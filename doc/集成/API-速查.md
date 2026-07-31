@@ -121,7 +121,7 @@
 | AI 审核建议 | `GET /api/admin/products/{id}/ai-review` |
 | 用户管理 | `GET/PUT /api/admin/users` |
 | 分类管理 | `GET/POST/PUT/DELETE /api/admin/categories` |
-| 评价管理 | `GET /api/admin/reviews` |
+| 评价管理 | `GET/DELETE /api/admin/reviews` |
 | 订单管理 | `GET /api/admin/orders` |
 | 仪表盘统计 | `GET /api/admin/dashboard` |
 

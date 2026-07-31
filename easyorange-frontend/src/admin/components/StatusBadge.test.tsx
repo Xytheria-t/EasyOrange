@@ -22,24 +22,39 @@ describe('StatusBadge', () => {
     });
 
     describe('product status', () => {
-        it('renders 草稿 for status 0', () => {
-            renderWithProviders(<StatusBadge status={0} type="product" />);
+        it('renders 草稿 for status DRAFT', () => {
+            renderWithProviders(<StatusBadge status="DRAFT" type="product" />);
             expect(screen.getByText('草稿')).toBeInTheDocument();
         });
 
-        it('renders 上架 for status 1', () => {
-            renderWithProviders(<StatusBadge status={1} type="product" />);
+        it('renders 待审核 for status PENDING_REVIEW', () => {
+            renderWithProviders(<StatusBadge status="PENDING_REVIEW" type="product" />);
+            expect(screen.getByText('待审核')).toBeInTheDocument();
+        });
+
+        it('renders 已驳回 for status REJECTED', () => {
+            renderWithProviders(<StatusBadge status="REJECTED" type="product" />);
+            expect(screen.getByText('已驳回')).toBeInTheDocument();
+        });
+
+        it('renders 上架 for status ONLINE', () => {
+            renderWithProviders(<StatusBadge status="ONLINE" type="product" />);
             expect(screen.getByText('上架')).toBeInTheDocument();
         });
 
-        it('renders 已售 for status 2', () => {
-            renderWithProviders(<StatusBadge status={2} type="product" />);
+        it('renders 已售 for status SOLD', () => {
+            renderWithProviders(<StatusBadge status="SOLD" type="product" />);
             expect(screen.getByText('已售')).toBeInTheDocument();
         });
 
-        it('renders 下架 for status 3', () => {
-            renderWithProviders(<StatusBadge status={3} type="product" />);
+        it('renders 下架 for status OFFLINE', () => {
+            renderWithProviders(<StatusBadge status="OFFLINE" type="product" />);
             expect(screen.getByText('下架')).toBeInTheDocument();
+        });
+
+        it('renders raw string for unknown product status', () => {
+            renderWithProviders(<StatusBadge status="CUSTOM" type="product" />);
+            expect(screen.getByText('CUSTOM')).toBeInTheDocument();
         });
     });
 

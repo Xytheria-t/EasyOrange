@@ -92,7 +92,7 @@ class ProductTest {
     void markAsSold_shouldChangeStatusAndEmitEvent() {
         var p = ProductTestFixture.onlineProduct();
 
-        var t = p.markAsSold();
+        var t = p.markAsSold().orElseThrow();
 
         assertThat(t.aggregate().getStatus()).isEqualTo(ProductStatus.SOLD);
         assertThat(t.event()).isInstanceOf(ProductMarkedSoldEvent.class);
@@ -118,12 +118,12 @@ class ProductTest {
     }
 
     @Test
-    @DisplayName("已售商品不能再次标记为已售")
-    void markAsSold_whenAlreadySold_shouldThrow() {
+    @DisplayName("已售商品重复标记已售应幂等返回空")
+    void markAsSold_whenAlreadySold_shouldReturnEmpty() {
         var p = ProductTestFixture.onlineProduct();
+        var sold = p.markAsSold().orElseThrow();
 
-        assertThatThrownBy(p.markAsSold().aggregate()::markAsSold)
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThat(sold.aggregate().markAsSold()).isEmpty();
     }
 
     @Test
@@ -203,6 +203,18 @@ class ProductTest {
 
         assertThatThrownBy(() -> rejected.approve("审核通过"))
                 .isInstanceOf(InvalidProductStatusException.class);
+    }
+
+    @Test
+    @DisplayName("信息不完整的商品审核通过应被拦截（与 putOnline 同一组上架不变量）")
+    void approve_whenIncomplete_shouldThrow() {
+        var p = ProductTestFixture.defaultProduct();
+        var submitted = p.submitForReview("1").aggregate();
+        var incomplete = submitted.toBuilder().title(null).build();
+
+        assertThatThrownBy(() -> incomplete.approve("审核通过"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("信息不完整");
     }
 
     // ==================== reject ====================
@@ -296,6 +308,15 @@ class ProductTest {
                 .isInstanceOf(InvalidProductStatusException.class);
     }
 
+    @Test
+    @DisplayName("非资产方不能下架商品")
+    void takeOffline_notOwner_shouldThrow() {
+        var p = ProductTestFixture.onlineProduct();
+
+        assertThatThrownBy(() -> p.takeOffline("999"))
+                .isInstanceOf(InvalidProductStatusException.class);
+    }
+
     // ==================== delete ====================
 
     @Test
@@ -321,7 +342,7 @@ class ProductTest {
     @DisplayName("已售商品不能删除")
     void delete_whenSold_shouldThrow() {
         var p = ProductTestFixture.onlineProduct();
-        var sold = p.markAsSold().aggregate();
+        var sold = p.markAsSold().orElseThrow().aggregate();
 
         assertThatThrownBy(() -> sold.delete("1"))
                 .isInstanceOf(InvalidProductStatusException.class);
@@ -333,7 +354,7 @@ class ProductTest {
     @DisplayName("已售商品不能恢复库存")
     void restoreStock_whenSold_shouldThrow() {
         var p = ProductTestFixture.onlineProduct();
-        var sold = p.markAsSold().aggregate();
+        var sold = p.markAsSold().orElseThrow().aggregate();
 
         assertThatThrownBy(sold::restoreStock)
                 .isInstanceOf(InvalidProductStatusException.class);

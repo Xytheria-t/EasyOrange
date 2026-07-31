@@ -3,9 +3,11 @@
  * @description 这些类型反映了后端实际返回的数据结构，需要通过 normalize 函数转换为前端类型
  */
 
+import type { ProductStatus } from './product';
+
 /**
  * 后端返回的原始商品数据
- * @description status 和 condition 是数字而非字符串，需要转换
+ * @description status 是后端下发的状态码（如 'ONLINE'），condition 是数字
  */
 export interface RawProduct {
     id: string;
@@ -16,7 +18,7 @@ export interface RawProduct {
     categoryId: number;
     categoryName?: string;
     condition?: number;
-    status?: number;
+    status?: ProductStatus;
     images?: string[];
     location?: string;
     views?: number;

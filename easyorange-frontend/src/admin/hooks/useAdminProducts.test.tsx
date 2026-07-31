@@ -91,7 +91,7 @@ describe('useUpdateProductStatus', () => {
             wrapper: Wrapper,
         });
 
-        result.current.mutate({ id: '1', data: { status: 3, reason: '下架' } });
+        result.current.mutate({ id: '1', data: { status: 'OFFLINE', reason: '下架' } });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
     });

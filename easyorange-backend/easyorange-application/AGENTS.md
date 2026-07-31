@@ -11,10 +11,12 @@ application/
 │       ├── EasyOrangeApplication.java     # Spring Boot 主类
 │       ├── adapter/
 │       │   ├── event/                     # 跨模块事件监听器
-│   │   │   ├── OrderFulfillmentEventConsumer.java  # 库存扣减
 │   │   │   ├── OrderNotificationEventConsumer.java
 │   │   │   ├── ProductAuditEventConsumer.java
-│   │   │   └── ReportProcessedEventConsumer.java
+│   │   │   ├── ReportProcessedEventConsumer.java
+│   │   │   ├── AiProductEventConsumer.java
+│   │   │   ├── AiCreditEventConsumer.java
+│   │   │   └── CompensationFailedAlertConsumer.java
 │       │   ├── inbound/web/controller/  # Web 控制器
 │       │   │   ├── AiController.java                  # AI 服务端点
 │       │   │   ├── CreditScoreController.java         # 信用分数端点
@@ -98,7 +100,7 @@ easyorange-application
 - ~~`thread-pool.*` — 线程池配置~~（已移除，改用虚拟线程，仅保留 `taskScheduler` 硬编码为 poolSize=5）
 - `file.upload.*` — 文件上传路径 (`path`) 和 URL 前缀 (`url-prefix`)
 - ~~`easyorange.idgen.*`~~ — ID 生成器配置（已移除，UUID v7 零配置零依赖）
-- `easyorange.cache.*` — 本地缓存配置（`image.max-size`、`image.expire-hours`、`l1.max-size`、`l1.expire-minutes`）
+- `easyorange.cache.*` — 多级缓存配置（`image.max-size`、`image.expire-hours`、`l1.max-size`、`l1.expire-minutes`、`l2.expire-minutes`、`l2.negative-expire-seconds`；负缓存默认 30s，L1 TTL 必须 ≤ L2 TTL）
 - ~~`http-client.*`~~ — HTTP 客户端超时和协议版本（已删除，Spring Boot 4 自动配置 RestClient）
 
 ### 日志配置 (logback-spring.xml)
@@ -153,6 +155,7 @@ easyorange-application
 | `AdminProductQueryAdapter` | `AdminProductQueryPort` | admin | 管理端商品查询 |
 | `AdminOrderQueryAdapter` | `AdminOrderQueryPort` | admin | 管理端订单查询 |
 | `AdminUserQueryAdapter` | `AdminUserQueryPort` | admin | 管理端用户查询 |
+| `AdminRatingQueryAdapter` | `AdminRatingQueryPort` | admin | 管理端评价查询 |
 
 `adapter/outbound/elasticsearch/` 搜索基础设施组件：
 

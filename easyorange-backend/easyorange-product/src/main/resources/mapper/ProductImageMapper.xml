@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper">
+<mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageMapper">
 
     <insert id="batchInsert">
         INSERT INTO eo_product_image (id, product_id, image_url, sort_order, is_main, create_time, update_time)

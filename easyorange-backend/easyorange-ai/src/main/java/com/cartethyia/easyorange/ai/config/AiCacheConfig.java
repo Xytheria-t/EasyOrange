@@ -5,6 +5,9 @@ import com.cartethyia.easyorange.ai.interceptor.AiRateLimitInterceptor;
 import com.cartethyia.easyorange.framework.cache.CacheInvalidationListener;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.github.benmanes.caffeine.cache.Cache;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.RedisTemplate;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +31,8 @@ public class AiCacheConfig implements WebMvcConfigurer {
     private final RedisTemplate<Object, Object> redisTemplate;
     private final AiRateLimitInterceptor aiRateLimitInterceptor;
     private final CacheInvalidationListener cacheInvalidationListener;
+    private final ObjectProvider<RedissonClient> redissonClientProvider;
+    private final ObjectProvider<MeterRegistry> meterRegistryProvider;
 
     @Bean("aiCaches")
     public Map<AiCallScope, MultiLevelCache> aiCaches() {
@@ -39,13 +45,19 @@ public class AiCacheConfig implements WebMvcConfigurer {
                     .expireAfterWrite(props.getL1ExpireMinutes(), TimeUnit.MINUTES)
                     .build();
 
+            var config = MultiLevelCache.Config.of(
+                    scope.cacheKeyPrefix(),
+                    Duration.ofMinutes(props.getL1ExpireMinutes()),
+                    Duration.ofSeconds(scope.getTtlSeconds()),
+                    null);
+
             var mlc = new MultiLevelCache(
                     l1,
                     redisTemplate,
-                    scope.cacheKeyPrefix(),
-                    scope.getTtlSeconds(),
-                    TimeUnit.SECONDS,
-                    cacheInvalidationListener
+                    config,
+                    cacheInvalidationListener,
+                    redissonClientProvider.getIfAvailable(),
+                    meterRegistryProvider.getIfAvailable()
             );
             map.put(scope, mlc);
         }

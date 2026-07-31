@@ -7,7 +7,6 @@
 ```
 framework/
 ├── async/             # AsyncManager（异步任务管理）
-├── bloom/             # BloomFilter + RedisBitmapBloomFilter（布隆过滤器）
 ├── cache/             # CacheLoader + CacheUtils + MultiLevelCache（多级缓存门面）
 ├── config/            # 框架配置（线程池/Jackson/MDC/缓存/Redis/Security/WebMVC/Properties）
 ├── event/             # 领域事件基础设施（EventConsumerHandler / EventMetadata / EventMetricsService / EventIdempotencyChecker / DlqAnomalyListener）
@@ -140,21 +139,7 @@ public class MdcTaskDecorator implements TaskDecorator {
 
 ### 布隆过滤器 (bloom/)
 
-Redis 位图实现的布隆过滤器，用于缓存穿透防护：
-
-- 默认配置: 100 万预期插入, 1% 假阳性率 → 约 1.2MB 内存, 7 个哈希函数
-- 哈希策略: Murmur3 128-bit 拆两个 long → k 个偏移量 (Less Hashing, Same Performance)
-- 位操作: `opsForValue().setBit/getBit`（标准 API，无 Lua、无序列化依赖；位图操作本身幂等，无需单次调用原子性）
-- 支持自定义预期数据量和假阳性率
-
-```java
-// 使用默认配置
-bloomFilter.put("eo:bloom:product:id", productId.toString());
-boolean exists = bloomFilter.mightContain("eo:bloom:product:id", productId.toString());
-
-// 自定义参数 (100 万, 1%)
-var custom = new RedisBitmapBloomFilter(redisTemplate, 1_000_000L, 0.01);
-```
+布隆过滤器已移除（2026-07-31）：`BloomFilter` / `RedisBitmapBloomFilter` / `BloomFilterConfig` 随 product 模块缓存穿透方案简化一并删除，缓存穿透统一由 `MultiLevelCache` 内置负缓存（NullValue 哨兵 30s）承担。
 
 ### 多级缓存门面 (cache/)
 
@@ -166,9 +151,16 @@ ProductDetail detail = multiLevelCache.get(
     () -> repository.findDetail(id)
 );
 
-// 手动失效 (同时清除 L1 + L2)
+// 手动失效 (同时清除 L1 + L2 + 广播其他节点)
 multiLevelCache.evict("product:detail:" + id);
 ```
+
+**行为约定（2026-07-31 重构后）**：
+- 构造使用单一 `MultiLevelCache.Config` record（`Config.of(prefix, l2Ttl)` 便捷工厂），**旧的多参构造器已删除**；校验 `l1Ttl ≤ l2Ttl`、`negativeTtl ≤ l2Ttl`，违反直接抛 `IllegalArgumentException`
+- **负缓存**：回源为 null 时以 `NullValue` 哨兵缓存（L1+L2，默认 30s），`get` 会返回缓存的 null 而不重复回源
+- **击穿防护**：回源走 Caffeine 原子单飞；配置了 `RedissonClient` 时叠加跨节点分布式锁（锁超时 fail-open）
+- **可观测**：指标 `easyorange.cache.requests{result=l1_hit|l2_hit|l2_negative|load}` + `easyorange.cache.load` Timer
+- `evictL2` 已删除，列表类缓存失效统一用 `evict()`（本节点 L1 同样过期，仅删 L2 会留本地陈旧值）
 
 ### Resilience4j Retry (resilience4j/)
 
@@ -234,7 +226,6 @@ public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request
 - **`ParameterNamesModule` 由 Spring Boot 4 自动配置**，领域事件 record 无需 @JsonCreator 注解即可反序列化；JacksonConfig 不再需要手动注册
 - **WebMvcConfig 不再重写 `extendMessageConverters`**：Spring Boot 4.0 使用 Jackson 3.x 的 HTTP 消息转换器，`MappingJackson2HttpMessageConverter`（Jackson 2.x）配置已无效
 - **RedisWorkerIdProvider 优雅降级**：Redis 不可用时 `afterPropertiesSet()` 自动降级至 workerId=0，不影响应用启动。`DisposableBean.destroy()` 在 Spring 关闭时释放 Redis WorkerId 租约。请勿移除这些异常处理，否则 Redis 故障会导致启动失败
-- **RedisBitmapBloomFilter 哈希偏移量**：`hash()` 方法使用 `Math.floorMod()` 计算位偏移量，避免 Java `%` 在负值时产生负数偏移。修改哈希逻辑需保持 `Math.floorMod`，否则 `SETBIT` 会收到非法偏移量
 - **RedisConfig 显式配置序列化器（2026-07-23）**：Spring Boot 4 `DataRedisAutoConfiguration` 不设任何序列化器（默认 `JdkSerializationRedisSerializer`，二进制 key/value 破坏 Lua `tonumber` 且不可读）。`RedisConfig` 通过 `@AutoConfigureBefore` 注入自定义 `@Bean RedisTemplate<Object, Object>`：`StringRedisSerializer`（key/hashKey）+ `GenericJacksonJsonRedisSerializer.builder().enableDefaultTyping(BasicPolymorphicTypeValidator).build()`（value/hashValue，含默认类型信息以便 `CacheUtils.cast()` 还原为原类型）。修改序列化策略时须同步评估所有 `RedisTemplate` 使用方
 - **配置属性类统一使用 `@ConfigurationProperties` + `@ConfigurationPropertiesScan` 模式**（纯 POJO，无需 `@Component`）：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖。主应用类 `EasyOrangeApplication` 已添加 `@ConfigurationPropertiesScan`，自动扫描所有 `@ConfigurationProperties` 类。推荐加 `@Validated` + Jakarta Validation 约束（`@Min`/`@NotBlank`/`@NotNull` 等）实现启动时 fail-fast 验证，替代手写 `@PostConstruct validate()`— 后者仅在需要输出警告而非错误时保留
 - **`@Idempotent` 幂等切面（`IdempotencyAspect`）**：`@Order(1)`，在 `RateLimitFilter(0)` 之后、`AuditLogAspect(3)` 之前执行。此顺序确保：① Filter 层先做快速防重；② 幂等拦截命中后不记录审计日志（避免重复日志）；③ 只有未缓存的请求会走到业务逻辑和日志记录。修改 Aspect 的 `@Order` 值时需评估这三层的影响

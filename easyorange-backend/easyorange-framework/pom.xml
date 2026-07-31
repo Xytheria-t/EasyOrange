@@ -95,13 +95,6 @@
             <version>0.4.20</version>
         </dependency>
 
-        <!-- Guava - Murmur3 哈希（布隆过滤器使用） -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>33.4.0-jre</version>
-        </dependency>
-
         <!-- MapStruct -->
         <dependency>
             <groupId>org.mapstruct</groupId>

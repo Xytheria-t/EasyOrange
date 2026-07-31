@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../api/adminApi';
-import type { AdminUser, AdminUserQuery, UpdateStatusRequest } from '../types/admin';
+import type { AdminUser, AdminUserQuery, UpdateUserStatusRequest } from '../types/admin';
 
 export const ADMIN_USER_KEYS = {
     all: ['admin', 'users'] as const,
@@ -51,7 +51,7 @@ export function useUpdateUserStatus() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: { id: string; data: UpdateStatusRequest }) => {
+        mutationFn: async ({ id, data }: { id: string; data: UpdateUserStatusRequest }) => {
             const response = await adminApi.updateUserStatus(id, data);
             return response.data;
         },

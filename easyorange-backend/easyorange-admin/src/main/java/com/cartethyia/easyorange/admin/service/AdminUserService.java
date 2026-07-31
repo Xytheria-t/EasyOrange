@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
+import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminUserQueryRequest;
@@ -18,12 +18,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AdminUserService {
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(CommonConstant.DATETIME_FORMAT);
 
     private final UserMapper userMapper;
 
@@ -57,7 +60,7 @@ public class AdminUserService {
 
         if (StringUtils.hasText(request.getStartTime())) {
             try {
-                LocalDateTime startTime = LocalDateTime.parse(request.getStartTime() + " 00:00:00", BatchQueryUtil.DATE_FORMATTER);
+                LocalDateTime startTime = LocalDateTime.parse(request.getStartTime() + " 00:00:00", DATE_FORMATTER);
                 wrapper.ge(UserDO::getCreateTime, startTime);
             } catch (Exception ignored) {
             }
@@ -65,7 +68,7 @@ public class AdminUserService {
 
         if (StringUtils.hasText(request.getEndTime())) {
             try {
-                LocalDateTime endTime = LocalDateTime.parse(request.getEndTime() + " 23:59:59", BatchQueryUtil.DATE_FORMATTER);
+                LocalDateTime endTime = LocalDateTime.parse(request.getEndTime() + " 23:59:59", DATE_FORMATTER);
                 wrapper.le(UserDO::getCreateTime, endTime);
             } catch (Exception ignored) {
             }

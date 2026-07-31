@@ -2,12 +2,9 @@ package com.cartethyia.easyorange.framework.cache;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.connection.Message;
-import org.springframework.data.redis.connection.MessageListener;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -17,14 +14,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * 当一个节点执行 {@link MultiLevelCache#evict(String)} 时，通过 Redis Pub/Sub 发布失效消息，
  * 其他节点收到消息后失效本地 L1（Caffeine）缓存，保证多节点 L1 缓存一致性。
  * <p>
- * 消息格式：{@code prefix:key}（原始字符串，不经过 RedisTemplate 序列化器，避免类型信息干扰）。
+ * 消息格式：{@code prefix\u0001key}（String 序列化，不携带 Jackson 类型信息）。
  * <p>
  * 注册：每个 {@link MultiLevelCache} 实例在构造时调用 {@link #register(String, Cache)} 注册其 L1 缓存，
  * 以 {@code l2KeyPrefix} 作为标识。
  */
 @Slf4j
 @Component
-public class CacheInvalidationListener implements MessageListener {
+public class CacheInvalidationListener {
 
     /** Pub/Sub 频道名 */
     public static final String CHANNEL = "eo:cache:invalidation";
@@ -32,10 +29,10 @@ public class CacheInvalidationListener implements MessageListener {
     /** 分隔符 — 使用 \u0001（SOH 控制字符）避免与 cache key 中的冒号冲突 */
     private static final String SEPARATOR = "\u0001";
 
-    private final RedisTemplate<Object, Object> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
     private final Map<String, Cache<String, Object>> l1Caches = new ConcurrentHashMap<>();
 
-    public CacheInvalidationListener(RedisTemplate<Object, Object> redisTemplate) {
+    public CacheInvalidationListener(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
@@ -52,29 +49,28 @@ public class CacheInvalidationListener implements MessageListener {
     /**
      * 发布缓存失效消息到 Redis Pub/Sub。
      * <p>
-     * 使用 {@code RedisCallback} 直接发送原始字节，绕过 RedisTemplate 的值序列化器，
-     * 避免类型信息（default typing）干扰消息解析。
+     * 使用 {@link StringRedisTemplate} 发送纯字符串，String 序列化不携带类型信息，
+     * 接收端无需处理序列化器差异。
      *
      * @param prefix 缓存前缀
      * @param key    缓存键
      */
     public void publishInvalidation(String prefix, String key) {
         try {
-            var message = (prefix + SEPARATOR + key).getBytes(StandardCharsets.UTF_8);
-            redisTemplate.execute(connection -> {
-                connection.publish(CHANNEL.getBytes(StandardCharsets.UTF_8), message);
-                return null;
-            }, true);
+            redisTemplate.convertAndSend(CHANNEL, prefix + SEPARATOR + key);
         } catch (Exception e) {
             log.warn("action=cache_invalidation_publish_failed, prefix={}, key={}, error={}",
                     prefix, key, e.getMessage());
         }
     }
 
-    @Override
-    public void onMessage(Message message, byte[] pattern) {
+    /**
+     * 消费缓存失效消息 — 由 {@code MessageListenerAdapter} 将消息体反序列化为 String 后调用。
+     *
+     * @param body 消息体（{@code prefix\u0001key}）
+     */
+    public void handleMessage(String body) {
         try {
-            var body = new String(message.getBody(), StandardCharsets.UTF_8);
             var idx = body.indexOf(SEPARATOR);
             if (idx < 0) {
                 return;

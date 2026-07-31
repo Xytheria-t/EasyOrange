@@ -1,14 +1,17 @@
 package com.cartethyia.easyorange.admin.service;
 
+import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminReportAssembler;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchHandleRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ReportHandleRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReportResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchHandleResultResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -22,23 +25,18 @@ import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
 import com.cartethyia.easyorange.product.domain.valueobject.Version;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
-import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
-import com.cartethyia.easyorange.user.domain.enums.UserStatus;
-import com.cartethyia.easyorange.user.domain.enums.UserType;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.product.domain.event.ReportProcessedEvent;
@@ -74,10 +72,16 @@ class AdminReportServiceTest {
     private ProductCacheEvictionPort productCachePort;
 
     @Mock
-    private BatchQueryUtil batchQueryUtil;
+    private AdminUserQueryPort adminUserQueryPort;
+
+    @Mock
+    private AdminProductQueryPort adminProductQueryPort;
 
     @Mock
     private DomainEventPublisher domainEventPublisher;
+
+    @Spy
+    private AdminReportAssembler assembler = new AdminReportAssembler();
 
     @InjectMocks
     private AdminReportService reportService;
@@ -99,13 +103,17 @@ class AdminReportServiceTest {
                 LocalDateTime.now().minusHours(2), LocalDateTime.now().minusHours(1), "1");
     }
 
-    private UserDO createUser(String id, String name) {
-        return UserDO.builder()
-                .id(id)
-                .username(name)
-                .nickName(name)
-                .userType(UserType.fromCode("01"))
-                .status(UserStatus.NORMAL)
+    private AdminUserQueryPort.UserInfo createUser(String id, String name) {
+        return new AdminUserQueryPort.UserInfo(id, name, name, null, null);
+    }
+
+    private Product createOnlineProduct() {
+        return Product.builder()
+                .id(ProductId.of(PRODUCT_ID)).sellerId(SellerId.of("1")).categoryId(CategoryId.of("1"))
+                .title(ProductTitle.of("测试商品")).price(Money.of(new BigDecimal("99.99")))
+                .stock(StockQuantity.of(10)).version(Version.INITIAL).status(ProductStatus.ONLINE)
+                .tags(TagSet.empty())
+                .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
                 .build();
     }
 
@@ -119,10 +127,9 @@ class AdminReportServiceTest {
             ProductReport report = createPendingReport();
             PageResult<ProductReport> pageResult = PageResult.of(List.of(report), 1L, 1, 20);
             when(productReportQueryRepository.findByStatus("0", 1, 20)).thenReturn(pageResult);
-            when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
-            ProductDO reportTestProduct = ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build();
-            reportTestProduct.setDelFlag(0);
-            when(batchQueryUtil.batchGetProducts(anyList())).thenReturn(Map.of(PRODUCT_ID, reportTestProduct));
+            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
+            when(adminProductQueryPort.getProductInfos(anyList()))
+                    .thenReturn(Map.of(PRODUCT_ID, new AdminProductQueryPort.ProductInfo(PRODUCT_ID, "测试商品")));
 
             PageResult<AdminReportResponse> result = reportService.listReports(1, 20, 0);
 
@@ -133,6 +140,21 @@ class AdminReportServiceTest {
             assertThat(vo.reporterName()).isEqualTo("举报人");
             assertThat(vo.status()).isEqualTo(0);
             assertThat(vo.statusDesc()).isEqualTo("待处理");
+        }
+
+        @Test
+        @DisplayName("无状态筛选时不传 status 给查询仓储")
+        void listReports_withoutStatus_passesNull() {
+            ProductReport report = createPendingReport();
+            PageResult<ProductReport> pageResult = PageResult.of(List.of(report), 1L, 1, 20);
+            when(productReportQueryRepository.findByStatus(null, 1, 20)).thenReturn(pageResult);
+            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of());
+            when(adminProductQueryPort.getProductInfos(anyList())).thenReturn(Map.of());
+
+            PageResult<AdminReportResponse> result = reportService.listReports(1, 20, null);
+
+            assertThat(result.records()).hasSize(1);
+            verify(productReportQueryRepository).findByStatus(null, 1, 20);
         }
     }
 
@@ -145,10 +167,9 @@ class AdminReportServiceTest {
         void getReportDetail_success() {
             ProductReport report = createPendingReport();
             when(productReportRepository.findById(REPORT_ID)).thenReturn(report);
-            when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
-            ProductDO testProduct2 = ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build();
-            testProduct2.setDelFlag(0);
-            when(batchQueryUtil.batchGetProducts(anyList())).thenReturn(Map.of(PRODUCT_ID, testProduct2));
+            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
+            when(adminProductQueryPort.getProductInfos(anyList()))
+                    .thenReturn(Map.of(PRODUCT_ID, new AdminProductQueryPort.ProductInfo(PRODUCT_ID, "测试商品")));
 
             AdminReportResponse vo = reportService.getReportDetail(REPORT_ID);
 
@@ -259,16 +280,8 @@ class AdminReportServiceTest {
         void handleReport_productOffline_takesProductOffline() {
             ProductReport report = createPendingReport();
             when(productReportRepository.findById(REPORT_ID)).thenReturn(report);
-
-            Product product = Product.builder()
-                    .id(ProductId.of(PRODUCT_ID)).sellerId(SellerId.of("1")).categoryId(CategoryId.of("1"))
-                    .title(ProductTitle.of("测试商品")).price(Money.of(new BigDecimal("99.99")))
-                    .stock(StockQuantity.of(10)).version(Version.INITIAL).status(ProductStatus.ONLINE)
-                    .tags(TagSet.empty())
-                    .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
-                    .build();
             when(productRepository.findById(ProductId.of(PRODUCT_ID)))
-                    .thenReturn(Optional.of(product));
+                    .thenReturn(Optional.of(createOnlineProduct()));
 
             ReportHandleRequest request = new ReportHandleRequest();
             request.setAction("PRODUCT_OFFLINE");
@@ -284,6 +297,27 @@ class AdminReportServiceTest {
                 TestSecurityUtil.clearSecurityContext();
             }
         }
+
+        @Test
+        @DisplayName("PRODUCT_OFFLINE 动作商品不存在时抛出异常")
+        void handleReport_productOffline_missingProduct_throws() {
+            ProductReport report = createPendingReport();
+            when(productReportRepository.findById(REPORT_ID)).thenReturn(report);
+            when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.empty());
+
+            ReportHandleRequest request = new ReportHandleRequest();
+            request.setAction("PRODUCT_OFFLINE");
+
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
+
+                assertThatThrownBy(() -> reportService.handleReport(REPORT_ID, request))
+                        .isInstanceOf(BusinessException.class)
+                        .hasMessageContaining("关联商品不存在");
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
+            }
+        }
     }
 
     @Nested
@@ -291,7 +325,7 @@ class AdminReportServiceTest {
     class BatchHandleReportsTests {
 
         @Test
-        @DisplayName("批量处理举报")
+        @DisplayName("批量处理举报返回聚合结果")
         void batchHandleReports_success() {
             ProductReport report1 = createPendingReport();
             ProductReport report2 = ProductReport.reconstitute("101", PRODUCT_ID, REPORTER_ID,
@@ -308,10 +342,45 @@ class AdminReportServiceTest {
             TestSecurityUtil.setSecurityContext(OPERATOR_ID);
             try {
 
-                reportService.batchHandleReports(request);
+                BatchHandleResultResponse result = reportService.batchHandleReports(request);
 
+                assertThat(result.total()).isEqualTo(2);
+                assertThat(result.success()).isEqualTo(2);
+                assertThat(result.failed()).isZero();
+                assertThat(result.errors()).isEmpty();
                 verify(productReportRepository, times(2)).update(any(ProductReport.class));
                 verify(reportHandleHistoryRepository, times(2)).save(any(ReportHandleHistory.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
+            }
+        }
+
+        @Test
+        @DisplayName("批量处理部分失败时聚合错误信息")
+        void batchHandleReports_partialFailure_aggregatesErrors() {
+            ProductReport pending = createPendingReport();
+            ProductReport resolved = ProductReport.reconstitute("101", PRODUCT_ID, REPORTER_ID,
+                    "侵权", ProductReportStatus.RESOLVED, "已处理",
+                    LocalDateTime.now().minusHours(2), LocalDateTime.now().minusHours(1), "2");
+
+            when(productReportRepository.findById("100")).thenReturn(pending);
+            when(productReportRepository.findById("101")).thenReturn(resolved);
+
+            BatchHandleRequest request = new BatchHandleRequest();
+            request.setReportIds(List.of("100", "101"));
+            request.setAction("dismiss");
+
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
+
+                BatchHandleResultResponse result = reportService.batchHandleReports(request);
+
+                assertThat(result.total()).isEqualTo(2);
+                assertThat(result.success()).isEqualTo(1);
+                assertThat(result.failed()).isEqualTo(1);
+                assertThat(result.errors()).hasSize(1);
+                assertThat(result.errors().get(0)).contains("101");
+                verify(productReportRepository, times(1)).update(any(ProductReport.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -371,7 +440,7 @@ class AdminReportServiceTest {
                     "resolve", "已处理", LocalDateTime.now());
 
             when(reportHandleHistoryRepository.findByReportId(REPORT_ID)).thenReturn(List.of(history));
-            when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(OPERATOR_ID, createUser(OPERATOR_ID, "管理员")));
+            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of(OPERATOR_ID, createUser(OPERATOR_ID, "管理员")));
 
             List<ReportHandleHistoryResponse> historyList = reportService.getReportHistory(REPORT_ID);
 

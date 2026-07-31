@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePagination } from '@/hooks/usePagination';
+import type { ProductStatus } from '@/types';
 import { AdminSelect } from '../../components/AdminSelect';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -11,12 +12,12 @@ import { ProductManageDetailModal } from './ProductManageDetailModal';
 
 const STATUS_FILTER_OPTIONS = [
     { value: '', label: '全部状态' },
-    { value: '0', label: '草稿' },
-    { value: '4', label: '待审核' },
-    { value: '5', label: '已驳回' },
-    { value: '1', label: '上架' },
-    { value: '2', label: '已售' },
-    { value: '3', label: '下架' },
+    { value: 'DRAFT', label: '草稿' },
+    { value: 'PENDING_REVIEW', label: '待审核' },
+    { value: 'REJECTED', label: '已驳回' },
+    { value: 'ONLINE', label: '上架' },
+    { value: 'SOLD', label: '已售' },
+    { value: 'OFFLINE', label: '下架' },
 ];
 
 const CATEGORY_FILTER_OPTIONS = [
@@ -41,7 +42,7 @@ const conditionLabels: Record<number, string> = {
 export default function ProductManagePage() {
     const [keyword, setKeyword] = useState('');
     const [searchInput, setSearchInput] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState<ProductStatus | ''>('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const {
         pageNum: page,
@@ -57,7 +58,7 @@ export default function ProductManagePage() {
         pageNum: page,
         pageSize,
         keyword: keyword || undefined,
-        status: statusFilter ? Number(statusFilter) : undefined,
+        status: statusFilter || undefined,
         categoryId: categoryFilter || undefined,
     });
 
@@ -88,7 +89,7 @@ export default function ProductManagePage() {
 
     const handleInlineOffline = useCallback(
         async (product: AdminProduct) => {
-            const targetStatus = product.status === 1 ? 3 : 1;
+            const targetStatus = product.status === 'ONLINE' ? 'OFFLINE' : 'ONLINE';
             try {
                 await updateStatusMutation.mutateAsync({
                     id: product.productId,
@@ -212,7 +213,7 @@ export default function ProductManagePage() {
             key: 'status',
             title: '状态',
             render: (_value, record) => (
-                <StatusBadge status={record.statusDesc ?? record.status ?? ''} type="product" />
+                <StatusBadge status={record.status ?? record.statusDesc ?? ''} type="product" />
             ),
         },
         {
@@ -277,7 +278,7 @@ export default function ProductManagePage() {
                         </svg>
                         详情
                     </Button>
-                    {(record.status === 1 || record.status === 3) && (
+                    {(record.status === 'ONLINE' || record.status === 'OFFLINE') && (
                         <Button
                             variant="ghost"
                             size="sm"
@@ -294,8 +295,9 @@ export default function ProductManagePage() {
                                 borderRadius: 10,
                                 fontSize: '0.81rem',
                                 fontWeight: 600,
-                                color: record.status === 1 ? '#E11D48' : '#059669',
-                                background: record.status === 1 ? 'rgba(244,63,94,0.07)' : 'rgba(16,185,129,0.07)',
+                                color: record.status === 'ONLINE' ? '#E11D48' : '#059669',
+                                background:
+                                    record.status === 'ONLINE' ? 'rgba(244,63,94,0.07)' : 'rgba(16,185,129,0.07)',
                                 border: '1px solid transparent',
                                 transition: 'all 0.2s ease',
                                 opacity: updateStatusMutation.isPending ? 0.6 : 1,
@@ -305,17 +307,17 @@ export default function ProductManagePage() {
                             onMouseEnter={e => {
                                 if (!updateStatusMutation.isPending) {
                                     e.currentTarget.style.background =
-                                        record.status === 1 ? 'rgba(244,63,94,0.14)' : 'rgba(16,185,129,0.14)';
+                                        record.status === 'ONLINE' ? 'rgba(244,63,94,0.14)' : 'rgba(16,185,129,0.14)';
                                 }
                             }}
                             onMouseLeave={e => {
                                 if (!updateStatusMutation.isPending) {
                                     e.currentTarget.style.background =
-                                        record.status === 1 ? 'rgba(244,63,94,0.07)' : 'rgba(16,185,129,0.07)';
+                                        record.status === 'ONLINE' ? 'rgba(244,63,94,0.07)' : 'rgba(16,185,129,0.07)';
                                 }
                             }}
                         >
-                            {record.status === 1 ? (
+                            {record.status === 'ONLINE' ? (
                                 <>
                                     <svg
                                         aria-hidden="true"
@@ -663,7 +665,7 @@ export default function ProductManagePage() {
                             options={STATUS_FILTER_OPTIONS}
                             value={statusFilter}
                             onChange={val => {
-                                setStatusFilter(val);
+                                setStatusFilter(val as ProductStatus | '');
                                 goTo(1);
                             }}
                         />

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePagination } from '@/hooks/usePagination';
+import type { ProductStatus } from '@/types';
 import { AdminSelect } from '../../components/AdminSelect';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -9,14 +10,14 @@ import { useAdminProducts } from '../../hooks/useAdminProducts';
 import type { AdminProduct } from '../../types/admin';
 import { ProductDetailDrawer } from './ProductDetailDrawer';
 
-const statusOptions: { value: number | ''; label: string }[] = [
+const statusOptions: { value: ProductStatus | ''; label: string }[] = [
     { value: '', label: '全部状态' },
-    { value: 4, label: '待审核' },
-    { value: 5, label: '已驳回' },
-    { value: 0, label: '草稿' },
-    { value: 1, label: '上架' },
-    { value: 2, label: '已售' },
-    { value: 3, label: '下架' },
+    { value: 'PENDING_REVIEW', label: '待审核' },
+    { value: 'REJECTED', label: '已驳回' },
+    { value: 'DRAFT', label: '草稿' },
+    { value: 'ONLINE', label: '上架' },
+    { value: 'SOLD', label: '已售' },
+    { value: 'OFFLINE', label: '下架' },
 ];
 
 const CATEGORY_OPTIONS = [
@@ -39,7 +40,7 @@ const SORT_OPTIONS = [
 export default function ProductReviewPage() {
     const [keyword, setKeyword] = useState('');
     const [searchInput, setSearchInput] = useState('');
-    const [statusFilter, setStatusFilter] = useState<number | ''>('');
+    const [statusFilter, setStatusFilter] = useState<ProductStatus | ''>('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const {
         pageNum: page,
@@ -192,7 +193,7 @@ export default function ProductReviewPage() {
                 key: 'status',
                 title: '状态',
                 render: (_value, record) => (
-                    <StatusBadge status={record.statusDesc ?? record.status ?? ''} type="product" />
+                    <StatusBadge status={record.status ?? record.statusDesc ?? ''} type="product" />
                 ),
             },
             {
@@ -591,7 +592,7 @@ export default function ProductReviewPage() {
                             options={statusOptions}
                             value={statusFilter}
                             onChange={value => {
-                                setStatusFilter(value as number | '');
+                                setStatusFilter(value as ProductStatus | '');
                                 goTo(1);
                             }}
                         />

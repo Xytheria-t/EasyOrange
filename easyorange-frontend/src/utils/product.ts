@@ -3,11 +3,12 @@
  * @description 提供商品相关的工具函数
  */
 
-import { PRODUCT_STATUS_CODE } from '@/constants';
-import type { Product, RawProduct } from '@/types';
+import type { Product, ProductStatus, RawProduct } from '@/types';
+
+const VALID_STATUSES: readonly ProductStatus[] = ['DRAFT', 'PENDING_REVIEW', 'REJECTED', 'ONLINE', 'OFFLINE', 'SOLD'];
 
 export function normalizeProduct(raw: RawProduct): Product {
-    const status = raw.status ?? 1;
+    const status = VALID_STATUSES.includes(raw.status as ProductStatus) ? (raw.status as ProductStatus) : 'ONLINE';
     const condition = raw.condition ?? 0;
     return {
         id: raw.id,
@@ -19,7 +20,7 @@ export function normalizeProduct(raw: RawProduct): Product {
         categoryName: raw.categoryName ?? '',
         condition,
         conditionLevel: condition,
-        status: PRODUCT_STATUS_CODE[status] ?? 'ONLINE',
+        status,
         images: raw.images ?? [],
         location: raw.location ?? '',
         views: raw.views ?? 0,

@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ReportHandleRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchHandleRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReportResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchHandleResultResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
 import com.cartethyia.easyorange.admin.service.AdminReportService;
@@ -52,9 +53,8 @@ public class AdminReportController {
     }
 
     @PutMapping("/batch-handle")
-    public Result<Void> batchHandleReports(@Valid @RequestBody BatchHandleRequest request) {
-        adminReportService.batchHandleReports(request);
-        return Result.success();
+    public Result<BatchHandleResultResponse> batchHandleReports(@Valid @RequestBody BatchHandleRequest request) {
+        return Result.success(adminReportService.batchHandleReports(request));
     }
 
     @GetMapping("/stats")

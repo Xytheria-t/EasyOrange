@@ -32,7 +32,7 @@ const sampleProduct: AdminProduct = {
     price: 100,
     originalPrice: 150,
     stock: 10,
-    status: 4,
+    status: 'PENDING_REVIEW',
     statusDesc: '待审核',
     conditionLevel: 9,
     location: '北京',

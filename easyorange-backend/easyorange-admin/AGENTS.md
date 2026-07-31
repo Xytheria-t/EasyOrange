@@ -24,16 +24,20 @@ easyorange-admin/
 ├── AGENTS.md
 └── src/main/java/com/cartethyia/easyorange/admin/
     ├── adapter/
-    │   └── inbound/web/controller/ # REST 控制器
+    │   └── inbound/web/
+    │       ├── controller/           # REST 控制器
+    │       ├── assembler/            # DTO 组装器（禁止在 Service 中直接构造 Response DTO）
+    │       └── dto/                  # 数据传输对象
+    │           ├── request/          # 请求 DTO
+    │           └── response/         # 响应 Response
     ├── domain/
-    │   └── port/                   # 端口接口（防腐层）
+    │   ├── enums/                    # 领域枚举（AdminResultCode / ReportHandleAction）
+    │   └── port/                     # 端口接口（防腐层）
     │       ├── AdminProductQueryPort.java  # 商品查询端口
     │       ├── AdminUserQueryPort.java     # 用户查询端口
-    │       └── AdminOrderQueryPort.java    # 订单查询端口
-    ├── service/              # 业务服务层
-    └── dto/                  # 数据传输对象
-        ├── request/          # 请求 DTO
-        └── response/         # 响应 Response
+    │       ├── AdminOrderQueryPort.java    # 订单查询端口
+    │       └── AdminRatingQueryPort.java   # 评价查询端口
+    └── service/              # 业务服务层
 ```
 
 > **注意**：Admin 模块通过端口接口访问其他模块数据，遵循防腐层原则，不直接依赖其他模块的 Mapper/DO。适配器实现在 `easyorange-application/adapter/outbound/admin/` 包下。
@@ -59,6 +63,7 @@ easyorange-admin ──optional──> easyorange-common   (Result, PageResult, 
 - `AdminProductQueryAdapter` → ProductMapper
 - `AdminUserQueryAdapter` → UserMapper
 - `AdminOrderQueryAdapter` → OrderMapper
+- `AdminRatingQueryAdapter` → ProductRatingMapper
 
 ## 常见开发任务
 

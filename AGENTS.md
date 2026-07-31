@@ -1,6 +1,6 @@
 # EasyOrange — LLM × DDD：Java 架构工程化实战
 
-> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。**双岗位叙事适配**：投「AI Agent / 大模型 Java 后端」看 6 决策点 + 轻量 Agent 编排 + 8 件套工程化；投「Java 架构师」看 DDD + Saga + 分布式可靠性 + ADR/ArchUnit/PIT 治理三板斧。**业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**工程亮点**：DDD 六边形 + CQRS · Saga 9 状态机 · 事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路 · AI 8 件套（Port/Adapter + 多级缓存 + Redisson 令牌桶 + stale 降级 + AiMetrics + Prompt YAML + TokenBudget + Bulkhead + 4 路并行 Tool Calling）· ES 搜索 + IK 分词 · ArchUnit 6 条规则 · 5 ADR · 2,427 测试（后端 1,389 + 前端 1,038）/ Domain 层 84.1% 行覆盖（JaCoCo + PIT 变异测试双重门禁）· SpringDoc OpenAPI 3 · Biome 0 errors。**2025 年 11 月启动**。
+> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。**双岗位叙事适配**：投「AI Agent / 大模型 Java 后端」看 6 决策点 + 轻量 Agent 编排 + 8 件套工程化；投「Java 架构师」看 DDD + Saga + 分布式可靠性 + ADR/ArchUnit/PIT 治理三板斧。**业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**工程亮点**：DDD 六边形 + CQRS · Saga 9 状态机 · 事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路 · AI 8 件套（Port/Adapter + 多级缓存 + Redisson 令牌桶 + stale 降级 + AiMetrics + Prompt YAML + TokenBudget + Bulkhead）· ES 搜索 + IK 分词 · ArchUnit 6 条规则 · 6 ADR · 2,419 测试（后端 1,377 + 前端 1,042）/ Domain 层 84.1% 行覆盖（JaCoCo + PIT 变异测试双重门禁）· SpringDoc OpenAPI 3 · Biome 0 errors。**2025 年 11 月启动**。
 
 ## 技术栈
 
@@ -20,7 +20,7 @@
 | 表名 | 说明 | 备注 |
 |------|------|------|
 | `eo_user` | 用户信息表 | user_type 枚举: 00(ADMIN)/01(NORMAL)/02(MANAGER) |
-| `eo_product` | 商品信息表 | 6状态: DRAFT(0)/PENDING_REVIEW(4)/REJECTED(5)/ONLINE(1)/SOLD(2)/OFFLINE(3) |
+| `eo_product` | 商品信息表 | 6状态(VARCHAR code, 按生命周期): DRAFT/PENDING_REVIEW/REJECTED/ONLINE/OFFLINE/SOLD |
 | `eo_product_audit_log` | 审核记录表 | action: 1通过/2拒绝/3重提交; 含维度JSON+前后状态快照 |
 | `eo_product_detail` | 商品详情表 | JSON 格式 |
 | `eo_product_image` | 商品图片表 | 1:N, 含 is_main 主图标记 + sort_order 排序; 图片不在 eo_product 表上 |
@@ -35,29 +35,28 @@
 
 ```
                     ┌──────────────────┐
-                    │   DRAFT (0)      │
+                    │    DRAFT         │
                     └────┬────┬────────┘
                          │    │
                     submit    putOnline (ADMIN bypass)
                          │    │
-                    ┌────▼────▼────────┐
-                    │ PENDING_REVIEW(4) │
+                    ┌────▼────▼─────────┐
+                    │  PENDING_REVIEW   │
                     └────┬────────┬─────┘
                     approve    reject
                          │    ┌────▼─────┐
-                    ┌────▼────▼─┐  REJECTED(5) │
-                    │ ONLINE(1) │  └─────┬──────┘
-                    └──┬─────┬──┘      submit (循环)
+                    ┌────▼────▼─┐  REJECTED  │
+                    │  ONLINE   │  └────┬─────┘
+                    └──┬─────┬──┘  submit (循环)
                   takeOffline  markAsSold
                        │      │
                   ┌────▼──┐   │
                   │OFFLINE│   │
-                  │  (3)  │   │
                   └───┬───┘   │
                  putOnline    │
                   (relist)    │
                        ┌──────▼──────┐
-                       │  SOLD (2)   │ (终端状态)
+                       │    SOLD     │ (终端状态)
                        └─────────────┘
 ```
 
@@ -68,7 +67,7 @@
 - 审核结果触发站内消息通知（AUDIT_SUCCESS / AUDIT_REJECTED）
 - 审核记录持久化至 `eo_product_audit_log` 表（action: 1通过/2拒绝/3重提交; 含维度JSON+前后状态快照）
 
-状态机定义在 `ProductStatus.java`，所有合法转换集中在一张 `ALLOWED_TRANSITIONS` 表，守卫统一由 `canTransitionTo(target)` 入口。delete 不改变 status，单独由 `canDelete()` 守卫（SOLD 状态下的商品不可删除以保留订单追溯记录）。
+状态机定义在 `ProductStatus.java`：枚举按生命周期声明（DRAFT → PENDING_REVIEW → REJECTED → ONLINE → OFFLINE → SOLD），所有合法转换集中在一张 `ALLOWED_TRANSITIONS` 表（单一事实来源，行内注释标注各转换的触发动作），聚合根通过 `transitionTo(target, action)` 统一守卫。终端状态用 `isTerminal()`（仅 SOLD）判断。delete 不改变 status，单独由 `canDelete()` 守卫（SOLD 状态下的商品不可删除以保留订单追溯记录）。库存恢复不变量 `canRestoreStock()`（SOLD/OFFLINE 不可恢复库存）由 `Product.restoreStock()` 调用。进入 ONLINE 只有 `approve`（审核通过）和 `putOnline`（管理员直上架）两条路径，统一经 `Product.validateOnline()`（isComplete + hasValidPrice + hasStock）守卫，禁止新增第三条绕过校验的上架路径。
 
 ## AI 能力清单
 
@@ -115,7 +114,7 @@ easy-orange/
 2. **CQRS**: 命令与查询分离 (product, order, payment 模块)
 3. **六边形架构**: domain 层通过 port 接口与外部解耦
 4. **不可变性**: 聚合根用 `@Builder(toBuilder = true)`，值对象用 `record`
-5. **领域事件**: `DomainEventPublisher` 发布事件 → `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher` → Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子） → 异步从 `EVENT_PUBLICATION` 读取并发布到 **RabbitMQ Topic Exchange** (`eo.domain.events`)。路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）→ `DlqRetryScheduler` 每 5 分钟扫描 DLQ 并指数退避重投主队列（1min/5min/15min），超过 max-retries=3 的毒消息转储 `eo.dlq.terminal` 等待人工介入。Modulith 的 at-least-once 语义 + 消费者 `EventIdempotencyChecker` 确保精确一次处理。审计日志同样走 Outbox 模式（`AuditLogAspect` 发布 `AuditLogEvent` → `AuditLogEventConsumer` 异步入库）。采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**traceId 全链路传递**：Brave `TracingFilter` 从 HTTP 头提取 traceId → 写入 MDC → `MdcTaskDecorator` 传递到 @Async 虚拟线程 → `EventMetadataMessagePostProcessor` 发布前把 traceId 注入 RabbitMQ message header → 消费者端 `EventMetadata.from(message, event)` decode 回 MDC → 日志 + Micrometer metrics 统一关联。**已实现 12 个事件消费者**: ProductEventConsumer (内部 CQRS 投影), AiProductEventConsumer (AI 估值/文案), OrderNotificationEventConsumer (站内信), OrderSagaEventConsumer (Saga 协调), OrderFulfillmentEventConsumer (库存扣减), AiCreditEventConsumer (信用分), ProductAuditEventConsumer (审核通知), ReportProcessedEventConsumer (举报通知), WebSocketEventConsumer (消息撤回广播), PaymentMetricsConsumer (支付指标), CompensationFailedAlertConsumer (补偿失败告警), **AuditLogEventConsumer (审计日志 Outbox 入库)**
+5. **领域事件**: `DomainEventPublisher` 发布事件 → `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher` → Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子） → 异步从 `EVENT_PUBLICATION` 读取并发布到 **RabbitMQ Topic Exchange** (`eo.domain.events`)。路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）→ `DlqRetryScheduler` 每 5 分钟扫描 DLQ 并指数退避重投主队列（1min/5min/15min），超过 max-retries=3 的毒消息转储 `eo.dlq.terminal` 等待人工介入。Modulith 的 at-least-once 语义 + 消费者 `EventIdempotencyChecker` 确保精确一次处理。审计日志同样走 Outbox 模式（`AuditLogAspect` 发布 `AuditLogEvent` → `AuditLogEventConsumer` 异步入库）。采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**traceId 全链路传递**：Brave `TracingFilter` 从 HTTP 头提取 traceId → 写入 MDC → `MdcTaskDecorator` 传递到 @Async 虚拟线程 → `EventMetadataMessagePostProcessor` 发布前把 traceId 注入 RabbitMQ message header → 消费者端 `EventMetadata.from(message, event)` decode 回 MDC → 日志 + Micrometer metrics 统一关联。**已实现 11 个事件消费者**: ProductEventConsumer (内部 CQRS 投影), AiProductEventConsumer (AI 估值/文案), OrderNotificationEventConsumer (站内信), OrderSagaEventConsumer (Saga 协调, 同步扣库存), AiCreditEventConsumer (信用分), ProductAuditEventConsumer (审核通知), ReportProcessedEventConsumer (举报通知), WebSocketEventConsumer (消息撤回广播), PaymentMetricsConsumer (支付指标), CompensationFailedAlertConsumer (补偿失败告警), **AuditLogEventConsumer (审计日志 Outbox 入库)**
 6. **Assembler 模式**: DTO 转换统一在 `adapter/inbound/web/assembler/` 目录下实现（FavoriteAssembler, CategoryAssembler, PaymentViewAssembler, UserAssembler）。**禁止**在 Controller/Service 中直接构造 Response DTO。已废弃旧 DTO（AddFavoriteDTO, FavoriteVO, QueryOrderRequest, PaymentQuery, PaymentView, PaymentMethodVO 等）
 7. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
 8. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 使用 Java 21 模式匹配 switch 在单个 `handle()` 方法内按类型分发，返回动态 HTTP 状态码（按错误码前缀自动映射：A0401→401/A0403→403/B→400/C→500/D→502）+ 业务错误码；校验类错误统一返回 400。**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底。`BusinessException` 和 `FileException` 构造器均设为 `protected`，抛业务异常时统一使用 `BusinessException.of(...)` / `FileException.of(...)` 工厂方法；子类可正常调用 `super(...)`。各模块领域异常必须使用模块专属 `ResultCode`（如 `ProductResultCode.PRODUCT_NOT_FOUND`），**禁止回退到全局 `B0002`**
@@ -168,10 +167,10 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 | B3xxx | order | `OrderResultCode` |
 | B4xxx | payment | `PaymentResultCode` |
 | B5xxx | file | `FileResultCode` |
-| B6xxx | **预留** | — |
+| B6xxx | admin | `AdminResultCode` |
 | B7xxx | message | `MessageResultCode` |
 
-> 新增模块时优先使用 B6xxx 范围，避免与现有范围冲突。各枚举统一使用 `@Getter @AllArgsConstructor` 模式实现 `IResultCode`。
+> 新增模块时优先使用 B8xxx-B9xxx 预留范围，避免与现有范围冲突。各枚举统一使用 `@Getter @AllArgsConstructor` 模式实现 `IResultCode`。
 
 ## 架构文档
 
@@ -218,13 +217,13 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 - 覆盖率报告由 **JaCoCo 0.8.14** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁（行≥80%/分支≥60%）配置在 `verify` 阶段，本地 `haltOnFailure=false` 仅出报告，CI 用 `-Djacoco.haltOnFailure=true` 启用阻断。依赖安全由 **OWASP Dependency Check 12.1.0** 在 `verify` 阶段检查（CVSS ≥ 8 阻断构建）
 - **变异测试（PIT 1.25.8）**: 行/分支覆盖率只测"代码被执行过"，不测"测试能否发现缺陷"。PIT 向 domain 层注入变异（聚合根状态机/领域服务/值对象），用现有测试杀灭变异来评估测试真实质量 — 行覆盖率的"金标准"补充。默认不启用（较慢），按需 `./mvnw -Ppit test-compile pitest:mutationCoverage`，HTML 报告 `target/pit-reports/index.html`；阈值门禁默认 0 不阻断，CI 用 `-Dpit.mutationThreshold=60 -Dpit.testStrengthThreshold=75 -Dpit.coverageThreshold=70` 启用（order 模块基线 70%/89%/81%）
 - **标准 API 优先（STP）**: 优先使用框架/标准库内置功能，不重复造轮子。Spring Security 有 JWT 认证就通过 `oauth2ResourceServer()` 配置，不要手写 Filter；有标准 `JwtDecoder`/`JwtEncoder` 就注入使用，不要手写 JWT 工具类。"零新增自定义代码"是最优方案——删掉手写代码，换成框架配置即可
-- **测试统计**：后端 11 模块合计 1,389 测试用例 / 1,298 注解 / 156 文件（2026-07-29 WSL2 实测全绿，Domain 层行覆盖率 84.1%，`mock-maker-subclass` 模式）；前端 111 测试文件 / 1,038 测试用例。数字单一来源见 [doc/工程指标.md](doc/工程指标.md) §1.2
+- **测试统计**：后端 11 模块合计 1,377 测试用例 / 1,306 注解 / 156 文件（2026-07-31 实测全绿，Domain 层行覆盖率 84.1%，`mock-maker-subclass` 模式）；前端 111 测试文件 / 1,042 测试用例。数字单一来源见 [doc/工程指标.md](doc/工程指标.md) §1.2
 - **前端组件规范**：表单/按钮统一使用 shadcn/ui（Button、Input、Label、Checkbox、Switch、Select、Textarea、RadioGroup），禁止保留原生 `<button>` / `<input>` / `<textarea>` / `<select>`；导入优先走 `@/components/ui`，颜色/边框硬编码应提取到 `src/styles/tokens.css`；CSS reset 必须置于 `@layer base` 避免覆盖 Tailwind utilities；生产代码禁止 `console.log` / `console.warn` / `console.error`
 - **前端表单校验**：所有包含显式校验逻辑的表单（登录/注册/发布/密码修改等），必须使用 `react-hook-form` + `zod` + `@hookform/resolvers` 方案，禁止手写 `useState` + 自定义 `validate` 函数。Zod schema 统一放在 `src/schemas/` 目录下，`.default()` 禁止使用（默认值通过 `useForm` 的 `defaultValues` 设置以保持类型推导正确）。`reValidateMode` 统一设为 `'onChange'` 使得首次提交后输入即时清除错误。管理端搜索/筛选类简单表单（如 CategoryManagePage）无需迁移
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/.../framework/util/TestSecurityUtil.java`
 - **全局认证拦截**: SecurityConfig 的 `.anyRequest().authenticated()` 已在过滤器层拦截所有未认证请求，Controller 方法上**无需**重复添加 `@PreAuthorize("isAuthenticated()")`。仅在需要角色/权限校验时使用 `@PreAuthorize`（如 `hasRole('ADMIN')`）
 - **UUID v7 ID**: 全库 ID 使用 UUID v7 (RFC 9562, String)，已彻底移除 Snowflake 备选代码。后端通过 `IdGenerator` 接口（`UuidV7IdGenerator` 为 `@Primary` 实现）生成 36 位 UUID 字符串。`BaseDO.id` 字段类型为 `String`，`@TableId(type = IdType.INPUT)`。前端实体 ID 字段类型保持 `string`（无需更改，JS 始终兼容字符串）。`V1__init_schema.sql` 直接使用 `VARCHAR(36)`。
-- **全量 Long→String 迁移**: 涉及所有模块——领域事件、值对象、DO、DTO、Port 接口、Adapter、Controller、测试文件。`SecurityContextUtil.getCurrentUserIdOrThrow()` 返回 `String`（原 Long）。`SnowflakeConfig`/`IdGenProperties` 等 Snowflake 配置已彻底移除，仅保留 `UuidV7IdGenerator`。`TestSecurityUtil.setSecurityContext()` 同时保留 `Long` 和 `String` 重载。全项目 2,427 测试通过（1,389 后端 + 1,038 前端）。
+- **全量 Long→String 迁移**: 涉及所有模块——领域事件、值对象、DO、DTO、Port 接口、Adapter、Controller、测试文件。`SecurityContextUtil.getCurrentUserIdOrThrow()` 返回 `String`（原 Long）。`SnowflakeConfig`/`IdGenProperties` 等 Snowflake 配置已彻底移除，仅保留 `UuidV7IdGenerator`。`TestSecurityUtil.setSecurityContext()` 同时保留 `Long` 和 `String` 重载。全项目 2,419 测试通过（1,377 后端 + 1,042 前端）。
 - **DO 枚举字段使用 TypeHandler**: DO 中 `status`、`condition_level` 等枚举字段直接使用领域枚举类型（`ProductStatus`、`ConditionLevel`），通过自定义 TypeHandler 持久化。框架提供 `IntegerCodeEnumTypeHandler`（TINYINT/INT 列）和 `CodeEnumTypeHandler`（VARCHAR 列）两个基类。新增枚举字段时：① 创建 TypeHandler 继承对应基类，标注 `@MappedTypes`；② 将 TypeHandler 所在包加入 `application.yaml` 的 `mybatis-plus.type-handlers-package`；③ DO 字段类型改为枚举。各模块测试通过后即为就绪。
 - **React Query 缓存**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all` 前缀匹配，确保 myOrders/soldOrders/detail 等所有查询都能被正确失效
 - **零配置启动**: 项目支持零配置开发环境启动（MySQL localhost:3306, Redis localhost:6379）。新开发者只需 `./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application` 即可运行。敏感配置通过根目录 `.env.example` 模板管理，复制为 `.env` 即可（IDEA、Docker Compose 通用）

@@ -1,37 +1,42 @@
 package com.cartethyia.easyorange.admin.service;
 
+import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminReportAssembler;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchHandleRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ReportHandleRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReportResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchHandleResultResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
+import com.cartethyia.easyorange.admin.domain.enums.AdminResultCode;
+import com.cartethyia.easyorange.admin.domain.enums.ReportHandleAction;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ReportHandleRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchHandleRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReportResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
-import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
-import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.domain.event.ReportProcessedEvent;
+import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
-import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
+import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
-import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import lombok.RequiredArgsConstructor;
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminReportService {
@@ -41,22 +46,33 @@ public class AdminReportService {
     private final ReportHandleHistoryRepository reportHandleHistoryRepository;
     private final ProductRepository productRepository;
     private final ProductCacheEvictionPort productCachePort;
-    private final BatchQueryUtil batchQueryUtil;
     private final DomainEventPublisher domainEventPublisher;
+    private final AdminReportAssembler assembler;
+    private final AdminUserQueryPort adminUserQueryPort;
+    private final AdminProductQueryPort adminProductQueryPort;
 
     @Transactional(readOnly = true)
     public PageResult<AdminReportResponse> listReports(Integer pageNum, Integer pageSize, Integer status) {
         int page = pageNum != null ? pageNum : 1;
         int size = pageSize != null ? pageSize : 20;
 
-        PageResult<ProductReport> reportPage = productReportQueryRepository.findByStatus(String.valueOf(status), page, size);
+        PageResult<ProductReport> reportPage = productReportQueryRepository
+                .findByStatus(status != null ? String.valueOf(status) : null, page, size);
 
-        Map<String, UserDO> userMap = batchQueryUtil.batchGetUsers(reportPage.records().stream().map(ProductReport::getReporterId).distinct().toList());
-        Map<String, ProductDO> productMap = batchQueryUtil.batchGetProducts(reportPage.records().stream().map(ProductReport::getProductId).distinct().toList());
+        List<String> productIds = reportPage.records().stream().map(ProductReport::getProductId).distinct().toList();
+        List<String> reporterIds = reportPage.records().stream().map(ProductReport::getReporterId).distinct().toList();
+
+        Map<String, AdminUserQueryPort.UserInfo> userMap = adminUserQueryPort.getUserInfos(reporterIds);
+        Map<String, AdminProductQueryPort.ProductInfo> productMap = adminProductQueryPort.getProductInfos(productIds);
+        Map<String, List<String>> imageMap = adminProductQueryPort.getProductImages(productIds);
 
         List<AdminReportResponse> records = reportPage.records().stream()
-            .map(r -> toAdminReportResponse(r, userMap, productMap))
-            .toList();
+                .map(r -> assembler.toAdminReportResponse(
+                        r,
+                        userMap.get(r.getReporterId()),
+                        productMap.get(r.getProductId()),
+                        firstImage(imageMap.get(r.getProductId()))))
+                .toList();
 
         return PageResult.of(records, reportPage.total(), page, size);
     }
@@ -64,212 +80,120 @@ public class AdminReportService {
     @Transactional(readOnly = true)
     public AdminReportResponse getReportDetail(String id) {
         ProductReport report = productReportRepository.findById(id);
-        BizRequire.notNull(report, "举报记录不存在");
+        BizRequire.notNull(report, AdminResultCode.REPORT_NOT_FOUND);
 
-        Map<String, UserDO> userMap = batchQueryUtil.batchGetUsers(List.of(report.getReporterId()));
-        Map<String, ProductDO> productMap = batchQueryUtil.batchGetProducts(List.of(report.getProductId()));
+        AdminUserQueryPort.UserInfo reporter = adminUserQueryPort.getUserInfos(List.of(report.getReporterId()))
+                .get(report.getReporterId());
+        AdminProductQueryPort.ProductInfo product = adminProductQueryPort.getProductInfos(List.of(report.getProductId()))
+                .get(report.getProductId());
+        String productImage = firstImage(adminProductQueryPort.getProductImages(List.of(report.getProductId()))
+                .get(report.getProductId()));
 
-        return toAdminReportResponse(report, userMap, productMap);
+        return assembler.toAdminReportResponse(report, reporter, product, productImage);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handleReport(String id, ReportHandleRequest request) {
         String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
         String remark = request.getRemark() != null ? request.getRemark() : "";
-        processSingleReport(id, request.getAction(), remark, operatorId);
+        processSingleReport(id, ReportHandleAction.fromCode(request.getAction()), remark, operatorId);
     }
 
     @Transactional(readOnly = true)
     public List<ReportHandleHistoryResponse> getReportHistory(String reportId) {
         List<ReportHandleHistory> histories = reportHandleHistoryRepository.findByReportId(reportId);
-
-        Map<String, UserDO> operatorMap = batchQueryUtil.batchGetUsers(histories.stream().map(ReportHandleHistory::getOperatorId).distinct().toList());
+        Map<String, AdminUserQueryPort.UserInfo> operatorMap = adminUserQueryPort.getUserInfos(
+                histories.stream().map(ReportHandleHistory::getOperatorId).distinct().toList());
 
         return histories.stream()
-            .map(h -> toHistoryResponse(h, operatorMap))
-            .collect(Collectors.toList());
+                .map(h -> assembler.toHistoryResponse(h, operatorMap.get(h.getOperatorId())))
+                .toList();
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void batchHandleReports(BatchHandleRequest request) {
-        BizRequire.notEmpty(request.getReportIds(), "举报ID列表不能为空");
-        if (request.getReportIds().size() > 50) {
-            throw BusinessException.of("批量处理数量不能超过50条");
-        }
+    public BatchHandleResultResponse batchHandleReports(BatchHandleRequest request) {
+        BizRequire.requireTrue(!request.getReportIds().isEmpty(), AdminResultCode.REPORT_LIST_EMPTY);
+        BizRequire.requireTrue(request.getReportIds().size() <= 50, AdminResultCode.REPORT_BATCH_LIMIT_EXCEEDED);
 
         String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        String action = request.getAction();
         String remark = request.getRemark() != null ? request.getRemark() : "";
+        ReportHandleAction action = ReportHandleAction.fromCode(request.getAction());
 
+        List<String> errors = new ArrayList<>();
+        int success = 0;
         for (String reportId : request.getReportIds()) {
             try {
                 processSingleReport(reportId, action, remark, operatorId);
+                success++;
             } catch (BusinessException e) {
+                errors.add("举报ID " + reportId + ": " + e.getMessage());
             }
         }
+        return new BatchHandleResultResponse(request.getReportIds().size(), success, errors.size(), errors);
     }
 
     @Transactional(readOnly = true)
     public ReportStatsResponse getReportStats() {
         return ReportStatsResponse.builder()
-            .totalReports(productReportQueryRepository.countByStatus(null))
-            .pendingReports(productReportQueryRepository.countByStatus(ProductReportStatus.PENDING.getCode()))
-            .processingReports(productReportQueryRepository.countByStatus(ProductReportStatus.PROCESSING.getCode()))
-            .resolvedReports(productReportQueryRepository.countByStatus(ProductReportStatus.RESOLVED.getCode()))
-            .dismissedReports(productReportQueryRepository.countByStatus(ProductReportStatus.DISMISSED.getCode()))
-            .build();
+                .totalReports(productReportQueryRepository.countByStatus(null))
+                .pendingReports(productReportQueryRepository.countByStatus(ProductReportStatus.PENDING.getCode()))
+                .processingReports(productReportQueryRepository.countByStatus(ProductReportStatus.PROCESSING.getCode()))
+                .resolvedReports(productReportQueryRepository.countByStatus(ProductReportStatus.RESOLVED.getCode()))
+                .dismissedReports(productReportQueryRepository.countByStatus(ProductReportStatus.DISMISSED.getCode()))
+                .build();
     }
 
-    private void processSingleReport(String reportId, String action, String remark, String operatorId) {
+    private void processSingleReport(String reportId, ReportHandleAction action, String remark, String operatorId) {
         ProductReport report = productReportRepository.findById(reportId);
-        BizRequire.notNull(report, "举报记录不存在");
+        BizRequire.notNull(report, AdminResultCode.REPORT_NOT_FOUND);
         if (!report.isPending()) {
-            throw BusinessException.of("该举报已被处理");
+            throw BusinessException.of(AdminResultCode.REPORT_ALREADY_HANDLED);
         }
 
-        var updated = applyAction(report, action, remark);
-        saveHandleHistory(reportId, operatorId, action, buildHistoryRemark(action, remark));
-        productReportRepository.update(updated);
-
-        boolean approved = ProductReportStatus.RESOLVED.equals(updated.getStatus());
-        publishProcessedEvent(reportId, updated, approved);
-    }
-
-    private ProductReport applyAction(ProductReport report, String action, String remark) {
-        return switch (action) {
-            case "resolve" -> report.approve(remark.isEmpty() ? "举报已处理" : remark);
-            case "dismiss" -> report.reject(remark.isEmpty() ? "举报已驳回" : remark);
-            case "IGNORE" -> report.reject(remark.isEmpty() ? "管理员忽略" : remark);
-            case "PRODUCT_OFFLINE" -> {
-                handleProductOffline(report, remark);
-                yield report.approve("下架商品: " + (remark.isEmpty() ? "" : remark));
+        String result = action.describe(remark);
+        ProductReport updated = switch (action) {
+            case PRODUCT_OFFLINE -> {
+                handleProductOffline(report);
+                yield report.approve(result);
             }
-            case "WARN_SENDER" -> report.reject("警告举报人: " + remark);
-            case "BAN_PRODUCT" -> {
+            case BAN_PRODUCT -> {
                 handleBanProduct(report, remark);
-                yield report.approve("封禁商品: " + (remark.isEmpty() ? "" : remark));
+                yield report.approve(result);
             }
-            default -> throw BusinessException.of("无效的处理动作");
+            case RESOLVE -> report.approve(result);
+            case DISMISS, IGNORE, WARN_SENDER -> report.reject(result);
         };
+
+        reportHandleHistoryRepository.save(ReportHandleHistory.create(reportId, operatorId, action.getCode(), result));
+        productReportRepository.update(updated);
+        publishProcessedEvent(reportId, updated);
     }
 
-    private String buildHistoryRemark(String action, String remark) {
-        return switch (action) {
-            case "resolve" -> remark.isEmpty() ? "举报已处理" : remark;
-            case "dismiss" -> remark.isEmpty() ? "举报已驳回" : remark;
-            case "IGNORE" -> remark.isEmpty() ? "管理员忽略" : remark;
-            case "PRODUCT_OFFLINE" -> "下架商品: " + remark;
-            case "WARN_SENDER" -> "警告举报人: " + remark;
-            case "BAN_PRODUCT" -> "封禁商品: " + remark;
-            default -> remark;
-        };
-    }
-
-    private void publishProcessedEvent(String reportId, ProductReport report, boolean approved) {
-        ReportProcessedEvent event = new ReportProcessedEvent(
+    private void publishProcessedEvent(String reportId, ProductReport report) {
+        domainEventPublisher.publish(new ReportProcessedEvent(
                 reportId,
                 report.getReporterId(),
                 report.getProductId(),
-                approved,
+                ProductReportStatus.RESOLVED.equals(report.getStatus()),
                 report.getRemark(),
-                LocalDateTime.now()
-        );
-        domainEventPublisher.publish(event);
+                LocalDateTime.now()));
     }
 
-    private void saveHandleHistory(String reportId, String operatorId, String action, String remark) {
-        ReportHandleHistory history = ReportHandleHistory.create(reportId, operatorId, action, remark);
-        reportHandleHistoryRepository.save(history);
-    }
-
-    private void handleProductOffline(ProductReport report, String remark) {
-        productRepository.findById(ProductId.of(report.getProductId()))
-                .ifPresent(product -> {
-                    var t = product.takeOffline();
-                    productRepository.save(t.aggregate());
-                    productCachePort.evictProductCache(report.getProductId());
-                });
+    private void handleProductOffline(ProductReport report) {
+        var product = productRepository.findById(ProductId.of(report.getProductId()))
+                .orElseThrow(() -> BusinessException.of(AdminResultCode.REPORT_PRODUCT_NOT_FOUND));
+        productRepository.save(product.takeOffline().aggregate());
+        productCachePort.evictProductCache(report.getProductId());
     }
 
     private void handleBanProduct(ProductReport report, String remark) {
-        productRepository.findById(ProductId.of(report.getProductId()))
-                .ifPresent(product -> {
-                    var t = product.reject("举报封禁: " + remark);
-                    productRepository.save(t.aggregate());
-                    productCachePort.evictProductCache(report.getProductId());
-                });
+        var product = productRepository.findById(ProductId.of(report.getProductId()))
+                .orElseThrow(() -> BusinessException.of(AdminResultCode.REPORT_PRODUCT_NOT_FOUND));
+        productRepository.save(product.reject("举报封禁: " + remark).aggregate());
+        productCachePort.evictProductCache(report.getProductId());
     }
 
-
-    private AdminReportResponse toAdminReportResponse(
-        ProductReport report,
-        Map<String, UserDO> userMap,
-        Map<String, ProductDO> productMap
-    ) {
-        UserDO reporter = userMap.get(report.getReporterId());
-        ProductDO product = productMap.get(report.getProductId());
-
-        String statusDesc = switch (report.statusCode()) {
-            case "0" -> "待处理";
-            case "1" -> "处理中";
-            case "2" -> "已解决";
-            case "3" -> "已驳回";
-            default -> "未知";
-        };
-
-        String reasonTypeDesc = switch (report.getReasonType() != null ? report.getReasonType() : "0") {
-            case "1" -> "虚假信息";
-            case "2" -> "侵权投诉";
-            case "3" -> "违规内容";
-            case "4" -> "其他";
-            default -> null;
-        };
-
-        LocalDateTime handleTime = report.isPending() ? null : report.getUpdateTime();
-
-        return AdminReportResponse.builder()
-            .reportId(report.getId())
-            .productId(report.getProductId())
-            .productName(product != null ? product.getName() : null)
-            .productImage(null)
-            .reporterId(report.getReporterId())
-            .reporterName(reporter != null ? reporter.getNickName() : null)
-            .reasonType(Integer.valueOf(report.getReasonType()))
-            .reasonTypeDesc(reasonTypeDesc)
-            .reason(report.getReason())
-            .status(Integer.valueOf(report.statusCode()))
-            .statusDesc(statusDesc)
-            .handleResult(report.getRemark())
-            .handleRemark(report.getRemark())
-            .createTime(report.getCreateTime())
-            .handleTime(handleTime)
-            .build();
-    }
-
-    private ReportHandleHistoryResponse toHistoryResponse(
-        ReportHandleHistory history,
-        Map<String, UserDO> operatorMap
-    ) {
-        UserDO operator = operatorMap.get(history.getOperatorId());
-
-        String actionDesc = switch (history.getAction()) {
-            case "resolve" -> "处理通过";
-            case "dismiss" -> "驳回";
-            case "IGNORE" -> "忽略";
-            case "PRODUCT_OFFLINE" -> "下架商品";
-            case "WARN_SENDER" -> "警告举报人";
-            case "BAN_PRODUCT" -> "封禁商品";
-            default -> history.getAction();
-        };
-
-        return ReportHandleHistoryResponse.builder()
-            .id(history.getId())
-            .reportId(history.getReportId())
-            .operatorName(operator != null ? operator.getNickName() : null)
-            .action(history.getAction())
-            .actionDesc(actionDesc)
-            .remark(history.getRemark())
-            .createTime(history.getCreateTime())
-            .build();
+    private static String firstImage(List<String> images) {
+        return images == null || images.isEmpty() ? null : images.getFirst();
     }
 }

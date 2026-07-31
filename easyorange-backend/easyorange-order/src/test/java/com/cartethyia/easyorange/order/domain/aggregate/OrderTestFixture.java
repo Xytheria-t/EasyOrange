@@ -123,6 +123,10 @@ public final class OrderTestFixture {
         return Order.from(aReconstructSpec().status(OrderStatus.CANCELLED).paymentStatus(PaymentStatus.UNPAID).build());
     }
 
+    public static Order refundedOrder() {
+        return Order.from(aReconstructSpec().status(OrderStatus.REFUNDED).paymentStatus(PaymentStatus.REFUNDED).build());
+    }
+
     /**
      * 通过 ID 构建指定状态订单 — 用于 job/saga 测试。
      */

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper">
+<mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper">
 
     <select id="searchByFullText" resultType="ProductDO">
         SELECT id, user_id, category_id, name, price, original_price, stock,

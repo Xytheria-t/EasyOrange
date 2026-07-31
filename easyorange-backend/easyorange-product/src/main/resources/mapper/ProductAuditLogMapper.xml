@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductAuditLogMapper">
+<mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.audit.ProductAuditLogMapper">
 
     <select id="selectByProductId" resultType="com.cartethyia.easyorange.product.adapter.outbound.persistence.audit.ProductAuditLogDO">
         SELECT id, product_id, operator_id, operator_name, action, reason,

@@ -45,7 +45,13 @@ class AdminCategoryServiceTest {
     private static final String PARENT_ID = "10";
 
     private CategoryDO createCategory(String id, String name, String parentId, Integer level) {
-        CategoryDO cat = new CategoryDO(name, parentId, level, null, 0, 1);
+        CategoryDO cat = CategoryDO.builder()
+                .name(name)
+                .parentId(parentId)
+                .level(level)
+                .sortOrder(0)
+                .status(1)
+                .build();
         cat.setId(id);
         cat.setDelFlag(0);
         cat.setCreateTime(LocalDateTime.now());

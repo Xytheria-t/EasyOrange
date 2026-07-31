@@ -22,7 +22,7 @@ const onlineProduct: AdminProduct = {
     price: 100,
     originalPrice: 150,
     stock: 10,
-    status: 1,
+    status: 'ONLINE',
     statusDesc: '上架',
     conditionLevel: 9,
     location: '北京',
@@ -46,7 +46,7 @@ const offlineProduct: AdminProduct = {
     price: 200,
     originalPrice: null,
     stock: 5,
-    status: 3,
+    status: 'OFFLINE',
     statusDesc: '下架',
     conditionLevel: 8,
     location: null,
@@ -161,7 +161,7 @@ describe('ProductManageDetailModal', () => {
     });
 
     // ── Test 8: Shows "下架" action button for online product ──
-    it('renders "下架" action button when product status is online (1)', () => {
+    it('renders "下架" action button when product status is online (ONLINE)', () => {
         renderWithProviders(
             <ProductManageDetailModal open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
@@ -169,7 +169,7 @@ describe('ProductManageDetailModal', () => {
     });
 
     // ── Test 9: Shows "上架" action button for offline product ──
-    it('renders "上架" action button when product status is offline (3)', () => {
+    it('renders "上架" action button when product status is offline (OFFLINE)', () => {
         mockUseAdminProductDetail.mockReturnValue({
             data: offlineProduct,
             isLoading: false,
@@ -183,11 +183,11 @@ describe('ProductManageDetailModal', () => {
     });
 
     // ── Test 10: No status action for sold product ──
-    it('does not render action buttons when product status is sold (2)', () => {
+    it('does not render action buttons when product status is sold (SOLD)', () => {
         const soldProduct: AdminProduct = {
             ...onlineProduct,
             productId: '3',
-            status: 2,
+            status: 'SOLD',
             statusDesc: '已售',
         };
         mockUseAdminProductDetail.mockReturnValue({
@@ -221,7 +221,7 @@ describe('ProductManageDetailModal', () => {
 
         expect(mutateAsync).toHaveBeenCalledWith({
             id: '1',
-            data: { status: 3 },
+            data: { status: 'OFFLINE' },
         });
     });
 

@@ -12,6 +12,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -234,6 +238,60 @@ class OrderTest {
         }
     }
 
+    @Nested
+    @DisplayName("forceCancel")
+    class ForceCancelTests {
+
+        @Test
+        @DisplayName("待付款订单可以强制取消")
+        void forceCancel_pendingPayment_returnsResult() {
+            var aggregate = pendingPaymentOrder();
+            var result = aggregate.forceCancel("管理端操作");
+
+            assertThat(result.event().orderId()).isEqualTo(aggregate.id().value());
+            assertThat(result.event().productIds()).containsExactly(PRODUCT_ID);
+            assertThat(result.event().reason()).isEqualTo("管理端操作");
+            assertThat(result.aggregate().status()).isEqualTo(OrderStatus.CANCELLED);
+            assertThat(result.aggregate().cancelReason()).isEqualTo("管理端操作");
+        }
+
+        @Test
+        @DisplayName("已付款订单可以强制取消")
+        void forceCancel_paid_returnsResult() {
+            var result = paidOrder().forceCancel("管理端操作");
+
+            assertThat(result.aggregate().status()).isEqualTo(OrderStatus.CANCELLED);
+            assertThat(result.aggregate().cancelReason()).isEqualTo("管理端操作");
+        }
+
+        @ParameterizedTest(name = "[{index}] {0}状态不能强制取消")
+        @MethodSource("com.cartethyia.easyorange.order.domain.aggregate.OrderTest#nonForceCancellableOrders")
+        @DisplayName("非法状态强制取消抛业务异常")
+        void forceCancel_invalidState_throwsBusinessException(String stateName, Order aggregate) {
+            assertThatThrownBy(() -> aggregate.forceCancel("管理端操作"))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(OrderResultCode.ORDER_STATUS_ERROR.getCode());
+        }
+    }
+
+    @Nested
+    @DisplayName("取消时间")
+    class CancelTimeTests {
+
+        @Test
+        @DisplayName("cancel 使用注入的 Clock")
+        void cancel_usesInjectedClock() {
+            var fixed = Clock.fixed(Instant.parse("2026-07-31T10:00:00Z"), ZoneOffset.UTC);
+            var aggregate = pendingPaymentOrder().toBuilder().clock(fixed).build();
+
+            var result = aggregate.cancel("不想要了");
+
+            assertThat(result.aggregate().cancelTime())
+                    .isEqualTo(LocalDateTime.ofInstant(fixed.instant(), fixed.getZone()));
+        }
+    }
+
     // ==================== Parameterized fixtures ====================
 
     /** pay() 的非法前置状态 — 已支付 / 已取消 */
@@ -258,6 +316,15 @@ class OrderTest {
                 Arguments.of("待付款", pendingPaymentOrder()),
                 Arguments.of("已完成", completedOrder()),
                 Arguments.of("已取消", cancelledOrder())
+        );
+    }
+
+    /** forceCancel() 的非法前置状态 — 已发货 / 已完成 / 已退款 */
+    static Stream<Arguments> nonForceCancellableOrders() {
+        return Stream.of(
+                Arguments.of("已发货", shippedOrder()),
+                Arguments.of("已完成", completedOrder()),
+                Arguments.of("已退款", refundedOrder())
         );
     }
 }

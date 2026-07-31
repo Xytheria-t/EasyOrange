@@ -11,6 +11,8 @@ public class CacheProperties {
 
     private L1Cache l1 = new L1Cache();
 
+    private L2Cache l2 = new L2Cache();
+
     @Data
     public static class ImageCache {
         private int maxSize = 1000;
@@ -21,5 +23,11 @@ public class CacheProperties {
     public static class L1Cache {
         private int maxSize = 5000;
         private int expireMinutes = 10;
+    }
+
+    @Data
+    public static class L2Cache {
+        private int expireMinutes = 30;
+        private int negativeExpireSeconds = 30;
     }
 }

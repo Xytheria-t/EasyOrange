@@ -34,6 +34,7 @@ import type {
     TopProductItem,
     TrendItem,
     UpdateStatusRequest,
+    UpdateUserStatusRequest,
     UserActivityItem,
     UserRoleRequest,
     UserUnlockRequest,
@@ -90,7 +91,7 @@ export const adminApi = {
         return request<AdminUser>(`${ADMIN_API_PREFIX}/users/${id}`);
     },
 
-    updateUserStatus(id: string, data: UpdateStatusRequest) {
+    updateUserStatus(id: string, data: UpdateUserStatusRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/users/${id}/status`, {
             method: 'PUT',
             body: data,

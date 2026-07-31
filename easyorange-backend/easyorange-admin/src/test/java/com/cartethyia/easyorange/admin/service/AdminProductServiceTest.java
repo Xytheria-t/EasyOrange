@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.admin.service;
 
+import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminProductAssembler;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminProductQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -58,6 +60,9 @@ class AdminProductServiceTest {
 
     @Mock
     private DomainEventPublisher domainEventPublisher;
+
+    @Spy
+    private AdminProductAssembler adminProductAssembler = new AdminProductAssembler();
 
     @InjectMocks
     private AdminProductService productService;
@@ -212,6 +217,27 @@ class AdminProductServiceTest {
             assertThatThrownBy(() -> productService.updateProductStatus(PRODUCT_ID, request))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("无效的商品状态");
+        }
+
+        @Test
+        @DisplayName("不支持的状态转换抛出异常")
+        void updateProductStatus_unsupportedTransition_throws() {
+            Product product = Product.builder()
+                    .id(ProductId.of(PRODUCT_ID)).sellerId(SellerId.of("1")).categoryId(CategoryId.of("1"))
+                    .title(ProductTitle.of("测试商品")).price(Money.of(new BigDecimal("99.99")))
+                    .stock(StockQuantity.of(10)).version(Version.INITIAL).status(ProductStatus.DRAFT)
+                    .tags(TagSet.empty())
+                    .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
+                    .build();
+            when(productRepository.findById(ProductId.of(PRODUCT_ID)))
+                    .thenReturn(Optional.of(product));
+
+            UpdateStatusRequest request = new UpdateStatusRequest();
+            request.setStatus(ProductStatus.PENDING_REVIEW.getCode());
+
+            assertThatThrownBy(() -> productService.updateProductStatus(PRODUCT_ID, request))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("不支持");
         }
     }
 }

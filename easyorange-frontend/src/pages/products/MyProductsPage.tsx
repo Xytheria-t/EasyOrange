@@ -14,7 +14,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PaginationBar } from '@/components/PaginationBar';
 import { Button } from '@/components/ui/button';
-import { PRODUCT_STATUS_CODE, STATUS_LABEL_MAP } from '@/constants/product';
+import { STATUS_LABEL_MAP } from '@/constants/product';
 import { useMyProducts } from '@/hooks/product/useProducts';
 import { usePagination } from '@/hooks/usePagination';
 import type { Product, ProductStatus } from '@/types';
@@ -86,13 +86,10 @@ function MyProductsPage() {
 
     const queryParams = useMemo(() => {
         const tab = STATUS_OPTIONS.find(t => t.id === activeTab);
-        const code = tab?.status
-            ? Number(Object.entries(PRODUCT_STATUS_CODE).find(([, v]) => v === tab.status)?.[0])
-            : undefined;
         return {
             pageNum,
             pageSize,
-            ...(code !== undefined ? { status: code } : {}),
+            ...(tab?.status ? { status: tab.status } : {}),
         };
     }, [activeTab, pageNum, pageSize]);
 

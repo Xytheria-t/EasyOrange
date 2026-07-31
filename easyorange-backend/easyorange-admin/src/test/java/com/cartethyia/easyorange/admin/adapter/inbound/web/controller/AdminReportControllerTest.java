@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReportResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchHandleResultResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.admin.service.AdminReportService;
@@ -134,13 +135,14 @@ class AdminReportControllerTest {
 
     @Test
     void batchHandleReports_shouldSucceed() throws Exception {
-        doNothing().when(adminReportService).batchHandleReports(any());
+        when(adminReportService.batchHandleReports(any())).thenReturn(new BatchHandleResultResponse(3, 3, 0, List.of()));
 
         mockMvc.perform(put("/api/admin/reports/batch-handle")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"reportIds\": [\"1\", \"2\", \"3\"], \"action\": \"dismiss\", \"remark\": \"批量驳回\"}"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.code").value("A0000"));
+            .andExpect(jsonPath("$.code").value("A0000"))
+            .andExpect(jsonPath("$.data.success").value(3));
     }
 
     @Test

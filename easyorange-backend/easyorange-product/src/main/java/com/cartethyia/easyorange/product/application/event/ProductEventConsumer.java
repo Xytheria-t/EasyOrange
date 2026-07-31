@@ -1,11 +1,9 @@
 package com.cartethyia.easyorange.product.application.event;
 
-import com.cartethyia.easyorange.framework.bloom.BloomFilter;
 import com.cartethyia.easyorange.framework.event.core.EventConsumerHandler;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
-import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheConstant;
 import com.cartethyia.easyorange.product.application.query.ProductQueryService;
 import com.cartethyia.easyorange.product.domain.event.*;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
@@ -32,7 +30,6 @@ public class ProductEventConsumer {
     private final ProductQueryService productQueryService;
     private final ProductNotificationPort notificationPort;
     private final ProductSearchIndexPort searchIndexPort;
-    private final BloomFilter bloomFilter;
 
     public ProductEventConsumer(
             EventIdempotencyChecker idempotencyChecker,
@@ -40,14 +37,12 @@ public class ProductEventConsumer {
             ProductCacheEvictionPort productCachePort,
             ProductQueryService productQueryService,
             @Autowired(required = false) ProductNotificationPort notificationPort,
-            @Autowired(required = false) ProductSearchIndexPort searchIndexPort,
-            BloomFilter bloomFilter) {
+            @Autowired(required = false) ProductSearchIndexPort searchIndexPort) {
         this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService, false);
         this.productCachePort = productCachePort;
         this.productQueryService = productQueryService;
         this.notificationPort = notificationPort;
         this.searchIndexPort = searchIndexPort;
-        this.bloomFilter = bloomFilter;
     }
 
     @RabbitHandler
@@ -70,7 +65,6 @@ public class ProductEventConsumer {
 
     private void handleCreated(ProductCreatedEvent e) {
         var productId = e.productId();
-        bloomFilter.put(ProductCacheConstant.PRODUCT_BLOOM_KEY, productId);
         if (e.data().categoryId() != null) {
             productCachePort.evictProductListCache(e.data().categoryId());
         }

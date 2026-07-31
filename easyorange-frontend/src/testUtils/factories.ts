@@ -52,7 +52,7 @@ export function createMockAdminProduct(overrides: Partial<AdminProduct> = {}): A
         price: 100,
         originalPrice: 150,
         stock: 10,
-        status: 4,
+        status: 'PENDING_REVIEW',
         statusDesc: '待审核',
         conditionLevel: 1,
         location: '北京',

@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.order.domain.aggregate;
 
 import com.cartethyia.easyorange.common.domain.Money;
-import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
@@ -12,7 +11,6 @@ import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
-import com.cartethyia.easyorange.order.domain.exception.OrderStatusException;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
@@ -20,10 +18,17 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 订单聚合根 —— 不可变对象
@@ -35,15 +40,21 @@ import java.util.List;
  *       ↓                ↓         ↓
  *   CANCELLED        CANCELLED   REFUNDED
  * </pre>
+ * 状态机合法转换的单一事实来源见 {@link OrderStatus#canTransitionTo(OrderStatus)}。
  * <p>
  * 核心不变量：
  * <ul>
  *   <li>订单必须包含至少一件资产，总金额必须大于 0</li>
  *   <li>认领方不能认领自己的资产</li>
- *   <li>状态转换必须严格遵循状态机规则</li>
+ *   <li>状态转换必须严格遵循状态机规则（用户取消仅限待付款，已付款取消走 forceCancel）</li>
  *   <li>取消/退款时必须附带原因</li>
  * </ul>
  */
+@Getter
+@Accessors(fluent = true)
+@Builder(toBuilder = true)
+@EqualsAndHashCode(of = "id")
+@ToString(of = {"id", "orderNo", "status", "paymentStatus"})
 public class Order {
 
     private final OrderId id;
@@ -59,15 +70,16 @@ public class Order {
     private final String remark;
     private final String cancelReason;
     private final LocalDateTime cancelTime;
+    private final Clock clock;
 
     private Order(OrderId id, OrderNo orderNo, UserId buyerId, UserId sellerId,
-                           List<OrderItem> items, Money totalAmount, OrderStatus status,
-                           PaymentStatus paymentStatus, Address address, Phone phone,
-                           String remark, String cancelReason, LocalDateTime cancelTime) {
+                  List<OrderItem> items, Money totalAmount, OrderStatus status,
+                  PaymentStatus paymentStatus, Address address, Phone phone,
+                  String remark, String cancelReason, LocalDateTime cancelTime, Clock clock) {
         this.id = id;
         this.orderNo = orderNo;
-        this.sellerId = sellerId;
         this.buyerId = buyerId;
+        this.sellerId = sellerId;
         this.items = items != null ? List.copyOf(items) : List.of();
         this.totalAmount = totalAmount;
         this.status = status;
@@ -77,6 +89,7 @@ public class Order {
         this.remark = remark;
         this.cancelReason = cancelReason;
         this.cancelTime = cancelTime;
+        this.clock = clock != null ? clock : Clock.systemDefaultZone();
     }
 
     // ==================== Factory ====================
@@ -89,7 +102,7 @@ public class Order {
      * @throws IllegalArgumentException 如果认领方等于资产方、资产为空或金额为零
      */
     public static Transition<Order, OrderCreatedEvent> createOrder(OrderCreateSpec spec) {
-        BizRequire.requireTrue(!java.util.Objects.equals(spec.buyerId().value(), spec.sellerId().value()),
+        BizRequire.requireTrue(!Objects.equals(spec.buyerId().value(), spec.sellerId().value()),
                 "不能认领自己的资产");
         BizRequire.notEmpty(spec.items(), "订单资产不能为空");
 
@@ -103,7 +116,7 @@ public class Order {
         Order aggregate = new Order(
                 orderId, OrderNo.of(spec.orderId()), spec.buyerId(), spec.sellerId(), spec.items(),
                 totalAmount, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID,
-                spec.address(), spec.phone(), spec.remark(), null, null
+                spec.address(), spec.phone(), spec.remark(), null, null, null
         );
 
         List<OrderCreatedEvent.OrderItemPayload> itemPayloads = spec.items().stream()
@@ -131,28 +144,32 @@ public class Order {
         return new Order(
                 spec.id(), spec.orderNo(), spec.buyerId(), spec.sellerId(),
                 spec.items(), spec.totalAmount(), spec.status(), spec.paymentStatus(),
-                spec.address(), spec.phone(), spec.remark(), spec.cancelReason(), spec.cancelTime()
+                spec.address(), spec.phone(), spec.remark(), spec.cancelReason(), spec.cancelTime(), null
         );
     }
 
     // ==================== Status Queries ====================
 
     /** 是否可支付（仅待付款状态可支付） */
-    public boolean canPay() { return status == OrderStatus.PENDING_PAYMENT; }
+    public boolean canPay() { return status.canTransitionTo(OrderStatus.PAID); }
 
-    /** 是否可取消（仅待付款状态可取消） */
+    /**
+     * 是否可取消（用户取消仅限待付款状态；已付款订单取消走 {@link #forceCancel}）。
+     */
     public boolean canCancel() { return status == OrderStatus.PENDING_PAYMENT; }
 
+    /** 是否可强制取消（待付款或已付款状态，管理端路径） */
+    public boolean canForceCancel() { return status.canTransitionTo(OrderStatus.CANCELLED); }
+
     /** 是否可发货（仅已付款状态可发货） */
-    public boolean canShip() { return status == OrderStatus.PAID; }
+    public boolean canShip() { return status.canTransitionTo(OrderStatus.SHIPPED); }
 
     /** 是否可确认收货（仅已发货状态可确认） */
-    public boolean canConfirmReceipt() { return status == OrderStatus.SHIPPED; }
+    public boolean canConfirmReceipt() { return status.canTransitionTo(OrderStatus.COMPLETED); }
 
     /** 是否可退款（已付款或已发货状态，且支付状态为已支付时可退款） */
     public boolean canRefund() {
-        return (status == OrderStatus.PAID || status == OrderStatus.SHIPPED)
-                && paymentStatus == PaymentStatus.PAID;
+        return status.canTransitionTo(OrderStatus.REFUNDED) && paymentStatus == PaymentStatus.PAID;
     }
 
     // ==================== State Transitions ====================
@@ -160,14 +177,15 @@ public class Order {
     /** 支付订单 */
     public Transition<Order, OrderPaidEvent> pay() {
         BizRequire.requireTrue(canPay(), OrderResultCode.ORDER_STATUS_ERROR);
-        var updated = copy(OrderStatus.PAID, PaymentStatus.PAID, cancelReason, cancelTime);
+        var updated = toBuilder().status(OrderStatus.PAID).paymentStatus(PaymentStatus.PAID).build();
         return new Transition<>(updated, new OrderPaidEvent(id.value(), PaymentStatus.PAID.getCode()));
     }
 
     /** 取消订单 */
     public Transition<Order, OrderCancelledEvent> cancel(String reason) {
         BizRequire.requireTrue(canCancel(), OrderResultCode.ORDER_CANNOT_CANCEL);
-        var updated = copy(OrderStatus.CANCELLED, paymentStatus, reason, LocalDateTime.now());
+        var updated = toBuilder().status(OrderStatus.CANCELLED)
+                .cancelReason(reason).cancelTime(now()).build();
         return new Transition<>(updated, new OrderCancelledEvent(id.value(), extractProductIds(), reason));
     }
 
@@ -177,81 +195,42 @@ public class Order {
      * 正常用户取消只允许待付款订单，管理端可以强制取消已付款订单。
      */
     public Transition<Order, OrderCancelledEvent> forceCancel(String reason) {
-        if (status != OrderStatus.PENDING_PAYMENT && status != OrderStatus.PAID) {
-            throw new OrderStatusException(id.value(), "强制取消", status);
-        }
-        var updated = copy(OrderStatus.CANCELLED, paymentStatus, reason, LocalDateTime.now());
+        BizRequire.requireTrue(canForceCancel(), OrderResultCode.ORDER_STATUS_ERROR);
+        var updated = toBuilder().status(OrderStatus.CANCELLED)
+                .cancelReason(reason).cancelTime(now()).build();
         return new Transition<>(updated, new OrderCancelledEvent(id.value(), extractProductIds(), reason));
     }
 
     /** 发货 */
     public Transition<Order, OrderShippedEvent> ship() {
         BizRequire.requireTrue(canShip(), OrderResultCode.ORDER_STATUS_ERROR);
-        var updated = copy(OrderStatus.SHIPPED, paymentStatus, cancelReason, cancelTime);
+        var updated = toBuilder().status(OrderStatus.SHIPPED).build();
         return new Transition<>(updated, new OrderShippedEvent(id.value()));
     }
 
     /** 确认收货 */
     public Transition<Order, OrderCompletedEvent> confirmReceipt() {
         BizRequire.requireTrue(canConfirmReceipt(), OrderResultCode.ORDER_STATUS_ERROR);
-        var updated = copy(OrderStatus.COMPLETED, paymentStatus, cancelReason, cancelTime);
+        var updated = toBuilder().status(OrderStatus.COMPLETED).build();
         return new Transition<>(updated, new OrderCompletedEvent(id.value(), extractProductIds()));
     }
 
     /** 退款 */
     public Transition<Order, OrderRefundedEvent> refund(String reason) {
         BizRequire.requireTrue(canRefund(), OrderResultCode.ORDER_CANNOT_REFUND);
-        var updated = copy(OrderStatus.REFUNDED, PaymentStatus.REFUNDED, reason, LocalDateTime.now());
+        var updated = toBuilder().status(OrderStatus.REFUNDED).paymentStatus(PaymentStatus.REFUNDED)
+                .cancelReason(reason).cancelTime(now()).build();
         return new Transition<>(updated, new OrderRefundedEvent(id.value(), extractProductIds(), reason));
     }
 
-    // ==================== Getters ====================
-
-    public OrderId id() { return id; }
-    public OrderNo orderNo() { return orderNo; }
-    public UserId buyerId() { return buyerId; }
-    public UserId sellerId() { return sellerId; }
-    public List<OrderItem> items() { return List.copyOf(items); }
-    public Money totalAmount() { return totalAmount; }
-    public OrderStatus status() { return status; }
-    public PaymentStatus paymentStatus() { return paymentStatus; }
-    public Address address() { return address; }
-    public Phone phone() { return phone; }
-    public String remark() { return remark; }
-    public String cancelReason() { return cancelReason; }
-    public LocalDateTime cancelTime() { return cancelTime; }
-
     // ==================== Internal Helpers ====================
 
-    /**
-     * 仅变更订单状态、支付状态、取消原因和取消时间，其余字段保持不变。
-     * 用于安全的不可变状态复制（替代多个 withXxx 方法）。
-     */
-    private Order copy(OrderStatus newStatus, PaymentStatus newPaymentStatus,
-                                 String newCancelReason, LocalDateTime newCancelTime) {
-        return new Order(id, orderNo, buyerId, sellerId, items,
-                totalAmount, newStatus, newPaymentStatus,
-                address, phone, remark, newCancelReason, newCancelTime);
+    /** 取消/退款时间取自注入的 {@link Clock}（测试可注入固定时钟保证确定性）。 */
+    private LocalDateTime now() {
+        return LocalDateTime.now(clock);
     }
 
     private List<String> extractProductIds() {
         return items.stream().map(i -> i.productId().value()).toList();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Order other)) return false;
-        return id != null && id.equals(other.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : 0;
-    }
-
-    @Override
-    public String toString() {
-        return "Order{id=" + id + ", orderNo=" + orderNo + ", status=" + status + ", paymentStatus=" + paymentStatus + "}";
     }
 }

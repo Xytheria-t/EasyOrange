@@ -72,7 +72,7 @@ function createPageData(records: AdminProduct[], total: number): PageResult<Admi
 }
 
 // ─── Helper to create products with dynamic times (to work with fake timers) ───
-function createSampleProducts(fakeNow: number) {
+function createSampleProducts(fakeNow: number): AdminProduct[] {
     return [
         {
             productId: '1',
@@ -81,7 +81,7 @@ function createSampleProducts(fakeNow: number) {
             price: 100,
             originalPrice: null,
             stock: 10,
-            status: 4,
+            status: 'PENDING_REVIEW',
             statusDesc: '待审核',
             conditionLevel: 9,
             location: '北京',
@@ -104,7 +104,7 @@ function createSampleProducts(fakeNow: number) {
             price: 200,
             originalPrice: null,
             stock: 5,
-            status: 5,
+            status: 'REJECTED',
             statusDesc: '已驳回',
             conditionLevel: 8,
             location: null,

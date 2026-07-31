@@ -132,8 +132,18 @@ spring:
 
 easyorange:
   cache:
-    # Redis Key 前缀
-    key-prefix: "easyorange"
+    # 图片处理缓存
+    image:
+      max-size: 1000
+      expire-hours: 24
+    # L1 本地缓存（Caffeine）
+    l1:
+      max-size: 5000
+      expire-minutes: 10
+    # L2 共享缓存（Redis）— 负缓存哨兵默认 30s；L1 TTL 必须 ≤ L2 TTL
+    l2:
+      expire-minutes: 30
+      negative-expire-seconds: 30
 ```
 
 ### 缓存类型转换
@@ -217,7 +227,12 @@ spring:
 
 easyorange:
   cache:
-    key-prefix: "easyorange"
+    l1:
+      max-size: 5000
+      expire-minutes: 10
+    l2:
+      expire-minutes: 30
+      negative-expire-seconds: 30
 ```
 
 ---

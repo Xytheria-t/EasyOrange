@@ -1,3 +1,5 @@
+import type { ProductStatus } from '@/types';
+
 export interface AdminUser {
     userId: string;
     username: string;
@@ -63,7 +65,7 @@ export interface RecentProduct {
     name: string;
     price: number | null;
     mainImage: string | null;
-    status: number | null;
+    status: ProductStatus | null;
     statusDesc: string | null;
     sellerId: string | null;
     sellerName: string | null;
@@ -79,7 +81,7 @@ export interface AdminProduct {
     price: number | null;
     originalPrice: number | null;
     stock: number | null;
-    status: number | null;
+    status: ProductStatus | null;
     statusDesc: string | null;
     conditionLevel: number | null;
     location: string | null;
@@ -111,15 +113,19 @@ export interface AdminProductQuery {
     pageSize: number;
     keyword?: string;
     categoryId?: string;
-    status?: number;
+    status?: ProductStatus;
     sellerId?: string;
     startTime?: string;
     endTime?: string;
 }
 
 export interface UpdateStatusRequest {
-    status: number;
+    status: ProductStatus;
     reason?: string;
+}
+
+export interface UpdateUserStatusRequest {
+    status: number;
 }
 
 export interface ActionResponse {

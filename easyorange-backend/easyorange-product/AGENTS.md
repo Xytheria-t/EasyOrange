@@ -27,7 +27,7 @@ product/
 │       ├── scheduler/                  # 定时批处理
 │       │   └── ViewCountFlushScheduler.java  # 浏览量 Redis→DB 定时刷入
 │       └── cache/                       # 缓存适配器
-│           ├── ProductCacheAdapter.java     # 实现 ProductCacheEvictionPort + ProductCachePort
+│           ├── ProductCacheAdapter.java     # 实现 ProductCachePort（extends ProductCacheEvictionPort）
 │           ├── CategoryCacheAdapter.java    # 实现 CategoryCachePort
 │           └── ProductCacheConstant.java
 ├── application/
@@ -156,25 +156,24 @@ public sealed interface ProductEvent extends DomainEvent
 
 缓存端口按 DDD 双向依赖原则分拆：
 
-- **domain 层**: `ProductCacheEvictionPort` — 仅 `evictProductCache(id)` / `evictProductListCache()`，领域服务只做驱逐
-- **application 层**: `ProductCachePort` — 完整 CRUD 操作（get/put/evict），供查询服务使用
-- **adapter 层**: `ProductCacheAdapter` 同时实现两个端口
+- **domain 层**: `ProductCacheEvictionPort` — 仅 `evictProductCache(id)` / `evictProductListCache(categoryId)`，领域服务只做驱逐
+- **application 层**: `ProductCachePort extends ProductCacheEvictionPort` — 继承驱逐方法，补充 get/set，供查询服务使用
+- **adapter 层**: `ProductCacheAdapter` 仅实现 `ProductCachePort`（驱逐方法由继承关系提供）
 
 ```java
 // domain/port/ProductCacheEvictionPort.java
 public interface ProductCacheEvictionPort {
     void evictProductCache(String productId);
-    void evictProductListCache();
+    void evictProductListCache(String categoryId);
 }
 
 // application/port/ProductCachePort.java
-public interface ProductCachePort {
-    Optional<ProductVO> getProduct(ProductId id);
-    void putProduct(ProductId id, ProductVO product);
-    void evictProductCache(String productId);
+public interface ProductCachePort extends ProductCacheEvictionPort {
+    Optional<ProductVO> getProductCache(String productId);
+    void setProductCache(String productId, ProductVO product);
 }
 
-// adapter/outbound/cache/ProductCacheAdapter.java — Redis 实现，实现两个接口
+// adapter/outbound/cache/ProductCacheAdapter.java — MultiLevelCache 实现，仅 implements ProductCachePort
 ```
 
 `CategoryCachePort` 同理，已从 domain 层移至 application 层，移除泛型 `<T>` 参数，直接使用 `CategoryReadModel`。

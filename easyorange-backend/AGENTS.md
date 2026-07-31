@@ -150,8 +150,8 @@ DO 中 `status`、`condition_level` 等枚举字段直接使用领域枚举类�
 
 | 基类 | 适用列类型 | 示例 |
 |------|-----------|------|
-| `IntegerCodeEnumTypeHandler` | TINYINT / INT | `ProductStatusTypeHandler`, `ConditionLevelTypeHandler` |
-| `CodeEnumTypeHandler` | VARCHAR | `UserStatus` 等 String 枚举 |
+| `CodeEnumTypeHandler` | VARCHAR | `ProductStatusTypeHandler`, `ConditionLevelTypeHandler`, `UserStatusTypeHandler` |
+| `IntegerCodeEnumTypeHandler` | TINYINT / INT | 当前无使用（全库枚举列均为 VARCHAR String code） |
 
 新增枚举字段步骤：① 创建 TypeHandler 继承对应基类，标注 `@MappedTypes`；② 将 TypeHandler 所在包加入 `application.yaml` 的 `mybatis-plus.type-handlers-package`；③ DO 字段类型改为枚举。参考实现：`easyorange-product` 模块的 `ProductStatusTypeHandler` + `ConditionLevelTypeHandler`。
 
@@ -271,7 +271,7 @@ Spring Boot 4 的 `DataRedisAutoConfiguration` 自动配置的 `RedisTemplate` �
 - 禁止自定义 `RedisTemplate<String, Object>` Bean（类型不匹配）
 - Mock 测试中的 `HashOperations` / `ValueOperations` 也需为 `<Object, Object>` 类型
 
-**已修复（2026-07-23）**：根因是 `DataRedisAutoConfiguration` 不设序列化器 → `RateLimitFilter` Lua `ARGV` 变二进制 → 限流器 fail-open；`RedisBitmapBloomFilter` 同理。修复方案：`RedisConfig` 全局配置序列化器 + 两个组件用 `opsForValue()` 标准 API 替代 Lua（`increment()+expire()` / `setBit()/getBit()`）。
+**已修复（2026-07-23）**：根因是 `DataRedisAutoConfiguration` 不设序列化器 → `RateLimitFilter` Lua `ARGV` 变二进制 → 限流器 fail-open。修复方案：`RedisConfig` 全局配置序列化器 + 限流器改用 `opsForValue()` 标准 API 替代 Lua（`increment()+expire()`）。
 
 ### Port/Adapter / MapStruct IntelliJ 误报
 

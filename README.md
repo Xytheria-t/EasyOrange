@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 在 DDD 六边形里装 LLM：可换供应商、可降级、可观测的 AI 工程化落地。
 >
-> **11 模块全解耦 · 2,427 测试守卫 · 31 Port 接口 · 12 RabbitMQ 消费者 · 5 ADR · Domain 层行覆盖 84.1%**
+> **11 模块全解耦 · 2,419 测试守卫 · 32 Port 接口 · 11 RabbitMQ 消费者 · 6 ADR · Domain 层行覆盖 84.1%**
 >
 > 业务聚焦核心流程（C2C 资产流转：固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。
 
@@ -15,7 +15,7 @@
 
 | 🎯 AI Agent / 大模型 Java 后端 | 🏛 Java 架构师 / 高级后端 |
 |---|---|
-| ✅ LLM/Vision Port/Adapter 隔离，供应商可换 | ✅ DDD 六边形 + 31 Port 编译期隔离 |
+| ✅ LLM/Vision Port/Adapter 隔离，供应商可换 | ✅ DDD 六边形 + 32 Port 编译期隔离 |
 | ✅ 轻量级 Agent 编排（4 路并行 Tool Calling） | ✅ Saga 状态机 + 反向补偿（9 状态持久化） |
 | ✅ L1 Caffeine + L2 Redis 多级缓存 + stale 降级 | ✅ Spring Modulith Outbox + DLQ 三级重试 |
 | ✅ Redisson 令牌桶限流 + Bulkhead 隔离舱 | ✅ Resilience4j 熔断 + 限流 + 降级 + 幂等 |
@@ -29,9 +29,9 @@
 | 钩子 | 数字锚点 | 一句话 |
 |---|---|---|
 | **AI 工程化** | 6 决策点 + 7 件套 + 轻量 Agent | Port/Adapter + L1/L2 多级缓存 + Redisson 令牌桶 + stale 降级 + AiMetrics + Prompt YAML + TokenBudget + Bulkhead + 4 路并行 Tool Calling |
-| **分布式可靠性** | Saga + Outbox + DLQ 三级重试 + 12 消费者 | 订单跨模块 Saga 编排 + 反向补偿；领域事件走 Spring Modulith Outbox → RabbitMQ；DLQ 指数退避 + terminal 转储 |
-| **架构落地** | 11 模块 / 31 Port / DDD+CQRS+事件驱动 / ArchUnit 6 规则 | domain 层零框架依赖，编译期隔离；message/favorite 故意不做 CQRS（ADR-0002） |
-| **质量门禁** | 2,427 测试 / JaCoCo + PIT / Biome 0 errors | 后端 ArchUnit + JaCoCo 行≥80% + PIT 变异测试；前端 Vitest + Playwright + Biome |
+| **分布式可靠性** | Saga + Outbox + DLQ 三级重试 + 11 消费者 | 订单跨模块 Saga 编排 + 反向补偿；领域事件走 Spring Modulith Outbox → RabbitMQ；DLQ 指数退避 + terminal 转储 |
+| **架构落地** | 11 模块 / 32 Port / DDD+CQRS+事件驱动 / ArchUnit 6 规则 | domain 层零框架依赖，编译期隔离；message/favorite 故意不做 CQRS（ADR-0002） |
+| **质量门禁** | 2,419 测试 / JaCoCo + PIT / Biome 0 errors | 后端 ArchUnit + JaCoCo 行≥80% + PIT 变异测试；前端 Vitest + Playwright + Biome |
 
 ## 项目定位
 
@@ -63,7 +63,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定，
 
 | 层 | 机制 | 解决的问题 |
 |---|---|---|
-| **决策层** | 5 条 ADR（[`doc/adr/`](doc/adr/)） | 记录「为什么 + 拒绝项」，不让选型沦为偏好 |
+| **决策层** | 6 条 ADR（[`doc/adr/`](doc/adr/)） | 记录「为什么 + 拒绝项」，不让选型沦为偏好 |
 | **守卫层** | ArchUnit 6 条（[`ArchitectureRulesTest`](./easyorange-backend/easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java)） | CI 阻断违规：domain 零框架 / port 必配 adapter / CQRS 分离 |
 | **验证层** | JaCoCo + PIT 变异测试 | JaCoCo 看「代码跑过」，PIT 注入变异看「测试能否发现缺陷」 |
 
@@ -74,6 +74,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定，
 | LangChain4j / Spring AI | Tool 调用反射黑盒 + 升级兼容差 | 手写 AiSearchEnhancer 4 路 Tool Registry，复用缓存限流 | [ADR-0003](doc/adr/0003-ai-port-adapter-with-decorator.md) |
 | Seata TCC | 3× try-confirm-cancel 样板 + 业务侵入 | Saga 逆序补偿 + restoreStock/cancelOrder | [ADR-0001](doc/adr/0001-use-saga-over-2pc.md) |
 | Milvus / PGVector | SKU < 10 万，向量库 ROI 低 | ES BM25 召回 + LLM semantic rerank（RAG 轻量版） | 隐含决策 |
+| **Kafka / Pulsar 作为默认 MQ** | ① Kafka 无原生 DLQ，三级重试要自造；② 1 事件→11 独立消费者模型不匹配；③ Pulsar 本地要 3 容器（Broker+BK+ZK）太重 | **RabbitMQ Topic Exchange + 队列级 DLQ（默认）**；NATS JetStream 留作 `@ConditionalOnProperty` 备选 Adapter | [ADR-0005](doc/adr/0005-messaging-bus-select-rabbitmq-over-kafka-nats-pulsar.md) |
 
 C2C 资产流转业务载体（固定价格 + 直发 + 平台不碰货）详见 [PRODUCT_DIRECTION.md](./PRODUCT_DIRECTION.md)。
 
@@ -118,7 +119,7 @@ docker compose -f compose.yaml up -d                               # MySQL/Redis
 cd easyorange-frontend && npm install && npm run dev               # :5173
 ```
 
-> 零配置启动，详见 [AGENTS.md](./AGENTS.md)。后端 11 模块 / 前端 1038 测试 / 31 Port 接口，数字单一来源 [doc/工程指标.md](doc/工程指标.md)
+> 零配置启动，详见 [AGENTS.md](./AGENTS.md)。后端 11 模块 / 前端 1042 测试 / 32 Port 接口，数字单一来源 [doc/工程指标.md](doc/工程指标.md)
 
 ## 模块 · AI 工程化 · 可靠性 · 质量门禁
 
@@ -129,7 +130,7 @@ cd easyorange-frontend && npm install && npm run dev               # :5173
 | **分布式可靠性** | Saga 9 状态机 + 超时检测 · Outbox 原子写 EVENT_PUBLICATION · DLQ 三级重试(指数退避 1/5/15min + terminal) · EventConsumerHandler 统一幂等/metrics · traceId 全链路 · JWT + 黑名单吊销 · RateLimitFilter(GET 本地 / 写 Redisson) · @Idempotent(24h) · AuditLogAspect Outbox · OWASP CVSS≥8 阻断 |
 | **质量门禁** | ArchUnit 6 条 · JaCoCo Domain 84.1% / 71.5% · PIT order(70/89/81) product(70/79/92) · Biome 0 errors · Git hooks commit-msg + pre-commit |
 
-前端：暖橙指挥中心 Admin 设计系统 · 120+ Portal/Dialog/Drawer/Sheet · 95 共享 UI + 107 Admin 组件 · 296 a11y 属性 · 171 TanStack Query hooks · 111 测试文件 / 1038 用例
+前端：暖橙指挥中心 Admin 设计系统 · 120+ Portal/Dialog/Drawer/Sheet · 95 共享 UI + 107 Admin 组件 · 296 a11y 属性 · 171 TanStack Query hooks · 111 测试文件 / 1042 用例
 
 ## 面试快速导航
 
@@ -146,7 +147,7 @@ docker compose up -d elasticsearch                # 可选 ES
 cd easyorange-frontend && docker build -t easyorange-fe . && docker run -p 80:80 easyorange-fe
 ```
 
-项目结构：`easyorange-backend/`(11 Maven) + `easyorange-frontend/`(React) + `doc/架构/` + `doc/集成/` + `doc/adr/`(5 ADR) + `PRODUCT_DIRECTION.md`（业务场景）+ `AGENTS.md`（编码规范）+ `CHANGELOG.md`
+项目结构：`easyorange-backend/`(11 Maven) + `easyorange-frontend/`(React) + `doc/架构/` + `doc/集成/` + `doc/adr/`(6 ADR) + `PRODUCT_DIRECTION.md`（业务场景）+ `AGENTS.md`（编码规范）+ `CHANGELOG.md`
 
 贡献：Conventional Commits · `main/develop/feature/*/bugfix/*` · 本地验证 `./mvnw test` + `npm test`，详见 [CONTRIBUTING.md](./CONTRIBUTING.md)
 

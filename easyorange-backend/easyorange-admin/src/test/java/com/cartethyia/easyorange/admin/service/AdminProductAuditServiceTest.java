@@ -4,6 +4,8 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAudi
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAuditRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
+import com.cartethyia.easyorange.ai.service.AiReviewService;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
@@ -15,6 +17,7 @@ import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusException;
+import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
@@ -52,6 +55,12 @@ class AdminProductAuditServiceTest {
 
     @Mock
     private ObjectMapper objectMapper;
+
+    @Mock
+    private AiReviewService aiReviewService;
+
+    @Mock
+    private AdminProductQueryPort adminProductQueryPort;
 
     @InjectMocks
     private AdminProductAuditService auditService;
@@ -174,8 +183,8 @@ class AdminProductAuditServiceTest {
             ProductAuditRequest request = new ProductAuditRequest(1, null, null, null);
 
             assertThatThrownBy(() -> auditService.auditProduct(PRODUCT_ID, request))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("商品不存在");
+                    .isInstanceOf(ProductNotFoundException.class)
+                    .hasMessageContaining("资产不存在");
         }
 
         @Test

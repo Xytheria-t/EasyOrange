@@ -9,6 +9,7 @@ import type {
     ProductQueryParams,
     ProductSearchParams,
     ProductSearchResult,
+    ProductStatus,
     RawProduct,
     UpdateProductRequest,
 } from '@/types';
@@ -120,7 +121,7 @@ export const productApi = {
         });
     },
 
-    getMyProducts(params?: { pageNum?: number; pageSize?: number; status?: number }) {
+    getMyProducts(params?: { pageNum?: number; pageSize?: number; status?: ProductStatus }) {
         return request<PageResult<RawProduct>>('/products/my', {
             method: 'GET',
             params: params as Record<string, unknown>,

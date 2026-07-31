@@ -1,6 +1,13 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '@/api/productApi';
-import type { CreateProductRequest, PageResult, Product, ProductQueryParams, UpdateProductRequest } from '@/types';
+import type {
+    CreateProductRequest,
+    PageResult,
+    Product,
+    ProductQueryParams,
+    ProductStatus,
+    UpdateProductRequest,
+} from '@/types';
 import { normalizeProduct } from '@/utils/product';
 
 export const PRODUCT_KEYS = {
@@ -164,7 +171,7 @@ export function useSimilarProducts(productId: string) {
     });
 }
 
-export function useMyProducts(params: { pageNum?: number; pageSize?: number; status?: number } = {}) {
+export function useMyProducts(params: { pageNum?: number; pageSize?: number; status?: ProductStatus } = {}) {
     return useQuery<PageResult<Product>>({
         queryKey: [...PRODUCT_KEYS.all, 'my', params.pageNum, params.pageSize, params.status],
         queryFn: async () => {

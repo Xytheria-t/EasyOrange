@@ -70,14 +70,14 @@ class ElasticsearchProductSearchIndexAdapterTest {
                 .tags("tag1,tag2,tag3")
                 .build();
 
-        ProductDetailDO detail = new ProductDetailDO("100", "商品描述");
+        ProductDetailDO detail = ProductDetailDO.builder().productId("100").description("商品描述").build();
         when(productDetailMapper.selectById("100")).thenReturn(detail);
 
         ProductImageDO mainImage = new ProductImageDO("100", "http://example.com/main.jpg", 1, 1);
         ProductImageDO otherImage = new ProductImageDO("100", "http://example.com/other.jpg", 2, 0);
         when(productImageMapper.selectList(any())).thenReturn(List.of(mainImage, otherImage));
 
-        CategoryDO category = new CategoryDO("手机", "0", 1, "icon.png", 1, 1);
+        CategoryDO category = CategoryDO.builder().name("手机").parentId("0").level(1).icon("icon.png").sortOrder(1).status(1).build();
         when(categoryMapper.selectById("300")).thenReturn(category);
 
         ProductDocument doc = adapter.buildDocument(product);

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { Button as ShadcnButton } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import type { ProductStatus } from '@/types';
 import { useAdminProductDetail, useUpdateProductStatus } from '../../hooks';
 import type { AdminProduct } from '../../types/admin';
 
@@ -21,18 +22,18 @@ const conditionLabels: Record<number, string> = {
 };
 
 const PRODUCT_STATUS = {
-    DRAFT: 0,
-    ONLINE: 1,
-    SOLD: 2,
-    OFFLINE: 3,
-    PENDING_REVIEW: 4,
-    REJECTED: 5,
+    DRAFT: 'DRAFT',
+    ONLINE: 'ONLINE',
+    SOLD: 'SOLD',
+    OFFLINE: 'OFFLINE',
+    PENDING_REVIEW: 'PENDING_REVIEW',
+    REJECTED: 'REJECTED',
 } as const;
 
 function getAvailableActions(
-    status: number | null
-): { targetStatus: number; label: string; variant: 'online' | 'offline' }[] {
-    const actions: { targetStatus: number; label: string; variant: 'online' | 'offline' }[] = [];
+    status: ProductStatus | null
+): { targetStatus: ProductStatus; label: string; variant: 'online' | 'offline' }[] {
+    const actions: { targetStatus: ProductStatus; label: string; variant: 'online' | 'offline' }[] = [];
     if (status === PRODUCT_STATUS.ONLINE) {
         actions.push({ targetStatus: PRODUCT_STATUS.OFFLINE, label: '下架', variant: 'offline' });
     } else if (
@@ -74,7 +75,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
         }
     }, [open]);
 
-    const handleStatusChange = async (targetStatus: number) => {
+    const handleStatusChange = async (targetStatus: ProductStatus) => {
         if (!product) {
             return;
         }

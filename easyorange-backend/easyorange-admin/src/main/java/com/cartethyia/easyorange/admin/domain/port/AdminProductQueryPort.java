@@ -27,6 +27,34 @@ public interface AdminProductQueryPort {
     Map<String, List<String>> getProductImages(List<String> productIds);
 
     /**
+     * 根据产品 ID 列表批量查询产品基本信息
+     */
+    Map<String, ProductInfo> getProductInfos(List<String> productIds);
+
+    /**
+     * 产品基本信息
+     */
+    record ProductInfo(String id, String name) {}
+
+    /**
+     * 获取 AI 审核所需数据（跨表读），产品不存在或已删除时返回 null
+     */
+    AiReviewData getAiReviewData(String productId);
+
+    /**
+     * AI 审核数据
+     */
+    record AiReviewData(
+        String name,
+        String description,
+        String categoryName,
+        String conditionLevel,
+        BigDecimal price,
+        String sellerName,
+        List<String> imageUrls
+    ) {}
+
+    /**
      * 产品查询条件
      */
     record ProductQueryCondition(

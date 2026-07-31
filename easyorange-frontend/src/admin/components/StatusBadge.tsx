@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import type { ProductStatus } from '@/types';
 
 export interface StatusBadgeProps {
     status: number | string;
@@ -13,11 +14,13 @@ const userStatusConfig: Record<number, { label: string; variant: StatusVariant }
     2: { label: '锁定', variant: 'warning' },
 };
 
-const productStatusConfig: Record<number, { label: string; variant: StatusVariant }> = {
-    0: { label: '草稿', variant: 'default' },
-    1: { label: '上架', variant: 'success' },
-    2: { label: '已售', variant: 'info' },
-    3: { label: '下架', variant: 'error' },
+const productStatusConfig: Record<ProductStatus, { label: string; variant: StatusVariant }> = {
+    DRAFT: { label: '草稿', variant: 'default' },
+    ONLINE: { label: '上架', variant: 'success' },
+    SOLD: { label: '已售', variant: 'info' },
+    OFFLINE: { label: '下架', variant: 'error' },
+    PENDING_REVIEW: { label: '待审核', variant: 'warning' },
+    REJECTED: { label: '已驳回', variant: 'error' },
 };
 
 const orderStatusConfig: Record<number, { label: string; variant: StatusVariant }> = {
@@ -74,8 +77,19 @@ const configMap = {
 };
 
 export function StatusBadge({ status, type, className }: StatusBadgeProps) {
-    const numericStatus = typeof status === 'number' ? status : Number(status);
-    const config = !Number.isNaN(numericStatus) ? configMap[type][numericStatus] : undefined;
+    let config: { label: string; variant: StatusVariant } | undefined;
+    if (type === 'product' && typeof status === 'string') {
+        config = productStatusConfig[status as ProductStatus];
+    }
+    if (!config && typeof status === 'number') {
+        config = (configMap[type] as Record<number, { label: string; variant: StatusVariant }>)[status];
+    }
+    if (!config && typeof status === 'string') {
+        const numericStatus = Number(status);
+        if (!Number.isNaN(numericStatus)) {
+            config = (configMap[type] as Record<number, { label: string; variant: StatusVariant }>)[numericStatus];
+        }
+    }
 
     const fallbackLabel = typeof status === 'string' && status.trim() ? status : '未知';
     const { label, variant } = config ?? { label: fallbackLabel, variant: 'default' as StatusVariant };

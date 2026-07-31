@@ -65,7 +65,9 @@ class CachingVisionAdapterTest {
 
         for (var scope : AiCallScope.values()) {
             Cache<String, Object> l1 = Caffeine.newBuilder().build();
-            var mlc = new MultiLevelCache(l1, redisTemplate, scope.cacheKeyPrefix(), scope.getTtlSeconds(), java.util.concurrent.TimeUnit.SECONDS);
+            var mlc = new MultiLevelCache(l1, redisTemplate,
+                    MultiLevelCache.Config.of(scope.cacheKeyPrefix(),
+                            java.time.Duration.ofSeconds(scope.getTtlSeconds())));
             aiCaches.put(scope, mlc);
         }
 

@@ -17,7 +17,7 @@ tags:
 easy-orange/
 ├── easyorange-backend/          # Spring Boot 后端
 │   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
-│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 多级缓存, Bloom 过滤器, AOP, 事件, 文件, 分布式 ID, 一致性哈希, **RabbitMQ 消息队列**)
+│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 多级缓存, AOP, 事件, 文件, 分布式 ID, 一致性哈希, **RabbitMQ 消息队列**)
 │   ├── easyorange-user/         # 用户模块 (DDD: 认证/注册/密码管理/个人资料)
 │   │   ├── domain/service/      # AuthenticationService, RegistrationService, LoginSecurityService
 │   │   ├── adapter/outbound/mock/ # MockSmsCodeAdapter, MockSmsSenderAdapter (测试用)

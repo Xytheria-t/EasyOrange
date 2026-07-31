@@ -9,7 +9,6 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductUpdateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotOwnerException;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
@@ -23,13 +22,12 @@ import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.function.Function;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(rollbackFor = Exception.class)
@@ -125,17 +123,13 @@ public class ProductCommandService {
 
     public void takeOffline(String productId) {
         var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        var product = verifyOwnership(ProductId.of(productId), userId);
-        mutate(product, Product::takeOffline);
+        var product = findByIdOrThrow(ProductId.of(productId));
+        mutate(product, p -> p.takeOffline(userId));
     }
 
     public void markAsSold(String productId) {
         var product = findByIdOrThrow(ProductId.of(productId));
-        if (product.getStatus() == ProductStatus.SOLD) {
-            log.info("Product {} already SOLD, skipping idempotent call", productId);
-            return;
-        }
-        mutate(product, Product::markAsSold);
+        mutateIfPresent(product, Product::markAsSold);
     }
 
     // ==================== Private Helpers ====================
@@ -157,6 +151,13 @@ public class ProductCommandService {
         var result = fn.apply(product);
         productRepository.save(result.aggregate());
         domainEventPublisher.publish(result.event());
+    }
+
+    private void mutateIfPresent(Product product, Function<Product, Optional<? extends Transition<Product, ?>>> fn) {
+        fn.apply(product).ifPresent(t -> {
+            productRepository.save(t.aggregate());
+            domainEventPublisher.publish(t.event());
+        });
     }
 
     private Product findByIdOrThrow(ProductId id) {

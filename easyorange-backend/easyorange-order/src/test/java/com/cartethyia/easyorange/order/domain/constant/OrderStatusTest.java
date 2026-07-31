@@ -5,6 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.Map;
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -37,5 +40,27 @@ class OrderStatusTest {
             .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> OrderStatus.fromCode(null))
             .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("canTransitionTo 全矩阵与状态机定义一致")
+    void canTransitionTo_fullMatrixMatchesStateMachine() {
+        Map<OrderStatus, Set<OrderStatus>> expected = Map.of(
+            OrderStatus.PENDING_PAYMENT, Set.of(OrderStatus.PAID, OrderStatus.CANCELLED),
+            OrderStatus.PAID,           Set.of(OrderStatus.SHIPPED, OrderStatus.CANCELLED, OrderStatus.REFUNDED),
+            OrderStatus.SHIPPED,        Set.of(OrderStatus.COMPLETED, OrderStatus.REFUNDED),
+            OrderStatus.COMPLETED,      Set.of(),
+            OrderStatus.CANCELLED,      Set.of(),
+            OrderStatus.REFUNDED,       Set.of()
+        );
+
+        for (OrderStatus from : OrderStatus.values()) {
+            for (OrderStatus to : OrderStatus.values()) {
+                boolean expectedAllowed = expected.getOrDefault(from, Set.of()).contains(to);
+                assertThat(from.canTransitionTo(to))
+                        .as("%s → %s", from, to)
+                        .isEqualTo(expectedAllowed);
+            }
+        }
     }
 }

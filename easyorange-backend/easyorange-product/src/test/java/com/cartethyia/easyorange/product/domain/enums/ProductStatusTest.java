@@ -75,6 +75,19 @@ class ProductStatusTest {
         assertThat(ProductStatus.SOLD.canTransitionTo(ProductStatus.SOLD)).isFalse();
     }
 
+    // ==================== isTerminal ====================
+
+    @Test
+    @DisplayName("SOLD 是唯一的终端状态")
+    void isTerminal_soldOnly() {
+        assertThat(ProductStatus.SOLD.isTerminal()).isTrue();
+        assertThat(ProductStatus.DRAFT.isTerminal()).isFalse();
+        assertThat(ProductStatus.ONLINE.isTerminal()).isFalse();
+        assertThat(ProductStatus.OFFLINE.isTerminal()).isFalse();
+        assertThat(ProductStatus.PENDING_REVIEW.isTerminal()).isFalse();
+        assertThat(ProductStatus.REJECTED.isTerminal()).isFalse();
+    }
+
     // ==================== canDelete ====================
 
     @Test
@@ -91,6 +104,24 @@ class ProductStatusTest {
         assertThat(ProductStatus.OFFLINE.canDelete()).isTrue();
         assertThat(ProductStatus.PENDING_REVIEW.canDelete()).isTrue();
         assertThat(ProductStatus.REJECTED.canDelete()).isTrue();
+    }
+
+    // ==================== canRestoreStock ====================
+
+    @Test
+    @DisplayName("SOLD / OFFLINE 状态不允许恢复库存")
+    void canRestoreStock_soldAndOffline_shouldReturnFalse() {
+        assertThat(ProductStatus.SOLD.canRestoreStock()).isFalse();
+        assertThat(ProductStatus.OFFLINE.canRestoreStock()).isFalse();
+    }
+
+    @Test
+    @DisplayName("仍在可交易生命周期内的状态允许恢复库存")
+    void canRestoreStock_activeStates_shouldReturnTrue() {
+        assertThat(ProductStatus.DRAFT.canRestoreStock()).isTrue();
+        assertThat(ProductStatus.PENDING_REVIEW.canRestoreStock()).isTrue();
+        assertThat(ProductStatus.REJECTED.canRestoreStock()).isTrue();
+        assertThat(ProductStatus.ONLINE.canRestoreStock()).isTrue();
     }
 
     // ==================== fromCode ====================
