@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import java.time.Duration;
 import java.util.EnumMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * 多级缓存 — L1（Caffeine 本地）+ L2（Redis 共享）。
@@ -29,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  *       {@link CacheInvalidationListener} 发布 Redis Pub/Sub 失效消息，其他节点收到后失效本地 L1。</li>
  * </ul>
  * <p>
- * {@link #get(String, Class, CacheLoader)} 触发的回源填充<b>不</b>发布失效消息——
+ * {@link #get(String, Class, Supplier)} 触发的回源填充<b>不</b>发布失效消息——
  * 因为回源填充的是新值，不涉及其他节点 L1 的陈旧数据。
  */
 public class MultiLevelCache {
@@ -157,7 +158,7 @@ public class MultiLevelCache {
      * L1 未命中时通过 {@link Cache#get(Object, java.util.function.Function)} 原子单飞回源；
      * 回源为 null 时以哨兵负缓存（见 {@link NullValue}）。
      */
-    public <T> T get(String key, Class<T> type, CacheLoader<T> loader) {
+    public <T> T get(String key, Class<T> type, Supplier<T> loader) {
         if (key == null) {
             return null;
         }
@@ -199,7 +200,7 @@ public class MultiLevelCache {
      *
      * @return 缓存值或 {@link NullValue} 哨兵（Caffeine 不缓存 null，哨兵即负缓存载体）
      */
-    private <T> Object load(String key, Class<T> type, CacheLoader<T> loader) {
+    private <T> Object load(String key, Class<T> type, Supplier<T> loader) {
         Object raw = redisGet(key);
         if (raw instanceof NullValue) {
             count(Result.L2_NEGATIVE);
@@ -217,7 +218,7 @@ public class MultiLevelCache {
         return redisTemplate.opsForValue().get(buildL2Key(key));
     }
 
-    private <T> T loadWithSingleFlight(String key, Class<T> type, CacheLoader<T> loader) {
+    private <T> T loadWithSingleFlight(String key, Class<T> type, Supplier<T> loader) {
         if (redissonClient == null) {
             return loadAndWrite(key, loader);
         }
@@ -250,15 +251,15 @@ public class MultiLevelCache {
         }
     }
 
-    private <T> T loadAndWrite(String key, CacheLoader<T> loader) {
+    private <T> T loadAndWrite(String key, Supplier<T> loader) {
         T source = loadAndRecord(loader);
         writeBack(key, source);
         return source;
     }
 
-    private <T> T loadAndRecord(CacheLoader<T> loader) {
+    private <T> T loadAndRecord(Supplier<T> loader) {
         count(Result.LOAD);
-        return loadTimer == null ? loader.load() : loadTimer.record(loader::load);
+        return loadTimer == null ? loader.get() : loadTimer.record(loader::get);
     }
 
     private <T> void writeBack(String key, T source) {

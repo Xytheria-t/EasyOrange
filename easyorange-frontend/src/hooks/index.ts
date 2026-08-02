@@ -29,5 +29,5 @@ export {
     useSimilarProducts,
     useUpdateProduct,
 } from './product';
-export { useColumnCount, useScrollReveal } from './ui';
+export { useColumnCount, useListUrlState, useScrollReveal } from './ui';
 export { useSemanticSearch } from './useSemanticSearch';

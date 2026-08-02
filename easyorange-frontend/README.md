@@ -16,7 +16,7 @@
 | **表单校验** | react-hook-form + Zod 4 | 类型安全表单验证 |
 | **图标** | Lucide React | 图标库 |
 | **SEO** | react-helmet-async | 路由级 meta 管理（title/description/og:title） |
-| **测试** | Vitest + Testing Library | 单元/组件测试（111 文件, 1,042 测试） |
+| **测试** | Vitest + Testing Library | 单元/组件测试（112 文件, 1,056 测试） |
 | | Playwright | E2E 测试 |
 | **质量** | Biome + jsx-a11y | 统一 lint + format（替代 ESLint + Prettier） |
 
@@ -61,8 +61,8 @@ easyorange-frontend/
 │   │   ├── useAiCopyGeneration.ts # AI 文案生成 Hook
 │   │   ├── auth/             # 认证相关 Hooks
 │   │   ├── order/            # 订单相关 Hooks
-│   │   ├── product/          # 资产相关 Hooks
-│   │   └── ui/               # UI 相关 Hooks (useColumnCount 等)
+│   │   ├── product/          # 资产相关 Hooks（含 useSearchUrlState：组合 useListUrlState + ai 开关）
+│   │   └── ui/               # UI 相关 Hooks（useColumnCount、useListUrlState 列表页 URL 状态同步、useScrollReveal）
 │   ├── lib/                  # 库配置
 │   ├── pages/                # 页面组件
 │   │   └── publish/          # 发布资产子模块

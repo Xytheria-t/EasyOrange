@@ -1,6 +1,6 @@
 # easyorange-order 模块指南
 
-订单管理模块，DDD + CQRS + Saga 架构，处理订单全生命周期。
+订单管理模块，DDD + CQRS 架构，处理订单全生命周期。
 
 ## 目录结构
 
@@ -23,14 +23,13 @@ order/
 │   │   │   ├── OrderTimeoutTask.java        # 订单超时取消
 │   │   │   └── OrderAutoConfirmTask.java    # 自动确认收货
 │   │   └── mq/subscriber/                   # 事件订阅
-│   │       └── OrderSagaEventConsumer.java  # 单一 Saga 事件消费者（替代多个分散 Subscriber）
+│   │       └── OrderLifecycleEventConsumer.java # 订单生命周期消费者（取消/退款恢复库存, 完成标记售出）
 │   └── outbound/
 │       ├── persistence/                     # 持久化
 │       │   ├── OrderRepositoryImpl.java
 │       │   ├── OrderReadRepositoryImpl.java
-│       │   ├── SagaRepositoryImpl.java
-│       │   ├── OrderDO.java, SagaDO.java
-│       │   ├── OrderMapper.java, SagaMapper.java
+│       │   ├── OrderDO.java
+│       │   ├── OrderMapper.java
 │       │   ├── OrderItemDO.java             # eo_order_item 实体
 │       │   ├── OrderItemMapper.java         # 行项 MyBatis Mapper
 │       │   ├── OrderDataMapper.java        # MapStruct: DO ↔ Domain
@@ -41,14 +40,11 @@ order/
 │       └── config/
 │           └── OrderTimeoutProperties.java  # 超时配置
 ├── application/
-│   ├── saga/                                 # Saga 编排（应用层）
-│   │   ├── CreateOrderSaga.java            # 创建订单 Saga 编排（重构后仅 157 行）
-│   │   └── support/                         # Saga 支持类（职责分离）
-│   │       ├── DistributedLockManager.java  # 分布式锁管理
-│   │       ├── SagaCoordinator.java         # Saga 状态管理
-│   │       ├── OrderCompensationService.java # 订单补偿操作
-│   │       ├── OrderPreparationService.java  # 商品数据准备
-│   │       └── OrderCreationExecutor.java    # 订单创建执行
+│   ├── service/                              # 应用服务（下单链路）
+│   │   ├── OrderCreationService.java         # 订单创建（本地单事务 + 分布式锁，见 ADR-0007）
+│   │   ├── DistributedLockManager.java       # 分布式锁管理（productId 排序防死锁）
+│   │   ├── OrderPreparationService.java      # 商品数据准备
+│   │   └── OrderCreationExecutor.java        # 订单创建执行
 │   ├── command/                             # 命令（CQRS Write，sealed OrderCommand 接口）
 │   │   ├── OrderCommandHandler.java
 │   │   ├── OrderCommand.java                 # sealed 接口，permits 7 个命令 record
@@ -70,12 +66,6 @@ order/
 │   │   ├── Order.java             # 订单聚合根（不可变，字段 final）
 │   │   ├── OrderCreateSpec.java            # record 收敛 createOrder() 工厂参数
 │   │   └── OrderReconstructSpec.java       # record 收敛 from() 重建参数
-│   ├── saga/                                 # Saga 支持类型（纯领域）
-│   │   ├── SagaRepository.java            # Saga 仓储接口
-│   │   ├── SagaState.java, SagaStatus.java
-│   │   ├── SagaException.java              # Saga 异常（含 sagaId/state 字段，涵盖锁获取/序列化/补偿场景）
-│   │   ├── PaymentGatewayAdapterException.java    # 支付网关异常
-│   │   └── OrderCreationException.java
 │   ├── valueobject/
 │   │   ├── OrderId.java, OrderNo.java
 │   │   ├── Address.java, Phone.java
@@ -107,7 +97,8 @@ order/
 │   │   └── OrderReadRepository.java        # 读仓储（countByStatus 入参为 OrderStatus 枚举）
 │   ├── constant/
 │   │   ├── OrderConstant.java
-│   │   ├── OrderStatus.java                # code 为 String："PENDING_PAYMENT"/"PAID"/"SHIPPED"/...
+│   │   ├── OrderStatus.java                # 状态枚举：code 为 String（"PENDING_PAYMENT"/"PAID"/...）
+│   │   ├── OrderAction.java                # 状态机唯一事实来源：动作（前置状态→目标状态+支付副作用）
 │   │   └── OrderResultCode.java
 │   └── exception/
 │       ├── OrderDomainException.java
@@ -119,28 +110,22 @@ order/
 
 > **Money 值对象**：`Money` 不在 order 模块，位于 `easyorange-common`。order 模块通过 `Money` 使用金额，但不重复定义。
 
-## Saga 模式
+## 下单链路（拒绝 Saga）
 
-创建订单使用 Saga 编排分布式事务，已重构为职责分离架构：
-
-**架构改进**：
-- CreateOrderSaga 从 327 行减至 157 行，依赖从 10 个减至 4 个
-- 分布式锁、状态管理、补偿逻辑、订单准备分离到独立支持类
-- 异常处理从 broad catch 改为具体异常类型（SagaException、PaymentGatewayAdapterException 等）
+创建订单不使用 Saga 编排，采用**本地单事务 + 分布式锁 + Outbox 事件**。语义见 [ADR-0007](../../doc/adr/0007-order-saga-single-tx-observability.md)：**原子性由单 `@Transactional` 回滚兜底，失败随事务整体回滚，无需反向补偿**（单库场景下补偿与回滚重复、失败状态随事务回滚丢失）。
 
 **执行流程**：
 ```
-CreateOrderSaga.execute():
-  1. DistributedLockManager 获取商品锁（按 productId 排序避免死锁）
-  2. SagaCoordinator 创建初始 Saga 状态
-  3. OrderPreparationService 准备商品数据（校验在线、库存、非自购）
-  4. OrderCreationExecutor 创建订单 + 发布事件
-  5. PaymentGatewayPort 创建支付记录
-  6. 失败时 OrderCompensationService 执行补偿（逆序取消订单）
+OrderCreationService.createOrder() ─ @Transactional(rollbackFor=Exception.class) ─
+  1. DistributedLockManager 获取商品锁（key=eo:order:lock:product:{productId}，按 productId 排序避免死锁）
+  2. OrderPreparationService 准备商品数据（校验在线、库存、非自购）
+  3. OrderCreationExecutor 创建订单 + 发布事件（Outbox 同事务原子）
+  4. ProductOrderPort.decreaseStock() 同步扣库存（同事务）
+  5. PaymentGatewayPort 创建支付记录（同事务）
+  6. 任一步失败 → 业务事务整体回滚，抛 OrderCreationException（库存/支付同事务回滚，无补偿路径）
 ```
 
-- `SagaState` 久化到 `eo_saga` 表，支持故障恢复
-- `SagaStatus`: PENDING → ORDER_CREATED → PAYMENT_CREATED → COMPLETED / COMPENSATING → COMPENSATED
+**库存恢复**：仅由 `OrderLifecycleEventConsumer` 消费订单取消/退款事件时调用 `ProductOrderPort.restoreStock()` 恢复；完成事件触发 `markAsSold`。
 
 ## CQRS 架构
 
@@ -175,14 +160,21 @@ CreateOrderSaga.execute():
 
 ## 订单状态机
 
+**动作驱动（Action-driven）设计**：`OrderAction` 枚举是状态机唯一事实来源，每个动作声明前置状态集合（sources）、目标状态（target）、目标支付状态（targetPaymentStatus，null 表示不变）、是否需要原因、非法错误码及额外支付前置条件（paymentGuard）。`OrderStatus.canTransitionTo()` 由此派生，`Order` 聚合根统一经私有 `transitionTo(action, reason)` 守卫执行——一处校验合法性 + 一处应用副作用（状态 + 支付状态 + 关闭原因/时间），**禁止绕过守卫直接修改状态**。
+
 ```
-PENDING_PAYMENT ──→ PAID ──→ SHIPPED ──→ COMPLETED
-       │                │         │
-       ↓                ↓         ↓
-   CANCELLED        CANCELLED   REFUNDED
+PENDING_PAYMENT ──PAY──→ PAID ──SHIP──→ SHIPPED ──CONFIRM_RECEIPT──→ COMPLETED
+       │                   │  │                     │
+       │                   │  └──FORCE_CANCEL──→    │
+       │                   └──REFUND──→            └──REFUND──→
+   CANCEL──→ CANCELLED            │                              REFUNDED
+       │        ▲                 │
+       └────────┴──FORCE_CANCEL───┘
 ```
 
-状态码使用 String code（`OrderStatus.PENDING_PAYMENT.getCode()` → `"PENDING_PAYMENT"`），由 `OrderStatusTypeHandler` / `PaymentStatusTypeHandler` 完成 VARCHAR 列互转，详见下方「枚举字符串化」章节。
+- `CANCEL`（买家）：仅限待付款；`FORCE_CANCEL`（管理端）：待付款或已付款
+- `REFUND`（退款）：已付款或已发货，且支付状态必须为已支付（paymentGuard）
+- 状态码使用 String code（`OrderStatus.PENDING_PAYMENT.getCode()` → `"PENDING_PAYMENT"`），由 `OrderStatusTypeHandler` / `PaymentStatusTypeHandler` 完成 VARCHAR 列互转，详见下方「枚举字符串化」章节。
 
 ## 定时任务
 
@@ -191,15 +183,15 @@ PENDING_PAYMENT ──→ PAID ──→ SHIPPED ──→ COMPLETED
 
 ## 常见开发任务
 
-### 添加订单新状态
+### 添加订单新转换
 
-1. `OrderStatus` 枚举新增值（`code` 为 String，如 `"EXCHANGED"`）
-2. `Order` 添加状态转换方法和校验（返回 `Transition<Order, XxxEvent>`）
+1. 在 `OrderAction` 枚举新增动作（声明前置状态、目标状态、目标支付状态、是否需要原因、错误码）
+2. `Order` 添加转换方法，内部委托 `transitionTo(新动作, reason)` 并构造对应领域事件（返回 `Transition<Order, XxxEvent>`）
 3. 添加对应领域事件
 4. `OrderCommandHandler` 添加命令处理（命令为 record）
-5. 更新 Saga 补偿逻辑（如需）
+5. 如涉及下单链路，检查 `OrderCreationService` 执行顺序与事务回滚语义（单事务内，无需补偿）
 6. Flyway 迁移：`status` 列 CHECK 约束追加新 code
-7. 测试
+7. 在 `OrderActionTest` 中补充前置状态/目标状态断言，`OrderTest` 补充转换用例
 
 ### 添加新查询维度
 

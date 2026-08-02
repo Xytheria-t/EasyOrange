@@ -30,7 +30,7 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 四模块共性与决策驱动力：
 
 - **product**：读多写少 + ES 全文搜索聚合，命令/查询分离收益明显
-- **order**：写链路走 Saga（见 ADR 0001），查询侧需独立 ReadModel 支撑「我的订单 / 卖出订单」分页
+- **order**：写链路为本地单事务 + 分布式锁 + Outbox（拒绝 Saga，见 [ADR 0007](0007-order-saga-single-tx-observability.md)），查询侧需独立 ReadModel 支撑「我的订单 / 卖出订单」分页
 - **payment**：写操作幂等性强（`@Idempotent`），查询侧需独立支付流水视图
 - **message**：站内信 + WebSocket 实时消息，读多写多但查询维度独立（会话列表 / 未读数 / 历史消息），与命令（发送 / 撤回 / 已读）天然分离
 
@@ -46,7 +46,7 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 | 候选模块 | 是否纳入 | 理由 |
 |---------|---------|------|
 | product | 是 | ES 全文搜索 + facets 聚合，读模型独立价值最高 |
-| order | 是 | Saga 写链路与查询分离，避免长事务拖累分页查询 |
+| order | 是 | 写链路与查询分离，避免长事务拖累分页查询 |
 | payment | 是 | 写操作幂等 + 流水查询独立，CQRS 收益清晰 |
 | message | 是 | 会话列表 / 未读数 / 历史消息查询维度独立，与命令天然分离 |
 | user | 否 | 读写比均衡，CRUD 即可，强套 CQRS 是空壳 |
@@ -60,7 +60,7 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 - 复杂度可控：4 个模块承担 CQRS 成本，其余模块保持简单的 `*AppService` 单服务模式
 - 重点模块收益明显：product 全文搜索、order 订单列表分页、payment 流水查询、message 会话列表都获得了独立 ReadModel
 - 边界由 ArchUnit 守卫，新人加代码时「该往 command 还是 query」一目了然
-- 与 Saga（ADR 0001）协同：order 写链路在 command 侧，查询不影响写事务
+- order 写链路在 command 侧，查询不影响写事务
 
 ### 负向后果
 
@@ -79,12 +79,12 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 
 - **全模块上 CQRS**：拒绝。user / favorite / ai 等模块读写比均衡或以调用外部 API 为主（ai 模块核心是 Port/Adapter + 装饰器，见 ADR 0003），强行套 CQRS 会引入无意义的 CommandHandler 空壳，违反 KISS / YAGNI。
 - **完全不上 CQRS**：拒绝。product 的 ES 全文搜索 + facets 聚合、order 的多维度分页查询，用单一 Service + Repository 难以承载，扩展性差；也无法在「LLM × DDD 工程化实战项目」中讲清楚 CQRS。
-- **只在 product 上 CQRS**：拒绝。order 的 Saga 写链路与查询分离、message 的会话/未读数查询维度独立，都有真实诉求；只做 product 会丢失这些场景的展示价值。
+- **只在 product 上 CQRS**：拒绝。order 的写链路与查询分离、message 的会话/未读数查询维度独立，都有真实诉求；只做 product 会丢失这些场景的展示价值。
 - **未来扩展到 user / favorite**：暂不排除。当 user 模块的「个人主页 / 信用画像」查询维度独立演化、或 favorite 出现大流量收藏列表分页时，再评估是否新增 ADR 扩展。
 
 ## 备注（Notes）
 
 - 相关文档：[easyorange-backend/AGENTS.md](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/AGENTS.md)「CQRS 模式」节、[README.md](file:///home/cartethyia/projects/Java/easy-orange/README.md)「架构模式落地」表
 - 相关代码：[MessageCommandHandler.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/command/MessageCommandHandler.java)、[MessageQueryHandler.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/query/MessageQueryHandler.java)
-- 相关 ADR：[ADR 0001](./0001-use-saga-over-2pc.md)（Saga 与 CQRS 在 order 模块协同）、[ADR 0003](./0003-ai-port-adapter-with-decorator.md)（ai 模块选择 Port/Adapter 而非 CQRS）
+- 相关 ADR：[ADR 0007](./0007-order-saga-single-tx-observability.md)（order 写链路：本地单事务 + 分布式锁 + Outbox，拒绝 Saga）、[ADR 0003](./0003-ai-port-adapter-with-decorator.md)（ai 模块选择 Port/Adapter 而非 CQRS）
 - 重评估触发：user 或 favorite 模块出现独立的复杂查询维度、或 ArchUnit 守卫频繁被绕过时，重新评估 CQRS 范围。

@@ -128,7 +128,7 @@ describe('SearchPage', () => {
                 sellerName: '资产方',
                 description: 'desc',
                 originalPrice: null,
-                categoryId: 1,
+                categoryId: '1',
                 conditionLevel: 1,
                 favorites: 0,
                 sellerId: 's1',

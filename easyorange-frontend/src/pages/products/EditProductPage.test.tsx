@@ -47,7 +47,7 @@ function createMockProduct(overrides: Partial<Product> = {}): Product {
         description: '这是一个可以编辑的测试商品',
         price: 99.99,
         originalPrice: 150,
-        categoryId: 1,
+        categoryId: '1',
         categoryName: '电子产品',
         condition: 2,
         conditionLevel: 2,

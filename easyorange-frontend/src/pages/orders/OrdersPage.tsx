@@ -15,8 +15,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PaginationBar } from '@/components/PaginationBar';
 import { Button } from '@/components/ui/button';
 import { getOrderStatusFromCode, getOrderStatusLabel } from '@/constants';
-import { useCancelOrder, useMyOrders, usePayOrder, useReceiveOrder } from '@/hooks';
-import { usePagination } from '@/hooks/usePagination';
+import { useCancelOrder, useMyOrders, usePayOrder, useReceiveOrder, useListUrlState } from '@/hooks';
 import { useUIStore } from '@/store';
 import type { Order, OrderStatus } from '@/types';
 import './orders-page.css';
@@ -75,24 +74,40 @@ const STATUS_STYLE_MAP: Record<OrderStatus, { bg: string; text: string; border: 
     },
 };
 
+const ORDER_PAGE_SIZE = 10;
+const VALID_TAB_IDS = STATUS_TAB_MAP.map(t => t.id);
+
 function OrdersPage() {
-    const [activeTab, setActiveTab] = useState('all');
-    const { pageNum, pageSize, goTo } = usePagination({
-        resetDeps: [activeTab],
-    });
+    const {
+        filters,
+        pageNum,
+        setFilterValue: setUrlFilter,
+        setPageNum: setUrlPageNum,
+    } = useListUrlState();
     const navigate = useNavigate();
+
+    const activeTab = VALID_TAB_IDS.includes(filters.status ?? '') ? (filters.status as string) : 'all';
 
     const queryParams = useMemo(() => {
         const tab = STATUS_TAB_MAP.find(t => t.id === activeTab);
         const baseParams: { status?: number; pageNum?: number; pageSize?: number } = {
             pageNum,
-            pageSize,
+            pageSize: ORDER_PAGE_SIZE,
         };
         if (tab?.statusCode !== undefined) {
             baseParams.status = tab.statusCode;
         }
         return baseParams;
-    }, [activeTab, pageNum, pageSize]);
+    }, [activeTab, pageNum]);
+
+    const handleTabChange = useCallback(
+        (tabId: string) => {
+            setUrlFilter('status', tabId === 'all' ? null : tabId);
+        },
+        [setUrlFilter]
+    );
+
+    const goTo = useCallback((page: number) => setUrlPageNum(page), [setUrlPageNum]);
 
     const { data, isLoading, isError, refetch } = useMyOrders(queryParams);
     const cancelOrder = useCancelOrder();
@@ -173,7 +188,7 @@ function OrdersPage() {
                         <Button
                             key={tab.id}
                             variant="ghost"
-                            onClick={() => setActiveTab(tab.id)}
+                            onClick={() => handleTabChange(tab.id)}
                             className={`orders-tab-item ${isActive ? 'orders-tab-active' : ''}`}
                             style={{ animationDelay: `${index * 60}ms` }}
                         >

@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.message.service;
+package com.cartethyia.easyorange.message.application.service;
 
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;

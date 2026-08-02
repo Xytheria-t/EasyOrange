@@ -1,6 +1,7 @@
 # ADR 0001 — 订单创建跨模块事务采用 Saga 而非 2PC
 
-- **状态**：接受
+> **状态**：**Superseded（已替代）** — 被 [ADR-0007](0007-order-saga-single-tx-observability.md)（2026-08-02）整体替代：订单创建已移除 Saga 层，回归「本地单事务 + 分布式锁 + Outbox」。本 ADR 仅保留「拒绝 2PC/XA/TCC」的结论；其余内容（编排器、补偿、状态机、超时检测）为历史记录，代码与表结构均已删除。
+
 - **日期**：2026-07-14
 - **决策者**：后端架构
 - **标签**：`saga` `distributed-transaction` `order` `event-driven`
@@ -65,14 +66,14 @@ CreateOrderSaga.execute()  ─ @Transactional ─
 ### 负向后果
 
 - 存在中间态可见窗口（订单已建但支付未建），客户端需轮询或接收事件
-- 补偿逻辑需独立测试覆盖（`CreateOrderSagaCompensationTest` 已守卫）
+- 补偿逻辑需独立测试覆盖（`CreateOrderSagaTest` 已守卫，单库单事务下由回滚兜底，见 ADR-0007）
 - 不保证强一致，仅保证最终一致 + 业务可补偿
 
 ### 缓解措施
 
 - 订单 30 分钟超时任务（`OrderTimeoutTask`）自动 `CANCELLED` 并触发商品重新可售
 - `SagaTimeoutScheduler` 自动检测超时（30 分钟无更新），重试次数耗尽时标记 `MANUAL_INTERVENTION` 等待运维介入
-- 补偿路径有专门的单测覆盖（`CreateOrderSagaCompensationTest`）
+- 补偿路径有专门的单测覆盖（`CreateOrderSagaTest`，见 ADR-0007）
 
 ## 备选方案（Alternatives Considered）
 
@@ -83,6 +84,6 @@ CreateOrderSaga.execute()  ─ @Transactional ─
 
 ## 备注（Notes）
 
+- **Superseded** by [ADR-0007](0007-order-saga-single-tx-observability.md)（2026-08-02）：订单创建移除 Saga 层，回归本地单事务 + 分布式锁 + Outbox
 - 相关文档：[doc/集成/AI-资产管理.md](file:///home/cartethyia/projects/Java/easy-orange/doc/集成/AI-资产管理.md)（订单闭环）、[doc/架构/架构-系统架构.md](file:///home/cartethyia/projects/Java/easy-orange/doc/架构/架构-系统架构.md)
-- 相关代码：[CreateOrderSaga.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/saga/CreateOrderSaga.java)、[SagaCoordinator.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/saga/support/SagaCoordinator.java)、[OrderCompensationService.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/saga/support/OrderCompensationService.java)
-- 重评估触发：当出现「订单已建但支付 > 5 分钟未建」的告警持续升高，或业务引入资金托管（不再 C2C 直发）时，重新评估是否需要 2PC/TCC。
+- 重评估触发：当业务引入资金托管（不再 C2C 直发）或 product/payment 模块拆分独立数据源时，重新评估跨服务编排（真 Saga / 事务性 Outbox 补偿），见 ADR-0007 备注。

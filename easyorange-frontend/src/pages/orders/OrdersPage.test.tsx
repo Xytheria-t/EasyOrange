@@ -26,12 +26,16 @@ const mockUseUIStore = vi.hoisted(() =>
     })
 );
 
-vi.mock('@/hooks', () => ({
-    useMyOrders: mockUseMyOrders,
-    useCancelOrder: mockUseCancelOrder,
-    usePayOrder: mockUsePayOrder,
-    useReceiveOrder: mockUseReceiveOrder,
-}));
+vi.mock('@/hooks', async () => {
+    const actual = await vi.importActual<typeof import('@/hooks')>('@/hooks');
+    return {
+        ...actual,
+        useMyOrders: mockUseMyOrders,
+        useCancelOrder: mockUseCancelOrder,
+        usePayOrder: mockUsePayOrder,
+        useReceiveOrder: mockUseReceiveOrder,
+    };
+});
 
 vi.mock('@/store', () => ({
     useUIStore: mockUseUIStore,

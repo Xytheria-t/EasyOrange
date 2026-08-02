@@ -86,7 +86,7 @@ function SearchPage() {
             pageSize: 20,
         };
         if (filters.category) {
-            params.categoryId = Number(filters.category);
+            params.categoryId = filters.category;
         }
         if (filters.condition) {
             params.conditionLevel = Number(filters.condition);
@@ -203,7 +203,7 @@ function SearchPage() {
     };
 
     const handleCategoryClick = (categoryId: string) => {
-        navigate(`/products?category=${categoryId}`);
+        navigate(`/products?filters=category:${encodeURIComponent(categoryId)}`);
     };
 
     const handleClear = () => {

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.dto;
 
 public record QaRequest(
-        Long productId,
+        String productId,
         String question,
         String productName,
         String productDescription,

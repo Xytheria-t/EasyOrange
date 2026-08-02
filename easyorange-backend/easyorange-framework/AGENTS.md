@@ -7,7 +7,7 @@
 ```
 framework/
 ├── async/             # AsyncManager（异步任务管理）
-├── cache/             # CacheLoader + CacheUtils + MultiLevelCache（多级缓存门面）
+├── cache/             # CacheUtils + MultiLevelCache（多级缓存门面，回源用 java.util.function.Supplier）
 ├── config/            # 框架配置（线程池/Jackson/MDC/缓存/Redis/Security/WebMVC/Properties）
 ├── event/             # 领域事件基础设施（EventConsumerHandler / EventMetadata / EventMetricsService / EventIdempotencyChecker / DlqAnomalyListener）
 ├── exception/         # GlobalExceptionHandler（全局异常处理，RFC 9457 ProblemDetail）

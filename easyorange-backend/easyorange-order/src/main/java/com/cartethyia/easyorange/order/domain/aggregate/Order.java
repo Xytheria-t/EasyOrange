@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.order.domain.aggregate;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
+import com.cartethyia.easyorange.order.domain.constant.OrderAction;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
@@ -40,7 +40,8 @@ import java.util.Objects;
  *       ↓                ↓         ↓
  *   CANCELLED        CANCELLED   REFUNDED
  * </pre>
- * 状态机合法转换的单一事实来源见 {@link OrderStatus#canTransitionTo(OrderStatus)}。
+ * 状态机合法转换的单一事实来源见 {@link OrderAction}，所有转换统一经
+ * {@link #transitionTo(OrderAction, String)} 守卫（一处校验合法性 + 一处应用副作用）。
  * <p>
  * 核心不变量：
  * <ul>
@@ -149,44 +150,27 @@ public class Order {
     }
 
     // ==================== Status Queries ====================
+    // 仅保留有生产调用方的谓词；其余能力查询（canPay/canShip/...）在需要时由
+    // OrderAction.X.canApply(status, paymentStatus) 直接裁决，无需在聚合根上重复暴露。
 
-    /** 是否可支付（仅待付款状态可支付） */
-    public boolean canPay() { return status.canTransitionTo(OrderStatus.PAID); }
-
-    /**
-     * 是否可取消（用户取消仅限待付款状态；已付款订单取消走 {@link #forceCancel}）。
-     */
-    public boolean canCancel() { return status == OrderStatus.PENDING_PAYMENT; }
-
-    /** 是否可强制取消（待付款或已付款状态，管理端路径） */
-    public boolean canForceCancel() { return status.canTransitionTo(OrderStatus.CANCELLED); }
-
-    /** 是否可发货（仅已付款状态可发货） */
-    public boolean canShip() { return status.canTransitionTo(OrderStatus.SHIPPED); }
+    /** 是否可取消（买家取消仅限待付款状态；已付款订单取消走 {@link #forceCancel}） */
+    public boolean canCancel() { return OrderAction.CANCEL.canApply(status, paymentStatus); }
 
     /** 是否可确认收货（仅已发货状态可确认） */
-    public boolean canConfirmReceipt() { return status.canTransitionTo(OrderStatus.COMPLETED); }
-
-    /** 是否可退款（已付款或已发货状态，且支付状态为已支付时可退款） */
-    public boolean canRefund() {
-        return status.canTransitionTo(OrderStatus.REFUNDED) && paymentStatus == PaymentStatus.PAID;
-    }
+    public boolean canConfirmReceipt() { return OrderAction.CONFIRM_RECEIPT.canApply(status, paymentStatus); }
 
     // ==================== State Transitions ====================
 
     /** 支付订单 */
     public Transition<Order, OrderPaidEvent> pay() {
-        BizRequire.requireTrue(canPay(), OrderResultCode.ORDER_STATUS_ERROR);
-        var updated = toBuilder().status(OrderStatus.PAID).paymentStatus(PaymentStatus.PAID).build();
-        return new Transition<>(updated, new OrderPaidEvent(id.value(), PaymentStatus.PAID.getCode()));
+        return new Transition<>(transitionTo(OrderAction.PAY, null),
+                new OrderPaidEvent(id.value(), PaymentStatus.PAID.getCode()));
     }
 
-    /** 取消订单 */
+    /** 取消订单（买家路径，仅限待付款） */
     public Transition<Order, OrderCancelledEvent> cancel(String reason) {
-        BizRequire.requireTrue(canCancel(), OrderResultCode.ORDER_CANNOT_CANCEL);
-        var updated = toBuilder().status(OrderStatus.CANCELLED)
-                .cancelReason(reason).cancelTime(now()).build();
-        return new Transition<>(updated, new OrderCancelledEvent(id.value(), extractProductIds(), reason));
+        return new Transition<>(transitionTo(OrderAction.CANCEL, reason),
+                new OrderCancelledEvent(id.value(), extractProductIds(), reason));
     }
 
     /**
@@ -195,32 +179,47 @@ public class Order {
      * 正常用户取消只允许待付款订单，管理端可以强制取消已付款订单。
      */
     public Transition<Order, OrderCancelledEvent> forceCancel(String reason) {
-        BizRequire.requireTrue(canForceCancel(), OrderResultCode.ORDER_STATUS_ERROR);
-        var updated = toBuilder().status(OrderStatus.CANCELLED)
-                .cancelReason(reason).cancelTime(now()).build();
-        return new Transition<>(updated, new OrderCancelledEvent(id.value(), extractProductIds(), reason));
+        return new Transition<>(transitionTo(OrderAction.FORCE_CANCEL, reason),
+                new OrderCancelledEvent(id.value(), extractProductIds(), reason));
     }
 
     /** 发货 */
     public Transition<Order, OrderShippedEvent> ship() {
-        BizRequire.requireTrue(canShip(), OrderResultCode.ORDER_STATUS_ERROR);
-        var updated = toBuilder().status(OrderStatus.SHIPPED).build();
-        return new Transition<>(updated, new OrderShippedEvent(id.value()));
+        return new Transition<>(transitionTo(OrderAction.SHIP, null),
+                new OrderShippedEvent(id.value()));
     }
 
     /** 确认收货 */
     public Transition<Order, OrderCompletedEvent> confirmReceipt() {
-        BizRequire.requireTrue(canConfirmReceipt(), OrderResultCode.ORDER_STATUS_ERROR);
-        var updated = toBuilder().status(OrderStatus.COMPLETED).build();
-        return new Transition<>(updated, new OrderCompletedEvent(id.value(), extractProductIds()));
+        return new Transition<>(transitionTo(OrderAction.CONFIRM_RECEIPT, null),
+                new OrderCompletedEvent(id.value(), extractProductIds()));
     }
 
     /** 退款 */
     public Transition<Order, OrderRefundedEvent> refund(String reason) {
-        BizRequire.requireTrue(canRefund(), OrderResultCode.ORDER_CANNOT_REFUND);
-        var updated = toBuilder().status(OrderStatus.REFUNDED).paymentStatus(PaymentStatus.REFUNDED)
-                .cancelReason(reason).cancelTime(now()).build();
-        return new Transition<>(updated, new OrderRefundedEvent(id.value(), extractProductIds(), reason));
+        return new Transition<>(transitionTo(OrderAction.REFUND, reason),
+                new OrderRefundedEvent(id.value(), extractProductIds(), reason));
+    }
+
+    // ==================== State Machine Guard ====================
+
+    /**
+     * 状态机守卫 — 所有转换的唯一入口。
+     * <p>
+     * 校验动作在当前订单状态（status + paymentStatus）下是否合法、终止性动作是否附带原因，
+     * 然后一次性应用副作用：目标状态 + 目标支付状态 + 关闭原因/时间。任何新增转换都必须
+     * 先声明 {@link OrderAction}，再经此方法执行，禁止绕过守卫直接修改状态。
+     */
+    private Order transitionTo(OrderAction action, String reason) {
+        BizRequire.requireTrue(action.canApply(status, paymentStatus), action.resultCode());
+        BizRequire.requireTrue(!action.requiresReason() || (reason != null && !reason.isBlank()),
+                action.resultCode());
+        return toBuilder()
+                .status(action.target())
+                .paymentStatus(action.targetPaymentStatus() != null ? action.targetPaymentStatus() : paymentStatus)
+                .cancelReason(action.requiresReason() ? reason : cancelReason)
+                .cancelTime(action.requiresReason() ? now() : cancelTime)
+                .build();
     }
 
     // ==================== Internal Helpers ====================

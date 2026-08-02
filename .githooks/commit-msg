@@ -3,6 +3,11 @@
 # 安装方式：git config core.hooksPath .githooks
 set -e
 
+if [ -n "$SKIP" ]; then
+  echo "[commit-msg] SKIP env var set, skipping hooks."
+  exit 0
+fi
+
 msg_file="$1"
 msg_first_line=$(head -1 "$msg_file")
 

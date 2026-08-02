@@ -5,11 +5,13 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.Arrays;
 
 /**
  * 订单状态枚举 — code 为有意义字符串，DB 列 VARCHAR(20)，由 {@code OrderStatusTypeHandler} 持久化。
+ * <p>
+ * 状态机合法转换的**唯一事实来源**是 {@link OrderAction}，本枚举仅声明状态本身；
+ * {@link #canTransitionTo(OrderStatus)} 由动作定义派生，避免两份状态机定义漂移。
  *
  * @author cartethyia
  * @date 2026/03/06
@@ -30,27 +32,18 @@ public enum OrderStatus implements BaseCodeEnum {
     private final String code;
     private final String desc;
 
-    // === 状态机：单一事实来源 ===
-    // 键为当前状态，值为允许到达的目标状态；各转换的触发动作见行内注释。
-    // PAID→CANCELLED 仅由管理端强制取消 forceCancel 触发（普通用户取消仅限待付款，见 Order.canCancel()）。
-    private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED_TRANSITIONS = Map.of(
-        PENDING_PAYMENT, Set.of(PAID, CANCELLED),                 // pay / cancel（用户）
-        PAID,           Set.of(SHIPPED, CANCELLED, REFUNDED),     // ship / forceCancel（管理端）/ refund
-        SHIPPED,        Set.of(COMPLETED, REFUNDED),              // confirmReceipt / refund
-        COMPLETED,      Set.of(),                                 // 终端
-        CANCELLED,      Set.of(),                                 // 终端
-        REFUNDED,       Set.of()                                  // 终端
-    );
-
     public static OrderStatus fromCode(String code) {
         return BaseCodeEnum.fromCode(OrderStatus.class, code);
     }
 
     /**
      * 从当前状态到目标状态的转换是否合法。
+     * <p>
+     * 由 {@link OrderAction} 派生：存在任一动作允许从当前状态到达目标状态即为合法。
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean canTransitionTo(OrderStatus target) {
-        return ALLOWED_TRANSITIONS.getOrDefault(this, Set.of()).contains(target);
+        return Arrays.stream(OrderAction.values())
+                .anyMatch(action -> action.sources().contains(this) && action.target() == target);
     }
 }

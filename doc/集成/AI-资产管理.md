@@ -10,7 +10,7 @@
 
 ## 一、定位
 
-EasyOrange 在 AI 工程上的**架构侧关注点**（7 件套）：
+EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 
 - 端口-适配器（`LlmPort` / `VisionPort` / `EmbeddingPort`）隔离业务与具体 AI 供应商
 - `@Primary` 装饰器（`CachingLlmAdapter` / `CachingVisionAdapter`）实现 L1 + L2 多级缓存
@@ -18,6 +18,7 @@ EasyOrange 在 AI 工程上的**架构侧关注点**（7 件套）：
 - AiMetrics 可观测（4 类 Micrometer 指标：缓存命中率 / LLM 延迟 / Vision 延迟 / 限流计数 → `/actuator/prometheus`）
 - Prompt 版本化（`ai/prompt/` — `YamlPromptRegistry` 启动时加载 `classpath:prompts/*.yml` + `PromptRenderer` `{var}` 渲染 + `quoteReplacement` 安全）
 - Token 预算治理（`ai/budget/` — `@TokenBudget` 注解 + `TokenBudgetAspect` AOP 切面 + `InMemoryTokenBudgetStore` 日预算控制，超限抛 `TokenBudgetExceededException`）
+- Bulkhead 隔离舱（Resilience4j 并发隔离 — `aiLlm` 8 / `aiVision` 4 / `dbHeavy` 16，AI 与 DB 调用互不挤占）
 - 路由键自动派生（`ProductCreatedEvent` → `product.created`）
 - 业务侧：**资产方按固定价格上架资产，平台不参与议价、不自动调价、不持有底价**
 

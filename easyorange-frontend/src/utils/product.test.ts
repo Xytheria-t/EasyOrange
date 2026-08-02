@@ -9,7 +9,7 @@ describe('normalizeProduct', () => {
             title: '测试',
             description: '描述',
             price: 100,
-            categoryId: 1,
+            categoryId: '1',
             status: 'ONLINE',
             condition: 1,
             images: [],
@@ -29,7 +29,7 @@ describe('normalizeProduct', () => {
         const product = normalizeProduct({
             id: '1',
             price: 50,
-            categoryId: 1,
+            categoryId: '1',
             sellerId: 'u1',
         } as import('@/types').RawProduct);
         expect(product.title).toBe('');
@@ -42,7 +42,7 @@ describe('normalizeProduct', () => {
         const product = normalizeProduct({
             id: '1',
             price: 50,
-            categoryId: 1,
+            categoryId: '1',
             sellerId: 'u1',
             status: 'OFFLINE',
         } as import('@/types').RawProduct);
@@ -51,7 +51,7 @@ describe('normalizeProduct', () => {
         const unknown = normalizeProduct({
             id: '2',
             price: 50,
-            categoryId: 1,
+            categoryId: '1',
             sellerId: 'u1',
             status: 'ARCHIVED',
         } as unknown as RawProduct);

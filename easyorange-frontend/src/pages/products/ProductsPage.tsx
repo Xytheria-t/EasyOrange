@@ -1,7 +1,7 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Search, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { SemanticSearchToggle } from '@/components/ai/SemanticSearchToggle';
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
 import { ProductCard } from '@/components/product/ProductCard';
@@ -11,41 +11,61 @@ import SortDropdown, { type SortOption } from '@/components/search/SortDropdown'
 import { Input } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { preloadImages } from '@/components/ui/Image';
-import { useCategories, useColumnCount, useFavoriteCheck, useInfiniteProducts, useSemanticSearch } from '@/hooks';
+import { useCategories, useColumnCount, useFavoriteCheck, useInfiniteProducts, useListUrlState, useSemanticSearch } from '@/hooks';
 import { useAuthStore } from '@/store/authStore';
 import type { Product } from '@/types';
 import './products-list.css';
 
+const SORT_OPTIONS = ['newest', 'price_asc', 'price_desc', 'popular'] as const;
+type ProductSort = (typeof SORT_OPTIONS)[number];
+
 function ProductsPage() {
-    const [searchParams] = useSearchParams();
     const { token } = useAuthStore();
     const navigate = useNavigate();
     const { checkFavorites, isFavorited, toggleFavorite } = useFavoriteCheck();
-    const initialCategoryId = searchParams.get('category') || searchParams.get('categoryId');
-    const initialKeyword = searchParams.get('keyword');
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [activeFilter, setActiveFilter] = useState<ToolsPlazaFilter>('all');
-    const [searchQuery, setSearchQuery] = useState(initialKeyword || '');
+    const {
+        keyword: urlKeyword,
+        filters,
+        setKeyword: setUrlKeyword,
+        setState: setUrlState,
+        reset: resetUrl,
+    } = useListUrlState();
 
-    const [queryParams, setQueryParams] = useState<{
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState(urlKeyword);
+    const [semanticPage, setSemanticPage] = useState(1);
+
+    const queryParams = useMemo<{
         pageSize: number;
         keyword?: string;
         categoryId?: string;
-        sort?: 'newest' | 'price_asc' | 'price_desc' | 'popular';
+        sort?: ProductSort;
         priceMin?: number;
         priceMax?: number;
         conditions?: number[];
         hasDiscount?: boolean;
-    }>({
-        pageSize: 20,
-        keyword: initialKeyword || undefined,
-        categoryId: initialCategoryId ?? undefined,
-        sort: 'newest',
-    });
+    }>(() => {
+        const sortValue = filters.sort;
+        const sort: ProductSort = sortValue && SORT_OPTIONS.includes(sortValue as ProductSort)
+            ? (sortValue as ProductSort)
+            : 'newest';
+        return {
+            pageSize: 20,
+            keyword: urlKeyword || undefined,
+            categoryId: filters.category || undefined,
+            sort,
+            priceMin: filters.priceMin ? Number(filters.priceMin) : undefined,
+            priceMax: filters.priceMax ? Number(filters.priceMax) : undefined,
+            conditions: filters.conditions ? filters.conditions.split(',').map(Number) : undefined,
+            hasDiscount: filters.hasDiscount === '1' || undefined,
+        };
+    }, [urlKeyword, filters]);
+
+    const activeFilter: ToolsPlazaFilter = queryParams.hasDiscount ? 'discount' : 'all';
 
     useEffect(() => {
-        setSearchQuery(queryParams.keyword || '');
-    }, [queryParams.keyword]);
+        setSearchQuery(urlKeyword || '');
+    }, [urlKeyword]);
 
     const {
         data: infiniteData,
@@ -84,7 +104,6 @@ function ProductsPage() {
     const isSearchLoading = isSemanticMode ? isSemanticSearching : isLoading;
 
     // 语义搜索的分页逻辑
-    const [semanticPage, setSemanticPage] = useState(1);
     useEffect(() => {
         if (isSemanticMode && queryParams.keyword) {
             semanticSearch(queryParams.keyword, semanticPage, queryParams.pageSize);
@@ -182,72 +201,64 @@ function ProductsPage() {
 
     const handleSortChange = useCallback((sort: SortOption) => {
         setSemanticPage(1);
-        setQueryParams(prev => ({ ...prev, sort, keyword: prev.keyword }));
-    }, []);
+        setUrlState({ filters: { ...filters, sort } });
+    }, [filters, setUrlState]);
 
     const handleFilterChange = useCallback((filter: ToolsPlazaFilter) => {
-        setActiveFilter(filter);
         setSemanticPage(1);
         if (filter === 'all') {
-            setQueryParams(prev => ({ ...prev, hasDiscount: undefined, sort: 'newest', keyword: prev.keyword }));
+            const next = { ...filters };
+            delete next.hasDiscount;
+            next.sort = 'newest';
+            setUrlState({ filters: next });
         } else if (filter === 'discount') {
-            setQueryParams(prev => ({ ...prev, hasDiscount: true, keyword: prev.keyword }));
+            setUrlState({ filters: { ...filters, hasDiscount: '1' } });
         }
-    }, []);
+    }, [filters, setUrlState]);
 
-    const handleApplyFilters = useCallback((filters: FilterState) => {
-        setActiveFilter('all');
+    const handleApplyFilters = useCallback((filterState: FilterState) => {
         setSemanticPage(1);
-        setQueryParams(prev => ({
-            ...prev,
-            categoryId: filters.categories.length === 1 ? filters.categories[0] : undefined,
-            priceMin: filters.priceMin,
-            priceMax: filters.priceMax,
-            conditions: filters.conditions.length > 0 ? filters.conditions : undefined,
-            keyword: prev.keyword,
-        }));
+        const next: Record<string, string> = {};
+        if (filters.sort) next.sort = filters.sort;
+        if (filterState.categories.length === 1) next.category = filterState.categories[0];
+        if (filterState.priceMin) next.priceMin = String(filterState.priceMin);
+        if (filterState.priceMax) next.priceMax = String(filterState.priceMax);
+        if (filterState.conditions.length > 0) next.conditions = filterState.conditions.join(',');
+        setUrlState({ filters: next });
         setIsFilterOpen(false);
-    }, []);
+    }, [filters, setUrlState]);
 
     const handleResetFilters = useCallback(() => {
-        setActiveFilter('all');
         setSemanticPage(1);
-        setQueryParams({
-            pageSize: 20,
-            sort: 'newest',
-        });
-    }, []);
+        resetUrl();
+    }, [resetUrl]);
 
     const handleClearCategory = useCallback(() => {
-        setActiveFilter('all');
         setSemanticPage(1);
-        setQueryParams(prev => ({ ...prev, categoryId: undefined, keyword: prev.keyword }));
-    }, []);
+        const next = { ...filters };
+        delete next.category;
+        delete next.hasDiscount;
+        setUrlState({ filters: next });
+    }, [filters, setUrlState]);
 
     const handleSearchSubmit = useCallback(
         (e: React.FormEvent) => {
             e.preventDefault();
             const trimmed = searchQuery.trim();
-            if (trimmed === queryParams.keyword) {
+            if (trimmed === urlKeyword) {
                 return;
             }
             setSemanticPage(1);
-            setQueryParams(prev => ({
-                ...prev,
-                keyword: trimmed || undefined,
-            }));
+            setUrlKeyword(trimmed);
         },
-        [searchQuery, queryParams.keyword]
+        [searchQuery, urlKeyword, setUrlKeyword]
     );
 
     const handleSearchClear = useCallback(() => {
         setSearchQuery('');
         setSemanticPage(1);
-        setQueryParams(prev => ({
-            ...prev,
-            keyword: undefined,
-        }));
-    }, []);
+        setUrlKeyword('');
+    }, [setUrlKeyword]);
 
     const handleFavorite = useCallback(
         async (productId: string, shouldFavorite: boolean) => {

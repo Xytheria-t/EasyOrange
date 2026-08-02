@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.test;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Component;
@@ -17,10 +16,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 @Component
 public class TestDataLoader {
 
-    private static final Logger log = LoggerFactory.getLogger(TestDataLoader.class);
     private static final String TEST_DATA_PATH = "db/test";
     private static final String CLEANUP_SCRIPT = "00_cleanup.sql";
 

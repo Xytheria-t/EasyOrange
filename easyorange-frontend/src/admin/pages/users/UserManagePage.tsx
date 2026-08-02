@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { usePagination } from '@/hooks/usePagination';
 import { AdminSelect } from '../../components/AdminSelect';
 import { AdminTable, type Column } from '../../components/AdminTable';
+import { pickAvatarGradient } from '../../components/avatarGradient';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAdminUsers, useUpdateUserStatus } from '../../hooks';
 import type { AdminUser } from '../../types/admin';
@@ -21,14 +22,6 @@ const USER_TYPE_FILTER_OPTIONS = [
     { value: '01', label: '学生' },
     { value: '02', label: '教师' },
 ];
-
-const AVATAR_GRADIENTS = [
-    'linear-gradient(135deg, #F97316, #FB923C)',
-    'linear-gradient(135deg, #FB7185, #C39BD3)',
-    'linear-gradient(135deg, #34D399, #10B981)',
-    'linear-gradient(135deg, #FBBF24, #F97316)',
-    'linear-gradient(135deg, #C39BD3, #D8B4FE)',
-] as const;
 
 export default function UserManagePage() {
     const [keyword, setKeyword] = useState('');
@@ -110,7 +103,7 @@ export default function UserManagePage() {
                             fontWeight: 700,
                             color: '#fff',
                             fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
-                            background: AVATAR_GRADIENTS[Number(record.userId ?? '') % AVATAR_GRADIENTS.length],
+                            background: pickAvatarGradient(record.userId ?? ''),
                             flexShrink: 0,
                         }}
                     >

@@ -91,7 +91,7 @@ EasyOrange 中的**资产**是广义概念，**不局限于二手实物**：
 5. **AI 物品评估** — 拍照生成"看货清单"，识别可能瑕疵、描述与实物差异
 6. **AI 信用画像（认领方）** — 5 维雷达图
 
-### 架构侧关注点（AI 工程化 7 件套）
+### 架构侧关注点（AI 工程化 8 件套）
 
 - **Port/Adapter 隔离**：`LlmPort` / `VisionPort` / `EmbeddingPort` 接口抽象，供应商可换
 - **L1/L2 多级缓存**：`CachingLlmAdapter` `@Primary` 装饰器包裹 `DeepSeekLlmAdapter`，L1 Caffeine + L2 Redis
@@ -100,6 +100,7 @@ EasyOrange 中的**资产**是广义概念，**不局限于二手实物**：
 - **AiMetrics 可观测**：缓存命中率 / LLM 延迟 / 限流计数 → Prometheus
 - **Prompt 版本化（YAML）**：版本化管理 prompt 模板，支持 A/B 与回滚
 - **Token 预算治理（@TokenBudget AOP）**：日预算控制 + 超预算降级
+- **Bulkhead 隔离舱**：Resilience4j 并发隔离 — `aiLlm`（8）/ `aiVision`（4）/ `dbHeavy`（16）
 
 > 详细机制见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md) 与 [ADR 0003](doc/adr/0003-ai-port-adapter-with-decorator.md)。
 

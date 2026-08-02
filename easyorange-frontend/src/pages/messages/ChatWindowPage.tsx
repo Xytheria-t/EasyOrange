@@ -44,7 +44,7 @@ function ChatWindowPage() {
         const unreadIds = messages.filter(m => m.senderId !== targetUserId && m.status !== 'READ').map(m => m.id);
 
         if (unreadIds.length > 0) {
-            messageApi.markAsRead(unreadIds.map(id => Number(id))).catch(() => {});
+            messageApi.markAsRead(unreadIds).catch(() => {});
         }
     }, [messages, targetUserId]);
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
 import { Button } from '@/components/ui/button';
+import { pickAvatarGradient } from '../../components/avatarGradient';
 import type { AdminUser } from '../../types/admin';
 
 export interface UserDetailModalProps {
@@ -16,14 +17,6 @@ const statusOptions: { value: string; label: string; emoji: string }[] = [
     { value: '1', label: '禁用', emoji: '🚫' },
     { value: '2', label: '锁定', emoji: '🔒' },
 ];
-
-const AVATAR_GRADIENTS = [
-    'linear-gradient(135deg, #F97316, #FB923C)',
-    'linear-gradient(135deg, #FB7185, #C39BD3)',
-    'linear-gradient(135deg, #34D399, #10B981)',
-    'linear-gradient(135deg, #FBBF24, #F97316)',
-    'linear-gradient(135deg, #C39BD3, #D8B4FE)',
-] as const;
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; dot: string; label: string }> = {
     '0': {
@@ -80,7 +73,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
         return `${maskedName}@${domain}`;
     };
 
-    const avatarGradient = AVATAR_GRADIENTS[Number(user.userId ?? '') % AVATAR_GRADIENTS.length];
+    const avatarGradient = pickAvatarGradient(user.userId ?? '');
     const currentStatusStyle = STATUS_STYLES[selectedStatus] ?? STATUS_STYLES['0'];
 
     return (

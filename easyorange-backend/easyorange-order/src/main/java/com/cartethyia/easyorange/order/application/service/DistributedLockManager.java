@@ -1,6 +1,6 @@
-package com.cartethyia.easyorange.order.application.saga.support;
+package com.cartethyia.easyorange.order.application.service;
 
-import com.cartethyia.easyorange.order.domain.saga.SagaException;
+import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -14,7 +14,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * 分布式锁管理器
  * <p>
- * 负责分布式锁的获取和释放，提供锁的生命周期管理
+ * 负责分布式锁的获取和释放，提供锁的生命周期管理。下单链路用它按 productId
+ * 加锁，防止同一商品并发下单导致超卖。
  */
 @Slf4j
 @Component
@@ -31,7 +32,7 @@ public class DistributedLockManager {
      * @param operation   要执行的操作
      * @param <T>         操作返回类型
      * @return 操作结果
-     * @throws SagaException 如果无法获取锁
+     * @throws OrderCreationException 如果无法获取锁
      */
     public <T> T executeWithLocks(List<String> lockKeys, long lockTimeout, LockOperation<T> operation) {
         List<RLock> acquiredLocks = new ArrayList<>();
@@ -48,20 +49,20 @@ public class DistributedLockManager {
      * 批量获取锁
      */
     private void acquireLocks(List<String> lockKeys, long timeout,
-                                List<RLock> acquiredLocks) throws SagaException {
+                                List<RLock> acquiredLocks) throws OrderCreationException {
         for (String lockKey : lockKeys) {
             RLock lock = redissonClient.getLock(lockKey);
             try {
                 boolean locked = lock.tryLock(timeout, timeout, TimeUnit.SECONDS);
                 if (!locked) {
                     releaseLocks(acquiredLocks);
-                    throw new SagaException("资产下单繁忙，请稍后重试");
+                    throw new OrderCreationException("资产下单繁忙，请稍后重试");
                 }
                 acquiredLocks.add(lock);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 releaseLocks(acquiredLocks);
-                throw new SagaException("资产下单繁忙，请稍后重试");
+                throw new OrderCreationException("资产下单繁忙，请稍后重试");
             }
         }
     }

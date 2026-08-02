@@ -43,8 +43,9 @@ class OrderStatusTest {
     }
 
     @Test
-    @DisplayName("canTransitionTo 全矩阵与状态机定义一致")
+    @DisplayName("canTransitionTo 派生全矩阵与状态机定义一致")
     void canTransitionTo_fullMatrixMatchesStateMachine() {
+        // 预期矩阵由 OrderAction 的前置/目标状态派生而来，此测试守护派生逻辑不被意外改动。
         Map<OrderStatus, Set<OrderStatus>> expected = Map.of(
             OrderStatus.PENDING_PAYMENT, Set.of(OrderStatus.PAID, OrderStatus.CANCELLED),
             OrderStatus.PAID,           Set.of(OrderStatus.SHIPPED, OrderStatus.CANCELLED, OrderStatus.REFUNDED),

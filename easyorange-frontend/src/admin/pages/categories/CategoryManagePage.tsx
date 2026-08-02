@@ -40,14 +40,14 @@ export default function CategoryManagePage() {
     // Create modal
     const [createOpen, setCreateOpen] = useState(false);
     const [createName, setCreateName] = useState('');
-    const [createParentId, setCreateParentId] = useState<number | undefined>(undefined);
+    const [createParentId, setCreateParentId] = useState<string | undefined>(undefined);
     const [createSortOrder, setCreateSortOrder] = useState(0);
 
     // Edit modal
     const [editOpen, setEditOpen] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
     const [editName, setEditName] = useState('');
-    const [editParentId, setEditParentId] = useState<number | undefined>(undefined);
+    const [editParentId, setEditParentId] = useState<string | undefined>(undefined);
     const [editSortOrder, setEditSortOrder] = useState(0);
     const [editStatus, setEditStatus] = useState(1);
 
@@ -132,8 +132,8 @@ export default function CategoryManagePage() {
             name: createName.trim(),
             sortOrder: createSortOrder,
         };
-        if (createParentId !== undefined) {
-            data.parentId = String(createParentId);
+        if (createParentId) {
+            data.parentId = createParentId;
         }
         await createMutation.mutateAsync(data);
         setCreateOpen(false);
@@ -152,8 +152,8 @@ export default function CategoryManagePage() {
             sortOrder: editSortOrder,
             status: editStatus,
         };
-        if (editParentId !== undefined) {
-            data.parentId = String(editParentId);
+        if (editParentId) {
+            data.parentId = editParentId;
         } else {
             data.parentId = undefined;
         }
@@ -804,8 +804,8 @@ export default function CategoryManagePage() {
                             </span>
                             <AdminSelect
                                 options={parentOptions}
-                                value={createParentId !== undefined ? String(createParentId) : ''}
-                                onChange={val => setCreateParentId(val ? Number(val) : undefined)}
+                                value={createParentId ?? ''}
+                                onChange={val => setCreateParentId(val || undefined)}
                             />
                             <p style={{ fontSize: '0.75rem', color: '#B5AEA8', marginTop: '0.25rem' }}>
                                 不选则为一级分类，最多支持三级分类
@@ -1003,8 +1003,8 @@ export default function CategoryManagePage() {
                             </span>
                             <AdminSelect
                                 options={parentOptions}
-                                value={editParentId !== undefined ? String(editParentId) : ''}
-                                onChange={val => setEditParentId(val ? Number(val) : undefined)}
+                                value={editParentId ?? ''}
+                                onChange={val => setEditParentId(val || undefined)}
                             />
                         </div>
 

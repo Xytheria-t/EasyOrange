@@ -1,181 +1,96 @@
 ---
-tags:
-  - always-on
+always-apply: true
 ---
 
 # EasyOrange — LLM × DDD：Java 架构工程化实战
 
-**EasyOrange** 是基于 Java 25 + Spring Boot 4 的 LLM × DDD 工程化实战项目——在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。落地 **DDD 六边形 + CQRS + Saga + 事件驱动 + AI 工程化 7 件套**（Port/Adapter 隔离 + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化 + Token 预算治理）。业务聚焦核心流程（C2C 资产流转：固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**2025 年 11 月启动开发**。
+**EasyOrange** 是基于 Java 25 + Spring Boot 4 的 LLM × DDD 工程化实战项目——在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。业务聚焦 C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**2025 年 11 月启动开发**。
 
-> **项目定位与数字锚点**：详见 [README.md](./README.md) 与 [doc/工程指标.md](./doc/工程指标.md)。本文件不再独立陈述项目定位与数字，避免文档间口径漂移。
+> **定位、数字锚点与完整规范**见 [README.md](./README.md)、[AGENTS.md](./AGENTS.md)、[doc/工程指标.md](./doc/工程指标.md)。本文件为会话记忆，聚焦高频项目专属约定与避坑，与 AGENTS.md 互为补充而非重复。编码细则见 `.claude/rules/ecc/`。
 
-## 项目结构
+## 快速开始
 
-> 详细目录说明见 [codemap.md](./codemap.md) 和 [AGENTS.md](./AGENTS.md) 的项目结构章节。
+```bash
+# 启动开发环境 (MySQL 8.4 + Redis 7.4 + RabbitMQ 3.13)
+docker compose -f compose.yaml up -d
 
-```
-easy-orange/
-├── easyorange-backend/          # Spring Boot 后端
-│   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
-│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 多级缓存, AOP, 事件, 文件, 分布式 ID, 一致性哈希, **RabbitMQ 消息队列**)
-│   ├── easyorange-user/         # 用户模块 (DDD: 认证/注册/密码管理/个人资料)
-│   │   ├── domain/service/      # AuthenticationService, RegistrationService, LoginSecurityService
-│   │   ├── adapter/outbound/mock/ # MockSmsCodeAdapter, MockSmsSenderAdapter (测试用)
-│   │   └── domain/port/         # SmsCodePort, PasswordEncoderPort, LoginAttemptPort, AvatarFilePort (端口接口)
-│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报 + AI 工程化)
-│   │   └── adapter/inbound/web/assembler/ # CategoryAssembler, ProductAssembler (DTO 转换)
-│   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
-│   ├── easyorange-payment/      # 支付模块 (DDD + CQRS)
-│   │   └── adapter/inbound/web/assembler/ # PaymentViewAssembler (DTO 转换)
-│   ├── easyorange-message/      # 消息模块 (DDD + WebSocket, Repository 已迁移)
-│   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
-│   │   └── adapter/inbound/web/assembler/ # FavoriteAssembler (DTO 转换)
-│   ├── easyorange-ai/           # AI 模块 (Port/Adapter + LLM/Vision/Embedding + 多级缓存 + 限流降级 + AiMetrics + Prompt 版本化 + Token 预算治理)
-│   ├── easyorange-admin/        # 管理端模块 (用户/商品/订单/分类/举报管理 API)
-│   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试 + ES 搜索适配器
-├── easyorange-frontend/         # React 前端
-│   ├── src/admin/              # 管理端模块（暖橙指挥中心设计系统，前后端已完整对接）
-│   │   ├── layout/             # AdminLayout, AdminSidebar(毛玻璃 210px), AdminHeader
-│   │   ├── pages/              # dashboard / users / products / orders / categories / reviews / reports / stats
-│   │   ├── users/UserDetailModal.tsx       # 用户详情弹窗（Portal挂载body）
-│   │   ├── products/ProductDetailDrawer.tsx # 商品审核抽屉（Portal+驳回弹窗+图片预览）
-│   │   └── orders/OrderDetailModal.tsx      # 订单详情弹窗（Portal挂载body）
-│   │   └── 全部页面已对接真实后端 API（无 Mock 数据残留）
-│   ├── src/components/         # AdminTable, AdminSelect(Portal+listRef防误关), StatusBadge, ConfirmModal(Portal), StatCard, AdminMenuEntry
-│   │   ├── chat/              # 聊天组件（ChatHeader, MessageBubble[长按菜单], MessageList[虚拟滚动], ChatInputBar, TypingIndicator）
-│   │   ├── hooks/             # useAdmin* / useAdminProductAudit / useAdminGuard
-│   │   │   └── chat/          # useStompChat(STOMP连接), useChatMessages(react-query+store合并), useMessageRecall
-│   │   ├── api/adminApi.ts    # 39 个 API 函数，覆盖 8 个管理端 Controller
-│   │   ├── api/messageApi.ts  # 消息 API（conversations, send, recall, typing, markAsRead）
-│   │   ├── types/admin.ts     # 完整类型定义（Order/Report/Category/Audit/User 操作）
-│   │   ├── store/chatStore.ts# 聊天全局状态（Zustand: messages, typingUsers, connectionStatus）
-│   │   └── styles/            # admin.css（侧边栏 210px/头部）, admin-layout.css（布局骨架）, chat-window.css
-│   ├── src/components/admin/   # 管理端共享组件（AdminMenuEntry 等，供用户侧 Header 引用）
-│   ├── src/api/core/            # API 核心模块 (请求/缓存/拦截器)
-│   ├── src/features/auth/       # 认证模块 (TokenRefreshManager)
-│   └── src/hooks/ui/            # UI Hooks (useColumnCount 等)
-├── doc/                         # 项目文档
-│   └── 架构/                   # 架构规范文档（已切分为多个子文档）
-└── .trae/rules/                 # AI 编码规则
+# 后端：先 install 依赖模块，再运行
+cd easyorange-backend && ./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application
+
+# 后端测试
+./mvnw test            # 全部
+./mvnw test -pl easyorange-order -am   # 单模块
+
+# 前端测试
+cd easyorange-frontend && npm test
 ```
 
-## 规则激活机制
+> 完整命令清单（PIT 变异测试、JaCoCo 覆盖率、OWASP、生产构建）见 [AGENTS.md](./AGENTS.md)「常用命令」。
 
-AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
+## 架构与文档地图
 
-### 1. 文件路径激活（paths）
+| 资源 | 内容 |
+|------|------|
+| [AGENTS.md](./AGENTS.md) | 唯一规范来源：技术栈、数据库表、状态机、错误码、模块依赖、开发规范 |
+| [README.md](./README.md) | 项目定位与数字锚点 |
+| [doc/工程指标.md](./doc/工程指标.md) | 测试数 / 覆盖率单一事实来源（2,412 测试 / Domain 层 84.1%） |
+| [doc/架构/](doc/架构/) | 架构规范（系统架构、DDD、安全认证、数据库迁移、部署） |
+| [doc/集成/](doc/集成/) | 业务专题（AI 资产管理、API 速查） |
+| [doc/adr/](doc/adr/) | 架构决策记录（6 个 ADR，如 ADR-0007 拒绝 Saga 单事务） |
 
-当编辑对应路径的文件时自动启用：
+核心原则：**DDD 六边形 + CQRS**，domain → application → adapter 单向依赖；**事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路**；**分布式锁防超卖**；**AI 8 件套**（Port/Adapter + 多级缓存 + 令牌桶 + stale 降级 + AiMetrics + Prompt YAML + TokenBudget + Bulkhead）。状态机与错误码规范以 AGENTS.md 为准。
 
-| 路径模式 | 激活规则 |
-|---------|---------|
-| `**/*.java` | Java 编码规范、模式、安全、测试 |
-| `**/*.ts` | TypeScript 编码规范、模式、安全、测试 |
-| `**/*.tsx` | TypeScript 编码规范、模式、安全、测试 |
-| `**/*.css` | Web 设计规范、性能、安全 |
-| `**/*.html` | Web 设计规范、性能、安全 |
+## 编码规则（ECC）
 
-### 2. 关键词激活（tags）
+编码细则在 `.claude/rules/ecc/`（ECC 分层规则集，按文件路径自动激活，语言级规则优先级高于 common）：
 
-当用户输入包含以下关键词时自动启用对应规则：
+| 路径 | 激活规则 |
+|------|---------|
+| `**/*.java` | `java/*.md`（extends common） |
+| `**/*.ts` / `**/*.tsx` | `typescript/*.md` + `react/*.md` |
+| `**/*.css` / `**/*.html` | `web/*.md` |
+| 全局 | `common/*.md` |
 
-| 关键词 | 激活规则 |
-|-------|---------|
-| auth, password, token, payment, encrypt, credential | 安全规则 |
-| test, TDD, coverage, mock, unit test, e2e | 测试规则 |
-| performance, optimize, cache, latency | 性能规则 |
-| review, PR, pull request | 代码审查规则 |
-| git, commit, branch, merge | Git 工作流规则 |
-| pattern, architecture, refactor, repository | 设计模式规则 |
-| agent, planner, tdd-guide | Agent 编排规则 |
-| UI, component, design, layout | Web 设计规则 |
+## 后端约定
 
-### 3. 始终激活（always-on）
+- **多模块构建**：修改子模块后启动前必须先 `mvn clean install -Dmaven.test.skip=true`，否则 DevTools 运行时会 ClassNotFoundException
+- **父 POM 模块注册**：新增后端子模块必须在 `easyorange-backend/pom.xml` 的 `<modules>` 中注册
+- **查询只读事务**：纯查询方法（find/get/list/query/count/check/is*）必须标注 `@Transactional(readOnly = true)`；写操作 `@Transactional(rollbackFor = Exception.class)`
+- **Mockito Java 25 兼容**：已配置 `mock-maker-subclass` 模式，**新测试不要改回 inline 模式**（WSL2 下 ByteBuddy attach 会失败）
+- **`product-paths` 白名单陷阱**：`security.product-paths` 会跳过 JWT 认证且前缀匹配（`/api/products` 会匹配 `/api/products/my`）。新增需认证接口必须添加更精确的 `.requestMatchers(GET, "/api/products/my/**").authenticated()`
+- **LoginCredential sealed interface**：登录凭据用 `sealed interface LoginCredential`（`domain/valueobject/`），新增登录方式添加新 `record` 实现，禁止用枚举字段区分
+- **RabbitMQ Spring AMQP 4.0.x API**：`CorrelationData` 在 `org.springframework.amqp.rabbit.connection`；`ReturnsCallback.returnedMessage()` 接收 `ReturnedMessage` 对象；concurrency 用 `concurrent-consumers` + `max-concurrent-consumers`（不支持 `"1-5"` 范围格式）
+- **ConfigurationProperties 注册方式**：统一 `@ConfigurationProperties` + `@ConfigurationPropertiesScan`，Properties 为纯 POJO（不加 `@Component`），已注册的不要再加 `@EnableConfigurationProperties`
+- **Flyway SQL 格式**：CREATE TABLE 列定义禁止使用对齐格式（列名与类型间大量空格填充），必须紧凑格式，否则 MySQL 1064 语法错误
+- **注册昵称默认值**：注册时 `nick_name` 默认等于 `username`，禁止随机昵称逻辑
+- **不可变集合**：统一使用 Java 9+ 不可变集合工厂方法，禁止 `Collections` 工具类创建空/单元素/不可包装集合
 
-所有任务都会加载的基础规则：
-- 本文件《行为准则》章节 - 行为准则（内联在 CLAUDE.md）
-- `.trae/rules/common/coding-style.md` - 核心编码原则
+## 前端约定
 
-### 4. 区域规则
+- **管理端弹窗/抽屉必须使用 Portal**：`src/admin/` 下所有 Modal/Drawer/确认框必须 `createPortal(..., document.body)` 挂载到 `<body>`。原因：`.admin-sidebar`/`.admin-header` 的 `backdrop-filter: blur()` 创建新包含块，导致 `position: fixed` 定位基准错乱。居中统一 `position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%)`
+- **管理端弹窗内容溢出**：Portal 容器必须 `maxHeight: 'calc(100vh - 2rem)'` + `display: flex; flexDirection: column; overflow: hidden`，内容区 `flex: 1; overflowY: auto; minHeight: 0`
+- **AdminTable render 函数签名**：`(value, record)` — 第一个参数是单元格值，第二个才是完整行记录。只接收 `(record) => ...` 会拿到 `undefined`
+- **管理端样式约定**：`src/admin/` 下必须使用内联 `style={{}}`，禁止依赖外部 CSS（唯一例外 `src/admin/styles/admin.css`）
+- **管理端下拉菜单**：所有 `<select>` 必须用 `AdminSelect` 组件（Portal 渲染下拉面板，解决 fixed 定位失效）
+- **AdminSelect Portal 防误关**：`handleClickOutside` 必须同时排除触发按钮 ref 和列表 listRef，否则点击选项会立即关闭
+- **管理端页面布局模式**：三层结构——根容器 `position: relative, minHeight: 'calc(100vh - 80px)'`；背景层 `position: absolute, inset: 0, borderRadius: 20`（禁 fixed）；内容层 `position: relative, zIndex: 1, display: flex, flexDirection: column`
+- **管理端路由架构**：`admin/*` 路由必须在 `MinimalLayout` 外部独立渲染，否则 C 端 Header/导航栏会在管理页面显示
+- **重依赖懒加载**：体积 > 100KB 的第三方库（recharts/dayjs/monaco-editor/xlsx/@tiptap/*）必须 (1) `manualChunks` 分配独立 `vendor-*` chunk (2) `React.lazy` + `Suspense` 包装。参考：`src/admin/pages/dashboard/charts/lazyCharts.tsx`
+- **前端 CSS 导入**：共享组件（如 ProductCard）使用的样式 CSS 必须在组件文件自身 import，禁止仅依赖页面级导入（React.lazy 懒加载时页面级 CSS 不随组件 chunk 加载）
+- **Zustand store 写入规则**：zustand store **只接受事件驱动写入**（STOMP 回调、用户操作回调），**禁止在 useEffect 内写 store**（spread 新引用 → 重渲染 → 无限循环）
+- **Zustand selector 稳定引用**：selector 中 `?? []` / `?? {}` 必须用模块级常量，禁止内联（新引用触发无限循环，React 19 StrictMode 下放大到 50 层）
+- **聊天 conversationId 格式**：排序双 ID `conv_{minId}_{maxId}`，确保 A→B 与 B→A 一致。前端 `conv_${[currentUserId, targetUserId].sort().join('_')}`；后端 `"conv_" + Math.min(sender, receiver) + "_" + Math.max(sender, receiver)`
+- **scrollIntoView 防误触发**：必须通过 ref 记录上一次状态（如历史长度），仅在数据真正新增时滚动，禁止在仅依赖 props/state 的 effect 中无条件调用
+- **Biome**：`lint/a11y/useSemanticElements` 优先语义化元素（`role="group"` → `<fieldset>`）；SVG 图标加 `aria-hidden="true"`；所有 if/else/for/while 必须加 `{}`（`useBlockStatements`）
+- **React Hooks**：`useEffect` 内禁止同步调用 `setState`（无限循环），用 `useReducer` 或移出 effect
 
-当用户使用中文时自动加载：
-- `.trae/rules/zh/*` - 中文版规则
-
-## 快速参考
-
-| 任务类型 | 加载规则 |
-|---------|---------|
-| 编写 Java 代码 | `java/coding-style.md`, `java/patterns.md` |
-| 编写 TypeScript 代码 | `typescript/coding-style.md`, `typescript/patterns.md` |
-| 编写前端样式 | `web/coding-style.md`, `web/design-quality.md` |
-| 安全相关任务 | `common/security.md`, `*/security.md` |
-| 测试相关任务 | `common/testing.md`, `*/testing.md` |
-| 性能优化任务 | `common/performance.md` |
-| 代码审查 | `common/code-review.md` |
-| Git 操作 | `common/git-workflow.md` |
-
-## 开发规范
-
-- 编码规则见 `.trae/rules/` 目录
-- 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
-- 数据库变更必须通过 Flyway 迁移脚本
-- 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，包含 `records/total/current/size/pages` + `facets` 分面桶 + `aiEnhancement` 增强）
-- 测试覆盖率目标 ≥ 80%
-- **多模块构建**: 修改子模块后启动前必须先执行 `mvn clean install -Dmaven.test.skip=true`，确保子模块 JAR 安装到本地仓库，否则 DevTools 运行时会 ClassNotFoundException
-- **前端CSS导入**: 共享组件（如 ProductCard）使用的样式CSS必须在组件文件自身 import，禁止仅依赖页面级导入。首页通过 React.lazy 懒加载 section 组件时，页面级CSS不会随组件chunk加载，导致首次渲染无样式
-- **前端组件库**: C 端表单/按钮统一使用 shadcn/ui（Button / Input / Label / Checkbox / Switch / Select / Textarea / RadioGroup），禁止保留原生 `<button>` / `<input>` / `<textarea>` / `<select>`；导入统一走 `@/components/ui`；颜色/边框硬编码应提取为 `src/styles/tokens.css` 变量，CSS reset 必须置于 `@layer base` 避免覆盖 Tailwind utilities
-- **重依赖懒加载**: 体积 > 100KB 的第三方库（如 recharts、dayjs、monaco-editor、xlsx、@tiptap/*）必须 (1) 在 `vite.config.ts` 的 `manualChunks` 中分配独立 `vendor-*` chunk (2) 组件用 `React.lazy` + `Suspense` 包装，禁止静态 import 到业务页面。参考实现：`src/admin/pages/dashboard/charts/lazyCharts.tsx`。违反会导致非相关路由首屏下载 300KB+ 死代码
-- **管理端弹窗/抽屉必须使用 Portal**: `src/admin/` 下所有 Modal、Drawer、确认框等弹出层组件**必须**通过 `createPortal(..., document.body)` 挂载到 `<body>` 节点。原因：`.admin-sidebar` 和 `.admin-header` 使用了 `backdrop-filter: blur()`，这会创建新的包含块（containing block），导致 `position: fixed` 的定位基准从视口变为被偏移的祖先元素，弹窗居中失效且底部截断。Portal 直接挂载 body 可彻底绕过此问题。居中方式统一用 `position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%)`
-- **管理端弹窗内容溢出处理**: 所有 Portal 弹窗容器必须设置 `maxHeight: 'calc(100vh - 2rem)'` + `display: flex; flexDirection: column; overflow: hidden`，内容区域设置 `flex: 1; overflowY: auto; minHeight: 0`。确保超长内容可滚动，header/footer 固定可见
-- **AdminTable render 函数签名**: 列定义的 `render` 回调签名为 `(value, record)` — 第一个参数是单元格值（`getValue(record, key)` 的结果），第二个参数才是完整行记录。常见错误：只接收第一个参数 `(record) => ...` 导致实际拿到的是 `undefined`（当列 key 在数据中不存在时），点击事件无法获取行数据
-- **管理端样式约定**: `src/admin/` 下所有页面和组件**必须使用内联 `style={{}}` 方式编写样式**，禁止依赖外部CSS文件。原因：`admin-layout.css` 的 `.admin-content` 容器会导致外部CSS选择器优先级冲突或样式不生效。唯一例外是 `src/admin/styles/admin.css`（侧边栏/头部布局样式），由 AdminLayout 统一 import
-- **管理端下拉菜单**: 所有 `<select>` 必须使用 `AdminSelect` 组件（位于 `src/admin/components/AdminSelect.tsx`）。原生 `<select>` 无法自定义选项样式且各浏览器渲染不一致。AdminSelect 通过 React `createPortal` 将下拉面板渲染到 `document.body`，解决父级 `backdrop-filter`/`transform` 导致的 fixed 定位失效问题
-- **管理端路由架构**: `admin/*` 路由必须在 `MinimalLayout` 外部独立渲染（见 `src/routes/index.tsx`），否则 C 端 Header/导航栏会在管理页面显示
-- **UUID v7 ID**: 全库 ID 使用 UUID v7 (RFC 9562, String)，已彻底移除 Snowflake 备选代码。后端通过 `IdGenerator` 接口（`UuidV7IdGenerator` 为 `@Primary` 实现）生成 36 位 UUID 字符串。`BaseDO.id` 字段类型为 `String`，`@TableId(type = IdType.INPUT)`。前端 TypeScript 中所有实体 ID 字段类型保持 `string`（无需更改，JS 始终兼容字符串）。DDL 在 `V1__init_schema.sql` 直接定义 `VARCHAR(36)`。
-- **React Query 缓存失效**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all`（`['orders']`）前缀，确保能匹配 `myOrders` / `soldOrders` / `detail` 等所有查询。使用 `ORDER_KEYS.lists()`（`['orders', 'list']`）会导致 myOrders/soldOrders 缓存无法失效
-- **管理员角色判断（前端）**: 前端管理员判断在 `useAdminGuard.ts` 中通过 `user.userType`（`'00'` = 超级管理员, `'02'` = 管理员）判定，用于 UI 权限展示。后端通过 `UserType.getDefaultRoles()`（在 `AuthAppService.login()` 中调用）将角色写入 JWT 的 `"authorities"` claim，资源服务器直接读取该 claim，不依赖前端 clientType 判断
-- **查询方法只读事务**: 所有 Service 类中的纯查询/读取方法（find/get/list/query/count/check/is* 等命名）**必须**标注 `@Transactional(readOnly = true)`。写操作方法使用 `@Transactional(rollbackFor = Exception.class)`。遗漏只读注解会导致 Hibernate/MyBatis 做不必要的脏检查和 flush，影响性能
-- **管理端页面布局模式**: `src/admin/pages/` 下所有页面**必须**使用以下三层结构，否则内容区会被裁切或背景不随内容滚动：
-  1. 根容器: `position: relative, minHeight: 'calc(100vh - 80px)'`
-  2. 背景层: `position: absolute, inset: 0, borderRadius: 20`（**禁止用 fixed**）
-  3. 内容层: `position: relative, zIndex: 1, display: flex, flexDirection: column`
-- **AdminSelect Portal 防误关**: AdminSelect 的下拉面板通过 `createPortal` 渲染到 `document.body`。`handleClickOutside` 必须**同时排除触发按钮 ref 和列表 listRef**，否则点击选项会立即关闭（mousedown 先冒泡到 document → 检测为外部点击 → 关闭 → onClick 被吞掉）。详见 `AdminSelect.tsx`
-- **父 POM 模块注册**: 新增后端子模块时（如 easyorange-admin），必须在 `easyorange-backend/pom.xml` 的 `<modules>` 中注册，否则该模块不会被构建/安装到本地仓库，依赖它的模块会报 `未解析的依赖项` 错误
-- **Flyway SQL 格式**: 迁移脚本中 CREATE TABLE 的列定义**禁止使用对齐格式**（列名与类型之间用大量空格填充对齐），必须使用紧凑格式。Flyway MySQL 解析器会对齐格式产生兼容性问题，导致 MySQL 1064 语法错误。详见 [架构-数据库迁移.md](doc/架构/架构-数据库迁移.md) 反模式章节
-- **Zustand store 写入规则**: zustand store **只接受事件驱动写入**（STOMP 回调、用户操作回调），**禁止在 useEffect 内写入 store**。原因：zustand 的 `...spread` 操作每次产生新对象引用 → effect 内写 store → 新引用触发重渲染 → effect 再执行 → 无限循环（Maximum update depth exceeded）。正确做法：react-query 提供 `staleTime: Infinity` 初始数据，zustand store 叠加实时更新（selector 纯读取安全）
-- **Zustand selector 稳定引用**: selector 中使用 `?? []` 或 `?? {}` 时**必须用模块级常量**（如 `const EMPTY_MESSAGES: ChatMessage[] = []`），禁止内联 `?? []`。原因：内联写法每次调用都创建新引用 → Zustand 用 `Object.is` 比较发现变化 → 触发重渲染 → selector 再执行 → 无限循环。配合 React 19 + StrictMode 的 `useSyncExternalStore` 双快照机制，循环会被放大到 50 层嵌套
-- **聊天 conversationId 格式**: 前后端统一使用排序双 ID 格式 `conv_{minId}_{maxId}`（如 `conv_123_456`），确保 A→B 和 B→A 的会话 ID 一致。前端：`conv_${[currentUserId, targetUserId].sort().join('_')}`；后端：`"conv_" + Math.min(sender, receiver) + "_" + Math.max(sender, receiver)`
-- **Mockito Java 25 兼容**: Java 25 下 Mockito inline mock maker 使用 ByteBuddy attach 机制会失败（WSL2 环境尤为明显）。已配置 `src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker` 使用 `mock-maker-subclass` 模式。**新测试不要尝试改回 inline 模式**
-- **`product-paths` 白名单陷阱**: `security.product-paths` 配置的路径会跳过 JWT 认证（`SecurityConfig` 的 `.requestMatchers(GET, ...)` 路径匹配）。配置项如 `/api/products` 会匹配 `/api/products/my`，导致需要认证的接口被公开访问。如果新增需要认证的商品相关接口，必须在 `SecurityConfig` 中添加更精确的 `.requestMatchers(GET, "/api/products/my/**").authenticated()`，或改用更精确的 `ignore-paths` 配置
-- **全局认证拦截**: SecurityConfig 的 `.anyRequest().authenticated()` 已在过滤器层拦截所有未认证请求，Controller 方法上**无需**重复添加 `@PreAuthorize("isAuthenticated()")`。仅在需要角色/权限校验时使用 `@PreAuthorize`（如 `hasRole('ADMIN')`）
-- **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（SubclassByteBuddyMockMaker 不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId)` + `} finally { TestSecurityUtil.clearSecurityContext(); }` 模式。工具类位于 `easyorange-framework/src/main/java/.../util/TestSecurityUtil.java`，所有模块测试通用。`clearSecurityContext()` 必须在 `finally` 块中调用，确保测试间隔离
-- **不可变集合**: 全项目统一使用 Java 9+ 不可变集合工厂方法，**禁止使用 `Collections` 工具类创建空/单元素/不可包装集合**。具体规则见 `.trae/rules/java/coding-style.md` §Immutability
-- **前端 Biome useSemanticElements**: 优先使用语义化 HTML 元素，禁止使用 `div role="button"` 替代 `<button type="button">`（Biome `lint/a11y/useSemanticElements` 会报错）。`role="group"` → `<fieldset>`，`role="region"` → `<section>`。仅限自定义复选框等无法直接使用语义元素且加 `role` 有意义的场景，用 `{/* biome-ignore lint/a11y/useSemanticElements: 原因 */}` 抑制
-- **前端 Biome noSvgWithoutTitle**: 装饰性 SVG 图标必须添加 `aria-hidden="true"`。有意义图标添加 `role="img"` + `<title>` 或 `aria-label`
-- **前端 Biome curly**: 所有 if/else/for/while 语句必须使用大括号，即使单行也要加 `{}`（Biome `lint/style/useBlockStatements` 强制执行）`
-- **前端 React Hooks**: `useEffect` 内禁止同步调用 `setState`（会触发无限循环）。使用 `useReducer` 或将状态逻辑移出 effect
-- **前端 scrollIntoView 防误触发**: 使用 `scrollIntoView` 自动滚动时，必须通过 ref 记录上一次状态（如历史记录长度），仅在数据真正新增时滚动。禁止在依赖数组仅为 props/state 的 `useEffect` 中无条件调用 `scrollIntoView`，否则组件挂载/数据初始化时会意外滚动整个页面
-- **注册昵称默认值**: 注册时 `nick_name` 默认等于 `username`，禁止引入随机昵称生成逻辑。用户后续可通过 `updatePersonalInfo` 接口自由修改昵称（`NicknameGeneratorPort`/`NicknameGenerator` 已删除）
-- **LoginCredential sealed interface**: 登录凭据使用 `sealed interface LoginCredential`（位于 `domain/valueobject/`），新增登录方式必须添加新的 `record` 实现（如 `Password(String identifier, String password)`、`Sms(String phone, String verifyCode)`），禁止在单个命令类中通过枚举字段区分登录方式。`*Request` DTO 通过 `toCredential()` 方法转换为密封接口子类型
-- **RabbitMQ 路由键规范**: 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。`DomainEvent.eventType()` 自动从类名去除 `Event` 后缀，`EventExternalizationConfig.toRoutingKey()` 再将 camelCase 转为 dot.case（含数字边界处理：`OrderPaidV2Event` → `order.paid.v2`）。新增领域事件只需创建事件 record 实现 `DomainEvent`，路由键自动生效
-- **RabbitMQ 消费者模式**: 多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发），禁止在同一个队列上使用多个方法级 `@RabbitListener`（会导致轮询竞争）。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试
-- **AI 工程化边界**: 平台不参与议价 / 不自动调价 / 不持有底价。资产方按固定价格上架资产，AI 在两端走**生产级工程实践**：资产方侧（智能估值建议 / AI 营销文案 / AI 信用画像），认领方侧（AI 智能找货 / AI 物品评估 / AI 信用画像）。6 个 AI 决策点全部走 Port/Adapter 隔离 + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化 + Token 预算治理。`OfferRuleEngine` / `OfferAppService` / `ProductPriceAdjustTask` / `NegotiationMessagePort` / `OrderCreationPort`（AI 自动成单 port）已删除
-- **RabbitMQ 事件发布（Modulith 事务发件箱）**: `DomainEventPublisher` 由 `ModulithDomainEventPublisher`（`@Primary`）实现，代理到 `ApplicationEventPublisher`。Spring Modulith 拦截、写 `EVENT_PUBLICATION` 表（同 DB 事务）、事务提交后异步外化到 `eo.domain.events` Topic Exchange。提供 at-least-once 语义，应用重启时自动重试未完成事件。`@ConditionalOnProperty(matchIfMissing=true)` 确保无 RabbitMQ 环境开发/测试正常启动
-- **RabbitMQ Spring AMQP 4.0.x API**: `CorrelationData` 在 `org.springframework.amqp.rabbit.connection` 包（非 support）；`ReturnsCallback.returnedMessage()` 接收 `ReturnedMessage` 对象（非分散参数）；concurrency 配置使用 `concurrent-consumers` + `max-concurrent-consumers`（不支持 `"1-5"` 范围格式）
-- **ConfigurationProperties 注册方式**: 统一使用 `@ConfigurationProperties` + `@ConfigurationPropertiesScan` 模式。Properties 类为纯 POJO（不加 `@Component`），由 `EasyOrangeApplication` 上的 `@ConfigurationPropertiesScan` 自动扫描注册。如果已有 `@EnableConfigurationProperties` 引用（如 `AiConfig`），`@Component` 会重复注册，应移除。框架属性类已全部清理，新增 Properties 类遵循同一模式
-- **Assembler 模式 (DTO 转换)**: adapter/inbound/web/assembler/ 目录下的 Assembler 类负责 domain → DTO 转换（使用 MapStruct 或手动实现）。**禁止**在 Controller/Service 中直接构造 Response DTO，必须通过 Assembler。已废弃的旧 DTO（AddFavoriteDTO, FavoriteVO, QueryOrderRequest 等）已删除，新代码统一使用 assembler 模式
-- **.gitignore 最佳实践**: 项目使用精简版 .gitignore (78行)，已忽略 AI 生成文件 (**/codemap.md)、AI 工具目录 (.slim/, .superpowers/)、测试产物 (test-results/)。前端 .env.production 和 .env.development 不提交（可能包含敏感配置），开发者应基于 .env.example 创建本地配置
-- **Java `var` 使用规范**: 推荐用 var 的场景——同一类型构造器（`Foo x = new Foo()` → `var x = new Foo()`）、显式 cast（`Type x = (Type) expr` → `var x = (Type) expr`）、StringBuilder 等。**不推荐**——接口→实现赋值（`List<X> x = new ArrayList<>()`，保留 `List<X>`，var 丢失接口抽象）
-
----
-
-# 行为准则
+## 行为准则
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
-## 1. Think Before Coding
+### 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
 
@@ -185,7 +100,7 @@ Before implementing:
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what's confusing. Ask.
 
-## 2. Simplicity First
+### 2. Simplicity First
 
 **Minimum code that solves the problem. Nothing speculative.**
 
@@ -198,7 +113,7 @@ Before implementing:
 
 Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 
-## 3. Surgical Changes
+### 3. Surgical Changes
 
 **Touch only what you must. Clean up only your own mess.**
 
@@ -214,7 +129,7 @@ When your changes create orphans:
 
 The test: Every changed line should trace directly to the user's request.
 
-## 4. Goal-Driven Execution
+### 4. Goal-Driven Execution
 
 **Define success criteria. Loop until verified.**
 

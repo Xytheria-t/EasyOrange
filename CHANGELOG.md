@@ -4,6 +4,32 @@
 
 ## [unreleased]
 
+### 2026-08-02 — 移除订单创建 Saga 层（拒绝 Saga）
+
+- **refactor(order)**: 移除订单创建 Saga 层，回归**本地单事务 + Redisson 分布式锁 + Outbox 事件**（[ADR-0007](doc/adr/0007-order-saga-single-tx-observability.md) 重写为「拒绝 Saga」，[ADR-0001](doc/adr/0001-use-saga-over-2pc.md) 标记 Superseded）。删除 10 类：`CreateOrderSaga` / `SagaCoordinator` / `SagaTimeoutScheduler` / `SagaException` / `SagaRepository` / `SagaState` / `SagaStatus` / `SagaDO` / `SagaMapper` / `SagaRepositoryImpl` + `OrderCompensationService`
+- **refactor(order)**: 新增 `OrderCreationService`（单一 `@Transactional`：锁 → 建单 + 发布事件 → 同步扣库存 → 建支付，失败整体回滚、无补偿路径）；`DistributedLockManager` / `OrderCreationExecutor` / `OrderPreparationService` 迁入 `application/service/`；`OrderCreationException` / `PaymentGatewayAdapterException` 迁入 `domain/exception/`
+- **refactor(order)**: `OrderSagaEventConsumer` → `OrderLifecycleEventConsumer`（队列 `QUEUE_ORDER_LIFECYCLE = eo.order.lifecycle`），消费取消/退款恢复库存、完成标记售出；`RabbitMQConfig` / `DlqRetryScheduler` / `DlqAnomalyListener` 队列引用同步
+- **chore(db)**: 新增 Flyway `V2__drop_order_saga_table.sql` 删除 `eo_saga_status` 表
+- **test**: 重写 `OrderCreationServiceTest`（成功路径 + 失败回滚 + 锁竞争），删除 `SagaTimeoutSchedulerTest`。后端 11 模块 1,362 → **1,356** 测试全绿（注解 1,284 → 1,278，测试文件 154 → 153）
+
+### 2026-08-02 — order 状态机重构：邻接表 → 动作驱动（OrderAction 单一事实来源）
+
+- **refactor(order)**: 订单状态机从"状态邻接表"升级为**动作驱动**——新增 `OrderAction` 枚举作为唯一事实来源，每个动作声明前置状态集合/目标状态/目标支付状态/是否需要原因/错误码/额外支付前置条件；`OrderStatus` 的 `ALLOWED_TRANSITIONS` 邻接表移除，`canTransitionTo()` 改为由动作派生
+- **refactor(order)**: `Order` 聚合根 6 组重复的"守卫 + toBuilder"收敛为单一私有 `transitionTo(action, reason)` 守卫（一处校验合法性 + 一处应用副作用：状态/支付状态/关闭原因时间）；公共方法 `pay()/cancel()/forceCancel()/ship()/confirmReceipt()/refund()` 签名与事件类型不变，外部调用方零改动；修掉 `canCancel()` 硬编码不一致、`cancel/forceCancel` 方法体重复
+- **test**: 新增 `OrderActionTest`（12 用例：前置状态矩阵/支付守卫/终端态/元数据），更新 `OrderStatusTest` 派生矩阵守护。后端 11 模块 1,362 测试全绿
+
+### 2026-07-31 — message 模块死代码清理 + 多级缓存简化 + neat-freak 文档同步
+
+- **refactor(message)**: 消除无分层的 `service/` 目录——`MessageArchiveService` + `MessageDomainServiceConfig` 迁入 `application/service/` 与 `application/config/`；删除 3 组死代码（`MessageTemplateService`/`MessageSubscriptionService`/`OfflineMessageService` 接口 + 实现 + 测试，共 9 文件）。`service/` 根目录彻底消除，模块演进路线 5 步全部完成（含 `entity/`→`domain/aggregate/`、`domain/port/` 端口），现为完整 DDD 六边形架构
+- **refactor(framework)**: `MultiLevelCache` 回源参数从自定义 `CacheLoader` 接口改为 `java.util.function.Supplier`（stdlib 替代），删除 `cache/CacheLoader.java`。同步移除 `MultiLevelCache.evictL2()`，列表类缓存失效统一走 `evict()`
+- **chore(product,framework)**: 移除布隆过滤器三件套（`BloomFilter`/`RedisBitmapBloomFilter`/`BloomFilterConfig`），缓存穿透统一由 `MultiLevelCache` 内置负缓存（`NullValue` 哨兵 30s）承担
+- **chore(common)**: 移除 `easyorange-common/pom.xml` 冗余 `jackson-databind` 依赖（由各 web 模块经 Spring Boot 传递引入），仅保留 `jackson-annotations`
+- **test**: 后端测试 1,377 → **1,350**（@Test 注解 1,306 → 1,277，测试文件 156 → 153）。`mvn clean test` 11 模块全绿（58s）。前端 1,042 不变，总计 2,419 → **2,392**
+- **docs(neat-freak)**: 重写 `easyorange-message/AGENTS.md` 目录树——修正 `entity/`（已迁 `domain/aggregate/`）、`dto/`（已迁 `adapter/inbound/web/dto/request/` + `application/query/dto/`）两大过期段，补 `RecallMessageCommand` / `MessageRecalledEvent` / `domain/port/` / `typehandler/` / `ChatWebSocketHandler` 等 12 处遗漏，删幽灵 `UnreadCountQuery.java`；演进路线第 2/5 步标记完成
+- **docs(neat-freak)**: 同步测试数字单一来源 `doc/工程指标.md`（v1.6→v1.7，1,377/1,306/156/2,419 → 1,350/1,277/153/2,392）+ 二级引用（根 `AGENTS.md` / `README.md` / `doc/技术债务清单.md` / `doc/面试-简历使用指南.md`）
+- **docs(neat-freak)**: 补齐上一轮遗漏的「7 件套→8 件套」同步——`CLAUDE.md` / `README.md` / `PRODUCT_DIRECTION.md` / `doc/集成/AI-资产管理.md` / `doc/技术债务清单.md` / `doc/面试-简历使用指南.md` 全部对齐权威定义（Port/Adapter + 多级缓存 + 令牌桶 + stale 降级 + AiMetrics + Prompt YAML + TokenBudget + Bulkhead）；`doc/工程指标.md` Port 接口数 31→32（实测 `grep` 验证）
+
+
 ### 2026-07-26 — 测试基础设施现代化（PIT 变异测试 + JaCoCo 修复 + 守卫测试）
 
 - **test(infra)**: 集成 **PIT 1.25.8** 变异测试（pitest-maven + pitest-junit5-plugin 1.2.2），放 `-Ppit` profile 按需启用。仅对 domain 层注入变异（聚合根状态机/领域服务/值对象），评估测试对缺陷的真实检测能力——行覆盖率的"金标准"补充。order 模块基线：mutation 70% / test strength 89% / line 81%（81 变异，41 秒）。阈值门禁默认 0 不阻断，CI 用 `-Dpit.mutationThreshold=60 -Dpit.testStrengthThreshold=75 -Dpit.coverageThreshold=70` 启用（对齐 JaCoCo `haltOnFailure` 约定）

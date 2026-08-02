@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.message.service.config;
+package com.cartethyia.easyorange.message.application.config;
 
 import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;

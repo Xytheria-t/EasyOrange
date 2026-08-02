@@ -27,7 +27,7 @@ function createMockProduct(overrides: Partial<Product> = {}): Product {
         description: '测试描述',
         price: 100,
         originalPrice: 150,
-        categoryId: 1,
+        categoryId: '1',
         categoryName: '电子产品',
         condition: 1,
         conditionLevel: 1,

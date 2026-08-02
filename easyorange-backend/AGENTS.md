@@ -84,8 +84,8 @@ product、order、payment 模块使用 CQRS（在 application/domain 层分离�
 **查询操作**：保留同步端口调用（如 `getSnapshot()`），通过可选依赖实现
 
 **库存扣减（主路径同步 + 订阅校验）**：
-- 主路径：`CreateOrderSaga` 在 `@Transactional` 内同步调用 `ProductOrderPort.decreaseStock()`
-- 历史异步路径：`OrderCreatedEvent → OrderSagaEventConsumer → StockReservationRequestedEvent → OrderFulfillmentEventConsumer → ProductCommandService.decrementStock()` 已移除，`OrderSagaEventConsumer.handleCreated()` 不再发布预留事件
+- 主路径：`OrderCreationService` 在 `@Transactional` 内同步调用 `ProductOrderPort.decreaseStock()`（失败随事务整体回滚）
+- 历史异步路径：`OrderCreatedEvent → OrderSagaEventConsumer → StockReservationRequestedEvent → OrderFulfillmentEventConsumer → ProductCommandService.decrementStock()` 已移除，`OrderLifecycleEventConsumer.handleCreated()` 不再发布预留事件
 
 ## 统一响应格式
 

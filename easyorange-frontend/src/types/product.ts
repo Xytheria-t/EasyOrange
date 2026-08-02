@@ -6,7 +6,7 @@ export interface Product {
     description: string;
     price: number;
     originalPrice: number | null;
-    categoryId: number;
+    categoryId: string;
     categoryName: string;
     condition: number;
     conditionLevel: number;
@@ -48,7 +48,7 @@ export interface CreateProductRequest {
     description: string;
     price: number;
     originalPrice?: number;
-    categoryId: number;
+    categoryId: string;
     conditionLevel: number;
     stock?: number;
     location?: string;
@@ -61,7 +61,7 @@ export interface UpdateProductRequest {
     description?: string;
     price?: number;
     originalPrice?: number;
-    categoryId?: number;
+    categoryId?: string;
     conditionLevel: number;
     stock?: number;
     location?: string;
@@ -86,7 +86,7 @@ export interface FavoriteProduct {
     sellerId: string;
     username: string;
     userAvatar: string | null;
-    categoryId: number;
+    categoryId: string;
     categoryName: string;
     title: string;
     description: string;
@@ -141,7 +141,7 @@ export interface AiEnhancement {
 /** Product search query parameters for ES search */
 export interface ProductSearchParams {
     keyword?: string;
-    categoryId?: number;
+    categoryId?: string;
     status?: number;
     minPrice?: number;
     maxPrice?: number;

@@ -163,7 +163,7 @@ export default function CategoriesSection() {
                     {displayCategories.map(category => (
                         <a
                             key={category.id}
-                            href={category.isAll ? '/products' : `/products?category=${category.id}`}
+                            href={category.isAll ? '/products' : `/products?filters=category:${encodeURIComponent(category.id)}`}
                             className={`category-card glass-card${category.isAll ? ' card-more' : ''}`}
                         >
                             <div className="card-bg"></div>

@@ -15,7 +15,7 @@ import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
-import com.cartethyia.easyorange.order.application.saga.CreateOrderSaga;
+import com.cartethyia.easyorange.order.application.service.OrderCreationService;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
@@ -50,7 +50,7 @@ class OrderCommandHandlerTest {
     private DomainEventPublisher domainEventPublisher;
 
     @Mock
-    private CreateOrderSaga createOrderSaga;
+    private OrderCreationService orderCreationService;
 
     @Mock
     private PaymentGatewayPort paymentGatewayPort;
@@ -79,13 +79,13 @@ class OrderCommandHandlerTest {
             );
 
             CreateOrderResult expectedResult = new CreateOrderResult(ORDER_ID, "ORD123");
-            when(createOrderSaga.execute(command)).thenReturn(expectedResult);
+            when(orderCreationService.execute(command)).thenReturn(expectedResult);
 
             CreateOrderResult result = commandHandler.handle(command);
 
             assertThat(result.orderId()).isEqualTo(ORDER_ID);
             assertThat(result.orderNo()).isEqualTo("ORD123");
-            verify(createOrderSaga).execute(command);
+            verify(orderCreationService).execute(command);
         }
     }
 

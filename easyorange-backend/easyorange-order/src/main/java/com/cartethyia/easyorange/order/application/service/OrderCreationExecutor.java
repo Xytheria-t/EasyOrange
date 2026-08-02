@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.application.saga.support;
+package com.cartethyia.easyorange.order.application.service;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
@@ -12,7 +12,7 @@ import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
-import com.cartethyia.easyorange.order.domain.saga.PaymentGatewayAdapterException;
+import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
@@ -25,7 +25,7 @@ import java.util.Optional;
 /**
  * 订单创建执行器。
  * <p>
- * 负责订单创建和支付创建的具体执行逻辑，作为 {@code CreateOrderSaga} 的支持组件。
+ * 负责订单创建和支付创建的具体执行逻辑，作为 {@code OrderCreationService} 的支持组件。
  * 职责分离：本类只做执行，不涉及 Saga 编排、分布式锁、补偿等横切关注点。
  */
 @Component

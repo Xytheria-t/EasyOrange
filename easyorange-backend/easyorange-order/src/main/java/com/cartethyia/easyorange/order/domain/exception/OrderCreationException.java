@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.domain.saga;
+package com.cartethyia.easyorange.order.domain.exception;
 
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 

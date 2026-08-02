@@ -126,7 +126,7 @@ describe('useCreateProduct', () => {
             name: '新商品',
             description: '描述',
             price: 100,
-            categoryId: 1,
+            categoryId: '1',
             conditionLevel: 1,
             imageUrls: [],
         });

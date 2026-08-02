@@ -137,7 +137,7 @@ function EditProductPage() {
                 description: data.description.trim(),
                 price: Number(data.price),
                 originalPrice: data.originalPrice ? Number(data.originalPrice) : undefined,
-                categoryId: Number(data.categoryId),
+                categoryId: data.categoryId,
                 conditionLevel: Number(data.conditionLevel),
                 stock: Number(data.stock) || 1,
                 location: data.location.trim() || undefined,

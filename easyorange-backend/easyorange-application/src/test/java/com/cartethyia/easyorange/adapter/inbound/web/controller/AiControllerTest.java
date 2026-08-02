@@ -107,7 +107,7 @@ class AiControllerTest {
         void autoListing_success() {
             var expected = new AutoListingResult(
                     "在管 iPhone 14", "99新", new BigDecimal("4500"),
-                    "手机数码", 1, "2", "广州",
+                    "手机数码", "1", "2", "广州",
                     List.of("手机", "数码"), List.of("正面照片", "背面照片")
             );
             when(autoListingService.analyzeImages(anyList())).thenReturn(expected);
@@ -211,7 +211,7 @@ class AiControllerTest {
         @Test
         @DisplayName("问答 — 返回有效回答")
         void answerQuestion_success() {
-            var request = new QaRequest(1L, "是正品吗？", "iPhone 14", "99新",
+            var request = new QaRequest("1", "是正品吗？", "iPhone 14", "99新",
                     "手机数码", "¥4500", "九五新", "张三", "高");
             var expected = new QaResponse("是正品，有官方购买凭证", true);
             when(qaService.answerQuestion(any())).thenReturn(expected);

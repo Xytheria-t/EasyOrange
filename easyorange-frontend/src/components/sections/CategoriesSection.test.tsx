@@ -84,7 +84,7 @@ describe('CategoriesSection', () => {
     it('links categories to correct URLs', () => {
         render(<CategoriesSection />);
         const electronicLink = screen.getByText('电子数码').closest('a');
-        expect(electronicLink).toHaveAttribute('href', '/products?category=1');
+        expect(electronicLink).toHaveAttribute('href', '/products?filters=category:1');
     });
 
     it('links "更多分类" to /products', () => {

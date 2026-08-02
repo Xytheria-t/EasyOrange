@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 在 DDD 六边形里装 LLM：可换供应商、可降级、可观测的 AI 工程化落地。
 >
-> **11 模块全解耦 · 2,419 测试守卫 · 32 Port 接口 · 11 RabbitMQ 消费者 · 6 ADR · Domain 层行覆盖 84.1%**
+> **11 模块全解耦 · 2,412 测试守卫 · 32 Port 接口 · 11 RabbitMQ 消费者 · 6 ADR · Domain 层行覆盖 84.1%**
 >
 > 业务聚焦核心流程（C2C 资产流转：固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。
 
@@ -16,7 +16,7 @@
 | 🎯 AI Agent / 大模型 Java 后端 | 🏛 Java 架构师 / 高级后端 |
 |---|---|
 | ✅ LLM/Vision Port/Adapter 隔离，供应商可换 | ✅ DDD 六边形 + 32 Port 编译期隔离 |
-| ✅ 轻量级 Agent 编排（4 路并行 Tool Calling） | ✅ Saga 状态机 + 反向补偿（9 状态持久化） |
+| ✅ 轻量级 Agent 编排（4 路并行 Tool Calling） | ✅ 拒绝 Saga：本地单事务 + 分布式锁防超卖 + Outbox |
 | ✅ L1 Caffeine + L2 Redis 多级缓存 + stale 降级 | ✅ Spring Modulith Outbox + DLQ 三级重试 |
 | ✅ Redisson 令牌桶限流 + Bulkhead 隔离舱 | ✅ Resilience4j 熔断 + 限流 + 降级 + 幂等 |
 | ✅ Prompt YAML 版本化 + @TokenBudget 日预算 | ✅ ArchUnit 6 条规则 + ADR 5 条决策记录 |
@@ -28,10 +28,10 @@
 
 | 钩子 | 数字锚点 | 一句话 |
 |---|---|---|
-| **AI 工程化** | 6 决策点 + 7 件套 + 轻量 Agent | Port/Adapter + L1/L2 多级缓存 + Redisson 令牌桶 + stale 降级 + AiMetrics + Prompt YAML + TokenBudget + Bulkhead + 4 路并行 Tool Calling |
-| **分布式可靠性** | Saga + Outbox + DLQ 三级重试 + 11 消费者 | 订单跨模块 Saga 编排 + 反向补偿；领域事件走 Spring Modulith Outbox → RabbitMQ；DLQ 指数退避 + terminal 转储 |
+| **AI 工程化** | 6 决策点 + 8 件套 + 轻量 Agent | Port/Adapter + L1/L2 多级缓存 + Redisson 令牌桶 + stale 降级 + AiMetrics + Prompt YAML + TokenBudget + Bulkhead + 4 路并行 Tool Calling |
+| **分布式可靠性** | 拒绝 Saga（ADR-0007）+ Outbox + DLQ 三级重试 + 11 消费者 | 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件驱动（拒绝 Saga）；领域事件走 Spring Modulith Outbox → RabbitMQ；DLQ 指数退避 + terminal 转储 |
 | **架构落地** | 11 模块 / 32 Port / DDD+CQRS+事件驱动 / ArchUnit 6 规则 | domain 层零框架依赖，编译期隔离；message/favorite 故意不做 CQRS（ADR-0002） |
-| **质量门禁** | 2,419 测试 / JaCoCo + PIT / Biome 0 errors | 后端 ArchUnit + JaCoCo 行≥80% + PIT 变异测试；前端 Vitest + Playwright + Biome |
+| **质量门禁** | 2,412 测试 / JaCoCo + PIT / Biome 0 errors | 后端 ArchUnit + JaCoCo 行≥80% + PIT 变异测试；前端 Vitest + Playwright + Biome |
 
 ## 项目定位
 
@@ -69,10 +69,11 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定，
 
 | 被拒绝方案 | 原因 | 替代方案 | ADR |
 |---|---|---|---|
-| 2PC / XA / Seata AT | 强一致锁表久 + 连接池代理侵入 | Saga + 9 状态持久化 + 超时检测 + 人工介入 | [ADR-0001](doc/adr/0001-use-saga-over-2pc.md) |
+| 2PC / XA / Seata AT | 强一致锁表久 + 连接池代理侵入 | 本地单事务 + Redisson 分布式锁 + Outbox（拒绝 Saga） | [ADR-0007](doc/adr/0007-order-saga-single-tx-observability.md) · [ADR-0001](doc/adr/0001-use-saga-over-2pc.md)(Superseded) |
 | 全模块 CQRS | message/favorite 读写均衡，收益 < 维护成本 | 仅 product/order/payment/message 4 模块做 | [ADR-0002](doc/adr/0002-cqrs-scope-only-4-modules.md) |
 | LangChain4j / Spring AI | Tool 调用反射黑盒 + 升级兼容差 | 手写 AiSearchEnhancer 4 路 Tool Registry，复用缓存限流 | [ADR-0003](doc/adr/0003-ai-port-adapter-with-decorator.md) |
-| Seata TCC | 3× try-confirm-cancel 样板 + 业务侵入 | Saga 逆序补偿 + restoreStock/cancelOrder | [ADR-0001](doc/adr/0001-use-saga-over-2pc.md) |
+| Seata TCC | 3× try-confirm-cancel 样板 + 业务侵入 | 同 ADR-0007：本地单事务 + 分布式锁 + Outbox | [ADR-0007](doc/adr/0007-order-saga-single-tx-observability.md) |
+| Saga 编排（跨模块补偿） | 单库下补偿与回滚重复 + 失败状态随事务回滚丢失 + 多 3~4 次独立写事务 | 本地单事务 + Redisson 分布式锁 + Outbox | [ADR-0007](doc/adr/0007-order-saga-single-tx-observability.md) |
 | Milvus / PGVector | SKU < 10 万，向量库 ROI 低 | ES BM25 召回 + LLM semantic rerank（RAG 轻量版） | 隐含决策 |
 | **Kafka / Pulsar 作为默认 MQ** | ① Kafka 无原生 DLQ，三级重试要自造；② 1 事件→11 独立消费者模型不匹配；③ Pulsar 本地要 3 容器（Broker+BK+ZK）太重 | **RabbitMQ Topic Exchange + 队列级 DLQ（默认）**；NATS JetStream 留作 `@ConditionalOnProperty` 备选 Adapter | [ADR-0005](doc/adr/0005-messaging-bus-select-rabbitmq-over-kafka-nats-pulsar.md) |
 
@@ -84,7 +85,7 @@ C2C 资产流转业务载体（固定价格 + 直发 + 平台不碰货）详见 
 graph TB
     FE["React 19 前端"]
     APP["easyorange-application · Spring Boot 4"]
-    USER[user] PROD["product + ES"] ORD["order + Saga"]
+    USER[user] PROD["product + ES"] ORD["order · 单事务+锁"]
     PAY["payment + 幂等"] MSG["message + STOMP"]
     FAV[favorite] ADMIN[admin] AI["ai · 6 决策点 + Agent"]
     MQ[("RabbitMQ · 12c + DLQ")] DB[("MySQL 8.4 · 30 表")]
@@ -96,15 +97,22 @@ graph TB
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PENDING --> ORDER_CREATED --> PAYMENT_CREATED --> COMPLETED --> [*]
-    ORDER_CREATED --> COMPENSATING:失败 PAYMENT_CREATED --> COMPENSATING:失败
-    COMPENSATING --> COMPENSATED:补偿成功 COMPENSATING --> FAILED:补偿异常
-    FAILED --> TIMEOUT:30min TIMEOUT --> MANUAL_INTERVENTION:retry≥3
+    [*] --> LOCKED: 获取分布式锁（按 productId 排序防死锁）
+    LOCKED --> ORDER_CREATED: 创建订单 + Outbox 发布事件
+    ORDER_CREATED --> STOCK_DECREASED: 同步扣库存（同事务）
+    STOCK_DECREASED --> PAYMENT_CREATED: 创建支付记录（同事务）
+    PAYMENT_CREATED --> COMMITTED: 事务提交
+    LOCKED --> ROLLED_BACK: 任一步失败
+    ORDER_CREATED --> ROLLED_BACK: 任一步失败
+    STOCK_DECREASED --> ROLLED_BACK: 任一步失败
+    PAYMENT_CREATED --> ROLLED_BACK: 任一步失败
+    COMMITTED --> [*]
+    ROLLED_BACK --> [*]
 ```
 
-**Saga + 事件可靠性 + traceId 全链路**：`CreateOrderSaga` 按 productId 排序加锁防死锁 → 建单 → 扣库存 → 建支付；失败逆序补偿 `restoreStock → cancelOrder`。事件走 Spring Modulith Outbox（业务表 + `EVENT_PUBLICATION` 原子写入）→ 异步 externalize 到 RabbitMQ → `EventConsumerHandler` 统一幂等/metrics/DLQ → `DlqRetryScheduler` 每 5min 重投或转储 terminal。traceId：Brave TracingFilter → MDC → `MdcTaskDecorator` 传 @Async → MQ message header → 消费者 MDC。
+**订单创建（拒绝 Saga）+ 事件可靠性 + traceId 全链路**：`OrderCreationService.createOrder()` 在单一本地 `@Transactional` 内按 productId 排序获取 Redisson 分布式锁（`DistributedLockManager`，key=`eo:order:lock:product:{productId}`，10s 超时）防死锁防超卖 → 创建订单 + 发布 `OrderCreatedEvent`（Spring Modulith Outbox 同事务原子）→ `ProductOrderPort.decreaseStock()` 同步扣库存 → 创建支付记录；任一步失败事务整体回滚，抛 `OrderCreationException`，**无补偿路径**（拒绝 Saga，见 [ADR-0007](doc/adr/0007-order-saga-single-tx-observability.md)）。取消/退款/完成等跨模块副作用由 `OrderLifecycleEventConsumer` 消费订单生命周期事件异步触发（恢复库存 / 标记售出）。事件走 Spring Modulith Outbox（业务表 + `EVENT_PUBLICATION` 原子写入）→ 异步 externalize 到 RabbitMQ → `EventConsumerHandler` 统一幂等/metrics/DLQ → `DlqRetryScheduler` 每 5min 重投或转储 terminal。traceId：Brave TracingFilter → MDC → `MdcTaskDecorator` 传 @Async → MQ message header → 消费者 MDC。
 
-> 细节：[架构-系统架构.md](doc/架构/架构-系统架构.md) · [ADR-0001](doc/adr/0001-use-saga-over-2pc.md) · [ADR-0003](doc/adr/0003-ai-port-adapter-with-decorator.md) · [ADR-0004](doc/adr/0004-ai-bulkhead-and-token-budget.md)
+> 细节：[架构-系统架构.md](doc/架构/架构-系统架构.md) · [ADR-0007](doc/adr/0007-order-saga-single-tx-observability.md)（拒绝 Saga）· [ADR-0001](doc/adr/0001-use-saga-over-2pc.md)（Superseded）· [ADR-0003](doc/adr/0003-ai-port-adapter-with-decorator.md) · [ADR-0004](doc/adr/0004-ai-bulkhead-and-token-budget.md)
 
 ## 技术栈
 
@@ -119,25 +127,25 @@ docker compose -f compose.yaml up -d                               # MySQL/Redis
 cd easyorange-frontend && npm install && npm run dev               # :5173
 ```
 
-> 零配置启动，详见 [AGENTS.md](./AGENTS.md)。后端 11 模块 / 前端 1042 测试 / 32 Port 接口，数字单一来源 [doc/工程指标.md](doc/工程指标.md)
+> 零配置启动，详见 [AGENTS.md](./AGENTS.md)。后端 11 模块 / 前端 1,056 测试 / 32 Port 接口，数字单一来源 [doc/工程指标.md](doc/工程指标.md)
 
 ## 模块 · AI 工程化 · 可靠性 · 质量门禁
 
 | 维度 | 详情 |
 |---|---|
-| **11 Maven 模块** | common / framework / user / product(CQRS+审核+举报+ES) / order(CQRS+Saga) / payment(CQRS) / message(WS) / favorite / ai(Port+Agent) / admin / application(入口+Flyway+ArchUnit) |
+| **11 Maven 模块** | common / framework / user / product(CQRS+审核+举报+ES) / order(CQRS+单事务+锁) / payment(CQRS) / message(WS) / favorite / ai(Port+Agent) / admin / application(入口+Flyway+ArchUnit) |
 | **AI 工程化 8 项** | 供应商 Port 隔离 · L1/L2 多级缓存装饰器 · Redisson 令牌桶 + stale 降级 · @TokenBudget 日预算 · Prompt 6 个 YAML · Resilience4j Bulkhead(8/4/16) · AiSearchEnhancer 4 路并行 Tool Calling · CompletableFuture 单步骤超时降级 |
-| **分布式可靠性** | Saga 9 状态机 + 超时检测 · Outbox 原子写 EVENT_PUBLICATION · DLQ 三级重试(指数退避 1/5/15min + terminal) · EventConsumerHandler 统一幂等/metrics · traceId 全链路 · JWT + 黑名单吊销 · RateLimitFilter(GET 本地 / 写 Redisson) · @Idempotent(24h) · AuditLogAspect Outbox · OWASP CVSS≥8 阻断 |
+| **分布式可靠性** | 拒绝 Saga（本地单事务 + 分布式锁防超卖 + Outbox，ADR-0007） · Outbox 原子写 EVENT_PUBLICATION · DLQ 三级重试(指数退避 1/5/15min + terminal) · EventConsumerHandler 统一幂等/metrics · traceId 全链路 · JWT + 黑名单吊销 · RateLimitFilter(GET 本地 / 写 Redisson) · @Idempotent(24h) · AuditLogAspect Outbox · OWASP CVSS≥8 阻断 |
 | **质量门禁** | ArchUnit 6 条 · JaCoCo Domain 84.1% / 71.5% · PIT order(70/89/81) product(70/79/92) · Biome 0 errors · Git hooks commit-msg + pre-commit |
 
-前端：暖橙指挥中心 Admin 设计系统 · 120+ Portal/Dialog/Drawer/Sheet · 95 共享 UI + 107 Admin 组件 · 296 a11y 属性 · 171 TanStack Query hooks · 111 测试文件 / 1042 用例
+前端：暖橙指挥中心 Admin 设计系统 · 120+ Portal/Dialog/Drawer/Sheet · 95 共享 UI + 107 Admin 组件 · 296 a11y 属性 · 171 TanStack Query hooks · 112 测试文件 / 1,056 用例
 
 ## 面试快速导航
 
 | 你投的岗位 | 先看这几节 | 被追问时跳 |
 |---|---|---|
 | **AI Agent / 大模型 Java 后端** | 双岗位适配面板 → 轻量级 Agent 编排 → AI 工程化 → 拒绝项清单 | ADR-0003 / ADR-0004 / [工程指标.md §四](doc/工程指标.md) |
-| **Java 架构师 / 高级后端** | 架构治理三板斧 → 拒绝项清单 → 架构总览(Saga+Outbox+traceId) | ADR-0001 / ADR-0002 / ArchitectureRulesTest |
+| **Java 架构师 / 高级后端** | 架构治理三板斧 → 拒绝项清单 → 架构总览(单事务+锁+Outbox+traceId) | ADR-0007 / ADR-0002 / ArchitectureRulesTest |
 | **全栈** | 技术栈 → 快速开始 → 模块总览 | [API-速查.md](doc/集成/API-速查.md) |
 
 ## 部署 · 结构 · 贡献
@@ -155,6 +163,6 @@ cd easyorange-frontend && docker build -t easyorange-fe . && docker run -p 80:80
 
 <div align="center">
 
-**EasyOrange** · LLM × DDD：Java 架构工程化实战 · Java 25 + Spring Boot 4 · DDD + CQRS + Saga + 事件驱动 + AI 工程化 · [Gitee](https://gitee.com/cartethyia_XLS/easy-orange) · [更新日志](./CHANGELOG.md)
+**EasyOrange** · LLM × DDD：Java 架构工程化实战 · Java 25 + Spring Boot 4 · DDD + CQRS + 本地单事务/分布式锁 + 事件驱动 + AI 工程化 · [Gitee](https://gitee.com/cartethyia_XLS/easy-orange) · [更新日志](./CHANGELOG.md)
 
 </div>

@@ -32,7 +32,7 @@ class AiQaServiceTest {
 
     private QaRequest createRequest(String question) {
         return new QaRequest(
-                1L, question, "iPhone 14", "99新，使用3个月",
+                "1", question, "iPhone 14", "99新，使用3个月",
                 "手机数码", "¥4500", "九五新", "张三", "高"
         );
     }

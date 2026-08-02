@@ -1,8 +1,7 @@
 package com.cartethyia.easyorange.user.adapter.outbound.mock;
 
 import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -13,11 +12,10 @@ import org.springframework.stereotype.Component;
  * <p>
  * 生产环境替换为真实 SMS 发送实现。
  */
+@Slf4j
 @Component
 @Profile({"dev", "test", "default"})
 public class MockSmsSenderAdapter implements SmsSenderPort {
-
-    private static final Logger log = LoggerFactory.getLogger(MockSmsSenderAdapter.class);
 
     @Override
     public void send(String phone, String code) {

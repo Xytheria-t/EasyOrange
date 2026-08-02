@@ -41,7 +41,7 @@ function createMockPage(recordsCount = 1, totalOverride?: number) {
             sellerId: 'seller1',
             username: '资产方张三',
             userAvatar: null,
-            categoryId: 1,
+            categoryId: '1',
             categoryName: '电子产品',
             title: `测试商品${i}`,
             description: '描述',

@@ -15,7 +15,7 @@ export interface RawProduct {
     description?: string;
     price: number;
     originalPrice?: number | null;
-    categoryId: number;
+    categoryId: string;
     categoryName?: string;
     condition?: number;
     status?: ProductStatus;

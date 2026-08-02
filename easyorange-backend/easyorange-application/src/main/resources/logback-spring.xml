@@ -4,6 +4,8 @@
 
     <springProperty name="APP_NAME" source="spring.application.name" defaultValue="easyorange"/>
     <property name="LOG_DIR" value="${LOG_PATH:-./logs}/${APP_NAME}"/>
+    <!-- 主机名：多实例部署时区分日志来源（容器环境 HOSTNAME 由内核自动注入） -->
+    <property name="HOST" value="${HOSTNAME:-unknown}"/>
 
     <!-- 控制台 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -46,7 +48,9 @@
         </encoder>
     </appender>
 
-    <!-- 异步包装：避免文件 I/O 阻塞业务线程，队列满时丢弃非关键日志但不阻塞 -->
+    <!-- 异步包装：避免文件 I/O 阻塞业务线程。
+         discardingThreshold=0 + neverBlock=true：队列满时直接丢弃所有级别日志（含 ERROR），
+         绝不阻塞业务线程；适合高吞吐场景，代价是极端峰值下可能丢日志。 -->
     <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
         <queueSize>1024</queueSize>
         <discardingThreshold>0</discardingThreshold>
@@ -73,7 +77,7 @@
             </rollingPolicy>
             <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
                 <format>logstash</format>
-                <customFields>{"app":"${APP_NAME}","environment":"prod"}</customFields>
+                <customFields>{"app":"${APP_NAME}","environment":"prod","host":"${HOST}"}</customFields>
             </encoder>
         </appender>
 

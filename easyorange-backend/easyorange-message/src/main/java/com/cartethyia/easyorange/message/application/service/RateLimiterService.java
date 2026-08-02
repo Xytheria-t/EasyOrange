@@ -1,8 +1,7 @@
 package com.cartethyia.easyorange.message.application.service;
 
 import com.cartethyia.easyorange.framework.cache.CacheUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.time.Duration;
@@ -15,9 +14,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 限流是运维/操作性关注点：阈值(5条/秒)、Redis 原子操作、本地降级计数器
  * 均不属于"消息"业务领域，故放在 application 层而非 domain 层。
  */
+@Slf4j
 public class RateLimiterService {
-
-    private static final Logger log = LoggerFactory.getLogger(RateLimiterService.class);
 
     private final RedisTemplate<Object, Object> redisTemplate;
 

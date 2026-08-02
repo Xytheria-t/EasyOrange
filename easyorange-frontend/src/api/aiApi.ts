@@ -14,7 +14,7 @@ export interface AutoListingResult {
     description: string;
     price: number;
     categoryName: string;
-    categoryId: number;
+    categoryId: string;
     conditionLevel: number;
     location: string;
     tags: string[];
@@ -38,7 +38,7 @@ export interface SemanticSearchResult {
 }
 
 export interface QaRequest {
-    productId: number;
+    productId: string;
     question: string;
     productName: string;
     productDescription: string;

@@ -23,13 +23,17 @@ const mockUseSemanticSearch = vi.hoisted(() =>
     }))
 );
 
-vi.mock('@/hooks', () => ({
-    useInfiniteProducts: mockUseInfiniteProducts,
-    useCategories: mockUseCategories,
-    useFavoriteCheck: mockUseFavoriteCheck,
-    useColumnCount: mockUseColumnCount,
-    useSemanticSearch: mockUseSemanticSearch,
-}));
+vi.mock('@/hooks', async () => {
+    const actual = await vi.importActual<typeof import('@/hooks')>('@/hooks');
+    return {
+        ...actual,
+        useInfiniteProducts: mockUseInfiniteProducts,
+        useCategories: mockUseCategories,
+        useFavoriteCheck: mockUseFavoriteCheck,
+        useColumnCount: mockUseColumnCount,
+        useSemanticSearch: mockUseSemanticSearch,
+    };
+});
 
 vi.mock('@/store/authStore', () => ({
     useAuthStore: mockUseAuthStore,
@@ -177,7 +181,7 @@ describe('ProductsPage', () => {
         });
 
         renderWithProviders(<ProductsPage />, {
-            initialRoute: '/products?category=1',
+            initialRoute: '/products?filters=category:1',
         });
 
         const catElements = screen.getAllByText('电子产品');
@@ -194,7 +198,7 @@ describe('ProductsPage', () => {
         });
 
         renderWithProviders(<ProductsPage />, {
-            initialRoute: '/products?category=1',
+            initialRoute: '/products?filters=category:1',
         });
 
         const user = userEvent.setup();

@@ -26,7 +26,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("OrderSagaEventConsumer 单元测试")
+@DisplayName("OrderLifecycleEventConsumer 单元测试")
 class OrderEventSubscribersTest {
 
     private static final String ORDER_ID = "100";
@@ -35,8 +35,8 @@ class OrderEventSubscribersTest {
     private static final String SELLER_ID = "2";
 
     @Nested
-    @DisplayName("OrderSagaEventConsumer")
-    class OrderSagaEventConsumerTests {
+    @DisplayName("OrderLifecycleEventConsumer")
+    class OrderLifecycleEventConsumerTests {
 
         @Mock
         private ProductOrderPort productOrderPort;
@@ -44,7 +44,7 @@ class OrderEventSubscribersTest {
         @Mock
         private EventIdempotencyChecker idempotencyChecker;
 
-        private OrderSagaEventConsumer consumer;
+        private OrderLifecycleEventConsumer consumer;
 
         @BeforeEach
         void setUp() {
@@ -52,7 +52,7 @@ class OrderEventSubscribersTest {
             lenient().when(idempotencyChecker.isDuplicate(anyString(), anyString())).thenReturn(false);
             lenient().when(idempotencyChecker.tryMark(anyString(), anyString())).thenReturn(true);
             var metricsService = new EventMetricsService(new SimpleMeterRegistry());
-            consumer = new OrderSagaEventConsumer(idempotencyChecker, metricsService,
+            consumer = new OrderLifecycleEventConsumer(idempotencyChecker, metricsService,
                     productOrderPort);
         }
 
@@ -63,7 +63,7 @@ class OrderEventSubscribersTest {
         }
 
     @Test
-    @DisplayName("收到订单创建事件后不再异步预留库存（已由 Saga 同步处理）")
+    @DisplayName("收到订单创建事件后不再异步预留库存（已由 OrderCreationService 同步扣减）")
     void onOrderCreated_shouldNotReserveStock() {
         OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID,
                 List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),

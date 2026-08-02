@@ -1,37 +1,20 @@
-package com.cartethyia.easyorange.order.application.saga;
+package com.cartethyia.easyorange.order.application.service;
 
-import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
-import com.cartethyia.easyorange.order.application.saga.support.DistributedLockManager;
-import com.cartethyia.easyorange.order.application.saga.support.OrderCompensationService;
-import com.cartethyia.easyorange.order.application.saga.support.OrderCreationExecutor;
-import com.cartethyia.easyorange.order.application.saga.support.OrderPreparationService;
-import com.cartethyia.easyorange.order.application.saga.support.SagaCoordinator;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
-import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort.ProductSnapshot;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
-import com.cartethyia.easyorange.order.domain.valueobject.Address;
-import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
-import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
-import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
-import com.cartethyia.easyorange.order.domain.valueobject.Phone;
-import com.cartethyia.easyorange.order.domain.valueobject.UserId;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
-import com.cartethyia.easyorange.order.domain.saga.OrderCreationException;
-import com.cartethyia.easyorange.order.domain.saga.SagaException;
-import com.cartethyia.easyorange.order.domain.saga.SagaRepository;
-import tools.jackson.databind.ObjectMapper;
+import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,14 +38,15 @@ import static com.cartethyia.easyorange.order.application.command.CreateOrderCom
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("CreateOrderSaga 补偿测试")
-class CreateOrderSagaCompensationTest {
+@DisplayName("OrderCreationService 下单流程测试")
+class OrderCreationServiceTest {
 
     @Mock
     private OrderRepository orderRepository;
@@ -86,33 +70,24 @@ class CreateOrderSagaCompensationTest {
     private RLock lock;
 
     @Mock
-    private SagaRepository sagaRepository;
-
-    @Mock
-    private ObjectMapper objectMapper;
-
-    @Mock
     private ProductQueryPort productQueryPort;
 
     @Mock
     private IdGenerator idGenerator;
 
-    private CreateOrderSaga saga;
+    private OrderCreationService service;
 
     private static final String BUYER_ID = "1";
     private static final String SELLER_ID = "2";
 
     @BeforeEach
     void setUp() throws InterruptedException {
-        // Construct support classes with mocks
         var lockManager = new DistributedLockManager(redissonClient);
-        var sagaCoordinator = new SagaCoordinator(sagaRepository, objectMapper);
-        var compensationService = new OrderCompensationService(orderRepository, orderCachePort);
         var preparationService = new OrderPreparationService(productOrderPort, productQueryPort, idGenerator);
         var orderCreationExecutor = new OrderCreationExecutor(
             orderRepository, eventPublisher, paymentGatewayPort, orderCachePort, preparationService, idGenerator
         );
-        saga = new CreateOrderSaga(lockManager, sagaCoordinator, compensationService, orderCreationExecutor, productOrderPort);
+        service = new OrderCreationService(lockManager, orderCreationExecutor, productOrderPort);
 
         Collection<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
@@ -128,7 +103,7 @@ class CreateOrderSagaCompensationTest {
     }
 
     @Test
-    @DisplayName("正常创建订单 Saga 成功")
+    @DisplayName("正常创建订单")
     void execute_normalFlow_succeeds() {
         CreateOrderCommand command = new CreateOrderCommand(
                 List.of(new CreateOrderItem("100", 1)),
@@ -139,18 +114,19 @@ class CreateOrderSagaCompensationTest {
         when(productOrderPort.getSnapshot("100")).thenReturn(Optional.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenReturn("1");
 
-        CreateOrderResult result = saga.execute(command);
+        CreateOrderResult result = service.execute(command);
 
         assertThat(result).isNotNull();
         verify(paymentGatewayPort).createPayment(any());
         verify(orderRepository).save(any(Order.class));
         verify(eventPublisher).publish(any());
+        verify(productOrderPort).decreaseStock("100", 1);
         verify(lock, atLeastOnce()).unlock();
     }
 
     @Test
-    @DisplayName("支付失败时执行订单补偿")
-    void execute_paymentFails_cancelsOrder() {
+    @DisplayName("支付失败时抛出 OrderCreationException（单事务回滚兜底，无需反向补偿）")
+    void execute_paymentFails_throws() {
         CreateOrderCommand command = new CreateOrderCommand(
                 List.of(new CreateOrderItem("100", 1)),
                 "北京市朝阳区", "13800138000", null, null
@@ -160,27 +136,16 @@ class CreateOrderSagaCompensationTest {
         when(productOrderPort.getSnapshot("100")).thenReturn(Optional.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenThrow(new RuntimeException("支付失败"));
 
-        Order cancelledAggregate = Order.from(
-                new OrderReconstructSpec(
-                        OrderId.of("1"), OrderNo.of("ORD1"),
-                        UserId.of(BUYER_ID), UserId.of(SELLER_ID),
-                        List.of(),
-                        Money.of(new BigDecimal("99.99")),
-                        OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID,
-                        Address.of("地址"), Phone.of("13800138000"),
-                        "备注", null, null
-                )
-        );
-        when(orderRepository.findById(any(OrderId.class))).thenReturn(Optional.of(cancelledAggregate));
-
-        assertThatThrownBy(() -> saga.execute(command))
-                .isInstanceOf(OrderCreationException.class);
-
-        verify(orderRepository).update(any(Order.class));
+        assertThatThrownBy(() -> service.execute(command))
+                .isInstanceOf(OrderCreationException.class)
+                .hasMessageContaining("支付失败");
+        // 无事务内反向补偿：订单/库存/支付随事务整体回滚
+        verify(productOrderPort, never()).restoreStock(anyString(), anyInt());
+        verify(orderRepository, never()).update(any(Order.class));
     }
 
     @Test
-    @DisplayName("资产不存在时 Saga 失败")
+    @DisplayName("资产不存在时下单失败")
     void execute_productNotFound_throws() {
         CreateOrderCommand command = new CreateOrderCommand(
                 List.of(new CreateOrderItem("999", 1)),
@@ -189,7 +154,7 @@ class CreateOrderSagaCompensationTest {
 
         when(productOrderPort.getSnapshot("999")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> saga.execute(command))
+        assertThatThrownBy(() -> service.execute(command))
                 .isInstanceOf(OrderCreationException.class)
                 .hasMessageContaining("资产不存在");
     }
@@ -205,8 +170,8 @@ class CreateOrderSagaCompensationTest {
                 "北京市朝阳区", "13800138000", null, null
         );
 
-        assertThatThrownBy(() -> saga.execute(command))
-                .isInstanceOf(SagaException.class)
+        assertThatThrownBy(() -> service.execute(command))
+                .isInstanceOf(OrderCreationException.class)
                 .hasMessageContaining("繁忙");
     }
 }

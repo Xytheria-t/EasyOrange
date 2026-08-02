@@ -12,7 +12,7 @@ import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
-import com.cartethyia.easyorange.order.application.saga.CreateOrderSaga;
+import com.cartethyia.easyorange.order.application.service.OrderCreationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,12 +25,12 @@ public class OrderCommandHandler {
 
     private final OrderRepository orderRepository;
     private final DomainEventPublisher domainEventPublisher;
-    private final CreateOrderSaga createOrderSaga;
+    private final OrderCreationService orderCreationService;
     private final PaymentGatewayPort paymentGatewayPort;
     private final OrderCachePort<?> orderCachePort;
 
     public CreateOrderResult handle(CreateOrderCommand command) {
-        return createOrderSaga.execute(command);
+        return orderCreationService.execute(command);
     }
 
     @Transactional(rollbackFor = Exception.class)

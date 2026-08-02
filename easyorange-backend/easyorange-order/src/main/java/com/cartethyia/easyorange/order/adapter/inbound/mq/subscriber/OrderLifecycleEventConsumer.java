@@ -17,10 +17,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * 订单 Saga 事件消费者 — 编排订单生命周期跨模块协作。
+ * 订单生命周期事件消费者 — 订单状态变更后的跨模块协作。
  * <p>
- * 注意：库存扣减已在 {@link com.cartethyia.easyorange.order.application.saga.CreateOrderSaga}
- * 中同步完成，{@code OrderCreatedEvent} 不再触发异步库存预留。
+ * 注意：下单时的库存扣减已在 {@code OrderCreationService} 中同步完成（同事务），
+ * {@code OrderCreatedEvent} 不再触发异步库存预留。
  * <p>
  * 职责：
  * <ul>
@@ -32,15 +32,15 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
-@RabbitListener(queues = RabbitMQConfig.QUEUE_ORDER_SAGA, containerFactory = "domainEventContainerFactory")
-public class OrderSagaEventConsumer {
+@RabbitListener(queues = RabbitMQConfig.QUEUE_ORDER_LIFECYCLE, containerFactory = "domainEventContainerFactory")
+public class OrderLifecycleEventConsumer {
 
     private final EventConsumerHandler handler;
     private final ProductOrderPort productOrderPort;
 
-    public OrderSagaEventConsumer(EventIdempotencyChecker idempotencyChecker,
-                                   EventMetricsService metricsService,
-                                   ProductOrderPort productOrderPort) {
+    public OrderLifecycleEventConsumer(EventIdempotencyChecker idempotencyChecker,
+                                       EventMetricsService metricsService,
+                                       ProductOrderPort productOrderPort) {
         this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService);
         this.productOrderPort = productOrderPort;
     }
@@ -48,7 +48,7 @@ public class OrderSagaEventConsumer {
     @RabbitHandler
     public void onOrderCreated(OrderCreatedEvent event, Message message) {
         handler.handle(event, message, metadata ->
-                log.debug("Order created, stock already decremented synchronously in Saga: orderId={}", event.orderId()));
+                log.debug("Order created, stock already decremented synchronously: orderId={}", event.orderId()));
     }
 
     @RabbitHandler

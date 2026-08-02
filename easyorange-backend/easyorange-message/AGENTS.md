@@ -1,18 +1,30 @@
 # easyorange-message 模块指南
 
-消息通知模块，混合架构（部分 DDD + 传统分层），支持站内消息、WebSocket 实时推送、消息模板。
+消息通知模块，DDD 六边形架构，支持站内消息、WebSocket 实时推送、消息模板。
 
-> **架构现状**: MyBatis Repository 实现已迁移到 `adapter/outbound/persistence/`。Controller 层已迁移到 `adapter/inbound/web/controller/`，service 层仍为传统分层结构，待进一步演进。
+> **架构现状**: 全模块已完成 DDD 分层迁移——聚合根在 `domain/aggregate/`（原 `entity/` 已消除），MyBatis Repository 实现在 `adapter/outbound/persistence/`（DO + Mapper + RepositoryImpl + typehandler），Controller 在 `adapter/inbound/web/controller/`，入站请求 DTO 在 `adapter/inbound/web/dto/request/`，应用层（CQRS + 定时服务 + 领域服务注册）在 `application/`，端口接口在 `domain/port/`。无分层的 `service/` / `entity/` / `dto/` 目录均已消除。
 
 ## 目录结构
 
 ```
 message/
-├── adapter/inbound/web/controller/    # REST 控制器
-│   ├── MessageCommandController.java
-│   └── MessageQueryController.java
-├── adapter/                           # 适配器层
+├── adapter/                           # 适配器层（六边形出/入站）
+│   ├── inbound/web/
+│   │   ├── controller/                # REST 控制器
+│   │   │   ├── MessageCommandController.java
+│   │   │   └── MessageQueryController.java
+│   │   └── dto/request/               # 入站请求 DTO
+│   │       ├── SendMessageRequest.java
+│   │       ├── QueryMessageRequest.java
+│   │       ├── SubscriptionRequest.java
+│   │       ├── TemplateMessageRequest.java
+│   │       └── WsMessage.java
 │   └── outbound/persistence/          # 出站适配器 (MyBatis 实现)
+│       ├── MessageDO.java             # 数据对象 (DO)
+│       ├── MessageSubscriptionDO.java
+│       ├── MessageTemplateDO.java
+│       ├── OfflineMessageDO.java
+│       ├── MessageDataMapper.java     # DO ↔ 聚合根映射
 │       ├── MessageMapper.java
 │       ├── MessageSubscriptionMapper.java
 │       ├── MessageTemplateMapper.java
@@ -21,9 +33,16 @@ message/
 │       ├── MessageQueryRepositoryImpl.java
 │       ├── MessageSubscriptionRepositoryImpl.java
 │       ├── MessageTemplateRepositoryImpl.java
-│       └── OfflineMessageRepositoryImpl.java
+│       ├── OfflineMessageRepositoryImpl.java
+│       └── typehandler/               # 枚举 TypeHandler
+│           ├── MessageStatusTypeHandler.java
+│           ├── MessageTypeTypeHandler.java
+│           └── ReadStatusTypeHandler.java
 ├── application/                       # [DDD] 应用层 (CQRS)
+│   ├── config/
+│   │   └── MessageDomainServiceConfig.java # @Bean 方式注册领域服务（保持 domain 层纯净）
 │   ├── service/
+│   │   ├── MessageArchiveService.java       # 消息归档定时服务（@Scheduled）
 │   │   └── RateLimiterService.java           # 消息发送频率限制（应用层运维策略）
 │   ├── command/
 │   │   ├── MessageCommandHandler.java
@@ -31,44 +50,40 @@ message/
 │   │   ├── SendSystemMessageCommand.java
 │   │   ├── MarkAsReadCommand.java
 │   │   ├── MarkAsReadBatchCommand.java
-│   │   └── DeleteMessageCommand.java
+│   │   ├── DeleteMessageCommand.java
+│   │   └── RecallMessageCommand.java
 │   └── query/
 │       ├── MessageQueryHandler.java
 │       ├── ConversationQueryHandler.java
 │       ├── MessageQuery.java
-│       └── UnreadCountQuery.java
-├── service/                           # [传统] 服务层 (待迁移到 application/service/)
-│   ├── config/
-│   │   └── MessageDomainServiceConfig.java # @Bean 方式注册领域服务（保持 domain 层纯净）
-│   ├── MessageArchiveService.java     # 消息归档定时服务
-│   ├── MessageSubscriptionService.java
-│   ├── MessageTemplateService.java
-│   ├── OfflineMessageService.java
-│   └── impl/
-├── dto/
-│   ├── request/
-│   │   ├── SendMessageRequest.java
-│   │   ├── QueryMessageRequest.java
-│   │   ├── SubscriptionRequest.java
-│   │   ├── TemplateMessageRequest.java
-│   │   └── WsMessage.java
-│   └── vo/
-│       ├── MessageResponse.java
-│       ├── ConversationResponse.java
-│       ├── UnreadCountResponse.java
-│       ├── MessageSubscriptionResponse.java
-│       └── MessageTemplateResponse.java
+│       └── dto/                      # 查询返回 VO
+│           ├── ConversationListVO.java
+│           ├── ConversationVO.java
+│           ├── MessageVO.java
+│           ├── MessageSubscriptionVO.java
+│           ├── MessageTemplateVO.java
+│           └── UnreadCountVO.java
 ├── domain/                            # [DDD] 领域层
+│   ├── aggregate/                     # 聚合根
+│   │   ├── Message.java
+│   │   ├── MessageSubscription.java
+│   │   ├── MessageTemplate.java
+│   │   └── OfflineMessage.java
 │   ├── event/
 │   │   ├── MessageSentEvent.java
 │   │   ├── MessageReadEvent.java
-│   │   └── MessageDeletedEvent.java
+│   │   ├── MessageDeletedEvent.java
+│   │   └── MessageRecalledEvent.java
+│   ├── port/                          # 端口接口（隔离外部依赖）
+│   │   ├── MessageNotifierPort.java
+│   │   └── UserInfoPort.java
 │   ├── repository/                    # 仓储接口 (实现已迁移到 adapter/outbound/)
 │   │   ├── MessageRepository.java
-│   │   ├── MessageQueryRepository.java
-│   │   ├── OfflineMessageRepository.java
 │   │   ├── MessageSubscriptionRepository.java
-│   │   └── MessageTemplateRepository.java
+│   │   ├── MessageTemplateRepository.java
+│   │   ├── OfflineMessageRepository.java
+│   │   └── query/
+│   │       └── MessageQueryRepository.java
 │   ├── service/
 │   │   ├── MessageRoutingService.java        # 根据订阅偏好路由消息（在线推送/离线存储）
 │   │   ├── OfflineMessageStoreService.java   # 离线消息存储和重推
@@ -76,16 +91,14 @@ message/
 │   ├── valueobject/
 │   │   ├── MessageContent.java
 │   │   ├── MessageContentFormat.java
-│   │   └── Recipient.java
+│   │   ├── Recipient.java
+│   │   ├── MessageQuery.java
+│   │   ├── UnreadCount.java
+│   │   └── UserInfo.java
 │   └── exception/
 │       ├── MessageDomainException.java
 │       ├── MessageNotFoundException.java
 │       └── UnauthorizedOperationException.java
-├── entity/                            # [传统] 实体类 (待迁移)
-│   ├── Message.java
-│   ├── MessageSubscription.java
-│   ├── MessageTemplate.java
-│   └── OfflineMessage.java
 ├── enums/
 │   ├── MessageStatus.java
 │   ├── MessageType.java
@@ -97,7 +110,10 @@ message/
     ├── WebSocketConfig.java
     ├── WebSocketAuthInterceptor.java
     ├── WebSocketNotifier.java
-    └── WebSocketEventListener.java
+    ├── WebSocketEventListener.java
+    ├── WebSocketEventConsumer.java
+    ├── ChatWebSocketHandler.java
+    └── TypingIndicatorService.java
 ```
 
 ## WebSocket 架构
@@ -133,10 +149,12 @@ message/
 ## 演进路线
 
 1. ~~将 `domain/repository/` 中的 MyBatis 实现类迁移到 `adapter/outbound/persistence/`~~ ✅ 已完成
-2. 将 `entity/` 中的实体类拆分：聚合根 → `domain/aggregate/`，数据对象 → `adapter/outbound/persistence/`
+2. ~~将 `entity/` 中的实体类拆分：聚合根 → `domain/aggregate/`，数据对象 → `adapter/outbound/persistence/`~~ ✅ 已完成（`entity/` 目录已消除，DO 在 `adapter/outbound/persistence/`，聚合根在 `domain/aggregate/`）
 3. ~~将 `controller/` 迁移到 `adapter/inbound/web/controller/`~~ ✅ 已完成
-4. 将 `service/` 迁移到 `application/service/`
-5. 添加 `domain/port/` 端口接口
+4. ~~将 `service/` 迁移到 `application/service/`~~ ✅ 已完成（2026-07-31，死代码清理 + MessageArchiveService/Config 迁入 application/）
+5. ~~添加 `domain/port/` 端口接口~~ ✅ 已完成（`MessageNotifierPort` / `UserInfoPort`）
+
+> 演进路线 5 步全部完成，模块已为完整 DDD 六边形架构。
 
 ## 常见开发任务
 

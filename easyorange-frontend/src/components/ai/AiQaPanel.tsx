@@ -8,7 +8,7 @@ import './ai-components.css';
 
 interface AiQaPanelProps {
     product: {
-        id: number | string;
+        id: string;
         title: string;
         description: string;
         categoryName: string;
@@ -50,7 +50,7 @@ function AiQaPanel({ product, onAsk, qaHistory, isLoading }: AiQaPanelProps) {
         }
 
         const request: QaRequest = {
-            productId: Number(product.id),
+            productId: product.id,
             question,
             productName: product.title,
             productDescription: product.description,

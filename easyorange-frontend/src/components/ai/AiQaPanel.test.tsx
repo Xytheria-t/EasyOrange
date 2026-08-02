@@ -9,7 +9,7 @@ import AiQaPanel from './AiQaPanel';
 type AskHandler = (request: QaRequest) => void;
 
 const mockProduct = {
-    id: 1,
+    id: '1',
     title: 'AI托管 iPhone 14',
     description: '99新，使用一个月',
     categoryName: '手机',
@@ -85,7 +85,7 @@ describe('AiQaPanel', () => {
             expect(handleAsk).toHaveBeenCalledTimes(1);
             const request: QaRequest = handleAsk.mock.calls[0][0];
             expect(request.question).toBe('有保修吗？');
-            expect(request.productId).toBe(1);
+            expect(request.productId).toBe('1');
             expect(request.productName).toBe('AI托管 iPhone 14');
         });
 

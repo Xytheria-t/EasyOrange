@@ -1,10 +1,12 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import {
+    serializeFilters,
+    useListUrlState,
+    type ListUrlState,
+} from '@/hooks/ui/useListUrlState';
 
-export interface SearchUrlState {
-    keyword: string;
-    filters: Record<string, string>;
-    pageNum: number;
+export interface SearchUrlState extends ListUrlState {
     aiEnabled: boolean;
 }
 
@@ -18,125 +20,35 @@ export interface SearchUrlStateSetters {
     reset: () => void;
 }
 
+const AI_PARAM = 'ai';
 const FILTERS_PARAM = 'filters';
 const PAGE_PARAM = 'page';
-const AI_PARAM = 'ai';
 const KEYWORD_PARAM = 'keyword';
 
-function serializeFilters(filters: Record<string, string>): string {
-    return Object.entries(filters)
-        .filter(([, value]) => value !== undefined && value !== null && value !== '')
-        .map(([key, value]) => `${key}:${encodeURIComponent(value)}`)
-        .join(',');
-}
-
-function parseFilters(raw: string | null): Record<string, string> {
-    if (!raw) {
-        return {};
-    }
-    const result: Record<string, string> = {};
-    raw.split(',').forEach(segment => {
-        const separatorIndex = segment.indexOf(':');
-        if (separatorIndex <= 0) {
-            return;
-        }
-        const key = segment.slice(0, separatorIndex);
-        const value = segment.slice(separatorIndex + 1);
-        if (key) {
-            result[key] = decodeURIComponent(value);
-        }
-    });
-    return result;
-}
-
+/**
+ * SearchPage 专用 URL 状态 hook。
+ *
+ * 在通用 {@link useListUrlState} 基础上扩展 `aiEnabled` 标志（语义搜索开关）。
+ *
+ * `aiEnabled` 通过独立的 `ai` 查询参数持久化（不进入 `filters` 序列化），
+ * 这样切换语义搜索不会触发列表筛选 chip 的展示。
+ *
+ * 写入操作复用 useListUrlState 的 updateParams 以共享同一 setSearchParams 实例，
+ * 避免多个 useSearchParams 写入在并发更新时产生竞争。读取操作直接使用
+ * useSearchParams（只读不竞争）。
+ *
+ * `setState` 与 `reset` 将 list 状态与 aiEnabled 合并到单次 updateParams 调用，
+ * 确保一次 React Router 导航即完成所有 URL 变更（避免双导航竞态）。
+ */
 export function useSearchUrlState(): SearchUrlState & SearchUrlStateSetters {
-    const [searchParams, setSearchParams] = useSearchParams();
+    const listState = useListUrlState();
+    const [searchParams] = useSearchParams();
 
-    const state = useMemo<SearchUrlState>(() => {
-        const keyword = searchParams.get(KEYWORD_PARAM) || '';
-        const filters = parseFilters(searchParams.get(FILTERS_PARAM));
-        const pageNum = Math.max(1, parseInt(searchParams.get(PAGE_PARAM) || '1', 10) || 1);
-        const aiEnabled = searchParams.get(AI_PARAM) === '1';
-        return { keyword, filters, pageNum, aiEnabled };
-    }, [searchParams]);
-
-    const updateParams = useCallback(
-        (updater: (params: URLSearchParams) => URLSearchParams) => {
-            setSearchParams(prev => {
-                const next = new URLSearchParams(prev);
-                return updater(next);
-            });
-        },
-        [setSearchParams]
-    );
-
-    const setKeyword = useCallback(
-        (keyword: string) => {
-            updateParams(params => {
-                if (keyword) {
-                    params.set(KEYWORD_PARAM, keyword);
-                } else {
-                    params.delete(KEYWORD_PARAM);
-                }
-                return params;
-            });
-        },
-        [updateParams]
-    );
-
-    const setFilters = useCallback(
-        (filters: Record<string, string>) => {
-            updateParams(params => {
-                const serialized = serializeFilters(filters);
-                if (serialized) {
-                    params.set(FILTERS_PARAM, serialized);
-                } else {
-                    params.delete(FILTERS_PARAM);
-                }
-                params.set(PAGE_PARAM, '1');
-                return params;
-            });
-        },
-        [updateParams]
-    );
-
-    const setFilterValue = useCallback(
-        (key: string, value: string | null) => {
-            updateParams(params => {
-                const current = parseFilters(params.get(FILTERS_PARAM));
-                const next = { ...current };
-                if (value === null || value === undefined || value === '') {
-                    delete next[key];
-                } else {
-                    next[key] = value;
-                }
-                const serialized = serializeFilters(next);
-                if (serialized) {
-                    params.set(FILTERS_PARAM, serialized);
-                } else {
-                    params.delete(FILTERS_PARAM);
-                }
-                params.set(PAGE_PARAM, '1');
-                return params;
-            });
-        },
-        [updateParams]
-    );
-
-    const setPageNum = useCallback(
-        (pageNum: number) => {
-            updateParams(params => {
-                const normalized = Math.max(1, pageNum);
-                params.set(PAGE_PARAM, String(normalized));
-                return params;
-            });
-        },
-        [updateParams]
-    );
+    const aiEnabled = useMemo(() => searchParams.get(AI_PARAM) === '1', [searchParams]);
 
     const setAiEnabled = useCallback(
         (enabled: boolean) => {
-            updateParams(params => {
+            listState.updateParams(params => {
                 if (enabled) {
                     params.set(AI_PARAM, '1');
                 } else {
@@ -145,12 +57,12 @@ export function useSearchUrlState(): SearchUrlState & SearchUrlStateSetters {
                 return params;
             });
         },
-        [updateParams]
+        [listState]
     );
 
     const setState = useCallback(
         (partial: Partial<SearchUrlState>) => {
-            updateParams(params => {
+            listState.updateParams(params => {
                 if ('keyword' in partial) {
                     const keyword = partial.keyword ?? '';
                     if (keyword) {
@@ -180,25 +92,28 @@ export function useSearchUrlState(): SearchUrlState & SearchUrlStateSetters {
                 return params;
             });
         },
-        [updateParams]
+        [listState]
     );
 
     const reset = useCallback(() => {
-        updateParams(params => {
+        listState.updateParams(params => {
             params.delete(KEYWORD_PARAM);
             params.delete(FILTERS_PARAM);
             params.delete(PAGE_PARAM);
             params.delete(AI_PARAM);
             return params;
         });
-    }, [updateParams]);
+    }, [listState]);
 
     return {
-        ...state,
-        setKeyword,
-        setFilters,
-        setFilterValue,
-        setPageNum,
+        keyword: listState.keyword,
+        filters: listState.filters,
+        pageNum: listState.pageNum,
+        aiEnabled,
+        setKeyword: listState.setKeyword,
+        setFilters: listState.setFilters,
+        setFilterValue: listState.setFilterValue,
+        setPageNum: listState.setPageNum,
         setAiEnabled,
         setState,
         reset,
