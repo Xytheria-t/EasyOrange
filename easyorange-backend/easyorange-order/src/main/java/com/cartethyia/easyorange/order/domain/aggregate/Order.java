@@ -18,6 +18,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -53,7 +54,7 @@ import java.util.Objects;
  */
 @Getter
 @Accessors(fluent = true)
-@Builder(toBuilder = true)
+@Builder(toBuilder = true, access = AccessLevel.PACKAGE)
 @EqualsAndHashCode(of = "id")
 @ToString(of = {"id", "orderNo", "status", "paymentStatus"})
 public class Order {
@@ -113,9 +114,9 @@ public class Order {
         BizRequire.requireTrue(total.compareTo(BigDecimal.ZERO) > 0, "订单金额必须大于0");
         Money totalAmount = Money.of(total);
 
-        OrderId orderId = OrderId.of(spec.orderId());
+        OrderId orderId = spec.orderId();
         Order aggregate = new Order(
-                orderId, OrderNo.of(spec.orderId()), spec.buyerId(), spec.sellerId(), spec.items(),
+                orderId, OrderNo.of(orderId.value()), spec.buyerId(), spec.sellerId(), spec.items(),
                 totalAmount, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID,
                 spec.address(), spec.phone(), spec.remark(), null, null, null
         );
@@ -127,7 +128,7 @@ public class Order {
                 .toList();
 
         OrderCreatedEvent event = new OrderCreatedEvent(
-                spec.orderId(), spec.buyerId().value(), spec.sellerId().value(),
+                orderId.value(), spec.buyerId().value(), spec.sellerId().value(),
                 itemPayloads, totalAmount.value()
         );
 

@@ -20,46 +20,46 @@ public class OrderQueryController {
 
     private final OrderQueryHandler queryHandler;
 
-    @GetMapping("/{id}")
+    @GetMapping("/owned/{id}")
     public Result<OrderVO> getOrderDetail(@PathVariable String id) {
         return Result.success(queryHandler.getOrderDetailForOwner(id));
     }
 
     @GetMapping("/my")
     public Result<PageResult<OrderVO>> getMyOrders(@Valid QueryOrderRequest request) {
-        return Result.success(queryHandler.getMyOrders(toListQuery(request, true)));
+        return Result.success(queryHandler.getMyOrders(toScopedListQuery(request)));
     }
 
     @GetMapping("/sold")
     public Result<PageResult<OrderVO>> getSoldOrders(@Valid QueryOrderRequest request) {
-        return Result.success(queryHandler.getSoldOrders(toListQuery(request, false)));
+        return Result.success(queryHandler.getSoldOrders(toScopedListQuery(request)));
     }
 
-    @GetMapping("/list")
+    @GetMapping
     public Result<PageResult<OrderVO>> queryOrders(@Valid QueryOrderRequest request) {
-        return Result.success(queryHandler.listOrders(toListQuery(request, false)));
+        return Result.success(queryHandler.listOrders(toExplicitListQuery(request)));
     }
 
-    /**
-     * 将 HTTP 入参 QueryOrderRequest 转换为 application 层 OrderListQuery。
-     * <p>
-     * String status code 在此边界转换为 {@link OrderStatus} 枚举，类型安全下沉到 application/domain 层。
-     * 非法 code 由 {@link OrderStatus#fromCode(String)} 抛出 IllegalArgumentException，
-     * 由全局异常处理器映射为 400 响应。
-     *
-     * @param skipUserScope true 表示 buyerId/sellerId 由 service 层根据登录用户填充（my/sold 场景），
-     *                      false 表示直接透传 request 中的 buyerId/sellerId（list 场景）
-     */
-    private static OrderListQuery toListQuery(QueryOrderRequest request, boolean skipUserScope) {
+    /** my/sold 场景：丢弃请求中的 buyerId/sellerId，用户 scope 由 application 层按当前登录人填充。 */
+    private static OrderListQuery toScopedListQuery(QueryOrderRequest request) {
         OrderStatus status = resolveStatus(request.getStatus());
-        String buyerId = skipUserScope ? null : request.getBuyerId();
-        String sellerId = skipUserScope ? null : request.getSellerId();
         return new OrderListQuery(
-                request.getOrderNo(), status, buyerId, sellerId,
+                request.getOrderNo(), status, null, null,
                 request.getPageNum(), request.getPageSize());
     }
 
-    /** 边界层 String code → OrderStatus 转换，blank 视为 null（查询全部状态）。 */
+    /** list/通用场景：透传请求中的 buyerId/sellerId 过滤条件。 */
+    private static OrderListQuery toExplicitListQuery(QueryOrderRequest request) {
+        OrderStatus status = resolveStatus(request.getStatus());
+        return new OrderListQuery(
+                request.getOrderNo(), status, request.getBuyerId(), request.getSellerId(),
+                request.getPageNum(), request.getPageSize());
+    }
+
+    /**
+     * 边界层 String code → OrderStatus 转换，blank 视为 null（查询全部状态）。
+     * 非法 code 由 {@link OrderStatus#fromCode(String)} 抛 IllegalArgumentException，由全局异常处理器映射为 400。
+     */
     private static OrderStatus resolveStatus(String status) {
         if (status == null || status.isBlank()) {
             return null;

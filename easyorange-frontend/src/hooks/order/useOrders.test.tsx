@@ -110,7 +110,7 @@ describe('useSoldOrders', () => {
 describe('useOrderDetail', () => {
     it('returns order detail', async () => {
         server.use(
-            http.get('/api/orders/1', () => {
+            http.get('/api/orders/owned/1', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',

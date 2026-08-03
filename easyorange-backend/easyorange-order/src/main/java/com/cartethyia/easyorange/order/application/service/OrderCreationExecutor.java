@@ -15,6 +15,7 @@ import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +55,7 @@ public class OrderCreationExecutor {
         // 创建订单聚合根（通过 spec record 收敛 7 个参数）
         Transition<Order, OrderCreatedEvent> result = Order.createOrder(
             new OrderCreateSpec(
-                idGenerator.generateId(),
+                OrderId.of(idGenerator.generateId()),
                 UserId.of(buyerId),
                 preparation.sellerId(),
                 preparation.orderItems(),

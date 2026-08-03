@@ -80,6 +80,6 @@ public class OrderReadModelAssembler {
                 .collect(Collectors.toMap(
                         ProductDetail::id,
                         p -> p,
-                        (a, b) -> a));
+                        (a, _) -> a));
     }
 }

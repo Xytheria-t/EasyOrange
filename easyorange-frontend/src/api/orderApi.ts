@@ -24,7 +24,7 @@ export const orderApi = {
     },
 
     getOrderDetail(id: string) {
-        return request<OrderDetail>(`/orders/${id}`);
+        return request<OrderDetail>(`/orders/owned/${id}`);
     },
 
     cancelOrder(id: string, reason?: string) {

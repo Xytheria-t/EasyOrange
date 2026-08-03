@@ -59,7 +59,7 @@ class OrderQueryControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/orders/{id}")
+    @DisplayName("GET /api/orders/owned/{id}")
     class GetOrderDetailTests {
 
         @Test
@@ -68,7 +68,7 @@ class OrderQueryControllerTest {
             OrderVO vo = createOrderVO("100", "ORD100", OrderStatus.PENDING_PAYMENT.getCode(), "待付款");
             when(queryHandler.getOrderDetailForOwner("100")).thenReturn(vo);
 
-            mockMvc.perform(get("/api/orders/{id}", 100L))
+            mockMvc.perform(get("/api/orders/owned/{id}", 100L))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("A0000"))
                     .andExpect(jsonPath("$.data.id").value(100))
@@ -82,7 +82,7 @@ class OrderQueryControllerTest {
         void getOrderDetail_withNonExistentId_shouldReturnNullData() throws Exception {
             when(queryHandler.getOrderDetailForOwner("999")).thenReturn(null);
 
-            mockMvc.perform(get("/api/orders/{id}", 999L))
+            mockMvc.perform(get("/api/orders/owned/{id}", 999L))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("A0000"))
                     .andExpect(jsonPath("$.data").doesNotExist());
@@ -96,7 +96,7 @@ class OrderQueryControllerTest {
 
             org.junit.jupiter.api.Assertions.assertThrows(
                     jakarta.servlet.ServletException.class,
-                    () -> mockMvc.perform(get("/api/orders/{id}", 100L))
+                    () -> mockMvc.perform(get("/api/orders/owned/{id}", 100L))
             );
         }
     }
@@ -178,7 +178,7 @@ class OrderQueryControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/orders/list")
+    @DisplayName("GET /api/orders")
     class QueryOrdersTests {
 
         @Test
@@ -190,7 +190,7 @@ class OrderQueryControllerTest {
             PageResult<OrderVO> pageResult = PageResult.of(records, 1L, 1, 10);
             when(queryHandler.listOrders(any(OrderListQuery.class))).thenReturn(pageResult);
 
-            mockMvc.perform(get("/api/orders/list")
+            mockMvc.perform(get("/api/orders")
                             .param("status", OrderStatus.PENDING_PAYMENT.getCode())
                             .param("pageNum", "1")
                             .param("pageSize", "10"))
@@ -206,7 +206,7 @@ class OrderQueryControllerTest {
             when(queryHandler.listOrders(any(OrderListQuery.class)))
                     .thenReturn(PageResult.empty(1, 10));
 
-            mockMvc.perform(get("/api/orders/list"))
+            mockMvc.perform(get("/api/orders"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("A0000"))
                     .andExpect(jsonPath("$.data.records.length()").value(0));

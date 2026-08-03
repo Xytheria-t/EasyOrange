@@ -127,6 +127,9 @@ function SearchPage() {
         []
     );
 
+    // 卸载时取消待执行的防抖定时器，避免组件卸载后回调 setState（触发 React 未处理异步错误）
+    useEffect(() => () => debouncedSetKeyword.cancel(), [debouncedSetKeyword]);
+
     useEffect(() => {
         inputRef.current?.focus();
     }, []);

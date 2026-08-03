@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.order.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
@@ -20,7 +19,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,24 +37,14 @@ public class OrderQueryHandler {
     private final OrderReadModelAssembler readModelAssembler;
 
     @Transactional(readOnly = true)
-    public OrderVO getOrderDetail(String orderId) {
-        OrderReadModel order = orderReadRepository.findById(OrderId.of(orderId)).orElse(null);
-        if (order == null) {
-            return null;
-        }
-        Map<String, ProductDetail> productMap = loadProductMap(order);
-        return readModelAssembler.toOrderVO(order, productMap, true);
-    }
-
-    @Transactional(readOnly = true)
     public OrderVO getOrderDetailForOwner(String orderId) {
         OrderReadModel order = orderReadRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
 
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        BizRequire.requireTrue(
-                order.buyerId().equals(userId) || order.sellerId().equals(userId),
-                OrderResultCode.ORDER_NOT_OWNER);
+        if (!order.buyerId().equals(userId) && !order.sellerId().equals(userId)) {
+            throw new OrderDomainException(OrderResultCode.ORDER_NOT_OWNER);
+        }
 
         Map<String, ProductDetail> productMap = loadProductMap(order);
         return readModelAssembler.toOrderVO(order, productMap, false);
@@ -59,9 +52,15 @@ public class OrderQueryHandler {
 
     /**
      * 订单列表查询（管理端 / 通用） — 通过 OrderListQuery 收敛 6 个参数。
+     * Controller 通过代理调用本方法，事务注解生效。
      */
     @Transactional(readOnly = true)
     public PageResult<OrderVO> listOrders(OrderListQuery query) {
+        return doListOrders(query);
+    }
+
+    /** listOrders 的实际实现 — 供同对象内部调用，避免 @Transactional 自调用失效。 */
+    private PageResult<OrderVO> doListOrders(OrderListQuery query) {
         OrderQueryCondition condition = new OrderQueryCondition(
                 query.orderNo(), query.status(), query.buyerId(), query.sellerId(),
                 query.pageNum(), query.pageSize());
@@ -91,22 +90,36 @@ public class OrderQueryHandler {
         return queryOrdersWithCache(null, userId, query);
     }
 
+    /**
+     * 带缓存的当前用户订单列表查询。
+     * <p>
+     * 缓存 key 由当前用户 + 状态 + 分页构成，覆盖所有影响结果集的参数；
+     * orderNo 为精确过滤、无法纳入 key，直接绕过缓存避免跨查询污染。
+     */
     private PageResult<OrderVO> queryOrdersWithCache(String buyerId, String sellerId, OrderListQuery query) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        String statusCode = query.status() != null ? query.status().getCode() : null;
-        String cacheKey = orderCachePort.buildOrderListKey(userId, statusCode);
+        String userId = buyerId != null ? buyerId : sellerId;
 
+        if (query.orderNo() != null && !query.orderNo().isBlank()) {
+            return doListOrders(withUserScope(query, buyerId, sellerId));
+        }
+
+        String statusCode = query.status() != null ? query.status().getCode() : null;
+        String cacheKey = orderCachePort.buildOrderListKey(userId, statusCode, query.pageNum(), query.pageSize());
         Optional<PageResult<OrderVO>> cachedResult = orderCachePort.getOrderList(cacheKey);
         if (cachedResult.isPresent()) {
             return cachedResult.get();
         }
 
-        OrderListQuery effectiveQuery = new OrderListQuery(
-                query.orderNo(), query.status(), buyerId, sellerId,
-                query.pageNum(), query.pageSize());
-        PageResult<OrderVO> result = listOrders(effectiveQuery);
+        PageResult<OrderVO> result = doListOrders(withUserScope(query, buyerId, sellerId));
         orderCachePort.putOrderList(cacheKey, result);
         return result;
+    }
+
+    /** 注入当前用户视角的 buyerId/sellerId 到查询条件。 */
+    private OrderListQuery withUserScope(OrderListQuery query, String buyerId, String sellerId) {
+        return new OrderListQuery(
+                query.orderNo(), query.status(), buyerId, sellerId,
+                query.pageNum(), query.pageSize());
     }
 
     private List<OrderVO> assembleOrderVOs(List<OrderReadModel> orders) {

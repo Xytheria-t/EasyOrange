@@ -43,7 +43,7 @@ public final class OrderTestFixture {
     }
 
     public static class OrderCreateSpecBuilder {
-        private String orderId = ORDER_ID;
+        private OrderId orderId = OrderId.of(ORDER_ID);
         private UserId buyerId = UserId.of(BUYER_ID);
         private UserId sellerId = UserId.of(SELLER_ID);
         private List<OrderItem> items = singleItemList();
@@ -51,7 +51,7 @@ public final class OrderTestFixture {
         private Phone phone = Phone.of("13800138000");
         private String remark = "尽快发货";
 
-        public OrderCreateSpecBuilder orderId(String orderId) { this.orderId = orderId; return this; }
+        public OrderCreateSpecBuilder orderId(String orderId) { this.orderId = OrderId.of(orderId); return this; }
         public OrderCreateSpecBuilder buyerId(String buyerId) { this.buyerId = UserId.of(buyerId); return this; }
         public OrderCreateSpecBuilder sellerId(String sellerId) { this.sellerId = UserId.of(sellerId); return this; }
         public OrderCreateSpecBuilder items(List<OrderItem> items) { this.items = items; return this; }

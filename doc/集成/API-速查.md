@@ -46,11 +46,15 @@
 | 功能 | 方法+路径 | 鉴权 |
 |------|----------|------|
 | 创建订单 | `POST /api/orders` | Access Token |
-| 订单详情 | `GET /api/orders/{id}` | Access Token（双方） |
+| 订单列表（通用） | `GET /api/orders` | Access Token |
+| 订单详情 | `GET /api/orders/owned/{id}` | Access Token（双方） |
 | 我的订单（买入） | `GET /api/orders/my` | Access Token |
 | 卖出订单 | `GET /api/orders/sold` | Access Token |
-| 取消订单 | `PUT /api/orders/{id}/cancel` | Access Token（订单双方） |
-| 确认收货 | `PUT /api/orders/{id}/confirm` | Access Token（认领方） |
+| 支付订单 | `PUT /api/orders/{id}/pay` | Access Token（认领方） |
+| 取消订单 | `PUT /api/orders/{id}/cancel` | Access Token（认领方） |
+| 发货 | `PUT /api/orders/{id}/ship` | Access Token（资产方） |
+| 确认收货 | `PUT /api/orders/{id}/receive` | Access Token（认领方） |
+| 退款 | `PUT /api/orders/{id}/refund` | Access Token（认领方） |
 
 ## 五、支付
 
