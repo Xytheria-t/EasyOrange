@@ -1,50 +1,119 @@
 #!/usr/bin/env bash
-# EasyOrange commit-msg hook — 校验 Conventional Commits 格式。
+# EasyOrange commit-msg hook — Conventional Commits 格式校验
+#
+# 规则（基于 Conventional Commits 1.0.0）：
+#   <type>[(<scope>)][!]: <description>
+#   - type: feat | fix | refactor | docs | test | chore | perf | ci | style | build | revert
+#   - scope: 可选，小写字母/数字开头，可含 - 或 _
+#   - !: 破坏性变更标记（也可在 body 写 'BREAKING CHANGE: ...'）
+#   - 标题长度：硬上限 100；推荐 ≤ 72（超出会 warning）
+#
+# 例外：merge / revert / fixup! / squash! / amend! 自动消息直接放行
+#
+# 跳过方式：SKIP=git-hooks git commit -m "..."
 # 安装方式：git config core.hooksPath .githooks
-set -e
+#
+# shellcheck shell=bash
+set -euo pipefail
 
-if [ -n "$SKIP" ]; then
-  echo "[commit-msg] SKIP env var set, skipping hooks."
+# shellcheck disable=SC2034
+HOOK_NAME="commit-msg"
+# shellcheck disable=SC2034
+HOOK_CMD="commit"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./_lib.sh
+source "$SCRIPT_DIR/_lib.sh"
+
+if hook_should_skip; then
+  hook_log "SKIP=${SKIP} set, skipping commit-msg."
   exit 0
 fi
 
-msg_file="$1"
-msg_first_line=$(head -1 "$msg_file")
+msg_file="${1:-}"
+if [[ -z "$msg_file" ]] || [[ ! -f "$msg_file" ]]; then
+  hook_fail "commit-msg requires the message file path as \$1"
+fi
 
-# Conventional Commits: <type>(<scope>): <description>
-# Types: feat fix refactor docs test chore perf ci style build
-# 标题 ≤ 72 字符
-pattern='^(feat|fix|refactor|docs|test|chore|perf|ci|style|build)(\([a-z0-9_-]+\))?: .{1,72}$'
+# 标题：首行去掉 CR + 去掉首尾空白
+title=$(head -1 "$msg_file" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+len=${#title}
 
-if ! echo "$msg_first_line" | grep -qE "$pattern"; then
+# 自动生成的合并/还原消息：直接放行
+case "$title" in
+  Merge*|Revert*|"fixup! "*|"squash! "*|"amend! "*)
+    hook_log "auto-generated message detected, skipping format check"
+    exit 0
+    ;;
+esac
+
+# 完整内容：用于检查 BREAKING CHANGE: footer（保留原样以支持行首匹配）
+msg_content=$(cat "$msg_file")
+
+types='(feat|fix|refactor|docs|test|chore|perf|ci|style|build|revert)'
+scope_opt='(\([a-z0-9][a-z0-9_-]*\))?'
+bang='!?'
+
+# Pattern A: 标题带 !  →  type[(scope)]!: description
+pattern_a="^${types}${scope_opt}${bang}: .{1,100}$"
+# Pattern B: 标题无 ! 但 body 含 'BREAKING CHANGE: '  →  type[(scope)]: description
+pattern_b="^${types}${scope_opt}: .{1,100}$"
+
+if [[ "$title" =~ $pattern_a ]]; then
+  matched=1
+elif [[ "$title" =~ $pattern_b ]] && grep -qE '^BREAKING CHANGE: .+' <<<"$msg_content"; then
+  matched=1
+else
+  matched=0
+fi
+
+if [[ "$matched" -eq 0 ]]; then
   cat >&2 <<EOF
-[commit-msg] FAIL: Commit message must follow Conventional Commits:
+[commit-msg] FAIL: title must follow Conventional Commits.
 
-  <type>(<scope>): <description>
+  Required: <type>[(<scope>)][!]: <description>
+  Got:      $title
+  Length:    $len
 
-Expected pattern: $pattern
-Got: $msg_first_line
+  Types:    feat | fix | refactor | docs | test | chore | perf | ci | style | build | revert
+  Scope:    optional, lowercase + digits + '-' or '_' (e.g. order, ai, payment)
+  Breaking: append '!' after type/scope, OR add 'BREAKING CHANGE: ...' in body
+  Length:   hard limit 100; recommended ≤ 72
 
-Examples:
-  feat: add user login endpoint
-  fix(order): resolve Saga compensation deadlock
-  refactor(ai): extract Prompt YAML registry
-  docs: update README architecture section
-  test(payment): add PaymentTransition unit tests
-  chore: bump Spring Boot to 4.0.3
-  perf: cache product list with Caffeine
-  ci: enable JaCoCo gate in workflow
+  Examples:
+    feat(order): add distributed lock for inventory deduction
+    fix(ai)!: drop legacy Python sidecar
+    refactor(framework): extract BaseCodeEnum
+    docs: update ADR-0007 with single-tx decision
+    test(payment): add PaymentTransition unit tests
+    chore: bump Spring Boot to 4.0.3
+    perf: cache product list with Caffeine
+    ci: enable JaCoCo gate in workflow
+    build(frontend): switch to rolldown
 
-Skip with: SKIP=git-hooks git commit -m '...'
+  Skip with: SKIP=git-hooks git commit -m '...'
 EOF
   exit 1
 fi
 
-# 检查标题长度
-len=${#msg_first_line}
-if [ "$len" -gt 72 ]; then
-  echo "[commit-msg] FAIL: Title too long ($len > 72 chars)."
-  exit 1
+# 风格告警（不阻断）
+if [[ "$len" -gt 72 ]]; then
+  hook_warn "title is $len chars (recommended ≤ 72 for git log readability)"
 fi
 
-echo "[commit-msg] OK"
+if [[ "$title" =~ \.$ ]]; then
+  hook_warn "title ends with a period (Conventional Commits style: omit trailing '.')"
+fi
+
+if [[ "$title" =~ ^[[:upper:]] ]]; then
+  hook_warn "title starts with uppercase (Conventional Commits style: lowercase first letter)"
+fi
+
+# 成功消息按实际形式标注（`!: ` 与 footer 二选一，都不是则不加）
+if [[ "$title" == *!:* ]]; then
+  suffix=" (!)"
+elif grep -qE '^BREAKING CHANGE: .+' <<<"$msg_content"; then
+  suffix=" (BREAKING CHANGE footer)"
+else
+  suffix=""
+fi
+hook_ok "title ($len chars)${suffix} accepted"

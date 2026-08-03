@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# EasyOrange pre-push hook — 重门禁（构建 + 测试，推送前执行）
+#
+# 职责（按被推送 commit 的变更文件类型分发，不做全量）：
+#   1. 后端：含 *.java / *.kt / pom.xml 变更 → ./mvnw test（含编译）
+#   2. 前端：含 easyorange-frontend/src|tests 下 TS 变更 → npm test（vitest run）
+#
+# 设计：
+#   - 变更范围 = 远端基线 sha..本地 sha；新分支（远端 sha 全 0）无基线 → 全量跑
+#   - pre-commit 保持轻量，构建/测试只在推送时付一次
+#   - 失败统一 hook_fail 收口（含 SKIP 提示）
+#
+# 跳过方式：SKIP=git-hooks git push
+# 安装方式：git config core.hooksPath .githooks
+#
+# shellcheck shell=bash
+set -euo pipefail
+
+# shellcheck disable=SC2034
+HOOK_NAME="pre-push"
+# shellcheck disable=SC2034
+HOOK_CMD="push"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./_lib.sh
+source "$SCRIPT_DIR/_lib.sh"
+
+if hook_should_skip; then
+  hook_log "SKIP=${SKIP} set, skipping pre-push."
+  exit 0
+fi
+
+ROOT="$(git rev-parse --show-toplevel)"
+BACKEND_DIR="$ROOT/easyorange-backend"
+FRONTEND_DIR="$ROOT/easyorange-frontend"
+
+need_backend=0
+need_frontend=0
+
+# stdin：每行 <本地ref> <本地sha> <远端ref> <远端sha>
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [[ "$remote_sha" =~ ^0+$ ]]; then
+    hook_log "new branch push (no remote baseline) → full gate"
+    need_backend=1
+    need_frontend=1
+    continue
+  fi
+  while IFS= read -r f; do
+    case "$f" in
+      *.java|*.kt|*/pom.xml)                          need_backend=1 ;;
+      easyorange-frontend/src/*|easyorange-frontend/tests/*) need_frontend=1 ;;
+    esac
+  done < <(git diff --name-only --diff-filter=ACMR "$remote_sha" "$local_sha")
+done
+
+# 1. 后端：mvn test
+if (( need_backend )); then
+  if [[ ! -x "$BACKEND_DIR/mvnw" ]]; then
+    hook_warn "mvnw not found in $BACKEND_DIR, skipping backend tests"
+  else
+    hook_log "Backend changes pushed → mvn test (compile + tests)..."
+    # -fae 失败聚合到末尾；-nsu 不查 snapshot 远端；-B -ntp 静默
+    if (cd "$BACKEND_DIR" && ./mvnw test -q -B -ntp -fae -nsu); then
+      hook_ok "mvn test"
+    else
+      hook_fail "mvn test failed (see output above)"
+    fi
+  fi
+else
+  hook_log "No backend changes, skipping mvn test"
+fi
+
+# 2. 前端：npm test（vitest run，非 watch）
+if (( need_frontend )); then
+  if [[ ! -f "$FRONTEND_DIR/package.json" ]]; then
+    hook_warn "frontend package.json not found, skipping npm test"
+  else
+    hook_log "Frontend changes pushed → npm test (vitest run)..."
+    if (cd "$FRONTEND_DIR" && npm test); then
+      hook_ok "npm test"
+    else
+      hook_fail "npm test failed (see output above)"
+    fi
+  fi
+else
+  hook_log "No frontend changes, skipping npm test"
+fi
+
+hook_ok "pre-push passed"

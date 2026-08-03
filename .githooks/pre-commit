@@ -1,29 +1,89 @@
 #!/usr/bin/env bash
-# EasyOrange pre-commit hook — 快速编译校验，防止破坏性提交进入仓库。
+# EasyOrange pre-commit hook — 快速检查（全部基于 staged 内容）
+#
+# 职责（<100ms~数秒）：
+#   1. 密钥扫描：gitleaks（硬门禁）或 grep 回退（仅 warn）
+#   2. 尾随空白 / 文件末尾空行（git diff --cached --check）
+#   3. merge 冲突标记残留
+#   4. 大文件（默认 >2MB 阻断）
+#   5. 前端：仅当 src/tests 下 ts/tsx 变更时跑 biome check
+#
+# 重门禁（构建 + 测试）在 pre-push，提交时不挡路。
+#
 # 跳过方式：SKIP=git-hooks git commit -m "..."
 # 安装方式：git config core.hooksPath .githooks
-set -e
+#
+# shellcheck shell=bash
+set -euo pipefail
 
-if [ -n "$SKIP" ]; then
-  echo "[pre-commit] SKIP env var set, skipping hooks."
+# shellcheck disable=SC2034
+HOOK_NAME="pre-commit"
+# shellcheck disable=SC2034
+HOOK_CMD="commit"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./_lib.sh
+source "$SCRIPT_DIR/_lib.sh"
+
+if hook_should_skip; then
+  hook_log "SKIP=${SKIP} set, skipping pre-commit."
   exit 0
 fi
 
 ROOT="$(git rev-parse --show-toplevel)"
-BACKEND_DIR="$ROOT/easyorange-backend"
+FRONTEND_DIR="$ROOT/easyorange-frontend"
+files=$(staged_files)
 
-if [ ! -d "$BACKEND_DIR" ]; then
-  echo "[pre-commit] Backend dir not found, skipping compile check."
-  exit 0
+# 1. 密钥扫描：gitleaks 硬门禁；未安装则 grep 仅警告（CI 仍兜底）
+if ! scan_secrets_staged; then
+  if gitleaks_available; then
+    hook_fail "gitleaks found potential secrets in staged changes (see output above)"
+  else
+    hook_warn "secret-like pattern(s) detected above — please review. Install gitleaks (see README) for a hard local gate."
+  fi
 fi
 
-# 仅校验编译（validate 阶段不跑测试，秒级完成）
-echo "[pre-commit] Running ./mvnw validate -q (compile check)..."
-cd "$BACKEND_DIR"
-if ! ./mvnw validate -q -B -ntp 2>/dev/null; then
-  echo "[pre-commit] FAIL: compilation error. Fix and retry."
-  echo "[pre-commit] Skip with: SKIP=git-hooks git commit -m '...'"
-  exit 1
+# 2. 快速内容检查：全部基于 staged 内容，聚合一次打印
+violations=0
+report_violation() {
+  local name="$1" out="$2"
+  if [[ -n "$out" ]]; then
+    violations=1
+    printf '[%s] FAIL: %s\n%s\n' "$HOOK_NAME" "$name" "$out" >&2
+  fi
+}
+
+ws=$(check_staged_whitespace)
+cm=$(check_conflict_markers)
+lf=$(check_large_files)
+report_violation "whitespace / blank-line-at-EOF (git diff --cached --check)" "$ws"
+report_violation "merge conflict markers left in staged files" "$cm"
+report_violation "large file(s) staged (>2MB) — intentional?" "$lf"
+if (( violations )); then
+  hook_fail "fast content checks failed (fix above, or SKIP=git-hooks to bypass)"
 fi
 
-echo "[pre-commit] OK"
+# 3. 前端：仅当 src/tests 下 ts/tsx/js/jsx 变更时跑 biome（工作区文件）
+fe_files=$(echo "$files" \
+  | grep -E '^easyorange-frontend/(src|tests)/.*\.(ts|tsx|js|jsx)$' \
+  | sed 's|^easyorange-frontend/||' \
+  || true)
+
+if [[ -n "$fe_files" ]]; then
+  local_biome="$FRONTEND_DIR/node_modules/.bin/biome"
+  if [[ ! -x "$local_biome" ]]; then
+    hook_warn "$local_biome not found, run 'npm install' first; skipping biome check"
+  else
+    hook_log "Frontend files staged → biome check ($(echo "$fe_files" | wc -l) files)..."
+    # biome: --no-errors-on-unmatched 处理已删除但仍出现在 index 的文件
+    # shellcheck disable=SC2086  # fe_files 需按词展开
+    if (cd "$FRONTEND_DIR" && "$local_biome" check --no-errors-on-unmatched --diagnostic-level=error $fe_files); then
+      hook_ok "biome check"
+    else
+      hook_fail "biome check failed (run 'npm run lint' to fix)"
+    fi
+  fi
+else
+  hook_log "No frontend TS changes, skipping biome check"
+fi
+
+hook_ok "pre-commit passed"
