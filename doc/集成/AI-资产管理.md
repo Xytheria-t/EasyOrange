@@ -1,8 +1,8 @@
 # AI 能力清单 — 详细机制
 
-> 本文档面向工程师：从**架构落地**角度，介绍 EasyOrange 项目中所有 AI 能力的端口抽象、缓存装饰、限流降级、调用流程。AI 部分的核心价值在于 Port/Adapter 六边形架构 + 多级缓存 + 限流降级的工程化深度，而非 AI 本身的商业价值。
+> 本文档面向工程师：从**架构落地**角度，介绍 EasyOrange 项目中所有 AI 能力的模型 Bean、限流降级、调用流程。AI 部分的核心价值在于 Spring AI 2.0 框架化 + 限流降级 + Token 预算的工程化深度，而非 AI 本身的商业价值。
 >
-> 平台在 AI 侧的边界：资产方按固定价格上架，平台不参与议价、不自动调价、不持有底价。AI 在两端走生产级工程实践（Port/Adapter + 多级缓存 + 限流降级 + AiMetrics + Prompt 版本化 + Token 预算），不替人做交易决定。
+> 平台在 AI 侧的边界：资产方按固定价格上架，平台不参与议价、不自动调价、不持有底价。AI 在两端走生产级工程实践（Spring AI 2.0 + 令牌桶限流 + stale 降级 + Prompt 版本化 + Token 预算），不替人做交易决定。
 >
 > 顶层规则/红线在 [AGENTS.md](../../AGENTS.md)，本文件是**深入文档**。
 
@@ -12,13 +12,13 @@
 
 EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 
-- 端口-适配器（`LlmPort` / `VisionPort` / `EmbeddingPort`）隔离业务与具体 AI 供应商
-- `@Primary` 装饰器（`CachingLlmAdapter` / `CachingVisionAdapter`）实现 L1 + L2 多级缓存
-- 限流拦截器（`AiRateLimitInterceptor`）+ 异常降级（Redis 不可用时 fail-open）
-- AiMetrics 可观测（4 类 Micrometer 指标：缓存命中率 / LLM 延迟 / Vision 延迟 / 限流计数 → `/actuator/prometheus`）
+- Spring AI 2.0 模型 Bean（`AiModelConfig` — `chatModel` @Primary DeepSeek / `visionChatModel` Qwen-VL / `embeddingModel` DashScope，统一 `OpenAiSetup.setupSyncClient` OpenAI 兼容线协议，ADR-0008）
+- 调用去重（`AiModelSupport` — `callText` / `callJson` / `embed` / `analyzeImages`）
+- 限流拦截器（`AiRateLimitInterceptor`）+ 异常降级（Redis 不可用时 fail-open + stale 缓存降级）
+- 可观测性（Spring AI 2.0 内置 Observation + Micrometer → `/actuator/prometheus`，原 `AiMetricsService` 已删除）
 - Prompt 版本化（`ai/prompt/` — `YamlPromptRegistry` 启动时加载 `classpath:prompts/*.yml` + `PromptRenderer` `{var}` 渲染 + `quoteReplacement` 安全）
 - Token 预算治理（`ai/budget/` — `@TokenBudget` 注解 + `TokenBudgetAspect` AOP 切面 + `InMemoryTokenBudgetStore` 日预算控制，超限抛 `TokenBudgetExceededException`）
-- Bulkhead 隔离舱（Resilience4j 并发隔离 — `aiLlm` 8 / `aiVision` 4 / `dbHeavy` 16，AI 与 DB 调用互不挤占）
+- Embedding 真实现（查询侧 kNN + 索引侧 `nameEmbedding` 写入，dimensions=1024 与 ES `dense_vector` 映射对齐）
 - 路由键自动派生（`ProductCreatedEvent` → `product.created`）
 - 业务侧：**资产方按固定价格上架资产，平台不参与议价、不自动调价、不持有底价**
 
@@ -30,11 +30,11 @@ EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 
 | 决策点 | 触发时机 | 实现 | 架构侧价值 |
 |--------|---------|------|----------|
-| 1. 智能估值 | 资产方提交资产 | `AiPricingService`（ai 模块） | LLM 端口 + 缓存 + 限流 |
-| 2. AI 营销文案 | 上架前 | `AiCopyGenerationService` | 4 风格文案生成 + 缓存键分桶 |
+| 1. 智能估值 | 资产方提交资产 | `AiPricingService`（ai 模块） | ChatModel + 限流 + Token 预算 |
+| 2. AI 营销文案 | 上架前 | `AiCopyGenerationService` | 4 风格文案生成 |
 | 3. AI 信用画像（资产方） | 认领方浏览时 | `CreditScoringService` | 5 维雷达图 + 规则引擎 |
-| 4. AI 智能找货 | 认领方搜索时 | `SemanticSearchService` + `AiSearchEnhancer` | ES 聚合 + LLM 增强 + 缓存 |
-| 5. AI 物品评估 | 认领方看货时 | `AutoListingService`（拍照识别） | Vision 端口 + 多模态 |
+| 4. AI 智能找货 | 认领方搜索时 | `SemanticSearchService` + `AiSearchEnhancer` | ES kNN + LLM 增强 + 缓存 |
+| 5. AI 物品评估 | 认领方看货时 | `AutoListingService`（拍照识别） | VisionChatModel 多模态 |
 | 6. AI 信用画像（认领方） | 认领方下单时 | `CreditScoringService` | 5 维雷达图 |
 
 ---

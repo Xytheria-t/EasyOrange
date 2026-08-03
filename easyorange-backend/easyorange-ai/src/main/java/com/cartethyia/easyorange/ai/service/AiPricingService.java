@@ -2,9 +2,9 @@ package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
 import com.cartethyia.easyorange.ai.dto.PricingSuggestion;
-import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
+import org.springframework.ai.chat.model.ChatModel;
 import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ public class AiPricingService {
 
     private static final String PROMPT_NAME = "ai_pricing_system";
 
-    private final LlmPort llmPort;
+    private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
 
@@ -48,7 +48,7 @@ public class AiPricingService {
         );
 
         try {
-            String jsonResponse = llmPort.generateTextWithJson(systemPrompt, userMessage);
+            String jsonResponse = AiModelSupport.callJson(chatModel, systemPrompt, userMessage);
             if (jsonResponse == null) {
                 return null;
             }

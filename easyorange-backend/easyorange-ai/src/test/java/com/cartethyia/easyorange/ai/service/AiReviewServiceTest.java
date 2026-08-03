@@ -1,8 +1,12 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.dto.AiReviewResult;
-import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.ai.prompt.TestPromptRegistry;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,7 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,7 +28,7 @@ import static org.mockito.Mockito.*;
 class AiReviewServiceTest {
 
     @Mock
-    private LlmPort llmPort;
+    private ChatModel chatModel;
 
     @Mock
     private ObjectMapper objectMapper;
@@ -33,7 +37,11 @@ class AiReviewServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AiReviewService(llmPort, objectMapper, new TestPromptRegistry());
+        service = new AiReviewService(chatModel, objectMapper, new TestPromptRegistry());
+    }
+
+    private static ChatResponse textResponse(String text) {
+        return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
     }
 
     @Nested
@@ -49,7 +57,7 @@ class AiReviewServiceTest {
                     """;
             AiReviewResult expected = new AiReviewResult(true, "通过", 90, List.of(), "信息完整合规");
 
-            when(llmPort.generateTextWithJson(anyString(), anyString())).thenReturn(jsonResponse);
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(jsonResponse));
             when(objectMapper.readValue(jsonResponse, AiReviewResult.class)).thenReturn(expected);
 
             AiReviewResult result = service.reviewProduct(
@@ -76,7 +84,7 @@ class AiReviewServiceTest {
                     false, "拒绝", 85, List.of("价格异常", "描述不符"), "价格明显异常"
             );
 
-            when(llmPort.generateTextWithJson(anyString(), anyString())).thenReturn(jsonResponse);
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(jsonResponse));
             when(objectMapper.readValue(jsonResponse, AiReviewResult.class)).thenReturn(expected);
 
             AiReviewResult result = service.reviewProduct(
@@ -92,7 +100,7 @@ class AiReviewServiceTest {
         @Test
         @DisplayName("LLM 返回空时默认通过")
         void reviewProduct_llmReturnsNull() {
-            when(llmPort.generateTextWithJson(anyString(), anyString())).thenReturn(null);
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(null));
 
             AiReviewResult result = service.reviewProduct(
                     "测试商品", "描述", "分类", "1", "¥100", "资产方", List.of()
@@ -107,7 +115,7 @@ class AiReviewServiceTest {
         @Test
         @DisplayName("LLM 调用异常时返回默认通过")
         void reviewProduct_llmException() {
-            when(llmPort.generateTextWithJson(anyString(), anyString()))
+            when(chatModel.call(any(Prompt.class)))
                     .thenThrow(new RuntimeException("API error"));
 
             AiReviewResult result = service.reviewProduct(
@@ -125,7 +133,7 @@ class AiReviewServiceTest {
         void reviewProduct_jsonParseException() throws Exception {
             String invalidJson = "{invalid}";
 
-            when(llmPort.generateTextWithJson(anyString(), anyString())).thenReturn(invalidJson);
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(invalidJson));
             when(objectMapper.readValue(invalidJson, AiReviewResult.class))
                     .thenThrow(JacksonException.class);
 

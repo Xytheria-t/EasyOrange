@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.ai.budget;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -18,13 +17,11 @@ import org.springframework.stereotype.Component;
  * 这样注解提供编译期可见的兜底契约，运维可通过配置热更新限额而无需发版。
  * <p>
  * <b>调用前</b>：若 {@code dailyTokenLimit > 0} 且 累计用量 + 本次预估 &gt; dailyTokenLimit，
- * 上报 {@link AiMetricsService#recordTokenBudgetExceeded} 后抛 {@link TokenBudgetExceededException}，
- * 目标方法不执行。
+ * 抛 {@link TokenBudgetExceededException}，目标方法不执行。
  * <p>
- * <b>调用后</b>：将 {@code maxTokensPerCall} 作为预估用量记入存储，
- * 上报 {@link AiMetricsService#recordTokenBudgetUsage}（含本次用量 + 当日累计）。
- * 由于 {@code LlmPort} 返回 {@code String}，无法获取真实 token 数，
- * 这里用注解声明的 {@code maxTokensPerCall} 作为估算值（YAGNI：不引入 token 计数器）。
+ * <b>调用后</b>：将 {@code maxTokensPerCall} 作为预估用量记入存储。
+ * 服务方法返回业务 DTO 而非 {@code ChatResponse}，无法直接取真实 token 数，
+ * 这里沿用注解声明的 {@code maxTokensPerCall} 作为估算值（YAGNI：不引入 token 计数器）。
  */
 @Slf4j
 @Aspect
@@ -35,7 +32,6 @@ public class TokenBudgetAspect {
 
     private final TokenBudgetStore budgetStore;
     private final AiProperties aiProperties;
-    private final AiMetricsService aiMetricsService;
 
     @Around("@annotation(tokenBudget)")
     public Object aroundBudget(ProceedingJoinPoint pjp, TokenBudget tokenBudget) throws Throwable {
@@ -52,17 +48,14 @@ public class TokenBudgetAspect {
         if (dailyLimit > 0 && used + maxPerCall > dailyLimit) {
             log.warn("action=token_budget_exceeded, scenario={}, used={}, maxPerCall={}, limit={}",
                     scenario, used, maxPerCall, dailyLimit);
-            aiMetricsService.recordTokenBudgetExceeded(scenario);
             throw new TokenBudgetExceededException(scenario, used, dailyLimit);
         }
 
         // 执行目标方法
         var result = pjp.proceed();
 
-        // 记录预估用量（LlmPort 返回 String，无法获取真实 token 数，用 maxTokensPerCall 估算）
+        // 记录预估用量（服务返回业务 DTO，无法获取真实 token 数，用 maxTokensPerCall 估算）
         budgetStore.recordUsage(scenario, maxPerCall, 0);
-        var dailyTotal = used + maxPerCall;
-        aiMetricsService.recordTokenBudgetUsage(scenario, maxPerCall, dailyTotal);
 
         return result;
     }

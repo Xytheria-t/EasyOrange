@@ -1,8 +1,13 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.AiSearchEnhancerAdapter;
-import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
@@ -32,7 +37,7 @@ class AiSearchEnhancerTest {
     private NaturalLanguageDetector nlDetector;
 
     @Mock
-    private LlmPort llmPort;
+    private ChatModel chatModel;
 
     @Mock
     private ProductTagger productTagger;
@@ -52,7 +57,7 @@ class AiSearchEnhancerTest {
     void setUp() {
         lenient().when(redisTemplateProvider.getIfAvailable()).thenReturn(redisTemplate);
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOps);
-        enhancer = new AiSearchEnhancerAdapter(nlDetector, llmPort, productTagger, redisTemplateProvider);
+        enhancer = new AiSearchEnhancerAdapter(nlDetector, chatModel, productTagger, redisTemplateProvider);
     }
 
     private ProductReadModel product(String id, String title, BigDecimal price) {
@@ -62,6 +67,27 @@ class AiSearchEnhancerTest {
                 null, null, null, null, null, null,
                 null, null, List.of("img.jpg"), null, null, null
         );
+    }
+
+    private static ChatResponse textResponse(String text) {
+        return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
+    }
+
+    /**
+     * Prompt 首条消息（system）包含指定片段的匹配器 — 区分同一 mock 上的多个 LLM 调用。
+     */
+    private static Prompt withSystemContaining(String fragment) {
+        return argThat(p -> {
+            if (p == null) {
+                return false;
+            }
+            List<Message> instructions = p.getInstructions();
+            if (instructions == null || instructions.isEmpty()) {
+                return false;
+            }
+            String text = instructions.get(0).getText();
+            return text != null && text.contains(fragment);
+        });
     }
 
     @Nested
@@ -77,7 +103,7 @@ class AiSearchEnhancerTest {
                     "MacBook", List.of(product("1", "MacBook", BigDecimal.valueOf(8000))));
 
             assertThat(result).isEmpty();
-            verifyNoInteractions(llmPort, productTagger, redisTemplate);
+            verifyNoInteractions(chatModel, productTagger, redisTemplate);
         }
 
         @Test
@@ -88,7 +114,7 @@ class AiSearchEnhancerTest {
             Optional<AiEnhancement> result = enhancer.tryEnhance("找电脑", List.of());
 
             assertThat(result).isEmpty();
-            verifyNoInteractions(llmPort, productTagger);
+            verifyNoInteractions(chatModel, productTagger);
         }
 
         @Test
@@ -119,23 +145,23 @@ class AiSearchEnhancerTest {
                     "找便宜手机", List.of(product("1", "手机", BigDecimal.valueOf(1500))));
 
             assertThat(result).isPresent().get().isEqualTo(cached);
-            verifyNoInteractions(llmPort, productTagger);
+            verifyNoInteractions(chatModel, productTagger);
         }
 
         @Test
         @DisplayName("Redis 缓存未配置 -> 正常走增强流程")
         void tryEnhance_noRedisConfigured() {
             when(redisTemplateProvider.getIfAvailable()).thenReturn(null);
-            enhancer = new AiSearchEnhancerAdapter(nlDetector, llmPort, productTagger, redisTemplateProvider);
+            enhancer = new AiSearchEnhancerAdapter(nlDetector, chatModel, productTagger, redisTemplateProvider);
             when(nlDetector.isNaturalLanguage("找电脑")).thenReturn(true);
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of()));
-            when(llmPort.generateText(anyString(), anyString())).thenReturn("想找电脑");
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("想找电脑"));
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
                     "找电脑", List.of(product("1", "笔记本", BigDecimal.valueOf(4000))));
 
             assertThat(result).isPresent();
-            verify(llmPort, atLeastOnce()).generateText(anyString(), anyString());
+            verify(chatModel, atLeastOnce()).call(any(Prompt.class));
         }
     }
 
@@ -148,14 +174,14 @@ class AiSearchEnhancerTest {
         void tryEnhance_allSuccess() {
             when(nlDetector.isNaturalLanguage("推荐个5000的笔记本")).thenReturn(true);
             when(valueOps.get(anyString())).thenReturn(null);
-            when(llmPort.generateText(contains("导购助手"), eq("推荐个5000的笔记本")))
-                    .thenReturn("想找5000元左右的笔记本电脑");
+            when(chatModel.call(withSystemContaining("导购助手")))
+                    .thenReturn(textResponse("想找5000元左右的笔记本电脑"));
             when(productTagger.tagProducts(anyList()))
                     .thenReturn(Map.of("1", List.of("💰超值")));
-            when(llmPort.generateText(contains("市场分析"), anyString()))
-                    .thenReturn("当前在管笔记本均价约4800元，性价比不错");
-            when(llmPort.generateText(contains("追问"), eq("推荐个5000的笔记本")))
-                    .thenReturn("有游戏需求吗,需要轻薄吗");
+            when(chatModel.call(withSystemContaining("市场分析")))
+                    .thenReturn(textResponse("当前在管笔记本均价约4800元，性价比不错"));
+            when(chatModel.call(withSystemContaining("追问")))
+                    .thenReturn(textResponse("有游戏需求吗,需要轻薄吗"));
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
                     "推荐个5000的笔记本",
@@ -178,7 +204,7 @@ class AiSearchEnhancerTest {
         void tryEnhance_onlyTagsSucceed() {
             when(nlDetector.isNaturalLanguage("找个手机")).thenReturn(true);
             when(valueOps.get(anyString())).thenReturn(null);
-            when(llmPort.generateText(anyString(), anyString())).thenReturn(null);
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(null));
             when(productTagger.tagProducts(anyList()))
                     .thenReturn(Map.of("1", List.of("💰超值", "📸实拍")));
 
@@ -195,7 +221,7 @@ class AiSearchEnhancerTest {
         void tryEnhance_allEmpty() {
             when(nlDetector.isNaturalLanguage("随便看看")).thenReturn(true);
             when(valueOps.get(anyString())).thenReturn(null);
-            when(llmPort.generateText(anyString(), anyString())).thenReturn(null);
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(null));
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of());
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
@@ -215,7 +241,7 @@ class AiSearchEnhancerTest {
         void tryEnhance_llmException_fallbackToTags() {
             when(nlDetector.isNaturalLanguage("找东西")).thenReturn(true);
             when(valueOps.get(anyString())).thenReturn(null);
-            when(llmPort.generateText(anyString(), anyString()))
+            when(chatModel.call(any(Prompt.class)))
                     .thenThrow(new RuntimeException("API timeout"));
             when(productTagger.tagProducts(anyList()))
                     .thenReturn(Map.of("1", List.of("⭐信用优")));

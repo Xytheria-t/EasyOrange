@@ -1,8 +1,12 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.dto.PricingSuggestion;
-import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.ai.prompt.TestPromptRegistry;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,9 +18,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,7 +30,7 @@ import static org.mockito.Mockito.*;
 class AiPricingServiceTest {
 
     @Mock
-    private LlmPort llmPort;
+    private ChatModel chatModel;
 
     @Mock
     private ObjectMapper objectMapper;
@@ -34,7 +39,11 @@ class AiPricingServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AiPricingService(llmPort, objectMapper, new TestPromptRegistry());
+        service = new AiPricingService(chatModel, objectMapper, new TestPromptRegistry());
+    }
+
+    private static ChatResponse textResponse(String text) {
+        return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
     }
 
     @Nested
@@ -62,7 +71,7 @@ class AiPricingServiceTest {
                     "同款均价4500左右"
             );
 
-            when(llmPort.generateTextWithJson(anyString(), anyString())).thenReturn(jsonResponse);
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(jsonResponse));
             when(objectMapper.readValue(jsonResponse, PricingSuggestion.class)).thenReturn(expected);
 
             PricingSuggestion result = service.suggestPrice(
@@ -75,19 +84,19 @@ class AiPricingServiceTest {
             assertThat(result.maxPrice()).isEqualByComparingTo(new BigDecimal("4800"));
             assertThat(result.reasoning()).isEqualTo("成色较新，折价合理");
             assertThat(result.marketContext()).isEqualTo("同款均价4500左右");
-            verify(llmPort).generateTextWithJson(anyString(), anyString());
+            verify(chatModel).call(any(Prompt.class));
             verify(objectMapper).readValue(jsonResponse, PricingSuggestion.class);
         }
 
         @Test
         @DisplayName("LLM 返回空时返回 null")
-        void suggestPrice_llmReturnsNull() throws Exception {
-            when(llmPort.generateTextWithJson(anyString(), anyString())).thenReturn(null);
+        void suggestPrice_llmReturnsNull() {
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(null));
 
             PricingSuggestion result = service.suggestPrice("测试商品", null, null, null, null);
 
             assertThat(result).isNull();
-            verify(llmPort).generateTextWithJson(anyString(), anyString());
+            verify(chatModel).call(any(Prompt.class));
             verify(objectMapper, never()).readValue(anyString(), any(Class.class));
         }
 
@@ -96,7 +105,7 @@ class AiPricingServiceTest {
         void suggestPrice_jsonParseException() throws Exception {
             String invalidJson = "{not valid json}";
 
-            when(llmPort.generateTextWithJson(anyString(), anyString())).thenReturn(invalidJson);
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(invalidJson));
             when(objectMapper.readValue(invalidJson, PricingSuggestion.class))
                     .thenThrow(JacksonException.class);
 
@@ -105,13 +114,13 @@ class AiPricingServiceTest {
             );
 
             assertThat(result).isNull();
-            verify(llmPort).generateTextWithJson(anyString(), anyString());
+            verify(chatModel).call(any(Prompt.class));
         }
 
         @Test
         @DisplayName("LLM 抛出运行时异常时返回 null")
         void suggestPrice_llmThrowsException() {
-            when(llmPort.generateTextWithJson(anyString(), anyString()))
+            when(chatModel.call(any(Prompt.class)))
                     .thenThrow(new RuntimeException("API connection timeout"));
 
             PricingSuggestion result = service.suggestPrice(

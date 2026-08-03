@@ -3,9 +3,9 @@ package com.cartethyia.easyorange.ai.service;
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
 import com.cartethyia.easyorange.ai.dto.QaRequest;
 import com.cartethyia.easyorange.ai.dto.QaResponse;
-import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
+import org.springframework.ai.chat.model.ChatModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ public class AiQaService {
 
     private static final String PROMPT_NAME = "ai_qa_system";
 
-    private final LlmPort llmPort;
+    private final ChatModel chatModel;
     private final PromptRegistry promptRegistry;
 
     @TokenBudget(scenario = "qa", maxTokensPerCall = 1000, dailyTokenLimit = 200_000)
@@ -27,7 +27,7 @@ public class AiQaService {
         log.debug("Answering question for productId={}, question={}", request.productId(), request.question());
 
         try {
-            String answer = llmPort.generateText(systemPrompt, userMessage);
+            String answer = AiModelSupport.callText(chatModel, systemPrompt, userMessage);
 
             if (answer == null || answer.isBlank()) {
                 log.warn("AI returned empty answer for productId={}", request.productId());

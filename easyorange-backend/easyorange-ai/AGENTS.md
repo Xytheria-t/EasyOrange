@@ -1,26 +1,19 @@
 # easyorange-ai 模块指南
 
-AI 能力模块，Port/Adapter 六边形架构。所有 LLM 调用通过端口接口隔离，业务逻辑不依赖具体 AI 供应商。
+AI 能力模块，全面框架化为 **Spring AI 2.0**（ADR-0008，Supersedes ADR-0003）。所有 LLM/Embedding 调用直接注入 Spring AI `ChatModel` / `EmbeddingModel` bean，不再有自研 Port/Adapter/装饰器层。
 
 ## 目录结构
 
 ```
 ai/
-├── port/                           # 端口接口 (domain 定义)
-│   ├── LlmPort.java                # 大语言模型端口，generateText(prompt, context)
-│   └── VisionPort.java             # 视觉识别端口，analyzeImage(image)
-├── adapter/                        # 适配器 (AI 供应商实现)
-│   ├── DeepSeekLlmAdapter.java     # DeepSeek 文本模型实现
-│   ├── QwenVlVisionAdapter.java    # 通义千问 VL 视觉模型实现
-│   ├── CachingLlmAdapter.java      # @Primary 装饰器，L1+L2 缓存
-│   ├── CachingVisionAdapter.java   # @Primary 装饰器，L1+L2 缓存
-│   ├── outbound/
-│   │   └── AiSearchEnhancerAdapter.java  # AI 导购搜索增强管道 (4 路并行，ForkJoinPool 虚拟线程)
-│   └── dto/                        # 适配器 DTO (DeepSeekRequest, DeepSeekResponse, QwenVlRequest, QwenVlResponse)
+├── config/
+│   ├── AiProperties.java           # AI 配置属性 (deepseek/qwenVl/embedding/cache/rateLimit/budget)
+│   ├── AiModelConfig.java          # 3 个 Spring AI 模型 bean（chatModel/visionChatModel/embeddingModel）
+│   ├── AiConfig.java               # tokenBudgetStore bean
+│   ├── AiCacheConfig.java          # AiRateLimitInterceptor 注册（/api/ai/**）
+│   └── AiStaleCacheConfig.java     # Stale 缓存 (Caffeine, 24h TTL, 限流降级用)
 ├── interceptor/
 │   └── AiRateLimitInterceptor.java # AI 限流拦截器，Redis 令牌桶 + stale 降级
-├── metrics/
-│   └── AiMetricsService.java       # AI 链路可观测性指标 (缓存命中率/LLM延迟/Vision延迟/限流计数)
 ├── prompt/                         # Prompt 版本管理 (YAML 加载 + 渲染器)
 │   ├── PromptTemplate.java         # record 值类型 (name/version/template/variables)
 │   ├── PromptRegistry.java         # 接口 getPrompt(name, version)
@@ -35,6 +28,7 @@ ai/
 ├── enums/
 │   └── AiCallScope.java            # 6 个枚举：PRICING/REVIEW/QA/COPY/AUTO_LISTING/SEMANTIC
 ├── service/                        # 业务服务
+│   ├── AiModelSupport.java         # 静态调用去重（callText/callJson/embed/analyzeImages）
 │   ├── NaturalLanguageDetector.java   # 规则引擎 (intent words + 长度检测)
 │   ├── ProductTagger.java             # 商品标签引擎 (折扣/图片/信用分)
 │   ├── CreditScoreFetcher.java        # 信用分获取接口
@@ -46,45 +40,50 @@ ai/
 │   ├── AutoListingService.java        # 拍照上架
 │   ├── SemanticSearchService.java     # 语义搜索
 │   └── CreditScoringService.java      # 信用评分
+├── adapter/outbound/
+│   └── AiSearchEnhancerAdapter.java  # AI 导购搜索增强管道 (4 路并行，ForkJoinPool 虚拟线程)
 ├── dto/                            # 业务 DTO (AiReviewRequest/Result, CopyGenerationRequest/Result, PricingRequest/Suggestion, AutoListingResult, CreditScoreResult, QaRequest/Response, SemanticSearchQuery/Result)
-├── config/
-│   ├── AiProperties.java           # AI 配置属性 (API key, endpoint, 模型名, cache, rateLimit)
-│   ├── AiConfig.java               # AI Bean 配置 (deepseekRestClient, qwenVlRestClient, tokenBudgetStore)
-│   ├── AiCacheConfig.java          # 6 个 MultiLevelCache Bean + 拦截器注册
-│   └── AiStaleCacheConfig.java     # Stale 缓存 (Caffeine, 24h TTL, 限流降级用)
 └── controller/                     # API 接口 (可选, 部分控制器在 easyorange-application)
 ```
 
 ## 架构决策
 
-- **Port/Adapter 隔离**: `port/` 定义接口，`adapter/` 实现具体供应商。新增 AI 供应商只需新增 adapter 类，不修改业务代码
-- **跨模块 Port**: 本模块作为端口实现方，接口定义在 consumer 模块（如 `AiSearchEnhancerPort` 在 `easyorange-product` 的 `domain/port/`），通过 Spring `Optional<>` 注入实现运行时可替换
-- **纯规则零 LLM**: `NaturalLanguageDetector` 和 `ProductTagger` 不调任何 LLM，通过规则引擎 + 数据库查询完成，确保亚毫秒级响应
-- **并行容错**: `AiSearchEnhancer` 内 4 个子步骤使用 `CompletableFuture` 并行执行，单步骤超时/失败不影响其他步骤。5s 总超时控制。使用 `ForkJoinPool.commonPool()`（Java 21+ 虚拟线程），无需自定义线程池。取消操作使用 `cancel(false)` 避免中断虚拟线程 carrier 线程
-- **AI 调用重试**: `CachingLlmAdapter` / `CachingVisionAdapter` 使用 Resilience4j Retry 包装 LLM/Vision API 调用，指数退避 500ms × 2.0，最多 3 次。注入方式：`@Qualifier("aiLlmRetry") Retry` + `@Qualifier("aiLlmBulkhead") Bulkhead`
-- **缓存装饰器**: `CachingLlmAdapter` / `CachingVisionAdapter` 使用 `@Primary` 装饰模式，L1 (Caffeine 5min) + L2 (Redis tiered TTL)，业务服务零修改
-- **限流拦截器**: `AiRateLimitInterceptor` 拦截 `/api/ai/**`，按端点独立令牌桶 (5-30次/分)，超限时优先返回 stale 缓存
+- **Spring AI 2.0 全面框架化（ADR-0008）**：自研 `LlmPort` / `VisionPort` / `DeepSeekLlmAdapter` / `PythonLlmAdapter` / `QwenVlVisionAdapter` / `CachingLlmAdapter` / `CachingVisionAdapter` / `AiMetricsService` / `adapter/dto/` 全部删除。六个业务服务 + 语义搜索 + 搜索增强直接注入 `ChatModel` / `EmbeddingModel` bean。决策翻转记录：ADR-0003 曾在 2025-11 拒绝 Spring AI 1.0（不稳定），Spring AI 2.0.0 GA 后迁移
+- **模型 Bean（`AiModelConfig`）**：三个 bean 统一走 `OpenAiSetup.setupSyncClient`（OpenAI 兼容线协议）——`chatModel`（`@Primary`，DeepSeek `deepseek-chat`）、`visionChatModel`（Qwen-VL `qwen-vl-max`，注入处用 `@Qualifier("visionChatModel")`）、`embeddingModel`（DashScope `text-embedding-v3`，dimensions=1024 与 ES `dense_vector` 映射对齐）
+- **调用去重（`AiModelSupport`）**：静态工具收敛四类重复模式，不构成端口/适配器抽象：`callText`（system+user 双消息）、`callJson`（`response_format=json_object`）、`embed`（float[]→List<Float>）、`analyzeImages`（多图 Media + UserMessage.builder）
+- **供应商可换（options 切换）**：改 `AiModelConfig` 的 baseUrl/apiKey/model（或 `application.yaml` 的 `easyorange.ai.*`），无需改业务代码；`easyorange.ai.provider` 字段与 `easyorange-python/` 侧车已删除（2026-08-03）
+- **跨模块 Port**：`SemanticSearchService` / `AiSearchEnhancerAdapter` 通过 consumer 模块定义的 port 接口查询（`ProductSearchQueryPort` / `AiSearchEnhancerPort`），本模块作为实现方
+- **纯规则零 LLM**：`NaturalLanguageDetector` 和 `ProductTagger` 不调任何 LLM，通过规则引擎 + 数据库查询完成，确保亚毫秒级响应
+- **并行容错**：`AiSearchEnhancer` 内 4 个子步骤使用 `CompletableFuture` 并行执行，单步骤超时/失败不影响其他步骤。5s 总超时控制。使用 `ForkJoinPool.commonPool()`（Java 21+ 虚拟线程），无需自定义线程池。取消操作使用 `cancel(false)` 避免中断虚拟线程 carrier 线程
+- **Embedding 真实现**：查询侧 `SemanticSearchService` 用 `embeddingModel.embed(keyword)` 生成查询向量经 `ProductSearchQueryPort` 传入 ES kNN；索引侧 `ElasticsearchProductSearchIndexAdapter`（easyorange-application 模块）注入 `ObjectProvider<EmbeddingModel>` best-effort 写入 `nameEmbedding`（失败降级 null，不阻塞索引）
+- **限流拦截器**：`AiRateLimitInterceptor` 拦截 `/api/ai/**`，按端点独立令牌桶 (5-30次/分)，超限时优先返回 stale 缓存
 
-## 缓存与限流
+## 限流与预算
 
-| 端点 | L2 TTL | 限流 (次/分) |
-|------|--------|-------------|
-| pricing | 1h | 10 |
-| review | 1h | 10 |
-| generate-copy | 1h | 20 |
-| auto-listing | 1h | 5 |
-| semantic-search | 1h | 30 |
-| qa | 15min | 20 |
+**限流**（`AiRateLimitInterceptor`，按端点独立令牌桶）：
 
-**配置**：`application.yaml` → `easyorange.ai.cache.*` + `easyorange.ai.rate-limit.*`
+| 端点 | 限流 (次/分) |
+|------|-------------|
+| pricing | 10 |
+| review | 10 |
+| generate-copy | 20 |
+| auto-listing | 5 |
+| semantic-search | 30 |
+| qa | 20 |
+
+**Token 预算**（`@TokenBudget` AOP + `easyorange.ai.budget.scenarios` 配置覆盖）：
+- 6 个 service 公开方法标注 `@TokenBudget(scenario, maxTokensPerCall, dailyTokenLimit)`，注解为编译期兜底契约，`application.yaml` 配置可热更新覆盖
+- 调用前检查 `累计用量 + maxTokensPerCall > dailyTokenLimit` 抛 `TokenBudgetExceededException`；调用后以 `maxTokensPerCall` 作为预估用量记入 `TokenBudgetStore`
+
+**配置**：`application.yaml` → `easyorange.ai.*`
 
 ## 新增 AI 能力
 
-1. 在 `port/` 定义接口（如果 consumer 也在本模块）或在 consumer 模块 `domain/port/` 定义接口
-2. 在 `service/` 实现业务逻辑
-3. 如果涉及 LLM 调用，通过 `LlmPort` 或 `VisionPort` 进行
-4. 在 `AiSearchEnhancerAdapter` 中添加新步骤（如果是搜索增强管道的一部分）
-5. 在 `AiCallScope` 枚举中新增条目，配置 TTL 和限流阈值
+1. 在 `service/` 实现业务逻辑，直接注入 `ChatModel` / `EmbeddingModel`
+2. 多消息 / JSON / 多图 / embedding 调用用 `AiModelSupport` 去重
+3. 若为 LLM 生成型场景，标注 `@TokenBudget(scenario, ...)`（`AiCallScope` 枚举名小写）
+4. 若为新端点，在 `AiCallScope` 枚举中新增条目并配置 `AiRateLimitInterceptor` 限流值
+5. 若为语义搜索相关，把向量写入 ES（`ElasticsearchProductSearchIndexAdapter`）或查询侧生成查询向量
 
 ## 搜索增强管道 (AiSearchEnhancer)
 
@@ -93,11 +92,11 @@ ai/
     ↓
 NaturalLanguageDetector.isNaturalLanguage()  → false → 降级为普通搜索
     ↓ (true 且 aiEnhanced=true)
-AiSearchEnhancer
-    ├─ Future 1: LLM → 需求理解 (intentExplanation)
+AiSearchEnhancerAdapter
+    ├─ Future 1: ChatModel → 需求理解 (intentExplanation)
     ├─ Future 2: ProductTagger → 商品标签 (productTags)
-    ├─ Future 3: LLM → 市场分析 (marketAnalysis)
-    └─ Future 4: LLM → 猜你想问 (suggestedQuestions)
+    ├─ Future 3: ChatModel → 市场分析 (marketAnalysis)
+    └─ Future 4: ChatModel → 猜你想问 (suggestedQuestions)
     ↓
 RedisTemplate (5min TTL, 注入时检查 ObjectProvider: 无 Redis 时不缓存)
     ↓
@@ -112,12 +111,18 @@ AiEnhancement DTO → SearchPageResponse.aiEnhancement
 | `ProductTaggerTest` | 折扣/图片/信用分/综合场景 |
 | `AiSearchEnhancerTest` | 前置条件/缓存命中/正常流程/异常降级 |
 | `AiCallScopeTest` | URI 映射/TTL/限流配置 |
-| `CachingLlmAdapterTest` | 缓存禁用/embedding 不缓存/缓存命中指标 |
-| `CachingVisionAdapterTest` | 缓存禁用/单图/多图/缓存命中指标 |
-| `AiRateLimitInterceptorTest` | 非 AI 路径/限流/fail-open/429/限流指标 |
-| `DeepSeekLlmAdapterTest` | 正常调用/null 响应/空 choices/JSON 模式/延迟指标 |
-| `AiMetricsServiceTest` | 缓存 hit/miss/stale + LLM/Vision 延迟 + 限流 rejected/stale_served/fail_open + Counter 复用 |
+| `AiPricingServiceTest` | 正常/降级/JSON 解析失败（ChatModel mock + textResponse helper） |
+| `AiQaServiceTest` | 问答正常/降级（ChatModel mock） |
+| `AiReviewServiceTest` | 审核正常/降级（ChatModel mock） |
+| `AiModelSupportTest` | callText/callJson/embed/analyzeImages 四类调用去重 |
+| `AiCopyGenerationServiceTest` | 文案生成正常/风格分支/降级/模板缺失 |
+| `AutoListingServiceTest` | 拍照上架正常/视觉降级/文本降级/模板缺失 |
+| `JdbcCreditScoreFetcherTest` | 批量查询/空输入/降级逐个查询 |
+| `SemanticSearchServiceTest` | 空白/null/端口缺失/空向量/正常 kNN 查询 |
+| `AiRateLimitInterceptorTest` | 非 AI 路径/限流/fail-open/429/X-Forwarded-For |
 | `PromptRendererTest` | {var} 替换 / quoteReplacement 安全 / null 边界 / 缺失变量保留 (8 测试) |
 | `YamlPromptRegistryTest` | YAML 加载 / 版本路由 / 缺失异常 / 资源解析 (7 测试) |
 | `TokenBudgetAspectTest` | 预算未超通过 / 超限抛 TokenBudgetExceededException / maxPerCall=0 跳过 / dailyLimit=0 不限 |
 | `InMemoryTokenBudgetStoreTest` | recordUsage 累加 / getTodayUsage 跨日重置 / 并发安全 |
+
+> 测试统一用 Mockito mock `ChatModel` / `EmbeddingModel`，`textResponse(text)` 构造 `ChatResponse(List.of(new Generation(new AssistantMessage(text))))`。Prompt 匹配用 `argThat`（注意 null-safe，避免 Mockito 对 stubbing 期 null 参数触发 NPE）。

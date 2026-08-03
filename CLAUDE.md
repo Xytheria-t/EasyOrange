@@ -36,9 +36,9 @@ cd easyorange-frontend && npm test
 | [doc/工程指标.md](./doc/工程指标.md) | 测试数 / 覆盖率单一事实来源（2,412 测试 / Domain 层 84.1%） |
 | [doc/架构/](doc/架构/) | 架构规范（系统架构、DDD、安全认证、数据库迁移、部署） |
 | [doc/集成/](doc/集成/) | 业务专题（AI 资产管理、API 速查） |
-| [doc/adr/](doc/adr/) | 架构决策记录（6 个 ADR，如 ADR-0007 拒绝 Saga 单事务） |
+| [doc/adr/](doc/adr/) | 架构决策记录（7 个 ADR，如 ADR-0007 拒绝 Saga 单事务、ADR-0008 Spring AI 迁移） |
 
-核心原则：**DDD 六边形 + CQRS**，domain → application → adapter 单向依赖；**事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路**；**分布式锁防超卖**；**AI 8 件套**（Port/Adapter + 多级缓存 + 令牌桶 + stale 降级 + AiMetrics + Prompt YAML + TokenBudget + Bulkhead）。状态机与错误码规范以 AGENTS.md 为准。
+核心原则：**DDD 六边形 + CQRS**，domain → application → adapter 单向依赖；**事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路**；**分布式锁防超卖**；**AI 8 件套**（Spring AI 2.0 框架化 + 令牌桶 + stale 降级 + Embedding 真实现 + Prompt YAML + TokenBudget + 多模态 Vision）。状态机与错误码规范以 AGENTS.md 为准。
 
 ## 编码规则（ECC）
 

@@ -15,6 +15,8 @@ import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
+import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
+import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,7 +32,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static com.cartethyia.easyorange.order.application.command.CreateOrderCommand.CreateOrderItem;
@@ -104,17 +105,17 @@ class OrderCreationServiceTest {
 
     @Test
     @DisplayName("正常创建订单")
-    void execute_normalFlow_succeeds() {
+    void createOrder_normalFlow_succeeds() {
         CreateOrderCommand command = new CreateOrderCommand(
                 List.of(new CreateOrderItem("100", 1)),
                 "北京市朝阳区", "13800138000", "备注", null
         );
 
         ProductSnapshot snapshot = new ProductSnapshot("100", SELLER_ID, new BigDecimal("99.99"), true, 10, "北京");
-        when(productOrderPort.getSnapshot("100")).thenReturn(Optional.of(snapshot));
+        when(productOrderPort.getSnapshots(any())).thenReturn(List.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenReturn("1");
 
-        CreateOrderResult result = service.execute(command);
+        CreateOrderResult result = service.createOrder(command);
 
         assertThat(result).isNotNull();
         verify(paymentGatewayPort).createPayment(any());
@@ -125,19 +126,19 @@ class OrderCreationServiceTest {
     }
 
     @Test
-    @DisplayName("支付失败时抛出 OrderCreationException（单事务回滚兜底，无需反向补偿）")
-    void execute_paymentFails_throws() {
+    @DisplayName("支付失败时抛出 PaymentGatewayAdapterException（单事务回滚兜底，无需反向补偿）")
+    void createOrder_paymentFails_throws() {
         CreateOrderCommand command = new CreateOrderCommand(
                 List.of(new CreateOrderItem("100", 1)),
                 "北京市朝阳区", "13800138000", null, null
         );
 
         ProductSnapshot snapshot = new ProductSnapshot("100", SELLER_ID, new BigDecimal("99.99"), true, 10, "北京");
-        when(productOrderPort.getSnapshot("100")).thenReturn(Optional.of(snapshot));
+        when(productOrderPort.getSnapshots(any())).thenReturn(List.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenThrow(new RuntimeException("支付失败"));
 
-        assertThatThrownBy(() -> service.execute(command))
-                .isInstanceOf(OrderCreationException.class)
+        assertThatThrownBy(() -> service.createOrder(command))
+                .isInstanceOf(PaymentGatewayAdapterException.class)
                 .hasMessageContaining("支付失败");
         // 无事务内反向补偿：订单/库存/支付随事务整体回滚
         verify(productOrderPort, never()).restoreStock(anyString(), anyInt());
@@ -146,22 +147,22 @@ class OrderCreationServiceTest {
 
     @Test
     @DisplayName("资产不存在时下单失败")
-    void execute_productNotFound_throws() {
+    void createOrder_productNotFound_throws() {
         CreateOrderCommand command = new CreateOrderCommand(
                 List.of(new CreateOrderItem("999", 1)),
                 "北京市朝阳区", "13800138000", null, null
         );
 
-        when(productOrderPort.getSnapshot("999")).thenReturn(Optional.empty());
+        when(productOrderPort.getSnapshots(any())).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.execute(command))
-                .isInstanceOf(OrderCreationException.class)
+        assertThatThrownBy(() -> service.createOrder(command))
+                .isInstanceOf(OrderDomainException.class)
                 .hasMessageContaining("资产不存在");
     }
 
     @Test
     @DisplayName("获取分布式锁失败时抛异常")
-    void execute_lockFailed_throws() throws InterruptedException {
+    void createOrder_lockFailed_throws() throws InterruptedException {
         when(redissonClient.getLock(anyString())).thenReturn(lock);
         when(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(false);
 
@@ -170,7 +171,7 @@ class OrderCreationServiceTest {
                 "北京市朝阳区", "13800138000", null, null
         );
 
-        assertThatThrownBy(() -> service.execute(command))
+        assertThatThrownBy(() -> service.createOrder(command))
                 .isInstanceOf(OrderCreationException.class)
                 .hasMessageContaining("繁忙");
     }

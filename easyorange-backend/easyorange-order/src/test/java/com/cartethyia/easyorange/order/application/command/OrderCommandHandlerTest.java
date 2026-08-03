@@ -11,9 +11,10 @@ import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
+import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
-import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
+import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.application.service.OrderCreationService;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
@@ -53,9 +54,6 @@ class OrderCommandHandlerTest {
     private OrderCreationService orderCreationService;
 
     @Mock
-    private PaymentGatewayPort paymentGatewayPort;
-
-    @Mock
     private OrderCachePort orderCachePort;
 
     @InjectMocks
@@ -79,13 +77,13 @@ class OrderCommandHandlerTest {
             );
 
             CreateOrderResult expectedResult = new CreateOrderResult(ORDER_ID, "ORD123");
-            when(orderCreationService.execute(command)).thenReturn(expectedResult);
+            when(orderCreationService.createOrder(command)).thenReturn(expectedResult);
 
             CreateOrderResult result = commandHandler.handle(command);
 
             assertThat(result.orderId()).isEqualTo(ORDER_ID);
             assertThat(result.orderNo()).isEqualTo("ORD123");
-            verify(orderCreationService).execute(command);
+            verify(orderCreationService).createOrder(command);
         }
     }
 
@@ -259,8 +257,8 @@ class OrderCommandHandlerTest {
             try {
                 commandHandler.handle(command);
 
-                verify(paymentGatewayPort).refundPayment(ORDER_ID, "商品有问题");
                 verify(orderRepository).update(any(Order.class));
+                verify(domainEventPublisher).publish(any(OrderRefundedEvent.class));
                 verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
             } finally {
                 TestSecurityUtil.clearSecurityContext();

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.outbound.product;
 
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
-import com.cartethyia.easyorange.product.application.query.ProductQueryService;
+import com.cartethyia.easyorange.product.application.query.ProductQueryHandler;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
@@ -15,12 +15,12 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class OrderProductQueryAdapter implements ProductQueryPort {
 
-    private final ProductQueryService productQueryService;
+    private final ProductQueryHandler productQueryHandler;
 
     @Override
     public Optional<ProductDetail> getProductById(String productId) {
         try {
-            ProductVO product = productQueryService.getProductById(productId);
+            ProductVO product = productQueryHandler.getProductById(productId);
             return Optional.ofNullable(product)
                     .map(this::toDetail);
         } catch (Exception e) {
@@ -30,7 +30,7 @@ public class OrderProductQueryAdapter implements ProductQueryPort {
 
     @Override
     public List<ProductDetail> getProductsByIds(List<String> productIds) {
-        List<ProductVO> products = productQueryService.getProductsByIds(productIds);
+        List<ProductVO> products = productQueryHandler.getProductsByIds(productIds);
         if (products == null) {
             return List.of();
         }

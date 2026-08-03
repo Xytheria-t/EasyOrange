@@ -1,8 +1,6 @@
 package com.cartethyia.easyorange.ai.budget;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,17 +22,13 @@ class TokenBudgetAspectTest {
 
     private InMemoryTokenBudgetStore store;
     private AiProperties aiProperties;
-    private SimpleMeterRegistry registry;
-    private AiMetricsService metricsService;
     private TokenBudgetAspect aspect;
 
     @BeforeEach
     void setUp() {
         store = new InMemoryTokenBudgetStore();
         aiProperties = new AiProperties();
-        registry = new SimpleMeterRegistry();
-        metricsService = new AiMetricsService(registry);
-        aspect = new TokenBudgetAspect(store, aiProperties, metricsService);
+        aspect = new TokenBudgetAspect(store, aiProperties);
     }
 
     @Test
@@ -50,33 +44,22 @@ class TokenBudgetAspectTest {
     }
 
     @Test
-    @DisplayName("预算未超限时调用后记录用量并上报 metrics")
-    void aroundBudget_withinLimit_recordsUsageAndMetrics() throws Throwable {
+    @DisplayName("预算未超限时调用后记录预估用量")
+    void aroundBudget_withinLimit_recordsUsage() throws Throwable {
         var annotation = mockBudget("pricing", 100, 1000);
         when(pjp.proceed()).thenReturn("AI response");
 
         aspect.aroundBudget(pjp, annotation);
 
-        // 存储记录
+        // 存储记录预估用量（maxTokensPerCall 估算值）
         var usage = store.getTodayUsage("pricing");
         assertThat(usage).isPresent();
         assertThat(usage.get().total()).isEqualTo(100);
-
-        // metrics 上报：usage counter + daily_total gauge
-        var usageCounter = registry.find("easyorange.ai.token_budget.usage")
-                .tag("scenario", "pricing").tag("outcome", "consumed").counter();
-        assertThat(usageCounter).isNotNull();
-        assertThat(usageCounter.count()).isEqualTo(100.0);
-
-        var dailyGauge = registry.find("easyorange.ai.token_budget.daily_total")
-                .tag("scenario", "pricing").gauge();
-        assertThat(dailyGauge).isNotNull();
-        assertThat(dailyGauge.value()).isEqualTo(100.0);
     }
 
     @Test
-    @DisplayName("累计用量超 dailyTokenLimit 时抛异常并上报 exceeded 指标")
-    void aroundBudget_exceedsDailyLimit_throwsExceptionAndReportsMetric() throws Throwable {
+    @DisplayName("累计用量超 dailyTokenLimit 时抛异常且不执行目标方法")
+    void aroundBudget_exceedsDailyLimit_throwsException() throws Throwable {
         var annotation = mockBudget("pricing", 600, 1000);
         store.recordUsage("pricing", 500, 0);
 
@@ -86,12 +69,6 @@ class TokenBudgetAspectTest {
                 .hasMessageContaining("1000");
 
         verify(pjp, never()).proceed();
-
-        // exceeded counter 递增
-        var exceededCounter = registry.find("easyorange.ai.token_budget")
-                .tag("scenario", "pricing").tag("outcome", "exceeded").counter();
-        assertThat(exceededCounter).isNotNull();
-        assertThat(exceededCounter.count()).isEqualTo(1.0);
     }
 
     @Test

@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.order.domain.port;
 
 import java.math.BigDecimal;
-import java.util.Optional;
+import java.util.List;
 
 public interface ProductOrderPort {
 
-    Optional<ProductSnapshot> getSnapshot(String productId);
+    List<ProductSnapshot> getSnapshots(List<String> productIds);
 
     void decreaseStock(String productId, int quantity);
 

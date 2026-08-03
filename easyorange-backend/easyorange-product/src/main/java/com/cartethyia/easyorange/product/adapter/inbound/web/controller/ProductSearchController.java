@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKey
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchHistoryResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchPageResponse;
-import com.cartethyia.easyorange.product.application.query.ProductSearchQueryService;
+import com.cartethyia.easyorange.product.application.query.ProductSearchQueryHandler;
 import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
@@ -37,7 +37,7 @@ import java.util.List;
 @Validated
 public class ProductSearchController {
 
-    private final ProductSearchQueryService searchQueryService;
+    private final ProductSearchQueryHandler searchQueryHandler;
 
     @GetMapping
     public Result<SearchPageResponse<ProductResponse>> searchProducts(@Valid ProductSearchRequest request) {
@@ -46,7 +46,7 @@ public class ProductSearchController {
                 request.getMinPrice(), request.getMaxPrice(), request.getConditionLevel(),
                 request.getSortField(), null,
                 request.getPageNum(), request.getPageSize());
-        ProductSearchResult result = searchQueryService.search(criteria, request.isAiEnhanced());
+        ProductSearchResult result = searchQueryHandler.search(criteria, request.isAiEnhanced());
 
         var responses = result.page().records().stream()
                 .map(ProductSearchController::toProductResponse)
@@ -65,7 +65,7 @@ public class ProductSearchController {
     @GetMapping("/history")
     public Result<List<SearchHistoryResponse>> getMySearchHistory(
             @RequestParam(defaultValue = "20") @Max(50) Integer limit) {
-        List<SearchHistoryReadModel> histories = searchQueryService.getMySearchHistory(limit);
+        List<SearchHistoryReadModel> histories = searchQueryHandler.getMySearchHistory(limit);
         var responses = histories.stream()
                 .map(h -> SearchHistoryResponse.builder()
                         .id(h.id()).keyword(h.keyword()).createTime(h.createTime()).build())
@@ -75,20 +75,20 @@ public class ProductSearchController {
 
     @DeleteMapping("/history")
     public Result<Void> clearMySearchHistory() {
-        searchQueryService.clearMySearchHistory();
+        searchQueryHandler.clearMySearchHistory();
         return Result.success();
     }
 
     @DeleteMapping("/history/{historyId}")
     public Result<Void> deleteSearchHistory(@PathVariable String historyId) {
-        searchQueryService.deleteSearchHistory(historyId);
+        searchQueryHandler.deleteSearchHistory(historyId);
         return Result.success();
     }
 
     @GetMapping("/hot")
     public Result<List<HotKeywordResponse>> getHotKeywords(
             @RequestParam(defaultValue = "10") @Max(50) Integer limit) {
-        List<HotKeywordReadModel> keywords = searchQueryService.getHotKeywords(limit);
+        List<HotKeywordReadModel> keywords = searchQueryHandler.getHotKeywords(limit);
         var responses = keywords.stream()
                 .map(k -> HotKeywordResponse.builder()
                         .id(k.id()).keyword(k.keyword())
@@ -101,13 +101,13 @@ public class ProductSearchController {
     public Result<List<String>> getSearchSuggestions(
             @RequestParam @Size(max = 100, message = "关键词不能超过 100 个字符") String keyword,
             @RequestParam(defaultValue = "10") @Max(50) Integer limit) {
-        List<String> suggestions = searchQueryService.getSearchSuggestions(keyword, limit);
+        List<String> suggestions = searchQueryHandler.getSearchSuggestions(keyword, limit);
         return Result.success(suggestions);
     }
 
     @PostMapping("/record")
     public Result<Void> recordSearch(@RequestParam @Size(max = 100, message = "关键词不能超过 100 个字符") String keyword) {
-        searchQueryService.recordSearch(keyword);
+        searchQueryHandler.recordSearch(keyword);
         return Result.success();
     }
 

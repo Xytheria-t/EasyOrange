@@ -46,7 +46,7 @@ EasyOrange 中的**资产**是广义概念，**不局限于二手实物**：
 | 物流模式 | **C2C 直发** | 平台不碰货、不囤货，物流走资产方→认领方 |
 | 资金流 | **不经手资金** | 避免支付牌照、备付金等合规复杂度 |
 | 商业模式 | **业务聚焦核心流程** | 把复杂度留给架构与 AI 工程化 |
-| AI 角色 | **生产级工程实践** | AI 是核心叙事，从"demo 调用"走到"生产级工程"——6 决策点全部走 Port/Adapter + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化 + Token 预算治理 |
+| AI 角色 | **生产级工程实践** | AI 是核心叙事，从"demo 调用"走到"生产级工程"——6 决策点全面框架化为 Spring AI 2.0 + 令牌桶限流 + stale 降级 + Embedding 真实现 + Prompt 版本化 + Token 预算治理 |
 
 > 业务聚焦核心流程，留出全部精力给架构和工程。架构师能讲清楚 DDD / CQRS / Saga / 事件驱动 / AI 工程化的细节，比业务复杂度本身更有展示价值。
 
@@ -93,16 +93,16 @@ EasyOrange 中的**资产**是广义概念，**不局限于二手实物**：
 
 ### 架构侧关注点（AI 工程化 8 件套）
 
-- **Port/Adapter 隔离**：`LlmPort` / `VisionPort` / `EmbeddingPort` 接口抽象，供应商可换
-- **L1/L2 多级缓存**：`CachingLlmAdapter` `@Primary` 装饰器包裹 `DeepSeekLlmAdapter`，L1 Caffeine + L2 Redis
+- **Spring AI 2.0 框架化**：`AiModelConfig` 定义 `chatModel`（@Primary DeepSeek）/ `visionChatModel`（Qwen-VL）/ `embeddingModel`（DashScope）三个 bean，统一 `OpenAiSetup.setupSyncClient` OpenAI 兼容线协议（[ADR-0008](doc/adr/0008-ai-migrate-to-spring-ai-framework.md)）
+- **调用去重**：`AiModelSupport`（callText / callJson / embed / analyzeImages）
 - **令牌桶限流**：`AiRateLimitInterceptor` 按端点独立限流（5-30 次/分）
 - **stale 降级**：超限时返回 stale 缓存，Redis 不可用时 fail-open
-- **AiMetrics 可观测**：缓存命中率 / LLM 延迟 / 限流计数 → Prometheus
+- **Embedding 真实现**：查询侧 kNN + 索引侧 `nameEmbedding` 写入（dims=1024 与 ES `dense_vector` 对齐）
 - **Prompt 版本化（YAML）**：版本化管理 prompt 模板，支持 A/B 与回滚
 - **Token 预算治理（@TokenBudget AOP）**：日预算控制 + 超预算降级
-- **Bulkhead 隔离舱**：Resilience4j 并发隔离 — `aiLlm`（8）/ `aiVision`（4）/ `dbHeavy`（16）
+- **可观测性**：Spring AI 2.0 内置 Observation + Micrometer → `/actuator/prometheus`
 
-> 详细机制见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md) 与 [ADR 0003](doc/adr/0003-ai-port-adapter-with-decorator.md)。
+> 详细机制见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md) 与 [ADR 0008](doc/adr/0008-ai-migrate-to-spring-ai-framework.md)。
 
 ---
 

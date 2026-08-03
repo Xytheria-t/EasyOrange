@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.adapter.outbound.product;
 
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
 
-import com.cartethyia.easyorange.product.application.command.ProductCommandService;
+import com.cartethyia.easyorange.product.application.command.ProductCommandHandler;
 import com.cartethyia.easyorange.product.domain.port.ProductSnapshotPort;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
+import java.util.List;
 
 @Primary
 @Component
@@ -18,33 +18,39 @@ import java.util.Optional;
 public class ProductOrderAdapter implements ProductOrderPort {
 
     private final ProductSnapshotPort productSnapshotPort;
-    private final ProductCommandService productCommandService;
+    private final ProductCommandHandler productCommandHandler;
 
     @Override
-    public Optional<ProductSnapshot> getSnapshot(String productId) {
-        return productSnapshotPort.findSnapshot(ProductId.of(productId))
-                .map(snapshot -> new ProductSnapshot(
-                        snapshot.productId().value(),
-                        snapshot.sellerId().value(),
-                        snapshot.price().value(),
-                        snapshot.status() == ProductStatus.ONLINE,
-                        snapshot.stock().value(),
-                        snapshot.location()
-                ));
+    public List<ProductSnapshot> getSnapshots(List<String> productIds) {
+        return productSnapshotPort.findSnapshots(productIds.stream().map(ProductId::of).toList())
+                .stream()
+                .map(this::toSnapshot)
+                .toList();
+    }
+
+    private ProductSnapshot toSnapshot(ProductSnapshotPort.ProductOrderSnapshot snapshot) {
+        return new ProductSnapshot(
+                snapshot.productId().value(),
+                snapshot.sellerId().value(),
+                snapshot.price().value(),
+                snapshot.status() == ProductStatus.ONLINE,
+                snapshot.stock().value(),
+                snapshot.location()
+        );
     }
 
     @Override
     public void decreaseStock(String productId, int quantity) {
-        productCommandService.decrementStock(productId, quantity);
+        productCommandHandler.decrementStock(productId, quantity);
     }
 
     @Override
     public void restoreStock(String productId, int quantity) {
-        productCommandService.restoreStock(productId, quantity);
+        productCommandHandler.restoreStock(productId, quantity);
     }
 
     @Override
     public void markAsSold(String productId) {
-        productCommandService.markAsSold(productId);
+        productCommandHandler.markAsSold(productId);
     }
 }

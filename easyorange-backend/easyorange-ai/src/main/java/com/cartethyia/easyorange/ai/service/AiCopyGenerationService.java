@@ -2,9 +2,9 @@ package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
 import com.cartethyia.easyorange.ai.dto.CopyGenerationResult;
-import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
+import org.springframework.ai.chat.model.ChatModel;
 import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ public class AiCopyGenerationService {
 
     private static final String PROMPT_NAME = "ai_copy_generation_system";
 
-    private final LlmPort llmPort;
+    private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
 
@@ -53,7 +53,7 @@ public class AiCopyGenerationService {
         );
 
         try {
-            String jsonResponse = llmPort.generateTextWithJson(systemPrompt, userMessage);
+            String jsonResponse = AiModelSupport.callJson(chatModel, systemPrompt, userMessage);
             if (jsonResponse == null) {
                 log.warn("LLM returned null for copy generation");
                 return null;

@@ -54,8 +54,8 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 
 product、order、payment 模块使用 CQRS（在 application/domain 层分离，Controller 层可能合并）：
 
-- **Command 侧**: `application/command/*CommandService` → `domain`
-- **Query 侧**: `application/query/*QueryService` → `application/port/query/`
+- **Command 侧**: `application/command/*CommandHandler` → `domain`
+- **Query 侧**: `application/query/*QueryHandler` → `application/port/query/`
 
 读写使用不同的 Repository 接口和数据模型。Controller 层按领域概念组织，不强制 CQRS 分割（product 模块只有一个 `ProductController`；order/payment/message 仍维持 `*CommandController` + `*QueryController` 分离）。
 
@@ -81,11 +81,11 @@ product、order、payment 模块使用 CQRS（在 application/domain 层分离�
 - 写操作通过领域事件解耦（如 `OrderCreatedEvent`）
 - 事件监听器在 `easyorange-application/adapter/event/` 包下（机制与第 3 节"领域事件"一致）
 
-**查询操作**：保留同步端口调用（如 `getSnapshot()`），通过可选依赖实现
+**查询操作**：保留同步端口调用（如 `getSnapshots()`），通过可选依赖实现
 
 **库存扣减（主路径同步 + 订阅校验）**：
 - 主路径：`OrderCreationService` 在 `@Transactional` 内同步调用 `ProductOrderPort.decreaseStock()`（失败随事务整体回滚）
-- 历史异步路径：`OrderCreatedEvent → OrderSagaEventConsumer → StockReservationRequestedEvent → OrderFulfillmentEventConsumer → ProductCommandService.decrementStock()` 已移除，`OrderLifecycleEventConsumer.handleCreated()` 不再发布预留事件
+- 历史异步路径：`OrderCreatedEvent → OrderSagaEventConsumer → StockReservationRequestedEvent → OrderFulfillmentEventConsumer → ProductCommandHandler.decrementStock()` 已移除，`OrderLifecycleEventConsumer.handleCreated()` 不再发布预留事件
 
 ## 统一响应格式
 
@@ -106,7 +106,9 @@ PageResult.of(records, total, page, size)
 | 值对象 | 名词 (record) | `ProductId`, `Money`, `StockQuantity` |
 | 领域事件 | `*Event` | `OrderCreatedEvent` |
 | 领域服务 | `*Service` | `AuthenticationService` |
-| 应用服务 | `*AppService` / `*CommandHandler` | `AuthAppService`, `ProfileAppService` |
+| 应用服务（非 CQRS） | `*AppService` | `AuthAppService`, `ProfileAppService` |
+| CQRS 命令处理器 | `*CommandHandler` | `OrderCommandHandler`, `ProductCommandHandler` |
+| CQRS 查询处理器 | `*QueryHandler` | `OrderQueryHandler`, `ProductQueryHandler` |
 | 仓储接口 | `*Repository` | `UserRepository` |
 | 仓储实现 | `*RepositoryImpl` (继承 `BaseRepository`) | `UserRepositoryImpl extends BaseRepository<UserMapper, UserDO>` |
 | 出站端口 | `*Port` | `PaymentGatewayPort` |
@@ -320,13 +322,14 @@ Redis 缓存操作统一使用 **Resilience4j CircuitBreaker** + 多级降级（
 
 **新增缓存适配器时**：注入 `CircuitBreakerRegistry`，用 `CircuitBreaker.decorateSupplier()` / `decorateRunnable()` 包装 Redis 操作，异常时降级到 DB + 本地缓存。参考 `CategoryCacheAdapter` 模式。
 
-### AI 调用重试 (Resilience4j Retry)
+### AI 调用重试与并发隔离（Spring AI 客户端内置）
 
-AI 适配器（`CachingLlmAdapter` / `CachingVisionAdapter`）使用 **Resilience4j Retry** 实现 LLM/Vision API 调用重试，应对网络瞬断和上游限流。
+AI 模块已全面框架化为 Spring AI 2.0（ADR-0008），自研 `CachingLlmAdapter` / `CachingVisionAdapter` / Resilience4j `aiLlmRetry` / `aiVisionRetry` / `aiLlmBulkhead` / `aiVisionBulkhead` 已删除。重试与并发隔离由 `AiModelConfig` 的 `OpenAiSetup.setupSyncClient` 承担：
 
-`Resilience4jConfig` 在 framework 模块提供 `RetryRegistry` Bean + 两个预注册实例：`aiLlm`（文本）和 `aiVision`（视觉）。默认指数退避 500ms × 2.0，最多 3 次，重试 `RestClientException`，忽略 `IllegalArgumentException`。
+- 重试：`MAX_RETRIES=2`（openai-java 客户端内置重试策略）
+- 并发：openai-java 客户端连接池配置（`OpenAiSetup` 默认值）
 
-**新增 AI 适配器时**：注入 `@Qualifier("aiLlmRetry") Retry` + `@Qualifier("aiLlmBulkhead") Bulkhead`，用 `Retry.decorateSupplier()` 包装 API 调用。参考 `CachingLlmAdapter` 模式。
+**新增 AI 调用时**：直接注入 `ChatModel` / `EmbeddingModel` bean，用 `AiModelSupport` 去重调用模式；业务级治理（`@TokenBudget` / `AiRateLimitInterceptor`）保留。
 
 ### AI 搜索增强并行管道
 

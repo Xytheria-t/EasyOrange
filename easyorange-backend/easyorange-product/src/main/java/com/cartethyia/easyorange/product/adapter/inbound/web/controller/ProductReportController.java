@@ -4,8 +4,8 @@ import com.cartethyia.easyorange.common.annotation.Idempotent;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.application.command.ProductReportCommandService;
-import com.cartethyia.easyorange.product.application.query.ProductReportQueryService;
+import com.cartethyia.easyorange.product.application.command.ProductReportCommandHandler;
+import com.cartethyia.easyorange.product.application.query.ProductReportQueryHandler;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ReportRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportDetailResponse;
@@ -22,15 +22,15 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ProductReportController {
 
-    private final ProductReportCommandService reportCommandService;
-    private final ProductReportQueryService reportQueryService;
+    private final ProductReportCommandHandler reportCommandHandler;
+    private final ProductReportQueryHandler reportQueryHandler;
 
     @PostMapping("/product/{productId}")
     @Idempotent
     public Result<Void> reportProduct(@PathVariable String productId,
                                        @Valid @RequestBody ReportRequest request) {
         String reporterId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        reportCommandService.handleReport(productId, reporterId, request.reason(), request.reasonType());
+        reportCommandHandler.handleReport(productId, reporterId, request.reason(), request.reasonType());
         return Result.success();
     }
 
@@ -39,12 +39,12 @@ public class ProductReportController {
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "20") Integer pageSize) {
         String reporterId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        return Result.success(reportQueryService.getMyReports(reporterId, pageNum, pageSize));
+        return Result.success(reportQueryHandler.getMyReports(reporterId, pageNum, pageSize));
     }
 
     @GetMapping("/{reportId}")
     public Result<ProductReportDetailResponse> getReportDetail(@PathVariable String reportId) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        return Result.success(reportQueryService.getReportDetail(reportId, userId));
+        return Result.success(reportQueryHandler.getReportDetail(reportId, userId));
     }
 }

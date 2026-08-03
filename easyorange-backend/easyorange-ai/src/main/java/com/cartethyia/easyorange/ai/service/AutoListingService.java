@@ -2,13 +2,13 @@ package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
 import com.cartethyia.easyorange.ai.dto.AutoListingResult;
-import com.cartethyia.easyorange.ai.port.LlmPort;
-import com.cartethyia.easyorange.ai.port.VisionPort;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
+import org.springframework.ai.chat.model.ChatModel;
 import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,8 +21,9 @@ public class AutoListingService {
     private static final String VISUAL_PROMPT_NAME = "auto_listing_visual";
     private static final String SYSTEM_PROMPT_NAME = "auto_listing_system";
 
-    private final VisionPort visionPort;
-    private final LlmPort llmPort;
+    private final ChatModel chatModel;
+    @Qualifier("visionChatModel")
+    private final ChatModel visionChatModel;
     private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
 
@@ -32,13 +33,13 @@ public class AutoListingService {
             String visualPrompt = loadPrompt(VISUAL_PROMPT_NAME);
             String systemPrompt = loadPrompt(SYSTEM_PROMPT_NAME);
 
-            String visualResult = visionPort.analyzeImages(imageUrls, visualPrompt);
+            String visualResult = AiModelSupport.analyzeImages(visionChatModel, imageUrls, visualPrompt);
             if (visualResult == null) {
                 log.warn("Vision analysis returned null for {} images", imageUrls.size());
                 return null;
             }
 
-            String jsonResponse = llmPort.generateTextWithJson(systemPrompt, visualResult);
+            String jsonResponse = AiModelSupport.callJson(chatModel, systemPrompt, visualResult);
             if (jsonResponse == null) {
                 log.warn("LLM returned null for auto listing generation");
                 return null;

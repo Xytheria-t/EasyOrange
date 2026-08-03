@@ -36,16 +36,16 @@ product/
 │   │   ├── CreateProductCommand.java         # 顶层 record
 │   │   ├── UpdateProductCommand.java         # 顶层 record
 │   │   ├── CreateProductRatingCommand.java   # 顶层 record
-│   │   ├── ProductCommandService.java
-│   │   ├── ProductReportCommandService.java
-│   │   └── ProductRatingCommandService.java
+│   │   ├── ProductCommandHandler.java
+│   │   ├── ProductReportCommandHandler.java
+│   │   └── ProductRatingCommandHandler.java
 │   ├── query/                           # 查询侧 (CQRS Read)
-│   │   ├── ProductQueryService.java
-│   │   ├── ProductReportQueryService.java
-│   │   ├── ProductRatingQueryService.java
-│   │   ├── ProductSearchQueryService.java
+│   │   ├── ProductQueryHandler.java
+│   │   ├── ProductReportQueryHandler.java
+│   │   ├── ProductRatingQueryHandler.java
+│   │   ├── ProductSearchQueryHandler.java
 │   │   ├── ProductSearchCriteria.java
-│   │   ├── CategoryQueryService.java
+│   │   ├── CategoryQueryHandler.java
 │   │   ├── dto/                         # 应用层输出 VO
 │   │   │   ├── ProductVO.java
 │   │   │   ├── ProductRatingVO.java
@@ -145,10 +145,10 @@ public sealed interface ProductEvent extends DomainEvent
 ## CQRS 架构
 
 **Command 侧 (写)**:
-`ProductController` → `ProductCommandService` → `Product` 聚合根 → `ProductRepository`
+`ProductController` → `ProductCommandHandler` → `Product` 聚合根 → `ProductRepository`
 
 **Query 侧 (读)**:
-`ProductController` → `ProductQueryService` → `ProductQueryRepository`（`application/port/query/`）→ `ProductReadModel`
+`ProductController` → `ProductQueryHandler` → `ProductQueryRepository`（`application/port/query/`）→ `ProductReadModel`
 
 读写使用不同的 Repository 接口和数据模型，查询侧使用 ReadModel 组装响应。查询 Repository 接口位于 `application/port/query/`（非 domain 层），因为查询 ReadModel 是 application 层的概念。
 

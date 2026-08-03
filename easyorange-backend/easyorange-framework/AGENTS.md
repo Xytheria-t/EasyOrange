@@ -166,16 +166,7 @@ multiLevelCache.evict("product:detail:" + id);
 
 `Resilience4jConfig` 提供 `RetryRegistry` Bean（自动绑定 Micrometer 指标）。默认配置：指数退避 500ms 初始间隔 × 2.0 乘数，最多 3 次，重试 `RestClientException` / `ResourceAccessException`，忽略 `IllegalArgumentException`。
 
-`Resilience4jConfig` 预注册两个具名 Retry 实例供 AI 模块注入：
-
-| 名称 | 用途 | 注入方式 |
-|------|------|---------|
-| `aiLlmRetry` | LLM 文本调用重试（CachingLlmAdapter） | `@Qualifier("aiLlmRetry") Retry` |
-| `aiVisionRetry` | Vision 图片分析重试（CachingVisionAdapter） | `@Qualifier("aiVisionRetry") Retry` |
-
-**使用模式**：AI 适配器构造器注入具名 `Retry`，用 `Retry.decorateSupplier()` 包装实际 LLM/Vision 调用，实现网络瞬断时自动重试。参考 `CachingLlmAdapter` / `CachingVisionAdapter`。
-
-Bulkhead 实例对应 Spring Bean 名为 `aiLlmBulkhead` / `aiVisionBulkhead` / `dbHeavyBulkhead`，注入使用 `@Qualifier("aiLlmBulkhead") Bulkhead`。
+> **AI 重试/Bulkhead 已移除（2026-08-03，ADR-0008）**：原 `aiLlmRetry` / `aiVisionRetry` / `aiLlmBulkhead` / `aiVisionBulkhead` / `dbHeavyBulkhead` 预注册实例已随 Spring AI 框架化删除——重试与并发隔离由 `AiModelConfig` 的 `OpenAiSetup.setupSyncClient`（openai-java 客户端内置）承担。AI 模块不再注入本模块的 `Retry` / `Bulkhead` bean。
 
 ### 分布式 ID 生成器 (idgen/)
 

@@ -1,11 +1,12 @@
 package com.cartethyia.easyorange.ai.adapter.outbound;
 
-import com.cartethyia.easyorange.ai.port.LlmPort;
+import com.cartethyia.easyorange.ai.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.service.NaturalLanguageDetector;
 import com.cartethyia.easyorange.ai.service.ProductTagger;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.framework.cache.CacheUtils;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.data.redis.core.RedisTemplate;
 import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,7 @@ import java.util.concurrent.*;
 public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
     private final NaturalLanguageDetector nlDetector;
-    private final LlmPort llmPort;
+    private final ChatModel chatModel;
     private final ProductTagger productTagger;
     private final RedisTemplate<Object, Object> redisTemplate;
 
@@ -53,11 +54,11 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
     public AiSearchEnhancerAdapter(
             NaturalLanguageDetector nlDetector,
-            LlmPort llmPort,
+            ChatModel chatModel,
             ProductTagger productTagger,
             ObjectProvider<RedisTemplate<Object, Object>> redisTemplateProvider) {
         this.nlDetector = nlDetector;
-        this.llmPort = llmPort;
+        this.chatModel = chatModel;
         this.productTagger = productTagger;
         this.redisTemplate = redisTemplateProvider.getIfAvailable();
     }
@@ -88,7 +89,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         List<ProductReadModel> top5 = topProducts.subList(0, Math.min(TOP_PRODUCTS_LIMIT, topProducts.size()));
 
         CompletableFuture<String> intentFuture = CompletableFuture.supplyAsync(
-            () -> llmPort.generateText(INTENT_SYSTEM_PROMPT, keyword));
+            () -> AiModelSupport.callText(chatModel, INTENT_SYSTEM_PROMPT, keyword));
 
         CompletableFuture<Map<String, List<String>>> tagsFuture = CompletableFuture.supplyAsync(
             () -> productTagger.tagProducts(top5));
@@ -96,7 +97,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         String marketContext = buildMarketContext(top5);
         CompletableFuture<String> marketFuture = CompletableFuture.supplyAsync(() -> {
             try {
-                return llmPort.generateText(MARKET_SYSTEM_PROMPT, marketContext);
+                return AiModelSupport.callText(chatModel, MARKET_SYSTEM_PROMPT, marketContext);
             } catch (Exception e) {
                 log.warn("Market analysis failed", e);
                 return null;
@@ -105,7 +106,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
         CompletableFuture<List<String>> questionsFuture = CompletableFuture.supplyAsync(() -> {
             try {
-                String result = llmPort.generateText(QUESTIONS_SYSTEM_PROMPT, keyword);
+                String result = AiModelSupport.callText(chatModel, QUESTIONS_SYSTEM_PROMPT, keyword);
                 return result != null ? Arrays.asList(result.split("[,，]")) : List.of();
             } catch (Exception e) {
                 log.warn("Suggested questions failed", e);

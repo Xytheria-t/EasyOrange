@@ -12,6 +12,7 @@ public class AiProperties {
 
     private DeepSeek deepseek = new DeepSeek();
     private QwenVl qwenVl = new QwenVl();
+    private Embedding embedding = new Embedding();
     private Cache cache = new Cache();
     private RateLimit rateLimit = new RateLimit();
     private Budget budget = new Budget();
@@ -27,9 +28,24 @@ public class AiProperties {
     @Data
     public static class QwenVl {
         private String apiKey;
-        private String baseUrl = "https://dashscope.aliyuncs.com/api/v1";
+        private String baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
         private String model = "qwen-vl-max";
         private int timeout = 60000;
+    }
+
+    /**
+     * Embedding 模型配置 — 走 OpenAI 兼容托管 API（DashScope text-embedding-v3）。
+     * <p>
+     * 维度（dimensions=1024）必须与 ES 索引 {@code dense_vector} 映射维度一致，
+     * 否则语义搜索 kNN 查询会因维度不匹配失败。
+     */
+    @Data
+    public static class Embedding {
+        private String apiKey;
+        private String baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+        private String model = "text-embedding-v3";
+        private int dimensions = 1024;
+        private int timeout = 30000;
     }
 
     @Data

@@ -1,6 +1,6 @@
 # ADR 0003 — AI 集成采用 Port/Adapter + 装饰器模式而非直接调用 LLM SDK
 
-- **状态**：接受
+- **状态**：已替代（Superseded by ADR-0008）
 - **日期**：2026-07-14
 - **决策者**：后端架构
 - **标签**：`ai` `hexagonal` `decorator` `cache` `observability`
@@ -43,13 +43,13 @@ AI 集成采用 **六边形 Port/Adapter + `@Primary` 装饰器模式**，业务
 层次结构：
 
 1. **Port（领域契约，零框架依赖）**：[LlmPort.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/port/LlmPort.java)、[VisionPort.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/port/VisionPort.java)
-2. **底层 Adapter（供应商实现）**：`DeepSeekLlmAdapter`、`QwenVlVisionAdapter`，直接调 RestClient + 厂商 API
+2. **底层 Adapter（供应商实现）**：`DeepSeekLlmAdapter`、`PythonLlmAdapter`（均 `@Qualifier("rawLlm")` + `@ConditionalOnProperty` 二选一）、`QwenVlVisionAdapter`，直接调 RestClient + 厂商 API
 3. **装饰器 Adapter（`@Primary`）**：[CachingLlmAdapter.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/CachingLlmAdapter.java)、`CachingVisionAdapter`，包裹底层 Adapter，叠加 L1 Caffeine + L2 Redis + stale 降级缓存
 4. **横切关注点**：`AiRateLimitInterceptor`（Redis 令牌桶，fail-open）、[AiMetricsService.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/metrics/AiMetricsService.java)（4 类 Micrometer 指标）
 
 关键实现要点：
 
-- `CachingLlmAdapter` 注入 `DeepSeekLlmAdapter delegate`，自身 `@Primary @Component`，Spring 自动让业务侧拿到的是装饰器而非底层 Adapter
+- `CachingLlmAdapter` 注入 `@Qualifier("rawLlm") LlmPort`（供应商实现按 `easyorange.ai.provider` 二选一注册），自身 `@Primary @Component`，Spring 自动让业务侧拿到的是装饰器而非底层 Adapter
 - 缓存键按 `AiCallScope`（PRICING / COPY / REVIEW / QA / SEARCH / VISION）分桶，每个 scope 独立 TTL
 - stale 缓存（独立 Caffeine）在限流降级时返回旧值，避免直接 429
 - `AiMetricsService` 暴露 `easyorange.ai.cache`（hit/miss/stale）、`easyorange.ai.llm.duration`、`easyorange.ai.vision.duration`、`easyorange.ai.ratelimit`（rejected/stale_served/fail_open）四类指标到 `/actuator/prometheus`
@@ -60,7 +60,7 @@ AI 集成采用 **六边形 Port/Adapter + `@Primary` 装饰器模式**，业务
 
 - 供应商可替换：新增供应商只需新增 `XxxLlmAdapter implements LlmPort`，业务侧零改动
 - 横切能力可叠加：缓存 / 限流 / 指标都在装饰器与拦截器层，业务服务只感知 Port
-- 测试友好：`CachingLlmAdapterTest` 直接 mock `DeepSeekLlmAdapter delegate`，无需启动真实 HTTP
+- 测试友好：`CachingLlmAdapterTest` 直接 mock `@Qualifier("rawLlm") LlmPort`，无需启动真实 HTTP
 - 可观测性完整：缓存命中率、LLM 延迟、限流计数独立采集，符合「AiMetrics 可观测」叙事
 - DDD 边界守住：Port 在 `ai/port/` 下，domain 层不依赖任何 AI SDK
 
@@ -87,5 +87,5 @@ AI 集成采用 **六边形 Port/Adapter + `@Primary` 装饰器模式**，业务
 
 - 相关文档：[doc/集成/AI-资产管理.md](file:///home/cartethyia/projects/Java/easy-orange/doc/集成/AI-资产管理.md)、[doc/架构/架构-系统架构.md](file:///home/cartethyia/projects/Java/easy-orange/doc/架构/架构-系统架构.md)「可观测性」表
 - 相关代码：[LlmPort.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/port/LlmPort.java)、[CachingLlmAdapter.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/CachingLlmAdapter.java)、[AiMetricsService.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/metrics/AiMetricsService.java)
-- 相关 ADR：[ADR 0002](./0002-cqrs-scope-only-4-modules.md)（ai 模块不上 CQRS，用 Port/Adapter + 装饰器替代）
+- 相关 ADR：[ADR 0002](./0002-cqrs-scope-only-4-modules.md)（ai 模块不上 CQRS，用 Port/Adapter + 装饰器替代）；**本 ADR 已被 [ADR 0008](./0008-ai-migrate-to-spring-ai-framework.md) 替代（2026-08-03，Spring AI 2.0 全面框架化）**
 - 重评估触发：Spring AI 进入稳定版且能覆盖 L1/L2 + stale 降级 + 按 scope 指标时，重新评估是否迁移；或当供应商数量 > 3 时考虑引入策略路由替代 `@Primary` 单选。

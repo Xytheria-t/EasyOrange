@@ -13,10 +13,13 @@ import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +42,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
     private final ProductImageMapper productImageMapper;
     private final CategoryMapper categoryMapper;
     private final ElasticsearchOperations elasticsearchOperations;
+    private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
 
     @Override
     public void indexProduct(String productId) {
@@ -185,9 +189,32 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
                 .tags(tagList)
                 .mainImage(mainImage)
                 .images(imageUrls)
+                .nameEmbedding(embedName(product.getName()))
                 .createTime(product.getCreateTime())
                 .updateTime(product.getUpdateTime())
                 .build();
+    }
+
+    /**
+     * 商品名向量化（best-effort）：用于 ES kNN 语义搜索。
+     * <p>embedding 服务不可用或调用失败时返回 {@code null}，索引照常写入（仅缺失向量匹配能力，不阻塞索引）。</p>
+     */
+    private List<Float> embedName(String name) {
+        EmbeddingModel model = embeddingModelProvider.getIfAvailable();
+        if (model == null || name == null || name.isBlank()) {
+            return null;
+        }
+        try {
+            float[] arr = model.embed(name);
+            var embedding = new ArrayList<Float>(arr.length);
+            for (float value : arr) {
+                embedding.add(value);
+            }
+            return embedding;
+        } catch (Exception e) {
+            log.warn("Failed to embed product name for ES index: {}", name, e);
+            return null;
+        }
     }
 
     /**

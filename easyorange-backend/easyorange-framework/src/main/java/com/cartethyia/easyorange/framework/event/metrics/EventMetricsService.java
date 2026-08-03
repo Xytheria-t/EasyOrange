@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
  * 领域事件可观测性指标服务 — 记录事件接收、处理结果、处理时延、DLQ 死信计数，
  * 暴露给 Prometheus 抓取（{@code /actuator/prometheus}）。
  * <p>
- * 与 {@code AiMetricsService} / {@code BusinessMetricsService} 模式一致，纯计数/计时，
+ * 与 {@code BusinessMetricsService} 模式一致，纯计数/计时，
  * 不包含业务语义。所有方法接受 {@code eventType} tag，便于按事件类型分维度切片。
  * <p>
  * 指标清单：

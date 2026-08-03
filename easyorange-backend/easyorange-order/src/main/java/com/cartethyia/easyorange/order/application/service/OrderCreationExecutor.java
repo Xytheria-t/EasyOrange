@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderCreateSpec;
+import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
@@ -20,8 +21,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.util.Optional;
-
 /**
  * 订单创建执行器。
  * <p>
@@ -31,9 +30,6 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 public class OrderCreationExecutor {
-
-    private static final String DEFAULT_PAYMENT_METHOD = "1";
-    private static final String DEFAULT_ADDRESS = "未指定";
 
     private final OrderRepository orderRepository;
     private final DomainEventPublisher eventPublisher;
@@ -87,9 +83,10 @@ public class OrderCreationExecutor {
             paymentGatewayPort.createPayment(new PaymentGatewayPort.CreatePaymentRequest(
                 orderEvent.orderId(),
                 orderEvent.totalAmount(),
-                Optional.ofNullable(command.paymentMethod()).orElse(DEFAULT_PAYMENT_METHOD),
-                "ORDER",
-                "订单支付"
+                StringUtils.hasText(command.paymentMethod())
+                    ? command.paymentMethod() : OrderConstant.DEFAULT_PAYMENT_METHOD,
+                OrderConstant.PAYMENT_BIZ_TYPE,
+                OrderConstant.PAYMENT_DESC
             ));
         } catch (Exception e) {
             throw new PaymentGatewayAdapterException(
@@ -110,6 +107,6 @@ public class OrderCreationExecutor {
      * 解析地址：如果未指定则返回默认值。
      */
     private static String resolveAddress(CreateOrderCommand command) {
-        return StringUtils.hasText(command.address()) ? command.address() : DEFAULT_ADDRESS;
+        return StringUtils.hasText(command.address()) ? command.address() : OrderConstant.DEFAULT_ADDRESS;
     }
 }

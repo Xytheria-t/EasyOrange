@@ -11,12 +11,12 @@ import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.Product
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductQueryRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductUpdateRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.CategoryResponse;
-import com.cartethyia.easyorange.product.application.command.ProductCommandService;
+import com.cartethyia.easyorange.product.application.command.ProductCommandHandler;
 import com.cartethyia.easyorange.product.application.command.CreateProductCommand;
 import com.cartethyia.easyorange.product.application.command.UpdateProductCommand;
-import com.cartethyia.easyorange.product.application.query.CategoryQueryService;
+import com.cartethyia.easyorange.product.application.query.CategoryQueryHandler;
 import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
-import com.cartethyia.easyorange.product.application.query.ProductQueryService;
+import com.cartethyia.easyorange.product.application.query.ProductQueryHandler;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.application.service.ProductViewCountAppService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,10 +44,10 @@ import java.util.List;
 @Validated
 public class ProductController {
 
-    private final ProductCommandService commandService;
+    private final ProductCommandHandler commandHandler;
     private final ProductViewCountAppService viewCountService;
-    private final ProductQueryService queryService;
-    private final CategoryQueryService categoryQueryService;
+    private final ProductQueryHandler queryHandler;
+    private final CategoryQueryHandler categoryQueryHandler;
     private final CategoryAssembler categoryAssembler;
 
     // ==================== Commands ====================
@@ -63,7 +63,7 @@ public class ProductController {
                 request.originalPrice(), request.stock(), request.conditionLevel(),
                 request.location(), request.contactMethod(), request.description(),
                 request.imageUrls());
-        return Result.success(commandService.createProduct(cmd));
+        return Result.success(commandHandler.createProduct(cmd));
     }
 
     @PutMapping("/{id}")
@@ -73,13 +73,13 @@ public class ProductController {
                 request.originalPrice(), request.stock(), request.conditionLevel(),
                 request.location(), request.contactMethod(), request.description(),
                 request.imageUrls());
-        commandService.updateProduct(cmd);
+        commandHandler.updateProduct(cmd);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
     public Result<Void> deleteProduct(@PathVariable String id) {
-        commandService.deleteProduct(id);
+        commandHandler.deleteProduct(id);
         return Result.success();
     }
 
@@ -88,26 +88,26 @@ public class ProductController {
      */
     @PutMapping("/{id}/submit")
     public Result<Void> submitForReview(@PathVariable String id) {
-        commandService.submitForReview(id);
+        commandHandler.submitForReview(id);
         return Result.success();
     }
 
     @PutMapping("/{productId}/online")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> putOnline(@PathVariable String productId) {
-        commandService.putOnline(productId);
+        commandHandler.putOnline(productId);
         return Result.success();
     }
 
     @PutMapping("/{productId}/offline")
     public Result<Void> takeOffline(@PathVariable String productId) {
-        commandService.takeOffline(productId);
+        commandHandler.takeOffline(productId);
         return Result.success();
     }
 
     @PutMapping("/{productId}/mark-sold")
     public Result<Void> markAsSold(@PathVariable String productId) {
-        commandService.markAsSold(productId);
+        commandHandler.markAsSold(productId);
         return Result.success();
     }
 
@@ -116,13 +116,13 @@ public class ProductController {
      */
     @PutMapping("/{productId}/decrement-stock")
     public Result<Void> decrementStock(@PathVariable String productId) {
-        commandService.decrementStock(productId, 1);
+        commandHandler.decrementStock(productId, 1);
         return Result.success();
     }
 
     @PutMapping("/{productId}/restore-stock")
     public Result<Void> restoreStock(@PathVariable String productId) {
-        commandService.restoreStock(productId);
+        commandHandler.restoreStock(productId);
         return Result.success();
     }
 
@@ -143,7 +143,7 @@ public class ProductController {
      */
     @GetMapping("/{id}")
     public Result<ProductVO> getProduct(@PathVariable String id) {
-        return Result.success(queryService.getProductById(id));
+        return Result.success(queryHandler.getProductById(id));
     }
 
     /**
@@ -157,7 +157,7 @@ public class ProductController {
                 request.getConditionLevel(), request.getSort(),
                 request.getHasDiscount(),
                 request.getPageNum(), request.getPageSize());
-        return Result.success(queryService.listProducts(criteria));
+        return Result.success(queryHandler.listProducts(criteria));
     }
 
     @GetMapping("/my")
@@ -166,7 +166,7 @@ public class ProductController {
             @RequestParam(defaultValue = "20") Integer pageSize,
             @RequestParam(required = false) String status) {
         String currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        return Result.success(queryService.getMyProducts(currentUserId, status, pageNum, pageSize));
+        return Result.success(queryHandler.getMyProducts(currentUserId, status, pageNum, pageSize));
     }
 
     @GetMapping("/category/{categoryId}")
@@ -181,18 +181,18 @@ public class ProductController {
     public Result<List<ProductVO>> getSimilarProducts(
             @PathVariable String id,
             @RequestParam(defaultValue = "10") Integer limit) {
-        return Result.success(queryService.getSimilarProducts(id, limit));
+        return Result.success(queryHandler.getSimilarProducts(id, limit));
     }
 
     @PostMapping("/batch")
     public Result<List<ProductVO>> getProductsByIds(@RequestBody List<String> ids) {
-        return Result.success(queryService.getProductsByIds(ids));
+        return Result.success(queryHandler.getProductsByIds(ids));
     }
 
     @GetMapping("/categories")
     public Result<List<CategoryResponse>> getCategories(
             @RequestParam(required = false) String parentId) {
-        var categories = categoryQueryService.getCategories(parentId);
+        var categories = categoryQueryHandler.getCategories(parentId);
         return Result.success(categoryAssembler.toCategoryResponses(categories));
     }
 }

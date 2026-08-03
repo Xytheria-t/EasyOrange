@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.framework.event.core.EventConsumerHandler;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
-import com.cartethyia.easyorange.product.application.query.ProductQueryService;
+import com.cartethyia.easyorange.product.application.query.ProductQueryHandler;
 import com.cartethyia.easyorange.product.domain.event.*;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.port.ProductNotificationPort;
@@ -27,7 +27,7 @@ public class ProductEventConsumer {
 
     private final EventConsumerHandler handler;
     private final ProductCacheEvictionPort productCachePort;
-    private final ProductQueryService productQueryService;
+    private final ProductQueryHandler productQueryHandler;
     private final ProductNotificationPort notificationPort;
     private final ProductSearchIndexPort searchIndexPort;
 
@@ -35,12 +35,12 @@ public class ProductEventConsumer {
             EventIdempotencyChecker idempotencyChecker,
             EventMetricsService metricsService,
             ProductCacheEvictionPort productCachePort,
-            ProductQueryService productQueryService,
+            ProductQueryHandler productQueryHandler,
             @Autowired(required = false) ProductNotificationPort notificationPort,
             @Autowired(required = false) ProductSearchIndexPort searchIndexPort) {
         this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService, false);
         this.productCachePort = productCachePort;
-        this.productQueryService = productQueryService;
+        this.productQueryHandler = productQueryHandler;
         this.notificationPort = notificationPort;
         this.searchIndexPort = searchIndexPort;
     }
@@ -108,7 +108,7 @@ public class ProductEventConsumer {
 
     private void checkLowStock(String productId) {
         try {
-            var readModel = productQueryService.getProductReadModel(productId);
+            var readModel = productQueryHandler.getProductReadModel(productId);
             if (readModel != null && readModel.stock() != null && readModel.stock() <= LOW_STOCK_THRESHOLD) {
                 log.warn("event=LowStockWarning productId={} currentStock={} threshold={}",
                         productId, readModel.stock(), LOW_STOCK_THRESHOLD);

@@ -44,6 +44,12 @@
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
 
+        <!-- Spring AI 2.0 — OpenAI 兼容模型（DeepSeek 文本 / DashScope 视觉与 Embedding） -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-framework</artifactId>

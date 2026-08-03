@@ -5,12 +5,8 @@ import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
-import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
-import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
-import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,25 +21,26 @@ import java.util.List;
  * <p>
  * 一致性语义：本地单事务保证原子性；并发防超卖由 {@link DistributedLockManager} 承担；
  * 事件副作用经 Outbox 与应用事务同原子持久化。为何不使用 Saga 见 ADR-0007。
+ * 异常不做二次包装，直接抛给 {@code GlobalExceptionHandler} 按错误码映射。
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderCreationService {
+
+    private static final String ORDER_LOCK_PREFIX = "eo:order:lock:product:";
+    private static final long LOCK_TRY_TIMEOUT_SECONDS = 10;
 
     private final DistributedLockManager lockManager;
     private final OrderCreationExecutor orderCreationExecutor;
     private final ProductOrderPort productOrderPort;
 
-    private static final String ORDER_LOCK_PREFIX = "eo:order:lock:product:";
-
     /**
      * 执行订单创建
      */
     @Transactional(rollbackFor = Exception.class)
-    public CreateOrderResult execute(CreateOrderCommand command) {
-        List<String> lockKeys = buildLockKeys(command);
-        return lockManager.executeWithLocks(lockKeys, 10, () -> doExecute(command));
+    public CreateOrderResult createOrder(CreateOrderCommand command) {
+        return lockManager.executeWithLocks(
+            buildLockKeys(command), LOCK_TRY_TIMEOUT_SECONDS, () -> createOrderFlow(command));
     }
 
     /**
@@ -58,27 +55,11 @@ public class OrderCreationService {
             .toList();
     }
 
-    private CreateOrderResult doExecute(CreateOrderCommand command) {
-        try {
-            return executeFlow(command);
-        } catch (Exception e) {
-            // 区分领域异常与基础设施异常，仅日志层面区分，处理路径一致
-            if (e instanceof OrderDomainException || e instanceof PaymentGatewayAdapterException) {
-                log.warn("订单创建业务异常 cause={}", e.getMessage());
-            } else {
-                log.error("订单创建失败 command={}", command, e);
-            }
-            throw new OrderCreationException("订单创建失败：" + e.getMessage(), e);
-        }
-    }
-
     /**
      * 执行下单流程 — 全部步骤在同一事务内，失败由回滚兜底
      */
-    private CreateOrderResult executeFlow(CreateOrderCommand command) {
-        Transition<Order, OrderCreatedEvent> createResult = orderCreationExecutor.createOrder(command);
-        Order aggregate = createResult.aggregate();
-        OrderCreatedEvent orderEvent = createResult.event();
+    private CreateOrderResult createOrderFlow(CreateOrderCommand command) {
+        Transition<Order, OrderCreatedEvent> result = orderCreationExecutor.createOrder(command);
 
         // 同步扣减库存（同一事务，失败时随事务整体回滚）
         for (var item : command.items()) {
@@ -86,9 +67,9 @@ public class OrderCreationService {
         }
 
         // 创建支付（同一事务，失败时随事务整体回滚）
-        orderCreationExecutor.createPayment(orderEvent, command);
-        orderCreationExecutor.evictSellerCache(aggregate.sellerId().value());
+        orderCreationExecutor.createPayment(result.event(), command);
+        orderCreationExecutor.evictSellerCache(result.aggregate().sellerId().value());
 
-        return new CreateOrderResult(aggregate.id().value(), aggregate.orderNo().value());
+        return new CreateOrderResult(result.aggregate().id().value(), result.aggregate().orderNo().value());
     }
 }

@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.order.application.service;
 
 import com.cartethyia.easyorange.common.domain.Money;
-import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
+import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -44,90 +45,94 @@ public class OrderPreparationService {
      * @throws OrderDomainException 如果资产不存在、已下架或库存不足
      */
     public PreparationResult prepareOrderItems(List<CreateOrderCommand.CreateOrderItem> items, String buyerId) {
-        // 获取商品快照并校验
-        List<ItemPreparation> preparations = prepareAndValidateItems(items);
+        BizRequire.notEmpty(items, "订单资产不能为空");
 
-        // 获取资产方 ID（所有资产必须来自同一资产方）
-        String sellerId = validateAndGetSellerId(preparations, buyerId);
+        // 批量获取商品快照并校验
+        Map<String, ProductOrderPort.ProductSnapshot> snapshotMap = loadSnapshots(items);
+        String sellerId = validateAndGetSellerId(items, snapshotMap, buyerId);
 
-        // 批量获取资产详情
-        Map<String, ProductDetail> productDetailMap = loadProductDetails(preparations);
-
-        // 构建订单项
-        List<OrderItem> orderItems = buildOrderItems(preparations, productDetailMap);
+        // 批量获取资产详情并构建订单项
+        Map<String, ProductDetail> productDetailMap = loadProductDetails(items);
+        List<OrderItem> orderItems = buildOrderItems(items, snapshotMap, productDetailMap);
 
         return new PreparationResult(UserId.of(sellerId), orderItems);
     }
 
     /**
-     * 准备并校验资产项
+     * 批量加载资产快照
      */
-    private List<ItemPreparation> prepareAndValidateItems(List<CreateOrderCommand.CreateOrderItem> items) {
-        return items.stream()
-            .map(item -> {
-                ProductOrderPort.ProductSnapshot snapshot = productOrderPort.getSnapshot(item.productId())
-                    .orElseThrow(() -> new OrderDomainException("资产不存在: " + item.productId()));
-
-                BizRequire.requireTrue(snapshot.isOnline(), "资产已下架: " + item.productId());
-                BizRequire.requireTrue(snapshot.hasStock(), "资产库存不足: " + item.productId());
-
-                return new ItemPreparation(snapshot, item.quantity());
-            })
+    private Map<String, ProductOrderPort.ProductSnapshot> loadSnapshots(List<CreateOrderCommand.CreateOrderItem> items) {
+        List<String> productIds = items.stream()
+            .map(CreateOrderCommand.CreateOrderItem::productId)
+            .distinct()
             .toList();
+        return productOrderPort.getSnapshots(productIds).stream()
+            .collect(Collectors.toMap(ProductOrderPort.ProductSnapshot::productId, Function.identity()));
     }
 
     /**
-     * 校验资产方 ID 并返回
+     * 校验资产（存在、在线、库存、非自购、同一资产方）并返回资产方 ID
      */
-    private String validateAndGetSellerId(List<ItemPreparation> preparations, String buyerId) {
-        String sellerId = preparations.getFirst().snapshot().sellerId();
-        BizRequire.requireTrue(!Objects.equals(sellerId, buyerId), "不能认领自己的资产");
+    private String validateAndGetSellerId(List<CreateOrderCommand.CreateOrderItem> items,
+                                          Map<String, ProductOrderPort.ProductSnapshot> snapshotMap, String buyerId) {
+        String sellerId = null;
+        for (CreateOrderCommand.CreateOrderItem item : items) {
+            ProductOrderPort.ProductSnapshot snapshot = snapshotMap.get(item.productId());
+            if (snapshot == null) {
+                throw new OrderDomainException("资产不存在: " + item.productId());
+            }
+            BizRequire.requireTrue(snapshot.isOnline(), "资产已下架: " + item.productId());
+            BizRequire.requireTrue(snapshot.hasStock(), "资产库存不足: " + item.productId());
 
-        // 校验所有资产来自同一资产方
-        boolean allSameSeller = preparations.stream()
-            .allMatch(p -> Objects.equals(p.snapshot().sellerId(), sellerId));
-        BizRequire.requireTrue(allSameSeller, "订单中的资产必须来自同一资产方");
-
+            if (sellerId == null) {
+                sellerId = snapshot.sellerId();
+                BizRequire.requireTrue(!Objects.equals(sellerId, buyerId), "不能认领自己的资产");
+            } else {
+                BizRequire.requireTrue(Objects.equals(snapshot.sellerId(), sellerId), "订单中的资产必须来自同一资产方");
+            }
+        }
         return sellerId;
     }
 
     /**
      * 批量加载资产详情
      */
-    private Map<String, ProductDetail> loadProductDetails(List<ItemPreparation> preparations) {
-        List<String> productIds = preparations.stream()
-            .map(p -> p.snapshot().productId())
+    private Map<String, ProductDetail> loadProductDetails(List<CreateOrderCommand.CreateOrderItem> items) {
+        List<String> productIds = items.stream()
+            .map(CreateOrderCommand.CreateOrderItem::productId)
+            .distinct()
             .toList();
-
-        return productQueryPort.getProductsByIds(productIds)
-            .stream()
-            .collect(Collectors.toMap(ProductDetail::id, d -> d));
+        return productQueryPort.getProductsByIds(productIds).stream()
+            .collect(Collectors.toMap(ProductDetail::id, Function.identity()));
     }
 
     /**
      * 构建订单项
      */
-    private List<OrderItem> buildOrderItems(List<ItemPreparation> preparations,
-                                              Map<String, ProductDetail> productDetailMap) {
-        return preparations.stream()
-            .map(prep -> buildOrderItem(prep, productDetailMap))
+    private List<OrderItem> buildOrderItems(List<CreateOrderCommand.CreateOrderItem> items,
+                                            Map<String, ProductOrderPort.ProductSnapshot> snapshotMap,
+                                            Map<String, ProductDetail> productDetailMap) {
+        return items.stream()
+            .map(item -> buildOrderItem(item, snapshotMap.get(item.productId()), productDetailMap))
             .toList();
     }
 
     /**
      * 构建单个订单项
      */
-    private OrderItem buildOrderItem(ItemPreparation prep, Map<String, ProductDetail> productDetailMap) {
-        Money unitPrice = Money.of(prep.snapshot().price());
-        Money subtotal = unitPrice.multiply(prep.quantity());
-        var productId = prep.snapshot().productId();
+    private OrderItem buildOrderItem(CreateOrderCommand.CreateOrderItem item,
+                                     ProductOrderPort.ProductSnapshot snapshot,
+                                     Map<String, ProductDetail> productDetailMap) {
+        Money unitPrice = Money.of(snapshot.price());
+        Money subtotal = unitPrice.multiply(item.quantity());
+        String productId = snapshot.productId();
 
         return OrderItem.builder()
             .id(idGenerator.generateId())
             .productId(ProductId.of(productId))
             .snapshot(buildProductSnapshot(productId, productDetailMap.get(productId), unitPrice))
             .unitPrice(unitPrice)
-            .quantity(prep.quantity())
+            .quantity(item.quantity())
             .subtotal(subtotal)
             .build();
     }
@@ -145,19 +150,21 @@ public class OrderPreparationService {
         }
         return ProductSnapshot.builder()
             .productId(productId)
-            .name(detail.title() != null ? detail.title() : "")
-            .image(detail.images() != null && !detail.images().isEmpty()
-                ? detail.images().getFirst() : "")
-            .description(detail.description() != null ? detail.description() : "")
+            .name(nullToEmpty(detail.title()))
+            .image(firstImage(detail.images()))
+            .description(nullToEmpty(detail.description()))
             .price(price)
-            .conditionLevel(detail.conditionLevel() != null ? detail.conditionLevel() : "")
+            .conditionLevel(nullToEmpty(detail.conditionLevel()))
             .build();
     }
 
-    /**
-     * 资产准备结果
-     */
-    private record ItemPreparation(ProductOrderPort.ProductSnapshot snapshot, int quantity) {}
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private static String firstImage(List<String> images) {
+        return images == null || images.isEmpty() ? "" : images.getFirst();
+    }
 
     /**
      * 准备结果

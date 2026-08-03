@@ -4,6 +4,16 @@
 
 ## [unreleased]
 
+### 2026-08-03 — AI 层全面框架化为 Spring AI 2.0（ADR-0008，Supersedes ADR-0003）
+
+- **refactor(ai)**: 自研 AI 层删除 14 个类——`LlmPort` / `VisionPort` / `DeepSeekLlmAdapter` / `QwenVlVisionAdapter` / `CachingLlmAdapter` / `CachingVisionAdapter` / `PythonLlmAdapter` / `adapter/dto/*`（4 个手写 JSON DTO）/ `AiMetricsService` + 对应 5 个测试。六个业务服务 + 语义搜索 + 搜索增强直接注入 Spring AI `ChatModel` / `EmbeddingModel` bean，删除自研 L1/L2 多级缓存（仅保留 stale Caffeine 24h TTL 供限流降级）
+- **feat(ai)**: `AiModelConfig` 定义 3 个 Spring AI 2.0 bean（统一 `OpenAiSetup.setupSyncClient` OpenAI 兼容线协议）——`chatModel`（`@Primary`，DeepSeek）、`visionChatModel`（Qwen-VL，字段级 `@Qualifier`）、`embeddingModel`（DashScope `text-embedding-v3`，dimensions=1024 与 ES `dense_vector` 映射对齐）；新增 `AiModelSupport` 静态调用去重（callText/callJson/embed/analyzeImages）
+- **feat(ai)**: **Embedding 真实现**——查询侧 `SemanticSearchService` 用 `embeddingModel.embed(keyword)` 生成查询向量；索引侧 `ElasticsearchProductSearchIndexAdapter` 注入 `ObjectProvider<EmbeddingModel>` best-effort 写 `nameEmbedding`（失败降级 null，不阻塞索引）
+- **fix(ai)**: `AiModelSupport.analyzeImages` 补 `Media.Format.IMAGE_JPEG` mimeType——Spring AI 2.0 `Media.Builder.build()` 要求 mimeType 非空，此前多图视觉调用会抛 `IllegalStateException`
+- **chore(infra)**: 删除 `easyorange-python/` 侧车（compose.yaml `python-ai` service + `.env.example` AI_PYTHON 块 + `.gitignore` Python 规则）；`easyorange.ai` 配置重写（删 provider/python/cache.enabled/l1-*，新增 embedding 块）；`Resilience4jConfig` 删 aiLlmRetry/aiVisionRetry/aiLlmBulkhead/aiVisionBulkhead（重试 `MAX_RETRIES=2` 由 openai-java 客户端内置承担）；可观测性由 Spring AI 2.0 内置 Observation + Micrometer 提供
+- **test**: 重写 4 个 service 测试 + `TokenBudgetAspectTest`（8 测试） + `AiRateLimitInterceptorTest`（5 测试）去 AiMetricsService；新增 `AiModelSupportTest` / `AiCopyGenerationServiceTest` / `AutoListingServiceTest` / `JdbcCreditScoreFetcherTest` / `SemanticSearchServiceTest`。AI 模块 123 → **150** 测试全绿，easyorange-ai 覆盖率回到门禁之上（**行 85.0% / 分支 82.0%**，目标 80%/60%）
+- **docs**: 新增 [ADR-0008](doc/adr/0008-ai-migrate-to-spring-ai-framework.md)（Supersedes ADR-0003）；同步根 README / 根 AGENTS.md / easyorange-ai/AGENTS.md / easyorange-backend/AGENTS.md / easyorange-framework/AGENTS.md / CLAUDE.md / PRODUCT_DIRECTION.md / doc/集成/AI-资产管理.md / doc/架构/架构-系统架构.md / doc/工程指标.md / doc/面试-简历使用指南.md / doc/技术债务清单.md / .env.example
+
 ### 2026-08-02 — 移除订单创建 Saga 层（拒绝 Saga）
 
 - **refactor(order)**: 移除订单创建 Saga 层，回归**本地单事务 + Redisson 分布式锁 + Outbox 事件**（[ADR-0007](doc/adr/0007-order-saga-single-tx-observability.md) 重写为「拒绝 Saga」，[ADR-0001](doc/adr/0001-use-saga-over-2pc.md) 标记 Superseded）。删除 10 类：`CreateOrderSaga` / `SagaCoordinator` / `SagaTimeoutScheduler` / `SagaException` / `SagaRepository` / `SagaState` / `SagaStatus` / `SagaDO` / `SagaMapper` / `SagaRepositoryImpl` + `OrderCompensationService`

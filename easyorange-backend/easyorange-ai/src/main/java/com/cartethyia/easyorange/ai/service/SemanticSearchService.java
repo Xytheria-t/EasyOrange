@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
 import com.cartethyia.easyorange.ai.dto.SemanticSearchResult;
-import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
+import org.springframework.ai.embedding.EmbeddingModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SemanticSearchService {
 
-    private final LlmPort llmPort;
+    private final EmbeddingModel embeddingModel;
     private final Optional<ProductSearchQueryPort> searchQueryPort;
 
     @TokenBudget(scenario = "semantic", maxTokensPerCall = 500, dailyTokenLimit = 200_000)
@@ -30,7 +30,7 @@ public class SemanticSearchService {
             return SemanticSearchResult.empty(pageNum, pageSize);
         }
 
-        List<Float> embedding = llmPort.generateEmbedding(keyword);
+        List<Float> embedding = AiModelSupport.embed(embeddingModel, keyword);
         if (embedding.isEmpty()) {
             log.warn("Empty embedding generated for keyword: {}", keyword);
             return SemanticSearchResult.empty(pageNum, pageSize);

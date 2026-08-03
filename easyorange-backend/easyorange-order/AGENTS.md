@@ -22,8 +22,6 @@ order/
 │   │   ├── job/                             # 定时任务
 │   │   │   ├── OrderTimeoutTask.java        # 订单超时取消
 │   │   │   └── OrderAutoConfirmTask.java    # 自动确认收货
-│   │   └── mq/subscriber/                   # 事件订阅
-│   │       └── OrderLifecycleEventConsumer.java # 订单生命周期消费者（取消/退款恢复库存, 完成标记售出）
 │   └── outbound/
 │       ├── persistence/                     # 持久化
 │       │   ├── OrderRepositoryImpl.java
@@ -59,6 +57,8 @@ order/
 │   │   ├── OrderListQuery.java              # record 收敛查询参数（orderNo, status: OrderStatus, buyerId, sellerId, pageNum, pageSize）
 │   │   └── assembler/
 │   │       └── OrderReadModelAssembler.java  # ReadModel → OrderVO（应用层组装）
+│   ├── event/                               # 事件订阅
+│   │   └── OrderLifecycleEventConsumer.java # RabbitMQ 订单生命周期消费者（取消/退款恢复库存, 完成标记售出）
 │   └── dto/
 │       └── OrderVO.java                      # 响应 VO
 ├── domain/
