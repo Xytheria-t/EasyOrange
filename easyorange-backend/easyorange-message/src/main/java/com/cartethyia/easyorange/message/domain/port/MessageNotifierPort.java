@@ -6,4 +6,6 @@ package com.cartethyia.easyorange.message.domain.port;
  */
 public interface MessageNotifierPort {
     boolean isUserOnline(String userId);
+
+    void sendNotification(String userId, Object notification);
 }

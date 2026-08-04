@@ -36,21 +36,21 @@ public class PaymentMetricsConsumer {
 
     @RabbitHandler
     public void onPaymentCreated(PaymentCreatedEvent event, Message message) {
-        handler.handle(event, message, metadata -> metricsService.recordPaymentCreated());
+        handler.handle(event, message, _ -> metricsService.recordPaymentCreated());
     }
 
     @RabbitHandler
     public void onPaymentSucceeded(PaymentSucceededEvent event, Message message) {
-        handler.handle(event, message, metadata -> metricsService.recordPaymentSuccess());
+        handler.handle(event, message, _ -> metricsService.recordPaymentSuccess());
     }
 
     @RabbitHandler
     public void onPaymentFailed(PaymentFailedEvent event, Message message) {
-        handler.handle(event, message, metadata -> metricsService.recordPaymentFailed());
+        handler.handle(event, message, _ -> metricsService.recordPaymentFailed());
     }
 
     @RabbitHandler
     public void onPaymentRefunded(PaymentRefundedEvent event, Message message) {
-        handler.handle(event, message, metadata -> metricsService.recordRefund());
+        handler.handle(event, message, _ -> metricsService.recordRefund());
     }
 }

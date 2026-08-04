@@ -117,46 +117,6 @@ class RateLimiterServiceTest {
     }
 
     @Nested
-    @DisplayName("allowTyping")
-    class AllowTypingTests {
-
-        @Test
-        @DisplayName("首次发送 typing 时返回 true")
-        void allowTyping_firstCall_returnsTrue() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.get(anyString())).thenReturn(null);
-
-            boolean result = rateLimiterService.allowTyping(USER_ID);
-
-            assertThat(result).isTrue();
-            verify(valueOperations).set(anyString(), eq(1), eq(2L), eq(TimeUnit.SECONDS));
-        }
-
-        @Test
-        @DisplayName("2 秒内再次发送 typing 返回 false")
-        void allowTyping_within2Seconds_returnsFalse() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.get(anyString())).thenReturn(1);
-
-            boolean result = rateLimiterService.allowTyping(USER_ID);
-
-            assertThat(result).isFalse();
-            verify(valueOperations, never()).increment(anyString(), anyLong());
-        }
-
-        @Test
-        @DisplayName("Redis 异常时 typing 优雅降级返回 true")
-        void allowTyping_redisException_returnsTrue() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.get(anyString())).thenThrow(new RuntimeException("Redis 连接失败"));
-
-            boolean result = rateLimiterService.allowTyping(USER_ID);
-
-            assertThat(result).isTrue();
-        }
-    }
-
-    @Nested
     @DisplayName("Redis key 格式")
     class RedisKeyFormatTests {
 
@@ -169,17 +129,6 @@ class RateLimiterServiceTest {
             rateLimiterService.allowSendMessage(USER_ID);
 
             verify(valueOperations).set(eq("chat:rate:message:" + USER_ID), eq(1), eq(1L), eq(TimeUnit.SECONDS));
-        }
-
-        @Test
-        @DisplayName("typing 限流 key 包含用户 ID")
-        void allowTyping_keyContainsUserId() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.get(eq("chat:rate:typing:" + USER_ID))).thenReturn(null);
-
-            rateLimiterService.allowTyping(USER_ID);
-
-            verify(valueOperations).set(eq("chat:rate:typing:" + USER_ID), eq(1), eq(2L), eq(TimeUnit.SECONDS));
         }
 
         @Test

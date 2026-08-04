@@ -1,7 +1,9 @@
 -- ===================================================================
 -- EasyOrange - 数据库初始化（V1 合并版）
 -- 职责: 创建所有初始表结构、索引、约束（当前完整 DDL）
--- 说明: 合并原 V1~V6 为单文件（项目未发版，开发阶段标准化）
+-- 说明: 合并原 V1~V6 为单文件，并折叠原 V2/V3 删表迁移（eo_saga_status / eo_message_template /
+--       eo_message_subscription，对应 ADR-0007 弃 Saga 与 message 模块现代化收口）。
+--       项目未发版，开发阶段标准化。
 -- Database: MySQL 8.0
 -- Charset: utf8mb4
 -- ===================================================================
@@ -434,43 +436,6 @@ CREATE TABLE `eo_message_archive` (
     KEY `idx_eo_message_archive_time` (`archived_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='消息归档表';
 
-CREATE TABLE `eo_message_subscription` (
-    `id`           VARCHAR(36) NOT NULL COMMENT '主键 ID',
-    `user_id`      VARCHAR(36) NOT NULL COMMENT '用户 ID',
-    `message_type` VARCHAR(50) NOT NULL COMMENT '消息类型',
-    `push_channel` VARCHAR(50) NOT NULL COMMENT '推送渠道',
-    `enabled`      TINYINT     NOT NULL DEFAULT 1 COMMENT '是否启用',
-    `create_time`  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time`  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `create_by`    VARCHAR(36) DEFAULT NULL COMMENT '创建者',
-    `update_by`    VARCHAR(36) DEFAULT NULL COMMENT '更新者',
-    `del_flag`     TINYINT     NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 1 删除）',
-    `version`      INT         NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_eo_message_subscription_user_type_channel` (`user_id`, `message_type`, `push_channel`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='消息订阅表';
-
-CREATE TABLE `eo_message_template` (
-    `id`            VARCHAR(36) NOT NULL COMMENT '主键 ID',
-    `template_code` VARCHAR(50) NOT NULL COMMENT '模板编码',
-    `template_name` VARCHAR(100) NOT NULL COMMENT '模板名称',
-    `template_type` VARCHAR(50) DEFAULT NULL COMMENT '模板类型',
-    `title`         VARCHAR(200) DEFAULT NULL COMMENT '消息标题模板',
-    `content`       TEXT        NOT NULL COMMENT '消息内容模板',
-    `variables`     TEXT        DEFAULT NULL COMMENT '模板变量定义',
-    `status`        TINYINT     NOT NULL DEFAULT 1 COMMENT '状态（0 禁用 1 启用）',
-    `remark`        VARCHAR(500) DEFAULT NULL COMMENT '备注',
-    `create_time`   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time`   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `create_by`     VARCHAR(36) DEFAULT NULL COMMENT '创建者',
-    `update_by`     VARCHAR(36) DEFAULT NULL COMMENT '更新者',
-    `del_flag`      TINYINT     NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 1 删除）',
-    `version`       INT         NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_eo_message_template_code` (`template_code`),
-    KEY `idx_eo_message_template_type` (`template_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='消息模板表';
-
 CREATE TABLE `eo_offline_message` (
     `id`             VARCHAR(36) NOT NULL COMMENT '主键 ID',
     `user_id`        VARCHAR(36) NOT NULL COMMENT '用户 ID',
@@ -684,31 +649,7 @@ CREATE TABLE IF NOT EXISTS EVENT_PUBLICATION_ARCHIVE (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Spring Modulith 事件发布归档表';
 
 -- ===================================================================
--- 12. Saga 分布式事务状态表
--- ===================================================================
-
-CREATE TABLE `eo_saga_status` (
-    `saga_id`          CHAR(36)    NOT NULL COMMENT 'Saga 实例唯一标识（UUID）',
-    `saga_type`        VARCHAR(100) NOT NULL COMMENT 'Saga 类型',
-    `state`            VARCHAR(20) NOT NULL COMMENT 'Saga 状态',
-    `current_step`     VARCHAR(50) DEFAULT NULL COMMENT '当前执行步骤',
-    `payload`          TEXT        DEFAULT NULL COMMENT 'Saga 载荷（JSON）',
-    `error_message`    TEXT        DEFAULT NULL COMMENT '错误信息',
-    `compensation_log` TEXT        DEFAULT NULL COMMENT '补偿日志（JSON）',
-    `retry_count`      INT         NOT NULL DEFAULT 0 COMMENT '重试次数',
-    `created_at`       DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT 'Saga 创建时间',
-    `updated_at`       DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT 'Saga 更新时间',
-    PRIMARY KEY (`saga_id`),
-    KEY `idx_eo_saga_status_type_state` (`saga_type`, `state`),
-    KEY `idx_eo_saga_status_state_created` (`state`, `created_at`),
-    KEY `idx_eo_saga_status_created_at` (`created_at`),
-    CONSTRAINT `chk_eo_saga_status_state` CHECK (
-        `state` IN ('PENDING', 'ORDER_CREATED', 'PAYMENT_CREATED', 'COMPLETED', 'COMPENSATING', 'COMPENSATED', 'FAILED')
-    )
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Saga 分布式事务状态表';
-
--- ===================================================================
--- 13. 幂等性键表
+-- 12. 幂等性键表
 -- ===================================================================
 
 CREATE TABLE `eo_idempotency_key` (

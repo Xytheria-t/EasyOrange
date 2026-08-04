@@ -94,7 +94,6 @@ logging:
     com.cartethyia.easyorange.framework.config.web: WARN
     com.baomidou.mybatisplus: WARN
     org.mybatis: WARN
-    org.springframework.boot.devtools: WARN
     org.springframework.boot.web.servlet.context: WARN
     org.springframework.boot.actuate.endpoint.web: WARN
     org.springframework.boot: INFO

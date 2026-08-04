@@ -56,7 +56,7 @@ function ChatWindowPage() {
             sendMessage({
                 receiverId: targetUserId,
                 content: content.trim(),
-                type: 0,
+                type: 2,
                 conversationId,
             });
         },

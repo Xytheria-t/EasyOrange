@@ -1,12 +1,12 @@
 package com.cartethyia.easyorange.message.websocket;
 
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
-import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.WsMessage;
+import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -25,24 +25,16 @@ public class ChatWebSocketHandler {
     private final SimpMessagingTemplate messagingTemplate;
     private final MessageCommandHandler messageCommandHandler;
     private final TypingIndicatorService typingService;
-    private final RateLimiterService rateLimiterService;
 
     @MessageMapping("/chat.send")
     public void handleChatMessage(@Payload WsMessage payload, Principal principal) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = requireUserId(principal);
 
-        if (!rateLimiterService.allowSendMessage(userId)) {
-            messagingTemplate.convertAndSendToUser(
-                    String.valueOf(userId),
-                    "/queue/error",
-                    Map.of("type", "RATE_LIMITED", "message", "发送过于频繁，请稍后再试")
-            );
-            return;
-        }
-
+        // 限流唯一裁决点在 MessageCommandHandler（REST 与 WS 共用），此处不再前置扣减，
+        // 避免每条 WS 消息被双重计数导致有效限流阈值减半。超限由 @MessageExceptionHandler 映射错误帧。
         SendMessageCommand command = new SendMessageCommand(
                 payload.getReceiverId(),
-                payload.getType() != null ? payload.getType() : 0,
+                payload.getType(),
                 payload.getTitle() != null ? payload.getTitle() : "",
                 payload.getContent(),
                 payload.getBusinessId(),
@@ -63,9 +55,22 @@ public class ChatWebSocketHandler {
                 payload.getConversationId(), userId, payload.getReceiverId());
     }
 
+    /** 消息命令异常（当前为限流）统一映射为发送方错误帧，避免在 STOMP 线程上抛出未捕获异常。 */
+    @MessageExceptionHandler(MessageDomainException.class)
+    public void handleDomainException(MessageDomainException ex, Principal principal) {
+        log.warn("action=chat_send_rejected error={} user={}", ex.getMessage(), principal != null ? principal.getName() : null);
+        if (principal != null) {
+            messagingTemplate.convertAndSendToUser(
+                    String.valueOf(principal.getName()),
+                    "/queue/error",
+                    Map.of("type", "RATE_LIMITED", "message", ex.getMessage())
+            );
+        }
+    }
+
     @MessageMapping("/chat.typing")
     public void handleTyping(@Payload WsMessage payload, Principal principal) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = requireUserId(principal);
 
         typingService.setTyping(payload.getConversationId(), userId);
 
@@ -101,5 +106,13 @@ public class ChatWebSocketHandler {
                         "timestamp", Instant.now().toEpochMilli()
                 )
         );
+    }
+
+    /** 从握手认证建立的 Principal 取当前用户 ID（STOMP 线程上 SecurityContextHolder 不可用）。 */
+    private static String requireUserId(Principal principal) {
+        if (principal == null || principal.getName() == null) {
+            throw new MessageDomainException("未认证的用户");
+        }
+        return principal.getName();
     }
 }

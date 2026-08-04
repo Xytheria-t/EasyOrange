@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.framework.util;
 
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RRateLimiter;
-import org.redisson.api.RateIntervalUnit;
 import org.redisson.api.RateType;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
@@ -48,7 +48,7 @@ public class DistributedRateLimiter {
     public boolean tryAcquire(String key, long maxRequests, long windowSeconds) {
         RRateLimiter rateLimiter = redissonClient.getRateLimiter(key);
         // trySetRate 是幂等的 — 仅在首次调用时设置速率配置，后续调用为 no-op
-        rateLimiter.trySetRate(RateType.OVERALL, maxRequests, windowSeconds, RateIntervalUnit.SECONDS);
+        rateLimiter.trySetRate(RateType.OVERALL, maxRequests, Duration.ofSeconds(windowSeconds));
         return rateLimiter.tryAcquire(1);
     }
 }

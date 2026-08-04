@@ -1,6 +1,7 @@
 import type { IMessage } from '@stomp/stompjs';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/chatStore';
 import { useStompChat } from './useStompChat';
 
@@ -66,6 +67,9 @@ function createMessage(body: unknown): IMessage {
 
 beforeEach(() => {
     useChatStore.getState().reset();
+    useAuthStore.setState({ token: 'test-token' });
+    mockUtils.setCurrentClient(null);
+    mockUtils.setCapturedConfig(null);
     messageCallbacks.length = 0;
     vi.useFakeTimers({ shouldAdvanceTime: true });
 });
@@ -94,6 +98,24 @@ describe('useStompChat', () => {
         expect(typeof result.current.sendTyping).toBe('function');
         expect(typeof result.current.subscribe).toBe('function');
         expect(typeof result.current.unsubscribe).toBe('function');
+    });
+
+    it('appends the auth token to the broker URL for handshake auth', async () => {
+        renderHook(() => useStompChat());
+        await waitFor(() => expect(mockUtils.getCurrentClient()?.activate).toHaveBeenCalled());
+
+        const brokerURL = mockUtils.getCapturedConfig()?.brokerURL as string;
+        expect(brokerURL).toContain('/ws');
+        expect(brokerURL).toContain(`?token=${encodeURIComponent('test-token')}`);
+    });
+
+    it('does not connect when no token is present', async () => {
+        useAuthStore.setState({ token: null });
+
+        const { result } = renderHook(() => useStompChat());
+        expect(mockUtils.getCurrentClient()).toBeNull();
+        expect(useChatStore.getState().connectionStatus).toBe('disconnected');
+        expect(result.current.subscribe).toBeTypeOf('function');
     });
 
     it('activates client on mount and updates connection status to connected', async () => {

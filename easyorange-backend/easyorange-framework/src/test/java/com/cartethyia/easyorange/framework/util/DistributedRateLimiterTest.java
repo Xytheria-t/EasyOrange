@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.framework.util;
 
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -7,7 +8,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.redisson.api.RRateLimiter;
-import org.redisson.api.RateIntervalUnit;
 import org.redisson.api.RateType;
 import org.redisson.api.RedissonClient;
 
@@ -52,7 +52,7 @@ class DistributedRateLimiterTest {
     void tryAcquire_allowed_shouldReturnTrue() {
         String key = "eo:rate:ip:127.0.0.1";
         when(redissonClient.getRateLimiter(key)).thenReturn(rateLimiter);
-        when(rateLimiter.trySetRate(any(RateType.class), anyLong(), anyLong(), any(RateIntervalUnit.class)))
+        when(rateLimiter.trySetRate(any(RateType.class), anyLong(), any(Duration.class)))
                 .thenReturn(true);
         when(rateLimiter.tryAcquire(1)).thenReturn(true);
 
@@ -66,7 +66,7 @@ class DistributedRateLimiterTest {
     void tryAcquire_denied_shouldReturnFalse() {
         String key = "eo:rate:ip:127.0.0.1";
         when(redissonClient.getRateLimiter(key)).thenReturn(rateLimiter);
-        when(rateLimiter.trySetRate(any(RateType.class), anyLong(), anyLong(), any(RateIntervalUnit.class)))
+        when(rateLimiter.trySetRate(any(RateType.class), anyLong(), any(Duration.class)))
                 .thenReturn(true);
         when(rateLimiter.tryAcquire(1)).thenReturn(false);
 
@@ -80,7 +80,7 @@ class DistributedRateLimiterTest {
     void tryAcquire_shouldCallTrySetRateWithOverallMode() {
         String key = "eo:rate:ip:127.0.0.1";
         when(redissonClient.getRateLimiter(key)).thenReturn(rateLimiter);
-        when(rateLimiter.trySetRate(any(RateType.class), anyLong(), anyLong(), any(RateIntervalUnit.class)))
+        when(rateLimiter.trySetRate(any(RateType.class), anyLong(), any(Duration.class)))
                 .thenReturn(true);
         when(rateLimiter.tryAcquire(1)).thenReturn(true);
 
@@ -89,8 +89,7 @@ class DistributedRateLimiterTest {
         verify(rateLimiter).trySetRate(
                 eq(RateType.OVERALL),
                 eq(30L),
-                eq(60L),
-                eq(RateIntervalUnit.SECONDS));
+                eq(Duration.ofSeconds(60)));
     }
 
     @Test
@@ -98,7 +97,7 @@ class DistributedRateLimiterTest {
     void tryAcquire_shouldRequestSinglePermit() {
         String key = "eo:rate:ip:127.0.0.1";
         when(redissonClient.getRateLimiter(key)).thenReturn(rateLimiter);
-        when(rateLimiter.trySetRate(any(RateType.class), anyLong(), anyLong(), any(RateIntervalUnit.class)))
+        when(rateLimiter.trySetRate(any(RateType.class), anyLong(), any(Duration.class)))
                 .thenReturn(true);
         when(rateLimiter.tryAcquire(1)).thenReturn(true);
 
@@ -114,7 +113,7 @@ class DistributedRateLimiterTest {
         String key = "eo:rate:ip:127.0.0.1";
         when(redissonClient.getRateLimiter(key)).thenReturn(rateLimiter);
         // trySetRate 返回 false 表示配置已存在，不会覆盖
-        when(rateLimiter.trySetRate(any(RateType.class), anyLong(), anyLong(), any(RateIntervalUnit.class)))
+        when(rateLimiter.trySetRate(any(RateType.class), anyLong(), any(Duration.class)))
                 .thenReturn(false);
         when(rateLimiter.tryAcquire(1)).thenReturn(true);
 
@@ -123,7 +122,7 @@ class DistributedRateLimiterTest {
         assertThat(result).isTrue();
         // 仍然调用 trySetRate（幂等检查），但不会覆盖已有配置
         verify(rateLimiter).trySetRate(
-                eq(RateType.OVERALL), eq(30L), eq(60L), eq(RateIntervalUnit.SECONDS));
+                eq(RateType.OVERALL), eq(30L), eq(Duration.ofSeconds(60)));
     }
 
     @Test
@@ -131,7 +130,7 @@ class DistributedRateLimiterTest {
     void tryAcquire_whenRedisThrows_shouldPropagate() {
         String key = "eo:rate:ip:127.0.0.1";
         when(redissonClient.getRateLimiter(key)).thenReturn(rateLimiter);
-        when(rateLimiter.trySetRate(any(RateType.class), anyLong(), anyLong(), any(RateIntervalUnit.class)))
+        when(rateLimiter.trySetRate(any(RateType.class), anyLong(), any(Duration.class)))
                 .thenThrow(new RuntimeException("Redis connection refused"));
 
         org.assertj.core.api.Assertions.assertThatCode(

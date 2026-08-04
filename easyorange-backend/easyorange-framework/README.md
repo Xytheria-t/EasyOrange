@@ -21,7 +21,7 @@
 
 ## 技术栈
 
-- Spring Boot 4.0.3
+- Spring Boot 4.0.7
 - Spring Security
 - Spring Data Redis
 - JWT (Spring Security OAuth2 Resource Server + Nimbus JOSE)

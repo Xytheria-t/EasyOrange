@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!--
+        CVE-2026-53914 (kotlin-stdlib / kotlin-stdlib-common, CVSS 9.8)
+        豁免理由：
+          1. 攻击面是 Kotlin 编译器「构建缓存元数据」的反序列化（Kotlin compiler build cache），
+             本项目为纯 Java 后端，不编译 Kotlin，kotlin-stdlib 仅为 Spring AI / OpenAI 客户端的
+             传递运行时依赖，生产环境不暴露该攻击面。
+          2. 修复版本 Kotlin 2.4.20 尚未发布稳定版（最新稳定 2.4.10）。
+        解除条件：Kotlin 2.4.20 稳定版发布后，升级 pom 的 <kotlin.version> 至 ≥ 2.4.20，
+        并删除本豁免条目。
+    -->
+    <suppress>
+        <notes>Kotlin 编译器构建缓存反序列化漏洞，纯 Java 项目无实际攻击面；待 Kotlin 2.4.20 稳定版修复后升级解除</notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/.*@.*$</packageUrl>
+        <cve>CVE-2026-53914</cve>
+    </suppress>
+
+    <!--
+        CVE-2026-60193 / CVE-2026-60192 (mysql-connector-j 9.7.0, CVSS 8.5/8.1)
+        1. 受影响组件为 Oracle MySQL Connectors 的 Connector/Net（.NET），非 Connector/J（Java JDBC 驱动），
+           dependency-check 按 CPE oracle:mysql_connector 误匹配到本项目的 mysql-connector-j。
+        2. 9.7.0 已是 Spring Boot 4.0.7 托管的最高版本，无修复版可升级。
+    -->
+    <suppress>
+        <notes>CVE 组件为 Connector/Net(.NET) 非 Connector/J(Java JDBC)，CPE 误匹配；且 9.7.0 已是最新无修复版</notes>
+        <packageUrl regex="true">^pkg:maven/com\.mysql/mysql-connector-j@.*$</packageUrl>
+        <cve>CVE-2026-60193</cve>
+    </suppress>
+    <suppress>
+        <notes>CVE 组件为 Connector/Net(.NET) 非 Connector/J(Java JDBC)，CPE 误匹配；且 9.7.0 已是最新无修复版</notes>
+        <packageUrl regex="true">^pkg:maven/com\.mysql/mysql-connector-j@.*$</packageUrl>
+        <cve>CVE-2026-60192</cve>
+    </suppress>
+</suppressions>

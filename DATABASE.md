@@ -15,20 +15,23 @@
 
 ## 表总览
 
-共 28 张业务表，按业务模块划分：
+共 25 张业务表（22 张已接入代码 + 3 张预留），按业务模块划分：另有 2 张基础设施表（EVENT_PUBLICATION / eo_idempotency_key）。
 
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
 | 用户 | eo_user | 用户信息 | UserDO |
 | 用户 | eo_user_credit | 用户信用评分 | UserCreditDO |
+| 用户 | eo_credit_change_log | 信用分变更流水（预留） | — |
 | 商品 | eo_category | 商品分类（两级树） | CategoryDO |
 | 商品 | eo_product | 商品信息 | ProductDO |
 | 商品 | eo_product_detail | 商品详情（1:1） | ProductDetailDO |
 | 商品 | eo_product_image | 商品图片（1:N） | ProductImageDO |
 | 商品 | eo_product_audit_log | 商品审核记录 | — |
+| 商品 | eo_audit_suggestion | AI 审核建议（预留） | — |
 | 商品 | eo_product_review | 商品评价 | ProductReviewDO |
 | 商品 | eo_product_report | 商品举报 | ProductReportDO |
 | 商品 | eo_report_handle_history | 举报处理历史 | ReportHandleHistoryDO |
+| 商品 | eo_product_question | 商品问答（预留） | — |
 | 商品 | eo_favorite | 用户收藏 | FavoriteDO |
 | 搜索 | eo_search_history | 搜索历史 | SearchHistoryDO |
 | 搜索 | eo_hot_keyword | 热门关键词 | HotKeywordDO |
@@ -38,13 +41,10 @@
 | 支付 | eo_payment_config | 支付渠道配置 | PaymentConfigDO |
 | 消息 | eo_message | 消息 | MessageDO |
 | 消息 | eo_message_archive | 消息归档 | — |
-| 消息 | eo_message_subscription | 消息订阅 | MessageSubscriptionDO |
-| 消息 | eo_message_template | 消息模板 | MessageTemplateDO |
 | 消息 | eo_offline_message | 离线消息 | OfflineMessageDO |
 | 文件 | eo_upload_file | 文件上传记录 | UploadFileDO |
 | 审计 | eo_audit_log | 审计日志 | AuditLog |
 | 事件 | EVENT_PUBLICATION | 领域事件注册表（Spring Modulith） | V3 |
-| 事务 | eo_saga_status | Saga 分布式事务 | SagaDO |
 | 幂等 | eo_idempotency_key | 幂等性键 | IdempotencyKeyDO |
 
 ## 公共字段
@@ -60,7 +60,7 @@
 | del_flag | TINYINT | 0 | 逻辑删除（0 正常 / 1 删除） |
 | version | INT | 0 | 乐观锁版本号 |
 
-基础设施表（eo_saga_status / eo_idempotency_key / EVENT_PUBLICATION）使用 created_at / updated_at 时间字段，精度为毫秒 DATETIME(3)。
+基础设施表（eo_idempotency_key / EVENT_PUBLICATION）使用 created_at / updated_at 时间字段，精度为毫秒 DATETIME(3)。
 
 归档表（eo_message_archive）无 del_flag / version，使用 archived_at 记录归档时间。
 
@@ -107,7 +107,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### eo_user_credit — 用户信用评分表
+### 2. eo_user_credit — 用户信用评分表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -137,7 +137,34 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 2. eo_category — 商品分类表
+### 3. eo_credit_change_log — 信用分变更流水表（预留）
+
+> **预留**：schema 已建表，代码未接入。信用分重算（`CreditScoringService`）当前只写 `eo_user_credit`，未落变更流水；该表为后续信用变更审计预留。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| id | VARCHAR(36) | PK | 主键 ID |
+| user_id | VARCHAR(36) | NOT NULL | 用户 ID |
+| change_amount | INT | NOT NULL | 变更分值 |
+| before_score | INT | NOT NULL | 变更前评分 |
+| after_score | INT | NOT NULL | 变更后评分 |
+| change_type | VARCHAR(30) | NOT NULL | 变更类型（TRADE_COMPLETE/TRADE_CANCEL/REPORT_CONFIRMED/REVIEW_RATING/RECALCULATE/ADMIN_ADJUST） |
+| reason | VARCHAR(500) | | 变更原因 |
+| reference_id | VARCHAR(36) | | 关联业务 ID（订单ID/举报ID等） |
+| create_by | VARCHAR(36) | | 操作人/系统 ID |
+| create_time | DATETIME | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+
+**索引**：
+
+| 名称 | 类型 | 列 |
+|------|------|----|
+| idx_eo_credit_change_log_user_id | KEY | user_id |
+| idx_eo_credit_change_log_type_time | KEY | change_type, create_time DESC |
+| idx_eo_credit_change_log_create_time | KEY | create_time DESC |
+
+---
+
+### 4. eo_category — 商品分类表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -173,7 +200,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 3. eo_product — 商品信息表
+### 5. eo_product — 商品信息表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -211,7 +238,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 4. eo_product_detail — 商品详情表
+### 6. eo_product_detail — 商品详情表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -221,7 +248,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 5. eo_product_image — 商品图片表
+### 7. eo_product_image — 商品图片表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -236,7 +263,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 6. eo_product_audit_log — 商品审核记录表
+### 8. eo_product_audit_log — 商品审核记录表
 
 > 无公共字段（审核记录不需要 del_flag/version，通过业务逻辑保证不可变）
 
@@ -264,7 +291,35 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 7. eo_product_review — 商品评价表
+### 9. eo_audit_suggestion — AI 审核建议表（预留）
+
+> **预留**：schema 已建表，代码未接入。用于 AI 商品审核建议（价格/描述/分类/图片维度），当前无对应实现。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| id | VARCHAR(36) | PK | 主键 ID |
+| product_id | VARCHAR(36) | NOT NULL | 商品 ID |
+| suggestion_type | VARCHAR(50) | NOT NULL | 建议类型（PRICE_AUDIT/DESCRIPTION_AUDIT/CATEGORY_AUDIT/IMAGE_AUDIT） |
+| suggestion_content | JSON | | 建议内容（JSON） |
+| confidence | DECIMAL(5,2) | NOT NULL DEFAULT 0.00 | 置信度（0.00-1.00） |
+| status | TINYINT | NOT NULL DEFAULT 0 | 状态（0 待处理 1 已采纳 2 已忽略） |
+| create_time | DATETIME | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+| update_time | DATETIME | NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 处理时间 |
+| create_by | VARCHAR(36) | | 创建者 |
+| update_by | VARCHAR(36) | | 处理者 |
+| del_flag | TINYINT | NOT NULL DEFAULT 0 | 删除标志（0 正常 1 删除） |
+| version | INT | NOT NULL DEFAULT 0 | 乐观锁版本号 |
+
+**索引**：
+
+| 名称 | 类型 | 列 |
+|------|------|----|
+| idx_eo_audit_suggestion_product_id | KEY | product_id |
+| idx_eo_audit_suggestion_type_status | KEY | suggestion_type, status, create_time DESC |
+
+---
+
+### 10. eo_product_review — 商品评价表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -294,7 +349,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 7. eo_product_report — 商品举报表
+### 11. eo_product_report — 商品举报表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -316,7 +371,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### eo_report_handle_history — 举报处理历史表
+### 12. eo_report_handle_history — 举报处理历史表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -336,7 +391,36 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 8. eo_favorite — 用户收藏表
+### 13. eo_product_question — 商品问答表（预留）
+
+> **预留**：schema 已建表，代码未接入。`AiQaService.answerQuestion()` 当前为内存回答、不落库；该表用于商品问答持久化。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| id | VARCHAR(36) | PK | 主键 ID |
+| product_id | VARCHAR(36) | NOT NULL | 商品 ID |
+| user_id | VARCHAR(36) | NOT NULL | 用户 ID |
+| question | TEXT | NOT NULL | 问题内容 |
+| answer | TEXT | | AI 回答内容 |
+| status | TINYINT | NOT NULL DEFAULT 0 | 状态（0 待回答 1 已回答 2 已驳回） |
+| create_time | DATETIME | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+| update_time | DATETIME | NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
+| create_by | VARCHAR(36) | | 创建者 |
+| update_by | VARCHAR(36) | | 更新者 |
+| del_flag | TINYINT | NOT NULL DEFAULT 0 | 删除标志（0 正常 1 删除） |
+| version | INT | NOT NULL DEFAULT 0 | 乐观锁版本号 |
+
+**索引**：
+
+| 名称 | 类型 | 列 |
+|------|------|----|
+| idx_eo_product_question_product_id | KEY | product_id |
+| idx_eo_product_question_user_id | KEY | user_id |
+| idx_eo_product_question_status_time | KEY | status, create_time DESC |
+
+---
+
+### 14. eo_favorite — 用户收藏表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -355,7 +439,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 8. eo_search_history — 搜索历史表
+### 15. eo_search_history — 搜索历史表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -375,7 +459,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 9. eo_hot_keyword — 热门关键词表
+### 16. eo_hot_keyword — 热门关键词表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -397,7 +481,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 10. eo_order_item — 订单行项表
+### 17. eo_order_item — 订单行项表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -422,7 +506,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 11. eo_order — 订单表
+### 18. eo_order — 订单表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -461,7 +545,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 12. eo_payment — 支付记录表
+### 19. eo_payment — 支付记录表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -493,7 +577,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 12. eo_payment_config — 支付渠道配置表
+### 20. eo_payment_config — 支付渠道配置表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -510,7 +594,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 14. eo_message — 消息表
+### 21. eo_message — 消息表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -539,51 +623,13 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 14. eo_message_archive — 消息归档表
+### 22. eo_message_archive — 消息归档表
 
 结构与 eo_message 相同，主键为 id（原消息 ID），额外增加 archived_at DATETIME 字段。无 del_flag / version。用于存储已归档的历史消息。
 
 ---
 
-### 15. eo_message_subscription — 消息订阅表
-
-| 字段 | 类型 | 约束 | 说明 |
-|------|------|------|------|
-| id | VARCHAR(36) | PK | 主键 ID |
-| user_id | VARCHAR(36) | NOT NULL | 用户 ID |
-| message_type | VARCHAR(50) | NOT NULL | 消息类型 |
-| push_channel | VARCHAR(50) | NOT NULL | 推送渠道 |
-| enabled | TINYINT | NOT NULL DEFAULT 1 | 是否启用 |
-| + 公共字段 | | | |
-
-**索引**：
-
-| 名称 | 类型 | 列 |
-|------|------|----|
-| uk_eo_message_subscription_user_type_channel | UNIQUE | user_id, message_type, push_channel |
-
----
-
-### 17. eo_message_template — 消息模板表
-
-| 字段 | 类型 | 约束 | 说明 |
-|------|------|------|------|
-| id | VARCHAR(36) | PK | 主键 ID |
-| template_code | VARCHAR(50) | NOT NULL, UK | 模板编码 |
-| template_name | VARCHAR(100) | NOT NULL | 模板名称 |
-| template_type | VARCHAR(50) | | 模板类型 |
-| title | VARCHAR(200) | | 标题模板 |
-| content | TEXT | NOT NULL | 内容模板 |
-| variables | TEXT | | 模板变量定义（JSON） |
-| status | TINYINT | NOT NULL DEFAULT 1 | 状态（0 禁用 / 1 启用） |
-| remark | VARCHAR(500) | | 备注 |
-| + 公共字段 | | | |
-
-**索引**：uk_eo_message_template_code (template_code), idx_eo_message_template_type (template_type)
-
----
-
-### 17. eo_offline_message — 离线消息表
+### 23. eo_offline_message — 离线消息表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -608,7 +654,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 18. eo_upload_file — 文件上传记录表
+### 24. eo_upload_file — 文件上传记录表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -632,7 +678,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 20. eo_audit_log — 审计日志表
+### 25. eo_audit_log — 审计日志表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -666,7 +712,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 22. eo_domain_event — 领域事件表（已删除）
+### eo_domain_event — 领域事件表（已删除）
 
 > **注意**：此表在 V1 初始化时创建，用于 Outbox 模式。已通过 Flyway V4 在 2026-07-14 清理（`DROP TABLE IF EXISTS eo_domain_event`）。当前使用 Spring Modulith 的 `EVENT_PUBLICATION` 表代替。
 
@@ -696,44 +742,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 22. eo_saga_status — Saga 分布式事务状态表
-
-| 字段 | 类型 | 约束 | 说明 |
-|------|------|------|------|
-| saga_id | CHAR(36) | PK | Saga 实例 UUID |
-| saga_type | VARCHAR(100) | NOT NULL | Saga 类型 |
-| state | VARCHAR(20) | NOT NULL | Saga 状态 |
-| current_step | VARCHAR(50) | | 当前执行步骤 |
-| payload | TEXT | | Saga 载荷（JSON） |
-| error_message | TEXT | | 错误信息 |
-| compensation_log | TEXT | | 补偿日志（JSON） |
-| retry_count | INT | NOT NULL DEFAULT 0 | 重试次数 |
-| created_at | DATETIME(3) | NOT NULL DEFAULT CURRENT_TIMESTAMP(3) | 创建时间 |
-| updated_at | DATETIME(3) | NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE | 更新时间 |
-
-**索引**：
-
-| 名称 | 类型 | 列 |
-|------|------|----|
-| idx_eo_saga_status_type_state | KEY | saga_type, state |
-| idx_eo_saga_status_state_created | KEY | state, created_at |
-| idx_eo_saga_status_created_at | KEY | created_at |
-
-**状态流转**：
-
-```
-PENDING ─→ ORDER_CREATED ─→ PAYMENT_CREATED ─→ COMPLETED
-  │                                        │
-  └──→ COMPENSATING ─→ COMPENSATED         └──→ FAILED
-  │
-  └──→ FAILED
-```
-
-**注意**：此表不继承公共字段，使用独立时间字段（毫秒精度）。
-
----
-
-### 24. eo_idempotency_key — 幂等性键表
+### eo_idempotency_key — 幂等性键表（基础设施）
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -771,7 +780,7 @@ PENDING ─→ ORDER_CREATED ─→ PAYMENT_CREATED ─→ COMPLETED
 | 长文本 | TEXT | description TEXT |
 | 时间（业务） | DATETIME | create_time DATETIME |
 | 时间（基础设施） | DATETIME(3) | created_at DATETIME(3) |
-| UUID | CHAR(36) | saga_id CHAR(36) |
+| UUID | VARCHAR(36) | conversation_id VARCHAR(36) |
 | 布尔 | TINYINT | is_main TINYINT DEFAULT 0 |
 | 文件大小 | BIGINT | file_size BIGINT |
 
@@ -797,7 +806,6 @@ eo_order ──1:1── eo_payment (order_id)
 eo_order ──1:N── eo_product_review (order_id)
 
 eo_user ──1:N── eo_message (sender_id / receiver_id)
-eo_user ──1:N── eo_message_subscription (user_id)
 eo_user ──1:N── eo_search_history (user_id)
 eo_user ──1:N── eo_offline_message (user_id)
 

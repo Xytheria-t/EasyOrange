@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.message.application.command;
 
 public record RecallMessageCommand(
-        String messageId,
-        String operatorId
+        String messageId
 ) {}

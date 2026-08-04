@@ -10,12 +10,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -34,7 +32,6 @@ class TypingIndicatorServiceTest {
 
     private static final String CONVERSATION_ID = "conv_1_2";
     private static final String USER_ID = "1";
-    private static final String OTHER_USER_ID = "2";
 
     @Nested
     @DisplayName("setTyping")
@@ -87,155 +84,6 @@ class TypingIndicatorServiceTest {
             typingIndicatorService.setTyping("conv_99_100", "99");
 
             verify(valueOperations).set(eq("chat:typing:conv_99_100:99"), anyString(), anyLong(), any(TimeUnit.class));
-        }
-    }
-
-    @Nested
-    @DisplayName("getTypingUsers")
-    class GetTypingUsersTests {
-
-        @Test
-        @DisplayName("返回正在输入的用户，排除指定用户")
-        void getTypingUsers_returnsUsersExcluding() {
-            Set<String> keys = Set.of(
-                    "chat:typing:" + CONVERSATION_ID + ":" + USER_ID,
-                    "chat:typing:" + CONVERSATION_ID + ":" + OTHER_USER_ID
-            );
-            when(redisTemplate.keys(anyString())).thenReturn(keys);
-
-            Set<String> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
-
-            assertThat(result)
-                    .hasSize(1)
-                    .containsExactly(OTHER_USER_ID);
-        }
-
-        @Test
-        @DisplayName("没有正在输入的用户时返回空集合")
-        void getTypingUsers_noKeys_returnsEmpty() {
-            when(redisTemplate.keys(anyString())).thenReturn(Set.of());
-
-            Set<String> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
-
-            assertThat(result).isEmpty();
-        }
-
-        @Test
-        @DisplayName("keys 返回 null 时返回空集合")
-        void getTypingUsers_nullKeys_returnsEmpty() {
-            when(redisTemplate.keys(anyString())).thenReturn(null);
-
-            Set<String> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
-
-            assertThat(result).isEmpty();
-        }
-
-        @Test
-        @DisplayName("conversationId 为 null 时返回空集合")
-        void getTypingUsers_nullConversationId_returnsEmpty() {
-            Set<String> result = typingIndicatorService.getTypingUsers(null, USER_ID);
-
-            assertThat(result).isEmpty();
-            verify(redisTemplate, never()).keys(anyString());
-        }
-
-        @Test
-        @DisplayName("正确构建 redis key pattern")
-        void getTypingUsers_correctKeyPattern() {
-            when(redisTemplate.keys(anyString())).thenReturn(Set.of());
-
-            typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
-
-            verify(redisTemplate).keys("chat:typing:" + CONVERSATION_ID + ":*");
-        }
-
-        @Test
-        @DisplayName("排除所有用户时返回空集合")
-        void getTypingUsers_excludeAllUsers_returnsEmpty() {
-            Set<String> keys = Set.of(
-                    "chat:typing:" + CONVERSATION_ID + ":" + USER_ID
-            );
-            when(redisTemplate.keys(anyString())).thenReturn(keys);
-
-            Set<String> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
-
-            assertThat(result).isEmpty();
-        }
-
-        @Test
-        @DisplayName("跳过格式错误的 key（少于3段）")
-        void getTypingUsers_skipsMalformedKeys() {
-            Set<String> keys = Set.of(
-                    "invalid-key",
-                    "chat:typing:" + CONVERSATION_ID + ":" + OTHER_USER_ID
-            );
-            when(redisTemplate.keys(anyString())).thenReturn(keys);
-
-            Set<String> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
-
-            assertThat(result)
-                    .hasSize(1)
-                    .containsExactly(OTHER_USER_ID);
-        }
-
-        @Test
-        @DisplayName("字符串用户 ID 也被视为有效")
-        void getTypingUsers_acceptsNonNumericUserId() {
-            Set<String> keys = Set.of(
-                    "chat:typing:" + CONVERSATION_ID + ":abc"
-            );
-            when(redisTemplate.keys(anyString())).thenReturn(keys);
-
-            Set<String> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
-
-            assertThat(result)
-                    .hasSize(1)
-                    .containsExactly("abc");
-        }
-    }
-
-    @Nested
-    @DisplayName("removeTyping")
-    class RemoveTypingTests {
-
-        @Test
-        @DisplayName("正常移除正在输入状态")
-        void removeTyping_normal_deletes() {
-            typingIndicatorService.removeTyping(CONVERSATION_ID, USER_ID);
-
-            verify(redisTemplate).delete("chat:typing:" + CONVERSATION_ID + ":" + USER_ID);
-        }
-
-        @Test
-        @DisplayName("conversationId 为 null 时直接返回")
-        void removeTyping_nullConversationId_returnsEarly() {
-            typingIndicatorService.removeTyping(null, USER_ID);
-
-            verify(redisTemplate, never()).delete(anyString());
-        }
-
-        @Test
-        @DisplayName("userId 为 null 时直接返回")
-        void removeTyping_nullUserId_returnsEarly() {
-            typingIndicatorService.removeTyping(CONVERSATION_ID, null);
-
-            verify(redisTemplate, never()).delete(anyString());
-        }
-
-        @Test
-        @DisplayName("两个参数都为 null 时直接返回")
-        void removeTyping_bothNull_returnsEarly() {
-            typingIndicatorService.removeTyping(null, null);
-
-            verify(redisTemplate, never()).delete(anyString());
-        }
-
-        @Test
-        @DisplayName("删除时 key 格式正确")
-        void removeTyping_correctKeyFormat() {
-            typingIndicatorService.removeTyping("conv_99_100", "99");
-
-            verify(redisTemplate).delete("chat:typing:conv_99_100:99");
         }
     }
 }

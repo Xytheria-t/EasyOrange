@@ -2,13 +2,8 @@ package com.cartethyia.easyorange.payment.application.metrics;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.TimeUnit;
-
-@Slf4j
 @Service
 public class PaymentMetricsService {
 
@@ -16,7 +11,6 @@ public class PaymentMetricsService {
     private final Counter paymentSuccessCounter;
     private final Counter paymentFailedCounter;
     private final Counter refundCounter;
-    private final Timer paymentProcessingTimer;
     private final Counter concurrentPaymentConflictCounter;
 
     public PaymentMetricsService(MeterRegistry meterRegistry) {
@@ -38,10 +32,6 @@ public class PaymentMetricsService {
         this.refundCounter = Counter.builder("payment.refund.total")
                 .description("Total number of refunds")
                 .tag("type", "refund")
-                .register(meterRegistry);
-
-        this.paymentProcessingTimer = Timer.builder("payment.processing.time")
-                .description("Time taken to process payment")
                 .register(meterRegistry);
 
         this.concurrentPaymentConflictCounter = Counter.builder("payment.concurrent.conflict.total")
@@ -66,19 +56,7 @@ public class PaymentMetricsService {
         refundCounter.increment();
     }
 
-    public void recordPaymentProcessingTime(long durationMillis) {
-        paymentProcessingTimer.record(durationMillis, TimeUnit.MILLISECONDS);
-    }
-
     public void recordConcurrentConflict() {
         concurrentPaymentConflictCounter.increment();
-    }
-
-    public Timer.Sample startTimer() {
-        return Timer.start();
-    }
-
-    public void stopTimer(Timer.Sample sample) {
-        sample.stop(paymentProcessingTimer);
     }
 }

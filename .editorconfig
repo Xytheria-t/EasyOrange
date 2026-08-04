@@ -12,23 +12,17 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 4
 
-[*.{yml,yaml}]
+# 数据/文档类：2 空格（递归覆盖全仓，如 backend/*.yaml、frontend/*.json）
+[**/*.{yml,yaml,json,md}]
 indent_size = 2
 
-[*.{json,md}]
+# shell 脚本：2 空格（递归覆盖，如 .githooks/、backend/keys/）
+[**/*.{sh,bash}]
 indent_size = 2
 
-[Makefile]
-indent_style = tab
-
-[*.{sh,bash}]
-indent_size = 2
-
-# Java：4 空格，与 google-java-format 一致
-[*.java]
-indent_size = 4
+# Java：行宽 120（缩进 4 继承自 [*]，与 google-java-format 一致）
+[**/*.java]
 max_line_length = 120
 
-# 前端：2 穩格（与 biome.json indentWidth: 4 对齐，但 .tsx/.ts 实际使用 2）
-[*.{ts,tsx,js,jsx,css,html}]
-indent_size = 2
+# 前端 TS/TSX/JS/JSX/CSS/HTML 缩进 4 空格，与 biome.json formatter 的 indentWidth: 4 对齐
+# （Biome 是前端格式化的唯一事实来源，EditorConfig 仅作编辑器基线）

@@ -47,34 +47,24 @@ public class OrderPreparationService {
     public PreparationResult prepareOrderItems(List<CreateOrderCommand.CreateOrderItem> items, String buyerId) {
         BizRequire.notEmpty(items, "订单资产不能为空");
 
-        // 批量获取商品快照并校验
-        Map<String, ProductOrderPort.ProductSnapshot> snapshotMap = loadSnapshots(items);
-        String sellerId = validateAndGetSellerId(items, snapshotMap, buyerId);
+        // 批量获取快照并校验，返回已确认存在的快照集与资产方 ID
+        ValidatedSnapshots validated = loadAndValidateSnapshots(items, buyerId);
 
-        // 批量获取资产详情并构建订单项
-        Map<String, ProductDetail> productDetailMap = loadProductDetails(items);
-        List<OrderItem> orderItems = buildOrderItems(items, snapshotMap, productDetailMap);
+        // 批量获取资产详情并构建订单项（构建只消费校验后的快照，消除隐式非空契约）
+        Map<String, ProductDetail> productDetailMap =
+            fetchByIds(items, productQueryPort::getProductsByIds, ProductDetail::id);
+        List<OrderItem> orderItems = buildOrderItems(items, validated.snapshots(), productDetailMap);
 
-        return new PreparationResult(UserId.of(sellerId), orderItems);
+        return new PreparationResult(validated.sellerId(), orderItems);
     }
 
     /**
-     * 批量加载资产快照
+     * 批量加载资产快照，校验（存在、在线、库存、非自购、同一资产方）并返回资产方 ID 与校验后的快照。
      */
-    private Map<String, ProductOrderPort.ProductSnapshot> loadSnapshots(List<CreateOrderCommand.CreateOrderItem> items) {
-        List<String> productIds = items.stream()
-            .map(CreateOrderCommand.CreateOrderItem::productId)
-            .distinct()
-            .toList();
-        return productOrderPort.getSnapshots(productIds).stream()
-            .collect(Collectors.toMap(ProductOrderPort.ProductSnapshot::productId, Function.identity()));
-    }
+    private ValidatedSnapshots loadAndValidateSnapshots(List<CreateOrderCommand.CreateOrderItem> items, String buyerId) {
+        Map<String, ProductOrderPort.ProductSnapshot> snapshotMap =
+            fetchByIds(items, productOrderPort::getSnapshots, ProductOrderPort.ProductSnapshot::productId);
 
-    /**
-     * 校验资产（存在、在线、库存、非自购、同一资产方）并返回资产方 ID
-     */
-    private String validateAndGetSellerId(List<CreateOrderCommand.CreateOrderItem> items,
-                                          Map<String, ProductOrderPort.ProductSnapshot> snapshotMap, String buyerId) {
         String sellerId = null;
         for (CreateOrderCommand.CreateOrderItem item : items) {
             ProductOrderPort.ProductSnapshot snapshot = snapshotMap.get(item.productId());
@@ -91,19 +81,21 @@ public class OrderPreparationService {
                 BizRequire.requireTrue(Objects.equals(snapshot.sellerId(), sellerId), "订单中的资产必须来自同一资产方");
             }
         }
-        return sellerId;
+        return new ValidatedSnapshots(UserId.of(sellerId), snapshotMap);
     }
 
     /**
-     * 批量加载资产详情
+     * 批量按 id 去重拉取并组装为 map（去重避免 toMap 重复键冲突）
      */
-    private Map<String, ProductDetail> loadProductDetails(List<CreateOrderCommand.CreateOrderItem> items) {
+    private <T> Map<String, T> fetchByIds(List<CreateOrderCommand.CreateOrderItem> items,
+                                          Function<List<String>, List<T>> fetcher,
+                                          Function<T, String> idExtractor) {
         List<String> productIds = items.stream()
             .map(CreateOrderCommand.CreateOrderItem::productId)
             .distinct()
             .toList();
-        return productQueryPort.getProductsByIds(productIds).stream()
-            .collect(Collectors.toMap(ProductDetail::id, Function.identity()));
+        return fetcher.apply(productIds).stream()
+            .collect(Collectors.toMap(idExtractor, Function.identity()));
     }
 
     /**
@@ -165,6 +157,11 @@ public class OrderPreparationService {
     private static String firstImage(List<String> images) {
         return images == null || images.isEmpty() ? "" : images.getFirst();
     }
+
+    /**
+     * 校验后的快照集（内部传递用：已确认每个商品 id 都存在于快照 map 中）
+     */
+    private record ValidatedSnapshots(UserId sellerId, Map<String, ProductOrderPort.ProductSnapshot> snapshots) {}
 
     /**
      * 准备结果

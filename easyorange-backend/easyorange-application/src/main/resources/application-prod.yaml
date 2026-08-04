@@ -168,6 +168,9 @@ security:
     - /api/health
     - /api/products/{id}/view
     - /api/products/batch
+    # WebSocket 握手端点 — 由 WebSocketAuthInterceptor 自行完成 JWT 认证与吊销校验
+    - /ws
+    - /ws/**
   product-paths:
     - /api/products
     - /api/products/{id}

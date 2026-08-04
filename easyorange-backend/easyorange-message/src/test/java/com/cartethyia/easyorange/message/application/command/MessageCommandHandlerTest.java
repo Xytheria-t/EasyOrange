@@ -7,14 +7,13 @@ import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
+import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
-import com.cartethyia.easyorange.message.domain.service.MessageRoutingService;
 import com.cartethyia.easyorange.message.domain.service.OfflineMessageStoreService;
 import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.ReadStatus;
-import com.cartethyia.easyorange.message.websocket.WebSocketNotifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -47,9 +46,6 @@ class MessageCommandHandlerTest {
     private DomainEventPublisher domainEventPublisher;
 
     @Mock
-    private MessageRoutingService routingService;
-
-    @Mock
     private OfflineMessageStoreService offlineMessageStoreService;
 
     @Mock
@@ -59,7 +55,7 @@ class MessageCommandHandlerTest {
     private SensitiveWordFilterService sensitiveWordFilterService;
 
     @Mock
-    private WebSocketNotifier webSocketNotifier;
+    private MessageNotifierPort messageNotifier;
 
     @InjectMocks
     private MessageCommandHandler commandHandler;
@@ -76,14 +72,14 @@ class MessageCommandHandlerTest {
         return Message.fromRaw(
                 MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
                 ReadStatus.UNREAD, null, null,
-                MessageStatus.SENT.getCode(), null, LocalDateTime.now());
+                MessageStatus.SENT, null, LocalDateTime.now());
     }
 
     private Message createTestMessageForRecall() {
         return Message.fromRaw(
                 MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
                 ReadStatus.UNREAD, null, null,
-                MessageStatus.SENT.getCode(), null, LocalDateTime.now().minusMinutes(1));
+                MessageStatus.SENT, null, LocalDateTime.now().minusMinutes(1));
     }
 
     @Nested
@@ -99,13 +95,12 @@ class MessageCommandHandlerTest {
 
             when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
-            MessageRoutingService.RouteDecision decision = new MessageRoutingService.RouteDecision(true, List.of());
-            when(routingService.decideRoute(anyString())).thenReturn(decision);
+            when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
 
             Message savedAggregate = Message.fromRaw(
                     MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
                     ReadStatus.UNREAD, null, null,
-                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
+                    MessageStatus.SENT, null, LocalDateTime.now());
             when(messageRepository.save(any(Message.class))).thenReturn(savedAggregate);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
@@ -151,13 +146,12 @@ class MessageCommandHandlerTest {
             when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
             when(sensitiveWordFilterService.filter("包含敏感词示例")).thenReturn("包含***");
             when(sensitiveWordFilterService.filter("标题")).thenReturn("标题");
-            MessageRoutingService.RouteDecision decision = new MessageRoutingService.RouteDecision(true, List.of());
-            when(routingService.decideRoute(anyString())).thenReturn(decision);
+            when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
 
             Message savedAggregate = Message.fromRaw(
                     MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "包含***",
                     ReadStatus.UNREAD, null, null,
-                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
+                    MessageStatus.SENT, null, LocalDateTime.now());
             when(messageRepository.save(any(Message.class))).thenReturn(savedAggregate);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
@@ -167,6 +161,29 @@ class MessageCommandHandlerTest {
                 verify(messageRepository).save(argThat(msg ->
                         msg.content().equals("包含***")
                 ));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
+            }
+        }
+
+        @Test
+        @DisplayName("type 缺省时归一化为聊天消息（CHAT=2）")
+        void handle_sendMessage_nullType_defaultsToChat() {
+            SendMessageCommand command = new SendMessageCommand(
+                    RECEIVER_ID, null, "标题", "hello", null, null
+            );
+
+            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
+            when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
+            when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
+
+            when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
+                commandHandler.handle(command);
+
+                verify(messageRepository).save(argThat(msg -> msg.type() == 2));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -184,8 +201,7 @@ class MessageCommandHandlerTest {
                     RECEIVER_ID, "系统通知", "您的商品已审核通过", null
             );
 
-            MessageRoutingService.RouteDecision decision = new MessageRoutingService.RouteDecision(true, List.of());
-            when(routingService.decideRoute(anyString())).thenReturn(decision);
+            when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
 
             Message savedAggregate = Message.fromRaw(
                     MESSAGE_ID, null, RECEIVER_ID, 1, "系统通知", "您的商品已审核通过",
@@ -197,7 +213,7 @@ class MessageCommandHandlerTest {
 
             verify(messageRepository).save(any(Message.class));
             verify(offlineMessageStoreService).storeIfOffline(anyString(), any(), anyString(), eq(true));
-            verify(webSocketNotifier).sendNotification(eq(RECEIVER_ID), any());
+            verify(messageNotifier).sendNotification(eq(RECEIVER_ID), any());
         }
     }
 
@@ -272,11 +288,11 @@ class MessageCommandHandlerTest {
             Message msg2 = Message.fromRaw(
                     "101", USER_ID, RECEIVER_ID, 2, "标题", "hello",
                     ReadStatus.UNREAD, null, null,
-                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
+                    MessageStatus.SENT, null, LocalDateTime.now());
             Message msg3 = Message.fromRaw(
                     "102", USER_ID, RECEIVER_ID, 2, "标题", "hello",
                     ReadStatus.UNREAD, null, null,
-                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
+                    MessageStatus.SENT, null, LocalDateTime.now());
 
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(msg1));
             when(messageRepository.findById("101")).thenReturn(Optional.of(msg2));
@@ -321,7 +337,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("正常撤回消息")
         void handle_recallMessage_success() {
-            RecallMessageCommand command = new RecallMessageCommand(MESSAGE_ID, null);
+            RecallMessageCommand command = new RecallMessageCommand(MESSAGE_ID);
 
             Message aggregate = createTestMessageForRecall();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
@@ -340,7 +356,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("撤回不存在的消息抛出异常")
         void handle_recallMessage_notFound_throws() {
-            RecallMessageCommand command = new RecallMessageCommand(MESSAGE_ID, null);
+            RecallMessageCommand command = new RecallMessageCommand(MESSAGE_ID);
 
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.empty());
 
@@ -348,6 +364,25 @@ class MessageCommandHandlerTest {
             try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                         .isInstanceOf(MessageNotFoundException.class);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
+            }
+        }
+
+        @Test
+        @DisplayName("非发送者撤回时抛出异常")
+        void handle_recallMessage_notSender_throws() {
+            RecallMessageCommand command = new RecallMessageCommand(MESSAGE_ID);
+
+            Message aggregate = createTestMessageForRecall();
+            when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
+
+            TestSecurityUtil.setSecurityContext("999");
+            try {
+                assertThatThrownBy(() -> commandHandler.handle(command))
+                        .isInstanceOf(BusinessException.class);
+
+                verify(messageRepository, never()).update(any());
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }

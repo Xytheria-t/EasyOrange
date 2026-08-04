@@ -11,13 +11,13 @@ import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
+import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
-import com.cartethyia.easyorange.message.domain.service.MessageRoutingService;
 import com.cartethyia.easyorange.message.domain.service.OfflineMessageStoreService;
 import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
-import com.cartethyia.easyorange.message.websocket.WebSocketNotifier;
+import com.cartethyia.easyorange.message.enums.MessageType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,11 +32,10 @@ public class MessageCommandHandler {
 
     private final MessageRepository messageRepository;
     private final DomainEventPublisher domainEventPublisher;
-    private final MessageRoutingService routingService;
     private final OfflineMessageStoreService offlineMessageStoreService;
     private final RateLimiterService rateLimiterService;
     private final SensitiveWordFilterService sensitiveWordFilterService;
-    private final WebSocketNotifier webSocketNotifier;
+    private final MessageNotifierPort messageNotifier;
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(SendMessageCommand command) {
@@ -52,7 +51,7 @@ public class MessageCommandHandler {
         MessageCreateResult result = Message.create(
                 senderId,
                 command.receiverId(),
-                command.type(),
+                normalizeType(command.type()),
                 filteredTitle,
                 filteredContent,
                 command.businessId()
@@ -60,12 +59,12 @@ public class MessageCommandHandler {
 
         Message saved = messageRepository.save(result.aggregate());
 
-        MessageRoutingService.RouteDecision decision = routingService.decideRoute(saved.receiverId());
+        boolean online = messageNotifier.isUserOnline(saved.receiverId());
         offlineMessageStoreService.storeIfOffline(
-                saved.receiverId(), saved.id(), "websocket", decision.isOnline());
+                saved.receiverId(), saved.id(), "websocket", online);
 
         log.info("action=send_message messageId={} senderId={} receiverId={} type={}",
-                saved.id(), senderId, command.receiverId(), command.type());
+                saved.id(), senderId, command.receiverId(), saved.type());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -79,12 +78,12 @@ public class MessageCommandHandler {
 
         Message saved = messageRepository.save(result.aggregate());
 
-        MessageRoutingService.RouteDecision decision = routingService.decideRoute(saved.receiverId());
+        boolean online = messageNotifier.isUserOnline(saved.receiverId());
         offlineMessageStoreService.storeIfOffline(
-                saved.receiverId(), saved.id(), "websocket", decision.isOnline());
+                saved.receiverId(), saved.id(), "websocket", online);
 
-        if (decision.isOnline()) {
-            webSocketNotifier.sendNotification(saved.receiverId(), Map.of(
+        if (online) {
+            messageNotifier.sendNotification(saved.receiverId(), Map.of(
                     "id", saved.id(),
                     "title", saved.title() != null ? saved.title() : "",
                     "content", saved.content() != null ? saved.content() : "",
@@ -163,13 +162,10 @@ public class MessageCommandHandler {
         Message aggregate = messageRepository.findById(command.messageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
 
-        String minId = aggregate.senderId() != null && aggregate.receiverId() != null
-                ? (aggregate.senderId().compareTo(aggregate.receiverId()) < 0 ? aggregate.senderId() : aggregate.receiverId())
-                : "";
-        String maxId = aggregate.senderId() != null && aggregate.receiverId() != null
-                ? (aggregate.senderId().compareTo(aggregate.receiverId()) < 0 ? aggregate.receiverId() : aggregate.senderId())
-                : "";
-        String conversationId = "conv_" + minId + "_" + maxId;
+        // 非发送者（含 senderId 为 null 的系统消息）在构造 conversationId 前快速失败，避免 "conv__"。
+        BizRequire.requireTrue(aggregate.isSender(userId), MessageResultCode.MESSAGE_NOT_OWNER);
+
+        String conversationId = buildConversationId(aggregate.senderId(), aggregate.receiverId());
         MessageRecallResult recallResult = aggregate.recall(userId, conversationId);
         messageRepository.update(recallResult.aggregate());
         domainEventPublisher.publish(recallResult.event());
@@ -193,5 +189,33 @@ public class MessageCommandHandler {
         messageRepository.delete(command.messageId());
 
         log.info("action=delete_message messageId={} userId={}", command.messageId(), userId);
+    }
+
+    /**
+     * 入参 type 归一化：null 或非法 MessageType code 一律视为聊天消息（CHAT=2）。
+     * <p>
+     * REST 发送（ProductDetailPage 联系卖家）不带 type、WS 前端发送 type:0，二者都应在
+     * 边界归一化为 CHAT，避免 eo_message.type 落入无效值（0）导致分类/未读统计失准。
+     */
+    private static Integer normalizeType(Integer type) {
+        if (type == null) {
+            return Integer.valueOf(MessageType.CHAT.getCode());
+        }
+        try {
+            MessageType.fromCode(String.valueOf(type));
+            return type;
+        } catch (IllegalArgumentException e) {
+            return Integer.valueOf(MessageType.CHAT.getCode());
+        }
+    }
+
+    /** 会话 ID：排序双 ID {@code conv_{min}_{max}}，保证 A→B 与 B→A 一致。 */
+    private static String buildConversationId(String senderId, String receiverId) {
+        if (senderId == null || receiverId == null) {
+            return null;
+        }
+        return senderId.compareTo(receiverId) < 0
+                ? "conv_" + senderId + "_" + receiverId
+                : "conv_" + receiverId + "_" + senderId;
     }
 }

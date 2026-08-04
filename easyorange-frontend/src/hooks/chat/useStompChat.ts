@@ -1,5 +1,6 @@
 import { Client, type IMessage } from '@stomp/stompjs';
 import { useCallback, useEffect, useRef } from 'react';
+import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/chatStore';
 import type { ChatMessage, RecallPayload, TypingPayload } from '@/types/message';
 
@@ -29,10 +30,18 @@ export function useStompChat(): UseStompChatReturn {
     const addMessage = useChatStore(s => s.addMessage);
     const updateMessage = useChatStore(s => s.updateMessage);
     const setTyping = useChatStore(s => s.setTyping);
+    const token = useAuthStore(s => s.token);
 
     useEffect(() => {
+        // 未登录不建立连接；brokerURL 追加 ?token= 供后端 WebSocket 握手拦截器认证
+        if (!token) {
+            setConnectionStatus('disconnected');
+            return;
+        }
+        const brokerURL = `${WS_URL}?token=${encodeURIComponent(token)}`;
+
         const client = new Client({
-            brokerURL: WS_URL,
+            brokerURL,
             connectHeaders: {},
             heartbeatOutgoing: HEARTBEAT_MS,
             heartbeatIncoming: HEARTBEAT_MS,
@@ -70,7 +79,7 @@ export function useStompChat(): UseStompChatReturn {
             client.deactivate();
             clientRef.current = null;
         };
-    }, [setConnectionStatus]);
+    }, [setConnectionStatus, token]);
 
     const sendMessage = useCallback((payload: Record<string, unknown>) => {
         clientRef.current?.publish({

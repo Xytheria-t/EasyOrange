@@ -53,7 +53,8 @@ cd easyorange-frontend && npm test
 
 ## 后端约定
 
-- **多模块构建**：修改子模块后启动前必须先 `mvn clean install -Dmaven.test.skip=true`，否则 DevTools 运行时会 ClassNotFoundException
+- **多模块构建**：修改子模块后启动前必须先 `mvn clean install -Dmaven.test.skip=true`，否则运行时按已安装 jar 解析子模块会 ClassNotFoundException
+- **启动方式**：统一 `./mvnw spring-boot:run -pl easyorange-application`（终端）。JVM 参数（`--enable-native-access` 等）已由 `easyorange-application/pom.xml` 的 `<jvmArguments>` 管，环境变量走 `.env`/shell export。**IDE 调试可另用 run config，但必须把 JVM flag 手动补进 VM options**（pom 的 jvmArguments 不传给 IDE）；禁止终端/IDE 混跑同一份代码，否则 JVM flag 不生效难排查
 - **父 POM 模块注册**：新增后端子模块必须在 `easyorange-backend/pom.xml` 的 `<modules>` 中注册
 - **查询只读事务**：纯查询方法（find/get/list/query/count/check/is*）必须标注 `@Transactional(readOnly = true)`；写操作 `@Transactional(rollbackFor = Exception.class)`
 - **Mockito Java 25 兼容**：已配置 `mock-maker-subclass` 模式，**新测试不要改回 inline 模式**（WSL2 下 ByteBuddy attach 会失败）
@@ -86,67 +87,4 @@ cd easyorange-frontend && npm test
 
 ## 行为准则
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
-
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
-
-### 1. Think Before Coding
-
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
-
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
-
-### 2. Simplicity First
-
-**Minimum code that solves the problem. Nothing speculative.**
-
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- **Prefer standard APIs over custom code**: Before writing a utility/filter/abstraction, check if the framework already provides it. Example: Spring Security `oauth2ResourceServer()` + `JwtDecoder`/`JwtEncoder` > custom `JwtAuthenticationFilter` + JJWT.
-- If you write 200 lines and it could be 50, rewrite it.
-
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
-
-### 3. Surgical Changes
-
-**Touch only what you must. Clean up only your own mess.**
-
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
-
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
-
-The test: Every changed line should trace directly to the user's request.
-
-### 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan:
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
-
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
-
----
-
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+通用编码行为准则（KISS/DRY/YAGNI、外科手术式改动、先思考后编码、目标驱动执行）由 **karpathy-guidelines 技能**与 ECC `common/coding-style.md` 自动加载，此处不再重复。

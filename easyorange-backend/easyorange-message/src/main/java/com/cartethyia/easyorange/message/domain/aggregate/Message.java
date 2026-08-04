@@ -36,13 +36,13 @@ public class Message {
     private final ReadStatus isRead;
     private final LocalDateTime readTime;
     private final String businessId;
-    private final String msgStatus;
+    private final MessageStatus msgStatus;
     private final LocalDateTime recalledAt;
     private final LocalDateTime createTime;
 
     private Message(String id, String senderId, String receiverId, Integer type,
                              String title, String content, ReadStatus isRead, LocalDateTime readTime,
-                             String businessId, String msgStatus, LocalDateTime recalledAt,
+                             String businessId, MessageStatus msgStatus, LocalDateTime recalledAt,
                              LocalDateTime createTime) {
         this.id = id;
         this.senderId = senderId;
@@ -69,7 +69,7 @@ public class Message {
     public ReadStatus isRead() { return isRead; }
     public LocalDateTime readTime() { return readTime; }
     public String businessId() { return businessId; }
-    public String msgStatus() { return msgStatus; }
+    public MessageStatus msgStatus() { return msgStatus; }
     public LocalDateTime recalledAt() { return recalledAt; }
     public LocalDateTime createTime() { return createTime; }
 
@@ -84,7 +84,7 @@ public class Message {
                 null, senderId, receiverId, type,
                 escapeHtml(title), escapeHtml(content),
                 ReadStatus.UNREAD, null,
-                businessId, MessageStatus.SENT.getCode(), null, null
+                businessId, MessageStatus.SENT, null, null
         );
         return new MessageCreateResult(aggregate, new MessageSentEvent(null, senderId, receiverId, type));
     }
@@ -111,7 +111,7 @@ public class Message {
     public static Message fromRaw(String id, String senderId, String receiverId, Integer type,
                                             String title, String content, ReadStatus isRead,
                                             LocalDateTime readTime, String businessId,
-                                            String msgStatus, LocalDateTime recalledAt,
+                                            MessageStatus msgStatus, LocalDateTime recalledAt,
                                             LocalDateTime createTime) {
         return new Message(id, senderId, receiverId, type,
                 title, content, isRead, readTime,
@@ -170,10 +170,10 @@ public class Message {
      * @throws MessageDomainException         如果消息已撤回或超过 2 分钟
      */
     public MessageRecallResult recall(String operatorId, String conversationId) {
-        if (!this.senderId.equals(operatorId)) {
+        if (!isSender(operatorId)) {
             throw new UnauthorizedOperationException("不能撤回他人的消息");
         }
-        if (MessageStatus.RECALLED.getCode().equals(this.msgStatus)) {
+        if (MessageStatus.RECALLED == this.msgStatus) {
             throw new MessageDomainException("消息已被撤回");
         }
         Duration elapsed = Duration.between(this.createTime, LocalDateTime.now());
@@ -184,7 +184,7 @@ public class Message {
         Message updated = new Message(
                 this.id, this.senderId, this.receiverId, this.type,
                 this.title, this.content, this.isRead, this.readTime,
-                this.businessId, MessageStatus.RECALLED.getCode(), now, this.createTime
+                this.businessId, MessageStatus.RECALLED, now, this.createTime
         );
         return new MessageRecallResult(updated, new MessageRecalledEvent(this.id, conversationId, operatorId, now));
     }

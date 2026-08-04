@@ -81,24 +81,54 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
 
     @Override
     public UnreadCount countUnreadByReceiverId(String userId) {
-        List<Map<String, Object>> counts = mapper.countUnreadByType(userId, 0);
+        List<Map<String, Object>> counts = mapper.countUnreadByType(userId, Integer.valueOf(ReadStatus.UNREAD.getCode()));
 
+        // eo_message.type 为 TINYINT，SQL 返回 Integer；用 Integer 作 key，按 MessageType.code 反查，
+        // 避免 String code 与 Integer key 永不匹配导致按类型未读数恒为 0。
         Map<Integer, Long> countMap = counts.stream()
                 .collect(Collectors.toMap(
                         m -> ((Number) m.get("type")).intValue(),
                         m -> ((Number) m.get("count")).longValue(),
                         (a, b) -> a));
 
-        long total = countMap.values().stream().mapToLong(Long::longValue).sum();
-
         return new UnreadCount(
-                total,
-                countMap.getOrDefault(MessageType.SYSTEM.getCode(), 0L),
-                countMap.getOrDefault(MessageType.CHAT.getCode(), 0L),
-                countMap.getOrDefault(MessageType.ORDER.getCode(), 0L),
-                countMap.getOrDefault(MessageType.PAYMENT.getCode(), 0L),
-                countMap.getOrDefault(MessageType.ACTIVITY.getCode(), 0L)
+                countMap.values().stream().mapToLong(Long::longValue).sum(),
+                countByCode(countMap, MessageType.SYSTEM),
+                countByCode(countMap, MessageType.CHAT),
+                countByCode(countMap, MessageType.ORDER),
+                countByCode(countMap, MessageType.PAYMENT),
+                countByCode(countMap, MessageType.ACTIVITY)
         );
+    }
+
+    private static long countByCode(Map<Integer, Long> countMap, MessageType type) {
+        return countMap.getOrDefault(Integer.valueOf(type.getCode()), 0L);
+    }
+
+    @Override
+    public List<Message> findConversation(String userId, String otherUserId) {
+        return messageDataMapper.toAggregateList(
+                lambdaQuery()
+                        .and(w -> w
+                                .eq(MessageDO::getSenderId, userId).eq(MessageDO::getReceiverId, otherUserId)
+                                .or()
+                                .eq(MessageDO::getSenderId, otherUserId).eq(MessageDO::getReceiverId, userId))
+                        .eq(MessageDO::getDelFlag, 0)
+                        .orderByAsc(MessageDO::getCreateTime)
+                        .list());
+    }
+
+    @Override
+    public List<Message> findRecentForUser(String userId) {
+        return messageDataMapper.toAggregateList(
+                lambdaQuery()
+                        .and(w -> w
+                                .eq(MessageDO::getSenderId, userId)
+                                .or()
+                                .eq(MessageDO::getReceiverId, userId))
+                        .eq(MessageDO::getDelFlag, 0)
+                        .orderByDesc(MessageDO::getCreateTime)
+                        .list());
     }
 
     private PageResult<Message> toAggregatePageResult(Page<MessageDO> messagePage) {

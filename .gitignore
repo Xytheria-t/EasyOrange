@@ -66,13 +66,16 @@ logs/
 coverage/
 
 # ---------- AI 工具与生成文件（隐私） ----------
-.claude/
+.claude/*
 .cursor/
 .opencode/
 .trae/
 .agents/
-.slim/
 .superpowers/
+
+# 但 .claude/rules/ 是项目编码规范，纳入版本控制
+!.claude/rules/
+!.claude/rules/**
 
 # AI 生成的代码地图
 **/codemap.md
@@ -81,12 +84,3 @@ coverage/
 test-results/
 playwright-report/
 blob-report/
-
-# ---------- 文档（可选） ----------
-docs/
-!docs/README.md
-
-# ---------- RSA 密钥文件 ----------
-
-# ---------- Deepwork 状态文件 ----------
-.slim/deepwork/

@@ -6,7 +6,7 @@
 
 | 层 | 技术 |
 |---|------|
-| **后端** | Java 25, Spring Boot 4.0.3, MyBatis-Plus 3.5.16 |
+| **后端** | Java 25, Spring Boot 4.0.7, MyBatis-Plus 3.5.16 |
 | **前端** | TypeScript, React |
 | **数据库** | MySQL 8.4, Redis 7.4 |
 | **消息队列** | RabbitMQ 3.13 (Spring AMQP 4.0.x) |
@@ -142,6 +142,10 @@ admin → framework, common, user (optional), product (optional), order (optiona
 
 ## 已知问题
 
+- **OWASP 硬闸门已恢复绿色（2026-08-04）**: 通过依赖升级 + 定向豁免清除全部 CVSS ≥ 8 告警：
+  - Spring Boot 4.0.3 → **4.0.7**（spring-framework 7.0.8，修复 **CVE-2026-41855** 9.8）；netty → **4.2.16**、tomcat → **11.0.24**、jackson → **3.1.5**（见 pom `<netty.version>`/`<tomcat.version>`/`<jackson3.version>` 覆盖）
+  - **豁免项**（`easyorange-backend/dependency-suppression.xml`，注明理由、待条件满足后解除）：kotlin-stdlib **CVE-2026-53914**（修复版 Kotlin 2.4.20 未发布稳定版；纯 Java 项目不编译 Kotlin，攻击面≈0）；mysql-connector-j **CVE-2026-60193/60192**（受影响组件为 Connector/Net(.NET)，非 Connector/J(Java JDBC)，且 9.7.0 已是最新版）
+  - **环境提示**：依赖检查需联网拉取数据源（OSS Index API 需 token、RetireJS 从 raw.githubusercontent 下载），本机若遇 401/超时可用 `-Danalyzer.ossindex.enabled=false` + `-Danalyzer.retirejs.enabled=false`，或临时 `-Ddependency-check.skip=true`
 - **Redis 连接**: `application.yaml` 的 base 配置和 `.env.example` 模板已统一默认 `REDIS_PASSWORD=easyorange123`，与 Docker Compose 一致。若仍遇到 `Unable to connect to Redis` 错误，检查：① 是否已执行 `docker compose up -d` 启动 Redis；② 环境变量 `REDIS_PASSWORD` 是否被设置为空值覆盖了默认值；③ **YAML 占位符必须用 `${VAR:default}`（单冒号），不要用 bash 风格的 `${VAR:-default}`**（多一个 `-`）—— Spring 会把 `-default` 当字面量默认值，导致 Lettuce 实际发出去的密码比预期多一个前导连字符，触发 `WRONGPASS invalid username-password pair`。**注意**：`docker-compose.yml` 和 `mvnw` 用 `:-` 是正确的（bash/Docker Compose 语法），但所有 `application*.yaml` 必须用单冒号。新增/修改 Spring Boot 配置占位符时，复制粘贴前先确认语法
 
 ## 错误码规范
@@ -255,7 +259,7 @@ cd easyorange-backend && ./mvnw clean package -DskipTests
 ./mvnw -Ppit test-compile pitest:mutationCoverage
 ./mvnw -pl easyorange-order -Ppit test-compile pitest:mutationCoverage  # 单模块
 
-# OWASP 依赖安全检查
+# OWASP 依赖安全检查（硬闸门 CVSS ≥ 8 阻断构建；豁免项见 easyorange-backend/dependency-suppression.xml）
 ./mvnw org.owasp:dependency-check-maven:check
 
 # 启动开发环境 (MySQL 8.4 + Redis 7.4 + RabbitMQ 3.13)

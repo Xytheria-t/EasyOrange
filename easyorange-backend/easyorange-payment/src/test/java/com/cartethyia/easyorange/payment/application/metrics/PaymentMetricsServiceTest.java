@@ -2,14 +2,11 @@ package com.cartethyia.easyorange.payment.application.metrics;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -78,33 +75,6 @@ class PaymentMetricsServiceTest {
 
             Counter counter = meterRegistry.counter("payment.refund.total", "type", "refund");
             assertThat(counter.count()).isEqualTo(1);
-        }
-    }
-
-    @Nested
-    @DisplayName("处理时间")
-    class ProcessingTimeTests {
-
-        @Test
-        @DisplayName("记录支付处理时间")
-        void recordPaymentProcessingTime() {
-            metricsService.recordPaymentProcessingTime(100L);
-
-            Timer timer = meterRegistry.timer("payment.processing.time");
-            assertThat(timer.totalTime(TimeUnit.MILLISECONDS)).isGreaterThan(0);
-        }
-
-        @Test
-        @DisplayName("启动和停止计时器")
-        void startAndStopTimer() {
-            Timer.Sample sample = metricsService.startTimer();
-
-            assertThat(sample).isNotNull();
-
-            metricsService.stopTimer(sample);
-
-            Timer timer = meterRegistry.timer("payment.processing.time");
-            assertThat(timer.count()).isEqualTo(1);
         }
     }
 

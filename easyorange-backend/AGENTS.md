@@ -1,13 +1,13 @@
 # EasyOrange Backend 编码指南
 
-Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
+Spring Boot 4.0.7 + Java 25 后端，采用 DDD + 六边形架构。
 
 ## 技术栈版本
 
 | 依赖 | 版本 |
 |------|------|
 | Java | 25 |
-| Spring Boot | 4.0.3 |
+| Spring Boot | 4.0.7 |
 | MyBatis-Plus | 3.5.16 |
 | MapStruct | 1.6.3 |
 | Flyway | 11.15.0 |

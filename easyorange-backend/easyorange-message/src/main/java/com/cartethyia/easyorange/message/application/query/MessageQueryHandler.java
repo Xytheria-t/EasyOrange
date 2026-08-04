@@ -9,7 +9,6 @@ import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
-import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
@@ -49,19 +48,15 @@ public class MessageQueryHandler {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<MessageVO> getMyMessages(QueryMessageRequest request) {
+    public PageResult<MessageVO> getMyMessages(MessageQuery query) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        var readStatus = request.getIsRead() != null ? ReadStatus.fromCode(String.valueOf(request.getIsRead())) : null;
-        MessageQuery query = new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), readStatus);
         PageResult<Message> messagePage = queryRepository.findByReceiverId(query, userId);
         return toMessageVOPage(messagePage);
     }
 
     @Transactional(readOnly = true)
-    public PageResult<MessageVO> getUnreadMessages(QueryMessageRequest request) {
+    public PageResult<MessageVO> getUnreadMessages(MessageQuery query) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        var readStatus = request.getIsRead() != null ? ReadStatus.fromCode(String.valueOf(request.getIsRead())) : null;
-        MessageQuery query = new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), readStatus);
         PageResult<Message> messagePage = queryRepository.findUnreadByReceiverId(query, userId);
         return toMessageVOPage(messagePage);
     }

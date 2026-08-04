@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.payment.application.lock;
 
+import com.cartethyia.easyorange.payment.application.metrics.PaymentMetricsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -21,6 +22,7 @@ import java.util.function.Supplier;
 public class DistributedLockWrapper {
 
     private final RedissonClient redissonClient;
+    private final PaymentMetricsService metricsService;
 
     private static final String LOCK_PREFIX = "payment:lock:";
     private static final long DEFAULT_TIMEOUT = 30;
@@ -44,6 +46,7 @@ public class DistributedLockWrapper {
             locked = acquireLock(fullKey, timeout, timeUnit);
             if (!locked) {
                 log.warn("获取分布式锁失败: key={}", fullKey);
+                metricsService.recordConcurrentConflict();
                 throw new IllegalStateException("系统繁忙，请稍后重试");
             }
             return operation.get();

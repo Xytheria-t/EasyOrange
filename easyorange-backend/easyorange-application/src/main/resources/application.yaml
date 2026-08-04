@@ -16,6 +16,18 @@ spring:
   main:
     banner-mode: console
 
+  ai:
+    # 模型由 easyorange-ai 的 AiModelConfig 手动装配（DeepSeek/Qwen-VL/Embedding），
+    # 且不使用 audio/image/moderation 模型族，故整体禁用 Spring AI OpenAI 自动配置，
+    # 避免无 AI key 时这些自动装配模型在启动期强制校验凭据而崩溃
+    model:
+      chat: false
+      embedding: false
+      audio.speech: false
+      audio.transcription: false
+      image: false
+      moderation: false
+
   datasource:
     url: jdbc:mysql://${EASYORANGE_DB_HOST:localhost}:${EASYORANGE_DB_PORT:3306}/${EASYORANGE_DB_NAME:easyorange}?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&connectTimeout=5000&socketTimeout=30000&connectionCollation=utf8mb4_0900_ai_ci
     username: ${EASYORANGE_DB_USERNAME:easyorange_app}
@@ -226,6 +238,9 @@ security:
     - /api/products/{id}/view
     - /api/products/batch
     - /api/products/categories/cache
+    # WebSocket 握手端点 — 由 WebSocketAuthInterceptor 自行完成 JWT 认证与吊销校验
+    - /ws
+    - /ws/**
     # SpringDoc OpenAPI 3 — API 契约文档 + Swagger UI（仅开发/测试环境暴露，生产通过反向代理拦截）
     - /v3/api-docs/**
     - /swagger-ui/**

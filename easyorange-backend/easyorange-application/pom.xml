@@ -83,13 +83,6 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-        <!-- Spring Boot DevTools 热部署 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <optional>true</optional>
-        </dependency>
-
         <!-- 数据访问 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -164,16 +157,12 @@
                     <skip>false</skip>
                     <jvmArguments>
                         --sun-misc-unsafe-memory-access=allow
+                        --enable-native-access=ALL-UNNAMED
                     </jvmArguments>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                        </exclude>
-                        <!-- devtools 严禁打入生产 fat jar: 它会启动 LiveReload 服务器并拖慢启动 -->
-                        <exclude>
-                            <groupId>org.springframework.boot</groupId>
-                            <artifactId>spring-boot-devtools</artifactId>
                         </exclude>
                     </excludes>
                 </configuration>

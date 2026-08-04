@@ -8,10 +8,10 @@ import com.cartethyia.easyorange.message.application.command.MessageCommandHandl
 import com.cartethyia.easyorange.message.application.command.RecallMessageCommand;
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
-import com.cartethyia.easyorange.message.application.query.dto.ConversationListVO;
 import com.cartethyia.easyorange.message.enums.MessageType;
 import com.cartethyia.easyorange.message.websocket.TypingIndicatorService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,7 +27,7 @@ public class MessageCommandController {
     private final TypingIndicatorService typingIndicatorService;
 
     @PostMapping
-    public Result<Void> sendMessage(@RequestBody SendMessageCommand command) {
+    public Result<Void> sendMessage(@Valid @RequestBody SendMessageCommand command) {
         commandHandler.handle(command);
         return Result.success();
     }
@@ -58,9 +58,8 @@ public class MessageCommandController {
 
     @PutMapping("/read-by-type/{type}")
     public Result<Void> markAsReadByType(@PathVariable Integer type) {
-        if (MessageType.fromCode(String.valueOf(type)) == null) {
-            return Result.error("无效的消息类型");
-        }
+        // 非法类型由 fromCode 抛 IllegalArgumentException → 全局异常处理器映射为 400
+        MessageType.fromCode(String.valueOf(type));
         commandHandler.handleMarkAsReadByType(type);
         return Result.success();
     }
@@ -73,10 +72,7 @@ public class MessageCommandController {
 
     @PutMapping("/{id}/recall")
     public Result<Void> recallMessage(@PathVariable String id) {
-        commandHandler.handle(new RecallMessageCommand(
-                id,
-                com.cartethyia.easyorange.framework.util.SecurityContextUtil.getCurrentUserIdOrThrow()
-        ));
+        commandHandler.handle(new RecallMessageCommand(id));
         return Result.success();
     }
 

@@ -9,6 +9,8 @@ import com.cartethyia.easyorange.message.application.query.dto.ConversationListV
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
+import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
+import com.cartethyia.easyorange.message.enums.ReadStatus;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -36,12 +38,12 @@ public class MessageQueryController {
 
     @GetMapping("/list")
     public Result<PageResult<MessageVO>> getMyMessages(QueryMessageRequest request) {
-        return Result.success(queryHandler.getMyMessages(request));
+        return Result.success(queryHandler.getMyMessages(toMessageQuery(request)));
     }
 
     @GetMapping("/unread")
     public Result<PageResult<MessageVO>> getUnreadMessages(QueryMessageRequest request) {
-        return Result.success(queryHandler.getUnreadMessages(request));
+        return Result.success(queryHandler.getUnreadMessages(toMessageQuery(request)));
     }
 
     @GetMapping("/unread-count")
@@ -52,5 +54,11 @@ public class MessageQueryController {
     @GetMapping("/conversation/{userId}")
     public Result<List<ConversationVO>> getConversation(@PathVariable String userId) {
         return Result.success(conversationQueryHandler.getConversation(userId));
+    }
+
+    /** 边界层 DTO → 领域查询参数，非法 isRead code 由 {@link ReadStatus#fromCode(String)} 抛 IllegalArgumentException 映射为 400。 */
+    private static MessageQuery toMessageQuery(QueryMessageRequest request) {
+        ReadStatus isRead = request.getIsRead() != null ? ReadStatus.fromCode(String.valueOf(request.getIsRead())) : null;
+        return new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), isRead);
     }
 }

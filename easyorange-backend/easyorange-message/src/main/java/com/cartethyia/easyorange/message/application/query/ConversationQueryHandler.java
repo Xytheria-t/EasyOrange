@@ -1,14 +1,12 @@
 package com.cartethyia.easyorange.message.application.query;
 
-import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
-import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationListVO;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
-import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
-import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
-import com.cartethyia.easyorange.message.enums.ReadStatus;
+import com.cartethyia.easyorange.message.domain.aggregate.Message;
+import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
+import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
+import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,29 +17,24 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConversationQueryHandler {
 
-    private final MessageMapper messageMapper;
+    /** 系统通知在会话列表中的固定占位会话 key（senderId 为 null 的消息归并到此处，避免 null key / NPE）。 */
+    private static final String SYSTEM_CONVERSATION = "system";
+
+    private final MessageQueryRepository queryRepository;
     private final UserInfoPort userInfoPort;
 
     @Transactional(readOnly = true)
     public List<ConversationVO> getConversation(String otherUserId) {
         String currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        List<MessageDO> messages = ChainWrappers.lambdaQueryChain(messageMapper)
-                .and(w -> w
-                        .eq(MessageDO::getSenderId, currentUserId).eq(MessageDO::getReceiverId, otherUserId)
-                        .or()
-                        .eq(MessageDO::getSenderId, otherUserId).eq(MessageDO::getReceiverId, currentUserId)
-                )
-                .eq(MessageDO::getDelFlag, 0)
-                .orderByAsc(MessageDO::getCreateTime)
-                .list();
-
+        List<Message> messages = queryRepository.findConversation(currentUserId, otherUserId);
         if (messages.isEmpty()) {
             return List.of();
         }
@@ -53,70 +46,73 @@ public class ConversationQueryHandler {
                 .toList();
     }
 
-    private ConversationVO toConversationVO(MessageDO message, Map<String, UserInfo> userMap) {
-        UserInfo sender = userMap.get(message.getSenderId());
-        UserInfo receiver = userMap.get(message.getReceiverId());
-
-        return ConversationVO.builder()
-                .id(message.getId())
-                .senderId(message.getSenderId())
-                .senderName(sender != null ? sender.username() : "未知用户")
-                .senderAvatar(sender != null ? sender.avatar() : null)
-                .receiverId(message.getReceiverId())
-                .receiverName(receiver != null ? receiver.username() : "未知用户")
-                .receiverAvatar(receiver != null ? receiver.avatar() : null)
-                .content(message.getContent())
-                .isRead(Integer.valueOf(message.getIsRead().getCode()))
-                .createTime(message.getCreateTime())
-                .build();
-    }
-
     @Transactional(readOnly = true)
     public List<ConversationListVO> getConversations() {
         String currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        List<MessageDO> messages = ChainWrappers.lambdaQueryChain(messageMapper)
-                .and(w -> w
-                        .eq(MessageDO::getSenderId, currentUserId)
-                        .or()
-                        .eq(MessageDO::getReceiverId, currentUserId)
-                )
-                .eq(MessageDO::getDelFlag, 0)
-                .orderByDesc(MessageDO::getCreateTime)
-                .list();
-
+        List<Message> messages = queryRepository.findRecentForUser(currentUserId);
         if (messages.isEmpty()) {
             return List.of();
         }
 
-        Map<String, MessageDO> latestByUser = new LinkedHashMap<>();
+        Map<String, Message> latestByUser = new LinkedHashMap<>();
         Map<String, Integer> unreadCounts = new HashMap<>();
 
-        for (MessageDO msg : messages) {
-            String otherUserId = msg.getSenderId().equals(currentUserId) ? msg.getReceiverId() : msg.getSenderId();
+        for (Message msg : messages) {
+            String otherUserId = otherUserId(currentUserId, msg);
             latestByUser.putIfAbsent(otherUserId, msg);
-            if (msg.getReceiverId().equals(currentUserId) && ReadStatus.UNREAD == msg.getIsRead()) {
+            if (msg.receiverId() != null && msg.receiverId().equals(currentUserId) && msg.isUnread()) {
                 unreadCounts.merge(otherUserId, 1, Integer::sum);
             }
         }
 
-        Map<String, UserInfo> userMap = userInfoPort.getUserInfoMap(latestByUser.keySet());
-        userMap.put(currentUserId, userMap.get(currentUserId));
+        // 排除固定占位 key，避免向用户仓库查询不存在的 "system" 用户
+        Set<String> userKeys = latestByUser.keySet().stream()
+                .filter(key -> !SYSTEM_CONVERSATION.equals(key))
+                .collect(Collectors.toSet());
+        Map<String, UserInfo> userMap = userInfoPort.getUserInfoMap(userKeys);
 
         return latestByUser.entrySet().stream()
                 .map(entry -> buildConversationListVO(entry.getKey(), entry.getValue(), userMap, unreadCounts))
                 .toList();
     }
 
-    private ConversationListVO buildConversationListVO(String targetUserId, MessageDO latestMsg,
+    /** 会话对方：senderId 为 null 的系统消息归并到固定 system 会话。 */
+    private static String otherUserId(String currentUserId, Message msg) {
+        if (msg.senderId() == null) {
+            return SYSTEM_CONVERSATION;
+        }
+        return msg.senderId().equals(currentUserId) ? msg.receiverId() : msg.senderId();
+    }
+
+    private ConversationVO toConversationVO(Message message, Map<String, UserInfo> userMap) {
+        UserInfo sender = message.senderId() != null ? userMap.get(message.senderId()) : null;
+        UserInfo receiver = message.receiverId() != null ? userMap.get(message.receiverId()) : null;
+
+        return ConversationVO.builder()
+                .id(message.id())
+                .senderId(message.senderId())
+                .senderName(sender != null ? sender.username() : (message.senderId() == null ? "系统" : "未知用户"))
+                .senderAvatar(sender != null ? sender.avatar() : null)
+                .receiverId(message.receiverId())
+                .receiverName(receiver != null ? receiver.username() : "未知用户")
+                .receiverAvatar(receiver != null ? receiver.avatar() : null)
+                .content(message.content())
+                .isRead(Integer.valueOf(message.isRead().getCode()))
+                .createTime(message.createTime())
+                .build();
+    }
+
+    private ConversationListVO buildConversationListVO(String targetUserId, Message latestMsg,
                                                         Map<String, UserInfo> userMap, Map<String, Integer> unreadCounts) {
+        boolean isSystem = SYSTEM_CONVERSATION.equals(targetUserId);
         UserInfo targetUser = userMap.get(targetUserId);
         return ConversationListVO.builder()
                 .targetUserId(targetUserId)
-                .targetUserName(targetUser != null ? targetUser.username() : "未知用户")
-                .targetUserAvatar(targetUser != null ? targetUser.avatar() : null)
-                .lastMessage(latestMsg.getContent())
-                .lastMessageTime(latestMsg.getCreateTime())
+                .targetUserName(isSystem ? "系统通知" : (targetUser != null ? targetUser.username() : "未知用户"))
+                .targetUserAvatar(isSystem ? null : (targetUser != null ? targetUser.avatar() : null))
+                .lastMessage(latestMsg.content())
+                .lastMessageTime(latestMsg.createTime())
                 .unreadCount(unreadCounts.getOrDefault(targetUserId, 0))
                 .build();
     }

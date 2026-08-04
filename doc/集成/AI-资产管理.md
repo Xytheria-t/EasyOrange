@@ -77,7 +77,7 @@ EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 
 > 注：议价 WebSocket 端点 `/offer.make`（`OfferMessageType` 枚举 / `OfferProcessingPort`）已于 2026-06-25 下线。
 
-前端 STOMP 客户端：`useStompChat`（`easyorange-frontend/src/components/hooks/chat/`）。
+前端 STOMP 客户端：`useStompChat`（`easyorange-frontend/src/hooks/chat/`）。
 
 ---
 

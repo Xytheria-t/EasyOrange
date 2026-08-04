@@ -1,25 +1,15 @@
 package com.cartethyia.easyorange.message.application.config;
 
 import com.cartethyia.easyorange.message.application.service.RateLimiterService;
-import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
-import org.springframework.data.redis.core.RedisTemplate;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
-import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
-import com.cartethyia.easyorange.message.domain.service.MessageRoutingService;
 import com.cartethyia.easyorange.message.domain.service.OfflineMessageStoreService;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.RedisTemplate;
 
 @Configuration
 public class MessageDomainServiceConfig {
-
-    @Bean
-    public MessageRoutingService messageRoutingService(
-            MessageSubscriptionRepository subscriptionRepository,
-            MessageNotifierPort sessionManager) {
-        return new MessageRoutingService(subscriptionRepository, sessionManager);
-    }
 
     @Bean
     public OfflineMessageStoreService offlineMessageStoreService(

@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.message.websocket;
 
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.WsMessage;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
-import com.cartethyia.easyorange.message.application.service.RateLimiterService;
-import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.WsMessage;
+import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,7 +23,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -40,9 +39,6 @@ class ChatWebSocketHandlerTest {
 
     @Mock
     private TypingIndicatorService typingService;
-
-    @Mock
-    private RateLimiterService rateLimiterService;
 
     @InjectMocks
     private ChatWebSocketHandler handler;
@@ -63,9 +59,11 @@ class ChatWebSocketHandlerTest {
     @BeforeEach
     void setUp() {
         principal = mock(Principal.class);
+        // lenient：broadcastRecallEvent / broadcastUnreadUpdate 用例不使用 principal
+        lenient().when(principal.getName()).thenReturn(USER_ID);
         wsMessage = WsMessage.builder()
                 .receiverId(RECEIVER_ID)
-                .type(0)
+                .type(2)
                 .title("你好")
                 .content("hello")
                 .conversationId(CONVERSATION_ID)
@@ -79,18 +77,15 @@ class ChatWebSocketHandlerTest {
         @Test
         @DisplayName("正常发送聊天消息")
         void handleChatMessage_normal_sendsMessage() {
-            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
-
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
                 handler.handleChatMessage(wsMessage, principal);
 
-                verify(rateLimiterService).allowSendMessage(USER_ID);
                 verify(messageCommandHandler).handle(commandCaptor.capture());
 
                 SendMessageCommand cmd = commandCaptor.getValue();
                 assertThat(cmd.receiverId()).isEqualTo(RECEIVER_ID);
-                assertThat(cmd.type()).isZero();
+                assertThat(cmd.type()).isEqualTo(2);
                 assertThat(cmd.title()).isEqualTo("你好");
                 assertThat(cmd.content()).isEqualTo("hello");
                 assertThat(cmd.conversationId()).isEqualTo(CONVERSATION_ID);
@@ -113,7 +108,6 @@ class ChatWebSocketHandlerTest {
         @DisplayName("发送消息时 title 为 null 使用默认空字符串")
         void handleChatMessage_nullTitle_usesDefault() {
             wsMessage.setTitle(null);
-            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -127,17 +121,16 @@ class ChatWebSocketHandlerTest {
         }
 
         @Test
-        @DisplayName("发送消息时 type 为 null 使用默认值 0")
-        void handleChatMessage_nullType_usesDefault() {
+        @DisplayName("发送消息时 type 为 null 原样透传（归一化在命令处理器）")
+        void handleChatMessage_nullType_passesThrough() {
             wsMessage.setType(null);
-            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
                 handler.handleChatMessage(wsMessage, principal);
 
                 verify(messageCommandHandler).handle(commandCaptor.capture());
-                assertThat(commandCaptor.getValue().type()).isZero();
+                assertThat(commandCaptor.getValue().type()).isNull();
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -147,7 +140,6 @@ class ChatWebSocketHandlerTest {
         @DisplayName("发送消息时 businessId 传递正确")
         void handleChatMessage_withBusinessId_passesCorrectly() {
             wsMessage.setBusinessId("999");
-            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -161,32 +153,8 @@ class ChatWebSocketHandlerTest {
         }
 
         @Test
-        @DisplayName("发送消息被限流时发送错误通知并返回")
-        void handleChatMessage_rateLimited_sendsError() {
-            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(false);
-
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                handler.handleChatMessage(wsMessage, principal);
-
-                verify(messagingTemplate).convertAndSendToUser(
-                        eq(String.valueOf(USER_ID)),
-                        eq("/queue/error"),
-                        argThat((Map<String, Object> map) ->
-                                "RATE_LIMITED".equals(map.get("type"))
-                        )
-                );
-                verify(messageCommandHandler, never()).handle(any(SendMessageCommand.class));
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
-        }
-
-        @Test
         @DisplayName("发送消息时未读通知包含正确字段")
         void handleChatMessage_unreadNotification_containsCorrectFields() {
-            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
-
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
                 handler.handleChatMessage(wsMessage, principal);
@@ -204,6 +172,29 @@ class ChatWebSocketHandlerTest {
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("handleDomainException")
+    class HandleDomainExceptionTests {
+
+        @Test
+        @DisplayName("命令异常（限流）映射为发送方错误帧")
+        void handleDomainException_sendsErrorFrame() {
+            when(principal.getName()).thenReturn(USER_ID);
+            MessageDomainException ex = new MessageDomainException("发送过于频繁，请稍后再试");
+
+            handler.handleDomainException(ex, principal);
+
+            verify(messagingTemplate).convertAndSendToUser(
+                    eq(String.valueOf(USER_ID)),
+                    eq("/queue/error"),
+                    mapCaptor.capture()
+            );
+            assertThat(mapCaptor.getValue())
+                    .containsEntry("type", "RATE_LIMITED")
+                    .containsEntry("message", "发送过于频繁，请稍后再试");
         }
     }
 
@@ -276,7 +267,6 @@ class ChatWebSocketHandlerTest {
         @DisplayName("广播撤回事件包含正确字段")
         void broadcastRecallEvent_containsCorrectFields() {
             String messageId = "100";
-            LocalDateTime before = LocalDateTime.now();
 
             handler.broadcastRecallEvent(CONVERSATION_ID, messageId, USER_ID);
 
@@ -290,8 +280,7 @@ class ChatWebSocketHandlerTest {
                     .containsEntry("conversationId", CONVERSATION_ID)
                     .containsEntry("operatorId", String.valueOf(USER_ID))
                     .containsKey("recalledAt");
-            String recalledAt = (String) payload.get("recalledAt");
-            assertThat(recalledAt).isNotNull();
+            assertThat(payload.get("recalledAt")).isNotNull();
         }
 
         @Test
