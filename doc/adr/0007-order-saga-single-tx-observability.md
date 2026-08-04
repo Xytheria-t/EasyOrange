@@ -57,7 +57,7 @@ ADR-0001 决定订单创建采用 Saga 编排 + 反向补偿，ADR-0007 初版�
 
 ### 缓解措施
 
-- 超时检测与人工介入由既有机制承担：`OrderTimeoutTask`（30 分钟未支付自动 CANCELLED + 库存恢复）、DLQ 三级重试、`CompensationFailedAlertConsumer`
+- 超时检测与人工介入由既有机制承担：`OrderTimeoutTask`（30 分钟未支付自动 CANCELLED + 库存恢复）、DLQ 三级重试
 - 演进触发条件记录于本文档备注，避免未来无依据地加回 Saga
 
 ## 备选方案（Alternatives Considered）

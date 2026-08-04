@@ -29,7 +29,7 @@
 | 钩子 | 数字锚点 | 一句话 |
 |---|---|---|
 | **AI 工程化** | 6 决策点 + 8 件套 + 轻量 Agent | Spring AI 2.0 框架化 + Redisson 令牌桶 + stale 降级 + Prompt YAML + TokenBudget + 4 路并行 Tool Calling |
-| **分布式可靠性** | 拒绝 Saga（ADR-0007）+ Outbox + DLQ 三级重试 + 11 消费者 | 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件驱动（拒绝 Saga）；领域事件走 Spring Modulith Outbox → RabbitMQ；DLQ 指数退避 + terminal 转储 |
+| **分布式可靠性** | 拒绝 Saga（ADR-0007）+ Outbox + DLQ 三级重试 + 10 消费者 | 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件驱动（拒绝 Saga）；领域事件走 Spring Modulith Outbox → RabbitMQ；DLQ 指数退避 + terminal 转储 |
 | **架构落地** | 11 模块 / 32 Port / DDD+CQRS+事件驱动 / ArchUnit 6 规则 | domain 层零框架依赖，编译期隔离；message/favorite 故意不做 CQRS（ADR-0002） |
 | **质量门禁** | 2,412 测试 / JaCoCo + PIT / Biome 0 errors | 后端 ArchUnit + JaCoCo 行≥80% + PIT 变异测试；前端 Vitest + Playwright + Biome |
 

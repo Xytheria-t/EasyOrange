@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.payment.application;
 
+import com.cartethyia.easyorange.payment.application.query.PaymentListQuery;
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
@@ -7,6 +8,9 @@ import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException
 import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -16,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,6 +36,16 @@ class PaymentQueryHandlerTest {
 
     @InjectMocks
     private PaymentQueryHandler queryHandler;
+
+    @BeforeEach
+    void setUp() {
+        TestSecurityUtil.setSecurityContext("3001");
+    }
+
+    @AfterEach
+    void tearDown() {
+        TestSecurityUtil.clearSecurityContext();
+    }
 
     private Payment createTestAggregate(String id, String paymentNo, PaymentStatus status) {
         var spec = new PaymentReconstructSpec(
@@ -81,6 +96,47 @@ class PaymentQueryHandlerTest {
             Payment result = queryHandler.getPaymentByOrderId("2001");
 
             assertThat(result.orderId()).isEqualTo("2001");
+        }
+    }
+
+    @Nested
+    @DisplayName("getMyPayments")
+    class GetMyPaymentsTests {
+
+        @Test
+        @DisplayName("自动填充当前登录用户")
+        void getMyPayments_usesCurrentUser() {
+            Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.SUCCESS);
+            when(paymentQueryRepository.findByUserIdAndStatus("3001", null, 1, 20))
+                    .thenReturn(List.of(aggregate));
+            when(paymentQueryRepository.countByUserIdAndStatus("3001", null)).thenReturn(1L);
+
+            var result = queryHandler.getMyPayments(new PaymentListQuery(null, null, null, null));
+
+            assertThat(result.records()).hasSize(1);
+            assertThat(result.total()).isEqualTo(1L);
+            assertThat(result.current()).isEqualTo(1);
+            assertThat(result.size()).isEqualTo(20);
+        }
+    }
+
+    @Nested
+    @DisplayName("queryPayments")
+    class QueryPaymentsTests {
+
+        @Test
+        @DisplayName("按用户与状态过滤")
+        void queryPayments_filtersByUserAndStatus() {
+            Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.REFUNDED);
+            when(paymentQueryRepository.findByUserIdAndStatus("3001", PaymentStatus.REFUNDED, 2, 10))
+                    .thenReturn(List.of(aggregate));
+            when(paymentQueryRepository.countByUserIdAndStatus("3001", PaymentStatus.REFUNDED)).thenReturn(5L);
+
+            var result = queryHandler.queryPayments(new PaymentListQuery("3001", PaymentStatus.REFUNDED, 2, 10));
+
+            assertThat(result.records()).hasSize(1);
+            assertThat(result.total()).isEqualTo(5L);
+            assertThat(result.current()).isEqualTo(2);
         }
     }
 }

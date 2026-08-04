@@ -56,7 +56,6 @@ cd easyorange-frontend && npm test
 - **多模块构建**：修改子模块后启动前必须先 `mvn clean install -Dmaven.test.skip=true`，否则运行时按已安装 jar 解析子模块会 ClassNotFoundException
 - **启动方式**：统一 `./mvnw spring-boot:run -pl easyorange-application`（终端）。JVM 参数（`--enable-native-access` 等）已由 `easyorange-application/pom.xml` 的 `<jvmArguments>` 管，环境变量走 `.env`/shell export。**IDE 调试可另用 run config，但必须把 JVM flag 手动补进 VM options**（pom 的 jvmArguments 不传给 IDE）；禁止终端/IDE 混跑同一份代码，否则 JVM flag 不生效难排查
 - **父 POM 模块注册**：新增后端子模块必须在 `easyorange-backend/pom.xml` 的 `<modules>` 中注册
-- **查询只读事务**：纯查询方法（find/get/list/query/count/check/is*）必须标注 `@Transactional(readOnly = true)`；写操作 `@Transactional(rollbackFor = Exception.class)`
 - **Mockito Java 25 兼容**：已配置 `mock-maker-subclass` 模式，**新测试不要改回 inline 模式**（WSL2 下 ByteBuddy attach 会失败）
 - **`product-paths` 白名单陷阱**：`security.product-paths` 会跳过 JWT 认证且前缀匹配（`/api/products` 会匹配 `/api/products/my`）。新增需认证接口必须添加更精确的 `.requestMatchers(GET, "/api/products/my/**").authenticated()`
 - **LoginCredential sealed interface**：登录凭据用 `sealed interface LoginCredential`（`domain/valueobject/`），新增登录方式添加新 `record` 实现，禁止用枚举字段区分
@@ -64,7 +63,6 @@ cd easyorange-frontend && npm test
 - **ConfigurationProperties 注册方式**：统一 `@ConfigurationProperties` + `@ConfigurationPropertiesScan`，Properties 为纯 POJO（不加 `@Component`），已注册的不要再加 `@EnableConfigurationProperties`
 - **Flyway SQL 格式**：CREATE TABLE 列定义禁止使用对齐格式（列名与类型间大量空格填充），必须紧凑格式，否则 MySQL 1064 语法错误
 - **注册昵称默认值**：注册时 `nick_name` 默认等于 `username`，禁止随机昵称逻辑
-- **不可变集合**：统一使用 Java 9+ 不可变集合工厂方法，禁止 `Collections` 工具类创建空/单元素/不可包装集合
 
 ## 前端约定
 
@@ -82,8 +80,6 @@ cd easyorange-frontend && npm test
 - **Zustand selector 稳定引用**：selector 中 `?? []` / `?? {}` 必须用模块级常量，禁止内联（新引用触发无限循环，React 19 StrictMode 下放大到 50 层）
 - **聊天 conversationId 格式**：排序双 ID `conv_{minId}_{maxId}`，确保 A→B 与 B→A 一致。前端 `conv_${[currentUserId, targetUserId].sort().join('_')}`；后端 `"conv_" + Math.min(sender, receiver) + "_" + Math.max(sender, receiver)`
 - **scrollIntoView 防误触发**：必须通过 ref 记录上一次状态（如历史长度），仅在数据真正新增时滚动，禁止在仅依赖 props/state 的 effect 中无条件调用
-- **Biome**：`lint/a11y/useSemanticElements` 优先语义化元素（`role="group"` → `<fieldset>`）；SVG 图标加 `aria-hidden="true"`；所有 if/else/for/while 必须加 `{}`（`useBlockStatements`）
-- **React Hooks**：`useEffect` 内禁止同步调用 `setState`（无限循环），用 `useReducer` 或移出 effect
 
 ## 行为准则
 

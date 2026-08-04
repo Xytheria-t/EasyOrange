@@ -44,7 +44,6 @@ public class  RabbitMQConfig {
     // AI 事件驱动队列
     public static final String QUEUE_AI_PRODUCT = "eo.ai.product";
     public static final String QUEUE_AI_CREDIT = "eo.ai.credit";
-    public static final String QUEUE_COMPENSATION_ALERT = "eo.compensation.alert";
 
     private final RabbitMQProperties properties;
 
@@ -76,10 +75,9 @@ public class  RabbitMQConfig {
                 new QueueSpec(QUEUE_AUDIT_LOG, "audit.log"),
                 new QueueSpec(QUEUE_REPORT_NOTIFICATION, "report.#"),
                 new QueueSpec(QUEUE_MESSAGE_WEBSOCKET, "message.recalled"),
-                new QueueSpec(QUEUE_PAYMENT_METRICS, "payment.#", "compensation.failed.alert"),
+                new QueueSpec(QUEUE_PAYMENT_METRICS, "payment.#"),
                 new QueueSpec(QUEUE_AI_PRODUCT, "product.created", "product.updated", "product.marked.sold"),
-                new QueueSpec(QUEUE_AI_CREDIT, "order.completed", "report.processed"),
-                new QueueSpec(QUEUE_COMPENSATION_ALERT, "compensation.failed.alert")
+                new QueueSpec(QUEUE_AI_CREDIT, "order.completed", "report.processed")
         )) {
             var queue = QueueBuilder.durable(q.name())
                     .quorum()

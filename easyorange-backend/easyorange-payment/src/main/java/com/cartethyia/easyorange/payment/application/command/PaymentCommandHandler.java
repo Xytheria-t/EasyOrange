@@ -7,27 +7,20 @@ import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.application.lock.DistributedLockWrapper;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentCreateSpec;
-import com.cartethyia.easyorange.payment.domain.event.CompensationFailedAlertEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.exception.SagaCompensationFailedException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
-import com.cartethyia.easyorange.payment.domain.saga.SagaExecutionException;
-import com.cartethyia.easyorange.payment.domain.saga.SagaOrchestrator;
-import com.cartethyia.easyorange.payment.domain.saga.SagaStepResult;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentCommandHandler {
@@ -53,41 +46,23 @@ public class PaymentCommandHandler {
         return result.aggregate().id();
     }
 
+    /**
+     * 支付：两阶段（本地事务 + 外部网关）。
+     * <p>
+     * 单数据库场景下遵循 ADR-0007「拒绝 Saga」——本地事务提供原子性，
+     * 外部网关调用无法纳入同一事务，因此用「准备 → 网关 → 确认」顺序两阶段，
+     * 网关失败时回退状态，无需跨服务编排。
+     */
     public void handle(PayCommand command) {
         String lockKey = "payment:pay:" + command.paymentNo();
 
         lockWrapper.executeWithLock(lockKey, () -> {
             final String paymentId = preparePayPhase1(command.paymentNo());
-            try {
-                SagaOrchestrator saga = new SagaOrchestrator();
-
-                saga.addStep("pay",
-                    () -> {
-                        PaymentResult payResult = invokePayGateway(paymentId);
-                        if (payResult.isSuccess()) {
-                            confirmPayPhase2(paymentId, payResult);
-                            return SagaStepResult.success(payResult);
-                        } else {
-                            rollbackPayStatus(paymentId);
-                            return SagaStepResult.failure(payResult.getErrorMessage());
-                        }
-                    },
-                    () -> rollbackPayStatus(paymentId)
-                );
-
-                saga.execute();
-            } catch (SagaExecutionException e) {
-                log.error("支付Saga执行失败 paymentNo={} step={}", command.paymentNo(), e.getFailedStep(), e);
-                throw PaymentDomainException.of(PaymentResultCode.PAYMENT_GATEWAY_ERROR, "支付失败: " + e.getMessage());
-            } catch (SagaCompensationFailedException e) {
-                log.error("支付Saga补偿失败 paymentNo={} paymentId={}", command.paymentNo(), paymentId, e);
-                domainEventPublisher.publish(new CompensationFailedAlertEvent(
-                    paymentId,
-                    "pay",
-                    e.getMessage(),
-                    e.getFailures().toString()
-                ));
-                throw PaymentDomainException.of(PaymentResultCode.PAYMENT_GATEWAY_ERROR, "支付失败且补偿失败，请联系客服处理: " + e.getMessage());
+            PaymentResult payResult = invokePayGateway(paymentId);
+            if (payResult.isSuccess()) {
+                confirmPayPhase2(paymentId, payResult);
+            } else {
+                rollbackPayStatus(paymentId);
             }
         });
     }
@@ -119,6 +94,9 @@ public class PaymentCommandHandler {
         domainEventPublisher.publish(confirmed.event());
     }
 
+    /**
+     * 退款：两阶段（本地事务 + 外部网关），与支付一致遵循 ADR-0007 拒绝 Saga。
+     */
     public void handle(RefundPaymentCommand command) {
         String lockKey = "payment:refund:" + command.paymentId();
 
@@ -126,38 +104,12 @@ public class PaymentCommandHandler {
             BigDecimal refundAmount = command.refundAmount();
             String paymentId = command.paymentId();
 
-            try {
-                prepareRefundPhase1(paymentId, refundAmount);
-
-                SagaOrchestrator saga = new SagaOrchestrator();
-
-                saga.addStep("refund",
-                    () -> {
-                        RefundResult refundResult = invokeRefundGateway(paymentId, refundAmount);
-                        if (refundResult.isSuccess()) {
-                            confirmRefundPhase2(paymentId, refundResult, refundAmount);
-                            return SagaStepResult.success(refundResult);
-                        } else {
-                            rollbackRefundStatus(paymentId);
-                            return SagaStepResult.failure(refundResult.getErrorMessage());
-                        }
-                    },
-                    () -> rollbackRefundStatus(paymentId)
-                );
-
-                saga.execute();
-            } catch (SagaExecutionException e) {
-                log.error("退款Saga执行失败 paymentId={} step={}", paymentId, e.getFailedStep(), e);
-                throw PaymentDomainException.of(PaymentResultCode.PAYMENT_GATEWAY_ERROR, "退款失败: " + e.getMessage());
-            } catch (SagaCompensationFailedException e) {
-                log.error("退款Saga补偿失败 paymentId={}", paymentId, e);
-                domainEventPublisher.publish(new CompensationFailedAlertEvent(
-                    paymentId,
-                    "refund",
-                    e.getMessage(),
-                    e.getFailures().toString()
-                ));
-                throw PaymentDomainException.of(PaymentResultCode.PAYMENT_GATEWAY_ERROR, "退款失败且补偿失败，请联系客服处理: " + e.getMessage());
+            prepareRefundPhase1(paymentId, refundAmount);
+            RefundResult refundResult = invokeRefundGateway(paymentId, refundAmount);
+            if (refundResult.isSuccess()) {
+                confirmRefundPhase2(paymentId, refundResult, refundAmount);
+            } else {
+                rollbackRefundStatus(paymentId);
             }
         });
     }

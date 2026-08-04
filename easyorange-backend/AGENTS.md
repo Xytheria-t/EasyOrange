@@ -65,7 +65,7 @@ product、order、payment 模块使用 CQRS（在 application/domain 层分离�
 
 - `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher`，Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子），事务提交后异步发布到 `eo.domain.events` Topic Exchange
 - 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`）；每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ + 指数退避重试；多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发）
-- 11 个消费者（见根目录 AGENTS.md），Modulith at-least-once 语义 + `EventIdempotencyChecker` 确保精确一次处理
+- 10 个消费者（见根目录 AGENTS.md），Modulith at-least-once 语义 + `EventIdempotencyChecker` 确保精确一次处理
 - `@ConditionalOnProperty(matchIfMissing=true)` 支持无 RabbitMQ 环境启动
 
 ## 跨模块通信
@@ -167,9 +167,9 @@ DO 中 `status`、`condition_level` 等枚举字段直接使用领域枚举类�
 | 集成测试 | — | 已移除（WSL2 Docker 兼容性限制，全量改为单元测试） |
 | 架构测试 | ArchUnit | DDD 分层合规、包依赖规则 |
 | 控制器测试 | MockMvc | API 端点 |
-| 覆盖率报告 | JaCoCo 0.8.14 | `prepare-package` 阶段生成报告 (`jacoco:report`)；门禁（行≥80%/分支≥60%）在 `verify` 阶段，本地 `haltOnFailure=false` 仅出报告，CI 用 `-Djacoco.haltOnFailure=true` 阻断 |
+| 覆盖率报告 | JaCoCo 0.8.14 | `prepare-package` 阶段生成报告 (`jacoco:report`)；门禁（行≥80%/分支≥60%）移入 `-Pci` profile，本地默认跳过，CI 用 `./mvnw -Pci verify`，`-Djacoco.haltOnFailure=true` 阻断 |
 | 变异测试 | PIT 1.25.8 | domain 层变异（聚合根/领域服务/值对象），`-Ppit` profile 按需启用：`./mvnw -Ppit test-compile pitest:mutationCoverage`；阈值默认 0 不阻断，CI 用 `-Dpit.mutationThreshold=60` 等启用 |
-| 依赖安全 | OWASP Dependency Check 12.1.0 | `verify` 阶段检查，CVSS ≥ 8 阻断构建 |
+| 依赖安全 | OWASP Dependency Check 12.1.0 | `-Pci` profile 内 `verify` 阶段检查（CVSS ≥ 8 阻断），本地默认构建跳过 |
 
 架构守卫测试位于 `easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java`。
 

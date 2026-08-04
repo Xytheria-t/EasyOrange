@@ -5,7 +5,10 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.payment.application.command.ClosePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
+import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
+import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
+import com.cartethyia.easyorange.payment.application.lock.DistributedLockWrapper;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
@@ -50,6 +53,9 @@ class PaymentCommandHandlerTest {
 
     @Mock
     private IdGenerator idGenerator;
+
+    @Mock
+    private DistributedLockWrapper lockWrapper;
 
     @InjectMocks
     private PaymentCommandHandler commandHandler;
@@ -154,6 +160,18 @@ class PaymentCommandHandlerTest {
         }
 
         @Test
+        @DisplayName("退款预处理退款金额为空时以支付金额为默认")
+        void prepareRefundPhase1_nullAmount_usesAggregateAmount() {
+            Payment paidAggregate = buildAggregate(PaymentStatus.SUCCESS);
+            when(paymentRepository.findById("1001")).thenReturn(Optional.of(paidAggregate));
+
+            commandHandler.prepareRefundPhase1("1001", null);
+
+            verify(paymentRepository).update(aggregateCaptor.capture());
+            assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.REFUNDING);
+        }
+
+        @Test
         @DisplayName("退款确认成功")
         void confirmRefundPhase2_success() {
             Payment refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
@@ -228,6 +246,94 @@ class PaymentCommandHandlerTest {
 
             assertThatThrownBy(() -> commandHandler.handle(command))
                     .isInstanceOf(PaymentDomainException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("handle(PayCommand) - 两阶段")
+    class PayFlowTests {
+
+        @BeforeEach
+        void enableLockWrapper() {
+            doAnswer(invocation -> {
+                invocation.getArgument(1, Runnable.class).run();
+                return null;
+            }).when(lockWrapper).executeWithLock(anyString(), any(Runnable.class));
+        }
+
+        @Test
+        @DisplayName("支付成功 - 网关成功走完整两阶段")
+        void handle_pay_success() {
+            Payment payingAggregate = buildAggregate(PaymentStatus.PAYING);
+            when(paymentRepository.findByPaymentNo("PAY123")).thenReturn(Optional.of(testAggregate));
+            when(paymentRepository.findById("1001")).thenReturn(Optional.of(payingAggregate));
+            when(paymentGateway.pay(any())).thenReturn(PaymentResult.success("TXN_123"));
+
+            commandHandler.handle(new PayCommand("PAY123", null, null));
+
+            verify(paymentGateway).pay(any());
+            verify(paymentRepository, times(2)).update(aggregateCaptor.capture());
+            assertThat(aggregateCaptor.getAllValues().get(1).status()).isEqualTo(PaymentStatus.SUCCESS);
+            verify(domainEventPublisher).publish(any());
+        }
+
+        @Test
+        @DisplayName("支付失败 - 网关失败回退 PENDING")
+        void handle_pay_gatewayFailure_rollsBack() {
+            Payment payingAggregate = buildAggregate(PaymentStatus.PAYING);
+            when(paymentRepository.findByPaymentNo("PAY123")).thenReturn(Optional.of(testAggregate));
+            when(paymentRepository.findById("1001")).thenReturn(Optional.of(payingAggregate));
+            when(paymentGateway.pay(any())).thenReturn(PaymentResult.failure("网关拒绝"));
+
+            commandHandler.handle(new PayCommand("PAY123", null, null));
+
+            verify(paymentRepository, times(2)).update(aggregateCaptor.capture());
+            assertThat(aggregateCaptor.getAllValues().get(1).status()).isEqualTo(PaymentStatus.PENDING);
+        }
+    }
+
+    @Nested
+    @DisplayName("handle(RefundPaymentCommand) - 两阶段")
+    class RefundFlowTests {
+
+        @BeforeEach
+        void enableLockWrapper() {
+            doAnswer(invocation -> {
+                invocation.getArgument(1, Runnable.class).run();
+                return null;
+            }).when(lockWrapper).executeWithLock(anyString(), any(Runnable.class));
+        }
+
+        @Test
+        @DisplayName("退款成功 - 网关成功走完整两阶段")
+        void handle_refund_success() {
+            Payment successAggregate = buildAggregate(PaymentStatus.SUCCESS);
+            Payment refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
+            when(paymentRepository.findById("1001")).thenReturn(
+                    Optional.of(successAggregate), Optional.of(refundingAggregate), Optional.of(refundingAggregate));
+            when(paymentGateway.refund(any(), any())).thenReturn(RefundResult.success("REF_123"));
+
+            commandHandler.handle(new RefundPaymentCommand("1001", new BigDecimal("100.00"), "用户申请"));
+
+            verify(paymentGateway).refund(any(), any());
+            verify(paymentRepository, times(2)).update(aggregateCaptor.capture());
+            assertThat(aggregateCaptor.getAllValues().get(1).status()).isEqualTo(PaymentStatus.REFUNDED);
+            verify(domainEventPublisher).publish(any());
+        }
+
+        @Test
+        @DisplayName("退款网关失败 - 回退 SUCCESS")
+        void handle_refund_gatewayFailure_rollsBack() {
+            Payment successAggregate = buildAggregate(PaymentStatus.SUCCESS);
+            Payment refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
+            when(paymentRepository.findById("1001")).thenReturn(
+                    Optional.of(successAggregate), Optional.of(refundingAggregate), Optional.of(refundingAggregate));
+            when(paymentGateway.refund(any(), any())).thenReturn(RefundResult.failure("网关拒绝"));
+
+            commandHandler.handle(new RefundPaymentCommand("1001", new BigDecimal("100.00"), "用户申请"));
+
+            verify(paymentRepository, times(2)).update(aggregateCaptor.capture());
+            assertThat(aggregateCaptor.getAllValues().get(1).status()).isEqualTo(PaymentStatus.SUCCESS);
         }
     }
 

@@ -254,4 +254,84 @@ class AdminOrderServiceTest {
                     .hasMessageContaining("无法退款");
         }
     }
+
+    @Nested
+    @DisplayName("cancelOrder 分支 / 列表边界 / 时间解析")
+    class BranchCoverageTests {
+
+        @Test
+        @DisplayName("取消已付款订单走强制取消")
+        void cancelOrder_paid_forceCancel() {
+            Order aggregate = rebuildAggregate(OrderStatus.PAID, PaymentStatus.PAID, null, null);
+            when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
+
+            orderService.cancelOrder(ORDER_ID, "管理员取消");
+
+            verify(orderRepository).update(argThat(a -> a.status() == OrderStatus.CANCELLED));
+        }
+
+        @Test
+        @DisplayName("当前状态不允许取消抛出异常")
+        void cancelOrder_invalidStatus_throws() {
+            Order aggregate = rebuildAggregate(OrderStatus.COMPLETED, PaymentStatus.PAID, null, null);
+            when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
+
+            assertThatThrownBy(() -> orderService.cancelOrder(ORDER_ID, "取消"))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("不允许取消");
+        }
+
+        @Test
+        @DisplayName("订单详情中买/卖/商品缺失时返回空信息")
+        void getOrderDetail_nullBuyerSellerProduct() {
+            OrderReadModel model = createReadModel(OrderStatus.PENDING_PAYMENT.getCode());
+            when(orderReadRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(model));
+            when(adminUserQueryPort.getUserInfo(BUYER_ID)).thenReturn(null);
+            when(adminUserQueryPort.getUserInfo(SELLER_ID)).thenReturn(null);
+            when(adminOrderQueryPort.getProducts(anyList())).thenReturn(Map.of());
+
+            AdminOrderDetailResponse detail = orderService.getOrderDetail(ORDER_ID);
+
+            assertThat(detail).isNotNull();
+            assertThat(detail.buyer().nickname()).isNull();
+            assertThat(detail.seller().nickname()).isNull();
+            assertThat(detail.products()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("订单列表用户信息缺失时返回空昵称")
+        void listOrders_missingUserInfo_returnsNullNickname() {
+            AdminOrderQueryRequest request = new AdminOrderQueryRequest();
+            OrderSummary order = createOrderSummary(OrderStatus.PENDING_PAYMENT.getCode());
+            when(adminOrderQueryPort.queryOrders(any(OrderQueryCondition.class)))
+                    .thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
+            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of());
+            when(adminOrderQueryPort.getOrderItems(anyList())).thenReturn(Map.of());
+            when(adminOrderQueryPort.getProducts(anyList())).thenReturn(Map.of());
+
+            PageResult<AdminOrderResponse> result = orderService.listOrders(request);
+
+            assertThat(result.records()).hasSize(1);
+            assertThat(result.records().get(0).buyerName()).isNull();
+            assertThat(result.records().get(0).sellerName()).isNull();
+        }
+
+        @Test
+        @DisplayName("非法时间格式回退为空")
+        void listOrders_invalidTimes_returnsNullTimes() {
+            AdminOrderQueryRequest request = new AdminOrderQueryRequest();
+            request.setStartTime("invalid");
+            request.setEndTime("invalid");
+            OrderSummary order = createOrderSummary(OrderStatus.PENDING_PAYMENT.getCode());
+            when(adminOrderQueryPort.queryOrders(any(OrderQueryCondition.class)))
+                    .thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
+            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of());
+            when(adminOrderQueryPort.getOrderItems(anyList())).thenReturn(Map.of());
+            when(adminOrderQueryPort.getProducts(anyList())).thenReturn(Map.of());
+
+            PageResult<AdminOrderResponse> result = orderService.listOrders(request);
+
+            assertThat(result.records()).hasSize(1);
+        }
+    }
 }

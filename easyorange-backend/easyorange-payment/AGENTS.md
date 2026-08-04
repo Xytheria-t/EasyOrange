@@ -54,10 +54,6 @@ payment/
 │   │   ├── Payment.java                  # 不可变聚合根（字段 final，状态转换返回 Transition<Payment, E> / 新实例）
 │   │   ├── PaymentCreateSpec.java                 # record 收敛 create() 工厂参数
 │   │   └── PaymentReconstructSpec.java            # record 收敛 from() 重建参数（15 字段）
-│   ├── saga/                                      # Saga 编排（纯领域）
-│   │   ├── SagaOrchestrator.java                  # Saga 编排器
-│   │   ├── SagaStepResult.java
-│   │   └── SagaExecutionException.java
 │   ├── specification/
 │   │   └── PaymentSpecification.java              # 业务规则校验
 │   ├── valueobject/
@@ -70,8 +66,7 @@ payment/
 │   │   ├── PaymentSucceededEvent.java
 │   │   ├── PaymentFailedEvent.java
 │   │   ├── PaymentRefundedEvent.java
-│   │   ├── PaymentClosedEvent.java
-│   │   └── CompensationFailedAlertEvent.java      # 补偿失败告警
+│   │   └── PaymentClosedEvent.java
 │   ├── port/                                      # 出站端口
 │   │   ├── PaymentGatewayPort.java
 │   │   ├── CallbackSignatureVerifierPort.java
@@ -86,8 +81,7 @@ payment/
 │   │   ├── PaymentMethod.java                     # code 为 String："WECHAT"/"ALIPAY"/"BALANCE"
 │   │   └── PaymentResultCode.java
 │   └── exception/
-│       ├── PaymentDomainException.java             # 统一支付异常（含 of() 工厂方法）
-│       └── SagaCompensationFailedException.java    # Saga 补偿失败异常
+│       └── PaymentDomainException.java             # 统一支付异常（含 of() 工厂方法）
 └── constant/
     └── PaymentConstant.java
 ```
@@ -124,8 +118,7 @@ CLOSED    FAILED   REFUNDING → REFUNDED
 - 两阶段支付：`preparePay()` → `Payment` → 网关调用 → `confirmPay(PaymentResult)` → `Transition<Payment, PaymentConfirmEvent>`
 - 两阶段退款：`prepareRefund(BigDecimal)` → `Payment` → 网关调用 → `confirmRefund(RefundResult, BigDecimal)` → `Transition<Payment, PaymentRefundedEvent>`
 - 单步退款：`directRefund(String refundReason)` → `Transition<Payment, PaymentRefundedEvent>`
-- Saga 补偿：`cancelPay()` / `cancelRefund()` 返回新 `Payment` 实例回退状态
-- **补偿失败处理**：补偿操作失败时抛出 `SagaCompensationFailedException`，发布 `CompensationFailedAlertEvent` 告警事件，不会被静默吞掉
+- 失败回退：`cancelPay()` / `cancelRefund()` 返回新 `Payment` 实例回退状态（两阶段网关失败时回退，不跨服务编排）
 - Guard 方法：`canPay()` / `canRefund()` / `canClose()` / `canFail()` / `canConfirmPay()` / `canConfirmRefund()`
 
 ## Spec Record 与 Command Record

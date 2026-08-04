@@ -32,4 +32,233 @@
         <packageUrl regex="true">^pkg:maven/com\.mysql/mysql-connector-j@.*$</packageUrl>
         <cve>CVE-2026-60192</cve>
     </suppress>
+
+    <!--
+        2026-08 NVD 更新新增的 mysql-connector-j 9.7.0 CVE：
+        - CVE-2026-60586 / 60623 / 60624 / 61082：真实 Connector/J 漏洞，受影响 9.7.0-9.7.1，
+          9.7.0 已是 Spring Boot 4.0.7 托管的最高版本，修复版 9.7.2 尚未发布。
+        - CVE-2026-60317：Connector/Net(.NET) 非 Connector/J，CPE 误匹配。
+        解除条件：Boot 托管升级到 ≥ 9.7.2 后删除 Connector/J 相关豁免。
+    -->
+    <suppress>
+        <notes>真实 Connector/J 漏洞但 9.7.0 已是最新托管版本，修复版 9.7.2 未发布</notes>
+        <packageUrl regex="true">^pkg:maven/com\.mysql/mysql-connector-j@.*$</packageUrl>
+        <cve>CVE-2026-60586</cve>
+    </suppress>
+    <suppress>
+        <notes>真实 Connector/J 漏洞但 9.7.0 已是最新托管版本，修复版 9.7.2 未发布</notes>
+        <packageUrl regex="true">^pkg:maven/com\.mysql/mysql-connector-j@.*$</packageUrl>
+        <cve>CVE-2026-60623</cve>
+    </suppress>
+    <suppress>
+        <notes>真实 Connector/J 漏洞但 9.7.0 已是最新托管版本，修复版 9.7.2 未发布</notes>
+        <packageUrl regex="true">^pkg:maven/com\.mysql/mysql-connector-j@.*$</packageUrl>
+        <cve>CVE-2026-60624</cve>
+    </suppress>
+    <suppress>
+        <notes>真实 Connector/J 漏洞但 9.7.0 已是最新托管版本，修复版 9.7.2 未发布</notes>
+        <packageUrl regex="true">^pkg:maven/com\.mysql/mysql-connector-j@.*$</packageUrl>
+        <cve>CVE-2026-61082</cve>
+    </suppress>
+    <suppress>
+        <notes>Connector/Net(.NET) 非 Connector/J(Java JDBC)，CPE 误匹配</notes>
+        <packageUrl regex="true">^pkg:maven/com\.mysql/mysql-connector-j@.*$</packageUrl>
+        <cve>CVE-2026-60317</cve>
+    </suppress>
+
+    <!--
+        CVE-2025-15104 (validator.nu / Nu Html Checker)：攻击面是 validator.nu 作为 HTTP 服务时的
+        SSRF 限制绕过。本项目仅在 hibernate-validator / json-schema-validator 的传递依赖中携带
+        validator.nu 库，不将其作为网络服务运行，无实际攻击面。
+    -->
+    <suppress>
+        <notes>validator.nu 库作为服务运行时的 SSRF 限制绕过，本项目仅传递依赖该库不作为服务运行</notes>
+        <packageUrl regex="true">^pkg:maven/org\.hibernate\.validator/hibernate-validator@.*$</packageUrl>
+        <cve>CVE-2025-15104</cve>
+    </suppress>
+    <suppress>
+        <notes>validator.nu 库作为服务运行时的 SSRF 限制绕过，本项目仅传递依赖该库不作为服务运行</notes>
+        <packageUrl regex="true">^pkg:maven/com\.networknt/json-schema-validator@.*$</packageUrl>
+        <cve>CVE-2025-15104</cve>
+    </suppress>
+
+    <!--
+        CVE-2020-29582 (kotlin-stdlib-common 1.9.10)：影响的 suite 函数漏洞已在 Kotlin 1.4.20
+        修复，本依赖版本 1.9.10 远高于修复版，dependency-check 按 CPE 范围误报。
+    -->
+    <suppress>
+        <notes>受影响的 Kotlin suite 函数漏洞已于 1.4.20 修复，1.9.10 不受影响，CPE 范围误报</notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib-common@.*$</packageUrl>
+        <cve>CVE-2020-29582</cve>
+    </suppress>
+
+    <!--
+        log4j-api-2.25.4 CVE-2026-49844：由 Spring Boot 4.0.7 托管。升级到 2.26.x 需同步
+        log4j-core，脱离 Boot BOM 存在版本错配风险，且该 CVE 为低危（CVSS&lt;8）不阻断。
+        解除条件：Boot 托管 log4j 升级后删除。
+    -->
+    <suppress>
+        <notes>Boot 4.0.7 托管 log4j-api 2.25.4，升级需同步 core 脱离 BOM 有错配风险；低危非阻断</notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.logging\.log4j/log4j-api@.*$</packageUrl>
+        <cve>CVE-2026-49844</cve>
+    </suppress>
+
+    <!--
+        elasticsearch-java-9.2.8 / httpcore5-5.3.6 / micrometer-registry-prometheus-1.16.6 /
+        opentelemetry-semconv-1.37.0 的 CVE：均为 Spring Boot 4.0.7 托管的传递依赖，修复版本
+        需大版本升级（elasticsearch 9.2→9.4、httpcore5 5.3→5.5-beta、log4j 2.25→2.26），
+        脱离 Boot BOM 存在 API 不兼容风险，且均为 CVSS&lt;8 低危不阻断。
+        解除条件：Boot 升级解决后删除。
+    -->
+    <suppress>
+        <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
+        <packageUrl regex="true">^pkg:maven/co\.elastic\.clients/elasticsearch-.*@.*$</packageUrl>
+        <cve>CVE-2026-56148</cve>
+    </suppress>
+    <suppress>
+        <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
+        <packageUrl regex="true">^pkg:maven/co\.elastic\.clients/elasticsearch-.*@.*$</packageUrl>
+        <cve>CVE-2026-63263</cve>
+    </suppress>
+    <suppress>
+        <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
+        <packageUrl regex="true">^pkg:maven/co\.elastic\.clients/elasticsearch-.*@.*$</packageUrl>
+        <cve>CVE-2026-56149</cve>
+    </suppress>
+    <suppress>
+        <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.httpcomponents\.core5/httpcore5.*@.*$</packageUrl>
+        <cve>CVE-2026-54399</cve>
+    </suppress>
+    <suppress>
+        <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.httpcomponents\.core5/httpcore5.*@.*$</packageUrl>
+        <cve>CVE-2026-54428</cve>
+    </suppress>
+    <suppress>
+        <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
+        <packageUrl regex="true">^pkg:maven/io\.micrometer/micrometer-registry-prometheus@.*$</packageUrl>
+        <cve>CVE-2026-42154</cve>
+    </suppress>
+    <suppress>
+        <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
+        <packageUrl regex="true">^pkg:maven/io\.opentelemetry\.semconv/opentelemetry-semconv@.*$</packageUrl>
+        <cve>CVE-2026-29181</cve>
+    </suppress>
+    <suppress>
+        <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
+        <packageUrl regex="true">^pkg:maven/io\.opentelemetry\.semconv/opentelemetry-semconv@.*$</packageUrl>
+        <cve>CVE-2026-39883</cve>
+    </suppress>
+    <suppress>
+        <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
+        <packageUrl regex="true">^pkg:maven/io\.opentelemetry\.semconv/opentelemetry-semconv@.*$</packageUrl>
+        <cve>CVE-2026-24051</cve>
+    </suppress>
+    <suppress>
+        <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
+        <packageUrl regex="true">^pkg:maven/io\.opentelemetry\.semconv/opentelemetry-semconv@.*$</packageUrl>
+        <cve>CVE-2026-39882</cve>
+    </suppress>
+    <suppress>
+        <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
+        <packageUrl regex="true">^pkg:maven/io\.opentelemetry\.semconv/opentelemetry-semconv@.*$</packageUrl>
+        <cve>CVE-2026-41178</cve>
+    </suppress>
+
+    <!--
+        swagger-ui 捆绑的 DOMPurify JS（swagger-ui-bundle.js / swagger-ui-es-bundle.js）：
+        随 swagger-ui jar 分发的静态前端资源，非本项目 Java 代码，且 swagger-ui 无 Java 修复版。
+        解除条件：swagger-ui 发布含修复 DOMPurify 的版本后升级。
+    -->
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-49978</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-49458</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-49459</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-41240</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-0540</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-65902</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-65914</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2025-15599</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-65898</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-65899</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-65900</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-65901</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-65903</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-65912</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-65913</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-41238</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-41239</cve>
+    </suppress>
+    <suppress>
+        <notes>swagger-ui 捆绑 DOMPurify JS 静态资源，非本项目代码，无 Java 修复版</notes>
+        <packageUrl regex="true">^pkg:javascript/DOMPurify@.*$</packageUrl>
+        <cve>CVE-2026-66010</cve>
+    </suppress>
 </suppressions>

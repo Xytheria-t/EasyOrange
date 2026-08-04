@@ -116,7 +116,7 @@ easy-orange/
 2. **CQRS**: 命令与查询分离 (product, order, payment 模块)
 3. **六边形架构**: domain 层通过 port 接口与外部解耦
 4. **不可变性**: 聚合根用 `@Builder(toBuilder = true)`，值对象用 `record`
-5. **领域事件**: `DomainEventPublisher` 发布事件 → `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher` → Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子） → 异步从 `EVENT_PUBLICATION` 读取并发布到 **RabbitMQ Topic Exchange** (`eo.domain.events`)。路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）→ `DlqRetryScheduler` 每 5 分钟扫描 DLQ 并指数退避重投主队列（1min/5min/15min），超过 max-retries=3 的毒消息转储 `eo.dlq.terminal` 等待人工介入。Modulith 的 at-least-once 语义 + 消费者 `EventIdempotencyChecker` 确保精确一次处理。审计日志同样走 Outbox 模式（`AuditLogAspect` 发布 `AuditLogEvent` → `AuditLogEventConsumer` 异步入库）。采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**traceId 全链路传递**：Brave `TracingFilter` 从 HTTP 头提取 traceId → 写入 MDC → `MdcTaskDecorator` 传递到 @Async 虚拟线程 → `EventMetadataMessagePostProcessor` 发布前把 traceId 注入 RabbitMQ message header → 消费者端 `EventMetadata.from(message, event)` decode 回 MDC → 日志 + Micrometer metrics 统一关联。**已实现 11 个事件消费者**: ProductEventConsumer (内部 CQRS 投影), AiProductEventConsumer (AI 估值/文案), OrderNotificationEventConsumer (站内信), OrderLifecycleEventConsumer (订单生命周期: 取消/退款恢复库存, 完成标记售出), AiCreditEventConsumer (信用分), ProductAuditEventConsumer (审核通知), ReportProcessedEventConsumer (举报通知), WebSocketEventConsumer (消息撤回广播), PaymentMetricsConsumer (支付指标), CompensationFailedAlertConsumer (补偿失败告警), **AuditLogEventConsumer (审计日志 Outbox 入库)**
+5. **领域事件**: `DomainEventPublisher` 发布事件 → `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher` → Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子） → 异步从 `EVENT_PUBLICATION` 读取并发布到 **RabbitMQ Topic Exchange** (`eo.domain.events`)。路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）→ `DlqRetryScheduler` 每 5 分钟扫描 DLQ 并指数退避重投主队列（1min/5min/15min），超过 max-retries=3 的毒消息转储 `eo.dlq.terminal` 等待人工介入。Modulith 的 at-least-once 语义 + 消费者 `EventIdempotencyChecker` 确保精确一次处理。审计日志同样走 Outbox 模式（`AuditLogAspect` 发布 `AuditLogEvent` → `AuditLogEventConsumer` 异步入库）。采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**traceId 全链路传递**：Brave `TracingFilter` 从 HTTP 头提取 traceId → 写入 MDC → `MdcTaskDecorator` 传递到 @Async 虚拟线程 → `EventMetadataMessagePostProcessor` 发布前把 traceId 注入 RabbitMQ message header → 消费者端 `EventMetadata.from(message, event)` decode 回 MDC → 日志 + Micrometer metrics 统一关联。**已实现 10 个事件消费者**: ProductEventConsumer (内部 CQRS 投影), AiProductEventConsumer (AI 估值/文案), OrderNotificationEventConsumer (站内信), OrderLifecycleEventConsumer (订单生命周期: 取消/退款恢复库存, 完成标记售出), AiCreditEventConsumer (信用分), ProductAuditEventConsumer (审核通知), ReportProcessedEventConsumer (举报通知), WebSocketEventConsumer (消息撤回广播), PaymentMetricsConsumer (支付指标), **AuditLogEventConsumer (审计日志 Outbox 入库)**
 6. **Assembler 模式**: DTO 转换统一在 `adapter/inbound/web/assembler/` 目录下实现（FavoriteAssembler, CategoryAssembler, PaymentViewAssembler, UserAssembler）。**禁止**在 Controller/Service 中直接构造 Response DTO。已废弃旧 DTO（AddFavoriteDTO, FavoriteVO, PaymentQuery, PaymentView, PaymentMethodVO 等；`QueryOrderRequest` 仍为现役请求 DTO，Controller 负责转为 `OrderListQuery`）
 7. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
 8. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 使用 Java 21 模式匹配 switch 在单个 `handle()` 方法内按类型分发，返回动态 HTTP 状态码（按错误码前缀自动映射：A0401→401/A0403→403/B→400/C→500/D→502）+ 业务错误码；校验类错误统一返回 400。**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底。`BusinessException` 和 `FileException` 构造器均设为 `protected`，抛业务异常时统一使用 `BusinessException.of(...)` / `FileException.of(...)` 工厂方法；子类可正常调用 `super(...)`。各模块领域异常必须使用模块专属 `ResultCode`（如 `ProductResultCode.PRODUCT_NOT_FOUND`），**禁止回退到全局 `B0002`**
@@ -145,7 +145,7 @@ admin → framework, common, user (optional), product (optional), order (optiona
 - **OWASP 硬闸门已恢复绿色（2026-08-04）**: 通过依赖升级 + 定向豁免清除全部 CVSS ≥ 8 告警：
   - Spring Boot 4.0.3 → **4.0.7**（spring-framework 7.0.8，修复 **CVE-2026-41855** 9.8）；netty → **4.2.16**、tomcat → **11.0.24**、jackson → **3.1.5**（见 pom `<netty.version>`/`<tomcat.version>`/`<jackson3.version>` 覆盖）
   - **豁免项**（`easyorange-backend/dependency-suppression.xml`，注明理由、待条件满足后解除）：kotlin-stdlib **CVE-2026-53914**（修复版 Kotlin 2.4.20 未发布稳定版；纯 Java 项目不编译 Kotlin，攻击面≈0）；mysql-connector-j **CVE-2026-60193/60192**（受影响组件为 Connector/Net(.NET)，非 Connector/J(Java JDBC)，且 9.7.0 已是最新版）
-  - **环境提示**：依赖检查需联网拉取数据源（OSS Index API 需 token、RetireJS 从 raw.githubusercontent 下载），本机若遇 401/超时可用 `-Danalyzer.ossindex.enabled=false` + `-Danalyzer.retirejs.enabled=false`，或临时 `-Ddependency-check.skip=true`
+  - **环境提示**：OWASP 依赖检查与 JaCoCo 覆盖率门禁已移入 `-Pci` profile（本地默认构建自动跳过，提速显著；CI 用 `./mvnw -Pci verify`）。检查需联网拉取数据源（OSS Index API 需 token、RetireJS 从 raw.githubusercontent 下载），本机若遇 401/超时可用 `-Danalyzer.ossindex.enabled=false` + `-Danalyzer.retirejs.enabled=false`，或临时 `-Ddependency-check.skip=true`
 - **Redis 连接**: `application.yaml` 的 base 配置和 `.env.example` 模板已统一默认 `REDIS_PASSWORD=easyorange123`，与 Docker Compose 一致。若仍遇到 `Unable to connect to Redis` 错误，检查：① 是否已执行 `docker compose up -d` 启动 Redis；② 环境变量 `REDIS_PASSWORD` 是否被设置为空值覆盖了默认值；③ **YAML 占位符必须用 `${VAR:default}`（单冒号），不要用 bash 风格的 `${VAR:-default}`**（多一个 `-`）—— Spring 会把 `-default` 当字面量默认值，导致 Lettuce 实际发出去的密码比预期多一个前导连字符，触发 `WRONGPASS invalid username-password pair`。**注意**：`docker-compose.yml` 和 `mvnw` 用 `:-` 是正确的（bash/Docker Compose 语法），但所有 `application*.yaml` 必须用单冒号。新增/修改 Spring Boot 配置占位符时，复制粘贴前先确认语法
 
 ## 错误码规范
@@ -220,7 +220,7 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 - 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
 - 数据库变更必须通过 Flyway 迁移脚本
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，包含 `records/total/current/size/pages` + `facets` 分面桶 + `aiEnhancement` 增强）
-- 覆盖率报告由 **JaCoCo 0.8.14** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁（行≥80%/分支≥60%）配置在 `verify` 阶段，本地 `haltOnFailure=false` 仅出报告，CI 用 `-Djacoco.haltOnFailure=true` 启用阻断。依赖安全由 **OWASP Dependency Check 12.1.0** 在 `verify` 阶段检查（CVSS ≥ 8 阻断构建）
+- 覆盖率报告由 **JaCoCo 0.8.14** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁（行≥80%/分支≥60%）与 **OWASP Dependency Check 12.1.0**（CVSS ≥ 8 阻断）均已移入 `-Pci` profile：本地默认构建跳过门禁与扫描（`prepare-agent`/`report` 仍在默认构建，`./mvnw test` 照常收集覆盖率），CI 用 `./mvnw -Pci verify` 启用，`-Djacoco.haltOnFailure=true` 可强制覆盖率阻断
 - **变异测试（PIT 1.25.8）**: 行/分支覆盖率只测"代码被执行过"，不测"测试能否发现缺陷"。PIT 向 domain 层注入变异（聚合根状态机/领域服务/值对象），用现有测试杀灭变异来评估测试真实质量 — 行覆盖率的"金标准"补充。默认不启用（较慢），按需 `./mvnw -Ppit test-compile pitest:mutationCoverage`，HTML 报告 `target/pit-reports/index.html`；阈值门禁默认 0 不阻断，CI 用 `-Dpit.mutationThreshold=60 -Dpit.testStrengthThreshold=75 -Dpit.coverageThreshold=70` 启用（order 模块基线 70%/89%/81%）
 - **标准 API 优先（STP）**: 优先使用框架/标准库内置功能，不重复造轮子。Spring Security 有 JWT 认证就通过 `oauth2ResourceServer()` 配置，不要手写 Filter；有标准 `JwtDecoder`/`JwtEncoder` 就注入使用，不要手写 JWT 工具类。"零新增自定义代码"是最优方案——删掉手写代码，换成框架配置即可
 - **测试统计**：后端 11 模块合计 1,356 测试用例 / 1,278 注解 / 153 文件（2026-08-02 实测全绿，Domain 层行覆盖率 84.1%，`mock-maker-subclass` 模式）；前端 112 测试文件 / 1,056 测试用例。数字单一来源见 [doc/工程指标.md](doc/工程指标.md) §1.2
@@ -259,8 +259,9 @@ cd easyorange-backend && ./mvnw clean package -DskipTests
 ./mvnw -Ppit test-compile pitest:mutationCoverage
 ./mvnw -pl easyorange-order -Ppit test-compile pitest:mutationCoverage  # 单模块
 
-# OWASP 依赖安全检查（硬闸门 CVSS ≥ 8 阻断构建；豁免项见 easyorange-backend/dependency-suppression.xml）
-./mvnw org.owasp:dependency-check-maven:check
+# OWASP 依赖安全 + JaCoCo 覆盖率门禁（CI 硬闸门：OWASP CVSS ≥ 8、覆盖率行≥80%/分支≥60%）
+# 均在 -Pci profile 内，本地默认构建自动跳过；豁免项见 easyorange-backend/dependency-suppression.xml
+./mvnw -Pci verify
 
 # 启动开发环境 (MySQL 8.4 + Redis 7.4 + RabbitMQ 3.13)
 docker compose -f compose.yaml up -d
