@@ -27,7 +27,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.Sea
 import com.cartethyia.easyorange.product.domain.constant.ProductConstant;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.application.port.CategoryCachePort;
+import com.cartethyia.easyorange.product.application.port.cache.CategoryCachePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;

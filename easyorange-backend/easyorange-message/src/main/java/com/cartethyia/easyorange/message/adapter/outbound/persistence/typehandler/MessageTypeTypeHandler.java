@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence.typehandler;
 
 import com.cartethyia.easyorange.framework.mybatis.CodeEnumTypeHandler;
-import com.cartethyia.easyorange.message.enums.MessageType;
+import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import org.apache.ibatis.type.MappedTypes;
 
 @MappedTypes(MessageType.class)

@@ -13,11 +13,11 @@ import com.cartethyia.easyorange.message.domain.exception.MessageDomainException
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
-import com.cartethyia.easyorange.message.domain.service.OfflineMessageStoreService;
+import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
 import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
-import com.cartethyia.easyorange.message.enums.MessageResultCode;
-import com.cartethyia.easyorange.message.enums.MessageType;
+import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
+import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

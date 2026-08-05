@@ -11,9 +11,11 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.7-6DB33F)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
 
-## 🔑 双岗位适配面板（HR/面试官一眼匹配）
+## 🔑 技术亮点：两大主线
 
-| 🎯 AI Agent / 大模型 Java 后端 | 🏛 Java 架构师 / 高级后端 |
+EasyOrange 在两条技术主线上都有独立且完整的落地，可分别展开讲解：
+
+| AI 应用工程化 | 架构落地 |
 |---|---|
 | ✅ Spring AI 2.0 框架化，多供应商 options 可换 | ✅ DDD 六边形 + 32 Port 编译期隔离 |
 | ✅ 轻量级 Agent 编排（4 路并行 Tool Calling） | ✅ 拒绝 Saga：本地单事务 + 分布式锁防超卖 + Outbox |
@@ -35,13 +37,13 @@
 
 ## 项目定位
 
-**EasyOrange — LLM × DDD 工程化实战**：在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。一套代码，双岗位叙事——投「AI Agent / 大模型 Java 后端」看 AI 工程化 + 轻量 Agent；投「Java 架构师」看 DDD + 分布式可靠性 + 架构治理。
+**EasyOrange — LLM × DDD 工程化实战**：在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。两条技术主线：**AI 应用工程化**（Spring AI 2.0 框架化 + 轻量 Agent 编排 + 限流预算降级）+ **架构落地**（DDD + 分布式可靠性 + 架构治理）。
 
 ### 核心矛盾
 
 DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定，必须有限流降级 + 可观测 + 预算治理。解法：**AI 基础设施全面框架化为 Spring AI 2.0**（ADR-0008，Supersedes ADR-0003）——删除自研 `LlmPort` / `VisionPort` / `CachingLlmAdapter` / `AiMetricsService`，六个业务服务直接注入 Spring AI `ChatModel` / `EmbeddingModel` bean（DeepSeek `chatModel` + Qwen-VL `visionChatModel` + DashScope `embeddingModel`，统一走 `OpenAiSetup.setupSyncClient` 的 OpenAI 兼容线协议）；保留业务级治理：`AiRateLimitInterceptor` 令牌桶按端点限流超限返回 stale 缓存、`@TokenBudget` AOP 日预算、Prompt YAML 版本化。Embedding 变真实现（查询侧 kNN + 索引侧 `nameEmbedding` 写入，dims=1024 与 ES 映射对齐）。
 
-### 轻量级 Agent 编排（AI Agent 岗叙事）
+### 轻量级 Agent 编排
 
 [`AiSearchEnhancerAdapter`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/AiSearchEnhancerAdapter.java) 是手写轻量 Agent Planner（基于 Spring AI `ChatModel` 编排 4 路 Tool，无 LangChain4j 黑盒）：
 
@@ -57,9 +59,9 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定，
 - 单步骤 5s 超时，失败降级不影响整体
 - 每路 Tool 复用同一套 Spring AI 模型 + 限流/预算链路
 
-### 架构治理三板斧（Java 架构师岗叙事） + 拒绝项清单
+### 架构治理三板斧 + 拒绝项清单
 
-> 加分点：不是列「我用了什么」，是讲「我评估过什么、为什么不用」。
+> 设计理念：不是列「我用了什么」，是讲「我评估过什么、为什么不用」。
 
 | 层 | 机制 | 解决的问题 |
 |---|---|---|
@@ -135,18 +137,10 @@ cd easyorange-frontend && npm install && npm run dev               # :5173
 |---|---|
 | **11 Maven 模块** | common / framework / user / product(CQRS+审核+举报+ES) / order(CQRS+单事务+锁) / payment(CQRS) / message(WS) / favorite / ai(Spring AI + Agent) / admin / application(入口+Flyway+ArchUnit) |
 | **AI 工程化 8 项** | Spring AI 2.0 框架化（ChatModel/EmbeddingModel bean） · Embedding 真实现（text-embedding-v3 kNN） · Redisson 令牌桶 + stale 降级 · @TokenBudget 日预算 · Prompt 6 个 YAML · 多模态 Vision（Qwen-VL） · AiSearchEnhancer 4 路并行 Tool Calling · CompletableFuture 单步骤超时降级 |
-| **分布式可靠性** | 拒绝 Saga（本地单事务 + 分布式锁防超卖 + Outbox，ADR-0007） · Outbox 原子写 EVENT_PUBLICATION · DLQ 三级重试(指数退避 1/5/15min + terminal) · EventConsumerHandler 统一幂等/metrics · traceId 全链路 · JWT + 黑名单吊销 · RateLimitFilter(GET 本地 / 写 Redisson) · @Idempotent(24h) · AuditLogAspect Outbox · OWASP CVSS≥8 阻断 |
+| **分布式可靠性** | 拒绝 Saga（本地单事务 + 分布式锁防超卖 + Outbox，ADR-0007） · Outbox 原子写 EVENT_PUBLICATION · DLQ 三级重试(指数退避 1/5/15min + terminal) · EventConsumerHandler 统一幂等/metrics · traceId 全链路 · JWT + 黑名单吊销 · RateLimitFilter(GET 本地 / 写 Redisson) · IdempotencyKeyFilter(24h) · AuditLogAspect Outbox · OWASP CVSS≥8 阻断 |
 | **质量门禁** | ArchUnit 6 条 · JaCoCo Domain 84.1% / 71.5% · PIT order(70/89/81) product(70/79/92) · Biome 0 errors · Git hooks commit-msg + pre-commit |
 
 前端：暖橙指挥中心 Admin 设计系统 · 120+ Portal/Dialog/Drawer/Sheet · 95 共享 UI + 107 Admin 组件 · 296 a11y 属性 · 171 TanStack Query hooks · 112 测试文件 / 1,056 用例
-
-## 面试快速导航
-
-| 你投的岗位 | 先看这几节 | 被追问时跳 |
-|---|---|---|
-| **AI Agent / 大模型 Java 后端** | 双岗位适配面板 → 轻量级 Agent 编排 → AI 工程化 → 拒绝项清单 | ADR-0008 / ADR-0004 / [工程指标.md §四](doc/工程指标.md) |
-| **Java 架构师 / 高级后端** | 架构治理三板斧 → 拒绝项清单 → 架构总览(单事务+锁+Outbox+traceId) | ADR-0007 / ADR-0002 / ArchitectureRulesTest |
-| **全栈** | 技术栈 → 快速开始 → 模块总览 | [API-速查.md](doc/集成/API-速查.md) |
 
 ## 部署 · 结构 · 贡献
 
@@ -155,7 +149,7 @@ docker compose up -d elasticsearch                # 可选 ES
 cd easyorange-frontend && docker build -t easyorange-fe . && docker run -p 80:80 easyorange-fe
 ```
 
-项目结构：`easyorange-backend/`(11 Maven) + `easyorange-frontend/`(React) + `doc/架构/` + `doc/集成/` + `doc/adr/`(7 ADR) + `PRODUCT_DIRECTION.md`（业务场景）+ `AGENTS.md`（编码规范）+ `CHANGELOG.md`
+项目结构：`easyorange-backend/`(11 Maven) + `easyorange-frontend/`(React) + `doc/架构/` + `doc/集成/` + `doc/adr/`(7 ADR) + `PRODUCT_DIRECTION.md`（业务场景）+ `AGENTS.md`（编码规范）
 
 贡献：Conventional Commits · `main/develop/feature/*/bugfix/*` · 本地验证 `./mvnw test` + `npm test`，详见 [CONTRIBUTING.md](./CONTRIBUTING.md)
 
@@ -163,6 +157,6 @@ cd easyorange-frontend && docker build -t easyorange-fe . && docker run -p 80:80
 
 <div align="center">
 
-**EasyOrange** · LLM × DDD：Java 架构工程化实战 · Java 25 + Spring Boot 4 · DDD + CQRS + 本地单事务/分布式锁 + 事件驱动 + AI 工程化 · [Gitee](https://gitee.com/cartethyia_XLS/easy-orange) · [更新日志](./CHANGELOG.md)
+**EasyOrange** · LLM × DDD：Java 架构工程化实战 · Java 25 + Spring Boot 4 · DDD + CQRS + 本地单事务/分布式锁 + 事件驱动 + AI 工程化 · [Gitee](https://gitee.com/cartethyia_XLS/easy-orange)
 
 </div>

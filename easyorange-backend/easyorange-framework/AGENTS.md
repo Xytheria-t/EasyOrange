@@ -19,7 +19,7 @@ framework/
 ├── audit/             # AuditLogAspect + AuditLogService（审计日志 AOP）
 ├── auth/              # TokenService + TokenServiceImpl（JWT 签发/刷新/吊销）
 ├── util/              # 工具函数（FileUtils/LocalRateLimiter/SecurityContextUtil/TestSecurityUtil）
-└── web/               # 过滤器（RateLimitFilter）+ 处理器（CustomMetaObjectHandler）+ 幂等（@Idempotent）
+└── web/               # 过滤器（RateLimitFilter/IdempotencyKeyFilter）+ 处理器（CustomMetaObjectHandler）+ 幂等（web/idempotency/）
 ```
 
 ## 核心机制
@@ -178,33 +178,36 @@ multiLevelCache.evict("product:detail:" + id);
 
 `ResponseAdvice` 自动将 Controller 返回值包装为 `Result<T>`，无需手动包装。
 
-### Idempotency-Key 幂等 (web/idempotency/)
+### Idempotency-Key 幂等 (web/filter/IdempotencyKeyFilter + web/idempotency/)
 
 客户端在请求头中传入 `Idempotency-Key`（UUID v4），服务端缓存成功响应结果。相同 key 的后续请求直接返回缓存，确保操作只执行一次。
 
-**实现原理**：
-1. `@Idempotent` 注解标记 Controller 方法 → `IdempotencyAspect`（`@Order(1)`）环绕拦截
-2. 从请求头提取 key → 调用 `RedisIdempotencyService.execute()`
-3. 先查 Redis 缓存（`eo:idempotency:{key}`），命中直接返回
-4. 未命中 → 执行业务操作 → 通过 `SETNX` 原子写入（防止并发覆盖）
-5. 执行异常 → 不缓存，重试可重新执行
-6. Redis 不可用 → fail-open 透传请求
+**实现原理**（Filter 驱动，替代原 `@Idempotent` + `IdempotencyAspect` AOP 方案）：
+1. `IdempotencyKeyFilter`（`OncePerRequestFilter`，`@Order(2)`）按 `idempotency.path-patterns` + 写方法 + 请求头递进判定是否生效，未命中则透传
+2. 命中 → 用 `ContentCachingResponseWrapper` 包装响应 → 调用 `RedisIdempotencyService.execute()`
+3. 首次请求：执行链路抓取「序列化后的 HTTP 响应」并缓存（`eo:idempotency:{key}`）；重复请求直接回放缓存响应（字节级）
+4. 非 2xx 响应（业务异常/校验失败/未认证）**不缓存**，直接提交，允许客户端重试
+5. Redis 不可用 → fail-open 透传请求
 
 **与 `RateLimitFilter` 防重的关系**：
 
 | 机制 | 窗口 | 标识 | 缓存响应 | 语义 |
 |------|------|------|---------|------|
 | `RateLimitFilter` 防重 | 3s | IP + URI + body hash | ❌ | 防快速连点 |
-| `@Idempotent` 幂等 | 24h | 客户端提供的 key (UUID) | ✅ 返回相同结果 | 协议级幂等 |
+| `IdempotencyKeyFilter` 幂等 | 24h | 客户端提供的 key (UUID) | ✅ 返回相同结果 | 协议级幂等 |
 
-**部署方式**：标注在 Controller 方法上即可，不要求所有客户端使用。未传 `Idempotency-Key` 头的请求正常执行（向后兼容）。
+**部署方式**：在 `application.yaml` 的 `idempotency.path-patterns` 配置要保护的写端点即可，零注解约定式覆盖。未传 `Idempotency-Key` 头的请求正常执行（向后兼容）。
 
-```java
-@PostMapping("/orders")
-@Idempotent
-public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-    return Result.success(commandHandler.handle(request));
-}
+```yaml
+idempotency:
+  enabled: true
+  header-name: "Idempotency-Key"
+  path-patterns:
+    - /api/orders
+    - /api/products
+    - /api/reports/product/*
+    - /api/payments
+  methods: [POST, PUT, PATCH]
 ```
 
 ## 修改注意
@@ -219,6 +222,6 @@ public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request
 - **RedisWorkerIdProvider 优雅降级**：Redis 不可用时 `afterPropertiesSet()` 自动降级至 workerId=0，不影响应用启动。`DisposableBean.destroy()` 在 Spring 关闭时释放 Redis WorkerId 租约。请勿移除这些异常处理，否则 Redis 故障会导致启动失败
 - **RedisConfig 显式配置序列化器（2026-07-23）**：Spring Boot 4 `DataRedisAutoConfiguration` 不设任何序列化器（默认 `JdkSerializationRedisSerializer`，二进制 key/value 破坏 Lua `tonumber` 且不可读）。`RedisConfig` 通过 `@AutoConfigureBefore` 注入自定义 `@Bean RedisTemplate<Object, Object>`：`StringRedisSerializer`（key/hashKey）+ `GenericJacksonJsonRedisSerializer.builder().enableDefaultTyping(BasicPolymorphicTypeValidator).build()`（value/hashValue，含默认类型信息以便 `CacheUtils.cast()` 还原为原类型）。修改序列化策略时须同步评估所有 `RedisTemplate` 使用方
 - **配置属性类统一使用 `@ConfigurationProperties` + `@ConfigurationPropertiesScan` 模式**（纯 POJO，无需 `@Component`）：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖。主应用类 `EasyOrangeApplication` 已添加 `@ConfigurationPropertiesScan`，自动扫描所有 `@ConfigurationProperties` 类。推荐加 `@Validated` + Jakarta Validation 约束（`@Min`/`@NotBlank`/`@NotNull` 等）实现启动时 fail-fast 验证，替代手写 `@PostConstruct validate()`— 后者仅在需要输出警告而非错误时保留
-- **`@Idempotent` 幂等切面（`IdempotencyAspect`）**：`@Order(1)`，在 `RateLimitFilter(0)` 之后、`AuditLogAspect(3)` 之前执行。此顺序确保：① Filter 层先做快速防重；② 幂等拦截命中后不记录审计日志（避免重复日志）；③ 只有未缓存的请求会走到业务逻辑和日志记录。修改 Aspect 的 `@Order` 值时需评估这三层的影响
+- **`IdempotencyKeyFilter` 幂等过滤器（替代原 `IdempotencyAspect`）**：作为 `@Component` 自动注册为 servlet filter（`OncePerRequestFilter` 防重复执行），并在 `SecurityConfig` 用 `addFilterBefore(idempotencyKeyFilter, AnonymousAuthenticationFilter.class)` 置于安全链最外层，以抓取最终响应。缓存的是序列化响应而非类型化返回值。修改 filter 顺序时需评估与 `RateLimitFilter`/安全过滤器的包裹关系
 - **`RateLimitFilter` 支持 `@SkipRateLimit`/`@SkipRepeatSubmit`**：Filter 通过 `HandlerMapping` 解析目标 Controller 方法，检查方法或类上的 Skip 注解后跳过对应检查。支持类级（`@Inherited` 继承）和方法级。无法解析 handler（如静态资源）时放行默认规则
 - **`RateLimitFilter` 使用 `ObjectProvider<List<HandlerMapping>>` 延迟注入**：`HandlerMapping` 列表通过 `ObjectProvider` 延迟解析，而非构造器直接注入。原因是直接注入 `List<HandlerMapping>` 会触发 `DelegatingWebSocketMessageBrokerConfiguration` → `WebSocketConfig` → `WebSocketAuthInterceptor` → `JwtDecoder`（`SecurityConfig` 中的 Bean）→ `SecurityConfig` → `RateLimitFilter` 的循环依赖。`ObjectProvider` 在请求时才解析 HandlerMapping，打破循环。修改 `RateLimitFilter` 构造器时不要改回 `@RequiredArgsConstructor` + `List<HandlerMapping>` 直接注入

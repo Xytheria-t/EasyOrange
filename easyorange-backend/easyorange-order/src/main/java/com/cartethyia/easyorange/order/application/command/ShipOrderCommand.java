@@ -7,4 +7,4 @@ import jakarta.validation.constraints.NotBlank;
  */
 public record ShipOrderCommand(
         @NotBlank(message = "订单 ID 不能为空") String orderId
-) implements OrderCommand {}
+) {}

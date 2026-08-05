@@ -43,4 +43,25 @@ public class JwtProperties {
      */
     @NotBlank(message = "JWT 发行者 (issuer) 不能为空")
     private String issuer = "easyorange";
+
+    /**
+     * Refresh Token HttpOnly Cookie 名称
+     */
+    @NotBlank(message = "refresh cookie 名称不能为空")
+    private String refreshCookieName = "eo_refresh_token";
+
+    /**
+     * Refresh Token Cookie 生效路径（建议收窄到 auth 端点）
+     */
+    private String refreshCookiePath = "/api/auth";
+
+    /**
+     * Refresh Token Cookie 是否带 Secure 标志（生产必须 true；本地 http 开发设 false）
+     */
+    private boolean refreshCookieSecure = true;
+
+    /**
+     * Refresh Token Cookie SameSite 策略
+     */
+    private String refreshCookieSameSite = "Lax";
 }

@@ -6,7 +6,6 @@ beforeEach(() => {
     useAuthStore.setState({
         user: null,
         token: null,
-        refreshToken: null,
     });
 });
 
@@ -16,7 +15,7 @@ describe('authStore', () => {
             const state = useAuthStore.getState();
             expect(state.user).toBeNull();
             expect(state.token).toBeNull();
-            expect(state.refreshToken).toBeNull();
+            expect('refreshToken' in state).toBe(false);
         });
     });
 
@@ -48,24 +47,23 @@ describe('authStore', () => {
     });
 
     describe('login', () => {
-        it('sets user, token and refreshToken', () => {
+        it('sets user and access token (refresh token 不在 store)', () => {
             const mockUser = { id: '1', username: 'test' } as unknown as User;
-            useAuthStore.getState().login(mockUser, 'access-token', 'refresh-token');
+            useAuthStore.getState().login(mockUser, 'access-token');
             const state = useAuthStore.getState();
             expect(state.user).toEqual(mockUser);
             expect(state.token).toBe('access-token');
-            expect(state.refreshToken).toBe('refresh-token');
+            expect('refreshToken' in state).toBe(false);
         });
     });
 
     describe('logout', () => {
-        it('clears all session data', () => {
-            useAuthStore.getState().login({ id: '1' } as unknown as User, 'token', 'refresh');
+        it('clears user and token', () => {
+            useAuthStore.getState().login({ id: '1' } as unknown as User, 'token');
             useAuthStore.getState().logout();
             const state = useAuthStore.getState();
             expect(state.user).toBeNull();
             expect(state.token).toBeNull();
-            expect(state.refreshToken).toBeNull();
         });
     });
 });

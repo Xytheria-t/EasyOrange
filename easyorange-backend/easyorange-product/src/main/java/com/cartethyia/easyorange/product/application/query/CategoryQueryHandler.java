@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
-import com.cartethyia.easyorange.product.application.port.CategoryCachePort;
+import com.cartethyia.easyorange.product.application.port.cache.CategoryCachePort;
 import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

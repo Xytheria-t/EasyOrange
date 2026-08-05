@@ -5,7 +5,9 @@ import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
+import com.cartethyia.easyorange.framework.web.filter.IdempotencyKeyFilter;
 import com.cartethyia.easyorange.framework.web.filter.RateLimitFilter;
+import com.cartethyia.easyorange.framework.web.filter.RefreshCsrfFilter;
 import com.cartethyia.easyorange.framework.web.filter.TokenRevocationFilter;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -74,8 +76,10 @@ public class SecurityConfig {
 
     // ========== Dependencies ==========
 
+    private final IdempotencyKeyFilter idempotencyKeyFilter;
     private final RateLimitFilter rateLimitFilter;
     private final TokenRevocationFilter tokenRevocationFilter;
+    private final RefreshCsrfFilter refreshCsrfFilter;
     private final SecurityProperties securityProperties;
     private final ObjectMapper objectMapper;
 
@@ -108,7 +112,9 @@ public class SecurityConfig {
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
             )
+            .addFilterBefore(idempotencyKeyFilter, AnonymousAuthenticationFilter.class)
             .addFilterBefore(rateLimitFilter, AnonymousAuthenticationFilter.class)
+            .addFilterBefore(refreshCsrfFilter, AnonymousAuthenticationFilter.class)
             .addFilterBefore(tokenRevocationFilter, AnonymousAuthenticationFilter.class)
             .headers(headers -> headers
                 .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)

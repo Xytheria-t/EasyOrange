@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.dto.SemanticSearchResult;
-import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
-import com.cartethyia.easyorange.product.domain.port.SearchResult;
+import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
+import com.cartethyia.easyorange.product.application.port.query.SearchResult;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

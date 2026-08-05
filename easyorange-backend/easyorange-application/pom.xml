@@ -11,8 +11,16 @@
 
     <artifactId>easyorange-application</artifactId>
 
+    <properties>
+        <!-- Flyway CLI 连接复用应用同一数据源约定，缺省即本地开发库（与 application.yaml 的 spring.datasource
+             默认值 / EASYORANGE_DB_* 环境变量一致），单一事实来源。
+             本地 `mvn flyway:migrate` 开箱即用；生产/CI 用 -Dflyway.url / -Dflyway.user / -Dflyway.password 覆盖。 -->
+        <flyway.url>jdbc:mysql://localhost:3306/easyorange?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true</flyway.url>
+        <flyway.user>easyorange_app</flyway.user>
+        <flyway.password>easyorange_app_dev</flyway.password>
+    </properties>
+
     <dependencies>
-        <!-- 依赖 Framework 模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-framework</artifactId>
@@ -23,25 +31,21 @@
             <artifactId>easyorange-common</artifactId>
         </dependency>
 
-        <!-- 依赖用户模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-user</artifactId>
         </dependency>
 
-        <!-- 依赖商品模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-product</artifactId>
         </dependency>
 
-        <!-- 依赖收藏模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-favorite</artifactId>
         </dependency>
 
-        <!-- 依赖订单模块（包含支付功能） -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-order</artifactId>
@@ -53,37 +57,31 @@
             <artifactId>easyorange-payment</artifactId>
         </dependency>
 
-        <!-- 依赖消息模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-message</artifactId>
         </dependency>
 
-        <!-- 依赖管理端模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-admin</artifactId>
         </dependency>
 
-        <!-- 依赖 AI 模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-ai</artifactId>
         </dependency>
 
-        <!-- Spring Boot Actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Micrometer Prometheus Registry -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-        <!-- 数据访问 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
@@ -94,7 +92,6 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Flyway 数据库迁移 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-flyway</artifactId>
@@ -108,26 +105,22 @@
             <artifactId>flyway-mysql</artifactId>
         </dependency>
 
-        <!-- ElasticSearch -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
         </dependency>
 
-        <!-- Micrometer Tracing (分布式追踪) -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-tracing-bridge-brave</artifactId>
         </dependency>
 
-        <!-- Docker Compose 开发服务自动配置 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-docker-compose</artifactId>
             <optional>true</optional>
         </dependency>
 
-        <!-- ArchUnit 架构守卫测试 -->
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
@@ -140,7 +133,6 @@
             <artifactId>spring-modulith-starter-jdbc</artifactId>
         </dependency>
 
-        <!-- SpringDoc OpenAPI 3 — 自动生成 API 契约文档 + Swagger UI -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -172,9 +164,9 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>${flyway.version}</version>
                 <configuration>
-                    <url>jdbc:mysql://localhost:3306/easyorange?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true</url>
-                    <user>${env.FLYWAY_USER}</user>
-                    <password>${env.FLYWAY_PASSWORD}</password>
+                    <url>${flyway.url}</url>
+                    <user>${flyway.user}</user>
+                    <password>${flyway.password}</password>
                     <locations>
                         <location>filesystem:src/main/resources/db/migration</location>
                     </locations>

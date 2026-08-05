@@ -53,9 +53,8 @@ payment/
 │   ├── aggregate/
 │   │   ├── Payment.java                  # 不可变聚合根（字段 final，状态转换返回 Transition<Payment, E> / 新实例）
 │   │   ├── PaymentCreateSpec.java                 # record 收敛 create() 工厂参数
-│   │   └── PaymentReconstructSpec.java            # record 收敛 from() 重建参数（15 字段）
-│   ├── specification/
-│   │   └── PaymentSpecification.java              # 业务规则校验
+│   │   ├── PaymentReconstructSpec.java            # record 收敛 from() 重建参数（15 字段）
+│   │   └── PaymentStatusGuard.java                # 支付状态机合法转换谓词（canPay/canRefund/...）
 │   ├── valueobject/
 │   │   ├── PaymentId.java                         # String UUID v7
 │   │   ├── PaymentNo.java

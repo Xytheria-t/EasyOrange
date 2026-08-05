@@ -50,8 +50,8 @@ public interface UserAssembler {
     @Mapping(target = "updateTime", ignore = true)
     UserProfileResponse toProfileResponse(User user, Set<String> roles, Set<String> permissions, Long loginTime);
 
-    default LoginResult toLoginResult(User user, String accessToken, String refreshToken) {
-        return new LoginResult(accessToken, refreshToken, toResponse(user));
+    default LoginResult toLoginResult(User user, String accessToken) {
+        return new LoginResult(accessToken, toResponse(user));
     }
 
     @AfterMapping

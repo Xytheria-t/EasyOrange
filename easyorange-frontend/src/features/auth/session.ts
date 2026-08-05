@@ -1,25 +1,8 @@
 import { request } from '@/api/core/request';
 import { useAuthStore } from '@/store/authStore';
-import type { TokenRefreshResult } from '@/types';
-
-import type { UserType } from '@/types/user';
+import type { TokenRefreshResult, User } from '@/types';
 
 const LOGIN_GRACE_PERIOD_MS = 5000;
-
-const EMPTY_USER_FALLBACK: import('@/types').User = {
-    userId: '',
-    username: '',
-    nickname: '',
-    email: '',
-    phone: null,
-    studentId: null,
-    realName: null,
-    avatar: null,
-    status: 0,
-    userType: '01' as UserType,
-    createTime: '',
-    updateTime: '',
-};
 
 export const AUTH_SESSION_CHANGE_EVENT = 'auth-session-change';
 
@@ -35,7 +18,7 @@ export interface AuthSessionDetail {
 
 class RefreshCoordinator {
     private isRefreshing = false;
-    private pendingCallbacks: Array<(token: string) => void> = [];
+    private pendingCallbacks: Array<(token: string | null) => void> = [];
     private lastLoginTimestamp = 0;
     private unauthorizedRedirectInFlight = false;
 
@@ -46,7 +29,7 @@ class RefreshCoordinator {
         });
     }
 
-    notifyPending(token: string): void {
+    notifyPending(token: string | null): void {
         this.pendingCallbacks.forEach(cb => {
             cb(token);
         });
@@ -106,12 +89,11 @@ export function getStoredUser() {
     return useAuthStore.getState().user;
 }
 
+/**
+ * 刷新 access token。refresh token 在 HttpOnly Cookie 中，随请求自动携带，JS 不可见。
+ * 并发请求复用：正在刷新时等待结果（单飞）。
+ */
 export async function refreshAccessToken(): Promise<string | null> {
-    const currentRefreshToken = useAuthStore.getState().refreshToken;
-    if (!currentRefreshToken) {
-        return null;
-    }
-
     // 并发请求复用：正在刷新时等待结果
     if (refreshCoordinator.getIsRefreshing()) {
         return refreshCoordinator.waitForRefresh();
@@ -122,27 +104,25 @@ export async function refreshAccessToken(): Promise<string | null> {
     try {
         const response = await request<TokenRefreshResult>('/auth/refresh', {
             method: 'POST',
-            body: { refreshToken: currentRefreshToken },
             skipAuth: true,
             timeout: 8000,
             retries: 0,
             dedupe: false,
         });
 
-        if (!response.data) {
+        if (!response.data?.accessToken) {
             throw new Error('Refresh response invalid');
         }
 
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
-        const user = useAuthStore.getState().user;
-
-        // 更新 store（Zustand 是唯一数据源）
-        useAuthStore.getState().login(user ?? EMPTY_USER_FALLBACK, accessToken, newRefreshToken);
+        const accessToken = response.data.accessToken;
+        useAuthStore.getState().setToken(accessToken);
 
         refreshCoordinator.notifyPending(accessToken);
         emitSessionChange();
         return accessToken;
     } catch {
+        // 失败也要唤醒并发等待者，避免 Promise 悬挂（单飞泄漏）
+        refreshCoordinator.notifyPending(null);
         clearSession('unauthorized');
         return null;
     } finally {
@@ -150,8 +130,8 @@ export async function refreshAccessToken(): Promise<string | null> {
     }
 }
 
-export function setSession(token: string, user: import('@/types').User, refreshToken: string): void {
-    useAuthStore.getState().login(user, token, refreshToken);
+export function setSession(token: string, user: User): void {
+    useAuthStore.getState().login(user, token);
     refreshCoordinator.markLogin();
     emitSessionChange();
 }
@@ -162,12 +142,10 @@ export function clearSession(reason: AuthSessionClearReason = 'manual'): void {
 }
 
 export async function logout(): Promise<void> {
-    const refreshToken = useAuthStore.getState().refreshToken;
     try {
-        await request('/auth/logout', {
-            method: 'POST',
-            body: { refreshToken },
-        });
+        // logout 需认证（已移出 PUBLIC_ENDPOINTS）：access 过期时由 request 层自动
+        // 刷新并重试，保证能吊销 refresh 会话 + 清 cookie。
+        await request('/auth/logout', { method: 'POST' });
     } catch {
         // 忽略 API 错误，确保本地状态清除
     }
@@ -201,13 +179,30 @@ function isTokenExpired(token: string): boolean {
     }
 }
 
-/** 启动时调用，清除可能残留的过期或不完整状态 */
-export function initAuth(): void {
+/**
+ * 启动时恢复会话：access token 仅存内存，页面刷新后 token 缺失。
+ * 若 HttpOnly refresh cookie 有效则刷新 access 并拉取用户，恢复登录态；否则清空会话。
+ */
+export async function restoreSession(): Promise<void> {
     const store = useAuthStore.getState();
-    if (!store.token) {
+    if (store.token && !isTokenExpired(store.token)) {
         return;
     }
-    if (!store.refreshToken || isTokenExpired(store.token)) {
-        store.logout();
+
+    const accessToken = await refreshAccessToken();
+    if (!accessToken) {
+        clearSession('unauthorized');
+        return;
+    }
+
+    try {
+        const response = await request<User>('/users/me');
+        if (response.data) {
+            setSession(accessToken, response.data);
+        } else {
+            clearSession('unauthorized');
+        }
+    } catch {
+        clearSession('unauthorized');
     }
 }

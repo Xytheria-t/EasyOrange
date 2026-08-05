@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.user.application.service;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.auth.TokenRefreshResult;
+import com.cartethyia.easyorange.framework.auth.TokenRotation;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
@@ -102,7 +102,7 @@ class AuthAppServiceTest {
                 .thenReturn(user);
             when(tokenService.createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER")))
                 .thenReturn("access-token");
-            when(tokenService.createRefreshToken(USER_ID, USERNAME, List.of("ROLE_USER")))
+            when(tokenService.createRefreshToken(USER_ID))
                 .thenReturn("refresh-token");
 
             var result = service.login(credential);
@@ -114,7 +114,7 @@ class AuthAppServiceTest {
             verify(authenticationService).authenticate(credential);
             verify(userRepository).update(any(User.class));
             verify(tokenService).createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER"));
-            verify(tokenService).createRefreshToken(USER_ID, USERNAME, List.of("ROLE_USER"));
+            verify(tokenService).createRefreshToken(USER_ID);
         }
 
         @Test
@@ -129,7 +129,7 @@ class AuthAppServiceTest {
                 .thenReturn(user);
             when(tokenService.createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER")))
                 .thenReturn("access-token");
-            when(tokenService.createRefreshToken(USER_ID, USERNAME, List.of("ROLE_USER")))
+            when(tokenService.createRefreshToken(USER_ID))
                 .thenReturn("refresh-token");
 
             var result = service.login(credential);
@@ -141,7 +141,7 @@ class AuthAppServiceTest {
             verify(authenticationService).authenticate(credential);
             verify(userRepository).update(any(User.class));
             verify(tokenService).createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER"));
-            verify(tokenService).createRefreshToken(USER_ID, USERNAME, List.of("ROLE_USER"));
+            verify(tokenService).createRefreshToken(USER_ID);
         }
     }
 
@@ -150,28 +150,62 @@ class AuthAppServiceTest {
     class TokenManagement {
 
         @Test
-        @DisplayName("登出成功 — 应撤销Refresh Token")
+        @DisplayName("登出成功 — 吊销 access 与 refresh")
         void logout_success() {
-            String refreshToken = "refresh-token";
+            service.logout("access-token", "refresh-token");
 
-            service.logout(refreshToken);
-
-            verify(tokenService).invalidateToken(refreshToken);
+            verify(tokenService).revokeAccessToken("access-token");
+            verify(tokenService).revokeRefreshToken("refresh-token");
         }
 
         @Test
-        @DisplayName("刷新Token — 应委托 tokenService 并返回结果")
+        @DisplayName("刷新Token — 轮换refresh并重验用户后签发新access")
         void refreshToken() {
-            String oldRefreshToken = "old-refresh-token";
-            TokenRefreshResult mockResult = new TokenRefreshResult("new-access-token", "new-refresh-token");
-            when(tokenService.refreshToken(oldRefreshToken)).thenReturn(mockResult);
+            String oldRT = "old-refresh-token";
+            User user = UserTestFixture.normalUser();
+            when(tokenService.rotateRefreshToken(oldRT))
+                .thenReturn(new TokenRotation(USER_ID, "new-refresh-token"));
+            when(userRepository.findById(USER_ID)).thenReturn(java.util.Optional.of(user));
+            when(tokenService.createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER")))
+                .thenReturn("new-access-token");
 
-            TokenRefreshResult result = service.refreshToken(oldRefreshToken);
+            var result = service.refreshToken(oldRT);
 
             assertThat(result).isNotNull();
             assertThat(result.accessToken()).isEqualTo("new-access-token");
             assertThat(result.refreshToken()).isEqualTo("new-refresh-token");
-            verify(tokenService).refreshToken(oldRefreshToken);
+            verify(tokenService).rotateRefreshToken(oldRT);
+            verify(tokenService).createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER"));
+            verify(tokenService, never()).revokeAllUserSessions(anyString());
+        }
+
+        @Test
+        @DisplayName("刷新Token — 用户不存在时吊销全会话并抛401")
+        void refreshToken_userNotFound_revokesAndThrows() {
+            when(tokenService.rotateRefreshToken("rt"))
+                .thenReturn(new TokenRotation(USER_ID, "new-refresh-token"));
+            when(userRepository.findById(USER_ID)).thenReturn(java.util.Optional.empty());
+
+            assertThatThrownBy(() -> service.refreshToken("rt"))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getCode())
+                .isEqualTo(ResultCode.UNAUTHORIZED.getCode());
+            verify(tokenService).revokeAllUserSessions(USER_ID);
+        }
+
+        @Test
+        @DisplayName("刷新Token — 用户被禁用时吊销全会话并抛401")
+        void refreshToken_disabledUser_revokesAndThrows() {
+            when(tokenService.rotateRefreshToken("rt"))
+                .thenReturn(new TokenRotation(USER_ID, "new-refresh-token"));
+            when(userRepository.findById(USER_ID))
+                .thenReturn(java.util.Optional.of(UserTestFixture.disabledUser()));
+
+            assertThatThrownBy(() -> service.refreshToken("rt"))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getCode())
+                .isEqualTo(ResultCode.UNAUTHORIZED.getCode());
+            verify(tokenService).revokeAllUserSessions(USER_ID);
         }
     }
 
@@ -239,6 +273,7 @@ class AuthAppServiceTest {
 
             verify(authenticationService).changePassword(user, "oldPwd123", "NewPass123");
             verify(userRepository).update(updatedUser);
+            verify(tokenService).revokeAllUserSessions(USER_ID);
         }
 
         @Test

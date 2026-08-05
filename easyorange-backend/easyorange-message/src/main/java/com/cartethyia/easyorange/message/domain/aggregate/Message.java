@@ -6,9 +6,9 @@ import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.UnauthorizedOperationException;
-import com.cartethyia.easyorange.message.enums.MessageStatus;
-import com.cartethyia.easyorange.message.enums.MessageType;
-import com.cartethyia.easyorange.message.enums.ReadStatus;
+import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
+import com.cartethyia.easyorange.message.domain.enums.MessageType;
+import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 
 import java.time.Duration;
 import java.time.LocalDateTime;

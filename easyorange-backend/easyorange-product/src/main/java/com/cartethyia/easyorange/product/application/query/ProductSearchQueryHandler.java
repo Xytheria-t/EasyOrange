@@ -7,9 +7,9 @@ import com.cartethyia.easyorange.product.application.query.readmodel.ProductRead
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
-import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
-import com.cartethyia.easyorange.product.domain.port.FacetBucket;
-import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
+import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
+import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
+import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -92,7 +92,7 @@ public class ProductSearchQueryHandler {
     }
 
     private static List<FacetBucket> mergeFacetsList(
-            com.cartethyia.easyorange.product.domain.port.SearchResult result) {
+            com.cartethyia.easyorange.product.application.port.query.SearchResult result) {
         var list = new ArrayList<FacetBucket>();
         result.categoryFacets().forEach(fb ->
                 list.add(new FacetBucket("category_" + fb.key(), fb.label(), fb.count())));

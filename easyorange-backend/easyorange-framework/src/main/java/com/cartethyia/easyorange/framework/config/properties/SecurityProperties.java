@@ -30,6 +30,13 @@ public class SecurityProperties {
     @NotNull
     private List<String> allowedOrigins = new ArrayList<>();
 
+    /**
+     * 需自定义头部（X-Client-Type）防护的端点（CSRF 纵深防御）。
+     * 默认覆盖 refresh / logout——跨站请求无法伪造自定义头。
+     */
+    @NotNull
+    private List<String> csrfProtectedPaths = new ArrayList<>(List.of("/api/auth/refresh", "/api/auth/logout"));
+
     private String logoutUrl = "/api/auth/logout";
 
     @Min(4) @Max(31)
@@ -67,6 +74,8 @@ public class SecurityProperties {
     public List<String> getProductPaths() { return List.copyOf(productPaths); }
 
     public List<String> getStaticPaths() { return List.copyOf(staticPaths); }
+
+    public List<String> getCsrfProtectedPaths() { return List.copyOf(csrfProtectedPaths); }
 
     public List<String> getAllowedOrigins() { return List.copyOf(allowedOrigins); }
 

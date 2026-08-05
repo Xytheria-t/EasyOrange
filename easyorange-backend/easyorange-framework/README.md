@@ -114,11 +114,11 @@ public class AuthController {
         // 验证用户
         User user = userService.authenticate(request);
         
-        // 生成 token（JWT 自包含签名，无需 Redis 预存）
-        String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), user.getType());
-        String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), user.getType());
-        
-        return Result.ok(new LoginResult(accessToken, refreshToken, userVO));
+        // access 为 RSA JWT；refresh 为 opaque，经 HttpOnly Cookie 下发（不进 JSON body）
+        String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), roles);
+        String refreshToken = tokenService.createRefreshToken(user.getId());
+        refreshCookie.write(response, refreshToken);
+        return Result.ok(new LoginResult(accessToken, userVO));
     }
 }
 ```

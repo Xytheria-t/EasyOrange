@@ -13,7 +13,7 @@ import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResu
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
-import com.cartethyia.easyorange.product.domain.port.FacetBucket;
+import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;

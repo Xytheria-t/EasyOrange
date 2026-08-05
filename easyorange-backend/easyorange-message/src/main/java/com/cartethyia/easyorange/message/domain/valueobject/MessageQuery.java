@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.domain.valueobject;
 
-import com.cartethyia.easyorange.message.enums.ReadStatus;
+import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 
 /**
  * Domain query parameters for message queries.

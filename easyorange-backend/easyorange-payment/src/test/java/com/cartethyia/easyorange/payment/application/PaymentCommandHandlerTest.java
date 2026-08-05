@@ -8,9 +8,11 @@ import com.cartethyia.easyorange.payment.application.command.CreatePaymentComman
 import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
-import com.cartethyia.easyorange.payment.application.lock.DistributedLockWrapper;
+import com.cartethyia.easyorange.payment.application.metrics.PaymentMetricsService;
+import com.cartethyia.easyorange.payment.domain.port.LockPort;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
+import com.cartethyia.easyorange.payment.domain.exception.LockAcquisitionException;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
@@ -55,7 +57,10 @@ class PaymentCommandHandlerTest {
     private IdGenerator idGenerator;
 
     @Mock
-    private DistributedLockWrapper lockWrapper;
+    private LockPort lockPort;
+
+    @Mock
+    private PaymentMetricsService metricsService;
 
     @InjectMocks
     private PaymentCommandHandler commandHandler;
@@ -74,6 +79,18 @@ class PaymentCommandHandlerTest {
     @AfterEach
     void tearDown() {
         TestSecurityUtil.clearSecurityContext();
+    }
+
+    @Test
+    @DisplayName("锁获取失败时用例层记录并发冲突指标并抛异常")
+    void executeWithLock_lockConflict_recordsMetricAndThrows() {
+        doThrow(new LockAcquisitionException("系统繁忙，请稍后重试"))
+                .when(lockPort).executeWithLock(anyString(), any(Runnable.class));
+
+        assertThatThrownBy(() -> commandHandler.handle(new PayCommand("PAY123", null, null)))
+                .isInstanceOf(LockAcquisitionException.class);
+
+        verify(metricsService).recordConcurrentConflict();
     }
 
     @Nested
@@ -258,7 +275,7 @@ class PaymentCommandHandlerTest {
             doAnswer(invocation -> {
                 invocation.getArgument(1, Runnable.class).run();
                 return null;
-            }).when(lockWrapper).executeWithLock(anyString(), any(Runnable.class));
+            }).when(lockPort).executeWithLock(anyString(), any(Runnable.class));
         }
 
         @Test
@@ -301,7 +318,7 @@ class PaymentCommandHandlerTest {
             doAnswer(invocation -> {
                 invocation.getArgument(1, Runnable.class).run();
                 return null;
-            }).when(lockWrapper).executeWithLock(anyString(), any(Runnable.class));
+            }).when(lockPort).executeWithLock(anyString(), any(Runnable.class));
         }
 
         @Test

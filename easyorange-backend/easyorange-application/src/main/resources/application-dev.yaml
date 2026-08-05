@@ -165,6 +165,7 @@ jwt:
   access-token-expiration: 120            # Access Token 过期时间（分钟）
   refresh-token-expiration: 7             # Refresh Token 过期时间（天）
   issuer: easyorange                      # Token 发行者
+  refresh-cookie-secure: false            # 本地 http 开发需关闭 Secure（否则 cookie 不发送）；生产必须 true
 
 # -------------------------------------------------------------------
 # Actuator 监控端点配置

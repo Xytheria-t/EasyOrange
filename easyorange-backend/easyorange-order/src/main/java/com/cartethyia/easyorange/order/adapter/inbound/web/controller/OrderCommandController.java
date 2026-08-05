@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.order.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.common.annotation.Idempotent;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.order.application.command.ConfirmReceiptCommand;
 import com.cartethyia.easyorange.order.application.command.OrderCommandHandler;
@@ -25,7 +24,6 @@ public class OrderCommandController {
     private final OrderCommandAssembler assembler;
 
     @PostMapping
-    @Idempotent
     public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         return Result.success(commandHandler.handle(assembler.toCreateCommand(request)).orderId());
     }

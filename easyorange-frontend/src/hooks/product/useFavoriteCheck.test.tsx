@@ -23,7 +23,6 @@ afterEach(() => {
     useAuthStore.setState({
         user: null,
         token: null,
-        refreshToken: null,
     });
     useUIStore.setState({ toasts: [], isLoading: false, loadingMessage: '' });
 });

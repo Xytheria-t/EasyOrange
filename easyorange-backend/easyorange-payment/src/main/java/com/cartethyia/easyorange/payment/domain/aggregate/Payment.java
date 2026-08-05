@@ -14,7 +14,6 @@ import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
-import com.cartethyia.easyorange.payment.domain.specification.PaymentSpecification;
 import com.cartethyia.easyorange.common.domain.Money;
 
 import java.math.BigDecimal;
@@ -126,27 +125,27 @@ public class Payment {
     // ==================== Guard Methods ====================
 
     public boolean canPay() {
-        return PaymentSpecification.canPay(this.status);
+        return PaymentStatusGuard.canPay(this.status);
     }
 
     public boolean canRefund() {
-        return PaymentSpecification.canRefund(this.status);
+        return PaymentStatusGuard.canRefund(this.status);
     }
 
     public boolean canClose() {
-        return PaymentSpecification.canClose(this.status);
+        return PaymentStatusGuard.canClose(this.status);
     }
 
     public boolean canFail() {
-        return PaymentSpecification.canFail(this.status);
+        return PaymentStatusGuard.canFail(this.status);
     }
 
     public boolean canConfirmPay() {
-        return PaymentSpecification.canConfirmPay(this.status);
+        return PaymentStatusGuard.canConfirmPay(this.status);
     }
 
     public boolean canConfirmRefund() {
-        return PaymentSpecification.canConfirmRefund(this.status);
+        return PaymentStatusGuard.canConfirmRefund(this.status);
     }
 
     // ==================== State Transitions ====================

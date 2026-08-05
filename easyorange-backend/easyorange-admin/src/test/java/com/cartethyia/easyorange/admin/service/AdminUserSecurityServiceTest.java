@@ -134,7 +134,7 @@ class AdminUserSecurityServiceTest {
 
             service.forceLogout(USER_ID);
 
-            verify(tokenService).invalidateAllUserTokens(USER_ID);
+            verify(tokenService).revokeAllUserSessions(USER_ID);
         }
 
         @Test

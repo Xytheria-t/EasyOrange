@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.Singleflight;
-import com.cartethyia.easyorange.product.application.port.ProductCachePort;
-import com.cartethyia.easyorange.product.application.port.SellerCachePort;
+import com.cartethyia.easyorange.product.application.port.cache.ProductCachePort;
+import com.cartethyia.easyorange.product.application.port.cache.SellerCachePort;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository.CategoryInfo;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository.ProductDetailInfo;

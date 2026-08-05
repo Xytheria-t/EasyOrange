@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.payment.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.common.annotation.Idempotent;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentCommandMapper;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.CreatePaymentRequest;
@@ -26,7 +25,6 @@ public class PaymentCommandController {
     private final PaymentCommandMapper paymentCommandMapper;
 
     @PostMapping
-    @Idempotent
     public Result<PaymentResponse> createPayment(@Valid @RequestBody CreatePaymentRequest request) {
         String paymentId = commandHandler.handle(paymentCommandMapper.toCreateCommand(request, null));
         PaymentResponse response = PaymentResponse.builder().id(paymentId).build();

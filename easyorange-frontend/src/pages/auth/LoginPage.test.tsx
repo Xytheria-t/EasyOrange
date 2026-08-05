@@ -46,7 +46,6 @@ vi.mock('@/store/overlayStore', () => ({
 
 const validLoginResponse = {
     token: 'mock-token',
-    refreshToken: 'mock-refresh',
     user: {
         userId: 'u1',
         username: 'testuser',

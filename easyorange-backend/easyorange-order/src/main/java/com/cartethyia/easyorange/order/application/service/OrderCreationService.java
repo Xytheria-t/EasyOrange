@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
+import com.cartethyia.easyorange.order.domain.port.LockPort;
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,7 @@ import java.util.List;
  * 全部步骤运行在同一 {@code @Transactional} 事务内，任一步失败由数据库整体回滚兜底
  * （订单 / 库存 / 支付 / Outbox 事件原子提交）。
  * <p>
- * 一致性语义：本地单事务保证原子性；并发防超卖由 {@link DistributedLockManager} 承担；
+ * 一致性语义：本地单事务保证原子性；并发防超卖由 {@link LockPort} 承担；
  * 事件副作用经 Outbox 与应用事务同原子持久化。为何不使用 Saga 见 ADR-0007。
  * 异常不做二次包装，直接抛给 {@code GlobalExceptionHandler} 按错误码映射。
  */
@@ -30,7 +31,7 @@ public class OrderCreationService {
     private static final String ORDER_LOCK_PREFIX = "eo:order:lock:product:";
     private static final long LOCK_TRY_TIMEOUT_SECONDS = 10;
 
-    private final DistributedLockManager lockManager;
+    private final LockPort lockPort;
     private final OrderCreationExecutor orderCreationExecutor;
     private final ProductOrderPort productOrderPort;
 
@@ -39,7 +40,7 @@ public class OrderCreationService {
      */
     @Transactional(rollbackFor = Exception.class)
     public CreateOrderResult createOrder(CreateOrderCommand command) {
-        return lockManager.executeWithLocks(
+        return lockPort.executeWithLocks(
             buildLockKeys(command), LOCK_TRY_TIMEOUT_SECONDS, () -> createOrderFlow(command));
     }
 

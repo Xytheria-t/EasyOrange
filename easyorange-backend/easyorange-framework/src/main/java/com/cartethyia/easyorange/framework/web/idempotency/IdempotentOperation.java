@@ -12,7 +12,7 @@ public interface IdempotentOperation<T> {
      * 执行业务操作。
      *
      * @return 操作结果
-     * @throws Throwable 操作中抛出的任何异常
+     * @throws Exception 操作中抛出的异常
      */
-    T execute() throws Throwable;
+    T execute() throws Exception;
 }

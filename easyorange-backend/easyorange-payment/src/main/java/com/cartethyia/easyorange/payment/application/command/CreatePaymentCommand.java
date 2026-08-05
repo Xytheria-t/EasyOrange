@@ -12,4 +12,4 @@ public record CreatePaymentCommand(
         @NotBlank(message = "支付方式不能为空") String paymentMethod,
         String payPassword,
         String attach
-) implements PaymentCommand {}
+) {}

@@ -18,13 +18,6 @@ export const userApi = {
         });
     },
 
-    refreshToken(refreshToken: string) {
-        return request<string>('/auth/refresh', {
-            method: 'POST',
-            body: { refreshToken },
-        });
-    },
-
     sendSmsCode(phone: string) {
         return request<void>('/auth/sms-code', {
             method: 'POST',

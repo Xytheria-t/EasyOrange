@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.message.adapter.inbound.job;
 
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
-import com.cartethyia.easyorange.message.enums.ReadStatus;
+import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

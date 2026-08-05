@@ -14,6 +14,10 @@ public final class LoginCacheConstants {
     public static final String FORCE_LOGOUT_KEY = USER_PREFIX + "token:force-logout:";
     public static final String ATTEMPTS_KEY = USER_PREFIX + "login:attempts:";
 
+    public static final String REFRESH_SESSION_KEY = USER_PREFIX + "refresh:SESSION:";
+    public static final String REFRESH_USED_KEY = USER_PREFIX + "refresh:USED:";
+    public static final String REFRESH_USER_KEY = USER_PREFIX + "refresh:USER:";
+
     public static String buildAttemptsKey(String identifier) {
         BizRequire.notNull(identifier, "identifier 不能为 null");
         return ATTEMPTS_KEY + identifier;

@@ -69,7 +69,7 @@ AI 调用的并发隔离与预算治理分别采用以下方案：
 
 ## 备选方案（Alternatives Considered）
 
-- **Sentinel**：拒绝。功能更全（流控 + 熔断 + 热点参数），但需引入独立 Dashboard（Sentinel Console）+ 规则存储，对简历项目过重；项目已用 Resilience4j 做 CircuitBreaker + Retry，Bulkhead 同属 Resilience4j 生态，零新增框架成本。
+- **Sentinel**：拒绝。功能更全（流控 + 熔断 + 热点参数），但需引入独立 Dashboard（Sentinel Console）+ 规则存储，对当前项目规模过重；项目已用 Resilience4j 做 CircuitBreaker + Retry，Bulkhead 同属 Resilience4j 生态，零新增框架成本。
 - **Hystrix**：拒绝。已停止维护（Netflix 2018 年进入维护模式），Spring Cloud 2024+ 不再集成。
 - **Tomcat 线程池隔离**：拒绝。粒度太粗——Tomcat 线程池隔离的是整个 HTTP 请求，无法区分「LLM 调用」与「DB 查询」在同一请求内的并发占用；且会大幅降低吞吐。
 - **Token 预算用拦截器而非 AOP**：拒绝。拦截器只能拦截 Controller 层，但 AI 调用发生在 service 层（`AiPricingService.suggestPrice` 等），且拦截器无法获取方法级 `scenario` 语义；AOP `@annotation` 切点天然与方法绑定，场景语义清晰。

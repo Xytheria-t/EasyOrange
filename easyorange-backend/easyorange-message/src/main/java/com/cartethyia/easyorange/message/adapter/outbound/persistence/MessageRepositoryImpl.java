@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
-import com.cartethyia.easyorange.message.enums.ReadStatus;
+import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;

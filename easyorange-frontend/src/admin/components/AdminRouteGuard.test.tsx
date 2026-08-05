@@ -21,7 +21,6 @@ beforeEach(() => {
     useAuthStore.setState({
         user: null,
         token: null,
-        refreshToken: null,
     });
     mockNavigate.mockClear();
 });

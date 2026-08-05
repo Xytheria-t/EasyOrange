@@ -148,8 +148,8 @@ public LoginContext login(LoginCredential credential) {
     User user = authenticationService.authenticate(credential);
     User loggedIn = user.recordLogin(RequestUtil.getClientIp());
     userRepository.update(loggedIn);
-    String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), user.getUserType().getCode());
-    String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), user.getUserType().getCode());
+    String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), user.getUserType().getDefaultRoles());
+    String refreshToken = tokenService.createRefreshToken(user.getId());
     return new LoginContext(user, accessToken, refreshToken);
 }
 ```

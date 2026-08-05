@@ -46,8 +46,8 @@ import java.util.Map;
  * {@code AuditLogEventConsumer} 消费写库。若事件发布失败，降级为直接入库（best-effort）。
  * </p>
  * <p>
- * 执行顺序 {@code @Order(3)}，在 {@code IdempotencyAspect @Order(1)} 之后，
- * 确保幂等拦截在审计日志记录前执行。
+ * 执行顺序 {@code @Order(3)}，在幂等/限流等 Filter 层拦截生效之后，
+ * 确保防护拦截在审计日志记录前执行。
  * </p>
  */
 @Slf4j

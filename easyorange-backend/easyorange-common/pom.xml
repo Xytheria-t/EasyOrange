@@ -16,14 +16,12 @@
     </description>
 
     <dependencies>
-        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
 
-        <!-- Apache Commons Lang3 - 常用工具类 -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
@@ -35,14 +33,12 @@
             <artifactId>jackson-annotations</artifactId>
         </dependency>
 
-        <!-- Jetbrains Annotations -->
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
             <scope>provided</scope>
         </dependency>
 
-        <!-- Jakarta Annotations - @Nullable 等注解 -->
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
@@ -66,13 +62,13 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
 
-        <!-- Spring Core - HttpStatus 枚举（无容器依赖） -->
+        <!-- Spring Core - 基础框架（无容器依赖） -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
         </dependency>
 
-        <!-- Spring Web - HttpStatus 枚举（无容器依赖） -->
+        <!-- Spring Web - HttpStatus 枚举等（无容器依赖） -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>

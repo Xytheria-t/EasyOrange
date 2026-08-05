@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort.ProductSearchQuery;
-import com.cartethyia.easyorange.product.domain.port.SearchResult;
+import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort.ProductSearchQuery;
+import com.cartethyia.easyorange.product.application.port.query.SearchResult;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

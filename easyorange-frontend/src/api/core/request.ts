@@ -82,13 +82,7 @@ const buildQueryParams = (params: Record<string, unknown>): string => {
     return `?${new URLSearchParams(filtered.map(([k, v]) => [k, String(v)])).toString()}`;
 };
 
-const PUBLIC_ENDPOINTS = new Set([
-    '/auth/login',
-    '/auth/logout',
-    '/auth/register',
-    '/auth/password/reset',
-    '/auth/sms-code',
-]);
+const PUBLIC_ENDPOINTS = new Set(['/auth/login', '/auth/register', '/auth/password/reset', '/auth/sms-code']);
 
 const shouldHandleUnauthorized = (endpoint: string, skipAuth: boolean): boolean => {
     if (skipAuth) {
@@ -131,6 +125,7 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
 
     let config: RequestConfig = {
         method,
+        credentials: 'include' as const,
         headers: {
             'X-Client-Type': String(CLIENT_TYPE),
             ...headers,

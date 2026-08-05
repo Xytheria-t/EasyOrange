@@ -30,11 +30,9 @@ export interface RegisterRequest {
 
 export interface LoginResponse {
     accessToken: string;
-    refreshToken: string;
     user: User;
 }
 
 export interface TokenRefreshResult {
     accessToken: string;
-    refreshToken: string;
 }

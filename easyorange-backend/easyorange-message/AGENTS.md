@@ -1,6 +1,6 @@
 # easyorange-message 模块指南
 
-消息通知模块，DDD 六边形架构，支持站内消息、WebSocket 实时推送、消息模板。
+消息通知模块，DDD 六边形架构，支持站内消息、WebSocket 实时推送。
 
 > **架构现状**: 全模块已完成 DDD 分层迁移——聚合根在 `domain/aggregate/`（原 `entity/` 已消除），MyBatis Repository 实现在 `adapter/outbound/persistence/`（DO + Mapper + RepositoryImpl + typehandler），Controller 在 `adapter/inbound/web/controller/`，入站请求 DTO 在 `adapter/inbound/web/dto/request/`，应用层（CQRS + 定时服务 + 领域服务注册）在 `application/`，端口接口在 `domain/port/`。无分层的 `service/` / `entity/` / `dto/` 目录均已消除。
 
@@ -14,37 +14,42 @@ message/
 │   │   │   ├── MessageCommandController.java
 │   │   │   └── MessageQueryController.java
 │   │   └── dto/request/               # 入站请求 DTO
-│   │       ├── SendMessageRequest.java
 │   │       ├── QueryMessageRequest.java
-│   │       ├── SubscriptionRequest.java
-│   │       ├── TemplateMessageRequest.java
 │   │       └── WsMessage.java
-│   └── outbound/persistence/          # 出站适配器 (MyBatis 实现)
-│       ├── MessageDO.java             # 数据对象 (DO)
-│       ├── MessageSubscriptionDO.java
-│       ├── MessageTemplateDO.java
-│       ├── OfflineMessageDO.java
-│       ├── MessageDataMapper.java     # DO ↔ 聚合根映射
-│       ├── MessageMapper.java
-│       ├── MessageSubscriptionMapper.java
-│       ├── MessageTemplateMapper.java
-│       ├── OfflineMessageMapper.java
-│       ├── MessageRepositoryImpl.java
-│       ├── MessageQueryRepositoryImpl.java
-│       ├── MessageSubscriptionRepositoryImpl.java
-│       ├── MessageTemplateRepositoryImpl.java
-│       ├── OfflineMessageRepositoryImpl.java
-│       └── typehandler/               # 枚举 TypeHandler
-│           ├── MessageStatusTypeHandler.java
-│           ├── MessageTypeTypeHandler.java
-│           └── ReadStatusTypeHandler.java
+│   ├── inbound/job/                   # 定时任务
+│   │   └── MessageArchiveTask.java    # 消息归档/清理（@Scheduled）
+│   ├── inbound/websocket/             # WebSocket 入站
+│   │   ├── AuthHandshakeHandler.java
+│   │   ├── ChatWebSocketHandler.java
+│   │   ├── TypingIndicatorService.java
+│   │   ├── WebSocketAttributes.java
+│   │   ├── WebSocketAuthInterceptor.java
+│   │   ├── WebSocketConfig.java
+│   │   ├── WebSocketEventConsumer.java
+│   │   └── WebSocketEventListener.java
+│   └── outbound/
+│       ├── persistence/              # 出站持久化 (MyBatis 实现)
+│       │   ├── MessageDO.java             # 数据对象 (DO)
+│       │   ├── OfflineMessageDO.java
+│       │   ├── MessageDataMapper.java     # DO ↔ 聚合根映射
+│       │   ├── MessageMapper.java
+│       │   ├── OfflineMessageMapper.java
+│       │   ├── MessageRepositoryImpl.java
+│       │   ├── MessageQueryRepositoryImpl.java
+│       │   ├── OfflineMessageRepositoryImpl.java
+│       │   └── typehandler/               # 枚举 TypeHandler
+│       │       ├── MessageStatusTypeHandler.java
+│       │       ├── MessageTypeTypeHandler.java
+│       │       └── ReadStatusTypeHandler.java
+│       └── websocket/
+│           └── WebSocketNotifier.java     # WebSocket 出站推送
 ├── application/                       # [DDD] 应用层 (CQRS)
 │   ├── config/
-│   │   └── MessageDomainServiceConfig.java # @Bean 方式注册领域服务（保持 domain 层纯净）
+│   │   └── MessageDomainConfig.java        # @Bean 方式注册服务（保持 domain 层纯净）
 │   ├── service/
-│   │   ├── MessageArchiveService.java       # 消息归档定时服务（@Scheduled）
-│   │   └── RateLimiterService.java           # 消息发送频率限制（应用层运维策略）
-│   ├── command/
+│   │   ├── RateLimiterService.java           # 消息发送频率限制（应用层运维策略）
+│   │   └── OfflineMessageStoreService.java   # 离线消息存储（应用层编排：在线则存、离线则略）
+│   ├── command/                        # 命令处理
 │   │   ├── MessageCommandHandler.java
 │   │   ├── SendMessageCommand.java
 │   │   ├── SendSystemMessageCommand.java
@@ -52,7 +57,7 @@ message/
 │   │   ├── MarkAsReadBatchCommand.java
 │   │   ├── DeleteMessageCommand.java
 │   │   └── RecallMessageCommand.java
-│   └── query/
+│   └── query/                         # 查询处理
 │       ├── MessageQueryHandler.java
 │       ├── ConversationQueryHandler.java
 │       ├── MessageQuery.java
@@ -60,16 +65,12 @@ message/
 │           ├── ConversationListVO.java
 │           ├── ConversationVO.java
 │           ├── MessageVO.java
-│           ├── MessageSubscriptionVO.java
-│           ├── MessageTemplateVO.java
 │           └── UnreadCountVO.java
 ├── domain/                            # [DDD] 领域层
 │   ├── aggregate/                     # 聚合根
 │   │   ├── Message.java
-│   │   ├── MessageSubscription.java
-│   │   ├── MessageTemplate.java
 │   │   └── OfflineMessage.java
-│   ├── event/
+│   ├── event/                         # 领域事件
 │   │   ├── MessageSentEvent.java
 │   │   ├── MessageReadEvent.java
 │   │   ├── MessageDeletedEvent.java
@@ -79,19 +80,19 @@ message/
 │   │   └── UserInfoPort.java
 │   ├── repository/                    # 仓储接口 (实现已迁移到 adapter/outbound/)
 │   │   ├── MessageRepository.java
-│   │   ├── MessageSubscriptionRepository.java
-│   │   ├── MessageTemplateRepository.java
 │   │   ├── OfflineMessageRepository.java
 │   │   └── query/
 │   │       └── MessageQueryRepository.java
-│   ├── service/
-│   │   ├── MessageRoutingService.java        # 根据订阅偏好路由消息（在线推送/离线存储）
-│   │   ├── OfflineMessageStoreService.java   # 离线消息存储和重推
+│   ├── service/                       # 领域服务（纯领域规则，无仓储编排）
 │   │   └── SensitiveWordFilterService.java   # 消息内容敏感词过滤
+│   ├── constant/
+│   │   └── MessageConstant.java
+│   ├── enums/
+│   │   ├── MessageResultCode.java
+│   │   ├── MessageStatus.java
+│   │   ├── MessageType.java
+│   │   └── ReadStatus.java
 │   ├── valueobject/
-│   │   ├── MessageContent.java
-│   │   ├── MessageContentFormat.java
-│   │   ├── Recipient.java
 │   │   ├── MessageQuery.java
 │   │   ├── UnreadCount.java
 │   │   └── UserInfo.java
@@ -99,21 +100,6 @@ message/
 │       ├── MessageDomainException.java
 │       ├── MessageNotFoundException.java
 │       └── UnauthorizedOperationException.java
-├── enums/
-│   ├── MessageStatus.java
-│   ├── MessageType.java
-│   ├── ReadStatus.java
-│   └── MessageResultCode.java
-├── constant/
-│   └── MessageConstant.java
-└── websocket/                         # WebSocket 实时推送
-    ├── WebSocketConfig.java
-    ├── WebSocketAuthInterceptor.java
-    ├── WebSocketNotifier.java
-    ├── WebSocketEventListener.java
-    ├── WebSocketEventConsumer.java
-    ├── ChatWebSocketHandler.java
-    └── TypingIndicatorService.java
 ```
 
 ## WebSocket 架构
@@ -125,10 +111,9 @@ message/
 
 ## 消息路由
 
-`MessageRoutingService` 根据用户订阅偏好决定推送方式：
-- 在线 → WebSocket 实时推送
-- 离线 → 存储为离线消息，上线后推送
-- 订阅检查 → 用户可关闭某类消息通知
+推送判定内聚在 `MessageCommandHandler`（SendMessageCommand 路径）：
+- 在线（`MessageNotifierPort.isUserOnline`）→ `WebSocketNotifier` 实时推送
+- 离线 → `OfflineMessageStoreService.storeIfOffline` 存为离线消息，上线后重推
 
 ## 安全要点
 
@@ -139,7 +124,7 @@ message/
 
 ## 消息归档服务
 
-`MessageArchiveService` 提供定时归档和清理功能：
+`MessageArchiveTask`（`adapter/inbound/job/`）提供定时归档和清理功能：
 
 - **清理任务**: 每天凌晨 3 点清理超过保留天数的消息
 - **归档任务**: 每月 1 号凌晨 2 点将旧消息归档到 `eo_message_archive` 表
@@ -161,9 +146,8 @@ message/
 ### 添加新消息类型
 
 1. `MessageType` 枚举新增值
-2. `MessageRoutingService` 添加路由规则
-3. 如需新模板 → `MessageTemplate` 添加记录
-4. 添加测试
+2. 如需新推送/离线逻辑 → 在 `MessageCommandHandler` 的路由判定处处理
+3. 添加测试
 
 ### 添加 WebSocket 事件
 

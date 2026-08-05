@@ -1,6 +1,6 @@
 # EasyOrange — LLM × DDD：Java 架构工程化实战
 
-> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。**双岗位叙事适配**：投「AI Agent / 大模型 Java 后端」看 6 决策点 + 轻量 Agent 编排 + 8 件套工程化；投「Java 架构师」看 DDD + 分布式可靠性 + ADR/ArchUnit/PIT 治理三板斧。**业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**工程亮点**：DDD 六边形 + CQRS · 事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路 · 分布式锁防超卖 · AI 8 件套（Spring AI 2.0 框架化 + Redisson 令牌桶 + stale 降级 + Prompt YAML + TokenBudget + Embedding 真实现）· ES 搜索 + IK 分词 · ArchUnit 6 条规则 · 7 ADR · 2,412 测试（后端 1,356 + 前端 1,056）/ Domain 层 84.1% 行覆盖（JaCoCo + PIT 变异测试双重门禁）· SpringDoc OpenAPI 3 · Biome 0 errors。**2025 年 11 月启动**。
+> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。**两条技术主线**：AI 应用工程化（6 决策点 + 轻量 Agent 编排 + 8 件套工程化）+ 架构落地（DDD + 分布式可靠性 + ADR/ArchUnit/PIT 治理三板斧）。**业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**工程亮点**：DDD 六边形 + CQRS · 事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路 · 分布式锁防超卖 · AI 8 件套（Spring AI 2.0 框架化 + Redisson 令牌桶 + stale 降级 + Prompt YAML + TokenBudget + Embedding 真实现）· ES 搜索 + IK 分词 · ArchUnit 6 条规则 · 7 ADR · 2,412 测试（后端 1,356 + 前端 1,056）/ Domain 层 84.1% 行覆盖（JaCoCo + PIT 变异测试双重门禁）· SpringDoc OpenAPI 3 · Biome 0 errors。**2025 年 11 月启动**。
 
 ## 技术栈
 
@@ -11,7 +11,7 @@
 | **数据库** | MySQL 8.4, Redis 7.4 |
 | **消息队列** | RabbitMQ 3.13 (Spring AMQP 4.0.x) |
 | **搜索引擎** | Elasticsearch 8.17.3 (IK 中文分词器) |
-| **认证** | JWT (Access + Refresh Token) |
+| **认证** | JWT Access (RSA) + Opaque Refresh (Redis, HttpOnly Cookie) |
 | **迁移** | Flyway 11.15.0 |
 | **部署** | Docker, docker-compose, compose.yaml (@ServiceConnection) |
 

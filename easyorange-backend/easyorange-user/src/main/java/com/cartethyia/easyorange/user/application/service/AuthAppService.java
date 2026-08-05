@@ -1,8 +1,9 @@
 package com.cartethyia.easyorange.user.application.service;
 
+import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.auth.TokenRefreshResult;
+import com.cartethyia.easyorange.framework.auth.TokenRotation;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
@@ -46,13 +47,16 @@ public class AuthAppService {
         userRepository.update(loggedIn);
         var roles = loggedIn.getUserType().getDefaultRoles();
         String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), roles);
-        String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), roles);
+        String refreshToken = tokenService.createRefreshToken(user.getId());
         return new LoginContext(user, accessToken, refreshToken);
     }
 
-    public void logout(String refreshToken) {
+    public void logout(String accessToken, String refreshToken) {
+        if (accessToken != null) {
+            tokenService.revokeAccessToken(accessToken);
+        }
         if (refreshToken != null) {
-            tokenService.invalidateToken(refreshToken);
+            tokenService.revokeRefreshToken(refreshToken);
         }
         SecurityContextUtil.clearContext();
     }
@@ -64,8 +68,22 @@ public class AuthAppService {
         }
     }
 
-    public TokenRefreshResult refreshToken(String refreshToken) {
-        return tokenService.refreshToken(refreshToken);
+    /**
+     * 刷新令牌：消费旧 refresh 并签发新 access + refresh。
+     * 轮换成功后重验用户状态（存在且启用），否则吊销该用户全部会话。
+     */
+    public RefreshResult refreshToken(String refreshToken) {
+        TokenRotation rotation = tokenService.rotateRefreshToken(refreshToken);
+        String userId = rotation.userId();
+        User user = userRepository.findById(userId)
+            .orElse(null);
+        if (user == null || !user.isEnabled()) {
+            tokenService.revokeAllUserSessions(userId);
+            throw BusinessException.of(ResultCode.UNAUTHORIZED, "账号不存在或已被禁用，请重新登录");
+        }
+        var roles = user.getUserType().getDefaultRoles();
+        String accessToken = tokenService.createAccessToken(userId, user.getUsername(), roles);
+        return new RefreshResult(accessToken, rotation.newToken());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -81,8 +99,12 @@ public class AuthAppService {
             .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
         User updated = authenticationService.changePassword(user, oldPassword, newPassword);
         userRepository.update(updated);
+        tokenService.revokeAllUserSessions(userId);
         domainEventPublisher.publish(new UserPasswordChangedEvent(userId));
     }
 
     public record LoginContext(User user, String accessToken, String refreshToken) {}
+
+    /** 刷新令牌结果：refresh 供 HttpOnly cookie 装配，access 供响应体。 */
+    public record RefreshResult(String accessToken, String refreshToken) {}
 }

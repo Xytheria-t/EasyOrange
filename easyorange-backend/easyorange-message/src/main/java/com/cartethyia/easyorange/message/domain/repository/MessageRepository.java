@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.domain.repository;
 
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
-import com.cartethyia.easyorange.message.enums.ReadStatus;
+import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 
 import java.util.List;
 import java.util.Optional;

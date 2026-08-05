@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.cache;
 import com.cartethyia.easyorange.framework.cache.CacheUtils;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
-import com.cartethyia.easyorange.product.application.port.CategoryCachePort;
+import com.cartethyia.easyorange.product.application.port.cache.CategoryCachePort;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;

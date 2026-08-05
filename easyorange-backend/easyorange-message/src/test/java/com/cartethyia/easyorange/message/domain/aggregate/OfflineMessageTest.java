@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.domain.aggregate;
 
-import com.cartethyia.easyorange.message.constant.MessageConstant;
+import com.cartethyia.easyorange.message.domain.constant.MessageConstant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

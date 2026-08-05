@@ -31,7 +31,7 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 
 - **product**：读多写少 + ES 全文搜索聚合，命令/查询分离收益明显
 - **order**：写链路为本地单事务 + 分布式锁 + Outbox（拒绝 Saga，见 [ADR 0007](0007-order-saga-single-tx-observability.md)），查询侧需独立 ReadModel 支撑「我的订单 / 卖出订单」分页
-- **payment**：写操作幂等性强（`@Idempotent`），查询侧需独立支付流水视图
+- **payment**：写操作幂等性强（`IdempotencyKeyFilter`），查询侧需独立支付流水视图
 - **message**：站内信 + WebSocket 实时消息，读多写多但查询维度独立（会话列表 / 未读数 / 历史消息），与命令（发送 / 撤回 / 已读）天然分离
 
 代码位置（以 message 为例验证边界）：

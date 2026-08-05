@@ -10,6 +10,7 @@ import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProp
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.data.redis.core.RedisTemplate;
 import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
@@ -54,6 +55,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 @Order(0)
+@NullMarked
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final HexFormat HEX_FORMAT = HexFormat.of();
@@ -102,12 +104,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
             // 限流 — 只在命中规则且方法没有 @SkipRateLimit 时检查
             Rule matchedRule = findMatchingRule(method, effectiveRequest.getRequestURI());
-            if (matchedRule != null && !hasSkipAnnotation(effectiveRequest, SkipRateLimit.class)) {
+
+            // 命中规则或写请求时才需要解析 handler；仅解析一次供限流/防重复用，避免每请求重复解析
+            HandlerMethod handlerMethod = (matchedRule != null || WRITE_METHODS.contains(method))
+                    ? resolveHandler(effectiveRequest)
+                    : null;
+
+            if (matchedRule != null && !hasSkipAnnotation(handlerMethod, SkipRateLimit.class)) {
                 checkRateLimit(effectiveRequest, method, matchedRule);
             }
 
             // 防重 — 写方法且没有 @SkipRepeatSubmit 时检查
-            if (WRITE_METHODS.contains(method) && !hasSkipAnnotation(effectiveRequest, SkipRepeatSubmit.class)) {
+            if (WRITE_METHODS.contains(method) && !hasSkipAnnotation(handlerMethod, SkipRepeatSubmit.class)) {
                 checkRepeatSubmit(effectiveRequest, method, wrappedRequest.getCachedBody());
             }
 
@@ -219,25 +227,31 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // ==================== Skip 注解检查 ====================
 
     /**
-     * 检查目标 Controller 方法/类是否有 Skip 注解。
-     * 无法解析 handler 时返回 false（放行默认规则），
-     * Spring {@link AbstractHandlerMapping} 内部缓存了 handler + 方法级检查结果，
-     * 同一次请求多次调用无额外开销。
+     * 解析请求对应的目标 {@link HandlerMethod}，解析失败返回 {@code null}（放行默认规则）。
+     * 每次请求至多解析一次，由调用方在命中规则或写请求时懒惰触发。
      */
-    private boolean hasSkipAnnotation(HttpServletRequest request, Class<? extends Annotation> annotationClass) {
+    private HandlerMethod resolveHandler(HttpServletRequest request) {
         List<HandlerMapping> handlerMappings = handlerMappingsProvider.getIfAvailable(List::of);
         for (HandlerMapping mapping : handlerMappings) {
             try {
                 HandlerExecutionChain chain = mapping.getHandler(request);
                 if (chain != null && chain.getHandler() instanceof HandlerMethod hm) {
-                    return hm.getMethodAnnotation(annotationClass) != null
-                            || hm.getBeanType().isAnnotationPresent(annotationClass);
+                    return hm;
                 }
             } catch (Exception e) {
                 log.debug("Failed to resolve handler via {}: {}", mapping, e.toString());
             }
         }
-        return false;
+        return null;
+    }
+
+    /**
+     * 检查目标方法/类是否有 Skip 注解（方法级优先，其次类级）。
+     */
+    private boolean hasSkipAnnotation(HandlerMethod handlerMethod, Class<? extends Annotation> annotationClass) {
+        return handlerMethod != null
+                && (handlerMethod.getMethodAnnotation(annotationClass) != null
+                || handlerMethod.getBeanType().isAnnotationPresent(annotationClass));
     }
 
     // ==================== 工具方法 ====================

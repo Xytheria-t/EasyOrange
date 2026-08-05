@@ -8,8 +8,8 @@ import com.cartethyia.easyorange.message.application.command.MessageCommandHandl
 import com.cartethyia.easyorange.message.application.command.RecallMessageCommand;
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
-import com.cartethyia.easyorange.message.enums.MessageType;
-import com.cartethyia.easyorange.message.websocket.TypingIndicatorService;
+import com.cartethyia.easyorange.message.domain.enums.MessageType;
+import com.cartethyia.easyorange.message.adapter.inbound.websocket.TypingIndicatorService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

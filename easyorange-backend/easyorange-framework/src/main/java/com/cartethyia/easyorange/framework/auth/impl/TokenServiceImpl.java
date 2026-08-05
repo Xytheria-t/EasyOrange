@@ -1,8 +1,7 @@
 package com.cartethyia.easyorange.framework.auth.impl;
 
-import com.cartethyia.easyorange.common.enums.ResultCode;
-import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.auth.TokenRefreshResult;
+import com.cartethyia.easyorange.framework.auth.RefreshTokenStore;
+import com.cartethyia.easyorange.framework.auth.TokenRotation;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
@@ -31,12 +30,12 @@ import java.util.concurrent.TimeUnit;
 public class TokenServiceImpl implements TokenService {
 
     private static final String ACCESS_TOKEN_TYPE = "access";
-    private static final String REFRESH_TOKEN_TYPE = "refresh";
 
     private final StringRedisTemplate stringRedisTemplate;
     private final JwtEncoder jwtEncoder;
     private final JwtDecoder jwtDecoder;
     private final JwtProperties jwtProperties;
+    private final RefreshTokenStore refreshTokenStore;
 
     @Override
     public String createAccessToken(String userId, String username, Collection<String> authorities) {
@@ -55,25 +54,24 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public String createRefreshToken(String userId, String username, Collection<String> authorities) {
-        var jti = UUID.randomUUID().toString().replace("-", "");
-        var claims = JwtClaimsSet.builder()
-                .issuer(jwtProperties.getIssuer())
-                .subject(userId)
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plus(jwtProperties.getRefreshTokenExpiration(), ChronoUnit.DAYS))
-                .claim("jti", jti)
-                .claim("type", REFRESH_TOKEN_TYPE)
-                .claim("username", username != null ? username : "")
-                .claim("authorities", authorities != null ? List.copyOf(authorities) : List.of())
-                .build();
-        return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+    public String createRefreshToken(String userId) {
+        return refreshTokenStore.create(userId);
     }
 
     @Override
-    public void invalidateToken(String token) {
+    public TokenRotation rotateRefreshToken(String refreshToken) {
+        return refreshTokenStore.rotate(refreshToken);
+    }
+
+    @Override
+    public void revokeRefreshToken(String refreshToken) {
+        refreshTokenStore.revoke(refreshToken);
+    }
+
+    @Override
+    public void revokeAccessToken(String accessToken) {
         try {
-            Jwt jwt = jwtDecoder.decode(token);
+            Jwt jwt = jwtDecoder.decode(accessToken);
             String jti = jwt.getId();
             if (jti != null) {
                 Instant expiresAt = jwt.getExpiresAt();
@@ -87,48 +85,19 @@ public class TokenServiceImpl implements TokenService {
                 }
             }
         } catch (JwtException e) {
-            log.warn("Token 失效 - token 已无效: {}", e.getMessage());
+            log.warn("吊销 access token - token 已无效: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Token 失效失败", e);
+            log.error("吊销 access token 失败", e);
         }
     }
 
     @Override
-    public void invalidateAllUserTokens(String userId) {
+    public void revokeAllUserSessions(String userId) {
+        refreshTokenStore.revokeAllSessions(userId);
         stringRedisTemplate.opsForValue().set(
                 getForceLogoutKey(userId), String.valueOf(System.currentTimeMillis()),
                 jwtProperties.getAccessTokenExpiration(), TimeUnit.MINUTES
         );
-    }
-
-    @Override
-    public TokenRefreshResult refreshToken(String refreshToken) {
-        Jwt jwt;
-        try {
-            jwt = jwtDecoder.decode(refreshToken);
-        } catch (JwtException e) {
-            throw BusinessException.of(ResultCode.UNAUTHORIZED, "刷新令牌已失效，请重新登录");
-        }
-
-        if (!REFRESH_TOKEN_TYPE.equals(jwt.getClaimAsString("type"))) {
-            log.warn("尝试使用 access token 刷新，拒绝");
-            throw BusinessException.of(ResultCode.UNAUTHORIZED, "刷新令牌已失效，请重新登录");
-        }
-
-        String userId = jwt.getSubject();
-
-        invalidateToken(refreshToken);
-
-        String username = jwt.getClaimAsString("username");
-        List<String> authorities = jwt.getClaimAsStringList("authorities");
-        if (authorities == null) {
-            authorities = List.of();
-        }
-
-        String newAccessToken = createAccessToken(userId, username, authorities);
-        String newRefreshToken = createRefreshToken(userId, username, authorities);
-
-        return new TokenRefreshResult(newAccessToken, newRefreshToken);
     }
 
     private String getBlacklistKey(String jti) {

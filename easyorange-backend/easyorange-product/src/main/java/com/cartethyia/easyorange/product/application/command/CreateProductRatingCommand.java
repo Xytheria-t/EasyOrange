@@ -18,4 +18,4 @@ public record CreateProductRatingCommand(
         @NotBlank(message = "评价内容不能为空")
         @Size(max = 2000, message = "评价内容最多2000字")
         String content
-) implements ProductCommand {}
+) {}

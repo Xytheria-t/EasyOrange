@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.outbound.cache;
 
-import com.cartethyia.easyorange.product.application.port.SellerCachePort;
+import com.cartethyia.easyorange.product.application.port.cache.SellerCachePort;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.github.benmanes.caffeine.cache.Cache;

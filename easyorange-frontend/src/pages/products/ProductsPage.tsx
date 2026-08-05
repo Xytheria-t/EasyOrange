@@ -11,7 +11,14 @@ import SortDropdown, { type SortOption } from '@/components/search/SortDropdown'
 import { Input } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { preloadImages } from '@/components/ui/Image';
-import { useCategories, useColumnCount, useFavoriteCheck, useInfiniteProducts, useListUrlState, useSemanticSearch } from '@/hooks';
+import {
+    useCategories,
+    useColumnCount,
+    useFavoriteCheck,
+    useInfiniteProducts,
+    useListUrlState,
+    useSemanticSearch,
+} from '@/hooks';
 import { useAuthStore } from '@/store/authStore';
 import type { Product } from '@/types';
 import './products-list.css';
@@ -46,9 +53,8 @@ function ProductsPage() {
         hasDiscount?: boolean;
     }>(() => {
         const sortValue = filters.sort;
-        const sort: ProductSort = sortValue && SORT_OPTIONS.includes(sortValue as ProductSort)
-            ? (sortValue as ProductSort)
-            : 'newest';
+        const sort: ProductSort =
+            sortValue && SORT_OPTIONS.includes(sortValue as ProductSort) ? (sortValue as ProductSort) : 'newest';
         return {
             pageSize: 20,
             keyword: urlKeyword || undefined,
@@ -199,34 +205,54 @@ function ProductsPage() {
         overscan: 8,
     });
 
-    const handleSortChange = useCallback((sort: SortOption) => {
-        setSemanticPage(1);
-        setUrlState({ filters: { ...filters, sort } });
-    }, [filters, setUrlState]);
+    const handleSortChange = useCallback(
+        (sort: SortOption) => {
+            setSemanticPage(1);
+            setUrlState({ filters: { ...filters, sort } });
+        },
+        [filters, setUrlState]
+    );
 
-    const handleFilterChange = useCallback((filter: ToolsPlazaFilter) => {
-        setSemanticPage(1);
-        if (filter === 'all') {
-            const next = { ...filters };
-            delete next.hasDiscount;
-            next.sort = 'newest';
+    const handleFilterChange = useCallback(
+        (filter: ToolsPlazaFilter) => {
+            setSemanticPage(1);
+            if (filter === 'all') {
+                const next = { ...filters };
+                // biome-ignore lint/performance/noDelete: 需从 URL 过滤键移除折扣筛选（Record<string,string> 不允许赋 undefined）
+                delete next.hasDiscount;
+                next.sort = 'newest';
+                setUrlState({ filters: next });
+            } else if (filter === 'discount') {
+                setUrlState({ filters: { ...filters, hasDiscount: '1' } });
+            }
+        },
+        [filters, setUrlState]
+    );
+
+    const handleApplyFilters = useCallback(
+        (filterState: FilterState) => {
+            setSemanticPage(1);
+            const next: Record<string, string> = {};
+            if (filters.sort) {
+                next.sort = filters.sort;
+            }
+            if (filterState.categories.length === 1) {
+                next.category = filterState.categories[0];
+            }
+            if (filterState.priceMin) {
+                next.priceMin = String(filterState.priceMin);
+            }
+            if (filterState.priceMax) {
+                next.priceMax = String(filterState.priceMax);
+            }
+            if (filterState.conditions.length > 0) {
+                next.conditions = filterState.conditions.join(',');
+            }
             setUrlState({ filters: next });
-        } else if (filter === 'discount') {
-            setUrlState({ filters: { ...filters, hasDiscount: '1' } });
-        }
-    }, [filters, setUrlState]);
-
-    const handleApplyFilters = useCallback((filterState: FilterState) => {
-        setSemanticPage(1);
-        const next: Record<string, string> = {};
-        if (filters.sort) next.sort = filters.sort;
-        if (filterState.categories.length === 1) next.category = filterState.categories[0];
-        if (filterState.priceMin) next.priceMin = String(filterState.priceMin);
-        if (filterState.priceMax) next.priceMax = String(filterState.priceMax);
-        if (filterState.conditions.length > 0) next.conditions = filterState.conditions.join(',');
-        setUrlState({ filters: next });
-        setIsFilterOpen(false);
-    }, [filters, setUrlState]);
+            setIsFilterOpen(false);
+        },
+        [filters, setUrlState]
+    );
 
     const handleResetFilters = useCallback(() => {
         setSemanticPage(1);
@@ -236,7 +262,9 @@ function ProductsPage() {
     const handleClearCategory = useCallback(() => {
         setSemanticPage(1);
         const next = { ...filters };
+        // biome-ignore lint/performance/noDelete: 需从 URL 过滤键移除类目/折扣筛选（Record<string,string> 不允许赋 undefined）
         delete next.category;
+        // biome-ignore lint/performance/noDelete: 同上
         delete next.hasDiscount;
         setUrlState({ filters: next });
     }, [filters, setUrlState]);

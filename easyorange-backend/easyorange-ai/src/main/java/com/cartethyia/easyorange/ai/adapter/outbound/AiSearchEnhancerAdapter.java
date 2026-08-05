@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.framework.cache.CacheUtils;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.data.redis.core.RedisTemplate;
-import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
+import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Primary;

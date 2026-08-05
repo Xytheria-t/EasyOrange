@@ -11,12 +11,12 @@ import java.util.concurrent.TimeUnit;
 /**
  * 基于 Redis 的 Idempotency-Key 幂等服务。
  * <p>
- * 原理：先检查 Redis 中是否已缓存此 key 的成功响应，
- * 未缓存则执行业务操作并原子性写入缓存（SETNX），
- * 确保并发场景下首个完成的请求决定返回结果。
+ * 原理：先抢「处理锁」（SETNX），只有抢到锁的请求才执行业务操作并缓存结果；
+ * 并发重复请求作为输家轮询等待赢家的结果，确保同一 key 的业务操作只执行一次。
  * </p>
  * <p>
- * 执行中抛出异常 → 不缓存，重试不受影响。
+ * 业务操作抛异常 → 不缓存、释放锁，重试可重新执行。
+ * 持有者崩溃（锁超时）→ 其它请求可重新抢锁执行。
  * Redis 不可用 → fail-open，请求透传（降级为无幂等保护）。
  * </p>
  */
@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 @Service
 @ConditionalOnClass(RedisTemplate.class)
 public class RedisIdempotencyService implements IdempotencyService {
+
+    private static final String LOCK_MARKER = "1";
 
     private final RedisTemplate<Object, Object> redisTemplate;
     private final IdempotencyProperties properties;
@@ -35,71 +37,114 @@ public class RedisIdempotencyService implements IdempotencyService {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T execute(String key, long ttlSeconds, IdempotentOperation<T> operation) throws Throwable {
-        var redisKey = redisKey(key);
+    public <T> T execute(String key, long ttlSeconds, IdempotentOperation<T> operation) throws Exception {
+        long resultTtl = ttlSeconds > 0 ? ttlSeconds : properties.getDefaultTtlSeconds();
+        String resultKey = redisKey(key);
+        String lockKey = lockKey(key);
 
-        // 快速路径：已有缓存
         try {
-            Object cached = redisTemplate.opsForValue().get(redisKey);
+            // 1. 快速路径：之前已完成并缓存了结果
+            Object cached = getOrUnavailable(resultKey, key);
             if (cached != null) {
-                log.debug("action=idempotency_cache_hit, key={}", key);
                 return (T) cached;
             }
-        } catch (Exception e) {
-            log.warn("action=idempotency_cache_read_error, key={}", key, e);
-            // fail-open：Redis 不可用时降级为正常执行
+
+            // 2. 抢锁执行，或作为输家等待赢家结果
+            long deadline = System.currentTimeMillis() + properties.getLockTtlSeconds() * 1000L;
+            while (true) {
+                if (tryAcquireLock(lockKey, key)) {
+                    try {
+                        // 抢到锁后复查，避免等待期间已被前一个赢家写入
+                        Object done = getOrUnavailable(resultKey, key);
+                        if (done != null) {
+                            return (T) done;
+                        }
+                        T result = operation.execute();   // 仅赢家执行；业务异常向上抛、不缓存
+                        cacheResult(resultKey, result, resultTtl, key);
+                        return result;
+                    } finally {
+                        releaseLock(lockKey);
+                    }
+                }
+
+                // 输家：轮询等赢家写入结果
+                Object result = getOrUnavailable(resultKey, key);
+                if (result != null) {
+                    return (T) result;
+                }
+                if (System.currentTimeMillis() >= deadline) {
+                    // 锁到期仍无结果（持有者崩溃）→ 兜底降级执行
+                    log.warn("action=idempotency_lock_timeout, key={}", key);
+                    return operation.execute();
+                }
+                waitBeforePoll();
+            }
+        } catch (RedisUnavailableException e) {
+            // Redis 不可用 → fail-open：降级为直接执行，无幂等保护
+            log.warn("action=idempotency_fail_open, key={}", key, e.getCause());
             return operation.execute();
         }
+    }
 
-        // 执行业务操作
-        T result;
+    /** 读缓存；Redis 不可用抛 {@link RedisUnavailableException} 以触发 fail-open。 */
+    private Object getOrUnavailable(String redisKey, String key) {
         try {
-            result = operation.execute();
-        } catch (Throwable t) {
-            // 异常不缓存，重试可重新执行
-            log.debug("action=idempotency_exec_failed, key={}", key);
-            throw t;
+            return redisTemplate.opsForValue().get(redisKey);
+        } catch (Exception e) {
+            throw new RedisUnavailableException(e);
         }
+    }
 
-        // 写入缓存（SETNX 防止并发覆盖）
+    /** 抢处理锁；Redis 不可用抛 {@link RedisUnavailableException} 以触发 fail-open。 */
+    private boolean tryAcquireLock(String lockKey, String key) {
         try {
-            Boolean wasSet = redisTemplate.opsForValue().setIfAbsent(redisKey, result, ttlSeconds > 0 ? ttlSeconds : properties.getDefaultTtlSeconds(), TimeUnit.SECONDS);
-            if (Boolean.FALSE.equals(wasSet)) {
-                // 并发请求先写入了，使用它的结果
-                Object existing = redisTemplate.opsForValue().get(redisKey);
-                if (existing != null) {
-                    return (T) existing;
-                }
-            }
+            return Boolean.TRUE.equals(
+                    redisTemplate.opsForValue().setIfAbsent(
+                            lockKey, LOCK_MARKER, properties.getLockTtlSeconds(), TimeUnit.SECONDS));
+        } catch (Exception e) {
+            throw new RedisUnavailableException(e);
+        }
+    }
+
+    /** 写结果缓存；失败仅记日志，不影响已执行的业务结果。 */
+    private void cacheResult(String resultKey, Object result, long ttl, String key) {
+        try {
+            redisTemplate.opsForValue().set(resultKey, result, ttl, TimeUnit.SECONDS);
         } catch (Exception e) {
             log.warn("action=idempotency_cache_write_error, key={}", key, e);
-            // 缓存写入失败不影响业务结果
-        }
-
-        return result;
-    }
-
-    @Override
-    public boolean isProcessed(String key) {
-        try {
-            return Boolean.TRUE.equals(redisTemplate.hasKey(redisKey(key)));
-        } catch (Exception e) {
-            log.warn("action=idempotency_check_error, key={}", key, e);
-            return false;
         }
     }
 
-    @Override
-    public void evict(String key) {
+    /** 释放处理锁；失败仅记日志。 */
+    private void releaseLock(String lockKey) {
         try {
-            redisTemplate.delete(redisKey(key));
-            log.debug("action=idempotency_evict, key={}", key);
+            redisTemplate.delete(lockKey);
         } catch (Exception e) {
-            log.warn("action=idempotency_evict_error, key={}", key, e);
+            log.warn("action=idempotency_lock_release_error, key={}", lockKey, e);
+        }
+    }
+
+    private void waitBeforePoll() throws InterruptedException {
+        try {
+            Thread.sleep(properties.getLockPollIntervalMs());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
         }
     }
 
     private String redisKey(String key) {
         return properties.getKeyPrefix() + ":" + key;
+    }
+
+    private String lockKey(String key) {
+        return redisKey(key) + ":lock";
+    }
+
+    /** 标记 Redis 不可用，触发统一的 fail-open 降级。 */
+    private static final class RedisUnavailableException extends RuntimeException {
+        RedisUnavailableException(Throwable cause) {
+            super(cause);
+        }
     }
 }

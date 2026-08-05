@@ -9,8 +9,8 @@ import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRep
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
-import com.cartethyia.easyorange.message.enums.ReadStatus;
-import com.cartethyia.easyorange.message.enums.MessageType;
+import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
+import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 

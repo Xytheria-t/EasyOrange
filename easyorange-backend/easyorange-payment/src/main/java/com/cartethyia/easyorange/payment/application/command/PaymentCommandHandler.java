@@ -4,12 +4,14 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.payment.application.lock.DistributedLockWrapper;
+import com.cartethyia.easyorange.payment.domain.port.LockPort;
+import com.cartethyia.easyorange.payment.application.metrics.PaymentMetricsService;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentCreateSpec;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
+import com.cartethyia.easyorange.payment.domain.exception.LockAcquisitionException;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
@@ -28,7 +30,8 @@ public class PaymentCommandHandler {
     private final PaymentRepositoryPort paymentRepository;
     private final DomainEventPublisher domainEventPublisher;
     private final PaymentGatewayPort paymentGateway;
-    private final DistributedLockWrapper lockWrapper;
+    private final LockPort lockPort;
+    private final PaymentMetricsService metricsService;
     private final IdGenerator idGenerator;
 
     @Transactional(rollbackFor = Exception.class)
@@ -56,7 +59,7 @@ public class PaymentCommandHandler {
     public void handle(PayCommand command) {
         String lockKey = "payment:pay:" + command.paymentNo();
 
-        lockWrapper.executeWithLock(lockKey, () -> {
+        executeWithLock(lockKey, () -> {
             final String paymentId = preparePayPhase1(command.paymentNo());
             PaymentResult payResult = invokePayGateway(paymentId);
             if (payResult.isSuccess()) {
@@ -100,7 +103,7 @@ public class PaymentCommandHandler {
     public void handle(RefundPaymentCommand command) {
         String lockKey = "payment:refund:" + command.paymentId();
 
-        lockWrapper.executeWithLock(lockKey, () -> {
+        executeWithLock(lockKey, () -> {
             BigDecimal refundAmount = command.refundAmount();
             String paymentId = command.paymentId();
 
@@ -112,6 +115,18 @@ public class PaymentCommandHandler {
                 rollbackRefundStatus(paymentId);
             }
         });
+    }
+
+    /**
+     * 带锁执行并记录并发冲突指标 — 锁获取失败由用例层记录，指标属支付域而不属锁基础设施。
+     */
+    private void executeWithLock(String lockKey, Runnable operation) {
+        try {
+            lockPort.executeWithLock(lockKey, operation);
+        } catch (LockAcquisitionException e) {
+            metricsService.recordConcurrentConflict();
+            throw e;
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -88,6 +88,7 @@ jwt:
   access-token-expiration: 60
   refresh-token-expiration: 7
   issuer: easyorange
+  refresh-cookie-secure: true            # 生产 HTTPS 必须 Secure
 
 # -------------------------------------------------------------------
 # Actuator 监控端点配置 - 生产环境限制暴露
@@ -160,7 +161,6 @@ rate-limit-filter:
 security:
   ignore-paths:
     - /api/auth/login
-    - /api/auth/logout
     - /api/auth/refresh
     - /api/auth/sms-code
     - /api/auth/register

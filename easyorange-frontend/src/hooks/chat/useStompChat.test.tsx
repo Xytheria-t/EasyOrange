@@ -42,11 +42,11 @@ const mockUtils = vi.hoisted(() => {
     return {
         createMockClient,
         getCapturedConfig: () => capturedConfig,
-        setCapturedConfig: (config: StompClientConfig) => {
+        setCapturedConfig: (config: StompClientConfig | null) => {
             capturedConfig = config;
         },
         getCurrentClient: () => currentClient,
-        setCurrentClient: (client: ReturnType<typeof createMockClient>) => {
+        setCurrentClient: (client: ReturnType<typeof createMockClient> | null) => {
             currentClient = client;
         },
     };

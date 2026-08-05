@@ -6,4 +6,4 @@ public record PayCommand(
         @NotBlank(message = "支付单号不能为空") String paymentNo,
         String transactionId,
         String attach
-) implements PaymentCommand {}
+) {}

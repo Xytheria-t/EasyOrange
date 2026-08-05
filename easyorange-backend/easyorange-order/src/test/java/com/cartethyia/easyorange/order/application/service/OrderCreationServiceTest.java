@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.order.application.service;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
+import com.cartethyia.easyorange.order.adapter.outbound.lock.RedissonLockAdapter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
@@ -83,8 +84,8 @@ class OrderCreationServiceTest {
 
     @BeforeEach
     void setUp() throws InterruptedException {
-        var lockManager = new DistributedLockManager(redissonClient);
-        var preparationService = new OrderPreparationService(productOrderPort, productQueryPort, idGenerator);
+        var lockManager = new RedissonLockAdapter(redissonClient);
+        var preparationService = new OrderPreparation(productOrderPort, productQueryPort, idGenerator);
         var orderCreationExecutor = new OrderCreationExecutor(
             orderRepository, eventPublisher, paymentGatewayPort, orderCachePort, preparationService, idGenerator
         );

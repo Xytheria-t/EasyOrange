@@ -23,7 +23,6 @@ afterEach(() => {
     useAuthStore.setState({
         user: null,
         token: null,
-        refreshToken: null,
     });
 });
 
@@ -64,14 +63,13 @@ describe('useLogin', () => {
     it('logs in successfully and updates store', async () => {
         const mockUser = { id: '1', username: 'testuser', nickname: '测试用户' };
         const mockToken = 'access-token-123';
-        const mockRefreshToken = 'refresh-token-456';
 
         server.use(
             http.post('/api/auth/login', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { user: mockUser, accessToken: mockToken, refreshToken: mockRefreshToken },
+                    data: { user: mockUser, accessToken: mockToken },
                     timestamp: Date.now(),
                 });
             })
@@ -87,7 +85,6 @@ describe('useLogin', () => {
 
         const state = useAuthStore.getState();
         expect(state.token).toBe(mockToken);
-        expect(state.refreshToken).toBe(mockRefreshToken);
         expect(state.user).toEqual(mockUser);
         expect(!!state.token).toBe(true);
     });

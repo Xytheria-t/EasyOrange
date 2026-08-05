@@ -28,7 +28,7 @@ import {
     Zap,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { favoriteApi } from '@/api/favoriteApi';
 import { messageApi } from '@/api/messageApi';
 import { productApi } from '@/api/productApi';
@@ -942,13 +942,7 @@ function ProductDetailPage() {
                         <>
                             <div className="pdp-similar-grid">
                                 {similarProducts.slice(0, 4).map(item => (
-                                    <Button
-                                        key={item.id}
-                                        type="button"
-                                        variant="ghost"
-                                        className="pdp-similar-card"
-                                        onClick={() => navigate(`/products/${item.id}`)}
-                                    >
+                                    <Link key={item.id} to={`/products/${item.id}`} className="pdp-similar-card">
                                         <div className="pdp-similar-image">
                                             <Image
                                                 src={item.images?.[0] || placeholderImage}
@@ -962,7 +956,7 @@ function ProductDetailPage() {
                                             <h4 className="pdp-similar-title">{item.title}</h4>
                                             <div className="pdp-similar-price">¥{item.price.toFixed(0)}</div>
                                         </div>
-                                    </Button>
+                                    </Link>
                                 ))}
                             </div>
                             <div className="pdp-similar-footer">

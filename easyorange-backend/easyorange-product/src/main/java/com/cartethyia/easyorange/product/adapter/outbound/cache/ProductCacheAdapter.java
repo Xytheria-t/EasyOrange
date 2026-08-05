@@ -1,8 +1,9 @@
 package com.cartethyia.easyorange.product.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
-import com.cartethyia.easyorange.product.application.port.ProductCachePort;
+import com.cartethyia.easyorange.product.application.port.cache.ProductCachePort;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
+import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
@@ -14,7 +15,7 @@ import java.util.Optional;
 @Primary
 @Component
 @RequiredArgsConstructor
-public class ProductCacheAdapter implements ProductCachePort {
+public class ProductCacheAdapter implements ProductCachePort, ProductCacheEvictionPort {
 
     private final MultiLevelCache multiLevelCache;
 

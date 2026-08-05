@@ -89,6 +89,20 @@ spring:
     timeout-per-shutdown-phase: 90s
 
 # -------------------------------------------------------------------
+# Idempotency-Key 幂等配置（Filter 驱动，替代 @Idempotent AOP 切面）
+# 仅对写方法 + 命中路径的请求生效；非 2xx 响应不缓存，允许客户端重试
+# -------------------------------------------------------------------
+idempotency:
+  enabled: true
+  header-name: "Idempotency-Key"
+  path-patterns:
+    - /api/orders
+    - /api/products
+    - /api/reports/product/*
+    - /api/payments
+  methods: [POST, PUT, PATCH]
+
+# -------------------------------------------------------------------
 # 限流 + 防重提交配置（Filter 驱动，替代 AOP 切面）
 # -------------------------------------------------------------------
 rate-limit-filter:
@@ -228,7 +242,6 @@ webmvc:
 security:
   ignore-paths:
     - /api/auth/login
-    - /api/auth/logout
     - /api/auth/refresh
     - /api/auth/sms-code
     - /api/auth/register

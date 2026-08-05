@@ -5,7 +5,6 @@ import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
-import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderCreateSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
@@ -35,8 +34,8 @@ public class OrderCreationExecutor {
     private final OrderRepository orderRepository;
     private final DomainEventPublisher eventPublisher;
     private final PaymentGatewayPort paymentGatewayPort;
-    private final OrderCachePort<OrderVO> orderCachePort;
-    private final OrderPreparationService preparationService;
+    private final OrderCachePort<?> orderCachePort;
+    private final OrderPreparation preparationService;
     private final IdGenerator idGenerator;
 
     /**
@@ -49,7 +48,7 @@ public class OrderCreationExecutor {
         String buyerId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         // 准备订单项数据
-        OrderPreparationService.PreparationResult preparation =
+        OrderPreparation.PreparationResult preparation =
             preparationService.prepareOrderItems(command.items(), buyerId);
 
         // 创建订单聚合根（通过 spec record 收敛 7 个参数）

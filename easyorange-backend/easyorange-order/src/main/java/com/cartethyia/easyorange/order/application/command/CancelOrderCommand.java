@@ -8,4 +8,4 @@ import jakarta.validation.constraints.NotBlank;
 public record CancelOrderCommand(
         @NotBlank(message = "订单 ID 不能为空") String orderId,
         @NotBlank(message = "取消原因不能为空") String reason
-) implements OrderCommand {}
+) {}

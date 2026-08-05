@@ -8,4 +8,4 @@ public record UpdateProductCommand(
         BigDecimal originalPrice, Integer stock, String conditionLevel,
         String location, String contactMethod, String description,
         List<String> imageUrls
-) implements ProductCommand {}
+) {}

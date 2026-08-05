@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.config;
 import com.cartethyia.easyorange.ai.interceptor.AiRateLimitInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -23,7 +24,7 @@ public class AiCacheConfig implements WebMvcConfigurer {
     private final AiRateLimitInterceptor aiRateLimitInterceptor;
 
     @Override
-    public void addInterceptors(InterceptorRegistry registry) {
+    public void addInterceptors(@NonNull InterceptorRegistry registry) {
         if (aiProperties.getRateLimit().isEnabled()) {
             registry.addInterceptor(aiRateLimitInterceptor)
                     .addPathPatterns("/api/ai/**")

@@ -189,19 +189,19 @@ DO 中 `status`、`condition_level` 等枚举字段直接使用领域枚举类�
 
 > **标准 API 优先（STP）**: 认证/授权相关功能优先使用 Spring Security 标准机制。有 `oauth2ResourceServer()` 就不要手写 Filter；有 `JwtDecoder`/`JwtEncoder` 就注入使用，不要手写 JWT 工具类。参考：JwtAuthenticationFilter + JJWT → Spring Security OAuth2 Resource Server 迁移。
 
-- JWT 双 Token: Access Token (短期) + Refresh Token (长期)
+- 双 Token 认证: Access = RSA 签名 JWT（30 分钟，仅内存）+ Refresh = opaque 落 Redis（HttpOnly Cookie 传输，JS 不可见），轮换 + 复用检测
 - 密码: BCrypt 加密存储
 - 限流: `RateLimitFilter` 配置驱动，GET 走本地限流（默认 200次/60秒/IP），写操作走 Redis 分布式限流（默认 30次/60秒/IP），Redis 不可用时放行（fail-open）。支持 `@SkipRateLimit` 按 Controller 方法/类跳过
 - 防重（短时间连点防护）: `RateLimitFilter` 约定式拦截所有 POST/PUT/DELETE/PATCH（默认 3秒间隔），key 含请求体 hash，Redis 不可用时放行。支持 `@SkipRepeatSubmit` 跳过低级别防重
-- 幂等（协议级防重放）: `@Idempotent` 注解 + `IdempotencyAspect(@Order=1)`，客户端提供 `Idempotency-Key` 头（UUID），服务端缓存成功响应 24h。与 `RateLimitFilter` 的短时间防重互补——前者防连点，后者防重放。支持自定义 header 名称和 TTL
+- 幂等（协议级防重放）: `IdempotencyKeyFilter`（配置驱动，`idempotency.path-patterns`），客户端提供 `Idempotency-Key` 头（UUID），服务端缓存成功响应 24h。与 `RateLimitFilter` 的短时间防重互补——前者防连点，后者防重放。支持自定义 header 名称和 TTL
 - 审计日志: 约定式自动记录所有写操作 (@Order 3), 无需注解, 异步持久化, 敏感字段自动掩码
 - XSS: `Content-Security-Policy` 头 (`default-src 'none'`)，已废除 `X-XSS-Protection`
 - CORS: 生产环境严格白名单
 - 全局认证: `SecurityConfig` 的 `.anyRequest().authenticated()` 已拦截所有未认证请求，Controller 上无需 `@PreAuthorize("isAuthenticated()")`
 
-Filter 执行顺序: RateLimitFilter(0) → SecurityConfig.oauth2ResourceServer() (Spring Security 内置 AuthenticationFilter) → TokenRevocationFilter(Redis 黑名单 + force-logout) → AnonymousAuthenticationFilter → AuditLogAspect(AOP @Order 3)
+Filter 执行顺序: RateLimitFilter(0) → RefreshCsrfFilter(1, 校验 refresh/logout 的 X-Client-Type 头) → SecurityConfig.oauth2ResourceServer() (Spring Security 内置 AuthenticationFilter) → TokenRevocationFilter(Redis access 黑名单 + force-logout) → AnonymousAuthenticationFilter → AuditLogAspect(AOP @Order 3)
 
-JWT 认证由 Spring Security OAuth2 Resource Server 的 `JwtDecoder` + `JwtAuthenticationConverter` 处理，无需自定义 Servlet Filter。认证流程：`AuthenticationFilter` (Spring Security 内置，由 `oauth2ResourceServer()` 配置注入) → `JwtDecoder` 验证签名 + issuer 检查 → `JwtAuthenticationConverter` 构造 `AuthUser` 并设置 `SecurityContext`。Token 吊销检查（Redis 黑名单 + force-logout）由独立的 `TokenRevocationFilter` 在认证完成后执行，职责分离：JwtDecoder 只做密码学验证，TokenRevocationFilter 只做吊销状态检查。JWT 使用 RSA 非对称密钥（2048 位），开发环境自动生成，生产环境通过 `jwt.private-key-location` + `jwt.public-key-location` 配置 PEM 文件路径。
+JWT 认证由 Spring Security OAuth2 Resource Server 的 `JwtDecoder` + `JwtAuthenticationConverter` 处理，无需自定义 Servlet Filter。认证流程：`AuthenticationFilter` (Spring Security 内置，由 `oauth2ResourceServer()` 配置注入) → `JwtDecoder` 验证签名 + issuer 检查 → `JwtAuthenticationConverter` 构造 `AuthUser` 并设置 `SecurityContext`。Token 吊销检查（Redis 黑名单 + force-logout）由独立的 `TokenRevocationFilter` 在认证完成后执行，职责分离：JwtDecoder 只做密码学验证，TokenRevocationFilter 只做吊销状态检查。JWT 使用 RSA 非对称密钥（2048 位），开发环境自动生成，生产环境通过 `jwt.private-key-location` + `jwt.public-key-location` 配置 PEM 文件路径。Refresh Token 为不透明随机串（存 Redis `eo:user:refresh:*`，SHA-256 哈希），经 HttpOnly Cookie（`jwt.refresh-cookie-*`）下发，由 `RefreshTokenStore` 管理轮换 / 复用检测 / 按用户吊销；前端 access token 仅存内存，刷新走 `/api/auth/refresh` + `restoreSession` 恢复会话。
 
 ## 不可变集合约定
 

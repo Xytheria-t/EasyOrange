@@ -56,7 +56,7 @@ public class AdminUserSecurityService {
     @Transactional(rollbackFor = Exception.class)
     public void forceLogout(String id) {
         findUserByIdOrThrow(id);
-        tokenService.invalidateAllUserTokens(id);
+        tokenService.revokeAllUserSessions(id);
     }
 
     @Transactional(rollbackFor = Exception.class)

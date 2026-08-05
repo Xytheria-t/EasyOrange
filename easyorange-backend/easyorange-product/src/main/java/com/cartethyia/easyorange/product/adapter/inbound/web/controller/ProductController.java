@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.common.annotation.Idempotent;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.cartethyia.easyorange.common.result.PageResult;
@@ -56,7 +55,6 @@ public class ProductController {
      * Resource CRUD
      */
     @PostMapping
-    @Idempotent
     public Result<String> createProduct(@Valid @RequestBody ProductCreateRequest request) {
         var cmd = new CreateProductCommand(
                 request.categoryId(), request.name(), request.price(),

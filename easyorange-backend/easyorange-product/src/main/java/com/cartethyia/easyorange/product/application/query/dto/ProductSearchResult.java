@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.application.query.dto;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
-import com.cartethyia.easyorange.product.domain.port.FacetBucket;
+import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 
 import java.util.List;
 

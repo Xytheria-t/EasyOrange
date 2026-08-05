@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
-import com.cartethyia.easyorange.payment.constant.PaymentConstant;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentConstant;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 

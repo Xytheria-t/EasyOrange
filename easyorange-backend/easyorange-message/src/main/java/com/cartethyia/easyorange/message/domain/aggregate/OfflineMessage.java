@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.domain.aggregate;
 
-import com.cartethyia.easyorange.message.constant.MessageConstant;
+import com.cartethyia.easyorange.message.domain.constant.MessageConstant;
 
 /**
  * 离线消息聚合根 —— 不可变对象
