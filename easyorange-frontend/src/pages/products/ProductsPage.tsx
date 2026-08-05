@@ -217,9 +217,7 @@ function ProductsPage() {
         (filter: ToolsPlazaFilter) => {
             setSemanticPage(1);
             if (filter === 'all') {
-                const next = { ...filters };
-                // biome-ignore lint/performance/noDelete: 需从 URL 过滤键移除折扣筛选（Record<string,string> 不允许赋 undefined）
-                delete next.hasDiscount;
+                const { hasDiscount, ...next } = filters;
                 next.sort = 'newest';
                 setUrlState({ filters: next });
             } else if (filter === 'discount') {
@@ -261,11 +259,7 @@ function ProductsPage() {
 
     const handleClearCategory = useCallback(() => {
         setSemanticPage(1);
-        const next = { ...filters };
-        // biome-ignore lint/performance/noDelete: 需从 URL 过滤键移除类目/折扣筛选（Record<string,string> 不允许赋 undefined）
-        delete next.category;
-        // biome-ignore lint/performance/noDelete: 同上
-        delete next.hasDiscount;
+        const { category, hasDiscount, ...next } = filters;
         setUrlState({ filters: next });
     }, [filters, setUrlState]);
 
