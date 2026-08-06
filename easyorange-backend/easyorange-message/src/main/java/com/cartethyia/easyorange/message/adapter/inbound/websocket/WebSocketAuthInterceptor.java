@@ -1,6 +1,8 @@
 package com.cartethyia.easyorange.message.adapter.inbound.websocket;
 
 import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
+import java.time.Instant;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -14,9 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
-import java.time.Instant;
-import java.util.Map;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -26,8 +25,11 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
     private final StringRedisTemplate redis;
 
     @Override
-    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
-                                   WebSocketHandler wsHandler, Map<String, Object> attributes) {
+    public boolean beforeHandshake(
+            ServerHttpRequest request,
+            ServerHttpResponse response,
+            WebSocketHandler wsHandler,
+            Map<String, Object> attributes) {
         if (request instanceof ServletServerHttpRequest servletRequest) {
             String token = extractToken(servletRequest);
             if (token == null) {
@@ -40,8 +42,7 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
 
                 // 检查 token 是否已被吊销
                 String jti = jwt.getId();
-                if (jti != null && Boolean.TRUE.equals(
-                        redis.hasKey(LoginCacheConstants.TOKEN_BLACKLIST_KEY + jti))) {
+                if (jti != null && Boolean.TRUE.equals(redis.hasKey(LoginCacheConstants.TOKEN_BLACKLIST_KEY + jti))) {
                     log.warn("WebSocket握手失败: token已被吊销");
                     return false;
                 }
@@ -67,8 +68,8 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
     }
 
     @Override
-    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
-                               WebSocketHandler wsHandler, Exception exception) {
+    public void afterHandshake(
+            ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {
         // WebSocket 握手后无需特殊处理
     }
 

@@ -1,5 +1,11 @@
 package com.cartethyia.easyorange.framework.web.cookie;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,12 +16,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * RefreshToken HttpOnly Cookie 装配 — 单元测试。
@@ -29,6 +29,7 @@ class RefreshCookieTest {
 
     @Mock
     private JwtProperties jwtProperties;
+
     @Mock
     private HttpServletResponse response;
 

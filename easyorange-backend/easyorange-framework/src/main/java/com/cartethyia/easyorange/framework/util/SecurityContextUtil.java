@@ -1,16 +1,15 @@
 package com.cartethyia.easyorange.framework.util;
 
-import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.security.AuthUser;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.experimental.UtilityClass;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @UtilityClass
 public class SecurityContextUtil {
@@ -18,13 +17,11 @@ public class SecurityContextUtil {
     // ==================== Current User ID ====================
 
     public static String getCurrentUserIdOrThrow() {
-        return getCurrentUserId()
-                .orElseThrow(() -> BusinessException.of(ResultCode.UNAUTHORIZED, "用户未登录"));
+        return getCurrentUserId().orElseThrow(() -> BusinessException.of(ResultCode.UNAUTHORIZED, "用户未登录"));
     }
 
     public static Optional<String> getCurrentUserId() {
-        return getAuthentication()
-                .flatMap(auth -> convertPrincipal(auth.getPrincipal()));
+        return getAuthentication().flatMap(auth -> convertPrincipal(auth.getPrincipal()));
     }
 
     // ==================== User Context ====================
@@ -37,8 +34,7 @@ public class SecurityContextUtil {
     }
 
     public static AuthUser getUserContextOrThrow() {
-        return getUserContext()
-                .orElseThrow(() -> BusinessException.of(ResultCode.UNAUTHORIZED, "用户未登录"));
+        return getUserContext().orElseThrow(() -> BusinessException.of(ResultCode.UNAUTHORIZED, "用户未登录"));
     }
 
     // ==================== Context Management ====================
@@ -92,8 +88,6 @@ public class SecurityContextUtil {
     }
 
     private static Set<String> extractPermissions(Set<String> authorities) {
-        return authorities.stream()
-                .filter(a -> !a.startsWith("ROLE_"))
-                .collect(Collectors.toSet());
+        return authorities.stream().filter(a -> !a.startsWith("ROLE_")).collect(Collectors.toSet());
     }
 }

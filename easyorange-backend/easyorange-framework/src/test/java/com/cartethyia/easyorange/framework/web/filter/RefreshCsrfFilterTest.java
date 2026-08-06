@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.framework.web.filter;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -8,8 +10,6 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import tools.jackson.databind.ObjectMapper;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Refresh 端点 CSRF 纵深防御过滤器 — 单元测试。

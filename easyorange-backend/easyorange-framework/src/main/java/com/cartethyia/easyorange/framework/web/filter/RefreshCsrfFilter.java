@@ -7,15 +7,14 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import tools.jackson.databind.ObjectMapper;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Refresh 端点 CSRF 纵深防御过滤器。
@@ -44,15 +43,13 @@ public class RefreshCsrfFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain chain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws ServletException, IOException {
         if (request.getHeader(REQUIRED_HEADER) == null) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-            objectMapper.writeValue(response.getOutputStream(),
-                    Result.error(ResultCode.FORBIDDEN, "缺少自定义请求头，疑似跨站请求"));
+            objectMapper.writeValue(response.getOutputStream(), Result.error(ResultCode.FORBIDDEN, "缺少自定义请求头，疑似跨站请求"));
             return;
         }
         chain.doFilter(request, response);

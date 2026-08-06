@@ -1,20 +1,19 @@
 package com.cartethyia.easyorange.admin.service;
 
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UserRoleRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ResetPasswordResponse;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
+import java.security.SecureRandom;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.security.SecureRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -48,9 +47,9 @@ public class AdminUserSecurityService {
         entity.setPassword(passwordEncoder.encode(newPassword));
         userMapper.updateById(entity);
         return ResetPasswordResponse.builder()
-            .newPassword(newPassword)
-            .message("密码已重置，请将新密码安全地传递给用户")
-            .build();
+                .newPassword(newPassword)
+                .message("密码已重置，请将新密码安全地传递给用户")
+                .build();
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -68,9 +67,9 @@ public class AdminUserSecurityService {
         }
         if (newRole == UserType.ADMIN) {
             long adminCount = ChainWrappers.lambdaQueryChain(userMapper)
-                .eq(UserDO::getUserType, UserType.ADMIN)
-                .eq(UserDO::getDelFlag, 0)
-                .count();
+                    .eq(UserDO::getUserType, UserType.ADMIN)
+                    .eq(UserDO::getDelFlag, 0)
+                    .count();
             if (adminCount <= 1 && entity.getUserType() == UserType.ADMIN) {
                 throw BusinessException.of("不能修改最后一个管理员的角色");
             }

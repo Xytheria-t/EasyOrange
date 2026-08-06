@@ -1,10 +1,21 @@
 package com.cartethyia.easyorange.framework.auth.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.framework.auth.RefreshTokenStore;
 import com.cartethyia.easyorange.framework.auth.TokenRotation;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
+import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,19 +30,6 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 /**
  * TokenService 门面 — 单元测试。
  * <p>
@@ -45,14 +43,19 @@ class TokenServiceImplTest {
 
     @Mock
     private StringRedisTemplate stringRedisTemplate;
+
     @Mock
     private ValueOperations<String, String> valueOps;
+
     @Mock
     private JwtEncoder jwtEncoder;
+
     @Mock
     private JwtDecoder jwtDecoder;
+
     @Mock
     private JwtProperties jwtProperties;
+
     @Mock
     private RefreshTokenStore refreshTokenStore;
 
@@ -63,7 +66,8 @@ class TokenServiceImplTest {
         lenient().when(stringRedisTemplate.opsForValue()).thenReturn(valueOps);
         lenient().when(jwtProperties.getIssuer()).thenReturn("easyorange");
         lenient().when(jwtProperties.getAccessTokenExpiration()).thenReturn(30L);
-        tokenService = new TokenServiceImpl(stringRedisTemplate, jwtEncoder, jwtDecoder, jwtProperties, refreshTokenStore);
+        tokenService =
+                new TokenServiceImpl(stringRedisTemplate, jwtEncoder, jwtDecoder, jwtProperties, refreshTokenStore);
     }
 
     @Test
@@ -120,9 +124,10 @@ class TokenServiceImplTest {
 
         tokenService.revokeAccessToken("access-token");
 
-        verify(valueOps).set(
-                eq(LoginCacheConstants.TOKEN_BLACKLIST_KEY + "jti-1"), eq("1"),
-                anyLong(), eq(TimeUnit.SECONDS));
+        verify(valueOps)
+                .set(
+                        eq(LoginCacheConstants.TOKEN_BLACKLIST_KEY + "jti-1"), eq("1"),
+                        anyLong(), eq(TimeUnit.SECONDS));
     }
 
     @Test
@@ -131,9 +136,10 @@ class TokenServiceImplTest {
         tokenService.revokeAllUserSessions(USER_ID);
 
         verify(refreshTokenStore).revokeAllSessions(USER_ID);
-        verify(valueOps).set(
-                eq(LoginCacheConstants.FORCE_LOGOUT_KEY + USER_ID), anyString(),
-                anyLong(), eq(TimeUnit.MINUTES));
+        verify(valueOps)
+                .set(
+                        eq(LoginCacheConstants.FORCE_LOGOUT_KEY + USER_ID), anyString(),
+                        anyLong(), eq(TimeUnit.MINUTES));
     }
 
     private static Jwt mockJwt(String tokenValue) {

@@ -6,10 +6,6 @@ import com.cartethyia.easyorange.framework.auth.RefreshTokenStore;
 import com.cartethyia.easyorange.framework.auth.TokenRotation;
 import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Component;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -18,6 +14,9 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.concurrent.TimeUnit;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Component;
 
 /**
  * 不透明 refresh token 的 Redis 存储实现。
@@ -78,8 +77,12 @@ public class RefreshTokenStoreImpl implements RefreshTokenStore {
 
         // 消费旧 token
         redis.delete(SESSION_KEY + hash);
-        redis.opsForValue().set(USED_KEY + hash, userId + ":" + System.currentTimeMillis(),
-                USED_MARKER_TTL_SECONDS, TimeUnit.SECONDS);
+        redis.opsForValue()
+                .set(
+                        USED_KEY + hash,
+                        userId + ":" + System.currentTimeMillis(),
+                        USED_MARKER_TTL_SECONDS,
+                        TimeUnit.SECONDS);
         redis.opsForSet().remove(USER_KEY + userId, hash);
 
         // 签发新 token（同用户新会话）
@@ -98,8 +101,12 @@ public class RefreshTokenStoreImpl implements RefreshTokenStore {
             return;
         }
         redis.delete(SESSION_KEY + hash);
-        redis.opsForValue().set(USED_KEY + hash, userId + ":" + System.currentTimeMillis(),
-                USED_MARKER_TTL_SECONDS, TimeUnit.SECONDS);
+        redis.opsForValue()
+                .set(
+                        USED_KEY + hash,
+                        userId + ":" + System.currentTimeMillis(),
+                        USED_MARKER_TTL_SECONDS,
+                        TimeUnit.SECONDS);
         redis.opsForSet().remove(USER_KEY + userId, hash);
     }
 
@@ -109,8 +116,12 @@ public class RefreshTokenStoreImpl implements RefreshTokenStore {
         if (hashes != null) {
             for (var h : hashes) {
                 redis.delete(SESSION_KEY + h);
-                redis.opsForValue().set(USED_KEY + h, userId + ":" + System.currentTimeMillis(),
-                        USED_MARKER_TTL_SECONDS, TimeUnit.SECONDS);
+                redis.opsForValue()
+                        .set(
+                                USED_KEY + h,
+                                userId + ":" + System.currentTimeMillis(),
+                                USED_MARKER_TTL_SECONDS,
+                                TimeUnit.SECONDS);
             }
             redis.delete(USER_KEY + userId);
         }

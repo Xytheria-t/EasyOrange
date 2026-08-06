@@ -2,12 +2,11 @@ package com.cartethyia.easyorange.framework.web.cookie;
 
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
-
-import java.time.Duration;
 
 /**
  * Refresh Token 的 HttpOnly Cookie 装配。
@@ -22,8 +21,10 @@ public class RefreshCookie {
     private final JwtProperties jwtProperties;
 
     public void write(HttpServletResponse response, String refreshToken) {
-        long maxAgeSeconds = Duration.ofDays(jwtProperties.getRefreshTokenExpiration()).getSeconds();
-        response.addHeader(HttpHeaders.SET_COOKIE, build(refreshToken, maxAgeSeconds).toString());
+        long maxAgeSeconds =
+                Duration.ofDays(jwtProperties.getRefreshTokenExpiration()).getSeconds();
+        response.addHeader(
+                HttpHeaders.SET_COOKIE, build(refreshToken, maxAgeSeconds).toString());
     }
 
     public void clear(HttpServletResponse response) {

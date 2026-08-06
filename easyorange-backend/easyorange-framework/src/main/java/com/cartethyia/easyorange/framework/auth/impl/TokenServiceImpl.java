@@ -3,8 +3,15 @@ package com.cartethyia.easyorange.framework.auth.impl;
 import com.cartethyia.easyorange.framework.auth.RefreshTokenStore;
 import com.cartethyia.easyorange.framework.auth.TokenRotation;
 import com.cartethyia.easyorange.framework.auth.TokenService;
-import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
+import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -15,14 +22,6 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Service;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -78,9 +77,7 @@ public class TokenServiceImpl implements TokenService {
                 if (expiresAt != null) {
                     var ttl = Duration.between(Instant.now(), expiresAt).getSeconds();
                     if (ttl > 0) {
-                        stringRedisTemplate.opsForValue().set(
-                                getBlacklistKey(jti), "1", ttl, TimeUnit.SECONDS
-                        );
+                        stringRedisTemplate.opsForValue().set(getBlacklistKey(jti), "1", ttl, TimeUnit.SECONDS);
                     }
                 }
             }
@@ -94,10 +91,13 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public void revokeAllUserSessions(String userId) {
         refreshTokenStore.revokeAllSessions(userId);
-        stringRedisTemplate.opsForValue().set(
-                getForceLogoutKey(userId), String.valueOf(System.currentTimeMillis()),
-                jwtProperties.getAccessTokenExpiration(), TimeUnit.MINUTES
-        );
+        stringRedisTemplate
+                .opsForValue()
+                .set(
+                        getForceLogoutKey(userId),
+                        String.valueOf(System.currentTimeMillis()),
+                        jwtProperties.getAccessTokenExpiration(),
+                        TimeUnit.MINUTES);
     }
 
     private String getBlacklistKey(String jti) {

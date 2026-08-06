@@ -1,27 +1,5 @@
 package com.cartethyia.easyorange.framework.auth.impl;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.auth.RefreshTokenStore;
-import com.cartethyia.easyorange.framework.auth.TokenRotation;
-import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
-import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.redis.core.SetOperations;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,6 +10,26 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+
+import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.framework.auth.RefreshTokenStore;
+import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
+import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 /**
  * RefreshTokenStore Redis 实现 — 单元测试。
@@ -49,10 +47,13 @@ class RefreshTokenStoreImplTest {
 
     @Mock
     private StringRedisTemplate redis;
+
     @Mock
     private ValueOperations<String, String> valueOps;
+
     @Mock
     private SetOperations<String, String> setOps;
+
     @Mock
     private JwtProperties jwtProperties;
 
@@ -123,8 +124,7 @@ class RefreshTokenStoreImplTest {
         var otherHash = "other-active-hash";
         when(setOps.members(USER_KEYPREFIX + USER_ID)).thenReturn(Set.of(oldHash, otherHash));
 
-        assertThatThrownBy(() -> store.rotate(oldToken))
-                .isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> store.rotate(oldToken)).isInstanceOf(BusinessException.class);
 
         // 吊销所有会话
         verify(redis).delete(SESSION + otherHash);
@@ -141,8 +141,7 @@ class RefreshTokenStoreImplTest {
         var freshTs = System.currentTimeMillis();
         when(valueOps.get(USED + oldHash)).thenReturn(USER_ID + ":" + freshTs);
 
-        assertThatThrownBy(() -> store.rotate(oldToken))
-                .isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> store.rotate(oldToken)).isInstanceOf(BusinessException.class);
 
         verifyNoInteractions(setOps);
     }
@@ -155,8 +154,7 @@ class RefreshTokenStoreImplTest {
         when(valueOps.get(SESSION + hash)).thenReturn(null);
         when(valueOps.get(USED + hash)).thenReturn(null);
 
-        assertThatThrownBy(() -> store.rotate(token))
-                .isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> store.rotate(token)).isInstanceOf(BusinessException.class);
     }
 
     // ==================== revoke (登出) ====================

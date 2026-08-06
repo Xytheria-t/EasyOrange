@@ -6,7 +6,4 @@ package com.cartethyia.easyorange.framework.auth;
  * @param userId    会话所属用户
  * @param newToken  新签发的 refresh token
  */
-public record TokenRotation(
-    String userId,
-    String newToken
-) {}
+public record TokenRotation(String userId, String newToken) {}

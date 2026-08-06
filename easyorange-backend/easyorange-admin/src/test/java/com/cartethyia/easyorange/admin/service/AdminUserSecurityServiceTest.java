@@ -1,5 +1,11 @@
 package com.cartethyia.easyorange.admin.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UserRoleRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ResetPasswordResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
@@ -16,12 +22,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminUserSecurityService 单元测试")

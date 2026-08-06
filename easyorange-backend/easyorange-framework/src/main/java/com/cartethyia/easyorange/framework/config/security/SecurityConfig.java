@@ -13,9 +13,17 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
@@ -47,18 +55,7 @@ import org.springframework.security.web.header.writers.ContentSecurityPolicyHead
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
 import tools.jackson.databind.ObjectMapper;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @AutoConfiguration
@@ -88,43 +85,43 @@ public class SecurityConfig {
     @Bean
     @Order(1)
     public SecurityFilterChain filterChain(HttpSecurity http) {
-        return http
-            .csrf(AbstractHttpConfigurer::disable)
-            .formLogin(AbstractHttpConfigurer::disable)
-            .httpBasic(AbstractHttpConfigurer::disable)
-            .cors(Customizer.withDefaults())
-            .exceptionHandling(exception -> exception
-                .authenticationEntryPoint((_, response, _) ->
-                    writeErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
-                            ResultCode.UNAUTHORIZED, "认证失败，请重新登录"))
-                .accessDeniedHandler((_, response, _) ->
-                    writeErrorResponse(response, HttpServletResponse.SC_FORBIDDEN,
-                            ResultCode.FORBIDDEN, "权限不足"))
-            )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(securityProperties.getIgnorePaths().toArray(String[]::new)).permitAll()
-                .requestMatchers(HttpMethod.GET, securityProperties.getProductPaths().toArray(String[]::new)).permitAll()
-                .requestMatchers(securityProperties.getStaticPaths().toArray(String[]::new)).permitAll()
-                .anyRequest().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
-            )
-            .addFilterBefore(idempotencyKeyFilter, AnonymousAuthenticationFilter.class)
-            .addFilterBefore(rateLimitFilter, AnonymousAuthenticationFilter.class)
-            .addFilterBefore(refreshCsrfFilter, AnonymousAuthenticationFilter.class)
-            .addFilterBefore(tokenRevocationFilter, AnonymousAuthenticationFilter.class)
-            .headers(headers -> headers
-                .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
-                .addHeaderWriter(new ContentSecurityPolicyHeaderWriter(
-                    "default-src 'none'; base-uri 'none'; form-action 'none'"))
-                .httpStrictTransportSecurity(hsts -> hsts
-                    .includeSubDomains(true)
-                    .maxAgeInSeconds(HSTS_MAX_AGE_SECONDS))
-            )
-            .build();
+        return http.csrf(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((_, response, _) -> writeErrorResponse(
+                                response, HttpServletResponse.SC_UNAUTHORIZED, ResultCode.UNAUTHORIZED, "认证失败，请重新登录"))
+                        .accessDeniedHandler((_, response, _) -> writeErrorResponse(
+                                response, HttpServletResponse.SC_FORBIDDEN, ResultCode.FORBIDDEN, "权限不足")))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**")
+                        .permitAll()
+                        .requestMatchers(securityProperties.getIgnorePaths().toArray(String[]::new))
+                        .permitAll()
+                        // 精确匹配优先于 product-paths 前缀放行：/api/products/my 需登录（CLAUDE.md product-paths 陷阱）
+                        .requestMatchers(HttpMethod.GET, "/api/products/my/**")
+                        .authenticated()
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                securityProperties.getProductPaths().toArray(String[]::new))
+                        .permitAll()
+                        .requestMatchers(securityProperties.getStaticPaths().toArray(String[]::new))
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
+                .oauth2ResourceServer(
+                        oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+                .addFilterBefore(idempotencyKeyFilter, AnonymousAuthenticationFilter.class)
+                .addFilterBefore(rateLimitFilter, AnonymousAuthenticationFilter.class)
+                .addFilterBefore(refreshCsrfFilter, AnonymousAuthenticationFilter.class)
+                .addFilterBefore(tokenRevocationFilter, AnonymousAuthenticationFilter.class)
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
+                        .addHeaderWriter(new ContentSecurityPolicyHeaderWriter(
+                                "default-src 'none'; base-uri 'none'; form-action 'none'"))
+                        .httpStrictTransportSecurity(
+                                hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(HSTS_MAX_AGE_SECONDS)))
+                .build();
     }
 
     // ========== JWT Key & Codec ==========
@@ -164,7 +161,8 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder(KeyPair keyPair, JwtProperties properties) {
-        var decoder = NimbusJwtDecoder.withPublicKey((RSAPublicKey) keyPair.getPublic()).build();
+        var decoder = NimbusJwtDecoder.withPublicKey((RSAPublicKey) keyPair.getPublic())
+                .build();
         decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(properties.getIssuer()));
         return decoder;
     }
@@ -207,7 +205,8 @@ public class SecurityConfig {
 
     // ========== Private Helpers ==========
 
-    private void writeErrorResponse(HttpServletResponse response, int status, ResultCode code, String message) throws IOException {
+    private void writeErrorResponse(HttpServletResponse response, int status, ResultCode code, String message)
+            throws IOException {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
@@ -225,9 +224,8 @@ public class SecurityConfig {
             if (authorityStrings == null) {
                 authorityStrings = List.of();
             }
-            var authorities = authorityStrings.stream()
-                    .map(SimpleGrantedAuthority::new)
-                    .toList();
+            var authorities =
+                    authorityStrings.stream().map(SimpleGrantedAuthority::new).toList();
             var roles = authorityStrings.stream()
                     .filter(a -> a.startsWith("ROLE_"))
                     .map(a -> a.substring(5))
@@ -244,5 +242,4 @@ public class SecurityConfig {
             return authentication;
         };
     }
-
 }
