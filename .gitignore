@@ -88,3 +88,4 @@ doc/interview/
 test-results/
 playwright-report/
 blob-report/
+easyorange-frontend/tests/e2e/reports/
