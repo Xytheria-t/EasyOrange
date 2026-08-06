@@ -7,8 +7,7 @@ public record AiReviewResult(
         String suggestedActionDesc,
         int confidenceScore,
         List<String> riskFlags,
-        String reasoning
-) {
+        String reasoning) {
     public static final int ACTION_PASS = 1;
     public static final int ACTION_REJECT = 2;
 }

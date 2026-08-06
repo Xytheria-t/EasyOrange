@@ -3,13 +3,12 @@ package com.cartethyia.easyorange.ai.service;
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
 import com.cartethyia.easyorange.ai.dto.SemanticSearchResult;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
-import org.springframework.ai.embedding.EmbeddingModel;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -37,17 +36,10 @@ public class SemanticSearchService {
         }
 
         var query = new ProductSearchQueryPort.ProductSearchQuery(
-                keyword, null, null, null, null, null, null, pageNum, pageSize,
-                embedding, true
-        );
+                keyword, null, null, null, null, null, null, pageNum, pageSize, embedding, true);
 
         var result = searchQueryPort.get().search(query);
 
-        return new SemanticSearchResult(
-                result.records(),
-                result.total(),
-                result.current(),
-                result.size()
-        );
+        return new SemanticSearchResult(result.records(), result.total(), result.current(), result.size());
     }
 }

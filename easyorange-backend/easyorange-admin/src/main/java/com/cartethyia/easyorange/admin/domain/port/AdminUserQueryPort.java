@@ -22,11 +22,5 @@ public interface AdminUserQueryPort {
     /**
      * 用户信息
      */
-    record UserInfo(
-        String id,
-        String username,
-        String nickName,
-        String avatar,
-        String phone
-    ) {}
+    record UserInfo(String id, String username, String nickName, String avatar, String phone) {}
 }

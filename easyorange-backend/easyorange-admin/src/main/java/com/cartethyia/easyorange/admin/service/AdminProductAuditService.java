@@ -21,16 +21,15 @@ import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundExcepti
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
-import tools.jackson.core.JacksonException;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -48,8 +47,8 @@ public class AdminProductAuditService {
 
     @Transactional(rollbackFor = Exception.class)
     public void auditProduct(String id, ProductAuditRequest request) {
-        Product product = productRepository.findById(ProductId.of(id))
-                .orElseThrow(() -> new ProductNotFoundException(id));
+        Product product =
+                productRepository.findById(ProductId.of(id)).orElseThrow(() -> new ProductNotFoundException(id));
         auditOne(product, parseAction(request.action()), request.reason(), request.remark(), request.dimensions());
     }
 
@@ -60,7 +59,8 @@ public class AdminProductAuditService {
 
         for (BatchAuditRequest.AuditItem item : request.getItems()) {
             try {
-                Product product = productRepository.findById(ProductId.of(item.productId()))
+                Product product = productRepository
+                        .findById(ProductId.of(item.productId()))
                         .orElseThrow(() -> new ProductNotFoundException(item.productId()));
                 auditOne(product, parseAction(item.action()), item.reason(), null, item.dimensions());
                 successCount++;
@@ -96,19 +96,19 @@ public class AdminProductAuditService {
 
     private void auditOne(Product product, AuditAction action, String reason, String remark, List<String> dimensions) {
         String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        String operatorName = SecurityContextUtil.getUserContext()
-                .map(AuthUser::username)
-                .orElse("管理员");
+        String operatorName =
+                SecurityContextUtil.getUserContext().map(AuthUser::username).orElse("管理员");
 
         String beforeStatus = product.getStatus().getCode();
-        Transition<Product, ?> t = switch (action) {
-            case APPROVED -> product.approve(reason);
-            case REJECTED -> {
-                BizRequire.notBlank(reason, "拒绝时必须填写原因");
-                yield product.reject(reason);
-            }
-            default -> throw BusinessException.of("无效的审核动作");
-        };
+        Transition<Product, ?> t =
+                switch (action) {
+                    case APPROVED -> product.approve(reason);
+                    case REJECTED -> {
+                        BizRequire.notBlank(reason, "拒绝时必须填写原因");
+                        yield product.reject(reason);
+                    }
+                    default -> throw BusinessException.of("无效的审核动作");
+                };
 
         productRepository.save(t.aggregate());
 
@@ -126,8 +126,13 @@ public class AdminProductAuditService {
 
         domainEventPublisher.publish(t.event());
 
-        log.info("action=audit_product productId={} action={} operatorId={} beforeStatus={} afterStatus={}",
-                product.getId().value(), action.getCode(), operatorId, beforeStatus, product.getStatus().getCode());
+        log.info(
+                "action=audit_product productId={} action={} operatorId={} beforeStatus={} afterStatus={}",
+                product.getId().value(),
+                action.getCode(),
+                operatorId,
+                beforeStatus,
+                product.getStatus().getCode());
     }
 
     private static AuditAction parseAction(Integer actionCode) {
@@ -153,8 +158,7 @@ public class AdminProductAuditService {
                 log.getAfterStatus(),
                 describeStatus(log.getAfterStatus()),
                 log.getRemark(),
-                log.getCreateTime()
-        );
+                log.getCreateTime());
     }
 
     private String describeStatus(String code) {

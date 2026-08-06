@@ -12,5 +12,4 @@ public record AutoListingResult(
         String conditionLevel,
         String location,
         List<String> tags,
-        List<String> imageDescriptions
-) {}
+        List<String> imageDescriptions) {}

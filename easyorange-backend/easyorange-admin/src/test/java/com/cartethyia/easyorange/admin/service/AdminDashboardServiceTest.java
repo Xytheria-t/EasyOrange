@@ -1,5 +1,11 @@
 package com.cartethyia.easyorange.admin.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ActivityResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.DashboardStatsResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.PendingItemsResponse;
@@ -9,14 +15,20 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendRes
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
-import com.cartethyia.easyorange.product.domain.entity.ProductReport;
-import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
+import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,19 +37,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
-
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminDashboardService 单元测试")
@@ -81,7 +80,8 @@ class AdminDashboardServiceTest {
         void getDashboardStats_returnsStats() {
             when(userMapper.selectCount(any())).thenReturn(100L, 5L);
             when(productQueryRepository.countByStatus(null)).thenReturn(200L);
-            when(productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode())).thenReturn(10L);
+            when(productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode()))
+                    .thenReturn(10L);
             when(orderReadRepository.countByStatus(null)).thenReturn(300L);
             when(productReportQueryRepository.countPendingReports()).thenReturn(8L);
 
@@ -107,11 +107,8 @@ class AdminDashboardServiceTest {
             when(orderReadRepository.countByStatus(any(OrderStatus.class))).thenReturn(5L);
             when(productQueryRepository.countByStatus(anyString())).thenReturn(7L);
             when(productReportQueryRepository.findPendingReports(anyInt(), anyInt()))
-                    .thenReturn(List.of(
-                            ProductReport.reconstitute("1", "100", "1",
-                                    "虚假信息", null, null,
-                                    LocalDateTime.now(), LocalDateTime.now(), "1")
-                    ));
+                    .thenReturn(List.of(ProductReport.reconstitute(
+                            "1", "100", "1", "虚假信息", null, null, LocalDateTime.now(), LocalDateTime.now(), "1")));
 
             PendingItemsResponse items = dashboardService.getPendingItems();
 
@@ -149,9 +146,9 @@ class AdminDashboardServiceTest {
             userRow.put("month", "2026-05");
             userRow.put("cnt", 10L);
             when(jdbcTemplate.queryForList(anyString(), any(LocalDateTime.class)))
-                .thenReturn(List.of(userRow))
-                .thenReturn(List.of())
-                .thenReturn(List.of());
+                    .thenReturn(List.of(userRow))
+                    .thenReturn(List.of())
+                    .thenReturn(List.of());
 
             List<TrendResponse> trend = dashboardService.getTrend();
 
@@ -189,10 +186,10 @@ class AdminDashboardServiceTest {
             productRow.put("create_time", Timestamp.valueOf(LocalDateTime.now()));
 
             when(jdbcTemplate.queryForList(anyString()))
-                .thenReturn(List.of(userRow))
-                .thenReturn(List.of(productRow))
-                .thenReturn(List.of())
-                .thenReturn(List.of());
+                    .thenReturn(List.of(userRow))
+                    .thenReturn(List.of(productRow))
+                    .thenReturn(List.of())
+                    .thenReturn(List.of());
 
             List<ActivityResponse> activities = dashboardService.getRecentActivity();
 
@@ -220,7 +217,7 @@ class AdminDashboardServiceTest {
             row2.put("cnt", 38L);
 
             when(jdbcTemplate.queryForList(anyString(), any(LocalDateTime.class)))
-                .thenReturn(List.of(row1, row2));
+                    .thenReturn(List.of(row1, row2));
 
             List<UserActivityHeatmapResponse> result = dashboardService.getUserActivityHeatmap();
 

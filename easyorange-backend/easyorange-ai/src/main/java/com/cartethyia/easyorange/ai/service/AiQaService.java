@@ -5,9 +5,9 @@ import com.cartethyia.easyorange.ai.dto.QaRequest;
 import com.cartethyia.easyorange.ai.dto.QaResponse;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
-import org.springframework.ai.chat.model.ChatModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -42,14 +42,15 @@ public class AiQaService {
     }
 
     private String loadSystemPrompt() {
-        return promptRegistry.getLatest(PROMPT_NAME)
+        return promptRegistry
+                .getLatest(PROMPT_NAME)
                 .map(PromptTemplate::template)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Prompt template not found: " + PROMPT_NAME));
+                .orElseThrow(() -> new IllegalStateException("Prompt template not found: " + PROMPT_NAME));
     }
 
     private String buildUserMessage(QaRequest request) {
-        return String.format("""
+        return String.format(
+                """
                 商品信息：
                 - 名称：%s
                 - 描述：%s
@@ -68,7 +69,6 @@ public class AiQaService {
                 request.conditionLevel(),
                 request.sellerName(),
                 request.sellerCreditLevel(),
-                request.question()
-        );
+                request.question());
     }
 }

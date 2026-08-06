@@ -1,18 +1,17 @@
 package com.cartethyia.easyorange.ai.prompt;
 
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.stereotype.Component;
-import org.yaml.snakeyaml.Yaml;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.stereotype.Component;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  * 基于 YAML 文件的 Prompt 模板注册中心。
@@ -93,9 +92,10 @@ public class YamlPromptRegistry implements PromptRegistry {
     }
 
     @SuppressWarnings("unchecked")
-    private void loadFromDirectory(Yaml yaml, Map<String, List<PromptTemplate>> loaded, Stream<Path> files) throws IOException {
-        var yamlFiles = files
-                .filter(p -> p.toString().endsWith(".yml") || p.toString().endsWith(".yaml"))
+    private void loadFromDirectory(Yaml yaml, Map<String, List<PromptTemplate>> loaded, Stream<Path> files)
+            throws IOException {
+        var yamlFiles = files.filter(
+                        p -> p.toString().endsWith(".yml") || p.toString().endsWith(".yaml"))
                 .toList();
         for (var file : yamlFiles) {
             try (InputStream is = Files.newInputStream(file)) {
@@ -114,8 +114,7 @@ public class YamlPromptRegistry implements PromptRegistry {
                 requireString(data, "name"),
                 requireString(data, "version"),
                 requireString(data, "template"),
-                getString(data, "description", "")
-        );
+                getString(data, "description", ""));
     }
 
     private String requireString(Map<String, Object> data, String key) {
@@ -183,7 +182,7 @@ public class YamlPromptRegistry implements PromptRegistry {
     private static int[] parseVersion(String version) {
         var stripped = version.startsWith("v") ? version.substring(1) : version;
         var parts = stripped.split("\\.");
-        var result = new int[]{0, 0, 0};
+        var result = new int[] {0, 0, 0};
         for (int i = 0; i < Math.min(parts.length, 3); i++) {
             try {
                 result[i] = Integer.parseInt(parts[i]);

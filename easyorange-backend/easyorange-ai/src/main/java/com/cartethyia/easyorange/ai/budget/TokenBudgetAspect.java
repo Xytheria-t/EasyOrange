@@ -40,14 +40,19 @@ public class TokenBudgetAspect {
         var maxPerCall = resolved.maxTokensPerCall();
         var dailyLimit = resolved.dailyTokenLimit();
 
-        var used = budgetStore.getTodayUsage(scenario)
+        var used = budgetStore
+                .getTodayUsage(scenario)
                 .map(TokenBudgetStore.TokenUsage::total)
                 .orElse(0);
 
         // 预算检查（dailyTokenLimit=0 表示不限）
         if (dailyLimit > 0 && used + maxPerCall > dailyLimit) {
-            log.warn("action=token_budget_exceeded, scenario={}, used={}, maxPerCall={}, limit={}",
-                    scenario, used, maxPerCall, dailyLimit);
+            log.warn(
+                    "action=token_budget_exceeded, scenario={}, used={}, maxPerCall={}, limit={}",
+                    scenario,
+                    used,
+                    maxPerCall,
+                    dailyLimit);
             throw new TokenBudgetExceededException(scenario, used, dailyLimit);
         }
 

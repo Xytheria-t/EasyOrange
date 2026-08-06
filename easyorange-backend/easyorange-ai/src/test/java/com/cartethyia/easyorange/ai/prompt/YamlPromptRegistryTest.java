@@ -1,14 +1,13 @@
 package com.cartethyia.easyorange.ai.prompt;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 @DisplayName("YamlPromptRegistry 测试")
 class YamlPromptRegistryTest {
@@ -95,8 +94,7 @@ class YamlPromptRegistryTest {
         var versions = registry.listVersions("tag");
 
         assertThat(versions).hasSize(2);
-        assertThat(versions).extracting(PromptTemplate::version)
-                .containsExactlyInAnyOrder("v1.0.0", "v2.0.0");
+        assertThat(versions).extracting(PromptTemplate::version).containsExactlyInAnyOrder("v1.0.0", "v2.0.0");
     }
 
     @Test

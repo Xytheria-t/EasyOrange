@@ -23,40 +23,33 @@ public interface AdminRatingQueryPort {
      * 评价查询条件
      */
     record RatingQueryCondition(
-        String productId,
-        String userId,
-        Integer rating,
-        Integer status,
-        String keyword,
-        LocalDateTime startTime,
-        LocalDateTime endTime,
-        Integer pageNum,
-        Integer pageSize
-    ) {}
+            String productId,
+            String userId,
+            Integer rating,
+            Integer status,
+            String keyword,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            Integer pageNum,
+            Integer pageSize) {}
 
     /**
      * 评价查询结果
      */
-    record RatingQueryResult(
-        List<RatingSummary> records,
-        long total,
-        int pageNum,
-        int pageSize
-    ) {}
+    record RatingQueryResult(List<RatingSummary> records, long total, int pageNum, int pageSize) {}
 
     /**
      * 评价摘要信息
      */
     record RatingSummary(
-        String id,
-        String productId,
-        String userId,
-        Integer rating,
-        String content,
-        String replyContent,
-        Integer likes,
-        Integer status,
-        LocalDateTime createTime,
-        LocalDateTime updateTime
-    ) {}
+            String id,
+            String productId,
+            String userId,
+            Integer rating,
+            String content,
+            String replyContent,
+            Integer likes,
+            Integer status,
+            LocalDateTime createTime,
+            LocalDateTime updateTime) {}
 }

@@ -1,13 +1,13 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminOrderQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.OrderInterventionRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.admin.service.AdminOrderService;
+import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,28 +37,19 @@ public class AdminOrderController {
     }
 
     @PutMapping("/{id}/cancel")
-    public Result<Void> cancelOrder(
-        @PathVariable String id,
-        @Valid @RequestBody OrderInterventionRequest request
-    ) {
+    public Result<Void> cancelOrder(@PathVariable String id, @Valid @RequestBody OrderInterventionRequest request) {
         adminOrderService.cancelOrder(id, request.getReason());
         return Result.success();
     }
 
     @PutMapping("/{id}/force-complete")
-    public Result<Void> forceComplete(
-        @PathVariable String id,
-        @Valid @RequestBody OrderInterventionRequest request
-    ) {
+    public Result<Void> forceComplete(@PathVariable String id, @Valid @RequestBody OrderInterventionRequest request) {
         adminOrderService.forceComplete(id, request.getReason());
         return Result.success();
     }
 
     @PutMapping("/{id}/refund")
-    public Result<Void> refundOrder(
-        @PathVariable String id,
-        @Valid @RequestBody OrderInterventionRequest request
-    ) {
+    public Result<Void> refundOrder(@PathVariable String id, @Valid @RequestBody OrderInterventionRequest request) {
         adminOrderService.refundOrder(id, request.getReason());
         return Result.success();
     }

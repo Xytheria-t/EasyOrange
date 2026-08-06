@@ -1,15 +1,22 @@
 package com.cartethyia.easyorange.admin.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryCreateRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryUpdateRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryTreeResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,15 +24,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminCategoryService 单元测试")
@@ -99,10 +97,12 @@ class AdminCategoryServiceTest {
             when(categoryQueryRepository.findByName("新分类")).thenReturn(null);
             // Set ID on insert to avoid NPE in toCategoryResponse (entity.id would be null after mocked insert)
             doAnswer(invocation -> {
-                CategoryDO entity = invocation.getArgument(0);
-                entity.setId("99");
-                return 1;
-            }).when(categoryMapper).insert(any(CategoryDO.class));
+                        CategoryDO entity = invocation.getArgument(0);
+                        entity.setId("99");
+                        return 1;
+                    })
+                    .when(categoryMapper)
+                    .insert(any(CategoryDO.class));
 
             CategoryCreateRequest request = new CategoryCreateRequest("新分类", null, 1);
 
@@ -118,10 +118,12 @@ class AdminCategoryServiceTest {
             when(categoryMapper.selectById(CATEGORY_ID)).thenReturn(parent);
             when(categoryQueryRepository.findByName("手机")).thenReturn(null);
             doAnswer(invocation -> {
-                CategoryDO entity = invocation.getArgument(0);
-                entity.setId("99");
-                return 1;
-            }).when(categoryMapper).insert(any(CategoryDO.class));
+                        CategoryDO entity = invocation.getArgument(0);
+                        entity.setId("99");
+                        return 1;
+                    })
+                    .when(categoryMapper)
+                    .insert(any(CategoryDO.class));
 
             CategoryCreateRequest request = new CategoryCreateRequest("手机", CATEGORY_ID, null);
 
@@ -145,7 +147,8 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("同名一级分类抛出异常")
         void createCategory_duplicateName_throws() {
-            CategoryReadModel existing = new CategoryReadModel(CATEGORY_ID, "已存在", null, 1, null, 0, 1, LocalDateTime.now(), 0);
+            CategoryReadModel existing =
+                    new CategoryReadModel(CATEGORY_ID, "已存在", null, 1, null, 0, 1, LocalDateTime.now(), 0);
             when(categoryQueryRepository.findByName("已存在")).thenReturn(existing);
 
             CategoryCreateRequest request = new CategoryCreateRequest("已存在", null, null);

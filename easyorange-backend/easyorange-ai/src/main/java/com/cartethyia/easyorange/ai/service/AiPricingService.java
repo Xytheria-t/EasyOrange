@@ -4,13 +4,12 @@ import com.cartethyia.easyorange.ai.budget.TokenBudget;
 import com.cartethyia.easyorange.ai.dto.PricingSuggestion;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
-import org.springframework.ai.chat.model.ChatModel;
-import tools.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -29,11 +28,11 @@ public class AiPricingService {
             String description,
             String categoryName,
             String conditionLevel,
-            BigDecimal originalPrice
-    ) {
+            BigDecimal originalPrice) {
         String systemPrompt = loadSystemPrompt();
 
-        String userMessage = String.format("""
+        String userMessage = String.format(
+                """
                 商品名称：%s
                 描述：%s
                 分类：%s
@@ -43,9 +42,8 @@ public class AiPricingService {
                 productName,
                 description != null ? description : "无",
                 categoryName != null ? categoryName : "未知",
-                formatCondition(conditionLevel),
-                originalPrice != null ? "¥" + originalPrice : "未知"
-        );
+                AiModelSupport.formatCondition(conditionLevel),
+                originalPrice != null ? "¥" + originalPrice : "未知");
 
         try {
             String jsonResponse = AiModelSupport.callJson(chatModel, systemPrompt, userMessage);
@@ -64,20 +62,9 @@ public class AiPricingService {
      * YAML 缺失时 fail-fast，避免静默使用错误 prompt。
      */
     private String loadSystemPrompt() {
-        return promptRegistry.getLatest(PROMPT_NAME)
+        return promptRegistry
+                .getLatest(PROMPT_NAME)
                 .map(PromptTemplate::template)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Prompt template not found: " + PROMPT_NAME));
-    }
-
-    private String formatCondition(String conditionLevel) {
-        if (conditionLevel == null) return "未知";
-        return switch (conditionLevel) {
-            case "1" -> "全新";
-            case "2" -> "九五新";
-            case "3" -> "八五新";
-            case "4" -> "七成新";
-            default -> "未知";
-        };
+                .orElseThrow(() -> new IllegalStateException("Prompt template not found: " + PROMPT_NAME));
     }
 }

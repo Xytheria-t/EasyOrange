@@ -1,17 +1,16 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryCreateRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryUpdateRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryTreeResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryTreeResponse;
 import com.cartethyia.easyorange.admin.service.AdminCategoryService;
+import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "管理后台-分类", description = "商品分类管理")
 @RestController
@@ -38,14 +37,12 @@ public class AdminCategoryController {
 
     @PutMapping("/{id}")
     public Result<CategoryResponse> updateCategory(
-        @PathVariable String id,
-        @Valid @RequestBody CategoryUpdateRequest request
-    ) {
+            @PathVariable String id, @Valid @RequestBody CategoryUpdateRequest request) {
         return Result.success(adminCategoryService.updateCategory(id, request));
     }
 
     @PutMapping("/{id}/status")
-    public Result<Void> updateStatus(        @PathVariable String id, @RequestParam Integer status) {
+    public Result<Void> updateStatus(@PathVariable String id, @RequestParam Integer status) {
         adminCategoryService.updateStatus(id, status);
         return Result.success();
     }

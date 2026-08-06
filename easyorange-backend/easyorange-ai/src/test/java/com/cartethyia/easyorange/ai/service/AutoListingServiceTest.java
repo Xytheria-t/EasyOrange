@@ -1,15 +1,16 @@
 package com.cartethyia.easyorange.ai.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.ai.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
 import com.cartethyia.easyorange.ai.prompt.TestPromptRegistry;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.Prompt;
-import tools.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,14 +18,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
+import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AutoListingService 测试")
@@ -62,8 +61,7 @@ class AutoListingServiceTest {
         @Test
         @DisplayName("正常流程 — 视觉识别 + 结构化生成")
         void analyzeImages_success() {
-            when(visionChatModel.call(any(Prompt.class)))
-                    .thenReturn(textResponse("图片中是一部九成新的 iPhone 14"));
+            when(visionChatModel.call(any(Prompt.class))).thenReturn(textResponse("图片中是一部九成新的 iPhone 14"));
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(VALID_JSON));
 
             AutoListingResult result = service.analyzeImages(List.of("http://example.com/a.jpg"));
@@ -113,8 +111,7 @@ class AutoListingServiceTest {
         @Test
         @DisplayName("LLM 抛出异常时返回 null")
         void analyzeImages_llmThrows() {
-            when(visionChatModel.call(any(Prompt.class)))
-                    .thenThrow(new RuntimeException("vision timeout"));
+            when(visionChatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("vision timeout"));
 
             AutoListingResult result = service.analyzeImages(List.of("http://example.com/a.jpg"));
 

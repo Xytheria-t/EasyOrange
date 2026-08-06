@@ -26,15 +26,14 @@ import com.cartethyia.easyorange.product.domain.repository.ProductReportReposito
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -56,11 +55,17 @@ public class AdminReportService {
         int page = pageNum != null ? pageNum : 1;
         int size = pageSize != null ? pageSize : 20;
 
-        PageResult<ProductReport> reportPage = productReportQueryRepository
-                .findByStatus(status != null ? String.valueOf(status) : null, page, size);
+        PageResult<ProductReport> reportPage =
+                productReportQueryRepository.findByStatus(status != null ? String.valueOf(status) : null, page, size);
 
-        List<String> productIds = reportPage.records().stream().map(ProductReport::getProductId).distinct().toList();
-        List<String> reporterIds = reportPage.records().stream().map(ProductReport::getReporterId).distinct().toList();
+        List<String> productIds = reportPage.records().stream()
+                .map(ProductReport::getProductId)
+                .distinct()
+                .toList();
+        List<String> reporterIds = reportPage.records().stream()
+                .map(ProductReport::getReporterId)
+                .distinct()
+                .toList();
 
         Map<String, AdminUserQueryPort.UserInfo> userMap = adminUserQueryPort.getUserInfos(reporterIds);
         Map<String, AdminProductQueryPort.ProductInfo> productMap = adminProductQueryPort.getProductInfos(productIds);
@@ -82,11 +87,13 @@ public class AdminReportService {
         ProductReport report = productReportRepository.findById(id);
         BizRequire.notNull(report, AdminResultCode.REPORT_NOT_FOUND);
 
-        AdminUserQueryPort.UserInfo reporter = adminUserQueryPort.getUserInfos(List.of(report.getReporterId()))
-                .get(report.getReporterId());
-        AdminProductQueryPort.ProductInfo product = adminProductQueryPort.getProductInfos(List.of(report.getProductId()))
+        AdminUserQueryPort.UserInfo reporter =
+                adminUserQueryPort.getUserInfos(List.of(report.getReporterId())).get(report.getReporterId());
+        AdminProductQueryPort.ProductInfo product = adminProductQueryPort
+                .getProductInfos(List.of(report.getProductId()))
                 .get(report.getProductId());
-        String productImage = firstImage(adminProductQueryPort.getProductImages(List.of(report.getProductId()))
+        String productImage = firstImage(adminProductQueryPort
+                .getProductImages(List.of(report.getProductId()))
                 .get(report.getProductId()));
 
         return assembler.toAdminReportResponse(report, reporter, product, productImage);
@@ -102,8 +109,10 @@ public class AdminReportService {
     @Transactional(readOnly = true)
     public List<ReportHandleHistoryResponse> getReportHistory(String reportId) {
         List<ReportHandleHistory> histories = reportHandleHistoryRepository.findByReportId(reportId);
-        Map<String, AdminUserQueryPort.UserInfo> operatorMap = adminUserQueryPort.getUserInfos(
-                histories.stream().map(ReportHandleHistory::getOperatorId).distinct().toList());
+        Map<String, AdminUserQueryPort.UserInfo> operatorMap = adminUserQueryPort.getUserInfos(histories.stream()
+                .map(ReportHandleHistory::getOperatorId)
+                .distinct()
+                .toList());
 
         return histories.stream()
                 .map(h -> assembler.toHistoryResponse(h, operatorMap.get(h.getOperatorId())))
@@ -151,18 +160,19 @@ public class AdminReportService {
         }
 
         String result = action.describe(remark);
-        ProductReport updated = switch (action) {
-            case PRODUCT_OFFLINE -> {
-                handleProductOffline(report);
-                yield report.approve(result);
-            }
-            case BAN_PRODUCT -> {
-                handleBanProduct(report, remark);
-                yield report.approve(result);
-            }
-            case RESOLVE -> report.approve(result);
-            case DISMISS, IGNORE, WARN_SENDER -> report.reject(result);
-        };
+        ProductReport updated =
+                switch (action) {
+                    case PRODUCT_OFFLINE -> {
+                        handleProductOffline(report);
+                        yield report.approve(result);
+                    }
+                    case BAN_PRODUCT -> {
+                        handleBanProduct(report, remark);
+                        yield report.approve(result);
+                    }
+                    case RESOLVE -> report.approve(result);
+                    case DISMISS, IGNORE, WARN_SENDER -> report.reject(result);
+                };
 
         reportHandleHistoryRepository.save(ReportHandleHistory.create(reportId, operatorId, action.getCode(), result));
         productReportRepository.update(updated);
@@ -180,14 +190,16 @@ public class AdminReportService {
     }
 
     private void handleProductOffline(ProductReport report) {
-        var product = productRepository.findById(ProductId.of(report.getProductId()))
+        var product = productRepository
+                .findById(ProductId.of(report.getProductId()))
                 .orElseThrow(() -> BusinessException.of(AdminResultCode.REPORT_PRODUCT_NOT_FOUND));
         productRepository.save(product.takeOffline().aggregate());
         productCachePort.evictProductCache(report.getProductId());
     }
 
     private void handleBanProduct(ProductReport report, String remark) {
-        var product = productRepository.findById(ProductId.of(report.getProductId()))
+        var product = productRepository
+                .findById(ProductId.of(report.getProductId()))
                 .orElseThrow(() -> BusinessException.of(AdminResultCode.REPORT_PRODUCT_NOT_FOUND));
         productRepository.save(product.reject("举报封禁: " + remark).aggregate());
         productCachePort.evictProductCache(report.getProductId());

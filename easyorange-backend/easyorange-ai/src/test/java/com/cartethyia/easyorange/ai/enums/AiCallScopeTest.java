@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.ai.enums;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("AiCallScope 测试")
 class AiCallScopeTest {
@@ -59,15 +59,13 @@ class AiCallScopeTest {
     @Test
     @DisplayName("cacheKeyPrefix 格式正确")
     void cacheKeyPrefix() {
-        assertThat(AiCallScope.REVIEW.cacheKeyPrefix())
-                .isEqualTo("ai:llm:v1:review:");
+        assertThat(AiCallScope.REVIEW.cacheKeyPrefix()).isEqualTo("ai:llm:v1:review:");
     }
 
     @Test
     @DisplayName("rateLimitKeyPrefix 格式正确")
     void rateLimitKeyPrefix() {
-        assertThat(AiCallScope.PRICING.rateLimitKeyPrefix())
-                .isEqualTo("ai:rl:pricing:");
+        assertThat(AiCallScope.PRICING.rateLimitKeyPrefix()).isEqualTo("ai:rl:pricing:");
     }
 
     @Test

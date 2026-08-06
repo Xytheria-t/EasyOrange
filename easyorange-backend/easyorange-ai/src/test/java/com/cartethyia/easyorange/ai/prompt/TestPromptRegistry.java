@@ -11,8 +11,7 @@ import java.util.Optional;
  */
 public final class TestPromptRegistry implements PromptRegistry {
 
-    public static final PromptTemplate STUB = new PromptTemplate(
-            "stub", "v1.0.0", "stub system prompt", "test stub");
+    public static final PromptTemplate STUB = new PromptTemplate("stub", "v1.0.0", "stub system prompt", "test stub");
 
     @Override
     public Optional<PromptTemplate> get(String name, String version) {

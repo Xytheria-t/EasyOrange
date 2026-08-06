@@ -1,13 +1,12 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
@@ -29,9 +28,8 @@ public class ProductTagger {
             return Map.of();
         }
 
-        Set<String> sellerIds = products.stream()
-                .map(ProductReadModel::sellerId)
-                .collect(Collectors.toSet());
+        Set<String> sellerIds =
+                products.stream().map(ProductReadModel::sellerId).collect(Collectors.toSet());
 
         Map<String, Integer> creditScores = creditScoreFetcher.fetchCreditScores(sellerIds);
 
@@ -49,8 +47,10 @@ public class ProductTagger {
     private void tagDiscount(ProductReadModel product, List<String> productTags) {
         BigDecimal originalPrice = product.originalPrice();
         BigDecimal price = product.price();
-        if (originalPrice != null && originalPrice.compareTo(BigDecimal.ZERO) > 0
-                && price != null && originalPrice.compareTo(price) > 0) {
+        if (originalPrice != null
+                && originalPrice.compareTo(BigDecimal.ZERO) > 0
+                && price != null
+                && originalPrice.compareTo(price) > 0) {
             int discountPercent = price.multiply(BigDecimal.valueOf(100))
                     .divide(originalPrice, 0, java.math.RoundingMode.HALF_UP)
                     .intValue();
@@ -74,8 +74,11 @@ public class ProductTagger {
                 productTags.add(TAG_CREDIT);
             }
         } catch (Exception e) {
-            log.debug("Credit tag skipped for productId={}, sellerId={}: {}",
-                product.id(), product.sellerId(), e.getMessage());
+            log.debug(
+                    "Credit tag skipped for productId={}, sellerId={}: {}",
+                    product.id(),
+                    product.sellerId(),
+                    e.getMessage());
         }
     }
 }

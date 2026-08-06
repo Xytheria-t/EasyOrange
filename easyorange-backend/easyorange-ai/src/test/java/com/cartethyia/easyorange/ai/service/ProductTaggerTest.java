@@ -1,6 +1,13 @@
 package com.cartethyia.easyorange.ai.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -8,14 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProductTagger -> 测试")
@@ -31,14 +30,31 @@ class ProductTaggerTest {
         tagger = new ProductTagger(creditScoreFetcher);
     }
 
-    private static ProductReadModel product(String id, String sellerId, BigDecimal price,
-                                            BigDecimal originalPrice, List<String> images) {
+    private static ProductReadModel product(
+            String id, String sellerId, BigDecimal price, BigDecimal originalPrice, List<String> images) {
         return new ProductReadModel(
-                id, sellerId, null, null, null, null,
-                "测试商品", null, price, originalPrice,
-                null, null, null, null, null, null,
-                null, null, images, null, null, null
-        );
+                id,
+                sellerId,
+                null,
+                null,
+                null,
+                null,
+                "测试商品",
+                null,
+                price,
+                originalPrice,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                images,
+                null,
+                null,
+                null);
     }
 
     @Nested
@@ -87,8 +103,7 @@ class ProductTaggerTest {
         @DisplayName("图片数>=3张 -> 实拍标签")
         void imagesGte3() {
             when(creditScoreFetcher.fetchCreditScores(anySet())).thenReturn(Map.of());
-            var p = product("5", "50", BigDecimal.TEN, null,
-                    List.of("a.jpg", "b.jpg", "c.jpg"));
+            var p = product("5", "50", BigDecimal.TEN, null, List.of("a.jpg", "b.jpg", "c.jpg"));
 
             Map<String, List<String>> result = tagger.tagProducts(List.of(p));
 
@@ -99,8 +114,7 @@ class ProductTaggerTest {
         @DisplayName("图片数=2张 -> 无实拍标签")
         void imagesLt3() {
             when(creditScoreFetcher.fetchCreditScores(anySet())).thenReturn(Map.of());
-            var p = product("6", "60", BigDecimal.TEN, null,
-                    List.of("a.jpg", "b.jpg"));
+            var p = product("6", "60", BigDecimal.TEN, null, List.of("a.jpg", "b.jpg"));
 
             Map<String, List<String>> result = tagger.tagProducts(List.of(p));
 
@@ -127,8 +141,7 @@ class ProductTaggerTest {
         @DisplayName("信用分>=120 -> 信用优标签")
         void creditScoreHigh() {
             var p = product("8", "80", BigDecimal.TEN, null, List.of());
-            when(creditScoreFetcher.fetchCreditScores(anySet()))
-                    .thenReturn(Map.of("80", 130));
+            when(creditScoreFetcher.fetchCreditScores(anySet())).thenReturn(Map.of("80", 130));
 
             Map<String, List<String>> result = tagger.tagProducts(List.of(p));
 
@@ -139,8 +152,7 @@ class ProductTaggerTest {
         @DisplayName("信用分<120 -> 无信用优标签")
         void creditScoreLow() {
             var p = product("9", "90", BigDecimal.TEN, null, List.of());
-            when(creditScoreFetcher.fetchCreditScores(anySet()))
-                    .thenReturn(Map.of("90", 100));
+            when(creditScoreFetcher.fetchCreditScores(anySet())).thenReturn(Map.of("90", 100));
 
             Map<String, List<String>> result = tagger.tagProducts(List.of(p));
 
@@ -166,20 +178,16 @@ class ProductTaggerTest {
         @Test
         @DisplayName("多商品批量打标 -> 各商品独立打标")
         void multipleProducts() {
-            when(creditScoreFetcher.fetchCreditScores(anySet()))
-                    .thenReturn(Map.of("101", 150, "102", 90));
+            when(creditScoreFetcher.fetchCreditScores(anySet())).thenReturn(Map.of("101", 150, "102", 90));
 
-            var p1 = product("11", "101", new BigDecimal("400"), new BigDecimal("600"),
-                    List.of("1.jpg", "2.jpg", "3.jpg"));
-            var p2 = product("12", "102", new BigDecimal("800"), new BigDecimal("800"),
-                    List.of("x.jpg"));
+            var p1 = product(
+                    "11", "101", new BigDecimal("400"), new BigDecimal("600"), List.of("1.jpg", "2.jpg", "3.jpg"));
+            var p2 = product("12", "102", new BigDecimal("800"), new BigDecimal("800"), List.of("x.jpg"));
 
             Map<String, List<String>> result = tagger.tagProducts(List.of(p1, p2));
 
-            assertThat(result.get("11"))
-                    .containsExactlyInAnyOrder("💰超值", "📸实拍", "⭐信用优");
-            assertThat(result.get("12"))
-                    .isEmpty();
+            assertThat(result.get("11")).containsExactlyInAnyOrder("💰超值", "📸实拍", "⭐信用优");
+            assertThat(result.get("12")).isEmpty();
         }
 
         @Test

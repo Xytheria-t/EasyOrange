@@ -1,12 +1,11 @@
 package com.cartethyia.easyorange.ai.budget;
 
-import lombok.extern.slf4j.Slf4j;
-
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 内存版 Token 预算存储 — 开发模式使用，重启后清空。
@@ -39,8 +38,7 @@ public class InMemoryTokenBudgetStore implements TokenBudgetStore {
                 .updateAndGet(current -> new TokenUsage(
                         current.inputTokens() + inputTokens,
                         current.outputTokens() + outputTokens,
-                        System.currentTimeMillis()
-                ));
+                        System.currentTimeMillis()));
     }
 
     private String todayKey(String scenario) {

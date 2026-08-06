@@ -1,5 +1,10 @@
 package com.cartethyia.easyorange.admin.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAuditRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAuditRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
@@ -21,7 +26,9 @@ import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundExcepti
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
-import tools.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,15 +37,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminProductAuditService 单元测试")
@@ -75,13 +74,13 @@ class AdminProductAuditServiceTest {
                 CategoryId.of("1"),
                 ProductTitle.of("测试商品"),
                 Money.of(new BigDecimal("99.99")),
-                null, StockQuantity.of(10),
+                null,
+                StockQuantity.of(10),
                 ConditionLevel.GOOD,
                 TradeLocation.of("北京"),
                 ContactMethod.of("微信"),
                 ProductDescription.of("描述"),
-                ImageSet.of(List.of("http://img/1.jpg"))
-        ));
+                ImageSet.of(List.of("http://img/1.jpg"))));
         return t.aggregate().assignId(PRODUCT_ID).submitForReview(SELLER_ID).aggregate();
     }
 
@@ -91,13 +90,13 @@ class AdminProductAuditServiceTest {
                 CategoryId.of("1"),
                 ProductTitle.of("测试商品"),
                 Money.of(new BigDecimal("99.99")),
-                null, StockQuantity.of(10),
+                null,
+                StockQuantity.of(10),
                 ConditionLevel.GOOD,
                 TradeLocation.of("北京"),
                 ContactMethod.of("微信"),
                 ProductDescription.of("描述"),
-                ImageSet.of(List.of("http://img/1.jpg"))
-        ));
+                ImageSet.of(List.of("http://img/1.jpg"))));
         var p = t.aggregate().assignId(PRODUCT_ID);
         if (status == ProductStatus.PENDING_REVIEW) {
             return p.submitForReview(SELLER_ID).aggregate();
@@ -191,8 +190,7 @@ class AdminProductAuditServiceTest {
         @DisplayName("非待审核状态的商品不能审核")
         void auditProduct_notPendingReview_throws() {
             Product onlineProduct = createProductWithStatus(ProductStatus.ONLINE);
-            when(productRepository.findById(ProductId.of(PRODUCT_ID)))
-                    .thenReturn(Optional.of(onlineProduct));
+            when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.of(onlineProduct));
 
             ProductAuditRequest request = new ProductAuditRequest(1, null, null, null);
 
@@ -227,8 +225,7 @@ class AdminProductAuditServiceTest {
             BatchAuditRequest request = new BatchAuditRequest();
             request.setItems(List.of(
                     new BatchAuditRequest.AuditItem("100", 1, "通过", null),
-                    new BatchAuditRequest.AuditItem("101", 2, "信息不符", null)
-            ));
+                    new BatchAuditRequest.AuditItem("101", 2, "信息不符", null)));
 
             TestSecurityUtil.setSecurityContext(OPERATOR_ID);
             try {
@@ -246,13 +243,13 @@ class AdminProductAuditServiceTest {
         @DisplayName("批量审核中跳过不存在的商品")
         void batchAudit_skipNotFound() {
             when(productRepository.findById(ProductId.of("100"))).thenReturn(Optional.empty());
-            when(productRepository.findById(ProductId.of("101"))).thenReturn(Optional.of(createProductInPendingReview()));
+            when(productRepository.findById(ProductId.of("101")))
+                    .thenReturn(Optional.of(createProductInPendingReview()));
 
             BatchAuditRequest request = new BatchAuditRequest();
             request.setItems(List.of(
                     new BatchAuditRequest.AuditItem("100", 1, "通过", null),
-                    new BatchAuditRequest.AuditItem("101", 1, "通过", null)
-            ));
+                    new BatchAuditRequest.AuditItem("101", 1, "通过", null)));
 
             TestSecurityUtil.setSecurityContext(OPERATOR_ID);
             try {

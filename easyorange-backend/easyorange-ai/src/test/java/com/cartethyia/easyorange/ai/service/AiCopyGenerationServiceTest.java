@@ -1,13 +1,13 @@
 package com.cartethyia.easyorange.ai.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.ai.dto.CopyGenerationResult;
 import com.cartethyia.easyorange.ai.prompt.TestPromptRegistry;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.Prompt;
-import tools.jackson.databind.ObjectMapper;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,13 +15,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
+import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiCopyGenerationService 测试")
@@ -56,8 +55,7 @@ class AiCopyGenerationServiceTest {
         void generateCopy_success() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(VALID_JSON));
 
-            CopyGenerationResult result = service.generateCopy(
-                    "iPhone 14", "手机数码", "2", "6999", "standard");
+            CopyGenerationResult result = service.generateCopy("iPhone 14", "手机数码", "2", "6999", "standard");
 
             assertThat(result).isNotNull();
             assertThat(result.title()).isEqualTo("苹果 iPhone 14 128G");
@@ -108,8 +106,7 @@ class AiCopyGenerationServiceTest {
         @Test
         @DisplayName("LLM 抛出异常时返回 null")
         void generateCopy_llmThrows() {
-            when(chatModel.call(any(Prompt.class)))
-                    .thenThrow(new RuntimeException("API timeout"));
+            when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("API timeout"));
 
             CopyGenerationResult result = service.generateCopy("A", "B", "1", "100", null);
 
@@ -129,7 +126,8 @@ class AiCopyGenerationServiceTest {
     private static final com.cartethyia.easyorange.ai.prompt.PromptRegistry EMPTY_REGISTRY =
             new com.cartethyia.easyorange.ai.prompt.PromptRegistry() {
                 @Override
-                public java.util.Optional<com.cartethyia.easyorange.ai.prompt.PromptTemplate> get(String name, String version) {
+                public java.util.Optional<com.cartethyia.easyorange.ai.prompt.PromptTemplate> get(
+                        String name, String version) {
                     return java.util.Optional.empty();
                 }
 

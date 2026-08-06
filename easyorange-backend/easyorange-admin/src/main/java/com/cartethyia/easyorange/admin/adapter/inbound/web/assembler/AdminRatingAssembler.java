@@ -11,20 +11,20 @@ public class AdminRatingAssembler {
 
     public AdminRatingResponse toAdminRatingResponse(RatingSummary review, UserInfo user, ProductInfo product) {
         return AdminRatingResponse.builder()
-            .reviewId(review.id())
-            .productId(review.productId())
-            .productName(product != null ? product.name() : null)
-            .userId(review.userId())
-            .username(resolveUsername(user))
-            .userAvatar(user != null ? user.avatar() : null)
-            .rating(review.rating())
-            .content(review.content())
-            .replyContent(review.replyContent())
-            .likes(review.likes())
-            .status(review.status())
-            .createTime(review.createTime())
-            .updateTime(review.updateTime())
-            .build();
+                .reviewId(review.id())
+                .productId(review.productId())
+                .productName(product != null ? product.name() : null)
+                .userId(review.userId())
+                .username(resolveUsername(user))
+                .userAvatar(user != null ? user.avatar() : null)
+                .rating(review.rating())
+                .content(review.content())
+                .replyContent(review.replyContent())
+                .likes(review.likes())
+                .status(review.status())
+                .createTime(review.createTime())
+                .updateTime(review.updateTime())
+                .build();
     }
 
     private String resolveUsername(UserInfo user) {

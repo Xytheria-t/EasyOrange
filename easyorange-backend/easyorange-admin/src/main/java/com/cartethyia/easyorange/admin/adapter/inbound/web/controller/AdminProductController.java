@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminProductQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
 import com.cartethyia.easyorange.admin.service.AdminProductService;
+import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,10 +30,7 @@ public class AdminProductController {
     }
 
     @PutMapping("/{id}/status")
-    public Result<Void> updateProductStatus(
-        @PathVariable String id,
-        @Valid @RequestBody UpdateStatusRequest request
-    ) {
+    public Result<Void> updateProductStatus(@PathVariable String id, @Valid @RequestBody UpdateStatusRequest request) {
         adminProductService.updateProductStatus(id, request);
         return Result.success();
     }

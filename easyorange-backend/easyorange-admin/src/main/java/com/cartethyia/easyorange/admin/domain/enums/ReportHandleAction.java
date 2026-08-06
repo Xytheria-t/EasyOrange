@@ -7,7 +7,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ReportHandleAction {
-
     RESOLVE("resolve", "处理通过", true),
     DISMISS("dismiss", "驳回", false),
     IGNORE("IGNORE", "忽略", false),

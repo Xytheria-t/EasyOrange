@@ -5,19 +5,19 @@ import com.cartethyia.easyorange.ai.service.NaturalLanguageDetector;
 import com.cartethyia.easyorange.ai.service.ProductTagger;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.framework.cache.CacheUtils;
-import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.data.redis.core.RedisTemplate;
 import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Component;
+import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.annotation.Primary;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Primary
@@ -76,7 +76,8 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
         if (redisTemplate != null) {
             try {
-                AiEnhancement cached = CacheUtils.cast(redisTemplate.opsForValue().get(cacheKey), AiEnhancement.class);
+                AiEnhancement cached =
+                        CacheUtils.cast(redisTemplate.opsForValue().get(cacheKey), AiEnhancement.class);
                 if (cached != null) {
                     log.debug("AI enhancement cache hit for keyword: {}", keyword);
                     return Optional.of(cached);
@@ -88,11 +89,11 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
         List<ProductReadModel> top5 = topProducts.subList(0, Math.min(TOP_PRODUCTS_LIMIT, topProducts.size()));
 
-        CompletableFuture<String> intentFuture = CompletableFuture.supplyAsync(
-            () -> AiModelSupport.callText(chatModel, INTENT_SYSTEM_PROMPT, keyword));
+        CompletableFuture<String> intentFuture =
+                CompletableFuture.supplyAsync(() -> AiModelSupport.callText(chatModel, INTENT_SYSTEM_PROMPT, keyword));
 
-        CompletableFuture<Map<String, List<String>>> tagsFuture = CompletableFuture.supplyAsync(
-            () -> productTagger.tagProducts(top5));
+        CompletableFuture<Map<String, List<String>>> tagsFuture =
+                CompletableFuture.supplyAsync(() -> productTagger.tagProducts(top5));
 
         String marketContext = buildMarketContext(top5);
         CompletableFuture<String> marketFuture = CompletableFuture.supplyAsync(() -> {
@@ -116,27 +117,26 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
         try {
             CompletableFuture.allOf(intentFuture, tagsFuture, marketFuture, questionsFuture)
-                .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                    .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             log.warn("AI search enhancement timed out for keyword: {}", keyword);
             intentFuture.cancel(false);
             marketFuture.cancel(false);
             questionsFuture.cancel(false);
-            return collectAndCache(cacheKey,
-                collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture));
+            return collectAndCache(
+                    cacheKey, collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("AI search enhancement interrupted for keyword: {}", keyword);
             return Optional.empty();
         } catch (ExecutionException e) {
             log.warn("AI search enhancement failed for keyword: {}", keyword, e.getCause());
-            return collectAndCache(cacheKey,
-                collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture));
+            return collectAndCache(
+                    cacheKey, collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture));
         }
 
         String intentExplanation = intentFuture.getNow(null);
         Map<String, List<String>> productTags = tagsFuture.getNow(Map.of());
-
 
         String marketAnalysis = marketFuture.getNow(null);
         List<String> suggestedQuestions = questionsFuture.getNow(List.of());
@@ -145,9 +145,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
             return Optional.empty();
         }
 
-        AiEnhancement result = new AiEnhancement(
-            intentExplanation, productTags, marketAnalysis, suggestedQuestions
-        );
+        AiEnhancement result = new AiEnhancement(intentExplanation, productTags, marketAnalysis, suggestedQuestions);
         writeToCache(cacheKey, result);
         return Optional.of(result);
     }
@@ -197,9 +195,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
             return Optional.empty();
         }
 
-        return Optional.of(new AiEnhancement(
-            intentExplanation, productTags, marketAnalysis, suggestedQuestions
-        ));
+        return Optional.of(new AiEnhancement(intentExplanation, productTags, marketAnalysis, suggestedQuestions));
     }
 
     private static <T> T getOrNull(CompletableFuture<T> future) {

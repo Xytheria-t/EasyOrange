@@ -18,13 +18,12 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -55,8 +54,12 @@ public class AdminRatingService {
             return PageResult.empty(result.pageNum(), result.pageSize());
         }
 
-        List<String> productIds = result.records().stream().map(RatingSummary::productId).distinct().toList();
-        List<String> userIds = result.records().stream().map(RatingSummary::userId).distinct().toList();
+        List<String> productIds = result.records().stream()
+                .map(RatingSummary::productId)
+                .distinct()
+                .toList();
+        List<String> userIds =
+                result.records().stream().map(RatingSummary::userId).distinct().toList();
 
         Map<String, UserInfo> userMap = adminUserQueryPort.getUserInfos(userIds);
         Map<String, ProductInfo> productMap = adminProductQueryPort.getProductInfos(productIds);
@@ -73,21 +76,24 @@ public class AdminRatingService {
         RatingSummary review = adminRatingQueryPort.getRatingDetail(id);
         BizRequire.notNull(review, AdminResultCode.RATING_NOT_FOUND);
 
-        UserInfo user = adminUserQueryPort.getUserInfos(List.of(review.userId())).get(review.userId());
-        ProductInfo product = adminProductQueryPort.getProductInfos(List.of(review.productId())).get(review.productId());
+        UserInfo user =
+                adminUserQueryPort.getUserInfos(List.of(review.userId())).get(review.userId());
+        ProductInfo product = adminProductQueryPort
+                .getProductInfos(List.of(review.productId()))
+                .get(review.productId());
 
         return assembler.toAdminRatingResponse(review, user, product);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteReview(String id, AdminRatingDeleteRequest request) {
-        productRatingRepository.findById(id)
+        productRatingRepository
+                .findById(id)
                 .orElseThrow(() -> BusinessException.of(AdminResultCode.RATING_NOT_FOUND_OR_DELETED));
 
         String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
         productRatingRepository.deleteById(id);
 
-        log.info("action=admin_delete_review reviewId={} operatorId={} reason={}",
-                id, operatorId, request.getReason());
+        log.info("action=admin_delete_review reviewId={} operatorId={} reason={}", id, operatorId, request.getReason());
     }
 }

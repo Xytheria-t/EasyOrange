@@ -1,10 +1,9 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Builder;
+import lombok.Data;
 
 @Data
 @Builder

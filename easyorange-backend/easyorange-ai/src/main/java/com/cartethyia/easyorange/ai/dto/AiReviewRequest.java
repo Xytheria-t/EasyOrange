@@ -9,5 +9,4 @@ public record AiReviewRequest(
         String conditionLevel,
         String price,
         String sellerName,
-        List<String> imageUrls
-) {}
+        List<String> imageUrls) {}

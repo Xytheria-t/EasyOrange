@@ -15,40 +15,36 @@ import org.springframework.stereotype.Component;
 public class AdminReportAssembler {
 
     public AdminReportResponse toAdminReportResponse(
-        ProductReport report,
-        UserInfo reporter,
-        ProductInfo product,
-        String productImage
-    ) {
+            ProductReport report, UserInfo reporter, ProductInfo product, String productImage) {
         return AdminReportResponse.builder()
-            .reportId(report.getId())
-            .productId(report.getProductId())
-            .productName(product != null ? product.name() : null)
-            .productImage(productImage)
-            .reporterId(report.getReporterId())
-            .reporterName(reporter != null ? reporter.nickName() : null)
-            .reasonType(report.getReasonType() != null ? Integer.valueOf(report.getReasonType()) : null)
-            .reasonTypeDesc(reasonTypeDesc(report.getReasonType()))
-            .reason(report.getReason())
-            .status(report.statusCode() != null ? Integer.valueOf(report.statusCode()) : null)
-            .statusDesc(statusDesc(report.statusCode()))
-            .handleResult(report.getRemark())
-            .handleRemark(report.getRemark())
-            .createTime(report.getCreateTime())
-            .handleTime(report.isPending() ? null : report.getUpdateTime())
-            .build();
+                .reportId(report.getId())
+                .productId(report.getProductId())
+                .productName(product != null ? product.name() : null)
+                .productImage(productImage)
+                .reporterId(report.getReporterId())
+                .reporterName(reporter != null ? reporter.nickName() : null)
+                .reasonType(report.getReasonType() != null ? Integer.valueOf(report.getReasonType()) : null)
+                .reasonTypeDesc(reasonTypeDesc(report.getReasonType()))
+                .reason(report.getReason())
+                .status(report.statusCode() != null ? Integer.valueOf(report.statusCode()) : null)
+                .statusDesc(statusDesc(report.statusCode()))
+                .handleResult(report.getRemark())
+                .handleRemark(report.getRemark())
+                .createTime(report.getCreateTime())
+                .handleTime(report.isPending() ? null : report.getUpdateTime())
+                .build();
     }
 
     public ReportHandleHistoryResponse toHistoryResponse(ReportHandleHistory history, UserInfo operator) {
         return ReportHandleHistoryResponse.builder()
-            .id(history.getId())
-            .reportId(history.getReportId())
-            .operatorName(operator != null ? operator.nickName() : null)
-            .action(history.getAction())
-            .actionDesc(actionDesc(history.getAction()))
-            .remark(history.getRemark())
-            .createTime(history.getCreateTime())
-            .build();
+                .id(history.getId())
+                .reportId(history.getReportId())
+                .operatorName(operator != null ? operator.nickName() : null)
+                .action(history.getAction())
+                .actionDesc(actionDesc(history.getAction()))
+                .remark(history.getRemark())
+                .createTime(history.getCreateTime())
+                .build();
     }
 
     private String statusDesc(String code) {

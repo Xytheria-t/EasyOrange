@@ -1,6 +1,15 @@
 package com.cartethyia.easyorange.ai.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.ai.dto.CreditScoreResult;
+import java.sql.ResultSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,16 +19,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
-
-import java.sql.ResultSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("JdbcCreditScoreFetcher 测试")
@@ -59,13 +58,15 @@ class JdbcCreditScoreFetcherTest {
         void fetchCreditScores_batchSuccess() throws Exception {
             ResultSet rs = mock(ResultSet.class);
             doAnswer(inv -> {
-                RowCallbackHandler rch = inv.getArgument(1);
-                when(rs.getString("user_id")).thenReturn("u1", "u2");
-                when(rs.getInt("credit_score")).thenReturn(120, 95);
-                rch.processRow(rs);
-                rch.processRow(rs);
-                return null;
-            }).when(jdbcTemplate).query(anyString(), any(RowCallbackHandler.class), any(Object[].class));
+                        RowCallbackHandler rch = inv.getArgument(1);
+                        when(rs.getString("user_id")).thenReturn("u1", "u2");
+                        when(rs.getInt("credit_score")).thenReturn(120, 95);
+                        rch.processRow(rs);
+                        rch.processRow(rs);
+                        return null;
+                    })
+                    .when(jdbcTemplate)
+                    .query(anyString(), any(RowCallbackHandler.class), any(Object[].class));
 
             Map<String, Integer> result = fetcher.fetchCreditScores(Set.of("u1", "u2"));
 
@@ -78,9 +79,9 @@ class JdbcCreditScoreFetcherTest {
         @DisplayName("批量查询失败降级为逐个查询")
         void fetchCreditScores_fallback() {
             doThrow(new RuntimeException("db down"))
-                    .when(jdbcTemplate).query(anyString(), any(RowCallbackHandler.class), any(Object[].class));
-            when(creditScoringService.getCreditScore("u1"))
-                    .thenReturn(creditResult("u1", 88));
+                    .when(jdbcTemplate)
+                    .query(anyString(), any(RowCallbackHandler.class), any(Object[].class));
+            when(creditScoringService.getCreditScore("u1")).thenReturn(creditResult("u1", 88));
 
             Map<String, Integer> result = fetcher.fetchCreditScores(Set.of("u1"));
 
@@ -92,7 +93,8 @@ class JdbcCreditScoreFetcherTest {
         @DisplayName("降级时无信用分的卖家被跳过")
         void fetchCreditScores_fallbackSkipsNull() {
             doThrow(new RuntimeException("db down"))
-                    .when(jdbcTemplate).query(anyString(), any(RowCallbackHandler.class), any(Object[].class));
+                    .when(jdbcTemplate)
+                    .query(anyString(), any(RowCallbackHandler.class), any(Object[].class));
             when(creditScoringService.getCreditScore("u1")).thenReturn(null);
 
             Map<String, Integer> result = fetcher.fetchCreditScores(Set.of("u1"));
@@ -104,9 +106,9 @@ class JdbcCreditScoreFetcherTest {
         @DisplayName("降级时查询抛异常被吞掉")
         void fetchCreditScores_fallbackIgnoresErrors() {
             doThrow(new RuntimeException("db down"))
-                    .when(jdbcTemplate).query(anyString(), any(RowCallbackHandler.class), any(Object[].class));
-            when(creditScoringService.getCreditScore("u1"))
-                    .thenThrow(new RuntimeException("lookup failed"));
+                    .when(jdbcTemplate)
+                    .query(anyString(), any(RowCallbackHandler.class), any(Object[].class));
+            when(creditScoringService.getCreditScore("u1")).thenThrow(new RuntimeException("lookup failed"));
 
             Map<String, Integer> result = fetcher.fetchCreditScores(Set.of("u1"));
 
@@ -114,9 +116,7 @@ class JdbcCreditScoreFetcherTest {
         }
 
         private CreditScoreResult creditResult(String userId, int score) {
-            return new CreditScoreResult(
-                    userId, score, "GOOD", 5, 4, 0, 0, 0,
-                    4.5, 80, null);
+            return new CreditScoreResult(userId, score, "GOOD", 5, 4, 0, 0, 0, 4.5, 80, null);
         }
     }
 }

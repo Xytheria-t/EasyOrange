@@ -1,5 +1,11 @@
 package com.cartethyia.easyorange.admin.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminRatingAssembler;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminRatingDeleteRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminRatingQueryRequest;
@@ -14,6 +20,10 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
 import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,17 +32,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminRatingService 单元测试")
@@ -62,8 +61,7 @@ class AdminRatingServiceTest {
 
     private RatingSummary createSummary(String id, String productId, String userId, Integer rating, String content) {
         return new RatingSummary(
-                id, productId, userId, rating, content, null, 5, 1,
-                LocalDateTime.now(), LocalDateTime.now());
+                id, productId, userId, rating, content, null, 5, 1, LocalDateTime.now(), LocalDateTime.now());
     }
 
     private AdminUserQueryPort.UserInfo createUser(String id, String username, String nickname) {
@@ -71,8 +69,8 @@ class AdminRatingServiceTest {
     }
 
     private ProductRating createRating(String id) {
-        return ProductRating.reconstitute(id, PRODUCT_ID, USER_ID, null, 5, "好商品",
-                null, null, 5, 1, LocalDateTime.now(), LocalDateTime.now());
+        return ProductRating.reconstitute(
+                id, PRODUCT_ID, USER_ID, null, 5, "好商品", null, null, 5, 1, LocalDateTime.now(), LocalDateTime.now());
     }
 
     @Nested
@@ -88,7 +86,8 @@ class AdminRatingServiceTest {
 
             RatingSummary review = createSummary(REVIEW_ID, PRODUCT_ID, USER_ID, 5, "好商品");
             when(adminRatingQueryPort.queryRatings(any())).thenReturn(new RatingQueryResult(List.of(review), 1, 1, 10));
-            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of(USER_ID, createUser(USER_ID, "testuser", "测试用户")));
+            when(adminUserQueryPort.getUserInfos(anyList()))
+                    .thenReturn(Map.of(USER_ID, createUser(USER_ID, "testuser", "测试用户")));
             when(adminProductQueryPort.getProductInfos(anyList()))
                     .thenReturn(Map.of(PRODUCT_ID, new AdminProductQueryPort.ProductInfo(PRODUCT_ID, "测试商品")));
 
@@ -130,7 +129,8 @@ class AdminRatingServiceTest {
         void getReviewDetail_returnsDetail() {
             RatingSummary review = createSummary(REVIEW_ID, PRODUCT_ID, USER_ID, 4, "还不错");
             when(adminRatingQueryPort.getRatingDetail(REVIEW_ID)).thenReturn(review);
-            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of(USER_ID, createUser(USER_ID, "testuser", "测试用户")));
+            when(adminUserQueryPort.getUserInfos(anyList()))
+                    .thenReturn(Map.of(USER_ID, createUser(USER_ID, "testuser", "测试用户")));
             when(adminProductQueryPort.getProductInfos(anyList()))
                     .thenReturn(Map.of(PRODUCT_ID, new AdminProductQueryPort.ProductInfo(PRODUCT_ID, "测试商品")));
 
@@ -147,8 +147,8 @@ class AdminRatingServiceTest {
             when(adminRatingQueryPort.getRatingDetail("999")).thenReturn(null);
 
             assertThatThrownBy(() -> reviewService.getReviewDetail("999"))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("评价不存在");
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessage("评价不存在");
         }
 
         @Test
@@ -157,8 +157,8 @@ class AdminRatingServiceTest {
             when(adminRatingQueryPort.getRatingDetail(REVIEW_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> reviewService.getReviewDetail(REVIEW_ID))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("评价不存在");
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessage("评价不存在");
         }
     }
 
@@ -194,8 +194,8 @@ class AdminRatingServiceTest {
             request.setReason("test");
 
             assertThatThrownBy(() -> reviewService.deleteReview("999", request))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("评价不存在或已被删除");
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessage("评价不存在或已被删除");
         }
     }
 }

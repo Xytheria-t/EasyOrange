@@ -1,5 +1,10 @@
 package com.cartethyia.easyorange.ai.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -12,12 +17,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingModel;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiModelSupport 调用去重工具测试")
@@ -56,8 +55,7 @@ class AiModelSupportTest {
         @Test
         @DisplayName("JSON 结构化输出请求并返回文本")
         void callJson_success() {
-            when(chatModel.call(any(Prompt.class)))
-                    .thenReturn(textResponse("{\"key\":\"value\"}"));
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"key\":\"value\"}"));
 
             String result = AiModelSupport.callJson(chatModel, "system", "user");
 
@@ -73,7 +71,7 @@ class AiModelSupportTest {
         @Test
         @DisplayName("float[] 向量转 List<Float>")
         void embed_convertsArray() {
-            when(embeddingModel.embed("iPhone 14")).thenReturn(new float[]{1.0f, 2.5f, -3.0f});
+            when(embeddingModel.embed("iPhone 14")).thenReturn(new float[] {1.0f, 2.5f, -3.0f});
 
             List<Float> result = AiModelSupport.embed(embeddingModel, "iPhone 14");
 
@@ -89,13 +87,10 @@ class AiModelSupportTest {
         @Test
         @DisplayName("多图 Media 随提示词交给视觉模型")
         void analyzeImages_success() {
-            when(chatModel.call(any(Prompt.class)))
-                    .thenReturn(textResponse("看到一个九成新的手机"));
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("看到一个九成新的手机"));
 
             String result = AiModelSupport.analyzeImages(
-                    chatModel,
-                    List.of("http://example.com/a.jpg", "http://example.com/b.jpg"),
-                    "请描述图片内容");
+                    chatModel, List.of("http://example.com/a.jpg", "http://example.com/b.jpg"), "请描述图片内容");
 
             assertThat(result).isEqualTo("看到一个九成新的手机");
             verify(chatModel).call(any(Prompt.class));

@@ -1,6 +1,10 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminUserQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
@@ -11,6 +15,8 @@ import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,14 +24,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminUserService 单元测试")
@@ -66,13 +64,12 @@ class AdminUserServiceTest {
             Page<UserDO> page = new Page<>(1, 20);
 
             // must use spy or return real page with records
-            when(userMapper.selectPage(any(), any()))
-                    .thenAnswer(invocation -> {
-                        Page<UserDO> p = invocation.getArgument(0);
-                        p.setRecords(List.of(user));
-                        p.setTotal(1);
-                        return p;
-                    });
+            when(userMapper.selectPage(any(), any())).thenAnswer(invocation -> {
+                Page<UserDO> p = invocation.getArgument(0);
+                p.setRecords(List.of(user));
+                p.setTotal(1);
+                return p;
+            });
 
             PageResult<AdminUserResponse> result = userService.listUsers(request);
 
@@ -87,13 +84,12 @@ class AdminUserServiceTest {
             AdminUserQueryRequest request = new AdminUserQueryRequest();
             request.setKeyword("test");
 
-            when(userMapper.selectPage(any(), any()))
-                    .thenAnswer(invocation -> {
-                        Page<UserDO> p = invocation.getArgument(0);
-                        p.setRecords(List.of(createTestUser()));
-                        p.setTotal(1);
-                        return p;
-                    });
+            when(userMapper.selectPage(any(), any())).thenAnswer(invocation -> {
+                Page<UserDO> p = invocation.getArgument(0);
+                p.setRecords(List.of(createTestUser()));
+                p.setTotal(1);
+                return p;
+            });
 
             PageResult<AdminUserResponse> result = userService.listUsers(request);
 
@@ -105,13 +101,12 @@ class AdminUserServiceTest {
         void listUsers_noResults_returnsEmptyPage() {
             AdminUserQueryRequest request = new AdminUserQueryRequest();
 
-            when(userMapper.selectPage(any(), any()))
-                    .thenAnswer(invocation -> {
-                        Page<UserDO> p = invocation.getArgument(0);
-                        p.setRecords(List.of());
-                        p.setTotal(0);
-                        return p;
-                    });
+            when(userMapper.selectPage(any(), any())).thenAnswer(invocation -> {
+                Page<UserDO> p = invocation.getArgument(0);
+                p.setRecords(List.of());
+                p.setTotal(0);
+                return p;
+            });
 
             PageResult<AdminUserResponse> result = userService.listUsers(request);
 

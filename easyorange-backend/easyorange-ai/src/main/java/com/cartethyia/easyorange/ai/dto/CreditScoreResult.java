@@ -13,5 +13,4 @@ public record CreditScoreResult(
         int confirmedReports,
         Double reviewAvgRating,
         int tradeCompletionRate,
-        LocalDateTime lastUpdated
-) {}
+        LocalDateTime lastUpdated) {}

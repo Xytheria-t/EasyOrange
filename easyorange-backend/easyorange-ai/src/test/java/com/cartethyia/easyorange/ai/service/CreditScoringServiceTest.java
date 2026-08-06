@@ -1,6 +1,12 @@
 package com.cartethyia.easyorange.ai.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.ai.dto.CreditScoreResult;
+import java.sql.ResultSet;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,13 +16,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
-
-import java.sql.ResultSet;
-import java.time.LocalDateTime;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -236,25 +235,32 @@ class CreditScoringServiceTest {
             consumer.accept(rs);
             boolean isTradeQuery = table.equals("eo_order");
             if (isTradeQuery) {
-                lenient().when(jdbcTemplate.query(
-                        argThat(sql -> sql != null && sql.contains(table)),
-                        any(ResultSetExtractor.class), anyString(), anyString()
-                )).thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(rs));
+                lenient()
+                        .when(jdbcTemplate.query(
+                                argThat(sql -> sql != null && sql.contains(table)),
+                                any(ResultSetExtractor.class),
+                                anyString(),
+                                anyString()))
+                        .thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(rs));
             } else {
-                lenient().when(jdbcTemplate.query(
-                        argThat(sql -> sql != null && sql.contains(table)),
-                        any(ResultSetExtractor.class), anyString()
-                )).thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(rs));
+                lenient()
+                        .when(jdbcTemplate.query(
+                                argThat(sql -> sql != null && sql.contains(table)),
+                                any(ResultSetExtractor.class),
+                                anyString()))
+                        .thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(rs));
             }
         }
 
         private void mockEmptyReviewQuery() throws Exception {
             ResultSet rs = mock(ResultSet.class);
             when(rs.next()).thenReturn(false);
-            lenient().when(jdbcTemplate.query(
-                    argThat(sql -> sql != null && sql.contains("eo_product_review")),
-                    any(ResultSetExtractor.class), anyString()
-            )).thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(rs));
+            lenient()
+                    .when(jdbcTemplate.query(
+                            argThat(sql -> sql != null && sql.contains("eo_product_review")),
+                            any(ResultSetExtractor.class),
+                            anyString()))
+                    .thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(rs));
         }
     }
 
@@ -265,8 +271,7 @@ class CreditScoringServiceTest {
         @Test
         @DisplayName("score 160+ → EXCELLENT")
         void level_excellent() throws Exception {
-            CreditScoreResult result = runWithData(
-                    12, 0, 0, 5.0);
+            CreditScoreResult result = runWithData(12, 0, 0, 5.0);
             assertThat(result.creditScore()).isEqualTo(170);
             assertThat(result.level()).isEqualTo("EXCELLENT");
         }
@@ -274,8 +279,7 @@ class CreditScoringServiceTest {
         @Test
         @DisplayName("score 120-159 → GOOD")
         void level_good() throws Exception {
-            CreditScoreResult result = runWithData(
-                    4, 0, 0, null);
+            CreditScoreResult result = runWithData(4, 0, 0, null);
             assertThat(result.creditScore()).isEqualTo(120);
             assertThat(result.level()).isEqualTo("GOOD");
         }
@@ -283,8 +287,7 @@ class CreditScoringServiceTest {
         @Test
         @DisplayName("score 80-119 → NORMAL（边界 80）")
         void level_normal_boundary() throws Exception {
-            CreditScoreResult result = runWithData(
-                    0, 0, 1, null);
+            CreditScoreResult result = runWithData(0, 0, 1, null);
             assertThat(result.creditScore()).isEqualTo(80);
             assertThat(result.level()).isEqualTo("NORMAL");
         }
@@ -292,8 +295,7 @@ class CreditScoringServiceTest {
         @Test
         @DisplayName("score 40-79 → LOW（边界 50）")
         void level_low_boundary() throws Exception {
-            CreditScoreResult result = runWithData(
-                    0, 3, 1, null);
+            CreditScoreResult result = runWithData(0, 3, 1, null);
             assertThat(result.creditScore()).isEqualTo(50);
             assertThat(result.level()).isEqualTo("LOW");
         }
@@ -301,14 +303,13 @@ class CreditScoringServiceTest {
         @Test
         @DisplayName("score < 40 → BLACKLIST（边界 10）")
         void level_blacklist_boundary() throws Exception {
-            CreditScoreResult result = runWithData(
-                    0, 3, 3, null);
+            CreditScoreResult result = runWithData(0, 3, 3, null);
             assertThat(result.creditScore()).isEqualTo(10);
             assertThat(result.level()).isEqualTo("BLACKLIST");
         }
 
-        private CreditScoreResult runWithData(int completedTrades, int cancelledTrades,
-                                              int confirmedReports, Double avgRating) throws Exception {
+        private CreditScoreResult runWithData(
+                int completedTrades, int cancelledTrades, int confirmedReports, Double avgRating) throws Exception {
             ResultSet tradeRs = mock(ResultSet.class);
             when(tradeRs.next()).thenReturn(true);
             when(tradeRs.getInt("total_trades")).thenReturn(completedTrades + cancelledTrades);
@@ -328,22 +329,31 @@ class CreditScoringServiceTest {
                 when(reviewRs.next()).thenReturn(false);
             }
 
-            lenient().when(jdbcTemplate.query(
-                    argThat(sql -> sql != null && sql.contains("eo_order")),
-                    any(ResultSetExtractor.class), anyString(), anyString()
-            )).thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(tradeRs));
+            lenient()
+                    .when(jdbcTemplate.query(
+                            argThat(sql -> sql != null && sql.contains("eo_order")),
+                            any(ResultSetExtractor.class),
+                            anyString(),
+                            anyString()))
+                    .thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(tradeRs));
 
-            lenient().when(jdbcTemplate.query(
-                    argThat(sql -> sql != null && sql.contains("eo_product_report")),
-                    any(ResultSetExtractor.class), anyString()
-            )).thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(reportRs));
+            lenient()
+                    .when(jdbcTemplate.query(
+                            argThat(sql -> sql != null && sql.contains("eo_product_report")),
+                            any(ResultSetExtractor.class),
+                            anyString()))
+                    .thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(reportRs));
 
-            lenient().when(jdbcTemplate.query(
-                    argThat(sql -> sql != null && sql.contains("eo_product_review")),
-                    any(ResultSetExtractor.class), anyString()
-            )).thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(reviewRs));
+            lenient()
+                    .when(jdbcTemplate.query(
+                            argThat(sql -> sql != null && sql.contains("eo_product_review")),
+                            any(ResultSetExtractor.class),
+                            anyString()))
+                    .thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(reviewRs));
 
-            lenient().when(jdbcTemplate.update(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+            lenient()
+                    .when(jdbcTemplate.update(
+                            anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(1);
 
             return service.recalculateScore("1");

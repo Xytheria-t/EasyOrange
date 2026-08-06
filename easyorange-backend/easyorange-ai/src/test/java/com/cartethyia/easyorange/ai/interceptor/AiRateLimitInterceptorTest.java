@@ -1,25 +1,24 @@
 package com.cartethyia.easyorange.ai.interceptor;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
-import tools.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.StringReader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.BufferedReader;
-import java.io.StringReader;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiRateLimitInterceptor 测试")
@@ -51,8 +50,7 @@ class AiRateLimitInterceptorTest {
 
         staleCache = Caffeine.newBuilder().build();
         objectMapper = new ObjectMapper();
-        interceptor = new AiRateLimitInterceptor(
-                distributedRateLimiter, aiProperties, objectMapper, staleCache);
+        interceptor = new AiRateLimitInterceptor(distributedRateLimiter, aiProperties, objectMapper, staleCache);
     }
 
     @Test
@@ -70,7 +68,8 @@ class AiRateLimitInterceptorTest {
     void withinLimitPass() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/ai/review");
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-        when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(true);
+        when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                .thenReturn(true);
 
         boolean result = interceptor.preHandle(request, response, null);
 
@@ -95,7 +94,8 @@ class AiRateLimitInterceptorTest {
     void rateLimitExceeded() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/ai/review");
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-        when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(false);
+        when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                .thenReturn(false);
         when(request.getReader()).thenReturn(new BufferedReader(new StringReader("")));
         when(response.getWriter()).thenReturn(mock(java.io.PrintWriter.class));
 
@@ -110,7 +110,8 @@ class AiRateLimitInterceptorTest {
     void xForwardedForHeader() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/ai/review");
         when(request.getHeader("X-Forwarded-For")).thenReturn("192.168.1.1, 10.0.0.1");
-        when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(true);
+        when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                .thenReturn(true);
 
         boolean result = interceptor.preHandle(request, response, null);
 

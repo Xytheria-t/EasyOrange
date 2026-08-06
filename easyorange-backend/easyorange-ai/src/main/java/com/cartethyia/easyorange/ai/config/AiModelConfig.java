@@ -3,6 +3,9 @@ package com.cartethyia.easyorange.ai.config;
 import com.openai.client.OpenAIClient;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -13,10 +16,6 @@ import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Spring AI 模型装配 — 三个模型 bean 全手动创建。
@@ -44,15 +43,20 @@ public class AiModelConfig {
      */
     @Bean
     @Primary
-    public ChatModel chatModel(AiProperties props, ObservationRegistry observationRegistry,
-                               MeterRegistry meterRegistry) {
+    public ChatModel chatModel(
+            AiProperties props, ObservationRegistry observationRegistry, MeterRegistry meterRegistry) {
         var deepseek = props.getDeepseek();
         if (hasNoText(deepseek.getApiKey())) {
             return new UnconfiguredChatModel("easyorange.ai.deepseek.api-key 为空，请配置 DEEPSEEK_API_KEY");
         }
         return OpenAiChatModel.builder()
-                .openAiClient(setupClient(deepseek.getBaseUrl(), deepseek.getApiKey(), deepseek.getModel(),
-                        deepseek.getTimeout(), observationRegistry, meterRegistry))
+                .openAiClient(setupClient(
+                        deepseek.getBaseUrl(),
+                        deepseek.getApiKey(),
+                        deepseek.getModel(),
+                        deepseek.getTimeout(),
+                        observationRegistry,
+                        meterRegistry))
                 .options(OpenAiChatOptions.builder().model(deepseek.getModel()).build())
                 .observationRegistry(observationRegistry)
                 .build();
@@ -62,15 +66,20 @@ public class AiModelConfig {
      * 视觉模型 — Qwen-VL（DashScope OpenAI 兼容端点），拍照上架图片识别专用。
      */
     @Bean
-    public ChatModel visionChatModel(AiProperties props, ObservationRegistry observationRegistry,
-                                     MeterRegistry meterRegistry) {
+    public ChatModel visionChatModel(
+            AiProperties props, ObservationRegistry observationRegistry, MeterRegistry meterRegistry) {
         var qwenVl = props.getQwenVl();
         if (hasNoText(qwenVl.getApiKey())) {
             return new UnconfiguredChatModel("easyorange.ai.qwen-vl.api-key 为空，请配置 QWEN_VL_API_KEY");
         }
         return OpenAiChatModel.builder()
-                .openAiClient(setupClient(qwenVl.getBaseUrl(), qwenVl.getApiKey(), qwenVl.getModel(),
-                        qwenVl.getTimeout(), observationRegistry, meterRegistry))
+                .openAiClient(setupClient(
+                        qwenVl.getBaseUrl(),
+                        qwenVl.getApiKey(),
+                        qwenVl.getModel(),
+                        qwenVl.getTimeout(),
+                        observationRegistry,
+                        meterRegistry))
                 .options(OpenAiChatOptions.builder().model(qwenVl.getModel()).build())
                 .observationRegistry(observationRegistry)
                 .build();
@@ -80,15 +89,20 @@ public class AiModelConfig {
      * Embedding 模型 — DashScope text-embedding-v3（OpenAI 兼容端点）。
      */
     @Bean
-    public EmbeddingModel embeddingModel(AiProperties props, ObservationRegistry observationRegistry,
-                                         MeterRegistry meterRegistry) {
+    public EmbeddingModel embeddingModel(
+            AiProperties props, ObservationRegistry observationRegistry, MeterRegistry meterRegistry) {
         var embedding = props.getEmbedding();
         if (hasNoText(embedding.getApiKey())) {
             return new UnconfiguredEmbeddingModel("easyorange.ai.embedding.api-key 为空，请配置 EMBEDDING_API_KEY");
         }
         return OpenAiEmbeddingModel.builder()
-                .openAiClient(setupClient(embedding.getBaseUrl(), embedding.getApiKey(), embedding.getModel(),
-                        embedding.getTimeout(), observationRegistry, meterRegistry))
+                .openAiClient(setupClient(
+                        embedding.getBaseUrl(),
+                        embedding.getApiKey(),
+                        embedding.getModel(),
+                        embedding.getTimeout(),
+                        observationRegistry,
+                        meterRegistry))
                 .options(OpenAiEmbeddingOptions.builder()
                         .model(embedding.getModel())
                         .dimensions(embedding.getDimensions())
@@ -101,11 +115,29 @@ public class AiModelConfig {
         return value == null || value.isBlank();
     }
 
-    private static OpenAIClient setupClient(String baseUrl, String apiKey, String model, int timeoutMillis,
-                                            ObservationRegistry observationRegistry, MeterRegistry meterRegistry) {
+    private static OpenAIClient setupClient(
+            String baseUrl,
+            String apiKey,
+            String model,
+            int timeoutMillis,
+            ObservationRegistry observationRegistry,
+            MeterRegistry meterRegistry) {
         return OpenAiSetup.setupSyncClient(
-                baseUrl, apiKey, null, null, null, null, false, false,
-                model, Duration.ofMillis(timeoutMillis), MAX_RETRIES, null, Map.of(),
-                observationRegistry, meterRegistry, List.of());
+                baseUrl,
+                apiKey,
+                null,
+                null,
+                null,
+                null,
+                false,
+                false,
+                model,
+                Duration.ofMillis(timeoutMillis),
+                MAX_RETRIES,
+                null,
+                Map.of(),
+                observationRegistry,
+                meterRegistry,
+                List.of());
     }
 }

@@ -1,5 +1,8 @@
 package com.cartethyia.easyorange.ai.service;
 
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -9,10 +12,6 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Spring AI 调用小工具 — 收敛 system+user 双消息、JSON 结构化输出、Embedding、
@@ -24,17 +23,17 @@ import java.util.List;
  */
 public final class AiModelSupport {
 
-    private AiModelSupport() {
-    }
+    private AiModelSupport() {}
 
     /**
      * 普通文本生成：system + user 双消息。
      */
     public static String callText(ChatModel chatModel, String systemPrompt, String userMessage) {
-        return chatModel.call(new Prompt(List.of(
-                new SystemMessage(systemPrompt),
-                new UserMessage(userMessage))))
-                .getResult().getOutput().getText();
+        return chatModel
+                .call(new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage))))
+                .getResult()
+                .getOutput()
+                .getText();
     }
 
     /**
@@ -47,10 +46,11 @@ public final class AiModelSupport {
                         .type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
                         .build())
                 .build();
-        return chatModel.call(new Prompt(List.of(
-                new SystemMessage(systemPrompt),
-                new UserMessage(userMessage)), jsonOptions))
-                .getResult().getOutput().getText();
+        return chatModel
+                .call(new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)), jsonOptions))
+                .getResult()
+                .getOutput()
+                .getText();
     }
 
     /**
@@ -75,11 +75,27 @@ public final class AiModelSupport {
                         .data(URI.create(url))
                         .build())
                 .toList();
-        Message userMessage = UserMessage.builder()
-                .text(prompt)
-                .media(media)
-                .build();
-        return visionChatModel.call(new Prompt(userMessage))
-                .getResult().getOutput().getText();
+        Message userMessage = UserMessage.builder().text(prompt).media(media).build();
+        return visionChatModel
+                .call(new Prompt(userMessage))
+                .getResult()
+                .getOutput()
+                .getText();
+    }
+
+    /**
+     * 成色等级（"1"~"4"）→ 中文标签。多个 AI 服务拼 prompt 时共用，避免各自复制一份映射。
+     */
+    public static String formatCondition(String conditionLevel) {
+        if (conditionLevel == null) {
+            return "未知";
+        }
+        return switch (conditionLevel) {
+            case "1" -> "全新";
+            case "2" -> "九五新";
+            case "3" -> "八五新";
+            case "4" -> "七成新";
+            default -> "未知";
+        };
     }
 }

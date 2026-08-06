@@ -7,7 +7,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum AdminResultCode implements IResultCode {
-
     REPORT_NOT_FOUND("B6001", "举报记录不存在"),
     REPORT_ALREADY_HANDLED("B6002", "该举报已被处理"),
     REPORT_INVALID_ACTION("B6003", "无效的处理动作"),

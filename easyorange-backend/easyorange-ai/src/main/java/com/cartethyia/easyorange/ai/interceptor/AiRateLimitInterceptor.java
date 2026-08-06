@@ -4,20 +4,19 @@ import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import org.jspecify.annotations.NullMarked;
-import tools.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.HandlerInterceptor;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NullMarked;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Component
@@ -41,8 +40,8 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
-                             Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
         String uri = request.getRequestURI();
         if (!uri.startsWith("/api/ai/")) {
             return true;
@@ -54,8 +53,7 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
 
         try {
             // Redisson RRateLimiter 令牌桶 — 原子化取桶/补桶/扣桶，解决 increment+expire 的原子性缺口
-            boolean allowed = distributedRateLimiter.tryAcquire(
-                    bucketKey, scope.getRatePerMinute(), 60);
+            boolean allowed = distributedRateLimiter.tryAcquire(bucketKey, scope.getRatePerMinute(), 60);
 
             if (!allowed) {
                 log.debug("AI rate limit exceeded: scope={}, user={}", scope, userKey);
@@ -70,8 +68,7 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
                     }
                 }
 
-                writeJson(response, 429,
-                        Map.of("success", false, "message", "AI 服务繁忙，请稍后重试"));
+                writeJson(response, 429, Map.of("success", false, "message", "AI 服务繁忙，请稍后重试"));
                 return false;
             }
         } catch (Exception e) {
@@ -107,8 +104,7 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
 
     private String extractStaleKey(HttpServletRequest request, AiCallScope scope) {
         try {
-            String body = request.getReader().lines()
-                    .reduce("", (a, b) -> a + b);
+            String body = request.getReader().lines().reduce("", (a, b) -> a + b);
             if (body.isEmpty()) return null;
             String fp = fingerprint(body);
             return scope.cacheKeyPrefix() + fp;
@@ -131,8 +127,7 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
         }
     }
 
-    private void writeJson(HttpServletResponse response, int status, Object body)
-            throws Exception {
+    private void writeJson(HttpServletResponse response, int status, Object body) throws Exception {
         response.setStatus(status);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(objectMapper.writeValueAsString(body));

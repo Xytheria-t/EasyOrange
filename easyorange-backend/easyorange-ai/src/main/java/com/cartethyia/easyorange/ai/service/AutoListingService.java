@@ -4,14 +4,13 @@ import com.cartethyia.easyorange.ai.budget.TokenBudget;
 import com.cartethyia.easyorange.ai.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
-import org.springframework.ai.chat.model.ChatModel;
-import tools.jackson.databind.ObjectMapper;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -22,8 +21,10 @@ public class AutoListingService {
     private static final String SYSTEM_PROMPT_NAME = "auto_listing_system";
 
     private final ChatModel chatModel;
+
     @Qualifier("visionChatModel")
     private final ChatModel visionChatModel;
+
     private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
 
@@ -53,9 +54,9 @@ public class AutoListingService {
     }
 
     private String loadPrompt(String name) {
-        return promptRegistry.getLatest(name)
+        return promptRegistry
+                .getLatest(name)
                 .map(PromptTemplate::template)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Prompt template not found: " + name));
+                .orElseThrow(() -> new IllegalStateException("Prompt template not found: " + name));
     }
 }

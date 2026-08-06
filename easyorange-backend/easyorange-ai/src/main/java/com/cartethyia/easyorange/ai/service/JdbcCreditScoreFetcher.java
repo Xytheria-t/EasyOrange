@@ -1,13 +1,12 @@
 package com.cartethyia.easyorange.ai.service;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
@@ -24,14 +23,14 @@ public class JdbcCreditScoreFetcher implements CreditScoreFetcher {
         }
 
         Map<String, Integer> result = new ConcurrentHashMap<>(sellerIds.size());
-        String sql = "SELECT user_id, credit_score FROM eo_user_credit WHERE user_id IN (" +
-                String.join(",", Collections.nCopies(sellerIds.size(), "?")) + ")";
+        String sql = "SELECT user_id, credit_score FROM eo_user_credit WHERE user_id IN ("
+                + String.join(",", Collections.nCopies(sellerIds.size(), "?")) + ")";
 
         try {
-            jdbcTemplate.query(sql,
+            jdbcTemplate.query(
+                    sql,
                     (RowCallbackHandler) rs -> result.put(rs.getString("user_id"), rs.getInt("credit_score")),
-                    (Object[]) sellerIds.toArray(new String[0])
-            );
+                    (Object[]) sellerIds.toArray(new String[0]));
         } catch (Exception e) {
             log.warn("Batch credit score fetch failed, falling back to individual lookup", e);
             return fallbackIndividualLookup(sellerIds);

@@ -3,9 +3,8 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class BatchAuditRequest {
@@ -15,9 +14,5 @@ public class BatchAuditRequest {
     private List<AuditItem> items;
 
     public record AuditItem(
-        @NotNull String productId,
-        @NotNull Integer action,
-        String reason,
-        List<String> dimensions
-    ) {}
+            @NotNull String productId, @NotNull Integer action, String reason, List<String> dimensions) {}
 }

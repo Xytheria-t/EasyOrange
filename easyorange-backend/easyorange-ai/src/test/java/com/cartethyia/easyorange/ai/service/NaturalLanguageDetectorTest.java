@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.ai.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -8,8 +10,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("NaturalLanguageDetector 测试")
 class NaturalLanguageDetectorTest {
@@ -26,15 +26,16 @@ class NaturalLanguageDetectorTest {
     class NaturalLanguageCases {
 
         @ParameterizedTest(name = "[{index}] \"{0}\" 是自然语言")
-        @ValueSource(strings = {
-            "找一台5000以内的笔记本",
-            "推荐一款适合编程的电脑",
-            "可以帮我看看有什么好的手机吗",
-            "预算3000左右买个在管相机",
-            "哪个牌子的耳机比较好用",
-            "怎么选一个好的机械键盘",
-            "有什么好手机推荐吗"
-        })
+        @ValueSource(
+                strings = {
+                    "找一台5000以内的笔记本",
+                    "推荐一款适合编程的电脑",
+                    "可以帮我看看有什么好的手机吗",
+                    "预算3000左右买个在管相机",
+                    "哪个牌子的耳机比较好用",
+                    "怎么选一个好的机械键盘",
+                    "有什么好手机推荐吗"
+                })
         void isNaturalLanguage_true(String keyword) {
             assertThat(detector.isNaturalLanguage(keyword)).isTrue();
         }
@@ -57,14 +58,7 @@ class NaturalLanguageDetectorTest {
         }
 
         @ParameterizedTest(name = "[{index}] \"{0}\" 不是自然语言")
-        @ValueSource(strings = {
-            "MacBook Pro",
-            "iPhone 14",
-            "笔记本",
-            "手机",
-            "abc",
-            "12345"
-        })
+        @ValueSource(strings = {"MacBook Pro", "iPhone 14", "笔记本", "手机", "abc", "12345"})
         void isNaturalLanguage_tooShortOrKeywordOnly(String keyword) {
             assertThat(detector.isNaturalLanguage(keyword)).isFalse();
         }
@@ -88,12 +82,7 @@ class NaturalLanguageDetectorTest {
     class EdgeCases {
 
         @ParameterizedTest(name = "[{index}] 长度={0}, 含意图词={1}, 结果={2}")
-        @CsvSource({
-            "5, true, true",
-            "5, false, false",
-            "4, true, false",
-            "100, true, true"
-        })
+        @CsvSource({"5, true, true", "5, false, false", "4, true, false", "100, true, true"})
         void isNaturalLanguage_boundary(int length, boolean hasIntentWord, boolean expected) {
             StringBuilder sb = new StringBuilder(length);
             for (int i = 0; i < length; i++) {

@@ -1,5 +1,10 @@
 package com.cartethyia.easyorange.admin.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminReportAssembler;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchHandleRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ReportHandleRequest;
@@ -9,27 +14,34 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHa
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
+import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
+import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
+import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import com.cartethyia.easyorange.product.domain.event.ReportProcessedEvent;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
+import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
-import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
 import com.cartethyia.easyorange.product.domain.valueobject.Version;
-import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
-import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
-import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
-import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
-import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,19 +50,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.product.domain.event.ReportProcessedEvent;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminReportService 单元测试")
@@ -92,15 +91,29 @@ class AdminReportServiceTest {
     private static final String OPERATOR_ID = "2";
 
     private ProductReport createPendingReport() {
-        return ProductReport.reconstitute(REPORT_ID, PRODUCT_ID, REPORTER_ID,
-                "虚假信息", ProductReportStatus.PENDING, null,
-                LocalDateTime.now().minusHours(1), LocalDateTime.now().minusHours(1), "1");
+        return ProductReport.reconstitute(
+                REPORT_ID,
+                PRODUCT_ID,
+                REPORTER_ID,
+                "虚假信息",
+                ProductReportStatus.PENDING,
+                null,
+                LocalDateTime.now().minusHours(1),
+                LocalDateTime.now().minusHours(1),
+                "1");
     }
 
     private ProductReport createResolvedReport() {
-        return ProductReport.reconstitute(REPORT_ID, PRODUCT_ID, REPORTER_ID,
-                "虚假信息", ProductReportStatus.RESOLVED, "已处理",
-                LocalDateTime.now().minusHours(2), LocalDateTime.now().minusHours(1), "1");
+        return ProductReport.reconstitute(
+                REPORT_ID,
+                PRODUCT_ID,
+                REPORTER_ID,
+                "虚假信息",
+                ProductReportStatus.RESOLVED,
+                "已处理",
+                LocalDateTime.now().minusHours(2),
+                LocalDateTime.now().minusHours(1),
+                "1");
     }
 
     private AdminUserQueryPort.UserInfo createUser(String id, String name) {
@@ -109,11 +122,17 @@ class AdminReportServiceTest {
 
     private Product createOnlineProduct() {
         return Product.builder()
-                .id(ProductId.of(PRODUCT_ID)).sellerId(SellerId.of("1")).categoryId(CategoryId.of("1"))
-                .title(ProductTitle.of("测试商品")).price(Money.of(new BigDecimal("99.99")))
-                .stock(StockQuantity.of(10)).version(Version.INITIAL).status(ProductStatus.ONLINE)
+                .id(ProductId.of(PRODUCT_ID))
+                .sellerId(SellerId.of("1"))
+                .categoryId(CategoryId.of("1"))
+                .title(ProductTitle.of("测试商品"))
+                .price(Money.of(new BigDecimal("99.99")))
+                .stock(StockQuantity.of(10))
+                .version(Version.INITIAL)
+                .status(ProductStatus.ONLINE)
                 .tags(TagSet.empty())
-                .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
+                .createTime(LocalDateTime.now())
+                .updateTime(LocalDateTime.now())
                 .build();
     }
 
@@ -127,7 +146,8 @@ class AdminReportServiceTest {
             ProductReport report = createPendingReport();
             PageResult<ProductReport> pageResult = PageResult.of(List.of(report), 1L, 1, 20);
             when(productReportQueryRepository.findByStatus("0", 1, 20)).thenReturn(pageResult);
-            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
+            when(adminUserQueryPort.getUserInfos(anyList()))
+                    .thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
             when(adminProductQueryPort.getProductInfos(anyList()))
                     .thenReturn(Map.of(PRODUCT_ID, new AdminProductQueryPort.ProductInfo(PRODUCT_ID, "测试商品")));
 
@@ -167,7 +187,8 @@ class AdminReportServiceTest {
         void getReportDetail_success() {
             ProductReport report = createPendingReport();
             when(productReportRepository.findById(REPORT_ID)).thenReturn(report);
-            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
+            when(adminUserQueryPort.getUserInfos(anyList()))
+                    .thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
             when(adminProductQueryPort.getProductInfos(anyList()))
                     .thenReturn(Map.of(PRODUCT_ID, new AdminProductQueryPort.ProductInfo(PRODUCT_ID, "测试商品")));
 
@@ -280,8 +301,7 @@ class AdminReportServiceTest {
         void handleReport_productOffline_takesProductOffline() {
             ProductReport report = createPendingReport();
             when(productReportRepository.findById(REPORT_ID)).thenReturn(report);
-            when(productRepository.findById(ProductId.of(PRODUCT_ID)))
-                    .thenReturn(Optional.of(createOnlineProduct()));
+            when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.of(createOnlineProduct()));
 
             ReportHandleRequest request = new ReportHandleRequest();
             request.setAction("PRODUCT_OFFLINE");
@@ -328,9 +348,16 @@ class AdminReportServiceTest {
         @DisplayName("批量处理举报返回聚合结果")
         void batchHandleReports_success() {
             ProductReport report1 = createPendingReport();
-            ProductReport report2 = ProductReport.reconstitute("101", PRODUCT_ID, REPORTER_ID,
-                    "侵权", ProductReportStatus.PENDING, null,
-                    LocalDateTime.now().minusHours(1), LocalDateTime.now().minusHours(1), "2");
+            ProductReport report2 = ProductReport.reconstitute(
+                    "101",
+                    PRODUCT_ID,
+                    REPORTER_ID,
+                    "侵权",
+                    ProductReportStatus.PENDING,
+                    null,
+                    LocalDateTime.now().minusHours(1),
+                    LocalDateTime.now().minusHours(1),
+                    "2");
 
             when(productReportRepository.findById("100")).thenReturn(report1);
             when(productReportRepository.findById("101")).thenReturn(report2);
@@ -359,9 +386,16 @@ class AdminReportServiceTest {
         @DisplayName("批量处理部分失败时聚合错误信息")
         void batchHandleReports_partialFailure_aggregatesErrors() {
             ProductReport pending = createPendingReport();
-            ProductReport resolved = ProductReport.reconstitute("101", PRODUCT_ID, REPORTER_ID,
-                    "侵权", ProductReportStatus.RESOLVED, "已处理",
-                    LocalDateTime.now().minusHours(2), LocalDateTime.now().minusHours(1), "2");
+            ProductReport resolved = ProductReport.reconstitute(
+                    "101",
+                    PRODUCT_ID,
+                    REPORTER_ID,
+                    "侵权",
+                    ProductReportStatus.RESOLVED,
+                    "已处理",
+                    LocalDateTime.now().minusHours(2),
+                    LocalDateTime.now().minusHours(1),
+                    "2");
 
             when(productReportRepository.findById("100")).thenReturn(pending);
             when(productReportRepository.findById("101")).thenReturn(resolved);
@@ -401,7 +435,9 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("超过50条抛出异常")
         void batchHandleReports_exceedLimit_throws() {
-            List<String> ids = java.util.stream.LongStream.range(1, 52).mapToObj(String::valueOf).toList();
+            List<String> ids = java.util.stream.LongStream.range(1, 52)
+                    .mapToObj(String::valueOf)
+                    .toList();
             BatchHandleRequest request = new BatchHandleRequest();
             request.setReportIds(ids);
             request.setAction("dismiss");
@@ -436,11 +472,12 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("获取举报处理历史")
         void getReportHistory_returnsHistory() {
-            ReportHandleHistory history = ReportHandleHistory.reconstitute("1", REPORT_ID, OPERATOR_ID,
-                    "resolve", "已处理", LocalDateTime.now());
+            ReportHandleHistory history = ReportHandleHistory.reconstitute(
+                    "1", REPORT_ID, OPERATOR_ID, "resolve", "已处理", LocalDateTime.now());
 
             when(reportHandleHistoryRepository.findByReportId(REPORT_ID)).thenReturn(List.of(history));
-            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of(OPERATOR_ID, createUser(OPERATOR_ID, "管理员")));
+            when(adminUserQueryPort.getUserInfos(anyList()))
+                    .thenReturn(Map.of(OPERATOR_ID, createUser(OPERATOR_ID, "管理员")));
 
             List<ReportHandleHistoryResponse> historyList = reportService.getReportHistory(REPORT_ID);
 

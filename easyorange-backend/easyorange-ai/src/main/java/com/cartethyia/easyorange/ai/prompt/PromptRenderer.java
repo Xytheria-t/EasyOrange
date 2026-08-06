@@ -15,8 +15,7 @@ public final class PromptRenderer {
 
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{(\\w+)}");
 
-    private PromptRenderer() {
-    }
+    private PromptRenderer() {}
 
     /**
      * 渲染模板，将所有 {@code {var}} 占位符替换为变量值。

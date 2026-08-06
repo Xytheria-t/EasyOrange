@@ -16,17 +16,16 @@ import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -42,27 +41,26 @@ public class AdminProductService {
     @Transactional(readOnly = true)
     public PageResult<AdminProductResponse> listProducts(AdminProductQueryRequest request) {
         ProductQueryCondition condition = new ProductQueryCondition(
-            request.keyword(),
-            request.categoryId(),
-            request.status(),
-            request.sellerId(),
-            parseDate(request.startTime(), false),
-            parseDate(request.endTime(), true),
-            request.pageNum(),
-            request.pageSize()
-        );
+                request.keyword(),
+                request.categoryId(),
+                request.status(),
+                request.sellerId(),
+                parseDate(request.startTime(), false),
+                parseDate(request.endTime(), true),
+                request.pageNum(),
+                request.pageSize());
 
         ProductQueryResult result = adminProductQueryPort.queryProducts(condition);
 
         List<String> productIds = result.records().stream()
-            .map(AdminProductQueryPort.ProductSummary::id)
-            .toList();
+                .map(AdminProductQueryPort.ProductSummary::id)
+                .toList();
 
         Map<String, List<String>> imagesMap = adminProductQueryPort.getProductImages(productIds);
 
         List<AdminProductResponse> records = result.records().stream()
-            .map(p -> adminProductAssembler.toSummaryResponse(p, imagesMap.getOrDefault(p.id(), List.of())))
-            .toList();
+                .map(p -> adminProductAssembler.toSummaryResponse(p, imagesMap.getOrDefault(p.id(), List.of())))
+                .toList();
 
         return PageResult.of(records, result.total(), result.pageNum(), result.pageSize());
     }
@@ -74,8 +72,8 @@ public class AdminProductService {
             throw BusinessException.of("商品不存在");
         }
 
-        List<String> images = adminProductQueryPort.getProductImages(List.of(id))
-            .getOrDefault(id, List.of());
+        List<String> images =
+                adminProductQueryPort.getProductImages(List.of(id)).getOrDefault(id, List.of());
 
         return adminProductAssembler.toDetailResponse(productDetail, images);
     }
@@ -89,20 +87,20 @@ public class AdminProductService {
             throw BusinessException.of("无效的商品状态");
         }
 
-        Product product = productRepository.findById(ProductId.of(id))
-            .orElseThrow(() -> BusinessException.of("商品不存在"));
+        Product product = productRepository.findById(ProductId.of(id)).orElseThrow(() -> BusinessException.of("商品不存在"));
 
         applyStatusTransition(product, newStatus);
         productCachePort.evictProductCache(id);
     }
 
     private void applyStatusTransition(Product product, ProductStatus newStatus) {
-        var transition = switch (newStatus) {
-            case ONLINE -> product.putOnline();
-            case OFFLINE -> product.takeOffline();
-            case SOLD -> product.markAsSold().orElse(null);
-            default -> throw BusinessException.of("不支持将该商品状态改为: " + newStatus.getDesc());
-        };
+        var transition =
+                switch (newStatus) {
+                    case ONLINE -> product.putOnline();
+                    case OFFLINE -> product.takeOffline();
+                    case SOLD -> product.markAsSold().orElse(null);
+                    default -> throw BusinessException.of("不支持将该商品状态改为: " + newStatus.getDesc());
+                };
         if (transition != null) {
             productRepository.save(transition.aggregate());
             domainEventPublisher.publish(transition.event());

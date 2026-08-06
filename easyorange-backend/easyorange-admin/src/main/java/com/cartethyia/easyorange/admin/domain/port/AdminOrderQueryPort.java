@@ -30,59 +30,43 @@ public interface AdminOrderQueryPort {
      * 订单查询条件 — status/paymentStatus 为 String code（与 OrderStatus/PaymentStatus code 一致）。
      */
     record OrderQueryCondition(
-        String orderNo,
-        String buyerId,
-        String sellerId,
-        String status,
-        String paymentStatus,
-        LocalDateTime startTime,
-        LocalDateTime endTime,
-        Integer pageNum,
-        Integer pageSize
-    ) {}
+            String orderNo,
+            String buyerId,
+            String sellerId,
+            String status,
+            String paymentStatus,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            Integer pageNum,
+            Integer pageSize) {}
 
     /**
      * 订单查询结果
      */
-    record OrderQueryResult(
-        List<OrderSummary> records,
-        long total,
-        int pageNum,
-        int pageSize
-    ) {}
+    record OrderQueryResult(List<OrderSummary> records, long total, int pageNum, int pageSize) {}
 
     /**
      * 订单摘要信息 — status/paymentStatus 为 String code。
      */
     record OrderSummary(
-        String id,
-        String orderNo,
-        String buyerId,
-        String sellerId,
-        BigDecimal totalAmount,
-        String status,
-        String statusDesc,
-        String paymentStatus,
-        String paymentStatusDesc,
-        LocalDateTime createTime
-    ) {}
+            String id,
+            String orderNo,
+            String buyerId,
+            String sellerId,
+            BigDecimal totalAmount,
+            String status,
+            String statusDesc,
+            String paymentStatus,
+            String paymentStatusDesc,
+            LocalDateTime createTime) {}
 
     /**
      * 订单项信息
      */
-    record OrderItemInfo(
-        String orderId,
-        String productId,
-        Integer quantity,
-        BigDecimal price
-    ) {}
+    record OrderItemInfo(String orderId, String productId, Integer quantity, BigDecimal price) {}
 
     /**
      * 产品信息（用于订单查询）
      */
-    record ProductInfo(
-        String id,
-        String name,
-        BigDecimal price
-    ) {}
+    record ProductInfo(String id, String name, BigDecimal price) {}
 }

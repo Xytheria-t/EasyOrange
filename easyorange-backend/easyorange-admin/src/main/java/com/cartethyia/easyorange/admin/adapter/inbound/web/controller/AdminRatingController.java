@@ -30,10 +30,7 @@ public class AdminRatingController {
     }
 
     @DeleteMapping("/{id}")
-    public Result<Void> deleteReview(
-        @PathVariable String id,
-        @Valid @RequestBody AdminRatingDeleteRequest request
-    ) {
+    public Result<Void> deleteReview(@PathVariable String id, @Valid @RequestBody AdminRatingDeleteRequest request) {
         adminRatingService.deleteReview(id, request);
         return Result.success();
     }

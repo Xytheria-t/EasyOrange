@@ -10,10 +10,4 @@ package com.cartethyia.easyorange.ai.prompt;
  * @param template    模板内容（含 {var} 占位符）
  * @param description 模板描述
  */
-public record PromptTemplate(
-        String name,
-        String version,
-        String template,
-        String description
-) {
-}
+public record PromptTemplate(String name, String version, String template, String description) {}
