@@ -3,7 +3,7 @@
 export { Avatar, AvatarFallback, AvatarImage } from './avatar';
 export { Badge, badgeVariants } from './badge';
 // shadcn/ui components (styled to match EasyOrange design system)
-export { Button as ShadcnButton, buttonVariants } from './button';
+export { Button, buttonVariants } from './button';
 export {
     Card,
     CardContent,

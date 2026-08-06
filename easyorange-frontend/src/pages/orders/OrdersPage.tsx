@@ -15,7 +15,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PaginationBar } from '@/components/PaginationBar';
 import { Button } from '@/components/ui/button';
 import { getOrderStatusFromCode, getOrderStatusLabel } from '@/constants';
-import { useCancelOrder, useMyOrders, usePayOrder, useReceiveOrder, useListUrlState } from '@/hooks';
+import { useCancelOrder, useListUrlState, useMyOrders, usePayOrder, useReceiveOrder } from '@/hooks';
 import { useUIStore } from '@/store';
 import type { Order, OrderStatus } from '@/types';
 import './orders-page.css';
@@ -78,12 +78,7 @@ const ORDER_PAGE_SIZE = 10;
 const VALID_TAB_IDS = STATUS_TAB_MAP.map(t => t.id);
 
 function OrdersPage() {
-    const {
-        filters,
-        pageNum,
-        setFilterValue: setUrlFilter,
-        setPageNum: setUrlPageNum,
-    } = useListUrlState();
+    const { filters, pageNum, setFilterValue: setUrlFilter, setPageNum: setUrlPageNum } = useListUrlState();
     const navigate = useNavigate();
 
     const activeTab = VALID_TAB_IDS.includes(filters.status ?? '') ? (filters.status as string) : 'all';

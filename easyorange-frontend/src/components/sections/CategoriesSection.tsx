@@ -97,7 +97,7 @@ function getCategoryDesc(name: string): string {
 }
 
 export default function CategoriesSection() {
-    useScrollReveal();
+    const sectionRef = useScrollReveal();
     const { data: categories } = useCategories();
 
     const displayCategories: CategoryDisplay[] =
@@ -125,7 +125,7 @@ export default function CategoriesSection() {
     });
 
     return (
-        <section className="categories-section" id="categories">
+        <section ref={sectionRef} className="categories-section" id="categories">
             {/* 顶部弥散光晕过渡 */}
             <div className="orb-transition orb-transition-top">
                 <div
@@ -163,7 +163,11 @@ export default function CategoriesSection() {
                     {displayCategories.map(category => (
                         <a
                             key={category.id}
-                            href={category.isAll ? '/products' : `/products?filters=category:${encodeURIComponent(category.id)}`}
+                            href={
+                                category.isAll
+                                    ? '/products'
+                                    : `/products?filters=category:${encodeURIComponent(category.id)}`
+                            }
                             className={`category-card glass-card${category.isAll ? ' card-more' : ''}`}
                         >
                             <div className="card-bg"></div>

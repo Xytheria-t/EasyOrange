@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { ImagePreviewOverlay } from '@/admin/components/ImagePreviewOverlay';
 import type { AiReviewResult } from '@/api/aiApi';
-import { ShadcnButton, Sheet, SheetContent, SheetHeader, SheetTitle, Textarea } from '@/components/ui';
+import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, Textarea } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { AiReviewSuggestion } from '../../../components/ai/AiReviewSuggestion';
 import { adminApi } from '../../api/adminApi';
@@ -200,7 +201,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         </span>
                         商品详情
                     </SheetTitle>
-                    <ShadcnButton
+                    <Button
                         variant="ghost"
                         size="icon"
                         onClick={onClose}
@@ -221,7 +222,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         >
                             <path d="M18 6L6 18M6 6l12 12" />
                         </svg>
-                    </ShadcnButton>
+                    </Button>
                 </SheetHeader>
 
                 {/* Content */}
@@ -235,7 +236,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         <div className="flex flex-col gap-6">
                             {/* Image gallery */}
                             <div className="flex flex-col gap-3">
-                                <ShadcnButton
+                                <Button
                                     variant="ghost"
                                     className="relative w-full overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)]"
                                     style={{
@@ -277,12 +278,12 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             点击预览
                                         </div>
                                     )}
-                                </ShadcnButton>
+                                </Button>
 
                                 {product.images.length > 1 && (
                                     <div className="flex gap-2 overflow-x-auto pb-1">
                                         {product.images.map((img, index) => (
-                                            <ShadcnButton
+                                            <Button
                                                 key={img}
                                                 variant="ghost"
                                                 size="icon"
@@ -300,7 +301,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                                 }}
                                             >
                                                 <img src={img} alt="" className="h-full w-full object-cover" />
-                                            </ShadcnButton>
+                                            </Button>
                                         ))}
                                     </div>
                                 )}
@@ -522,7 +523,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                 {DIMENSIONS.map(dim => {
                                     const active = selectedDimensions.includes(dim.key);
                                     return (
-                                        <ShadcnButton
+                                        <Button
                                             key={dim.key}
                                             variant="ghost"
                                             size="sm"
@@ -537,7 +538,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                         >
                                             {active ? '✓ ' : ''}
                                             {dim.label}
-                                        </ShadcnButton>
+                                        </Button>
                                     );
                                 })}
                             </div>
@@ -553,75 +554,39 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
 
                         {/* 操作按钮行 */}
                         <div className="flex gap-[0.65rem]">
-                            <ShadcnButton
+                            <Button
                                 onClick={handleApproveWithDimensions}
                                 disabled={updateStatus.isPending}
                                 isLoading={updateStatus.isPending}
                                 className="h-10 flex-1 rounded-xl border-none bg-[linear-gradient(135deg,#10B981,#059669)] text-[0.87rem] font-semibold text-white shadow-[0_3px_12px_rgba(16,185,129,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_18px_rgba(16,185,129,0.38)]"
                             >
                                 ✅ 通过审核
-                            </ShadcnButton>
-                            <ShadcnButton
+                            </Button>
+                            <Button
                                 onClick={() => setState(prev => ({ ...prev, showRejectModal: true }))}
                                 disabled={updateStatus.isPending}
                                 className="h-10 flex-1 rounded-xl border-none bg-[linear-gradient(135deg,#F43F5E,#E11D48)] text-[0.87rem] font-semibold text-white shadow-[0_3px_12px_rgba(244,63,94,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_18px_rgba(244,63,94,0.38)]"
                             >
                                 🚫 驳回商品
-                            </ShadcnButton>
-                            <ShadcnButton
+                            </Button>
+                            <Button
                                 variant="outline"
                                 onClick={onClose}
                                 disabled={updateStatus.isPending}
                                 className="h-10 rounded-xl border-[1.5px] border-[#E5E0DB] bg-white px-5 text-[0.87rem] font-semibold text-[#6B6460] hover:bg-[rgba(229,224,219,0.3)] hover:text-[#6B6460]"
                             >
                                 关闭
-                            </ShadcnButton>
+                            </Button>
                         </div>
                     </div>
                 )}
 
                 {/* Image preview overlay */}
                 {previewImage && (
-                    <>
-                        <button
-                            type="button"
-                            aria-label="关闭预览（点击空白处或按 Esc）"
-                            className="fixed inset-0 z-50 cursor-default border-0 bg-[rgba(42,37,32,0.88)] p-0"
-                            style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
-                            onClick={() => setState(prev => ({ ...prev, previewImage: null }))}
-                            onKeyDown={e => {
-                                if (e.key === 'Escape') {
-                                    setState(prev => ({ ...prev, previewImage: null }));
-                                }
-                            }}
-                        />
-                        <img
-                            src={previewImage}
-                            alt="预览"
-                            className="pointer-events-none fixed left-1/2 top-1/2 z-[51] max-h-[90vh] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-xl object-contain"
-                        />
-                        <ShadcnButton
-                            variant="ghost"
-                            size="icon"
-                            className="fixed right-5 top-5 z-[52] inline-flex h-10 w-10 items-center justify-center rounded-xl border-[1.5px] border-white/20 bg-white/10 text-white transition-all duration-150 hover:bg-white/20"
-                            onClick={() => setState(prev => ({ ...prev, previewImage: null }))}
-                            aria-label="关闭预览"
-                        >
-                            <svg
-                                aria-hidden="true"
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <path d="M18 6L6 18M6 6l12 12" />
-                            </svg>
-                        </ShadcnButton>
-                    </>
+                    <ImagePreviewOverlay
+                        src={previewImage}
+                        onClose={() => setState(prev => ({ ...prev, previewImage: null }))}
+                    />
                 )}
 
                 {/* 驳回弹窗 */}
@@ -638,7 +603,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                 <h3 className="flex items-center gap-[0.45rem] text-[1.05rem] font-bold text-[#E11D48]">
                                     ⚠️ 确认驳回商品
                                 </h3>
-                                <ShadcnButton
+                                <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() =>
@@ -648,7 +613,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                     aria-label="关闭"
                                 >
                                     ✕
-                                </ShadcnButton>
+                                </Button>
                             </div>
 
                             <p className="mb-[0.85rem] text-[0.85rem] leading-relaxed text-[#6B6460]">
@@ -658,7 +623,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                             {/* 快捷理由选项 */}
                             <div className="mb-[0.75rem] flex flex-wrap gap-[0.35rem]">
                                 {REJECT_TAGS.map(tag => (
-                                    <ShadcnButton
+                                    <Button
                                         key={tag}
                                         variant="ghost"
                                         size="sm"
@@ -666,7 +631,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                         className="h-auto min-h-0 rounded-md border-[1.5px] border-[#E5E0DB] bg-white px-[0.55rem] py-[0.28rem] text-[0.76rem] font-medium text-[#8B857E] transition-all duration-150 hover:border-[#F43F5E] hover:bg-white hover:text-[#E11D48]"
                                     >
                                         {tag}
-                                    </ShadcnButton>
+                                    </Button>
                                 ))}
                             </div>
 
@@ -680,7 +645,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                             />
 
                             <div className="flex justify-end gap-[0.6rem]">
-                                <ShadcnButton
+                                <Button
                                     variant="outline"
                                     onClick={() =>
                                         setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' }))
@@ -688,15 +653,15 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                     className="h-9 rounded-xl border-[1.5px] border-[#E5E0DB] bg-white px-[1.1rem] text-[0.84rem] font-semibold text-[#6B6460] hover:bg-[rgba(229,224,219,0.3)] hover:text-[#6B6460]"
                                 >
                                     取消
-                                </ShadcnButton>
-                                <ShadcnButton
+                                </Button>
+                                <Button
                                     onClick={handleRejectWithReason}
                                     disabled={!rejectReason.trim() || updateStatus.isPending}
                                     isLoading={updateStatus.isPending}
                                     className="h-9 rounded-xl border-none bg-[linear-gradient(135deg,#F43F5E,#E11D48)] px-[1.3rem] text-[0.84rem] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 disabled:translate-y-0 disabled:bg-[#D6CEC5]"
                                 >
                                     确认驳回
-                                </ShadcnButton>
+                                </Button>
                             </div>
                         </div>
                     </div>

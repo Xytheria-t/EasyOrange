@@ -54,6 +54,42 @@ export function parseFilters(raw: string | null): Record<string, string> {
     return result;
 }
 
+/**
+ * 将列表状态的部分更新应用到 URL 参数（keyword/filters/pageNum）。
+ * 供 {@link useListUrlState} 与组合 hook（如 useSearchUrlState）复用同一分支逻辑，
+ * 避免各自复制一份 URL 更新代码。
+ */
+export function applyListPartial(params: URLSearchParams, partial: Partial<ListUrlState>): URLSearchParams {
+    if ('keyword' in partial) {
+        const keyword = partial.keyword ?? '';
+        if (keyword) {
+            params.set(KEYWORD_PARAM, keyword);
+        } else {
+            params.delete(KEYWORD_PARAM);
+        }
+    }
+    if ('filters' in partial) {
+        const serialized = serializeFilters(partial.filters ?? {});
+        if (serialized) {
+            params.set(FILTERS_PARAM, serialized);
+        } else {
+            params.delete(FILTERS_PARAM);
+        }
+    }
+    if ('pageNum' in partial) {
+        params.set(PAGE_PARAM, String(Math.max(1, partial.pageNum ?? 1)));
+    }
+    return params;
+}
+
+/** 清空列表状态相关的全部 URL 参数（keyword/filters/pageNum）。 */
+export function resetListParams(params: URLSearchParams): URLSearchParams {
+    params.delete(KEYWORD_PARAM);
+    params.delete(FILTERS_PARAM);
+    params.delete(PAGE_PARAM);
+    return params;
+}
+
 export function useListUrlState(): ListUrlState & ListUrlStateSetters {
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -140,39 +176,13 @@ export function useListUrlState(): ListUrlState & ListUrlStateSetters {
 
     const setState = useCallback(
         (partial: Partial<ListUrlState>) => {
-            updateParams(params => {
-                if ('keyword' in partial) {
-                    const keyword = partial.keyword ?? '';
-                    if (keyword) {
-                        params.set(KEYWORD_PARAM, keyword);
-                    } else {
-                        params.delete(KEYWORD_PARAM);
-                    }
-                }
-                if ('filters' in partial) {
-                    const serialized = serializeFilters(partial.filters ?? {});
-                    if (serialized) {
-                        params.set(FILTERS_PARAM, serialized);
-                    } else {
-                        params.delete(FILTERS_PARAM);
-                    }
-                }
-                if ('pageNum' in partial) {
-                    params.set(PAGE_PARAM, String(Math.max(1, partial.pageNum ?? 1)));
-                }
-                return params;
-            });
+            updateParams(params => applyListPartial(params, partial));
         },
         [updateParams]
     );
 
     const reset = useCallback(() => {
-        updateParams(params => {
-            params.delete(KEYWORD_PARAM);
-            params.delete(FILTERS_PARAM);
-            params.delete(PAGE_PARAM);
-            return params;
-        });
+        updateParams(resetListParams);
     }, [updateParams]);
 
     return {

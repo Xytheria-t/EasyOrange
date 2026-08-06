@@ -369,7 +369,7 @@ export default function ProductManagePage() {
             style={{
                 position: 'relative',
                 minHeight: 'calc(100vh - 80px)',
-                animation: 'pmPageIn 0.5s ease-out both',
+                animation: 'pageIn 0.5s ease-out both',
             }}
         >
             {/* Background atmosphere */}
@@ -458,7 +458,7 @@ export default function ProductManagePage() {
                 )}
 
                 {/* ===== Header ===== */}
-                <header style={{ marginBottom: '1.75rem', animation: 'pmHeaderSlide 0.6s ease-out both' }}>
+                <header style={{ marginBottom: '1.75rem', animation: 'headerSlide 0.6s ease-out both' }}>
                     <div
                         style={{
                             display: 'flex',
@@ -631,7 +631,7 @@ export default function ProductManagePage() {
                         border: '1px solid rgba(255,255,255,0.6)',
                         borderRadius: 16,
                         marginBottom: '1.25rem',
-                        animation: 'pmToolbarIn 0.5s ease-out 0.08s both',
+                        animation: 'toolbarIn 0.5s ease-out 0.08s both',
                     }}
                 >
                     {/* Status filter */}
@@ -731,7 +731,7 @@ export default function ProductManagePage() {
                         borderRadius: 20,
                         overflow: 'hidden',
                         transition: 'all 0.35s ease',
-                        animation: 'pmCardIn 0.5s ease-out 0.15s both',
+                        animation: 'cardIn 0.5s ease-out 0.15s both',
                     }}
                 >
                     <AdminTable
@@ -759,10 +759,6 @@ export default function ProductManagePage() {
 
             {/* Keyframe animations injected once */}
             <style>{`
-        @keyframes pmPageIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pmHeaderSlide { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pmToolbarIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pmCardIn { from { opacity: 0; transform: translateY(16px) scale(0.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
       `}</style>
         </div>
     );

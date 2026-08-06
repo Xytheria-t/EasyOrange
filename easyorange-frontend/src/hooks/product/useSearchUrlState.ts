@@ -1,10 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-    serializeFilters,
-    useListUrlState,
-    type ListUrlState,
-} from '@/hooks/ui/useListUrlState';
+import { applyListPartial, type ListUrlState, resetListParams, useListUrlState } from '@/hooks/ui/useListUrlState';
 
 export interface SearchUrlState extends ListUrlState {
     aiEnabled: boolean;
@@ -21,9 +17,6 @@ export interface SearchUrlStateSetters {
 }
 
 const AI_PARAM = 'ai';
-const FILTERS_PARAM = 'filters';
-const PAGE_PARAM = 'page';
-const KEYWORD_PARAM = 'keyword';
 
 /**
  * SearchPage 专用 URL 状态 hook。
@@ -63,25 +56,7 @@ export function useSearchUrlState(): SearchUrlState & SearchUrlStateSetters {
     const setState = useCallback(
         (partial: Partial<SearchUrlState>) => {
             listState.updateParams(params => {
-                if ('keyword' in partial) {
-                    const keyword = partial.keyword ?? '';
-                    if (keyword) {
-                        params.set(KEYWORD_PARAM, keyword);
-                    } else {
-                        params.delete(KEYWORD_PARAM);
-                    }
-                }
-                if ('filters' in partial) {
-                    const serialized = serializeFilters(partial.filters ?? {});
-                    if (serialized) {
-                        params.set(FILTERS_PARAM, serialized);
-                    } else {
-                        params.delete(FILTERS_PARAM);
-                    }
-                }
-                if ('pageNum' in partial) {
-                    params.set(PAGE_PARAM, String(Math.max(1, partial.pageNum ?? 1)));
-                }
+                applyListPartial(params, partial);
                 if ('aiEnabled' in partial) {
                     if (partial.aiEnabled) {
                         params.set(AI_PARAM, '1');
@@ -97,9 +72,7 @@ export function useSearchUrlState(): SearchUrlState & SearchUrlStateSetters {
 
     const reset = useCallback(() => {
         listState.updateParams(params => {
-            params.delete(KEYWORD_PARAM);
-            params.delete(FILTERS_PARAM);
-            params.delete(PAGE_PARAM);
+            resetListParams(params);
             params.delete(AI_PARAM);
             return params;
         });
