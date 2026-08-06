@@ -1,9 +1,8 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.dto.response;
 
-import lombok.Builder;
-
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Builder;
 
 @Builder
 public record CategoryResponse(
@@ -16,5 +15,4 @@ public record CategoryResponse(
         Integer status,
         LocalDateTime createTime,
         Integer productCount,
-        List<CategoryResponse> children
-) {}
+        List<CategoryResponse> children) {}

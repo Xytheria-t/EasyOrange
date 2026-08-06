@@ -3,11 +3,10 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.product;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
-import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
 @Component
 public class ProductDataMapper {
@@ -94,13 +93,39 @@ public class ProductDataMapper {
 
     // -- null-safe helpers for value objects --
 
-    private static String val(ProductId v) { return v != null ? v.value() : null; }
-    private static String val(SellerId v) { return v != null ? v.value() : null; }
-    private static String val(CategoryId v) { return v != null ? v.value() : null; }
-    private static String val(ProductTitle v) { return v != null ? v.value() : null; }
-    private static String val(TradeLocation v) { return v != null ? v.value() : null; }
-    private static BigDecimal val(Money v) { return v != null ? v.value() : null; }
-    private static Integer val(StockQuantity v) { return v != null ? v.value() : null; }
-    private static Integer val(Version v) { return v != null ? v.value() : null; }
-    private static String val(ContactMethod v) { return v != null && v.isNotBlank() ? v.value() : null; }
+    private static String val(ProductId v) {
+        return v != null ? v.value() : null;
+    }
+
+    private static String val(SellerId v) {
+        return v != null ? v.value() : null;
+    }
+
+    private static String val(CategoryId v) {
+        return v != null ? v.value() : null;
+    }
+
+    private static String val(ProductTitle v) {
+        return v != null ? v.value() : null;
+    }
+
+    private static String val(TradeLocation v) {
+        return v != null ? v.value() : null;
+    }
+
+    private static BigDecimal val(Money v) {
+        return v != null ? v.value() : null;
+    }
+
+    private static Integer val(StockQuantity v) {
+        return v != null ? v.value() : null;
+    }
+
+    private static Integer val(Version v) {
+        return v != null ? v.value() : null;
+    }
+
+    private static String val(ContactMethod v) {
+        return v != null && v.isNotBlank() ? v.value() : null;
+    }
 }

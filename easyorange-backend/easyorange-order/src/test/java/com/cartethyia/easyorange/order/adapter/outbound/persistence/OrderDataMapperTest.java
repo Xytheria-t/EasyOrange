@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
@@ -14,16 +16,13 @@ import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("OrderDataMapper 单元测试")
 class OrderDataMapperTest {
@@ -75,11 +74,19 @@ class OrderDataMapperTest {
 
     private Order createAggregate() {
         return Order.from(new OrderReconstructSpec(
-                OrderId.of(ID), OrderNo.of(ORDER_NO),
-                UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
-                Money.of(AMOUNT), STATUS, PAYMENT_STATUS,
-                Address.of(ADDRESS), Phone.of(PHONE), REMARK, null, null
-        ));
+                OrderId.of(ID),
+                OrderNo.of(ORDER_NO),
+                UserId.of(BUYER_ID),
+                UserId.of(SELLER_ID),
+                itemForTest(),
+                Money.of(AMOUNT),
+                STATUS,
+                PAYMENT_STATUS,
+                Address.of(ADDRESS),
+                Phone.of(PHONE),
+                REMARK,
+                null,
+                null));
     }
 
     @Nested
@@ -214,9 +221,11 @@ class OrderDataMapperTest {
             assertThat(itemDO.getId()).isEqualTo(item.id());
             assertThat(itemDO.getOrderId()).isEqualTo(ID);
             assertThat(itemDO.getProductId()).isEqualTo(item.productId().value());
-            assertThat(itemDO.getUnitPrice()).isEqualByComparingTo(item.unitPrice().value());
+            assertThat(itemDO.getUnitPrice())
+                    .isEqualByComparingTo(item.unitPrice().value());
             assertThat(itemDO.getQuantity()).isEqualTo(item.quantity());
-            assertThat(itemDO.getSubtotal()).isEqualByComparingTo(item.subtotal().value());
+            assertThat(itemDO.getSubtotal())
+                    .isEqualByComparingTo(item.subtotal().value());
             assertThat(itemDO.getProductSnapshot()).isNotNull();
         }
 
@@ -224,9 +233,13 @@ class OrderDataMapperTest {
         @DisplayName("toItemReadModel 应将 OrderItemDO 正确映射")
         void toItemReadModel_shouldMapAllFields() {
             OrderItemDO itemDO = OrderItemDO.builder()
-                    .id("1").orderId(ID).productId(PRODUCT_ID)
+                    .id("1")
+                    .orderId(ID)
+                    .productId(PRODUCT_ID)
                     .productSnapshot("{}")
-                    .unitPrice(AMOUNT).quantity(1).subtotal(AMOUNT)
+                    .unitPrice(AMOUNT)
+                    .quantity(1)
+                    .subtotal(AMOUNT)
                     .build();
 
             OrderItemReadModel readModel = mapper.toItemReadModel(itemDO);
@@ -243,9 +256,13 @@ class OrderDataMapperTest {
         @DisplayName("toOrderItem 应将 OrderItemDO 正确映射为领域对象")
         void toOrderItem_shouldMapToDomain() {
             OrderItemDO itemDO = OrderItemDO.builder()
-                    .id("1").orderId(ID).productId(PRODUCT_ID)
+                    .id("1")
+                    .orderId(ID)
+                    .productId(PRODUCT_ID)
                     .productSnapshot("{}")
-                    .unitPrice(AMOUNT).quantity(1).subtotal(AMOUNT)
+                    .unitPrice(AMOUNT)
+                    .quantity(1)
+                    .subtotal(AMOUNT)
                     .build();
 
             OrderItem item = mapper.toOrderItem(itemDO);
@@ -274,9 +291,11 @@ class OrderDataMapperTest {
             assertThat(restored.id().value()).isEqualTo(original.id().value());
             assertThat(restored.orderNo().value()).isEqualTo(original.orderNo().value());
             assertThat(restored.buyerId().value()).isEqualTo(original.buyerId().value());
-            assertThat(restored.sellerId().value()).isEqualTo(original.sellerId().value());
+            assertThat(restored.sellerId().value())
+                    .isEqualTo(original.sellerId().value());
             assertThat(restored.items()).isEmpty();
-            assertThat(restored.totalAmount().value()).isEqualByComparingTo(original.totalAmount().value());
+            assertThat(restored.totalAmount().value())
+                    .isEqualByComparingTo(original.totalAmount().value());
             assertThat(restored.status()).isEqualTo(original.status());
             assertThat(restored.paymentStatus()).isEqualTo(original.paymentStatus());
             assertThat(restored.address().value()).isEqualTo(original.address().value());

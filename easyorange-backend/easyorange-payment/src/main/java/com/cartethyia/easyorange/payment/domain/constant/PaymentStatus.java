@@ -8,7 +8,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum PaymentStatus implements BaseCodeEnum {
-
     PENDING("PENDING", "待支付"),
     SUCCESS("SUCCESS", "已支付"),
     REFUNDED("REFUNDED", "已退款"),
@@ -20,6 +19,7 @@ public enum PaymentStatus implements BaseCodeEnum {
 
     @JsonValue
     private final String code;
+
     private final String desc;
 
     public static PaymentStatus fromCode(String code) {

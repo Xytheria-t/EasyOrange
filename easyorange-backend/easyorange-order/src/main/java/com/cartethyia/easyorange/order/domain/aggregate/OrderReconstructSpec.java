@@ -9,7 +9,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -47,5 +46,4 @@ public record OrderReconstructSpec(
         Phone phone,
         String remark,
         String cancelReason,
-        LocalDateTime cancelTime
-) {}
+        LocalDateTime cancelTime) {}

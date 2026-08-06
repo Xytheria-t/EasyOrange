@@ -1,11 +1,20 @@
 package com.cartethyia.easyorange.order.adapter.inbound.web.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.application.command.OrderCommandHandler;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.OrderListQuery;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,16 +24,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(OrderQueryController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -91,13 +90,10 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("handler 异常应包装为 ServletException")
         void getOrderDetail_whenHandlerThrows_shouldThrowServletException() {
-            when(queryHandler.getOrderDetailForOwner("100"))
-                    .thenThrow(new RuntimeException("订单不存在"));
+            when(queryHandler.getOrderDetailForOwner("100")).thenThrow(new RuntimeException("订单不存在"));
 
             org.junit.jupiter.api.Assertions.assertThrows(
-                    jakarta.servlet.ServletException.class,
-                    () -> mockMvc.perform(get("/api/orders/owned/{id}", 100L))
-            );
+                    jakarta.servlet.ServletException.class, () -> mockMvc.perform(get("/api/orders/owned/{id}", 100L)));
         }
     }
 
@@ -110,14 +106,11 @@ class OrderQueryControllerTest {
         void getMyOrders_withData_shouldReturnPage() throws Exception {
             List<OrderVO> records = List.of(
                     createOrderVO("100", "ORD100", OrderStatus.PENDING_PAYMENT.getCode(), "待付款"),
-                    createOrderVO("101", "ORD101", OrderStatus.PAID.getCode(), "已付款")
-            );
+                    createOrderVO("101", "ORD101", OrderStatus.PAID.getCode(), "已付款"));
             PageResult<OrderVO> pageResult = PageResult.of(records, 2L, 1, 10);
             when(queryHandler.getMyOrders(any(OrderListQuery.class))).thenReturn(pageResult);
 
-            mockMvc.perform(get("/api/orders/my")
-                            .param("pageNum", "1")
-                            .param("pageSize", "10"))
+            mockMvc.perform(get("/api/orders/my").param("pageNum", "1").param("pageSize", "10"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("A0000"))
                     .andExpect(jsonPath("$.data.records.length()").value(2))
@@ -150,9 +143,7 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("有售出订单应返回分页结果")
         void getSoldOrders_withData_shouldReturnPage() throws Exception {
-            List<OrderVO> records = List.of(
-                    createOrderVO("100", "ORD100", OrderStatus.SHIPPED.getCode(), "已发货")
-            );
+            List<OrderVO> records = List.of(createOrderVO("100", "ORD100", OrderStatus.SHIPPED.getCode(), "已发货"));
             PageResult<OrderVO> pageResult = PageResult.of(records, 1L, 1, 10);
             when(queryHandler.getSoldOrders(any(OrderListQuery.class))).thenReturn(pageResult);
 
@@ -167,8 +158,7 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("无售出订单应返回空分页")
         void getSoldOrders_withNoData_shouldReturnEmptyPage() throws Exception {
-            when(queryHandler.getSoldOrders(any(OrderListQuery.class)))
-                    .thenReturn(PageResult.empty(1, 10));
+            when(queryHandler.getSoldOrders(any(OrderListQuery.class))).thenReturn(PageResult.empty(1, 10));
 
             mockMvc.perform(get("/api/orders/sold"))
                     .andExpect(status().isOk())
@@ -184,9 +174,8 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("通用查询应返回分页结果")
         void queryOrders_withFilters_shouldReturnPage() throws Exception {
-            List<OrderVO> records = List.of(
-                    createOrderVO("100", "ORD100", OrderStatus.PENDING_PAYMENT.getCode(), "待付款")
-            );
+            List<OrderVO> records =
+                    List.of(createOrderVO("100", "ORD100", OrderStatus.PENDING_PAYMENT.getCode(), "待付款"));
             PageResult<OrderVO> pageResult = PageResult.of(records, 1L, 1, 10);
             when(queryHandler.listOrders(any(OrderListQuery.class))).thenReturn(pageResult);
 
@@ -203,8 +192,7 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("无结果时应返回空分页")
         void queryOrders_withNoResults_shouldReturnEmptyPage() throws Exception {
-            when(queryHandler.listOrders(any(OrderListQuery.class)))
-                    .thenReturn(PageResult.empty(1, 10));
+            when(queryHandler.listOrders(any(OrderListQuery.class))).thenReturn(PageResult.empty(1, 10));
 
             mockMvc.perform(get("/api/orders"))
                     .andExpect(status().isOk())

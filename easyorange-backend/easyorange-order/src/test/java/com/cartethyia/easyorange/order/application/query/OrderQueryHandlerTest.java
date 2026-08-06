@@ -1,18 +1,29 @@
 package com.cartethyia.easyorange.order.application.query;
 
-import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
-import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
-import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
-import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
-import com.cartethyia.easyorange.order.application.query.assembler.OrderReadModelAssembler;
-import com.cartethyia.easyorange.order.application.dto.OrderVO;
-import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
-
 import static com.cartethyia.easyorange.order.domain.constant.OrderStatus.PENDING_PAYMENT;
 import static com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus.UNPAID;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.order.application.dto.OrderVO;
+import com.cartethyia.easyorange.order.application.query.assembler.OrderReadModelAssembler;
+import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
+import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
+import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
+import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
+import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
+import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,20 +36,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -71,11 +68,22 @@ class OrderQueryHandlerTest {
         handler = new OrderQueryHandler(orderReadRepository, productQueryPort, orderCachePort, readModelAssembler);
 
         testOrderReadModel = new OrderReadModel(
-                "1", "ORD001", BUYER_ID, SELLER_ID, List.of(),
-                new BigDecimal("99.99"), PENDING_PAYMENT.getCode(), "待付款", UNPAID.getCode(),
-                "北京市朝阳区", "13800138000", "备注", null, null,
-                LocalDateTime.now(), LocalDateTime.now()
-        );
+                "1",
+                "ORD001",
+                BUYER_ID,
+                SELLER_ID,
+                List.of(),
+                new BigDecimal("99.99"),
+                PENDING_PAYMENT.getCode(),
+                "待付款",
+                UNPAID.getCode(),
+                "北京市朝阳区",
+                "13800138000",
+                "备注",
+                null,
+                null,
+                LocalDateTime.now(),
+                LocalDateTime.now());
 
         mockOrderVO = OrderVO.builder()
                 .id("1")
@@ -85,12 +93,9 @@ class OrderQueryHandlerTest {
 
         when(readModelAssembler.toOrderVO(any(OrderReadModel.class), anyMap(), anyBoolean()))
                 .thenReturn(mockOrderVO);
-        when(readModelAssembler.toOrderVOs(any(), anyMap()))
-                .thenReturn(List.of(mockOrderVO));
-        when(orderCachePort.buildOrderListKey(any(), any(), any(), any()))
-                .thenReturn("eo:order:list:key");
-        when(orderCachePort.getOrderList(any()))
-                .thenReturn(Optional.empty());
+        when(readModelAssembler.toOrderVOs(any(), anyMap())).thenReturn(List.of(mockOrderVO));
+        when(orderCachePort.buildOrderListKey(any(), any(), any(), any())).thenReturn("eo:order:list:key");
+        when(orderCachePort.getOrderList(any())).thenReturn(Optional.empty());
     }
 
     @AfterEach
@@ -251,8 +256,6 @@ class OrderQueryHandlerTest {
     }
 
     private static ProductDetail testProductDetail() {
-        return new ProductDetail(
-                "300", "测试商品", new BigDecimal("99.99"), "1", List.of("http://img.jpg"), null, null
-        );
+        return new ProductDetail("300", "测试商品", new BigDecimal("99.99"), "1", List.of("http://img.jpg"), null, null);
     }
 }

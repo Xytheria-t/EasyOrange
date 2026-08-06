@@ -1,11 +1,10 @@
 package com.cartethyia.easyorange.product.domain.port;
 
 import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +25,5 @@ public interface ProductSnapshotPort {
             Money price,
             ProductStatus status,
             StockQuantity stock,
-            String location
-    ) { }
+            String location) {}
 }

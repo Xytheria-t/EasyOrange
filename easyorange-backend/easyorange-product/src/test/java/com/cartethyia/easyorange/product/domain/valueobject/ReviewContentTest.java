@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 class ReviewContentTest {
 
@@ -29,8 +29,7 @@ class ReviewContentTest {
     void create_withTooLongValue_shouldThrow() {
         var longStr = "a".repeat(2001);
 
-        assertThatThrownBy(() -> new ReviewContent(longStr))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new ReviewContent(longStr)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.domain.Money;
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.enums.ResultCode;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
@@ -15,11 +15,10 @@ import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import java.util.List;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-
-import java.util.List;
 
 @Component
 public class OrderDataMapper {
@@ -54,17 +53,22 @@ public class OrderDataMapper {
         var status = orderDO.getStatus();
         var paymentStatus = orderDO.getPaymentStatus();
         return new OrderReadModel(
-                orderDO.getId(), orderDO.getOrderNo(),
-                orderDO.getBuyerId(), orderDO.getSellerId(),
+                orderDO.getId(),
+                orderDO.getOrderNo(),
+                orderDO.getBuyerId(),
+                orderDO.getSellerId(),
                 items != null ? items : List.of(),
                 orderDO.getTotalAmount(),
                 status != null ? status.getCode() : null,
                 status != null ? status.getDesc() : null,
                 paymentStatus != null ? paymentStatus.getCode() : null,
-                orderDO.getAddress(), orderDO.getPhone(), orderDO.getRemark(),
-                orderDO.getCancelReason(), orderDO.getCancelTime(),
-                orderDO.getCreateTime(), orderDO.getUpdateTime()
-        );
+                orderDO.getAddress(),
+                orderDO.getPhone(),
+                orderDO.getRemark(),
+                orderDO.getCancelReason(),
+                orderDO.getCancelTime(),
+                orderDO.getCreateTime(),
+                orderDO.getUpdateTime());
     }
 
     // ==================== Item DO → Domain ====================
@@ -86,10 +90,12 @@ public class OrderDataMapper {
     public OrderItemReadModel toItemReadModel(OrderItemDO itemDO) {
         if (itemDO == null) return null;
         return new OrderItemReadModel(
-                itemDO.getId(), itemDO.getProductId(),
+                itemDO.getId(),
+                itemDO.getProductId(),
                 itemDO.getProductSnapshot(),
-                itemDO.getUnitPrice(), itemDO.getQuantity(), itemDO.getSubtotal()
-        );
+                itemDO.getUnitPrice(),
+                itemDO.getQuantity(),
+                itemDO.getSubtotal());
     }
 
     // ==================== Aggregate → DO (Write path) ====================
@@ -129,15 +135,19 @@ public class OrderDataMapper {
 
     private static OrderReconstructSpec toReconstructSpec(OrderDO orderDO, List<OrderItem> items) {
         return new OrderReconstructSpec(
-                OrderId.of(orderDO.getId()), OrderNo.of(orderDO.getOrderNo()),
-                UserId.of(orderDO.getBuyerId()), UserId.of(orderDO.getSellerId()),
+                OrderId.of(orderDO.getId()),
+                OrderNo.of(orderDO.getOrderNo()),
+                UserId.of(orderDO.getBuyerId()),
+                UserId.of(orderDO.getSellerId()),
                 items,
                 Money.of(orderDO.getTotalAmount()),
                 orderDO.getStatus(),
                 orderDO.getPaymentStatus(),
-                Address.of(orderDO.getAddress()), Phone.of(orderDO.getPhone()),
-                orderDO.getRemark(), orderDO.getCancelReason(), orderDO.getCancelTime()
-        );
+                Address.of(orderDO.getAddress()),
+                Phone.of(orderDO.getPhone()),
+                orderDO.getRemark(),
+                orderDO.getCancelReason(),
+                orderDO.getCancelTime());
     }
 
     private String toJson(ProductSnapshot snapshot) {

@@ -3,14 +3,13 @@ package com.cartethyia.easyorange.order.adapter.outbound.cache;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Primary
@@ -77,8 +76,8 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     @Override
     public String buildOrderListKey(String userId, String status, Integer pageNum, Integer pageSize) {
         if (userId == null) return null;
-        var key = new StringBuilder(KEY_PREFIX)
-                .append(userId).append(":status:").append(status != null ? status : "all");
+        var key =
+                new StringBuilder(KEY_PREFIX).append(userId).append(":status:").append(status != null ? status : "all");
         if (pageNum != null && pageSize != null) {
             key.append(":page:").append(pageNum).append(":size:").append(pageSize);
         }

@@ -1,13 +1,13 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ReportRequest;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportDetailResponse;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportResponse;
 import com.cartethyia.easyorange.product.application.command.ProductReportCommandHandler;
 import com.cartethyia.easyorange.product.application.query.ProductReportQueryHandler;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ReportRequest;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportResponse;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportDetailResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +25,7 @@ public class ProductReportController {
     private final ProductReportQueryHandler reportQueryHandler;
 
     @PostMapping("/product/{productId}")
-    public Result<Void> reportProduct(@PathVariable String productId,
-                                       @Valid @RequestBody ReportRequest request) {
+    public Result<Void> reportProduct(@PathVariable String productId, @Valid @RequestBody ReportRequest request) {
         String reporterId = SecurityContextUtil.getCurrentUserIdOrThrow();
         reportCommandHandler.handleReport(productId, reporterId, request.reason(), request.reasonType());
         return Result.success();
@@ -34,8 +33,7 @@ public class ProductReportController {
 
     @GetMapping("/my")
     public Result<PageResult<ProductReportResponse>> myReports(
-            @RequestParam(defaultValue = "1") Integer pageNum,
-            @RequestParam(defaultValue = "20") Integer pageSize) {
+            @RequestParam(defaultValue = "1") Integer pageNum, @RequestParam(defaultValue = "20") Integer pageSize) {
         String reporterId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return Result.success(reportQueryHandler.getMyReports(reporterId, pageNum, pageSize));
     }

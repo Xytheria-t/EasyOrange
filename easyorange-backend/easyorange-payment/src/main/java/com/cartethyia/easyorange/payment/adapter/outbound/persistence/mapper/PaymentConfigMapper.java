@@ -5,5 +5,4 @@ import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentCon
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface PaymentConfigMapper extends BaseMapper<PaymentConfigDO> {
-}
+public interface PaymentConfigMapper extends BaseMapper<PaymentConfigDO> {}

@@ -10,12 +10,10 @@ import com.cartethyia.easyorange.favorite.application.service.FavoriteService;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Tag(name = "收藏", description = "商品收藏管理")
@@ -29,8 +27,7 @@ public class FavoriteController {
 
     @GetMapping
     public Result<PageResult<FavoriteResponse>> getFavorites(
-            @RequestParam(defaultValue = "1") Integer pageNum,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
+            @RequestParam(defaultValue = "1") Integer pageNum, @RequestParam(defaultValue = "10") Integer pageSize) {
         PageResult<Favorite> page = favoriteService.queryFavorites(pageNum, pageSize);
         return Result.success(favoriteAssembler.toPageResult(page, pageNum, pageSize));
     }

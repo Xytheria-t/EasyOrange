@@ -1,21 +1,19 @@
 package com.cartethyia.easyorange.product.application.command;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.application.command.CreateProductRatingCommand;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
 import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProductRatingCommandHandler 测试")
@@ -37,13 +35,15 @@ class ProductRatingCommandHandlerTest {
         TestSecurityUtil.setSecurityContext("1");
         try {
             doAnswer(invocation -> {
-                ProductRating rating = invocation.getArgument(0);
-                // 模拟仓储生成 ID
-                var field = ProductRating.class.getDeclaredField("id");
-                field.setAccessible(true);
-                field.set(rating, "100");
-                return null;
-            }).when(productRatingRepository).save(any(ProductRating.class));
+                        ProductRating rating = invocation.getArgument(0);
+                        // 模拟仓储生成 ID
+                        var field = ProductRating.class.getDeclaredField("id");
+                        field.setAccessible(true);
+                        field.set(rating, "100");
+                        return null;
+                    })
+                    .when(productRatingRepository)
+                    .save(any(ProductRating.class));
 
             var command = new CreateProductRatingCommand("10", 5, "非常好的商品");
 
@@ -51,12 +51,11 @@ class ProductRatingCommandHandlerTest {
 
             assertThat(reviewId).isEqualTo("100");
 
-            verify(productRatingRepository).save(argThat(r ->
-                    r.getProductId().equals("10") &&
-                    r.getUserId().equals("1") &&
-                    r.getRating().value() == 5 &&
-                    r.getContent().value().equals("非常好的商品")
-            ));
+            verify(productRatingRepository)
+                    .save(argThat(r -> r.getProductId().equals("10")
+                            && r.getUserId().equals("1")
+                            && r.getRating().value() == 5
+                            && r.getContent().value().equals("非常好的商品")));
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {

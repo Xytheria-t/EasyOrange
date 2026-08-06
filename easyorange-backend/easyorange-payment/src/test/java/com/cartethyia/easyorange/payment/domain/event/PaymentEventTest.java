@@ -1,11 +1,10 @@
 package com.cartethyia.easyorange.payment.domain.event;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("支付领域事件测试")
 class PaymentEventTest {
@@ -13,8 +12,8 @@ class PaymentEventTest {
     @Test
     @DisplayName("创建事件关联聚合根 ID")
     void createdEvent_aggregateId() {
-        PaymentCreatedEvent event = new PaymentCreatedEvent(
-                "1001", "PAY123", "2001", "3001", new BigDecimal("100.00"), "WECHAT");
+        PaymentCreatedEvent event =
+                new PaymentCreatedEvent("1001", "PAY123", "2001", "3001", new BigDecimal("100.00"), "WECHAT");
 
         assertThat(event.aggregateId()).isEqualTo("1001");
         assertThat(event.eventType()).isNotBlank();

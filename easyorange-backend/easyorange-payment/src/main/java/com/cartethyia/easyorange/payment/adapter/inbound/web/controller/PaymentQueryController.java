@@ -11,11 +11,10 @@ import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
 
 @Tag(name = "支付管理", description = "支付查询")
 @RestController
@@ -43,9 +42,9 @@ public class PaymentQueryController {
         Payment aggregate = queryHandler.getPaymentById(id);
         return Result.success(new PaymentStatusResponse(
                 aggregate.status().getDesc(),
-                com.cartethyia.easyorange.payment.domain.constant.PaymentMethod.getDescByCode(aggregate.paymentMethod().getCode()),
-                aggregate.updateTime()
-        ));
+                com.cartethyia.easyorange.payment.domain.constant.PaymentMethod.getDescByCode(
+                        aggregate.paymentMethod().getCode()),
+                aggregate.updateTime()));
     }
 
     public record PaymentStatusResponse(String status, String paymentMethod, LocalDateTime payTime) {}
@@ -53,8 +52,7 @@ public class PaymentQueryController {
     @GetMapping("/my")
     public Result<PageResult<PaymentResponse>> getMyPayments(@Valid QueryPaymentRequest request) {
         PaymentListQuery query = new PaymentListQuery(
-                null, resolveStatus(request.getStatus()),
-                request.getPageNum(), request.getPageSize());
+                null, resolveStatus(request.getStatus()), request.getPageNum(), request.getPageSize());
         PageResult<Payment> result = queryHandler.getMyPayments(query);
         return Result.success(paymentViewAssembler.toPageResult(result));
     }

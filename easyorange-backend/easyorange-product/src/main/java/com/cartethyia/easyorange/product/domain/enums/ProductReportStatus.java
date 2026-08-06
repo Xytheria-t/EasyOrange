@@ -8,7 +8,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ProductReportStatus implements BaseCodeEnum {
-
     PENDING("0", "待处理"),
     PROCESSING("1", "处理中"),
     RESOLVED("2", "已解决"),
@@ -16,6 +15,7 @@ public enum ProductReportStatus implements BaseCodeEnum {
 
     @JsonValue
     private final String code;
+
     private final String desc;
 
     public static ProductReportStatus fromCode(String code) {

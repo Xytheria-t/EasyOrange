@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-
 import java.util.List;
 
 /**
@@ -18,11 +17,9 @@ public record CreateOrderCommand(
         String address,
         String phone,
         String remark,
-        String paymentMethod
-) {
+        String paymentMethod) {
 
     public record CreateOrderItem(
             @NotNull(message = "资产 ID 不能为空") String productId,
-            @Min(value = 1, message = "数量至少为 1") int quantity
-    ) {}
+            @Min(value = 1, message = "数量至少为 1") int quantity) {}
 }

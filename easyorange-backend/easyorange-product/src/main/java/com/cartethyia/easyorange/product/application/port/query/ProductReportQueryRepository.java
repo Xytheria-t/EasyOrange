@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.product.application.port.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
-
 import java.util.List;
 
 public interface ProductReportQueryRepository {

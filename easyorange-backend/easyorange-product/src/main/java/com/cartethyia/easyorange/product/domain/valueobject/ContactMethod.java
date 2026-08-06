@@ -9,10 +9,7 @@ public record ContactMethod(String value) {
     public ContactMethod {
         if (value != null) {
             value = value.trim();
-            BizRequire.requireTrue(
-                    value.length() <= MAX_LENGTH,
-                    "联系方式长度不能超过 " + MAX_LENGTH + " 个字符"
-            );
+            BizRequire.requireTrue(value.length() <= MAX_LENGTH, "联系方式长度不能超过 " + MAX_LENGTH + " 个字符");
         }
     }
 

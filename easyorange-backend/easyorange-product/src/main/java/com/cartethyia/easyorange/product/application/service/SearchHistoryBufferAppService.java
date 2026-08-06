@@ -2,16 +2,14 @@ package com.cartethyia.easyorange.product.application.service;
 
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryMapper;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 @Slf4j
 @Service
@@ -19,11 +17,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class SearchHistoryBufferAppService {
 
     private final SearchHistoryMapper searchHistoryMapper;
-    
+
     private final BlockingQueue<SearchHistoryDO> buffer = new LinkedBlockingQueue<>(5000);
-    
+
     private static final int BATCH_SIZE = 100;
-    
+
     /**
      * 队列水位警戒线：超过此水位时 flush 失败不再回插，直接丢弃以保护系统。
      */
@@ -33,7 +31,7 @@ public class SearchHistoryBufferAppService {
         if (userId == null || keyword == null || keyword.isBlank()) {
             return;
         }
-        
+
         SearchHistoryDO historyDO = SearchHistoryDO.builder()
                 .userId(userId)
                 .keyword(keyword)
@@ -48,11 +46,11 @@ public class SearchHistoryBufferAppService {
     public void flushBuffer() {
         var batch = new ArrayList<SearchHistoryDO>(BATCH_SIZE);
         buffer.drainTo(batch, BATCH_SIZE);
-        
+
         if (batch.isEmpty()) {
             return;
         }
-        
+
         try {
             searchHistoryMapper.batchInsert(batch);
             log.debug("Flushed {} search history records to database", batch.size());

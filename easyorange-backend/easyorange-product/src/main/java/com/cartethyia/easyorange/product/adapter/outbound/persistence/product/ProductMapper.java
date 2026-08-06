@@ -2,16 +2,15 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.product;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
+import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface ProductMapper extends BaseMapper<ProductDO> {
@@ -19,13 +18,12 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
     // -- 搜索 --
 
     record ProductSearchCriteria(
-        String keyword,
-        ProductStatus status,
-        BigDecimal minPrice,
-        BigDecimal maxPrice,
-        ConditionLevel conditionLevel,
-        Boolean hasDiscount
-    ) {}
+            String keyword,
+            ProductStatus status,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            ConditionLevel conditionLevel,
+            Boolean hasDiscount) {}
 
     Page<ProductDO> searchByFullText(Page<ProductDO> page, @Param("c") ProductSearchCriteria criteria);
 
@@ -45,7 +43,5 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
 
     void batchAddViewCounts(@Param("entries") List<ViewCountEntry> entries);
 
-    void updateSearchText(@Param("productId") String productId,
-                          @Param("searchText") String searchText);
-
+    void updateSearchText(@Param("productId") String productId, @Param("searchText") String searchText);
 }

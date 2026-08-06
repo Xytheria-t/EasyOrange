@@ -26,5 +26,4 @@ public record ProductUpdateSpec(
         TradeLocation location,
         ContactMethod contactMethod,
         ProductDescription description,
-        ImageSet images
-) {}
+        ImageSet images) {}

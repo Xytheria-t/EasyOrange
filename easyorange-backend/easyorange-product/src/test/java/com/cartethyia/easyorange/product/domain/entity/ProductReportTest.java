@@ -1,12 +1,11 @@
 package com.cartethyia.easyorange.product.domain.entity;
 
+import static org.assertj.core.api.Assertions.*;
+
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.time.LocalDateTime;
-
-import static org.assertj.core.api.Assertions.*;
 
 @DisplayName("ProductReport 领域实体测试")
 class ProductReportTest {
@@ -109,11 +108,8 @@ class ProductReportTest {
     void reconstitute_shouldRestoreFullState() {
         LocalDateTime now = LocalDateTime.now();
 
-        ProductReport report = ProductReport.reconstitute(
-                "100", "1", "2", "假货",
-                ProductReportStatus.RESOLVED, "已处理",
-                now, now, "2"
-        );
+        ProductReport report =
+                ProductReport.reconstitute("100", "1", "2", "假货", ProductReportStatus.RESOLVED, "已处理", now, now, "2");
 
         assertThat(report.getId()).isEqualTo("100");
         assertThat(report.getProductId()).isEqualTo("1");

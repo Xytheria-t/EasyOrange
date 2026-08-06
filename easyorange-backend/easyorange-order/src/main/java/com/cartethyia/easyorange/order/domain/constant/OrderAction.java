@@ -1,12 +1,11 @@
 package com.cartethyia.easyorange.order.domain.constant;
 
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
+import java.util.Set;
+import java.util.function.Predicate;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-
-import java.util.Set;
-import java.util.function.Predicate;
 
 /**
  * 订单状态机动作 — 订单生命周期所有合法转换的**唯一事实来源**。
@@ -34,25 +33,47 @@ import java.util.function.Predicate;
 @Accessors(fluent = true)
 @AllArgsConstructor
 public enum OrderAction {
-
-    PAY("支付",
-            Set.of(OrderStatus.PENDING_PAYMENT), OrderStatus.PAID, PaymentStatus.PAID,
-            false, OrderResultCode.ORDER_STATUS_ERROR, null),
-    CANCEL("取消",
-            Set.of(OrderStatus.PENDING_PAYMENT), OrderStatus.CANCELLED, null,
-            true, OrderResultCode.ORDER_CANNOT_CANCEL, null),
-    FORCE_CANCEL("强制取消",
-            Set.of(OrderStatus.PENDING_PAYMENT, OrderStatus.PAID), OrderStatus.CANCELLED, null,
-            true, OrderResultCode.ORDER_STATUS_ERROR, null),
-    SHIP("发货",
-            Set.of(OrderStatus.PAID), OrderStatus.SHIPPED, null,
-            false, OrderResultCode.ORDER_STATUS_ERROR, null),
-    CONFIRM_RECEIPT("确认收货",
-            Set.of(OrderStatus.SHIPPED), OrderStatus.COMPLETED, null,
-            false, OrderResultCode.ORDER_STATUS_ERROR, null),
-    REFUND("退款",
-            Set.of(OrderStatus.PAID, OrderStatus.SHIPPED), OrderStatus.REFUNDED, PaymentStatus.REFUNDED,
-            true, OrderResultCode.ORDER_CANNOT_REFUND, payment -> payment == PaymentStatus.PAID);
+    PAY(
+            "支付",
+            Set.of(OrderStatus.PENDING_PAYMENT),
+            OrderStatus.PAID,
+            PaymentStatus.PAID,
+            false,
+            OrderResultCode.ORDER_STATUS_ERROR,
+            null),
+    CANCEL(
+            "取消",
+            Set.of(OrderStatus.PENDING_PAYMENT),
+            OrderStatus.CANCELLED,
+            null,
+            true,
+            OrderResultCode.ORDER_CANNOT_CANCEL,
+            null),
+    FORCE_CANCEL(
+            "强制取消",
+            Set.of(OrderStatus.PENDING_PAYMENT, OrderStatus.PAID),
+            OrderStatus.CANCELLED,
+            null,
+            true,
+            OrderResultCode.ORDER_STATUS_ERROR,
+            null),
+    SHIP("发货", Set.of(OrderStatus.PAID), OrderStatus.SHIPPED, null, false, OrderResultCode.ORDER_STATUS_ERROR, null),
+    CONFIRM_RECEIPT(
+            "确认收货",
+            Set.of(OrderStatus.SHIPPED),
+            OrderStatus.COMPLETED,
+            null,
+            false,
+            OrderResultCode.ORDER_STATUS_ERROR,
+            null),
+    REFUND(
+            "退款",
+            Set.of(OrderStatus.PAID, OrderStatus.SHIPPED),
+            OrderStatus.REFUNDED,
+            PaymentStatus.REFUNDED,
+            true,
+            OrderResultCode.ORDER_CANNOT_REFUND,
+            payment -> payment == PaymentStatus.PAID);
 
     /** 动作名称（用于日志/提示） */
     private final String actionName;
@@ -73,7 +94,6 @@ public enum OrderAction {
      * 当前订单状态（status + paymentStatus）是否允许触发该动作。
      */
     public boolean canApply(OrderStatus currentStatus, PaymentStatus currentPaymentStatus) {
-        return sources.contains(currentStatus)
-                && (paymentGuard == null || paymentGuard.test(currentPaymentStatus));
+        return sources.contains(currentStatus) && (paymentGuard == null || paymentGuard.test(currentPaymentStatus));
     }
 }

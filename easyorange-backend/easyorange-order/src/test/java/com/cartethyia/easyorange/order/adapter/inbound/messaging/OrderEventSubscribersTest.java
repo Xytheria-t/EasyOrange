@@ -1,5 +1,8 @@
 package com.cartethyia.easyorange.order.adapter.inbound.messaging;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
@@ -9,6 +12,8 @@ import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.math.BigDecimal;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,13 +23,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-
-import java.math.BigDecimal;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrderLifecycleEventConsumer 单元测试")
@@ -53,11 +51,13 @@ class OrderEventSubscribersTest {
         @BeforeEach
         void setUp() {
             // Allow idempotency check to pass through (fail-open: returns true when Redis unavailable)
-            lenient().when(idempotencyChecker.isDuplicate(anyString(), anyString())).thenReturn(false);
+            lenient()
+                    .when(idempotencyChecker.isDuplicate(anyString(), anyString()))
+                    .thenReturn(false);
             lenient().when(idempotencyChecker.tryMark(anyString(), anyString())).thenReturn(true);
             var metricsService = new EventMetricsService(new SimpleMeterRegistry());
-            consumer = new OrderLifecycleEventConsumer(idempotencyChecker, metricsService,
-                    productOrderPort, paymentGatewayPort);
+            consumer = new OrderLifecycleEventConsumer(
+                    idempotencyChecker, metricsService, productOrderPort, paymentGatewayPort);
         }
 
         private Message buildMessage() {
@@ -69,8 +69,12 @@ class OrderEventSubscribersTest {
         @Test
         @DisplayName("收到订单创建事件后不再异步预留库存（已由 OrderCreationService 同步扣减）")
         void onOrderCreated_shouldNotReserveStock() {
-            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID,
-                    List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
+            OrderCreatedEvent event = new OrderCreatedEvent(
+                    ORDER_ID,
+                    BUYER_ID,
+                    SELLER_ID,
+                    List.of(new OrderCreatedEvent.OrderItemPayload(
+                            PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
                     BigDecimal.valueOf(99.99));
 
             consumer.onOrderCreated(event, buildMessage());

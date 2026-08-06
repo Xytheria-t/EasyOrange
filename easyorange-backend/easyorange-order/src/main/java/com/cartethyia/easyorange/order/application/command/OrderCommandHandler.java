@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.order.application.service.OrderCreationService;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
@@ -11,15 +12,13 @@ import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
-import com.cartethyia.easyorange.order.application.service.OrderCreationService;
+import java.util.Objects;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-
-import java.util.Objects;
-import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -69,8 +68,7 @@ public class OrderCommandHandler {
         persistAndPublish(aggregate, result);
     }
 
-    private void persistAndPublish(Order oldAggregate,
-                                   Transition<Order, ?> result) {
+    private void persistAndPublish(Order oldAggregate, Transition<Order, ?> result) {
         orderRepository.update(result.aggregate());
         domainEventPublisher.publish(result.event());
         evictCacheAfterCommit(oldAggregate);
@@ -102,12 +100,14 @@ public class OrderCommandHandler {
     private Order validateOwner(String orderId, Function<Order, UserId> ownerExtractor) {
         var aggregate = findOrder(orderId);
         var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        BizRequire.requireTrue(Objects.equals(ownerExtractor.apply(aggregate).value(), userId), OrderResultCode.ORDER_NOT_OWNER);
+        BizRequire.requireTrue(
+                Objects.equals(ownerExtractor.apply(aggregate).value(), userId), OrderResultCode.ORDER_NOT_OWNER);
         return aggregate;
     }
 
     private Order findOrder(String orderId) {
-        return orderRepository.findById(OrderId.of(orderId))
+        return orderRepository
+                .findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
     }
 }

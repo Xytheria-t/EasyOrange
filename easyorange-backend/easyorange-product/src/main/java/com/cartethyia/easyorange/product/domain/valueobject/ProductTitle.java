@@ -11,10 +11,7 @@ public record ProductTitle(@JsonValue String value) {
     public ProductTitle {
         BizRequire.notBlank(value, "资产名称不能为空");
         value = value.trim();
-        BizRequire.requireTrue(
-                value.length() <= MAX_LENGTH,
-                "资产名称长度必须在 1-" + MAX_LENGTH + " 个字符之间"
-        );
+        BizRequire.requireTrue(value.length() <= MAX_LENGTH, "资产名称长度必须在 1-" + MAX_LENGTH + " 个字符之间");
     }
 
     @JsonCreator

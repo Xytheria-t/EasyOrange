@@ -1,8 +1,10 @@
 package com.cartethyia.easyorange.payment.domain.aggregate;
 
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.event.PaymentClosedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentConfirmEvent;
@@ -10,12 +12,9 @@ import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentRefundedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentSucceededEvent;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
-import com.cartethyia.easyorange.common.domain.Money;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -52,11 +51,22 @@ public class Payment {
     private final LocalDateTime updateTime;
     private final int version;
 
-    private Payment(String id, String paymentNo, String orderId, String userId,
-                             Money amount, Money refundedAmount, PaymentMethod paymentMethod,
-                             PaymentStatus status, String transactionId, String refundReason,
-                             LocalDateTime refundTime, String attach,
-                             LocalDateTime createTime, LocalDateTime updateTime, int version) {
+    private Payment(
+            String id,
+            String paymentNo,
+            String orderId,
+            String userId,
+            Money amount,
+            Money refundedAmount,
+            PaymentMethod paymentMethod,
+            PaymentStatus status,
+            String transactionId,
+            String refundReason,
+            LocalDateTime refundTime,
+            String attach,
+            LocalDateTime createTime,
+            LocalDateTime updateTime,
+            int version) {
         this.id = id;
         this.paymentNo = paymentNo;
         this.orderId = orderId;
@@ -94,15 +104,29 @@ public class Payment {
         Money paymentAmount = Money.of(spec.amount());
 
         Payment aggregate = new Payment(
-                spec.paymentId(), paymentNo, spec.orderId(), spec.userId(),
-                paymentAmount, Money.ZERO, spec.paymentMethod(),
-                PaymentStatus.PENDING, null, null,
-                null, spec.attach(), null, null, 0
-        );
+                spec.paymentId(),
+                paymentNo,
+                spec.orderId(),
+                spec.userId(),
+                paymentAmount,
+                Money.ZERO,
+                spec.paymentMethod(),
+                PaymentStatus.PENDING,
+                null,
+                null,
+                null,
+                spec.attach(),
+                null,
+                null,
+                0);
 
         PaymentCreatedEvent event = new PaymentCreatedEvent(
-                spec.paymentId(), paymentNo, spec.orderId(), spec.userId(), spec.amount(), spec.paymentMethod().getCode()
-        );
+                spec.paymentId(),
+                paymentNo,
+                spec.orderId(),
+                spec.userId(),
+                spec.amount(),
+                spec.paymentMethod().getCode());
 
         return new Transition<>(aggregate, event);
     }
@@ -115,11 +139,22 @@ public class Payment {
      * 状态字段使用领域枚举类型，由 TypeHandler 完成 VARCHAR 列互转。
      */
     public static Payment from(PaymentReconstructSpec spec) {
-        return new Payment(spec.id(), spec.paymentNo(), spec.orderId(), spec.userId(),
-                Money.of(spec.amount()), Money.of(spec.refundedAmount()),
-                spec.paymentMethod(), spec.status(), spec.transactionId(), spec.refundReason(),
-                spec.refundTime(), spec.attach(),
-                spec.createTime(), spec.updateTime(), spec.version() != null ? spec.version() : 0);
+        return new Payment(
+                spec.id(),
+                spec.paymentNo(),
+                spec.orderId(),
+                spec.userId(),
+                Money.of(spec.amount()),
+                Money.of(spec.refundedAmount()),
+                spec.paymentMethod(),
+                spec.status(),
+                spec.transactionId(),
+                spec.refundReason(),
+                spec.refundTime(),
+                spec.attach(),
+                spec.createTime(),
+                spec.updateTime(),
+                spec.version() != null ? spec.version() : 0);
     }
 
     // ==================== Guard Methods ====================
@@ -207,7 +242,9 @@ public class Payment {
         validateRefundAmount(refundAmount);
 
         if (!result.isSuccess()) {
-            throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, result.getErrorMessage() != null ? result.getErrorMessage() : "退款失败");
+            throw PaymentDomainException.of(
+                    PaymentResultCode.REFUND_NOT_ALLOWED,
+                    result.getErrorMessage() != null ? result.getErrorMessage() : "退款失败");
         }
 
         Money refundMoney = Money.of(refundAmount);
@@ -221,7 +258,8 @@ public class Payment {
             newStatus = PaymentStatus.PARTIALLY_REFUNDED;
             refundEventReason = "部分退款: " + refundAmount;
         }
-        Payment updated = withRefundResult(newStatus, newRefundedAmount, refundEventReason, LocalDateTime.now(), nextVersion());
+        Payment updated =
+                withRefundResult(newStatus, newRefundedAmount, refundEventReason, LocalDateTime.now(), nextVersion());
         return new Transition<>(updated, new PaymentRefundedEvent(this.id, refundEventReason));
     }
 
@@ -242,9 +280,8 @@ public class Payment {
         if (!canRefund()) {
             throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, "当前状态不允许退款: " + this.status);
         }
-        Payment updated = withRefundResult(
-                PaymentStatus.REFUNDED, this.amount, refundReason, LocalDateTime.now(), nextVersion()
-        );
+        Payment updated =
+                withRefundResult(PaymentStatus.REFUNDED, this.amount, refundReason, LocalDateTime.now(), nextVersion());
         return new Transition<>(updated, new PaymentRefundedEvent(this.id, refundReason));
     }
 
@@ -273,25 +310,61 @@ public class Payment {
     // ==================== Internal Helpers ====================
 
     private Payment withStatus(PaymentStatus newStatus, int newVersion) {
-        return new Payment(id, paymentNo, orderId, userId,
-                amount, refundedAmount, paymentMethod, newStatus,
-                transactionId, refundReason, refundTime, attach,
-                createTime, LocalDateTime.now(), newVersion);
+        return new Payment(
+                id,
+                paymentNo,
+                orderId,
+                userId,
+                amount,
+                refundedAmount,
+                paymentMethod,
+                newStatus,
+                transactionId,
+                refundReason,
+                refundTime,
+                attach,
+                createTime,
+                LocalDateTime.now(),
+                newVersion);
     }
 
-    private Payment withRefundResult(PaymentStatus newStatus, Money newRefundedAmount,
-                                              String reason, LocalDateTime time, int newVersion) {
-        return new Payment(id, paymentNo, orderId, userId,
-                amount, newRefundedAmount, paymentMethod, newStatus,
-                transactionId, reason, time, attach,
-                createTime, LocalDateTime.now(), newVersion);
+    private Payment withRefundResult(
+            PaymentStatus newStatus, Money newRefundedAmount, String reason, LocalDateTime time, int newVersion) {
+        return new Payment(
+                id,
+                paymentNo,
+                orderId,
+                userId,
+                amount,
+                newRefundedAmount,
+                paymentMethod,
+                newStatus,
+                transactionId,
+                reason,
+                time,
+                attach,
+                createTime,
+                LocalDateTime.now(),
+                newVersion);
     }
 
     private Payment withSuccess(String transactionId) {
-        return new Payment(id, paymentNo, orderId, userId,
-                amount, refundedAmount, paymentMethod, PaymentStatus.SUCCESS,
-                transactionId, refundReason, refundTime, attach,
-                createTime, LocalDateTime.now(), nextVersion());
+        return new Payment(
+                id,
+                paymentNo,
+                orderId,
+                userId,
+                amount,
+                refundedAmount,
+                paymentMethod,
+                PaymentStatus.SUCCESS,
+                transactionId,
+                refundReason,
+                refundTime,
+                attach,
+                createTime,
+                LocalDateTime.now(),
+                nextVersion());
     }
 
     private void validateRefundAmount(BigDecimal refundAmount) {
@@ -311,21 +384,65 @@ public class Payment {
 
     // ==================== Getters ====================
 
-    public String id() { return id; }
-    public String paymentNo() { return paymentNo; }
-    public String orderId() { return orderId; }
-    public String userId() { return userId; }
-    public BigDecimal amount() { return amount.value(); }
-    public BigDecimal refundedAmount() { return refundedAmount.value(); }
-    public PaymentMethod paymentMethod() { return paymentMethod; }
-    public PaymentStatus status() { return status; }
-    public String transactionId() { return transactionId; }
-    public String refundReason() { return refundReason; }
-    public LocalDateTime refundTime() { return refundTime; }
-    public String attach() { return attach; }
-    public LocalDateTime createTime() { return createTime; }
-    public LocalDateTime updateTime() { return updateTime; }
-    public int version() { return version; }
+    public String id() {
+        return id;
+    }
+
+    public String paymentNo() {
+        return paymentNo;
+    }
+
+    public String orderId() {
+        return orderId;
+    }
+
+    public String userId() {
+        return userId;
+    }
+
+    public BigDecimal amount() {
+        return amount.value();
+    }
+
+    public BigDecimal refundedAmount() {
+        return refundedAmount.value();
+    }
+
+    public PaymentMethod paymentMethod() {
+        return paymentMethod;
+    }
+
+    public PaymentStatus status() {
+        return status;
+    }
+
+    public String transactionId() {
+        return transactionId;
+    }
+
+    public String refundReason() {
+        return refundReason;
+    }
+
+    public LocalDateTime refundTime() {
+        return refundTime;
+    }
+
+    public String attach() {
+        return attach;
+    }
+
+    public LocalDateTime createTime() {
+        return createTime;
+    }
+
+    public LocalDateTime updateTime() {
+        return updateTime;
+    }
+
+    public int version() {
+        return version;
+    }
 
     @Override
     public boolean equals(Object o) {

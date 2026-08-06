@@ -2,9 +2,8 @@ package com.cartethyia.easyorange.product.adapter.inbound.web.assembler;
 
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
+import org.springframework.stereotype.Component;
 
 @Component
 public class CategoryAssembler {
@@ -14,9 +13,7 @@ public class CategoryAssembler {
             return List.of();
         }
 
-        return readModels.stream()
-                .map(this::toCategoryResponse)
-                .toList();
+        return readModels.stream().map(this::toCategoryResponse).toList();
     }
 
     private CategoryResponse toCategoryResponse(CategoryReadModel model) {
@@ -24,7 +21,6 @@ public class CategoryAssembler {
                 .id(model.id())
                 .parentId(model.parentId())
                 .name(model.name())
-
                 .level(model.level())
                 .icon(model.icon())
                 .sortOrder(model.sortOrder())

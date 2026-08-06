@@ -10,7 +10,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
-
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -51,13 +50,40 @@ public final class OrderTestFixture {
         private Phone phone = Phone.of("13800138000");
         private String remark = "尽快发货";
 
-        public OrderCreateSpecBuilder orderId(String orderId) { this.orderId = OrderId.of(orderId); return this; }
-        public OrderCreateSpecBuilder buyerId(String buyerId) { this.buyerId = UserId.of(buyerId); return this; }
-        public OrderCreateSpecBuilder sellerId(String sellerId) { this.sellerId = UserId.of(sellerId); return this; }
-        public OrderCreateSpecBuilder items(List<OrderItem> items) { this.items = items; return this; }
-        public OrderCreateSpecBuilder address(String address) { this.address = Address.of(address); return this; }
-        public OrderCreateSpecBuilder phone(String phone) { this.phone = Phone.of(phone); return this; }
-        public OrderCreateSpecBuilder remark(String remark) { this.remark = remark; return this; }
+        public OrderCreateSpecBuilder orderId(String orderId) {
+            this.orderId = OrderId.of(orderId);
+            return this;
+        }
+
+        public OrderCreateSpecBuilder buyerId(String buyerId) {
+            this.buyerId = UserId.of(buyerId);
+            return this;
+        }
+
+        public OrderCreateSpecBuilder sellerId(String sellerId) {
+            this.sellerId = UserId.of(sellerId);
+            return this;
+        }
+
+        public OrderCreateSpecBuilder items(List<OrderItem> items) {
+            this.items = items;
+            return this;
+        }
+
+        public OrderCreateSpecBuilder address(String address) {
+            this.address = Address.of(address);
+            return this;
+        }
+
+        public OrderCreateSpecBuilder phone(String phone) {
+            this.phone = Phone.of(phone);
+            return this;
+        }
+
+        public OrderCreateSpecBuilder remark(String remark) {
+            this.remark = remark;
+            return this;
+        }
 
         public OrderCreateSpec build() {
             return new OrderCreateSpec(orderId, buyerId, sellerId, items, address, phone, remark);
@@ -85,15 +111,46 @@ public final class OrderTestFixture {
         private String cancelReason = null;
         private java.time.LocalDateTime cancelTime = null;
 
-        public OrderReconstructSpecBuilder id(String id) { this.id = OrderId.of(id); return this; }
-        public OrderReconstructSpecBuilder orderNo(String orderNo) { this.orderNo = OrderNo.of(orderNo); return this; }
-        public OrderReconstructSpecBuilder status(OrderStatus status) { this.status = status; return this; }
-        public OrderReconstructSpecBuilder paymentStatus(PaymentStatus paymentStatus) { this.paymentStatus = paymentStatus; return this; }
-        public OrderReconstructSpecBuilder items(List<OrderItem> items) { this.items = items; return this; }
+        public OrderReconstructSpecBuilder id(String id) {
+            this.id = OrderId.of(id);
+            return this;
+        }
+
+        public OrderReconstructSpecBuilder orderNo(String orderNo) {
+            this.orderNo = OrderNo.of(orderNo);
+            return this;
+        }
+
+        public OrderReconstructSpecBuilder status(OrderStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        public OrderReconstructSpecBuilder paymentStatus(PaymentStatus paymentStatus) {
+            this.paymentStatus = paymentStatus;
+            return this;
+        }
+
+        public OrderReconstructSpecBuilder items(List<OrderItem> items) {
+            this.items = items;
+            return this;
+        }
 
         public OrderReconstructSpec build() {
-            return new OrderReconstructSpec(id, orderNo, buyerId, sellerId, items,
-                    totalAmount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
+            return new OrderReconstructSpec(
+                    id,
+                    orderNo,
+                    buyerId,
+                    sellerId,
+                    items,
+                    totalAmount,
+                    status,
+                    paymentStatus,
+                    address,
+                    phone,
+                    remark,
+                    cancelReason,
+                    cancelTime);
         }
     }
 
@@ -108,23 +165,38 @@ public final class OrderTestFixture {
     }
 
     public static Order paidOrder() {
-        return Order.from(aReconstructSpec().status(OrderStatus.PAID).paymentStatus(PaymentStatus.PAID).build());
+        return Order.from(aReconstructSpec()
+                .status(OrderStatus.PAID)
+                .paymentStatus(PaymentStatus.PAID)
+                .build());
     }
 
     public static Order shippedOrder() {
-        return Order.from(aReconstructSpec().status(OrderStatus.SHIPPED).paymentStatus(PaymentStatus.PAID).build());
+        return Order.from(aReconstructSpec()
+                .status(OrderStatus.SHIPPED)
+                .paymentStatus(PaymentStatus.PAID)
+                .build());
     }
 
     public static Order completedOrder() {
-        return Order.from(aReconstructSpec().status(OrderStatus.COMPLETED).paymentStatus(PaymentStatus.PAID).build());
+        return Order.from(aReconstructSpec()
+                .status(OrderStatus.COMPLETED)
+                .paymentStatus(PaymentStatus.PAID)
+                .build());
     }
 
     public static Order cancelledOrder() {
-        return Order.from(aReconstructSpec().status(OrderStatus.CANCELLED).paymentStatus(PaymentStatus.UNPAID).build());
+        return Order.from(aReconstructSpec()
+                .status(OrderStatus.CANCELLED)
+                .paymentStatus(PaymentStatus.UNPAID)
+                .build());
     }
 
     public static Order refundedOrder() {
-        return Order.from(aReconstructSpec().status(OrderStatus.REFUNDED).paymentStatus(PaymentStatus.REFUNDED).build());
+        return Order.from(aReconstructSpec()
+                .status(OrderStatus.REFUNDED)
+                .paymentStatus(PaymentStatus.REFUNDED)
+                .build());
     }
 
     /**
@@ -166,7 +238,6 @@ public final class OrderTestFixture {
                         .unitPrice(Money.of(new BigDecimal("49.99")))
                         .quantity(2)
                         .subtotal(Money.of(new BigDecimal("99.98")))
-                        .build()
-        );
+                        .build());
     }
 }

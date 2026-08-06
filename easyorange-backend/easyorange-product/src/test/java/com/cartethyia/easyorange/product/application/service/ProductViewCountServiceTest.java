@@ -1,26 +1,23 @@
 package com.cartethyia.easyorange.product.application.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("浏览量服务单元测试")
@@ -84,8 +81,7 @@ class ProductViewCountServiceTest {
         @SuppressWarnings("unchecked")
         void flush_success() {
             when(redisTemplate.opsForHash()).thenReturn(hashOperations);
-            when(hashOperations.entries("eo:product:views:pending"))
-                    .thenReturn(Map.of("1", 5, "2", 3));
+            when(hashOperations.entries("eo:product:views:pending")).thenReturn(Map.of("1", 5, "2", 3));
 
             batchProcessor.flush();
 
@@ -94,8 +90,7 @@ class ProductViewCountServiceTest {
             assertThat(captor.getValue())
                     .hasSize(2)
                     .containsExactlyInAnyOrder(
-                            new ProductMapper.ViewCountEntry("1", 5),
-                            new ProductMapper.ViewCountEntry("2", 3));
+                            new ProductMapper.ViewCountEntry("1", 5), new ProductMapper.ViewCountEntry("2", 3));
             verify(hashOperations).delete(eq("eo:product:views:pending"), any(Object[].class));
         }
 
@@ -103,8 +98,7 @@ class ProductViewCountServiceTest {
         @DisplayName("待同步列表为空时跳过")
         void flush_empty_skips() {
             when(redisTemplate.opsForHash()).thenReturn(hashOperations);
-            when(hashOperations.entries("eo:product:views:pending"))
-                    .thenReturn(Map.of());
+            when(hashOperations.entries("eo:product:views:pending")).thenReturn(Map.of());
 
             batchProcessor.flush();
 
@@ -115,8 +109,7 @@ class ProductViewCountServiceTest {
         @DisplayName("所有数据解析失败时跳过DB写入，数据保留在Redis中等待下次重试")
         void flush_allInvalid_skipsDbWrite() {
             when(redisTemplate.opsForHash()).thenReturn(hashOperations);
-            when(hashOperations.entries("eo:product:views:pending"))
-                    .thenReturn(Map.of("100", "not-a-number"));
+            when(hashOperations.entries("eo:product:views:pending")).thenReturn(Map.of("100", "not-a-number"));
 
             batchProcessor.flush();
 
@@ -129,8 +122,7 @@ class ProductViewCountServiceTest {
         void flush_redisError_propagates() {
             when(redisTemplate.opsForHash()).thenThrow(new RuntimeException("Redis error"));
 
-            org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class,
-                    () -> batchProcessor.flush());
+            org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () -> batchProcessor.flush());
 
             verify(productMapper, never()).batchAddViewCounts(any());
         }

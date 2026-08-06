@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.aggregate;
 
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
-
 import java.math.BigDecimal;
 
 /**
@@ -20,5 +19,4 @@ public record PaymentCreateSpec(
         String userId,
         BigDecimal amount,
         PaymentMethod paymentMethod,
-        String attach
-) {}
+        String attach) {}

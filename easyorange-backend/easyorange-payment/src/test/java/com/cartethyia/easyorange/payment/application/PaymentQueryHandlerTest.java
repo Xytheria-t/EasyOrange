@@ -1,14 +1,21 @@
 package com.cartethyia.easyorange.payment.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
+
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.payment.application.query.PaymentListQuery;
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
-import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
+import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,14 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PaymentQueryHandler 测试")
@@ -49,10 +48,21 @@ class PaymentQueryHandlerTest {
 
     private Payment createTestAggregate(String id, String paymentNo, PaymentStatus status) {
         var spec = new PaymentReconstructSpec(
-                id, paymentNo, "2001", "3001",
-                new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
-                status, null, null, null, null, null, null, 0
-        );
+                id,
+                paymentNo,
+                "2001",
+                "3001",
+                new BigDecimal("100.00"),
+                BigDecimal.ZERO,
+                PaymentMethod.WECHAT,
+                status,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                0);
         return Payment.from(spec);
     }
 
@@ -78,8 +88,7 @@ class PaymentQueryHandlerTest {
         void getById_notFound() {
             when(paymentQueryRepository.findAggregateById("9999")).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> queryHandler.getPaymentById("9999"))
-                    .isInstanceOf(PaymentDomainException.class);
+            assertThatThrownBy(() -> queryHandler.getPaymentById("9999")).isInstanceOf(PaymentDomainException.class);
         }
     }
 
@@ -130,7 +139,8 @@ class PaymentQueryHandlerTest {
             Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.REFUNDED);
             when(paymentQueryRepository.findByUserIdAndStatus("3001", PaymentStatus.REFUNDED, 2, 10))
                     .thenReturn(List.of(aggregate));
-            when(paymentQueryRepository.countByUserIdAndStatus("3001", PaymentStatus.REFUNDED)).thenReturn(5L);
+            when(paymentQueryRepository.countByUserIdAndStatus("3001", PaymentStatus.REFUNDED))
+                    .thenReturn(5L);
 
             var result = queryHandler.queryPayments(new PaymentListQuery("3001", PaymentStatus.REFUNDED, 2, 10));
 

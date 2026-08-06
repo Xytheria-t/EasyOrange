@@ -1,6 +1,10 @@
 package com.cartethyia.easyorange.product.domain.aggregate;
 
+import static org.assertj.core.api.Assertions.*;
+
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductDeletedEvent;
@@ -12,15 +16,10 @@ import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
 import com.cartethyia.easyorange.product.domain.exception.InsufficientStockException;
 import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusException;
-import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.math.BigDecimal;
-
-import static org.assertj.core.api.Assertions.*;
 
 class ProductTest {
 
@@ -36,24 +35,24 @@ class ProductTest {
     @DisplayName("创建商品时名称不能为空")
     void create_withNullTitle_shouldThrow() {
         assertThatThrownBy(() -> Product.create(
-                ProductTestFixture.aProduct().withNoTitle().build()
-        )).isInstanceOf(BusinessException.class);
+                        ProductTestFixture.aProduct().withNoTitle().build()))
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
     @DisplayName("创建商品时价格必须大于0")
     void create_withZeroPrice_shouldThrow() {
         assertThatThrownBy(() -> Product.create(
-                ProductTestFixture.aProduct().price(BigDecimal.ZERO).build()
-        )).isInstanceOf(BusinessException.class);
+                        ProductTestFixture.aProduct().price(BigDecimal.ZERO).build()))
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
     @DisplayName("创建商品时图片不能为空")
     void create_withEmptyImages_shouldThrow() {
         assertThatThrownBy(() -> Product.create(
-                ProductTestFixture.aProduct().emptyImages().build()
-        )).isInstanceOf(BusinessException.class);
+                        ProductTestFixture.aProduct().emptyImages().build()))
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
@@ -61,8 +60,7 @@ class ProductTest {
     void decrementStock_whenNoStock_shouldThrow() {
         var p = Product.create(ProductTestFixture.aProduct().stock(0).build()).aggregate();
 
-        assertThatThrownBy(p::decrementStock)
-                .isInstanceOf(InsufficientStockException.class);
+        assertThatThrownBy(p::decrementStock).isInstanceOf(InsufficientStockException.class);
     }
 
     @Test
@@ -103,8 +101,7 @@ class ProductTest {
     void markAsSold_whenNotOnline_shouldThrow() {
         var p = ProductTestFixture.defaultProduct();
 
-        assertThatThrownBy(p::markAsSold)
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(p::markAsSold).isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
@@ -112,9 +109,7 @@ class ProductTest {
     void putOnline_whenNoStock_shouldThrow() {
         var p = Product.create(ProductTestFixture.aProduct().stock(0).build()).aggregate();
 
-        assertThatThrownBy(p::putOnline)
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("库存不足");
+        assertThatThrownBy(p::putOnline).isInstanceOf(BusinessException.class).hasMessageContaining("库存不足");
     }
 
     @Test
@@ -131,9 +126,7 @@ class ProductTest {
     void update_shouldModifyFields() {
         var p = ProductTestFixture.defaultProduct();
 
-        var t = p.update(
-                updateWith(CategoryId.of("99"), ProductTitle.of("新名称"), Money.of(new BigDecimal("200")))
-        );
+        var t = p.update(updateWith(CategoryId.of("99"), ProductTitle.of("新名称"), Money.of(new BigDecimal("200"))));
 
         assertThat(t.aggregate().getCategoryId().value()).isEqualTo("99");
         assertThat(t.aggregate().getTitle().value()).isEqualTo("新名称");
@@ -158,8 +151,7 @@ class ProductTest {
     void submitForReview_notOwner_shouldThrow() {
         var p = ProductTestFixture.defaultProduct();
 
-        assertThatThrownBy(() -> p.submitForReview("999"))
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> p.submitForReview("999")).isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
@@ -167,8 +159,7 @@ class ProductTest {
     void submitForReview_whenOnline_shouldThrow() {
         var p = ProductTestFixture.onlineProduct();
 
-        assertThatThrownBy(() -> p.submitForReview("1"))
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> p.submitForReview("1")).isInstanceOf(InvalidProductStatusException.class);
     }
 
     // ==================== approve ====================
@@ -190,8 +181,7 @@ class ProductTest {
     void approve_whenOnline_shouldThrow() {
         var p = ProductTestFixture.onlineProduct();
 
-        assertThatThrownBy(() -> p.approve("审核通过"))
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> p.approve("审核通过")).isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
@@ -201,8 +191,7 @@ class ProductTest {
         var submitted = p.submitForReview("1").aggregate();
         var rejected = submitted.reject("不合规").aggregate();
 
-        assertThatThrownBy(() -> rejected.approve("审核通过"))
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> rejected.approve("审核通过")).isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
@@ -282,8 +271,7 @@ class ProductTest {
     void putOnline_whenAlreadyOnline_shouldThrow() {
         var p = ProductTestFixture.onlineProduct();
 
-        assertThatThrownBy(p::putOnline)
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(p::putOnline).isInstanceOf(InvalidProductStatusException.class);
     }
 
     // ==================== takeOffline ====================
@@ -304,8 +292,7 @@ class ProductTest {
     void takeOffline_whenDraft_shouldThrow() {
         var p = ProductTestFixture.defaultProduct();
 
-        assertThatThrownBy(p::takeOffline)
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(p::takeOffline).isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
@@ -313,8 +300,7 @@ class ProductTest {
     void takeOffline_notOwner_shouldThrow() {
         var p = ProductTestFixture.onlineProduct();
 
-        assertThatThrownBy(() -> p.takeOffline("999"))
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> p.takeOffline("999")).isInstanceOf(InvalidProductStatusException.class);
     }
 
     // ==================== delete ====================
@@ -334,8 +320,7 @@ class ProductTest {
     void delete_notOwner_shouldThrow() {
         var p = ProductTestFixture.defaultProduct();
 
-        assertThatThrownBy(() -> p.delete("999"))
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> p.delete("999")).isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
@@ -344,8 +329,7 @@ class ProductTest {
         var p = ProductTestFixture.onlineProduct();
         var sold = p.markAsSold().orElseThrow().aggregate();
 
-        assertThatThrownBy(() -> sold.delete("1"))
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> sold.delete("1")).isInstanceOf(InvalidProductStatusException.class);
     }
 
     // ==================== restoreStock edge cases ====================
@@ -356,8 +340,7 @@ class ProductTest {
         var p = ProductTestFixture.onlineProduct();
         var sold = p.markAsSold().orElseThrow().aggregate();
 
-        assertThatThrownBy(sold::restoreStock)
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(sold::restoreStock).isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
@@ -366,8 +349,7 @@ class ProductTest {
         var p = ProductTestFixture.onlineProduct();
         var offline = p.takeOffline().aggregate();
 
-        assertThatThrownBy(offline::restoreStock)
-                .isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(offline::restoreStock).isInstanceOf(InvalidProductStatusException.class);
     }
 
     // ==================== predicates ====================

@@ -1,13 +1,12 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.cartethyia.easyorange.common.exception.BusinessException;
+import java.util.List;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 class ImageSetTest {
 
@@ -33,8 +32,7 @@ class ImageSetTest {
         var image1 = new ImageSet.ProductImage(new ImageUrl("http://img/1.jpg"), 0, true);
         var image2 = new ImageSet.ProductImage(new ImageUrl("http://img/2.jpg"), 1, true);
 
-        assertThatThrownBy(() -> new ImageSet(List.of(image1, image2)))
-                .isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> new ImageSet(List.of(image1, image2))).isInstanceOf(BusinessException.class);
     }
 
     @Test

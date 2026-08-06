@@ -1,9 +1,16 @@
 package com.cartethyia.easyorange.order.adapter.inbound.web.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.cartethyia.easyorange.order.adapter.inbound.web.assembler.OrderCommandAssembler;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.CancelOrderRequest;
-import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.RefundOrderRequest;
-import java.util.List;
 import com.cartethyia.easyorange.order.application.command.CancelOrderCommand;
 import com.cartethyia.easyorange.order.application.command.ConfirmReceiptCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
@@ -13,7 +20,7 @@ import com.cartethyia.easyorange.order.application.command.PayOrderCommand;
 import com.cartethyia.easyorange.order.application.command.RefundOrderCommand;
 import com.cartethyia.easyorange.order.application.command.ShipOrderCommand;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
-
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,15 +31,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(OrderCommandController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -138,8 +136,7 @@ class OrderCommandControllerTest {
         @DisplayName("带取消原因应传递到命令")
         void cancelOrder_withReason_shouldPassReason() throws Exception {
             var request = new CancelOrderRequest("不想要了");
-            when(assembler.toCancelCommand(eq(ORDER_ID), any()))
-                    .thenReturn(new CancelOrderCommand(ORDER_ID, "不想要了"));
+            when(assembler.toCancelCommand(eq(ORDER_ID), any())).thenReturn(new CancelOrderCommand(ORDER_ID, "不想要了"));
 
             mockMvc.perform(put("/api/orders/{id}/cancel", ORDER_ID)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -211,8 +208,7 @@ class OrderCommandControllerTest {
         @Test
         @DisplayName("带退款原因应传递到命令")
         void refundOrder_withReason_shouldPassReason() throws Exception {
-            when(assembler.toRefundCommand(eq(ORDER_ID), any()))
-                    .thenReturn(new RefundOrderCommand(ORDER_ID, "商品有问题"));
+            when(assembler.toRefundCommand(eq(ORDER_ID), any())).thenReturn(new RefundOrderCommand(ORDER_ID, "商品有问题"));
 
             mockMvc.perform(put("/api/orders/{id}/refund", ORDER_ID)
                             .contentType(MediaType.APPLICATION_JSON)

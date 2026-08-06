@@ -7,15 +7,12 @@ import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.SellerInfo;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
@@ -29,9 +26,7 @@ public class FavoriteAssembler {
             return PageResult.empty(pageNum, pageSize);
         }
 
-        List<String> productIds = favorites.stream()
-                .map(Favorite::getProductId)
-                .collect(Collectors.toList());
+        List<String> productIds = favorites.stream().map(Favorite::getProductId).collect(Collectors.toList());
 
         List<ProductInfo> products = productInfoPort.findProductsByIds(productIds);
         if (products.isEmpty()) {
@@ -47,11 +42,11 @@ public class FavoriteAssembler {
 
         List<ProductDetailInfo> productDetailInfos = productInfoPort.assembleProductDetails(products, sellerMap);
 
-        Map<String, ProductDetailInfo> productDetailMap = productDetailInfos.stream()
-                .collect(Collectors.toMap(ProductDetailInfo::id, p -> p, (a, b) -> a));
+        Map<String, ProductDetailInfo> productDetailMap =
+                productDetailInfos.stream().collect(Collectors.toMap(ProductDetailInfo::id, p -> p, (a, b) -> a));
 
-        Map<String, Favorite> favoriteByProductId = favorites.stream()
-                .collect(Collectors.toMap(Favorite::getProductId, f -> f, (a, b) -> a));
+        Map<String, Favorite> favoriteByProductId =
+                favorites.stream().collect(Collectors.toMap(Favorite::getProductId, f -> f, (a, b) -> a));
 
         List<FavoriteResponse> responses = productIds.stream()
                 .map(productId -> {

@@ -1,16 +1,14 @@
 package com.cartethyia.easyorange.favorite.domain.aggregate;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.favorite.domain.aggregate.FavoriteCreateSpec;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
-import java.time.LocalDateTime;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.cartethyia.easyorange.common.exception.BusinessException;
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("Favorite 聚合根单元测试")
 class FavoriteTest {
@@ -125,8 +123,7 @@ class FavoriteTest {
         void validateOwnership_sameUser_doesNotThrow() {
             Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID));
 
-            assertThatCode(() -> favorite.validateOwnership(USER_ID))
-                    .doesNotThrowAnyException();
+            assertThatCode(() -> favorite.validateOwnership(USER_ID)).doesNotThrowAnyException();
         }
 
         @Test

@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.payment.dto.assembler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentViewAssembler;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
@@ -7,15 +9,12 @@ import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("PaymentViewAssembler 测试")
 class PaymentViewAssemblerTest {
@@ -24,12 +23,21 @@ class PaymentViewAssemblerTest {
 
     private Payment aggregate() {
         var spec = new PaymentReconstructSpec(
-                "1001", "PAY123", "2001", "3001",
-                new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
-                PaymentStatus.SUCCESS, "TXN_1", "用户退款",
-                LocalDateTime.of(2026, 1, 1, 10, 0), "attach",
-                LocalDateTime.of(2026, 1, 1, 9, 0), LocalDateTime.of(2026, 1, 1, 9, 30), 3
-        );
+                "1001",
+                "PAY123",
+                "2001",
+                "3001",
+                new BigDecimal("100.00"),
+                BigDecimal.ZERO,
+                PaymentMethod.WECHAT,
+                PaymentStatus.SUCCESS,
+                "TXN_1",
+                "用户退款",
+                LocalDateTime.of(2026, 1, 1, 10, 0),
+                "attach",
+                LocalDateTime.of(2026, 1, 1, 9, 0),
+                LocalDateTime.of(2026, 1, 1, 9, 30),
+                3);
         return Payment.from(spec);
     }
 

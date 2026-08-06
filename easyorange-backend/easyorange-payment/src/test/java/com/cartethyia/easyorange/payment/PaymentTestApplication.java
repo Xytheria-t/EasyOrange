@@ -9,5 +9,4 @@ import org.springframework.context.annotation.ComponentScan;
 @EnableAutoConfiguration
 @ComponentScan(basePackages = "com.cartethyia.easyorange.payment")
 @MapperScan("com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper")
-public class PaymentTestApplication {
-}
+public class PaymentTestApplication {}

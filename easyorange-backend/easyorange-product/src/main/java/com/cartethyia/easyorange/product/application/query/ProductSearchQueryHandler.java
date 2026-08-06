@@ -2,22 +2,21 @@ package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
+import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
+import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
+import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
-import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
-import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
-import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
-import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
-import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -36,25 +35,32 @@ public class ProductSearchQueryHandler {
 
         if (searchQueryPort.isPresent()) {
             var query = new ProductSearchQueryPort.ProductSearchQuery(
-                    criteria.keyword(), criteria.categoryId(), criteria.status(),
-                    criteria.minPrice(), criteria.maxPrice(), criteria.conditionLevel(),
+                    criteria.keyword(),
+                    criteria.categoryId(),
+                    criteria.status(),
+                    criteria.minPrice(),
+                    criteria.maxPrice(),
+                    criteria.conditionLevel(),
                     criteria.sort(),
-                    criteria.effectivePageNum(), criteria.effectivePageSize(),
-                    null, false);
+                    criteria.effectivePageNum(),
+                    criteria.effectivePageSize(),
+                    null,
+                    false);
             var searchResult = searchQueryPort.get().search(query);
             readModels = searchResult.records();
             facets = mergeFacetsList(searchResult);
-            page = PageResult.of(searchResult.records(), searchResult.total(),
-                    searchResult.current(), searchResult.size());
+            page = PageResult.of(
+                    searchResult.records(), searchResult.total(), searchResult.current(), searchResult.size());
         } else {
             page = productQueryRepository.searchProducts(criteria);
             readModels = page.records();
         }
 
-        var aiEnhancement = aiEnhanced
-                && aiSearchEnhancer.isPresent()
-                && !readModels.isEmpty()
-                ? aiSearchEnhancer.get().tryEnhance(criteria.keyword(), takeTop(readModels, 5)).orElse(null)
+        var aiEnhancement = aiEnhanced && aiSearchEnhancer.isPresent() && !readModels.isEmpty()
+                ? aiSearchEnhancer
+                        .get()
+                        .tryEnhance(criteria.keyword(), takeTop(readModels, 5))
+                        .orElse(null)
                 : null;
 
         return new ProductSearchResult(page, facets, aiEnhancement);
@@ -94,12 +100,11 @@ public class ProductSearchQueryHandler {
     private static List<FacetBucket> mergeFacetsList(
             com.cartethyia.easyorange.product.application.port.query.SearchResult result) {
         var list = new ArrayList<FacetBucket>();
-        result.categoryFacets().forEach(fb ->
-                list.add(new FacetBucket("category_" + fb.key(), fb.label(), fb.count())));
-        result.conditionFacets().forEach(fb ->
-                list.add(new FacetBucket("condition_" + fb.key(), fb.label(), fb.count())));
-        result.priceRangeFacets().forEach(fb ->
-                list.add(new FacetBucket("price_" + fb.key(), fb.label(), fb.count())));
+        result.categoryFacets()
+                .forEach(fb -> list.add(new FacetBucket("category_" + fb.key(), fb.label(), fb.count())));
+        result.conditionFacets()
+                .forEach(fb -> list.add(new FacetBucket("condition_" + fb.key(), fb.label(), fb.count())));
+        result.priceRangeFacets().forEach(fb -> list.add(new FacetBucket("price_" + fb.key(), fb.label(), fb.count())));
         return List.copyOf(list);
     }
 

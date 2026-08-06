@@ -9,6 +9,4 @@ import jakarta.validation.constraints.NotBlank;
  * 根据构造函数参数名自动推断 JSON 字段名映射，无需额外注解。
  */
 public record RefundOrderRequest(
-        @NotBlank(message = "退款原因不能为空")
-        String reason
-) {}
+        @NotBlank(message = "退款原因不能为空") String reason) {}

@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.favorite.domain.repository;
 
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

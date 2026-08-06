@@ -1,5 +1,9 @@
 package com.cartethyia.easyorange.product.application.query;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.application.port.query.ProductRatingQueryRepository;
 import com.cartethyia.easyorange.product.application.query.dto.ProductRatingVO;
@@ -7,21 +11,16 @@ import com.cartethyia.easyorange.product.application.query.dto.RatingStatsVO;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
 import com.cartethyia.easyorange.product.domain.port.SellerInfoPort;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerInfo;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProductRatingQueryHandler 测试")
@@ -41,9 +40,8 @@ class ProductRatingQueryHandlerTest {
     void setUp() {
         queryHandler = new ProductRatingQueryHandler(productRatingQueryRepository, sellerInfoPort);
 
-        review = ProductRating.reconstitute("100", "10", "1", null,
-                5, "非常好", null, null,
-                3, 1, LocalDateTime.now(), LocalDateTime.now());
+        review = ProductRating.reconstitute(
+                "100", "10", "1", null, 5, "非常好", null, null, 3, 1, LocalDateTime.now(), LocalDateTime.now());
     }
 
     @Test
@@ -51,9 +49,8 @@ class ProductRatingQueryHandlerTest {
     void listReviews_shouldReturnPage() {
         PageResult<ProductRating> page = PageResult.of(List.of(review), 1, 1, 10);
         when(productRatingQueryRepository.findByProductId("10", 1, 10)).thenReturn(page);
-        when(sellerInfoPort.getSellerInfos(anySet())).thenReturn(Map.of(
-                "1", new SellerInfo("1", "认领方", null, "http://avatar.jpg")
-        ));
+        when(sellerInfoPort.getSellerInfos(anySet()))
+                .thenReturn(Map.of("1", new SellerInfo("1", "认领方", null, "http://avatar.jpg")));
 
         PageResult<ProductRatingVO> result = queryHandler.listReviews("10", 1, 10);
 
@@ -99,15 +96,12 @@ class ProductRatingQueryHandlerTest {
     @Test
     @DisplayName("获取评价统计信息应正确计算")
     void getReviewStats_shouldCalculateCorrectly() {
-        ProductRating review2 = ProductRating.reconstitute("101", "10", "2", null,
-                4, "好", null, null,
-                1, 1, LocalDateTime.now(), LocalDateTime.now());
-        ProductRating review3 = ProductRating.reconstitute("102", "10", "3", null,
-                5, "很好", null, null,
-                2, 1, LocalDateTime.now(), LocalDateTime.now());
+        ProductRating review2 = ProductRating.reconstitute(
+                "101", "10", "2", null, 4, "好", null, null, 1, 1, LocalDateTime.now(), LocalDateTime.now());
+        ProductRating review3 = ProductRating.reconstitute(
+                "102", "10", "3", null, 5, "很好", null, null, 2, 1, LocalDateTime.now(), LocalDateTime.now());
 
-        when(productRatingQueryRepository.findAllByProductId("10"))
-                .thenReturn(List.of(review, review2, review3));
+        when(productRatingQueryRepository.findAllByProductId("10")).thenReturn(List.of(review, review2, review3));
 
         RatingStatsVO stats = queryHandler.getReviewStats("10");
 

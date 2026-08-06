@@ -2,20 +2,19 @@ package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportDetailResponse;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportResponse;
+import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ReportReasonType;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
-import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
-import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportDetailResponse;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportResponse;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,11 +26,11 @@ public class ProductReportQueryHandler {
 
     @Transactional(readOnly = true)
     public PageResult<ProductReportResponse> getMyReports(String reporterId, int pageNum, int pageSize) {
-        PageResult<ProductReport> reportPage = productReportQueryRepository.findByReporterId(reporterId, pageNum, pageSize);
+        PageResult<ProductReport> reportPage =
+                productReportQueryRepository.findByReporterId(reporterId, pageNum, pageSize);
 
-        List<ProductReportResponse> voList = reportPage.records().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        List<ProductReportResponse> voList =
+                reportPage.records().stream().map(this::toResponse).collect(Collectors.toList());
 
         return PageResult.of(voList, reportPage.total(), pageNum, pageSize);
     }
@@ -46,13 +45,14 @@ public class ProductReportQueryHandler {
             throw BusinessException.of("无权查看此举报记录");
         }
 
-        String statusDesc = switch (report.statusCode()) {
-            case "0" -> "待处理";
-            case "1" -> "处理中";
-            case "2" -> "已解决";
-            case "3" -> "已驳回";
-            default -> "未知";
-        };
+        String statusDesc =
+                switch (report.statusCode()) {
+                    case "0" -> "待处理";
+                    case "1" -> "处理中";
+                    case "2" -> "已解决";
+                    case "3" -> "已驳回";
+                    default -> "未知";
+                };
 
         ReportReasonType reasonType = ReportReasonType.fromCode(report.getReasonType());
 
@@ -73,8 +73,7 @@ public class ProductReportQueryHandler {
                 statusDesc,
                 report.getRemark(),
                 report.getCreateTime(),
-                report.getUpdateTime()
-        );
+                report.getUpdateTime());
     }
 
     @Transactional(readOnly = true)
@@ -82,9 +81,8 @@ public class ProductReportQueryHandler {
         List<ProductReport> reports = productReportQueryRepository.findPendingReports(pageNum, pageSize);
         long total = productReportQueryRepository.countPendingReports();
 
-        List<ProductReportResponse> voList = reports.stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        List<ProductReportResponse> voList =
+                reports.stream().map(this::toResponse).collect(Collectors.toList());
 
         return PageResult.of(voList, total, pageNum, pageSize);
     }
@@ -99,7 +97,6 @@ public class ProductReportQueryHandler {
                 report.getReporterId(),
                 report.getReason(),
                 report.getReasonType(),
-                report.statusCode()
-        );
+                report.statusCode());
     }
 }

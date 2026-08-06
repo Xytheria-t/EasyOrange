@@ -2,15 +2,14 @@ package com.cartethyia.easyorange.order.adapter.outbound.lock;
 
 import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
 import com.cartethyia.easyorange.order.domain.port.LockPort;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Redisson 分布式锁适配器 — {@link LockPort} 的 Redisson 实现。
@@ -40,8 +39,8 @@ public class RedissonLockAdapter implements LockPort {
     /**
      * 批量获取锁。
      */
-    private void acquireLocks(List<String> lockKeys, long timeout,
-                              List<RLock> acquiredLocks) throws OrderCreationException {
+    private void acquireLocks(List<String> lockKeys, long timeout, List<RLock> acquiredLocks)
+            throws OrderCreationException {
         for (String lockKey : lockKeys) {
             RLock lock = redissonClient.getLock(lockKey);
             try {

@@ -1,12 +1,11 @@
 package com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.response;
 
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Builder

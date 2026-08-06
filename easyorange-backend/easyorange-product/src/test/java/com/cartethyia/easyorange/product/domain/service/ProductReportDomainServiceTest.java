@@ -1,5 +1,8 @@
 package com.cartethyia.easyorange.product.domain.service;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
@@ -9,6 +12,9 @@ import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,13 +22,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProductReportDomainService 测试")
@@ -43,7 +42,8 @@ class ProductReportDomainServiceTest {
 
     @BeforeEach
     void setUp() {
-        domainService = new ProductReportDomainService(productReportRepository, productRepository, productCacheEvictionPort);
+        domainService =
+                new ProductReportDomainService(productReportRepository, productRepository, productCacheEvictionPort);
     }
 
     @Test
@@ -60,15 +60,14 @@ class ProductReportDomainServiceTest {
         ProductReport report = ProductReport.create(PRODUCT_ID, "2", "假货", "1");
         report = report.assignId("100");
         when(productReportRepository.findById("100")).thenReturn(report);
-        when(productRepository.findById(ProductId.of(PRODUCT_ID)))
-                .thenReturn(Optional.of(createOnlineProduct()));
+        when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.of(createOnlineProduct()));
 
         var event = domainService.processReport("100", true);
 
         assertThat(event).isPresent();
         assertThat(event.get().productId()).isEqualTo(PRODUCT_ID);
-        verify(productRepository).save(argThat(p ->
-                p.getId().value().equals(PRODUCT_ID) && p.getStatus() == ProductStatus.OFFLINE));
+        verify(productRepository)
+                .save(argThat(p -> p.getId().value().equals(PRODUCT_ID) && p.getStatus() == ProductStatus.OFFLINE));
         verify(productCacheEvictionPort).evictProductCache(PRODUCT_ID);
         verify(productReportRepository).update(argThat(r -> r != null && !r.isPending()));
     }
@@ -104,8 +103,7 @@ class ProductReportDomainServiceTest {
         ProductReport report = ProductReport.create(PRODUCT_ID, "2", "假货", "1");
         report = report.assignId("100");
         when(productReportRepository.findById("100")).thenReturn(report);
-        when(productRepository.findById(ProductId.of(PRODUCT_ID)))
-                .thenReturn(Optional.of(createOnlineProduct()));
+        when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.of(createOnlineProduct()));
 
         domainService.processReport("100", true);
 

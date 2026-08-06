@@ -30,12 +30,10 @@ import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
 import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
 import com.cartethyia.easyorange.product.domain.valueobject.Version;
-
-import lombok.Builder;
-import lombok.Getter;
-
 import java.time.LocalDateTime;
 import java.util.Optional;
+import lombok.Builder;
+import lombok.Getter;
 
 @Getter
 @Builder(toBuilder = true)
@@ -50,7 +48,10 @@ public class Product {
     private final StockQuantity stock;
     private final Version version;
     private final ProductStatus status;
-    @Builder.Default private final int viewCount = 0;
+
+    @Builder.Default
+    private final int viewCount = 0;
+
     private final ConditionLevel conditionLevel;
     private final TradeLocation location;
     private final ContactMethod contactMethod;
@@ -71,14 +72,22 @@ public class Product {
         BizRequire.requireTrue(spec.images() != null && !spec.images().isEmpty(), "资产图片不能为空");
 
         Product p = Product.builder()
-                .sellerId(spec.sellerId()).categoryId(spec.categoryId()).title(spec.title())
-                .price(spec.price()).originalPrice(spec.originalPrice())
+                .sellerId(spec.sellerId())
+                .categoryId(spec.categoryId())
+                .title(spec.title())
+                .price(spec.price())
+                .originalPrice(spec.originalPrice())
                 .stock(spec.stock() != null ? spec.stock() : StockQuantity.of(1))
-                .version(Version.INITIAL).status(ProductStatus.DRAFT)
-                .conditionLevel(spec.conditionLevel()).location(spec.location()).contactMethod(spec.contactMethod())
-                .description(spec.description()).tags(TagSet.empty())
+                .version(Version.INITIAL)
+                .status(ProductStatus.DRAFT)
+                .conditionLevel(spec.conditionLevel())
+                .location(spec.location())
+                .contactMethod(spec.contactMethod())
+                .description(spec.description())
+                .tags(TagSet.empty())
                 .priceUpdateTime(LocalDateTime.now())
-                .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
+                .createTime(LocalDateTime.now())
+                .updateTime(LocalDateTime.now())
                 .build();
 
         return new Transition<>(p, new ProductCreatedEvent(ProductEvent.Data.from(p)));
@@ -104,16 +113,24 @@ public class Product {
         return new Transition<>(
                 updated,
                 new ProductAuditedEvent(
-                        id.value(), title.value(), sellerId.value(),
-                        AuditAction.APPROVED.getCode(), reason, LocalDateTime.now()));
+                        id.value(),
+                        title.value(),
+                        sellerId.value(),
+                        AuditAction.APPROVED.getCode(),
+                        reason,
+                        LocalDateTime.now()));
     }
 
     public Transition<Product, ProductAuditedEvent> reject(String reason) {
         return new Transition<>(
                 transitionTo(ProductStatus.REJECTED, "审核拒绝"),
                 new ProductAuditedEvent(
-                        id.value(), title.value(), sellerId.value(),
-                        AuditAction.REJECTED.getCode(), reason, LocalDateTime.now()));
+                        id.value(),
+                        title.value(),
+                        sellerId.value(),
+                        AuditAction.REJECTED.getCode(),
+                        reason,
+                        LocalDateTime.now()));
     }
 
     public Transition<Product, ProductPutOnlineEvent> putOnline() {
@@ -124,8 +141,7 @@ public class Product {
 
     public Transition<Product, ProductTakeOfflineEvent> takeOffline() {
         return new Transition<>(
-                transitionTo(ProductStatus.OFFLINE, "下架"),
-                new ProductTakeOfflineEvent(id.value(), sellerId.value()));
+                transitionTo(ProductStatus.OFFLINE, "下架"), new ProductTakeOfflineEvent(id.value(), sellerId.value()));
     }
 
     public Transition<Product, ProductTakeOfflineEvent> takeOffline(String userId) {
@@ -140,8 +156,7 @@ public class Product {
             return Optional.empty(); // 幂等：订单完成链路重复触发时忽略
         }
         return Optional.of(new Transition<>(
-                transitionTo(ProductStatus.SOLD, "标记已售"),
-                new ProductMarkedSoldEvent(id.value(), sellerId.value())));
+                transitionTo(ProductStatus.SOLD, "标记已售"), new ProductMarkedSoldEvent(id.value(), sellerId.value())));
     }
 
     /** 状态机守卫：目标状态非法时抛出 {@link InvalidProductStatusException}，否则返回新状态。 */
@@ -173,7 +188,8 @@ public class Product {
         if (spec.stock() != null) builder.stock(spec.stock());
         if (spec.conditionLevel() != null) builder.conditionLevel(spec.conditionLevel());
         if (spec.location() != null) builder.location(spec.location());
-        if (spec.contactMethod() != null && spec.contactMethod().isNotBlank()) builder.contactMethod(spec.contactMethod());
+        if (spec.contactMethod() != null && spec.contactMethod().isNotBlank())
+            builder.contactMethod(spec.contactMethod());
         if (spec.description() != null) builder.description(spec.description());
         if (spec.images() != null) builder.images(spec.images());
         var updated = builder.updateTime(LocalDateTime.now()).build();
@@ -188,8 +204,7 @@ public class Product {
             throw new InvalidProductStatusException("不允许删除", id, status);
         }
         return new Transition<>(
-                toBuilder().updateTime(LocalDateTime.now()).build(),
-                new ProductDeletedEvent(id.value(), userId));
+                toBuilder().updateTime(LocalDateTime.now()).build(), new ProductDeletedEvent(id.value(), userId));
     }
 
     // ==================== Utility ====================
@@ -212,7 +227,10 @@ public class Product {
             throw new InsufficientStockException("资产库存不足", id, stock);
         }
         return new Transition<>(
-                toBuilder().stock(stock.decrease(quantity)).updateTime(LocalDateTime.now()).build(),
+                toBuilder()
+                        .stock(stock.decrease(quantity))
+                        .updateTime(LocalDateTime.now())
+                        .build(),
                 StockDecreasedEvent.of(id.value(), quantity));
     }
 
@@ -225,16 +243,17 @@ public class Product {
             throw new InvalidProductStatusException("不允许恢复库存", id, status);
         }
         return new Transition<>(
-                toBuilder().stock(stock.increase(quantity)).updateTime(LocalDateTime.now()).build(),
+                toBuilder()
+                        .stock(stock.increase(quantity))
+                        .updateTime(LocalDateTime.now())
+                        .build(),
                 StockRestoredEvent.of(id.value(), quantity));
     }
 
     // ==================== Query / Predicate ====================
 
     public boolean isComplete() {
-        return title != null && !title.value().isBlank()
-                && price != null
-                && conditionLevel != null;
+        return title != null && !title.value().isBlank() && price != null && conditionLevel != null;
     }
 
     public boolean hasValidPrice() {

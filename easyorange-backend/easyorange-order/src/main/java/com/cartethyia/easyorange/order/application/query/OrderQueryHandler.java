@@ -2,29 +2,28 @@ package com.cartethyia.easyorange.order.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
-import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
-import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
-import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
-import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
-import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
-import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.assembler.OrderReadModelAssembler;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
+import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
+import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
+import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
+import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
+import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
+import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
+import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -38,7 +37,8 @@ public class OrderQueryHandler {
 
     @Transactional(readOnly = true)
     public OrderVO getOrderDetailForOwner(String orderId) {
-        OrderReadModel order = orderReadRepository.findById(OrderId.of(orderId))
+        OrderReadModel order = orderReadRepository
+                .findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
 
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
@@ -62,12 +62,10 @@ public class OrderQueryHandler {
     /** listOrders 的实际实现 — 供同对象内部调用，避免 @Transactional 自调用失效。 */
     private PageResult<OrderVO> doListOrders(OrderListQuery query) {
         OrderQueryCondition condition = new OrderQueryCondition(
-                query.orderNo(), query.status(), query.buyerId(), query.sellerId(),
-                query.pageNum(), query.pageSize());
+                query.orderNo(), query.status(), query.buyerId(), query.sellerId(), query.pageNum(), query.pageSize());
         PageResult<OrderReadModel> orderPage = orderReadRepository.findPage(condition);
         List<OrderVO> voList = assembleOrderVOs(orderPage.records());
-        return PageResult.of(voList, orderPage.total(),
-                orderPage.current(), orderPage.size());
+        return PageResult.of(voList, orderPage.total(), orderPage.current(), orderPage.size());
     }
 
     /**
@@ -118,8 +116,7 @@ public class OrderQueryHandler {
     /** 注入当前用户视角的 buyerId/sellerId 到查询条件。 */
     private OrderListQuery withUserScope(OrderListQuery query, String buyerId, String sellerId) {
         return new OrderListQuery(
-                query.orderNo(), query.status(), buyerId, sellerId,
-                query.pageNum(), query.pageSize());
+                query.orderNo(), query.status(), buyerId, sellerId, query.pageNum(), query.pageSize());
     }
 
     private List<OrderVO> assembleOrderVOs(List<OrderReadModel> orders) {

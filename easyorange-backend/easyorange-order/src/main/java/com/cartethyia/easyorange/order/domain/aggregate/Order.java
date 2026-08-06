@@ -18,18 +18,17 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
-
-import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * 订单聚合根 —— 不可变对象
@@ -74,10 +73,21 @@ public class Order {
     private final LocalDateTime cancelTime;
     private final Clock clock;
 
-    private Order(OrderId id, OrderNo orderNo, UserId buyerId, UserId sellerId,
-                  List<OrderItem> items, Money totalAmount, OrderStatus status,
-                  PaymentStatus paymentStatus, Address address, Phone phone,
-                  String remark, String cancelReason, LocalDateTime cancelTime, Clock clock) {
+    private Order(
+            OrderId id,
+            OrderNo orderNo,
+            UserId buyerId,
+            UserId sellerId,
+            List<OrderItem> items,
+            Money totalAmount,
+            OrderStatus status,
+            PaymentStatus paymentStatus,
+            Address address,
+            Phone phone,
+            String remark,
+            String cancelReason,
+            LocalDateTime cancelTime,
+            Clock clock) {
         this.id = id;
         this.orderNo = orderNo;
         this.buyerId = buyerId;
@@ -104,22 +114,31 @@ public class Order {
      * @throws IllegalArgumentException 如果认领方等于资产方、资产为空或金额为零
      */
     public static Transition<Order, OrderCreatedEvent> createOrder(OrderCreateSpec spec) {
-        BizRequire.requireTrue(!Objects.equals(spec.buyerId().value(), spec.sellerId().value()),
-                "不能认领自己的资产");
+        BizRequire.requireTrue(
+                !Objects.equals(spec.buyerId().value(), spec.sellerId().value()), "不能认领自己的资产");
         BizRequire.notEmpty(spec.items(), "订单资产不能为空");
 
-        BigDecimal total = spec.items().stream()
-                .map(item -> item.subtotal().value())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal total =
+                spec.items().stream().map(item -> item.subtotal().value()).reduce(BigDecimal.ZERO, BigDecimal::add);
         BizRequire.requireTrue(total.compareTo(BigDecimal.ZERO) > 0, "订单金额必须大于0");
         Money totalAmount = Money.of(total);
 
         OrderId orderId = spec.orderId();
         Order aggregate = new Order(
-                orderId, OrderNo.of(orderId.value()), spec.buyerId(), spec.sellerId(), spec.items(),
-                totalAmount, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID,
-                spec.address(), spec.phone(), spec.remark(), null, null, null
-        );
+                orderId,
+                OrderNo.of("ORD" + orderId.value()),
+                spec.buyerId(),
+                spec.sellerId(),
+                spec.items(),
+                totalAmount,
+                OrderStatus.PENDING_PAYMENT,
+                PaymentStatus.UNPAID,
+                spec.address(),
+                spec.phone(),
+                spec.remark(),
+                null,
+                null,
+                null);
 
         List<OrderCreatedEvent.OrderItemPayload> itemPayloads = spec.items().stream()
                 .map(item -> new OrderCreatedEvent.OrderItemPayload(
@@ -128,9 +147,7 @@ public class Order {
                 .toList();
 
         OrderCreatedEvent event = new OrderCreatedEvent(
-                orderId.value(), spec.buyerId().value(), spec.sellerId().value(),
-                itemPayloads, totalAmount.value()
-        );
+                orderId.value(), spec.buyerId().value(), spec.sellerId().value(), itemPayloads, totalAmount.value());
 
         return new Transition<>(aggregate, event);
     }
@@ -144,10 +161,20 @@ public class Order {
      */
     public static Order from(OrderReconstructSpec spec) {
         return new Order(
-                spec.id(), spec.orderNo(), spec.buyerId(), spec.sellerId(),
-                spec.items(), spec.totalAmount(), spec.status(), spec.paymentStatus(),
-                spec.address(), spec.phone(), spec.remark(), spec.cancelReason(), spec.cancelTime(), null
-        );
+                spec.id(),
+                spec.orderNo(),
+                spec.buyerId(),
+                spec.sellerId(),
+                spec.items(),
+                spec.totalAmount(),
+                spec.status(),
+                spec.paymentStatus(),
+                spec.address(),
+                spec.phone(),
+                spec.remark(),
+                spec.cancelReason(),
+                spec.cancelTime(),
+                null);
     }
 
     // ==================== Status Queries ====================
@@ -155,22 +182,27 @@ public class Order {
     // OrderAction.X.canApply(status, paymentStatus) 直接裁决，无需在聚合根上重复暴露。
 
     /** 是否可取消（买家取消仅限待付款状态；已付款订单取消走 {@link #forceCancel}） */
-    public boolean canCancel() { return OrderAction.CANCEL.canApply(status, paymentStatus); }
+    public boolean canCancel() {
+        return OrderAction.CANCEL.canApply(status, paymentStatus);
+    }
 
     /** 是否可确认收货（仅已发货状态可确认） */
-    public boolean canConfirmReceipt() { return OrderAction.CONFIRM_RECEIPT.canApply(status, paymentStatus); }
+    public boolean canConfirmReceipt() {
+        return OrderAction.CONFIRM_RECEIPT.canApply(status, paymentStatus);
+    }
 
     // ==================== State Transitions ====================
 
     /** 支付订单 */
     public Transition<Order, OrderPaidEvent> pay() {
-        return new Transition<>(transitionTo(OrderAction.PAY, null),
-                new OrderPaidEvent(id.value(), PaymentStatus.PAID.getCode()));
+        return new Transition<>(
+                transitionTo(OrderAction.PAY, null), new OrderPaidEvent(id.value(), PaymentStatus.PAID.getCode()));
     }
 
     /** 取消订单（买家路径，仅限待付款） */
     public Transition<Order, OrderCancelledEvent> cancel(String reason) {
-        return new Transition<>(transitionTo(OrderAction.CANCEL, reason),
+        return new Transition<>(
+                transitionTo(OrderAction.CANCEL, reason),
                 new OrderCancelledEvent(id.value(), extractProductIds(), reason));
     }
 
@@ -180,25 +212,27 @@ public class Order {
      * 正常用户取消只允许待付款订单，管理端可以强制取消已付款订单。
      */
     public Transition<Order, OrderCancelledEvent> forceCancel(String reason) {
-        return new Transition<>(transitionTo(OrderAction.FORCE_CANCEL, reason),
+        return new Transition<>(
+                transitionTo(OrderAction.FORCE_CANCEL, reason),
                 new OrderCancelledEvent(id.value(), extractProductIds(), reason));
     }
 
     /** 发货 */
     public Transition<Order, OrderShippedEvent> ship() {
-        return new Transition<>(transitionTo(OrderAction.SHIP, null),
-                new OrderShippedEvent(id.value()));
+        return new Transition<>(transitionTo(OrderAction.SHIP, null), new OrderShippedEvent(id.value()));
     }
 
     /** 确认收货 */
     public Transition<Order, OrderCompletedEvent> confirmReceipt() {
-        return new Transition<>(transitionTo(OrderAction.CONFIRM_RECEIPT, null),
+        return new Transition<>(
+                transitionTo(OrderAction.CONFIRM_RECEIPT, null),
                 new OrderCompletedEvent(id.value(), extractProductIds()));
     }
 
     /** 退款 */
     public Transition<Order, OrderRefundedEvent> refund(String reason) {
-        return new Transition<>(transitionTo(OrderAction.REFUND, reason),
+        return new Transition<>(
+                transitionTo(OrderAction.REFUND, reason),
                 new OrderRefundedEvent(id.value(), extractProductIds(), reason));
     }
 
@@ -213,8 +247,7 @@ public class Order {
      */
     private Order transitionTo(OrderAction action, String reason) {
         BizRequire.requireTrue(action.canApply(status, paymentStatus), action.resultCode());
-        BizRequire.requireTrue(!action.requiresReason() || (reason != null && !reason.isBlank()),
-                action.resultCode());
+        BizRequire.requireTrue(!action.requiresReason() || (reason != null && !reason.isBlank()), action.resultCode());
         return toBuilder()
                 .status(action.target())
                 .paymentStatus(action.targetPaymentStatus() != null ? action.targetPaymentStatus() : paymentStatus)

@@ -2,8 +2,7 @@ package com.cartethyia.easyorange.product.domain.valueobject;
 
 public record ReviewContent(String value) {
     public ReviewContent {
-        if (value != null && value.length() > 2000)
-            throw new IllegalArgumentException("评价内容最多2000字");
+        if (value != null && value.length() > 2000) throw new IllegalArgumentException("评价内容最多2000字");
     }
 
     public static ReviewContent of(String value) {

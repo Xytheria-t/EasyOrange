@@ -1,14 +1,11 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.rating;
 
 import com.cartethyia.easyorange.common.repository.BaseRepository;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingMapper;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
 import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
+import java.util.Optional;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
 
 @Primary
 @Repository
@@ -62,8 +59,7 @@ public class ProductRatingRepositoryImpl extends BaseRepository<ProductRatingMap
                 do_.getLikes() != null ? do_.getLikes() : 0,
                 do_.getStatus() != null ? do_.getStatus() : 1,
                 do_.getCreateTime(),
-                do_.getUpdateTime()
-        );
+                do_.getUpdateTime());
     }
 
     private ProductRatingDO convertToDO(ProductRating rating) {

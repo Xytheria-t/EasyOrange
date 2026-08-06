@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
+import static org.assertj.core.api.Assertions.*;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.*;
 
 @DisplayName("ProductStatus 状态机与枚举测试")
 class ProductStatusTest {
@@ -13,7 +13,8 @@ class ProductStatusTest {
     @Test
     @DisplayName("DRAFT → PENDING_REVIEW 是允许的转换")
     void canTransitionTo_draftToPendingReview() {
-        assertThat(ProductStatus.DRAFT.canTransitionTo(ProductStatus.PENDING_REVIEW)).isTrue();
+        assertThat(ProductStatus.DRAFT.canTransitionTo(ProductStatus.PENDING_REVIEW))
+                .isTrue();
     }
 
     @Test
@@ -31,19 +32,22 @@ class ProductStatusTest {
     @Test
     @DisplayName("PENDING_REVIEW → ONLINE 是允许的转换（审核通过）")
     void canTransitionTo_pendingReviewToOnline() {
-        assertThat(ProductStatus.PENDING_REVIEW.canTransitionTo(ProductStatus.ONLINE)).isTrue();
+        assertThat(ProductStatus.PENDING_REVIEW.canTransitionTo(ProductStatus.ONLINE))
+                .isTrue();
     }
 
     @Test
     @DisplayName("PENDING_REVIEW → REJECTED 是允许的转换（审核拒绝）")
     void canTransitionTo_pendingReviewToRejected() {
-        assertThat(ProductStatus.PENDING_REVIEW.canTransitionTo(ProductStatus.REJECTED)).isTrue();
+        assertThat(ProductStatus.PENDING_REVIEW.canTransitionTo(ProductStatus.REJECTED))
+                .isTrue();
     }
 
     @Test
     @DisplayName("REJECTED → PENDING_REVIEW 是允许的转换（重新提交审核）")
     void canTransitionTo_rejectedToPendingReview() {
-        assertThat(ProductStatus.REJECTED.canTransitionTo(ProductStatus.PENDING_REVIEW)).isTrue();
+        assertThat(ProductStatus.REJECTED.canTransitionTo(ProductStatus.PENDING_REVIEW))
+                .isTrue();
     }
 
     @Test
@@ -70,7 +74,8 @@ class ProductStatusTest {
         assertThat(ProductStatus.SOLD.canTransitionTo(ProductStatus.DRAFT)).isFalse();
         assertThat(ProductStatus.SOLD.canTransitionTo(ProductStatus.ONLINE)).isFalse();
         assertThat(ProductStatus.SOLD.canTransitionTo(ProductStatus.OFFLINE)).isFalse();
-        assertThat(ProductStatus.SOLD.canTransitionTo(ProductStatus.PENDING_REVIEW)).isFalse();
+        assertThat(ProductStatus.SOLD.canTransitionTo(ProductStatus.PENDING_REVIEW))
+                .isFalse();
         assertThat(ProductStatus.SOLD.canTransitionTo(ProductStatus.REJECTED)).isFalse();
         assertThat(ProductStatus.SOLD.canTransitionTo(ProductStatus.SOLD)).isFalse();
     }

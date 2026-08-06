@@ -13,12 +13,11 @@ import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
 
 @Tag(name = "支付管理", description = "模拟支付回调（开发测试用）")
 @RestController
@@ -33,12 +32,9 @@ public class MockPaymentController {
     @PostMapping("/create")
     @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> createMockPayment(
-            @RequestParam String orderId,
-            @RequestParam String paymentMethod,
-            @RequestParam BigDecimal amount) {
+            @RequestParam String orderId, @RequestParam String paymentMethod, @RequestParam BigDecimal amount) {
         String paymentId = idGenerator.generateId();
-        var spec = new PaymentCreateSpec(paymentId, orderId, "0", amount,
-                PaymentMethod.fromCode(paymentMethod), null);
+        var spec = new PaymentCreateSpec(paymentId, orderId, "0", amount, PaymentMethod.fromCode(paymentMethod), null);
         var created = Payment.create(spec);
 
         paymentRepository.save(created.aggregate());
@@ -49,7 +45,8 @@ public class MockPaymentController {
     @PostMapping("/process")
     @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> processMockPayment(@RequestBody MockPaymentRequest request) {
-        Payment aggregate = paymentRepository.findById(request.getPaymentId())
+        Payment aggregate = paymentRepository
+                .findById(request.getPaymentId())
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
 
         if (Boolean.TRUE.equals(request.getSuccess())) {
@@ -61,7 +58,8 @@ public class MockPaymentController {
             paymentRepository.update(failed.aggregate());
         }
 
-        aggregate = paymentRepository.findById(request.getPaymentId())
+        aggregate = paymentRepository
+                .findById(request.getPaymentId())
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
         return Result.success(buildPaymentResponse(aggregate));
     }
@@ -69,32 +67,37 @@ public class MockPaymentController {
     @PostMapping("/success/{paymentId}")
     @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> mockPaymentSuccess(@PathVariable String paymentId) {
-        Payment aggregate = paymentRepository.findById(paymentId)
+        Payment aggregate = paymentRepository
+                .findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
         Payment prepared = aggregate.preparePay();
         var confirmed = prepared.confirmPay(PaymentResult.success("MOCK_TXN_" + System.currentTimeMillis()));
         paymentRepository.update(confirmed.aggregate());
 
-        return Result.success(buildPaymentResponse(paymentRepository.findById(paymentId)
+        return Result.success(buildPaymentResponse(paymentRepository
+                .findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND))));
     }
 
     @PostMapping("/fail/{paymentId}")
     @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> mockPaymentFail(@PathVariable String paymentId) {
-        Payment aggregate = paymentRepository.findById(paymentId)
+        Payment aggregate = paymentRepository
+                .findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
         var failed = aggregate.fail("模拟支付失败");
         paymentRepository.update(failed.aggregate());
 
-        return Result.success(buildPaymentResponse(paymentRepository.findById(paymentId)
+        return Result.success(buildPaymentResponse(paymentRepository
+                .findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND))));
     }
 
     @PostMapping("/refund/{paymentId}")
     @Transactional(rollbackFor = Exception.class)
     public Result<Void> mockRefund(@PathVariable String paymentId, @RequestParam String reason) {
-        Payment aggregate = paymentRepository.findById(paymentId)
+        Payment aggregate = paymentRepository
+                .findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
         var result = aggregate.directRefund(reason);
         paymentRepository.update(result.aggregate());
@@ -109,7 +112,8 @@ public class MockPaymentController {
                 .orderId(aggregate.orderId())
                 .amount(aggregate.amount())
                 .paymentMethod(aggregate.paymentMethod().getCode())
-                .paymentMethodDesc(PaymentMethod.getDescByCode(aggregate.paymentMethod().getCode()))
+                .paymentMethodDesc(
+                        PaymentMethod.getDescByCode(aggregate.paymentMethod().getCode()))
                 .status(aggregate.status().getCode())
                 .statusDesc(PaymentStatus.getDescByCode(aggregate.status().getCode()))
                 .transactionId(aggregate.transactionId())

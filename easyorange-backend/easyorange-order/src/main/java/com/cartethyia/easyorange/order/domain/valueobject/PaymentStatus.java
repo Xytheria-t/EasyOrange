@@ -26,6 +26,7 @@ public enum PaymentStatus implements BaseCodeEnum {
 
     @JsonValue
     private final String code;
+
     private final String desc;
 
     public static PaymentStatus fromCode(String code) {

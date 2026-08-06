@@ -1,13 +1,19 @@
 package com.cartethyia.easyorange.order.adapter.inbound.job;
 
+import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.orderWithStatus;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
-import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,13 +22,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.orderWithStatus;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrderAutoConfirmTask 单元测试")
@@ -96,7 +95,8 @@ class OrderAutoConfirmTaskTest {
 
             doThrow(new RuntimeException("确认收货失败"))
                     .doNothing()
-                    .when(orderRepository).update(any(Order.class));
+                    .when(orderRepository)
+                    .update(any(Order.class));
 
             orderAutoConfirmTask.autoConfirmReceipt();
 

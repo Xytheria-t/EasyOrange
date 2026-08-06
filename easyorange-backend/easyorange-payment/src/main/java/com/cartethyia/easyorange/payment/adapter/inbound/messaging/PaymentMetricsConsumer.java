@@ -28,10 +28,12 @@ public class PaymentMetricsConsumer {
     private final EventConsumerHandler handler;
     private final PaymentMetricsService metricsService;
 
-    public PaymentMetricsConsumer(EventIdempotencyChecker idempotencyChecker,
-                                   EventMetricsService eventMetricsService,
-                                   PaymentMetricsService metricsService) {
-        this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, eventMetricsService, false);
+    public PaymentMetricsConsumer(
+            EventIdempotencyChecker idempotencyChecker,
+            EventMetricsService eventMetricsService,
+            PaymentMetricsService metricsService) {
+        this.handler =
+                new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, eventMetricsService, false);
         this.metricsService = metricsService;
     }
 

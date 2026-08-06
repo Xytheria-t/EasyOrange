@@ -1,19 +1,18 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.security;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.util.HexFormat;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.util.HexFormat;
-
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("CallbackSignatureVerifier 测试")
 class CallbackSignatureVerifierTest {
@@ -48,8 +47,7 @@ class CallbackSignatureVerifierTest {
         void verify_validSign_passes() throws Exception {
             String sign = hmac("PAY123|TXN_1");
 
-            assertThatCode(() -> verifier.verify("PAY123", "TXN_1", sign))
-                    .doesNotThrowAnyException();
+            assertThatCode(() -> verifier.verify("PAY123", "TXN_1", sign)).doesNotThrowAnyException();
         }
 
         @Test
@@ -71,8 +69,7 @@ class CallbackSignatureVerifierTest {
         void verify_disabled_passesThrough() throws Exception {
             setField("verifyEnabled", false);
 
-            assertThatCode(() -> verifier.verify("PAY123", "TXN_1", "anything"))
-                    .doesNotThrowAnyException();
+            assertThatCode(() -> verifier.verify("PAY123", "TXN_1", "anything")).doesNotThrowAnyException();
         }
     }
 }

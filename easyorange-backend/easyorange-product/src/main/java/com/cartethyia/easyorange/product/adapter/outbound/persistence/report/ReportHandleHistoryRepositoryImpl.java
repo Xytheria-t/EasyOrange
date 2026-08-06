@@ -3,16 +3,14 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.report;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.report.ReportHandleHistoryDO;
-import org.springframework.context.annotation.Primary;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.report.ReportHandleHistoryMapper;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Repository;
 
 @Primary
 @Repository
-public class ReportHandleHistoryRepositoryImpl extends BaseRepository<ReportHandleHistoryMapper, ReportHandleHistoryDO> implements ReportHandleHistoryRepository {
+public class ReportHandleHistoryRepositoryImpl extends BaseRepository<ReportHandleHistoryMapper, ReportHandleHistoryDO>
+        implements ReportHandleHistoryRepository {
 
     public ReportHandleHistoryRepositoryImpl(ReportHandleHistoryMapper reportHandleHistoryMapper) {
         super(reportHandleHistoryMapper);
@@ -45,8 +43,7 @@ public class ReportHandleHistoryRepositoryImpl extends BaseRepository<ReportHand
                 do_.getOperatorId(),
                 do_.getAction(),
                 do_.getRemark(),
-                do_.getCreateTime()
-        );
+                do_.getCreateTime());
     }
 
     private ReportHandleHistoryDO convertToDO(ReportHandleHistory history) {

@@ -2,10 +2,10 @@ package com.cartethyia.easyorange.order.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.QueryOrderRequest;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.OrderListQuery;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
-import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.QueryOrderRequest;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -44,16 +44,19 @@ public class OrderQueryController {
     private static OrderListQuery toScopedListQuery(QueryOrderRequest request) {
         OrderStatus status = resolveStatus(request.getStatus());
         return new OrderListQuery(
-                request.getOrderNo(), status, null, null,
-                request.getPageNum(), request.getPageSize());
+                request.getOrderNo(), status, null, null, request.getPageNum(), request.getPageSize());
     }
 
     /** list/通用场景：透传请求中的 buyerId/sellerId 过滤条件。 */
     private static OrderListQuery toExplicitListQuery(QueryOrderRequest request) {
         OrderStatus status = resolveStatus(request.getStatus());
         return new OrderListQuery(
-                request.getOrderNo(), status, request.getBuyerId(), request.getSellerId(),
-                request.getPageNum(), request.getPageSize());
+                request.getOrderNo(),
+                status,
+                request.getBuyerId(),
+                request.getSellerId(),
+                request.getPageNum(),
+                request.getPageSize());
     }
 
     /**

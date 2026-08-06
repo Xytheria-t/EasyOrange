@@ -16,7 +16,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum OrderResultCode implements IResultCode {
-
     ORDER_NOT_FOUND("B3001", "订单不存在"),
     ORDER_STATUS_ERROR("B3002", "订单状态异常"),
     ORDER_NOT_OWNER("B3003", "非订单所有者"),

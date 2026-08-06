@@ -1,10 +1,9 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.product;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-
-import java.util.List;
 
 @Mapper
 public interface ProductImageMapper extends BaseMapper<ProductImageDO> {

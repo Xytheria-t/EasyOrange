@@ -3,9 +3,8 @@ package com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
-import org.mapstruct.Mapper;
-
 import java.math.BigDecimal;
+import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface PaymentDataMapper {
@@ -29,8 +28,7 @@ public interface PaymentDataMapper {
                 po.getAttach(),
                 po.getCreateTime(),
                 po.getUpdateTime(),
-                po.getVersion()
-        );
+                po.getVersion());
         return Payment.from(spec);
     }
 

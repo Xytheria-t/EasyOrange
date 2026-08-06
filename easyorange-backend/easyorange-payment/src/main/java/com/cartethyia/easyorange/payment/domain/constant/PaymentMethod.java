@@ -8,13 +8,13 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum PaymentMethod implements BaseCodeEnum {
-
     WECHAT("WECHAT", "微信支付"),
     ALIPAY("ALIPAY", "支付宝"),
     BALANCE("BALANCE", "余额支付");
 
     @JsonValue
     private final String code;
+
     private final String desc;
 
     public static PaymentMethod fromCode(String code) {

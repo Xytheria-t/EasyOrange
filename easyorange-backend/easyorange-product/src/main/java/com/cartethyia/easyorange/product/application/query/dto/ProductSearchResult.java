@@ -2,9 +2,8 @@ package com.cartethyia.easyorange.product.application.query.dto;
 
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
-
+import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import java.util.List;
 
 /**
@@ -15,7 +14,4 @@ import java.util.List;
  * @param aiEnhancement  AI 搜索结果增强（可选）
  */
 public record ProductSearchResult(
-    PageResult<ProductReadModel> page,
-    List<FacetBucket> facets,
-    AiEnhancement aiEnhancement
-) {}
+        PageResult<ProductReadModel> page, List<FacetBucket> facets, AiEnhancement aiEnhancement) {}

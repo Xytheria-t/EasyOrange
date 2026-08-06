@@ -1,16 +1,15 @@
 package com.cartethyia.easyorange.order.domain.constant;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.Set;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("OrderAction 状态机单元测试")
 class OrderActionTest {
@@ -22,8 +21,7 @@ class OrderActionTest {
                 Arguments.of(OrderAction.FORCE_CANCEL, Set.of(OrderStatus.PENDING_PAYMENT, OrderStatus.PAID)),
                 Arguments.of(OrderAction.SHIP, Set.of(OrderStatus.PAID)),
                 Arguments.of(OrderAction.CONFIRM_RECEIPT, Set.of(OrderStatus.SHIPPED)),
-                Arguments.of(OrderAction.REFUND, Set.of(OrderStatus.PAID, OrderStatus.SHIPPED))
-        );
+                Arguments.of(OrderAction.REFUND, Set.of(OrderStatus.PAID, OrderStatus.SHIPPED)));
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
@@ -41,26 +39,36 @@ class OrderActionTest {
     @Test
     @DisplayName("REFUND 要求支付状态为已支付")
     void canApply_refundRequiresPaidPayment() {
-        assertThat(OrderAction.REFUND.canApply(OrderStatus.PAID, PaymentStatus.UNPAID)).isFalse();
-        assertThat(OrderAction.REFUND.canApply(OrderStatus.PAID, PaymentStatus.PAID)).isTrue();
-        assertThat(OrderAction.REFUND.canApply(OrderStatus.SHIPPED, PaymentStatus.PAID)).isTrue();
-        assertThat(OrderAction.REFUND.canApply(OrderStatus.SHIPPED, PaymentStatus.UNPAID)).isFalse();
+        assertThat(OrderAction.REFUND.canApply(OrderStatus.PAID, PaymentStatus.UNPAID))
+                .isFalse();
+        assertThat(OrderAction.REFUND.canApply(OrderStatus.PAID, PaymentStatus.PAID))
+                .isTrue();
+        assertThat(OrderAction.REFUND.canApply(OrderStatus.SHIPPED, PaymentStatus.PAID))
+                .isTrue();
+        assertThat(OrderAction.REFUND.canApply(OrderStatus.SHIPPED, PaymentStatus.UNPAID))
+                .isFalse();
     }
 
     @Test
     @DisplayName("非退款动作不受支付状态约束")
     void canApply_nonRefundActionsIgnorePaymentStatus() {
-        assertThat(OrderAction.PAY.canApply(OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID)).isTrue();
-        assertThat(OrderAction.CANCEL.canApply(OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID)).isTrue();
-        assertThat(OrderAction.FORCE_CANCEL.canApply(OrderStatus.PAID, PaymentStatus.PAID)).isTrue();
-        assertThat(OrderAction.SHIP.canApply(OrderStatus.PAID, PaymentStatus.PAID)).isTrue();
-        assertThat(OrderAction.CONFIRM_RECEIPT.canApply(OrderStatus.SHIPPED, PaymentStatus.PAID)).isTrue();
+        assertThat(OrderAction.PAY.canApply(OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID))
+                .isTrue();
+        assertThat(OrderAction.CANCEL.canApply(OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID))
+                .isTrue();
+        assertThat(OrderAction.FORCE_CANCEL.canApply(OrderStatus.PAID, PaymentStatus.PAID))
+                .isTrue();
+        assertThat(OrderAction.SHIP.canApply(OrderStatus.PAID, PaymentStatus.PAID))
+                .isTrue();
+        assertThat(OrderAction.CONFIRM_RECEIPT.canApply(OrderStatus.SHIPPED, PaymentStatus.PAID))
+                .isTrue();
     }
 
     @Test
     @DisplayName("终端状态无任何动作可触发")
     void canApply_terminalStatesHaveNoActions() {
-        for (OrderStatus terminal : new OrderStatus[]{OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.REFUNDED}) {
+        for (OrderStatus terminal :
+                new OrderStatus[] {OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.REFUNDED}) {
             for (OrderAction action : OrderAction.values()) {
                 assertThat(action.canApply(terminal, PaymentStatus.PAID))
                         .as("%s from terminal %s", action, terminal)

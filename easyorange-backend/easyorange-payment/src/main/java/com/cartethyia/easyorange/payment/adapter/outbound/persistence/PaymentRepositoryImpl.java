@@ -4,18 +4,17 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.PaymentDataMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentMapper;
-import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
 @Primary
 @Repository
 public class PaymentRepositoryImpl extends BaseRepository<PaymentMapper, PaymentDO>
@@ -40,7 +39,8 @@ public class PaymentRepositoryImpl extends BaseRepository<PaymentMapper, Payment
         int rows = mapper.updateById(po);
 
         if (rows == 0) {
-            throw PaymentDomainException.of(PaymentResultCode.PAYMENT_FAILED, "并发更新冲突，支付记录已被其他事务修改: paymentId=" + aggregate.id());
+            throw PaymentDomainException.of(
+                    PaymentResultCode.PAYMENT_FAILED, "并发更新冲突，支付记录已被其他事务修改: paymentId=" + aggregate.id());
         }
     }
 
@@ -51,13 +51,15 @@ public class PaymentRepositoryImpl extends BaseRepository<PaymentMapper, Payment
 
     @Override
     public Optional<Payment> findByPaymentNo(String paymentNo) {
-        return Optional.ofNullable(lambdaQuery().eq(PaymentDO::getPaymentNo, paymentNo).one())
+        return Optional.ofNullable(
+                        lambdaQuery().eq(PaymentDO::getPaymentNo, paymentNo).one())
                 .map(paymentDataMapper::toAggregate);
     }
 
     @Override
     public Optional<Payment> findByOrderId(String orderId) {
-        return Optional.ofNullable(lambdaQuery().eq(PaymentDO::getOrderId, orderId).one())
+        return Optional.ofNullable(
+                        lambdaQuery().eq(PaymentDO::getOrderId, orderId).one())
                 .map(paymentDataMapper::toAggregate);
     }
 

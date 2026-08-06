@@ -5,7 +5,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
-
 import java.util.List;
 
 /**
@@ -29,5 +28,4 @@ public record OrderCreateSpec(
         List<OrderItem> items,
         Address address,
         Phone phone,
-        String remark
-) {}
+        String remark) {}

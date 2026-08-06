@@ -4,10 +4,4 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ProductReportResponse(
-        String id,
-        String productId,
-        String reporterId,
-        String reason,
-        String reasonType,
-        String status
-) {}
+        String id, String productId, String reporterId, String reason, String reasonType, String status) {}

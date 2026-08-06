@@ -5,10 +5,4 @@ import lombok.Builder;
 
 @Builder
 public record ProductSnapshot(
-    String productId,
-    String name,
-    String image,
-    String description,
-    Money price,
-    String conditionLevel
-) {}
+        String productId, String name, String image, String description, Money price, String conditionLevel) {}

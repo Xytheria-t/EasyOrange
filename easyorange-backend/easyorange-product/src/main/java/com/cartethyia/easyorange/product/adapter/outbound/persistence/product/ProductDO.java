@@ -5,14 +5,13 @@ import com.baomidou.mybatisplus.annotation.Version;
 import com.cartethyia.easyorange.common.entity.BaseDO;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @SuperBuilder(toBuilder = true)
 @NoArgsConstructor
@@ -28,8 +27,10 @@ public class ProductDO extends BaseDO {
     private BigDecimal price;
     private BigDecimal originalPrice;
     private Integer stock;
+
     @Version
     private Integer version;
+
     private ProductStatus status;
     private Integer viewCount;
     private ConditionLevel conditionLevel;

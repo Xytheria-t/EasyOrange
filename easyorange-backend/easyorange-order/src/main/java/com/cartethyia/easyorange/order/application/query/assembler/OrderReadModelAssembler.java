@@ -4,12 +4,11 @@ import com.cartethyia.easyorange.common.util.MaskUtils;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Component;
 
 @Component
 public class OrderReadModelAssembler {
@@ -18,9 +17,7 @@ public class OrderReadModelAssembler {
         if (orders == null || orders.isEmpty()) {
             return List.of();
         }
-        return orders.stream()
-                .map(o -> toOrderVO(o, productMap, true))
-                .toList();
+        return orders.stream().map(o -> toOrderVO(o, productMap, true)).toList();
     }
 
     public OrderVO toOrderVO(OrderReadModel order, Map<String, ProductDetail> productMap, boolean maskSensitive) {
@@ -28,8 +25,11 @@ public class OrderReadModelAssembler {
                 .map(item -> {
                     ProductDetail product = productMap.get(item.productId());
                     String productName = product != null ? product.title() : "";
-                    String productImage = (product != null && product.images() != null && !product.images().isEmpty())
-                            ? product.images().getFirst() : null;
+                    String productImage = (product != null
+                                    && product.images() != null
+                                    && !product.images().isEmpty())
+                            ? product.images().getFirst()
+                            : null;
                     return OrderVO.OrderItemVO.builder()
                             .itemId(item.itemId())
                             .productId(item.productId())
@@ -57,11 +57,9 @@ public class OrderReadModelAssembler {
                 .updateTime(order.updateTime());
 
         if (maskSensitive) {
-            builder.address(MaskUtils.maskAddress(order.address(), 6))
-                   .phone(MaskUtils.maskPhone(order.phone()));
+            builder.address(MaskUtils.maskAddress(order.address(), 6)).phone(MaskUtils.maskPhone(order.phone()));
         } else {
-            builder.address(order.address())
-                   .phone(MaskUtils.maskPhone(order.phone()));
+            builder.address(order.address()).phone(MaskUtils.maskPhone(order.phone()));
         }
 
         return builder.build();
@@ -77,9 +75,6 @@ public class OrderReadModelAssembler {
         }
         return products.stream()
                 .filter(Objects::nonNull)
-                .collect(Collectors.toMap(
-                        ProductDetail::id,
-                        p -> p,
-                        (a, _) -> a));
+                .collect(Collectors.toMap(ProductDetail::id, p -> p, (a, _) -> a));
     }
 }

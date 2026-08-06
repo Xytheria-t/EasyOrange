@@ -14,5 +14,4 @@ import org.springframework.context.annotation.ComponentScan;
  */
 @SpringBootConfiguration
 @ComponentScan(basePackages = "com.cartethyia.easyorange.order.adapter.inbound.web")
-public class OrderTestApplication {
-}
+public class OrderTestApplication {}

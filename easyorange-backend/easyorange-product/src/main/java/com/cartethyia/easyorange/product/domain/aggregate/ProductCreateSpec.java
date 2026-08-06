@@ -28,5 +28,4 @@ public record ProductCreateSpec(
         TradeLocation location,
         ContactMethod contactMethod,
         ProductDescription description,
-        ImageSet images
-) {}
+        ImageSet images) {}

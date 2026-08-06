@@ -7,17 +7,18 @@ import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKey
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchHistoryResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchPageResponse;
-import com.cartethyia.easyorange.product.application.query.ProductSearchQueryHandler;
+import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
+import com.cartethyia.easyorange.product.application.query.ProductSearchQueryHandler;
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
-import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,8 +28,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @Tag(name = "商品管理", description = "商品搜索/筛选")
 @RestController
@@ -42,10 +41,16 @@ public class ProductSearchController {
     @GetMapping
     public Result<SearchPageResponse<ProductResponse>> searchProducts(@Valid ProductSearchRequest request) {
         var criteria = new ProductSearchCriteria(
-                request.getKeyword(), request.getCategoryId(), request.getStatus(),
-                request.getMinPrice(), request.getMaxPrice(), request.getConditionLevel(),
-                request.getSortField(), null,
-                request.getPageNum(), request.getPageSize());
+                request.getKeyword(),
+                request.getCategoryId(),
+                request.getStatus(),
+                request.getMinPrice(),
+                request.getMaxPrice(),
+                request.getConditionLevel(),
+                request.getSortField(),
+                null,
+                request.getPageNum(),
+                request.getPageSize());
         ProductSearchResult result = searchQueryHandler.search(criteria, request.isAiEnhanced());
 
         var responses = result.page().records().stream()
@@ -56,9 +61,13 @@ public class ProductSearchController {
                 .toList();
 
         var searchResp = new SearchPageResponse<>(
-                responses, result.page().total(), result.page().current(),
-                result.page().size(), result.page().pages(),
-                facetResponses, result.aiEnhancement());
+                responses,
+                result.page().total(),
+                result.page().current(),
+                result.page().size(),
+                result.page().pages(),
+                facetResponses,
+                result.aiEnhancement());
         return Result.success(searchResp);
     }
 
@@ -68,7 +77,10 @@ public class ProductSearchController {
         List<SearchHistoryReadModel> histories = searchQueryHandler.getMySearchHistory(limit);
         var responses = histories.stream()
                 .map(h -> SearchHistoryResponse.builder()
-                        .id(h.id()).keyword(h.keyword()).createTime(h.createTime()).build())
+                        .id(h.id())
+                        .keyword(h.keyword())
+                        .createTime(h.createTime())
+                        .build())
                 .toList();
         return Result.success(responses);
     }
@@ -86,13 +98,15 @@ public class ProductSearchController {
     }
 
     @GetMapping("/hot")
-    public Result<List<HotKeywordResponse>> getHotKeywords(
-            @RequestParam(defaultValue = "10") @Max(50) Integer limit) {
+    public Result<List<HotKeywordResponse>> getHotKeywords(@RequestParam(defaultValue = "10") @Max(50) Integer limit) {
         List<HotKeywordReadModel> keywords = searchQueryHandler.getHotKeywords(limit);
         var responses = keywords.stream()
                 .map(k -> HotKeywordResponse.builder()
-                        .id(k.id()).keyword(k.keyword())
-                        .searchCount(k.searchCount()).hotLevel(k.hotLevel()).build())
+                        .id(k.id())
+                        .keyword(k.keyword())
+                        .searchCount(k.searchCount())
+                        .hotLevel(k.hotLevel())
+                        .build())
                 .toList();
         return Result.success(responses);
     }

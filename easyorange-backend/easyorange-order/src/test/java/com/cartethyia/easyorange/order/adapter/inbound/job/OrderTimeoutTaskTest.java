@@ -1,15 +1,19 @@
 package com.cartethyia.easyorange.order.adapter.inbound.job;
 
+import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.orderWithStatus;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
-import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,13 +22,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.orderWithStatus;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrderTimeoutTask 单元测试")
@@ -91,8 +90,10 @@ class OrderTimeoutTaskTest {
             // First order fails to acquire lock, second succeeds
             RLock lock1 = mock(RLock.class);
             RLock lock2 = mock(RLock.class);
-            when(redissonClient.getLock(argThat((String key) -> key != null && key.contains(ORDER_ID_1)))).thenReturn(lock1);
-            when(redissonClient.getLock(argThat((String key) -> key != null && key.contains(ORDER_ID_2)))).thenReturn(lock2);
+            when(redissonClient.getLock(argThat((String key) -> key != null && key.contains(ORDER_ID_1))))
+                    .thenReturn(lock1);
+            when(redissonClient.getLock(argThat((String key) -> key != null && key.contains(ORDER_ID_2))))
+                    .thenReturn(lock2);
             when(lock1.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(false);
             when(lock2.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
             when(lock2.isHeldByCurrentThread()).thenReturn(true);
@@ -129,7 +130,8 @@ class OrderTimeoutTaskTest {
             // First order update throws exception
             doThrow(new RuntimeException("更新失败"))
                     .doNothing()
-                    .when(orderRepository).update(any(Order.class));
+                    .when(orderRepository)
+                    .update(any(Order.class));
 
             orderTimeoutTask.cancelExpiredOrders();
 

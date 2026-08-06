@@ -1,5 +1,9 @@
 package com.cartethyia.easyorange.payment.adapter.inbound.web.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentViewAssembler;
@@ -11,6 +15,8 @@ import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import java.math.BigDecimal;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,13 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PaymentQueryController 测试")
@@ -44,11 +43,21 @@ class PaymentQueryControllerTest {
 
     private Payment aggregate() {
         var spec = new PaymentReconstructSpec(
-                "1001", "PAY123", "2001", "3001",
-                new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
-                PaymentStatus.SUCCESS, "TXN_1", null,
-                null, null, null, null, 0
-        );
+                "1001",
+                "PAY123",
+                "2001",
+                "3001",
+                new BigDecimal("100.00"),
+                BigDecimal.ZERO,
+                PaymentMethod.WECHAT,
+                PaymentStatus.SUCCESS,
+                "TXN_1",
+                null,
+                null,
+                null,
+                null,
+                null,
+                0);
         return Payment.from(spec);
     }
 
@@ -106,10 +115,8 @@ class PaymentQueryControllerTest {
         @Test
         @DisplayName("我的支付记录 - 空状态解析为 null 查询全部")
         void getMyPayments_blankStatus_queriesAll() {
-            QueryPaymentRequest request = QueryPaymentRequest.builder()
-                    .pageNum(1)
-                    .pageSize(10)
-                    .build();
+            QueryPaymentRequest request =
+                    QueryPaymentRequest.builder().pageNum(1).pageSize(10).build();
             when(queryHandler.getMyPayments(any())).thenReturn(PageResult.of(List.of(aggregate()), 1L, 1, 10));
 
             Result<PageResult<PaymentResponse>> result = controller.getMyPayments(request);
@@ -127,7 +134,8 @@ class PaymentQueryControllerTest {
                     .pageNum(1)
                     .pageSize(10)
                     .build();
-            when(queryHandler.queryPayments(any(PaymentListQuery.class))).thenReturn(PageResult.of(List.of(aggregate()), 5L, 1, 10));
+            when(queryHandler.queryPayments(any(PaymentListQuery.class)))
+                    .thenReturn(PageResult.of(List.of(aggregate()), 5L, 1, 10));
 
             Result<PageResult<PaymentResponse>> result = controller.queryPayments(request);
 

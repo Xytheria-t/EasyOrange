@@ -4,11 +4,10 @@ import com.cartethyia.easyorange.product.application.query.readmodel.ProductRead
 import java.util.List;
 
 public record SearchResult(
-    List<ProductReadModel> records,
-    long total,
-    int current,
-    int size,
-    List<FacetBucket> categoryFacets,
-    List<FacetBucket> conditionFacets,
-    List<FacetBucket> priceRangeFacets
-) { }
+        List<ProductReadModel> records,
+        long total,
+        int current,
+        int size,
+        List<FacetBucket> categoryFacets,
+        List<FacetBucket> conditionFacets,
+        List<FacetBucket> priceRangeFacets) {}

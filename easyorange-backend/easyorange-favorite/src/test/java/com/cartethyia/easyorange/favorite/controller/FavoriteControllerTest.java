@@ -1,5 +1,10 @@
 package com.cartethyia.easyorange.favorite.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.favorite.adapter.inbound.web.assembler.FavoriteAssembler;
 import com.cartethyia.easyorange.favorite.adapter.inbound.web.controller.FavoriteController;
@@ -8,21 +13,14 @@ import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.request.BatchR
 import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.response.FavoriteResponse;
 import com.cartethyia.easyorange.favorite.application.service.FavoriteService;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("收藏控制器测试")
@@ -43,10 +41,9 @@ class FavoriteControllerTest {
         Favorite favorite = Favorite.reconstitute("1", "1001", "2001", null);
         PageResult<Favorite> pageResult = PageResult.of(List.of(favorite), 1L, 1, 10);
 
-        FavoriteResponse favoriteResponse = FavoriteResponse.builder()
-                .id("1").productId("2001").build();
-        PageResult<FavoriteResponse> responsePageResult = PageResult.of(
-                List.of(favoriteResponse), 1L, 1, 10);
+        FavoriteResponse favoriteResponse =
+                FavoriteResponse.builder().id("1").productId("2001").build();
+        PageResult<FavoriteResponse> responsePageResult = PageResult.of(List.of(favoriteResponse), 1L, 1, 10);
 
         when(favoriteService.queryFavorites(1, 10)).thenReturn(pageResult);
         when(favoriteAssembler.toPageResult(pageResult, 1, 10)).thenReturn(responsePageResult);

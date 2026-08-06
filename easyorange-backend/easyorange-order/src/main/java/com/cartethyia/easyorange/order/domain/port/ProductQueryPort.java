@@ -17,6 +17,5 @@ public interface ProductQueryPort {
             String status,
             List<String> images,
             String description,
-            String conditionLevel
-    ) {}
+            String conditionLevel) {}
 }

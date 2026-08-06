@@ -9,10 +9,7 @@ public record ProductDescription(String value) {
     public ProductDescription {
         if (value != null && !value.isBlank()) {
             value = value.trim();
-            BizRequire.requireTrue(
-                    value.length() <= MAX_LENGTH,
-                    "资产描述长度不能超过 " + MAX_LENGTH + " 个字符"
-            );
+            BizRequire.requireTrue(value.length() <= MAX_LENGTH, "资产描述长度不能超过 " + MAX_LENGTH + " 个字符");
         } else {
             value = null;
         }

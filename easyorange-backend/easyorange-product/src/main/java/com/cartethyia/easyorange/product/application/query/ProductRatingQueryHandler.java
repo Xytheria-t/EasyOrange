@@ -8,11 +8,6 @@ import com.cartethyia.easyorange.product.application.query.dto.RatingStatsVO;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
 import com.cartethyia.easyorange.product.domain.port.SellerInfoPort;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerInfo;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -20,6 +15,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -31,13 +30,10 @@ public class ProductRatingQueryHandler {
 
     @Transactional(readOnly = true)
     public PageResult<ProductRatingVO> listReviews(String productId, Integer pageNum, Integer pageSize) {
-        var pageReq = PageRequest.builder()
-                .pageNum(pageNum)
-                .pageSize(pageSize)
-                .build();
+        var pageReq = PageRequest.builder().pageNum(pageNum).pageSize(pageSize).build();
 
-        PageResult<ProductRating> ratingPage = productRatingQueryRepository.findByProductId(
-                productId, pageReq.getPageNum(), pageReq.getPageSize());
+        PageResult<ProductRating> ratingPage =
+                productRatingQueryRepository.findByProductId(productId, pageReq.getPageNum(), pageReq.getPageSize());
 
         if (ratingPage.records().isEmpty()) {
             return PageResult.empty(pageReq.getPageNum(), pageReq.getPageSize());
@@ -45,9 +41,8 @@ public class ProductRatingQueryHandler {
 
         Map<String, SellerInfo> userMap = resolveUsers(ratingPage.records());
 
-        List<ProductRatingVO> vos = ratingPage.records().stream()
-                .map(r -> toReviewVO(r, userMap))
-                .collect(Collectors.toList());
+        List<ProductRatingVO> vos =
+                ratingPage.records().stream().map(r -> toReviewVO(r, userMap)).collect(Collectors.toList());
 
         return PageResult.of(vos, ratingPage.total(), pageReq.getPageNum(), pageReq.getPageSize());
     }
@@ -66,16 +61,11 @@ public class ProductRatingQueryHandler {
                     .build();
         }
 
-        double avg = reviews.stream()
-                .mapToInt(r -> r.getRating().value())
-                .average()
-                .orElse(0.0);
+        double avg =
+                reviews.stream().mapToInt(r -> r.getRating().value()).average().orElse(0.0);
 
         Map<Integer, Long> distribution = reviews.stream()
-                .collect(Collectors.groupingBy(
-                        r -> r.getRating().value(),
-                        Collectors.counting()
-                ));
+                .collect(Collectors.groupingBy(r -> r.getRating().value(), Collectors.counting()));
 
         for (int i = 1; i <= 5; i++) {
             distribution.putIfAbsent(i, 0L);

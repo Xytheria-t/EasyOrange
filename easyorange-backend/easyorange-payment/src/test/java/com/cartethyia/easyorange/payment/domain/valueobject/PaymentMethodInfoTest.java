@@ -1,13 +1,13 @@
 package com.cartethyia.easyorange.payment.domain.valueobject;
 
-import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("PaymentMethodInfo 值对象测试")
 class PaymentMethodInfoTest {
@@ -72,8 +72,8 @@ class PaymentMethodInfoTest {
         @DisplayName("null 抛出 PaymentDomainException")
         void of_withNull_throws() {
             assertThatThrownBy(() -> PaymentMethodInfo.of(null))
-                .isInstanceOf(PaymentDomainException.class)
-                .hasMessageContaining("支付方式不能为空");
+                    .isInstanceOf(PaymentDomainException.class)
+                    .hasMessageContaining("支付方式不能为空");
         }
     }
 

@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,5 +60,5 @@ public record ImageSet(List<ProductImage> images) {
         return images.isEmpty();
     }
 
-    public record ProductImage(ImageUrl url, Integer sortOrder, boolean isMain) { }
+    public record ProductImage(ImageUrl url, Integer sortOrder, boolean isMain) {}
 }

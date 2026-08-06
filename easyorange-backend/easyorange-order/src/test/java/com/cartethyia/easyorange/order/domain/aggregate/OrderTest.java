@@ -1,16 +1,13 @@
 package com.cartethyia.easyorange.order.domain.aggregate;
 
+import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -18,10 +15,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Stream;
-
-import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @DisplayName("Order 单元测试")
 class OrderTest {
@@ -49,8 +48,7 @@ class OrderTest {
         @Test
         @DisplayName("创建多商品订单")
         void createOrder_multiItem_returnsResult() {
-            var result = Order.createOrder(
-                    aCreateSpec().items(multiItemList()).build());
+            var result = Order.createOrder(aCreateSpec().items(multiItemList()).build());
 
             assertThat(result.event().items()).hasSize(2);
             assertThat(result.event().totalAmount()).isEqualByComparingTo(new BigDecimal("199.97"));
@@ -62,7 +60,7 @@ class OrderTest {
         @DisplayName("认领方不能认领自己的资产")
         void createOrder_buyerEqualsSeller_throws() {
             assertThatThrownBy(() -> Order.createOrder(
-                    aCreateSpec().buyerId(BUYER_ID).sellerId(BUYER_ID).build()))
+                            aCreateSpec().buyerId(BUYER_ID).sellerId(BUYER_ID).build()))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("不能认领自己的资产");
         }
@@ -70,8 +68,8 @@ class OrderTest {
         @Test
         @DisplayName("订单资产不能为空")
         void createOrder_emptyItems_throws() {
-            assertThatThrownBy(() -> Order.createOrder(
-                    aCreateSpec().items(List.of()).build()))
+            assertThatThrownBy(() ->
+                            Order.createOrder(aCreateSpec().items(List.of()).build()))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("订单资产不能为空");
         }
@@ -296,18 +294,12 @@ class OrderTest {
 
     /** pay() 的非法前置状态 — 已支付 / 已取消 */
     static Stream<Arguments> nonPayableOrders() {
-        return Stream.of(
-                Arguments.of("已支付", paidOrder()),
-                Arguments.of("已取消", cancelledOrder())
-        );
+        return Stream.of(Arguments.of("已支付", paidOrder()), Arguments.of("已取消", cancelledOrder()));
     }
 
     /** cancel() 的非法前置状态 — 已发货 / 已取消 */
     static Stream<Arguments> nonCancellableOrders() {
-        return Stream.of(
-                Arguments.of("已发货", shippedOrder()),
-                Arguments.of("已取消", cancelledOrder())
-        );
+        return Stream.of(Arguments.of("已发货", shippedOrder()), Arguments.of("已取消", cancelledOrder()));
     }
 
     /** refund() 的非法前置状态 — 待付款 / 已完成 / 已取消 */
@@ -315,8 +307,7 @@ class OrderTest {
         return Stream.of(
                 Arguments.of("待付款", pendingPaymentOrder()),
                 Arguments.of("已完成", completedOrder()),
-                Arguments.of("已取消", cancelledOrder())
-        );
+                Arguments.of("已取消", cancelledOrder()));
     }
 
     /** forceCancel() 的非法前置状态 — 已发货 / 已完成 / 已退款 */
@@ -324,7 +315,6 @@ class OrderTest {
         return Stream.of(
                 Arguments.of("已发货", shippedOrder()),
                 Arguments.of("已完成", completedOrder()),
-                Arguments.of("已退款", refundedOrder())
-        );
+                Arguments.of("已退款", refundedOrder()));
     }
 }

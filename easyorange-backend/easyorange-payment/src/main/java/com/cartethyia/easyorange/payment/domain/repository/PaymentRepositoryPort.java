@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.repository;
 
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
-
 import java.util.Optional;
 
 public interface PaymentRepositoryPort {

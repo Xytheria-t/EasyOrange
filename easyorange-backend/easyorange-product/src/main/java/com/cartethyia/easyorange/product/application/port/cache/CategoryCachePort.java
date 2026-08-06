@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.product.application.port.cache;
 
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
-
 import java.util.List;
 import java.util.Optional;
 

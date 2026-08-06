@@ -16,7 +16,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum PaymentResultCode implements IResultCode {
-
     PAYMENT_NOT_FOUND("B4001", "支付记录不存在"),
     PAYMENT_FAILED("B4002", "支付失败"),
     PAYMENT_TIMEOUT("B4003", "支付超时"),

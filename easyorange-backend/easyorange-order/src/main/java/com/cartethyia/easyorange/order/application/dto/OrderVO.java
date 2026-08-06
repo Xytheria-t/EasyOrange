@@ -1,13 +1,12 @@
 package com.cartethyia.easyorange.order.application.dto;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 订单视图对象 — 状态字段为 String code（与 {@code OrderStatus.code} 一致）。

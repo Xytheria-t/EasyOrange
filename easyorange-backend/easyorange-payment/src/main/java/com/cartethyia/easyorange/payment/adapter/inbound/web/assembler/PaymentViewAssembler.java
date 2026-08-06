@@ -5,9 +5,8 @@ import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentRes
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
+import org.springframework.stereotype.Component;
 
 @Component
 public class PaymentViewAssembler {
@@ -23,7 +22,8 @@ public class PaymentViewAssembler {
                 .userId(aggregate.userId())
                 .amount(aggregate.amount())
                 .paymentMethod(aggregate.paymentMethod().getCode())
-                .paymentMethodDesc(PaymentMethod.getDescByCode(aggregate.paymentMethod().getCode()))
+                .paymentMethodDesc(
+                        PaymentMethod.getDescByCode(aggregate.paymentMethod().getCode()))
                 .status(aggregate.status().getCode())
                 .statusDesc(PaymentStatus.getDescByCode(aggregate.status().getCode()))
                 .transactionId(aggregate.transactionId())
@@ -35,9 +35,8 @@ public class PaymentViewAssembler {
     }
 
     public PageResult<PaymentResponse> toPageResult(PageResult<Payment> page) {
-        List<PaymentResponse> records = page.records().stream()
-                .map(this::toPaymentResponse)
-                .toList();
+        List<PaymentResponse> records =
+                page.records().stream().map(this::toPaymentResponse).toList();
         return PageResult.of(records, page.total(), page.current(), page.size());
     }
 

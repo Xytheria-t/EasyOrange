@@ -12,6 +12,5 @@ public record CategoryReadModel(
         Integer sortOrder,
         Integer status,
         LocalDateTime createTime,
-        Integer productCount
-) implements Serializable {
-}
+        Integer productCount)
+        implements Serializable {}

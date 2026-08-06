@@ -43,8 +43,7 @@ public class ProductRatingController {
 
     @PostMapping("/{productId}/reviews")
     public Result<String> createReview(
-            @PathVariable String productId,
-            @Valid @RequestBody CreateRatingRequest request) {
+            @PathVariable String productId, @Valid @RequestBody CreateRatingRequest request) {
         return Result.success(reviewCommandHandler.createReview(request.toCommand(productId)));
     }
 

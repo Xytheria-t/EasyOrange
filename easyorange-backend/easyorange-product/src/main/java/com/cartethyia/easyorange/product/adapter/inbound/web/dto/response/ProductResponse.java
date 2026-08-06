@@ -1,11 +1,10 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Builder;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Builder;
 
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -31,5 +30,4 @@ public record ProductResponse(
         List<String> images,
         String mainImageUrl,
         LocalDateTime createTime,
-        LocalDateTime updateTime
-) {}
+        LocalDateTime updateTime) {}

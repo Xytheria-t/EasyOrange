@@ -1,25 +1,24 @@
 package com.cartethyia.easyorange.payment.domain.aggregate;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.event.PaymentClosedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentRefundedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentSucceededEvent;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("Payment 聚合根测试")
 class PaymentTest {
@@ -64,8 +63,7 @@ class PaymentTest {
         @Test
         @DisplayName("orderId 为空抛出异常")
         void create_withNullOrderId_throws() {
-            var spec = new PaymentCreateSpec(
-                    "1001", null, "2001", new BigDecimal("99.99"), PaymentMethod.WECHAT, null);
+            var spec = new PaymentCreateSpec("1001", null, "2001", new BigDecimal("99.99"), PaymentMethod.WECHAT, null);
 
             assertThatThrownBy(() -> Payment.create(spec))
                     .isInstanceOf(BusinessException.class)
@@ -75,8 +73,7 @@ class PaymentTest {
         @Test
         @DisplayName("userId 为空抛出异常")
         void create_withNullUserId_throws() {
-            var spec = new PaymentCreateSpec(
-                    "1001", "1001", null, new BigDecimal("99.99"), PaymentMethod.WECHAT, null);
+            var spec = new PaymentCreateSpec("1001", "1001", null, new BigDecimal("99.99"), PaymentMethod.WECHAT, null);
 
             assertThatThrownBy(() -> Payment.create(spec))
                     .isInstanceOf(BusinessException.class)
@@ -86,8 +83,7 @@ class PaymentTest {
         @Test
         @DisplayName("amount 为空抛出异常")
         void create_withNullAmount_throws() {
-            var spec = new PaymentCreateSpec(
-                    "1001", "1001", "2001", null, PaymentMethod.WECHAT, null);
+            var spec = new PaymentCreateSpec("1001", "1001", "2001", null, PaymentMethod.WECHAT, null);
 
             assertThatThrownBy(() -> Payment.create(spec))
                     .isInstanceOf(BusinessException.class)
@@ -97,8 +93,7 @@ class PaymentTest {
         @Test
         @DisplayName("amount 小于等于零抛出异常")
         void create_withZeroAmount_throws() {
-            var spec = new PaymentCreateSpec(
-                    "1001", "1001", "2001", BigDecimal.ZERO, PaymentMethod.WECHAT, null);
+            var spec = new PaymentCreateSpec("1001", "1001", "2001", BigDecimal.ZERO, PaymentMethod.WECHAT, null);
 
             assertThatThrownBy(() -> Payment.create(spec))
                     .isInstanceOf(BusinessException.class)
@@ -108,8 +103,7 @@ class PaymentTest {
         @Test
         @DisplayName("paymentMethod 为空抛出异常")
         void create_withNullPaymentMethod_throws() {
-            var spec = new PaymentCreateSpec(
-                    "1001", "1001", "2001", new BigDecimal("99.99"), null, null);
+            var spec = new PaymentCreateSpec("1001", "1001", "2001", new BigDecimal("99.99"), null, null);
 
             assertThatThrownBy(() -> Payment.create(spec))
                     .isInstanceOf(BusinessException.class)
@@ -125,12 +119,21 @@ class PaymentTest {
         @DisplayName("from 正确重建聚合根")
         void from_convertsCorrectly() {
             var spec = new PaymentReconstructSpec(
-                    "1001", "PAY123456", "2001", "3001",
-                    new BigDecimal("99.99"), BigDecimal.ZERO, PaymentMethod.WECHAT,
-                    PaymentStatus.SUCCESS, "TXN123", "已退款",
-                    LocalDateTime.now(), "attach",
-                    LocalDateTime.now(), LocalDateTime.now(), 1
-            );
+                    "1001",
+                    "PAY123456",
+                    "2001",
+                    "3001",
+                    new BigDecimal("99.99"),
+                    BigDecimal.ZERO,
+                    PaymentMethod.WECHAT,
+                    PaymentStatus.SUCCESS,
+                    "TXN123",
+                    "已退款",
+                    LocalDateTime.now(),
+                    "attach",
+                    LocalDateTime.now(),
+                    LocalDateTime.now(),
+                    1);
 
             Payment aggregate = Payment.from(spec);
 
@@ -145,10 +148,21 @@ class PaymentTest {
         @DisplayName("from 处理 version 为 null")
         void from_withNullVersion() {
             var spec = new PaymentReconstructSpec(
-                    "1001", "PAY123456", "2001", "3001",
-                    new BigDecimal("99.99"), BigDecimal.ZERO, PaymentMethod.WECHAT,
-                    PaymentStatus.PENDING, null, null, null, null, null, null, null
-            );
+                    "1001",
+                    "PAY123456",
+                    "2001",
+                    "3001",
+                    new BigDecimal("99.99"),
+                    BigDecimal.ZERO,
+                    PaymentMethod.WECHAT,
+                    PaymentStatus.PENDING,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
 
             Payment aggregate = Payment.from(spec);
 
@@ -182,7 +196,8 @@ class PaymentTest {
             assertThat(result.aggregate().status()).isEqualTo(PaymentStatus.SUCCESS);
             assertThat(result.aggregate().transactionId()).isEqualTo("TXN_001");
             assertThat(result.event())
-                    .isInstanceOfSatisfying(PaymentSucceededEvent.class,
+                    .isInstanceOfSatisfying(
+                            PaymentSucceededEvent.class,
                             e -> assertThat(e.transactionId()).isEqualTo("TXN_001"));
         }
 
@@ -195,7 +210,8 @@ class PaymentTest {
 
             assertThat(result.aggregate().status()).isEqualTo(PaymentStatus.FAILED);
             assertThat(result.event())
-                    .isInstanceOfSatisfying(PaymentFailedEvent.class,
+                    .isInstanceOfSatisfying(
+                            PaymentFailedEvent.class,
                             e -> assertThat(e.reason()).isEqualTo("余额不足"));
         }
 
@@ -204,8 +220,7 @@ class PaymentTest {
         void preparePay_withNonPendingStatus_throws() {
             Payment aggregate = createTestAggregate(PaymentStatus.SUCCESS);
 
-            assertThatThrownBy(aggregate::preparePay)
-                    .isInstanceOf(PaymentDomainException.class);
+            assertThatThrownBy(aggregate::preparePay).isInstanceOf(PaymentDomainException.class);
         }
 
         @Test
@@ -345,8 +360,7 @@ class PaymentTest {
         void close_withNonPendingStatus_throws() {
             Payment aggregate = createTestAggregate(PaymentStatus.SUCCESS);
 
-            assertThatThrownBy(aggregate::close)
-                    .isInstanceOf(PaymentDomainException.class);
+            assertThatThrownBy(aggregate::close).isInstanceOf(PaymentDomainException.class);
         }
     }
 
@@ -371,8 +385,7 @@ class PaymentTest {
         void directRefund_withNonSuccessStatus_throws() {
             Payment aggregate = createTestAggregate(PaymentStatus.PENDING);
 
-            assertThatThrownBy(() -> aggregate.directRefund("test refund"))
-                    .isInstanceOf(PaymentDomainException.class);
+            assertThatThrownBy(() -> aggregate.directRefund("test refund")).isInstanceOf(PaymentDomainException.class);
         }
     }
 
@@ -380,22 +393,41 @@ class PaymentTest {
 
     private Payment createTestAggregate(PaymentStatus status) {
         var spec = new PaymentReconstructSpec(
-                "1001", "PAY123456", "2001", "3001",
-                new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
-                status, "TXN123", null, null, "attach",
-                LocalDateTime.now(), LocalDateTime.now(), 0
-        );
+                "1001",
+                "PAY123456",
+                "2001",
+                "3001",
+                new BigDecimal("100.00"),
+                BigDecimal.ZERO,
+                PaymentMethod.WECHAT,
+                status,
+                "TXN123",
+                null,
+                null,
+                "attach",
+                LocalDateTime.now(),
+                LocalDateTime.now(),
+                0);
         return Payment.from(spec);
     }
 
     private Payment createRefundedAggregate(BigDecimal refundedAmount) {
         var spec = new PaymentReconstructSpec(
-                "1001", "PAY123456", "2001", "3001",
-                new BigDecimal("100.00"), refundedAmount, PaymentMethod.WECHAT,
-                PaymentStatus.SUCCESS, "TXN123", "previous refund",
-                LocalDateTime.now(), "attach",
-                LocalDateTime.now(), LocalDateTime.now(), 0
-        );
+                "1001",
+                "PAY123456",
+                "2001",
+                "3001",
+                new BigDecimal("100.00"),
+                refundedAmount,
+                PaymentMethod.WECHAT,
+                PaymentStatus.SUCCESS,
+                "TXN123",
+                "previous refund",
+                LocalDateTime.now(),
+                "attach",
+                LocalDateTime.now(),
+                LocalDateTime.now(),
+                0);
         return Payment.from(spec);
     }
 }

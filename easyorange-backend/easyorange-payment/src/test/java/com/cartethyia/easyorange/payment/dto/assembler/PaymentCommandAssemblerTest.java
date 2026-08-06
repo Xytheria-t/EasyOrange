@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.payment.adapter.inbound.web.assembler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.CreatePaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.PaymentCallback;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.RefundRequest;
@@ -7,13 +9,10 @@ import com.cartethyia.easyorange.payment.application.command.ClosePaymentCommand
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.math.BigDecimal;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("PaymentCommandMapper 测试")
 class PaymentCommandAssemblerTest {
@@ -21,11 +20,7 @@ class PaymentCommandAssemblerTest {
     private final PaymentCommandMapper mapper = new PaymentCommandMapper() {
         @Override
         public PayCommand toPayCommand(PaymentCallback callback) {
-            return new PayCommand(
-                    callback.getPaymentNo(),
-                    callback.getTransactionId(),
-                    callback.getAttach()
-            );
+            return new PayCommand(callback.getPaymentNo(), callback.getTransactionId(), callback.getAttach());
         }
     };
 

@@ -1,5 +1,10 @@
 package com.cartethyia.easyorange.payment.adapter.inbound.web.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.MockPaymentRequest;
@@ -9,22 +14,15 @@ import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import java.math.BigDecimal;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MockPaymentController 测试")
@@ -45,10 +43,21 @@ class MockPaymentControllerTest {
 
     private Payment aggregate(PaymentStatus status) {
         var spec = new PaymentReconstructSpec(
-                "1001", "PAY123", "2001", "3001",
-                new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
-                status, null, null, null, null, null, null, 0
-        );
+                "1001",
+                "PAY123",
+                "2001",
+                "3001",
+                new BigDecimal("100.00"),
+                BigDecimal.ZERO,
+                PaymentMethod.WECHAT,
+                status,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                0);
         return Payment.from(spec);
     }
 
@@ -76,11 +85,13 @@ class MockPaymentControllerTest {
         @Test
         @DisplayName("成功标记 - 进入成功状态")
         void processMockPayment_success_confirms() {
-            when(paymentRepository.findById("1001")).thenReturn(
-                    Optional.of(aggregate(PaymentStatus.PENDING)), Optional.of(aggregate(PaymentStatus.SUCCESS)));
+            when(paymentRepository.findById("1001"))
+                    .thenReturn(
+                            Optional.of(aggregate(PaymentStatus.PENDING)),
+                            Optional.of(aggregate(PaymentStatus.SUCCESS)));
 
-            Result<PaymentResponse> result = controller.processMockPayment(
-                    new MockPaymentRequest("1001", null, null, null, true));
+            Result<PaymentResponse> result =
+                    controller.processMockPayment(new MockPaymentRequest("1001", null, null, null, true));
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().getStatus()).isEqualTo("SUCCESS");
@@ -89,11 +100,13 @@ class MockPaymentControllerTest {
         @Test
         @DisplayName("失败标记 - 进入失败状态")
         void processMockPayment_failure_marksFailed() {
-            when(paymentRepository.findById("1001")).thenReturn(
-                    Optional.of(aggregate(PaymentStatus.PENDING)), Optional.of(aggregate(PaymentStatus.FAILED)));
+            when(paymentRepository.findById("1001"))
+                    .thenReturn(
+                            Optional.of(aggregate(PaymentStatus.PENDING)),
+                            Optional.of(aggregate(PaymentStatus.FAILED)));
 
-            Result<PaymentResponse> result = controller.processMockPayment(
-                    new MockPaymentRequest("1001", null, null, null, false));
+            Result<PaymentResponse> result =
+                    controller.processMockPayment(new MockPaymentRequest("1001", null, null, null, false));
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().getStatus()).isEqualTo("FAILED");
@@ -107,8 +120,10 @@ class MockPaymentControllerTest {
         @Test
         @DisplayName("模拟支付成功")
         void mockPaymentSuccess_confirms() {
-            when(paymentRepository.findById("1001")).thenReturn(
-                    Optional.of(aggregate(PaymentStatus.PENDING)), Optional.of(aggregate(PaymentStatus.SUCCESS)));
+            when(paymentRepository.findById("1001"))
+                    .thenReturn(
+                            Optional.of(aggregate(PaymentStatus.PENDING)),
+                            Optional.of(aggregate(PaymentStatus.SUCCESS)));
 
             Result<PaymentResponse> result = controller.mockPaymentSuccess("1001");
 
@@ -118,8 +133,10 @@ class MockPaymentControllerTest {
         @Test
         @DisplayName("模拟支付失败")
         void mockPaymentFail_marksFailed() {
-            when(paymentRepository.findById("1001")).thenReturn(
-                    Optional.of(aggregate(PaymentStatus.PENDING)), Optional.of(aggregate(PaymentStatus.FAILED)));
+            when(paymentRepository.findById("1001"))
+                    .thenReturn(
+                            Optional.of(aggregate(PaymentStatus.PENDING)),
+                            Optional.of(aggregate(PaymentStatus.FAILED)));
 
             Result<PaymentResponse> result = controller.mockPaymentFail("1001");
 

@@ -1,33 +1,32 @@
 package com.cartethyia.easyorange.product.application.query;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.product.application.port.cache.ProductCachePort;
+import com.cartethyia.easyorange.product.application.port.cache.SellerCachePort;
+import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.query.assembler.ProductReadModelAssembler;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
-import com.cartethyia.easyorange.product.application.port.cache.ProductCachePort;
-import com.cartethyia.easyorange.product.application.port.cache.SellerCachePort;
-import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
-import com.cartethyia.easyorange.common.domain.Money;
-import com.cartethyia.easyorange.product.domain.valueobject.*;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
+import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import com.cartethyia.easyorange.product.domain.valueobject.*;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("商品查询处理器测试")
@@ -55,10 +54,10 @@ class ProductQueryHandlerTest {
 
     @BeforeEach
     void setUp() {
-        queryHandler = new ProductQueryHandler(productRepository, productQueryRepository, readModelAssembler, productCachePort, sellerCachePort);
+        queryHandler = new ProductQueryHandler(
+                productRepository, productQueryRepository, readModelAssembler, productCachePort, sellerCachePort);
 
-        testProduct = Product.create(
-                new ProductCreateSpec(
+        testProduct = Product.create(new ProductCreateSpec(
                         SellerId.of("1"),
                         CategoryId.of("2"),
                         ProductTitle.of("测试商品"),
@@ -69,9 +68,9 @@ class ProductQueryHandlerTest {
                         TradeLocation.of("北京"),
                         ContactMethod.of("微信"),
                         ProductDescription.of("描述"),
-                        ImageSet.of(List.of("http://img/1.jpg"))
-                )
-        ).aggregate().assignId("1");
+                        ImageSet.of(List.of("http://img/1.jpg"))))
+                .aggregate()
+                .assignId("1");
 
         testProductVO = ProductVO.builder()
                 .id("1")
@@ -117,8 +116,7 @@ class ProductQueryHandlerTest {
         when(productCachePort.getProductCache("999")).thenReturn(Optional.empty());
         when(productRepository.findById(ProductId.of("999"))).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> queryHandler.getProductById("999"))
-                .isInstanceOf(ProductNotFoundException.class);
+        assertThatThrownBy(() -> queryHandler.getProductById("999")).isInstanceOf(ProductNotFoundException.class);
     }
 
     @Test

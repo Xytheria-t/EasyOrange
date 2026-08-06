@@ -2,21 +2,20 @@ package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
+import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
+import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import java.util.List;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
 
 @Primary
 @Repository
@@ -25,8 +24,10 @@ public class OrderReadRepositoryImpl extends BaseRepository<OrderMapper, OrderDO
     private final OrderDataMapper dataMapper;
     private final OrderItemMapper orderItemMapper;
 
-    public OrderReadRepositoryImpl(OrderMapper orderMapper, @Qualifier("orderDataMapper") OrderDataMapper dataMapper,
-                                      OrderItemMapper orderItemMapper) {
+    public OrderReadRepositoryImpl(
+            OrderMapper orderMapper,
+            @Qualifier("orderDataMapper") OrderDataMapper dataMapper,
+            OrderItemMapper orderItemMapper) {
         super(orderMapper);
         this.dataMapper = dataMapper;
         this.orderItemMapper = orderItemMapper;
@@ -58,8 +59,9 @@ public class OrderReadRepositoryImpl extends BaseRepository<OrderMapper, OrderDO
 
         return PageResult.of(
                 orderPage.getRecords().stream().map(dataMapper::toReadModel).toList(),
-                orderPage.getTotal(), (int) orderPage.getCurrent(), (int) orderPage.getSize()
-        );
+                orderPage.getTotal(),
+                (int) orderPage.getCurrent(),
+                (int) orderPage.getSize());
     }
 
     @Override
@@ -67,16 +69,15 @@ public class OrderReadRepositoryImpl extends BaseRepository<OrderMapper, OrderDO
         if (status == null) {
             return lambdaQuery().count();
         }
-        return lambdaQuery()
-                .eq(OrderDO::getStatus, status)
-                .count();
+        return lambdaQuery().eq(OrderDO::getStatus, status).count();
     }
 
     @Override
     public List<OrderItemReadModel> findItemsByOrderId(String orderId) {
-        return orderItemMapper.selectList(
-                new LambdaQueryWrapper<OrderItemDO>()
-                        .eq(OrderItemDO::getOrderId, orderId)
-        ).stream().map(dataMapper::toItemReadModel).toList();
+        return orderItemMapper
+                .selectList(new LambdaQueryWrapper<OrderItemDO>().eq(OrderItemDO::getOrderId, orderId))
+                .stream()
+                .map(dataMapper::toItemReadModel)
+                .toList();
     }
 }

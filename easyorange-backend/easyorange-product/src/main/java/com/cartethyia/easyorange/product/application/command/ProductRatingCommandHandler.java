@@ -22,8 +22,12 @@ public class ProductRatingCommandHandler {
         ProductRating rating = ProductRating.create(command.productId(), userId, command.rating(), command.content());
         productRatingRepository.save(rating);
 
-        log.info("action=create_review reviewId={} productId={} userId={} rating={}",
-                rating.getId(), command.productId(), userId, command.rating());
+        log.info(
+                "action=create_review reviewId={} productId={} userId={} rating={}",
+                rating.getId(),
+                command.productId(),
+                userId,
+                command.rating());
 
         return rating.getId();
     }
@@ -32,8 +36,8 @@ public class ProductRatingCommandHandler {
     public void deleteReview(String reviewId) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        ProductRating rating = productRatingRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("评价不存在"));
+        ProductRating rating =
+                productRatingRepository.findById(reviewId).orElseThrow(() -> new IllegalArgumentException("评价不存在"));
 
         if (!rating.getUserId().equals(userId)) {
             throw new IllegalArgumentException("只能删除自己的评价");
@@ -47,8 +51,8 @@ public class ProductRatingCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void likeReview(String reviewId) {
-        ProductRating rating = productRatingRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("评价不存在"));
+        ProductRating rating =
+                productRatingRepository.findById(reviewId).orElseThrow(() -> new IllegalArgumentException("评价不存在"));
         rating.like();
         productRatingRepository.update(rating);
         log.info("action=like_review reviewId={}", reviewId);

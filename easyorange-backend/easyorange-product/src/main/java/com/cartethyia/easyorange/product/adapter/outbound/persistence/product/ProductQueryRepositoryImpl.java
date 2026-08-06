@@ -2,44 +2,38 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.product;
 
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheConstant;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.HotKeywordDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.HotKeywordMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryMapper;
+import com.cartethyia.easyorange.product.application.port.cache.CategoryCachePort;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.application.service.SearchHistoryBufferAppService;
-import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheConstant;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.HotKeywordDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.HotKeywordMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryMapper;
 import com.cartethyia.easyorange.product.domain.constant.ProductConstant;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.application.port.cache.CategoryCachePort;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Repository
@@ -76,7 +70,8 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
             var searchCriteria = new ProductMapper.ProductSearchCriteria(
                     keyword,
                     status != null ? ProductStatus.fromCode(status) : ProductStatus.ONLINE,
-                    minPrice, maxPrice,
+                    minPrice,
+                    maxPrice,
                     conditionLevel != null ? ConditionLevel.fromCode(conditionLevel) : null,
                     hasDiscount);
             return convertToReadModelPage(productMapper.searchByFullText(page, searchCriteria));
@@ -99,8 +94,8 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public PageResult<ProductReadModel> findProductsBySellerId(String sellerId, String status,
-                                                                Integer pageNum, Integer pageSize) {
+    public PageResult<ProductReadModel> findProductsBySellerId(
+            String sellerId, String status, Integer pageNum, Integer pageSize) {
         var wrapper = ChainWrappers.lambdaQueryChain(productMapper);
         wrapper.eq(ProductDO::getUserId, sellerId);
         if (status != null) wrapper.eq(ProductDO::getStatus, status);
@@ -111,8 +106,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     @Override
     public List<ProductReadModel> findProductsByIds(List<String> ids) {
         if (ids == null || ids.isEmpty()) return List.of();
-        return ChainWrappers.lambdaQueryChain(productMapper)
-                .in(ProductDO::getId, ids).list().stream()
+        return ChainWrappers.lambdaQueryChain(productMapper).in(ProductDO::getId, ids).list().stream()
                 .map(this::convertToReadModel)
                 .toList();
     }
@@ -128,8 +122,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     @Override
     public List<CategoryInfo> findCategoriesByIds(List<String> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) return List.of();
-        return ChainWrappers.lambdaQueryChain(categoryMapper)
-                .in(CategoryDO::getId, categoryIds).list().stream()
+        return ChainWrappers.lambdaQueryChain(categoryMapper).in(CategoryDO::getId, categoryIds).list().stream()
                 .map(c -> new CategoryInfo(c.getId(), c.getName(), c.getParentId(), c.getLevel(), c.getSortOrder()))
                 .toList();
     }
@@ -147,9 +140,11 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         if (productIds == null || productIds.isEmpty()) return List.of();
         return ChainWrappers.lambdaQueryChain(productImageMapper)
                 .in(ProductImageDO::getProductId, productIds)
-                .orderByAsc(ProductImageDO::getSortOrder).list().stream()
-                .map(img -> new ProductImageInfo(img.getProductId(), img.getImageUrl(), img.getSortOrder(),
-                        Objects.equals(img.getIsMain(), 1)))
+                .orderByAsc(ProductImageDO::getSortOrder)
+                .list()
+                .stream()
+                .map(img -> new ProductImageInfo(
+                        img.getProductId(), img.getImageUrl(), img.getSortOrder(), Objects.equals(img.getIsMain(), 1)))
                 .toList();
     }
 
@@ -179,7 +174,9 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         return ChainWrappers.lambdaQueryChain(searchHistoryMapper)
                 .eq(SearchHistoryDO::getUserId, userId)
                 .orderByDesc(SearchHistoryDO::getSearchTime)
-                .page(new Page<>(1, lim)).getRecords().stream()
+                .page(new Page<>(1, lim))
+                .getRecords()
+                .stream()
                 .map(h -> new SearchHistoryReadModel(h.getId(), h.getKeyword(), h.getSearchTime()))
                 .toList();
     }
@@ -187,15 +184,16 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     @Override
     public List<HotKeywordReadModel> findHotKeywords(Integer limit) {
         int lim = limit != null ? limit : 10;
-        Set<Object> topKeywords = redisTemplate.opsForZSet()
-                .reverseRange(ProductCacheConstant.HOT_KEYWORD_ZSET_KEY, 0, lim - 1);
+        Set<Object> topKeywords =
+                redisTemplate.opsForZSet().reverseRange(ProductCacheConstant.HOT_KEYWORD_ZSET_KEY, 0, lim - 1);
 
         if (topKeywords != null && !topKeywords.isEmpty()) {
             return topKeywords.stream()
                     .map(k -> {
-                        int count = Optional.ofNullable(redisTemplate.opsForZSet()
-                                        .score(ProductCacheConstant.HOT_KEYWORD_ZSET_KEY, k))
-                                .map(Number::intValue).orElse(0);
+                        int count = Optional.ofNullable(
+                                        redisTemplate.opsForZSet().score(ProductCacheConstant.HOT_KEYWORD_ZSET_KEY, k))
+                                .map(Number::intValue)
+                                .orElse(0);
                         return new HotKeywordReadModel(null, k.toString(), count, calculateHotLevel(count));
                     })
                     .toList();
@@ -203,9 +201,11 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
 
         return ChainWrappers.lambdaQueryChain(hotKeywordMapper)
                 .orderByDesc(HotKeywordDO::getSearchCount)
-                .page(new Page<>(1, lim)).getRecords().stream()
-                .map(k -> new HotKeywordReadModel(k.getId(), k.getKeyword(), k.getSearchCount(),
-                        calculateHotLevel(k.getSearchCount())))
+                .page(new Page<>(1, lim))
+                .getRecords()
+                .stream()
+                .map(k -> new HotKeywordReadModel(
+                        k.getId(), k.getKeyword(), k.getSearchCount(), calculateHotLevel(k.getSearchCount())))
                 .toList();
     }
 
@@ -214,8 +214,8 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         if (keyword == null || keyword.isBlank()) return List.of();
 
         int lim = limit != null ? limit : 10;
-        Set<Object> allKeywords = redisTemplate.opsForZSet()
-                .reverseRange(ProductCacheConstant.HOT_KEYWORD_ZSET_KEY, 0, -1);
+        Set<Object> allKeywords =
+                redisTemplate.opsForZSet().reverseRange(ProductCacheConstant.HOT_KEYWORD_ZSET_KEY, 0, -1);
 
         if (allKeywords != null && !allKeywords.isEmpty()) {
             String lowerKeyword = keyword.toLowerCase();
@@ -229,7 +229,9 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         return ChainWrappers.lambdaQueryChain(hotKeywordMapper)
                 .like(HotKeywordDO::getKeyword, keyword)
                 .orderByDesc(HotKeywordDO::getSearchCount)
-                .page(new Page<>(1, lim)).getRecords().stream()
+                .page(new Page<>(1, lim))
+                .getRecords()
+                .stream()
                 .map(HotKeywordDO::getKeyword)
                 .toList();
     }
@@ -252,7 +254,8 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     public void clearSearchHistory(String userId) {
         redisTemplate.delete(ProductCacheConstant.searchHistoryKey(userId));
         ChainWrappers.lambdaUpdateChain(searchHistoryMapper)
-                .eq(SearchHistoryDO::getUserId, userId).remove();
+                .eq(SearchHistoryDO::getUserId, userId)
+                .remove();
     }
 
     @Override
@@ -268,16 +271,17 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     @Override
     public long countByStatus(String status) {
         return ChainWrappers.lambdaQueryChain(productMapper)
-                .eq(ProductDO::getStatus, status).count();
+                .eq(ProductDO::getStatus, status)
+                .count();
     }
 
     // ===================== 私有辅助方法 =====================
 
     private PageResult<ProductReadModel> convertToReadModelPage(Page<ProductDO> productPage) {
-        var records = productPage.getRecords().stream()
-                .map(this::convertToReadModel).toList();
-        return PageResult.of(records, productPage.getTotal(),
-                (int) productPage.getCurrent(), (int) productPage.getSize());
+        var records =
+                productPage.getRecords().stream().map(this::convertToReadModel).toList();
+        return PageResult.of(
+                records, productPage.getTotal(), (int) productPage.getCurrent(), (int) productPage.getSize());
     }
 
     private ProductReadModel convertToReadModel(ProductDO product) {
@@ -292,7 +296,10 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 .status(product.getStatus().getCode())
                 .statusDesc(product.getStatus().getDesc())
                 .views(product.getViewCount())
-                .condition(product.getConditionLevel() != null ? product.getConditionLevel().getCode() : null)
+                .condition(
+                        product.getConditionLevel() != null
+                                ? product.getConditionLevel().getCode()
+                                : null)
                 .images(List.of())
                 .mainImageUrl("")
                 .createTime(product.getCreateTime())

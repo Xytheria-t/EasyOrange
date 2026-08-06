@@ -18,5 +18,4 @@ public class QueryOrderRequest extends PageRequest {
     private String buyerId;
     private String sellerId;
     private String status;
-
 }

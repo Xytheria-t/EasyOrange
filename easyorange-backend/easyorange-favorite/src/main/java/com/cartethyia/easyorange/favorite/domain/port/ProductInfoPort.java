@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.favorite.domain.port;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.SellerInfo;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

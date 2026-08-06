@@ -7,7 +7,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ProductResultCode implements IResultCode {
-
     PRODUCT_NOT_FOUND("B2001", "资产不存在"),
     PRODUCT_OFF_SHELF("B2002", "资产已下架"),
     PRODUCT_OUT_OF_STOCK("B2003", "资产库存不足"),

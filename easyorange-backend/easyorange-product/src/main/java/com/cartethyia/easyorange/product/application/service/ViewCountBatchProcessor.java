@@ -1,15 +1,14 @@
 package com.cartethyia.easyorange.product.application.service;
 
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -43,7 +42,9 @@ public class ViewCountBatchProcessor {
 
         // Step 3: Clean up Redis (non-transactional, best-effort)
         try {
-            redisTemplate.opsForHash().delete(VIEW_COUNT_KEY, pendingViews.keySet().toArray());
+            redisTemplate
+                    .opsForHash()
+                    .delete(VIEW_COUNT_KEY, pendingViews.keySet().toArray());
         } catch (Exception e) {
             log.error("action=cleanupViewCountCacheFailed entries={}", entries.size(), e);
         }

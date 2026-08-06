@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.product.domain.aggregate;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
-
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -29,14 +28,39 @@ public final class ProductTestFixture {
 
         private ProductCreateSpecBuilder() {}
 
-        public ProductCreateSpecBuilder stock(int value) { this.stock = StockQuantity.of(value); return this; }
-        public ProductCreateSpecBuilder withNoTitle() { this.title = null; return this; }
-        public ProductCreateSpecBuilder price(BigDecimal value) { this.price = Money.of(value); return this; }
-        public ProductCreateSpecBuilder emptyImages() { this.images = ImageSet.empty(); return this; }
+        public ProductCreateSpecBuilder stock(int value) {
+            this.stock = StockQuantity.of(value);
+            return this;
+        }
+
+        public ProductCreateSpecBuilder withNoTitle() {
+            this.title = null;
+            return this;
+        }
+
+        public ProductCreateSpecBuilder price(BigDecimal value) {
+            this.price = Money.of(value);
+            return this;
+        }
+
+        public ProductCreateSpecBuilder emptyImages() {
+            this.images = ImageSet.empty();
+            return this;
+        }
 
         public ProductCreateSpec build() {
-            return new ProductCreateSpec(sellerId, categoryId, title, price, null, stock,
-                    conditionLevel, location, contactMethod, description, images);
+            return new ProductCreateSpec(
+                    sellerId,
+                    categoryId,
+                    title,
+                    price,
+                    null,
+                    stock,
+                    conditionLevel,
+                    location,
+                    contactMethod,
+                    description,
+                    images);
         }
     }
 

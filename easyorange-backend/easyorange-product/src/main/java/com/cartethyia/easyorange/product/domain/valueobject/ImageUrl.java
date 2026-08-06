@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
-
 import java.util.regex.Pattern;
 
 public record ImageUrl(String value) {

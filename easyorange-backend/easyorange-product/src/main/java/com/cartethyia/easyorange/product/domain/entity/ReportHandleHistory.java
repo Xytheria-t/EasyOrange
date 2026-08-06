@@ -2,9 +2,8 @@ package com.cartethyia.easyorange.product.domain.entity;
 
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
-import lombok.Getter;
-
 import java.time.LocalDateTime;
+import lombok.Getter;
 
 @Getter
 public class ReportHandleHistory {
@@ -16,8 +15,8 @@ public class ReportHandleHistory {
     private final String remark;
     private final LocalDateTime createTime;
 
-    private ReportHandleHistory(String id, String reportId, String operatorId,
-                                String action, String remark, LocalDateTime createTime) {
+    private ReportHandleHistory(
+            String id, String reportId, String operatorId, String action, String remark, LocalDateTime createTime) {
         this.id = id;
         this.reportId = reportId;
         this.operatorId = operatorId;
@@ -43,9 +42,8 @@ public class ReportHandleHistory {
         return new ReportHandleHistory(reportId, operatorId, action, remark);
     }
 
-    public static ReportHandleHistory reconstitute(String id, String reportId, String operatorId,
-                                                     String action, String remark,
-                                                     LocalDateTime createTime) {
+    public static ReportHandleHistory reconstitute(
+            String id, String reportId, String operatorId, String action, String remark, LocalDateTime createTime) {
         return new ReportHandleHistory(id, reportId, operatorId, action, remark, createTime);
     }
 
@@ -57,6 +55,7 @@ public class ReportHandleHistory {
         public HistoryDomainException(String message) {
             super(message);
         }
+
         @Override
         protected String defaultCode() {
             return ProductResultCode.REPORT_ERROR.getCode();

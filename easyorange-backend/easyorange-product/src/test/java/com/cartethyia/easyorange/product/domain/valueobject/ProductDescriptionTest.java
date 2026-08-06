@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ProductDescriptionTest {
 
@@ -38,8 +38,7 @@ class ProductDescriptionTest {
     void create_withTooLongValue_shouldThrow() {
         var longStr = "a".repeat(5001);
 
-        assertThatThrownBy(() -> new ProductDescription(longStr))
-                .isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> new ProductDescription(longStr)).isInstanceOf(BusinessException.class);
     }
 
     @Test

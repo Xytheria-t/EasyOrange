@@ -1,12 +1,19 @@
 package com.cartethyia.easyorange.favorite.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.favorite.application.service.FavoriteService;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
-import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
+import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import java.util.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,14 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.*;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("收藏服务测试")
@@ -55,7 +54,8 @@ class FavoriteServiceTest {
     void addFavorite_success() {
         when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(true);
         when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
-        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
+        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
+                .thenReturn(false);
         when(favoriteRepository.save(any(Favorite.class))).thenAnswer(inv -> inv.getArgument(0));
 
         favoriteService.addFavorite(TEST_PRODUCT_ID);
@@ -80,7 +80,8 @@ class FavoriteServiceTest {
     void addFavorite_alreadyFavorited() {
         when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(true);
         when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
-        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(true);
+        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
+                .thenReturn(true);
 
         assertThatThrownBy(() -> favoriteService.addFavorite(TEST_PRODUCT_ID))
                 .isInstanceOf(BusinessException.class)
@@ -134,7 +135,7 @@ class FavoriteServiceTest {
         Favorite favorite1 = Favorite.reconstitute("1", TEST_USER_ID, "2001", null);
         Favorite favorite2 = Favorite.reconstitute("2", TEST_USER_ID, "2002", null);
         Favorite favorite3 = Favorite.reconstitute("3", TEST_USER_ID, "2003", null);
-        
+
         when(favoriteRepository.findByIds(favoriteIds)).thenReturn(List.of(favorite1, favorite2, favorite3));
         when(favoriteRepository.removeByIds(favoriteIds)).thenReturn(3);
 
@@ -159,7 +160,7 @@ class FavoriteServiceTest {
         List<String> favoriteIds = List.of("1", "2");
         Favorite ownFavorite = Favorite.reconstitute("1", TEST_USER_ID, "2001", null);
         Favorite otherUserFavorite = Favorite.reconstitute("2", "9999", "2002", null);
-        
+
         when(favoriteRepository.findByIds(favoriteIds)).thenReturn(List.of(ownFavorite, otherUserFavorite));
 
         assertThatThrownBy(() -> favoriteService.removeManyFavorites(favoriteIds))
@@ -194,8 +195,7 @@ class FavoriteServiceTest {
     @DisplayName("查询收藏列表 - 空列表")
     void queryFavorites_emptyList() {
         when(favoriteRepository.countByUserId(TEST_USER_ID)).thenReturn(0L);
-        when(favoriteRepository.findByUserId(eq(TEST_USER_ID), eq(0L), eq(10L)))
-                .thenReturn(List.of());
+        when(favoriteRepository.findByUserId(eq(TEST_USER_ID), eq(0L), eq(10L))).thenReturn(List.of());
 
         PageResult<Favorite> result = favoriteService.queryFavorites(1, 10);
 
@@ -207,7 +207,8 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("检查用户是否收藏指定商品 - 已收藏")
     void isFavorited_true() {
-        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, "2001")).thenReturn(true);
+        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, "2001"))
+                .thenReturn(true);
 
         boolean result = favoriteService.isFavorited("2001");
 
@@ -217,7 +218,8 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("检查用户是否收藏指定商品 - 未收藏")
     void isFavorited_false() {
-        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, "2001")).thenReturn(false);
+        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, "2001"))
+                .thenReturn(false);
 
         boolean result = favoriteService.isFavorited("2001");
 

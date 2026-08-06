@@ -1,26 +1,25 @@
 package com.cartethyia.easyorange.product.application.query;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
-import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProductSearchQueryHandler 测试")
@@ -37,13 +36,28 @@ class ProductSearchQueryHandlerTest {
         searchQueryHandler = new ProductSearchQueryHandler(productQueryRepository, Optional.empty(), Optional.empty());
 
         testProduct = new ProductReadModel(
-                "1", "10", "资产方", null, "2", "分类",
-                "测试商品", "描述", new BigDecimal("100"), null,
-                10, "1", "上架", 0, "1", "全新",
-                "北京", "微信", List.of("http://img/1.jpg"),
+                "1",
+                "10",
+                "资产方",
+                null,
+                "2",
+                "分类",
+                "测试商品",
+                "描述",
+                new BigDecimal("100"),
+                null,
+                10,
+                "1",
+                "上架",
+                0,
+                "1",
+                "全新",
+                "北京",
+                "微信",
+                List.of("http://img/1.jpg"),
                 "http://img/1.jpg",
-                LocalDateTime.now(), LocalDateTime.now()
-        );
+                LocalDateTime.now(),
+                LocalDateTime.now());
     }
 
     @Test
@@ -93,8 +107,7 @@ class ProductSearchQueryHandlerTest {
         TestSecurityUtil.setSecurityContext(1L);
         try {
             SearchHistoryReadModel history = new SearchHistoryReadModel("100", "手机", LocalDateTime.now());
-            when(productQueryRepository.findSearchHistoryByUserId("1", 10))
-                    .thenReturn(List.of(history));
+            when(productQueryRepository.findSearchHistoryByUserId("1", 10)).thenReturn(List.of(history));
 
             List<SearchHistoryReadModel> result = searchQueryHandler.getMySearchHistory(10);
 
@@ -150,8 +163,7 @@ class ProductSearchQueryHandlerTest {
     @Test
     @DisplayName("获取搜索建议应返回建议列表")
     void getSearchSuggestions_shouldReturnSuggestions() {
-        when(productQueryRepository.findSearchSuggestions("手", 10))
-                .thenReturn(List.of("手机", "手表", "手套"));
+        when(productQueryRepository.findSearchSuggestions("手", 10)).thenReturn(List.of("手机", "手表", "手套"));
 
         List<String> result = searchQueryHandler.getSearchSuggestions("手", 10);
 

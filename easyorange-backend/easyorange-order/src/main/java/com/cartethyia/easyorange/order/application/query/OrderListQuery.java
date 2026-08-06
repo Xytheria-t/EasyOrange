@@ -9,13 +9,7 @@ import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
  * 前端 String code 转换为枚举，类型安全下沉到 application/domain 层。
  */
 public record OrderListQuery(
-        String orderNo,
-        OrderStatus status,
-        String buyerId,
-        String sellerId,
-        Integer pageNum,
-        Integer pageSize
-) {
+        String orderNo, OrderStatus status, String buyerId, String sellerId, Integer pageNum, Integer pageSize) {
     public OrderListQuery {
         if (pageNum == null || pageNum < 1) {
             pageNum = 1;

@@ -7,11 +7,10 @@ import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.port.LockPort;
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 /**
  * 订单创建服务
@@ -41,7 +40,7 @@ public class OrderCreationService {
     @Transactional(rollbackFor = Exception.class)
     public CreateOrderResult createOrder(CreateOrderCommand command) {
         return lockPort.executeWithLocks(
-            buildLockKeys(command), LOCK_TRY_TIMEOUT_SECONDS, () -> createOrderFlow(command));
+                buildLockKeys(command), LOCK_TRY_TIMEOUT_SECONDS, () -> createOrderFlow(command));
     }
 
     /**
@@ -49,11 +48,11 @@ public class OrderCreationService {
      */
     private List<String> buildLockKeys(CreateOrderCommand command) {
         return command.items().stream()
-            .map(CreateOrderCommand.CreateOrderItem::productId)
-            .distinct()
-            .sorted()
-            .map(id -> ORDER_LOCK_PREFIX + id)
-            .toList();
+                .map(CreateOrderCommand.CreateOrderItem::productId)
+                .distinct()
+                .sorted()
+                .map(id -> ORDER_LOCK_PREFIX + id)
+                .toList();
     }
 
     /**
@@ -71,6 +70,7 @@ public class OrderCreationService {
         orderCreationExecutor.createPayment(result.event(), command);
         orderCreationExecutor.evictSellerCache(result.aggregate().sellerId().value());
 
-        return new CreateOrderResult(result.aggregate().id().value(), result.aggregate().orderNo().value());
+        return new CreateOrderResult(
+                result.aggregate().id().value(), result.aggregate().orderNo().value());
     }
 }

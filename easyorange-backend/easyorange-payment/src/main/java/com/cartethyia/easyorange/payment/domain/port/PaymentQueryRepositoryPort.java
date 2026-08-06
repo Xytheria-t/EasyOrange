@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.payment.domain.port;
 
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
-
 import java.util.List;
 import java.util.Optional;
 

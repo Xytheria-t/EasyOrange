@@ -1,5 +1,10 @@
 package com.cartethyia.easyorange.payment.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
@@ -9,17 +14,19 @@ import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
 import com.cartethyia.easyorange.payment.application.metrics.PaymentMetricsService;
-import com.cartethyia.easyorange.payment.domain.port.LockPort;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
-import com.cartethyia.easyorange.payment.domain.exception.LockAcquisitionException;
-import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.exception.LockAcquisitionException;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
+import com.cartethyia.easyorange.payment.domain.port.LockPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import java.math.BigDecimal;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,14 +38,6 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PaymentCommandHandler 测试")
@@ -85,7 +84,8 @@ class PaymentCommandHandlerTest {
     @DisplayName("锁获取失败时用例层记录并发冲突指标并抛异常")
     void executeWithLock_lockConflict_recordsMetricAndThrows() {
         doThrow(new LockAcquisitionException("系统繁忙，请稍后重试"))
-                .when(lockPort).executeWithLock(anyString(), any(Runnable.class));
+                .when(lockPort)
+                .executeWithLock(anyString(), any(Runnable.class));
 
         assertThatThrownBy(() -> commandHandler.handle(new PayCommand("PAY123", null, null)))
                 .isInstanceOf(LockAcquisitionException.class);
@@ -100,13 +100,8 @@ class PaymentCommandHandlerTest {
         @Test
         @DisplayName("创建支付成功")
         void handle_createPayment_success() {
-            CreatePaymentCommand command = new CreatePaymentCommand(
-                    "2001",
-                    new BigDecimal("100.00"),
-                    "WECHAT",
-                    null,
-                    "test"
-            );
+            CreatePaymentCommand command =
+                    new CreatePaymentCommand("2001", new BigDecimal("100.00"), "WECHAT", null, "test");
 
             when(idGenerator.generateId()).thenReturn("1001");
 
@@ -261,8 +256,7 @@ class PaymentCommandHandlerTest {
 
             ClosePaymentCommand command = new ClosePaymentCommand("9999");
 
-            assertThatThrownBy(() -> commandHandler.handle(command))
-                    .isInstanceOf(PaymentDomainException.class);
+            assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(PaymentDomainException.class);
         }
     }
 
@@ -273,9 +267,11 @@ class PaymentCommandHandlerTest {
         @BeforeEach
         void enableLockWrapper() {
             doAnswer(invocation -> {
-                invocation.getArgument(1, Runnable.class).run();
-                return null;
-            }).when(lockPort).executeWithLock(anyString(), any(Runnable.class));
+                        invocation.getArgument(1, Runnable.class).run();
+                        return null;
+                    })
+                    .when(lockPort)
+                    .executeWithLock(anyString(), any(Runnable.class));
         }
 
         @Test
@@ -316,9 +312,11 @@ class PaymentCommandHandlerTest {
         @BeforeEach
         void enableLockWrapper() {
             doAnswer(invocation -> {
-                invocation.getArgument(1, Runnable.class).run();
-                return null;
-            }).when(lockPort).executeWithLock(anyString(), any(Runnable.class));
+                        invocation.getArgument(1, Runnable.class).run();
+                        return null;
+                    })
+                    .when(lockPort)
+                    .executeWithLock(anyString(), any(Runnable.class));
         }
 
         @Test
@@ -326,8 +324,11 @@ class PaymentCommandHandlerTest {
         void handle_refund_success() {
             Payment successAggregate = buildAggregate(PaymentStatus.SUCCESS);
             Payment refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
-            when(paymentRepository.findById("1001")).thenReturn(
-                    Optional.of(successAggregate), Optional.of(refundingAggregate), Optional.of(refundingAggregate));
+            when(paymentRepository.findById("1001"))
+                    .thenReturn(
+                            Optional.of(successAggregate),
+                            Optional.of(refundingAggregate),
+                            Optional.of(refundingAggregate));
             when(paymentGateway.refund(any(), any())).thenReturn(RefundResult.success("REF_123"));
 
             commandHandler.handle(new RefundPaymentCommand("1001", new BigDecimal("100.00"), "用户申请"));
@@ -343,8 +344,11 @@ class PaymentCommandHandlerTest {
         void handle_refund_gatewayFailure_rollsBack() {
             Payment successAggregate = buildAggregate(PaymentStatus.SUCCESS);
             Payment refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
-            when(paymentRepository.findById("1001")).thenReturn(
-                    Optional.of(successAggregate), Optional.of(refundingAggregate), Optional.of(refundingAggregate));
+            when(paymentRepository.findById("1001"))
+                    .thenReturn(
+                            Optional.of(successAggregate),
+                            Optional.of(refundingAggregate),
+                            Optional.of(refundingAggregate));
             when(paymentGateway.refund(any(), any())).thenReturn(RefundResult.failure("网关拒绝"));
 
             commandHandler.handle(new RefundPaymentCommand("1001", new BigDecimal("100.00"), "用户申请"));
@@ -361,10 +365,21 @@ class PaymentCommandHandlerTest {
      */
     private static Payment buildAggregate(PaymentStatus status) {
         var spec = new PaymentReconstructSpec(
-                "1001", "PAY123", "2001", "3001",
-                new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
-                status, null, null, null, null, null, null, 0
-        );
+                "1001",
+                "PAY123",
+                "2001",
+                "3001",
+                new BigDecimal("100.00"),
+                BigDecimal.ZERO,
+                PaymentMethod.WECHAT,
+                status,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                0);
         return Payment.from(spec);
     }
 }

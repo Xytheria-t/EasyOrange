@@ -12,13 +12,13 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum AuditAction {
-
     APPROVED("1", "通过"),
     REJECTED("2", "拒绝"),
     RESUBMIT("3", "重提交");
 
     @JsonValue
     private final String code;
+
     private final String desc;
 
     public static AuditAction fromCode(String code) {

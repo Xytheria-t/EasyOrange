@@ -1,18 +1,17 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.product;
 
-import com.cartethyia.easyorange.product.domain.aggregate.Product;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
+import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Repository;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Repository;
 
 @Primary
 @Repository
@@ -23,10 +22,11 @@ public class ProductRepositoryImpl implements ProductRepository {
     private final ProductImageMapper productImageMapper;
     private final ProductDataMapper dataMapper;
 
-    public ProductRepositoryImpl(ProductMapper productMapper,
-                                  ProductDetailMapper productDetailMapper,
-                                  ProductImageMapper productImageMapper,
-                                  ProductDataMapper dataMapper) {
+    public ProductRepositoryImpl(
+            ProductMapper productMapper,
+            ProductDetailMapper productDetailMapper,
+            ProductImageMapper productImageMapper,
+            ProductDataMapper dataMapper) {
         this.productMapper = productMapper;
         this.productDetailMapper = productDetailMapper;
         this.productImageMapper = productImageMapper;
@@ -45,8 +45,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     public void delete(ProductId id) {
         productMapper.deleteById(id.value());
         productDetailMapper.deleteById(id.value());
-        productImageMapper.delete(Wrappers.<ProductImageDO>lambdaQuery()
-                .eq(ProductImageDO::getProductId, id.value()));
+        productImageMapper.delete(Wrappers.<ProductImageDO>lambdaQuery().eq(ProductImageDO::getProductId, id.value()));
     }
 
     @Override
@@ -65,9 +64,8 @@ public class ProductRepositoryImpl implements ProductRepository {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        var productDOs = productMapper.selectList(
-                Wrappers.<ProductDO>lambdaQuery()
-                        .in(ProductDO::getId, ids.stream().map(ProductId::value).toList()));
+        var productDOs = productMapper.selectList(Wrappers.<ProductDO>lambdaQuery()
+                .in(ProductDO::getId, ids.stream().map(ProductId::value).toList()));
         return productDOs.isEmpty() ? List.of() : toDomainList(productDOs);
     }
 
@@ -97,18 +95,15 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     private List<Product> toDomainList(List<ProductDO> productDOs) {
         var productIds = productDOs.stream().map(ProductDO::getId).toList();
-        var detailMap = productDetailMapper
-                .selectDetailsByProductIds(productIds).stream()
+        var detailMap = productDetailMapper.selectDetailsByProductIds(productIds).stream()
                 .collect(Collectors.toMap(ProductDetailDO::getProductId, d -> d, (a, _) -> a));
-        var imagesByProduct = productMapper
-                .selectImagesByProductIds(productIds).stream()
+        var imagesByProduct = productMapper.selectImagesByProductIds(productIds).stream()
                 .collect(Collectors.groupingBy(ProductImageDO::getProductId));
         return productDOs.stream()
                 .map(productDO -> dataMapper.toDomain(
                         productDO,
                         detailMap.get(productDO.getId()),
-                        imagesByProduct.getOrDefault(productDO.getId(), List.of())
-                ))
+                        imagesByProduct.getOrDefault(productDO.getId(), List.of())))
                 .toList();
     }
 
@@ -128,12 +123,9 @@ public class ProductRepositoryImpl implements ProductRepository {
         var productId = product.getId().value();
         var existingImages = productMapper.selectImagesByProductIds(List.of(productId));
         var newImages = dataMapper.toImageDOs(product.getId(), product.getImages());
-        var existingUrls = existingImages.stream()
-                .map(ProductImageDO::getImageUrl)
-                .collect(Collectors.toSet());
-        var newUrls = newImages.stream()
-                .map(ProductImageDO::getImageUrl)
-                .collect(Collectors.toSet());
+        var existingUrls =
+                existingImages.stream().map(ProductImageDO::getImageUrl).collect(Collectors.toSet());
+        var newUrls = newImages.stream().map(ProductImageDO::getImageUrl).collect(Collectors.toSet());
         var urlsToDelete = new HashSet<>(existingUrls);
         urlsToDelete.removeAll(newUrls);
         if (!urlsToDelete.isEmpty()) {

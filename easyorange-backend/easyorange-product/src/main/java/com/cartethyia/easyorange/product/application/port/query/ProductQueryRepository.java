@@ -6,7 +6,6 @@ import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordR
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
-
 import java.util.List;
 import java.util.Set;
 
@@ -14,8 +13,8 @@ public interface ProductQueryRepository {
 
     PageResult<ProductReadModel> searchProducts(ProductSearchCriteria criteria);
 
-    PageResult<ProductReadModel> findProductsBySellerId(String sellerId, String status,
-                                                    Integer pageNum, Integer pageSize);
+    PageResult<ProductReadModel> findProductsBySellerId(
+            String sellerId, String status, Integer pageNum, Integer pageSize);
 
     List<ProductReadModel> findProductsByIds(List<String> ids);
 
@@ -43,9 +42,9 @@ public interface ProductQueryRepository {
 
     long countByStatus(String status);
 
-    record CategoryInfo(String id, String name, String parentId, Integer level, Integer sortOrder) { }
+    record CategoryInfo(String id, String name, String parentId, Integer level, Integer sortOrder) {}
 
-    record ProductDetailInfo(String productId, String description) { }
+    record ProductDetailInfo(String productId, String description) {}
 
-    record ProductImageInfo(String productId, String imageUrl, Integer sortOrder, boolean isMain) { }
+    record ProductImageInfo(String productId, String imageUrl, Integer sortOrder, boolean isMain) {}
 }

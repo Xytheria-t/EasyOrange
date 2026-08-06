@@ -58,7 +58,8 @@ public class ProductEventConsumer {
                 case ProductSubmittedForReviewEvent e -> productCachePort.evictProductCache(e.productId());
                 case ProductPutOnlineEvent e -> handlePutOnline(e);
                 case ProductTakeOfflineEvent e -> handleTakeOffline(e);
-                default -> log.debug("No handler for event: {}", event.getClass().getSimpleName());
+                default ->
+                    log.debug("No handler for event: {}", event.getClass().getSimpleName());
             }
         });
     }
@@ -68,7 +69,9 @@ public class ProductEventConsumer {
         if (e.data().categoryId() != null) {
             productCachePort.evictProductListCache(e.data().categoryId());
         }
-        if (notificationPort != null) tryRun(() -> notificationPort.notifyProductCreated(productId, e.data().userId()));
+        if (notificationPort != null)
+            tryRun(() ->
+                    notificationPort.notifyProductCreated(productId, e.data().userId()));
         if (searchIndexPort != null) tryRun(() -> searchIndexPort.indexProduct(productId));
     }
 
@@ -110,8 +113,11 @@ public class ProductEventConsumer {
         try {
             var readModel = productQueryHandler.getProductReadModel(productId);
             if (readModel != null && readModel.stock() != null && readModel.stock() <= LOW_STOCK_THRESHOLD) {
-                log.warn("event=LowStockWarning productId={} currentStock={} threshold={}",
-                        productId, readModel.stock(), LOW_STOCK_THRESHOLD);
+                log.warn(
+                        "event=LowStockWarning productId={} currentStock={} threshold={}",
+                        productId,
+                        readModel.stock(),
+                        LOW_STOCK_THRESHOLD);
                 if (notificationPort != null) {
                     notificationPort.notifyLowStock(productId, readModel.sellerId(), readModel.stock());
                 }

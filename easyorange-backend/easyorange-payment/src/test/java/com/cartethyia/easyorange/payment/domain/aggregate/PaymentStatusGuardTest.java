@@ -1,13 +1,13 @@
 package com.cartethyia.easyorange.payment.domain.aggregate;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("PaymentStatusGuard 状态守卫测试")
 class PaymentStatusGuardTest {
@@ -23,7 +23,10 @@ class PaymentStatusGuardTest {
         }
 
         @ParameterizedTest
-        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"PENDING"})
+        @EnumSource(
+                value = PaymentStatus.class,
+                mode = EnumSource.Mode.EXCLUDE,
+                names = {"PENDING"})
         @DisplayName("非 PENDING 状态不能支付")
         void canPay_nonPending(PaymentStatus status) {
             assertThat(PaymentStatusGuard.canPay(status)).isFalse();
@@ -43,11 +46,15 @@ class PaymentStatusGuardTest {
         @Test
         @DisplayName("PARTIALLY_REFUNDED 状态可以退款")
         void canRefund_partiallyRefunded() {
-            assertThat(PaymentStatusGuard.canRefund(PaymentStatus.PARTIALLY_REFUNDED)).isTrue();
+            assertThat(PaymentStatusGuard.canRefund(PaymentStatus.PARTIALLY_REFUNDED))
+                    .isTrue();
         }
 
         @ParameterizedTest
-        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"SUCCESS", "PARTIALLY_REFUNDED"})
+        @EnumSource(
+                value = PaymentStatus.class,
+                mode = EnumSource.Mode.EXCLUDE,
+                names = {"SUCCESS", "PARTIALLY_REFUNDED"})
         @DisplayName("其他状态不能退款")
         void canRefund_otherStatus(PaymentStatus status) {
             assertThat(PaymentStatusGuard.canRefund(status)).isFalse();
@@ -71,7 +78,10 @@ class PaymentStatusGuardTest {
         }
 
         @ParameterizedTest
-        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"PENDING", "FAILED"})
+        @EnumSource(
+                value = PaymentStatus.class,
+                mode = EnumSource.Mode.EXCLUDE,
+                names = {"PENDING", "FAILED"})
         @DisplayName("其他状态不能关闭")
         void canClose_otherStatus(PaymentStatus status) {
             assertThat(PaymentStatusGuard.canClose(status)).isFalse();
@@ -89,7 +99,10 @@ class PaymentStatusGuardTest {
         }
 
         @ParameterizedTest
-        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"PENDING"})
+        @EnumSource(
+                value = PaymentStatus.class,
+                mode = EnumSource.Mode.EXCLUDE,
+                names = {"PENDING"})
         @DisplayName("非 PENDING 状态不能标记失败")
         void canFail_nonPending(PaymentStatus status) {
             assertThat(PaymentStatusGuard.canFail(status)).isFalse();
@@ -107,7 +120,10 @@ class PaymentStatusGuardTest {
         }
 
         @ParameterizedTest
-        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"PAYING"})
+        @EnumSource(
+                value = PaymentStatus.class,
+                mode = EnumSource.Mode.EXCLUDE,
+                names = {"PAYING"})
         @DisplayName("非 PAYING 状态不能确认支付")
         void canConfirmPay_nonPaying(PaymentStatus status) {
             assertThat(PaymentStatusGuard.canConfirmPay(status)).isFalse();
@@ -121,11 +137,15 @@ class PaymentStatusGuardTest {
         @Test
         @DisplayName("REFUNDING 状态可以确认退款")
         void canConfirmRefund_refunding() {
-            assertThat(PaymentStatusGuard.canConfirmRefund(PaymentStatus.REFUNDING)).isTrue();
+            assertThat(PaymentStatusGuard.canConfirmRefund(PaymentStatus.REFUNDING))
+                    .isTrue();
         }
 
         @ParameterizedTest
-        @EnumSource(value = PaymentStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"REFUNDING"})
+        @EnumSource(
+                value = PaymentStatus.class,
+                mode = EnumSource.Mode.EXCLUDE,
+                names = {"REFUNDING"})
         @DisplayName("非 REFUNDING 状态不能确认退款")
         void canConfirmRefund_nonRefunding(PaymentStatus status) {
             assertThat(PaymentStatusGuard.canConfirmRefund(status)).isFalse();

@@ -1,5 +1,10 @@
 package com.cartethyia.easyorange.payment.adapter.inbound.web.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentCommandMapper;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentCommandMapperImpl;
@@ -13,6 +18,7 @@ import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
 import com.cartethyia.easyorange.payment.domain.port.CallbackSignatureVerifierPort;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,14 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PaymentCommandController 测试")
@@ -55,8 +53,7 @@ class PaymentCommandControllerTest {
         @Test
         @DisplayName("创建支付成功返回支付 ID")
         void createPayment_success() {
-            CreatePaymentRequest request = new CreatePaymentRequest(
-                    "2001", new BigDecimal("100.00"), "WECHAT", null);
+            CreatePaymentRequest request = new CreatePaymentRequest("2001", new BigDecimal("100.00"), "WECHAT", null);
             when(commandHandler.handle(any(CreatePaymentCommand.class))).thenReturn("1001");
 
             Result<PaymentResponse> result = controller.createPayment(request);

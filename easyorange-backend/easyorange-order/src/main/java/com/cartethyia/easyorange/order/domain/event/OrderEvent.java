@@ -8,8 +8,12 @@ import com.cartethyia.easyorange.common.event.DomainEvent;
  * 默认提供 {@link #aggregateId()} 实现，由 {@link #orderId()} 派生。
  */
 public sealed interface OrderEvent extends DomainEvent
-        permits OrderCreatedEvent, OrderPaidEvent, OrderShippedEvent,
-                OrderCompletedEvent, OrderCancelledEvent, OrderRefundedEvent {
+        permits OrderCreatedEvent,
+                OrderPaidEvent,
+                OrderShippedEvent,
+                OrderCompletedEvent,
+                OrderCancelledEvent,
+                OrderRefundedEvent {
 
     /**
      * 订单 ID，所有订单事件都关联到一个订单。

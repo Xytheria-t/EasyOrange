@@ -1,19 +1,16 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.category;
 
 import com.cartethyia.easyorange.common.repository.BaseRepository;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryProductCount;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
-import org.springframework.stereotype.Repository;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.stereotype.Repository;
 
 @Repository
-public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, CategoryDO> implements CategoryQueryRepository {
+public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, CategoryDO>
+        implements CategoryQueryRepository {
 
     public CategoryQueryRepositoryImpl(CategoryMapper categoryMapper) {
         super(categoryMapper);
@@ -21,31 +18,21 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
 
     @Override
     public List<CategoryReadModel> findByParentId(String parentId) {
-        return lambdaQuery()
-                .eq(CategoryDO::getParentId, parentId)
-                .orderByAsc(CategoryDO::getSortOrder)
-                .list()
-                .stream()
+        return lambdaQuery().eq(CategoryDO::getParentId, parentId).orderByAsc(CategoryDO::getSortOrder).list().stream()
                 .map(this::toReadModel)
                 .toList();
     }
 
     @Override
     public List<CategoryReadModel> findByLevel(Integer level) {
-        return lambdaQuery()
-                .eq(CategoryDO::getLevel, level)
-                .orderByAsc(CategoryDO::getSortOrder)
-                .list()
-                .stream()
+        return lambdaQuery().eq(CategoryDO::getLevel, level).orderByAsc(CategoryDO::getSortOrder).list().stream()
                 .map(this::toReadModel)
                 .toList();
     }
 
     @Override
     public CategoryReadModel findByName(String name) {
-        CategoryDO category = lambdaQuery()
-                .eq(CategoryDO::getName, name)
-                .one();
+        CategoryDO category = lambdaQuery().eq(CategoryDO::getName, name).one();
         return category != null ? toReadModel(category) : null;
     }
 
@@ -54,9 +41,7 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        return mapper.selectByIds(ids).stream()
-                .map(this::toReadModel)
-                .toList();
+        return mapper.selectByIds(ids).stream().map(this::toReadModel).toList();
     }
 
     @Override
@@ -95,7 +80,6 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
                 category.getSortOrder(),
                 category.getStatus(),
                 category.getCreateTime(),
-                0
-        );
+                0);
     }
 }

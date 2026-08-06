@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.product.domain.repository;
 
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
-
 import java.util.Optional;
 
 public interface ProductRatingRepository {

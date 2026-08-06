@@ -7,13 +7,12 @@ import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Repository;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Repository;
 
 @Primary
 @Repository
@@ -22,8 +21,10 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
     private final OrderDataMapper dataMapper;
     private final OrderItemMapper orderItemMapper;
 
-    public OrderRepositoryImpl(OrderMapper orderMapper, @Qualifier("orderDataMapper") OrderDataMapper dataMapper,
-                                  OrderItemMapper orderItemMapper) {
+    public OrderRepositoryImpl(
+            OrderMapper orderMapper,
+            @Qualifier("orderDataMapper") OrderDataMapper dataMapper,
+            OrderItemMapper orderItemMapper) {
         super(orderMapper);
         this.dataMapper = dataMapper;
         this.orderItemMapper = orderItemMapper;
@@ -60,7 +61,9 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
                 .eq(OrderDO::getStatus, OrderStatus.PENDING_PAYMENT)
                 .lt(OrderDO::getCreateTime, threshold)
                 .list()
-                .stream().map(dataMapper::toAggregate).toList();
+                .stream()
+                .map(dataMapper::toAggregate)
+                .toList();
     }
 
     @Override
@@ -69,21 +72,25 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
                 .eq(OrderDO::getStatus, OrderStatus.SHIPPED)
                 .lt(OrderDO::getUpdateTime, threshold)
                 .list()
-                .stream().map(dataMapper::toAggregate).toList();
+                .stream()
+                .map(dataMapper::toAggregate)
+                .toList();
     }
 
     @Override
     public List<OrderItem> findItemsByOrderId(String orderId) {
-        return orderItemMapper.selectList(
-                new LambdaQueryWrapper<OrderItemDO>()
-                        .eq(OrderItemDO::getOrderId, orderId)
-        ).stream().map(dataMapper::toOrderItem).toList();
+        return orderItemMapper
+                .selectList(new LambdaQueryWrapper<OrderItemDO>().eq(OrderItemDO::getOrderId, orderId))
+                .stream()
+                .map(dataMapper::toOrderItem)
+                .toList();
     }
 
     private void batchInsertItems(String orderId, List<OrderItem> items) {
         if (items == null || items.isEmpty()) {
             return;
         }
-        orderItemMapper.batchInsert(items.stream().map(item -> dataMapper.toItemDO(orderId, item)).toList());
+        orderItemMapper.batchInsert(
+                items.stream().map(item -> dataMapper.toItemDO(orderId, item)).toList());
     }
 }

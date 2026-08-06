@@ -8,7 +8,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ReportReasonType implements BaseCodeEnum {
-
     FAKE_INFO("1", "虚假信息"),
     INFRINGEMENT("2", "侵权投诉"),
     VIOLATION("3", "违规内容"),
@@ -16,6 +15,7 @@ public enum ReportReasonType implements BaseCodeEnum {
 
     @JsonValue
     private final String code;
+
     private final String desc;
 
     public static ReportReasonType fromCode(String code) {

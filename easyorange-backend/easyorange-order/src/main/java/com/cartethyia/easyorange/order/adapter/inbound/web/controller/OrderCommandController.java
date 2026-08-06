@@ -1,14 +1,14 @@
 package com.cartethyia.easyorange.order.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.order.application.command.ConfirmReceiptCommand;
-import com.cartethyia.easyorange.order.application.command.OrderCommandHandler;
-import com.cartethyia.easyorange.order.application.command.PayOrderCommand;
-import com.cartethyia.easyorange.order.application.command.ShipOrderCommand;
 import com.cartethyia.easyorange.order.adapter.inbound.web.assembler.OrderCommandAssembler;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.CancelOrderRequest;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.CreateOrderRequest;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.RefundOrderRequest;
+import com.cartethyia.easyorange.order.application.command.ConfirmReceiptCommand;
+import com.cartethyia.easyorange.order.application.command.OrderCommandHandler;
+import com.cartethyia.easyorange.order.application.command.PayOrderCommand;
+import com.cartethyia.easyorange.order.application.command.ShipOrderCommand;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,12 +25,12 @@ public class OrderCommandController {
 
     @PostMapping
     public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        return Result.success(commandHandler.handle(assembler.toCreateCommand(request)).orderId());
+        return Result.success(
+                commandHandler.handle(assembler.toCreateCommand(request)).orderId());
     }
 
     @PutMapping("/{id}/cancel")
-    public Result<Void> cancelOrder(@PathVariable String id,
-                                    @Valid @RequestBody CancelOrderRequest request) {
+    public Result<Void> cancelOrder(@PathVariable String id, @Valid @RequestBody CancelOrderRequest request) {
         commandHandler.handle(assembler.toCancelCommand(id, request));
         return Result.success();
     }
@@ -54,8 +54,7 @@ public class OrderCommandController {
     }
 
     @PutMapping("/{id}/refund")
-    public Result<Void> refundOrder(@PathVariable String id,
-                                    @Valid @RequestBody RefundOrderRequest request) {
+    public Result<Void> refundOrder(@PathVariable String id, @Valid @RequestBody RefundOrderRequest request) {
         commandHandler.handle(assembler.toRefundCommand(id, request));
         return Result.success();
     }

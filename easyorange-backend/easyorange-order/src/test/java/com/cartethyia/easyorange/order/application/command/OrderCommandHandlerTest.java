@@ -1,10 +1,16 @@
 package com.cartethyia.easyorange.order.application.command;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
+import static com.cartethyia.easyorange.order.application.command.CreateOrderCommand.CreateOrderItem;
+import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.aReconstructSpec;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-
+import com.cartethyia.easyorange.order.application.service.OrderCreationService;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -16,29 +22,17 @@ import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
-import com.cartethyia.easyorange.order.application.service.OrderCreationService;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
-import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Optional;
-
-import static com.cartethyia.easyorange.order.application.command.CreateOrderCommand.CreateOrderItem;
-import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.aReconstructSpec;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrderCommandHandler 单元测试")
@@ -72,9 +66,7 @@ class OrderCommandHandlerTest {
         @DisplayName("正常创建订单")
         void handle_createOrder_success() {
             CreateOrderCommand command = new CreateOrderCommand(
-                    List.of(new CreateOrderItem(PRODUCT_ID, 1)),
-                    "北京市朝阳区", "13800138000", "尽快发货", null
-            );
+                    List.of(new CreateOrderItem(PRODUCT_ID, 1)), "北京市朝阳区", "13800138000", "尽快发货", null);
 
             CreateOrderResult expectedResult = new CreateOrderResult(ORDER_ID, "ORD123");
             when(orderCreationService.createOrder(command)).thenReturn(expectedResult);
@@ -120,8 +112,7 @@ class OrderCommandHandlerTest {
 
             TestSecurityUtil.setSecurityContext(BUYER_ID);
             try {
-                assertThatThrownBy(() -> commandHandler.handle(command))
-                    .isInstanceOf(OrderDomainException.class);
+                assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(OrderDomainException.class);
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -138,9 +129,9 @@ class OrderCommandHandlerTest {
             TestSecurityUtil.setSecurityContext("999");
             try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
-                    .isInstanceOf(BusinessException.class)
-                    .extracting(e -> ((BusinessException) e).getCode())
-                    .isEqualTo(OrderResultCode.ORDER_NOT_OWNER.getCode());
+                        .isInstanceOf(BusinessException.class)
+                        .extracting(e -> ((BusinessException) e).getCode())
+                        .isEqualTo(OrderResultCode.ORDER_NOT_OWNER.getCode());
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -207,9 +198,9 @@ class OrderCommandHandlerTest {
             TestSecurityUtil.setSecurityContext("999");
             try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
-                    .isInstanceOf(BusinessException.class)
-                    .extracting(e -> ((BusinessException) e).getCode())
-                    .isEqualTo(OrderResultCode.ORDER_NOT_OWNER.getCode());
+                        .isInstanceOf(BusinessException.class)
+                        .extracting(e -> ((BusinessException) e).getCode())
+                        .isEqualTo(OrderResultCode.ORDER_NOT_OWNER.getCode());
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -276,9 +267,9 @@ class OrderCommandHandlerTest {
             TestSecurityUtil.setSecurityContext(BUYER_ID);
             try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
-                    .isInstanceOf(BusinessException.class)
-                .extracting(e -> ((BusinessException) e).getCode())
-                .isEqualTo(OrderResultCode.ORDER_CANNOT_REFUND.getCode());
+                        .isInstanceOf(BusinessException.class)
+                        .extracting(e -> ((BusinessException) e).getCode())
+                        .isEqualTo(OrderResultCode.ORDER_CANNOT_REFUND.getCode());
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }

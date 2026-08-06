@@ -1,19 +1,18 @@
 package com.cartethyia.easyorange.payment.dto.assembler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.PaymentDataMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.PaymentDataMapperImpl;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("PaymentDataMapper 测试")
 class PaymentDataMapperTest {
@@ -98,12 +97,21 @@ class PaymentDataMapperTest {
         @DisplayName("聚合根转 PO，字段映射正确")
         void toPO_mapsFields() {
             var spec = new com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec(
-                    "1001", "PAY123", "2001", "3001",
-                    new BigDecimal("100.00"), new BigDecimal("20.00"), PaymentMethod.WECHAT,
-                    PaymentStatus.PARTIALLY_REFUNDED, "TXN_1", "部分退款",
-                    LocalDateTime.of(2026, 1, 1, 10, 0), "attach",
-                    LocalDateTime.of(2026, 1, 1, 9, 0), LocalDateTime.of(2026, 1, 1, 9, 30), 4
-            );
+                    "1001",
+                    "PAY123",
+                    "2001",
+                    "3001",
+                    new BigDecimal("100.00"),
+                    new BigDecimal("20.00"),
+                    PaymentMethod.WECHAT,
+                    PaymentStatus.PARTIALLY_REFUNDED,
+                    "TXN_1",
+                    "部分退款",
+                    LocalDateTime.of(2026, 1, 1, 10, 0),
+                    "attach",
+                    LocalDateTime.of(2026, 1, 1, 9, 0),
+                    LocalDateTime.of(2026, 1, 1, 9, 30),
+                    4);
             Payment aggregate = Payment.from(spec);
 
             PaymentDO po = mapper.toPO(aggregate);

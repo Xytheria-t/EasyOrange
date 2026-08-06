@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.port;
 
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
-
 import java.math.BigDecimal;
 
 public interface PaymentGatewayPort {

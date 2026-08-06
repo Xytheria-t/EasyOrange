@@ -40,10 +40,11 @@ public class OrderLifecycleEventConsumer {
     private final ProductOrderPort productOrderPort;
     private final PaymentGatewayPort paymentGatewayPort;
 
-    public OrderLifecycleEventConsumer(EventIdempotencyChecker idempotencyChecker,
-                                       EventMetricsService metricsService,
-                                       ProductOrderPort productOrderPort,
-                                       PaymentGatewayPort paymentGatewayPort) {
+    public OrderLifecycleEventConsumer(
+            EventIdempotencyChecker idempotencyChecker,
+            EventMetricsService metricsService,
+            ProductOrderPort productOrderPort,
+            PaymentGatewayPort paymentGatewayPort) {
         this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService);
         this.productOrderPort = productOrderPort;
         this.paymentGatewayPort = paymentGatewayPort;
@@ -51,8 +52,11 @@ public class OrderLifecycleEventConsumer {
 
     @RabbitHandler
     public void onOrderCreated(OrderCreatedEvent event, Message message) {
-        handler.handle(event, message, metadata ->
-                log.debug("Order created, stock already decremented synchronously: orderId={}", event.orderId()));
+        handler.handle(
+                event,
+                message,
+                metadata -> log.debug(
+                        "Order created, stock already decremented synchronously: orderId={}", event.orderId()));
     }
 
     @RabbitHandler

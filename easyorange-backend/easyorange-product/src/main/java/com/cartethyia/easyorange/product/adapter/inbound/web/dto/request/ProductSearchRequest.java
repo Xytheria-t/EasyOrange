@@ -3,10 +3,9 @@ package com.cartethyia.easyorange.product.adapter.inbound.web.dto.request;
 import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.Pattern;
+import java.math.BigDecimal;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import java.math.BigDecimal;
 
 @Data
 @EqualsAndHashCode(callSuper = true)

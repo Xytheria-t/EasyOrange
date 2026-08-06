@@ -14,22 +14,13 @@ public interface PaymentCommandMapper {
 
     default CreatePaymentCommand toCreateCommand(CreatePaymentRequest request, String userId) {
         return new CreatePaymentCommand(
-                request.getOrderId(),
-                request.getAmount(),
-                request.getPaymentMethod(),
-                request.getPayPassword(),
-                null
-        );
+                request.getOrderId(), request.getAmount(), request.getPaymentMethod(), request.getPayPassword(), null);
     }
 
     PayCommand toPayCommand(PaymentCallback callback);
 
     default RefundPaymentCommand toRefundCommand(String paymentId, RefundRequest request) {
-        return new RefundPaymentCommand(
-                paymentId,
-                request.getRefundAmount(),
-                request.getRefundReason()
-        );
+        return new RefundPaymentCommand(paymentId, request.getRefundAmount(), request.getRefundReason());
     }
 
     default ClosePaymentCommand toCloseCommand(String paymentId) {

@@ -9,10 +9,10 @@ import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderCreateSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
+import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
-import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
@@ -48,21 +48,17 @@ public class OrderCreationExecutor {
         String buyerId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         // 准备订单项数据
-        OrderPreparation.PreparationResult preparation =
-            preparationService.prepareOrderItems(command.items(), buyerId);
+        OrderPreparation.PreparationResult preparation = preparationService.prepareOrderItems(command.items(), buyerId);
 
         // 创建订单聚合根（通过 spec record 收敛 7 个参数）
-        Transition<Order, OrderCreatedEvent> result = Order.createOrder(
-            new OrderCreateSpec(
+        Transition<Order, OrderCreatedEvent> result = Order.createOrder(new OrderCreateSpec(
                 OrderId.of(idGenerator.generateId()),
                 UserId.of(buyerId),
                 preparation.sellerId(),
                 preparation.orderItems(),
                 Address.of(resolveAddress(command)),
                 Phone.of(command.phone()),
-                command.remark()
-            )
-        );
+                command.remark()));
 
         // 保存并发布事件
         orderRepository.save(result.aggregate());
@@ -81,16 +77,16 @@ public class OrderCreationExecutor {
     public void createPayment(OrderCreatedEvent orderEvent, CreateOrderCommand command) {
         try {
             paymentGatewayPort.createPayment(new PaymentGatewayPort.CreatePaymentRequest(
-                orderEvent.orderId(),
-                orderEvent.totalAmount(),
-                StringUtils.hasText(command.paymentMethod())
-                    ? command.paymentMethod() : OrderConstant.DEFAULT_PAYMENT_METHOD,
-                OrderConstant.PAYMENT_BIZ_TYPE,
-                OrderConstant.PAYMENT_DESC
-            ));
+                    orderEvent.orderId(),
+                    orderEvent.totalAmount(),
+                    StringUtils.hasText(command.paymentMethod())
+                            ? command.paymentMethod()
+                            : OrderConstant.DEFAULT_PAYMENT_METHOD,
+                    OrderConstant.PAYMENT_BIZ_TYPE,
+                    OrderConstant.PAYMENT_DESC));
         } catch (Exception e) {
             throw new PaymentGatewayAdapterException(
-                "支付创建失败 orderId=" + orderEvent.orderId() + ": " + e.getMessage(), e);
+                    "支付创建失败 orderId=" + orderEvent.orderId() + ": " + e.getMessage(), e);
         }
     }
 

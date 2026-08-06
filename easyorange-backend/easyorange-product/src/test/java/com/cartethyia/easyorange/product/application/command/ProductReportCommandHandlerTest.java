@@ -1,18 +1,18 @@
 package com.cartethyia.easyorange.product.application.command;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.product.domain.service.ProductReportDomainService;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
+import com.cartethyia.easyorange.product.domain.service.ProductReportDomainService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProductReportCommandHandler 测试")
@@ -31,7 +31,8 @@ class ProductReportCommandHandlerTest {
 
     @BeforeEach
     void setUp() {
-        handler = new ProductReportCommandHandler(productReportDomainService, productReportRepository, domainEventPublisher);
+        handler = new ProductReportCommandHandler(
+                productReportDomainService, productReportRepository, domainEventPublisher);
     }
 
     @Test

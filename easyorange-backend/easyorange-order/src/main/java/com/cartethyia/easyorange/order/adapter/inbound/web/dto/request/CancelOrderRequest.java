@@ -10,6 +10,4 @@ import jakarta.validation.constraints.NotBlank;
  * 一致即可正确反序列化。
  */
 public record CancelOrderRequest(
-        @NotBlank(message = "取消原因不能为空")
-        String reason
-) {}
+        @NotBlank(message = "取消原因不能为空") String reason) {}

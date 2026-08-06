@@ -13,12 +13,7 @@ import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
  * @param pageNum  页码（null 或 < 1 时默认 1）
  * @param pageSize 每页大小（null 或 < 1 时默认 20）
  */
-public record PaymentListQuery(
-        String userId,
-        PaymentStatus status,
-        Integer pageNum,
-        Integer pageSize
-) {
+public record PaymentListQuery(String userId, PaymentStatus status, Integer pageNum, Integer pageSize) {
     public PaymentListQuery {
         if (pageNum == null || pageNum < 1) {
             pageNum = 1;

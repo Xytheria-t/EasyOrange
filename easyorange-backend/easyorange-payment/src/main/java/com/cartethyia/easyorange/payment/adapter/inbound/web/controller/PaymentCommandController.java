@@ -21,6 +21,7 @@ public class PaymentCommandController {
 
     private final PaymentCommandHandler commandHandler;
     private final CallbackSignatureVerifierPort signatureVerifier;
+
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final PaymentCommandMapper paymentCommandMapper;
 

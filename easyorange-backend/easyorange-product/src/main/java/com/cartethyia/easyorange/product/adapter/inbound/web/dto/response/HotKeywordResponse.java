@@ -5,9 +5,4 @@ import lombok.Builder;
 
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record HotKeywordResponse(
-        String id,
-        String keyword,
-        Integer searchCount,
-        Integer hotLevel
-) {}
+public record HotKeywordResponse(String id, String keyword, Integer searchCount, Integer hotLevel) {}

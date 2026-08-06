@@ -5,17 +5,16 @@ import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
-import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
+import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -83,7 +82,8 @@ public class OrderTimeoutTask {
         Transition<Order, OrderCancelledEvent> result = aggregate.cancel("订单超时自动取消");
         orderRepository.update(result.aggregate());
 
-        orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
+        orderCachePort.evictOrderCache(
+                aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
 
         return true;

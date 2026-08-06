@@ -25,5 +25,4 @@ public record OrderReadModel(
         String cancelReason,
         LocalDateTime cancelTime,
         LocalDateTime createTime,
-        LocalDateTime updateTime
-) {}
+        LocalDateTime updateTime) {}

@@ -3,15 +3,12 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.rating;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingMapper;
 import com.cartethyia.easyorange.product.application.port.query.ProductRatingQueryRepository;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
-import org.springframework.stereotype.Repository;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public class ProductRatingQueryRepositoryImpl extends BaseRepository<ProductRatingMapper, ProductRatingDO>
@@ -30,9 +27,8 @@ public class ProductRatingQueryRepositoryImpl extends BaseRepository<ProductRati
                 .orderByDesc(ProductRatingDO::getCreateTime)
                 .page(page);
 
-        List<ProductRating> ratings = resultPage.getRecords().stream()
-                .map(this::convertToDomain)
-                .toList();
+        List<ProductRating> ratings =
+                resultPage.getRecords().stream().map(this::convertToDomain).toList();
 
         return PageResult.of(ratings, resultPage.getTotal(), pageNum, pageSize);
     }
@@ -78,7 +74,6 @@ public class ProductRatingQueryRepositoryImpl extends BaseRepository<ProductRati
                 do_.getLikes() != null ? do_.getLikes() : 0,
                 do_.getStatus() != null ? do_.getStatus() : 1,
                 do_.getCreateTime(),
-                do_.getUpdateTime()
-        );
+                do_.getUpdateTime());
     }
 }

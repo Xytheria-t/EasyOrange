@@ -1,13 +1,10 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.category;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryProductCount;
+import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
-
-import java.util.List;
 
 @Mapper
 public interface CategoryMapper extends BaseMapper<CategoryDO> {

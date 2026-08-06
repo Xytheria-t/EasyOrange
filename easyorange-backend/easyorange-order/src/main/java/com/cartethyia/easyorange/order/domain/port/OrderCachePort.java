@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.order.domain.port;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-
 import java.util.Optional;
 
 public interface OrderCachePort<T> {

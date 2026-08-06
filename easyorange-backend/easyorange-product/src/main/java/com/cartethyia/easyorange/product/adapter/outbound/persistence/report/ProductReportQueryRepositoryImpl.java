@@ -1,19 +1,17 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.report;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.report.ProductReportDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.report.ProductReportMapper;
+import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
+import java.util.List;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
 @Repository
-public class ProductReportQueryRepositoryImpl extends BaseRepository<ProductReportMapper, ProductReportDO> implements ProductReportQueryRepository {
+public class ProductReportQueryRepositoryImpl extends BaseRepository<ProductReportMapper, ProductReportDO>
+        implements ProductReportQueryRepository {
 
     public ProductReportQueryRepositoryImpl(ProductReportMapper productReportMapper) {
         super(productReportMapper);
@@ -26,9 +24,7 @@ public class ProductReportQueryRepositoryImpl extends BaseRepository<ProductRepo
                 .eq(ProductReportDO::getStatus, ProductReportStatus.PENDING.getCode())
                 .orderByDesc(ProductReportDO::getCreateTime)
                 .page(page);
-        return resultPage.getRecords().stream()
-                .map(this::convertToDomain)
-                .toList();
+        return resultPage.getRecords().stream().map(this::convertToDomain).toList();
     }
 
     @Override
@@ -47,9 +43,8 @@ public class ProductReportQueryRepositoryImpl extends BaseRepository<ProductRepo
         }
         wrapper.orderByDesc(ProductReportDO::getCreateTime);
         Page<ProductReportDO> resultPage = wrapper.page(page);
-        List<ProductReport> reports = resultPage.getRecords().stream()
-                .map(this::convertToDomain)
-                .toList();
+        List<ProductReport> reports =
+                resultPage.getRecords().stream().map(this::convertToDomain).toList();
 
         return PageResult.of(reports, resultPage.getTotal(), pageNum, pageSize);
     }
@@ -70,9 +65,8 @@ public class ProductReportQueryRepositoryImpl extends BaseRepository<ProductRepo
                 .eq(ProductReportDO::getReporterId, reporterId)
                 .orderByDesc(ProductReportDO::getCreateTime)
                 .page(page);
-        List<ProductReport> reports = resultPage.getRecords().stream()
-                .map(this::convertToDomain)
-                .toList();
+        List<ProductReport> reports =
+                resultPage.getRecords().stream().map(this::convertToDomain).toList();
 
         return PageResult.of(reports, resultPage.getTotal(), pageNum, pageSize);
     }
@@ -90,7 +84,6 @@ public class ProductReportQueryRepositoryImpl extends BaseRepository<ProductRepo
                 do_.getHandleResult(),
                 do_.getCreateTime(),
                 do_.getUpdateTime(),
-                do_.getReasonType()
-        );
+                do_.getReasonType());
     }
 }

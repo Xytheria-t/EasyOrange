@@ -7,5 +7,4 @@ import jakarta.validation.constraints.NotBlank;
  */
 public record RefundOrderCommand(
         @NotBlank(message = "订单 ID 不能为空") String orderId,
-        @NotBlank(message = "退款原因不能为空") String reason
-) {}
+        @NotBlank(message = "退款原因不能为空") String reason) {}

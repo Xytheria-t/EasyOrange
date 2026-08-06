@@ -2,14 +2,13 @@ package com.cartethyia.easyorange.payment.adapter.outbound.lock;
 
 import com.cartethyia.easyorange.payment.domain.exception.LockAcquisitionException;
 import com.cartethyia.easyorange.payment.domain.port.LockPort;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 /**
  * Redisson 分布式锁适配器 — {@link LockPort} 的 Redisson 实现。

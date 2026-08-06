@@ -1,16 +1,15 @@
 package com.cartethyia.easyorange.favorite.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
-import com.cartethyia.easyorange.common.repository.BaseRepository;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Repository;
 
 @Primary
 @Repository
@@ -30,9 +29,7 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        return mapper.selectByIds(ids).stream()
-            .map(this::toDomain)
-            .toList();
+        return mapper.selectByIds(ids).stream().map(this::toDomain).toList();
     }
 
     @Override
@@ -67,18 +64,20 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
 
     @Override
     public Favorite save(Favorite favorite) {
-        FavoriteDO softDeleted = mapper.selectSoftDeletedByUserIdAndProductId(
-                favorite.getUserId(), favorite.getProductId());
+        FavoriteDO softDeleted =
+                mapper.selectSoftDeletedByUserIdAndProductId(favorite.getUserId(), favorite.getProductId());
 
         if (softDeleted != null) {
             mapper.reviveById(softDeleted.getId(), favorite.getUserId());
             FavoriteDO revived = mapper.selectById(softDeleted.getId());
-            return Favorite.reconstitute(revived.getId(), revived.getUserId(), revived.getProductId(), revived.getCreateTime());
+            return Favorite.reconstitute(
+                    revived.getId(), revived.getUserId(), revived.getProductId(), revived.getCreateTime());
         }
 
         FavoriteDO dataObject = toDataObject(favorite);
         mapper.insert(dataObject);
-        return Favorite.reconstitute(dataObject.getId(), dataObject.getUserId(), dataObject.getProductId(), dataObject.getCreateTime());
+        return Favorite.reconstitute(
+                dataObject.getId(), dataObject.getUserId(), dataObject.getProductId(), dataObject.getCreateTime());
     }
 
     @Override
@@ -94,10 +93,11 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
     @Override
     public boolean existsByUserIdAndProductId(String userId, String productId) {
         return lambdaQuery()
-                .eq(FavoriteDO::getUserId, userId)
-                .eq(FavoriteDO::getProductId, productId)
-                .eq(FavoriteDO::getDelFlag, 0)
-                .count() > 0;
+                        .eq(FavoriteDO::getUserId, userId)
+                        .eq(FavoriteDO::getProductId, productId)
+                        .eq(FavoriteDO::getDelFlag, 0)
+                        .count()
+                > 0;
     }
 
     @Override
@@ -107,13 +107,12 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
                 .in(FavoriteDO::getProductId, productIds)
                 .eq(FavoriteDO::getDelFlag, 0)
                 .list();
-        return dataObjects.stream()
-                .map(FavoriteDO::getProductId)
-                .collect(Collectors.toSet());
+        return dataObjects.stream().map(FavoriteDO::getProductId).collect(Collectors.toSet());
     }
 
     private Favorite toDomain(FavoriteDO dataObject) {
-        return Favorite.reconstitute(dataObject.getId(), dataObject.getUserId(), dataObject.getProductId(), dataObject.getCreateTime());
+        return Favorite.reconstitute(
+                dataObject.getId(), dataObject.getUserId(), dataObject.getProductId(), dataObject.getCreateTime());
     }
 
     private FavoriteDO toDataObject(Favorite favorite) {

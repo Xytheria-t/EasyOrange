@@ -9,8 +9,8 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductUpdateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotOwnerException;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
+import com.cartethyia.easyorange.product.domain.exception.ProductNotOwnerException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
@@ -21,12 +21,11 @@ import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
+import java.util.Optional;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
-import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -41,21 +40,18 @@ public class ProductCommandHandler {
     public String createProduct(CreateProductCommand command) {
         var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        var product = Product.create(
-                new ProductCreateSpec(
-                        SellerId.of(userId),
-                        CategoryId.of(command.categoryId()),
-                        ProductTitle.of(command.name()),
-                        Money.of(command.price()),
-                        mapIfPresent(command.originalPrice(), Money::of),
-                        StockQuantity.of(command.stock() != null ? command.stock() : 1),
-                        parseConditionLevel(command.conditionLevel()),
-                        TradeLocation.of(command.location()),
-                        ContactMethod.of(command.contactMethod()),
-                        ProductDescription.of(command.description()),
-                        ImageSet.of(command.imageUrls())
-                )
-        );
+        var product = Product.create(new ProductCreateSpec(
+                SellerId.of(userId),
+                CategoryId.of(command.categoryId()),
+                ProductTitle.of(command.name()),
+                Money.of(command.price()),
+                mapIfPresent(command.originalPrice(), Money::of),
+                StockQuantity.of(command.stock() != null ? command.stock() : 1),
+                parseConditionLevel(command.conditionLevel()),
+                TradeLocation.of(command.location()),
+                ContactMethod.of(command.contactMethod()),
+                ProductDescription.of(command.description()),
+                ImageSet.of(command.imageUrls())));
 
         var created = productRepository.save(product.aggregate());
         domainEventPublisher.publish(product.event());
@@ -66,8 +62,9 @@ public class ProductCommandHandler {
         var productId = ProductId.of(command.id());
         var product = verifyOwnership(productId, SecurityContextUtil.getCurrentUserIdOrThrow());
 
-        mutate(product, p -> p.update(
-                new ProductUpdateSpec(
+        mutate(
+                product,
+                p -> p.update(new ProductUpdateSpec(
                         mapIfPresent(command.categoryId(), CategoryId::of),
                         mapIfPresent(command.name(), ProductTitle::of),
                         mapIfPresent(command.price(), Money::of),
@@ -77,9 +74,7 @@ public class ProductCommandHandler {
                         mapIfPresent(command.location(), TradeLocation::of),
                         mapIfPresent(command.contactMethod(), ContactMethod::of),
                         mapIfPresent(command.description(), ProductDescription::of),
-                        mapIfPresent(command.imageUrls(), ImageSet::of)
-                )
-        ));
+                        mapIfPresent(command.imageUrls(), ImageSet::of))));
     }
 
     public void deleteProduct(String id) {
@@ -161,8 +156,7 @@ public class ProductCommandHandler {
     }
 
     private Product findByIdOrThrow(ProductId id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new ProductNotFoundException(id));
+        return productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
     }
 
     private Product verifyOwnership(ProductId productId, String userId) {

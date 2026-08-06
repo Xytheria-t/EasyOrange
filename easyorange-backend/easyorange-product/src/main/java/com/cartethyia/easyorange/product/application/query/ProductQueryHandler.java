@@ -15,15 +15,14 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -46,7 +45,8 @@ public class ProductQueryHandler {
     public ProductVO getProductById(String id) {
         var cached = productCachePort.getProductCache(id);
         return cached.orElseGet(() -> productSingleflight.execute(id, () -> {
-            var product = productRepository.findById(ProductId.of(id))
+            var product = productRepository
+                    .findById(ProductId.of(id))
                     .orElseThrow(() -> new ProductNotFoundException(ProductId.of(id)));
             var productVO = assembleProductVO(product);
             productCachePort.setProductCache(id, productVO);
@@ -57,7 +57,8 @@ public class ProductQueryHandler {
     @Transactional(readOnly = true)
     public List<ProductVO> getProductsByIds(List<String> ids) {
         if (ids == null || ids.isEmpty()) return List.of();
-        var products = productRepository.findByIds(ids.stream().map(ProductId::of).toList());
+        var products =
+                productRepository.findByIds(ids.stream().map(ProductId::of).toList());
         return assembleProductVOs(products);
     }
 

@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.payment.domain.aggregate;
 
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -28,5 +27,4 @@ public record PaymentReconstructSpec(
         String attach,
         LocalDateTime createTime,
         LocalDateTime updateTime,
-        Integer version
-) {}
+        Integer version) {}

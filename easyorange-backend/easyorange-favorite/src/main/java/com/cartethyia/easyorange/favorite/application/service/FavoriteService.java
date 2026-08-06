@@ -8,14 +8,13 @@ import com.cartethyia.easyorange.favorite.domain.aggregate.FavoriteCreateSpec;
 import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FavoriteService {
@@ -23,8 +22,7 @@ public class FavoriteService {
     private final FavoriteRepository favoriteRepository;
     private final ProductInfoPort productInfoPort;
 
-    public FavoriteService(FavoriteRepository favoriteRepository,
-                           ProductInfoPort productInfoPort) {
+    public FavoriteService(FavoriteRepository favoriteRepository, ProductInfoPort productInfoPort) {
         this.favoriteRepository = favoriteRepository;
         this.productInfoPort = productInfoPort;
     }
@@ -35,10 +33,7 @@ public class FavoriteService {
 
         BizRequire.requireTrue(productInfoPort.productExists(productId), "商品不存在");
         BizRequire.requireTrue(!productInfoPort.isOwnProduct(userId, productId), "不能收藏自己的商品");
-        BizRequire.requireTrue(
-                !favoriteRepository.existsByUserIdAndProductId(userId, productId),
-                "已收藏过该商品"
-        );
+        BizRequire.requireTrue(!favoriteRepository.existsByUserIdAndProductId(userId, productId), "已收藏过该商品");
 
         Favorite favorite = Favorite.create(new FavoriteCreateSpec(userId, productId));
         favoriteRepository.save(favorite);
@@ -48,7 +43,8 @@ public class FavoriteService {
     public void removeFavorite(String productId) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Favorite favorite = favoriteRepository.findByUserIdAndProductId(userId, productId)
+        Favorite favorite = favoriteRepository
+                .findByUserIdAndProductId(userId, productId)
                 .orElseThrow(() -> BusinessException.of("未收藏过该商品"));
 
         favorite.validateOwnership(userId);

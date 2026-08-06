@@ -1,14 +1,20 @@
 package com.cartethyia.easyorange.product.application.query;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportDetailResponse;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportResponse;
+import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
-import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
-import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportDetailResponse;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportResponse;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,13 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProductReportQueryHandler 测试")
@@ -41,7 +40,8 @@ class ProductReportQueryHandlerTest {
 
     @BeforeEach
     void setUp() {
-        queryHandler = new ProductReportQueryHandler(productReportRepository, productReportQueryRepository, productQueryRepository);
+        queryHandler = new ProductReportQueryHandler(
+                productReportRepository, productReportQueryRepository, productQueryRepository);
     }
 
     @Nested
@@ -179,11 +179,28 @@ class ProductReportQueryHandlerTest {
 
         private ProductReadModel createProductReadModel(String id, String title) {
             return new ProductReadModel(
-                    id, "seller1", "seller", null, "cat1", "分类",
-                    title, "描述", null, null, 10,
-                    "0", "草稿", 0, null, null, null, null,
-                    List.of(), "main.jpg", LocalDateTime.now(), LocalDateTime.now()
-            );
+                    id,
+                    "seller1",
+                    "seller",
+                    null,
+                    "cat1",
+                    "分类",
+                    title,
+                    "描述",
+                    null,
+                    null,
+                    10,
+                    "0",
+                    "草稿",
+                    0,
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of(),
+                    "main.jpg",
+                    LocalDateTime.now(),
+                    LocalDateTime.now());
         }
     }
 }

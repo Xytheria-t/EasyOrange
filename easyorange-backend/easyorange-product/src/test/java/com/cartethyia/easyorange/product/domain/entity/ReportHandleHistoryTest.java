@@ -1,11 +1,10 @@
 package com.cartethyia.easyorange.product.domain.entity;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.*;
 
 import java.time.LocalDateTime;
-
-import static org.assertj.core.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("ReportHandleHistory 领域实体测试")
 class ReportHandleHistoryTest {
@@ -60,9 +59,7 @@ class ReportHandleHistoryTest {
     void reconstitute_shouldRestoreFullState() {
         LocalDateTime now = LocalDateTime.now();
 
-        ReportHandleHistory history = ReportHandleHistory.reconstitute(
-                "100", "1", "2", "RESOLVE", "已处理", now
-        );
+        ReportHandleHistory history = ReportHandleHistory.reconstitute("100", "1", "2", "RESOLVE", "已处理", now);
 
         assertThat(history.getId()).isEqualTo("100");
         assertThat(history.getReportId()).isEqualTo("1");

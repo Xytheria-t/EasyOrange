@@ -1,14 +1,12 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.repository.BaseRepository;
-import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentConfigMapper;
-import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentConfigDO;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentConstant;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentConfigResponse;
-import org.springframework.stereotype.Repository;
-
+import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentConfigMapper;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentConstant;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public class PaymentConfigRepository extends BaseRepository<PaymentConfigMapper, PaymentConfigDO> {
@@ -26,11 +24,14 @@ public class PaymentConfigRepository extends BaseRepository<PaymentConfigMapper,
 
     public List<PaymentConfigResponse> getEnabledChannels() {
         return lambdaQuery()
-                        .eq(PaymentConfigDO::getStatus, PaymentConstant.CONFIG_STATUS_ENABLED)
-                        .select(PaymentConfigDO::getId, PaymentConfigDO::getChannelCode,
-                                PaymentConfigDO::getChannelName, PaymentConfigDO::getSandbox,
-                                PaymentConfigDO::getStatus)
-                        .list()
+                .eq(PaymentConfigDO::getStatus, PaymentConstant.CONFIG_STATUS_ENABLED)
+                .select(
+                        PaymentConfigDO::getId,
+                        PaymentConfigDO::getChannelCode,
+                        PaymentConfigDO::getChannelName,
+                        PaymentConfigDO::getSandbox,
+                        PaymentConfigDO::getStatus)
+                .list()
                 .stream()
                 .map(config -> PaymentConfigResponse.builder()
                         .id(config.getId())

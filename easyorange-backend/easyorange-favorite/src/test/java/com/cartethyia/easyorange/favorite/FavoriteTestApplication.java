@@ -9,5 +9,4 @@ import org.springframework.context.annotation.ComponentScan;
 @EnableAutoConfiguration
 @ComponentScan(basePackages = "com.cartethyia.easyorange.favorite")
 @MapperScan("com.cartethyia.easyorange.favorite.adapter.outbound.persistence")
-public class FavoriteTestApplication {
-}
+public class FavoriteTestApplication {}

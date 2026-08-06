@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.favorite.domain.aggregate;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
-
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -60,8 +59,19 @@ public class Favorite {
         return "Favorite{id=" + id + ", userId=" + userId + ", productId=" + productId + "}";
     }
 
-    public String getId() { return id; }
-    public String getUserId() { return userId; }
-    public String getProductId() { return productId; }
-    public LocalDateTime getCreateTime() { return createTime; }
+    public String getId() {
+        return id;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public String getProductId() {
+        return productId;
+    }
+
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
 }

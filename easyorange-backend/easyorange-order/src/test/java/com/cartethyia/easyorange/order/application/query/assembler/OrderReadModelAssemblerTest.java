@@ -1,21 +1,20 @@
 package com.cartethyia.easyorange.order.application.query.assembler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("OrderReadModelAssembler 单元测试")
 class OrderReadModelAssemblerTest {
@@ -50,12 +49,22 @@ class OrderReadModelAssemblerTest {
 
     private OrderReadModel createOrder() {
         return new OrderReadModel(
-                ORDER_ID, ORDER_NO, BUYER_ID, SELLER_ID, testItems(),
+                ORDER_ID,
+                ORDER_NO,
+                BUYER_ID,
+                SELLER_ID,
+                testItems(),
                 AMOUNT,
-                STATUS, STATUS_DESC, PAYMENT_STATUS,
-                ADDRESS, PHONE, REMARK, CANCEL_REASON, CANCEL_TIME,
-                CREATE_TIME, UPDATE_TIME
-        );
+                STATUS,
+                STATUS_DESC,
+                PAYMENT_STATUS,
+                ADDRESS,
+                PHONE,
+                REMARK,
+                CANCEL_REASON,
+                CANCEL_TIME,
+                CREATE_TIME,
+                UPDATE_TIME);
     }
 
     private ProductDetail createProductDetail() {
@@ -132,7 +141,8 @@ class OrderReadModelAssemblerTest {
         @DisplayName("商品无图片时应仅设置标题不设图片")
         void toOrderVO_withProductNoImages_shouldSetTitleOnly() {
             OrderReadModel order = createOrder();
-            ProductDetail product = new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, List.of(), null, null);
+            ProductDetail product =
+                    new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, List.of(), null, null);
             Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, product);
 
             OrderVO vo = assembler.toOrderVO(order, productMap, true);
@@ -146,12 +156,22 @@ class OrderReadModelAssemblerTest {
         @DisplayName("null 字段应优雅处理")
         void toOrderVO_withNullFields_shouldHandleGracefully() {
             OrderReadModel order = new OrderReadModel(
-                    ORDER_ID, ORDER_NO, BUYER_ID, SELLER_ID, testItems(),
+                    ORDER_ID,
+                    ORDER_NO,
+                    BUYER_ID,
+                    SELLER_ID,
+                    testItems(),
                     AMOUNT,
-                    OrderStatus.PENDING_PAYMENT.getCode(), STATUS_DESC, PaymentStatus.UNPAID.getCode(),
-                    null, null, null, null, null,
-                    CREATE_TIME, UPDATE_TIME
-            );
+                    OrderStatus.PENDING_PAYMENT.getCode(),
+                    STATUS_DESC,
+                    PaymentStatus.UNPAID.getCode(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    CREATE_TIME,
+                    UPDATE_TIME);
 
             OrderVO vo = assembler.toOrderVO(order, Map.of(), true);
 
@@ -172,16 +192,27 @@ class OrderReadModelAssemblerTest {
         void toOrderVOs_withMultipleOrders_shouldMapAll() {
             OrderReadModel order1 = createOrder();
             OrderReadModel order2 = new OrderReadModel(
-                    "101", "ORD101", "3", "4",
-                    List.of(new OrderItemReadModel("2", "201", "{}", new BigDecimal("49.99"), 1, new BigDecimal("49.99"))),
+                    "101",
+                    "ORD101",
+                    "3",
+                    "4",
+                    List.of(new OrderItemReadModel(
+                            "2", "201", "{}", new BigDecimal("49.99"), 1, new BigDecimal("49.99"))),
                     new BigDecimal("49.99"),
-                    OrderStatus.PAID.getCode(), "已付款", PaymentStatus.PAID.getCode(),
-                    "上海市浦东新区", "13900139000", "备注2", null, null,
-                    LocalDateTime.now(), LocalDateTime.now()
-            );
+                    OrderStatus.PAID.getCode(),
+                    "已付款",
+                    PaymentStatus.PAID.getCode(),
+                    "上海市浦东新区",
+                    "13900139000",
+                    "备注2",
+                    null,
+                    null,
+                    LocalDateTime.now(),
+                    LocalDateTime.now());
 
             ProductDetail product1 = createProductDetail();
-            ProductDetail product2 = new ProductDetail("201", "商品2", new BigDecimal("49.99"), "1", List.of("img2.jpg"), null, null);
+            ProductDetail product2 =
+                    new ProductDetail("201", "商品2", new BigDecimal("49.99"), "1", List.of("img2.jpg"), null, null);
             Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, product1, "201", product2);
 
             List<OrderVO> vos = assembler.toOrderVOs(List.of(order1, order2), productMap);
