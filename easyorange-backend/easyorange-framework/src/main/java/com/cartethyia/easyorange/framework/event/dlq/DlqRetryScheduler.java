@@ -2,28 +2,28 @@ package com.cartethyia.easyorange.framework.event.dlq;
 
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
-
 /**
- * DLQ 分级重试调度器 — 定时从 DLQ 拉取死信消息，按策略重投主队列或转储 terminal 队列。
+ * DLQ 分级重试调度器 — 定时从 DLQ 拉取死信消息，重投主队列或转储 terminal 队列。
  * <p>
- * 三级重试流程：
+ * 重试流程：
  * <ol>
- *   <li>主队列 RetryTemplate 指数退避 3 次（由 {@code domainEventContainerFactory} 配置）</li>
- *   <li>消息进入 DLQ → 本调度器每 5 分钟拉取，检查 {@code x-retry-count} 头</li>
- *   <li>重试次数 &lt; max → 重投主交换（原 routing key），{@code x-retry-count + 1}</li>
- *   <li>重试次数 ≥ max → 转储 {@code eo.dlq.terminal} 队列，等待人工介入</li>
+ *   <li>主队列 RetryTemplate 失败 3 次（由 {@code domainEventContainerFactory} 配置）</li>
+ *   <li>消息进入 DLQ → 本调度器每 5 分钟（{@code fixedDelay=300000}）拉取，检查 {@code x-retry-count} 头</li>
+ *   <li>重试次数 &lt; {@code MAX_RETRIES}(3) → 重投主交换（原 routing key），{@code x-retry-count + 1}</li>
+ *   <li>重试次数 ≥ 3 → 转储 {@code eo.dlq.terminal} 队列，等待人工介入</li>
  * </ol>
+ * <p>
+ * 说明：DLQ 层重试间隔由调度周期固定（约 5 分钟），不做指数退避——退避由主队列 RetryTemplate 承担。
  * <p>
  * 幂等安全：重投消息保留原 body + eventId，消费者端 {@link com.cartethyia.easyorange.framework.event.core.EventConsumerHandler}
  * 幂等检查基于 eventId 去重，重复投递不会产生副作用。
@@ -40,6 +40,7 @@ public class DlqRetryScheduler {
 
     private static final int BATCH_SIZE = 10;
     private static final long RECEIVE_TIMEOUT_MILLIS = 1000L;
+    private static final int MAX_RETRIES = 3;
 
     /** 所有需要扫描的 DLQ 队列（与 RabbitMQConfig 中声明的主队列一一对应） */
     private static final List<String> DLQ_QUEUES = List.of(
@@ -52,11 +53,9 @@ public class DlqRetryScheduler {
             RabbitMQConfig.QUEUE_MESSAGE_WEBSOCKET + ".dlq",
             RabbitMQConfig.QUEUE_PAYMENT_METRICS + ".dlq",
             RabbitMQConfig.QUEUE_AI_PRODUCT + ".dlq",
-            RabbitMQConfig.QUEUE_AI_CREDIT + ".dlq"
-    );
+            RabbitMQConfig.QUEUE_AI_CREDIT + ".dlq");
 
     private final RabbitTemplate rabbitTemplate;
-    private final DlqRetryStrategy strategy;
     private final EventMetricsService metricsService;
 
     /**
@@ -108,14 +107,16 @@ public class DlqRetryScheduler {
             return;
         }
 
-        if (strategy.shouldRetry(retryCount)) {
-            log.info("action=dlq_retry, queue={}, retryCount={}, delay={}ms, routingKey={}",
-                    originalQueue, retryCount, strategy.getDelayMillis(retryCount), routingKey);
+        if (retryCount < MAX_RETRIES) {
+            log.info("action=dlq_retry, queue={}, retryCount={}, routingKey={}", originalQueue, retryCount, routingKey);
             republishToMainExchange(message, routingKey, retryCount, originalQueue);
             metricsService.recordDlq(originalQueue, "retry");
         } else {
-            log.warn("action=dlq_terminal_max_retries, queue={}, retryCount={}, maxRetries={}",
-                    originalQueue, retryCount, strategy.getMaxRetries());
+            log.warn(
+                    "action=dlq_terminal_max_retries, queue={}, retryCount={}, maxRetries={}",
+                    originalQueue,
+                    retryCount,
+                    MAX_RETRIES);
             moveToTerminal(dlqQueue, message, "max-retries");
             metricsService.recordDlq(originalQueue, "terminal_max_retries");
         }
@@ -123,8 +124,8 @@ public class DlqRetryScheduler {
 
     // ───────────────────────── Republish helpers ─────────────────────────
 
-    private void republishToMainExchange(Message message, String routingKey,
-                                          int currentRetryCount, String originalQueue) {
+    private void republishToMainExchange(
+            Message message, String routingKey, int currentRetryCount, String originalQueue) {
         var props = message.getMessageProperties();
         props.setHeader(X_RETRY_COUNT_HEADER, currentRetryCount + 1);
         rabbitTemplate.send(RabbitMQConfig.EXCHANGE_NAME, routingKey, message);

@@ -1,8 +1,21 @@
 package com.cartethyia.easyorange.framework.event.dlq;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atMost;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -14,20 +27,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atMost;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DlqRetryScheduler DLQ 分级重试调度器")
@@ -47,8 +46,7 @@ class DlqRetrySchedulerTest {
     void setUp() {
         meterRegistry = new SimpleMeterRegistry();
         var metricsService = new EventMetricsService(meterRegistry);
-        var strategy = new ExponentialBackoffRetryStrategy();
-        scheduler = new DlqRetryScheduler(rabbitTemplate, strategy, metricsService);
+        scheduler = new DlqRetryScheduler(rabbitTemplate, metricsService);
     }
 
     // ───────────────────────── Test helpers ─────────────────────────
@@ -56,13 +54,19 @@ class DlqRetrySchedulerTest {
     private Message buildDlqMessage(int retryCount, String routingKey) {
         var props = new MessageProperties();
         if (routingKey != null) {
-            props.setHeader("x-death", List.of(Map.of(
-                    "queue", ORIGINAL_QUEUE,
-                    "reason", "rejected",
-                    "exchange", RabbitMQConfig.EXCHANGE_NAME,
-                    "routing-keys", List.of(routingKey),
-                    "count", 1L
-            )));
+            props.setHeader(
+                    "x-death",
+                    List.of(Map.of(
+                            "queue",
+                            ORIGINAL_QUEUE,
+                            "reason",
+                            "rejected",
+                            "exchange",
+                            RabbitMQConfig.EXCHANGE_NAME,
+                            "routing-keys",
+                            List.of(routingKey),
+                            "count",
+                            1L)));
         }
         if (retryCount > 0) {
             props.setHeader("x-retry-count", retryCount);
@@ -72,9 +76,7 @@ class DlqRetrySchedulerTest {
 
     /** 模拟 receive 在第一次调用返回 message，之后返回 null（空队列） */
     private void mockReceiveOneMessage(Message message) {
-        when(rabbitTemplate.receive(anyString(), anyLong()))
-                .thenReturn(message)
-                .thenReturn(null);
+        when(rabbitTemplate.receive(anyString(), anyLong())).thenReturn(message).thenReturn(null);
     }
 
     private void mockEmptyQueue() {
@@ -96,10 +98,7 @@ class DlqRetrySchedulerTest {
             scheduler.retryFromDlq();
 
             var msgCaptor = ArgumentCaptor.forClass(Message.class);
-            verify(rabbitTemplate).send(
-                    eq(RabbitMQConfig.EXCHANGE_NAME),
-                    eq(ROUTING_KEY),
-                    msgCaptor.capture());
+            verify(rabbitTemplate).send(eq(RabbitMQConfig.EXCHANGE_NAME), eq(ROUTING_KEY), msgCaptor.capture());
             Object retryCount = msgCaptor.getValue().getMessageProperties().getHeader("x-retry-count");
             assertThat(retryCount).isEqualTo(1);
         }
@@ -112,10 +111,7 @@ class DlqRetrySchedulerTest {
 
             scheduler.retryFromDlq();
 
-            verify(rabbitTemplate).send(
-                    eq(RabbitMQConfig.EXCHANGE_NAME),
-                    eq(ROUTING_KEY),
-                    any(Message.class));
+            verify(rabbitTemplate).send(eq(RabbitMQConfig.EXCHANGE_NAME), eq(ROUTING_KEY), any(Message.class));
         }
 
         @Test
@@ -126,8 +122,7 @@ class DlqRetrySchedulerTest {
 
             scheduler.retryFromDlq();
 
-            var counter = meterRegistry.counter("easyorange.events.dlq",
-                    "queue", ORIGINAL_QUEUE, "reason", "retry");
+            var counter = meterRegistry.counter("easyorange.events.dlq", "queue", ORIGINAL_QUEUE, "reason", "retry");
             org.junit.jupiter.api.Assertions.assertEquals(1.0, counter.count(), 0.001);
         }
     }
@@ -145,8 +140,7 @@ class DlqRetrySchedulerTest {
             scheduler.retryFromDlq();
 
             verify(rabbitTemplate).send(eq(RabbitMQConfig.TERMINAL_QUEUE), any(Message.class));
-            verify(rabbitTemplate, never()).send(
-                    eq(RabbitMQConfig.EXCHANGE_NAME), anyString(), any(Message.class));
+            verify(rabbitTemplate, never()).send(eq(RabbitMQConfig.EXCHANGE_NAME), anyString(), any(Message.class));
         }
 
         @Test
@@ -182,8 +176,8 @@ class DlqRetrySchedulerTest {
 
             scheduler.retryFromDlq();
 
-            var counter = meterRegistry.counter("easyorange.events.dlq",
-                    "queue", ORIGINAL_QUEUE, "reason", "terminal_max_retries");
+            var counter = meterRegistry.counter(
+                    "easyorange.events.dlq", "queue", ORIGINAL_QUEUE, "reason", "terminal_max_retries");
             org.junit.jupiter.api.Assertions.assertEquals(1.0, counter.count(), 0.001);
         }
     }
@@ -216,16 +210,11 @@ class DlqRetrySchedulerTest {
 
             doThrow(new RuntimeException("Connection refused"))
                     .when(rabbitTemplate)
-                    .send(eq(RabbitMQConfig.EXCHANGE_NAME),
-                          eq(ROUTING_KEY),
-                          any(Message.class));
+                    .send(eq(RabbitMQConfig.EXCHANGE_NAME), eq(ROUTING_KEY), any(Message.class));
 
             scheduler.retryFromDlq();
 
-            verify(rabbitTemplate).send(
-                    eq(RabbitMQConfig.DLQ_EXCHANGE_NAME),
-                    eq(DLQ_QUEUE),
-                    any(Message.class));
+            verify(rabbitTemplate).send(eq(RabbitMQConfig.DLQ_EXCHANGE_NAME), eq(DLQ_QUEUE), any(Message.class));
         }
     }
 

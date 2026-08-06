@@ -2,15 +2,14 @@ package com.cartethyia.easyorange.framework.event.dlq;
 
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * 死信队列异常监听器 — 监听所有 DLQ 队列，记录 metrics 与结构化 ERROR 日志。
@@ -41,31 +40,30 @@ public class DlqAnomalyListener {
 
     @RabbitListener(
             queues = {
-                    RabbitMQConfig.QUEUE_PRODUCT_CQRS + ".dlq",
-                    RabbitMQConfig.QUEUE_ORDER_NOTIFICATION + ".dlq",
-                    RabbitMQConfig.QUEUE_ORDER_LIFECYCLE + ".dlq",
-                    RabbitMQConfig.QUEUE_AUDIT_NOTIFICATION + ".dlq",
-                    RabbitMQConfig.QUEUE_AUDIT_LOG + ".dlq",
-                    RabbitMQConfig.QUEUE_REPORT_NOTIFICATION + ".dlq",
-                    RabbitMQConfig.QUEUE_MESSAGE_WEBSOCKET + ".dlq",
-                    RabbitMQConfig.QUEUE_PAYMENT_METRICS + ".dlq",
-                    RabbitMQConfig.QUEUE_AI_PRODUCT + ".dlq",
-                    RabbitMQConfig.QUEUE_AI_CREDIT + ".dlq"
+                RabbitMQConfig.QUEUE_PRODUCT_CQRS + ".dlq",
+                RabbitMQConfig.QUEUE_ORDER_NOTIFICATION + ".dlq",
+                RabbitMQConfig.QUEUE_ORDER_LIFECYCLE + ".dlq",
+                RabbitMQConfig.QUEUE_AUDIT_NOTIFICATION + ".dlq",
+                RabbitMQConfig.QUEUE_AUDIT_LOG + ".dlq",
+                RabbitMQConfig.QUEUE_REPORT_NOTIFICATION + ".dlq",
+                RabbitMQConfig.QUEUE_MESSAGE_WEBSOCKET + ".dlq",
+                RabbitMQConfig.QUEUE_PAYMENT_METRICS + ".dlq",
+                RabbitMQConfig.QUEUE_AI_PRODUCT + ".dlq",
+                RabbitMQConfig.QUEUE_AI_CREDIT + ".dlq"
             },
-            containerFactory = "domainEventContainerFactory"
-    )
+            containerFactory = "domainEventContainerFactory")
     public void onDeadLetter(Message message) {
         var props = message.getMessageProperties();
         var headers = props.getHeaders();
-        var queue = props.getConsumerQueue() != null
-                ? props.getConsumerQueue()
-                : (String) headers.get(X_FIRST_DEATH_QUEUE);
+        var queue =
+                props.getConsumerQueue() != null ? props.getConsumerQueue() : (String) headers.get(X_FIRST_DEATH_QUEUE);
         var reason = extractReason(headers);
         var originalRoutingKey = extractFirstDeathRoutingKey(headers);
 
         metricsService.recordDlq(queue, reason);
 
-        log.error("事件死信告警 dlq={} reason={} originalRoutingKey={} messageId={} bodySize={} xDeath={}",
+        log.error(
+                "事件死信告警 dlq={} reason={} originalRoutingKey={} messageId={} bodySize={} xDeath={}",
                 queue,
                 reason,
                 originalRoutingKey,
@@ -110,8 +108,6 @@ public class DlqAnomalyListener {
             return "[]";
         }
         var first = xDeath.get(0);
-        return "queue=" + first.get("queue")
-                + ",reason=" + first.get("reason")
-                + ",count=" + first.get("count");
+        return "queue=" + first.get("queue") + ",reason=" + first.get("reason") + ",count=" + first.get("count");
     }
 }
