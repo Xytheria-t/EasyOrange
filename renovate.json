@@ -1,0 +1,36 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "enabledManagers": ["maven", "npm"],
+  "labels": ["dependencies"],
+  "timezone": "Asia/Shanghai",
+  "schedule": ["before 9am on monday"],
+  "rangeStrategy": "auto",
+  "separateMajorMinor": true,
+  "packageRules": [
+    {
+      "matchManagers": ["maven"],
+      "groupName": "backend (maven) dependencies",
+      "matchUpdateTypes": ["minor", "patch"],
+      "enabled": true
+    },
+    {
+      "matchManagers": ["npm"],
+      "groupName": "frontend (npm) dependencies",
+      "matchUpdateTypes": ["minor", "patch"],
+      "enabled": true
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "enabled": true
+    },
+    {
+      "matchDepTypes": ["devDependencies"],
+      "automerge": false
+    }
+  ],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 3,
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Dependency Dashboard (Renovate)"
+}
