@@ -1,0 +1,24 @@
+# Testcontainers 集成测试 profile（AbstractIntegrationTest 激活）
+# 连接由 @ServiceConnection 从容器自动注入；本文件仅关闭会干扰测试的自动装配。
+spring:
+  docker:
+    compose:
+      enabled: false        # 关闭 spring-boot-docker-compose，避免它去扫描根 compose.yaml 起容器
+  data:
+    redis:
+      # @ServiceConnection 提供 host/port；容器无密码，须覆盖基文件的 ${REDIS_PASSWORD}（无默认值）
+      password: ""
+    elasticsearch:
+      repositories:
+        enabled: false      # 集成测试不校验 ES（easyorange.search.elasticsearch.enabled 基文件已 false）
+
+management:
+  tracing:
+    sampling:
+      probability: 0        # 测试不采样，避免向 Zipkin 发送 span
+
+easyorange:
+  ai:
+    # key 未配置 → 装配 placeholder bean，应用照常启动（与生产无 key 降级契约一致）
+    embedding:
+      api-key: ""

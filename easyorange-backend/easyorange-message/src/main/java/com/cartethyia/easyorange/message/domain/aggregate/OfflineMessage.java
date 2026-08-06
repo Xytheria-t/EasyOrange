@@ -22,8 +22,14 @@ public class OfflineMessage {
     private final Integer retryCount;
     private final Integer maxRetryCount;
 
-    private OfflineMessage(String id, String userId, String messageId, String pushChannel,
-                                     Integer pushStatus, Integer retryCount, Integer maxRetryCount) {
+    private OfflineMessage(
+            String id,
+            String userId,
+            String messageId,
+            String pushChannel,
+            Integer pushStatus,
+            Integer retryCount,
+            Integer maxRetryCount) {
         this.id = id;
         this.userId = userId;
         this.messageId = messageId;
@@ -35,13 +41,33 @@ public class OfflineMessage {
 
     // ==================== Getters ====================
 
-    public String id() { return id; }
-    public String userId() { return userId; }
-    public String messageId() { return messageId; }
-    public String pushChannel() { return pushChannel; }
-    public Integer pushStatus() { return pushStatus; }
-    public Integer retryCount() { return retryCount; }
-    public Integer maxRetryCount() { return maxRetryCount; }
+    public String id() {
+        return id;
+    }
+
+    public String userId() {
+        return userId;
+    }
+
+    public String messageId() {
+        return messageId;
+    }
+
+    public String pushChannel() {
+        return pushChannel;
+    }
+
+    public Integer pushStatus() {
+        return pushStatus;
+    }
+
+    public Integer retryCount() {
+        return retryCount;
+    }
+
+    public Integer maxRetryCount() {
+        return maxRetryCount;
+    }
 
     // ==================== Factory ====================
 
@@ -50,11 +76,13 @@ public class OfflineMessage {
      */
     public static OfflineMessage create(String userId, String messageId, String pushChannel) {
         return new OfflineMessage(
-                null, userId, messageId, pushChannel,
+                null,
+                userId,
+                messageId,
+                pushChannel,
                 MessageConstant.PUSH_STATUS_PENDING,
                 MessageConstant.DEFAULT_RETRY_COUNT,
-                MessageConstant.DEFAULT_MAX_RETRY_COUNT
-        );
+                MessageConstant.DEFAULT_MAX_RETRY_COUNT);
     }
 
     // ==================== Reconstruction ====================
@@ -62,11 +90,15 @@ public class OfflineMessage {
     /**
      * 从持久层原始数据重建聚合根
      */
-    public static OfflineMessage fromRaw(String id, String userId, String messageId,
-                                                    String pushChannel, Integer pushStatus,
-                                                    Integer retryCount, Integer maxRetryCount) {
-        return new OfflineMessage(id, userId, messageId, pushChannel,
-                pushStatus, retryCount, maxRetryCount);
+    public static OfflineMessage fromRaw(
+            String id,
+            String userId,
+            String messageId,
+            String pushChannel,
+            Integer pushStatus,
+            Integer retryCount,
+            Integer maxRetryCount) {
+        return new OfflineMessage(id, userId, messageId, pushChannel, pushStatus, retryCount, maxRetryCount);
     }
 
     // ==================== Predicates ====================
@@ -85,27 +117,42 @@ public class OfflineMessage {
      * 标记为已推送
      */
     public OfflineMessage markAsPushed() {
-        return new OfflineMessage(this.id, this.userId, this.messageId,
-                this.pushChannel, MessageConstant.PUSH_STATUS_PUSHED,
-                this.retryCount, this.maxRetryCount);
+        return new OfflineMessage(
+                this.id,
+                this.userId,
+                this.messageId,
+                this.pushChannel,
+                MessageConstant.PUSH_STATUS_PUSHED,
+                this.retryCount,
+                this.maxRetryCount);
     }
 
     /**
      * 标记为推送失败
      */
     public OfflineMessage markAsFailed() {
-        return new OfflineMessage(this.id, this.userId, this.messageId,
-                this.pushChannel, MessageConstant.PUSH_STATUS_FAILED,
-                this.retryCount, this.maxRetryCount);
+        return new OfflineMessage(
+                this.id,
+                this.userId,
+                this.messageId,
+                this.pushChannel,
+                MessageConstant.PUSH_STATUS_FAILED,
+                this.retryCount,
+                this.maxRetryCount);
     }
 
     /**
      * 增加重试次数
      */
     public OfflineMessage incrementRetry() {
-        return new OfflineMessage(this.id, this.userId, this.messageId,
-                this.pushChannel, this.pushStatus,
-                this.retryCount + 1, this.maxRetryCount);
+        return new OfflineMessage(
+                this.id,
+                this.userId,
+                this.messageId,
+                this.pushChannel,
+                this.pushStatus,
+                this.retryCount + 1,
+                this.maxRetryCount);
     }
 
     @Override
@@ -122,6 +169,7 @@ public class OfflineMessage {
 
     @Override
     public String toString() {
-        return "OfflineMessage{id=" + id + ", userId=" + userId + ", pushStatus=" + pushStatus + ", retryCount=" + retryCount + "}";
+        return "OfflineMessage{id=" + id + ", userId=" + userId + ", pushStatus=" + pushStatus + ", retryCount="
+                + retryCount + "}";
     }
 }

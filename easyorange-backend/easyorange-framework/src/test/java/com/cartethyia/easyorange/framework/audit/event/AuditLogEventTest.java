@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.framework.audit.event;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.framework.audit.entity.AuditLog;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("AuditLogEvent 领域事件")
 class AuditLogEventTest {
@@ -54,10 +54,7 @@ class AuditLogEventTest {
         @Test
         @DisplayName("method 为 null 时聚合标识返回 unknown")
         void aggregateId_whenMethodIsNull_returnsUnknown() {
-            var auditLog = AuditLog.builder()
-                    .title("test")
-                    .method(null)
-                    .build();
+            var auditLog = AuditLog.builder().title("test").method(null).build();
             var event = AuditLogEvent.of(auditLog);
 
             assertThat(event.aggregateId()).isEqualTo("unknown");

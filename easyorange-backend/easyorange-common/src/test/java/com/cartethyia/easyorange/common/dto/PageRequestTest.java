@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.common.dto;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * {@link PageRequest} 单元测试
@@ -115,8 +115,10 @@ class PageRequestTest {
         @DisplayName("显式设值原样保留")
         void builder_explicitValues_preserved() {
             var req = PageRequest.builder()
-                    .pageNum(2).pageSize(20)
-                    .sortField("createTime").sortDirection("asc")
+                    .pageNum(2)
+                    .pageSize(20)
+                    .sortField("createTime")
+                    .sortDirection("asc")
                     .build();
 
             assertThat(req.getPageNum()).isEqualTo(2);

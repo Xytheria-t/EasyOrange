@@ -3,12 +3,11 @@ package com.cartethyia.easyorange.user.adapter.outbound.mock;
 import com.cartethyia.easyorange.user.domain.constant.UserSecurityConstant;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
+import java.time.Instant;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
-
-import java.time.Instant;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 内存实现的短信验证码适配器（开发/测试环境）。
@@ -58,7 +57,7 @@ public class MockSmsCodeAdapter implements SmsCodePort {
         }
 
         long attempts = verifyCounts.merge(phone, 1L, Long::sum);
-            if (attempts > UserSecurityConstant.SMS_MAX_VERIFY_ATTEMPTS) {
+        if (attempts > UserSecurityConstant.SMS_MAX_VERIFY_ATTEMPTS) {
             codes.remove(phone);
             verifyCounts.remove(phone);
             return VerifyResult.TOO_MANY_ATTEMPTS;

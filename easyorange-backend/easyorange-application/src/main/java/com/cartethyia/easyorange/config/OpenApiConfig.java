@@ -8,10 +8,9 @@ import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
 
 /**
  * SpringDoc OpenAPI 3 配置 — 自动生成 API 契约文档 + Swagger UI。
@@ -40,17 +39,13 @@ public class OpenApiConfig {
                                 AI 工程化 7 件套：可换供应商、可降级、可观测。
                                 """)
                         .version("v1")
-                        .contact(new Contact()
-                                .name("cartethyia")
-                                .url("https://github.com/cartethyia/easy-orange"))
-                        .license(new License()
-                                .name("MIT")
-                                .url("https://opensource.org/licenses/MIT")))
-                .servers(List.of(
-                        new Server().url("/").description("本地开发环境")))
+                        .contact(new Contact().name("cartethyia").url("https://github.com/cartethyia/easy-orange"))
+                        .license(new License().name("MIT").url("https://opensource.org/licenses/MIT")))
+                .servers(List.of(new Server().url("/").description("本地开发环境")))
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
                 .components(new Components()
-                        .addSecuritySchemes(SECURITY_SCHEME_NAME,
+                        .addSecuritySchemes(
+                                SECURITY_SCHEME_NAME,
                                 new SecurityScheme()
                                         .name(SECURITY_SCHEME_NAME)
                                         .type(SecurityScheme.Type.HTTP)

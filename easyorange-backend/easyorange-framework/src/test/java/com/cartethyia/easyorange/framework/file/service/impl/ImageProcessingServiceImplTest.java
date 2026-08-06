@@ -1,7 +1,14 @@
 package com.cartethyia.easyorange.framework.file.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.framework.config.properties.ImageProcessingProperties;
 import com.cartethyia.easyorange.framework.file.service.ImageProcessingService;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.nio.file.Path;
+import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,14 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -42,8 +41,7 @@ class ImageProcessingServiceImplTest {
     @Test
     void processImage_withExplicitQuality_shouldSucceed() throws Exception {
         var source = createImage(200, 200, "jpg");
-        var result = service.processImage(source, 100, 100,
-                ImageProcessingService.ImageFormat.JPEG, 0.9f);
+        var result = service.processImage(source, 100, 100, ImageProcessingService.ImageFormat.JPEG, 0.9f);
         assertNotNull(result);
         assertTrue(result.file().exists());
         assertEquals("image/jpeg", result.mimeType());
@@ -52,16 +50,16 @@ class ImageProcessingServiceImplTest {
     @Test
     void processImage_outputFormat_shouldMatchRequested() throws Exception {
         var source = createImage(200, 200, "png");
-        var result = service.processImage(source, 100, 100,
-                ImageProcessingService.ImageFormat.PNG, 0.8f);
+        var result = service.processImage(source, 100, 100, ImageProcessingService.ImageFormat.PNG, 0.8f);
         assertEquals("image/png", result.mimeType());
     }
 
     @Test
     void processImage_withInvalidFile_shouldThrow() {
-        assertThrows(Exception.class, () ->
-                service.processImage(new File("/nonexistent/image.jpg"), 100, 100,
-                        ImageProcessingService.ImageFormat.JPEG, 0.8f));
+        assertThrows(
+                Exception.class,
+                () -> service.processImage(
+                        new File("/nonexistent/image.jpg"), 100, 100, ImageProcessingService.ImageFormat.JPEG, 0.8f));
     }
 
     @Test

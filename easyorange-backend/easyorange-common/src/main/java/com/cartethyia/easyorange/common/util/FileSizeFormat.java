@@ -8,8 +8,7 @@ public final class FileSizeFormat {
     private static final long MB = KB * 1024;
     private static final long GB = MB * 1024;
 
-    private FileSizeFormat() {
-    }
+    private FileSizeFormat() {}
 
     public static String formatFileSize(long size) {
         if (size <= 0) {

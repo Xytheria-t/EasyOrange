@@ -1,9 +1,8 @@
 package com.cartethyia.easyorange.framework.config.async;
 
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class LoggingRejectedExecutionHandler implements RejectedExecutionHandler {
@@ -18,7 +17,8 @@ public class LoggingRejectedExecutionHandler implements RejectedExecutionHandler
 
     @Override
     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-        log.warn("线程池 [{}] 任务被拒绝 - 活跃线程: {}, 队列大小: {}, 已完成: {}, 是否丢弃: {}",
+        log.warn(
+                "线程池 [{}] 任务被拒绝 - 活跃线程: {}, 队列大小: {}, 已完成: {}, 是否丢弃: {}",
                 executorName,
                 executor.getActiveCount(),
                 executor.getQueue().size(),

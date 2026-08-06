@@ -1,16 +1,14 @@
 package com.cartethyia.easyorange.adapter.outbound.product;
 
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
-
 import com.cartethyia.easyorange.product.application.command.ProductCommandHandler;
-import com.cartethyia.easyorange.product.domain.port.ProductSnapshotPort;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import com.cartethyia.easyorange.product.domain.port.ProductSnapshotPort;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Primary
 @Component
@@ -22,7 +20,8 @@ public class ProductOrderAdapter implements ProductOrderPort {
 
     @Override
     public List<ProductSnapshot> getSnapshots(List<String> productIds) {
-        return productSnapshotPort.findSnapshots(productIds.stream().map(ProductId::of).toList())
+        return productSnapshotPort
+                .findSnapshots(productIds.stream().map(ProductId::of).toList())
                 .stream()
                 .map(this::toSnapshot)
                 .toList();
@@ -35,8 +34,7 @@ public class ProductOrderAdapter implements ProductOrderPort {
                 snapshot.price().value(),
                 snapshot.status() == ProductStatus.ONLINE,
                 snapshot.stock().value(),
-                snapshot.location()
-        );
+                snapshot.location());
     }
 
     @Override

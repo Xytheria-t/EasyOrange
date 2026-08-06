@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
-
 import java.util.List;
 
 public interface MessageQueryRepository {

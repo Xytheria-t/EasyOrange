@@ -2,13 +2,7 @@ package com.cartethyia.easyorange.common.result;
 
 import java.util.List;
 
-public record PageResult<T>(
-        List<T> records,
-        long total,
-        int current,
-        int size,
-        int pages
-) {
+public record PageResult<T>(List<T> records, long total, int current, int size, int pages) {
 
     public PageResult {
         records = records != null ? records : List.of();

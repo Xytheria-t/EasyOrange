@@ -1,5 +1,10 @@
 package com.cartethyia.easyorange.framework.audit.event;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import com.cartethyia.easyorange.framework.audit.entity.AuditLog;
 import com.cartethyia.easyorange.framework.audit.service.AuditLogService;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
@@ -15,11 +20,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuditLogEventConsumer 单元测试")

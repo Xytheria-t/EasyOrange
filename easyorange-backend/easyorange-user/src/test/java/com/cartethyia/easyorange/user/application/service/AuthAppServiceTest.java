@@ -1,5 +1,10 @@
 package com.cartethyia.easyorange.user.application.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
@@ -13,6 +18,7 @@ import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.AuthenticationService;
 import com.cartethyia.easyorange.user.domain.service.RegistrationService;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,27 +28,25 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuthAppService 测试")
 class AuthAppServiceTest {
 
     @Mock
     private AuthenticationService authenticationService;
+
     @Mock
     private RegistrationService registrationService;
+
     @Mock
     private TokenService tokenService;
+
     @Mock
     private UserRepository userRepository;
+
     @Mock
     private SmsCodePort smsCodePort;
+
     @Mock
     private DomainEventPublisher domainEventPublisher;
 
@@ -54,7 +58,13 @@ class AuthAppServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AuthAppService(authenticationService, registrationService, tokenService, userRepository, smsCodePort, domainEventPublisher);
+        service = new AuthAppService(
+                authenticationService,
+                registrationService,
+                tokenService,
+                userRepository,
+                smsCodePort,
+                domainEventPublisher);
     }
 
     @AfterEach
@@ -72,10 +82,11 @@ class AuthAppServiceTest {
             String username = "newuser";
             String password = "Password123";
 
-            User savedUser = UserTestFixture.userWithCredentials(username, "encodedPassword")
-                .toBuilder().id("100").personalInfo(null).build();
-            when(registrationService.registerNewUser(username, password))
-                .thenReturn(savedUser);
+            User savedUser = UserTestFixture.userWithCredentials(username, "encodedPassword").toBuilder()
+                    .id("100")
+                    .personalInfo(null)
+                    .build();
+            when(registrationService.registerNewUser(username, password)).thenReturn(savedUser);
             when(userRepository.save(savedUser)).thenReturn(savedUser);
 
             String result = service.register(username, password);
@@ -98,12 +109,10 @@ class AuthAppServiceTest {
             LoginCredential credential = new LoginCredential.Password(account, password);
 
             User user = UserTestFixture.userWithCredentials(USERNAME, "encoded");
-            when(authenticationService.authenticate(any(LoginCredential.class)))
-                .thenReturn(user);
+            when(authenticationService.authenticate(any(LoginCredential.class))).thenReturn(user);
             when(tokenService.createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER")))
-                .thenReturn("access-token");
-            when(tokenService.createRefreshToken(USER_ID))
-                .thenReturn("refresh-token");
+                    .thenReturn("access-token");
+            when(tokenService.createRefreshToken(USER_ID)).thenReturn("refresh-token");
 
             var result = service.login(credential);
 
@@ -125,12 +134,10 @@ class AuthAppServiceTest {
             LoginCredential credential = new LoginCredential.Sms(phone, verifyCode);
 
             User user = UserTestFixture.userWithCredentials(USERNAME, "encoded");
-            when(authenticationService.authenticate(any(LoginCredential.class)))
-                .thenReturn(user);
+            when(authenticationService.authenticate(any(LoginCredential.class))).thenReturn(user);
             when(tokenService.createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER")))
-                .thenReturn("access-token");
-            when(tokenService.createRefreshToken(USER_ID))
-                .thenReturn("refresh-token");
+                    .thenReturn("access-token");
+            when(tokenService.createRefreshToken(USER_ID)).thenReturn("refresh-token");
 
             var result = service.login(credential);
 
@@ -163,11 +170,10 @@ class AuthAppServiceTest {
         void refreshToken() {
             String oldRT = "old-refresh-token";
             User user = UserTestFixture.normalUser();
-            when(tokenService.rotateRefreshToken(oldRT))
-                .thenReturn(new TokenRotation(USER_ID, "new-refresh-token"));
+            when(tokenService.rotateRefreshToken(oldRT)).thenReturn(new TokenRotation(USER_ID, "new-refresh-token"));
             when(userRepository.findById(USER_ID)).thenReturn(java.util.Optional.of(user));
             when(tokenService.createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER")))
-                .thenReturn("new-access-token");
+                    .thenReturn("new-access-token");
 
             var result = service.refreshToken(oldRT);
 
@@ -182,29 +188,26 @@ class AuthAppServiceTest {
         @Test
         @DisplayName("刷新Token — 用户不存在时吊销全会话并抛401")
         void refreshToken_userNotFound_revokesAndThrows() {
-            when(tokenService.rotateRefreshToken("rt"))
-                .thenReturn(new TokenRotation(USER_ID, "new-refresh-token"));
+            when(tokenService.rotateRefreshToken("rt")).thenReturn(new TokenRotation(USER_ID, "new-refresh-token"));
             when(userRepository.findById(USER_ID)).thenReturn(java.util.Optional.empty());
 
             assertThatThrownBy(() -> service.refreshToken("rt"))
-                .isInstanceOf(BusinessException.class)
-                .extracting(e -> ((BusinessException) e).getCode())
-                .isEqualTo(ResultCode.UNAUTHORIZED.getCode());
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(ResultCode.UNAUTHORIZED.getCode());
             verify(tokenService).revokeAllUserSessions(USER_ID);
         }
 
         @Test
         @DisplayName("刷新Token — 用户被禁用时吊销全会话并抛401")
         void refreshToken_disabledUser_revokesAndThrows() {
-            when(tokenService.rotateRefreshToken("rt"))
-                .thenReturn(new TokenRotation(USER_ID, "new-refresh-token"));
-            when(userRepository.findById(USER_ID))
-                .thenReturn(java.util.Optional.of(UserTestFixture.disabledUser()));
+            when(tokenService.rotateRefreshToken("rt")).thenReturn(new TokenRotation(USER_ID, "new-refresh-token"));
+            when(userRepository.findById(USER_ID)).thenReturn(java.util.Optional.of(UserTestFixture.disabledUser()));
 
             assertThatThrownBy(() -> service.refreshToken("rt"))
-                .isInstanceOf(BusinessException.class)
-                .extracting(e -> ((BusinessException) e).getCode())
-                .isEqualTo(ResultCode.UNAUTHORIZED.getCode());
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(ResultCode.UNAUTHORIZED.getCode());
             verify(tokenService).revokeAllUserSessions(USER_ID);
         }
     }
@@ -228,61 +231,7 @@ class AuthAppServiceTest {
         void tooFrequent() {
             when(smsCodePort.send(PHONE)).thenReturn(false);
 
-            assertThatThrownBy(() -> service.sendSmsCode(PHONE))
-                .isInstanceOf(BusinessException.class);
-        }
-    }
-
-    @Nested
-    @DisplayName("重置密码（忘记密码）")
-    class ResetPassword {
-
-        @Test
-        @DisplayName("应委托 AuthenticationService 重置并保存")
-        void shouldDelegateAndSave() {
-            String phone = "13812345678";
-            String verifyCode = "123456";
-            String newPassword = "NewPass123";
-
-            User updated = UserTestFixture.userWithCredentials(USERNAME, "encodedNewPwd");
-            when(authenticationService.resetPassword(phone, verifyCode, newPassword))
-                .thenReturn(updated);
-
-            service.resetPassword(phone, verifyCode, newPassword);
-
-            verify(authenticationService).resetPassword(phone, verifyCode, newPassword);
-            verify(userRepository).update(updated);
-        }
-    }
-
-    @Nested
-    @DisplayName("修改密码（已登录）")
-    class ChangePassword {
-
-        @Test
-        @DisplayName("应查询用户后委托 AuthenticationService.changePassword 并保存")
-        void shouldFindUserAndDelegateToChangePassword() {
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            var user = UserTestFixture.userWithCredentials("testuser", "encodedOldPwd");
-            var updatedUser = UserTestFixture.userWithCredentials("testuser", "encodedNewPwd");
-            when(userRepository.findById(USER_ID)).thenReturn(java.util.Optional.of(user));
-            when(authenticationService.changePassword(user, "oldPwd123", "NewPass123"))
-                .thenReturn(updatedUser);
-
-            service.changePassword("oldPwd123", "NewPass123");
-
-            verify(authenticationService).changePassword(user, "oldPwd123", "NewPass123");
-            verify(userRepository).update(updatedUser);
-            verify(tokenService).revokeAllUserSessions(USER_ID);
-        }
-
-        @Test
-        @DisplayName("SecurityContext 无用户时应抛出异常")
-        void shouldThrowWhenNoUserInContext() {
-            assertThatThrownBy(() -> service.changePassword("123456", "NewPass123"))
-                .isInstanceOf(BusinessException.class)
-                .extracting(e -> ((BusinessException) e).getCode())
-                .isEqualTo(ResultCode.UNAUTHORIZED.getCode());
+            assertThatThrownBy(() -> service.sendSmsCode(PHONE)).isInstanceOf(BusinessException.class);
         }
     }
 }

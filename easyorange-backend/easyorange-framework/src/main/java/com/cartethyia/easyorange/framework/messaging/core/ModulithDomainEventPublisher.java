@@ -2,12 +2,12 @@ package com.cartethyia.easyorange.framework.messaging.core;
 
 import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.framework.messaging.config.EventExternalizationConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Primary;
-import com.cartethyia.easyorange.framework.messaging.config.EventExternalizationConfig;
 import org.springframework.stereotype.Component;
 
 /**

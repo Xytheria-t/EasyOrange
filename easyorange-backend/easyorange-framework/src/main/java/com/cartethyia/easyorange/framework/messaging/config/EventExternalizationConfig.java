@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.framework.messaging.config;
 
 import com.cartethyia.easyorange.common.event.DomainEvent;
-import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -30,7 +29,8 @@ public class EventExternalizationConfig {
     EventExternalizationConfiguration eventExternalizationConfiguration() {
         return EventExternalizationConfiguration.externalizing()
                 .selectByType(DomainEvent.class)
-                .route(DomainEvent.class,
+                .route(
+                        DomainEvent.class,
                         event -> RoutingTarget.forTarget(RabbitMQConfig.EXCHANGE_NAME)
                                 .andKey(toRoutingKey(event)))
                 .build();

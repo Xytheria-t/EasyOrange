@@ -1,23 +1,5 @@
 package com.cartethyia.easyorange.framework.cache;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,6 +10,23 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 /**
  * 多级缓存单元测试 — 覆盖跨节点 L1 失效广播、负缓存、单飞回源与 TTL 校验。
@@ -159,8 +158,8 @@ class MultiLevelCacheTest {
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
         when(valueOps.get(L2_KEY)).thenReturn(null);
 
-        var config = new MultiLevelCache.Config(PREFIX, null,
-                Duration.ofMinutes(30), Duration.ofSeconds(30), null, null);
+        var config =
+                new MultiLevelCache.Config(PREFIX, null, Duration.ofMinutes(30), Duration.ofSeconds(30), null, null);
         var mlc = new MultiLevelCache(l1Cache, redisTemplate, config);
         var calls = new AtomicInteger();
 

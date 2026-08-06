@@ -1,10 +1,9 @@
 package com.cartethyia.easyorange.framework.file.service;
 
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
+import java.util.List;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 public interface FileService {
 

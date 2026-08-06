@@ -1,16 +1,16 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
-import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
 import com.cartethyia.easyorange.product.application.port.query.SearchResult;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
+import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchAggregation;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchAggregations;
@@ -18,12 +18,11 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.StringQuery;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 @Slf4j
 @Component
@@ -69,9 +68,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
 
         // Execute search
         SearchHits<ProductDocument> searchHits = elasticsearchOperations.search(
-                new StringQuery(queryJson, PageRequest.of(page - 1, size)),
-                ProductDocument.class
-        );
+                new StringQuery(queryJson, PageRequest.of(page - 1, size)), ProductDocument.class);
 
         // Convert documents
         List<ProductReadModel> records = searchHits.getSearchHits().stream()
@@ -85,14 +82,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         List<FacetBucket> priceRangeFacets = extractRangeAggBuckets(searchHits, "priceRanges");
 
         return new SearchResult(
-                records,
-                searchHits.getTotalHits(),
-                page,
-                size,
-                categoryFacets,
-                conditionFacets,
-                priceRangeFacets
-        );
+                records, searchHits.getTotalHits(), page, size, categoryFacets, conditionFacets, priceRangeFacets);
     }
 
     private JsonNode buildQuery(ProductSearchQuery query) {
@@ -118,16 +108,19 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         // Filter clauses
         ArrayNode filter = objectMapper.createArrayNode();
         if (query.status() != null) {
-            filter.add(objectMapper.createObjectNode().set("term",
-                    objectMapper.createObjectNode().put("status", query.status())));
+            filter.add(objectMapper
+                    .createObjectNode()
+                    .set("term", objectMapper.createObjectNode().put("status", query.status())));
         }
         if (query.categoryId() != null) {
-            filter.add(objectMapper.createObjectNode().set("term",
-                    objectMapper.createObjectNode().put("categoryId", query.categoryId())));
+            filter.add(objectMapper
+                    .createObjectNode()
+                    .set("term", objectMapper.createObjectNode().put("categoryId", query.categoryId())));
         }
         if (query.conditionLevel() != null) {
-            filter.add(objectMapper.createObjectNode().set("term",
-                    objectMapper.createObjectNode().put("conditionLevel", query.conditionLevel())));
+            filter.add(objectMapper
+                    .createObjectNode()
+                    .set("term", objectMapper.createObjectNode().put("conditionLevel", query.conditionLevel())));
         }
         if (query.minPrice() != null || query.maxPrice() != null) {
             ObjectNode range = objectMapper.createObjectNode();
@@ -158,16 +151,19 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
 
         ArrayNode filter = objectMapper.createArrayNode();
         if (query.status() != null) {
-            filter.add(objectMapper.createObjectNode().set("term",
-                    objectMapper.createObjectNode().put("status", query.status())));
+            filter.add(objectMapper
+                    .createObjectNode()
+                    .set("term", objectMapper.createObjectNode().put("status", query.status())));
         }
         if (query.categoryId() != null) {
-            filter.add(objectMapper.createObjectNode().set("term",
-                    objectMapper.createObjectNode().put("categoryId", query.categoryId())));
+            filter.add(objectMapper
+                    .createObjectNode()
+                    .set("term", objectMapper.createObjectNode().put("categoryId", query.categoryId())));
         }
         if (query.conditionLevel() != null) {
-            filter.add(objectMapper.createObjectNode().set("term",
-                    objectMapper.createObjectNode().put("conditionLevel", query.conditionLevel())));
+            filter.add(objectMapper
+                    .createObjectNode()
+                    .set("term", objectMapper.createObjectNode().put("conditionLevel", query.conditionLevel())));
         }
         if (query.minPrice() != null || query.maxPrice() != null) {
             ObjectNode range = objectMapper.createObjectNode();
@@ -193,16 +189,26 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         ArrayNode sort = objectMapper.createArrayNode();
         String sortKey = sortField != null ? sortField : "relevance";
         switch (sortKey) {
-            case "price_asc" -> sort.add(objectMapper.createObjectNode().set("price",
-                    objectMapper.createObjectNode().put("order", "asc")));
-            case "price_desc" -> sort.add(objectMapper.createObjectNode().set("price",
-                    objectMapper.createObjectNode().put("order", "desc")));
-            case "newest" -> sort.add(objectMapper.createObjectNode().set("createTime",
-                    objectMapper.createObjectNode().put("order", "desc")));
-            case "popular" -> sort.add(objectMapper.createObjectNode().set("viewCount",
-                    objectMapper.createObjectNode().put("order", "desc")));
-            default -> sort.add(objectMapper.createObjectNode().set("_score",
-                    objectMapper.createObjectNode().put("order", "desc")));
+            case "price_asc" ->
+                sort.add(objectMapper
+                        .createObjectNode()
+                        .set("price", objectMapper.createObjectNode().put("order", "asc")));
+            case "price_desc" ->
+                sort.add(objectMapper
+                        .createObjectNode()
+                        .set("price", objectMapper.createObjectNode().put("order", "desc")));
+            case "newest" ->
+                sort.add(objectMapper
+                        .createObjectNode()
+                        .set("createTime", objectMapper.createObjectNode().put("order", "desc")));
+            case "popular" ->
+                sort.add(objectMapper
+                        .createObjectNode()
+                        .set("viewCount", objectMapper.createObjectNode().put("order", "desc")));
+            default ->
+                sort.add(objectMapper
+                        .createObjectNode()
+                        .set("_score", objectMapper.createObjectNode().put("order", "desc")));
         }
         return sort;
     }
@@ -212,16 +218,16 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
 
         // category terms
         ObjectNode categoryAgg = objectMapper.createObjectNode();
-        categoryAgg.set("terms", objectMapper.createObjectNode()
-                .put("field", "categoryId")
-                .put("size", 20));
+        categoryAgg.set(
+                "terms",
+                objectMapper.createObjectNode().put("field", "categoryId").put("size", 20));
         aggs.set("category", categoryAgg);
 
         // conditionLevel terms
         ObjectNode conditionAgg = objectMapper.createObjectNode();
-        conditionAgg.set("terms", objectMapper.createObjectNode()
-                .put("field", "conditionLevel")
-                .put("size", 10));
+        conditionAgg.set(
+                "terms",
+                objectMapper.createObjectNode().put("field", "conditionLevel").put("size", 10));
         aggs.set("conditionLevel", conditionAgg);
 
         // priceRanges range
@@ -230,8 +236,10 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         rangeField.put("field", "price");
         ArrayNode ranges = rangeField.putArray("ranges");
         ranges.add(objectMapper.createObjectNode().put("to", 100).put("key", "*-100"));
-        ranges.add(objectMapper.createObjectNode().put("from", 100).put("to", 500).put("key", "100-500"));
-        ranges.add(objectMapper.createObjectNode().put("from", 500).put("to", 1000).put("key", "500-1000"));
+        ranges.add(
+                objectMapper.createObjectNode().put("from", 100).put("to", 500).put("key", "100-500"));
+        ranges.add(
+                objectMapper.createObjectNode().put("from", 500).put("to", 1000).put("key", "500-1000"));
         ranges.add(objectMapper.createObjectNode().put("from", 1000).put("key", "1000-*"));
         priceRanges.set("range", rangeField);
         aggs.set("priceRanges", priceRanges);

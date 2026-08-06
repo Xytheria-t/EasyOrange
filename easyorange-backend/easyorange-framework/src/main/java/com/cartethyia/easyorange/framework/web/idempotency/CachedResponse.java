@@ -11,5 +11,4 @@ package com.cartethyia.easyorange.framework.web.idempotency;
  * @param contentType  响应 Content-Type（可为 null）
  * @param body         响应体字节
  */
-public record CachedResponse(int status, String contentType, byte[] body) {
-}
+public record CachedResponse(int status, String contentType, byte[] body) {}

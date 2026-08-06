@@ -4,17 +4,16 @@ import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.SellerInfo;
+import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Primary
 @Component
@@ -31,7 +30,8 @@ public class FavoriteProductInfoAdapter implements ProductInfoPort {
 
     @Override
     public boolean isOwnProduct(String userId, String productId) {
-        return productRepository.findById(ProductId.of(productId))
+        return productRepository
+                .findById(ProductId.of(productId))
                 .map(p -> p.getSellerId().value().equals(userId))
                 .orElse(false);
     }
@@ -39,9 +39,7 @@ public class FavoriteProductInfoAdapter implements ProductInfoPort {
     @Override
     public List<ProductInfo> findProductsByIds(List<String> productIds) {
         List<ProductReadModel> products = productQueryRepository.findProductsByIds(productIds);
-        return products.stream()
-                .map(this::toProductInfo)
-                .collect(Collectors.toList());
+        return products.stream().map(this::toProductInfo).collect(Collectors.toList());
     }
 
     @Override
@@ -50,27 +48,22 @@ public class FavoriteProductInfoAdapter implements ProductInfoPort {
             return Map.of();
         }
         return productQueryRepository.findSellersByIds(sellerIds).stream()
-                .collect(Collectors.toMap(
-                        SellerReadModel::id,
-                        this::toSellerInfo,
-                        (a, b) -> a
-                ));
+                .collect(Collectors.toMap(SellerReadModel::id, this::toSellerInfo, (a, b) -> a));
     }
 
     @Override
-    public List<ProductDetailInfo> assembleProductDetails(List<ProductInfo> products,
-                                                           Map<String, SellerInfo> sellerMap) {
-        List<String> productIds = products.stream()
-                .map(ProductInfo::id)
-                .collect(Collectors.toList());
+    public List<ProductDetailInfo> assembleProductDetails(
+            List<ProductInfo> products, Map<String, SellerInfo> sellerMap) {
+        List<String> productIds = products.stream().map(ProductInfo::id).collect(Collectors.toList());
 
-        Map<String, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
-                .findImagesByProductIds(productIds).stream()
-                .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
+        Map<String, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct =
+                productQueryRepository.findImagesByProductIds(productIds).stream()
+                        .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
 
         return products.stream()
                 .map(product -> {
-                    List<ProductQueryRepository.ProductImageInfo> images = imagesByProduct.getOrDefault(product.id(), List.of());
+                    List<ProductQueryRepository.ProductImageInfo> images =
+                            imagesByProduct.getOrDefault(product.id(), List.of());
                     List<String> imageUrls = images.stream()
                             .map(ProductQueryRepository.ProductImageInfo::imageUrl)
                             .collect(Collectors.toList());
@@ -133,16 +126,10 @@ public class FavoriteProductInfoAdapter implements ProductInfoPort {
                 model.images(),
                 model.mainImageUrl(),
                 model.createTime(),
-                model.updateTime()
-        );
+                model.updateTime());
     }
 
     private SellerInfo toSellerInfo(SellerReadModel model) {
-        return new SellerInfo(
-                model.id(),
-                model.username(),
-                model.nickName(),
-                model.avatar()
-        );
+        return new SellerInfo(model.id(), model.username(), model.nickName(), model.avatar());
     }
 }

@@ -14,7 +14,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum MessageStatus implements BaseCodeEnum {
-
     UNREAD("UNREAD", "未读"),
     READ("READ", "已读"),
     SENT("SENT", "已发送"),
@@ -23,6 +22,7 @@ public enum MessageStatus implements BaseCodeEnum {
 
     @JsonValue
     private final String code;
+
     private final String desc;
 
     public static MessageStatus fromCode(String code) {

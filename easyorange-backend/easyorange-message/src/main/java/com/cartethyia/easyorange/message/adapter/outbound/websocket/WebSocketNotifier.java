@@ -18,11 +18,7 @@ public class WebSocketNotifier implements MessageNotifierPort {
 
     public void sendMessage(String userId, WsMessage message) {
         try {
-            messagingTemplate.convertAndSendToUser(
-                    userId.toString(),
-                    "/queue/message",
-                    message
-            );
+            messagingTemplate.convertAndSendToUser(userId.toString(), "/queue/message", message);
         } catch (Exception e) {
             log.warn("action=send_websocket_message_failed userId={}", userId, e);
         }
@@ -30,11 +26,7 @@ public class WebSocketNotifier implements MessageNotifierPort {
 
     public void sendNotification(String userId, Object notification) {
         try {
-            messagingTemplate.convertAndSendToUser(
-                    userId.toString(),
-                    "/queue/notification",
-                    notification
-            );
+            messagingTemplate.convertAndSendToUser(userId.toString(), "/queue/notification", notification);
         } catch (Exception e) {
             log.warn("action=send_websocket_notification_failed userId={}", userId, e);
         }

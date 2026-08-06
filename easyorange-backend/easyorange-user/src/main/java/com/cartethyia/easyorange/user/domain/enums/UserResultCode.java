@@ -19,7 +19,9 @@ public enum UserResultCode implements IResultCode {
     SMS_CODE_INVALID("B1008", "验证码无效或已过期"),
     SMS_CODE_SEND_TOO_FREQUENT("B1009", "验证码发送过于频繁"),
     SMS_CODE_VERIFY_TOO_FREQUENT("B1010", "验证码验证次数过多，请重新获取"),
-    PASSWORD_SAME_AS_OLD("B1013", "新密码不能与旧密码相同");
+    PASSWORD_SAME_AS_OLD("B1013", "新密码不能与旧密码相同"),
+    AVATAR_EMPTY("B1014", "头像不能为空"),
+    AVATAR_TOO_LARGE("B1015", "头像大小超过限制，最大允许5MB");
 
     private final String code;
     private final String message;

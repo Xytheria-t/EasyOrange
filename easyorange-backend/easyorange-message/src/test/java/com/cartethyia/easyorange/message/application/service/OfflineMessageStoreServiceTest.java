@@ -1,7 +1,10 @@
 package com.cartethyia.easyorange.message.application.service;
 
-import com.cartethyia.easyorange.message.domain.constant.MessageConstant;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
+import com.cartethyia.easyorange.message.domain.constant.MessageConstant;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -11,9 +14,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OfflineMessageStoreService 单元测试")

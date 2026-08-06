@@ -11,13 +11,12 @@ import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 /**
  * Admin 订单查询适配器
@@ -36,8 +35,7 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
 
     @Override
     public OrderQueryResult queryOrders(OrderQueryCondition condition) {
-        var wrapper = ChainWrappers.lambdaQueryChain(orderMapper)
-            .eq(OrderDO::getDelFlag, 0);
+        var wrapper = ChainWrappers.lambdaQueryChain(orderMapper).eq(OrderDO::getDelFlag, 0);
 
         if (condition.orderNo() != null && !condition.orderNo().isEmpty()) {
             wrapper.like(OrderDO::getOrderNo, condition.orderNo());
@@ -67,9 +65,8 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
         int pageSize = condition.pageSize() != null ? condition.pageSize() : 20;
         Page<OrderDO> page = wrapper.page(new Page<>(pageNum, pageSize));
 
-        List<OrderSummary> records = page.getRecords().stream()
-            .map(this::toOrderSummary)
-            .collect(Collectors.toList());
+        List<OrderSummary> records =
+                page.getRecords().stream().map(this::toOrderSummary).collect(Collectors.toList());
 
         return new OrderQueryResult(records, page.getTotal(), pageNum, pageSize);
     }
@@ -80,13 +77,11 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
             return Map.of();
         }
         List<OrderItemDO> items = ChainWrappers.lambdaQueryChain(orderItemMapper)
-            .in(OrderItemDO::getOrderId, orderIds)
-            .list();
+                .in(OrderItemDO::getOrderId, orderIds)
+                .list();
         return items.stream()
-            .collect(Collectors.groupingBy(
-                OrderItemDO::getOrderId,
-                Collectors.mapping(this::toOrderItemInfo, Collectors.toList())
-            ));
+                .collect(Collectors.groupingBy(
+                        OrderItemDO::getOrderId, Collectors.mapping(this::toOrderItemInfo, Collectors.toList())));
     }
 
     @Override
@@ -95,45 +90,30 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
             return Map.of();
         }
         List<ProductDO> products = productMapper.selectByIds(productIds);
-        return products.stream()
-            .collect(Collectors.toMap(
-                ProductDO::getId,
-                this::toProductInfo,
-                (a, b) -> a
-            ));
+        return products.stream().collect(Collectors.toMap(ProductDO::getId, this::toProductInfo, (a, b) -> a));
     }
 
     private OrderSummary toOrderSummary(OrderDO order) {
         OrderStatus status = order.getStatus();
         PaymentStatus paymentStatus = order.getPaymentStatus();
         return new OrderSummary(
-            order.getId(),
-            order.getOrderNo(),
-            order.getBuyerId(),
-            order.getSellerId(),
-            order.getTotalAmount(),
-            status != null ? status.getCode() : null,
-            status != null ? status.getDesc() : "未知状态",
-            paymentStatus != null ? paymentStatus.getCode() : null,
-            paymentStatus != null ? paymentStatus.getDesc() : "未支付",
-            order.getCreateTime()
-        );
+                order.getId(),
+                order.getOrderNo(),
+                order.getBuyerId(),
+                order.getSellerId(),
+                order.getTotalAmount(),
+                status != null ? status.getCode() : null,
+                status != null ? status.getDesc() : "未知状态",
+                paymentStatus != null ? paymentStatus.getCode() : null,
+                paymentStatus != null ? paymentStatus.getDesc() : "未支付",
+                order.getCreateTime());
     }
 
     private OrderItemInfo toOrderItemInfo(OrderItemDO item) {
-        return new OrderItemInfo(
-            item.getOrderId(),
-            item.getProductId(),
-            item.getQuantity(),
-            item.getUnitPrice()
-        );
+        return new OrderItemInfo(item.getOrderId(), item.getProductId(), item.getQuantity(), item.getUnitPrice());
     }
 
     private ProductInfo toProductInfo(ProductDO product) {
-        return new ProductInfo(
-            product.getId(),
-            product.getName(),
-            product.getPrice()
-        );
+        return new ProductInfo(product.getId(), product.getName(), product.getPrice());
     }
 }

@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
+import static org.mockito.Mockito.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,8 +12,6 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.data.elasticsearch.core.document.Document;
 import org.springframework.data.elasticsearch.core.index.Settings;
-
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ElasticsearchIndexManagerTest {
@@ -51,5 +51,4 @@ class ElasticsearchIndexManagerTest {
         verify(indexOps).create(any(Settings.class));
         verify(indexOps).putMapping(any(Document.class));
     }
-
 }

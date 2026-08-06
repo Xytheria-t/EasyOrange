@@ -1,5 +1,15 @@
 package com.cartethyia.easyorange.framework.web.filter;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
@@ -7,6 +17,9 @@ import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProp
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Rule;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,20 +35,6 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.HandlerMapping;
 import tools.jackson.databind.ObjectMapper;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * RateLimitFilter 限流 + 防重跳过注解 — 单元测试。
@@ -70,8 +69,13 @@ class RateLimitFilterTest {
     @BeforeEach
     void setUp() {
         properties = new RateLimitFilterProperties();
-        filter = new RateLimitFilter(properties, redisTemplate, localRateLimiter,
-                distributedRateLimiter, new ObjectMapper(), handlerMappingsProvider);
+        filter = new RateLimitFilter(
+                properties,
+                redisTemplate,
+                localRateLimiter,
+                distributedRateLimiter,
+                new ObjectMapper(),
+                handlerMappingsProvider);
     }
 
     // ==================== 测试用 Controller 与 handler 解析 ====================
@@ -80,25 +84,20 @@ class RateLimitFilterTest {
     static class TestController {
 
         @SkipRateLimit
-        public void skipRateLimit() {
-        }
+        public void skipRateLimit() {}
 
         @SkipRepeatSubmit
-        public void skipRepeatSubmit() {
-        }
+        public void skipRepeatSubmit() {}
 
-        public void noSkip() {
-        }
+        public void noSkip() {}
     }
 
     private HandlerMethod handlerFor(String methodName) throws Exception {
-        return new HandlerMethod(new TestController(),
-                TestController.class.getDeclaredMethod(methodName));
+        return new HandlerMethod(new TestController(), TestController.class.getDeclaredMethod(methodName));
     }
 
     private void stubHandler(HandlerMethod handler) throws Exception {
-        when(handlerMappingsProvider.getIfAvailable(any(Supplier.class)))
-                .thenReturn(List.of(handlerMapping));
+        when(handlerMappingsProvider.getIfAvailable(any(Supplier.class))).thenReturn(List.of(handlerMapping));
         when(handlerMapping.getHandler(any())).thenReturn(new HandlerExecutionChain(handler));
     }
 

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.config.async;
 
-import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.module.SimpleModule;
@@ -17,9 +17,7 @@ public class JacksonConfig {
 
     @Bean
     public JsonMapper jsonMapper() {
-        return JsonMapper.builder()
-                .addModule(longToStringModule())
-                .build();
+        return JsonMapper.builder().addModule(longToStringModule()).build();
     }
 
     private SimpleModule longToStringModule() {

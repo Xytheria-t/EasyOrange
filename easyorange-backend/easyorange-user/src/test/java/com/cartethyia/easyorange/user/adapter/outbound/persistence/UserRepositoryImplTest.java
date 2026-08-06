@@ -1,16 +1,26 @@
 package com.cartethyia.easyorange.user.adapter.outbound.persistence;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.*;
+
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.enums.Sex;
+import com.cartethyia.easyorange.user.domain.enums.UserStatus;
+import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
-import com.cartethyia.easyorange.user.domain.enums.Sex;
-import com.cartethyia.easyorange.user.domain.enums.UserStatus;
-import com.cartethyia.easyorange.user.domain.enums.UserType;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,15 +31,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserRepositoryImpl 测试")
 class UserRepositoryImplTest {
@@ -39,6 +40,9 @@ class UserRepositoryImplTest {
 
     @Mock
     private UserEntityMapper entityMapper;
+
+    @Mock
+    private IdGenerator idGenerator;
 
     private UserRepositoryImpl userRepository;
 
@@ -54,51 +58,48 @@ class UserRepositoryImplTest {
 
     @BeforeEach
     void setUp() {
-        userRepository = new UserRepositoryImpl(userMapper, entityMapper);
+        userRepository = new UserRepositoryImpl(userMapper, entityMapper, idGenerator);
     }
 
     private UserDO buildTestEntity() {
         return UserDO.builder()
-            .id("1")
-            .username("testuser")
-            .password("$2a$10$encoded")
-            .userType(UserType.NORMAL)
-            .status(UserStatus.NORMAL)
-            .email("test@example.com")
-            .phone("13812345678")
-            .studentId("2024001")
-            .realName("张三")
-            .nickName("小张")
-            .sex(Sex.MALE)
-            .loginIp("192.168.1.1")
-            .loginDate(LocalDateTime.of(2024, 1, 1, 12, 0))
-            .pwdUpdateDate(LocalDateTime.of(2024, 1, 1, 0, 0))
-            .avatar("/avatar/test.png")
-            .remark("测试用户")
-            .version(0)
-            .build();
+                .id("1")
+                .username("testuser")
+                .password("$2a$10$encoded")
+                .userType(UserType.NORMAL)
+                .status(UserStatus.NORMAL)
+                .email("test@example.com")
+                .phone("13812345678")
+                .studentId("2024001")
+                .realName("张三")
+                .nickName("小张")
+                .sex(Sex.MALE)
+                .loginIp("192.168.1.1")
+                .loginDate(LocalDateTime.of(2024, 1, 1, 12, 0))
+                .pwdUpdateDate(LocalDateTime.of(2024, 1, 1, 0, 0))
+                .avatar("/avatar/test.png")
+                .remark("测试用户")
+                .version(0)
+                .build();
     }
 
     private User buildTestDomainUser() {
         return User.builder()
-            .id("1")
-            .credentials(new Credentials("testuser", "$2a$10$encoded"))
-            .userType(UserType.NORMAL)
-            .status(UserStatus.NORMAL)
-            .contactInfo(new ContactInfo("test@example.com", "13812345678"))
-            .personalInfo(PersonalInfo.builder()
-                .realName("张三")
-                .nickName("小张")
-                .sex(Sex.MALE)
-                .studentId("2024001")
-                .avatar("/avatar/test.png")
-                .build())
-            .loginInfo(new LoginInfo(
-                "192.168.1.1",
-                LocalDateTime.of(2024, 1, 1, 12, 0),
-                LocalDateTime.of(2024, 1, 1, 0, 0)
-            ))
-            .build();
+                .id("1")
+                .credentials(new Credentials("testuser", "$2a$10$encoded"))
+                .userType(UserType.NORMAL)
+                .status(UserStatus.NORMAL)
+                .contactInfo(new ContactInfo("test@example.com", "13812345678"))
+                .personalInfo(PersonalInfo.builder()
+                        .realName("张三")
+                        .nickName("小张")
+                        .sex(Sex.MALE)
+                        .studentId("2024001")
+                        .avatar("/avatar/test.png")
+                        .build())
+                .loginInfo(new LoginInfo(
+                        "192.168.1.1", LocalDateTime.of(2024, 1, 1, 12, 0), LocalDateTime.of(2024, 1, 1, 0, 0)))
+                .build();
     }
 
     @Nested
@@ -169,30 +170,52 @@ class UserRepositoryImplTest {
     class SaveTests {
 
         @Test
-        @DisplayName("应插入并返回带 id 的用户")
-        void shouldInsertAndReturnWithId() {
+        @DisplayName("新用户无 ID 时由 IdGenerator 生成并落库")
+        void shouldGenerateAndAssignIdForNewUser() {
+            when(idGenerator.generateId()).thenReturn("gen-id-123");
             User domainUser = User.builder()
-                .credentials(new Credentials("newuser", "$2a$10$encoded"))
-                .userType(UserType.NORMAL)
-                .status(UserStatus.NORMAL)
-                .build();
-            when(entityMapper.from(domainUser)).thenReturn(UserDO.builder()
-                .username("newuser")
-                .password("$2a$10$encoded")
-                .userType(UserType.NORMAL)
-                .status(UserStatus.NORMAL)
-                .build());
-            doAnswer(invocation -> {
-                UserDO e = invocation.getArgument(0);
-                e.setId("1");
-                return 1;
-            }).when(userMapper).insert(any(UserDO.class));
+                    .credentials(new Credentials("newuser", "$2a$10$encoded"))
+                    .userType(UserType.NORMAL)
+                    .status(UserStatus.NORMAL)
+                    .build();
+            when(entityMapper.from(domainUser))
+                    .thenReturn(UserDO.builder()
+                            .username("newuser")
+                            .password("$2a$10$encoded")
+                            .userType(UserType.NORMAL)
+                            .status(UserStatus.NORMAL)
+                            .build());
 
             User result = userRepository.save(domainUser);
 
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo("1");
-            verify(userMapper).insert(any(UserDO.class));
+            assertThat(result.getId()).isEqualTo("gen-id-123");
+            verify(idGenerator).generateId();
+            verify(userMapper).insert(argThat((UserDO entity) -> "gen-id-123".equals(entity.getId())));
+        }
+
+        @Test
+        @DisplayName("已有 ID 的用户保存时保留原 ID")
+        void shouldPreserveExistingId() {
+            User domainUser = User.builder()
+                    .id("existing-id")
+                    .credentials(new Credentials("newuser", "$2a$10$encoded"))
+                    .userType(UserType.NORMAL)
+                    .status(UserStatus.NORMAL)
+                    .build();
+            when(entityMapper.from(domainUser))
+                    .thenReturn(UserDO.builder()
+                            .id("existing-id")
+                            .username("newuser")
+                            .password("$2a$10$encoded")
+                            .userType(UserType.NORMAL)
+                            .status(UserStatus.NORMAL)
+                            .build());
+
+            User result = userRepository.save(domainUser);
+
+            assertThat(result.getId()).isEqualTo("existing-id");
+            verify(idGenerator, never()).generateId();
         }
     }
 
@@ -204,16 +227,17 @@ class UserRepositoryImplTest {
         @DisplayName("应委托给 mapper 更新")
         void shouldDelegateToMapper() {
             User domainUser = User.builder()
-                .id("1")
-                .credentials(new Credentials("testuser", "password"))
-                .contactInfo(new ContactInfo("updated@example.com", null))
-                .build();
-            when(entityMapper.from(domainUser)).thenReturn(UserDO.builder()
-                .id("1")
-                .username("testuser")
-                .password("password")
-                .email("updated@example.com")
-                .build());
+                    .id("1")
+                    .credentials(new Credentials("testuser", "password"))
+                    .contactInfo(new ContactInfo("updated@example.com", null))
+                    .build();
+            when(entityMapper.from(domainUser))
+                    .thenReturn(UserDO.builder()
+                            .id("1")
+                            .username("testuser")
+                            .password("password")
+                            .email("updated@example.com")
+                            .build());
             when(userMapper.updateById(any(UserDO.class))).thenReturn(1);
 
             userRepository.update(domainUser);
@@ -225,18 +249,18 @@ class UserRepositoryImplTest {
         @DisplayName("更新失败时应返回 false")
         void shouldReturnFalseWhenUpdateFails() {
             User domainUser = User.builder()
-                .id("999")
-                .credentials(new Credentials("testuser", "password"))
-                .build();
-            when(entityMapper.from(domainUser)).thenReturn(UserDO.builder()
-                .id("999")
-                .username("testuser")
-                .password("password")
-                .build());
+                    .id("999")
+                    .credentials(new Credentials("testuser", "password"))
+                    .build();
+            when(entityMapper.from(domainUser))
+                    .thenReturn(UserDO.builder()
+                            .id("999")
+                            .username("testuser")
+                            .password("password")
+                            .build());
             when(userMapper.updateById(any(UserDO.class))).thenReturn(0);
 
-            assertThatThrownBy(() -> userRepository.update(domainUser))
-                .isInstanceOf(ConcurrentUpdateException.class);
+            assertThatThrownBy(() -> userRepository.update(domainUser)).isInstanceOf(ConcurrentUpdateException.class);
         }
     }
 

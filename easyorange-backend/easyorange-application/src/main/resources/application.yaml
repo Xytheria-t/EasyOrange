@@ -210,6 +210,14 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+      # k8s 探针：/actuator/health/readiness + /actuator/health/liveness
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db,redis,rabbit,ai
+        liveness:
+          include: livenessState
 
 logging:
   level:
@@ -251,6 +259,12 @@ security:
     - /api/products/{id}/view
     - /api/products/batch
     - /api/products/categories/cache
+    # Actuator 运维端点 — 仅放行健康/信息/指标抓取（探针与 Prometheus 需匿名访问）；
+    # 其中的详细内容受 show-details: when-authorized 保护。env/configprops 等敏感端点不在暴露清单内
+    - /actuator/health/**
+    - /actuator/info
+    - /actuator/prometheus
+    - /actuator/metrics
     # WebSocket 握手端点 — 由 WebSocketAuthInterceptor 自行完成 JWT 认证与吊销校验
     - /ws
     - /ws/**

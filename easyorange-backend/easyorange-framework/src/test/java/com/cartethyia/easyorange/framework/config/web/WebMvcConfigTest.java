@@ -1,15 +1,14 @@
 package com.cartethyia.easyorange.framework.config.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.framework.config.async.JacksonConfig;
+import java.math.BigInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
-
-import java.math.BigInteger;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("JacksonConfig - Long精度处理测试")
 class WebMvcConfigTest {
@@ -75,9 +74,7 @@ class WebMvcConfigTest {
             String json = jsonMapper.writeValueAsString(entity);
             JsonNode root = jsonMapper.readTree(json);
 
-            assertThat(root.get("id").asStringOpt())
-                    .as("基本类型long字段也应为字符串类型")
-                    .isPresent();
+            assertThat(root.get("id").asStringOpt()).as("基本类型long字段也应为字符串类型").isPresent();
             assertThat(root.get("id").asString()).isEqualTo("311597393252585472");
         }
     }

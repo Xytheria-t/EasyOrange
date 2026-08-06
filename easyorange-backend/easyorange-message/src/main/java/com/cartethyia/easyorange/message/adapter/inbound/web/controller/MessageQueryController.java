@@ -2,20 +2,19 @@ package com.cartethyia.easyorange.message.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.application.query.ConversationQueryHandler;
 import com.cartethyia.easyorange.message.application.query.MessageQueryHandler;
-import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationListVO;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
-import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
+import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "消息系统", description = "消息查询")
 @RestController
@@ -58,7 +57,8 @@ public class MessageQueryController {
 
     /** 边界层 DTO → 领域查询参数，非法 isRead code 由 {@link ReadStatus#fromCode(String)} 抛 IllegalArgumentException 映射为 400。 */
     private static MessageQuery toMessageQuery(QueryMessageRequest request) {
-        ReadStatus isRead = request.getIsRead() != null ? ReadStatus.fromCode(String.valueOf(request.getIsRead())) : null;
+        ReadStatus isRead =
+                request.getIsRead() != null ? ReadStatus.fromCode(String.valueOf(request.getIsRead())) : null;
         return new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), isRead);
     }
 }

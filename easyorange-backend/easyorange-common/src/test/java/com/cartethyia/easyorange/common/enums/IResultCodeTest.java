@@ -1,9 +1,10 @@
 package com.cartethyia.easyorange.common.enums;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * {@link IResultCode} 单元测试

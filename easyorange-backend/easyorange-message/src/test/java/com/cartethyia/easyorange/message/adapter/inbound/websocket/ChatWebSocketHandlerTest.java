@@ -1,10 +1,17 @@
 package com.cartethyia.easyorange.message.adapter.inbound.websocket;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.WsMessage;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
+import java.security.Principal;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,16 +23,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-
-import java.security.Principal;
-import java.time.LocalDateTime;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChatWebSocketHandler 单元测试")
@@ -90,15 +87,10 @@ class ChatWebSocketHandlerTest {
                 assertThat(cmd.content()).isEqualTo("hello");
                 assertThat(cmd.conversationId()).isEqualTo(CONVERSATION_ID);
 
-                verify(messagingTemplate).convertAndSend(
-                        eq("/queue/chat/" + CONVERSATION_ID),
-                        eq(wsMessage)
-                );
-                verify(messagingTemplate).convertAndSendToUser(
-                        eq(String.valueOf(RECEIVER_ID)),
-                        eq("/queue/unread-count"),
-                        any(Map.class)
-                );
+                verify(messagingTemplate).convertAndSend(eq("/queue/chat/" + CONVERSATION_ID), eq(wsMessage));
+                verify(messagingTemplate)
+                        .convertAndSendToUser(
+                                eq(String.valueOf(RECEIVER_ID)), eq("/queue/unread-count"), any(Map.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -159,11 +151,9 @@ class ChatWebSocketHandlerTest {
             try {
                 handler.handleChatMessage(wsMessage, principal);
 
-                verify(messagingTemplate).convertAndSendToUser(
-                        eq(String.valueOf(RECEIVER_ID)),
-                        eq("/queue/unread-count"),
-                        mapCaptor.capture()
-                );
+                verify(messagingTemplate)
+                        .convertAndSendToUser(
+                                eq(String.valueOf(RECEIVER_ID)), eq("/queue/unread-count"), mapCaptor.capture());
                 Map<String, Object> notification = mapCaptor.getValue();
                 assertThat(notification)
                         .containsEntry("conversationId", CONVERSATION_ID)
@@ -187,11 +177,8 @@ class ChatWebSocketHandlerTest {
 
             handler.handleDomainException(ex, principal);
 
-            verify(messagingTemplate).convertAndSendToUser(
-                    eq(String.valueOf(USER_ID)),
-                    eq("/queue/error"),
-                    mapCaptor.capture()
-            );
+            verify(messagingTemplate)
+                    .convertAndSendToUser(eq(String.valueOf(USER_ID)), eq("/queue/error"), mapCaptor.capture());
             assertThat(mapCaptor.getValue())
                     .containsEntry("type", "RATE_LIMITED")
                     .containsEntry("message", "发送过于频繁，请稍后再试");
@@ -210,14 +197,10 @@ class ChatWebSocketHandlerTest {
                 handler.handleTyping(wsMessage, principal);
 
                 verify(typingService).setTyping(CONVERSATION_ID, USER_ID);
-                verify(messagingTemplate).convertAndSend(
-                        eq("/topic/chat/" + CONVERSATION_ID + "/typing"),
-                        (Object) mapCaptor.capture()
-                );
+                verify(messagingTemplate)
+                        .convertAndSend(eq("/topic/chat/" + CONVERSATION_ID + "/typing"), (Object) mapCaptor.capture());
                 Map<String, Object> payload = mapCaptor.getValue();
-                assertThat(payload)
-                        .containsEntry("userId", USER_ID)
-                        .containsKey("timestamp");
+                assertThat(payload).containsEntry("userId", USER_ID).containsKey("timestamp");
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -233,10 +216,7 @@ class ChatWebSocketHandlerTest {
                 handler.handleTyping(wsMessage, principal);
 
                 verify(typingService).setTyping(null, USER_ID);
-                verify(messagingTemplate).convertAndSend(
-                        eq("/topic/chat/null/typing"),
-                        (Object) any(Map.class)
-                );
+                verify(messagingTemplate).convertAndSend(eq("/topic/chat/null/typing"), (Object) any(Map.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -249,10 +229,8 @@ class ChatWebSocketHandlerTest {
             try {
                 handler.handleTyping(wsMessage, principal);
 
-                verify(messagingTemplate).convertAndSend(
-                        eq("/topic/chat/" + CONVERSATION_ID + "/typing"),
-                        (Object) any(Map.class)
-                );
+                verify(messagingTemplate)
+                        .convertAndSend(eq("/topic/chat/" + CONVERSATION_ID + "/typing"), (Object) any(Map.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -270,10 +248,8 @@ class ChatWebSocketHandlerTest {
 
             handler.broadcastRecallEvent(CONVERSATION_ID, messageId, USER_ID);
 
-            verify(messagingTemplate).convertAndSend(
-                    eq("/topic/chat/" + CONVERSATION_ID + "/recall"),
-                    (Object) mapCaptor.capture()
-            );
+            verify(messagingTemplate)
+                    .convertAndSend(eq("/topic/chat/" + CONVERSATION_ID + "/recall"), (Object) mapCaptor.capture());
             Map<String, Object> payload = mapCaptor.getValue();
             assertThat(payload)
                     .containsEntry("messageId", String.valueOf(messageId))
@@ -288,10 +264,8 @@ class ChatWebSocketHandlerTest {
         void broadcastRecallEvent_correctTopic() {
             handler.broadcastRecallEvent(CONVERSATION_ID, "100", USER_ID);
 
-            verify(messagingTemplate).convertAndSend(
-                    eq("/topic/chat/" + CONVERSATION_ID + "/recall"),
-                    (Object) any(Map.class)
-            );
+            verify(messagingTemplate)
+                    .convertAndSend(eq("/topic/chat/" + CONVERSATION_ID + "/recall"), (Object) any(Map.class));
         }
     }
 
@@ -306,11 +280,9 @@ class ChatWebSocketHandlerTest {
 
             handler.broadcastUnreadUpdate(String.valueOf(RECEIVER_ID), CONVERSATION_ID, count);
 
-            verify(messagingTemplate).convertAndSendToUser(
-                    eq(String.valueOf(RECEIVER_ID)),
-                    eq("/queue/unread-count"),
-                    mapCaptor.capture()
-            );
+            verify(messagingTemplate)
+                    .convertAndSendToUser(
+                            eq(String.valueOf(RECEIVER_ID)), eq("/queue/unread-count"), mapCaptor.capture());
             Map<String, Object> payload = mapCaptor.getValue();
             assertThat(payload)
                     .containsEntry("conversationId", CONVERSATION_ID)

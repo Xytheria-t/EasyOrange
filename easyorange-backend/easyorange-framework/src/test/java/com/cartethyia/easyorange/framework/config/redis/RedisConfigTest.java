@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.framework.config.redis;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,8 +11,6 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * RedisConfig 序列化器配置守卫测试。
@@ -35,8 +35,7 @@ class RedisConfigTest {
         assertThat(template.getKeySerializer())
                 .as("key 序列化器必须是 StringRedisSerializer，否则 Lua tonumber(ARGV) 返回 nil")
                 .isInstanceOf(StringRedisSerializer.class);
-        assertThat(template.getHashKeySerializer())
-                .isInstanceOf(StringRedisSerializer.class);
+        assertThat(template.getHashKeySerializer()).isInstanceOf(StringRedisSerializer.class);
     }
 
     @Test
@@ -48,8 +47,7 @@ class RedisConfigTest {
         assertThat(template.getValueSerializer())
                 .as("value 序列化器必须是 GenericJacksonJsonRedisSerializer，否则 Redis CLI 不可读")
                 .isInstanceOf(GenericJacksonJsonRedisSerializer.class);
-        assertThat(template.getHashValueSerializer())
-                .isInstanceOf(GenericJacksonJsonRedisSerializer.class);
+        assertThat(template.getHashValueSerializer()).isInstanceOf(GenericJacksonJsonRedisSerializer.class);
     }
 
     @Test

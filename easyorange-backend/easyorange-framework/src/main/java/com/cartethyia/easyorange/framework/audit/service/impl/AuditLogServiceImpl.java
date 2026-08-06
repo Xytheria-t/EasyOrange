@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.audit.service.impl;
 
-import com.cartethyia.easyorange.framework.audit.entity.AuditLog;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
+import com.cartethyia.easyorange.framework.audit.entity.AuditLog;
 import com.cartethyia.easyorange.framework.audit.mapper.AuditLogMapper;
 import com.cartethyia.easyorange.framework.audit.service.AuditLogService;
 import lombok.RequiredArgsConstructor;

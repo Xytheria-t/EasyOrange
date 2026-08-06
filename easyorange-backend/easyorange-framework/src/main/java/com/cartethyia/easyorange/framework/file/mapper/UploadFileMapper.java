@@ -5,5 +5,4 @@ import com.cartethyia.easyorange.framework.file.entity.UploadFileDO;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface UploadFileMapper extends BaseMapper<UploadFileDO> {
-}
+public interface UploadFileMapper extends BaseMapper<UploadFileDO> {}

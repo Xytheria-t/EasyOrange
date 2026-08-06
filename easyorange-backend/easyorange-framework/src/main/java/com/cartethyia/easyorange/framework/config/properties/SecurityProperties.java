@@ -4,13 +4,12 @@ import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Data
@@ -39,7 +38,8 @@ public class SecurityProperties {
 
     private String logoutUrl = "/api/auth/logout";
 
-    @Min(4) @Max(31)
+    @Min(4)
+    @Max(31)
     private int passwordEncoderStrength = 10;
 
     @PostConstruct
@@ -69,14 +69,23 @@ public class SecurityProperties {
         }
     }
 
-    public List<String> getIgnorePaths() { return List.copyOf(ignorePaths); }
+    public List<String> getIgnorePaths() {
+        return List.copyOf(ignorePaths);
+    }
 
-    public List<String> getProductPaths() { return List.copyOf(productPaths); }
+    public List<String> getProductPaths() {
+        return List.copyOf(productPaths);
+    }
 
-    public List<String> getStaticPaths() { return List.copyOf(staticPaths); }
+    public List<String> getStaticPaths() {
+        return List.copyOf(staticPaths);
+    }
 
-    public List<String> getCsrfProtectedPaths() { return List.copyOf(csrfProtectedPaths); }
+    public List<String> getCsrfProtectedPaths() {
+        return List.copyOf(csrfProtectedPaths);
+    }
 
-    public List<String> getAllowedOrigins() { return List.copyOf(allowedOrigins); }
-
+    public List<String> getAllowedOrigins() {
+        return List.copyOf(allowedOrigins);
+    }
 }

@@ -2,14 +2,12 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
-import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Repository;
 
 @Primary
 @Repository
@@ -31,25 +29,21 @@ public class MessageRepositoryImpl extends BaseRepository<MessageMapper, Message
 
     @Override
     public List<Message> findByReceiverId(String receiverId, int limit) {
-        return messageDataMapper.toAggregateList(
-                lambdaQuery()
-                        .eq(MessageDO::getReceiverId, receiverId)
-                        .orderByDesc(MessageDO::getCreateTime)
-                        .last("LIMIT " + limit)
-                        .list()
-        );
+        return messageDataMapper.toAggregateList(lambdaQuery()
+                .eq(MessageDO::getReceiverId, receiverId)
+                .orderByDesc(MessageDO::getCreateTime)
+                .last("LIMIT " + limit)
+                .list());
     }
 
     @Override
     public List<Message> findByReceiverIdAndReadStatus(String receiverId, ReadStatus readStatus, int limit) {
-        return messageDataMapper.toAggregateList(
-                lambdaQuery()
-                        .eq(MessageDO::getReceiverId, receiverId)
-                        .eq(MessageDO::getIsRead, readStatus)
-                        .orderByDesc(MessageDO::getCreateTime)
-                        .last("LIMIT " + limit)
-                        .list()
-            );
+        return messageDataMapper.toAggregateList(lambdaQuery()
+                .eq(MessageDO::getReceiverId, receiverId)
+                .eq(MessageDO::getIsRead, readStatus)
+                .orderByDesc(MessageDO::getCreateTime)
+                .last("LIMIT " + limit)
+                .list());
     }
 
     @Override

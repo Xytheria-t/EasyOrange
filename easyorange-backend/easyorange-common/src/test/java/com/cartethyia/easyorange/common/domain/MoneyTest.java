@@ -1,14 +1,13 @@
 package com.cartethyia.easyorange.common.domain;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.math.BigDecimal;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("Money 值对象测试")
 class MoneyTest {
@@ -34,15 +33,13 @@ class MoneyTest {
         @Test
         @DisplayName("空金额抛出异常")
         void nullAmount_throws() {
-            assertThatThrownBy(() -> Money.of(null))
-                    .isInstanceOf(BusinessException.class);
+            assertThatThrownBy(() -> Money.of(null)).isInstanceOf(BusinessException.class);
         }
 
         @Test
         @DisplayName("负金额抛出异常")
         void negativeAmount_throws() {
-            assertThatThrownBy(() -> Money.of(new BigDecimal("-1")))
-                    .isInstanceOf(BusinessException.class);
+            assertThatThrownBy(() -> Money.of(new BigDecimal("-1"))).isInstanceOf(BusinessException.class);
         }
     }
 
@@ -53,29 +50,37 @@ class MoneyTest {
         @Test
         @DisplayName("compareTo 按数值比较")
         void compareTo_byValue() {
-            assertThat(Money.of(new BigDecimal("10")).compareTo(Money.of(new BigDecimal("20")))).isNegative();
-            assertThat(Money.of(new BigDecimal("20")).compareTo(Money.of(new BigDecimal("10")))).isPositive();
+            assertThat(Money.of(new BigDecimal("10")).compareTo(Money.of(new BigDecimal("20"))))
+                    .isNegative();
+            assertThat(Money.of(new BigDecimal("20")).compareTo(Money.of(new BigDecimal("10"))))
+                    .isPositive();
         }
 
         @Test
         @DisplayName("isGreaterThan")
         void isGreaterThan() {
-            assertThat(Money.of(new BigDecimal("20")).isGreaterThan(Money.of(new BigDecimal("10")))).isTrue();
-            assertThat(Money.of(new BigDecimal("10")).isGreaterThan(Money.of(new BigDecimal("20")))).isFalse();
+            assertThat(Money.of(new BigDecimal("20")).isGreaterThan(Money.of(new BigDecimal("10"))))
+                    .isTrue();
+            assertThat(Money.of(new BigDecimal("10")).isGreaterThan(Money.of(new BigDecimal("20"))))
+                    .isFalse();
         }
 
         @Test
         @DisplayName("isLessThanOrEqualTo")
         void isLessThanOrEqualTo() {
-            assertThat(Money.of(new BigDecimal("10")).isLessThanOrEqualTo(Money.of(new BigDecimal("10")))).isTrue();
-            assertThat(Money.of(new BigDecimal("20")).isLessThanOrEqualTo(Money.of(new BigDecimal("10")))).isFalse();
+            assertThat(Money.of(new BigDecimal("10")).isLessThanOrEqualTo(Money.of(new BigDecimal("10"))))
+                    .isTrue();
+            assertThat(Money.of(new BigDecimal("20")).isLessThanOrEqualTo(Money.of(new BigDecimal("10"))))
+                    .isFalse();
         }
 
         @Test
         @DisplayName("isEqualTo")
         void isEqualTo() {
-            assertThat(Money.of(new BigDecimal("10")).isEqualTo(Money.of(new BigDecimal("10.00")))).isTrue();
-            assertThat(Money.of(new BigDecimal("10")).isEqualTo(Money.of(new BigDecimal("11")))).isFalse();
+            assertThat(Money.of(new BigDecimal("10")).isEqualTo(Money.of(new BigDecimal("10.00"))))
+                    .isTrue();
+            assertThat(Money.of(new BigDecimal("10")).isEqualTo(Money.of(new BigDecimal("11"))))
+                    .isFalse();
         }
     }
 

@@ -1,10 +1,22 @@
 package com.cartethyia.easyorange.framework.web.filter;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.framework.config.properties.IdempotencyProperties;
 import com.cartethyia.easyorange.framework.web.idempotency.CachedResponse;
 import com.cartethyia.easyorange.framework.web.idempotency.IdempotencyService;
 import com.cartethyia.easyorange.framework.web.idempotency.IdempotentOperation;
 import jakarta.servlet.FilterChain;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,19 +25,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Idempotency-Key 幂等过滤器 — 单元测试。
@@ -73,8 +72,7 @@ class IdempotencyKeyFilterTest {
         properties.setEnabled(false);
         var invoked = new AtomicBoolean(false);
 
-        filter.doFilter(keyedWriteRequest(), new MockHttpServletResponse(),
-                (r, s) -> invoked.set(true));
+        filter.doFilter(keyedWriteRequest(), new MockHttpServletResponse(), (r, s) -> invoked.set(true));
 
         assertThat(invoked).isTrue();
         verify(idempotencyService, never()).execute(any(), anyLong(), any());
@@ -126,8 +124,7 @@ class IdempotencyKeyFilterTest {
         var res = new MockHttpServletResponse();
         var invoked = new AtomicBoolean(false);
         when(idempotencyService.execute(anyString(), anyLong(), any()))
-                .thenReturn(new CachedResponse(200, "application/json",
-                        BODY.getBytes(StandardCharsets.UTF_8)));
+                .thenReturn(new CachedResponse(200, "application/json", BODY.getBytes(StandardCharsets.UTF_8)));
 
         filter.doFilter(keyedWriteRequest(), res, (r, s) -> invoked.set(true));
 

@@ -3,27 +3,26 @@ package com.cartethyia.easyorange.message.application.query;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
+import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
+import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
+import com.cartethyia.easyorange.message.domain.enums.MessageType;
+import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
-import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
-import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
-import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
-import com.cartethyia.easyorange.message.domain.enums.MessageType;
-import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -76,15 +75,14 @@ public class MessageQueryHandler {
     }
 
     private PageResult<MessageVO> toMessageVOPage(PageResult<Message> messagePage) {
-        Map<String, String> usernameMap = resolveUsernames(
-                messagePage.records().stream().collect(Collectors.toSet()));
+        Map<String, String> usernameMap =
+                resolveUsernames(messagePage.records().stream().collect(Collectors.toSet()));
 
         List<MessageVO> voList = messagePage.records().stream()
                 .map(m -> toMessageVO(m, usernameMap))
                 .collect(Collectors.toList());
 
-        return PageResult.of(voList, messagePage.total(),
-                messagePage.current(), messagePage.size());
+        return PageResult.of(voList, messagePage.total(), messagePage.current(), messagePage.size());
     }
 
     private Map<String, String> resolveUsernames(Set<Message> aggregates) {

@@ -1,8 +1,13 @@
 package com.cartethyia.easyorange.message.adapter.inbound.job;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,12 +15,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MessageArchiveTask 单元测试")
@@ -69,12 +68,26 @@ class MessageArchiveTaskTest {
         @Test
         @DisplayName("有待归档消息时归档并删除原记录")
         void archiveOldMessages_hasMessages_archivesAndDeletes() {
-            MessageDO msg1 = MessageDO.builder().id("1").senderId("1").receiverId("2").type(1)
-                    .title("title").content("content").isRead(ReadStatus.UNREAD)
-                    .createTime(LocalDateTime.now().minusDays(100)).build();
-            MessageDO msg2 = MessageDO.builder().id("2").senderId("1").receiverId("2").type(1)
-                    .title("title2").content("content2").isRead(ReadStatus.READ)
-                    .createTime(LocalDateTime.now().minusDays(100)).build();
+            MessageDO msg1 = MessageDO.builder()
+                    .id("1")
+                    .senderId("1")
+                    .receiverId("2")
+                    .type(1)
+                    .title("title")
+                    .content("content")
+                    .isRead(ReadStatus.UNREAD)
+                    .createTime(LocalDateTime.now().minusDays(100))
+                    .build();
+            MessageDO msg2 = MessageDO.builder()
+                    .id("2")
+                    .senderId("1")
+                    .receiverId("2")
+                    .type(1)
+                    .title("title2")
+                    .content("content2")
+                    .isRead(ReadStatus.READ)
+                    .createTime(LocalDateTime.now().minusDays(100))
+                    .build();
             when(messageMapper.selectMessagesBefore(any()))
                     .thenReturn(List.of(msg1, msg2))
                     .thenReturn(List.of());
@@ -101,12 +114,26 @@ class MessageArchiveTaskTest {
         @Test
         @DisplayName("多批次归档时循环处理")
         void archiveOldMessages_multipleBatches_processesAll() {
-            MessageDO msg1 = MessageDO.builder().id("1").senderId("1").receiverId("2").type(1)
-                    .title("t").content("c").isRead(ReadStatus.UNREAD)
-                    .createTime(LocalDateTime.now().minusDays(100)).build();
-            MessageDO msg2 = MessageDO.builder().id("2").senderId("1").receiverId("2").type(1)
-                    .title("t2").content("c2").isRead(ReadStatus.READ)
-                    .createTime(LocalDateTime.now().minusDays(100)).build();
+            MessageDO msg1 = MessageDO.builder()
+                    .id("1")
+                    .senderId("1")
+                    .receiverId("2")
+                    .type(1)
+                    .title("t")
+                    .content("c")
+                    .isRead(ReadStatus.UNREAD)
+                    .createTime(LocalDateTime.now().minusDays(100))
+                    .build();
+            MessageDO msg2 = MessageDO.builder()
+                    .id("2")
+                    .senderId("1")
+                    .receiverId("2")
+                    .type(1)
+                    .title("t2")
+                    .content("c2")
+                    .isRead(ReadStatus.READ)
+                    .createTime(LocalDateTime.now().minusDays(100))
+                    .build();
             when(messageMapper.selectMessagesBefore(any()))
                     .thenReturn(List.of(msg1))
                     .thenReturn(List.of(msg2))

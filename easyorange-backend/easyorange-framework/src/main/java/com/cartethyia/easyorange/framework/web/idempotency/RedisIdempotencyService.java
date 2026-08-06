@@ -1,12 +1,11 @@
 package com.cartethyia.easyorange.framework.web.idempotency;
 
 import com.cartethyia.easyorange.framework.config.properties.IdempotencyProperties;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * 基于 Redis 的 Idempotency-Key 幂等服务。
@@ -59,7 +58,7 @@ public class RedisIdempotencyService implements IdempotencyService {
                         if (done != null) {
                             return (T) done;
                         }
-                        T result = operation.execute();   // 仅赢家执行；业务异常向上抛、不缓存
+                        T result = operation.execute(); // 仅赢家执行；业务异常向上抛、不缓存
                         cacheResult(resultKey, result, resultTtl, key);
                         return result;
                     } finally {
@@ -98,9 +97,9 @@ public class RedisIdempotencyService implements IdempotencyService {
     /** 抢处理锁；Redis 不可用抛 {@link RedisUnavailableException} 以触发 fail-open。 */
     private boolean tryAcquireLock(String lockKey, String key) {
         try {
-            return Boolean.TRUE.equals(
-                    redisTemplate.opsForValue().setIfAbsent(
-                            lockKey, LOCK_MARKER, properties.getLockTtlSeconds(), TimeUnit.SECONDS));
+            return Boolean.TRUE.equals(redisTemplate
+                    .opsForValue()
+                    .setIfAbsent(lockKey, LOCK_MARKER, properties.getLockTtlSeconds(), TimeUnit.SECONDS));
         } catch (Exception e) {
             throw new RedisUnavailableException(e);
         }

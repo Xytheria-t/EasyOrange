@@ -2,9 +2,8 @@ package com.cartethyia.easyorange.common.exception.validation;
 
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
-import lombok.Getter;
-
 import java.util.Map;
+import lombok.Getter;
 
 @Getter
 public class ParamValidationException extends BaseBusinessException {
@@ -17,9 +16,7 @@ public class ParamValidationException extends BaseBusinessException {
 
     public ParamValidationException(String message, Map<String, String> fieldErrors) {
         super(ResultCode.VALIDATE_FAILED, message);
-        this.fieldErrors = fieldErrors != null
-                ? Map.copyOf(fieldErrors)
-                : Map.of();
+        this.fieldErrors = fieldErrors != null ? Map.copyOf(fieldErrors) : Map.of();
     }
 
     @Override

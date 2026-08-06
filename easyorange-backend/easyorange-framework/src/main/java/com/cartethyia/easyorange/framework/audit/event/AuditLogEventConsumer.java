@@ -27,9 +27,10 @@ public class AuditLogEventConsumer {
     private final EventConsumerHandler handler;
     private final AuditLogService auditLogService;
 
-    public AuditLogEventConsumer(EventIdempotencyChecker idempotencyChecker,
-                                  EventMetricsService metricsService,
-                                  AuditLogService auditLogService) {
+    public AuditLogEventConsumer(
+            EventIdempotencyChecker idempotencyChecker,
+            EventMetricsService metricsService,
+            AuditLogService auditLogService) {
         this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService, false);
         this.auditLogService = auditLogService;
     }
@@ -38,9 +39,13 @@ public class AuditLogEventConsumer {
     public void onAuditLog(AuditLogEvent event, Message message) {
         handler.handle(event, message, metadata -> {
             var auditLog = event.auditLog();
-            log.info("审计日志入库: method={} status={} user={} ip={} duration={}ms",
-                    auditLog.getMethod(), auditLog.getStatus(), auditLog.getUsername(),
-                    auditLog.getClientIp(), auditLog.getDuration());
+            log.info(
+                    "审计日志入库: method={} status={} user={} ip={} duration={}ms",
+                    auditLog.getMethod(),
+                    auditLog.getStatus(),
+                    auditLog.getUsername(),
+                    auditLog.getClientIp(),
+                    auditLog.getDuration());
             auditLogService.insertAuditLog(auditLog);
         });
     }

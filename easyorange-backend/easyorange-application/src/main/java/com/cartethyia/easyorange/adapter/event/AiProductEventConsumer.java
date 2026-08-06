@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductMarkedSoldEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductUpdatedEvent;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
@@ -16,8 +17,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * AI 商品事件消费者 — 异步响应商品生命周期事件并触发 AI 处理。
@@ -44,11 +43,12 @@ public class AiProductEventConsumer {
     private final AiCopyGenerationService copyGenerationService;
     private final RedisTemplate<Object, Object> redisTemplate;
 
-    public AiProductEventConsumer(EventIdempotencyChecker idempotencyChecker,
-                                  EventMetricsService metricsService,
-                                  AiPricingService pricingService,
-                                  AiCopyGenerationService copyGenerationService,
-                                  RedisTemplate<Object, Object> redisTemplate) {
+    public AiProductEventConsumer(
+            EventIdempotencyChecker idempotencyChecker,
+            EventMetricsService metricsService,
+            AiPricingService pricingService,
+            AiCopyGenerationService copyGenerationService,
+            RedisTemplate<Object, Object> redisTemplate) {
         this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService, false);
         this.pricingService = pricingService;
         this.copyGenerationService = copyGenerationService;
@@ -62,10 +62,11 @@ public class AiProductEventConsumer {
             var suggestion = pricingService.suggestPrice(
                     data.name(), data.description(), null, data.conditionLevel(), data.originalPrice());
             if (suggestion != null) {
-                redisTemplate.opsForValue().set(
-                        "eo:ai:valuation:" + event.productId(), suggestion, 24, TimeUnit.HOURS);
-                log.info("event=product_created_valuated productId={} suggestedPrice={}",
-                        event.productId(), suggestion.suggestedPrice());
+                redisTemplate.opsForValue().set("eo:ai:valuation:" + event.productId(), suggestion, 24, TimeUnit.HOURS);
+                log.info(
+                        "event=product_created_valuated productId={} suggestedPrice={}",
+                        event.productId(),
+                        suggestion.suggestedPrice());
             }
         });
     }
@@ -75,14 +76,17 @@ public class AiProductEventConsumer {
         handler.handle(event, message, metadata -> {
             var data = event.data();
             var copyResult = copyGenerationService.generateCopy(
-                    data.name(), null, data.conditionLevel(),
+                    data.name(),
+                    null,
+                    data.conditionLevel(),
                     data.originalPrice() != null ? data.originalPrice().toString() : null,
                     "standard");
             if (copyResult != null) {
-                redisTemplate.opsForValue().set(
-                        "eo:ai:copy:" + event.productId(), copyResult, 24, TimeUnit.HOURS);
-                log.info("event=product_updated_copy_generated productId={} copyTitle={}",
-                        event.productId(), copyResult.title());
+                redisTemplate.opsForValue().set("eo:ai:copy:" + event.productId(), copyResult, 24, TimeUnit.HOURS);
+                log.info(
+                        "event=product_updated_copy_generated productId={} copyTitle={}",
+                        event.productId(),
+                        copyResult.title());
             }
             redisTemplate.delete("eo:ai:valuation:" + event.productId());
         });
@@ -91,8 +95,10 @@ public class AiProductEventConsumer {
     @RabbitHandler
     public void onProductMarkedSold(ProductMarkedSoldEvent event, Message message) {
         handler.handle(event, message, metadata -> {
-            log.info("event=product_marked_sold productId={} sellerId={} action=record_sale_price",
-                    event.productId(), event.sellerId());
+            log.info(
+                    "event=product_marked_sold productId={} sellerId={} action=record_sale_price",
+                    event.productId(),
+                    event.sellerId());
             redisTemplate.delete("eo:ai:valuation:" + event.productId());
             redisTemplate.delete("eo:ai:copy:" + event.productId());
         });

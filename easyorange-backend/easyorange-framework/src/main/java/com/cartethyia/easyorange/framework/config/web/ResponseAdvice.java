@@ -1,7 +1,8 @@
 package com.cartethyia.easyorange.framework.config.web;
 
 import com.cartethyia.easyorange.common.result.Result;
-import tools.jackson.databind.ObjectMapper;
+import jakarta.annotation.Nullable;
+import java.util.Objects;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -9,10 +10,7 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
-
-import jakarta.annotation.Nullable;
-
-import java.util.Objects;
+import tools.jackson.databind.ObjectMapper;
 
 @RestControllerAdvice(basePackages = "com.cartethyia.easyorange")
 public class ResponseAdvice implements ResponseBodyAdvice<Object> {
@@ -24,16 +22,20 @@ public class ResponseAdvice implements ResponseBodyAdvice<Object> {
     }
 
     @Override
-    public boolean supports(MethodParameter returnType, @Nullable Class<? extends HttpMessageConverter<?>> converterType) {
+    public boolean supports(
+            MethodParameter returnType, @Nullable Class<? extends HttpMessageConverter<?>> converterType) {
         return !Result.class.isAssignableFrom(returnType.getParameterType());
     }
 
     @Override
     @Nullable
-    public Object beforeBodyWrite(@Nullable Object body, @Nullable MethodParameter returnType,
-                                  @Nullable MediaType selectedContentType,
-                                  @Nullable Class<? extends HttpMessageConverter<?>> selectedConverterType,
-                                  @Nullable ServerHttpRequest request, @Nullable ServerHttpResponse response) {
+    public Object beforeBodyWrite(
+            @Nullable Object body,
+            @Nullable MethodParameter returnType,
+            @Nullable MediaType selectedContentType,
+            @Nullable Class<? extends HttpMessageConverter<?>> selectedConverterType,
+            @Nullable ServerHttpRequest request,
+            @Nullable ServerHttpResponse response) {
         switch (body) {
             case null -> {
                 return Result.success();

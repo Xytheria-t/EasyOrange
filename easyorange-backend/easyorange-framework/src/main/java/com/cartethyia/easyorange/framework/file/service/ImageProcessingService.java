@@ -22,13 +22,19 @@ public interface ImageProcessingService {
             this.mimeType = mimeType;
         }
 
-        public String extension() { return extension; }
-        public String mimeType() { return mimeType; }
+        public String extension() {
+            return extension;
+        }
+
+        public String mimeType() {
+            return mimeType;
+        }
     }
 
     record ProcessedImage(File file, String mimeType, long size) {}
 
-    ProcessedImage processImage(File source, int width, int height, ImageFormat format, float quality) throws IOException;
+    ProcessedImage processImage(File source, int width, int height, ImageFormat format, float quality)
+            throws IOException;
 
     ProcessedImage createThumbnail(File source, int size, float quality) throws IOException;
 

@@ -1,5 +1,11 @@
 package com.cartethyia.easyorange.message.application.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+
+import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -7,27 +13,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-
-import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("RateLimiterService 单元测试")
 class RateLimiterServiceTest {
 
     @Mock
-    private RedisTemplate<Object, Object> redisTemplate;
-
-    @Mock
-    private ValueOperations<Object, Object> valueOperations;
+    private DistributedRateLimiter distributedRateLimiter;
 
     @InjectMocks
     private RateLimiterService rateLimiterService;
@@ -39,46 +31,21 @@ class RateLimiterServiceTest {
     class AllowSendMessageTests {
 
         @Test
-        @DisplayName("首次发送消息时返回 true")
-        void allowSendMessage_firstCall_returnsTrue() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.get(anyString())).thenReturn(null);
+        @DisplayName("获得令牌时放行")
+        void allowSendMessage_acquiredToken_returnsTrue() {
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                    .thenReturn(true);
 
             boolean result = rateLimiterService.allowSendMessage(USER_ID);
 
             assertThat(result).isTrue();
-            verify(valueOperations).set(anyString(), eq(1), eq(1L), eq(TimeUnit.SECONDS));
         }
 
         @Test
-        @DisplayName("在限制次数内发送消息返回 true")
-        void allowSendMessage_underLimit_returnsTrue() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.get(anyString())).thenReturn(3);
-
-            boolean result = rateLimiterService.allowSendMessage(USER_ID);
-
-            assertThat(result).isTrue();
-            verify(valueOperations).increment(anyString(), eq(1L));
-        }
-
-        @Test
-        @DisplayName("超过限制次数后返回 false")
-        void allowSendMessage_overLimit_returnsFalse() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.get(anyString())).thenReturn(5);
-
-            boolean result = rateLimiterService.allowSendMessage(USER_ID);
-
-            assertThat(result).isFalse();
-            verify(valueOperations, never()).increment(anyString(), anyLong());
-        }
-
-        @Test
-        @DisplayName("正好达到限制次数时返回 false")
-        void allowSendMessage_atExactLimit_returnsFalse() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.get(anyString())).thenReturn(5);
+        @DisplayName("令牌耗尽时限流")
+        void allowSendMessage_tokenExhausted_returnsFalse() {
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                    .thenReturn(false);
 
             boolean result = rateLimiterService.allowSendMessage(USER_ID);
 
@@ -86,61 +53,30 @@ class RateLimiterServiceTest {
         }
 
         @Test
-        @DisplayName("Redis 异常时使用本地计数器降级")
-        void allowSendMessage_redisException_usesLocalFallback() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.get(anyString())).thenThrow(new RuntimeException("Redis 连接失败"));
+        @DisplayName("Redis 异常时 fail-open 放行")
+        void allowSendMessage_redisException_failsOpen() {
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                    .thenThrow(new RuntimeException("Redis 连接失败"));
 
-            // 前 5 次应返回 true（本地计数器 0-4）
-            for (int i = 0; i < 5; i++) {
-                assertThat(rateLimiterService.allowSendMessage(USER_ID)).isTrue();
-            }
-            // 第 6 次应返回 false
-            assertThat(rateLimiterService.allowSendMessage(USER_ID)).isFalse();
-        }
-
-        @Test
-        @DisplayName("Redis 异常降级后本地计数器重置")
-        void allowSendMessage_redisException_localCounterResets() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.get(anyString())).thenThrow(new RuntimeException("Redis 连接失败"));
-
-            // 触发限流
-            for (int i = 0; i < 6; i++) {
-                rateLimiterService.allowSendMessage(USER_ID);
-            }
-
-            // 本地计数器在达到 5 时置 0，所以后续调用应返回 true
             boolean result = rateLimiterService.allowSendMessage(USER_ID);
+
             assertThat(result).isTrue();
         }
     }
 
     @Nested
-    @DisplayName("Redis key 格式")
-    class RedisKeyFormatTests {
+    @DisplayName("限流 key")
+    class RateLimitKeyTests {
 
         @Test
-        @DisplayName("消息限流 key 包含用户 ID")
+        @DisplayName("key 包含用户 ID")
         void allowSendMessage_keyContainsUserId() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.get(eq("chat:rate:message:" + USER_ID))).thenReturn(null);
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                    .thenReturn(true);
 
             rateLimiterService.allowSendMessage(USER_ID);
 
-            verify(valueOperations).set(eq("chat:rate:message:" + USER_ID), eq(1), eq(1L), eq(TimeUnit.SECONDS));
-        }
-
-        @Test
-        @DisplayName("消息限流 key 正确格式化")
-        void allowSendMessage_correctKeyFormat() {
-            String userId = "12345";
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.get(anyString())).thenReturn(null);
-
-            rateLimiterService.allowSendMessage(userId);
-
-            verify(valueOperations).get("chat:rate:message:12345");
+            org.mockito.Mockito.verify(distributedRateLimiter).tryAcquire("eo:rate:message:" + USER_ID, 5, 1);
         }
     }
 }

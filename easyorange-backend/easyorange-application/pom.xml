@@ -127,6 +127,30 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- ===== Testcontainers 集成测试（真实 MySQL/Redis/RabbitMQ）=====
+             版本由 spring-boot-dependencies BOM 托管。用例基类采用
+             @Testcontainers(disabledWithoutDocker=true)：无 Docker 时自动跳过，不破坏构建。 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-mysql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-rabbitmq</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Spring Modulith Event Publication Registry (JDBC backend, shares primary DataSource) -->
         <dependency>
             <groupId>org.springframework.modulith</groupId>

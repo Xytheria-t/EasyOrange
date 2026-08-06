@@ -1,17 +1,16 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("JwtProperties Tests")
 class JwtPropertiesTest {
@@ -77,48 +76,42 @@ class JwtPropertiesTest {
         @DisplayName("should reject null issuer")
         void nullIssuer_shouldHaveViolation() {
             properties.setIssuer(null);
-            assertThat(violations())
-                    .anyMatch(v -> v.getMessage().contains("发行者"));
+            assertThat(violations()).anyMatch(v -> v.getMessage().contains("发行者"));
         }
 
         @Test
         @DisplayName("should reject blank issuer")
         void blankIssuer_shouldHaveViolation() {
             properties.setIssuer("   ");
-            assertThat(violations())
-                    .anyMatch(v -> v.getMessage().contains("发行者"));
+            assertThat(violations()).anyMatch(v -> v.getMessage().contains("发行者"));
         }
 
         @Test
         @DisplayName("should reject zero access token expiration")
         void zeroAccessTokenExpiration_shouldHaveViolation() {
             properties.setAccessTokenExpiration(0);
-            assertThat(violations())
-                    .anyMatch(v -> v.getMessage().contains("Access Token"));
+            assertThat(violations()).anyMatch(v -> v.getMessage().contains("Access Token"));
         }
 
         @Test
         @DisplayName("should reject negative access token expiration")
         void negativeAccessTokenExpiration_shouldHaveViolation() {
             properties.setAccessTokenExpiration(-1);
-            assertThat(violations())
-                    .anyMatch(v -> v.getMessage().contains("Access Token"));
+            assertThat(violations()).anyMatch(v -> v.getMessage().contains("Access Token"));
         }
 
         @Test
         @DisplayName("should reject zero refresh token expiration")
         void zeroRefreshTokenExpiration_shouldHaveViolation() {
             properties.setRefreshTokenExpiration(0);
-            assertThat(violations())
-                    .anyMatch(v -> v.getMessage().contains("Refresh Token"));
+            assertThat(violations()).anyMatch(v -> v.getMessage().contains("Refresh Token"));
         }
 
         @Test
         @DisplayName("should reject negative refresh token expiration")
         void negativeRefreshTokenExpiration_shouldHaveViolation() {
             properties.setRefreshTokenExpiration(-1);
-            assertThat(violations())
-                    .anyMatch(v -> v.getMessage().contains("Refresh Token"));
+            assertThat(violations()).anyMatch(v -> v.getMessage().contains("Refresh Token"));
         }
 
         @Test

@@ -6,20 +6,18 @@ import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 /**
  * Admin 产品查询适配器
@@ -36,8 +34,7 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
 
     @Override
     public ProductQueryResult queryProducts(ProductQueryCondition condition) {
-        var wrapper = ChainWrappers.lambdaQueryChain(productMapper)
-            .eq(ProductDO::getDelFlag, 0);
+        var wrapper = ChainWrappers.lambdaQueryChain(productMapper).eq(ProductDO::getDelFlag, 0);
 
         if (condition.keyword() != null && !condition.keyword().isEmpty()) {
             wrapper.like(ProductDO::getName, condition.keyword());
@@ -64,9 +61,8 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
         int pageSize = condition.pageSize() != null ? condition.pageSize() : 20;
         Page<ProductDO> page = wrapper.page(new Page<>(pageNum, pageSize));
 
-        List<ProductSummary> records = page.getRecords().stream()
-            .map(this::toProductSummary)
-            .collect(Collectors.toList());
+        List<ProductSummary> records =
+                page.getRecords().stream().map(this::toProductSummary).collect(Collectors.toList());
 
         return new ProductQueryResult(records, page.getTotal(), pageNum, pageSize);
     }
@@ -82,23 +78,24 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
         String description = details.isEmpty() ? null : details.get(0).getDescription();
 
         return new ProductDetail(
-            product.getId(),
-            product.getName(),
-            description,
-            product.getPrice(),
-            product.getOriginalPrice(),
-            product.getStock(),
-            product.getStatus() != null ? product.getStatus().getCode() : null,
-            product.getStatus() != null ? product.getStatus().getDesc() : null,
-            product.getConditionLevel() != null ? product.getConditionLevel().getCode() : null,
-            product.getLocation(),
-            product.getContactMethod(),
-            product.getCategoryId(),
-            product.getUserId(),
-            product.getViewCount(),
-            product.getCreateTime(),
-            product.getUpdateTime()
-        );
+                product.getId(),
+                product.getName(),
+                description,
+                product.getPrice(),
+                product.getOriginalPrice(),
+                product.getStock(),
+                product.getStatus() != null ? product.getStatus().getCode() : null,
+                product.getStatus() != null ? product.getStatus().getDesc() : null,
+                product.getConditionLevel() != null
+                        ? product.getConditionLevel().getCode()
+                        : null,
+                product.getLocation(),
+                product.getContactMethod(),
+                product.getCategoryId(),
+                product.getUserId(),
+                product.getViewCount(),
+                product.getCreateTime(),
+                product.getUpdateTime());
     }
 
     @Override
@@ -107,14 +104,13 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
             return Map.of();
         }
         List<ProductImageDO> images = ChainWrappers.lambdaQueryChain(productImageMapper)
-            .in(ProductImageDO::getProductId, productIds)
-            .orderByAsc(ProductImageDO::getSortOrder)
-            .list();
+                .in(ProductImageDO::getProductId, productIds)
+                .orderByAsc(ProductImageDO::getSortOrder)
+                .list();
         return images.stream()
-            .collect(Collectors.groupingBy(
-                ProductImageDO::getProductId,
-                Collectors.mapping(ProductImageDO::getImageUrl, Collectors.toList())
-            ));
+                .collect(Collectors.groupingBy(
+                        ProductImageDO::getProductId,
+                        Collectors.mapping(ProductImageDO::getImageUrl, Collectors.toList())));
     }
 
     @Override
@@ -124,12 +120,8 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
         }
         List<ProductDO> products = productMapper.selectByIds(productIds);
         return products.stream()
-            .filter(p -> p.getDelFlag() == 0)
-            .collect(Collectors.toMap(
-                ProductDO::getId,
-                p -> new ProductInfo(p.getId(), p.getName()),
-                (a, b) -> a
-            ));
+                .filter(p -> p.getDelFlag() == 0)
+                .collect(Collectors.toMap(ProductDO::getId, p -> new ProductInfo(p.getId(), p.getName()), (a, b) -> a));
     }
 
     @Override
@@ -156,7 +148,9 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
                 product.getName(),
                 description,
                 categoryName,
-                product.getConditionLevel() != null ? product.getConditionLevel().getCode() : null,
+                product.getConditionLevel() != null
+                        ? product.getConditionLevel().getCode()
+                        : null,
                 product.getPrice(),
                 sellerName,
                 imageUrls);
@@ -164,21 +158,22 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
 
     private ProductSummary toProductSummary(ProductDO product) {
         return new ProductSummary(
-            product.getId(),
-            product.getName(),
-            product.getPrice(),
-            product.getOriginalPrice(),
-            product.getStock(),
-            product.getStatus() != null ? product.getStatus().getCode() : null,
-            product.getStatus() != null ? product.getStatus().getDesc() : null,
-            product.getConditionLevel() != null ? product.getConditionLevel().getCode() : null,
-            product.getLocation(),
-            product.getContactMethod(),
-            product.getCategoryId(),
-            product.getUserId(),
-            product.getViewCount(),
-            product.getCreateTime(),
-            product.getUpdateTime()
-        );
+                product.getId(),
+                product.getName(),
+                product.getPrice(),
+                product.getOriginalPrice(),
+                product.getStock(),
+                product.getStatus() != null ? product.getStatus().getCode() : null,
+                product.getStatus() != null ? product.getStatus().getDesc() : null,
+                product.getConditionLevel() != null
+                        ? product.getConditionLevel().getCode()
+                        : null,
+                product.getLocation(),
+                product.getContactMethod(),
+                product.getCategoryId(),
+                product.getUserId(),
+                product.getViewCount(),
+                product.getCreateTime(),
+                product.getUpdateTime());
     }
 }

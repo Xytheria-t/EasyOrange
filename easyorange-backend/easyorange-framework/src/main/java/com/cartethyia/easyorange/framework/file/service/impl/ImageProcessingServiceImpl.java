@@ -2,18 +2,17 @@ package com.cartethyia.easyorange.framework.file.service.impl;
 
 import com.cartethyia.easyorange.framework.config.properties.ImageProcessingProperties;
 import com.cartethyia.easyorange.framework.file.service.ImageProcessingService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import net.coobird.thumbnailator.Thumbnails;
-import net.coobird.thumbnailator.geometry.Positions;
-import org.springframework.stereotype.Service;
-
-import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
+import javax.imageio.ImageIO;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.coobird.thumbnailator.Thumbnails;
+import net.coobird.thumbnailator.geometry.Positions;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -22,15 +21,15 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
 
     private final ImageProcessingProperties properties;
 
-    private static final Set<String> SUPPORTED_IMAGE_TYPES = Set.of(
-            "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/bmp");
+    private static final Set<String> SUPPORTED_IMAGE_TYPES =
+            Set.of("image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/bmp");
 
-    private static final Set<ImageFormat> SUPPORTED_OUTPUT_FORMATS = Set.of(
-            ImageFormat.JPEG, ImageFormat.PNG, ImageFormat.WEBP);
+    private static final Set<ImageFormat> SUPPORTED_OUTPUT_FORMATS =
+            Set.of(ImageFormat.JPEG, ImageFormat.PNG, ImageFormat.WEBP);
 
     @Override
-    public ProcessedImage processImage(File source, int width, int height,
-                                       ImageFormat format, float quality) throws IOException {
+    public ProcessedImage processImage(File source, int width, int height, ImageFormat format, float quality)
+            throws IOException {
         var output = createTempFile("processed_", format.extension());
         try {
             var builder = Thumbnails.of(source)

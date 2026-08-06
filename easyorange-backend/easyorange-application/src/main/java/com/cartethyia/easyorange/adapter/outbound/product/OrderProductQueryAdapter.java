@@ -3,12 +3,11 @@ package com.cartethyia.easyorange.adapter.outbound.product;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.product.application.query.ProductQueryHandler;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Optional;
 
 @Primary
 @Component
@@ -21,8 +20,7 @@ public class OrderProductQueryAdapter implements ProductQueryPort {
     public Optional<ProductDetail> getProductById(String productId) {
         try {
             ProductVO product = productQueryHandler.getProductById(productId);
-            return Optional.ofNullable(product)
-                    .map(this::toDetail);
+            return Optional.ofNullable(product).map(this::toDetail);
         } catch (Exception e) {
             return Optional.empty();
         }
@@ -34,9 +32,7 @@ public class OrderProductQueryAdapter implements ProductQueryPort {
         if (products == null) {
             return List.of();
         }
-        return products.stream()
-                .map(this::toDetail)
-                .toList();
+        return products.stream().map(this::toDetail).toList();
     }
 
     private ProductDetail toDetail(ProductVO p) {
@@ -47,7 +43,6 @@ public class OrderProductQueryAdapter implements ProductQueryPort {
                 p.getStatus(),
                 p.getImages(),
                 p.getDescription(),
-                p.getConditionDesc()
-        );
+                p.getConditionDesc());
     }
 }

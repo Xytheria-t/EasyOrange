@@ -1,11 +1,10 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * 审计日志配置属性
@@ -69,10 +68,8 @@ public class AuditLogProperties {
      * 默认覆盖常见地查询前缀。
      * </p>
      */
-    private List<String> skipPrefixes = List.of(
-            "get", "query", "find", "list", "detail",
-            "search", "count", "check", "exists", "stats", "my"
-    );
+    private List<String> skipPrefixes =
+            List.of("get", "query", "find", "list", "detail", "search", "count", "check", "exists", "stats", "my");
 
     /**
      * 请求参数中需要掩码的敏感字段名列表
@@ -81,9 +78,15 @@ public class AuditLogProperties {
      * </p>
      */
     private List<String> sensitiveFields = List.of(
-            "password", "confirmPassword", "oldPassword", "newPassword",
-            "token", "secret", "secretKey", "accessToken", "refreshToken"
-    );
+            "password",
+            "confirmPassword",
+            "oldPassword",
+            "newPassword",
+            "token",
+            "secret",
+            "secretKey",
+            "accessToken",
+            "refreshToken");
 
     /**
      * Controller 类名 → 中文模块名称映射

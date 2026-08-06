@@ -1,15 +1,21 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
-import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import java.math.BigDecimal;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,13 +25,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-
-import java.math.BigDecimal;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ElasticsearchProductSearchIndexAdapterTest {
@@ -57,8 +56,12 @@ class ElasticsearchProductSearchIndexAdapterTest {
     void setUp() {
         lenient().when(embeddingModelProvider.getIfAvailable()).thenReturn(null);
         adapter = new ElasticsearchProductSearchIndexAdapter(
-                productMapper, productDetailMapper, productImageMapper,
-                categoryMapper, elasticsearchOperations, embeddingModelProvider);
+                productMapper,
+                productDetailMapper,
+                productImageMapper,
+                categoryMapper,
+                elasticsearchOperations,
+                embeddingModelProvider);
     }
 
     @Test
@@ -79,14 +82,22 @@ class ElasticsearchProductSearchIndexAdapterTest {
                 .tags("tag1,tag2,tag3")
                 .build();
 
-        ProductDetailDO detail = ProductDetailDO.builder().productId("100").description("商品描述").build();
+        ProductDetailDO detail =
+                ProductDetailDO.builder().productId("100").description("商品描述").build();
         when(productDetailMapper.selectById("100")).thenReturn(detail);
 
         ProductImageDO mainImage = new ProductImageDO("100", "http://example.com/main.jpg", 1, 1);
         ProductImageDO otherImage = new ProductImageDO("100", "http://example.com/other.jpg", 2, 0);
         when(productImageMapper.selectList(any())).thenReturn(List.of(mainImage, otherImage));
 
-        CategoryDO category = CategoryDO.builder().name("手机").parentId("0").level(1).icon("icon.png").sortOrder(1).status(1).build();
+        CategoryDO category = CategoryDO.builder()
+                .name("手机")
+                .parentId("0")
+                .level(1)
+                .icon("icon.png")
+                .sortOrder(1)
+                .status(1)
+                .build();
         when(categoryMapper.selectById("300")).thenReturn(category);
 
         ProductDocument doc = adapter.buildDocument(product);
@@ -106,8 +117,7 @@ class ElasticsearchProductSearchIndexAdapterTest {
         assertThat(doc.getLocation()).isEqualTo("北京");
         assertThat(doc.getTags()).containsExactly("tag1", "tag2", "tag3");
         assertThat(doc.getMainImage()).isEqualTo("http://example.com/main.jpg");
-        assertThat(doc.getImages()).containsExactly(
-                "http://example.com/main.jpg", "http://example.com/other.jpg");
+        assertThat(doc.getImages()).containsExactly("http://example.com/main.jpg", "http://example.com/other.jpg");
     }
 
     @Test
@@ -156,7 +166,7 @@ class ElasticsearchProductSearchIndexAdapterTest {
     @DisplayName("embedding 服务可用时应写入 nameEmbedding")
     void buildDocument_shouldWriteNameEmbedding() {
         when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
-        when(embeddingModel.embed("测试商品")).thenReturn(new float[]{0.1f, 0.2f, 0.3f});
+        when(embeddingModel.embed("测试商品")).thenReturn(new float[] {0.1f, 0.2f, 0.3f});
 
         ProductDO product = ProductDO.builder()
                 .id("100")
@@ -204,10 +214,10 @@ class ElasticsearchProductSearchIndexAdapterTest {
                 .build();
 
         when(productDetailMapper.selectById("100")).thenReturn(null);
-        when(productImageMapper.selectList(any())).thenReturn(List.of(
-                new ProductImageDO("100", "http://example.com/img1.jpg", 1, 0),
-                new ProductImageDO("100", "http://example.com/img2.jpg", 2, 1)
-        ));
+        when(productImageMapper.selectList(any()))
+                .thenReturn(List.of(
+                        new ProductImageDO("100", "http://example.com/img1.jpg", 1, 0),
+                        new ProductImageDO("100", "http://example.com/img2.jpg", 2, 1)));
 
         ProductDocument doc = adapter.buildDocument(product);
 
@@ -225,9 +235,8 @@ class ElasticsearchProductSearchIndexAdapterTest {
                 .build();
 
         when(productDetailMapper.selectById("100")).thenReturn(null);
-        when(productImageMapper.selectList(any())).thenReturn(List.of(
-                new ProductImageDO("100", "http://example.com/first.jpg", 1, 0)
-        ));
+        when(productImageMapper.selectList(any()))
+                .thenReturn(List.of(new ProductImageDO("100", "http://example.com/first.jpg", 1, 0)));
 
         ProductDocument doc = adapter.buildDocument(product);
 

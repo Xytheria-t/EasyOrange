@@ -1,13 +1,12 @@
 package com.cartethyia.easyorange.common.util;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * BizRequire 单元测试

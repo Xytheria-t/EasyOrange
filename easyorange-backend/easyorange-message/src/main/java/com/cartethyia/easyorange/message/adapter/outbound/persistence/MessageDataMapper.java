@@ -1,12 +1,9 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
-import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
-import com.cartethyia.easyorange.message.adapter.outbound.persistence.OfflineMessageDO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
-import org.mapstruct.Mapper;
-
 import java.util.List;
+import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface MessageDataMapper {
@@ -18,18 +15,18 @@ public interface MessageDataMapper {
             return null;
         }
         return MessageDO.builder()
-            .id(aggregate.id())
-            .senderId(aggregate.senderId())
-            .receiverId(aggregate.receiverId())
-            .type(aggregate.type())
-            .title(aggregate.title())
-            .content(aggregate.content())
-            .isRead(aggregate.isRead())
-            .readTime(aggregate.readTime())
-            .businessId(aggregate.businessId())
-            .msgStatus(aggregate.msgStatus())
-            .recalledAt(aggregate.recalledAt())
-            .build();
+                .id(aggregate.id())
+                .senderId(aggregate.senderId())
+                .receiverId(aggregate.receiverId())
+                .type(aggregate.type())
+                .title(aggregate.title())
+                .content(aggregate.content())
+                .isRead(aggregate.isRead())
+                .readTime(aggregate.readTime())
+                .businessId(aggregate.businessId())
+                .msgStatus(aggregate.msgStatus())
+                .recalledAt(aggregate.recalledAt())
+                .build();
     }
 
     default Message toAggregate(MessageDO entity) {
@@ -48,8 +45,7 @@ public interface MessageDataMapper {
                 entity.getBusinessId(),
                 entity.getMsgStatus(),
                 entity.getRecalledAt(),
-                entity.getCreateTime()
-        );
+                entity.getCreateTime());
     }
 
     default List<Message> toAggregateList(List<MessageDO> entities) {
@@ -66,14 +62,14 @@ public interface MessageDataMapper {
             return null;
         }
         return OfflineMessageDO.builder()
-            .id(aggregate.id())
-            .userId(aggregate.userId())
-            .messageId(aggregate.messageId())
-            .pushChannel(aggregate.pushChannel())
-            .pushStatus(aggregate.pushStatus())
-            .retryCount(aggregate.retryCount())
-            .maxRetryCount(aggregate.maxRetryCount())
-            .build();
+                .id(aggregate.id())
+                .userId(aggregate.userId())
+                .messageId(aggregate.messageId())
+                .pushChannel(aggregate.pushChannel())
+                .pushStatus(aggregate.pushStatus())
+                .retryCount(aggregate.retryCount())
+                .maxRetryCount(aggregate.maxRetryCount())
+                .build();
     }
 
     default OfflineMessage toAggregate(OfflineMessageDO entity) {
@@ -87,8 +83,7 @@ public interface MessageDataMapper {
                 entity.getPushChannel(),
                 entity.getPushStatus(),
                 entity.getRetryCount(),
-                entity.getMaxRetryCount()
-        );
+                entity.getMaxRetryCount());
     }
 
     default List<OfflineMessage> toOfflineAggregateList(List<OfflineMessageDO> entities) {

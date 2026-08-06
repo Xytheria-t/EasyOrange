@@ -1,14 +1,13 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("SecurityProperties Tests")
 class SecurityPropertiesTest {
@@ -59,7 +58,6 @@ class SecurityPropertiesTest {
         void passwordEncoderStrength_default_shouldBe10() {
             assertThat(properties.getPasswordEncoderStrength()).isEqualTo(10);
         }
-
     }
 
     @Nested
@@ -170,8 +168,7 @@ class SecurityPropertiesTest {
 
             List<String> paths = properties.getIgnorePaths();
 
-            assertThatThrownBy(() -> paths.add("/api/other"))
-                    .isInstanceOf(UnsupportedOperationException.class);
+            assertThatThrownBy(() -> paths.add("/api/other")).isInstanceOf(UnsupportedOperationException.class);
         }
 
         @Test
@@ -181,8 +178,7 @@ class SecurityPropertiesTest {
 
             List<String> paths = properties.getProductPaths();
 
-            assertThatThrownBy(() -> paths.add("/api/other"))
-                    .isInstanceOf(UnsupportedOperationException.class);
+            assertThatThrownBy(() -> paths.add("/api/other")).isInstanceOf(UnsupportedOperationException.class);
         }
 
         @Test
@@ -192,8 +188,7 @@ class SecurityPropertiesTest {
 
             List<String> paths = properties.getStaticPaths();
 
-            assertThatThrownBy(() -> paths.add("/api/other"))
-                    .isInstanceOf(UnsupportedOperationException.class);
+            assertThatThrownBy(() -> paths.add("/api/other")).isInstanceOf(UnsupportedOperationException.class);
         }
 
         @Test

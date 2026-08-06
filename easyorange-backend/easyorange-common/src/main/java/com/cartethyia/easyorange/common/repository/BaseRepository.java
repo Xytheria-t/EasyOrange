@@ -26,7 +26,9 @@ public abstract class BaseRepository<M extends BaseMapper<T>, T> {
     }
 
     protected <R> Optional<T> findBy(SFunction<T, R> column, R value) {
-        return value == null ? Optional.empty() : Optional.ofNullable(lambdaQuery().eq(column, value).one());
+        return value == null
+                ? Optional.empty()
+                : Optional.ofNullable(lambdaQuery().eq(column, value).one());
     }
 
     protected <R> List<T> findAllByIn(SFunction<T, R> column, Collection<R> values) {

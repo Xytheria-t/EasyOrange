@@ -1,19 +1,18 @@
 package com.cartethyia.easyorange.framework.web.handler;
 
-import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.config.properties.WebMvcProperties;
+import com.cartethyia.easyorange.framework.util.RequestUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.servlet.HandlerInterceptor;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -48,7 +47,8 @@ public class LoggingInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+    public void afterCompletion(
+            HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         var uri = request.getRequestURI();
         if (shouldSkipLogging(uri)) return;
 
@@ -59,21 +59,25 @@ public class LoggingInterceptor implements HandlerInterceptor {
         meterRegistry.counter("http.requests.total").increment();
 
         if (ex != null || status >= 500) {
-            log.error("action=request_error method={} uri={} status={} cost={}ms error={}",
-                    method, uri, status, costTime, ex != null ? ex.getMessage() : "server_error");
+            log.error(
+                    "action=request_error method={} uri={} status={} cost={}ms error={}",
+                    method,
+                    uri,
+                    status,
+                    costTime,
+                    ex != null ? ex.getMessage() : "server_error");
         } else if (status >= 400) {
-            log.warn("action=request_warn method={} uri={} status={} cost={}ms",
-                    method, uri, status, costTime);
+            log.warn("action=request_warn method={} uri={} status={} cost={}ms", method, uri, status, costTime);
         }
 
-        meterRegistry.timer("http.server.request", "uri", uri, "method", method)
+        meterRegistry
+                .timer("http.server.request", "uri", uri, "method", method)
                 .record(costTime, TimeUnit.MILLISECONDS);
 
         MDC.clear();
     }
 
     private boolean shouldSkipLogging(String uri) {
-        return skipLoggingPaths.stream()
-                .anyMatch(pattern -> pathMatcher.match(pattern, uri));
+        return skipLoggingPaths.stream().anyMatch(pattern -> pathMatcher.match(pattern, uri));
     }
 }

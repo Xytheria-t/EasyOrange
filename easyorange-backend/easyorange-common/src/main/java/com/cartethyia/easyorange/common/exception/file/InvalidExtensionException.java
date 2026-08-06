@@ -1,9 +1,8 @@
 package com.cartethyia.easyorange.common.exception.file;
 
 import com.cartethyia.easyorange.common.enums.FileResultCode;
-import lombok.Getter;
-
 import java.util.List;
+import lombok.Getter;
 
 @Getter
 public class InvalidExtensionException extends FileException {

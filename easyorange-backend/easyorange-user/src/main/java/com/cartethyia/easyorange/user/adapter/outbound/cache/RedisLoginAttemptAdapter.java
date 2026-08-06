@@ -2,13 +2,12 @@ package com.cartethyia.easyorange.user.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 @Primary
 @Component

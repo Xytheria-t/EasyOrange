@@ -1,19 +1,18 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.repository.BaseRepository;
-import com.cartethyia.easyorange.message.domain.constant.MessageConstant;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
-import com.cartethyia.easyorange.message.adapter.outbound.persistence.OfflineMessageDO;
+import com.cartethyia.easyorange.message.domain.constant.MessageConstant;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 @Primary
 @Repository
-public class OfflineMessageRepositoryImpl extends BaseRepository<OfflineMessageMapper, OfflineMessageDO> implements OfflineMessageRepository {
+public class OfflineMessageRepositoryImpl extends BaseRepository<OfflineMessageMapper, OfflineMessageDO>
+        implements OfflineMessageRepository {
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final MessageDataMapper messageDataMapper;
@@ -32,16 +31,14 @@ public class OfflineMessageRepositoryImpl extends BaseRepository<OfflineMessageM
 
     @Override
     public List<OfflineMessage> findPendingByUserId(String userId) {
-        return messageDataMapper.toOfflineAggregateList(
-                lambdaQuery()
-                        .eq(OfflineMessageDO::getUserId, userId)
-                        .eq(OfflineMessageDO::getPushStatus, MessageConstant.PUSH_STATUS_PENDING)
-                        .orderByAsc(OfflineMessageDO::getCreateTime)
-                        .list()
-                        .stream()
-                        .filter(msg -> msg.getRetryCount() < msg.getMaxRetryCount())
-                        .toList()
-        );
+        return messageDataMapper.toOfflineAggregateList(lambdaQuery()
+                .eq(OfflineMessageDO::getUserId, userId)
+                .eq(OfflineMessageDO::getPushStatus, MessageConstant.PUSH_STATUS_PENDING)
+                .orderByAsc(OfflineMessageDO::getCreateTime)
+                .list()
+                .stream()
+                .filter(msg -> msg.getRetryCount() < msg.getMaxRetryCount())
+                .toList());
     }
 
     @Override

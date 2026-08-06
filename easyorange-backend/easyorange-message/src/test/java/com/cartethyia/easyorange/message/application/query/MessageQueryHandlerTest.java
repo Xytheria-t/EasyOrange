@@ -1,19 +1,28 @@
 package com.cartethyia.easyorange.message.application.query;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
+import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
+import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
+import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
-import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
-import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
-import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
-import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -21,17 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MessageQueryHandler 单元测试")
@@ -52,9 +50,18 @@ class MessageQueryHandlerTest {
 
     private Message createTestMessage() {
         return Message.fromRaw(
-                MESSAGE_ID, SENDER_ID, USER_ID, 2, "标题", "内容",
-                ReadStatus.UNREAD, null, null,
-                MessageStatus.SENT, null, LocalDateTime.now());
+                MESSAGE_ID,
+                SENDER_ID,
+                USER_ID,
+                2,
+                "标题",
+                "内容",
+                ReadStatus.UNREAD,
+                null,
+                null,
+                MessageStatus.SENT,
+                null,
+                LocalDateTime.now());
     }
 
     @Nested
@@ -67,8 +74,11 @@ class MessageQueryHandlerTest {
             Message aggregate = createTestMessage();
             when(queryRepository.findById(MESSAGE_ID)).thenReturn(aggregate);
             when(userInfoPort.getUserInfoMap(any()))
-                    .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", "avatar.jpg"),
-                            USER_ID, new UserInfo(USER_ID, "接收者", null)));
+                    .thenReturn(Map.of(
+                            SENDER_ID,
+                            new UserInfo(SENDER_ID, "发送者", "avatar.jpg"),
+                            USER_ID,
+                            new UserInfo(USER_ID, "接收者", null)));
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -124,10 +134,14 @@ class MessageQueryHandlerTest {
             MessageQuery query = new MessageQuery(1, 20, null, null);
             Message aggregate = createTestMessage();
             PageResult<Message> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
-            when(queryRepository.findByReceiverId(any(MessageQuery.class), anyString())).thenReturn(pageResult);
+            when(queryRepository.findByReceiverId(any(MessageQuery.class), anyString()))
+                    .thenReturn(pageResult);
             when(userInfoPort.getUserInfoMap(any()))
-                    .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", null),
-                            USER_ID, new UserInfo(USER_ID, "接收者", null)));
+                    .thenReturn(Map.of(
+                            SENDER_ID,
+                            new UserInfo(SENDER_ID, "发送者", null),
+                            USER_ID,
+                            new UserInfo(USER_ID, "接收者", null)));
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -145,7 +159,8 @@ class MessageQueryHandlerTest {
         void getMyMessages_empty_returnsEmptyPage() {
             MessageQuery query = new MessageQuery(1, 20, null, null);
             PageResult<Message> pageResult = PageResult.of(List.of(), 0L, 1, 20);
-            when(queryRepository.findByReceiverId(any(MessageQuery.class), anyString())).thenReturn(pageResult);
+            when(queryRepository.findByReceiverId(any(MessageQuery.class), anyString()))
+                    .thenReturn(pageResult);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -169,10 +184,14 @@ class MessageQueryHandlerTest {
             MessageQuery query = new MessageQuery(1, 20, null, null);
             Message aggregate = createTestMessage();
             PageResult<Message> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
-            when(queryRepository.findUnreadByReceiverId(any(MessageQuery.class), anyString())).thenReturn(pageResult);
+            when(queryRepository.findUnreadByReceiverId(any(MessageQuery.class), anyString()))
+                    .thenReturn(pageResult);
             when(userInfoPort.getUserInfoMap(any()))
-                    .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", null),
-                            USER_ID, new UserInfo(USER_ID, "接收者", null)));
+                    .thenReturn(Map.of(
+                            SENDER_ID,
+                            new UserInfo(SENDER_ID, "发送者", null),
+                            USER_ID,
+                            new UserInfo(USER_ID, "接收者", null)));
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {

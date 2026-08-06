@@ -1,15 +1,13 @@
 package com.cartethyia.easyorange.framework.util;
 
+import java.util.List;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.util.List;
-
 public final class TestSecurityUtil {
 
-    private TestSecurityUtil() {
-    }
+    private TestSecurityUtil() {}
 
     public static void setSecurityContext(Long userId) {
         setSecurityContext(userId != null ? String.valueOf(userId) : null);
@@ -20,9 +18,8 @@ public final class TestSecurityUtil {
     }
 
     public static void setSecurityContext(String userId) {
-        var auth = new UsernamePasswordAuthenticationToken(
-                userId, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))
-        );
+        var auth =
+                new UsernamePasswordAuthenticationToken(userId, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 

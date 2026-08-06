@@ -3,12 +3,11 @@ package com.cartethyia.easyorange.user.adapter.inbound.web.dto.response;
 import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Data
 @Builder

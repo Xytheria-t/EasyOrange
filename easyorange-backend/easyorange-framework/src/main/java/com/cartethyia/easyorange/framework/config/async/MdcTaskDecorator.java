@@ -1,10 +1,9 @@
 package com.cartethyia.easyorange.framework.config.async;
 
+import java.util.Map;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.MDC;
 import org.springframework.core.task.TaskDecorator;
-import org.jspecify.annotations.NullMarked;
-
-import java.util.Map;
 
 /**
  * 复制主线程 MDC 到异步线程，保证 traceId 等上下文在跨线程时不丢失；

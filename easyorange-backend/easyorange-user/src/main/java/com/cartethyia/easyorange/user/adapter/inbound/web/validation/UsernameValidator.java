@@ -3,10 +3,8 @@ package com.cartethyia.easyorange.user.adapter.inbound.web.validation;
 import com.cartethyia.easyorange.user.domain.constant.UserConstant;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-
-import org.springframework.stereotype.Component;
-
 import java.util.regex.Pattern;
+import org.springframework.stereotype.Component;
 
 @Component
 public class UsernameValidator implements ConstraintValidator<Username, String> {
@@ -19,7 +17,7 @@ public class UsernameValidator implements ConstraintValidator<Username, String> 
             return true;
         }
         return value.length() >= UserConstant.USERNAME_MIN_LENGTH
-            && value.length() <= UserConstant.USERNAME_MAX_LENGTH
-            && PATTERN.matcher(value).matches();
+                && value.length() <= UserConstant.USERNAME_MAX_LENGTH
+                && PATTERN.matcher(value).matches();
     }
 }

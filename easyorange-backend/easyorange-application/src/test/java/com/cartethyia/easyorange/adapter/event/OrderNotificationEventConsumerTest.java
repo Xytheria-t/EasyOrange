@@ -1,21 +1,32 @@
 package com.cartethyia.easyorange.adapter.event;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,18 +37,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrderNotificationEventConsumer 单元测试")
@@ -65,16 +64,25 @@ class OrderNotificationEventConsumerTest {
     @BeforeEach
     void setUp() {
         var metricsService = new EventMetricsService(new SimpleMeterRegistry());
-        consumer = new OrderNotificationEventConsumer(idempotencyChecker, metricsService,
-                messageCommandHandler, orderReadRepository);
+        consumer = new OrderNotificationEventConsumer(
+                idempotencyChecker, metricsService, messageCommandHandler, orderReadRepository);
         orderReadModel = new OrderReadModel(
-                ORDER_ID, "ORD" + ORDER_ID,
-                BUYER_ID, SELLER_ID, List.of(),
-                BigDecimal.valueOf(99.99), OrderStatus.PENDING_PAYMENT.getCode(), "待付款",
+                ORDER_ID,
+                "ORD" + ORDER_ID,
+                BUYER_ID,
+                SELLER_ID,
+                List.of(),
+                BigDecimal.valueOf(99.99),
+                OrderStatus.PENDING_PAYMENT.getCode(),
+                "待付款",
                 PaymentStatus.UNPAID.getCode(),
-                "地址", "13800138000", "备注",
-                null, null, null, null
-        );
+                "地址",
+                "13800138000",
+                "备注",
+                null,
+                null,
+                null,
+                null);
     }
 
     private Message buildMessage() {
@@ -89,8 +97,7 @@ class OrderNotificationEventConsumerTest {
     }
 
     private void mockFindOrderReadModel() {
-        when(orderReadRepository.findById(OrderId.of(ORDER_ID)))
-                .thenReturn(Optional.of(orderReadModel));
+        when(orderReadRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(orderReadModel));
     }
 
     @Nested
@@ -102,16 +109,18 @@ class OrderNotificationEventConsumerTest {
         void onOrderCreated_shouldSendNotification() {
             mockLockSuccess();
 
-            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID,
-                    List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
+            OrderCreatedEvent event = new OrderCreatedEvent(
+                    ORDER_ID,
+                    BUYER_ID,
+                    SELLER_ID,
+                    List.of(new OrderCreatedEvent.OrderItemPayload(
+                            PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
                     BigDecimal.valueOf(99.99));
 
             consumer.onOrderCreated(event, buildMessage());
 
-            verify(idempotencyChecker).isDuplicate(
-                    eq(CONSUMER_ID + ":OrderCreated"), anyString());
-            verify(idempotencyChecker).tryMark(
-                    eq(CONSUMER_ID + ":OrderCreated"), anyString());
+            verify(idempotencyChecker).isDuplicate(eq(CONSUMER_ID + ":OrderCreated"), anyString());
+            verify(idempotencyChecker).tryMark(eq(CONSUMER_ID + ":OrderCreated"), anyString());
 
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
@@ -137,10 +146,8 @@ class OrderNotificationEventConsumerTest {
 
             consumer.onOrderPaid(event, buildMessage());
 
-            verify(idempotencyChecker).isDuplicate(
-                    eq(CONSUMER_ID + ":OrderPaid"), anyString());
-            verify(idempotencyChecker).tryMark(
-                    eq(CONSUMER_ID + ":OrderPaid"), anyString());
+            verify(idempotencyChecker).isDuplicate(eq(CONSUMER_ID + ":OrderPaid"), anyString());
+            verify(idempotencyChecker).tryMark(eq(CONSUMER_ID + ":OrderPaid"), anyString());
 
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
@@ -214,10 +221,8 @@ class OrderNotificationEventConsumerTest {
 
             consumer.onOrderRefunded(event, buildMessage());
 
-            verify(idempotencyChecker).isDuplicate(
-                    eq(CONSUMER_ID + ":OrderRefunded"), anyString());
-            verify(idempotencyChecker).tryMark(
-                    eq(CONSUMER_ID + ":OrderRefunded"), anyString());
+            verify(idempotencyChecker).isDuplicate(eq(CONSUMER_ID + ":OrderRefunded"), anyString());
+            verify(idempotencyChecker).tryMark(eq(CONSUMER_ID + ":OrderRefunded"), anyString());
 
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
@@ -238,8 +243,12 @@ class OrderNotificationEventConsumerTest {
         void onEvent_withDuplicateEvent_shouldSkip() {
             when(idempotencyChecker.isDuplicate(anyString(), anyString())).thenReturn(true);
 
-            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID,
-                    List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
+            OrderCreatedEvent event = new OrderCreatedEvent(
+                    ORDER_ID,
+                    BUYER_ID,
+                    SELLER_ID,
+                    List.of(new OrderCreatedEvent.OrderItemPayload(
+                            PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
                     BigDecimal.valueOf(99.99));
 
             consumer.onOrderCreated(event, buildMessage());
@@ -254,8 +263,12 @@ class OrderNotificationEventConsumerTest {
             when(idempotencyChecker.isDuplicate(anyString(), anyString())).thenReturn(false);
             when(idempotencyChecker.tryMark(anyString(), anyString())).thenReturn(false);
 
-            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID,
-                    List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
+            OrderCreatedEvent event = new OrderCreatedEvent(
+                    ORDER_ID,
+                    BUYER_ID,
+                    SELLER_ID,
+                    List.of(new OrderCreatedEvent.OrderItemPayload(
+                            PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
                     BigDecimal.valueOf(99.99));
 
             consumer.onOrderCreated(event, buildMessage());

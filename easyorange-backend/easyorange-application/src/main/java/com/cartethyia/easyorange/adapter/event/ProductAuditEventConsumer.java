@@ -26,9 +26,10 @@ public class ProductAuditEventConsumer {
     private final EventConsumerHandler handler;
     private final MessageCommandHandler messageCommandHandler;
 
-    public ProductAuditEventConsumer(EventIdempotencyChecker idempotencyChecker,
-                                      EventMetricsService metricsService,
-                                      MessageCommandHandler messageCommandHandler) {
+    public ProductAuditEventConsumer(
+            EventIdempotencyChecker idempotencyChecker,
+            EventMetricsService metricsService,
+            MessageCommandHandler messageCommandHandler) {
         this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService);
         this.messageCommandHandler = messageCommandHandler;
     }
@@ -41,8 +42,8 @@ public class ProductAuditEventConsumer {
             var content = approved
                     ? "您发布的「%s」已通过审核，现已上架销售！".formatted(event.productName())
                     : "您发布的「%s」未通过审核。原因：%s。请修改后重新提交。".formatted(event.productName(), event.reason());
-            messageCommandHandler.handle(new SendSystemMessageCommand(
-                    event.sellerId(), title, content, event.productId()));
+            messageCommandHandler.handle(
+                    new SendSystemMessageCommand(event.sellerId(), title, content, event.productId()));
         });
     }
 }

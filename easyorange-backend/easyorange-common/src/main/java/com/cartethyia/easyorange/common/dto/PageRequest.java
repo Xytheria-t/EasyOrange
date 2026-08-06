@@ -57,5 +57,4 @@ public class PageRequest {
     public void setPageSize(Integer pageSize) {
         this.pageSize = (pageSize == null || pageSize < 1) ? DEFAULT_PAGE_SIZE : Math.min(pageSize, MAX_PAGE_SIZE);
     }
-
 }

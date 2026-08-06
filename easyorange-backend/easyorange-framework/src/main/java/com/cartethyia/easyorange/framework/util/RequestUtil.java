@@ -1,12 +1,11 @@
 package com.cartethyia.easyorange.framework.util;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 public final class RequestUtil {
 
@@ -15,15 +14,10 @@ public final class RequestUtil {
     private static final String HEADER_X_FORWARDED_FOR = "X-Forwarded-For";
     private static final String HEADER_X_REAL_IP = "X-Real-IP";
 
-    private static final Set<String> LOCALHOST_IPS = Set.of(
-            LOCALHOST_IPV4,
-            "::1",
-            "0:0:0:0:0:0:0:1",
-            "::ffff:127.0.0.1"
-    );
+    private static final Set<String> LOCALHOST_IPS =
+            Set.of(LOCALHOST_IPV4, "::1", "0:0:0:0:0:0:0:1", "::ffff:127.0.0.1");
 
-    private RequestUtil() {
-    }
+    private RequestUtil() {}
 
     public static HttpServletRequest getRequest() {
         var attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();

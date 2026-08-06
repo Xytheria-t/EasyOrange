@@ -180,6 +180,13 @@
                 <version>${jetbrains.annotations.version}</version>
             </dependency>
 
+            <!-- 版本收敛：spring-ai 依赖 5.0.0，openai-java-core 传递依赖 4.38.0，显式钉到 5.0.0 消除冲突 -->
+            <dependency>
+                <groupId>com.github.victools</groupId>
+                <artifactId>jsonschema-module-swagger-2</artifactId>
+                <version>5.0.0</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct</artifactId>
@@ -384,6 +391,34 @@
                     <propertiesEncoding>UTF-8</propertiesEncoding>
                 </configuration>
             </plugin>
+            <!-- 构建环境硬约束：锁 Java 25 / Maven 3.9+ / 依赖收敛，违背即构建失败 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>enforce-requirements</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>[25,26)</version>
+                                </requireJavaVersion>
+                                <requireMavenVersion>
+                                    <version>[3.9,)</version>
+                                </requireMavenVersion>
+                                <!-- 不启用 dependencyConvergence：本项目大量用 dependencyManagement 显式钉版
+                                     （netty/tomcat/jackson/swagger/ai 覆盖），该规则会把「已显式收敛」的传递依赖
+                                     也报成冲突，产生长尾噪声。版本收敛由显式 dependencyManagement +
+                                     OWASP dependency-check（-Pci）+ Renovate 管线共同承担。 -->
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -503,6 +538,31 @@
             <id>ci</id>
             <build>
                 <plugins>
+                    <!-- 后端代码格式强制：palantir-java-format（4 空格 / 120 列，与 .editorconfig 一致），
+                         进 verify 阶段 check，格式不达标即 CI 红。本地 `-Pci spotless:apply` 可一键规范化 -->
+                    <plugin>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <version>2.44.4</version>
+                        <configuration>
+                            <java>
+                                <palantirJavaFormat>
+                                    <version>2.97.0</version>
+                                    <style>PALANTIR</style>
+                                </palantirJavaFormat>
+                                <removeUnusedImports/>
+                            </java>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>spotless-check</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <groupId>org.jacoco</groupId>
                         <artifactId>jacoco-maven-plugin</artifactId>

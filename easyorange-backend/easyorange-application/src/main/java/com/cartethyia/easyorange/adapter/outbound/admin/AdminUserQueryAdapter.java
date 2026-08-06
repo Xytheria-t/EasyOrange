@@ -3,13 +3,12 @@ package com.cartethyia.easyorange.adapter.outbound.admin;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 /**
  * Admin 用户查询适配器
@@ -37,21 +36,10 @@ public class AdminUserQueryAdapter implements AdminUserQueryPort {
             return Map.of();
         }
         List<UserDO> users = userMapper.selectByIds(userIds);
-        return users.stream()
-            .collect(Collectors.toMap(
-                UserDO::getId,
-                this::toUserInfo,
-                (a, b) -> a
-            ));
+        return users.stream().collect(Collectors.toMap(UserDO::getId, this::toUserInfo, (a, b) -> a));
     }
 
     private UserInfo toUserInfo(UserDO user) {
-        return new UserInfo(
-            user.getId(),
-            user.getUsername(),
-            user.getNickName(),
-            user.getAvatar(),
-            user.getPhone()
-        );
+        return new UserInfo(user.getId(), user.getUsername(), user.getNickName(), user.getAvatar(), user.getPhone());
     }
 }

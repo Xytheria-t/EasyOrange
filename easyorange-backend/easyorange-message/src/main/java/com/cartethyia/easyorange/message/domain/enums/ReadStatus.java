@@ -14,12 +14,12 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ReadStatus implements BaseCodeEnum {
-
     UNREAD("0", "未读"),
     READ("1", "已读");
 
     @JsonValue
     private final String code;
+
     private final String desc;
 
     public static ReadStatus fromCode(String code) {

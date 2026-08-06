@@ -7,6 +7,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.core.annotation.Order;
@@ -14,8 +15,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingResponseWrapper;
-
-import java.io.IOException;
 
 /**
  * Idempotency-Key 幂等过滤器（替代原 {@code IdempotencyAspect} AOP 方案）。
@@ -66,13 +65,14 @@ public class IdempotencyKeyFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         String key = request.getHeader(properties.getHeaderName());
         ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
         try {
             CachedResponse cached = idempotencyService.execute(
-                    key, properties.getDefaultTtlSeconds(),
+                    key,
+                    properties.getDefaultTtlSeconds(),
                     () -> executeAndCapture(request, response, wrappedResponse, filterChain));
             replay(response, cached);
         } catch (NonCacheableResponseException e) {
@@ -87,14 +87,15 @@ public class IdempotencyKeyFilter extends OncePerRequestFilter {
     }
 
     /** 执行后续链路并抓取响应；非 2xx 不缓存，提交后抛异常中断缓存。 */
-    private CachedResponse executeAndCapture(HttpServletRequest request, HttpServletResponse realResponse,
-                                             ContentCachingResponseWrapper wrappedResponse,
-                                             FilterChain filterChain) throws ServletException, IOException {
+    private CachedResponse executeAndCapture(
+            HttpServletRequest request,
+            HttpServletResponse realResponse,
+            ContentCachingResponseWrapper wrappedResponse,
+            FilterChain filterChain)
+            throws ServletException, IOException {
         filterChain.doFilter(request, wrappedResponse);
         CachedResponse cached = new CachedResponse(
-                wrappedResponse.getStatus(),
-                wrappedResponse.getContentType(),
-                wrappedResponse.getContentAsByteArray());
+                wrappedResponse.getStatus(), wrappedResponse.getContentType(), wrappedResponse.getContentAsByteArray());
         if (cached.status() >= 400) {
             replay(realResponse, cached);
             throw NonCacheableResponseException.INSTANCE;

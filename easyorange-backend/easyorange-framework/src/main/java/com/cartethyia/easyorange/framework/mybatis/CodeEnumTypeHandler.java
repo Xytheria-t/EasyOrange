@@ -1,13 +1,12 @@
 package com.cartethyia.easyorange.framework.mybatis;
 
-import org.apache.ibatis.type.BaseTypeHandler;
-import org.apache.ibatis.type.JdbcType;
-
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Function;
+import org.apache.ibatis.type.BaseTypeHandler;
+import org.apache.ibatis.type.JdbcType;
 
 /**
  * 通用枚举类型处理器基类，用于将枚举类型映射为数据库中的字符串值。

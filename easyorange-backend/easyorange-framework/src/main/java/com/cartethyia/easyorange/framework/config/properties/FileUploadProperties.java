@@ -1,10 +1,9 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
 import com.cartethyia.easyorange.common.constant.CommonConstant;
+import java.util.List;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-
-import java.util.List;
 
 @Data
 @ConfigurationProperties(prefix = "file.upload")

@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.common.exception;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * {@link BusinessException} 单元测试

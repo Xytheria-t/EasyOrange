@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.domain.exception;
 
-import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.enums.IResultCode;
+import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
 import lombok.Getter;
 

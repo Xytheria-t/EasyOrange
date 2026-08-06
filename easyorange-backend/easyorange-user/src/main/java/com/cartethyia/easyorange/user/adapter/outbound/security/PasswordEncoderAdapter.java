@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.user.adapter.outbound.security;
 
 import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Primary

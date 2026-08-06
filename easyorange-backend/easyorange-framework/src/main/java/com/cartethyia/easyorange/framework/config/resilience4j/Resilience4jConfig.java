@@ -1,28 +1,19 @@
 package com.cartethyia.easyorange.framework.config.resilience4j;
 
-import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.micrometer.tagged.TaggedCircuitBreakerMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.springframework.amqp.AmqpException;
+import java.time.Duration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.data.redis.RedisConnectionFailureException;
-import org.springframework.jdbc.CannotGetJdbcConnectionException;
-
-import java.time.Duration;
 
 /**
  * Resilience4j 配置 — 手动创建 Registry（不使用 spring-boot-starter，兼容 Spring Boot 4）。
  * <p>
- * 当前用途：
- * <ul>
- *   <li>Redis 操作熔断（CategoryCacheAdapter）</li>
- *   <li>DB 查询熔断（dbQuery — 连接超时/查询超时）</li>
- *   <li>RabbitMQ 消息发布熔断（rabbitMQ — AMQP 连接异常）</li>
- * </ul>
+ * 用途：Redis 操作熔断（CategoryCacheAdapter 经默认 registry 取用）。
  * <p>
  * AI 调用重试与并发隔离已移除（2026-08 迁移至 Spring AI）：
  * <ul>
@@ -64,35 +55,8 @@ public class Resilience4jConfig {
         var registry = CircuitBreakerRegistry.of(config);
 
         // 绑定 Micrometer 指标：自动暴露 circuit breaker 状态 + 调用计数
-        TaggedCircuitBreakerMetrics.ofCircuitBreakerRegistry(registry)
-                .bindTo(meterRegistry);
+        TaggedCircuitBreakerMetrics.ofCircuitBreakerRegistry(registry).bindTo(meterRegistry);
 
         return registry;
-    }
-
-    /**
-     * DB 查询熔断器 — 连接池耗尽 / 查询超时时开路，保护下游不被慢查询拖垮。
-     * <p>
-     * 记录异常：{@link CannotGetJdbcConnectionException}（连接池耗尽）、{@link QueryTimeoutException}（查询超时）
-     */
-    @Bean("dbQuery")
-    public CircuitBreaker dbQueryCircuitBreaker(CircuitBreakerRegistry registry) {
-        var config = CircuitBreakerConfig.from(registry.getDefaultConfig())
-                .recordExceptions(CannotGetJdbcConnectionException.class, QueryTimeoutException.class)
-                .build();
-        return registry.circuitBreaker("dbQuery", config);
-    }
-
-    /**
-     * RabbitMQ 消息熔断器 — AMQP 连接异常时开路，防止消息发布反复失败拖垮请求线程。
-     * <p>
-     * 记录异常：{@link AmqpException}（连接拒绝 / 通道关闭等）
-     */
-    @Bean("rabbitMQ")
-    public CircuitBreaker rabbitMqCircuitBreaker(CircuitBreakerRegistry registry) {
-        var config = CircuitBreakerConfig.from(registry.getDefaultConfig())
-                .recordExceptions(AmqpException.class)
-                .build();
-        return registry.circuitBreaker("rabbitMQ", config);
     }
 }

@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.Regis
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.SmsLoginRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResult;
 import com.cartethyia.easyorange.user.application.service.AuthAppService;
+import com.cartethyia.easyorange.user.application.service.CredentialAppService;
 import com.cartethyia.easyorange.user.domain.constant.UserConstant;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthAppService authAppService;
+    private final CredentialAppService credentialAppService;
     private final UserAssembler userAssembler;
     private final RefreshCookie refreshCookie;
     private final JwtProperties jwtProperties;
@@ -40,16 +42,14 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public Result<LoginResult> login(@Valid @RequestBody PasswordLoginRequest request,
-                                     HttpServletResponse response) {
+    public Result<LoginResult> login(@Valid @RequestBody PasswordLoginRequest request, HttpServletResponse response) {
         var ctx = authAppService.login(request.toCredential());
         refreshCookie.write(response, ctx.refreshToken());
         return Result.success(userAssembler.toLoginResult(ctx.user(), ctx.accessToken()));
     }
 
     @PostMapping("/sms-login")
-    public Result<LoginResult> smsLogin(@Valid @RequestBody SmsLoginRequest request,
-                                        HttpServletResponse response) {
+    public Result<LoginResult> smsLogin(@Valid @RequestBody SmsLoginRequest request, HttpServletResponse response) {
         var ctx = authAppService.login(request.toCredential());
         refreshCookie.write(response, ctx.refreshToken());
         return Result.success(userAssembler.toLoginResult(ctx.user(), ctx.accessToken()));
@@ -70,8 +70,7 @@ public class AuthController {
      */
     @SkipRepeatSubmit
     @PostMapping("/refresh")
-    public Result<TokenRefreshResult> refreshToken(HttpServletRequest request,
-                                                   HttpServletResponse response) {
+    public Result<TokenRefreshResult> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         var refreshToken = readRefreshTokenCookie(request);
         if (refreshToken == null) {
             return Result.error("刷新令牌缺失，请重新登录");
@@ -85,7 +84,10 @@ public class AuthController {
 
     @PostMapping("/sms-code")
     public Result<Void> sendSmsCode(
-            @NotBlank(message = "手机号不能为空") @Pattern(regexp = UserConstant.PHONE_REGEX, message = "手机号格式不正确") @RequestParam String phone) {
+            @NotBlank(message = "手机号不能为空")
+                    @Pattern(regexp = UserConstant.PHONE_REGEX, message = "手机号格式不正确")
+                    @RequestParam
+                    String phone) {
         authAppService.sendSmsCode(phone);
         return Result.success();
     }
@@ -94,13 +96,13 @@ public class AuthController {
 
     @PostMapping("/password/reset")
     public Result<Void> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
-        authAppService.resetPassword(request.phone(), request.verifyCode(), request.newPassword());
+        credentialAppService.resetPassword(request.phone(), request.verifyCode(), request.newPassword());
         return Result.success();
     }
 
     @PutMapping("/password/change")
     public Result<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        authAppService.changePassword(request.oldPassword(), request.newPassword());
+        credentialAppService.changePassword(request.oldPassword(), request.newPassword());
         return Result.success();
     }
 

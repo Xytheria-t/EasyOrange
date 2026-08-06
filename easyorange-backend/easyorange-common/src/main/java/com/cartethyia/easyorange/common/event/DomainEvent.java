@@ -20,9 +20,7 @@ public interface DomainEvent {
      */
     default String eventType() {
         String simpleName = getClass().getSimpleName();
-        return simpleName.endsWith("Event")
-                ? simpleName.substring(0, simpleName.length() - 5)
-                : simpleName;
+        return simpleName.endsWith("Event") ? simpleName.substring(0, simpleName.length() - 5) : simpleName;
     }
 
     /**

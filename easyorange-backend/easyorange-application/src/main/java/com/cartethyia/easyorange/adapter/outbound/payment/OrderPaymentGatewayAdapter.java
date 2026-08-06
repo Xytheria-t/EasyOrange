@@ -26,22 +26,18 @@ public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
                 request.orderId(),
                 request.amount(),
                 request.paymentMethod(),
-                null,  // payPassword
-                request.attach()
-        );
+                null, // payPassword
+                request.attach());
         return paymentCommandHandler.handle(command);
     }
 
     @Override
     public void refundPayment(String orderId, String reason) {
-        Payment payment = paymentRepository.findByOrderId(orderId)
+        Payment payment = paymentRepository
+                .findByOrderId(orderId)
                 .orElseThrow(() -> BusinessException.of(OrderResultCode.ORDER_NOT_FOUND, "支付单不存在"));
 
-        RefundPaymentCommand command = new RefundPaymentCommand(
-                payment.id(),
-                payment.amount(),
-                reason
-        );
+        RefundPaymentCommand command = new RefundPaymentCommand(payment.id(), payment.amount(), reason);
         paymentCommandHandler.handle(command);
     }
 }

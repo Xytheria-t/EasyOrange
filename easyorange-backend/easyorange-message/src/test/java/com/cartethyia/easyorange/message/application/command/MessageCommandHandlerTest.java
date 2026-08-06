@@ -1,19 +1,29 @@
 package com.cartethyia.easyorange.message.application.command;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
+import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
+import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
+import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
-import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
-import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
-import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
-import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,18 +32,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MessageCommandHandler 单元测试")
@@ -65,21 +63,38 @@ class MessageCommandHandlerTest {
     private static final String MESSAGE_ID = "100";
 
     @BeforeEach
-    void setUp() {
-    }
+    void setUp() {}
 
     private Message createTestMessage() {
         return Message.fromRaw(
-                MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
-                ReadStatus.UNREAD, null, null,
-                MessageStatus.SENT, null, LocalDateTime.now());
+                MESSAGE_ID,
+                USER_ID,
+                RECEIVER_ID,
+                2,
+                "标题",
+                "hello",
+                ReadStatus.UNREAD,
+                null,
+                null,
+                MessageStatus.SENT,
+                null,
+                LocalDateTime.now());
     }
 
     private Message createTestMessageForRecall() {
         return Message.fromRaw(
-                MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
-                ReadStatus.UNREAD, null, null,
-                MessageStatus.SENT, null, LocalDateTime.now().minusMinutes(1));
+                MESSAGE_ID,
+                USER_ID,
+                RECEIVER_ID,
+                2,
+                "标题",
+                "hello",
+                ReadStatus.UNREAD,
+                null,
+                null,
+                MessageStatus.SENT,
+                null,
+                LocalDateTime.now().minusMinutes(1));
     }
 
     @Nested
@@ -89,18 +104,25 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("正常发送消息")
         void handle_sendMessage_success() {
-            SendMessageCommand command = new SendMessageCommand(
-                    RECEIVER_ID, 2, "标题", "hello", null, null
-            );
+            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "hello", null, null);
 
             when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
 
             Message savedAggregate = Message.fromRaw(
-                    MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
-                    ReadStatus.UNREAD, null, null,
-                    MessageStatus.SENT, null, LocalDateTime.now());
+                    MESSAGE_ID,
+                    USER_ID,
+                    RECEIVER_ID,
+                    2,
+                    "标题",
+                    "hello",
+                    ReadStatus.UNREAD,
+                    null,
+                    null,
+                    MessageStatus.SENT,
+                    null,
+                    LocalDateTime.now());
             when(messageRepository.save(any(Message.class))).thenReturn(savedAggregate);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
@@ -118,9 +140,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("发送过于频繁时抛出异常")
         void handle_sendMessage_rateLimited_throws() {
-            SendMessageCommand command = new SendMessageCommand(
-                    RECEIVER_ID, 2, "标题", "hello", null, null
-            );
+            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "hello", null, null);
 
             when(rateLimiterService.allowSendMessage(anyString())).thenReturn(false);
 
@@ -139,9 +159,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("发送消息经过敏感词过滤")
         void handle_sendMessage_sensitiveFilterApplied() {
-            SendMessageCommand command = new SendMessageCommand(
-                    RECEIVER_ID, 2, "标题", "包含敏感词示例", null, null
-            );
+            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "包含敏感词示例", null, null);
 
             when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
             when(sensitiveWordFilterService.filter("包含敏感词示例")).thenReturn("包含***");
@@ -149,18 +167,25 @@ class MessageCommandHandlerTest {
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
 
             Message savedAggregate = Message.fromRaw(
-                    MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "包含***",
-                    ReadStatus.UNREAD, null, null,
-                    MessageStatus.SENT, null, LocalDateTime.now());
+                    MESSAGE_ID,
+                    USER_ID,
+                    RECEIVER_ID,
+                    2,
+                    "标题",
+                    "包含***",
+                    ReadStatus.UNREAD,
+                    null,
+                    null,
+                    MessageStatus.SENT,
+                    null,
+                    LocalDateTime.now());
             when(messageRepository.save(any(Message.class))).thenReturn(savedAggregate);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
                 commandHandler.handle(command);
 
-                verify(messageRepository).save(argThat(msg ->
-                        msg.content().equals("包含***")
-                ));
+                verify(messageRepository).save(argThat(msg -> msg.content().equals("包含***")));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -169,9 +194,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("type 缺省时归一化为聊天消息（CHAT=2）")
         void handle_sendMessage_nullType_defaultsToChat() {
-            SendMessageCommand command = new SendMessageCommand(
-                    RECEIVER_ID, null, "标题", "hello", null, null
-            );
+            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, null, "标题", "hello", null, null);
 
             when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -197,16 +220,23 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("正常发送系统消息")
         void handle_sendSystemMessage_success() {
-            SendSystemMessageCommand command = new SendSystemMessageCommand(
-                    RECEIVER_ID, "系统通知", "您的商品已审核通过", null
-            );
+            SendSystemMessageCommand command = new SendSystemMessageCommand(RECEIVER_ID, "系统通知", "您的商品已审核通过", null);
 
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
 
             Message savedAggregate = Message.fromRaw(
-                    MESSAGE_ID, null, RECEIVER_ID, 1, "系统通知", "您的商品已审核通过",
-                    ReadStatus.UNREAD, null, null,
-                    null, null, LocalDateTime.now());
+                    MESSAGE_ID,
+                    null,
+                    RECEIVER_ID,
+                    1,
+                    "系统通知",
+                    "您的商品已审核通过",
+                    ReadStatus.UNREAD,
+                    null,
+                    null,
+                    null,
+                    null,
+                    LocalDateTime.now());
             when(messageRepository.save(any(Message.class))).thenReturn(savedAggregate);
 
             commandHandler.handle(command);
@@ -248,8 +278,7 @@ class MessageCommandHandlerTest {
 
             TestSecurityUtil.setSecurityContext(RECEIVER_ID);
             try {
-                assertThatThrownBy(() -> commandHandler.handle(command))
-                        .isInstanceOf(MessageNotFoundException.class);
+                assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(MessageNotFoundException.class);
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -265,8 +294,7 @@ class MessageCommandHandlerTest {
 
             TestSecurityUtil.setSecurityContext("999");
             try {
-                assertThatThrownBy(() -> commandHandler.handle(command))
-                        .isInstanceOf(BusinessException.class);
+                assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(BusinessException.class);
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -280,19 +308,36 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("批量标记已读成功")
         void handle_markAsReadBatch_success() {
-            MarkAsReadBatchCommand command = new MarkAsReadBatchCommand(
-                    new ArrayList<>(List.of(MESSAGE_ID, "101", "102"))
-            );
+            MarkAsReadBatchCommand command =
+                    new MarkAsReadBatchCommand(new ArrayList<>(List.of(MESSAGE_ID, "101", "102")));
 
             Message msg1 = createTestMessage();
             Message msg2 = Message.fromRaw(
-                    "101", USER_ID, RECEIVER_ID, 2, "标题", "hello",
-                    ReadStatus.UNREAD, null, null,
-                    MessageStatus.SENT, null, LocalDateTime.now());
+                    "101",
+                    USER_ID,
+                    RECEIVER_ID,
+                    2,
+                    "标题",
+                    "hello",
+                    ReadStatus.UNREAD,
+                    null,
+                    null,
+                    MessageStatus.SENT,
+                    null,
+                    LocalDateTime.now());
             Message msg3 = Message.fromRaw(
-                    "102", USER_ID, RECEIVER_ID, 2, "标题", "hello",
-                    ReadStatus.UNREAD, null, null,
-                    MessageStatus.SENT, null, LocalDateTime.now());
+                    "102",
+                    USER_ID,
+                    RECEIVER_ID,
+                    2,
+                    "标题",
+                    "hello",
+                    ReadStatus.UNREAD,
+                    null,
+                    null,
+                    MessageStatus.SENT,
+                    null,
+                    LocalDateTime.now());
 
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(msg1));
             when(messageRepository.findById("101")).thenReturn(Optional.of(msg2));
@@ -311,9 +356,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("批量标记时跳过不存在的消息")
         void handle_markAsReadBatch_skipNotFound() {
-            MarkAsReadBatchCommand command = new MarkAsReadBatchCommand(
-                    new ArrayList<>(List.of(MESSAGE_ID, "999"))
-            );
+            MarkAsReadBatchCommand command = new MarkAsReadBatchCommand(new ArrayList<>(List.of(MESSAGE_ID, "999")));
 
             Message msg1 = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(msg1));
@@ -362,8 +405,7 @@ class MessageCommandHandlerTest {
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
-                assertThatThrownBy(() -> commandHandler.handle(command))
-                        .isInstanceOf(MessageNotFoundException.class);
+                assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(MessageNotFoundException.class);
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -379,8 +421,7 @@ class MessageCommandHandlerTest {
 
             TestSecurityUtil.setSecurityContext("999");
             try {
-                assertThatThrownBy(() -> commandHandler.handle(command))
-                        .isInstanceOf(BusinessException.class);
+                assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(BusinessException.class);
 
                 verify(messageRepository, never()).update(any());
             } finally {
@@ -421,8 +462,7 @@ class MessageCommandHandlerTest {
 
             TestSecurityUtil.setSecurityContext("999");
             try {
-                assertThatThrownBy(() -> commandHandler.handle(command))
-                        .isInstanceOf(BusinessException.class);
+                assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(BusinessException.class);
 
                 verify(messageRepository, never()).delete(anyString());
             } finally {

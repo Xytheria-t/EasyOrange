@@ -1,9 +1,8 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.controller;
 
-
-import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.adapter.inbound.web.assembler.UserAssembler;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.profile.UpdateProfileRequest;
@@ -29,15 +28,18 @@ public class UserController {
     public Result<UserProfileResponse> getCurrentUser() {
         AuthUser authUser = SecurityContextUtil.getUserContextOrThrow();
         return Result.success(userAssembler.toProfileResponse(
-                profileAppService.getCurrentUser(),
-                authUser.roles(), authUser.permissions(), authUser.loginTime()));
+                profileAppService.getCurrentUser(), authUser.roles(), authUser.permissions(), authUser.loginTime()));
     }
 
     @PutMapping("/me")
     public Result<UserResponse> updateUserInfo(@Valid @RequestBody UpdateProfileRequest request) {
         var cmd = new ProfileAppService.UpdateCommand(
-            request.nickname(), request.email(), request.phone(),
-            request.gender(), request.realName(), request.studentId());
+                request.nickname(),
+                request.email(),
+                request.phone(),
+                request.gender(),
+                request.realName(),
+                request.studentId());
         return Result.success(userAssembler.toResponse(profileAppService.updateUserInfo(cmd)));
     }
 
@@ -45,7 +47,7 @@ public class UserController {
     public Result<UserResponse> uploadAvatar(@RequestParam("avatar") MultipartFile avatar) {
         try {
             var user = profileAppService.uploadAvatar(
-                avatar.getBytes(), avatar.getContentType(), avatar.getOriginalFilename());
+                    avatar.getBytes(), avatar.getContentType(), avatar.getOriginalFilename());
             return Result.success(userAssembler.toResponse(user));
         } catch (Exception e) {
             throw BusinessException.of("头像上传失败", e);

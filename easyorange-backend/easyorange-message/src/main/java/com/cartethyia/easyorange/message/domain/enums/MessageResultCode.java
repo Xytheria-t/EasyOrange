@@ -16,7 +16,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum MessageResultCode implements IResultCode {
-
     MESSAGE_NOT_FOUND("B7001", "消息不存在"),
     MESSAGE_NOT_OWNER("B7002", "非消息接收者"),
     TEMPLATE_NOT_FOUND("B7003", "消息模板不存在"),

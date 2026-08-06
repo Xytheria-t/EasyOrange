@@ -3,11 +3,10 @@ package com.cartethyia.easyorange.user.adapter.inbound.web.validation;
 import com.cartethyia.easyorange.user.domain.constant.UserConstant;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 @Component
 public class PasswordValidator implements ConstraintValidator<Password, String> {
@@ -32,8 +31,7 @@ public class PasswordValidator implements ConstraintValidator<Password, String> 
 
         if (weakPasswords.contains(value)) {
             context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate("密码过于简单，请使用更强的密码")
-                   .addConstraintViolation();
+            context.buildConstraintViolationWithTemplate("密码过于简单，请使用更强的密码").addConstraintViolation();
             return false;
         }
 

@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.framework.messaging.config;
 
+import java.time.Duration;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Primary;
-import java.time.Duration;
 
 @Data
 @Primary
@@ -49,5 +49,4 @@ public class RabbitMQProperties {
         private int min = 1;
         private int max = 5;
     }
-
 }

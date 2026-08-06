@@ -1,15 +1,5 @@
 package com.cartethyia.easyorange.framework.cache;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.redis.core.StringRedisTemplate;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
@@ -19,6 +9,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 /**
  * L1 缓存跨节点失效广播 — 单元测试。
@@ -78,9 +78,7 @@ class CacheInvalidationListenerTest {
 
         listener.handleMessage("mlc:" + SEPARATOR + "product:1");
 
-        assertThat(l1Cache.getIfPresent("product:1"))
-                .as("L1 缓存应被失效")
-                .isNull();
+        assertThat(l1Cache.getIfPresent("product:1")).as("L1 缓存应被失效").isNull();
     }
 
     @Test
@@ -97,9 +95,7 @@ class CacheInvalidationListenerTest {
         listener.handleMessage("mlc:" + SEPARATOR + "k1");
 
         assertThat(l1CacheA.getIfPresent("k1")).isNull();
-        assertThat(l1CacheB.getIfPresent("k1"))
-                .as("其他 prefix 的 L1 缓存不应被影响")
-                .isEqualTo("v1");
+        assertThat(l1CacheB.getIfPresent("k1")).as("其他 prefix 的 L1 缓存不应被影响").isEqualTo("v1");
     }
 
     @Test
@@ -109,12 +105,9 @@ class CacheInvalidationListenerTest {
         l1Cache.put("k1", "v1");
         listener.register("mlc:", l1Cache);
 
-        assertThatCode(() -> listener.handleMessage("no-separator-here"))
-                .doesNotThrowAnyException();
+        assertThatCode(() -> listener.handleMessage("no-separator-here")).doesNotThrowAnyException();
 
-        assertThat(l1Cache.getIfPresent("k1"))
-                .as("非法消息不应触发 L1 失效")
-                .isEqualTo("v1");
+        assertThat(l1Cache.getIfPresent("k1")).as("非法消息不应触发 L1 失效").isEqualTo("v1");
     }
 
     @Test
@@ -126,9 +119,7 @@ class CacheInvalidationListenerTest {
 
         listener.handleMessage("unknown-prefix" + SEPARATOR + "k1");
 
-        assertThat(l1Cache.getIfPresent("k1"))
-                .as("未知 prefix 的消息不应触发 L1 失效")
-                .isEqualTo("v1");
+        assertThat(l1Cache.getIfPresent("k1")).as("未知 prefix 的消息不应触发 L1 失效").isEqualTo("v1");
     }
 
     @Test
@@ -160,11 +151,7 @@ class CacheInvalidationListenerTest {
 
         listener.handleMessage("mlc:" + SEPARATOR + "k1");
 
-        assertThat(l1CacheA.getIfPresent("k1"))
-                .as("旧 L1 实例不应被影响")
-                .isEqualTo("vA");
-        assertThat(l1CacheB.getIfPresent("k1"))
-                .as("新注册的 L1 实例应被失效")
-                .isNull();
+        assertThat(l1CacheA.getIfPresent("k1")).as("旧 L1 实例不应被影响").isEqualTo("vA");
+        assertThat(l1CacheB.getIfPresent("k1")).as("新注册的 L1 实例应被失效").isNull();
     }
 }

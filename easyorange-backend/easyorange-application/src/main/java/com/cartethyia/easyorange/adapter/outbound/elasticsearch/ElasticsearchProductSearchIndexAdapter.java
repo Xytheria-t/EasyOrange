@@ -2,23 +2,14 @@ package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,6 +17,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.stereotype.Component;
 
 /**
  * ES 实现的商品搜索索引适配器。
@@ -125,10 +123,11 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
     }
 
     /** 使用预加载的数据构建文档（批量操作使用，消除 N+1 查询） */
-    private ProductDocument buildDocument(ProductDO product,
-                                          Map<String, ProductDetailDO> detailMap,
-                                          Map<String, List<ProductImageDO>> imagesByProduct,
-                                          Map<String, CategoryDO> categoryMap) {
+    private ProductDocument buildDocument(
+            ProductDO product,
+            Map<String, ProductDetailDO> detailMap,
+            Map<String, List<ProductImageDO>> imagesByProduct,
+            Map<String, CategoryDO> categoryMap) {
         String productId = product.getId();
 
         ProductDetailDO detail = detailMap.get(productId);
@@ -146,10 +145,8 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
     }
 
     /** 核心文档构建逻辑（无数据库查询） */
-    private ProductDocument buildDocument(ProductDO product,
-                                           ProductDetailDO detail,
-                                           List<ProductImageDO> imageList,
-                                           String categoryName) {
+    private ProductDocument buildDocument(
+            ProductDO product, ProductDetailDO detail, List<ProductImageDO> imageList, String categoryName) {
         String productId = product.getId();
 
         String mainImage = null;
@@ -160,9 +157,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
                     .findFirst()
                     .map(ProductImageDO::getImageUrl)
                     .orElse(imageList.get(0).getImageUrl());
-            imageUrls = imageList.stream()
-                    .map(ProductImageDO::getImageUrl)
-                    .collect(Collectors.toList());
+            imageUrls = imageList.stream().map(ProductImageDO::getImageUrl).collect(Collectors.toList());
         }
 
         List<String> tagList = product.getTags() != null && !product.getTags().isBlank()
@@ -180,8 +175,14 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
                 .categoryId(product.getCategoryId())
                 .categoryName(categoryName)
                 .price(product.getPrice() != null ? product.getPrice().doubleValue() : null)
-                .originalPrice(product.getOriginalPrice() != null ? product.getOriginalPrice().doubleValue() : null)
-                .conditionLevel(product.getConditionLevel() != null ? product.getConditionLevel().getCode() : null)
+                .originalPrice(
+                        product.getOriginalPrice() != null
+                                ? product.getOriginalPrice().doubleValue()
+                                : null)
+                .conditionLevel(
+                        product.getConditionLevel() != null
+                                ? product.getConditionLevel().getCode()
+                                : null)
                 .status(product.getStatus() != null ? product.getStatus().getCode() : null)
                 .viewCount(product.getViewCount())
                 .stock(product.getStock())
@@ -243,9 +244,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
             return List.of();
         }
 
-        Map<String, ProductDetailDO> detailMap = productDetailMapper
-                .selectDetailsByProductIds(productIds)
-                .stream()
+        Map<String, ProductDetailDO> detailMap = productDetailMapper.selectDetailsByProductIds(productIds).stream()
                 .collect(Collectors.toMap(ProductDetailDO::getProductId, d -> d, (a, b) -> a));
 
         Map<String, List<ProductImageDO>> imagesByProduct = ChainWrappers.lambdaQueryChain(productImageMapper)
@@ -259,9 +258,9 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
                 .map(ProductDO::getCategoryId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        Map<String, CategoryDO> categoryMap = categoryIds.isEmpty() ? Map.of()
-                : categoryMapper.selectByIds(categoryIds)
-                        .stream()
+        Map<String, CategoryDO> categoryMap = categoryIds.isEmpty()
+                ? Map.of()
+                : categoryMapper.selectByIds(categoryIds).stream()
                         .collect(Collectors.toMap(CategoryDO::getId, c -> c, (a, b) -> a));
 
         return products.stream()

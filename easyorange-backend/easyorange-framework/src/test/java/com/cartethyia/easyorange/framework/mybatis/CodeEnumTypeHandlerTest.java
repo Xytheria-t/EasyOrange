@@ -1,5 +1,14 @@
 package com.cartethyia.easyorange.framework.mybatis;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import org.apache.ibatis.type.JdbcType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -7,16 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.sql.CallableStatement;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * {@link CodeEnumTypeHandler} 枚举字符串化守卫测试。
@@ -35,9 +34,13 @@ class CodeEnumTypeHandlerTest {
 
         private final String code;
 
-        TestStatus(String code) { this.code = code; }
+        TestStatus(String code) {
+            this.code = code;
+        }
 
-        public String getCode() { return code; }
+        public String getCode() {
+            return code;
+        }
 
         public static TestStatus fromCode(String code) {
             for (var s : values()) {

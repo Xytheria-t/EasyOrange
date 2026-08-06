@@ -20,11 +20,7 @@ public class ProductNotificationAdapter implements ProductNotificationPort {
     public void notifyProductCreated(String productId, String userId) {
         try {
             SendSystemMessageCommand command = new SendSystemMessageCommand(
-                    userId,
-                    "商品发布成功",
-                    "您的商品（ID: " + productId + "）已成功发布，等待管理员审核。审核通过后将自动上架。",
-                    productId
-            );
+                    userId, "商品发布成功", "您的商品（ID: " + productId + "）已成功发布，等待管理员审核。审核通过后将自动上架。", productId);
             messageCommandHandler.handle(command);
             log.info("action=notify_product_created productId={} userId={}", productId, userId);
         } catch (Exception e) {
@@ -35,12 +31,8 @@ public class ProductNotificationAdapter implements ProductNotificationPort {
     @Override
     public void notifyProductMarkedSold(String productId, String userId) {
         try {
-            SendSystemMessageCommand command = new SendSystemMessageCommand(
-                    userId,
-                    "商品已售出",
-                    "您的商品（ID: " + productId + "）已被标记为已售出。",
-                    productId
-            );
+            SendSystemMessageCommand command =
+                    new SendSystemMessageCommand(userId, "商品已售出", "您的商品（ID: " + productId + "）已被标记为已售出。", productId);
             messageCommandHandler.handle(command);
             log.info("action=notify_product_sold productId={} userId={}", productId, userId);
         } catch (Exception e) {
@@ -55,12 +47,20 @@ public class ProductNotificationAdapter implements ProductNotificationPort {
                     sellerId,
                     "库存不足预警",
                     "您的商品（ID: " + productId + "）当前库存仅剩 " + currentStock + " 件，低于安全库存阈值，请及时补货。",
-                    productId
-            );
+                    productId);
             messageCommandHandler.handle(command);
-            log.info("action=notify_low_stock productId={} sellerId={} currentStock={}", productId, sellerId, currentStock);
+            log.info(
+                    "action=notify_low_stock productId={} sellerId={} currentStock={}",
+                    productId,
+                    sellerId,
+                    currentStock);
         } catch (Exception e) {
-            log.error("action=notify_low_stock_failed productId={} sellerId={} currentStock={}", productId, sellerId, currentStock, e);
+            log.error(
+                    "action=notify_low_stock_failed productId={} sellerId={} currentStock={}",
+                    productId,
+                    sellerId,
+                    currentStock,
+                    e);
         }
     }
 }

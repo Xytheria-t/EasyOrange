@@ -33,7 +33,9 @@ public class EventMetricsService {
 
     /** 事件接收 +1，outcome: success / failure / duplicate / concurrent_skip */
     public void recordReceived(String eventType, String outcome) {
-        meterRegistry.counter(METRIC_RECEIVED, "type", eventType, "outcome", outcome).increment();
+        meterRegistry
+                .counter(METRIC_RECEIVED, "type", eventType, "outcome", outcome)
+                .increment();
     }
 
     /** 启动计时器采样 */

@@ -1,13 +1,13 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class SmsLoginRequestTest {
 

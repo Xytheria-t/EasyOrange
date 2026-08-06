@@ -3,14 +3,13 @@ package com.cartethyia.easyorange.framework.config.web;
 import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
 import com.cartethyia.easyorange.framework.config.properties.WebMvcProperties;
 import com.cartethyia.easyorange.framework.web.handler.LoggingInterceptor;
+import java.nio.file.Paths;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-import java.nio.file.Paths;
 
 @Slf4j
 @AutoConfiguration
@@ -33,12 +32,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String absoluteUploadPath = Paths.get(fileUploadProperties.getPath()).toAbsolutePath().normalize().toString();
+        String absoluteUploadPath = Paths.get(fileUploadProperties.getPath())
+                .toAbsolutePath()
+                .normalize()
+                .toString();
         String urlPrefix = fileUploadProperties.getUrlPrefix();
         String urlPattern = urlPrefix.endsWith("/") ? urlPrefix + "**" : urlPrefix + "/**";
 
-        registry.addResourceHandler(urlPattern)
-                .addResourceLocations("file:" + absoluteUploadPath + "/");
+        registry.addResourceHandler(urlPattern).addResourceLocations("file:" + absoluteUploadPath + "/");
 
         log.info("静态资源映射已配置: {} -> file:{}/", urlPattern, absoluteUploadPath);
     }

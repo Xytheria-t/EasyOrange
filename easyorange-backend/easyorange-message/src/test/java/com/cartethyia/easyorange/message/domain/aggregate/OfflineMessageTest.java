@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.message.domain.aggregate;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.message.domain.constant.MessageConstant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 离线消息聚合根 —— 纯领域单元测试
@@ -35,10 +35,7 @@ class OfflineMessageTest {
     @Test
     @DisplayName("fromRaw 应正确重建所有字段")
     void fromRaw_shouldReconstructAllFields() {
-        var aggregate = OfflineMessage.fromRaw(
-                "id-1", "u001", "m001", "sms",
-                MessageConstant.PUSH_STATUS_PUSHED, 2, 5
-        );
+        var aggregate = OfflineMessage.fromRaw("id-1", "u001", "m001", "sms", MessageConstant.PUSH_STATUS_PUSHED, 2, 5);
 
         assertThat(aggregate.id()).isEqualTo("id-1");
         assertThat(aggregate.userId()).isEqualTo("u001");
@@ -76,10 +73,8 @@ class OfflineMessageTest {
     @Test
     @DisplayName("canRetry — retryCount 小于 maxRetryCount 应返回 true")
     void canRetry_whenUnderMax_shouldReturnTrue() {
-        var aggregate = OfflineMessage.fromRaw(
-                "id-1", "u001", "m001", "email",
-                MessageConstant.PUSH_STATUS_FAILED, 0, 3
-        );
+        var aggregate =
+                OfflineMessage.fromRaw("id-1", "u001", "m001", "email", MessageConstant.PUSH_STATUS_FAILED, 0, 3);
 
         assertThat(aggregate.canRetry()).isTrue();
     }
@@ -87,10 +82,8 @@ class OfflineMessageTest {
     @Test
     @DisplayName("canRetry — retryCount 等于 maxRetryCount 应返回 false")
     void canRetry_whenAtMax_shouldReturnFalse() {
-        var aggregate = OfflineMessage.fromRaw(
-                "id-1", "u001", "m001", "email",
-                MessageConstant.PUSH_STATUS_FAILED, 3, 3
-        );
+        var aggregate =
+                OfflineMessage.fromRaw("id-1", "u001", "m001", "email", MessageConstant.PUSH_STATUS_FAILED, 3, 3);
 
         assertThat(aggregate.canRetry()).isFalse();
     }

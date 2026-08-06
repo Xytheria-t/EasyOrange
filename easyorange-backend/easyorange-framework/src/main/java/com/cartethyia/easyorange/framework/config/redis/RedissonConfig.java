@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.framework.config.redis;
 
+import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -7,11 +8,9 @@ import org.redisson.config.Config;
 import org.redisson.config.SingleServerConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 import org.springframework.context.annotation.Bean;
-
-import java.time.Duration;
 
 /**
  * Redisson 独立配置（不使用 Spring Boot Starter，避免与现有 RedisTemplate 冲突）。

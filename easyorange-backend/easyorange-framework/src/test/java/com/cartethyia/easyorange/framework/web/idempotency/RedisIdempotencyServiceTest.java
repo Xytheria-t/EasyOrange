@@ -1,6 +1,23 @@
 package com.cartethyia.easyorange.framework.web.idempotency;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.framework.config.properties.IdempotencyProperties;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,24 +28,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * RedisIdempotencyService 单元测试 — 幂等 key 的「抢锁 + 缓存结果」语义。
@@ -60,9 +59,11 @@ class RedisIdempotencyServiceTest {
         when(vo.setIfAbsent(any(), any(), anyLong(), any()))
                 .thenAnswer(inv -> store.putIfAbsent(inv.getArgument(0), "1") == null);
         doAnswer(inv -> {
-            store.put(inv.getArgument(0), inv.getArgument(1));
-            return null;
-        }).when(vo).set(any(), any(), anyLong(), any());
+                    store.put(inv.getArgument(0), inv.getArgument(1));
+                    return null;
+                })
+                .when(vo)
+                .set(any(), any(), anyLong(), any());
 
         when(redisTemplate.opsForValue()).thenReturn(vo);
         when(redisTemplate.delete(anyString())).thenAnswer(inv -> store.remove(inv.getArgument(0)) != null);
@@ -103,8 +104,10 @@ class RedisIdempotencyServiceTest {
     @DisplayName("业务异常 → 向上抛且不缓存，重试可重新执行")
     void execute_whenOperationThrows_propagatesAndDoesNotCache() {
         assertThatThrownBy(() -> service.execute(KEY, 60, () -> {
-            throw new IllegalStateException("boom");
-        })).isInstanceOf(IllegalStateException.class).hasMessage("boom");
+                    throw new IllegalStateException("boom");
+                }))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("boom");
 
         // 异常不缓存，且锁已释放
         assertThat(store).doesNotContainKey("eo:idempotency:" + KEY);

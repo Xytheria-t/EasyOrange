@@ -29,18 +29,23 @@ public class AiCreditEventConsumer {
     private final EventConsumerHandler handler;
     private final CreditScoringService creditScoringService;
 
-    public AiCreditEventConsumer(EventIdempotencyChecker idempotencyChecker,
-                                  EventMetricsService metricsService,
-                                  CreditScoringService creditScoringService) {
+    public AiCreditEventConsumer(
+            EventIdempotencyChecker idempotencyChecker,
+            EventMetricsService metricsService,
+            CreditScoringService creditScoringService) {
         this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService);
         this.creditScoringService = creditScoringService;
     }
 
     @RabbitHandler
     public void onOrderCompleted(OrderCompletedEvent event, Message message) {
-        handler.handle(event, message, metadata ->
-                log.info("action=recalculate_credit_after_trade orderId={} productIds={}",
-                        event.orderId(), event.productIds()));
+        handler.handle(
+                event,
+                message,
+                metadata -> log.info(
+                        "action=recalculate_credit_after_trade orderId={} productIds={}",
+                        event.orderId(),
+                        event.productIds()));
     }
 
     @RabbitHandler
@@ -51,8 +56,10 @@ public class AiCreditEventConsumer {
                 return;
             }
             creditScoringService.recalculateScore(event.reporterId());
-            log.info("action=recalculate_credit_after_report userId={} approved={}",
-                    event.reporterId(), event.approved());
+            log.info(
+                    "action=recalculate_credit_after_report userId={} approved={}",
+                    event.reporterId(),
+                    event.approved());
         });
     }
 }

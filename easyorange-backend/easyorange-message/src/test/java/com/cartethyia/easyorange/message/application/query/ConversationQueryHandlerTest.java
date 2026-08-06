@@ -1,14 +1,23 @@
 package com.cartethyia.easyorange.message.application.query;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationListVO;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
+import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
+import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
-import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
-import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -16,16 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ConversationQueryHandler 单元测试")
@@ -46,9 +45,18 @@ class ConversationQueryHandlerTest {
 
     private Message createMessage(String senderId, String receiverId, String content, String id) {
         return Message.fromRaw(
-                id, senderId, receiverId, 2, "", content,
-                ReadStatus.UNREAD, null, null,
-                MessageStatus.SENT, null, LocalDateTime.now());
+                id,
+                senderId,
+                receiverId,
+                2,
+                "",
+                content,
+                ReadStatus.UNREAD,
+                null,
+                null,
+                MessageStatus.SENT,
+                null,
+                LocalDateTime.now());
     }
 
     @Nested
@@ -61,12 +69,12 @@ class ConversationQueryHandlerTest {
             Message msg1 = createMessage(CURRENT_USER_ID, OTHER_USER_ID, "你好", "1");
             Message msg2 = createMessage(OTHER_USER_ID, CURRENT_USER_ID, "嗨", "2");
 
-            when(queryRepository.findConversation(CURRENT_USER_ID, OTHER_USER_ID)).thenReturn(List.of(msg1, msg2));
+            when(queryRepository.findConversation(CURRENT_USER_ID, OTHER_USER_ID))
+                    .thenReturn(List.of(msg1, msg2));
             when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(Map.of(
                             CURRENT_USER_ID, new UserInfo(CURRENT_USER_ID, "当前用户", null),
-                            OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "对方用户", "avatar.jpg")
-                    ));
+                            OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "对方用户", "avatar.jpg")));
 
             TestSecurityUtil.setSecurityContext(CURRENT_USER_ID);
             try {
@@ -113,8 +121,7 @@ class ConversationQueryHandlerTest {
             when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(new HashMap<>(Map.of(
                             OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "用户2", "a.jpg"),
-                            THIRD_USER_ID, new UserInfo(THIRD_USER_ID, "用户3", "b.jpg")
-                    )));
+                            THIRD_USER_ID, new UserInfo(THIRD_USER_ID, "用户3", "b.jpg"))));
 
             TestSecurityUtil.setSecurityContext(CURRENT_USER_ID);
             try {
@@ -123,10 +130,12 @@ class ConversationQueryHandlerTest {
                 assertThat(result).hasSize(2);
                 ConversationListVO convWithUser2 = result.stream()
                         .filter(c -> c.getTargetUserId().equals(OTHER_USER_ID))
-                        .findFirst().orElseThrow();
+                        .findFirst()
+                        .orElseThrow();
                 ConversationListVO convWithUser3 = result.stream()
                         .filter(c -> c.getTargetUserId().equals(THIRD_USER_ID))
-                        .findFirst().orElseThrow();
+                        .findFirst()
+                        .orElseThrow();
 
                 assertThat(convWithUser2.getTargetUserName()).isEqualTo("用户2");
                 assertThat(convWithUser3.getTargetUserName()).isEqualTo("用户3");
@@ -139,8 +148,18 @@ class ConversationQueryHandlerTest {
         @DisplayName("系统消息（senderId 为 null）不 NPE 并归并到 system 会话")
         void getConversations_systemMessage_noNpe() {
             Message sysMsg = Message.fromRaw(
-                    "5", null, CURRENT_USER_ID, 1, "系统通知", "订单已支付",
-                    ReadStatus.UNREAD, null, null, null, null, LocalDateTime.now());
+                    "5",
+                    null,
+                    CURRENT_USER_ID,
+                    1,
+                    "系统通知",
+                    "订单已支付",
+                    ReadStatus.UNREAD,
+                    null,
+                    null,
+                    null,
+                    null,
+                    LocalDateTime.now());
             Message chatMsg = createMessage(OTHER_USER_ID, CURRENT_USER_ID, "嗨", "2");
 
             when(queryRepository.findRecentForUser(CURRENT_USER_ID)).thenReturn(List.of(sysMsg, chatMsg));
@@ -154,7 +173,8 @@ class ConversationQueryHandlerTest {
                 assertThat(result).hasSize(2);
                 ConversationListVO systemConv = result.stream()
                         .filter(c -> c.getTargetUserId().equals("system"))
-                        .findFirst().orElseThrow();
+                        .findFirst()
+                        .orElseThrow();
                 assertThat(systemConv.getTargetUserName()).isEqualTo("系统通知");
                 assertThat(systemConv.getUnreadCount()).isEqualTo(1);
             } finally {

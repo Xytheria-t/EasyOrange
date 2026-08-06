@@ -14,7 +14,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum MessageType implements BaseCodeEnum {
-
     SYSTEM("1", "系统通知"),
     CHAT("2", "聊天消息"),
     ORDER("3", "订单消息"),
@@ -23,6 +22,7 @@ public enum MessageType implements BaseCodeEnum {
 
     @JsonValue
     private final String code;
+
     private final String desc;
 
     public static MessageType fromCode(String code) {

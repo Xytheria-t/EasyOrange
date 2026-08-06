@@ -3,9 +3,6 @@ package com.cartethyia.easyorange.framework.file.storage;
 import com.cartethyia.easyorange.common.exception.file.FileException;
 import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,6 +11,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HexFormat;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
@@ -36,10 +35,11 @@ public class LocalFileStorage implements FileStorage {
     @Override
     public String store(byte[] content, String originalFilename, String contentType) throws IOException {
         var extension = extractExtension(originalFilename, contentType);
-        var relativePath = "%s/%s.%s".formatted(
-                LocalDate.now().format(DATE_PATH_FORMATTER),
-                HexFormat.of().formatHex(randomBytes(16)),
-                extension);
+        var relativePath = "%s/%s.%s"
+                .formatted(
+                        LocalDate.now().format(DATE_PATH_FORMATTER),
+                        HexFormat.of().formatHex(randomBytes(16)),
+                        extension);
         var fullPath = securePath(relativePath);
         Files.createDirectories(fullPath.getParent());
         Files.write(fullPath, content);

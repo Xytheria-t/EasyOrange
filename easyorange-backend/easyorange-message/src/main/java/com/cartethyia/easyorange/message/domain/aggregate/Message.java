@@ -1,15 +1,14 @@
 package com.cartethyia.easyorange.message.domain.aggregate;
 
+import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
+import com.cartethyia.easyorange.message.domain.enums.MessageType;
+import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageReadEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.UnauthorizedOperationException;
-import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
-import com.cartethyia.easyorange.message.domain.enums.MessageType;
-import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
-
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -40,10 +39,19 @@ public class Message {
     private final LocalDateTime recalledAt;
     private final LocalDateTime createTime;
 
-    private Message(String id, String senderId, String receiverId, Integer type,
-                             String title, String content, ReadStatus isRead, LocalDateTime readTime,
-                             String businessId, MessageStatus msgStatus, LocalDateTime recalledAt,
-                             LocalDateTime createTime) {
+    private Message(
+            String id,
+            String senderId,
+            String receiverId,
+            Integer type,
+            String title,
+            String content,
+            ReadStatus isRead,
+            LocalDateTime readTime,
+            String businessId,
+            MessageStatus msgStatus,
+            LocalDateTime recalledAt,
+            LocalDateTime createTime) {
         this.id = id;
         this.senderId = senderId;
         this.receiverId = receiverId;
@@ -60,47 +68,96 @@ public class Message {
 
     // ==================== Getters ====================
 
-    public String id() { return id; }
-    public String senderId() { return senderId; }
-    public String receiverId() { return receiverId; }
-    public Integer type() { return type; }
-    public String title() { return title; }
-    public String content() { return content; }
-    public ReadStatus isRead() { return isRead; }
-    public LocalDateTime readTime() { return readTime; }
-    public String businessId() { return businessId; }
-    public MessageStatus msgStatus() { return msgStatus; }
-    public LocalDateTime recalledAt() { return recalledAt; }
-    public LocalDateTime createTime() { return createTime; }
+    public String id() {
+        return id;
+    }
+
+    public String senderId() {
+        return senderId;
+    }
+
+    public String receiverId() {
+        return receiverId;
+    }
+
+    public Integer type() {
+        return type;
+    }
+
+    public String title() {
+        return title;
+    }
+
+    public String content() {
+        return content;
+    }
+
+    public ReadStatus isRead() {
+        return isRead;
+    }
+
+    public LocalDateTime readTime() {
+        return readTime;
+    }
+
+    public String businessId() {
+        return businessId;
+    }
+
+    public MessageStatus msgStatus() {
+        return msgStatus;
+    }
+
+    public LocalDateTime recalledAt() {
+        return recalledAt;
+    }
+
+    public LocalDateTime createTime() {
+        return createTime;
+    }
 
     // ==================== Factory ====================
 
     /**
      * 创建普通消息
      */
-    public static MessageCreateResult create(String senderId, String receiverId, Integer type,
-                                              String title, String content, String businessId) {
+    public static MessageCreateResult create(
+            String senderId, String receiverId, Integer type, String title, String content, String businessId) {
         Message aggregate = new Message(
-                null, senderId, receiverId, type,
-                escapeHtml(title), escapeHtml(content),
-                ReadStatus.UNREAD, null,
-                businessId, MessageStatus.SENT, null, null
-        );
+                null,
+                senderId,
+                receiverId,
+                type,
+                escapeHtml(title),
+                escapeHtml(content),
+                ReadStatus.UNREAD,
+                null,
+                businessId,
+                MessageStatus.SENT,
+                null,
+                null);
         return new MessageCreateResult(aggregate, new MessageSentEvent(null, senderId, receiverId, type));
     }
 
     /**
      * 创建系统消息
      */
-    public static MessageCreateResult createSystem(String receiverId, String title,
-                                                    String content, String businessId) {
+    public static MessageCreateResult createSystem(String receiverId, String title, String content, String businessId) {
         Message aggregate = new Message(
-                null, null, receiverId, Integer.valueOf(MessageType.SYSTEM.getCode()),
-                escapeHtml(title), escapeHtml(content),
-                ReadStatus.UNREAD, null,
-                businessId, null, null, null
-        );
-        return new MessageCreateResult(aggregate, new MessageSentEvent(null, null, receiverId, Integer.valueOf(MessageType.SYSTEM.getCode())));
+                null,
+                null,
+                receiverId,
+                Integer.valueOf(MessageType.SYSTEM.getCode()),
+                escapeHtml(title),
+                escapeHtml(content),
+                ReadStatus.UNREAD,
+                null,
+                businessId,
+                null,
+                null,
+                null);
+        return new MessageCreateResult(
+                aggregate, new MessageSentEvent(null, null, receiverId, Integer.valueOf(MessageType.SYSTEM.getCode())));
     }
 
     // ==================== Reconstruction ====================
@@ -108,14 +165,32 @@ public class Message {
     /**
      * 从持久层原始数据重建聚合根
      */
-    public static Message fromRaw(String id, String senderId, String receiverId, Integer type,
-                                            String title, String content, ReadStatus isRead,
-                                            LocalDateTime readTime, String businessId,
-                                            MessageStatus msgStatus, LocalDateTime recalledAt,
-                                            LocalDateTime createTime) {
-        return new Message(id, senderId, receiverId, type,
-                title, content, isRead, readTime,
-                businessId, msgStatus, recalledAt, createTime);
+    public static Message fromRaw(
+            String id,
+            String senderId,
+            String receiverId,
+            Integer type,
+            String title,
+            String content,
+            ReadStatus isRead,
+            LocalDateTime readTime,
+            String businessId,
+            MessageStatus msgStatus,
+            LocalDateTime recalledAt,
+            LocalDateTime createTime) {
+        return new Message(
+                id,
+                senderId,
+                receiverId,
+                type,
+                title,
+                content,
+                isRead,
+                readTime,
+                businessId,
+                msgStatus,
+                recalledAt,
+                createTime);
     }
 
     // ==================== Predicates ====================
@@ -155,10 +230,18 @@ public class Message {
             return null;
         }
         Message updated = new Message(
-                this.id, this.senderId, this.receiverId, this.type,
-                this.title, this.content, ReadStatus.READ, LocalDateTime.now(),
-                this.businessId, this.msgStatus, this.recalledAt, this.createTime
-        );
+                this.id,
+                this.senderId,
+                this.receiverId,
+                this.type,
+                this.title,
+                this.content,
+                ReadStatus.READ,
+                LocalDateTime.now(),
+                this.businessId,
+                this.msgStatus,
+                this.recalledAt,
+                this.createTime);
         return new MessageReadResult(updated, new MessageReadEvent(this.id, userId));
     }
 
@@ -182,10 +265,18 @@ public class Message {
         }
         LocalDateTime now = LocalDateTime.now();
         Message updated = new Message(
-                this.id, this.senderId, this.receiverId, this.type,
-                this.title, this.content, this.isRead, this.readTime,
-                this.businessId, MessageStatus.RECALLED, now, this.createTime
-        );
+                this.id,
+                this.senderId,
+                this.receiverId,
+                this.type,
+                this.title,
+                this.content,
+                this.isRead,
+                this.readTime,
+                this.businessId,
+                MessageStatus.RECALLED,
+                now,
+                this.createTime);
         return new MessageRecallResult(updated, new MessageRecalledEvent(this.id, conversationId, operatorId, now));
     }
 
@@ -208,8 +299,7 @@ public class Message {
         if (input == null) {
             return null;
         }
-        return input
-                .replace("&", "&amp;")
+        return input.replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")
                 .replace("\"", "&quot;")
@@ -219,7 +309,9 @@ public class Message {
     // ==================== Result Records ====================
 
     public record MessageCreateResult(Message aggregate, MessageSentEvent event) {}
+
     public record MessageReadResult(Message aggregate, MessageReadEvent event) {}
+
     public record MessageRecallResult(Message aggregate, MessageRecalledEvent event) {}
 
     @Override

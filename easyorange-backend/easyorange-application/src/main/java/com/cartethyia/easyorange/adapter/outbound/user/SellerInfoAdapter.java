@@ -4,14 +4,13 @@ import com.cartethyia.easyorange.product.domain.port.SellerInfoPort;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerInfo;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Component;
-
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 @Primary
 @Component
@@ -25,8 +24,7 @@ public class SellerInfoAdapter implements SellerInfoPort {
         if (sellerId == null) {
             return Optional.empty();
         }
-        return userRepository.findById(sellerId)
-                .map(this::toSellerInfo);
+        return userRepository.findById(sellerId).map(this::toSellerInfo);
     }
 
     @Override
@@ -35,11 +33,7 @@ public class SellerInfoAdapter implements SellerInfoPort {
             return Map.of();
         }
         return userRepository.findAllByIds(sellerIds).stream()
-                .collect(Collectors.toMap(
-                        User::getId,
-                        this::toSellerInfo,
-                        (a, b) -> a
-                ));
+                .collect(Collectors.toMap(User::getId, this::toSellerInfo, (a, b) -> a));
     }
 
     private SellerInfo toSellerInfo(User user) {

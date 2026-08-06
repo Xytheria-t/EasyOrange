@@ -1,15 +1,14 @@
 package com.cartethyia.easyorange.common.exception;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.validation.ParamValidationException;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * {@link ParamValidationException} 单元测试
@@ -160,8 +159,7 @@ class ParamValidationExceptionTest {
             // Act & Assert
             org.junit.jupiter.api.Assertions.assertThrows(
                     UnsupportedOperationException.class,
-                    () -> exception.getFieldErrors().put("newField", "newError")
-            );
+                    () -> exception.getFieldErrors().put("newField", "newError"));
         }
     }
 

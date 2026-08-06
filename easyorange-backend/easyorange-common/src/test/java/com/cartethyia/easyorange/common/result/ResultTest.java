@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.common.result;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Result 单元测试

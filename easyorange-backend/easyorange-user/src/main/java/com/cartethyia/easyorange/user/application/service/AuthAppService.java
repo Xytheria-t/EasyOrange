@@ -9,14 +9,12 @@ import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
-import com.cartethyia.easyorange.user.domain.event.UserPasswordChangedEvent;
 import com.cartethyia.easyorange.user.domain.event.UserRegisteredEvent;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.AuthenticationService;
 import com.cartethyia.easyorange.user.domain.service.RegistrationService;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,8 +73,7 @@ public class AuthAppService {
     public RefreshResult refreshToken(String refreshToken) {
         TokenRotation rotation = tokenService.rotateRefreshToken(refreshToken);
         String userId = rotation.userId();
-        User user = userRepository.findById(userId)
-            .orElse(null);
+        User user = userRepository.findById(userId).orElse(null);
         if (user == null || !user.isEnabled()) {
             tokenService.revokeAllUserSessions(userId);
             throw BusinessException.of(ResultCode.UNAUTHORIZED, "账号不存在或已被禁用，请重新登录");
@@ -84,23 +81,6 @@ public class AuthAppService {
         var roles = user.getUserType().getDefaultRoles();
         String accessToken = tokenService.createAccessToken(userId, user.getUsername(), roles);
         return new RefreshResult(accessToken, rotation.newToken());
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public void resetPassword(String phone, String verifyCode, String newPassword) {
-        User updated = authenticationService.resetPassword(phone, verifyCode, newPassword);
-        userRepository.update(updated);
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public void changePassword(String oldPassword, String newPassword) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
-        User updated = authenticationService.changePassword(user, oldPassword, newPassword);
-        userRepository.update(updated);
-        tokenService.revokeAllUserSessions(userId);
-        domainEventPublisher.publish(new UserPasswordChangedEvent(userId));
     }
 
     public record LoginContext(User user, String accessToken, String refreshToken) {}

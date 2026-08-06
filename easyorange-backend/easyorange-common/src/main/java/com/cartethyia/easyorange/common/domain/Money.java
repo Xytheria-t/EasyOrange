@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.common.util.BizRequire;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.annotation.Nonnull;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -21,18 +20,30 @@ public record Money(@JsonValue BigDecimal value) implements Comparable<Money> {
     }
 
     @JsonCreator
-    public static Money of(BigDecimal value) { return new Money(value); }
+    public static Money of(BigDecimal value) {
+        return new Money(value);
+    }
 
     @Override
-    public int compareTo(@Nonnull Money other) { return value.compareTo(other.value); }
+    public int compareTo(@Nonnull Money other) {
+        return value.compareTo(other.value);
+    }
 
-    public boolean isGreaterThan(Money other) { return compareTo(other) > 0; }
+    public boolean isGreaterThan(Money other) {
+        return compareTo(other) > 0;
+    }
 
-    public boolean isLessThanOrEqualTo(Money other) { return compareTo(other) <= 0; }
+    public boolean isLessThanOrEqualTo(Money other) {
+        return compareTo(other) <= 0;
+    }
 
-    public boolean isEqualTo(Money other) { return compareTo(other) == 0; }
+    public boolean isEqualTo(Money other) {
+        return compareTo(other) == 0;
+    }
 
-    public Money add(Money other) { return new Money(value.add(other.value)); }
+    public Money add(Money other) {
+        return new Money(value.add(other.value));
+    }
 
     public Money multiply(int multiplier) {
         BizRequire.requireTrue(multiplier >= 0, "乘数不能为负数");
@@ -41,5 +52,7 @@ public record Money(@JsonValue BigDecimal value) implements Comparable<Money> {
 
     @Nonnull
     @Override
-    public String toString() { return value.toPlainString(); }
+    public String toString() {
+        return value.toPlainString();
+    }
 }

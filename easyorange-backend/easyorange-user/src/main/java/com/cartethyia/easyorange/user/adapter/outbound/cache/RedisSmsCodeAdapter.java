@@ -4,11 +4,10 @@ import com.cartethyia.easyorange.framework.cache.CacheUtils;
 import com.cartethyia.easyorange.user.domain.constant.UserSecurityConstant;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * Redis 实现的短信验证码适配器。
@@ -43,8 +42,12 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
         }
 
         String code = SmsCodePort.generateCode();
-        redisTemplate.opsForValue().set(CODE_KEY + phone, code, UserSecurityConstant.SMS_CODE_TTL.getSeconds(), TimeUnit.SECONDS);
-        redisTemplate.opsForValue().set(LIMIT_KEY + phone, "1", UserSecurityConstant.SMS_SEND_INTERVAL.getSeconds(), TimeUnit.SECONDS);
+        redisTemplate
+                .opsForValue()
+                .set(CODE_KEY + phone, code, UserSecurityConstant.SMS_CODE_TTL.getSeconds(), TimeUnit.SECONDS);
+        redisTemplate
+                .opsForValue()
+                .set(LIMIT_KEY + phone, "1", UserSecurityConstant.SMS_SEND_INTERVAL.getSeconds(), TimeUnit.SECONDS);
 
         smsSenderPort.send(phone, code);
         return true;

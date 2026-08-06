@@ -1,13 +1,12 @@
 package com.cartethyia.easyorange.framework.util;
 
 import jakarta.annotation.PostConstruct;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.stereotype.Component;
-
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongArray;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.stereotype.Component;
 
 @Component
 public class LocalRateLimiter {
@@ -23,8 +22,7 @@ public class LocalRateLimiter {
 
     @PostConstruct
     void startCleaner() {
-        taskScheduler.scheduleAtFixedRate(this::evictExpired,
-                Duration.ofSeconds(CLEAN_INTERVAL_SECONDS));
+        taskScheduler.scheduleAtFixedRate(this::evictExpired, Duration.ofSeconds(CLEAN_INTERVAL_SECONDS));
     }
 
     /**
@@ -39,7 +37,7 @@ public class LocalRateLimiter {
         long now = System.currentTimeMillis();
         AtomicLongArray window = windows.compute(key, (k, v) -> {
             if (v == null || isExpired(v, windowSizeMs, now)) {
-                return new AtomicLongArray(new long[]{now, 1});
+                return new AtomicLongArray(new long[] {now, 1});
             }
             v.getAndIncrement(1);
             return v;

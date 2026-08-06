@@ -1,13 +1,12 @@
 package com.cartethyia.easyorange.framework.mybatis;
 
-import org.apache.ibatis.type.BaseTypeHandler;
-import org.apache.ibatis.type.JdbcType;
-
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Function;
+import org.apache.ibatis.type.BaseTypeHandler;
+import org.apache.ibatis.type.JdbcType;
 
 /**
  * 通用整型编码枚举 TypeHandler — 用于 DB 字段为 TINYINT/INT 的枚举（如状态码）。

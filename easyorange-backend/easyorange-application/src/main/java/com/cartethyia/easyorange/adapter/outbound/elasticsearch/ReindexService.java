@@ -4,14 +4,13 @@ import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 /**
  * 全量重建 ES 商品索引服务。
@@ -43,9 +42,8 @@ public class ReindexService {
                 .list();
 
         // 批量写入
-        List<ProductDocument> docs = products.stream()
-                .map(indexAdapter::buildDocument)
-                .toList();
+        List<ProductDocument> docs =
+                products.stream().map(indexAdapter::buildDocument).toList();
 
         if (!docs.isEmpty()) {
             elasticsearchOperations.save(docs);

@@ -2,46 +2,49 @@ package com.cartethyia.easyorange.user.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
-import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-
 @Primary
 @Repository
 public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> implements UserRepository {
 
     private final UserEntityMapper entityMapper;
+    private final IdGenerator idGenerator;
 
-    public UserRepositoryImpl(UserMapper userMapper,
-                              @Qualifier("userEntityMapperImpl") UserEntityMapper entityMapper) {
+    public UserRepositoryImpl(
+            UserMapper userMapper,
+            @Qualifier("userEntityMapperImpl") UserEntityMapper entityMapper,
+            IdGenerator idGenerator) {
         super(userMapper);
         this.entityMapper = entityMapper;
+        this.idGenerator = idGenerator;
     }
 
     // ========== Query methods ==========
 
     @Override
     public Optional<User> findById(String id) {
-        return Optional.ofNullable(mapper.selectById(id))
-            .map(entityMapper::toDomain);
+        return Optional.ofNullable(mapper.selectById(id)).map(entityMapper::toDomain);
     }
 
     @Override
     public List<User> findAllByIds(Collection<String> ids) {
         return findAllByIn(UserDO::getId, ids).stream()
-            .map(entityMapper::toDomain)
-            .toList();
+                .map(entityMapper::toDomain)
+                .toList();
     }
 
     @Override
@@ -72,12 +75,12 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
 
         var trimmed = identifier.trim();
         return Optional.ofNullable(lambdaQuery()
-                .eq(UserDO::getUsername, trimmed)
-                .or()
-                .eq(UserDO::getEmail, trimmed)
-                .or()
-                .eq(UserDO::getPhone, trimmed)
-                .one())
+                        .eq(UserDO::getUsername, trimmed)
+                        .or()
+                        .eq(UserDO::getEmail, trimmed)
+                        .or()
+                        .eq(UserDO::getPhone, trimmed)
+                        .one())
                 .map(entityMapper::toDomain);
     }
 
@@ -86,6 +89,10 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     @Override
     public User save(User user) {
         UserDO entity = entityMapper.from(user);
+        // 主键为 IdType.INPUT，领域新建聚合无 ID → 由应用生成 UUID v7 后落库
+        if (entity.getId() == null) {
+            entity.setId(idGenerator.generateId());
+        }
         mapper.insert(entity);
         return user.assignId(entity.getId());
     }
@@ -106,10 +113,10 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void updateLoginInfo(String userId, String loginIp) {
         boolean updated = lambdaUpdate()
-            .eq(UserDO::getId, userId)
-            .set(UserDO::getLoginDate, LocalDateTime.now())
-            .set(UserDO::getLoginIp, loginIp)
-            .update();
+                .eq(UserDO::getId, userId)
+                .set(UserDO::getLoginDate, LocalDateTime.now())
+                .set(UserDO::getLoginIp, loginIp)
+                .update();
         if (!updated) {
             throw BusinessException.of(UserResultCode.USER_NOT_FOUND);
         }

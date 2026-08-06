@@ -1,9 +1,8 @@
 package com.cartethyia.easyorange.message.domain.service;
 
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Set;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 敏感词过滤服务 —— 纯领域服务。
@@ -14,9 +13,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class SensitiveWordFilterService {
 
-    private static final Set<String> SENSITIVE_WORDS = Set.of(
-            "敏感词示例"
-    );
+    private static final Set<String> SENSITIVE_WORDS = Set.of("敏感词示例");
 
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 
@@ -40,8 +37,10 @@ public class SensitiveWordFilterService {
 
         boolean wasFiltered = !result.equals(normalized);
         if (wasFiltered) {
-            log.info("action=sensitive_word_filtered originalLength={} filteredLength={}",
-                    content.length(), result.length());
+            log.info(
+                    "action=sensitive_word_filtered originalLength={} filteredLength={}",
+                    content.length(),
+                    result.length());
         }
 
         return result;

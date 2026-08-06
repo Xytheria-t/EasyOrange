@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.common.enums.IResultCode;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import java.util.Collection;
 
-
 public class BizRequire {
 
     private BizRequire() {}

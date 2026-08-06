@@ -4,14 +4,13 @@ import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Component;
-
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 @Primary
 @Component
@@ -25,8 +24,7 @@ public class MessageUserInfoAdapter implements UserInfoPort {
         if (userId == null) {
             return Optional.empty();
         }
-        return userRepository.findById(userId)
-                .map(this::toUserInfo);
+        return userRepository.findById(userId).map(this::toUserInfo);
     }
 
     @Override
@@ -35,11 +33,7 @@ public class MessageUserInfoAdapter implements UserInfoPort {
             return Map.of();
         }
         return userRepository.findAllByIds(userIds).stream()
-                .collect(Collectors.toMap(
-                        User::getId,
-                        this::toUserInfo,
-                        (a, _) -> a
-                ));
+                .collect(Collectors.toMap(User::getId, this::toUserInfo, (a, _) -> a));
     }
 
     private UserInfo toUserInfo(User user) {

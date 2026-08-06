@@ -2,11 +2,7 @@ package com.cartethyia.easyorange.user.domain.valueobject;
 
 import java.time.LocalDateTime;
 
-public record LoginInfo(
-    String loginIp,
-    LocalDateTime loginDate,
-    LocalDateTime pwdUpdateDate
-) {
+public record LoginInfo(String loginIp, LocalDateTime loginDate, LocalDateTime pwdUpdateDate) {
     public LoginInfo {
         if (loginIp != null && loginIp.isBlank()) {
             throw new IllegalArgumentException("loginIp must not be blank");

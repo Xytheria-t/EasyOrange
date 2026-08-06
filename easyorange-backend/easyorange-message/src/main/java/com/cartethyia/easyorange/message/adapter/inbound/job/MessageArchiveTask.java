@@ -2,14 +2,13 @@ package com.cartethyia.easyorange.message.adapter.inbound.job;
 
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 过期消息清理/归档定时任务 — 入站适配器。
@@ -63,9 +62,8 @@ public class MessageArchiveTask {
                 totalArchived += messagesToArchive.size();
                 batchCount++;
 
-                messageMapper.deleteByIds(messagesToArchive.stream()
-                        .map(MessageDO::getId)
-                        .toList());
+                messageMapper.deleteByIds(
+                        messagesToArchive.stream().map(MessageDO::getId).toList());
 
                 log.info("Archived batch #{}: {} messages", batchCount, messagesToArchive.size());
             }

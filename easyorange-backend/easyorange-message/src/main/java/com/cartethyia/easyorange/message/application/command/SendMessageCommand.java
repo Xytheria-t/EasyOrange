@@ -9,5 +9,4 @@ public record SendMessageCommand(
         @Size(max = 100) String title,
         @NotBlank @Size(max = 2000) String content,
         String businessId,
-        String conversationId
-) {}
+        String conversationId) {}

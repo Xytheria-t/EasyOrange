@@ -2,10 +2,14 @@ package com.cartethyia.easyorange.framework.config.cache;
 
 import com.cartethyia.easyorange.framework.cache.CacheInvalidationListener;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
+import com.cartethyia.easyorange.framework.config.async.MdcTaskDecorator;
 import com.cartethyia.easyorange.framework.config.properties.CacheProperties;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
@@ -22,10 +26,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @AutoConfiguration
@@ -98,6 +98,8 @@ public class LocalCacheConfig {
         executor.setMaxPoolSize(4);
         executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("cache-invalidation-");
+        // 同步主线程 MDC（traceId 等），保证失效处理日志跨线程可追踪
+        executor.setTaskDecorator(new MdcTaskDecorator());
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.initialize();
         return executor;
@@ -120,11 +122,10 @@ public class LocalCacheConfig {
         container.setConnectionFactory(connectionFactory);
         container.setTaskExecutor(taskExecutor);
         container.addMessageListener(
-                (Message message, byte[] _) -> cacheInvalidationListener.handleMessage(
-                        new String(message.getBody(), StandardCharsets.UTF_8)),
+                (Message message, byte[] _) ->
+                        cacheInvalidationListener.handleMessage(new String(message.getBody(), StandardCharsets.UTF_8)),
                 new ChannelTopic(CacheInvalidationListener.CHANNEL));
-        log.info("action=cache_invalidation_listener_registered, channel={}",
-                CacheInvalidationListener.CHANNEL);
+        log.info("action=cache_invalidation_listener_registered, channel={}", CacheInvalidationListener.CHANNEL);
         return container;
     }
 }

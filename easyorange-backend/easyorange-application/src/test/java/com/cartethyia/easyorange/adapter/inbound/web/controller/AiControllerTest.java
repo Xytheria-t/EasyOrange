@@ -1,8 +1,12 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.ai.dto.AiReviewRequest;
-import com.cartethyia.easyorange.ai.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.dto.AiReviewResult;
+import com.cartethyia.easyorange.ai.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.dto.CopyGenerationRequest;
 import com.cartethyia.easyorange.ai.dto.CopyGenerationResult;
 import com.cartethyia.easyorange.ai.dto.PricingRequest;
@@ -17,6 +21,8 @@ import com.cartethyia.easyorange.ai.service.AiReviewService;
 import com.cartethyia.easyorange.ai.service.AutoListingService;
 import com.cartethyia.easyorange.ai.service.SemanticSearchService;
 import com.cartethyia.easyorange.common.result.Result;
+import java.math.BigDecimal;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,13 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiController 测试")
@@ -59,9 +58,12 @@ class AiControllerTest {
     @BeforeEach
     void setUp() {
         controller = new AiController(
-                pricingService, autoListingService, reviewService,
-                semanticSearchService, qaService, copyGenerationService
-        );
+                pricingService,
+                autoListingService,
+                reviewService,
+                semanticSearchService,
+                qaService,
+                copyGenerationService);
     }
 
     @Nested
@@ -72,9 +74,7 @@ class AiControllerTest {
         @DisplayName("请求定价 — 返回 PricingSuggestion")
         void suggestPrice_success() {
             var expected = new PricingSuggestion(
-                    new BigDecimal("4500"), new BigDecimal("4200"),
-                    new BigDecimal("4800"), "成色较新，折价合理", "同款均价4500左右"
-            );
+                    new BigDecimal("4500"), new BigDecimal("4200"), new BigDecimal("4800"), "成色较新，折价合理", "同款均价4500左右");
             when(pricingService.suggestPrice(anyString(), any(), any(), any(), any()))
                     .thenReturn(expected);
 
@@ -84,8 +84,8 @@ class AiControllerTest {
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data()).isEqualTo(expected);
             assertThat(result.data().suggestedPrice()).isEqualByComparingTo(new BigDecimal("4500"));
-            verify(pricingService).suggestPrice(eq("在管 iPhone 14"), eq("99新"),
-                    eq("手机数码"), eq("2"), eq(new BigDecimal("6999")));
+            verify(pricingService)
+                    .suggestPrice(eq("在管 iPhone 14"), eq("99新"), eq("手机数码"), eq("2"), eq(new BigDecimal("6999")));
         }
 
         @Test
@@ -93,8 +93,7 @@ class AiControllerTest {
         void suggestPrice_onlyRequiredParams() {
             controller.suggestPrice(new PricingRequest("测试商品", null, null, null, null));
 
-            verify(pricingService).suggestPrice(eq("测试商品"), isNull(),
-                    isNull(), isNull(), isNull());
+            verify(pricingService).suggestPrice(eq("测试商品"), isNull(), isNull(), isNull(), isNull());
         }
     }
 
@@ -106,10 +105,15 @@ class AiControllerTest {
         @DisplayName("图片分析 — 返回 AutoListingResult")
         void autoListing_success() {
             var expected = new AutoListingResult(
-                    "在管 iPhone 14", "99新", new BigDecimal("4500"),
-                    "手机数码", "1", "2", "广州",
-                    List.of("手机", "数码"), List.of("正面照片", "背面照片")
-            );
+                    "在管 iPhone 14",
+                    "99新",
+                    new BigDecimal("4500"),
+                    "手机数码",
+                    "1",
+                    "2",
+                    "广州",
+                    List.of("手机", "数码"),
+                    List.of("正面照片", "背面照片"));
             when(autoListingService.analyzeImages(anyList())).thenReturn(expected);
 
             var imageUrls = List.of("https://example.com/img1.jpg", "https://example.com/img2.jpg");
@@ -124,9 +128,8 @@ class AiControllerTest {
         @Test
         @DisplayName("空图片列表 — 仍可正常请求")
         void autoListing_emptyImages() {
-            when(autoListingService.analyzeImages(anyList())).thenReturn(
-                    new AutoListingResult(null, null, null, null, null, null, null, List.of(), List.of())
-            );
+            when(autoListingService.analyzeImages(anyList()))
+                    .thenReturn(new AutoListingResult(null, null, null, null, null, null, null, List.of(), List.of()));
 
             Result<AutoListingResult> result = controller.autoListing(List.of());
 
@@ -146,16 +149,22 @@ class AiControllerTest {
             when(reviewService.reviewProduct(anyString(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(expected);
 
-            var request = new AiReviewRequest("iPhone 14", "99新手机", "手机数码", "2", "¥4500", "张三",
-                    List.of("https://example.com/phone.jpg"));
+            var request = new AiReviewRequest(
+                    "iPhone 14", "99新手机", "手机数码", "2", "¥4500", "张三", List.of("https://example.com/phone.jpg"));
             Result<AiReviewResult> result = controller.reviewProduct(request);
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().suggestedAction()).isTrue();
             assertThat(result.data().confidenceScore()).isEqualTo(90);
-            verify(reviewService).reviewProduct(eq("iPhone 14"), eq("99新手机"),
-                    eq("手机数码"), eq("2"), eq("¥4500"), eq("张三"),
-                    eq(List.of("https://example.com/phone.jpg")));
+            verify(reviewService)
+                    .reviewProduct(
+                            eq("iPhone 14"),
+                            eq("99新手机"),
+                            eq("手机数码"),
+                            eq("2"),
+                            eq("¥4500"),
+                            eq("张三"),
+                            eq(List.of("https://example.com/phone.jpg")));
         }
 
         @Test
@@ -164,11 +173,11 @@ class AiControllerTest {
             when(reviewService.reviewProduct(anyString(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(new AiReviewResult(true, "通过", 50, List.of(), "默认通过"));
 
-            Result<AiReviewResult> result = controller.reviewProduct(new AiReviewRequest("测试商品", null, null, null, null, null, null));
+            Result<AiReviewResult> result =
+                    controller.reviewProduct(new AiReviewRequest("测试商品", null, null, null, null, null, null));
 
             assertThat(result.isSuccess()).isTrue();
-            verify(reviewService).reviewProduct(eq("测试商品"), isNull(),
-                    isNull(), isNull(), isNull(), isNull(), isNull());
+            verify(reviewService).reviewProduct(eq("测试商品"), isNull(), isNull(), isNull(), isNull(), isNull(), isNull());
         }
     }
 
@@ -211,8 +220,7 @@ class AiControllerTest {
         @Test
         @DisplayName("问答 — 返回有效回答")
         void answerQuestion_success() {
-            var request = new QaRequest("1", "是正品吗？", "iPhone 14", "99新",
-                    "手机数码", "¥4500", "九五新", "张三", "高");
+            var request = new QaRequest("1", "是正品吗？", "iPhone 14", "99新", "手机数码", "¥4500", "九五新", "张三", "高");
             var expected = new QaResponse("是正品，有官方购买凭证", true);
             when(qaService.answerQuestion(any())).thenReturn(expected);
 
@@ -242,8 +250,8 @@ class AiControllerTest {
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().title()).isEqualTo("超值iPhone 14");
             assertThat(result.data().style()).isEqualTo("standard");
-            verify(copyGenerationService).generateCopy(eq("iPhone 14"), eq("手机数码"),
-                    eq("2"), eq("¥6999"), eq("standard"));
+            verify(copyGenerationService)
+                    .generateCopy(eq("iPhone 14"), eq("手机数码"), eq("2"), eq("¥6999"), eq("standard"));
         }
 
         @Test
@@ -256,8 +264,7 @@ class AiControllerTest {
             Result<CopyGenerationResult> result = controller.generateCopy(request);
 
             assertThat(result.isSuccess()).isTrue();
-            verify(copyGenerationService).generateCopy(eq("测试商品"), isNull(),
-                    isNull(), isNull(), eq("standard"));
+            verify(copyGenerationService).generateCopy(eq("测试商品"), isNull(), isNull(), isNull(), eq("standard"));
         }
 
         @Test
@@ -270,8 +277,7 @@ class AiControllerTest {
             Result<CopyGenerationResult> result = controller.generateCopy(request);
 
             assertThat(result.isSuccess()).isTrue();
-            verify(copyGenerationService).generateCopy(eq("商品"), eq("分类"),
-                    eq("1"), eq("¥100"), eq("detailed"));
+            verify(copyGenerationService).generateCopy(eq("商品"), eq("分类"), eq("1"), eq("¥100"), eq("detailed"));
         }
     }
 }

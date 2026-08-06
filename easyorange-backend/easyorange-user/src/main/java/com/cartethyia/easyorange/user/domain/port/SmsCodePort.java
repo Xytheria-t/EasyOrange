@@ -22,5 +22,9 @@ public interface SmsCodePort {
         return String.format("%06d", ThreadLocalRandom.current().nextInt(1_000_000));
     }
 
-    enum VerifyResult { OK, NOT_FOUND, TOO_MANY_ATTEMPTS }
+    enum VerifyResult {
+        OK,
+        NOT_FOUND,
+        TOO_MANY_ATTEMPTS
+    }
 }

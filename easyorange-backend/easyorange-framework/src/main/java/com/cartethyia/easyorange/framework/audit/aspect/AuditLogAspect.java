@@ -11,6 +11,10 @@ import com.cartethyia.easyorange.framework.util.AuditLogUtil;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -27,11 +31,6 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
-
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 
 /**
  * 审计日志 AOP 切面。
@@ -62,11 +61,12 @@ public class AuditLogAspect {
     private final DomainEventPublisher domainEventPublisher;
     private final TransactionTemplate transactionTemplate;
 
-    public AuditLogAspect(AuditLogService auditLogService,
-                           AuditLogProperties auditLogProperties,
-                           ObjectMapper objectMapper,
-                           DomainEventPublisher domainEventPublisher,
-                           PlatformTransactionManager transactionManager) {
+    public AuditLogAspect(
+            AuditLogService auditLogService,
+            AuditLogProperties auditLogProperties,
+            ObjectMapper objectMapper,
+            DomainEventPublisher domainEventPublisher,
+            PlatformTransactionManager transactionManager) {
         this.auditLogService = auditLogService;
         this.auditLogProperties = auditLogProperties;
         this.objectMapper = objectMapper;
@@ -138,8 +138,8 @@ public class AuditLogAspect {
      */
     private void publishAuditLog(AuditLog auditLog) {
         try {
-            transactionTemplate.executeWithoutResult(status ->
-                    domainEventPublisher.publish(AuditLogEvent.of(auditLog)));
+            transactionTemplate.executeWithoutResult(
+                    status -> domainEventPublisher.publish(AuditLogEvent.of(auditLog)));
         } catch (Exception e) {
             log.warn("Outbox 发布审计日志失败，降级为直接入库: method={}", auditLog.getMethod(), e);
             auditLogService.insertAuditLog(auditLog);
@@ -148,9 +148,14 @@ public class AuditLogAspect {
 
     // ───────────────────────── AuditLog builder ─────────────────────────
 
-    private AuditLog buildAuditLog(ProceedingJoinPoint joinPoint, Method method, String methodName,
-                                    Exception e, Object jsonResult,
-                                    HttpServletRequest request, long costTime) {
+    private AuditLog buildAuditLog(
+            ProceedingJoinPoint joinPoint,
+            Method method,
+            String methodName,
+            Exception e,
+            Object jsonResult,
+            HttpServletRequest request,
+            long costTime) {
 
         String className = joinPoint.getTarget().getClass().getSimpleName();
 
@@ -196,10 +201,8 @@ public class AuditLogAspect {
     private String deriveModuleName(String className) {
         if (className == null || className.isEmpty()) return className;
 
-        String lookup = className
-                .replace("Controller", "")
-                .replace("Command", "")
-                .replace("Query", "");
+        String lookup =
+                className.replace("Controller", "").replace("Command", "").replace("Query", "");
 
         Map<String, String> mapping = auditLogProperties.getModuleNames();
         String bestMatch = null;
@@ -229,19 +232,40 @@ public class AuditLogAspect {
     }
 
     private static BusinessType deriveBusinessType(String methodName) {
-        if (methodName.startsWith("create") || methodName.startsWith("add") || methodName.startsWith("save")
-                || methodName.startsWith("register") || methodName.startsWith("upload") || methodName.startsWith("import")) {
+        if (methodName.startsWith("create")
+                || methodName.startsWith("add")
+                || methodName.startsWith("save")
+                || methodName.startsWith("register")
+                || methodName.startsWith("upload")
+                || methodName.startsWith("import")) {
             return BusinessType.ADD;
         }
-        if (methodName.startsWith("update") || methodName.startsWith("edit") || methodName.startsWith("modify")
-                || methodName.startsWith("change") || methodName.startsWith("reset") || methodName.startsWith("mark")
-                || methodName.startsWith("approve") || methodName.startsWith("reject") || methodName.startsWith("process")
-                || methodName.startsWith("handle") || methodName.startsWith("bind") || methodName.startsWith("unbind")
-                || methodName.startsWith("toggle") || methodName.startsWith("audit") || methodName.startsWith("enable")
-                || methodName.startsWith("disable") || methodName.startsWith("ban") || methodName.startsWith("unban")
-                || methodName.startsWith("force") || methodName.startsWith("unlock") || methodName.startsWith("recall")
-                || methodName.startsWith("send") || methodName.startsWith("typing") || methodName.startsWith("reply")
-                || methodName.startsWith("like") || methodName.startsWith("report")) {
+        if (methodName.startsWith("update")
+                || methodName.startsWith("edit")
+                || methodName.startsWith("modify")
+                || methodName.startsWith("change")
+                || methodName.startsWith("reset")
+                || methodName.startsWith("mark")
+                || methodName.startsWith("approve")
+                || methodName.startsWith("reject")
+                || methodName.startsWith("process")
+                || methodName.startsWith("handle")
+                || methodName.startsWith("bind")
+                || methodName.startsWith("unbind")
+                || methodName.startsWith("toggle")
+                || methodName.startsWith("audit")
+                || methodName.startsWith("enable")
+                || methodName.startsWith("disable")
+                || methodName.startsWith("ban")
+                || methodName.startsWith("unban")
+                || methodName.startsWith("force")
+                || methodName.startsWith("unlock")
+                || methodName.startsWith("recall")
+                || methodName.startsWith("send")
+                || methodName.startsWith("typing")
+                || methodName.startsWith("reply")
+                || methodName.startsWith("like")
+                || methodName.startsWith("report")) {
             return BusinessType.UPDATE;
         }
         if (methodName.startsWith("delete") || methodName.startsWith("remove") || methodName.startsWith("cancel")) {
@@ -254,9 +278,7 @@ public class AuditLogAspect {
     }
 
     private static int resolveOperatorType(java.util.Optional<AuthUser> userCtx) {
-        return userCtx
-                .map(u -> u.roles().contains("ADMIN") ? 1 : 2)
-                .orElse(0);
+        return userCtx.map(u -> u.roles().contains("ADMIN") ? 1 : 2).orElse(0);
     }
 
     // ───────────────────────── Request param handling ─────────────────────────

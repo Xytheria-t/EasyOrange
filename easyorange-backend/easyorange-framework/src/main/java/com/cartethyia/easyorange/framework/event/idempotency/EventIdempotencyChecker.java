@@ -1,12 +1,11 @@
 package com.cartethyia.easyorange.framework.event.idempotency;
 
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -41,7 +40,9 @@ public class EventIdempotencyChecker {
                 if (isDuplicate(eventType, eventId)) {
                     return false;
                 }
-                redisTemplate.opsForValue().set(EVENT_DONE_PREFIX + eventType + ":" + eventId, "1", DONE_TTL_HOURS, TimeUnit.HOURS);
+                redisTemplate
+                        .opsForValue()
+                        .set(EVENT_DONE_PREFIX + eventType + ":" + eventId, "1", DONE_TTL_HOURS, TimeUnit.HOURS);
                 return true;
             } finally {
                 if (lock.isHeldByCurrentThread()) {

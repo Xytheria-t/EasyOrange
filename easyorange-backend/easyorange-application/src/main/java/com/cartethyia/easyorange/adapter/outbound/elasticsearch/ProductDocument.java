@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,9 +10,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Builder

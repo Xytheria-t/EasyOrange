@@ -1,16 +1,16 @@
 package com.cartethyia.easyorange.framework.exception;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.common.enums.ResultCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("GlobalExceptionHandler 单元测试")
 class GlobalExceptionHandlerTest {
@@ -34,7 +34,6 @@ class GlobalExceptionHandlerTest {
             assertThat(response.getBody().getDetail()).isEqualTo("测试业务异常");
             assertThat(response.getBody().getProperties()).containsEntry("errorCode", "TEST_CODE");
         }
-
     }
 
     @Nested
@@ -50,7 +49,8 @@ class GlobalExceptionHandlerTest {
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(response.getBody().getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-            assertThat(response.getBody().getProperties()).containsEntry("errorCode", ResultCode.BUSINESS_ERROR.getCode());
+            assertThat(response.getBody().getProperties())
+                    .containsEntry("errorCode", ResultCode.BUSINESS_ERROR.getCode());
         }
     }
 
@@ -64,5 +64,4 @@ class GlobalExceptionHandlerTest {
             return "TEST_CODE";
         }
     }
-
 }

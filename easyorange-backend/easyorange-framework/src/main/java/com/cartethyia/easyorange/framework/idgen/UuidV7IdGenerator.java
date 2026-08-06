@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.framework.idgen;
 
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
-
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -35,12 +34,12 @@ public class UuidV7IdGenerator implements IdGenerator {
 
         // MSB: 48-bit 时间戳 | 4-bit 版本 (0x7) | 12-bit 随机
         long msb = (timestamp - CUSTOM_EPOCH) << 16
-                 | (0x7L << 12)                    // version = 7
-                 | (rng.nextLong() & 0x0FFFL);     // 12-bit rand_a
+                | (0x7L << 12) // version = 7
+                | (rng.nextLong() & 0x0FFFL); // 12-bit rand_a
 
         // LSB: 2-bit 变体 (10) | 62-bit 随机
-        long lsb = (0x2L << 62)                     // variant = 10xx
-                 | (rng.nextLong() & 0x3FFFFFFFFFFFFFFFL); // 62-bit rand_b
+        long lsb = (0x2L << 62) // variant = 10xx
+                | (rng.nextLong() & 0x3FFFFFFFFFFFFFFFL); // 62-bit rand_b
 
         return new UUID(msb, lsb);
     }

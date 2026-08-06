@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.framework.file.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.file.FileException;
@@ -8,9 +9,11 @@ import com.cartethyia.easyorange.framework.file.entity.UploadFileDO;
 import com.cartethyia.easyorange.framework.file.mapper.UploadFileMapper;
 import com.cartethyia.easyorange.framework.file.service.FileService;
 import com.cartethyia.easyorange.framework.file.storage.FileStorage;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.framework.util.FileUtils;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
@@ -18,10 +21,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
 
 @Slf4j
 @Service
@@ -43,8 +42,7 @@ public class FileServiceImpl implements FileService {
         Objects.requireNonNull(file, "上传文件不能为空");
         if (file.isEmpty()) throw BusinessException.of("上传文件不能为空");
 
-        var userId = SecurityContextUtil.getCurrentUserId()
-                .orElseThrow(() -> BusinessException.of("用户未登录"));
+        var userId = SecurityContextUtil.getCurrentUserId().orElseThrow(() -> BusinessException.of("用户未登录"));
 
         try {
             FileUtils.assertAllowed(file, FileUtils.DEFAULT_ALLOWED_EXTENSION);
@@ -66,7 +64,10 @@ public class FileServiceImpl implements FileService {
 
             uploadFileMapper.insert(entity);
 
-            log.info("action=file_upload, filename={}, size={}", file.getOriginalFilename(), FileUtils.formatFileSize(file.getSize()));
+            log.info(
+                    "action=file_upload, filename={}, size={}",
+                    file.getOriginalFilename(),
+                    FileUtils.formatFileSize(file.getSize()));
             return toVo(entity);
         } catch (IOException e) {
             throw FileException.of("文件上传失败：" + e.getMessage(), e);
@@ -96,8 +97,7 @@ public class FileServiceImpl implements FileService {
         var entity = uploadFileMapper.selectById(fileId);
         if (entity == null) throw BusinessException.of("文件不存在");
 
-        var userId = SecurityContextUtil.getCurrentUserId()
-                .orElseThrow(() -> BusinessException.of("用户未登录"));
+        var userId = SecurityContextUtil.getCurrentUserId().orElseThrow(() -> BusinessException.of("用户未登录"));
 
         if (!Objects.equals(entity.getUploaderId(), userId)) {
             throw BusinessException.of("无权限删除该文件");
@@ -124,8 +124,8 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public List<UploadFileVO> getFilesByBusiness(String businessType, String businessId) {
-        return uploadFileMapper.selectList(
-                new LambdaQueryWrapper<UploadFileDO>()
+        return uploadFileMapper
+                .selectList(new LambdaQueryWrapper<UploadFileDO>()
                         .eq(UploadFileDO::getBusinessType, businessType)
                         .eq(UploadFileDO::getBusinessId, businessId)
                         .eq(UploadFileDO::getStatus, CommonConstant.FILE_STATUS_NORMAL)
@@ -151,10 +151,6 @@ public class FileServiceImpl implements FileService {
 
     private static UploadFileVO toVo(UploadFileDO entity) {
         return new UploadFileVO(
-                entity.getId(),
-                entity.getFileName(),
-                entity.getFileUrl(),
-                entity.getFileSize(),
-                entity.getMimeType());
+                entity.getId(), entity.getFileName(), entity.getFileUrl(), entity.getFileSize(), entity.getMimeType());
     }
 }

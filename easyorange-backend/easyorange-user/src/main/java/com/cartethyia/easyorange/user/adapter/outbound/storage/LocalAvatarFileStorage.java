@@ -5,12 +5,11 @@ import com.cartethyia.easyorange.framework.file.service.FileService;
 import com.cartethyia.easyorange.framework.file.util.ByteArrayMultipartFile;
 import com.cartethyia.easyorange.framework.util.FileUtils;
 import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
-
-import java.util.regex.Pattern;
 
 /**
  * 本地文件系统实现的头像存储适配器。

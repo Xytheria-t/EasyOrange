@@ -2,10 +2,9 @@ package com.cartethyia.easyorange.user.domain.enums;
 
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.util.List;
 
 @Getter
 @AllArgsConstructor

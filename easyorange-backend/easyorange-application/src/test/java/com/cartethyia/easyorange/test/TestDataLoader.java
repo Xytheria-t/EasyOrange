@@ -1,12 +1,5 @@
 package com.cartethyia.easyorange.test;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
-import org.springframework.stereotype.Component;
-
-import javax.sql.DataSource;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,6 +8,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.sql.DataSource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
@@ -77,8 +75,7 @@ public class TestDataLoader {
             if (resource.exists()) {
                 Path path = Paths.get(resource.getURL().toURI());
                 try (Stream<Path> stream = Files.list(path)) {
-                    scripts = stream
-                            .filter(Files::isRegularFile)
+                    scripts = stream.filter(Files::isRegularFile)
                             .filter(p -> p.toString().endsWith(".sql"))
                             .filter(p -> !p.getFileName().toString().startsWith("00_"))
                             .sorted(Comparator.comparing(p -> p.getFileName().toString()))

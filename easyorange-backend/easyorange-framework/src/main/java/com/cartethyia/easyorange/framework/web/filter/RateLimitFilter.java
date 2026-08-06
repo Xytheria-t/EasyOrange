@@ -10,25 +10,10 @@ import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProp
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
-import org.jspecify.annotations.NullMarked;
-import org.springframework.data.redis.core.RedisTemplate;
-import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
-import org.springframework.util.AntPathMatcher;
-import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.servlet.HandlerExecutionChain;
-import org.springframework.web.servlet.HandlerMapping;
-
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +24,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NullMarked;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.annotation.Order;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerExecutionChain;
+import org.springframework.web.servlet.HandlerMapping;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * 限流 + 防重提交统一过滤器
@@ -69,12 +68,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
     private final ObjectProvider<List<HandlerMapping>> handlerMappingsProvider;
 
-    public RateLimitFilter(RateLimitFilterProperties properties,
-                           RedisTemplate<Object, Object> redisTemplate,
-                           LocalRateLimiter localRateLimiter,
-                           DistributedRateLimiter distributedRateLimiter,
-                           ObjectMapper objectMapper,
-                           ObjectProvider<List<HandlerMapping>> handlerMappingsProvider) {
+    public RateLimitFilter(
+            RateLimitFilterProperties properties,
+            RedisTemplate<Object, Object> redisTemplate,
+            LocalRateLimiter localRateLimiter,
+            DistributedRateLimiter distributedRateLimiter,
+            ObjectMapper objectMapper,
+            ObjectProvider<List<HandlerMapping>> handlerMappingsProvider) {
         this.properties = properties;
         this.redisTemplate = redisTemplate;
         this.localRateLimiter = localRateLimiter;
@@ -84,8 +84,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         if (!properties.isEnabled()) {
             filterChain.doFilter(request, response);
             return;
@@ -106,9 +106,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             Rule matchedRule = findMatchingRule(method, effectiveRequest.getRequestURI());
 
             // 命中规则或写请求时才需要解析 handler；仅解析一次供限流/防重复用，避免每请求重复解析
-            HandlerMethod handlerMethod = (matchedRule != null || WRITE_METHODS.contains(method))
-                    ? resolveHandler(effectiveRequest)
-                    : null;
+            HandlerMethod handlerMethod =
+                    (matchedRule != null || WRITE_METHODS.contains(method)) ? resolveHandler(effectiveRequest) : null;
 
             if (matchedRule != null && !hasSkipAnnotation(handlerMethod, SkipRateLimit.class)) {
                 checkRateLimit(effectiveRequest, method, matchedRule);
@@ -138,8 +137,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (rule.getMethods().isEmpty()) {
             return true;
         }
-        return rule.getMethods().stream()
-                .anyMatch(m -> m.equalsIgnoreCase(method));
+        return rule.getMethods().stream().anyMatch(m -> m.equalsIgnoreCase(method));
     }
 
     // ==================== 限流 ====================
@@ -174,8 +172,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String key = "eo:rate:" + identifier + ":" + method + ":" + request.getRequestURI();
         try {
             // Redisson RRateLimiter 令牌桶 — 原子化取桶/补桶/扣桶，解决 increment+expire 的原子性缺口
-            boolean allowed = distributedRateLimiter.tryAcquire(
-                    key, rule.getMaxRequests(), rule.getWindowSeconds());
+            boolean allowed = distributedRateLimiter.tryAcquire(key, rule.getMaxRequests(), rule.getWindowSeconds());
             if (!allowed) {
                 log.warn("action=redis_rate_limit, key={}, limit={}", key, rule.getMaxRequests());
                 throw BusinessException.of(rule.getMessage());
@@ -195,8 +192,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (!config.isEnabled()) {
             return;
         }
-        if (!config.getMethods().isEmpty()
-                && config.getMethods().stream().noneMatch(m -> m.equalsIgnoreCase(method))) {
+        if (!config.getMethods().isEmpty() && config.getMethods().stream().noneMatch(m -> m.equalsIgnoreCase(method))) {
             return;
         }
 
@@ -213,7 +209,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String key = "eo:repeat:" + userIdentifier + ":" + request.getRequestURI() + ":" + bodyHash;
 
         try {
-            if (Boolean.FALSE.equals(redisTemplate.opsForValue().setIfAbsent(key, "1", intervalMs, TimeUnit.MILLISECONDS))) {
+            if (Boolean.FALSE.equals(
+                    redisTemplate.opsForValue().setIfAbsent(key, "1", intervalMs, TimeUnit.MILLISECONDS))) {
                 throw BusinessException.of(config.getMessage());
             }
         } catch (BusinessException ex) {
@@ -251,7 +248,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private boolean hasSkipAnnotation(HandlerMethod handlerMethod, Class<? extends Annotation> annotationClass) {
         return handlerMethod != null
                 && (handlerMethod.getMethodAnnotation(annotationClass) != null
-                || handlerMethod.getBeanType().isAnnotationPresent(annotationClass));
+                        || handlerMethod.getBeanType().isAnnotationPresent(annotationClass));
     }
 
     // ==================== 工具方法 ====================

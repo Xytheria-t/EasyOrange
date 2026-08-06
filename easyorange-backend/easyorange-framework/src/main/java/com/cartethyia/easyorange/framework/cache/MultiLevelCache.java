@@ -4,14 +4,14 @@ import com.github.benmanes.caffeine.cache.Cache;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
-import org.springframework.data.redis.core.RedisTemplate;
-
 import java.time.Duration;
 import java.util.EnumMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.data.redis.core.RedisTemplate;
 
 /**
  * 多级缓存 — L1（Caffeine 本地）+ L2（Redis 共享）。
@@ -33,6 +33,7 @@ import java.util.function.Supplier;
  * {@link #get(String, Class, Supplier)} 触发的回源填充<b>不</b>发布失效消息——
  * 因为回源填充的是新值，不涉及其他节点 L1 的陈旧数据。
  */
+@Slf4j
 public class MultiLevelCache {
 
     private static final String LOCK_PREFIX = "eo:cache:lock:";
@@ -61,7 +62,8 @@ public class MultiLevelCache {
                 throw new IllegalArgumentException("l1Ttl must be <= l2Ttl, got l1=" + l1Ttl + ", l2=" + l2Ttl);
             }
             if (negativeTtl.compareTo(l2Ttl) > 0) {
-                throw new IllegalArgumentException("negativeTtl must be <= l2Ttl, got negative=" + negativeTtl + ", l2=" + l2Ttl);
+                throw new IllegalArgumentException(
+                        "negativeTtl must be <= l2Ttl, got negative=" + negativeTtl + ", l2=" + l2Ttl);
             }
         }
 
@@ -78,8 +80,7 @@ public class MultiLevelCache {
 
     /** 负缓存哨兵 — 代表「null 被缓存」。经 Redis 反序列化后是独立实例，判断须用 instanceof。 */
     public static final class NullValue {
-        public NullValue() {
-        }
+        public NullValue() {}
 
         @Override
         public String toString() {
@@ -88,7 +89,10 @@ public class MultiLevelCache {
     }
 
     private enum Result {
-        L1_HIT("l1_hit"), L2_HIT("l2_hit"), L2_NEGATIVE("l2_negative"), LOAD("load");
+        L1_HIT("l1_hit"),
+        L2_HIT("l2_hit"),
+        L2_NEGATIVE("l2_negative"),
+        LOAD("load");
 
         private final String tag;
 
@@ -108,6 +112,7 @@ public class MultiLevelCache {
     private final CacheInvalidationListener invalidationListener;
     /** 跨节点回源单飞锁，可为 null（测试场景 / 无 Redisson 时降级为纯 JVM 单飞） */
     private final RedissonClient redissonClient;
+
     private final EnumMap<Result, Counter> requestCounters;
     private final Timer loadTimer;
 
@@ -138,11 +143,15 @@ public class MultiLevelCache {
         this.requestCounters = new EnumMap<>(Result.class);
         if (meterRegistry != null) {
             for (var r : Result.values()) {
-                requestCounters.put(r, Counter.builder("easyorange.cache.requests")
-                        .tag("result", r.tag()).register(meterRegistry));
+                requestCounters.put(
+                        r,
+                        Counter.builder("easyorange.cache.requests")
+                                .tag("result", r.tag())
+                                .register(meterRegistry));
             }
         }
-        this.loadTimer = meterRegistry == null ? null
+        this.loadTimer = meterRegistry == null
+                ? null
                 : Timer.builder("easyorange.cache.load")
                         .description("Source load duration on cache miss")
                         .publishPercentiles(0.5, 0.95, 0.99)
@@ -196,6 +205,22 @@ public class MultiLevelCache {
     }
 
     /**
+     * 清空整组缓存：失效本地 L1（全部）+ SCAN 删除该前缀下的所有 L2 key。
+     * Redis 不可用时仅清本地 L1，静默降级（不影响功能）。
+     */
+    public void clear() {
+        l1Cache.invalidateAll();
+        try {
+            var keys = CacheUtils.scan(redisTemplate, config.keyPrefix() + "*");
+            if (keys != null && !keys.isEmpty()) {
+                redisTemplate.delete(keys);
+            }
+        } catch (Exception e) {
+            log.warn("action=cache_clear_redis_failed, prefix={}, error={}", config.keyPrefix(), e.getMessage());
+        }
+    }
+
+    /**
      * L1 未命中（Caffeine 单飞内）后的回源填充逻辑。
      *
      * @return 缓存值或 {@link NullValue} 哨兵（Caffeine 不缓存 null，哨兵即负缓存载体）
@@ -225,7 +250,8 @@ public class MultiLevelCache {
         RLock lock = redissonClient.getLock(LOCK_PREFIX + buildL2Key(key));
         boolean acquired;
         try {
-            acquired = lock.tryLock(config.lockWait().toMillis(), config.lockLease().toMillis(), TimeUnit.MILLISECONDS);
+            acquired = lock.tryLock(
+                    config.lockWait().toMillis(), config.lockLease().toMillis(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             acquired = false;
@@ -264,11 +290,13 @@ public class MultiLevelCache {
 
     private <T> void writeBack(String key, T source) {
         if (source == null) {
-            redisTemplate.opsForValue().set(buildL2Key(key), new NullValue(),
-                    config.negativeTtl().toMillis(), TimeUnit.MILLISECONDS);
+            redisTemplate
+                    .opsForValue()
+                    .set(buildL2Key(key), new NullValue(), config.negativeTtl().toMillis(), TimeUnit.MILLISECONDS);
         } else {
-            redisTemplate.opsForValue().set(buildL2Key(key), source,
-                    config.l2Ttl().toMillis(), TimeUnit.MILLISECONDS);
+            redisTemplate
+                    .opsForValue()
+                    .set(buildL2Key(key), source, config.l2Ttl().toMillis(), TimeUnit.MILLISECONDS);
         }
     }
 

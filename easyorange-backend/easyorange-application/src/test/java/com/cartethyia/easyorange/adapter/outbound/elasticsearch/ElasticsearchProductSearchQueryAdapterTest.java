@@ -1,9 +1,15 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort.ProductSearchQuery;
 import com.cartethyia.easyorange.product.application.port.query.SearchResult;
-import tools.jackson.databind.ObjectMapper;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,14 +21,7 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.StringQuery;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import tools.jackson.databind.ObjectMapper;
 
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -50,7 +49,8 @@ class ElasticsearchProductSearchQueryAdapterTest {
         when(elasticsearchOperations.search(any(StringQuery.class), eq(ProductDocument.class)))
                 .thenReturn(searchHits);
 
-        ProductSearchQuery query = new ProductSearchQuery("test", null, null, null, null, null, null, 1, 20, null, false);
+        ProductSearchQuery query =
+                new ProductSearchQuery("test", null, null, null, null, null, null, 1, 20, null, false);
         SearchResult result = adapter.search(query);
 
         assertThat(result.total()).isZero();
@@ -95,7 +95,8 @@ class ElasticsearchProductSearchQueryAdapterTest {
         when(elasticsearchOperations.search(any(StringQuery.class), eq(ProductDocument.class)))
                 .thenReturn(searchHits);
 
-        ProductSearchQuery query = new ProductSearchQuery("test", null, null, null, null, null, null, 1, 20, null, false);
+        ProductSearchQuery query =
+                new ProductSearchQuery("test", null, null, null, null, null, null, 1, 20, null, false);
         SearchResult result = adapter.search(query);
 
         assertThat(result.total()).isEqualTo(1);
@@ -133,7 +134,8 @@ class ElasticsearchProductSearchQueryAdapterTest {
         when(elasticsearchOperations.search(queryCaptor.capture(), eq(ProductDocument.class)))
                 .thenReturn(searchHits);
 
-        ProductSearchQuery query = new ProductSearchQuery("手机", "300", null, null, null, null, null, 1, 20, null, false);
+        ProductSearchQuery query =
+                new ProductSearchQuery("手机", "300", null, null, null, null, null, 1, 20, null, false);
         adapter.search(query);
 
         StringQuery capturedQuery = queryCaptor.getValue();
@@ -175,9 +177,18 @@ class ElasticsearchProductSearchQueryAdapterTest {
         when(elasticsearchOperations.search(queryCaptor.capture(), eq(ProductDocument.class)))
                 .thenReturn(searchHits);
 
-        ProductSearchQuery query = new ProductSearchQuery(null, null, null,
-                new java.math.BigDecimal("100"), new java.math.BigDecimal("500"),
-                null, null, 1, 20, null, false);
+        ProductSearchQuery query = new ProductSearchQuery(
+                null,
+                null,
+                null,
+                new java.math.BigDecimal("100"),
+                new java.math.BigDecimal("500"),
+                null,
+                null,
+                1,
+                20,
+                null,
+                false);
         adapter.search(query);
 
         StringQuery capturedQuery = queryCaptor.getValue();
@@ -198,7 +209,8 @@ class ElasticsearchProductSearchQueryAdapterTest {
         when(elasticsearchOperations.search(queryCaptor.capture(), eq(ProductDocument.class)))
                 .thenReturn(searchHits);
 
-        ProductSearchQuery query = new ProductSearchQuery(null, null, null, null, null, null, "price_asc", 1, 20, null, false);
+        ProductSearchQuery query =
+                new ProductSearchQuery(null, null, null, null, null, null, "price_asc", 1, 20, null, false);
         adapter.search(query);
 
         StringQuery capturedQuery = queryCaptor.getValue();

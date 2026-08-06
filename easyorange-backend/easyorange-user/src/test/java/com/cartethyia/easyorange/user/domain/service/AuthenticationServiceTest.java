@@ -1,12 +1,17 @@
 package com.cartethyia.easyorange.user.domain.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.aggregate.UserTestFixture;
 import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
-import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -14,14 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
-
-import static com.cartethyia.easyorange.user.domain.port.SmsCodePort.VerifyResult;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuthenticationService 测试")
@@ -37,7 +34,7 @@ class AuthenticationServiceTest {
     private LoginSecurityService loginSecurityService;
 
     @Mock
-    private SmsCodePort smsCodePort;
+    private SmsVerificationService smsVerificationService;
 
     private AuthenticationService service;
 
@@ -50,7 +47,8 @@ class AuthenticationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AuthenticationService(userRepository, passwordEncoder, loginSecurityService, smsCodePort);
+        service = new AuthenticationService(
+                userRepository, passwordEncoder, loginSecurityService, smsVerificationService);
     }
 
     @Nested
@@ -80,8 +78,8 @@ class AuthenticationServiceTest {
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD)))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("账号或密码错误");
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("账号或密码错误");
 
             verify(loginSecurityService).incrementAndCheck(ACCOUNT);
             verify(loginSecurityService, never()).clear(any());
@@ -96,8 +94,8 @@ class AuthenticationServiceTest {
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(false);
 
             assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD)))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("账号或密码错误");
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("账号或密码错误");
 
             verify(loginSecurityService).incrementAndCheck(ACCOUNT);
             verify(loginSecurityService, never()).clear(any());
@@ -112,8 +110,8 @@ class AuthenticationServiceTest {
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(true);
 
             assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD)))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("账户已被禁用");
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("账户已被禁用");
 
             verify(loginSecurityService, never()).incrementAndCheck(ACCOUNT);
             verify(loginSecurityService, never()).clear(any());
@@ -130,14 +128,13 @@ class AuthenticationServiceTest {
             String phone = "13812345678";
             String verifyCode = "123456";
             User user = UserTestFixture.normalUser();
-            when(smsCodePort.verify(phone, verifyCode)).thenReturn(VerifyResult.OK);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
 
             User result = service.authenticate(new LoginCredential.Sms(phone, verifyCode));
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(USER_ID);
-            verify(smsCodePort).verify(phone, verifyCode);
+            verify(smsVerificationService).verifyCodeOrThrow(phone, verifyCode);
         }
 
         @Test
@@ -145,12 +142,11 @@ class AuthenticationServiceTest {
         void userNotFound() {
             String phone = "13812345678";
             String verifyCode = "123456";
-            when(smsCodePort.verify(phone, verifyCode)).thenReturn(VerifyResult.OK);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.authenticate(new LoginCredential.Sms(phone, verifyCode)))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("账号或密码错误");
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("账号或密码错误");
         }
 
         @Test
@@ -159,12 +155,11 @@ class AuthenticationServiceTest {
             String phone = "13812345678";
             String verifyCode = "123456";
             User user = UserTestFixture.disabledUser();
-            when(smsCodePort.verify(phone, verifyCode)).thenReturn(VerifyResult.OK);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
 
             assertThatThrownBy(() -> service.authenticate(new LoginCredential.Sms(phone, verifyCode)))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("账户已被禁用");
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("账户已被禁用");
         }
     }
 }

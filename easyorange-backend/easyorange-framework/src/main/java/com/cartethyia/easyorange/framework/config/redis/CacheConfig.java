@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.framework.config.redis;
 
+import java.time.Duration;
+import java.util.Map;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -9,9 +11,6 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-
-import java.time.Duration;
-import java.util.Map;
 
 @AutoConfiguration
 @EnableCaching
@@ -27,14 +26,14 @@ public class CacheConfig {
         RedisSerializer<Object> jsonSerializer = RedisSerializer.json();
 
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeKeysWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
                 .disableCachingNullValues();
 
         Map<String, RedisCacheConfiguration> cacheConfigs = Map.of(
                 PRODUCT_LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(PRODUCT_LIST_EXPIRE_TIME)),
-                CATEGORY_LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(CATEGORY_INFO_EXPIRE_TIME))
-        );
+                CATEGORY_LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(CATEGORY_INFO_EXPIRE_TIME)));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)

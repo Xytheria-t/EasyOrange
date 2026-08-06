@@ -1,10 +1,9 @@
 package com.cartethyia.easyorange.framework.event.metadata;
 
 import com.cartethyia.easyorange.common.event.DomainEvent;
+import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 import org.springframework.amqp.core.Message;
-
-import java.time.Instant;
 
 /**
  * 领域事件元数据信封。
@@ -35,8 +34,7 @@ public record EventMetadata(
         String eventType,
         String aggregateId,
         @Nullable String traceId,
-        @Nullable String causationId
-) {
+        @Nullable String causationId) {
 
     private static final String HEADER_TRACE_ID = "traceId";
     private static final String HEADER_CAUSATION_ID = "causationId";
@@ -52,8 +50,6 @@ public record EventMetadata(
                 event.eventType(),
                 event.aggregateId(),
                 props.getHeader(HEADER_TRACE_ID),
-                props.getHeader(HEADER_CAUSATION_ID)
-        );
+                props.getHeader(HEADER_CAUSATION_ID));
     }
-
 }

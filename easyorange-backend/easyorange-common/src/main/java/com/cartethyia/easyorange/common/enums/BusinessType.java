@@ -12,7 +12,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum BusinessType implements BaseCodeEnum {
-
     OTHER("0", "其它"),
     ADD("1", "新增"),
     UPDATE("2", "修改"),
@@ -21,6 +20,7 @@ public enum BusinessType implements BaseCodeEnum {
 
     @JsonValue
     private final String code;
+
     private final String desc;
 
     public static BusinessType fromCode(String code) {

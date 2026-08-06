@@ -3,10 +3,9 @@ package com.cartethyia.easyorange.framework.metrics;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import org.springframework.stereotype.Component;
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import org.springframework.stereotype.Component;
 
 /**
  * 业务指标服务 — 记录核心业务流程的 Metrics 数据，

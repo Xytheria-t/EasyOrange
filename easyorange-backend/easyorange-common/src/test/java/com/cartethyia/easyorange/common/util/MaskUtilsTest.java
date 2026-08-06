@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.common.util;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * MaskUtils 单元测试
@@ -122,5 +122,4 @@ class MaskUtilsTest {
             assertNull(MaskUtils.maskAddress(null));
         }
     }
-
 }

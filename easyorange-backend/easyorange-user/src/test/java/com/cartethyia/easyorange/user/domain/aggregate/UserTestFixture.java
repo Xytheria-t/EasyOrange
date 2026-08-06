@@ -33,19 +33,19 @@ public final class UserTestFixture {
 
     public static User.UserBuilder aUser() {
         return User.builder()
-            .id(USER_ID)
-            .credentials(new Credentials(USERNAME, ENCODED_PW))
-            .userType(UserType.NORMAL)
-            .status(UserStatus.NORMAL)
-            .contactInfo(new ContactInfo(EMAIL, PHONE))
-            .personalInfo(PersonalInfo.builder()
-                .realName("张三")
-                .nickName("小张")
-                .sex(Sex.MALE)
-                .studentId("2024001")
-                .avatar("/avatar/test.png")
-                .build())
-            .loginInfo(LoginInfo.empty());
+                .id(USER_ID)
+                .credentials(new Credentials(USERNAME, ENCODED_PW))
+                .userType(UserType.NORMAL)
+                .status(UserStatus.NORMAL)
+                .contactInfo(new ContactInfo(EMAIL, PHONE))
+                .personalInfo(PersonalInfo.builder()
+                        .realName("张三")
+                        .nickName("小张")
+                        .sex(Sex.MALE)
+                        .studentId("2024001")
+                        .avatar("/avatar/test.png")
+                        .build())
+                .loginInfo(LoginInfo.empty());
     }
 
     // ==================== Convenience Factories ====================
@@ -63,22 +63,22 @@ public final class UserTestFixture {
     /** 仅含 id+credentials+loginInfo 的最小用户 — 适用于不关心 profile 的 domain/service 测试。 */
     public static User minimalUser() {
         return User.builder()
-            .id(USER_ID)
-            .credentials(new Credentials(USERNAME, ENCODED_PW))
-            .userType(UserType.NORMAL)
-            .status(UserStatus.NORMAL)
-            .loginInfo(LoginInfo.empty())
-            .build();
+                .id(USER_ID)
+                .credentials(new Credentials(USERNAME, ENCODED_PW))
+                .userType(UserType.NORMAL)
+                .status(UserStatus.NORMAL)
+                .loginInfo(LoginInfo.empty())
+                .build();
     }
 
     /** 指定凭证的最小用户 — 适用于需要特定用户名/密码的测试。 */
     public static User userWithCredentials(String username, String encodedPassword) {
         return User.builder()
-            .id(USER_ID)
-            .credentials(new Credentials(username, encodedPassword))
-            .userType(UserType.NORMAL)
-            .status(UserStatus.NORMAL)
-            .loginInfo(LoginInfo.empty())
-            .build();
+                .id(USER_ID)
+                .credentials(new Credentials(username, encodedPassword))
+                .userType(UserType.NORMAL)
+                .status(UserStatus.NORMAL)
+                .loginInfo(LoginInfo.empty())
+                .build();
     }
 }

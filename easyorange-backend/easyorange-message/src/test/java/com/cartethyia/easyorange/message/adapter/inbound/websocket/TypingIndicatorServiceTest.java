@@ -1,5 +1,10 @@
 package com.cartethyia.easyorange.message.adapter.inbound.websocket;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -9,13 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-
-import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("TypingIndicatorService 单元测试")
@@ -44,12 +42,7 @@ class TypingIndicatorServiceTest {
 
             typingIndicatorService.setTyping(CONVERSATION_ID, USER_ID);
 
-            verify(valueOperations).set(
-                    "chat:typing:" + CONVERSATION_ID + ":" + USER_ID,
-                    "1",
-                    10L,
-                    TimeUnit.SECONDS
-            );
+            verify(valueOperations).set("chat:typing:" + CONVERSATION_ID + ":" + USER_ID, "1", 10L, TimeUnit.SECONDS);
         }
 
         @Test

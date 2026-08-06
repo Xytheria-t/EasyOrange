@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.message.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.message.adapter.inbound.websocket.TypingIndicatorService;
 import com.cartethyia.easyorange.message.application.command.DeleteMessageCommand;
 import com.cartethyia.easyorange.message.application.command.MarkAsReadBatchCommand;
 import com.cartethyia.easyorange.message.application.command.MarkAsReadCommand;
@@ -9,13 +10,11 @@ import com.cartethyia.easyorange.message.application.command.RecallMessageComman
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
-import com.cartethyia.easyorange.message.adapter.inbound.websocket.TypingIndicatorService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "消息系统", description = "消息发送/已读")
 @RestController
@@ -80,7 +79,8 @@ public class MessageCommandController {
     public Result<Void> typing(@RequestBody java.util.Map<String, String> body) {
         String conversationId = body.get("conversationId");
         String targetUserId = body.get("targetUserId");
-        typingIndicatorService.setTyping(conversationId, com.cartethyia.easyorange.framework.util.SecurityContextUtil.getCurrentUserIdOrThrow());
+        typingIndicatorService.setTyping(
+                conversationId, com.cartethyia.easyorange.framework.util.SecurityContextUtil.getCurrentUserIdOrThrow());
         return Result.success();
     }
 }

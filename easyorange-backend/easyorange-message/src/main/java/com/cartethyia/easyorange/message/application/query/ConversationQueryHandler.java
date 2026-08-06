@@ -7,17 +7,16 @@ import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -41,9 +40,7 @@ public class ConversationQueryHandler {
 
         Map<String, UserInfo> userMap = userInfoPort.getUserInfoMap(Set.of(currentUserId, otherUserId));
 
-        return messages.stream()
-                .map(msg -> toConversationVO(msg, userMap))
-                .toList();
+        return messages.stream().map(msg -> toConversationVO(msg, userMap)).toList();
     }
 
     @Transactional(readOnly = true)
@@ -103,8 +100,8 @@ public class ConversationQueryHandler {
                 .build();
     }
 
-    private ConversationListVO buildConversationListVO(String targetUserId, Message latestMsg,
-                                                        Map<String, UserInfo> userMap, Map<String, Integer> unreadCounts) {
+    private ConversationListVO buildConversationListVO(
+            String targetUserId, Message latestMsg, Map<String, UserInfo> userMap, Map<String, Integer> unreadCounts) {
         boolean isSystem = SYSTEM_CONVERSATION.equals(targetUserId);
         UserInfo targetUser = userMap.get(targetUserId);
         return ConversationListVO.builder()

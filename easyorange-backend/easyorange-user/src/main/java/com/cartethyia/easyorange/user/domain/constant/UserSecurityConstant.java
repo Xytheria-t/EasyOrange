@@ -1,9 +1,8 @@
 package com.cartethyia.easyorange.user.domain.constant;
 
+import java.time.Duration;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-
-import java.time.Duration;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class UserSecurityConstant {

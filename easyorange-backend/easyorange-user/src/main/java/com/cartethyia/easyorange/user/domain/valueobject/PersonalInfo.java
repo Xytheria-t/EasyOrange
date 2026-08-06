@@ -8,12 +8,11 @@ import org.jetbrains.annotations.Nullable;
 @With
 @Builder(toBuilder = true)
 public record PersonalInfo(
-    @Nullable String realName,
-    @Nullable String nickName,
-    @Nullable Sex sex,
-    @Nullable String studentId,
-    @Nullable String avatar
-) {
+        @Nullable String realName,
+        @Nullable String nickName,
+        @Nullable Sex sex,
+        @Nullable String studentId,
+        @Nullable String avatar) {
     public PersonalInfo {
         rejectBlank(realName, "realName");
         rejectBlank(nickName, "nickName");

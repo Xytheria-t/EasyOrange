@@ -1,10 +1,13 @@
 package com.cartethyia.easyorange.framework.exception;
 
+import static org.springframework.http.HttpStatus.*;
+
 import com.cartethyia.easyorange.common.enums.IResultCode;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.exception.validation.ParamValidationException;
 import jakarta.validation.ConstraintViolationException;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -24,14 +27,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.util.stream.Collectors;
-
-import static org.springframework.http.HttpStatus.*;
-
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handle(Exception e) {
@@ -48,9 +46,9 @@ public class GlobalExceptionHandler {
                 yield ResponseEntity.status(status).body(pd);
             }
             case AccessDeniedException _ -> ResponseEntity.status(FORBIDDEN).body(ProblemDetail.forStatus(FORBIDDEN));
-            case HttpRequestMethodNotSupportedException _ -> response(METHOD_NOT_ALLOWED, ResultCode.METHOD_NOT_ALLOWED);
-            case MethodArgumentNotValidException _, BindException _ ->
-                    handleBindingErrors(getBindingResult(e));
+            case HttpRequestMethodNotSupportedException _ ->
+                response(METHOD_NOT_ALLOWED, ResultCode.METHOD_NOT_ALLOWED);
+            case MethodArgumentNotValidException _, BindException _ -> handleBindingErrors(getBindingResult(e));
             case ConstraintViolationException c -> {
                 var msg = c.getConstraintViolations().stream()
                         .map(v -> v.getPropertyPath() + ": " + v.getMessage())
@@ -98,8 +96,8 @@ public class GlobalExceptionHandler {
 
     private static BindingResult getBindingResult(Exception e) {
         return e instanceof MethodArgumentNotValidException m
-               ? m.getBindingResult()
-               : ((BindException) e).getBindingResult();
+                ? m.getBindingResult()
+                : ((BindException) e).getBindingResult();
     }
 
     private static String extractAllErrors(BindingResult br) {
@@ -131,15 +129,17 @@ public class GlobalExceptionHandler {
             return BAD_REQUEST;
         }
         return switch (errorCode.charAt(0)) {
-            case 'A' -> errorCode.length() < 5 ? BAD_REQUEST
-                    : switch (errorCode.substring(errorCode.length() - 3)) {
-                        case "401", "402" -> UNAUTHORIZED;
-                        case "403" -> FORBIDDEN;
-                        case "404" -> NOT_FOUND;
-                        case "405" -> METHOD_NOT_ALLOWED;
-                        case "500" -> BAD_REQUEST;
-                        default -> OK;
-                    };
+            case 'A' ->
+                errorCode.length() < 5
+                        ? BAD_REQUEST
+                        : switch (errorCode.substring(errorCode.length() - 3)) {
+                            case "401", "402" -> UNAUTHORIZED;
+                            case "403" -> FORBIDDEN;
+                            case "404" -> NOT_FOUND;
+                            case "405" -> METHOD_NOT_ALLOWED;
+                            case "500" -> BAD_REQUEST;
+                            default -> OK;
+                        };
             case 'C' -> INTERNAL_SERVER_ERROR;
             case 'D' -> BAD_GATEWAY;
             default -> BAD_REQUEST;

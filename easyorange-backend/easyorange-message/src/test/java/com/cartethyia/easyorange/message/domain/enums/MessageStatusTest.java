@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.message.domain.enums;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("MessageStatus 枚举测试")
 class MessageStatusTest {
@@ -20,10 +20,8 @@ class MessageStatusTest {
     @Test
     @DisplayName("fromCode 抛出异常当 code 不存在或为 null")
     void fromCode_unknownCode_throwsException() {
-        assertThatThrownBy(() -> MessageStatus.fromCode("UNKNOWN"))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> MessageStatus.fromCode(null))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> MessageStatus.fromCode("UNKNOWN")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> MessageStatus.fromCode(null)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

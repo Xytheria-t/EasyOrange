@@ -11,9 +11,10 @@ public class FileSizeLimitExceededException extends FileException {
     private final long actualSizeBytes;
 
     public FileSizeLimitExceededException(long maxSizeBytes, long actualSizeBytes) {
-        super(FileResultCode.FILE_SIZE_EXCEEDED,
-                "文件大小超过限制：最大 " + FileSizeFormat.formatFileSize(maxSizeBytes)
-                        + "，当前 " + FileSizeFormat.formatFileSize(actualSizeBytes));
+        super(
+                FileResultCode.FILE_SIZE_EXCEEDED,
+                "文件大小超过限制：最大 " + FileSizeFormat.formatFileSize(maxSizeBytes) + "，当前 "
+                        + FileSizeFormat.formatFileSize(actualSizeBytes));
         this.maxSizeBytes = maxSizeBytes;
         this.actualSizeBytes = actualSizeBytes;
     }

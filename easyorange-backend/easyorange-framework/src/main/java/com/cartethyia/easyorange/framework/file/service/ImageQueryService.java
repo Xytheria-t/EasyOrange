@@ -1,24 +1,20 @@
 package com.cartethyia.easyorange.framework.file.service;
 
 import com.cartethyia.easyorange.framework.config.properties.ImageProcessingProperties;
-import com.cartethyia.easyorange.framework.file.service.ImageProcessingService.ImageDimensions;
 import com.cartethyia.easyorange.framework.file.service.ImageProcessingService.ImageFormat;
-import com.cartethyia.easyorange.framework.file.service.ImageProcessingService.ProcessedImage;
 import com.github.benmanes.caffeine.cache.Cache;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
-import org.springframework.stereotype.Service;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -46,9 +42,9 @@ public class ImageQueryService {
 
     public record ImageQueryResult(Resource resource, String mimeType, String eTag, boolean notModified) {}
 
-    public ImageQueryResult getForView(String fileId, Integer width, Integer height,
-                                       ImageFormat format, float quality,
-                                       String ifNoneMatch) throws IOException {
+    public ImageQueryResult getForView(
+            String fileId, Integer width, Integer height, ImageFormat format, float quality, String ifNoneMatch)
+            throws IOException {
         var fileEntry = resolveFile(fileId);
         if (!imageProcessingService.isImage(fileEntry.mimeType)) {
             return new ImageQueryResult(fileEntry.resource, fileEntry.mimeType, null, false);
@@ -66,7 +62,8 @@ public class ImageQueryService {
 
         if (imageProcessingService.supportsFormat(format)) {
             var dims = imageProcessingService.getDimensions(fileEntry.path);
-            var entry = getCachedOrProcess(fileEntry.path.toFile(), fileId, dims.width(), dims.height(), format, quality, ifNoneMatch);
+            var entry = getCachedOrProcess(
+                    fileEntry.path.toFile(), fileId, dims.width(), dims.height(), format, quality, ifNoneMatch);
             return toResult(entry);
         }
 
@@ -82,15 +79,15 @@ public class ImageQueryService {
         return toResult(entry);
     }
 
-    public ImageQueryResult getResponsive(String fileId, Integer width, ImageFormat format,
-                                          float quality, String ifNoneMatch) throws IOException {
+    public ImageQueryResult getResponsive(
+            String fileId, Integer width, ImageFormat format, float quality, String ifNoneMatch) throws IOException {
         var fileEntry = resolveFile(fileId);
         if (!imageProcessingService.isImage(fileEntry.mimeType)) {
             return new ImageQueryResult(null, null, null, false);
         }
         int targetWidth = findClosestPresetWidth(width);
-        var entry = getCachedOrProcess(fileEntry.path.toFile(), fileId, targetWidth, targetWidth,
-                format, quality, ifNoneMatch);
+        var entry = getCachedOrProcess(
+                fileEntry.path.toFile(), fileId, targetWidth, targetWidth, format, quality, ifNoneMatch);
         return toResult(entry);
     }
 
@@ -131,7 +128,8 @@ public class ImageQueryService {
         try {
             var probed = Files.probeContentType(path);
             if (probed != null) return probed;
-        } catch (IOException ignored) {}
+        } catch (IOException ignored) {
+        }
         var name = path.getFileName().toString().toLowerCase();
         if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "image/jpeg";
         if (name.endsWith(".png")) return "image/png";
@@ -142,16 +140,20 @@ public class ImageQueryService {
 
     private static ImageQueryResult toResult(ProcessCacheEntry e) {
         return new ImageQueryResult(
-                new FileSystemResource(e.entry().file),
-                e.entry().mimeType, e.entry().eTag, e.notModified);
+                new FileSystemResource(e.entry().file), e.entry().mimeType, e.entry().eTag, e.notModified);
     }
 
     private record ProcessCacheEntry(ImageProcessingCacheEntry entry, boolean notModified) {}
 
-    private ProcessCacheEntry getCachedOrProcess(File originalFile, String fileId,
-                                                  int width, int height,
-                                                  ImageFormat format, float quality,
-                                                  String ifNoneMatch) throws IOException {
+    private ProcessCacheEntry getCachedOrProcess(
+            File originalFile,
+            String fileId,
+            int width,
+            int height,
+            ImageFormat format,
+            float quality,
+            String ifNoneMatch)
+            throws IOException {
         var cacheKey = buildCacheKey(fileId, width, height, format, quality);
         var cached = getFromCache(cacheKey);
         if (cached != null) {
@@ -172,8 +174,8 @@ public class ImageQueryService {
         return new ProcessCacheEntry(entry, false);
     }
 
-    private ProcessCacheEntry getCachedOrProcessForThumbnail(File originalFile, String fileId,
-                                                              int size, String ifNoneMatch) throws IOException {
+    private ProcessCacheEntry getCachedOrProcessForThumbnail(
+            File originalFile, String fileId, int size, String ifNoneMatch) throws IOException {
         var quality = imageProcessingProperties.getThumbnailQuality();
         var cacheKey = buildCacheKey(fileId, size, size, ImageFormat.WEBP, quality);
         var cached = getFromCache(cacheKey);
@@ -219,7 +221,10 @@ public class ImageQueryService {
         var minDiff = Math.abs(width - closest);
         for (var preset : PRESET_WIDTHS) {
             var diff = Math.abs(width - preset);
-            if (diff < minDiff) { minDiff = diff; closest = preset; }
+            if (diff < minDiff) {
+                minDiff = diff;
+                closest = preset;
+            }
         }
         return closest;
     }

@@ -1,12 +1,11 @@
 package com.cartethyia.easyorange.framework.cache;
 
 import com.github.benmanes.caffeine.cache.Cache;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * L1 缓存跨节点失效广播 — 基于 Redis Pub/Sub。
@@ -59,8 +58,11 @@ public class CacheInvalidationListener {
         try {
             redisTemplate.convertAndSend(CHANNEL, prefix + SEPARATOR + key);
         } catch (Exception e) {
-            log.warn("action=cache_invalidation_publish_failed, prefix={}, key={}, error={}",
-                    prefix, key, e.getMessage());
+            log.warn(
+                    "action=cache_invalidation_publish_failed, prefix={}, key={}, error={}",
+                    prefix,
+                    key,
+                    e.getMessage());
         }
     }
 

@@ -7,6 +7,8 @@ import com.cartethyia.easyorange.framework.file.service.ImageProcessingService;
 import com.cartethyia.easyorange.framework.file.service.ImageQueryService;
 import com.cartethyia.easyorange.framework.file.service.ImageQueryService.ImageQueryResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.io.IOException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -15,9 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.List;
 
 @Slf4j
 @Tag(name = "文件服务", description = "图片上传/处理")
@@ -59,16 +58,13 @@ public class FileController {
 
     @GetMapping("/business/{businessType}/{businessId}")
     public Result<List<UploadFileVO>> getFilesByBusiness(
-            @PathVariable String businessType,
-            @PathVariable String businessId) {
+            @PathVariable String businessType, @PathVariable String businessId) {
         return Result.success(fileService.getFilesByBusiness(businessType, businessId));
     }
 
     @PutMapping("/{id}/bind")
     public Result<Void> bindBusiness(
-            @PathVariable String id,
-            @RequestParam String businessType,
-            @RequestParam String businessId) {
+            @PathVariable String id, @RequestParam String businessType, @RequestParam String businessId) {
         fileService.bindBusiness(id, businessType, businessId);
         return Result.success();
     }
@@ -89,17 +85,19 @@ public class FileController {
             @RequestParam(value = "h", required = false) Integer height,
             @RequestParam(value = "format", required = false, defaultValue = "webp") String format,
             @RequestParam(value = "q", required = false, defaultValue = "80") Integer quality,
-            @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) throws IOException {
+            @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch)
+            throws IOException {
 
-        return respond(imageQueryService.getForView(id, width, height,
-                parseFormat(format), clampQuality(quality), ifNoneMatch));
+        return respond(imageQueryService.getForView(
+                id, width, height, parseFormat(format), clampQuality(quality), ifNoneMatch));
     }
 
     @GetMapping("/{id}/thumbnail")
     public ResponseEntity<Resource> getThumbnail(
             @PathVariable String id,
             @RequestParam(value = "size", required = false, defaultValue = "200") Integer size,
-            @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) throws IOException {
+            @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch)
+            throws IOException {
 
         return respond(imageQueryService.getThumbnail(id, size, ifNoneMatch));
     }
@@ -110,10 +108,11 @@ public class FileController {
             @RequestParam(value = "w", required = false) Integer width,
             @RequestParam(value = "format", required = false, defaultValue = "webp") String format,
             @RequestParam(value = "q", required = false, defaultValue = "80") Integer quality,
-            @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) throws IOException {
+            @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch)
+            throws IOException {
 
-        return respond(imageQueryService.getResponsive(id, width,
-                parseFormat(format), clampQuality(quality), ifNoneMatch));
+        return respond(
+                imageQueryService.getResponsive(id, width, parseFormat(format), clampQuality(quality), ifNoneMatch));
     }
 
     // ===== Internal =====
@@ -134,10 +133,11 @@ public class FileController {
 
     private ResponseEntity<Resource> respond(ImageQueryResult result) {
         if (result.resource() == null) return ResponseEntity.badRequest().build();
-        if (result.notModified()) return ResponseEntity.status(304)
-                .eTag(result.eTag())
-                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=" + CACHE_MAX_AGE_SECONDS)
-                .build();
+        if (result.notModified())
+            return ResponseEntity.status(304)
+                    .eTag(result.eTag())
+                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=" + CACHE_MAX_AGE_SECONDS)
+                    .build();
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(result.mimeType()))
                 .eTag(result.eTag())

@@ -1,14 +1,13 @@
 package com.cartethyia.easyorange.framework.cache;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Set;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.util.NumberUtils;
-
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Redis 缓存工具方法集合。
@@ -22,8 +21,7 @@ import java.util.Set;
  */
 public final class CacheUtils {
 
-    private CacheUtils() {
-    }
+    private CacheUtils() {}
 
     /**
      * 类型安全的缓存值转换（支持 Number 跨类型转换）。
@@ -52,7 +50,8 @@ public final class CacheUtils {
     public static Set<String> scan(RedisTemplate<Object, Object> template, String pattern) {
         Set<String> result = new HashSet<>();
         template.execute((RedisCallback<Set<String>>) connection -> {
-            try (Cursor<byte[]> cursor = connection.keyCommands()
+            try (Cursor<byte[]> cursor = connection
+                    .keyCommands()
                     .scan(ScanOptions.scanOptions().match(pattern).count(1000).build())) {
                 while (cursor.hasNext()) {
                     result.add(new String(cursor.next(), StandardCharsets.UTF_8));

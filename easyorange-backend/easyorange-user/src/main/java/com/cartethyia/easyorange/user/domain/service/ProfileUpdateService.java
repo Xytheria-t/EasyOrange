@@ -25,26 +25,20 @@ public class ProfileUpdateService {
      */
     public void validateUniqueContact(String email, String phone, String studentId, User currentUser) {
         var contact = currentUser.getContactInfo();
-        if (isPresent(email) && !email.equals(contact != null ? contact.email() : null)
-            && userRepository.findByEmail(email).isPresent())
+        if (isPresent(email)
+                && !email.equals(contact != null ? contact.email() : null)
+                && userRepository.findByEmail(email).isPresent())
             throw BusinessException.of(UserResultCode.EMAIL_EXISTS);
-        if (isPresent(phone) && !phone.equals(contact != null ? contact.phone() : null)
-            && userRepository.findByPhone(phone).isPresent())
+        if (isPresent(phone)
+                && !phone.equals(contact != null ? contact.phone() : null)
+                && userRepository.findByPhone(phone).isPresent())
             throw BusinessException.of(UserResultCode.PHONE_EXISTS);
 
         var personal = currentUser.getPersonalInfo();
-        if (isPresent(studentId) && !studentId.equals(personal != null ? personal.studentId() : null)
-            && userRepository.findByStudentId(studentId).isPresent())
+        if (isPresent(studentId)
+                && !studentId.equals(personal != null ? personal.studentId() : null)
+                && userRepository.findByStudentId(studentId).isPresent())
             throw BusinessException.of(UserResultCode.STUDENT_ID_EXISTS);
-    }
-
-    /**
-     * 判断是否有任何字段需要更新。
-     */
-    public static boolean hasAny(String nickname, String email, String phone,
-                                  String gender, String realName, String studentId) {
-        return isPresent(nickname) || isPresent(email) || isPresent(phone)
-            || gender != null || isPresent(realName) || isPresent(studentId);
     }
 
     private static boolean isPresent(String value) {

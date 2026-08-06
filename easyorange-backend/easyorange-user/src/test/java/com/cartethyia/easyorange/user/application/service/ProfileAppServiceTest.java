@@ -1,14 +1,21 @@
 package com.cartethyia.easyorange.user.application.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
+
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.user.application.service.ProfileAppService.UpdateCommand;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.aggregate.UserTestFixture;
+import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.ProfileUpdateService;
+import com.cartethyia.easyorange.user.domain.valueobject.Avatar;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,13 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProfileAppService 测试")
@@ -34,6 +34,7 @@ class ProfileAppServiceTest {
 
     @Mock
     private AvatarFilePort avatarFilePort;
+
     @Mock
     private DomainEventPublisher domainEventPublisher;
 
@@ -45,7 +46,8 @@ class ProfileAppServiceTest {
     @BeforeEach
     void setUp() {
         profileUpdateService = new ProfileUpdateService(userRepository);
-        profileAppService = new ProfileAppService(userRepository, avatarFilePort, domainEventPublisher, profileUpdateService);
+        profileAppService =
+                new ProfileAppService(userRepository, avatarFilePort, domainEventPublisher, profileUpdateService);
     }
 
     @AfterEach
@@ -76,8 +78,7 @@ class ProfileAppServiceTest {
             setSecurityContext();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> profileAppService.getCurrentUser())
-                .isInstanceOf(BusinessException.class);
+            assertThatThrownBy(() -> profileAppService.getCurrentUser()).isInstanceOf(BusinessException.class);
         }
     }
 
@@ -103,8 +104,9 @@ class ProfileAppServiceTest {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(userRepository.findByEmail("existing@example.com")).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(new UpdateCommand(null, "existing@example.com", null, null, null, null)))
-                .isInstanceOf(BusinessException.class);
+            assertThatThrownBy(() -> profileAppService.updateUserInfo(
+                            new UpdateCommand(null, "existing@example.com", null, null, null, null)))
+                    .isInstanceOf(BusinessException.class);
         }
 
         @Test
@@ -115,8 +117,9 @@ class ProfileAppServiceTest {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(userRepository.findByPhone("13900000000")).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(new UpdateCommand(null, null, "13900000000", null, null, null)))
-                .isInstanceOf(BusinessException.class);
+            assertThatThrownBy(() -> profileAppService.updateUserInfo(
+                            new UpdateCommand(null, null, "13900000000", null, null, null)))
+                    .isInstanceOf(BusinessException.class);
         }
 
         @Test
@@ -127,8 +130,9 @@ class ProfileAppServiceTest {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(userRepository.findByStudentId("2022001")).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(new UpdateCommand(null, null, null, null, null, "2022001")))
-                .isInstanceOf(BusinessException.class);
+            assertThatThrownBy(() -> profileAppService.updateUserInfo(
+                            new UpdateCommand(null, null, null, null, null, "2022001")))
+                    .isInstanceOf(BusinessException.class);
         }
 
         @Test
@@ -138,10 +142,10 @@ class ProfileAppServiceTest {
             User user = UserTestFixture.normalUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(new UpdateCommand(null, null, null, null, null, null)))
-                .isInstanceOf(BusinessException.class);
+            assertThatThrownBy(() ->
+                            profileAppService.updateUserInfo(new UpdateCommand(null, null, null, null, null, null)))
+                    .isInstanceOf(BusinessException.class);
         }
-
     }
 
     @Nested
@@ -153,14 +157,13 @@ class ProfileAppServiceTest {
         void success() {
             setSecurityContext();
             User user = UserTestFixture.normalUser();
-            User updatedUser = user.changeAvatar("/avatar/new.png", USER_ID);
-
-            when(userRepository.findById(USER_ID))
-                .thenReturn(Optional.of(user));
-
             byte[] content = "image-data".getBytes();
+            Avatar avatar = Avatar.uploaded("/avatar/new.png", content, "image/png");
+            User updatedUser = user.changeAvatar(avatar, USER_ID);
+
+            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(avatarFilePort.upload(content, "image/png", "avatar.png", USER_ID))
-                .thenReturn("/avatar/new.png");
+                    .thenReturn("/avatar/new.png");
             var result = profileAppService.uploadAvatar(content, "image/png", "avatar.png");
 
             assertThat(result.getId()).isEqualTo(USER_ID);
@@ -172,7 +175,9 @@ class ProfileAppServiceTest {
         @DisplayName("头像为空时抛出异常")
         void emptyContent() {
             assertThatThrownBy(() -> profileAppService.uploadAvatar(new byte[0], "image/png", "avatar.png"))
-                .isInstanceOf(BusinessException.class);
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(UserResultCode.AVATAR_EMPTY.getCode());
         }
 
         @Test
@@ -180,7 +185,9 @@ class ProfileAppServiceTest {
         void exceedsMaxSize() {
             byte[] content = new byte[6 * 1024 * 1024];
             assertThatThrownBy(() -> profileAppService.uploadAvatar(content, "image/png", "avatar.png"))
-                .isInstanceOf(BusinessException.class);
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(UserResultCode.AVATAR_TOO_LARGE.getCode());
         }
     }
 

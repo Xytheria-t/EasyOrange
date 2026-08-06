@@ -1,13 +1,12 @@
 package com.cartethyia.easyorange.framework.event.metadata;
 
+import java.time.Instant;
+import java.util.Date;
+import java.util.UUID;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.MDC;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
-
-import java.time.Instant;
-import java.util.Date;
-import java.util.UUID;
 
 /**
  * RabbitMQ 消息发布前注入事件元数据。

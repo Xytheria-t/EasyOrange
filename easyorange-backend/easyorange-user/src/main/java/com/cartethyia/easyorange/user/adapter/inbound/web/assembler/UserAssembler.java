@@ -10,6 +10,8 @@ import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
+import java.time.LocalDateTime;
+import java.util.Set;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
@@ -17,10 +19,10 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValueMappingStrategy;
 
-import java.time.LocalDateTime;
-import java.util.Set;
-
-@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true), nullValueMappingStrategy = NullValueMappingStrategy.RETURN_DEFAULT)
+@Mapper(
+        componentModel = "spring",
+        builder = @Builder(disableBuilder = true),
+        nullValueMappingStrategy = NullValueMappingStrategy.RETURN_DEFAULT)
 public interface UserAssembler {
 
     @Mapping(target = "userId", source = "id")
@@ -78,9 +80,16 @@ public interface UserAssembler {
         return sex != null ? sex.getCode() : null;
     }
 
-    record CommonData(String status, LocalDateTime createTime, LocalDateTime updateTime,
-                      String nickname, String email, String phone, String realName,
-                      String avatar, String studentId) {
+    record CommonData(
+            String status,
+            LocalDateTime createTime,
+            LocalDateTime updateTime,
+            String nickname,
+            String email,
+            String phone,
+            String realName,
+            String avatar,
+            String studentId) {
 
         static CommonData from(User user) {
             ContactInfo ci = user.getContactInfo();
@@ -97,8 +106,7 @@ public interface UserAssembler {
                     MaskUtils.maskPhone(ci != null ? ci.phone() : null),
                     MaskUtils.maskName(pi != null ? pi.realName() : null),
                     pi != null ? pi.avatar() : null,
-                    pi != null ? pi.studentId() : null
-            );
+                    pi != null ? pi.studentId() : null);
         }
 
         void applyTo(CommonUserFields r) {
@@ -114,4 +122,3 @@ public interface UserAssembler {
         }
     }
 }
-

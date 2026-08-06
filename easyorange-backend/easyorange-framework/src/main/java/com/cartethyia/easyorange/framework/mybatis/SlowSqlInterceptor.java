@@ -3,6 +3,12 @@ package com.cartethyia.easyorange.framework.mybatis;
 import com.cartethyia.easyorange.framework.config.properties.SlowSqlProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.text.DateFormat;
+import java.time.Duration;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
@@ -22,13 +28,6 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.text.DateFormat;
-import java.time.Duration;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
-
 /**
  * 慢 SQL 检测拦截器。
  * <p>
@@ -41,9 +40,25 @@ import java.util.concurrent.TimeUnit;
 @NullMarked
 @Component
 @Intercepts({
-        @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class}),
-        @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
-        @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class, CacheKey.class, BoundSql.class}),
+    @Signature(
+            type = Executor.class,
+            method = "update",
+            args = {MappedStatement.class, Object.class}),
+    @Signature(
+            type = Executor.class,
+            method = "query",
+            args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
+    @Signature(
+            type = Executor.class,
+            method = "query",
+            args = {
+                MappedStatement.class,
+                Object.class,
+                RowBounds.class,
+                ResultHandler.class,
+                CacheKey.class,
+                BoundSql.class
+            }),
 })
 public class SlowSqlInterceptor implements Interceptor {
 
@@ -107,8 +122,7 @@ public class SlowSqlInterceptor implements Interceptor {
         // 结构化日志
         String message = String.format(
                 "action=slow_sql namespace=%s command=%s cost=%dms threshold=%dms sql=[%s]",
-                namespace, commandName, elapsedMs, properties.getThresholdMs(), sql
-        );
+                namespace, commandName, elapsedMs, properties.getThresholdMs(), sql);
 
         switch (properties.getLogLevel().toLowerCase(Locale.ROOT)) {
             case "trace" -> log.trace(message);
@@ -181,7 +195,9 @@ public class SlowSqlInterceptor implements Interceptor {
         if (value == null) return "null";
         return switch (value) {
             case String s -> "'" + s + "'";
-            case Date d -> DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(d);
+            case Date d ->
+                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM)
+                        .format(d);
             case Number ignored -> value.toString();
             case Boolean ignored -> value.toString();
             default -> "'" + value + "'";

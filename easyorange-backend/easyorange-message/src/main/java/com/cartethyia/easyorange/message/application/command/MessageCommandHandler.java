@@ -3,27 +3,25 @@ package com.cartethyia.easyorange.message.application.command;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
+import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageCreateResult;
 import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageReadResult;
 import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageRecallResult;
+import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
+import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
-import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
-import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
-import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
-import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
-import com.cartethyia.easyorange.message.domain.enums.MessageType;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -54,60 +52,58 @@ public class MessageCommandHandler {
                 normalizeType(command.type()),
                 filteredTitle,
                 filteredContent,
-                command.businessId()
-        );
+                command.businessId());
 
         Message saved = messageRepository.save(result.aggregate());
 
         boolean online = messageNotifier.isUserOnline(saved.receiverId());
-        offlineMessageStoreService.storeIfOffline(
-                saved.receiverId(), saved.id(), "websocket", online);
+        offlineMessageStoreService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);
 
-        log.info("action=send_message messageId={} senderId={} receiverId={} type={}",
-                saved.id(), senderId, command.receiverId(), saved.type());
+        log.info(
+                "action=send_message messageId={} senderId={} receiverId={} type={}",
+                saved.id(),
+                senderId,
+                command.receiverId(),
+                saved.type());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(SendSystemMessageCommand command) {
-        MessageCreateResult result = Message.createSystem(
-                command.receiverId(),
-                command.title(),
-                command.content(),
-                command.businessId()
-        );
+        MessageCreateResult result =
+                Message.createSystem(command.receiverId(), command.title(), command.content(), command.businessId());
 
         Message saved = messageRepository.save(result.aggregate());
 
         boolean online = messageNotifier.isUserOnline(saved.receiverId());
-        offlineMessageStoreService.storeIfOffline(
-                saved.receiverId(), saved.id(), "websocket", online);
+        offlineMessageStoreService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);
 
         if (online) {
-            messageNotifier.sendNotification(saved.receiverId(), Map.of(
-                    "id", saved.id(),
-                    "title", saved.title() != null ? saved.title() : "",
-                    "content", saved.content() != null ? saved.content() : "",
-                    "businessId", saved.businessId() != null ? saved.businessId() : "",
-                    "type", saved.type(),
-                    "createTime", saved.createTime() != null ? saved.createTime().toString() : ""
-            ));
+            messageNotifier.sendNotification(
+                    saved.receiverId(),
+                    Map.of(
+                            "id", saved.id(),
+                            "title", saved.title() != null ? saved.title() : "",
+                            "content", saved.content() != null ? saved.content() : "",
+                            "businessId", saved.businessId() != null ? saved.businessId() : "",
+                            "type", saved.type(),
+                            "createTime",
+                                    saved.createTime() != null
+                                            ? saved.createTime().toString()
+                                            : ""));
         }
 
-        log.info("action=send_system_message messageId={} receiverId={}",
-                saved.id(), command.receiverId());
+        log.info("action=send_system_message messageId={} receiverId={}", saved.id(), command.receiverId());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(MarkAsReadCommand command) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Message aggregate = messageRepository.findById(command.messageId())
+        Message aggregate = messageRepository
+                .findById(command.messageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
 
-        BizRequire.requireTrue(
-                aggregate.isOwnedBy(userId),
-                MessageResultCode.MESSAGE_NOT_OWNER
-        );
+        BizRequire.requireTrue(aggregate.isOwnedBy(userId), MessageResultCode.MESSAGE_NOT_OWNER);
 
         if (aggregate.isUnread()) {
             MessageReadResult readResult = aggregate.read(userId);
@@ -120,7 +116,8 @@ public class MessageCommandHandler {
     @Transactional(rollbackFor = Exception.class)
     public void handle(MarkAsReadBatchCommand command) {
         BizRequire.notEmpty(command.messageIds(), "消息ID列表不能为空");
-        BizRequire.requireTrue(command.messageIds() != null && !command.messageIds().contains(null), "消息ID不能为null");
+        BizRequire.requireTrue(
+                command.messageIds() != null && !command.messageIds().contains(null), "消息ID不能为null");
 
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
@@ -138,7 +135,10 @@ public class MessageCommandHandler {
             }
         }
 
-        log.info("action=mark_batch_read userId={} count={}", userId, command.messageIds().size());
+        log.info(
+                "action=mark_batch_read userId={} count={}",
+                userId,
+                command.messageIds().size());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -159,7 +159,8 @@ public class MessageCommandHandler {
     public void handle(RecallMessageCommand command) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Message aggregate = messageRepository.findById(command.messageId())
+        Message aggregate = messageRepository
+                .findById(command.messageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
 
         // 非发送者（含 senderId 为 null 的系统消息）在构造 conversationId 前快速失败，避免 "conv__"。
@@ -177,13 +178,11 @@ public class MessageCommandHandler {
     public void handle(DeleteMessageCommand command) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Message aggregate = messageRepository.findById(command.messageId())
+        Message aggregate = messageRepository
+                .findById(command.messageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
 
-        BizRequire.requireTrue(
-                aggregate.isOwnedBy(userId),
-                MessageResultCode.MESSAGE_NOT_OWNER
-        );
+        BizRequire.requireTrue(aggregate.isOwnedBy(userId), MessageResultCode.MESSAGE_NOT_OWNER);
 
         MessageDeletedEvent event = aggregate.delete(userId);
         messageRepository.delete(command.messageId());

@@ -1,12 +1,11 @@
 package com.cartethyia.easyorange.common.util;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.*;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.assertj.core.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("Singleflight 缓存击穿防护")
 class SingleflightTest {
@@ -23,20 +22,21 @@ class SingleflightTest {
 
         for (int i = 0; i < threadCount; i++) {
             new Thread(() -> {
-                try {
-                    startLatch.await();
-                    var result = singleflight.execute("same-key", () -> {
-                        callCount.incrementAndGet();
-                        sleepQuietly(50);
-                        return "computed-value";
-                    });
-                    results.add(result);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                } finally {
-                    doneLatch.countDown();
-                }
-            }).start();
+                        try {
+                            startLatch.await();
+                            var result = singleflight.execute("same-key", () -> {
+                                callCount.incrementAndGet();
+                                sleepQuietly(50);
+                                return "computed-value";
+                            });
+                            results.add(result);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        } finally {
+                            doneLatch.countDown();
+                        }
+                    })
+                    .start();
         }
 
         startLatch.countDown();

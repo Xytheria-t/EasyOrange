@@ -24,16 +24,20 @@ public class WebSocketEventConsumer {
     private final EventConsumerHandler handler;
     private final ChatWebSocketHandler chatWebSocketHandler;
 
-    public WebSocketEventConsumer(EventIdempotencyChecker idempotencyChecker,
-                                  EventMetricsService metricsService,
-                                  ChatWebSocketHandler chatWebSocketHandler) {
+    public WebSocketEventConsumer(
+            EventIdempotencyChecker idempotencyChecker,
+            EventMetricsService metricsService,
+            ChatWebSocketHandler chatWebSocketHandler) {
         this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService, false);
         this.chatWebSocketHandler = chatWebSocketHandler;
     }
 
     @RabbitHandler
     public void onMessageRecalled(MessageRecalledEvent event, Message message) {
-        handler.handle(event, message, metadata ->
-                chatWebSocketHandler.broadcastRecallEvent(event.conversationId(), event.messageId(), event.operatorId()));
+        handler.handle(
+                event,
+                message,
+                metadata -> chatWebSocketHandler.broadcastRecallEvent(
+                        event.conversationId(), event.messageId(), event.operatorId()));
     }
 }
