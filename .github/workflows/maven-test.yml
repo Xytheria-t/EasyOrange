@@ -67,12 +67,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: easyorange-frontend/package-lock.json
 
       - name: Install frontend dependencies
-        run: npm ci
+        # 强制官方 registry + 全局替换 lockfile 里的 npmmirror host：避免 CI 从
+        # registry.npmmirror.com 拉包遇 503（该镜像在境外 runner 上不稳定）
+        run: npm ci --registry=https://registry.npmjs.org --replace-registry-host=always
         working-directory: easyorange-frontend
 
       - name: Lint check
