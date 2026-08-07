@@ -75,15 +75,7 @@ test.describe('认证流程', () => {
   });
 
   test('未登录时访问受保护页面跳转到登录页', async ({ page }) => {
-    // 清除可能存在的 token
-    await page.goto('/login');
-    await page.evaluate(() => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('auth-storage');
-      sessionStorage.clear();
-    });
-
-    // 访问受保护的 profile 页面
+    // 每个测试是全新浏览器上下文，天然无凭据；直接访问受保护页，应被重定向到登录页
     await page.goto('/profile');
     await page.waitForLoadState('networkidle');
 
@@ -146,8 +138,9 @@ test.describe('认证流程', () => {
     await page.locator('[data-testid="input-register-confirm-password"]').fill('DifferentPass456');
 
     // 提交表单（无需勾选同意条款来触发表单验证）
-    // 先勾选同意条款
-    await page.locator('.auth-page-terms-checkbox input[type="checkbox"]').check();
+    // 先勾选同意条款。terms 复选框是 Radix Checkbox（隐藏原生 input + 可见 role=checkbox
+    // button），需点击可见的 role=checkbox 以触发 onCheckedChange
+    await page.getByRole('checkbox').click();
     await page.locator('[data-testid="btn-register-submit"]').click();
 
     // 应显示密码不一致的错误

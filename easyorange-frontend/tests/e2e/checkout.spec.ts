@@ -9,11 +9,12 @@ import { seedSession, spaNavigate } from './helpers/auth';
  */
 test.describe('收银台支付流程', () => {
   test.beforeEach(async ({ page }) => {
-    // 注入登录态（双 Token 会话恢复流）；等待 restoreSession 完成，token 写入内存，
+    // 注入登录态（双 Token 会话恢复流）。等「用户菜单」出现即代表 token 已写入内存、
+    // restoreSession 完成——以此作为就绪信号（比 networkidle 更确定，抗 WSL2 负载抖动），
     // 供后续 SPA 导航进入受保护路由时通过同步的 ProtectedRoute 校验
     await seedSession(page, { userId: '1', username: 'buyer', nickname: '买家' });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await expect(page.locator('[data-testid="btn-user-menu"]')).toBeVisible({ timeout: 20000 });
   });
 
   test('登录用户可进入收银台并渲染订单与支付方式', async ({ page }) => {
