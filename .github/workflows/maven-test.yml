@@ -10,6 +10,10 @@ on:
       - develop
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -66,9 +70,21 @@ jobs:
         run: npm run typecheck
         working-directory: easyorange-frontend
 
-      # 生产构建：tsc + vite build（rolldown），验证产物可生成
+      # 生产构建：tsc + vite build（rolldown），验证产物可生成；同时产出 dist 供下方 E2E 使用
       - name: Frontend production build
         run: npm run build
+        working-directory: easyorange-frontend
+
+      # E2E（Playwright）—— 纯 mock 双 Token 会话恢复流，跑在 vite preview（生产构建产物
+      # dist，由上方 build 步骤产出），不依赖后端。代码更新 → 已跑过的 E2E 自动重跑：
+      # 前端组件/路由/data-testid/文案变更会被立刻捕获。
+      # 若 CI 环境出现偶发抖动，可降级 continue-on-error 观察（不建议，会失去门禁意义）
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: easyorange-frontend
+
+      - name: Run E2E tests
+        run: npx playwright test
         working-directory: easyorange-frontend
 
   # PIT 变异测试 — 评估测试对缺陷的真实检测力（仅 domain 层）。非阻断：

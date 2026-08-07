@@ -1,383 +1,125 @@
 import { test, expect } from '@playwright/test';
+import { seedAdminSession, seedSession, spaNavigate } from './helpers/auth';
 
+/**
+ * 管理后台 E2E —— 契约层：钉住「守卫 + 路由可达」，不断言页面数据。
+ *
+ * 后台判定走 useAdminGuard（userType '00'|'02'），登录态注入与 auth/checkout 同款
+ * 双 Token 会话恢复流（seedSession 拦截 /auth/refresh + /users/me），管理员用
+ * seedAdminSession（userType '00'）。受保护路由用 spaNavigate 前进，避开 full goto
+ * 与异步 restore 的竞态（见 helpers/auth.ts 注释）。
+ *
+ * 断言基准：
+ * - 守卫通过信号 = `.admin-layout` 可见（AdminRouteGuard 放行后 AdminLayout 挂载）
+ * - 页面可达 = 该页稳定标题可见（商品审核/用户管理/订单管理/数据统计；举报页无标题
+ *   则以布局 + 侧边栏品牌为准）
+ * - 页面数据的真实渲染由 src/admin/pages/** 组件测试覆盖，不在 E2E 重复
+ */
 test.describe('管理后台', () => {
-  test('后台登录页面可访问', async ({ page }) => {
-    await page.goto('/admin/login');
-    await expect(page).toHaveURL(/\/admin\/login/);
-    await expect(page.locator('body')).toBeVisible();
-  });
-
-  test('未登录访问后台跳转到登录页', async ({ page }) => {
-    await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
-    const currentUrl = page.url();
-    // 未认证状态应当跳转到登录页
-    expect(currentUrl.includes('login')).toBeTruthy();
-  });
-
-  test('未登录访问后台各页面均跳转登录', async ({ page }) => {
-    const adminPaths = ['/admin/users', '/admin/products', '/admin/orders', '/admin/reports', '/admin/stats'];
-    for (const path of adminPaths) {
-      await page.goto(path);
-      await page.waitForLoadState('networkidle');
-      const currentUrl = page.url();
-      expect(currentUrl.includes('login')).toBeTruthy();
-    }
-  });
-
-  test('登录后普通用户访问后台显示禁止访问', async ({ page }) => {
-    // 设置普通用户登录状态
-    await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-user-token',
-          refreshToken: 'mock-refresh-token',
-          user: {
-            userId: 2,
-            username: 'regularuser',
-            nickname: '普通用户',
-            role: 'user',
-            roles: ['user'],
-          },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-user-token');
+    test('未登录访问后台跳转到登录页', async ({ page }) => {
+        await page.goto('/admin');
+        await expect(page).toHaveURL(/\/login/, { timeout: 10000 });
     });
 
-    await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
-
-    // 普通用户应看到 403 禁止访问页面
-    await page.waitForTimeout(3000);
-    const forbiddenPage = page.locator('text=访问受限').first();
-    const forbiddenCode = page.locator('text=403').first();
-    const redirectToLogin = page.locator('text=返回主站').first();
-    await expect(forbiddenPage.or(redirectToLogin).or(forbiddenCode)).toBeVisible({ timeout: 15000 });
-  });
-
-  test('已登录管理员可访问后台首页', async ({ page }) => {
-    // 设置管理员登录状态
-    await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-admin-token',
-          refreshToken: 'mock-admin-refresh',
-          user: {
-            userId: 1,
-            username: 'admin',
-            nickname: '管理员',
-            role: 'admin',
-            roles: ['admin', 'user'],
-          },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-admin-token');
+    test('未登录访问后台各页面均跳转登录', async ({ page }) => {
+        const adminPaths = ['/admin/users', '/admin/products', '/admin/orders', '/admin/reports', '/admin/stats'];
+        for (const path of adminPaths) {
+            await page.goto(path);
+            await expect(page).toHaveURL(/\/login/, { timeout: 10000 });
+        }
     });
 
-    await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
+    test('登录后普通用户访问后台显示禁止访问', async ({ page }) => {
+        await seedSession(page, { userId: '2', username: 'regularuser', nickname: '普通用户' });
+        await page.goto('/');
+        await expect(page.locator('[data-testid="btn-user-menu"]')).toBeVisible({ timeout: 20000 });
 
-    // 管理员应看到后台布局
-    await page.waitForTimeout(3000);
-    const adminLayout = page.locator('.admin-layout, [class*="admin"]').first();
-    await expect(adminLayout).toBeVisible({ timeout: 15000 });
-  });
+        await spaNavigate(page, '/admin');
 
-  test('管理员后台首页显示统计数据区域', async ({ page }) => {
-    // 设置管理员登录状态
-    await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-admin-token',
-          refreshToken: 'mock-admin-refresh',
-          user: {
-            userId: 1,
-            username: 'admin',
-            nickname: '管理员',
-            role: 'admin',
-            roles: ['admin', 'user'],
-          },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-admin-token');
+        // userType '01' 非管理员 → AdminRouteGuard 渲染 ForbiddenPage
+        await expect(page.locator('text=访问受限').first()).toBeVisible({ timeout: 15000 });
     });
 
-    await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
+    test('管理员用户菜单显示后台入口', async ({ page }) => {
+        await seedAdminSession(page, { userId: '1', username: 'admin', nickname: '管理员' });
+        await page.goto('/');
+        await expect(page.locator('[data-testid="btn-user-menu"]')).toBeVisible({ timeout: 20000 });
 
-    // 统计卡片区域应可见（可能有加载骨架屏或实际数据）
-    const statCards = page.locator('[class*="stat"], [class*="Stat"], [class*="card"]').first();
-    const dashboardGrid = page.locator('[class*="grid"], [class*="dashboard"]').first();
-    await expect(statCards.or(dashboardGrid)).toBeVisible({ timeout: 15000 });
-  });
+        const userMenuBtn = page.locator('[data-testid="btn-user-menu"]');
+        await userMenuBtn.click({ force: true });
 
-  test('管理员可导航到商品审核页面', async ({ page }) => {
-    // 设置管理员登录状态
-    await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-admin-token',
-          refreshToken: 'mock-admin-refresh',
-          user: {
-            userId: 1,
-            username: 'admin',
-            nickname: '管理员',
-            role: 'admin',
-            roles: ['admin', 'user'],
-          },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-admin-token');
+        const adminMenuItem = page.locator('.floating-nav__menu-item').filter({ hasText: '后台管理' });
+        await expect(adminMenuItem).toBeVisible({ timeout: 10000 });
     });
 
-    await page.goto('/admin/products');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
+    test('普通用户菜单不显示后台入口', async ({ page }) => {
+        await seedSession(page, { userId: '2', username: 'regularuser', nickname: '普通用户' });
+        await page.goto('/');
+        await expect(page.locator('[data-testid="btn-user-menu"]')).toBeVisible({ timeout: 20000 });
 
-    // 商品审核页面应有搜索框和筛选选项
-    const searchInput = page.locator('input[placeholder*="搜索"], input[placeholder*="search"]').first();
-    const statusSelect = page.locator('select, [class*="select"]').first();
-    await expect(searchInput.or(statusSelect)).toBeVisible({ timeout: 15000 });
-  });
+        const userMenuBtn = page.locator('[data-testid="btn-user-menu"]');
+        await userMenuBtn.click({ force: true });
 
-  test('管理员可导航到举报管理页面', async ({ page }) => {
-    // 设置管理员登录状态
-    await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-admin-token',
-          refreshToken: 'mock-admin-refresh',
-          user: {
-            userId: 1,
-            username: 'admin',
-            nickname: '管理员',
-            role: 'admin',
-            roles: ['admin', 'user'],
-          },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-admin-token');
+        const adminMenuItem = page.locator('.floating-nav__menu-item').filter({ hasText: '后台管理' });
+        await expect(adminMenuItem).toHaveCount(0);
     });
 
-    await page.goto('/admin/reports');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
+    test.describe('已登录管理员', () => {
+        test.beforeEach(async ({ page }) => {
+            await seedAdminSession(page, { userId: '1', username: 'admin', nickname: '管理员' });
+            await page.goto('/');
+            // 就绪信号：用户菜单出现 = token 已写入内存、restoreSession 完成
+            await expect(page.locator('[data-testid="btn-user-menu"]')).toBeVisible({ timeout: 20000 });
+        });
 
-    // 举报管理页面应有筛选器和表格
-    const filterSection = page.locator('[class*="filter"], [class*="status"]').first();
-    await expect(filterSection).toBeVisible({ timeout: 15000 });
-  });
+        test('可访问后台首页', async ({ page }) => {
+            await spaNavigate(page, '/admin');
+            // 守卫通过 → AdminLayout 挂载
+            await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
+            await expect(page.locator('.sidebar-logo-text')).toHaveText('易橙管理', { timeout: 10000 });
+        });
 
-  test('管理员可导航到用户管理页面', async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-admin-token',
-          refreshToken: 'mock-admin-refresh',
-          user: {
-            userId: 1,
-            username: 'admin',
-            nickname: '管理员',
-            role: 'admin',
-            roles: ['admin', 'user'],
-          },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-admin-token');
+        test('可导航到商品审核页面', async ({ page }) => {
+            await spaNavigate(page, '/admin/products');
+            await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
+            await expect(page.locator('text=商品审核').first()).toBeVisible({ timeout: 15000 });
+        });
+
+        test('可导航到举报处理页面', async ({ page }) => {
+            await spaNavigate(page, '/admin/reports');
+            await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
+            // 举报页无稳定标题，以布局 + 侧边栏导航可达为准
+            await expect(page.locator('.sidebar-nav a').filter({ hasText: '举报处理' })).toBeVisible();
+        });
+
+        test('可导航到用户管理页面', async ({ page }) => {
+            await spaNavigate(page, '/admin/users');
+            await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
+            await expect(page.locator('text=用户管理').first()).toBeVisible({ timeout: 15000 });
+        });
+
+        test('可导航到订单管理页面', async ({ page }) => {
+            await spaNavigate(page, '/admin/orders');
+            await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
+            await expect(page.locator('text=订单管理').first()).toBeVisible({ timeout: 15000 });
+        });
+
+        test('可导航到数据统计页面', async ({ page }) => {
+            await spaNavigate(page, '/admin/stats');
+            await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
+            await expect(page.locator('text=数据统计').first()).toBeVisible({ timeout: 15000 });
+        });
+
+        test('后台侧边栏导航可用', async ({ page }) => {
+            await spaNavigate(page, '/admin');
+            await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
+
+            // 点击侧边栏「商品审核」→ 应路由到 /admin/products
+            const productNav = page.locator('.sidebar-nav a').filter({ hasText: '商品审核' }).first();
+            await expect(productNav).toBeVisible({ timeout: 10000 });
+            await productNav.click();
+            await expect(page).toHaveURL(/\/admin\/products/, { timeout: 10000 });
+            await expect(page.locator('text=商品审核').first()).toBeVisible({ timeout: 15000 });
+        });
     });
-
-    await page.goto('/admin/users');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
-
-    // 用户管理页面应有表格或内容区域
-    const tableEl = page.locator('table, [class*="table"], [class*="Table"]').first();
-    const contentArea = page.locator('[class*="content"], [class*="page"]').first();
-    await expect(tableEl.or(contentArea)).toBeVisible({ timeout: 15000 });
-  });
-
-  test('管理员可导航到订单管理页面', async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-admin-token',
-          refreshToken: 'mock-admin-refresh',
-          user: {
-            userId: 1,
-            username: 'admin',
-            nickname: '管理员',
-            role: 'admin',
-            roles: ['admin', 'user'],
-          },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-admin-token');
-    });
-
-    await page.goto('/admin/orders');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
-
-    // 订单管理页面应有内容
-    const content = page.locator('[class*="page"], [class*="content"]').first();
-    await expect(content).toBeVisible({ timeout: 15000 });
-  });
-
-  test('管理员可导航到数据统计页面', async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-admin-token',
-          refreshToken: 'mock-admin-refresh',
-          user: {
-            userId: 1,
-            username: 'admin',
-            nickname: '管理员',
-            role: 'admin',
-            roles: ['admin', 'user'],
-          },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-admin-token');
-    });
-
-    await page.goto('/admin/stats');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
-
-    // 统计页面应有内容
-    const content = page.locator('[class*="page"], [class*="stats"]').first();
-    await expect(content).toBeVisible({ timeout: 15000 });
-  });
-
-  test('管理员后台侧边栏导航可用', async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-admin-token',
-          refreshToken: 'mock-admin-refresh',
-          user: {
-            userId: 1,
-            username: 'admin',
-            nickname: '管理员',
-            role: 'admin',
-            roles: ['admin', 'user'],
-          },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-admin-token');
-    });
-
-    await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
-
-    // 侧边栏导航链接可见（AdminLayout 内的导航）
-    const sideNav = page.locator('nav a, [class*="sidebar"] a, [class*="menu"] a').first();
-    if (await sideNav.isVisible().catch(() => false)) {
-      // 尝试点击导航链接跳转到商品审核
-      const productLink = page.locator('nav a, [class*="sidebar"] a, [class*="menu"] a').filter({ hasText: /商品/i }).first();
-      if (await productLink.isVisible().catch(() => false)) {
-        await productLink.click();
-        await page.waitForTimeout(1000);
-        await expect(page).toHaveURL(/\/admin\/products/);
-      }
-    }
-  });
-
-  test('非管理员用户菜单不显示后台入口', async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-user-token',
-          refreshToken: 'mock-refresh-token',
-          user: {
-            userId: 2,
-            username: 'regularuser',
-            nickname: '普通用户',
-            role: 'user',
-            roles: ['user'],
-          },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-user-token');
-    });
-
-    await page.reload();
-    await page.waitForLoadState('networkidle');
-
-    // 打开用户菜单
-    const userMenuBtn = page.locator('[data-testid="btn-user-menu"]').first();
-    await expect(userMenuBtn).toBeVisible({ timeout: 10000 });
-    await userMenuBtn.click();
-
-    // 菜单中不应包含"后台管理"链接
-    const adminMenuItem = page.locator('text=后台管理');
-    await expect(adminMenuItem).toHaveCount(0);
-  });
-
-  test('管理员用户菜单显示后台入口', async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-admin-token',
-          refreshToken: 'mock-admin-refresh',
-          user: {
-            userId: 1,
-            username: 'admin',
-            nickname: '管理员',
-            role: 'admin',
-            roles: ['admin', 'user'],
-          },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-admin-token');
-    });
-
-    await page.reload();
-    await page.waitForLoadState('networkidle');
-
-    // 打开用户菜单
-    const userMenuBtn = page.locator('[data-testid="btn-user-menu"]').first();
-    await expect(userMenuBtn).toBeVisible({ timeout: 10000 });
-    await userMenuBtn.click();
-
-    // 菜单中应包含"后台管理"链接
-    const adminMenuItem = page.locator('.floating-nav__menu-item--admin, .floating-nav__menu-item').filter({ hasText: '后台管理' });
-    await expect(adminMenuItem).toBeVisible();
-  });
 });

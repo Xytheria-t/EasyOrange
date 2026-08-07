@@ -43,6 +43,12 @@ export default defineConfig({
             }
         }
     },
+    // E2E 跑在 vite preview（生产构建产物）而非 dev server：预打包无按需转换、
+    // 无 HMR WebSocket，抗 WSL2/CI 冷启动抖动。端口与 dev 对齐便于复用 baseURL
+    preview: {
+        port: 5173,
+        strictPort: true
+    },
     build: {
         target: 'es2020',
         outDir: 'dist',

@@ -1,7 +1,8 @@
 # 双 Token 现代化改造设计（access/refresh 职责分离）
 
 日期：2026-08-05
-状态：已获批（User: "就要这个"）
+状态：✅ **已实现并收口**（2026-08-06，落地提交 `b5f0f879`「双 Token 现代化改造落地 + 幂等 AOP→Filter + 锁抽象收口」；后续收口见 `1357d0a2`「认证域服务拆分 ADR-0009 + DLQ 简化 + 生产密钥校验」）。本文保留为设计决策记录，现役行为以代码与 [doc/架构/架构-安全认证.md](../架构/架构-安全认证.md) 为准。
+> 历史状态：已获批（User: "就要这个"）
 范围：easyorange-backend（framework / user / admin / application）+ easyorange-frontend
 
 ## 1. 目标与决策

@@ -123,7 +123,7 @@ stateDiagram-v2
 ## 快速开始
 
 ```bash
-git clone https://gitee.com/cartethyia_XLS/easy-orange.git && cd easy-orange
+git clone https://github.com/471292781/EasyOrange.git && cd easy-orange
 docker compose -f compose.yaml up -d                               # MySQL/Redis/RabbitMQ
 ./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application   # :8080
 cd easyorange-frontend && npm install && npm run dev               # :5173
@@ -157,6 +157,6 @@ cd easyorange-frontend && docker build -t easyorange-fe . && docker run -p 80:80
 
 <div align="center">
 
-**EasyOrange** · LLM × DDD：Java 架构工程化实战 · Java 25 + Spring Boot 4 · DDD + CQRS + 本地单事务/分布式锁 + 事件驱动 + AI 工程化 · [Gitee](https://gitee.com/cartethyia_XLS/easy-orange)
+**EasyOrange** · LLM × DDD：Java 架构工程化实战 · Java 25 + Spring Boot 4 · DDD + CQRS + 本地单事务/分布式锁 + 事件驱动 + AI 工程化 · [GitHub](https://github.com/471292781/EasyOrange)
 
 </div>

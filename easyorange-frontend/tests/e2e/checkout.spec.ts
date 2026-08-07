@@ -61,7 +61,6 @@ test.describe('收银台支付流程', () => {
 
     // SPA 导航进入受保护路由，避免 full goto 触发 restoreSession 与同步守卫的竞态
     await spaNavigate(page, '/payment?orderId=order-123');
-    await page.waitForLoadState('networkidle');
 
     // 收银台渲染
     await expect(page.locator('text=收银台').first()).toBeVisible({ timeout: 15000 });
@@ -76,7 +75,6 @@ test.describe('收银台支付流程', () => {
 
   test('无 orderId 时收银台显示无效订单兜底', async ({ page }) => {
     await spaNavigate(page, '/payment');
-    await page.waitForLoadState('networkidle');
     await expect(page.locator('text=无效的订单').first()).toBeVisible({ timeout: 15000 });
   });
 });

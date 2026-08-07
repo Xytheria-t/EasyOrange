@@ -20,18 +20,16 @@ test.describe('认证流程', () => {
 
   test('登录失败显示错误信息', async ({ page }) => {
     await page.goto('/login');
-    // 确保登录 tab 激活
+    // 确保登录 tab 激活（active 类出现即切换完成，比固定 sleep 确定）
     await page.locator('[data-testid="tab-login"]').click();
-    await page.waitForTimeout(200);
+    await expect(page.locator('[data-testid="tab-login"].auth-page-tab--active')).toBeVisible();
 
     // 输入无效凭证
     await page.locator('[data-testid="input-account"]').fill('nonexistent_user');
     await page.locator('[data-testid="input-password"]').fill('wrongpassword123');
     await page.locator('[data-testid="btn-login-submit"]').click();
 
-    // 等待错误提示出现（API 调用失败会显示错误）
-    await page.waitForTimeout(2000);
-    // 检查是否显示了错误消息（服务端返回或 toast 提示）
+    // 检查是否显示了错误消息（服务端返回或 toast 提示；expect 轮询确定性等待）
     const errorEl = page.locator('[data-testid="login-error"]');
     const toastEl = page.locator('.toast-message, .toast-error, [class*="toast"]').first();
     await expect(errorEl.or(toastEl)).toBeVisible({ timeout: 10000 });
@@ -40,7 +38,7 @@ test.describe('认证流程', () => {
   test('登录成功跳转到首页', async ({ page }) => {
     await page.goto('/login');
     await page.locator('[data-testid="tab-login"]').click();
-    await page.waitForTimeout(200);
+    await expect(page.locator('[data-testid="tab-login"].auth-page-tab--active')).toBeVisible();
 
     await page.locator('[data-testid="input-account"]').fill('testuser');
     await page.locator('[data-testid="input-password"]').fill('Test123456');
@@ -77,7 +75,6 @@ test.describe('认证流程', () => {
   test('未登录时访问受保护页面跳转到登录页', async ({ page }) => {
     // 每个测试是全新浏览器上下文，天然无凭据；直接访问受保护页，应被重定向到登录页
     await page.goto('/profile');
-    await page.waitForLoadState('networkidle');
 
     // 应该跳转到登录页，且带 redirect 参数
     await expect(page).toHaveURL(/\/login/);
@@ -90,7 +87,6 @@ test.describe('认证流程', () => {
     // 注入登录态（双 Token 会话恢复流）
     await seedSession(page, { userId: '1', username: 'testuser', nickname: '测试用户' });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
 
     // 打开用户菜单。浮动导航在 hover 时有 :hover 位移 + navFloat 浮动动画，Playwright
     // 的 actionability 会判定元素「不稳定」；force 跳过该稳定性检查，仍是真实点击。
@@ -114,7 +110,7 @@ test.describe('认证流程', () => {
   test('注册表单包含必要字段和验证提示', async ({ page }) => {
     await page.goto('/login');
     await page.locator('[data-testid="tab-register"]').click();
-    await page.waitForTimeout(200);
+    await expect(page.locator('[data-testid="tab-register"].auth-page-tab--active')).toBeVisible();
 
     // 注册表单字段应可见
     await expect(page.locator('[data-testid="input-register-username"]')).toBeVisible();
@@ -130,7 +126,7 @@ test.describe('认证流程', () => {
   test('注册时两次密码不一致显示错误', async ({ page }) => {
     await page.goto('/login');
     await page.locator('[data-testid="tab-register"]').click();
-    await page.waitForTimeout(200);
+    await expect(page.locator('[data-testid="tab-register"].auth-page-tab--active')).toBeVisible();
 
     // 填写密码但两次不一致
     await page.locator('[data-testid="input-register-username"]').fill('newuser123');
@@ -143,11 +139,9 @@ test.describe('认证流程', () => {
     await page.getByRole('checkbox').click();
     await page.locator('[data-testid="btn-register-submit"]').click();
 
-    // 应显示密码不一致的错误
-    await page.waitForTimeout(1000);
+    // 应显示密码不一致的错误（可能通过 toast 或内联错误显示；expect 轮询确定性等待）
     const errorEl = page.locator('[data-testid="register-error"]');
     const toastEl = page.locator('.toast-message, .toast-error, [class*="toast"]').first();
-    // 可能通过 toast 或内联错误显示
     await expect(errorEl.or(toastEl)).toBeVisible({ timeout: 10000 });
   });
 
@@ -175,13 +169,11 @@ test.describe('认证流程', () => {
 
     // 切换到注册
     await page.locator('[data-testid="tab-register"]').click();
-    await page.waitForTimeout(200);
     await expect(page.locator('[data-testid="tab-register"].auth-page-tab--active')).toBeVisible();
     await expect(page.locator('[data-testid="input-register-username"]')).toBeVisible();
 
     // 切回登录
     await page.locator('[data-testid="tab-login"]').click();
-    await page.waitForTimeout(200);
     await expect(page.locator('[data-testid="tab-login"].auth-page-tab--active')).toBeVisible();
     await expect(page.locator('[data-testid="input-account"]')).toBeVisible();
   });

@@ -217,6 +217,7 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 ## 开发规范
 
 - 编码规则见 `.claude/rules/ecc/` 目录（ECC 分层规则集：common 通用 + java/typescript/react/web 语言专用，按文件路径自动激活，语言级规则优先级高于 common）
+- **开发中指标收口延后**：开发阶段（未整体完成前）每次改动只做**增量验证**——跑改动涉及模块/文件的单测与集成测试即可，不做全量测试统计、不核查 JaCoCo/PIT 覆盖率、不刷新 `doc/工程指标.md` 的测试数数字（这些只在开发整体收口时统一跑一次并落档）。用户明确要求核查时除外
 - 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
 - 数据库变更必须通过 Flyway 迁移脚本
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，包含 `records/total/current/size/pages` + `facets` 分面桶 + `aiEnhancement` 增强）
@@ -240,6 +241,10 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 ## 常用命令
 
 ```bash
+# Git 操作（远程 origin = GitHub，push/PR 触发 GitHub Actions）
+git push origin develop
+git pull origin develop
+
 # 后端构建
 cd easyorange-backend && ./mvnw clean package -DskipTests
 
@@ -255,6 +260,7 @@ cd easyorange-backend && ./mvnw clean package -DskipTests
 ./mvnw test -pl easyorange-admin
 ./mvnw test -pl easyorange-order
 ./mvnw test -pl easyorange-message -am
+./mvnw test -pl easyorange-product -am
 
 # 生成 JaCoCo 覆盖率报告
 ./mvnw clean test jacoco:report
@@ -292,14 +298,16 @@ npm run test:watch
 # 覆盖率报告
 npm run test:coverage
 
-# E2E 测试（需先启动 dev server）
+# E2E 测试 —— 跑在 vite preview（生产构建产物），自动 npm run build 后再跑；
+# 纯 page.route mock 双 Token 会话恢复流，不依赖真实后端。WSL2 慢机抗性见
+# playwright.config.ts / tests/e2e/global-setup.ts 注释（retries 2、预热、禁 networkidle）
 npm run test:e2e
 
 # 生产构建 + Bundle 分析（rollup-plugin-visualizer 输出 dist/stats.html，treemap 可视化）
 npm run build:analyze
 ```
 
-CI/CD: `.gitee/workflows/maven-test.yml` — push/PR 到 develop/main 触发（后端 11 模块测试 + JaCoCo 门禁 → 前端 lint/test），远端为 Gitee
+CI/CD: `.github/workflows/maven-test.yml` — push/PR 到 develop/main 触发（后端 11 模块测试 + OWASP/JaCoCo 门禁 → 前端 lint/test/typecheck/build → Playwright E2E），远端为 GitHub Actions
 
 ## Repository Map
 

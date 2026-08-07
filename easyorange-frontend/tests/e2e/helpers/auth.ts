@@ -3,10 +3,15 @@ import type { Page } from '@playwright/test';
 /** 后台 API 统一响应信封 */
 const OK = { code: 'A0000', message: 'success' };
 
+/** 用户类型：'00' 管理员 / '01' 学生 / '02' 教师（见 src/types/user.ts + useAdminGuard） */
+export type SeedUserType = '00' | '01' | '02';
+
 interface SeedUser {
     userId: string;
     username: string;
     nickname?: string;
+    /** 管理员守卫判定字段（useAdminGuard：'00' | '02' 为管理员）。默认 '01' 普通用户 */
+    userType?: SeedUserType;
 }
 
 /**
@@ -18,9 +23,10 @@ interface SeedUser {
  *
  * 这里改为拦截应用启动时 restoreSession() 真正调用的两个端点（/auth/refresh →
  * /users/me），让应用自己把会话立起来——与真实登录态等价，且不依赖后端与种子数据。
- * userType 取 '01'（普通用户），避免被管理员判定误伤。
  */
 export async function seedSession(page: Page, user: SeedUser): Promise<void> {
+    const userType = user.userType ?? '01';
+
     await page.route('**/api/auth/refresh**', route =>
         route.fulfill({
             status: 200,
@@ -45,7 +51,7 @@ export async function seedSession(page: Page, user: SeedUser): Promise<void> {
                     realName: null,
                     avatar: null,
                     status: 0,
-                    userType: '01',
+                    userType,
                     createTime: '',
                     updateTime: '',
                 },
@@ -58,6 +64,13 @@ export async function seedSession(page: Page, user: SeedUser): Promise<void> {
     await page.route('**/api/auth/logout**', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(OK) })
     );
+}
+
+/**
+ * 注入「管理员」会话（userType '00'），供 admin.spec 后台守卫用例使用。
+ */
+export async function seedAdminSession(page: Page, user: SeedUser): Promise<void> {
+    await seedSession(page, { ...user, userType: '00' });
 }
 
 /**
