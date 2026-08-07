@@ -145,7 +145,7 @@ admin → framework, common, user (optional), product (optional), order (optiona
 - **OWASP 硬闸门已恢复绿色（2026-08-04）**: 通过依赖升级 + 定向豁免清除全部 CVSS ≥ 8 告警：
   - Spring Boot 4.0.3 → **4.0.7**（spring-framework 7.0.8，修复 **CVE-2026-41855** 9.8）；netty → **4.2.16**、tomcat → **11.0.24**、jackson → **3.1.5**（见 pom `<netty.version>`/`<tomcat.version>`/`<jackson3.version>` 覆盖）
   - **豁免项**（`easyorange-backend/dependency-suppression.xml`，注明理由、待条件满足后解除）：kotlin-stdlib **CVE-2026-53914**（修复版 Kotlin 2.4.20 未发布稳定版；纯 Java 项目不编译 Kotlin，攻击面≈0）；mysql-connector-j **CVE-2026-60193/60192**（受影响组件为 Connector/Net(.NET)，非 Connector/J(Java JDBC)，且 9.7.0 已是最新版）
-  - **环境提示**：OWASP 依赖检查与 JaCoCo 覆盖率门禁已移入 `-Pci` profile（本地默认构建自动跳过，提速显著；CI 用 `./mvnw -Pci verify`）。检查需联网拉取数据源（OSS Index API 需 token、RetireJS 从 raw.githubusercontent 下载），本机若遇 401/超时可用 `-Danalyzer.ossindex.enabled=false` + `-Danalyzer.retirejs.enabled=false`，或临时 `-Ddependency-check.skip=true`
+  - **环境提示**：OWASP 依赖检查已从 `-Pci` 主门禁拆出，改为独立 `-Powasp` profile + CI 非阻断 security job（NVD 在境外 runner 上首次扫描实测 39 分钟，不适合阻塞每次 push/PR；`failOnError=false` 使 NVD 抖动只告警不红，真实 CVSS ≥ 8 仍会标红）。本地默认构建完全跳过 OWASP（提速显著）；按需扫描用 `./mvnw -Powasp verify -DskipTests`。检查需联网拉取数据源（OSS Index API 需 token、RetireJS 从 raw.githubusercontent 下载），本机若遇 401/超时可用 `-Danalyzer.ossindex.enabled=false` + `-Danalyzer.retirejs.enabled=false`，或临时 `-Ddependency-check.skip=true`
 - **Redis 连接**: `application.yaml` 的 base 配置和 `.env.example` 模板已统一默认 `REDIS_PASSWORD=easyorange123`，与 Docker Compose 一致。若仍遇到 `Unable to connect to Redis` 错误，检查：① 是否已执行 `docker compose up -d` 启动 Redis；② 环境变量 `REDIS_PASSWORD` 是否被设置为空值覆盖了默认值；③ **YAML 占位符必须用 `${VAR:default}`（单冒号），不要用 bash 风格的 `${VAR:-default}`**（多一个 `-`）—— Spring 会把 `-default` 当字面量默认值，导致 Lettuce 实际发出去的密码比预期多一个前导连字符，触发 `WRONGPASS invalid username-password pair`。**注意**：`docker-compose.yml` 和 `mvnw` 用 `:-` 是正确的（bash/Docker Compose 语法），但所有 `application*.yaml` 必须用单冒号。新增/修改 Spring Boot 配置占位符时，复制粘贴前先确认语法
 
 ## 错误码规范
@@ -221,7 +221,7 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 - 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
 - 数据库变更必须通过 Flyway 迁移脚本
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，包含 `records/total/current/size/pages` + `facets` 分面桶 + `aiEnhancement` 增强）
-- 覆盖率报告由 **JaCoCo 0.8.14** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁（行≥80%/分支≥60%）与 **OWASP Dependency Check 12.1.0**（CVSS ≥ 8 阻断）均已移入 `-Pci` profile：本地默认构建跳过门禁与扫描（`prepare-agent`/`report` 仍在默认构建，`./mvnw test` 照常收集覆盖率），CI 用 `./mvnw -Pci verify` 启用，`-Djacoco.haltOnFailure=true` 可强制覆盖率阻断
+- 覆盖率报告由 **JaCoCo 0.8.14** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁（行≥80%/分支≥60%）在 `-Pci` profile：本地默认构建跳过门禁（`prepare-agent`/`report` 仍在默认构建，`./mvnw test` 照常收集覆盖率），CI 用 `./mvnw -Pci verify` 启用，`-Djacoco.haltOnFailure=true` 可强制覆盖率阻断。**OWASP Dependency Check 12.1.0**（CVSS ≥ 8 标红）已拆出为 `-Powasp` profile，由 CI 非阻断 security job 单独跑（NVD 境外首次扫描 ~39 分钟，不阻塞主门禁）
 - **变异测试（PIT 1.25.8）**: 行/分支覆盖率只测"代码被执行过"，不测"测试能否发现缺陷"。PIT 向 domain 层注入变异（聚合根状态机/领域服务/值对象），用现有测试杀灭变异来评估测试真实质量 — 行覆盖率的"金标准"补充。默认不启用（较慢），按需 `./mvnw -Ppit test-compile pitest:mutationCoverage`，HTML 报告 `target/pit-reports/index.html`；阈值门禁默认 0 不阻断，CI 用 `-Dpit.mutationThreshold=60 -Dpit.testStrengthThreshold=75 -Dpit.coverageThreshold=70` 启用（order 模块基线 70%/89%/81%）
 - **标准 API 优先（STP）**: 优先使用框架/标准库内置功能，不重复造轮子。Spring Security 有 JWT 认证就通过 `oauth2ResourceServer()` 配置，不要手写 Filter；有标准 `JwtDecoder`/`JwtEncoder` 就注入使用，不要手写 JWT 工具类。"零新增自定义代码"是最优方案——删掉手写代码，换成框架配置即可
 - **测试统计**：后端 11 模块合计 1,356 测试用例 / 1,278 注解 / 153 文件（2026-08-02 实测全绿，Domain 层行覆盖率 84.1%，`mock-maker-subclass` 模式）；前端 112 测试文件 / 1,056 测试用例。数字单一来源见 [doc/工程指标.md](doc/工程指标.md) §1.2
@@ -269,8 +269,9 @@ cd easyorange-backend && ./mvnw clean package -DskipTests
 ./mvnw -Ppit test-compile pitest:mutationCoverage
 ./mvnw -pl easyorange-order -Ppit test-compile pitest:mutationCoverage  # 单模块
 
-# OWASP 依赖安全 + JaCoCo 覆盖率门禁（CI 硬闸门：OWASP CVSS ≥ 8、覆盖率行≥80%/分支≥60%）
-# 均在 -Pci profile 内，本地默认构建自动跳过；豁免项见 easyorange-backend/dependency-suppression.xml
+# JaCoCo 覆盖率门禁（行≥80%/分支≥60%，CI 硬闸门）
+# OWASP 依赖安全（非阻断 security job，CVSS ≥ 8 标红）：./mvnw -Powasp verify -DskipTests
+# 豁免项见 easyorange-backend/dependency-suppression.xml
 ./mvnw -Pci verify
 
 # 启动开发环境 (MySQL 8.4 + Redis 7.4 + RabbitMQ 3.13)

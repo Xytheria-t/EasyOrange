@@ -137,7 +137,7 @@ cd easyorange-frontend && npm install && npm run dev               # :5173
 |---|---|
 | **11 Maven 模块** | common / framework / user / product(CQRS+审核+举报+ES) / order(CQRS+单事务+锁) / payment(CQRS) / message(WS) / favorite / ai(Spring AI + Agent) / admin / application(入口+Flyway+ArchUnit) |
 | **AI 工程化 8 项** | Spring AI 2.0 框架化（ChatModel/EmbeddingModel bean） · Embedding 真实现（text-embedding-v3 kNN） · Redisson 令牌桶 + stale 降级 · @TokenBudget 日预算 · Prompt 6 个 YAML · 多模态 Vision（Qwen-VL） · AiSearchEnhancer 4 路并行 Tool Calling · CompletableFuture 单步骤超时降级 |
-| **分布式可靠性** | 拒绝 Saga（本地单事务 + 分布式锁防超卖 + Outbox，ADR-0007） · Outbox 原子写 EVENT_PUBLICATION · DLQ 三级重试(定时扫描 + terminal) · EventConsumerHandler 统一幂等/metrics · traceId 全链路 · JWT + 黑名单吊销 · RateLimitFilter(GET 本地 / 写 Redisson) · IdempotencyKeyFilter(24h) · AuditLogAspect Outbox · OWASP CVSS≥8 阻断 |
+| **分布式可靠性** | 拒绝 Saga（本地单事务 + 分布式锁防超卖 + Outbox，ADR-0007） · Outbox 原子写 EVENT_PUBLICATION · DLQ 三级重试(定时扫描 + terminal) · EventConsumerHandler 统一幂等/metrics · traceId 全链路 · JWT + 黑名单吊销 · RateLimitFilter(GET 本地 / 写 Redisson) · IdempotencyKeyFilter(24h) · AuditLogAspect Outbox · OWASP CVSS≥8 告警（非阻断 security job） |
 | **质量门禁** | ArchUnit 6 条 · JaCoCo Domain 84.1% / 71.5% · PIT order(70/89/81) product(70/79/92) · Biome 0 errors · Git hooks commit-msg + pre-commit |
 
 前端：暖橙指挥中心 Admin 设计系统 · 120+ Portal/Dialog/Drawer/Sheet · 95 共享 UI + 107 Admin 组件 · 296 a11y 属性 · 171 TanStack Query hooks · 112 测试文件 / 1,056 用例

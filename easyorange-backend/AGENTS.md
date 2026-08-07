@@ -169,7 +169,7 @@ DO 中 `status`、`condition_level` 等枚举字段直接使用领域枚举类�
 | 控制器测试 | MockMvc | API 端点 |
 | 覆盖率报告 | JaCoCo 0.8.14 | `prepare-package` 阶段生成报告 (`jacoco:report`)；门禁（行≥80%/分支≥60%）移入 `-Pci` profile，本地默认跳过，CI 用 `./mvnw -Pci verify`，`-Djacoco.haltOnFailure=true` 阻断 |
 | 变异测试 | PIT 1.25.8 | domain 层变异（聚合根/领域服务/值对象），`-Ppit` profile 按需启用：`./mvnw -Ppit test-compile pitest:mutationCoverage`；阈值默认 0 不阻断，CI 用 `-Dpit.mutationThreshold=60` 等启用 |
-| 依赖安全 | OWASP Dependency Check 12.1.0 | `-Pci` profile 内 `verify` 阶段检查（CVSS ≥ 8 阻断），本地默认构建跳过 |
+| 依赖安全 | OWASP Dependency Check 12.1.0 | `-Powasp` profile 独立 `verify` 检查（CVSS ≥ 8 标红），由 CI 非阻断 security job 承担（NVD 境外首次扫描 ~39 分钟），本地默认构建跳过 |
 
 架构守卫测试位于 `easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java`。
 

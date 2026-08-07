@@ -571,10 +571,13 @@
     <profiles>
         <!--
             CI 门禁 profile — 本地默认关闭，仅 CI 用 `./mvnw -Pci` 启用：
-              • OWASP dependency-check：全依赖 NVD 漏洞扫描（分钟级，本地构建不跑）
+              • Spotless 格式强制
               • JaCoCo 覆盖率门禁（check）：80% 行 / 60% 分支，低于阈值即失败
-            本地 `./mvnw install` 会跳过这两项（JaCoCo prepare-agent/report 仍在默认构建，
+            本地 `./mvnw install` 会跳过（JaCoCo prepare-agent/report 仍在默认构建，
             本地 `./mvnw test` 照常收集覆盖率），构建速度显著提升。
+            注：OWASP dependency-check 已移出本 profile —— 境外 runner 上 NVD 拉取动辄 30-40
+            分钟，不适合放在主门禁里阻塞每次 push/PR。改由独立 `-Powasp` profile + 非阻断
+            security job 承担（见 `-Powasp` 注释）。
         -->
         <profile>
             <id>ci</id>
@@ -619,12 +622,31 @@
                             </execution>
                         </executions>
                     </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!--
+            OWASP dependency-check — 全依赖 NVD 漏洞扫描。独立 profile，由 CI 的 security job
+            （非阻断，continue-on-error）单独启用，不混入主门禁 `-Pci`：
+            境外 GitHub runner 上 nvd.nist.gov 慢/脆，首次扫描实测 39 分钟 —— 若放主门禁，
+            每次 push/PR 都要等 30-40 分钟且随时可能因 NVD 抖动让 CI 红。
+            本地按需运行：`./mvnw -Powasp verify -DskipTests`（需联网拉 NVD 增量，较慢）。
+        -->
+        <profile>
+            <id>owasp</id>
+            <build>
+                <plugins>
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
                         <version>12.1.0</version>
                         <configuration>
                             <failBuildOnCVSS>8</failBuildOnCVSS>
+                            <!-- 网络/基础设施故障（NVD 拉取失败、限流）不 fail —— 境外 runner 上
+                                 nvd.nist.gov 慢/脆，缓存未命中时首次下载可能 30-40 分钟甚至超时。
+                                 failOnError=false 让扫描失败只告警不 fail，真正的高危 CVE 仍由
+                                 failBuildOnCVSS=8 兜底标记。即"实漏洞才红，基础设施抖动不红" -->
+                            <failOnError>false</failOnError>
                             <formats>
                                 <format>HTML</format>
                             </formats>
@@ -634,7 +656,7 @@
                                  避免每次全新下载整库（nvd.nist.gov 慢/限流会让首次 run 挂 30+ 分钟） -->
                             <dataDirectory>${user.home}/.dependency-check-data</dataDirectory>
                             <!-- 关闭 OSS Index 第三方补充源：本环境网络不可达（每次查询都失败产生告警），
-                                 权威 NVD 源足以支撑门禁；保留其余 analyzer（NVD/GitHub Advisory） -->
+                                 权威 NVD 源足以支撑扫描；保留其余 analyzer（NVD/GitHub Advisory） -->
                             <ossindexAnalyzerEnabled>false</ossindexAnalyzerEnabled>
                             <!-- 关闭 RetireJS：其 jsrepository.json 托管于 GitHub raw，本环境网络不可达，
                                  每次扫描都 Read timed out 中止整体分析。本项目为纯 Java 后端，唯一 JS 依赖
@@ -710,9 +732,9 @@
                             <mutationThreshold>${pit.mutationThreshold}</mutationThreshold>
                             <testStrengthThreshold>${pit.testStrengthThreshold}</testStrengthThreshold>
                             <coverageThreshold>${pit.coverageThreshold}</coverageThreshold>
-                            <!-- 增量历史：加速重复运行，仅重测变更相关变异 -->
-                            <historyInputFile>${project.build.directory}/pitest-history.bin</historyInputFile>
-                            <historyOutputFile>${project.build.directory}/pitest-history.bin</historyOutputFile>
+                            <!-- 注意：不配置 historyInputFile/historyOutputFile —— 增量历史是 PIT 的付费
+                                 功能（pitest-history 商业插件，arcmutate），免费版开启会直接报
+                                 "History has been enabled but no history plugin has been installed" 构建失败 -->
                             <jvmArgs>
                                 <jvmArg>-XX:+EnableDynamicAgentLoading</jvmArg>
                                 <jvmArg>--sun-misc-unsafe-memory-access=allow</jvmArg>

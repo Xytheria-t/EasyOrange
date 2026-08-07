@@ -15,8 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 后端门禁：全量 11 模块单测 + verify（OWASP 漏洞扫描 + JaCoCo 覆盖率 80%/60%）。
-  # OWASP 首次需下载 NVD 库（慢/网络受限），已缓存数据目录；该 job 独立跑，不堵前端/E2E。
+  # 后端门禁：全量 11 模块单测 + verify（JaCoCo 覆盖率 80%/60% + Spotless 格式）。
+  # 快、稳定，是唯一 merge-freeze 后端闸门。OWASP / PIT 这两个慢或网络脆的扫描拆出去单独跑（见下）。
   backend:
     runs-on: ubuntu-latest
     steps:
@@ -38,23 +38,54 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      # OWASP dependency-check 的 NVD 数据目录 —— 缓存它避免每次全新下载整库
-      # （nvd.nist.gov 慢/限流，首次 run 会挂很久）。稳定 key，NVD 数据跨 run 复用
+      # 全量 11 模块测试（取代原先只测 framework/application/admin 三模块）
+      - name: Backend full test (11 modules)
+        run: ./mvnw test -B
+        working-directory: easyorange-backend
+
+      # verify -Pci：JaCoCo check（80% 行/60% 分支）+ Spotless 格式检查。任一红 → merge-freeze。
+      # OWASP 已移出 -Pci：NVD 在境外 runner 上太脆（首次扫描实测 39 分钟），改由下方非阻断 security job 承担
+      - name: Backend verify (JaCoCo + Spotless gates)
+        run: ./mvnw verify -B -Pci -DskipTests=true
+        working-directory: easyorange-backend
+
+  # OWASP 漏洞扫描（dependency-check + NVD）— 独立非阻断 job。NVD 在境外 runner 上慢/脆：
+  # 首次扫描实测 39 分钟，若放主门禁会阻塞每次 push/PR，且随时因 NVD 抖动让 CI 红。
+  # continue-on-error=true → 只暴露扫描结果供人工观察，不 merge-freeze；
+  # failOnError=false（pom -Powasp）→ NVD 拉取失败只告警不标红，仅真实 CVSS≥8 告警会把 job 标红。
+  security:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('easyorange-backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # OWASP dependency-check 的 NVD 数据目录 —— 稳定 key 跨 run 复用，避免每次全新下载整库
       - name: Cache OWASP NVD data
         uses: actions/cache@v4
         with:
           path: ~/.dependency-check-data
           key: ${{ runner.os }}-owasp-nvd
 
-      # 全量 11 模块测试（取代原先只测 framework/application/admin 三模块）
-      - name: Backend full test (11 modules)
-        run: ./mvnw test -B
-        working-directory: easyorange-backend
-
-      # verify -Pci：激活 OWASP dependency-check（NVD 漏洞扫描）+ JaCoCo check（80% 行/60% 分支）
-      # 任一红 → merge-freeze。PIT 变异测试单独在 pit job 跑（非阻断，避免拖慢主门禁）
-      - name: Backend verify (OWASP + JaCoCo gates)
-        run: ./mvnw verify -B -Pci -DskipTests=true
+      # verify -Powasp：仅激活 OWASP dependency-check（NVD 漏洞扫描），reactor 含全 11 模块，
+      # 依赖树从 reactor 解析，无需先 install。-DskipTests=true 跳过测试执行（测试编译仍发生）
+      - name: OWASP dependency-check (NVD)
+        run: ./mvnw verify -B -Powasp -DskipTests=true
         working-directory: easyorange-backend
 
   # 前端门禁：并行于 backend，独立完即报绿。lint + 单测 + typecheck + 生产构建 + Playwright E2E。
@@ -122,7 +153,14 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # 仅 order 模块（domain 变异基线最高 ~70%），避免全仓 PIT 分钟级耗时
+      # 仅 order 模块（domain 变异基线最高 ~70%），避免全仓 PIT 分钟级耗时。
+      # 分两步：先 install 上游依赖模块，再对 order 单独跑 PIT —— 若用 `-am` 一步跑，
+      # pitest:mutationCoverage 直接 goal 会在 reactor 内每个上游模块（common/framework/
+      # product/user/payment）上各跑一遍，耗时数分钟且偏离"仅 order"意图。
+      - name: Build upstream modules (skip PIT)
+        run: ./mvnw -pl easyorange-order -am install -DskipTests -B
+        working-directory: easyorange-backend
+
       - name: PIT mutation coverage (order domain)
-        run: ./mvnw -pl easyorange-order -am -Ppit test-compile pitest:mutationCoverage -B -DskipTests=false
+        run: ./mvnw -pl easyorange-order -Ppit test-compile pitest:mutationCoverage -B
         working-directory: easyorange-backend
