@@ -15,14 +15,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  # 后端门禁：全量 11 模块单测 + verify（OWASP 漏洞扫描 + JaCoCo 覆盖率 80%/60%）。
+  # OWASP 首次需下载 NVD 库（慢/网络受限），已缓存数据目录；该 job 独立跑，不堵前端/E2E。
+  backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
@@ -37,7 +39,7 @@ jobs:
             ${{ runner.os }}-maven-
 
       # OWASP dependency-check 的 NVD 数据目录 —— 缓存它避免每次全新下载整库
-      # （nvd.nist.gov 慢/限流，首次 run 会挂 30+ 分钟）。稳定 key，NVD 数据跨 run 复用
+      # （nvd.nist.gov 慢/限流，首次 run 会挂很久）。稳定 key，NVD 数据跨 run 复用
       - name: Cache OWASP NVD data
         uses: actions/cache@v4
         with:
@@ -54,6 +56,13 @@ jobs:
       - name: Backend verify (OWASP + JaCoCo gates)
         run: ./mvnw verify -B -Pci -DskipTests=true
         working-directory: easyorange-backend
+
+  # 前端门禁：并行于 backend，独立完即报绿。lint + 单测 + typecheck + 生产构建 + Playwright E2E。
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -105,7 +114,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
