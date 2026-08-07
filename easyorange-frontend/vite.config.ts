@@ -23,7 +23,9 @@ export default defineConfig({
             })
         ] : [])
     ],
-    base: './',
+    // 绝对 base：应用部署在根路径。相对 base('./') 会让深链（如 /admin/users）把
+    // ./assets/* 解析成 /admin/assets/* 而 404，应用挂载不起来（E2E 深链守卫用例必挂）
+    base: '/',
     resolve: {
         tsconfigPaths: true
     },
