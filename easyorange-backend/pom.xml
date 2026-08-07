@@ -630,6 +630,9 @@
                             </formats>
                             <skipTestScope>true</skipTestScope>
                             <skipProvidedScope>true</skipProvidedScope>
+                            <!-- 显式数据目录：CI 里用 actions/cache 缓存它，NVD 库跨 run 复用，
+                                 避免每次全新下载整库（nvd.nist.gov 慢/限流会让首次 run 挂 30+ 分钟） -->
+                            <dataDirectory>${user.home}/.dependency-check-data</dataDirectory>
                             <!-- 关闭 OSS Index 第三方补充源：本环境网络不可达（每次查询都失败产生告警），
                                  权威 NVD 源足以支撑门禁；保留其余 analyzer（NVD/GitHub Advisory） -->
                             <ossindexAnalyzerEnabled>false</ossindexAnalyzerEnabled>

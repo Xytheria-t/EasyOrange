@@ -36,6 +36,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
+      # OWASP dependency-check 的 NVD 数据目录 —— 缓存它避免每次全新下载整库
+      # （nvd.nist.gov 慢/限流，首次 run 会挂 30+ 分钟）。稳定 key，NVD 数据跨 run 复用
+      - name: Cache OWASP NVD data
+        uses: actions/cache@v4
+        with:
+          path: ~/.dependency-check-data
+          key: ${{ runner.os }}-owasp-nvd
+
       # 全量 11 模块测试（取代原先只测 framework/application/admin 三模块）
       - name: Backend full test (11 modules)
         run: ./mvnw test -B
