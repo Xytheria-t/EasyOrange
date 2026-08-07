@@ -243,8 +243,12 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 # 后端构建
 cd easyorange-backend && ./mvnw clean package -DskipTests
 
-# 运行所有测试
+# 单测（surefire，*Test，快速）
 ./mvnw test
+
+# 集成测试（failsafe 绑定 verify，*IT）：复用 docker compose dev 栈（MySQL/Redis/RabbitMQ），
+# 需先 `docker compose -f compose.yaml up -d`。相比 Testcontainers 不依赖 ryuk sidecar（无代理 Docker 下不会被静默跳过）
+./mvnw verify
 
 # 运行特定模块测试
 ./mvnw test -pl easyorange-framework

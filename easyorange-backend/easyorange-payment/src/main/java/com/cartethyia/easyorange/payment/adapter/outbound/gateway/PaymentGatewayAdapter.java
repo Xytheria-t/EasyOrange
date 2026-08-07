@@ -11,7 +11,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("dev")
+// dev/it 均为非生产演示角色：dev 正常演示支付，it 下的集成测试需加载完整上下文，
+// mock 支付网关缺失会导致 PaymentCommandHandler 装配失败（PaymentGatewayPort 无 bean）
+@Profile({"dev", "it"})
 public class PaymentGatewayAdapter implements PaymentGatewayPort {
 
     @Override

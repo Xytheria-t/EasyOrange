@@ -383,6 +383,48 @@
                     </argLine>
                 </configuration>
             </plugin>
+            <!-- 集成测试（*IT）经 failsafe 绑定到 verify 阶段，与 surefire 单测（*Test）分离。
+                 调用 `mvn verify` 时才会起真实基础设施（Boot docker-compose 复用 dev 栈），`mvn test` 保持快速单测。 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <!-- 与 surefire 同一套 JVM 参数（含 JaCoCo agent @{argLine} 与 WSL2 Mockito/反射 flag） -->
+                    <argLine>
+                        @{argLine}
+                        -Dfile.encoding=UTF-8
+                        -Dsun.jnu.encoding=UTF-8
+                        -Dstdout.encoding=UTF-8
+                        -Dstderr.encoding=UTF-8
+                        -Djdk.attach.allowAttachSelf=true
+                        -Dnet.bytebuddy.experimental=true
+                        -XX:+EnableDynamicAgentLoading
+                        --sun-misc-unsafe-memory-access=allow
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                        --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+                        --add-opens java.base/java.io=ALL-UNNAMED
+                        --add-opens java.base/java.util=ALL-UNNAMED
+                        --add-opens java.base/java.lang.invoke=ALL-UNNAMED
+                        --add-opens java.base/java.text=ALL-UNNAMED
+                        --add-opens java.base/java.nio=ALL-UNNAMED
+                        --add-opens java.base/jdk.internal.misc=ALL-UNNAMED
+                        --add-opens java.base/jdk.internal.reflect=ALL-UNNAMED
+                        --add-opens java.base/sun.security.ssl=ALL-UNNAMED
+                        --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+                        --add-opens java.base/sun.nio.fs=ALL-UNNAMED
+                        --add-opens java.base/sun.security.action=ALL-UNNAMED
+                        --add-exports java.base/sun.net.util=ALL-UNNAMED
+                    </argLine>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>

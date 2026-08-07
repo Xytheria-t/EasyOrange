@@ -1,16 +1,35 @@
-# Testcontainers 集成测试 profile（AbstractIntegrationTest 激活）
-# 连接由 @ServiceConnection 从容器自动注入；本文件仅关闭会干扰测试的自动装配。
+# 集成测试 profile（AbstractIntegrationTest 激活）— 复用项目 docker compose 的 dev 基础设施。
+# 基础设施由 spring-boot-docker-compose 按仓库根 compose.yaml（start-only）保证运行；
+# 应用连接使用下方显式 localhost 直连（compose 把容器端口发布到宿主机，凭据与 compose.yaml 一致）。
+# 相比 Testcontainers：不依赖 ryuk sidecar 镜像（无代理 Docker 拉取失败会让用例静默跳过，掩盖真实装配错误）。
 spring:
   docker:
     compose:
-      enabled: false        # 关闭 spring-boot-docker-compose，避免它去扫描根 compose.yaml 起容器
+      # 相对应用目录：easyorange-application/ → 仓库根 compose.yaml（start-only 只保证运行、不销毁 dev 栈）
+      file: ../../compose.yaml
+      lifecycle-management: start-only
+
+  flyway:
+    # 复用开发者 dev 库时，其迁移历史可能与当前脚本 diverged（repeatable seed 曾被移除过）。
+    # 本 profile 关闭校验：IT 是装配/连通性冒烟，不承担迁移校验职责；干净库/CI 仍走默认校验。
+    validate-on-migrate: false
+
   data:
     redis:
-      # @ServiceConnection 提供 host/port；容器无密码，须覆盖基文件的 ${REDIS_PASSWORD}（无默认值）
-      password: ""
+      # 与 compose.yaml redis 服务的命令 `--requirepass easyorange123` 一致
+      host: localhost
+      port: 6379
+      password: ${REDIS_PASSWORD:easyorange123}
     elasticsearch:
       repositories:
         enabled: false      # 集成测试不校验 ES（easyorange.search.elasticsearch.enabled 基文件已 false）
+
+  rabbitmq:
+    # 与 compose.yaml rabbitmq 服务的 easyorange / easyorange123 一致
+    host: localhost
+    port: 5672
+    username: easyorange
+    password: easyorange123
 
 management:
   tracing:

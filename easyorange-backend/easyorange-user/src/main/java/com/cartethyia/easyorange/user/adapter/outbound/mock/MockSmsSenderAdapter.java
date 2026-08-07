@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@Profile({"dev", "test", "default"})
+@Profile({"dev", "test", "default", "it"})
 public class MockSmsSenderAdapter implements SmsSenderPort {
 
     @Override

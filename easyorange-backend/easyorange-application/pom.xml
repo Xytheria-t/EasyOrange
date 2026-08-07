@@ -127,29 +127,10 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- ===== Testcontainers 集成测试（真实 MySQL/Redis/RabbitMQ）=====
-             版本由 spring-boot-dependencies BOM 托管。用例基类采用
-             @Testcontainers(disabledWithoutDocker=true)：无 Docker 时自动跳过，不破坏构建。 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-testcontainers</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-mysql</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-rabbitmq</artifactId>
-            <scope>test</scope>
-        </dependency>
+        <!-- ===== 集成测试基础设施（真实 MySQL/Redis/RabbitMQ）=====
+             复用 Boot docker-compose：按仓库根 compose.yaml（start-only）保证 dev 栈运行，
+             用例经 application-it.yaml 显式 localhost 直连。相比 Testcontainers 不依赖 ryuk sidecar，
+             无代理 Docker 下不会被静默跳过。 -->
 
         <!-- Spring Modulith Event Publication Registry (JDBC backend, shares primary DataSource) -->
         <dependency>
