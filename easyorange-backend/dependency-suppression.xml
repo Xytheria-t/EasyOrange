@@ -263,18 +263,20 @@
     </suppress>
 
     <!--
-        CVE-2026-66299 (tomcat-embed-core 11.0.24, CVSS 7.5)
+        CVE-2026-66299 (tomcat-embed-* 11.0.24, CVSS 7.5)
         豁免理由：
           1. 漏洞是 Tomcat「WebSocket chat example」示例 Web 应用的资源耗尽 DoS（CWE-400），
              Spring Boot 内嵌 Tomcat 不打包 examples 应用，本项目无该攻击面
              （NVD 官方注明 "Users who removed the examples web application are unaffected"）。
           2. 修复版 11.0.25 已入 Apache 公告但尚未同步到 Maven Central（最新仍为 11.0.24），当前无法升级。
+          3. CPE 为 apache:tomcat 版本级匹配，告警会在 tomcat-embed-core/websocket/el 等构件间
+             漂移（CI 报 core、本地报 websocket），故豁免覆盖全部 tomcat-embed-*。
         解除条件：Maven Central 发布 tomcat-embed-core ≥ 11.0.25 后，将 pom 的
         <tomcat.version> 升级至 ≥ 11.0.25（沿用既有 netty/tomcat 覆盖模式），并删除本豁免条目。
     -->
     <suppress>
         <notes>Tomcat WebSocket chat 示例应用 DoS，Spring Boot 内嵌 Tomcat 不打包 examples 无攻击面；修复版 11.0.25 未发布到 Maven Central</notes>
-        <packageUrl regex="true">^pkg:maven/org\.apache\.tomcat\.embed/tomcat-embed-core@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.tomcat\.embed/tomcat-embed-.*@.*$</packageUrl>
         <cve>CVE-2026-66299</cve>
     </suppress>
 </suppressions>

@@ -24,10 +24,9 @@ jobs:
             Linux-owasp-nvd
           fail-on-cache-miss: true
       - name: Stage NVD cache into workspace
+        # upload-artifact 对 home 目录绝对路径不识别（实测 "No files were found"），
+        # 先复制到 workspace 相对路径再上传。
         run: |
-          echo "HOME=$HOME"
-          ls -la ~/.dependency-check-data/ | head
-          du -sh ~/.dependency-check-data
           cp -r ~/.dependency-check-data nvd-cache/
           du -sh nvd-cache
       - name: Package NVD cache as artifact
