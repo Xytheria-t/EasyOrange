@@ -1,0 +1,29 @@
+name: Export NVD cache
+# 按需导出 CI 已下载好的 NVD 漏洞库，供本地 `gh run download` 拉取。
+# 背景：本地网络经 Clash 代理访问 NVD 实测仅 20-73KB/s（NVD Cloudflare 限代理出口 IP），
+# 全量 374k CVE 重下需数小时；而 CI（GitHub runner）几分钟就下好并缓存在 Linux-owasp-nvd。
+# 解法：把这份现成缓存打包成 artifact，本地一次拉取（GitHub 经代理 ~407KB/s，112MB 约 5 分钟）。
+# 用法：
+#   gh workflow run "Export NVD cache"
+#   gh run download $(gh run list --workflow=export-nvd-cache.yml --limit 1 --json databaseId -q '.[0].databaseId') -n owasp-nvd-cache -D /tmp
+#   rm -rf ~/.dependency-check-data && mv /tmp/owasp-nvd-cache ~/.dependency-check-data
+# 此后本地 `./mvnw -Powasp verify -DskipTests` 即秒级增量更新（240 分钟内跳过 NVD 更新）。
+on:
+  workflow_dispatch:
+
+jobs:
+  export-nvd-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore OWASP NVD cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.dependency-check-data
+          key: Linux-owasp-nvd
+          fail-on-cache-miss: true
+      - name: Package NVD cache as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-nvd-cache
+          path: ~/.dependency-check-data
+          if-no-files-found: error
