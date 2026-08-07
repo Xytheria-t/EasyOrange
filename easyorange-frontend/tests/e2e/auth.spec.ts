@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { seedSession } from './helpers/auth';
 
 test.describe('认证流程', () => {
   test('访问登录页面', async ({ page }) => {
@@ -94,28 +95,16 @@ test.describe('认证流程', () => {
   });
 
   test('退出登录', async ({ page }) => {
-    // 先设置登录状态以展示用户菜单
+    // 注入登录态（双 Token 会话恢复流）
+    await seedSession(page, { userId: '1', username: 'testuser', nickname: '测试用户' });
     await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-jwt-token',
-          refreshToken: 'mock-refresh-token',
-          user: { userId: 1, username: 'testuser', nickname: '测试用户' },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-jwt-token');
-    });
-
-    await page.reload();
     await page.waitForLoadState('networkidle');
 
-    // 打开用户菜单
+    // 打开用户菜单。浮动导航在 hover 时有 :hover 位移 + navFloat 浮动动画，Playwright
+    // 的 actionability 会判定元素「不稳定」；force 跳过该稳定性检查，仍是真实点击。
     const userMenuBtn = page.locator('[data-testid="btn-user-menu"]');
     await expect(userMenuBtn).toBeVisible({ timeout: 10000 });
-    await userMenuBtn.click();
+    await userMenuBtn.click({ force: true });
 
     // 点击退出登录按钮
     const logoutBtn = page.locator('[data-testid="btn-logout"]');

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { seedSession, spaNavigate } from './helpers/auth';
 
 /**
  * 收银台（支付）核心闭环冒烟 — 与 auth.spec.ts 同款模式：前端 dev server + page.route mock API，
@@ -8,20 +9,11 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('收银台支付流程', () => {
   test.beforeEach(async ({ page }) => {
-    // 注入登录态（同 auth.spec.ts 写法）
+    // 注入登录态（双 Token 会话恢复流）；等待 restoreSession 完成，token 写入内存，
+    // 供后续 SPA 导航进入受保护路由时通过同步的 ProtectedRoute 校验
+    await seedSession(page, { userId: '1', username: 'buyer', nickname: '买家' });
     await page.goto('/');
-    await page.evaluate(() => {
-      const authData = {
-        state: {
-          token: 'mock-jwt-token',
-          refreshToken: 'mock-refresh-token',
-          user: { userId: 1, username: 'buyer', nickname: '买家' },
-        },
-        version: 0,
-      };
-      localStorage.setItem('auth-storage', JSON.stringify(authData));
-      localStorage.setItem('token', 'mock-jwt-token');
-    });
+    await page.waitForLoadState('networkidle');
   });
 
   test('登录用户可进入收银台并渲染订单与支付方式', async ({ page }) => {
@@ -66,7 +58,8 @@ test.describe('收银台支付流程', () => {
       });
     });
 
-    await page.goto('/payment?orderId=order-123');
+    // SPA 导航进入受保护路由，避免 full goto 触发 restoreSession 与同步守卫的竞态
+    await spaNavigate(page, '/payment?orderId=order-123');
     await page.waitForLoadState('networkidle');
 
     // 收银台渲染
@@ -81,7 +74,7 @@ test.describe('收银台支付流程', () => {
   });
 
   test('无 orderId 时收银台显示无效订单兜底', async ({ page }) => {
-    await page.goto('/payment');
+    await spaNavigate(page, '/payment');
     await page.waitForLoadState('networkidle');
     await expect(page.locator('text=无效的订单').first()).toBeVisible({ timeout: 15000 });
   });
