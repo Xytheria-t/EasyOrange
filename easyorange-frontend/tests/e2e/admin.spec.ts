@@ -25,7 +25,8 @@ test.describe('管理后台', () => {
         const adminPaths = ['/admin/users', '/admin/products', '/admin/orders', '/admin/reports', '/admin/stats'];
         for (const path of adminPaths) {
             await page.goto(path);
-            await expect(page).toHaveURL(/\/login/, { timeout: 10000 });
+            // 深链先加载 lazy admin chunk（含 recharts 等重块）再执行守卫跳转，给足时间
+            await expect(page).toHaveURL(/\/login/, { timeout: 20000 });
         }
     });
 
