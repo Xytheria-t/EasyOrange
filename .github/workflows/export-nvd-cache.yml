@@ -23,9 +23,16 @@ jobs:
           restore-keys: |
             Linux-owasp-nvd
           fail-on-cache-miss: true
+      - name: Stage NVD cache into workspace
+        run: |
+          echo "HOME=$HOME"
+          ls -la ~/.dependency-check-data/ | head
+          du -sh ~/.dependency-check-data
+          cp -r ~/.dependency-check-data nvd-cache/
+          du -sh nvd-cache
       - name: Package NVD cache as artifact
         uses: actions/upload-artifact@v4
         with:
           name: owasp-nvd-cache
-          path: /home/runner/.dependency-check-data
+          path: nvd-cache/
           if-no-files-found: error
