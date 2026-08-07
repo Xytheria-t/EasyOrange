@@ -18,8 +18,10 @@ jobs:
       - name: Restore OWASP NVD cache
         uses: actions/cache@v4
         with:
-          path: /home/runner/.dependency-check-data
+          path: ~/.dependency-check-data
           key: Linux-owasp-nvd
+          restore-keys: |
+            Linux-owasp-nvd
           fail-on-cache-miss: true
       - name: Package NVD cache as artifact
         uses: actions/upload-artifact@v4
