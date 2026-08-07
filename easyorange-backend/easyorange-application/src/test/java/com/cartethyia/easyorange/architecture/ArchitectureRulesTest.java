@@ -21,14 +21,17 @@ import org.junit.jupiter.api.DisplayName;
 /**
  * 架构守卫测试 — 使用 ArchUnit 1.4.x 真实 API（@AnalyzeClasses + @ArchTest）。
  * <p>
- * 6 项规则守护 DDD/CQRS 分层：
+ * 11 条 @ArchTest 规则守护 DDD/CQRS 分层（规则 1 含 3 项子检查）：
  * <ol>
- *   <li>domain 层零框架依赖（Spring/MyBatis/servlet + controller/dto/mapper/service.impl）</li>
- *   <li>命令 handler 禁止依赖查询 handler（CQRS 写读分离）</li>
- *   <li>查询 handler 禁止依赖命令 handler（CQRS 读写分离）</li>
+ *   <li>domain 层零框架依赖（3 项：禁框架 / 禁 web 层 / 禁 DTO）</li>
+ *   <li>command handler 禁止依赖 query handler（CQRS 写读分离）</li>
+ *   <li>query handler 禁止依赖 command handler（CQRS 读写分离）</li>
  *   <li>业务模块间仅通过 domain.port / domain.valueobject 通信</li>
  *   <li>端口接口必须有适配器实现</li>
  *   <li>禁止 infrastructure/ 包（已废弃，用 adapter/outbound/）</li>
+ *   <li>domain/application 禁止反向依赖 adapter 实现（已知技术债豁免见规则 7 注释）</li>
+ *   <li>controller 禁止直连 mapper（必须经由 application 服务）</li>
+ *   <li>禁止 System.out / e.printStackTrace()（统一 SLF4J）</li>
  * </ol>
  * 无白名单 — 所有规则必须严格合规。
  */

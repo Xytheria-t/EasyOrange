@@ -33,7 +33,7 @@ cd easyorange-frontend && npm test
 |------|------|
 | [AGENTS.md](./AGENTS.md) | 唯一规范来源：技术栈、数据库表、状态机、错误码、模块依赖、开发规范 |
 | [README.md](./README.md) | 项目定位与数字锚点 |
-| [doc/工程指标.md](./doc/工程指标.md) | 测试数 / 覆盖率单一事实来源（2,412 测试 / Domain 层 84.1%） |
+| [doc/工程指标.md](./doc/工程指标.md) | 测试数 / 覆盖率单一事实来源（README 锚点 2,400+，精确数字见该文档） |
 | [doc/架构/](doc/架构/) | 架构规范（系统架构、DDD、安全认证、数据库迁移、部署） |
 | [doc/集成/](doc/集成/) | 业务专题（AI 资产管理、API 速查） |
 | [doc/adr/](doc/adr/) | 架构决策记录（8 个 ADR，如 ADR-0007 拒绝 Saga 单事务、ADR-0008 Spring AI 迁移、ADR-0009 领域服务按需分布） |

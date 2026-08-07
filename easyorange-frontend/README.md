@@ -16,7 +16,7 @@
 | **表单校验** | react-hook-form + Zod 4 | 类型安全表单验证 |
 | **图标** | Lucide React | 图标库 |
 | **SEO** | react-helmet-async | 路由级 meta 管理（title/description/og:title） |
-| **测试** | Vitest + Testing Library | 单元/组件测试（112 文件, 1,056 测试） |
+| **测试** | Vitest + Testing Library | 单元/组件测试（113 文件 / 1,060 用例，2026-08-07 静态计数；单一来源见 [../doc/工程指标.md](../doc/工程指标.md)） |
 | | Playwright | E2E 测试 |
 | **质量** | Biome + jsx-a11y | 统一 lint + format（替代 ESLint + Prettier） |
 
