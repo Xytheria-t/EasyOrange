@@ -57,7 +57,8 @@ public class GlobalExceptionHandler {
                         .body(Result.error(b.getCode(), b.getMessage()));
             }
             case AccessDeniedException _ -> response(FORBIDDEN, ResultCode.FORBIDDEN);
-            case HttpRequestMethodNotSupportedException _ -> response(METHOD_NOT_ALLOWED, ResultCode.METHOD_NOT_ALLOWED);
+            case HttpRequestMethodNotSupportedException _ ->
+                response(METHOD_NOT_ALLOWED, ResultCode.METHOD_NOT_ALLOWED);
             case MethodArgumentNotValidException _, BindException _ -> handleValidation(getBindingResult(e));
             case ConstraintViolationException c -> {
                 var msg = c.getConstraintViolations().stream()
@@ -139,13 +140,14 @@ public class GlobalExceptionHandler {
             return BAD_REQUEST;
         }
         return switch (errorCode.charAt(0)) {
-            case 'A' -> switch (errorCode) {
-                case "A0401", "A0402" -> UNAUTHORIZED;
-                case "A0403" -> FORBIDDEN;
-                case "A0404" -> NOT_FOUND;
-                case "A0405" -> METHOD_NOT_ALLOWED;
-                default -> BAD_REQUEST;
-            };
+            case 'A' ->
+                switch (errorCode) {
+                    case "A0401", "A0402" -> UNAUTHORIZED;
+                    case "A0403" -> FORBIDDEN;
+                    case "A0404" -> NOT_FOUND;
+                    case "A0405" -> METHOD_NOT_ALLOWED;
+                    default -> BAD_REQUEST;
+                };
             case 'C' -> INTERNAL_SERVER_ERROR;
             case 'D' -> BAD_GATEWAY;
             default -> BAD_REQUEST;

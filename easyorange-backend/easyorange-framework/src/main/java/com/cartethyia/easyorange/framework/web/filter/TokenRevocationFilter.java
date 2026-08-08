@@ -69,7 +69,6 @@ public class TokenRevocationFilter extends OncePerRequestFilter {
     }
 
     private void sendUnauthorized(HttpServletResponse response, String message) throws IOException {
-        errorResponseWriter.write(
-                response, HttpServletResponse.SC_UNAUTHORIZED, ResultCode.UNAUTHORIZED, message);
+        errorResponseWriter.write(response, HttpServletResponse.SC_UNAUTHORIZED, ResultCode.UNAUTHORIZED, message);
     }
 }

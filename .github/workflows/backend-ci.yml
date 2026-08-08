@@ -1,7 +1,9 @@
 name: Backend CI
 
-# 仅后端变更触发（easyorange-backend/**），前端/文档/CI 改动自动跳过本 workflow。
-# 分支保护里 required check 名为 "Backend CI / backend"，skip 视为通过。
+# 分支保护 required check 名为 "Backend CI / backend"。⚠️ 禁止在 on.pull_request 配 paths
+# 过滤：只改 .github/** 的 PR（如 Dependabot 升级 action）会让本 workflow 不触发，
+# required check 永不报告 → PR 永久 BLOCKED。改为恒触发 + changes job 用 paths-filter 判定，
+# 无后端变更时 backend job 被 skip（GitHub 视 skipped required check 为通过）。
 on:
   push:
     branches:
@@ -13,8 +15,6 @@ on:
     branches:
       - develop
       - main
-    paths:
-      - easyorange-backend/**
   workflow_dispatch:
 
 concurrency:
@@ -25,12 +25,32 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Detect backend changes
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'easyorange-backend/**'
+
   # 后端门禁：一次 verify 完成 11 模块单测 + JaCoCo（80% 行/60% 分支）+ Spotless 格式。
   # 唯一 merge-freeze 后端闸门。OWASP / PIT 慢扫描为独立 schedule workflow
   # （security-scan.yml / pit-mutation.yml），不进 PR 路径。
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

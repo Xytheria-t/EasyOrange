@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.framework.audit.service;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.audit.entity.AuditLog;
 import com.cartethyia.easyorange.framework.audit.mapper.AuditLogMapper;
-import com.cartethyia.easyorange.framework.audit.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

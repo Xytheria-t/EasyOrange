@@ -44,10 +44,7 @@ public class RefreshCsrfFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         if (request.getHeader(REQUIRED_HEADER) == null) {
             errorResponseWriter.write(
-                    response,
-                    HttpServletResponse.SC_FORBIDDEN,
-                    ResultCode.FORBIDDEN,
-                    "缺少自定义请求头，疑似跨站请求");
+                    response, HttpServletResponse.SC_FORBIDDEN, ResultCode.FORBIDDEN, "缺少自定义请求头，疑似跨站请求");
             return;
         }
         chain.doFilter(request, response);

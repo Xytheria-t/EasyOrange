@@ -1,7 +1,9 @@
 name: Frontend CI
 
-# 仅前端变更触发（easyorange-frontend/**），后端/文档/CI 改动自动跳过本 workflow。
-# 分支保护里 required check 名为 "Frontend CI / frontend"，skip 视为通过。
+# 分支保护 required check 名为 "Frontend CI / frontend"。⚠️ 禁止在 on.pull_request 配 paths
+# 过滤：只改 .github/** 的 PR（如 Dependabot 升级 action）会让本 workflow 不触发，
+# required check 永不报告 → PR 永久 BLOCKED。改为恒触发 + changes job 用 paths-filter 判定，
+# 无前端变更时 frontend job 被 skip（GitHub 视 skipped required check 为通过）。
 on:
   push:
     branches:
@@ -13,8 +15,6 @@ on:
     branches:
       - develop
       - main
-    paths:
-      - easyorange-frontend/**
   workflow_dispatch:
 
 concurrency:
@@ -25,10 +25,30 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Detect frontend changes
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'easyorange-frontend/**'
+
   # 前端门禁：lint + 单测 + typecheck + 生产构建 + Playwright E2E。
   frontend:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

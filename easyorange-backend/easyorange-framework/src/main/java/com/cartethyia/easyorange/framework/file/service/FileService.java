@@ -8,7 +8,6 @@ import com.cartethyia.easyorange.common.util.FileSizeFormat;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
 import com.cartethyia.easyorange.framework.file.entity.UploadFileDO;
 import com.cartethyia.easyorange.framework.file.mapper.UploadFileMapper;
-import com.cartethyia.easyorange.framework.file.service.FileService;
 import com.cartethyia.easyorange.framework.file.storage.FileStorage;
 import com.cartethyia.easyorange.framework.util.FileUtils;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;

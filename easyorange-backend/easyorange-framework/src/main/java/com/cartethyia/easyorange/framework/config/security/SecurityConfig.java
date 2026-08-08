@@ -13,7 +13,6 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
@@ -89,15 +88,9 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((_, response, _) -> errorResponseWriter.write(
-                                response,
-                                HttpServletResponse.SC_UNAUTHORIZED,
-                                ResultCode.UNAUTHORIZED,
-                                "认证失败，请重新登录"))
+                                response, HttpServletResponse.SC_UNAUTHORIZED, ResultCode.UNAUTHORIZED, "认证失败，请重新登录"))
                         .accessDeniedHandler((_, response, _) -> errorResponseWriter.write(
-                                response,
-                                HttpServletResponse.SC_FORBIDDEN,
-                                ResultCode.FORBIDDEN,
-                                "权限不足")))
+                                response, HttpServletResponse.SC_FORBIDDEN, ResultCode.FORBIDDEN, "权限不足")))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()

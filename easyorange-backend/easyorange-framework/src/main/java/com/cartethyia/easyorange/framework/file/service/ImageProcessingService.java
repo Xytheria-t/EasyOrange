@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.framework.file.service;
 
 import com.cartethyia.easyorange.framework.config.properties.ImageProcessingProperties;
-import com.cartethyia.easyorange.framework.file.service.ImageProcessingService;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class ImageProcessingService {
-
 
     public record ImageDimensions(int width, int height) {}
 
@@ -46,7 +44,6 @@ public class ImageProcessingService {
     }
 
     public record ProcessedImage(File file, String mimeType, long size) {}
-
 
     private final ImageProcessingProperties properties;
 

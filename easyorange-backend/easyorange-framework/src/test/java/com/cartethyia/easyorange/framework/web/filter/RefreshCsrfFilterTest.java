@@ -25,8 +25,7 @@ class RefreshCsrfFilterTest {
 
     @BeforeEach
     void setUp() {
-        filter = new RefreshCsrfFilter(
-                new SecurityProperties(), new ErrorResponseWriter(new ObjectMapper()));
+        filter = new RefreshCsrfFilter(new SecurityProperties(), new ErrorResponseWriter(new ObjectMapper()));
     }
 
     @Test

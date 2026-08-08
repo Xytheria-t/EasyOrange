@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.framework.config.properties.ImageProcessingProperties;
-import com.cartethyia.easyorange.framework.file.service.ImageProcessingService;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.file.Path;
