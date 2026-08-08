@@ -10,6 +10,7 @@ import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,46 +48,34 @@ class ProductCacheAdapterTest {
     void getProductCache_cacheHit_shouldReturnProduct() {
         when(multiLevelCache.get(anyString(), eq(ProductVO.class), any())).thenReturn(testProductVO);
 
-        Optional<ProductVO> result = cacheAdapter.getProductCache(PRODUCT_ID);
+        Optional<ProductVO> result = cacheAdapter.getProductCache(PRODUCT_ID, this::testLoader);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getId()).isEqualTo(PRODUCT_ID);
+        verify(multiLevelCache).get(eq(ProductCacheConstant.infoKey(PRODUCT_ID)), eq(ProductVO.class), any());
+    }
+
+    @Test
+    @DisplayName("获取缓存 - 缓存未命中时经 loader 回源")
+    void getProductCache_cacheMiss_shouldLoad() {
+        when(multiLevelCache.get(anyString(), eq(ProductVO.class), any())).thenAnswer(invocation -> {
+            Supplier<ProductVO> loader = invocation.getArgument(2);
+            return loader.get();
+        });
+
+        Optional<ProductVO> result = cacheAdapter.getProductCache(PRODUCT_ID, this::testLoader);
 
         assertThat(result).isPresent();
         assertThat(result.get().getId()).isEqualTo(PRODUCT_ID);
     }
 
     @Test
-    @DisplayName("获取缓存 - 缓存未命中返回空")
-    void getProductCache_cacheMiss_shouldReturnEmpty() {
-        when(multiLevelCache.get(anyString(), eq(ProductVO.class), any())).thenReturn(null);
-
-        Optional<ProductVO> result = cacheAdapter.getProductCache(PRODUCT_ID);
-
-        assertThat(result).isEmpty();
-    }
-
-    @Test
     @DisplayName("获取缓存 - productId为null返回空")
     void getProductCache_nullProductId_shouldReturnEmpty() {
-        Optional<ProductVO> result = cacheAdapter.getProductCache(null);
+        Optional<ProductVO> result = cacheAdapter.getProductCache(null, this::testLoader);
 
         assertThat(result).isEmpty();
         verify(multiLevelCache, never()).get(anyString(), any(), any());
-    }
-
-    @Test
-    @DisplayName("设置缓存成功")
-    void setProductCache_shouldSetCache() {
-        cacheAdapter.setProductCache(PRODUCT_ID, testProductVO);
-
-        verify(multiLevelCache).put(eq(ProductCacheConstant.infoKey(PRODUCT_ID)), eq(testProductVO));
-    }
-
-    @Test
-    @DisplayName("设置缓存 - 参数为null不操作")
-    void setProductCache_nullParams_shouldNotOperate() {
-        cacheAdapter.setProductCache(null, testProductVO);
-        cacheAdapter.setProductCache(PRODUCT_ID, null);
-
-        verify(multiLevelCache, never()).put(anyString(), any());
     }
 
     @Test
@@ -107,5 +96,9 @@ class ProductCacheAdapterTest {
         cacheAdapter.evictProductListCache(PRODUCT_ID);
 
         verify(multiLevelCache).evict(ProductCacheConstant.listKey(PRODUCT_ID));
+    }
+
+    private ProductVO testLoader() {
+        return testProductVO;
     }
 }

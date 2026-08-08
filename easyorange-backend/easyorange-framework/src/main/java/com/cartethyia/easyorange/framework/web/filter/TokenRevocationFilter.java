@@ -1,26 +1,23 @@
 package com.cartethyia.easyorange.framework.web.filter;
 
 import com.cartethyia.easyorange.common.enums.ResultCode;
-import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
+import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * Token 吊销检查过滤器。
@@ -34,7 +31,7 @@ import tools.jackson.databind.ObjectMapper;
 public class TokenRevocationFilter extends OncePerRequestFilter {
 
     private final StringRedisTemplate redis;
-    private final ObjectMapper objectMapper;
+    private final ErrorResponseWriter errorResponseWriter;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -72,9 +69,7 @@ public class TokenRevocationFilter extends OncePerRequestFilter {
     }
 
     private void sendUnauthorized(HttpServletResponse response, String message) throws IOException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        objectMapper.writeValue(response.getOutputStream(), Result.error(ResultCode.UNAUTHORIZED, message));
+        errorResponseWriter.write(
+                response, HttpServletResponse.SC_UNAUTHORIZED, ResultCode.UNAUTHORIZED, message);
     }
 }

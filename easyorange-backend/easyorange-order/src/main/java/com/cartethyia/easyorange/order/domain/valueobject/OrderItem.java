@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.domain.valueobject;
 
 import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import java.math.BigDecimal;
 import lombok.Builder;

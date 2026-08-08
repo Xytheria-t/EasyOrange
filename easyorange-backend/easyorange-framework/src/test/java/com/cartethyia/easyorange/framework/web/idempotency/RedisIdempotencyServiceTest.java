@@ -30,7 +30,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 /**
- * RedisIdempotencyService 单元测试 — 幂等 key 的「抢锁 + 缓存结果」语义。
+ * IdempotencyService 单元测试 — 幂等 key 的「抢锁 + 缓存结果」语义。
  * <p>
  * 用 {@link ConcurrentHashMap} 模拟 Redis 的 GET / SETNX / SET / DELETE，
  * 重点验证并发重复请求下业务操作只执行一次。
@@ -38,8 +38,8 @@ import org.springframework.data.redis.core.ValueOperations;
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("RedisIdempotencyService 幂等")
-class RedisIdempotencyServiceTest {
+@DisplayName("IdempotencyService 幂等")
+class IdempotencyServiceTest {
 
     private static final String KEY = "order-1";
 
@@ -49,7 +49,7 @@ class RedisIdempotencyServiceTest {
     @Mock
     private RedisTemplate<Object, Object> redisTemplate;
 
-    private RedisIdempotencyService service;
+    private IdempotencyService service;
 
     @BeforeEach
     void setUp() {
@@ -69,7 +69,7 @@ class RedisIdempotencyServiceTest {
         when(redisTemplate.delete(anyString())).thenAnswer(inv -> store.remove(inv.getArgument(0)) != null);
 
         IdempotencyProperties properties = new IdempotencyProperties();
-        service = new RedisIdempotencyService(redisTemplate, properties);
+        service = new IdempotencyService(redisTemplate, properties);
     }
 
     private IdempotentOperation<String> countingOperation() {

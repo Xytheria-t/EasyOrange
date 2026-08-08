@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
@@ -11,6 +10,7 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserRespo
 import com.cartethyia.easyorange.user.application.service.ProfileAppService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,13 +44,9 @@ public class UserController {
     }
 
     @PostMapping("/avatar")
-    public Result<UserResponse> uploadAvatar(@RequestParam("avatar") MultipartFile avatar) {
-        try {
-            var user = profileAppService.uploadAvatar(
-                    avatar.getBytes(), avatar.getContentType(), avatar.getOriginalFilename());
-            return Result.success(userAssembler.toResponse(user));
-        } catch (Exception e) {
-            throw BusinessException.of("头像上传失败", e);
-        }
+    public Result<UserResponse> uploadAvatar(@RequestParam("avatar") MultipartFile avatar) throws IOException {
+        var user = profileAppService.uploadAvatar(
+                avatar.getBytes(), avatar.getContentType(), avatar.getOriginalFilename());
+        return Result.success(userAssembler.toResponse(user));
     }
 }

@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.product.domain.valueobject;
+package com.cartethyia.easyorange.common.domain;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.fasterxml.jackson.annotation.JsonCreator;

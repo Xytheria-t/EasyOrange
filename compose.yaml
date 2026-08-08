@@ -62,7 +62,76 @@ services:
       retries: 5
       start_period: 15s
 
+  easyorange-app:
+    # 后端应用 — 支持多实例：docker compose --profile fullstack up -d --scale easyorange-app=3
+    # 多实例由 nginx upstream + Prometheus dns_sd 自动发现，无需改配置
+    # 注意：无 container_name（固定名字会让 --scale 报错），nginx 走服务 DNS 名
+    # profile: fullstack — 裸 `docker compose up -d` 仍是纯开发三件套（MySQL/Redis/RabbitMQ），
+    # 不会触发后端镜像构建（2-5 分钟）或拉取观测镜像，日常热循环零影响
+    profiles: [fullstack]
+    build:
+      context: ./easyorange-backend
+    image: easyorange-backend:local
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: dev          # 覆盖 Dockerfile 的 prod（本地栈用 dev：自动生成 JWT 密钥 + 宽松限流）
+      EASYORANGE_DB_HOST: mysql
+      REDIS_HOST: redis
+      SPRING_RABBITMQ_HOST: rabbitmq
+      # 压测透传开关：RATE_LIMIT_FILTER_ENABLED=false docker compose up -d --scale easyorange-app=2
+      RATE_LIMIT_FILTER_ENABLED: ${RATE_LIMIT_FILTER_ENABLED:-true}
+    ports:
+      # 端口区间：scale=1 占 8080，scale=N 依次占 8080..8080+N-1（无需改配置即可多实例）
+      - "8080-8085:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: easyorange-prometheus
+    restart: unless-stopped
+    profiles: [fullstack]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      easyorange-app:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana-oss:11.3.0
+    container_name: easyorange-grafana
+    restart: unless-stopped
+    profiles: [fullstack]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # 本地监控栈匿名只读（仅 localhost 暴露），免登录直达 dashboard
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SERVER_ROOT_URL: http://localhost:3000
+    volumes:
+      # provisioning 即代码：datasource + dashboard 随仓库版本化
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      prometheus:
+        condition: service_started
+
 volumes:
   mysql-data:
   redis-data:
   rabbitmq-data:
+  grafana-data:

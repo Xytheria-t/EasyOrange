@@ -370,6 +370,10 @@ easyorange:
         qa:                # 智能客服 — LLM 文本输出（50 字内），~1000 token/call
           max-tokens-per-call: 1000
           daily-token-limit: 200000
+    eval:                  # LLM-as-Judge 离线评估 — 定时给 eo_ai_call_log 未评审记录打分
+      enabled: false       # 默认关闭；开启后按 cron 每天对成功调用打分（1-5 + 评语）
+      cron: "0 0 3 * * ?"
+      batch-size: 50
 
 ---
 # -------------------------------------------------------------------

@@ -208,8 +208,8 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 ## 安全要点
 
 - 密码: BCrypt 加密，禁止明文存储和日志输出
-- 登录限流: `@RateLimiter` + Redis 固定窗口（生产） ; 开发环境限流走内存 Mock
-- 防重提交: `@RepeatSubmit` 防止重复注册
+- 登录限流/防重: 由全局 `RateLimitFilter` 约定式拦截（写操作 Redis 分布式限流 + 3 秒防重，Redis 不可用 fail-open），无需模块内注解
+- 登录失败锁定: `LoginSecurityService`（domain）按 `LoginAttemptPort` 计数判定，超限抛 `AccountLockedException`（携带剩余锁定秒数）；计数存储走 `RedisLoginAttemptAdapter`
 - Token: Access Token 短期 + Refresh Token 长期，登出加入黑名单
 
 ## 常见开发任务

@@ -9,7 +9,7 @@ import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
-import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import java.util.List;

@@ -3,7 +3,6 @@ com.cartethyia.easyorange.framework.config.async.JacksonConfig
 com.cartethyia.easyorange.framework.config.async.ThreadPoolConfig
 com.cartethyia.easyorange.framework.config.redis.RedisConfig
 com.cartethyia.easyorange.framework.config.database.MybatisPlusConfig
-com.cartethyia.easyorange.framework.config.redis.CacheConfig
 com.cartethyia.easyorange.framework.config.web.WebMvcConfig
 com.cartethyia.easyorange.framework.config.cache.LocalCacheConfig
 com.cartethyia.easyorange.framework.config.idgen.IdGeneratorConfig

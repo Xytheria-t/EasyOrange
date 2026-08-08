@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.file.service.impl;
+package com.cartethyia.easyorange.framework.file.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -20,12 +20,12 @@ import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class ImageProcessingServiceImplTest {
+class ImageProcessingServiceTest {
 
     @Mock
     private ImageProcessingProperties properties;
 
-    private ImageProcessingServiceImpl service;
+    private ImageProcessingService service;
 
     @TempDir
     Path tempDir;
@@ -35,7 +35,7 @@ class ImageProcessingServiceImplTest {
         when(properties.getQuality()).thenReturn(0.80f);
         when(properties.getThumbnailQuality()).thenReturn(0.75f);
 
-        service = new ImageProcessingServiceImpl(properties);
+        service = new ImageProcessingService(properties);
     }
 
     @Test

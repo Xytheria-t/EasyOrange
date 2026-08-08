@@ -76,14 +76,14 @@ EasyOrange 的事件驱动架构已经落地：
 ## 备注（Notes）
 
 - 相关文档：
-  - [doc/工程指标.md](file:///home/cartethyia/projects/Java/easy-orange/doc/工程指标.md) §1.3 AI 工程化 8 件套
-  - [AGENTS.md](file:///home/cartethyia/projects/Java/easy-orange/AGENTS.md) §11 领域事件机制 + traceId 传递链路
-  - [README.md](file:///home/cartethyia/projects/Java/easy-orange/README.md) §架构总览 + 拒绝项清单
+  - [doc/工程指标.md](../../doc/工程指标.md) §1.3 AI 工程化 8 件套
+  - [AGENTS.md](../../AGENTS.md) §11 领域事件机制 + traceId 传递链路
+  - [README.md](../../README.md) §架构总览 + 拒绝项清单
 - 相关代码：
-  - [RabbitMQConfig.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/messaging/config/RabbitMQConfig.java)：交换机 + 11 队列 + DLQ 绑定声明
-  - [DlqRetryScheduler.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/dlq/DlqRetryScheduler.java) + [ExponentialBackoffRetryStrategy.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/dlq/ExponentialBackoffRetryStrategy.java)：DLQ 三级重试调度
-  - [AbstractDomainEventConsumer.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/core/AbstractDomainEventConsumer.java)：11 消费者统一 ack/nack/幂等/异常链
-  - [EventMetadataMessagePostProcessor.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/metadata/EventMetadataMessagePostProcessor.java)：traceId 注入 MQ 消息头
+  - [RabbitMQConfig.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/messaging/config/RabbitMQConfig.java)：交换机 + 11 队列 + DLQ 绑定声明
+  - [DlqRetryScheduler.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/dlq/DlqRetryScheduler.java) + [ExponentialBackoffRetryStrategy.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/dlq/ExponentialBackoffRetryStrategy.java)：DLQ 三级重试调度
+  - [AbstractDomainEventConsumer.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/core/AbstractDomainEventConsumer.java)：11 消费者统一 ack/nack/幂等/异常链
+  - [EventMetadataMessagePostProcessor.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/metadata/EventMetadataMessagePostProcessor.java)：traceId 注入 MQ 消息头
 - 重评估触发条件：
   1. 业务事件量级预估持续 > 10k msg/s 超过 1 周
   2. 出现「顺序消费分区」硬诉求（如同一 orderId 关联事件必须严格有序且并发 > 单消费者）

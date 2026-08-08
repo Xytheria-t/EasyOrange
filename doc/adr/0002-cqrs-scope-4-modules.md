@@ -19,7 +19,7 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 
 约束：
 
-- 项目是「LLM × DDD 工程化实战项目」，需要展示 CQRS 的真实落地，但**业务聚焦核心流程**（固定价格 + C2C 直发，见 `PRODUCT_DIRECTION.md`），不需要为展示而过度铺开
+- 项目是「LLM × DDD 工程化实战项目」，需要展示 CQRS 的真实落地，但**业务聚焦核心流程**（固定价格 + C2C 直发，见 `doc/PRODUCT_DIRECTION.md`），不需要为展示而过度铺开
 - 已有 ArchUnit 架构守卫（`ArchitectureRulesTest.java`），可强制 CQRS 边界
 - 各模块的读写比差异极大：product 读多写少（搜索 / 详情 / 列表），user 几乎是对称的 CRUD
 
@@ -30,14 +30,14 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 四模块共性与决策驱动力：
 
 - **product**：读多写少 + ES 全文搜索聚合，命令/查询分离收益明显
-- **order**：写链路为本地单事务 + 分布式锁 + Outbox（拒绝 Saga，见 [ADR 0007](0007-order-saga-single-tx-observability.md)），查询侧需独立 ReadModel 支撑「我的订单 / 卖出订单」分页
+- **order**：写链路为本地单事务 + 分布式锁 + Outbox（拒绝 Saga，见 [ADR 0007](0007-order-local-tx-over-saga.md)），查询侧需独立 ReadModel 支撑「我的订单 / 卖出订单」分页
 - **payment**：写操作幂等性强（`IdempotencyKeyFilter`），查询侧需独立支付流水视图
 - **message**：站内信 + WebSocket 实时消息，读多写多但查询维度独立（会话列表 / 未读数 / 历史消息），与命令（发送 / 撤回 / 已读）天然分离
 
 代码位置（以 message 为例验证边界）：
 
-- Command：[MessageCommandHandler.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/command/MessageCommandHandler.java)
-- Query：[MessageQueryHandler.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/query/MessageQueryHandler.java)、[ConversationQueryHandler.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/query/ConversationQueryHandler.java)
+- Command：[MessageCommandHandler.java](../../easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/command/MessageCommandHandler.java)
+- Query：[MessageQueryHandler.java](../../easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/query/MessageQueryHandler.java)、[ConversationQueryHandler.java](../../easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/query/ConversationQueryHandler.java)
 
 边界由 `easyorange-application` 下的 ArchUnit 守卫强制：`*CommandHandler` 禁止依赖 `*QueryHandler`，反之亦然。
 
@@ -84,7 +84,7 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 
 ## 备注（Notes）
 
-- 相关文档：[easyorange-backend/AGENTS.md](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/AGENTS.md)「CQRS 模式」节、[README.md](file:///home/cartethyia/projects/Java/easy-orange/README.md)「架构模式落地」表
-- 相关代码：[MessageCommandHandler.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/command/MessageCommandHandler.java)、[MessageQueryHandler.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/query/MessageQueryHandler.java)
-- 相关 ADR：[ADR 0007](./0007-order-saga-single-tx-observability.md)（order 写链路：本地单事务 + 分布式锁 + Outbox，拒绝 Saga）、[ADR 0003](./0003-ai-port-adapter-with-decorator.md)（ai 模块选择 Port/Adapter 而非 CQRS）
+- 相关文档：[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「CQRS 模式」节、[README.md](../../README.md)「架构模式落地」表
+- 相关代码：[MessageCommandHandler.java](../../easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/command/MessageCommandHandler.java)、[MessageQueryHandler.java](../../easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/query/MessageQueryHandler.java)
+- 相关 ADR：[ADR 0007](./0007-order-local-tx-over-saga.md)（order 写链路：本地单事务 + 分布式锁 + Outbox，拒绝 Saga）、[ADR 0003](./0003-ai-port-adapter-decorator.md)（ai 模块选择 Port/Adapter 而非 CQRS）
 - 重评估触发：user 或 favorite 模块出现独立的复杂查询维度、或 ArchUnit 守卫频繁被绕过时，重新评估 CQRS 范围。

@@ -115,27 +115,6 @@ public class ProductController {
         return Result.success();
     }
 
-    @PutMapping("/{productId}/mark-sold")
-    public Result<Void> markAsSold(@PathVariable String productId) {
-        commandHandler.markAsSold(productId);
-        return Result.success();
-    }
-
-    /**
-     * Stock operations
-     */
-    @PutMapping("/{productId}/decrement-stock")
-    public Result<Void> decrementStock(@PathVariable String productId) {
-        commandHandler.decrementStock(productId, 1);
-        return Result.success();
-    }
-
-    @PutMapping("/{productId}/restore-stock")
-    public Result<Void> restoreStock(@PathVariable String productId) {
-        commandHandler.restoreStock(productId);
-        return Result.success();
-    }
-
     /**
      * View count tracking
      */

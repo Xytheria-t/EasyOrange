@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.payment.adapter.outbound.security;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.cartethyia.easyorange.payment.adapter.outbound.config.PaymentCallbackProperties;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import javax.crypto.Mac;
@@ -18,18 +18,13 @@ import org.junit.jupiter.api.Test;
 class CallbackSignatureVerifierTest {
 
     private static final String SECRET = "test-secret";
-    private final CallbackSignatureVerifier verifier = new CallbackSignatureVerifier();
+    private final PaymentCallbackProperties properties = new PaymentCallbackProperties();
+    private final CallbackSignatureVerifier verifier = new CallbackSignatureVerifier(properties);
 
     @BeforeEach
-    void setUp() throws Exception {
-        setField("callbackSecret", SECRET);
-        setField("verifyEnabled", true);
-    }
-
-    private void setField(String name, Object value) throws Exception {
-        Field field = CallbackSignatureVerifier.class.getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(verifier, value);
+    void setUp() {
+        properties.setSecret(SECRET);
+        properties.setVerifyEnabled(true);
     }
 
     private String hmac(String data) throws Exception {
@@ -67,7 +62,7 @@ class CallbackSignatureVerifierTest {
         @Test
         @DisplayName("校验开关关闭时直接放行")
         void verify_disabled_passesThrough() throws Exception {
-            setField("verifyEnabled", false);
+            properties.setVerifyEnabled(false);
 
             assertThatCode(() -> verifier.verify("PAY123", "TXN_1", "anything")).doesNotThrowAnyException();
         }

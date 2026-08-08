@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.domain.exception;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.common.domain.ProductId;
 
 public class InvalidProductStatusException extends BaseBusinessException {
 

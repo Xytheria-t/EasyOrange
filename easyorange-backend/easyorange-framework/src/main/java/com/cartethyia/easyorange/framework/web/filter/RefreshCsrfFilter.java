@@ -1,20 +1,17 @@
 package com.cartethyia.easyorange.framework.web.filter;
 
 import com.cartethyia.easyorange.common.enums.ResultCode;
-import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
+import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * Refresh 端点 CSRF 纵深防御过滤器。
@@ -31,7 +28,7 @@ public class RefreshCsrfFilter extends OncePerRequestFilter {
     private static final String REQUIRED_HEADER = "X-Client-Type";
 
     private final SecurityProperties securityProperties;
-    private final ObjectMapper objectMapper;
+    private final ErrorResponseWriter errorResponseWriter;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -46,10 +43,11 @@ public class RefreshCsrfFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         if (request.getHeader(REQUIRED_HEADER) == null) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-            objectMapper.writeValue(response.getOutputStream(), Result.error(ResultCode.FORBIDDEN, "缺少自定义请求头，疑似跨站请求"));
+            errorResponseWriter.write(
+                    response,
+                    HttpServletResponse.SC_FORBIDDEN,
+                    ResultCode.FORBIDDEN,
+                    "缺少自定义请求头，疑似跨站请求");
             return;
         }
         chain.doFilter(request, response);

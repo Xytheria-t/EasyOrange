@@ -92,6 +92,6 @@ EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 
 **相关文档**：
 - 顶层规则 [AGENTS.md](../../AGENTS.md)
-- 业务场景说明 [PRODUCT_DIRECTION.md](../../PRODUCT_DIRECTION.md)
+- 业务场景说明 [PRODUCT_DIRECTION.md](../PRODUCT_DIRECTION.md)
 - 架构 [doc/架构/架构-系统架构.md](../架构/架构-系统架构.md)
 - API 速查 [API-速查.md](./API-速查.md)

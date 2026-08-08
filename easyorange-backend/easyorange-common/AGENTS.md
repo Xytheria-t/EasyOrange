@@ -8,8 +8,7 @@
 common/
 ├── annotation/          # 自定义注解
 │   ├── SkipRateLimit.java      # 跳过限流（配合 RateLimitFilter 使用）
-│   ├── SkipRepeatSubmit.java   # 跳过防重提交（配合 RateLimitFilter 使用）
-│   └── Idempotent.java         # Idempotency-Key 协议级幂等（@Aspect 实现）
+│   └── SkipRepeatSubmit.java   # 跳过防重提交（配合 RateLimitFilter 使用）
 ├── constant/
 │   └── CommonConstant.java  # 全局常量
 ├── dto/
@@ -45,7 +44,8 @@ common/
 │   ├── Result.java          # 统一响应 Result<T>
 │   └── PageResult.java      # 分页响应 PageResult<T>
 ├── domain/
-│   └── Money.java           # 金额值对象（record，精度2 HALF_UP，不可变四则运算）
+│   ├── Money.java           # 金额值对象（record，精度2 HALF_UP，不可变四则运算）
+│   └── ProductId.java       # 商品 ID 值对象（record，@JsonValue/@JsonCreator，order/product 共享）
 └── util/
     ├── BizRequire.java          # 业务断言工具
     ├── MaskUtils.java           # 数据脱敏
@@ -84,7 +84,8 @@ BizRequire.requireTrue(condition, "条件不满足");
 
 - `@SkipRateLimit` — 跳过当前方法/类的限流（`RateLimitFilter` 命中规则时检查）
 - `@SkipRepeatSubmit` — 跳过当前方法/类的防重提交（`RateLimitFilter` 写方法时自动检查）
-- `@Idempotent(headerName, ttlSeconds)` — Idempotency-Key 协议级幂等。客户端提供幂等 key 头（默认 `Idempotency-Key`），服务端缓存成功响应，相同 key 的重复请求直接返回缓存结果。`@Idempotent` 与 `@SkipRepeatSubmit` 互补：前者是 24h 协议级幂等（含响应缓存），后者是 3s 短时间防连点
+
+> 协议级幂等（Idempotency-Key）由 framework 的 `IdempotencyKeyFilter` 约定式处理（配置驱动，见 framework/AGENTS.md），原 `@Idempotent` 注解 + AOP 方案已删除。
 
 > 审计日志（AuditLog）为约定式自动记录，无需注解。所有非查询类 RestController 方法自动记录。
 

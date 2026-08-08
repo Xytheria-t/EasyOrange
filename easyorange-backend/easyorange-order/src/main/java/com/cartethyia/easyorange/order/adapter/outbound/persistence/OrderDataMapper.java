@@ -12,7 +12,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
-import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import java.util.List;

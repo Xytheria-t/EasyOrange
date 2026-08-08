@@ -10,7 +10,7 @@ framework/
 ├── cache/             # CacheUtils + MultiLevelCache（多级缓存门面，回源用 java.util.function.Supplier）
 ├── config/            # 框架配置（线程池/Jackson/MDC/缓存/Redis/Security/WebMVC/Properties）
 ├── event/             # 领域事件基础设施（EventConsumerHandler / EventMetadata / EventMetricsService / EventIdempotencyChecker / DlqAnomalyListener）
-├── exception/         # GlobalExceptionHandler（全局异常处理，RFC 9457 ProblemDetail）
+├── exception/         # GlobalExceptionHandler（全局异常处理，统一返回 Result<T> 信封）
 ├── file/              # 文件上传下载（FileController/FileService/FileStorage）
 ├── idgen/             # UuidV7IdGenerator（UUID v7）
 ├── mybatis/           # CodeEnumTypeHandler（通用枚举 TypeHandler 基类）
@@ -19,7 +19,7 @@ framework/
 ├── audit/             # AuditLogAspect + AuditLogService（审计日志 AOP）
 ├── auth/              # TokenService + TokenServiceImpl（JWT 签发/刷新/吊销）
 ├── util/              # 工具函数（FileUtils/LocalRateLimiter/SecurityContextUtil/TestSecurityUtil）
-└── web/               # 过滤器（RateLimitFilter/IdempotencyKeyFilter）+ 处理器（CustomMetaObjectHandler）+ 幂等（web/idempotency/）
+└── web/               # 过滤器（RateLimitFilter/IdempotencyKeyFilter）+ ErrorResponseWriter（过滤器统一错误序列化）+ 处理器（CustomMetaObjectHandler）+ 幂等（web/idempotency/）
 ```
 
 ## 核心机制
@@ -48,7 +48,7 @@ JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthe
 1. **幂等去重**：`EventIdempotencyChecker`（Redis SETNX + Redisson 锁），命名空间 `consumerId + ":" + eventType` 隔离多消费者，`idempotencyEnabled=false` 构造器关闭投影/广播/指标类消费者
 2. **事件元数据**：`EventMetadataMessagePostProcessor` 发布前向 message headers 注入 eventId/timestamp/traceId；`EventMetadata.from(message, event)` 在消费端解码
 3. **指标埋点**：`EventMetricsService` 自动上报 `easyorange.events.received{type,outcome}` / `easyorange.events.duration{type,outcome}` / `easyorange.events.dlq{queue,reason}`
-4. **DLQ 异常监听**：`DlqAnomalyListener` 监听 11 个 DLQ 队列，提取 x-death header 记录指标
+4. **DLQ 异常监听**：`DlqAnomalyListener` 监听 10 个 DLQ 队列，提取 x-death header 记录指标
 5. **组合**：`EventConsumerHandler.handle(event, message, metadata -> ...)` 封装统一预处理（幂等 → metrics → 日志 → 业务 → 异常兜底），业务逻辑写在 lambda 中
 
 ### Redis 缓存操作
@@ -162,9 +162,9 @@ multiLevelCache.evict("product:detail:" + id);
 - **可观测**：指标 `easyorange.cache.requests{result=l1_hit|l2_hit|l2_negative|load}` + `easyorange.cache.load` Timer
 - `evictL2` 已删除，列表类缓存失效统一用 `evict()`（本节点 L1 同样过期，仅删 L2 会留本地陈旧值）
 
-### Resilience4j Retry (resilience4j/)
+### Resilience4j CircuitBreaker (resilience4j/)
 
-`Resilience4jConfig` 提供 `RetryRegistry` Bean（自动绑定 Micrometer 指标）。默认配置：指数退避 500ms 初始间隔 × 2.0 乘数，最多 3 次，重试 `RestClientException` / `ResourceAccessException`，忽略 `IllegalArgumentException`。
+`Resilience4jConfig` 提供 `CircuitBreakerRegistry` Bean（自动绑定 Micrometer 指标）。默认配置：COUNT_BASED 滑动窗口 10、最小调用 5、失败率阈值 50%、开路 60s、Half-Open 3 次探测，记录 `RedisConnectionFailureException` / `QueryTimeoutException`。Redis 缓存操作统一走熔断 + 多级降级（参考 `CategoryCacheAdapter`）。
 
 > **AI 重试/Bulkhead 已移除（2026-08-03，ADR-0008）**：原 `aiLlmRetry` / `aiVisionRetry` / `aiLlmBulkhead` / `aiVisionBulkhead` / `dbHeavyBulkhead` 预注册实例已随 Spring AI 框架化删除——重试与并发隔离由 `AiModelConfig` 的 `OpenAiSetup.setupSyncClient`（openai-java 客户端内置）承担。AI 模块不再注入本模块的 `Retry` / `Bulkhead` bean。
 
@@ -219,7 +219,6 @@ idempotency:
 - **JacksonConfig 统一使用 Jackson 3.x**：不再配置 Jackson 2.x `ObjectMapper`。通过 `JsonMapperBuilderCustomizer` 注册 `ToStringSerializer`（Long→String 防止 JS 精度丢失）到 Spring Boot 4 自动配置的 Jackson 3 `ObjectMapper`；同时保留 `jsonMapper()` Bean 供显式注入。两者均注册 `Long.class` 和 `long` 基本类型序列化。
 - **`ParameterNamesModule` 由 Spring Boot 4 自动配置**，领域事件 record 无需 @JsonCreator 注解即可反序列化；JacksonConfig 不再需要手动注册
 - **WebMvcConfig 不再重写 `extendMessageConverters`**：Spring Boot 4.0 使用 Jackson 3.x 的 HTTP 消息转换器，`MappingJackson2HttpMessageConverter`（Jackson 2.x）配置已无效
-- **RedisWorkerIdProvider 优雅降级**：Redis 不可用时 `afterPropertiesSet()` 自动降级至 workerId=0，不影响应用启动。`DisposableBean.destroy()` 在 Spring 关闭时释放 Redis WorkerId 租约。请勿移除这些异常处理，否则 Redis 故障会导致启动失败
 - **RedisConfig 显式配置序列化器（2026-07-23）**：Spring Boot 4 `DataRedisAutoConfiguration` 不设任何序列化器（默认 `JdkSerializationRedisSerializer`，二进制 key/value 破坏 Lua `tonumber` 且不可读）。`RedisConfig` 通过 `@AutoConfigureBefore` 注入自定义 `@Bean RedisTemplate<Object, Object>`：`StringRedisSerializer`（key/hashKey）+ `GenericJacksonJsonRedisSerializer.builder().enableDefaultTyping(BasicPolymorphicTypeValidator).build()`（value/hashValue，含默认类型信息以便 `CacheUtils.cast()` 还原为原类型）。修改序列化策略时须同步评估所有 `RedisTemplate` 使用方
 - **配置属性类统一使用 `@ConfigurationProperties` + `@ConfigurationPropertiesScan` 模式**（纯 POJO，无需 `@Component`）：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖。主应用类 `EasyOrangeApplication` 已添加 `@ConfigurationPropertiesScan`，自动扫描所有 `@ConfigurationProperties` 类。推荐加 `@Validated` + Jakarta Validation 约束（`@Min`/`@NotBlank`/`@NotNull` 等）实现启动时 fail-fast 验证，替代手写 `@PostConstruct validate()`— 后者仅在需要输出警告而非错误时保留
 - **`IdempotencyKeyFilter` 幂等过滤器（替代原 `IdempotencyAspect`）**：作为 `@Component` 自动注册为 servlet filter（`OncePerRequestFilter` 防重复执行），并在 `SecurityConfig` 用 `addFilterBefore(idempotencyKeyFilter, AnonymousAuthenticationFilter.class)` 置于安全链最外层，以抓取最终响应。缓存的是序列化响应而非类型化返回值。修改 filter 顺序时需评估与 `RateLimitFilter`/安全过滤器的包裹关系

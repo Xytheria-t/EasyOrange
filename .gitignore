@@ -18,8 +18,6 @@ node_modules/
 # ---------- 构建输出 ----------
 easyorange-frontend/dist/
 easyorange-frontend/build/
-easyorange-shared/dist/
-easyorange-miniprogram/dist/
 *.tsbuildinfo
 
 # ---------- IDE ----------
@@ -55,9 +53,10 @@ application-local.*
 *.keystore
 *.key
 
-# 前端环境配置（可能包含 API Key）
-easyorange-frontend/.env.production
-easyorange-frontend/.env.development
+# K8s 部署敏感配置（overlay 环境变量 + JWT 密钥，仅提交 .example 模板）
+k8s/overlays/demo/env/backend.env
+k8s/overlays/demo/infra/env/infra.env
+k8s/overlays/demo/env/jwt/
 
 # ---------- 运行时 ----------
 logs/

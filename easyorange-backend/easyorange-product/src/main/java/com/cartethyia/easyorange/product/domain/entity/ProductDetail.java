@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.product.domain.entity;
 
 import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
-import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.common.domain.ProductId;
 
 public record ProductDetail(ProductId productId, ProductDescription description) {
 

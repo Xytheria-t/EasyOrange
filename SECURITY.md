@@ -45,7 +45,7 @@ EasyOrange 已实现的安全机制：
 - **安全头**：X-Frame-Options DENY / HSTS / CSP
 - **输入校验**：Bean Validation（`@NotBlank/@NotNull/@Size`）
 - **审计日志**：AOP 自动记录 + 敏感字段脱敏
-- **依赖扫描**：OWASP Dependency-Check（CI 强制）
+- **依赖扫描**：OWASP Dependency-Check（nightly CI workflow `security-scan.yml` + 本地 `-Powasp` 按需扫描）
 
 ## 安全最佳实践（贡献者）
 

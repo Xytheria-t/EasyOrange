@@ -16,11 +16,13 @@ import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -83,7 +85,7 @@ class ProductQueryHandlerTest {
     @Test
     @DisplayName("缓存命中时直接返回缓存数据")
     void getProductById_cacheHit_shouldReturnCached() {
-        when(productCachePort.getProductCache("1")).thenReturn(Optional.of(testProductVO));
+        when(productCachePort.getProductCache(eq("1"), any())).thenReturn(Optional.of(testProductVO));
 
         ProductVO result = queryHandler.getProductById("1");
 
@@ -93,9 +95,12 @@ class ProductQueryHandlerTest {
     }
 
     @Test
-    @DisplayName("缓存未命中时从数据库查询并写入缓存")
-    void getProductById_cacheMiss_shouldQueryDbAndSetCache() {
-        when(productCachePort.getProductCache("1")).thenReturn(Optional.empty());
+    @DisplayName("缓存未命中时经回源 loader 查询数据库")
+    void getProductById_cacheMiss_shouldLoadViaLoader() {
+        when(productCachePort.getProductCache(eq("1"), any())).thenAnswer(invocation -> {
+            Supplier<ProductVO> loader = invocation.getArgument(1);
+            return Optional.ofNullable(loader.get());
+        });
         when(productRepository.findById(ProductId.of("1"))).thenReturn(Optional.of(testProduct));
         when(productQueryRepository.findImagesByProductIds(any())).thenReturn(List.of());
         when(productQueryRepository.findCategoriesByIds(any())).thenReturn(List.of());
@@ -107,14 +112,13 @@ class ProductQueryHandlerTest {
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo("1");
-        verify(productCachePort).setProductCache(eq("1"), eq(testProductVO));
+        verify(productRepository).findById(ProductId.of("1"));
     }
 
     @Test
     @DisplayName("查询不存在的商品应抛出异常")
     void getProductById_notFound_shouldThrow() {
-        when(productCachePort.getProductCache("999")).thenReturn(Optional.empty());
-        when(productRepository.findById(ProductId.of("999"))).thenReturn(Optional.empty());
+        when(productCachePort.getProductCache(eq("999"), any())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> queryHandler.getProductById("999")).isInstanceOf(ProductNotFoundException.class);
     }

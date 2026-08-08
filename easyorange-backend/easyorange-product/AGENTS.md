@@ -80,26 +80,26 @@ product/
 │   │   ├── ProductReport.java
 │   │   └── ReportHandleHistory.java
 │   ├── valueobject/
-│   │   ├── ProductId.java, CategoryId.java, SellerId.java
-│   │   ├── Money.java, StockQuantity.java, Version.java
+│   │   ├── CategoryId.java, SellerId.java
+│   │   ├── StockQuantity.java, Version.java
 │   │   ├── ProductTitle.java, ProductDescription.java
 │   │   ├── ImageUrl.java, ImageSet.java, TagSet.java
 │   │   ├── ContactMethod.java, TradeLocation.java
 │   │   ├── SellerInfo.java
 │   │   ├── Rating.java, ReviewContent.java
-    │   ├── event/
-    │   │   ├── ProductEvent.java                 # 密封接口（消除 aggregateId() 模板）
-    │   │   ├── ProductCreatedEvent.java
-    │   │   ├── ProductUpdatedEvent.java
-    │   │   ├── ProductDeletedEvent.java
-    │   │   ├── ProductSubmittedForReviewEvent.java
-    │   │   ├── ProductPutOnlineEvent.java
-    │   │   ├── ProductTakeOfflineEvent.java
-    │   │   ├── ProductMarkedSoldEvent.java
-    │   │   ├── ProductAuditedEvent.java
-    │   │   ├── StockDecreasedEvent.java
-    │   │   ├── StockRestoredEvent.java
-    │   │   └── ReportProcessedEvent.java
+│   ├── event/
+│   │   ├── ProductEvent.java                 # 密封接口（消除 aggregateId() 模板）
+│   │   ├── ProductCreatedEvent.java
+│   │   ├── ProductUpdatedEvent.java
+│   │   ├── ProductDeletedEvent.java
+│   │   ├── ProductSubmittedForReviewEvent.java
+│   │   ├── ProductPutOnlineEvent.java
+│   │   ├── ProductTakeOfflineEvent.java
+│   │   ├── ProductMarkedSoldEvent.java
+│   │   ├── ProductAuditedEvent.java
+│   │   ├── StockDecreasedEvent.java
+│   │   ├── StockRestoredEvent.java
+│   │   └── ReportProcessedEvent.java
 │   ├── port/
 │   │   ├── OutboundPort.java            # 标记接口 (跨模块出站端口)
 │   │   ├── ProductCacheEvictionPort.java # 缓存驱逐端口（domain 层，仅 evict）
@@ -126,6 +126,8 @@ product/
 └── config/
     └── ProductDomainConfig.java
 ```
+
+> **共享值对象**：`ProductId` 与 `Money` 位于 `easyorange-common`（`common/domain/`，2026-08-08 将两模块重复的 `ProductId` 收敛为单一实现，带 `@JsonValue`/`@JsonCreator`），本模块 valueobject 包不重复定义。
 
 ## 领域事件模式
 

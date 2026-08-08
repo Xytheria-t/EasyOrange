@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
+import com.cartethyia.easyorange.message.adapter.inbound.config.MessageRetentionProperties;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import java.time.LocalDateTime;
@@ -12,7 +13,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -23,8 +23,12 @@ class MessageArchiveTaskTest {
     @Mock
     private MessageMapper messageMapper;
 
-    @InjectMocks
     private MessageArchiveTask archiveTask;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        archiveTask = new MessageArchiveTask(messageMapper, new MessageRetentionProperties());
+    }
 
     @Nested
     @DisplayName("cleanupExpiredMessages")

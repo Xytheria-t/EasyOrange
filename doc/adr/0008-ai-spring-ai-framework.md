@@ -29,7 +29,7 @@ EasyOrange 的 6 个 AI 决策点（智能估值 / AI 营销文案 / AI 信用�
 
 **全面框架化**：删除 AI 模块自研的 Port/Adapter/装饰器/自定义 DTO/自定义指标/Python 侧车，六个业务服务 + 语义搜索 + 搜索增强直接注入 Spring AI 的 `ChatModel` / `EmbeddingModel` bean。
 
-### 1. 模型 Bean（[AiModelConfig.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/AiModelConfig.java)）
+### 1. 模型 Bean（[AiModelConfig.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/AiModelConfig.java)）
 
 三个 bean 统一走 `OpenAiSetup.setupSyncClient`：
 
@@ -41,7 +41,7 @@ EasyOrange 的 6 个 AI 决策点（智能估值 / AI 营销文案 / AI 信用�
 
 `OpenAiChatAutoConfiguration` 的 `@ConditionalOnMissingBean`（按返回类型推断）会因自定义 bean 存在而安全退让，不产生重复 bean。
 
-### 2. 调用去重（[AiModelSupport.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/service/AiModelSupport.java)）
+### 2. 调用去重（[AiModelSupport.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/service/AiModelSupport.java)）
 
 `callText` / `callJson`（`response_format=json_object`）/ `embed`（`float[] → List<Float>`）/ `analyzeImages`（多图 Media + `UserMessage.builder`）四个静态工具收敛重复调用模式，**不是**端口/适配器抽象，只是代码去重。
 
@@ -95,7 +95,7 @@ EasyOrange 的 6 个 AI 决策点（智能估值 / AI 营销文案 / AI 信用�
 
 ## 备注（Notes）
 
-- Supersedes [ADR 0003](./0003-ai-port-adapter-with-decorator.md)（其第 84 行「用 Spring AI Starter：拒绝」决策翻转）；Related to [ADR 0004](./0004-ai-bulkhead-and-token-budget.md)（`@TokenBudget` 保留，Bulkhead 隔离仓删除）
+- Supersedes [ADR 0003](./0003-ai-port-adapter-decorator.md)（其第 84 行「用 Spring AI Starter：拒绝」决策翻转）；Related to [ADR 0004](./0004-ai-bulkhead-token-budget.md)（`@TokenBudget` 保留，Bulkhead 隔离仓删除）
 - 相关文档：[doc/集成/AI-资产管理.md](../集成/AI-资产管理.md)、根目录 `AGENTS.md`「AI 能力清单」
-- 相关代码：[AiModelConfig.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/AiModelConfig.java)、[AiModelSupport.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/service/AiModelSupport.java)、[ElasticsearchProductSearchIndexAdapter.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-application/src/main/java/com/cartethyia/easyorange/adapter/outbound/elasticsearch/ElasticsearchProductSearchIndexAdapter.java)
+- 相关代码：[AiModelConfig.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/AiModelConfig.java)、[AiModelSupport.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/service/AiModelSupport.java)、[ElasticsearchProductSearchIndexAdapter.java](../../easyorange-backend/easyorange-application/src/main/java/com/cartethyia/easyorange/adapter/outbound/elasticsearch/ElasticsearchProductSearchIndexAdapter.java)
 - 后续演进触发：Spring AI 新版本升级时评估 API 变更；上线前 curl 验证 DashScope `text-embedding-v3` endpoint 可用性（#5647），失败则切 SiliconFlow BAAI/bge-m3（同为 OpenAI 兼容线协议）

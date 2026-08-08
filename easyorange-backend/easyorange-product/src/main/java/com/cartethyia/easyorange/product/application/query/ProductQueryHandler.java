@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.common.util.Singleflight;
 import com.cartethyia.easyorange.product.application.port.cache.ProductCachePort;
 import com.cartethyia.easyorange.product.application.port.cache.SellerCachePort;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
@@ -14,7 +13,7 @@ import com.cartethyia.easyorange.product.application.query.readmodel.ProductRead
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.common.domain.ProductId;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,7 +33,6 @@ public class ProductQueryHandler {
     private final ProductReadModelAssembler readModelAssembler;
     private final ProductCachePort productCachePort;
     private final SellerCachePort sellerCachePort;
-    private static final Singleflight<String, ProductVO> productSingleflight = new Singleflight<>();
 
     @Transactional(readOnly = true)
     public ProductReadModel getProductReadModel(String id) {
@@ -43,15 +41,14 @@ public class ProductQueryHandler {
 
     @Transactional(readOnly = true)
     public ProductVO getProductById(String id) {
-        var cached = productCachePort.getProductCache(id);
-        return cached.orElseGet(() -> productSingleflight.execute(id, () -> {
-            var product = productRepository
-                    .findById(ProductId.of(id))
-                    .orElseThrow(() -> new ProductNotFoundException(ProductId.of(id)));
-            var productVO = assembleProductVO(product);
-            productCachePort.setProductCache(id, productVO);
-            return productVO;
-        }));
+        return productCachePort
+                .getProductCache(id, () -> {
+                    var product = productRepository
+                            .findById(ProductId.of(id))
+                            .orElseThrow(() -> new ProductNotFoundException(ProductId.of(id)));
+                    return assembleProductVO(product);
+                })
+                .orElseThrow(() -> new ProductNotFoundException(ProductId.of(id)));
     }
 
     @Transactional(readOnly = true)

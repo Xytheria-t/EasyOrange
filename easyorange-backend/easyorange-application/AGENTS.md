@@ -10,50 +10,38 @@ application/
 │   └── com/cartethyia/easyorange/
 │       ├── EasyOrangeApplication.java     # Spring Boot 主类
 │       ├── adapter/
-│       │   ├── event/                     # 跨模块事件监听器
-│   │   │   ├── OrderNotificationEventConsumer.java
-│   │   │   ├── ProductAuditEventConsumer.java
-│   │   │   ├── ReportProcessedEventConsumer.java
-│   │   │   ├── AiProductEventConsumer.java
-│   │   │   └── AiCreditEventConsumer.java
+│       │   ├── event/                     # 跨模块事件监听器（5 个；其余消费者在各业务模块内）
+│       │   │   ├── OrderNotificationEventConsumer.java
+│       │   │   ├── ProductAuditEventConsumer.java
+│       │   │   ├── ReportProcessedEventConsumer.java
+│       │   │   ├── AiProductEventConsumer.java
+│       │   │   └── AiCreditEventConsumer.java
 │       │   ├── inbound/web/controller/  # Web 控制器
 │       │   │   ├── AiController.java                  # AI 服务端点
 │       │   │   ├── CreditScoreController.java         # 信用分数端点
 │       │   │   ├── AdminSearchReindexController.java  # ES 重索引管理
 │       │   │   ├── HealthController.java              # 健康检查
 │       │   │   └── PlatformStatsController.java       # 平台统计
-│       │   └── outbound/                  # 跨模块适配器实现
-│       │       ├── elasticsearch/         # ES 搜索索引适配器
-│       │       │   ├── ElasticsearchIndexManager.java
-│       │       │   ├── ElasticsearchProductSearchIndexAdapter.java
-│       │       │   ├── ElasticsearchProductSearchQueryAdapter.java
-│       │       │   ├── ProductDocument.java
-│       │       │   └── ReindexService.java
-│       │       ├── payment/
-│       │       │   └── OrderPaymentGatewayAdapter.java
-│       │       ├── product/
-│       │       │   ├── FavoriteProductInfoAdapter.java
-│   │       │   ├── ProductOrderAdapter.java
-│       │       │   ├── OrderProductQueryAdapter.java
-│       │       │   └── ProductSearchIndexAdapter.java
-│       │       └── user/
-│       │           ├── MessageUserInfoAdapter.java
-│       │           ├── OrderUserInfoAdapter.java
-│       │           └── SellerInfoAdapter.java
+│       │   └── outbound/                  # 跨模块适配器实现（完整清单见下方「跨模块适配器」表）
+│       │       ├── admin/                 # AdminProductQueryAdapter / AdminUserQueryAdapter / AdminOrderQueryAdapter / AdminRatingQueryAdapter
+│       │       ├── elasticsearch/         # ES 搜索索引适配器（ElasticsearchIndexManager / ProductDocument / ReindexService / 索引读写适配器）
+│       │       ├── payment/               # OrderPaymentGatewayAdapter
+│       │       ├── product/               # ProductOrderAdapter / OrderProductQueryAdapter / ProductNotificationAdapter / ProductSearchIndexAdapter / FavoriteProductInfoAdapter
+│       │       └── user/                  # MessageUserInfoAdapter / OrderUserInfoAdapter / SellerInfoAdapter
 ├── src/main/resources/
 │   ├── application.yaml                   # 基础配置
 │   ├── application-dev.yaml               # 开发环境
 │   ├── application-prod.yaml              # 生产环境
 │   ├── application-test.yaml              # 测试环境
 │   ├── logback-spring.xml                 # 日志配置
-│       └── db/
-│           ├── migration/                     # Flyway 迁移脚本 (V=版本, R=可重复)
-│           │   ├── V1__init_schema.sql              # 完整 DDL（合并原 V1~V6）
-│           │   ├── R__seed_categories.sql           # 分类种子数据（含二级）
-│           │   ├── R__seed_message_templates.sql    # 消息模板种子数据
-│           │   └── R__seed_payment_config.sql       # 支付渠道配置
-│           └── dev/                           # 开发环境数据
-│               └── R__insert_dev_test_data.sql
+│   └── db/
+│       ├── migration/                     # Flyway 迁移脚本 (V=版本, R=可重复)
+│       │   ├── V1__init_schema.sql              # 完整 DDL（合并原 V1~V6）
+│       │   ├── R__seed_categories.sql           # 分类种子数据（含二级）
+│       │   ├── R__seed_message_templates.sql    # 消息模板种子数据
+│       │   └── R__seed_payment_config.sql       # 支付渠道配置
+│       └── dev/                           # 开发环境数据
+│           └── R__insert_dev_test_data.sql
 └── src/test/java/
     └── com/cartethyia/easyorange/
         ├── architecture/
@@ -69,6 +57,7 @@ application/
 easyorange-application
 ├── easyorange-framework
 ├── easyorange-admin                    # 管理端 API（需管理员权限）
+├── easyorange-ai                       # AI 端点（AiController / CreditScoreController / 搜索增强）
 ├── easyorange-user
 ├── easyorange-product
 ├── easyorange-favorite
@@ -93,8 +82,8 @@ easyorange-application
 
 ### 关键配置项
 
-- `easyorange.jwt.secret` / `easyorange.jwt.access-token-expiration` — JWT 配置
-- `easyorange.security` — 安全相关 (白名单路径等)
+- `jwt.*` — JWT 配置（RSA PEM 密钥路径 `jwt.private-key-location`/`jwt.public-key-location`、access/refresh 过期时间；开发环境自动生成密钥，见 `JwtProperties`）
+- `security` — 安全相关 (白名单路径 `security.product-paths` 等)
 - `rate-limit-filter` — 限流+防重 Filter 配置（规则列表、防重间隔、方法匹配）
 - ~~`thread-pool.*` — 线程池配置~~（已移除，改用虚拟线程，仅保留 `taskScheduler` 硬编码为 poolSize=5）
 - `file.upload.*` — 文件上传路径 (`path`) 和 URL 前缀 (`url-prefix`)

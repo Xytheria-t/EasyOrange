@@ -59,7 +59,6 @@ public class AuthAppService {
         SecurityContextUtil.clearContext();
     }
 
-    @Transactional(readOnly = true)
     public void sendSmsCode(String phone) {
         if (!smsCodePort.send(phone)) {
             throw BusinessException.of(UserResultCode.SMS_CODE_SEND_TOO_FREQUENT);

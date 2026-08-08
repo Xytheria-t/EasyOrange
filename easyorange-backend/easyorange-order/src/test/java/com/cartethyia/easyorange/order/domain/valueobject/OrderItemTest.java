@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.order.domain.valueobject;
 import static org.assertj.core.api.Assertions.*;
 
 import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;

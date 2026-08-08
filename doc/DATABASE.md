@@ -15,7 +15,7 @@
 
 ## 表总览
 
-共 25 张业务表（22 张已接入代码 + 3 张预留），按业务模块划分：另有 2 张基础设施表（EVENT_PUBLICATION / eo_idempotency_key）。
+共 28 张表：26 张 `eo_*` 业务/观测表（其中 3 张预留）+ 2 张 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。`eo_idempotency_key` 已由 V2 迁移删除（幂等统一由 framework 的 `IdempotencyKeyFilter` + Redis 承载，2026-08 双 Token 收口）；`eo_ai_call_log` 由 V3 迁移新增（LLM-as-Judge 离线评估数据源，未提交前按 V3 计）。
 
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
@@ -44,8 +44,9 @@
 | 消息 | eo_offline_message | 离线消息 | OfflineMessageDO |
 | 文件 | eo_upload_file | 文件上传记录 | UploadFileDO |
 | 审计 | eo_audit_log | 审计日志 | AuditLog |
-| 事件 | EVENT_PUBLICATION | 领域事件注册表（Spring Modulith） | V3 |
-| 幂等 | eo_idempotency_key | 幂等性键 | IdempotencyKeyDO |
+| 事件 | EVENT_PUBLICATION | 领域事件注册表（Spring Modulith） | Modulith |
+| 事件 | EVENT_PUBLICATION_ARCHIVE | 领域事件归档表（Spring Modulith） | Modulith |
+| 观测 | eo_ai_call_log | AI 调用日志（LLM-as-Judge 数据源，V3 新增） | —（JDBC 直写） |
 
 ## 公共字段
 
@@ -60,7 +61,7 @@
 | del_flag | TINYINT | 0 | 逻辑删除（0 正常 / 1 删除） |
 | version | INT | 0 | 乐观锁版本号 |
 
-基础设施表（eo_idempotency_key / EVENT_PUBLICATION）使用 created_at / updated_at 时间字段，精度为毫秒 DATETIME(3)。
+基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE / eo_ai_call_log）使用 created_at / updated_at 时间字段，精度为毫秒 DATETIME(3)。
 
 归档表（eo_message_archive）无 del_flag / version，使用 archived_at 记录归档时间。
 
@@ -738,11 +739,13 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 | idx_eo_domain_event_status_created | KEY | status, created_at |
 | idx_eo_domain_event_event_type | KEY | event_type |
 
-**替代实现**：Spring Modulith 的 `EVENT_PUBLICATION` 表（V3 迁移脚本创建）—— ModulithDomainEventPublisher 在应用事务中写入该表，提交后异步读取并发布到 RabbitMQ，实现 at-least-once 语义。
+**替代实现**：Spring Modulith 的 `EVENT_PUBLICATION` 表（V1 初始化脚本创建）—— ModulithDomainEventPublisher 在应用事务中写入该表，提交后异步读取并发布到 RabbitMQ，实现 at-least-once 语义。
 
 ---
 
-### eo_idempotency_key — 幂等性键表（基础设施）
+### eo_idempotency_key — 幂等性键表（已删除）
+
+> **注意**：此表已在 V1 初始化时创建，后由 **V2 迁移删除**（2026-08，双 Token 现代化收口 b5f0f879）——幂等保护统一由 framework 的 `IdempotencyKeyFilter` + Redis 实现承载，DB 表不再需要。下表仅为历史记录，当前数据库无此表。
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -812,3 +815,25 @@ eo_user ──1:N── eo_offline_message (user_id)
 eo_message ──1:1── eo_message_archive (id)
 
 ```
+
+---
+
+### eo_ai_call_log — AI 调用日志表（V3 新增）
+
+> **现状**：`AiCallLogRecorder`（easyorange-ai/adapter/outbound/）在每次 LLM/Embedding 调用后 JDBC 直写一条（记录失败仅告警，不阻塞主链路）；`AiEvalScheduler`（adapter/inbound/job/）定时对 `judge_score IS NULL AND success = 1` 的记录用 ChatModel 打分（1-5 + 评语）。默认关闭（`easyorange.ai.eval.enabled=false`）。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| id | VARCHAR(36) | PK | 主键 UUID v7 |
+| scope | VARCHAR(32) | NOT NULL | AI 调用场景（PRICING/REVIEW/COPY/AUTO_LISTING/SEMANTIC/QA/SEARCH_ENHANCE） |
+| model | VARCHAR(64) | NOT NULL | 模型标识 |
+| prompt_hash | CHAR(32) | NOT NULL | system+user prompt 摘要 MD5（去重与回归用） |
+| response_text | TEXT | | 模型输出文本 |
+| latency_ms | BIGINT | NOT NULL DEFAULT 0 | 调用耗时（毫秒） |
+| success | TINYINT(1) | NOT NULL DEFAULT 1 | 是否成功 1/0 |
+| error_msg | VARCHAR(512) | | 失败原因 |
+| judge_score | TINYINT | NULL | LLM-as-Judge 质量评分 1-5（NULL=待评估） |
+| judge_comment | VARCHAR(255) | | 评审评语 |
+| created_at | DATETIME | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+
+**索引**：idx_ai_call_log_scope (scope, created_at)、idx_ai_call_log_judge (judge_score, created_at)

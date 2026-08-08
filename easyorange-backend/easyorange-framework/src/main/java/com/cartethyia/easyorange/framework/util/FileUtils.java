@@ -130,18 +130,6 @@ public final class FileUtils {
         return MIME_TO_EXTENSION.getOrDefault(contentType.toLowerCase(), "");
     }
 
-    public static String formatFileSize(long size) {
-        if (size >= GB) {
-            return String.format("%.2f GB", size / (double) GB);
-        } else if (size >= MB) {
-            return String.format("%.2f MB", size / (double) MB);
-        } else if (size >= KB) {
-            return String.format("%.2f KB", size / (double) KB);
-        } else {
-            return size + " B";
-        }
-    }
-
     public static boolean deleteFile(String filePath) {
         if (filePath == null) {
             return false;

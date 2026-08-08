@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.domain.aggregate;
 
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
 import java.math.BigDecimal;
 import java.util.List;

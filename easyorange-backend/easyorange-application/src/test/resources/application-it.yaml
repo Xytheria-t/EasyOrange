@@ -8,6 +8,12 @@ spring:
       # 相对应用目录：easyorange-application/ → 仓库根 compose.yaml（start-only 只保证运行、不销毁 dev 栈）
       file: ../../compose.yaml
       lifecycle-management: start-only
+      # 只启 dev 依赖三件套，跳过 easyorange-app/prometheus/grafana：
+      # 否则每次 mvn verify 都会构建后端镜像（2-5 分钟）+ 抢 8080/9090/3000 端口
+      services:
+        - mysql
+        - redis
+        - rabbitmq
 
   flyway:
     # 复用开发者 dev 库时，其迁移历史可能与当前脚本 diverged（repeatable seed 曾被移除过）。

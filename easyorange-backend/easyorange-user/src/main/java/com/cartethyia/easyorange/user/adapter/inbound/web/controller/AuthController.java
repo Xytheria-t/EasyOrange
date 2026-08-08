@@ -15,6 +15,7 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResu
 import com.cartethyia.easyorange.user.application.service.AuthAppService;
 import com.cartethyia.easyorange.user.application.service.CredentialAppService;
 import com.cartethyia.easyorange.user.domain.constant.UserConstant;
+import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,14 +44,16 @@ public class AuthController {
 
     @PostMapping("/login")
     public Result<LoginResult> login(@Valid @RequestBody PasswordLoginRequest request, HttpServletResponse response) {
-        var ctx = authAppService.login(request.toCredential());
-        refreshCookie.write(response, ctx.refreshToken());
-        return Result.success(userAssembler.toLoginResult(ctx.user(), ctx.accessToken()));
+        return doLogin(request.toCredential(), response);
     }
 
     @PostMapping("/sms-login")
     public Result<LoginResult> smsLogin(@Valid @RequestBody SmsLoginRequest request, HttpServletResponse response) {
-        var ctx = authAppService.login(request.toCredential());
+        return doLogin(request.toCredential(), response);
+    }
+
+    private Result<LoginResult> doLogin(LoginCredential credential, HttpServletResponse response) {
+        var ctx = authAppService.login(credential);
         refreshCookie.write(response, ctx.refreshToken());
         return Result.success(userAssembler.toLoginResult(ctx.user(), ctx.accessToken()));
     }

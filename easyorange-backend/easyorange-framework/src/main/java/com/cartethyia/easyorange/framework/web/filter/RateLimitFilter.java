@@ -3,13 +3,13 @@ package com.cartethyia.easyorange.framework.web.filter;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.RepeatSubmitConfig;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Rule;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
+import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,9 +17,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -29,15 +26,14 @@ import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.util.DigestUtils;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.HandlerMapping;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * 限流 + 防重提交统一过滤器
@@ -57,7 +53,6 @@ import tools.jackson.databind.ObjectMapper;
 @NullMarked
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final HexFormat HEX_FORMAT = HexFormat.of();
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
     private static final Set<String> WRITE_METHODS = Set.of("POST", "PUT", "DELETE", "PATCH");
 
@@ -65,7 +60,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final RedisTemplate<Object, Object> redisTemplate;
     private final LocalRateLimiter localRateLimiter;
     private final DistributedRateLimiter distributedRateLimiter;
-    private final ObjectMapper objectMapper;
+    private final ErrorResponseWriter errorResponseWriter;
     private final ObjectProvider<List<HandlerMapping>> handlerMappingsProvider;
 
     public RateLimitFilter(
@@ -73,13 +68,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
             RedisTemplate<Object, Object> redisTemplate,
             LocalRateLimiter localRateLimiter,
             DistributedRateLimiter distributedRateLimiter,
-            ObjectMapper objectMapper,
+            ErrorResponseWriter errorResponseWriter,
             ObjectProvider<List<HandlerMapping>> handlerMappingsProvider) {
         this.properties = properties;
         this.redisTemplate = redisTemplate;
         this.localRateLimiter = localRateLimiter;
         this.distributedRateLimiter = distributedRateLimiter;
-        this.objectMapper = objectMapper;
+        this.errorResponseWriter = errorResponseWriter;
         this.handlerMappingsProvider = handlerMappingsProvider;
     }
 
@@ -254,21 +249,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // ==================== 工具方法 ====================
 
     private void writeErrorResponse(HttpServletResponse response, BusinessException ex) throws IOException {
-        response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-
-        Result<Void> result = Result.error(ex.getCode(), ex.getMessage());
-        response.getWriter().write(objectMapper.writeValueAsString(result));
+        errorResponseWriter.write(response, HttpStatus.TOO_MANY_REQUESTS.value(), ex.getCode(), ex.getMessage());
     }
 
     private String md5(byte[] input) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] digest = md.digest(input);
-            return HEX_FORMAT.formatHex(digest);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("MD5 algorithm not available", e);
-        }
+        return DigestUtils.md5DigestAsHex(input);
     }
 }

@@ -31,9 +31,9 @@
 
 关键实现：
 
-- 本次迁移：[ProfileAppService.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-user/src/main/java/com/cartethyia/easyorange/user/application/service/ProfileAppService.java)（私有 `hasAny`/`isPresent`）
-- 领域服务保留：[ProfileUpdateService.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/service/ProfileUpdateService.java)（`validateUniqueContact`）
-- 富聚合范式：[Order.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/domain/aggregate/Order.java)（`Transition<Order, XEvent>` 状态机）
+- 本次迁移：[ProfileAppService.java](../../easyorange-backend/easyorange-user/src/main/java/com/cartethyia/easyorange/user/application/service/ProfileAppService.java)（私有 `hasAny`/`isPresent`）
+- 领域服务保留：[ProfileUpdateService.java](../../easyorange-backend/easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/service/ProfileUpdateService.java)（`validateUniqueContact`）
+- 富聚合范式：[Order.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/domain/aggregate/Order.java)（`Transition<Order, XEvent>` 状态机）
 
 核心驱动力：
 
@@ -67,7 +67,7 @@
 
 ## 备注（Notes）
 
-- 相关 ADR：[0002-cqrs-scope-only-4-modules.md](0002-cqrs-scope-only-4-modules.md)（CQRS 边界）、[0007-order-saga-single-tx-observability.md](0007-order-saga-single-tx-observability.md)（拒绝过度设计）
+- 相关 ADR：[0002-cqrs-scope-4-modules.md](0002-cqrs-scope-4-modules.md)（CQRS 边界）、[0007-order-local-tx-over-saga.md](0007-order-local-tx-over-saga.md)（拒绝过度设计）
 - 相关文档：[doc/架构/架构-DDD规范.md](../架构/架构-DDD规范.md)、`doc/interview/DDD-核心思想轻量落地.md`
 - 相关代码：user 认证族（`AuthenticationService`/`LoginSecurityService`/`SmsVerificationService`/`PasswordManagementService`）、product 举报流（`ProductReportDomainService`）、message 净化（`SensitiveWordFilterService`）
 - 后续演进触发条件：若某模块出现「领域服务一堆但聚合为数据容器」的贫血模型，重新评估并下沉规则回聚合

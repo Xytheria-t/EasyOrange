@@ -1,6 +1,6 @@
 # EasyOrange — LLM × DDD：Java 架构工程化实战
 
-> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。**两条技术主线**：AI 应用工程化（6 决策点 + 轻量 Agent 编排 + 8 件套工程化）+ 架构落地（DDD + 分布式可靠性 + ADR/ArchUnit/PIT 治理三板斧）。**业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**工程亮点**：DDD 六边形 + CQRS · 事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路 · 分布式锁防超卖 · AI 8 件套（Spring AI 2.0 框架化 + Redisson 令牌桶 + stale 降级 + Prompt YAML + TokenBudget + Embedding 真实现 + 多模态 Vision + 4 路并行 Tool Calling）· ES 搜索 + IK 分词 · ArchUnit 11 条规则 · 8 ADR · 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重门禁）· SpringDoc OpenAPI 3 · Biome 0 errors。**2025 年 11 月启动**。
+> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。**两条技术主线**：AI 应用工程化（6 决策点 + 轻量 Agent 编排 + 8 件套工程化）+ 架构落地（DDD + 分布式可靠性 + ADR/ArchUnit/PIT 治理三板斧）。**业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**工程亮点**：DDD 六边形 + CQRS · 事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路 · 分布式锁防超卖 · AI 8 件套（Spring AI 2.0 框架化 + Redisson 令牌桶 + stale 降级 + Prompt YAML + TokenBudget + Embedding 真实现 + 多模态 Vision + 4 路并行 Tool Calling）· ES 搜索 + IK 分词 · ArchUnit 11 条规则 · 9 ADR · 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重门禁）· SpringDoc OpenAPI 3 · Biome 0 errors。**2025 年 11 月启动**。
 
 ## 技术栈
 
@@ -13,7 +13,7 @@
 | **搜索引擎** | Elasticsearch 8.17.3 (IK 中文分词器) |
 | **认证** | JWT Access (RSA) + Opaque Refresh (Redis, HttpOnly Cookie) |
 | **迁移** | Flyway 11.15.0 |
-| **部署** | Docker, docker-compose, compose.yaml (@ServiceConnection) |
+| **部署** | Docker, docker-compose, compose.yaml (@ServiceConnection) + **K8s/kustomize** (k8s/, 无状态应用层) |
 
 ## 数据库表清单
 
@@ -30,6 +30,7 @@
 | `eo_user_credit` | 用户信用分表 | score(0-200)+total_trades+completed_trades+cancelled_trades+total_reports+confirmed_reports+avg_rating |
 | `eo_order` | 订单主表 | total_amount(行项总和); 状态机: PENDING_PAYMENT/PAID/SHIPPED/COMPLETED/CANCELLED/REFUNDED |
 | `eo_order_item` | 订单行项表 | 含 product_snapshot JSON 快照, unit_price, quantity, subtotal |
+| `eo_ai_call_log` | AI 调用日志表 | V3 新增; AiCallLogRecorder 每次 LLM 调用写一条, AiEvalScheduler 打分(1-5), 默认关闭 |
 
 ## 商品状态机
 
@@ -106,7 +107,10 @@
 easy-orange/
 ├── easyorange-backend/          # Spring Boot 后端 (11 Maven 模块)
 ├── easyorange-frontend/         # React 前端 (Vite + TypeScript + TanStack Query)
-├── doc/                         # 项目文档
+├── doc/                         # 项目文档（架构 / 集成 / ADR / DATABASE / PRODUCT_DIRECTION）
+├── infra/                       # 基础设施即代码（Prometheus / Grafana / ES IK 镜像）
+├── k8s/                         # K8s 部署（kustomize，无状态应用层）
+├── load-tests/                  # k6 压测脚本
 └── .claude/rules/ecc/           # AI 编码规则 (ECC: common/java/typescript/react/web)
 ```
 
@@ -133,7 +137,7 @@ payment → framework, common
 message → framework, common, user (通过 UserInfoPort 隔离，optional)
 favorite → framework, common, product (通过 ProductInfoPort 隔离，optional)
 ai → framework, common, product (通过 ProductSearchQueryPort 隔离)
-admin → framework, common, user (optional), product (optional), order (optional), payment (optional), ai (optional)
+admin → framework, common（其余模块零依赖，全部通过 AdminProductQueryPort / AdminUserQueryPort / AdminOrderQueryPort / AdminRatingQueryPort 隔离，2026-08-08 收口）
 ```
 
 > **状态**：所有跨模块依赖已通过端口接口 + 适配器模式隔离，Maven 依赖标记为 `<optional>true</optional>`。写操作通过事件驱动解耦，查询操作保留同步端口调用。
@@ -145,7 +149,7 @@ admin → framework, common, user (optional), product (optional), order (optiona
 - **OWASP 硬闸门已恢复绿色（2026-08-04）**: 通过依赖升级 + 定向豁免清除全部 CVSS ≥ 8 告警：
   - Spring Boot 4.0.3 → **4.0.7**（spring-framework 7.0.8，修复 **CVE-2026-41855** 9.8）；netty → **4.2.16**、tomcat → **11.0.24**、jackson → **3.1.5**（见 pom `<netty.version>`/`<tomcat.version>`/`<jackson3.version>` 覆盖）
   - **豁免项**（`easyorange-backend/dependency-suppression.xml`，注明理由、待条件满足后解除）：kotlin-stdlib **CVE-2026-53914**（修复版 Kotlin 2.4.20 未发布稳定版；纯 Java 项目不编译 Kotlin，攻击面≈0）；mysql-connector-j **CVE-2026-60193/60192**（受影响组件为 Connector/Net(.NET)，非 Connector/J(Java JDBC)，且 9.7.0 已是最新版）
-  - **环境提示**：OWASP 依赖检查已从 `-Pci` 主门禁拆出，改为独立 `-Powasp` profile + CI 非阻断 security job（NVD 在境外 runner 上首次扫描实测 39 分钟，不适合阻塞每次 push/PR；`failOnError=false` 使 NVD 抖动只告警不红，真实 CVSS ≥ 8 仍会标红）。本地默认构建完全跳过 OWASP（提速显著）；按需扫描用 `./mvnw -Powasp verify -DskipTests`。检查需联网拉取数据源（OSS Index API 需 token、RetireJS 从 raw.githubusercontent 下载），本机若遇 401/超时可用 `-Danalyzer.ossindex.enabled=false` + `-Danalyzer.retirejs.enabled=false`，或临时 `-Ddependency-check.skip=true`
+  - **环境提示**：OWASP 依赖检查已从 `-Pci` 主门禁拆出，改为独立 `-Powasp` profile + nightly schedule workflow（`.github/workflows/security-scan.yml`，每日 02:00 UTC + 手动触发；NVD 在境外 runner 上首次扫描实测 39 分钟，不适合阻塞每次 push/PR；`failOnError=false` 使 NVD 抖动只告警不红，真实 CVSS ≥ 8 仍会标红）。本地默认构建完全跳过 OWASP（提速显著）；按需扫描用 `./mvnw -Powasp verify -DskipTests`。检查需联网拉取数据源（OSS Index API 需 token、RetireJS 从 raw.githubusercontent 下载），本机若遇 401/超时可用 `-Danalyzer.ossindex.enabled=false` + `-Danalyzer.retirejs.enabled=false`，或临时 `-Ddependency-check.skip=true`
 - **Redis 连接**: `application.yaml` 的 base 配置和 `.env.example` 模板已统一默认 `REDIS_PASSWORD=easyorange123`，与 Docker Compose 一致。若仍遇到 `Unable to connect to Redis` 错误，检查：① 是否已执行 `docker compose up -d` 启动 Redis；② 环境变量 `REDIS_PASSWORD` 是否被设置为空值覆盖了默认值；③ **YAML 占位符必须用 `${VAR:default}`（单冒号），不要用 bash 风格的 `${VAR:-default}`**（多一个 `-`）—— Spring 会把 `-default` 当字面量默认值，导致 Lettuce 实际发出去的密码比预期多一个前导连字符，触发 `WRONGPASS invalid username-password pair`。**注意**：`docker-compose.yml` 和 `mvnw` 用 `:-` 是正确的（bash/Docker Compose 语法），但所有 `application*.yaml` 必须用单冒号。新增/修改 Spring Boot 配置占位符时，复制粘贴前先确认语法
 
 ## 错误码规范
@@ -221,7 +225,7 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 - 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
 - 数据库变更必须通过 Flyway 迁移脚本
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，包含 `records/total/current/size/pages` + `facets` 分面桶 + `aiEnhancement` 增强）
-- 覆盖率报告由 **JaCoCo 0.8.14** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁（行≥80%/分支≥60%）在 `-Pci` profile：本地默认构建跳过门禁（`prepare-agent`/`report` 仍在默认构建，`./mvnw test` 照常收集覆盖率），CI 用 `./mvnw -Pci verify` 启用，`-Djacoco.haltOnFailure=true` 可强制覆盖率阻断。**OWASP Dependency Check 12.1.0**（CVSS ≥ 8 标红）已拆出为 `-Powasp` profile，由 CI 非阻断 security job 单独跑（NVD 境外首次扫描 ~39 分钟，不阻塞主门禁）
+- 覆盖率报告由 **JaCoCo 0.8.14** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁（行≥80%/分支≥60%）在 `-Pci` profile：本地默认构建跳过门禁（`prepare-agent`/`report` 仍在默认构建，`./mvnw test` 照常收集覆盖率），CI 用 `./mvnw -Pci verify` 启用，`-Djacoco.haltOnFailure=true` 可强制覆盖率阻断。**OWASP Dependency Check 12.1.0**（CVSS ≥ 8 标红）已拆出为 `-Powasp` profile，由 nightly security workflow 单独跑（`security-scan.yml`，NVD 境外首次扫描 ~39 分钟，不阻塞主门禁）
 - **变异测试（PIT 1.25.8）**: 行/分支覆盖率只测"代码被执行过"，不测"测试能否发现缺陷"。PIT 向 domain 层注入变异（聚合根状态机/领域服务/值对象），用现有测试杀灭变异来评估测试真实质量 — 行覆盖率的"金标准"补充。默认不启用（较慢），按需 `./mvnw -Ppit test-compile pitest:mutationCoverage`，HTML 报告 `target/pit-reports/index.html`；阈值门禁默认 0 不阻断，CI 用 `-Dpit.mutationThreshold=60 -Dpit.testStrengthThreshold=75 -Dpit.coverageThreshold=70` 启用（order 模块基线 70%/89%/81%）
 - **标准 API 优先（STP）**: 优先使用框架/标准库内置功能，不重复造轮子。Spring Security 有 JWT 认证就通过 `oauth2ResourceServer()` 配置，不要手写 Filter；有标准 `JwtDecoder`/`JwtEncoder` 就注入使用，不要手写 JWT 工具类。"零新增自定义代码"是最优方案——删掉手写代码，换成框架配置即可
 - **测试统计**：数字单一来源见 [doc/工程指标.md](doc/工程指标.md) §1.2。后端 11 模块合计 1,423 测试注解 / 184 测试文件，前端 113 测试文件 / 1,060 测试用例（2026-08-07 静态统计；2026-08-02 实测全绿：后端 1,356 / 前端 1,056，Domain 层行覆盖率 84.1%，`mock-maker-subclass` 模式）。README 取整锚点 **2,400+**，精确全绿总数待整体收口刷新
@@ -234,9 +238,49 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 - **DO 枚举字段使用 TypeHandler**: DO 中 `status`、`condition_level` 等枚举字段直接使用领域枚举类型（`ProductStatus`、`ConditionLevel`），通过自定义 TypeHandler 持久化。框架提供 `IntegerCodeEnumTypeHandler`（TINYINT/INT 列）和 `CodeEnumTypeHandler`（VARCHAR 列）两个基类。新增枚举字段时：① 创建 TypeHandler 继承对应基类，标注 `@MappedTypes`；② 将 TypeHandler 所在包加入 `application.yaml` 的 `mybatis-plus.type-handlers-package`；③ DO 字段类型改为枚举。各模块测试通过后即为就绪。
 - **React Query 缓存**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all` 前缀匹配，确保 myOrders/soldOrders/detail 等所有查询都能被正确失效
 - **零配置启动**: 项目支持零配置开发环境启动（MySQL localhost:3306, Redis localhost:6379）。新开发者只需 `./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application` 即可运行。敏感配置通过根目录 `.env.example` 模板管理，复制为 `.env` 即可（IDEA、Docker Compose 通用）
-- **.gitignore 规范**: 使用精简版 .gitignore (98行)，已忽略 AI 生成文件 (**/codemap.md, 298个)、AI 工具目录 (.slim/, .superpowers/)、前端 .env.production/.env.development、测试产物 (test-results/)
+- **.gitignore 规范**: 使用精简版 .gitignore (98行)，已忽略 AI 生成文件 (**/codemap.md, 298个)、AI 工具目录 (.slim/, .superpowers/)、测试产物 (test-results/)。前端 `.env.development`/`.env.production` 为构建所需配置（无密钥），随仓库跟踪
 - **Java `var` 使用规范**: 局部变量推荐使用 `var` 的场景：同一类型构造器（`Foo x = new Foo()` → `var x = new Foo()`）、显式 cast（`Type x = (Type) expr` → `var x = (Type) expr`）、StringBuilder/ByteArrayOutputStream 等无泛型构造器。**不推荐**的场景：接口类型到实现类型的赋值（`List<X> x = new ArrayList<>()` → 保持 `List<X>`，使用 `var` 会丢失接口抽象）
-- **可靠性工程模式**（2026-07-27 企业级差距优化后落地）：① **审计日志 Outbox** — `AuditLogAspect` 不再直接入库，改为发布 `AuditLogEvent` 走 Spring Modulith Outbox（事务一致 + 崩溃恢复），`AuditLogEventConsumer` 异步消费写库；② **DLQ 三级重试** — `DlqRetryScheduler` 每 5 分钟扫描 DLQ，重试次数 < 3 重投主队列，超限转储 `eo.dlq.terminal`；③ **Redisson 分布式令牌桶** — `DistributedRateLimiter` 基于 `RRateLimiter` 替代 `increment+expire` 固定窗口，解决原子性缺口 + 边界突刺；④ **L1 缓存广播失效** — `MultiLevelCache` evict 时 Redis Pub/Sub 广播，`CacheInvalidationListener` 订阅清除本地 Caffeine；⑤ **订单创建一致性** — 下单链路 = 本地单 `@Transactional`（订单/库存/支付/Outbox 原子提交）+ Redisson 分布式锁（按 productId 排序防死锁防超卖）+ Outbox 事件副作用；**拒绝 Saga**：单库场景下反向补偿与回滚重复、失败状态随事务回滚丢失，决策记录见 [ADR-0007](doc/adr/0007-order-saga-single-tx-observability.md)；⑥ **Resilience4j Bulkhead** — aiLlm/aiVision/dbHeavy 三隔离舱限制并发；⑦ **SpringDoc OpenAPI 3** — `/v3/api-docs` + `/swagger-ui.html`
+- **可靠性工程模式**（2026-07-27 企业级差距优化后落地）：① **审计日志 Outbox** — `AuditLogAspect` 不再直接入库，改为发布 `AuditLogEvent` 走 Spring Modulith Outbox（事务一致 + 崩溃恢复），`AuditLogEventConsumer` 异步消费写库；② **DLQ 三级重试** — `DlqRetryScheduler` 每 5 分钟扫描 DLQ，重试次数 < 3 重投主队列，超限转储 `eo.dlq.terminal`；③ **Redisson 分布式令牌桶** — `DistributedRateLimiter` 基于 `RRateLimiter` 替代 `increment+expire` 固定窗口，解决原子性缺口 + 边界突刺；④ **L1 缓存广播失效** — `MultiLevelCache` evict 时 Redis Pub/Sub 广播，`CacheInvalidationListener` 订阅清除本地 Caffeine；⑤ **订单创建一致性** — 下单链路 = 本地单 `@Transactional`（订单/库存/支付/Outbox 原子提交）+ Redisson 分布式锁（按 productId 排序防死锁防超卖）+ Outbox 事件副作用；**拒绝 Saga**：单库场景下反向补偿与回滚重复、失败状态随事务回滚丢失，决策记录见 [ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)；⑥ **Redis 熔断降级** — `Resilience4jConfig` 提供 `CircuitBreakerRegistry`（COUNT_BASED 10/失败率 50%/开路 60s），Redis 缓存操作统一熔断 + 多级降级（L1 Caffeine → L2 Redis → DB）；⑦ **SpringDoc OpenAPI 3** — `/v3/api-docs` + `/swagger-ui.html`
+
+### ECC 编码规则激活表
+
+| 路径 | 激活规则 |
+|------|---------|
+| `**/*.java` | `java/*.md`（extends common） |
+| `**/*.ts` / `**/*.tsx` | `typescript/*.md` + `react/*.md` |
+| `**/*.css` / `**/*.html` | `web/*.md` |
+| 全局 | `common/*.md` |
+
+### 后端约定
+
+- **多模块构建**：修改子模块后启动前必须先 `mvn clean install -Dmaven.test.skip=true`，否则运行时按已安装 jar 解析子模块会 ClassNotFoundException
+- **启动方式**：统一 `./mvnw spring-boot:run -pl easyorange-application`（终端）。JVM 参数（`--enable-native-access` 等）已由 `easyorange-application/pom.xml` 的 `<jvmArguments>` 管，环境变量走 `.env`/shell export。**IDE 调试可另用 run config，但必须把 JVM flag 手动补进 VM options**（pom 的 jvmArguments 不传给 IDE）；禁止终端/IDE 混跑同一份代码，否则 JVM flag 不生效难排查
+- **父 POM 模块注册**：新增后端子模块必须在 `easyorange-backend/pom.xml` 的 `<modules>` 中注册
+- **Mockito Java 25 兼容**：已配置 `mock-maker-subclass` 模式，**新测试不要改回 inline 模式**（WSL2 下 ByteBuddy attach 会失败）
+- **`product-paths` 白名单陷阱**：`security.product-paths` 会跳过 JWT 认证且前缀匹配（`/api/products` 会匹配 `/api/products/my`）。新增需认证接口必须添加更精确的 `.requestMatchers(GET, "/api/products/my/**").authenticated()`
+- **LoginCredential sealed interface**：登录凭据用 `sealed interface LoginCredential`（`domain/valueobject/`），新增登录方式添加新 `record` 实现，禁止用枚举字段区分
+- **RabbitMQ Spring AMQP 4.0.x API**：`CorrelationData` 在 `org.springframework.amqp.rabbit.connection`；`ReturnsCallback.returnedMessage()` 接收 `ReturnedMessage` 对象；concurrency 用 `concurrent-consumers` + `max-concurrent-consumers`（不支持 `"1-5"` 范围格式）
+- **ConfigurationProperties 注册方式**：统一 `@ConfigurationProperties` + `@ConfigurationPropertiesScan`，Properties 为纯 POJO（不加 `@Component`），已注册的不要再加 `@EnableConfigurationProperties`
+- **Flyway SQL 格式**：CREATE TABLE 列定义禁止使用对齐格式（列名与类型间大量空格填充），必须紧凑格式，否则 MySQL 1064 语法错误
+- **注册昵称默认值**：注册时 `nick_name` 默认等于 `username`，禁止随机昵称逻辑
+
+### 前端约定
+
+- **管理端弹窗/抽屉必须使用 Portal**：`src/admin/` 下所有 Modal/Drawer/确认框必须 `createPortal(..., document.body)` 挂载到 `<body>`。原因：`.admin-sidebar`/`.admin-header` 的 `backdrop-filter: blur()` 创建新包含块，导致 `position: fixed` 定位基准错乱。居中统一 `position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%)`
+- **管理端弹窗内容溢出**：Portal 容器必须 `maxHeight: 'calc(100vh - 2rem)'` + `display: flex; flexDirection: column; overflow: hidden`，内容区 `flex: 1; overflowY: auto; minHeight: 0`
+- **AdminTable render 函数签名**：`(value, record)` — 第一个参数是单元格值，第二个才是完整行记录。只接收 `(record) => ...` 会拿到 `undefined`
+- **管理端样式约定**：`src/admin/` 下必须使用内联 `style={{}}`，禁止依赖外部 CSS（唯一例外 `src/admin/styles/admin.css`）
+- **管理端下拉菜单**：所有 `<select>` 必须用 `AdminSelect` 组件（Portal 渲染下拉面板，解决 fixed 定位失效）
+- **AdminSelect Portal 防误关**：`handleClickOutside` 必须同时排除触发按钮 ref 和列表 listRef，否则点击选项会立即关闭
+- **管理端页面布局模式**：三层结构——根容器 `position: relative, minHeight: 'calc(100vh - 80px)'`；背景层 `position: absolute, inset: 0, borderRadius: 20`（禁 fixed）；内容层 `position: relative, zIndex: 1, display: flex, flexDirection: column`
+- **管理端路由架构**：`admin/*` 路由必须在 `MinimalLayout` 外部独立渲染，否则 C 端 Header/导航栏会在管理页面显示
+- **重依赖懒加载**：体积 > 100KB 的第三方库（recharts/dayjs/monaco-editor/xlsx/@tiptap/*）必须 (1) `manualChunks` 分配独立 `vendor-*` chunk (2) `React.lazy` + `Suspense` 包装。参考：`src/admin/pages/dashboard/charts/lazyCharts.tsx`
+- **前端 CSS 导入**：共享组件（如 ProductCard）使用的样式 CSS 必须在组件文件自身 import，禁止仅依赖页面级导入（React.lazy 懒加载时页面级 CSS 不随组件 chunk 加载）
+- **Zustand store 写入规则**：zustand store **只接受事件驱动写入**（STOMP 回调、用户操作回调），**禁止在 useEffect 内写 store**（spread 新引用 → 重渲染 → 无限循环）
+- **Zustand selector 稳定引用**：selector 中 `?? []` / `?? {}` 必须用模块级常量，禁止内联（新引用触发无限循环，React 19 StrictMode 下放大到 50 层）
+- **聊天 conversationId 格式**：排序双 ID `conv_{minId}_{maxId}`，确保 A→B 与 B→A 一致。前端 `conv_${[currentUserId, targetUserId].sort().join('_')}`；后端 `"conv_" + Math.min(sender, receiver) + "_" + Math.max(sender, receiver)`
+- **scrollIntoView 防误触发**：必须通过 ref 记录上一次状态（如历史长度），仅在数据真正新增时滚动，禁止在仅依赖 props/state 的 effect 中无条件调用
+- **行为准则**：通用编码行为准则（KISS/DRY/YAGNI、外科手术式改动、先思考后编码、目标驱动执行）由 karpathy-guidelines 技能与 ECC `common/coding-style.md` 自动加载
 
 ## 常用命令
 
@@ -270,15 +314,31 @@ cd easyorange-backend && ./mvnw clean package -DskipTests
 ./mvnw -pl easyorange-order -Ppit test-compile pitest:mutationCoverage  # 单模块
 
 # JaCoCo 覆盖率门禁（行≥80%/分支≥60%，CI 硬闸门）
-# OWASP 依赖安全（非阻断 security job，CVSS ≥ 8 标红）：./mvnw -Powasp verify -DskipTests
+# OWASP 依赖安全（nightly security-scan.yml，CVSS ≥ 8 标红）：./mvnw -Powasp verify -DskipTests
 # 豁免项见 easyorange-backend/dependency-suppression.xml
 ./mvnw -Pci verify
 
 # 启动开发环境 (MySQL 8.4 + Redis 7.4 + RabbitMQ 3.13)
 docker compose -f compose.yaml up -d
 
-# 可选: ES 搜索 (需先构建镜像: docker compose build elasticsearch)
-docker compose up -d elasticsearch
+# 可选: ES 搜索（compose 未含 ES 服务；手动构建 IK 镜像并运行）
+#   docker build -t easyorange-elasticsearch:local infra/elasticsearch && \
+#   docker run -d --name easyorange-es -p 9200:9200 -e discovery.type=single-node \
+#     -e xpack.security.enabled=false easyorange-elasticsearch:local
+
+# 后端应用容器化 + 多实例压测栈（Prometheus :9090 + Grafana :3000，dashboard 自动 provisioning）
+# 注：app/prometheus/grafana 在 fullstack profile 下——裸 `docker compose up -d` 仍是纯开发三件套，热循环零影响
+docker compose --profile fullstack up -d --build --scale easyorange-app=2   # 多实例（nginx 自动 LB；单实例不加 --scale）
+docker compose --profile fullstack up -d prometheus grafana                  # 可观测栈（app 未启时显式点名即可，无需 --build）
+# 压测：RATE_LIMIT_FILTER_ENABLED=false docker compose --profile fullstack up -d --scale easyorange-app=2
+#       k6 run --vus 50 --duration 30s load-tests/product-list.js
+# 注意：compose.yaml 新增服务不影响集成测试（application-it.yaml 已用 spring.docker.compose.services 限定 mysql/redis/rabbitmq）
+
+# K8s 部署（kustomize，无状态应用层；完整说明见 k8s/README.md）
+# 步骤：构建镜像(docker build) → docker save | k3s ctr images import → 生成密钥+填 env → apply
+bash k8s/scripts/generate-jwt-keys.sh                                  # 生成 JWT RSA 密钥到 overlays/demo/env/jwt/（gitignored）
+kubectl apply -k k8s/overlays/demo                                     # k3s 自包含部署（含 MySQL/Redis/RabbitMQ demo StatefulSet）
+kubectl apply -k k8s/observability                                     # 可观测性（需先装 kube-prometheus-stack）
 
 # 启动后端（⚠️ 不要单独用 spring-boot:run -pl，会从本地仓库加载依赖模块旧 JAR）
 # 正确方式：先打包所有依赖模块，再 java -jar
@@ -308,7 +368,7 @@ npm run test:e2e
 npm run build:analyze
 ```
 
-CI/CD: `.github/workflows/maven-test.yml` — push/PR 到 develop/main 触发（后端 11 模块测试 + OWASP/JaCoCo 门禁 → 前端 lint/test/typecheck/build → Playwright E2E），远端为 GitHub Actions
+CI/CD: `.github/workflows/backend-ci.yml`（仅 `easyorange-backend/**` 变更触发：11 模块单测 + JaCoCo 80%/60% 门禁 + Spotless）与 `frontend-ci.yml`（仅 `easyorange-frontend/**` 触发：lint/test/typecheck/build → Playwright E2E）——push/PR 到 develop/main 触发，为唯一 merge-freeze 闸门；OWASP（`security-scan.yml`）与 PIT（`pit-mutation.yml`）为 nightly + 手动触发的独立 workflow，远端为 GitHub Actions。Actions 依赖升级由 Dependabot（`.github/dependabot.yml`，weekly + groups 批量）自动开 PR
 
 ## Repository Map
 

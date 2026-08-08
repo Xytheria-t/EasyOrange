@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.framework.config.security;
 
 import com.cartethyia.easyorange.common.enums.ResultCode;
-import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
+import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
 import com.cartethyia.easyorange.framework.web.filter.IdempotencyKeyFilter;
 import com.cartethyia.easyorange.framework.web.filter.RateLimitFilter;
 import com.cartethyia.easyorange.framework.web.filter.RefreshCsrfFilter;
@@ -29,7 +29,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.Customizer;
@@ -55,7 +54,6 @@ import org.springframework.security.web.header.writers.ContentSecurityPolicyHead
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @AutoConfiguration
@@ -78,7 +76,7 @@ public class SecurityConfig {
     private final TokenRevocationFilter tokenRevocationFilter;
     private final RefreshCsrfFilter refreshCsrfFilter;
     private final SecurityProperties securityProperties;
-    private final ObjectMapper objectMapper;
+    private final ErrorResponseWriter errorResponseWriter;
 
     // ========== Security Filter Chain ==========
 
@@ -90,10 +88,16 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint((_, response, _) -> writeErrorResponse(
-                                response, HttpServletResponse.SC_UNAUTHORIZED, ResultCode.UNAUTHORIZED, "认证失败，请重新登录"))
-                        .accessDeniedHandler((_, response, _) -> writeErrorResponse(
-                                response, HttpServletResponse.SC_FORBIDDEN, ResultCode.FORBIDDEN, "权限不足")))
+                        .authenticationEntryPoint((_, response, _) -> errorResponseWriter.write(
+                                response,
+                                HttpServletResponse.SC_UNAUTHORIZED,
+                                ResultCode.UNAUTHORIZED,
+                                "认证失败，请重新登录"))
+                        .accessDeniedHandler((_, response, _) -> errorResponseWriter.write(
+                                response,
+                                HttpServletResponse.SC_FORBIDDEN,
+                                ResultCode.FORBIDDEN,
+                                "权限不足")))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
@@ -204,14 +208,6 @@ public class SecurityConfig {
     }
 
     // ========== Private Helpers ==========
-
-    private void writeErrorResponse(HttpServletResponse response, int status, ResultCode code, String message)
-            throws IOException {
-        response.setStatus(status);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding("UTF-8");
-        objectMapper.writeValue(response.getOutputStream(), Result.error(code, message));
-    }
 
     private Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
         return jwt -> {

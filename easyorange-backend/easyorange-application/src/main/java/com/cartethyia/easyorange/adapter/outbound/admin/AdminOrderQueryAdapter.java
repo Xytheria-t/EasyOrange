@@ -3,14 +3,23 @@ package com.cartethyia.easyorange.adapter.outbound.admin;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderDO;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemDO;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
+import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
+import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
+import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -19,9 +28,9 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 /**
- * Admin 订单查询适配器
+ * Admin 订单查询/操作适配器
  * <p>
- * 实现 {@link AdminOrderQueryPort}，通过 Order Mapper 查询数据并转换为 Admin 模块需要的格式。
+ * 实现 {@link AdminOrderQueryPort}，通过 Order Mapper / Repository 访问订单数据并转换为 Admin 模块需要的格式。
  * 状态字段使用 String code，由 OrderDO 的 enum 字段直接 {@code getCode()} 派生。
  */
 @Primary
@@ -32,6 +41,9 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final ProductMapper productMapper;
+    private final OrderReadRepository orderReadRepository;
+    private final OrderRepository orderRepository;
+    private final DomainEventPublisher domainEventPublisher;
 
     @Override
     public OrderQueryResult queryOrders(OrderQueryCondition condition) {
@@ -91,6 +103,85 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
         }
         List<ProductDO> products = productMapper.selectByIds(productIds);
         return products.stream().collect(Collectors.toMap(ProductDO::getId, this::toProductInfo, (a, b) -> a));
+    }
+
+    @Override
+    public OrderDetail getOrderDetail(String orderId) {
+        return orderReadRepository.findById(OrderId.of(orderId)).map(this::toOrderDetail).orElse(null);
+    }
+
+    @Override
+    public OrderStats getOrderStats() {
+        long totalOrders = orderReadRepository.countByStatus(null);
+        long pendingPayment = orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT);
+        long paid = orderReadRepository.countByStatus(OrderStatus.PAID);
+        long shipped = orderReadRepository.countByStatus(OrderStatus.SHIPPED);
+        long completed = orderReadRepository.countByStatus(OrderStatus.COMPLETED);
+        long cancelled = orderReadRepository.countByStatus(OrderStatus.CANCELLED);
+        long refunded = orderReadRepository.countByStatus(OrderStatus.REFUNDED);
+
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        long todayOrders = queryOrders(new OrderQueryCondition(null, null, null, null, null, todayStart, null, null, null))
+                .total();
+
+        return new OrderStats(totalOrders, todayOrders, pendingPayment, paid, shipped, completed, cancelled, refunded);
+    }
+
+    @Override
+    public void cancelOrder(String orderId, String reason) {
+        var aggregate = findOrderOrThrow(orderId);
+
+        if (aggregate.status() == OrderStatus.PENDING_PAYMENT) {
+            persistAndPublish(aggregate.cancel(reason));
+        } else if (aggregate.status() == OrderStatus.PAID) {
+            persistAndPublish(aggregate.forceCancel(reason));
+        } else {
+            throw BusinessException.of("当前订单状态不允许取消");
+        }
+    }
+
+    @Override
+    public void forceComplete(String orderId) {
+        var aggregate = findOrderOrThrow(orderId);
+        persistAndPublish(aggregate.confirmReceipt());
+    }
+
+    @Override
+    public void refundOrder(String orderId, String reason) {
+        var aggregate = findOrderOrThrow(orderId);
+        persistAndPublish(aggregate.refund(reason));
+    }
+
+    private Order findOrderOrThrow(String orderId) {
+        return orderRepository
+                .findById(OrderId.of(orderId))
+                .orElseThrow(() -> BusinessException.of("订单不存在"));
+    }
+
+    private void persistAndPublish(com.cartethyia.easyorange.common.event.Transition<Order, ?> result) {
+        orderRepository.update(result.aggregate());
+        domainEventPublisher.publish(result.event());
+    }
+
+    private OrderDetail toOrderDetail(OrderReadModel model) {
+        List<OrderItemDetail> items = model.items().stream()
+                .map(item -> new OrderItemDetail(item.productId(), item.quantity(), item.unitPrice()))
+                .toList();
+        return new OrderDetail(
+                model.id(),
+                model.orderNo(),
+                model.buyerId(),
+                model.sellerId(),
+                items,
+                model.totalAmount(),
+                model.status(),
+                model.statusDesc(),
+                model.paymentStatus(),
+                model.remark(),
+                model.cancelReason(),
+                model.createTime(),
+                model.updateTime(),
+                model.cancelTime());
     }
 
     private OrderSummary toOrderSummary(OrderDO order) {

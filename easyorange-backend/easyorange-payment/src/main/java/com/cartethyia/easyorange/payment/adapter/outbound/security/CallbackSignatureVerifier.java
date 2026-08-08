@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.payment.adapter.outbound.security;
 
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
+import com.cartethyia.easyorange.payment.adapter.outbound.config.PaymentCallbackProperties;
 import com.cartethyia.easyorange.payment.domain.port.CallbackSignatureVerifierPort;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
@@ -9,27 +10,24 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Primary
 @Component
+@RequiredArgsConstructor
 public class CallbackSignatureVerifier implements CallbackSignatureVerifierPort {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
-    @Value("${payment.callback.secret:default-callback-secret-key}")
-    private String callbackSecret;
-
-    @Value("${payment.callback.verify-enabled:true}")
-    private boolean verifyEnabled;
+    private final PaymentCallbackProperties callbackProperties;
 
     @Override
     public void verify(String paymentNo, String transactionId, String sign) {
-        if (!verifyEnabled) {
+        if (!callbackProperties.isVerifyEnabled()) {
             return;
         }
 
@@ -39,7 +37,7 @@ public class CallbackSignatureVerifier implements CallbackSignatureVerifierPort 
         }
 
         String data = paymentNo + "|" + transactionId;
-        String expectedSign = hmacSha256(data, callbackSecret);
+        String expectedSign = hmacSha256(data, callbackProperties.getSecret());
 
         if (!expectedSign.equals(sign)) {
             log.warn("回调签名验证失败 paymentNo={}", paymentNo);

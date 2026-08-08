@@ -40,9 +40,6 @@ public class ResponseAdvice implements ResponseBodyAdvice<Object> {
             case null -> {
                 return Result.success();
             }
-            case Result<?> ignored -> {
-                return body;
-            }
             case String str -> {
                 Objects.requireNonNull(response).getHeaders().setContentType(MediaType.APPLICATION_JSON);
                 try {

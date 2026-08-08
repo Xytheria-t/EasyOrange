@@ -2,101 +2,20 @@
 
 Spring Boot 4.0.7 + Java 25 后端，采用 DDD + 六边形架构。
 
-## 技术栈版本
+> **全局规范见根目录 [AGENTS.md](../AGENTS.md)**（技术栈、DDD 分层、领域事件/Outbox、跨模块通信、错误码、测试门禁、常用命令）。本文件只保留后端编码专属约定，全局已有内容不在此重复。
+
+## 补充技术栈版本
 
 | 依赖 | 版本 |
 |------|------|
-| Java | 25 |
-| Spring Boot | 4.0.7 |
-| MyBatis-Plus | 3.5.16 |
 | MapStruct | 1.6.3 |
-| Flyway | 11.15.0 |
-| Spring Security OAuth2 Resource Server | — |
 | ArchUnit | 1.4.1 |
 | Resilience4j | 2.2.0 |
 | Spring Data Elasticsearch | 6.0.3 |
-| Elasticsearch | 8.17.3 |
 
-## DDD 分层规则
+## 事务约定
 
-依赖方向严格单向向内：`adapter → application → domain`
-
-```
-┌─────────────────────────────────────────────┐
-│  adapter (适配器层)                          │
-│  inbound/: REST Controller, DTO, Validation │
-│  outbound/: Persistence, Cache, Messaging   │
-├─────────────────────────────────────────────┤
-│  application (应用层)                        │
-│  command/: 命令处理                          │
-│  query/: 查询处理 (CQRS 模块)               │
-│  service/: 应用服务                          │
-│  assembler/: DTO 组装                        │
-├─────────────────────────────────────────────┤
-│  domain (领域层) — 纯业务逻辑，零框架依赖    │
-│  aggregate/: 聚合根                          │
-│  valueobject/: 值对象 (record)               │
-│  event/: 领域事件                            │
-│  port/: 出站端口接口                          │
-│  repository/: 仓储接口                       │
-│  service/: 领域服务                          │
-└─────────────────────────────────────────────┘
-```
-
-**关键约束**：
-- `domain` 层禁止依赖 Spring 框架、MyBatis、Redis 等基础设施
-- `domain` 层通过 `port/` 接口与外部交互，由 `adapter/outbound/` 实现
-- `application` 层编排业务流程，事务边界在此层
-- `adapter/inbound/` 仅做参数校验和 DTO 转换，不含业务逻辑
 - **查询方法只读事务**: `application/service/` 和 `application/query/` 下的纯查询方法（find/get/list/query/count 等）**必须**标注 `@Transactional(readOnly = true)`；写操作方法使用 `@Transactional(rollbackFor = Exception.class)`。这是项目级约定，所有模块（user/product/order/payment/message/favorite/admin）一致遵循
-
-## CQRS 模式
-
-product、order、payment 模块使用 CQRS（在 application/domain 层分离，Controller 层可能合并）：
-
-- **Command 侧**: `application/command/*CommandHandler` → `domain`
-- **Query 侧**: `application/query/*QueryHandler` → `application/port/query/`
-
-读写使用不同的 Repository 接口和数据模型。Controller 层按领域概念组织，不强制 CQRS 分割（product 模块只有一个 `ProductController`；order/payment/message 仍维持 `*CommandController` + `*QueryController` 分离）。
-
-## 领域事件机制
-
-应用服务注入 `DomainEventPublisher` 发布事件，框架层通过 Spring Modulith + RabbitMQ Topic Exchange 分发：
-
-- `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher`，Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子），事务提交后异步发布到 `eo.domain.events` Topic Exchange
-- 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`）；每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ + 指数退避重试；多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发）
-- 10 个消费者（见根目录 AGENTS.md），Modulith at-least-once 语义 + `EventIdempotencyChecker` 确保精确一次处理
-- `@ConditionalOnProperty(matchIfMissing=true)` 支持无 RabbitMQ 环境启动
-
-## 跨模块通信
-
-**当前状态**：所有跨模块依赖已通过端口接口 + 适配器模式隔离，Maven 依赖标记为 `<optional>true</optional>`。
-
-**隔离方式**：
-- 调用方模块定义 `domain/port/` 接口（如 `ProductOrderPort`）
-- 适配器实现在 `easyorange-application/adapter/outbound/` 包下
-- Maven 依赖标记为 `<optional>true</optional>` 实现编译期隔离
-
-**事件驱动**：
-- 写操作通过领域事件解耦（如 `OrderCreatedEvent`）
-- 事件监听器在 `easyorange-application/adapter/event/` 包下（机制与第 3 节"领域事件"一致）
-
-**查询操作**：保留同步端口调用（如 `getSnapshots()`），通过可选依赖实现
-
-**库存扣减（主路径同步 + 订阅校验）**：
-- 主路径：`OrderCreationService` 在 `@Transactional` 内同步调用 `ProductOrderPort.decreaseStock()`（失败随事务整体回滚）
-- 历史异步路径：`OrderCreatedEvent → OrderSagaEventConsumer → StockReservationRequestedEvent → OrderFulfillmentEventConsumer → ProductCommandHandler.decrementStock()` 已移除，`OrderLifecycleEventConsumer.handleCreated()` 不再发布预留事件
-
-## 统一响应格式
-
-```java
-Result<T>       // 单条数据
-Result.success(data)
-Result.fail(ResultCode)
-
-PageResult<T>   // 分页数据
-PageResult.of(records, total, page, size)
-```
 
 ## 命名规范
 
@@ -114,7 +33,7 @@ PageResult.of(records, total, page, size)
 | 出站端口 | `*Port` | `PaymentGatewayPort` |
 | 控制器 | `*Controller` | `AuthController` |
 | 请求 DTO | `*Request` | `PasswordLoginRequest`, `RegisterRequest` |
-| 响应 DTO | `*Response` / `*Response` | `UserResponse` |
+| 响应 DTO | `*Response` / `*VO` | `UserResponse`, `OrderVO` |
 | 数据对象 | `*DO` | `UserDO`, `PaymentDO` |
 
 ## 服务层方法返回值约定
@@ -146,82 +65,6 @@ public class BaseDO {
 }
 ```
 
-## DO 枚举字段约定
-
-DO 中 `status`、`condition_level` 等枚举字段直接使用领域枚举类型（`ProductStatus`、`ConditionLevel`），通过自定义 MyBatis TypeHandler 持久化。框架提供两个可继承基类：
-
-| 基类 | 适用列类型 | 示例 |
-|------|-----------|------|
-| `CodeEnumTypeHandler` | VARCHAR | `ProductStatusTypeHandler`, `ConditionLevelTypeHandler`, `UserStatusTypeHandler` |
-| `IntegerCodeEnumTypeHandler` | TINYINT / INT | 当前无使用（全库枚举列均为 VARCHAR String code） |
-
-新增枚举字段步骤：① 创建 TypeHandler 继承对应基类，标注 `@MappedTypes`；② 将 TypeHandler 所在包加入 `application.yaml` 的 `mybatis-plus.type-handlers-package`；③ DO 字段类型改为枚举。参考实现：`easyorange-product` 模块的 `ProductStatusTypeHandler` + `ConditionLevelTypeHandler`。
-
-> **提示**：`mybatis-plus.type-aliases-package` 已配置（见 application.yaml），Mapper XML 的 `resultType` 中可直接使用类名（如 `ProductDO`）代替 FQCN。
-
-## 测试策略
-
-| 类型 | 工具 | 范围 |
-|------|------|------|
-| 单元测试 | JUnit 5, Mockito | 领域模型、值对象、领域服务 |
-| 集成测试 | — | 已移除（WSL2 Docker 兼容性限制，全量改为单元测试） |
-| 架构测试 | ArchUnit | DDD 分层合规、包依赖规则 |
-| 控制器测试 | MockMvc | API 端点 |
-| 覆盖率报告 | JaCoCo 0.8.14 | `prepare-package` 阶段生成报告 (`jacoco:report`)；门禁（行≥80%/分支≥60%）移入 `-Pci` profile，本地默认跳过，CI 用 `./mvnw -Pci verify`，`-Djacoco.haltOnFailure=true` 阻断 |
-| 变异测试 | PIT 1.25.8 | domain 层变异（聚合根/领域服务/值对象），`-Ppit` profile 按需启用：`./mvnw -Ppit test-compile pitest:mutationCoverage`；阈值默认 0 不阻断，CI 用 `-Dpit.mutationThreshold=60` 等启用 |
-| 依赖安全 | OWASP Dependency Check 12.1.0 | `-Powasp` profile 独立 `verify` 检查（CVSS ≥ 8 标红），由 CI 非阻断 security job 承担（NVD 境外首次扫描 ~39 分钟），本地默认构建跳过 |
-
-架构守卫测试位于 `easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java`。
-
-**TestSecurityUtil 模式**：测试中设置 `SecurityContextHolder` 统一使用 `TestSecurityUtil.setSecurityContext(userId)`（位于 `easyorange-framework/src/main/java/.../framework/util/TestSecurityUtil.java`），替代 `mockStatic(SecurityContextUtil.class)`。`clearSecurityContext()` 必须在 `finally` 块中调用保证测试间隔离。
-
-## Flyway 迁移规范
-
-- DDL 脚本: `db/migration/V{N}__description.sql`
-- 开发数据: `db/dev/R__insert_dev_test_data.sql`
-- 项目开发阶段的所有 V 迁移已合并为单个 `V1__init_schema.sql`（完整当前 DDL）
-- 后续 DDL 变更按递增版本号添加 `V{N+1}__description.sql`
-- **禁止修改已执行的迁移脚本**（生产环境原则；开发阶段若需重置，清库重跑即可）
-- 新增字段必须可空或有默认值
-- DDL 迁移中 DROP INDEX / ADD INDEX 使用 MySQL 8.0 原生 DDL（非阻塞 INPLACE 算法），允许生产环境在线执行
-
-## 安全要点
-
-> **标准 API 优先（STP）**: 认证/授权相关功能优先使用 Spring Security 标准机制。有 `oauth2ResourceServer()` 就不要手写 Filter；有 `JwtDecoder`/`JwtEncoder` 就注入使用，不要手写 JWT 工具类。参考：JwtAuthenticationFilter + JJWT → Spring Security OAuth2 Resource Server 迁移。
-
-- 双 Token 认证: Access = RSA 签名 JWT（30 分钟，仅内存）+ Refresh = opaque 落 Redis（HttpOnly Cookie 传输，JS 不可见），轮换 + 复用检测
-- 密码: BCrypt 加密存储
-- 限流: `RateLimitFilter` 配置驱动，GET 走本地限流（默认 200次/60秒/IP），写操作走 Redis 分布式限流（默认 30次/60秒/IP），Redis 不可用时放行（fail-open）。支持 `@SkipRateLimit` 按 Controller 方法/类跳过
-- 防重（短时间连点防护）: `RateLimitFilter` 约定式拦截所有 POST/PUT/DELETE/PATCH（默认 3秒间隔），key 含请求体 hash，Redis 不可用时放行。支持 `@SkipRepeatSubmit` 跳过低级别防重
-- 幂等（协议级防重放）: `IdempotencyKeyFilter`（配置驱动，`idempotency.path-patterns`），客户端提供 `Idempotency-Key` 头（UUID），服务端缓存成功响应 24h。与 `RateLimitFilter` 的短时间防重互补——前者防连点，后者防重放。支持自定义 header 名称和 TTL
-- 审计日志: 约定式自动记录所有写操作 (@Order 3), 无需注解, 异步持久化, 敏感字段自动掩码
-- XSS: `Content-Security-Policy` 头 (`default-src 'none'`)，已废除 `X-XSS-Protection`
-- CORS: 生产环境严格白名单
-- 全局认证: `SecurityConfig` 的 `.anyRequest().authenticated()` 已拦截所有未认证请求，Controller 上无需 `@PreAuthorize("isAuthenticated()")`
-
-Filter 执行顺序: RateLimitFilter(0) → RefreshCsrfFilter(1, 校验 refresh/logout 的 X-Client-Type 头) → SecurityConfig.oauth2ResourceServer() (Spring Security 内置 AuthenticationFilter) → TokenRevocationFilter(Redis access 黑名单 + force-logout) → AnonymousAuthenticationFilter → AuditLogAspect(AOP @Order 3)
-
-JWT 认证由 Spring Security OAuth2 Resource Server 的 `JwtDecoder` + `JwtAuthenticationConverter` 处理，无需自定义 Servlet Filter。认证流程：`AuthenticationFilter` (Spring Security 内置，由 `oauth2ResourceServer()` 配置注入) → `JwtDecoder` 验证签名 + issuer 检查 → `JwtAuthenticationConverter` 构造 `AuthUser` 并设置 `SecurityContext`。Token 吊销检查（Redis 黑名单 + force-logout）由独立的 `TokenRevocationFilter` 在认证完成后执行，职责分离：JwtDecoder 只做密码学验证，TokenRevocationFilter 只做吊销状态检查。JWT 使用 RSA 非对称密钥（2048 位），开发环境自动生成，生产环境通过 `jwt.private-key-location` + `jwt.public-key-location` 配置 PEM 文件路径。Refresh Token 为不透明随机串（存 Redis `eo:user:refresh:*`，SHA-256 哈希），经 HttpOnly Cookie（`jwt.refresh-cookie-*`）下发，由 `RefreshTokenStore` 管理轮换 / 复用检测 / 按用户吊销；前端 access token 仅存内存，刷新走 `/api/auth/refresh` + `restoreSession` 恢复会话。
-
-## 不可变集合约定
-
-全项目 Java 代码**禁止使用 `Collections` 工具类**创建空/单元素/不可包装集合，统一使用 Java 9+ 工厂方法：
-
-| 场景 | ✅ 推荐 | ❌ 禁止 |
-|------|---------|---------|
-| 空 List | `List.of()` | `Collections.emptyList()` |
-| 空 Set | `Set.of()` | `Collections.emptySet()` |
-| 空 Map | `Map.of()` | `Collections.emptyMap()` |
-| 单元素 List | `List.of(x)` | `Collections.singletonList(x)` |
-| 单元素 Set | `Set.of(x)` | `Collections.singleton(x)` |
-| 不可变包装 | `List.copyOf(x)` / `Set.copyOf(x)` / `Map.copyOf(x)` | `Collections.unmodifiableXxx(x)` |
-
-此约定已通过全局 grep 清理完毕，新代码须直接使用工厂方法。
-
-## Java `var` 使用规范
-
-局部变量推荐使用 `var` 的场景：同一类型构造器（`Foo x = new Foo()` → `var x = new Foo()`）、显式 cast（`Type x = (Type) expr` → `var x = (Type) expr`）、StringBuilder/ByteArrayOutputStream 等无泛型构造器。**不推荐**的场景：接口类型到实现类型的赋值（`List<X> x = new ArrayList<>()` → 保持 `List<X>`，使用 `var` 会丢失接口抽象）
-
 ## Controller 响应内联约定
 
 Controller 方法中，当服务调用结果直接传递给 `Result.success()` 且无任何转换/条件逻辑时，**内联为单表达式**，不引入中间变量：
@@ -240,6 +83,36 @@ return Result.success(userId);
 - 调用与返回之间有**条件分支**或**后处理**
 - 对返回值有**多步骤转换**（如 `builder().id(x).build()` 再 wrap）
 - 变量名承载了**非显而易见的语义**（如 `var pageReq = PageRequest.builder().pageNum(pageNum).pageSize(pageSize).build()` 在后续多个操作中使用）
+
+## 不可变集合约定
+
+全项目 Java 代码**禁止使用 `Collections` 工具类**创建空/单元素/不可包装集合，统一使用 Java 9+ 工厂方法：
+
+| 场景 | ✅ 推荐 | ❌ 禁止 |
+|------|---------|---------|
+| 空 List | `List.of()` | `Collections.emptyList()` |
+| 空 Set | `Set.of()` | `Collections.emptySet()` |
+| 空 Map | `Map.of()` | `Collections.emptyMap()` |
+| 单元素 List | `List.of(x)` | `Collections.singletonList(x)` |
+| 单元素 Set | `Set.of(x)` | `Collections.singleton(x)` |
+| 不可变包装 | `List.copyOf(x)` / `Set.copyOf(x)` / `Map.copyOf(x)` | `Collections.unmodifiableXxx(x)` |
+
+此约定已通过全局 grep 清理完毕，新代码须直接使用工厂方法。
+
+## 安全要点
+
+- 双 Token 认证: Access = RSA 签名 JWT（30 分钟，仅内存）+ Refresh = opaque 落 Redis（HttpOnly Cookie 传输，JS 不可见），轮换 + 复用检测
+- 密码: BCrypt 加密存储
+- 限流: `RateLimitFilter` 配置驱动，GET 走本地限流（默认 200次/60秒/IP），写操作走 Redis 分布式限流（默认 30次/60秒/IP），Redis 不可用时放行（fail-open）。支持 `@SkipRateLimit` 按 Controller 方法/类跳过
+- 防重（短时间连点防护）: `RateLimitFilter` 约定式拦截所有 POST/PUT/DELETE/PATCH（默认 3秒间隔），key 含请求体 hash，Redis 不可用时放行。支持 `@SkipRepeatSubmit` 跳过低级别防重
+- 幂等（协议级防重放）: `IdempotencyKeyFilter`（配置驱动，`idempotency.path-patterns`），客户端提供 `Idempotency-Key` 头（UUID），服务端缓存成功响应 24h。与 `RateLimitFilter` 的短时间防重互补——前者防连点，后者防重放。支持自定义 header 名称和 TTL
+- 审计日志: 约定式自动记录所有写操作 (@Order 3), 无需注解, 异步持久化, 敏感字段自动掩码
+- XSS: `Content-Security-Policy` 头 (`default-src 'none'`)，已废除 `X-XSS-Protection`
+- CORS: 生产环境严格白名单
+
+Filter 执行顺序: RateLimitFilter(0) → RefreshCsrfFilter(1, 校验 refresh/logout 的 X-Client-Type 头) → SecurityConfig.oauth2ResourceServer() (Spring Security 内置 AuthenticationFilter) → TokenRevocationFilter(Redis access 黑名单 + force-logout) → AnonymousAuthenticationFilter → AuditLogAspect(AOP @Order 3)
+
+JWT 认证由 Spring Security OAuth2 Resource Server 的 `JwtDecoder` + `JwtAuthenticationConverter` 处理，无需自定义 Servlet Filter。认证流程：`AuthenticationFilter` (Spring Security 内置，由 `oauth2ResourceServer()` 配置注入) → `JwtDecoder` 验证签名 + issuer 检查 → `JwtAuthenticationConverter` 构造 `AuthUser` 并设置 `SecurityContext`。Token 吊销检查（Redis 黑名单 + force-logout）由独立的 `TokenRevocationFilter` 在认证完成后执行，职责分离：JwtDecoder 只做密码学验证，TokenRevocationFilter 只做吊销状态检查。JWT 使用 RSA 非对称密钥（2048 位），开发环境自动生成，生产环境通过 `jwt.private-key-location` + `jwt.public-key-location` 配置 PEM 文件路径。Refresh Token 为不透明随机串（存 Redis `eo:user:refresh:*`，SHA-256 哈希），经 HttpOnly Cookie（`jwt.refresh-cookie-*`）下发，由 `RefreshTokenStore` 管理轮换 / 复用检测 / 按用户吊销；前端 access token 仅存内存，刷新走 `/api/auth/refresh` + `restoreSession` 恢复会话。
 
 ## 踩坑警示
 
@@ -337,4 +210,4 @@ AI 模块已全面框架化为 Spring AI 2.0（ADR-0008），自研 `CachingLlmA
 
 ### Admin 模块端口接口
 
-Admin 模块**禁止直接依赖其他模块的 Mapper/DO**，必须通过 `domain/port/`（`AdminProductQueryPort`, `AdminUserQueryPort`, `AdminOrderQueryPort`）接口查询，适配器在 `easyorange-application/adapter/outbound/admin/` 实现。
+Admin 模块**禁止直接依赖其他模块的 Mapper/DO**，必须通过 `domain/port/`（`AdminProductQueryPort`, `AdminUserQueryPort`, `AdminOrderQueryPort`, `AdminRatingQueryPort`）接口查询，适配器在 `easyorange-application/adapter/outbound/admin/` 实现。

@@ -1,6 +1,6 @@
 # ADR 0000 — 架构决策记录模板（MADR 中文风格）
 
-- **状态**：提议 / 接受 / 废弃 / 已替代
+- **状态**：提议 / 接受 / 已替代 / 部分已替代
 - **日期**：YYYY-MM-DD
 - **决策者**：（可选）参与决策的角色或团队
 - **标签**：（可选）`saga` `cqrs` `ai` `cache` 等便于检索的关键词
@@ -28,7 +28,7 @@
 
 代码引用示例：
 
-- 实现：[OrderCreationService.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/service/OrderCreationService.java)
+- 实现：[OrderCreationService.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/service/OrderCreationService.java)
 
 ## 后果（Consequences）
 
@@ -64,9 +64,10 @@
 ## 使用约定
 
 1. **文件命名**：`NNNN-kebab-case-title.md`，`NNNN` 为四位递增序号，从 `0001` 开始。
-2. **状态流转**：提议 → 接受；若废弃或被替代，需在文件顶部状态字段标注，并在「备注」中写明替代关系，**保留原文件不删除**。
+2. **状态流转**：提议 → 接受；若废弃或被替代，需在**文件顶部加横幅**（`> **状态**：**已替代（Superseded by ADR-00XX）** — 一句话说明新决策`；部分替代同理标注有效/失效部分），front matter 状态行只保留单词取值（`已替代` / `部分已替代`），并在「备注」中写明替代关系，**保留原文件不删除**。
 3. **不可变性**：已「接受」的 ADR **禁止回溯修改决策内容**，只能新增 ADR 替代。
 4. **行数建议**：80–150 行，避免过度啰嗦；上下文与后果是核心，备选方案要给真实拒绝理由。
-5. **代码引用**：用 markdown 链接形式 `file:///` 绝对路径，至少 1 处。
+5. **代码引用**：用相对路径 markdown 链接（从 `doc/adr/` 出发，如 `../../easyorange-backend/...`），至少 1 处；禁止绝对路径（机器相关、跨端断链）。
 6. **语言**：中文写作，避免使用 emoji。
 7. **位置**：所有 ADR 存放于 `/home/cartethyia/projects/Java/easy-orange/doc/adr/`。
+8. **索引同步**：新增或状态变更（替代/部分替代）后，必须同步更新 [README.md](README.md) 索引（状态、替代链、日期）。

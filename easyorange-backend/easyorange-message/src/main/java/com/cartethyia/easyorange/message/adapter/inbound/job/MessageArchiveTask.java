@@ -1,12 +1,12 @@
 package com.cartethyia.easyorange.message.adapter.inbound.job;
 
+import com.cartethyia.easyorange.message.adapter.inbound.config.MessageRetentionProperties;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -22,15 +22,13 @@ import org.springframework.stereotype.Component;
 public class MessageArchiveTask {
 
     private final MessageMapper messageMapper;
-
-    @Value("${easyorange.message.retention-days:90}")
-    private int retentionDays;
+    private final MessageRetentionProperties retentionProperties;
 
     /** 每日 03:00 清理过期消息（分批 DELETE ... LIMIT 1000）。 */
     @Scheduled(cron = "0 0 3 * * ?")
     public void cleanupExpiredMessages() {
         try {
-            LocalDateTime expireDate = LocalDateTime.now().minusDays(retentionDays);
+            LocalDateTime expireDate = LocalDateTime.now().minusDays(retentionProperties.getRetentionDays());
             int totalDeleted = 0;
             int deleted;
             do {
@@ -38,7 +36,7 @@ public class MessageArchiveTask {
                 totalDeleted += deleted;
             } while (deleted > 0);
 
-            log.info("Cleaned up {} expired messages (older than {} days)", totalDeleted, retentionDays);
+            log.info("Cleaned up {} expired messages (older than {} days)", totalDeleted, retentionProperties.getRetentionDays());
         } catch (Exception e) {
             log.error("Failed to cleanup expired messages", e);
         }
@@ -48,7 +46,7 @@ public class MessageArchiveTask {
     @Scheduled(cron = "0 0 2 1 * ?")
     public void archiveOldMessages() {
         try {
-            LocalDateTime archiveDate = LocalDateTime.now().minusDays(retentionDays);
+            LocalDateTime archiveDate = LocalDateTime.now().minusDays(retentionProperties.getRetentionDays());
             int totalArchived = 0;
             int batchCount = 0;
 

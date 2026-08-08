@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.product.application.port.cache.ProductCachePort
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import java.util.Optional;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
@@ -19,19 +20,11 @@ public class ProductCacheAdapter implements ProductCachePort, ProductCacheEvicti
     private final MultiLevelCache multiLevelCache;
 
     @Override
-    public Optional<ProductVO> getProductCache(String productId) {
+    public Optional<ProductVO> getProductCache(String productId, Supplier<ProductVO> loader) {
         if (productId == null) {
             return Optional.empty();
         }
-        return cached(ProductCacheConstant.infoKey(productId));
-    }
-
-    @Override
-    public void setProductCache(String productId, ProductVO productVO) {
-        if (productId == null || productVO == null) {
-            return;
-        }
-        put(ProductCacheConstant.infoKey(productId), productVO);
+        return cached(ProductCacheConstant.infoKey(productId), loader);
     }
 
     @Override
@@ -52,20 +45,12 @@ public class ProductCacheAdapter implements ProductCachePort, ProductCacheEvicti
 
     // ── Private helpers ──
 
-    private Optional<ProductVO> cached(String key) {
+    private Optional<ProductVO> cached(String key, Supplier<ProductVO> loader) {
         try {
-            return Optional.ofNullable(multiLevelCache.get(key, ProductVO.class, () -> null));
+            return Optional.ofNullable(multiLevelCache.get(key, ProductVO.class, loader));
         } catch (Exception e) {
             log.warn("action=cacheGetFailed key={}", key, e);
             return Optional.empty();
-        }
-    }
-
-    private void put(String key, ProductVO value) {
-        try {
-            multiLevelCache.put(key, value);
-        } catch (Exception e) {
-            log.warn("action=cachePutFailed key={}", key, e);
         }
     }
 

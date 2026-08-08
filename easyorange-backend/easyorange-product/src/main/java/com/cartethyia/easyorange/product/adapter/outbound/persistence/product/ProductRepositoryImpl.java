@@ -1,10 +1,11 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.product;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
+import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -15,9 +16,8 @@ import org.springframework.stereotype.Repository;
 
 @Primary
 @Repository
-public class ProductRepositoryImpl implements ProductRepository {
+public class ProductRepositoryImpl extends BaseRepository<ProductMapper, ProductDO> implements ProductRepository {
 
-    private final ProductMapper productMapper;
     private final ProductDetailMapper productDetailMapper;
     private final ProductImageMapper productImageMapper;
     private final ProductDataMapper dataMapper;
@@ -27,7 +27,7 @@ public class ProductRepositoryImpl implements ProductRepository {
             ProductDetailMapper productDetailMapper,
             ProductImageMapper productImageMapper,
             ProductDataMapper dataMapper) {
-        this.productMapper = productMapper;
+        super(productMapper);
         this.productDetailMapper = productDetailMapper;
         this.productImageMapper = productImageMapper;
         this.dataMapper = dataMapper;
@@ -43,19 +43,19 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public void delete(ProductId id) {
-        productMapper.deleteById(id.value());
+        mapper.deleteById(id.value());
         productDetailMapper.deleteById(id.value());
         productImageMapper.delete(Wrappers.<ProductImageDO>lambdaQuery().eq(ProductImageDO::getProductId, id.value()));
     }
 
     @Override
     public Optional<Product> findById(ProductId id) {
-        var productDO = productMapper.selectById(id.value());
+        var productDO = mapper.selectById(id.value());
         if (productDO == null) {
             return Optional.empty();
         }
         var detailDO = productDetailMapper.selectById(productDO.getId());
-        var imageDOs = productMapper.selectImagesByProductIds(List.of(productDO.getId()));
+        var imageDOs = mapper.selectImagesByProductIds(List.of(productDO.getId()));
         return Optional.of(dataMapper.toDomain(productDO, detailDO, imageDOs));
     }
 
@@ -64,14 +64,15 @@ public class ProductRepositoryImpl implements ProductRepository {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        var productDOs = productMapper.selectList(Wrappers.<ProductDO>lambdaQuery()
-                .in(ProductDO::getId, ids.stream().map(ProductId::value).toList()));
+        var productDOs = lambdaQuery()
+                .in(ProductDO::getId, ids.stream().map(ProductId::value).toList())
+                .list();
         return productDOs.isEmpty() ? List.of() : toDomainList(productDOs);
     }
 
     private Product insert(Product product) {
         var productDO = dataMapper.toDataObject(product);
-        productMapper.insert(productDO);
+        mapper.insert(productDO);
         var saved = product.assignId(productDO.getId());
         var detailDO = dataMapper.toDetailDO(saved.getId(), saved.getDescription());
         if (detailDO != null) {
@@ -85,7 +86,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     private Product update(Product product) {
-        if (productMapper.updateById(dataMapper.toDataObject(product)) == 0) {
+        if (mapper.updateById(dataMapper.toDataObject(product)) == 0) {
             throw new ConcurrentUpdateException("商品更新冲突: id=" + product.getId().value());
         }
         upsertDetail(product);
@@ -97,7 +98,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         var productIds = productDOs.stream().map(ProductDO::getId).toList();
         var detailMap = productDetailMapper.selectDetailsByProductIds(productIds).stream()
                 .collect(Collectors.toMap(ProductDetailDO::getProductId, d -> d, (a, _) -> a));
-        var imagesByProduct = productMapper.selectImagesByProductIds(productIds).stream()
+        var imagesByProduct = mapper.selectImagesByProductIds(productIds).stream()
                 .collect(Collectors.groupingBy(ProductImageDO::getProductId));
         return productDOs.stream()
                 .map(productDO -> dataMapper.toDomain(
@@ -121,7 +122,7 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     private void syncImages(Product product) {
         var productId = product.getId().value();
-        var existingImages = productMapper.selectImagesByProductIds(List.of(productId));
+        var existingImages = mapper.selectImagesByProductIds(List.of(productId));
         var newImages = dataMapper.toImageDOs(product.getId(), product.getImages());
         var existingUrls =
                 existingImages.stream().map(ProductImageDO::getImageUrl).collect(Collectors.toSet());

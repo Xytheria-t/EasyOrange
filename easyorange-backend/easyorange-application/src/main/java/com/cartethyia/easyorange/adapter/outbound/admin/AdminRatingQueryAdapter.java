@@ -2,7 +2,9 @@ package com.cartethyia.easyorange.adapter.outbound.admin;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.cartethyia.easyorange.admin.domain.enums.AdminResultCode;
 import com.cartethyia.easyorange.admin.domain.port.AdminRatingQueryPort;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingMapper;
 import java.util.List;
@@ -67,6 +69,15 @@ public class AdminRatingQueryAdapter implements AdminRatingQueryPort {
             return null;
         }
         return toSummary(review);
+    }
+
+    @Override
+    public void deleteRating(String ratingId) {
+        ProductRatingDO review = ratingMapper.selectById(ratingId);
+        if (review == null || review.getDelFlag() != 0) {
+            throw BusinessException.of(AdminResultCode.RATING_NOT_FOUND_OR_DELETED);
+        }
+        ratingMapper.deleteById(ratingId);
     }
 
     private RatingSummary toSummary(ProductRatingDO review) {

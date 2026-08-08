@@ -12,66 +12,44 @@ import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import java.time.LocalDateTime;
 import java.util.Set;
-import org.mapstruct.AfterMapping;
-import org.mapstruct.Builder;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValueMappingStrategy;
+import org.springframework.stereotype.Component;
 
-@Mapper(
-        componentModel = "spring",
-        builder = @Builder(disableBuilder = true),
-        nullValueMappingStrategy = NullValueMappingStrategy.RETURN_DEFAULT)
-public interface UserAssembler {
+/**
+ * 聚合根 → 响应 DTO 转换（含脱敏、枚举转码）。
+ * 手写普通类：MapStruct 版本全部字段 ignore + {@code @AfterMapping} 手工回填，
+ * 注解处理器只是空转，改为显式映射更直白。
+ */
+@Component
+public class UserAssembler {
 
-    @Mapping(target = "userId", source = "id")
-    @Mapping(target = "nickname", ignore = true)
-    @Mapping(target = "email", ignore = true)
-    @Mapping(target = "phone", ignore = true)
-    @Mapping(target = "realName", ignore = true)
-    @Mapping(target = "status", ignore = true)
-    @Mapping(target = "avatar", ignore = true)
-    @Mapping(target = "studentId", ignore = true)
-    @Mapping(target = "createTime", ignore = true)
-    @Mapping(target = "updateTime", ignore = true)
-    UserResponse toResponse(User user);
-
-    @Mapping(target = "userId", source = "user.id")
-    @Mapping(target = "nickname", ignore = true)
-    @Mapping(target = "email", ignore = true)
-    @Mapping(target = "phone", ignore = true)
-    @Mapping(target = "realName", ignore = true)
-    @Mapping(target = "status", ignore = true)
-    @Mapping(target = "statusDesc", ignore = true)
-    @Mapping(target = "gender", ignore = true)
-    @Mapping(target = "userType", ignore = true)
-    @Mapping(target = "avatar", ignore = true)
-    @Mapping(target = "studentId", ignore = true)
-    @Mapping(target = "createTime", ignore = true)
-    @Mapping(target = "updateTime", ignore = true)
-    UserProfileResponse toProfileResponse(User user, Set<String> roles, Set<String> permissions, Long loginTime);
-
-    default LoginResult toLoginResult(User user, String accessToken) {
-        return new LoginResult(accessToken, toResponse(user));
-    }
-
-    @AfterMapping
-    default void afterToResponse(User user, @MappingTarget UserResponse r) {
-        if (user == null) return;
+    public UserResponse toResponse(User user) {
+        var r = new UserResponse();
+        r.setUserId(user.getId());
+        r.setUsername(user.getUsername());
         CommonData.from(user).applyTo(r);
         r.setUserType(user.getUserType());
+        return r;
     }
 
-    @AfterMapping
-    default void afterToProfileResponse(User user, @MappingTarget UserProfileResponse r) {
-        if (user == null) return;
+    public UserProfileResponse toProfileResponse(
+            User user, Set<String> roles, Set<String> permissions, Long loginTime) {
+        var r = new UserProfileResponse();
+        r.setUserId(user.getId());
+        r.setUsername(user.getUsername());
         CommonData.from(user).applyTo(r);
         UserStatus userStatus = user.getStatus();
         PersonalInfo personalInfo = user.getPersonalInfo();
         r.setStatusDesc(userStatus != null ? userStatus.getDescription() : null);
         r.setGender(genderCode(personalInfo));
         r.setUserType(user.getUserType());
+        r.setRoles(roles);
+        r.setPermissions(permissions);
+        r.setLoginTime(loginTime);
+        return r;
+    }
+
+    public LoginResult toLoginResult(User user, String accessToken) {
+        return new LoginResult(accessToken, toResponse(user));
     }
 
     private static String genderCode(PersonalInfo info) {

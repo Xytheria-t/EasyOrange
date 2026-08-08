@@ -133,13 +133,7 @@ message/
 
 ## 演进路线
 
-1. ~~将 `domain/repository/` 中的 MyBatis 实现类迁移到 `adapter/outbound/persistence/`~~ ✅ 已完成
-2. ~~将 `entity/` 中的实体类拆分：聚合根 → `domain/aggregate/`，数据对象 → `adapter/outbound/persistence/`~~ ✅ 已完成（`entity/` 目录已消除，DO 在 `adapter/outbound/persistence/`，聚合根在 `domain/aggregate/`）
-3. ~~将 `controller/` 迁移到 `adapter/inbound/web/controller/`~~ ✅ 已完成
-4. ~~将 `service/` 迁移到 `application/service/`~~ ✅ 已完成（2026-07-31，死代码清理 + MessageArchiveService/Config 迁入 application/）
-5. ~~添加 `domain/port/` 端口接口~~ ✅ 已完成（`MessageNotifierPort` / `UserInfoPort`）
-
-> 演进路线 5 步全部完成，模块已为完整 DDD 六边形架构。
+> 历史 5 步迁移（repository/entity/controller/service/port 全量 DDD 化）已全部完成，模块已为完整 DDD 六边形架构（2026-07-31 收口）。
 
 ## 常见开发任务
 

@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
-import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import java.math.BigDecimal;
 import java.util.List;

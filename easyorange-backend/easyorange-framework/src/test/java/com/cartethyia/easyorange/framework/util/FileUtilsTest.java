@@ -112,47 +112,6 @@ class FileUtilsTest {
     }
 
     @Nested
-    @DisplayName("formatFileSize")
-    class FormatFileSizeTests {
-
-        @Test
-        @DisplayName("should format bytes")
-        void formatFileSize_withBytes_shouldReturnB() {
-            assertThat(FileUtils.formatFileSize(500)).isEqualTo("500 B");
-        }
-
-        @Test
-        @DisplayName("should format zero bytes")
-        void formatFileSize_withZero_shouldReturnB() {
-            assertThat(FileUtils.formatFileSize(0)).isEqualTo("0 B");
-        }
-
-        @Test
-        @DisplayName("should format KB")
-        void formatFileSize_withKB_shouldReturnKB() {
-            assertThat(FileUtils.formatFileSize(2048)).isEqualTo("2.00 KB");
-        }
-
-        @Test
-        @DisplayName("should format MB")
-        void formatFileSize_withMB_shouldReturnMB() {
-            assertThat(FileUtils.formatFileSize(5 * 1024 * 1024)).isEqualTo("5.00 MB");
-        }
-
-        @Test
-        @DisplayName("should format GB")
-        void formatFileSize_withGB_shouldReturnGB() {
-            assertThat(FileUtils.formatFileSize(2L * 1024 * 1024 * 1024)).isEqualTo("2.00 GB");
-        }
-
-        @Test
-        @DisplayName("should format exactly 1 KB")
-        void formatFileSize_withExactly1KB_shouldReturnKB() {
-            assertThat(FileUtils.formatFileSize(1024)).isEqualTo("1.00 KB");
-        }
-    }
-
-    @Nested
     @DisplayName("deleteFile")
     class DeleteFileTests {
 

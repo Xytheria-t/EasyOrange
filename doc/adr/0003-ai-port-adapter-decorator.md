@@ -21,7 +21,7 @@ EasyOrange 在「资产方 / 认领方双端」共 6 个 AI 决策点（智能�
 - **可观测性是核心叙事**：项目对外宣传语明确提到「AiMetrics 可观测」，缓存命中率 / LLM 延迟 / 限流计数必须独立采集
 - **领域层零框架依赖**（DDD 铁律，见 `easyorange-backend/AGENTS.md`）：AI 调用入口不能污染 domain 层
 
-业务侧的边界（来自 `PRODUCT_DIRECTION.md` 与 `AGENTS.md`）：平台不议价、不自动调价，AI 走生产级工程实践（Port/Adapter + 多级缓存 + 限流降级 + AiMetrics + Prompt 版本化 + Token 预算）。所以 AI 调用结果**可缓存、可降级、可观测**比「实时精准」更重要。
+业务侧的边界（来自 `doc/PRODUCT_DIRECTION.md` 与 `AGENTS.md`）：平台不议价、不自动调价，AI 走生产级工程实践（Port/Adapter + 多级缓存 + 限流降级 + AiMetrics + Prompt 版本化 + Token 预算）。所以 AI 调用结果**可缓存、可降级、可观测**比「实时精准」更重要。
 
 6 个 AI 决策点对应不同的 `AiCallScope`（缓存分桶）：
 
@@ -42,10 +42,10 @@ AI 集成采用 **六边形 Port/Adapter + `@Primary` 装饰器模式**，业务
 
 层次结构：
 
-1. **Port（领域契约，零框架依赖）**：[LlmPort.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/port/LlmPort.java)、[VisionPort.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/port/VisionPort.java)
+1. **Port（领域契约，零框架依赖）**：[LlmPort.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/port/LlmPort.java)、[VisionPort.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/port/VisionPort.java)
 2. **底层 Adapter（供应商实现）**：`DeepSeekLlmAdapter`、`PythonLlmAdapter`（均 `@Qualifier("rawLlm")` + `@ConditionalOnProperty` 二选一）、`QwenVlVisionAdapter`，直接调 RestClient + 厂商 API
-3. **装饰器 Adapter（`@Primary`）**：[CachingLlmAdapter.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/CachingLlmAdapter.java)、`CachingVisionAdapter`，包裹底层 Adapter，叠加 L1 Caffeine + L2 Redis + stale 降级缓存
-4. **横切关注点**：`AiRateLimitInterceptor`（Redis 令牌桶，fail-open）、[AiMetricsService.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/metrics/AiMetricsService.java)（4 类 Micrometer 指标）
+3. **装饰器 Adapter（`@Primary`）**：[CachingLlmAdapter.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/CachingLlmAdapter.java)、`CachingVisionAdapter`，包裹底层 Adapter，叠加 L1 Caffeine + L2 Redis + stale 降级缓存
+4. **横切关注点**：`AiRateLimitInterceptor`（Redis 令牌桶，fail-open）、[AiMetricsService.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/metrics/AiMetricsService.java)（4 类 Micrometer 指标）
 
 关键实现要点：
 
@@ -85,7 +85,7 @@ AI 集成采用 **六边形 Port/Adapter + `@Primary` 装饰器模式**，业务
 
 ## 备注（Notes）
 
-- 相关文档：[doc/集成/AI-资产管理.md](file:///home/cartethyia/projects/Java/easy-orange/doc/集成/AI-资产管理.md)、[doc/架构/架构-系统架构.md](file:///home/cartethyia/projects/Java/easy-orange/doc/架构/架构-系统架构.md)「可观测性」表
-- 相关代码：[LlmPort.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/port/LlmPort.java)、[CachingLlmAdapter.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/CachingLlmAdapter.java)、[AiMetricsService.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/metrics/AiMetricsService.java)
-- 相关 ADR：[ADR 0002](./0002-cqrs-scope-only-4-modules.md)（ai 模块不上 CQRS，用 Port/Adapter + 装饰器替代）；**本 ADR 已被 [ADR 0008](./0008-ai-migrate-to-spring-ai-framework.md) 替代（2026-08-03，Spring AI 2.0 全面框架化）**
+- 相关文档：[doc/集成/AI-资产管理.md](../../doc/集成/AI-资产管理.md)、[doc/架构/架构-系统架构.md](../../doc/架构/架构-系统架构.md)「可观测性」表
+- 相关代码：[LlmPort.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/port/LlmPort.java)、[CachingLlmAdapter.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/CachingLlmAdapter.java)、[AiMetricsService.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/metrics/AiMetricsService.java)
+- 相关 ADR：[ADR 0002](./0002-cqrs-scope-4-modules.md)（ai 模块不上 CQRS，用 Port/Adapter + 装饰器替代）；**本 ADR 已被 [ADR 0008](./0008-ai-spring-ai-framework.md) 替代（2026-08-03，Spring AI 2.0 全面框架化）**
 - 重评估触发：Spring AI 进入稳定版且能覆盖 L1/L2 + stale 降级 + 按 scope 指标时，重新评估是否迁移；或当供应商数量 > 3 时考虑引入策略路由替代 `@Primary` 单选。

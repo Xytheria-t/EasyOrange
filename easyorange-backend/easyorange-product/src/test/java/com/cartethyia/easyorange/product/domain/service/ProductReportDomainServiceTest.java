@@ -11,6 +11,7 @@ import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
 import java.math.BigDecimal;
 import java.util.List;

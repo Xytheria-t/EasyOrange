@@ -38,7 +38,7 @@
 
 | 功能 | 方法+路径 | 鉴权 |
 |------|----------|------|
-| 全文搜索 | `GET /api/search/products` | 否 |
+| 全文搜索 | `GET /api/products/search` | 否 |
 | 语义搜索 | `GET /api/ai/semantic-search` | 否 |
 
 ## 四、订单

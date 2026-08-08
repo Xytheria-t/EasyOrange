@@ -17,6 +17,7 @@ import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProp
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Rule;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
+import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -74,7 +75,7 @@ class RateLimitFilterTest {
                 redisTemplate,
                 localRateLimiter,
                 distributedRateLimiter,
-                new ObjectMapper(),
+                new ErrorResponseWriter(new ObjectMapper()),
                 handlerMappingsProvider);
     }
 
