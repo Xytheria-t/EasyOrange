@@ -63,7 +63,7 @@ jobs:
           cache: maven
 
       - name: Backend verify (11 modules, JaCoCo + Spotless gates)
-        # -Dfailsafe.skip=true：只跳过 failsafe（*IT），IT 需要本地 docker compose dev 栈
+        # -DskipITs=true：只跳过 failsafe（*IT），IT 需要本地 docker compose dev 栈
         # （MySQL/Redis/RabbitMQ），CI runner 上没有。surefire 单测 + JaCoCo/Spotless 门禁照跑。
-        run: ./mvnw verify -B -Pci -Dfailsafe.skip=true
+        run: ./mvnw verify -B -Pci -DskipITs=true
         working-directory: easyorange-backend
