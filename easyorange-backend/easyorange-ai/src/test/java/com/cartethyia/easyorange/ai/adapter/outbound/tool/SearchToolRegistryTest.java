@@ -13,31 +13,29 @@ import org.junit.jupiter.api.Test;
 @DisplayName("SearchToolRegistry -> 测试")
 class SearchToolRegistryTest {
 
-    private static final SearchTool<String> DUMMY =
-            new SearchTool<String>() {
-                @Override
-                public String name() {
-                    return "dummy";
-                }
+    private static final SearchTool<String> DUMMY = new SearchTool<String>() {
+        @Override
+        public String name() {
+            return "dummy";
+        }
 
-                @Override
-                public String description() {
-                    return "dummy tool";
-                }
+        @Override
+        public String description() {
+            return "dummy tool";
+        }
 
-                @Override
-                public SearchToolKind kind() {
-                    return SearchToolKind.RULE;
-                }
+        @Override
+        public SearchToolKind kind() {
+            return SearchToolKind.RULE;
+        }
 
-                @Override
-                public CompletableFuture<String> run(SearchToolContext context) {
-                    return CompletableFuture.completedFuture("ok");
-                }
-            };
+        @Override
+        public CompletableFuture<String> run(SearchToolContext context) {
+            return CompletableFuture.completedFuture("ok");
+        }
+    };
 
-    private static final SearchToolContext CTX =
-            new SearchToolContext("找电脑", List.<ProductReadModel>of(), "");
+    private static final SearchToolContext CTX = new SearchToolContext("找电脑", List.<ProductReadModel>of(), "");
 
     @Test
     @DisplayName("自动收集所有工具 -> all() 返回全部")

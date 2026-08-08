@@ -150,7 +150,8 @@ class AdminProductQueryAdapterTest {
         var p = t.aggregate().assignId(PRODUCT_ID);
         return switch (status) {
             case PENDING_REVIEW -> p.submitForReview(SELLER_ID).aggregate();
-            case ONLINE -> p.submitForReview(SELLER_ID).aggregate().approve(null).aggregate();
+            case ONLINE ->
+                p.submitForReview(SELLER_ID).aggregate().approve(null).aggregate();
             default -> p;
         };
     }

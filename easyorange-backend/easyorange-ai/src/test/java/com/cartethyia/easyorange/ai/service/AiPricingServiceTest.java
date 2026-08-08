@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.AiCallLogRecorder;
-import com.cartethyia.easyorange.ai.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.dto.PricingSuggestion;
 import com.cartethyia.easyorange.ai.prompt.TestPromptRegistry;
 import java.math.BigDecimal;
@@ -40,7 +39,8 @@ class AiPricingServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AiPricingService(chatModel, objectMapper, new TestPromptRegistry(), new AiModelSupport(mock(AiCallLogRecorder.class)));
+        service = new AiPricingService(
+                chatModel, objectMapper, new TestPromptRegistry(), new AiModelSupport(mock(AiCallLogRecorder.class)));
     }
 
     private static ChatResponse textResponse(String text) {

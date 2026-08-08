@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.ai.adapter.outbound;
 
-import com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchTool;
 import com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchToolContext;
 import com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchToolRegistry;
 import com.cartethyia.easyorange.ai.service.NaturalLanguageDetector;
@@ -17,7 +16,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;

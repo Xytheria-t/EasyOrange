@@ -5,9 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.admin.domain.enums.AdminResultCode;
 import com.cartethyia.easyorange.admin.domain.port.AdminRatingQueryPort.RatingSummary;
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingMapper;

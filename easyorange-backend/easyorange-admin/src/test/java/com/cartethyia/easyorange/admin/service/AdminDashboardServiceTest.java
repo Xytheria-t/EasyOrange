@@ -59,17 +59,7 @@ class AdminDashboardServiceTest {
 
     private RecentUser createTestUser() {
         return new RecentUser(
-                "1",
-                "testuser",
-                "测试用户",
-                null,
-                null,
-                null,
-                "01",
-                "普通用户",
-                "NORMAL",
-                "正常",
-                LocalDateTime.now());
+                "1", "testuser", "测试用户", null, null, null, "01", "普通用户", "NORMAL", "正常", LocalDateTime.now());
     }
 
     @Nested
@@ -108,8 +98,18 @@ class AdminDashboardServiceTest {
             when(adminProductQueryPort.queryReports(0, 1, 5))
                     .thenReturn(new ReportQueryResult(
                             List.of(new ReportRecord(
-                                    "1", "100", "1", "1", "虚假信息", "虚假信息", "0", "待处理", null,
-                                    LocalDateTime.now(), LocalDateTime.now(), true)),
+                                    "1",
+                                    "100",
+                                    "1",
+                                    "1",
+                                    "虚假信息",
+                                    "虚假信息",
+                                    "0",
+                                    "待处理",
+                                    null,
+                                    LocalDateTime.now(),
+                                    LocalDateTime.now(),
+                                    true)),
                             1,
                             1,
                             5));
@@ -242,7 +242,12 @@ class AdminDashboardServiceTest {
         void getTopProducts_returnsProducts() {
             when(adminProductQueryPort.getTopProducts(10))
                     .thenReturn(List.of(new TopProductRecord(
-                            "1", "高等数学教材", 1024, new BigDecimal("59.00"), "http://example.com/img.jpg", "ONLINE",
+                            "1",
+                            "高等数学教材",
+                            1024,
+                            new BigDecimal("59.00"),
+                            "http://example.com/img.jpg",
+                            "ONLINE",
                             "上架")));
 
             List<TopProductResponse> result = dashboardService.getTopProducts(10);

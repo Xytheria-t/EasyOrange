@@ -107,7 +107,10 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
 
     @Override
     public OrderDetail getOrderDetail(String orderId) {
-        return orderReadRepository.findById(OrderId.of(orderId)).map(this::toOrderDetail).orElse(null);
+        return orderReadRepository
+                .findById(OrderId.of(orderId))
+                .map(this::toOrderDetail)
+                .orElse(null);
     }
 
     @Override
@@ -121,7 +124,8 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
         long refunded = orderReadRepository.countByStatus(OrderStatus.REFUNDED);
 
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        long todayOrders = queryOrders(new OrderQueryCondition(null, null, null, null, null, todayStart, null, null, null))
+        long todayOrders = queryOrders(
+                        new OrderQueryCondition(null, null, null, null, null, todayStart, null, null, null))
                 .total();
 
         return new OrderStats(totalOrders, todayOrders, pendingPayment, paid, shipped, completed, cancelled, refunded);
@@ -153,9 +157,7 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
     }
 
     private Order findOrderOrThrow(String orderId) {
-        return orderRepository
-                .findById(OrderId.of(orderId))
-                .orElseThrow(() -> BusinessException.of("订单不存在"));
+        return orderRepository.findById(OrderId.of(orderId)).orElseThrow(() -> BusinessException.of("订单不存在"));
     }
 
     private void persistAndPublish(com.cartethyia.easyorange.common.event.Transition<Order, ?> result) {

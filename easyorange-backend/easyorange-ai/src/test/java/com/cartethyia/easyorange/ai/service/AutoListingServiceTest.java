@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.AiCallLogRecorder;
-import com.cartethyia.easyorange.ai.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
@@ -43,7 +42,12 @@ class AutoListingServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AutoListingService(chatModel, visionChatModel, objectMapper, new TestPromptRegistry(), new AiModelSupport(mock(AiCallLogRecorder.class)));
+        service = new AutoListingService(
+                chatModel,
+                visionChatModel,
+                objectMapper,
+                new TestPromptRegistry(),
+                new AiModelSupport(mock(AiCallLogRecorder.class)));
     }
 
     private static ChatResponse textResponse(String text) {
@@ -123,7 +127,12 @@ class AutoListingServiceTest {
         @Test
         @DisplayName("Prompt 模板缺失时返回 null（被 catch 兜底）")
         void analyzeImages_missingPrompt() {
-            service = new AutoListingService(chatModel, visionChatModel, objectMapper, EMPTY_REGISTRY, new AiModelSupport(mock(AiCallLogRecorder.class)));
+            service = new AutoListingService(
+                    chatModel,
+                    visionChatModel,
+                    objectMapper,
+                    EMPTY_REGISTRY,
+                    new AiModelSupport(mock(AiCallLogRecorder.class)));
 
             AutoListingResult result = service.analyzeImages(List.of("http://example.com/a.jpg"));
 

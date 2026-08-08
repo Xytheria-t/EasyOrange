@@ -210,8 +210,7 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("获取订单统计")
         void getOrderStats_returnsStats() {
-            when(adminOrderQueryPort.getOrderStats())
-                    .thenReturn(new OrderStats(100, 10, 20, 30, 15, 25, 5, 5));
+            when(adminOrderQueryPort.getOrderStats()).thenReturn(new OrderStats(100, 10, 20, 30, 15, 25, 5, 5));
 
             OrderStatsResponse stats = orderService.getOrderStats();
 

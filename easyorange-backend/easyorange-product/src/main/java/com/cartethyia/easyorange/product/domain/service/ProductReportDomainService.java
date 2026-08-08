@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.domain.service;
 
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
@@ -8,7 +9,6 @@ import com.cartethyia.easyorange.product.domain.event.ProductTakeOfflineEvent;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.common.domain.ProductId;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 

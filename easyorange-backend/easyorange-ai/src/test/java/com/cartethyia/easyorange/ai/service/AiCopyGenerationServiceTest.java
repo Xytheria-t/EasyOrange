@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.AiCallLogRecorder;
-import com.cartethyia.easyorange.ai.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.dto.CopyGenerationResult;
 import com.cartethyia.easyorange.ai.prompt.TestPromptRegistry;
 import java.util.List;
@@ -37,7 +36,8 @@ class AiCopyGenerationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AiCopyGenerationService(chatModel, objectMapper, new TestPromptRegistry(), new AiModelSupport(mock(AiCallLogRecorder.class)));
+        service = new AiCopyGenerationService(
+                chatModel, objectMapper, new TestPromptRegistry(), new AiModelSupport(mock(AiCallLogRecorder.class)));
     }
 
     private static ChatResponse textResponse(String text) {
@@ -118,7 +118,8 @@ class AiCopyGenerationServiceTest {
         @Test
         @DisplayName("Prompt 模板缺失时抛 IllegalStateException")
         void generateCopy_missingPrompt() {
-            service = new AiCopyGenerationService(chatModel, objectMapper, EMPTY_REGISTRY, new AiModelSupport(mock(AiCallLogRecorder.class)));
+            service = new AiCopyGenerationService(
+                    chatModel, objectMapper, EMPTY_REGISTRY, new AiModelSupport(mock(AiCallLogRecorder.class)));
 
             assertThatThrownBy(() -> service.generateCopy("A", "B", "1", "100", null))
                     .isInstanceOf(IllegalStateException.class);

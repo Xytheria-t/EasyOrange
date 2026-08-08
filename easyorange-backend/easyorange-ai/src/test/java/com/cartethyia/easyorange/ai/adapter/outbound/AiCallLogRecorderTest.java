@@ -53,7 +53,8 @@ class AiCallLogRecorderTest {
     void record_failure() {
         recorder.record("QA", "OpenAiChatModel", "hash", null, 500L, false, "API timeout");
 
-        verify(jdbcTemplate).update(anyString(), eq("id-1"), eq("QA"), any(), any(), any(), eq(500L), eq(0), eq("API timeout"));
+        verify(jdbcTemplate)
+                .update(anyString(), eq("id-1"), eq("QA"), any(), any(), any(), eq(500L), eq(0), eq("API timeout"));
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -14,7 +15,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
-import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

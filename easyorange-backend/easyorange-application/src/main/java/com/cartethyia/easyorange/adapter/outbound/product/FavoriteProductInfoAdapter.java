@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.product;
 
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductInfo;
@@ -8,7 +9,6 @@ import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepo
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.common.domain.ProductId;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;

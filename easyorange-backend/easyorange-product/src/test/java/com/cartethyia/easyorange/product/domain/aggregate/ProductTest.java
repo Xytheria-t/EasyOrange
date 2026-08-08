@@ -16,7 +16,6 @@ import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
 import com.cartethyia.easyorange.product.domain.exception.InsufficientStockException;
 import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusException;
-import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;

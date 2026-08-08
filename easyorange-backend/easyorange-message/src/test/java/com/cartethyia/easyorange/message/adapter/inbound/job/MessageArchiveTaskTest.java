@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.message.adapter.inbound.job;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.adapter.inbound.config.MessageRetentionProperties;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import java.time.LocalDateTime;

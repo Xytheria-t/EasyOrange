@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
-import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.dto.QaRequest;
 import com.cartethyia.easyorange.ai.dto.QaResponse;
+import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
 import lombok.RequiredArgsConstructor;

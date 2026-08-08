@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.adapter.outbound.product;
 
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
 import com.cartethyia.easyorange.product.application.command.ProductCommandHandler;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductSnapshotPort;
-import com.cartethyia.easyorange.common.domain.ProductId;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;

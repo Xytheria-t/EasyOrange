@@ -107,7 +107,8 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("创建子分类成功")
         void createCategory_child_success() {
-            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "电子数码", null, 1));
+            when(adminProductQueryPort.getCategory(CATEGORY_ID))
+                    .thenReturn(createCategory(CATEGORY_ID, "电子数码", null, 1));
             when(adminProductQueryPort.findCategoryByName("手机")).thenReturn(null);
             when(adminProductQueryPort.createCategory("手机", CATEGORY_ID, 0, 2))
                     .thenReturn(createCategory("99", "手机", CATEGORY_ID, 2));
@@ -152,7 +153,8 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("更新分类成功")
         void updateCategory_success() {
-            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "旧名称", null, 1));
+            when(adminProductQueryPort.getCategory(CATEGORY_ID))
+                    .thenReturn(createCategory(CATEGORY_ID, "旧名称", null, 1));
             when(adminProductQueryPort.findCategoryByName("新名称")).thenReturn(null);
             when(adminProductQueryPort.countProductsByCategoryIds(anyList())).thenReturn(Map.of(CATEGORY_ID, 0L));
 
@@ -183,7 +185,8 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("删除空分类成功")
         void deleteCategory_noChildren_success() {
-            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "测试分类", null, 1));
+            when(adminProductQueryPort.getCategory(CATEGORY_ID))
+                    .thenReturn(createCategory(CATEGORY_ID, "测试分类", null, 1));
             when(adminProductQueryPort.countCategoryChildren(CATEGORY_ID)).thenReturn(0L);
             when(adminProductQueryPort.countProductsByCategoryIds(anyList())).thenReturn(Map.of(CATEGORY_ID, 0L));
 
@@ -195,7 +198,8 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("有子分类时无法删除")
         void deleteCategory_hasChildren_throws() {
-            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "测试分类", null, 1));
+            when(adminProductQueryPort.getCategory(CATEGORY_ID))
+                    .thenReturn(createCategory(CATEGORY_ID, "测试分类", null, 1));
             when(adminProductQueryPort.countCategoryChildren(CATEGORY_ID)).thenReturn(2L);
 
             assertThatThrownBy(() -> categoryService.deleteCategory(CATEGORY_ID))
@@ -206,7 +210,8 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("有商品关联时无法删除")
         void deleteCategory_hasProducts_throws() {
-            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "测试分类", null, 1));
+            when(adminProductQueryPort.getCategory(CATEGORY_ID))
+                    .thenReturn(createCategory(CATEGORY_ID, "测试分类", null, 1));
             when(adminProductQueryPort.countCategoryChildren(CATEGORY_ID)).thenReturn(0L);
             when(adminProductQueryPort.countProductsByCategoryIds(anyList())).thenReturn(Map.of(CATEGORY_ID, 3L));
 

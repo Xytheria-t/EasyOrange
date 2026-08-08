@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
-import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.dto.SemanticSearchResult;
+import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
 import java.util.List;
 import java.util.Optional;

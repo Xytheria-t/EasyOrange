@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
-import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.dto.AutoListingResult;
+import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
 import java.util.List;
@@ -42,7 +42,8 @@ public class AutoListingService {
                 return null;
             }
 
-            String jsonResponse = aiModelSupport.callJson(chatModel, AiCallScope.AUTO_LISTING, systemPrompt, visualResult);
+            String jsonResponse =
+                    aiModelSupport.callJson(chatModel, AiCallScope.AUTO_LISTING, systemPrompt, visualResult);
             if (jsonResponse == null) {
                 log.warn("LLM returned null for auto listing generation");
                 return null;

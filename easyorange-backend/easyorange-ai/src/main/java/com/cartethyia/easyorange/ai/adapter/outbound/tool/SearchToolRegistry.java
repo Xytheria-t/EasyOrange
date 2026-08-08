@@ -19,13 +19,9 @@ public class SearchToolRegistry {
 
     public SearchToolRegistry(List<SearchTool<?>> tools) {
         this.tools = tools.stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        SearchTool::name,
-                        tool -> tool,
-                        (existing, duplicate) -> {
-                            throw new IllegalArgumentException(
-                                    "Duplicate search tool name: " + existing.name());
-                        }));
+                .collect(Collectors.toUnmodifiableMap(SearchTool::name, tool -> tool, (existing, duplicate) -> {
+                    throw new IllegalArgumentException("Duplicate search tool name: " + existing.name());
+                }));
     }
 
     public Collection<SearchTool<?>> all() {

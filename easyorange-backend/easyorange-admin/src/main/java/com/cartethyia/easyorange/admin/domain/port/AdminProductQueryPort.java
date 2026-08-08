@@ -333,6 +333,12 @@ public interface AdminProductQueryPort {
     /**
      * Top 商品记录
      */
-    record TopProductRecord(String productId, String name, Integer viewCount, BigDecimal price, String mainImage,
-            String status, String statusDesc) {}
+    record TopProductRecord(
+            String productId,
+            String name,
+            Integer viewCount,
+            BigDecimal price,
+            String mainImage,
+            String status,
+            String statusDesc) {}
 }

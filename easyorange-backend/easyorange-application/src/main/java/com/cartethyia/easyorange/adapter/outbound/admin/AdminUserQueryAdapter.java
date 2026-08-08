@@ -90,7 +90,8 @@ public class AdminUserQueryAdapter implements AdminUserQueryPort {
 
         Page<UserDO> page = wrapper.page(new Page<>(pageNum, pageSize));
 
-        List<UserDetail> records = page.getRecords().stream().map(this::toUserDetail).toList();
+        List<UserDetail> records =
+                page.getRecords().stream().map(this::toUserDetail).toList();
         return new UserQueryResult(records, page.getTotal(), pageNum, pageSize);
     }
 

@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.AiCallLogRecorder;
-import com.cartethyia.easyorange.ai.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.adapter.outbound.AiSearchEnhancerAdapter;
 import com.cartethyia.easyorange.ai.adapter.outbound.tool.*;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;

@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -25,7 +24,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +64,12 @@ class AdminOrderQueryAdapterTest {
     @BeforeEach
     void setUp() {
         adapter = new AdminOrderQueryAdapter(
-                orderMapper, orderItemMapper, productMapper, orderReadRepository, orderRepository, domainEventPublisher);
+                orderMapper,
+                orderItemMapper,
+                productMapper,
+                orderReadRepository,
+                orderRepository,
+                domainEventPublisher);
     }
 
     private Order order(OrderStatus status, PaymentStatus paymentStatus) {

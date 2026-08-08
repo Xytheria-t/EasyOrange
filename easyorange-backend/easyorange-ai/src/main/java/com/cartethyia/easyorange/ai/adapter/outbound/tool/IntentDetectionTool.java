@@ -44,7 +44,6 @@ public class IntentDetectionTool implements SearchTool<String> {
     @Override
     public CompletableFuture<String> run(SearchToolContext context) {
         return CompletableFuture.supplyAsync(
-                () -> aiModelSupport.callText(
-                        chatModel, AiCallScope.SEARCH_ENHANCE, SYSTEM_PROMPT, context.keyword()));
+                () -> aiModelSupport.callText(chatModel, AiCallScope.SEARCH_ENHANCE, SYSTEM_PROMPT, context.keyword()));
     }
 }

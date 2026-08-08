@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.application.query;
 
+import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.application.port.cache.ProductCachePort;
 import com.cartethyia.easyorange.product.application.port.cache.SellerCachePort;
@@ -13,7 +14,6 @@ import com.cartethyia.easyorange.product.application.query.readmodel.ProductRead
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.common.domain.ProductId;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

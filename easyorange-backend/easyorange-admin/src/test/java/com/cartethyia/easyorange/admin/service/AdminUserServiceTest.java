@@ -64,8 +64,8 @@ class AdminUserServiceTest {
         @Test
         @DisplayName("分页查询用户列表")
         void listUsers_defaultParams_returnsPage() {
-            when(adminUserQueryPort.queryUsers(any())).thenReturn(
-                    new UserQueryResult(List.of(createTestUser()), 1, 1, 20));
+            when(adminUserQueryPort.queryUsers(any()))
+                    .thenReturn(new UserQueryResult(List.of(createTestUser()), 1, 1, 20));
 
             PageResult<AdminUserResponse> result = userService.listUsers(new AdminUserQueryRequest());
 
@@ -80,8 +80,8 @@ class AdminUserServiceTest {
             AdminUserQueryRequest request = new AdminUserQueryRequest();
             request.setKeyword("test");
 
-            when(adminUserQueryPort.queryUsers(any())).thenReturn(
-                    new UserQueryResult(List.of(createTestUser()), 1, 1, 20));
+            when(adminUserQueryPort.queryUsers(any()))
+                    .thenReturn(new UserQueryResult(List.of(createTestUser()), 1, 1, 20));
 
             PageResult<AdminUserResponse> result = userService.listUsers(request);
 

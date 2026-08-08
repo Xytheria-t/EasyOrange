@@ -292,8 +292,7 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("获取举报统计")
         void getReportStats_returnsStats() {
-            when(adminProductQueryPort.getReportStats())
-                    .thenReturn(new ReportStats(10, 5, 2, 2, 1));
+            when(adminProductQueryPort.getReportStats()).thenReturn(new ReportStats(10, 5, 2, 2, 1));
 
             ReportStatsResponse stats = reportService.getReportStats();
 
@@ -306,7 +305,8 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("获取举报处理历史")
         void getReportHistory_returnsHistory() {
-            ReportHistoryRecord history = new ReportHistoryRecord("1", REPORT_ID, OPERATOR_ID, "resolve", "已处理", LocalDateTime.now());
+            ReportHistoryRecord history =
+                    new ReportHistoryRecord("1", REPORT_ID, OPERATOR_ID, "resolve", "已处理", LocalDateTime.now());
 
             when(adminProductQueryPort.getReportHistory(REPORT_ID)).thenReturn(List.of(history));
             when(adminUserQueryPort.getUserInfos(anyList()))

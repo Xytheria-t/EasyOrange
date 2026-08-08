@@ -93,8 +93,7 @@ public class AiModelSupport {
      * 文本向量化（带调用日志）：同 {@link #embed}，记录 scope/耗时（响应不落库，只记成功与否）。
      */
     public List<Float> embed(EmbeddingModel embeddingModel, AiCallScope scope, String text) {
-        return recordCall(
-                scope, embeddingModel, "embed", text, () -> embed(embeddingModel, text));
+        return recordCall(scope, embeddingModel, "embed", text, () -> embed(embeddingModel, text));
     }
 
     /**
@@ -145,7 +144,15 @@ public class AiModelSupport {
             errorMsg = e.getMessage();
             throw e;
         } finally {
-            record(scope, model, systemPrompt, userMessage, result instanceof String s ? s : null, start, success, errorMsg);
+            record(
+                    scope,
+                    model,
+                    systemPrompt,
+                    userMessage,
+                    result instanceof String s ? s : null,
+                    start,
+                    success,
+                    errorMsg);
         }
     }
 

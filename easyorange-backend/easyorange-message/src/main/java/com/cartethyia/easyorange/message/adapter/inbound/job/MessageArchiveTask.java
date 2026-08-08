@@ -36,7 +36,10 @@ public class MessageArchiveTask {
                 totalDeleted += deleted;
             } while (deleted > 0);
 
-            log.info("Cleaned up {} expired messages (older than {} days)", totalDeleted, retentionProperties.getRetentionDays());
+            log.info(
+                    "Cleaned up {} expired messages (older than {} days)",
+                    totalDeleted,
+                    retentionProperties.getRetentionDays());
         } catch (Exception e) {
             log.error("Failed to cleanup expired messages", e);
         }

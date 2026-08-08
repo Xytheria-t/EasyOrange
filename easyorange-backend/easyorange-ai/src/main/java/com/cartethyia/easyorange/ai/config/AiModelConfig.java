@@ -49,7 +49,13 @@ public class AiModelConfig {
             return new UnconfiguredChatModel("easyorange.ai.deepseek.api-key 为空，请配置 DEEPSEEK_API_KEY");
         }
         return OpenAiChatModel.builder()
-                .openAiClient(syncClient(deepseek.getBaseUrl(), deepseek.getApiKey(), deepseek.getModel(), deepseek.getTimeout(), obs, meters))
+                .openAiClient(syncClient(
+                        deepseek.getBaseUrl(),
+                        deepseek.getApiKey(),
+                        deepseek.getModel(),
+                        deepseek.getTimeout(),
+                        obs,
+                        meters))
                 .options(OpenAiChatOptions.builder().model(deepseek.getModel()).build())
                 .observationRegistry(obs)
                 .build();
@@ -65,7 +71,8 @@ public class AiModelConfig {
             return new UnconfiguredChatModel("easyorange.ai.qwen-vl.api-key 为空，请配置 QWEN_VL_API_KEY");
         }
         return OpenAiChatModel.builder()
-                .openAiClient(syncClient(qwenVl.getBaseUrl(), qwenVl.getApiKey(), qwenVl.getModel(), qwenVl.getTimeout(), obs, meters))
+                .openAiClient(syncClient(
+                        qwenVl.getBaseUrl(), qwenVl.getApiKey(), qwenVl.getModel(), qwenVl.getTimeout(), obs, meters))
                 .options(OpenAiChatOptions.builder().model(qwenVl.getModel()).build())
                 .observationRegistry(obs)
                 .build();
@@ -81,8 +88,13 @@ public class AiModelConfig {
             return new UnconfiguredEmbeddingModel("easyorange.ai.embedding.api-key 为空，请配置 EMBEDDING_API_KEY");
         }
         return OpenAiEmbeddingModel.builder()
-                .openAiClient(
-                        syncClient(embedding.getBaseUrl(), embedding.getApiKey(), embedding.getModel(), embedding.getTimeout(), obs, meters))
+                .openAiClient(syncClient(
+                        embedding.getBaseUrl(),
+                        embedding.getApiKey(),
+                        embedding.getModel(),
+                        embedding.getTimeout(),
+                        obs,
+                        meters))
                 .options(OpenAiEmbeddingOptions.builder()
                         .model(embedding.getModel())
                         .dimensions(embedding.getDimensions())
@@ -95,7 +107,7 @@ public class AiModelConfig {
         return value == null || value.isBlank();
     }
 
-/**
+    /**
      * OpenAI 兼容供应商的统一同步客户端装配。非本项目使用的 Azure/stubbing/自定义头等
      * 能力传空值即可——两个供应商（DeepSeek / DashScope）均走 apiKey + base-url 直连。
      */

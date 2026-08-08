@@ -44,9 +44,7 @@ public class AdminCategoryService {
 
         Map<String, List<CategoryRecord>> groupedByParent = all.stream()
                 .collect(Collectors.groupingBy(
-                        cat -> cat.parentId() != null ? cat.parentId() : "0",
-                        LinkedHashMap::new,
-                        Collectors.toList()));
+                        cat -> cat.parentId() != null ? cat.parentId() : "0", LinkedHashMap::new, Collectors.toList()));
 
         Function<String, List<CategoryTreeResponse>> buildChildren = new Function<>() {
             @Override
@@ -54,12 +52,7 @@ public class AdminCategoryService {
                 List<CategoryRecord> children = groupedByParent.getOrDefault(pid, List.of());
                 return children.stream()
                         .map(cat -> new CategoryTreeResponse(
-                                cat.id(),
-                                cat.name(),
-                                cat.level(),
-                                cat.sortOrder(),
-                                cat.status(),
-                                apply(cat.id())))
+                                cat.id(), cat.name(), cat.level(), cat.sortOrder(), cat.status(), apply(cat.id())))
                         .collect(Collectors.toList());
             }
         };
@@ -214,7 +207,8 @@ public class AdminCategoryService {
             return Map.of();
         }
 
-        List<CategoryRecord> parents = adminProductQueryPort.getCategoriesByIds(parentIds.stream().toList());
+        List<CategoryRecord> parents =
+                adminProductQueryPort.getCategoriesByIds(parentIds.stream().toList());
         return parents.stream().collect(Collectors.toMap(CategoryRecord::id, CategoryRecord::name, (a, b) -> a));
     }
 

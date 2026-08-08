@@ -56,8 +56,7 @@ public class OrderReadModelAssembler {
                 .createTime(order.createTime())
                 .updateTime(order.updateTime());
 
-        return builder
-                .address(maskSensitive ? MaskUtils.maskAddress(order.address(), 6) : order.address())
+        return builder.address(maskSensitive ? MaskUtils.maskAddress(order.address(), 6) : order.address())
                 .phone(MaskUtils.maskPhone(order.phone()))
                 .build();
     }

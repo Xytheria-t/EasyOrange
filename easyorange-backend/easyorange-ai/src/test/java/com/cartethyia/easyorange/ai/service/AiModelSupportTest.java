@@ -67,15 +67,7 @@ class AiModelSupportTest {
             String result = aiModelSupport.callText(chatModel, AiCallScope.QA, "system", "user");
 
             assertThat(result).isEqualTo("你好");
-            verify(callLogRecorder)
-                    .record(
-                            eq("QA"),
-                            anyString(),
-                            anyString(),
-                            eq("你好"),
-                            anyLong(),
-                            eq(true),
-                            isNull());
+            verify(callLogRecorder).record(eq("QA"), anyString(), anyString(), eq("你好"), anyLong(), eq(true), isNull());
         }
 
         @Test
@@ -88,14 +80,7 @@ class AiModelSupportTest {
                     .isInstanceOf(RuntimeException.class);
 
             verify(callLogRecorder)
-                    .record(
-                            eq("QA"),
-                            anyString(),
-                            anyString(),
-                            isNull(),
-                            anyLong(),
-                            eq(false),
-                            anyString());
+                    .record(eq("QA"), anyString(), anyString(), isNull(), anyLong(), eq(false), anyString());
         }
     }
 

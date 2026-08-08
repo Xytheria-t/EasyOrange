@@ -12,7 +12,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.RecentProductRecord;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportStats;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.TopProductRecord;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.RecentUser;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserStats;
@@ -72,7 +71,10 @@ public class AdminDashboardService {
                                 .id(report.id())
                                 .productId(report.productId())
                                 .reason(report.reason())
-                                .createTime(report.createTime() != null ? report.createTime().toString() : null)
+                                .createTime(
+                                        report.createTime() != null
+                                                ? report.createTime().toString()
+                                                : null)
                                 .build())
                         .toList();
 

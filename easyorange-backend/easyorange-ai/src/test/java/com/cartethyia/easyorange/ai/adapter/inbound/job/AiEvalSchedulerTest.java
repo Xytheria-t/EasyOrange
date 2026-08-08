@@ -5,8 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.AiCallLogRecorder;
-import com.cartethyia.easyorange.ai.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.service.AiModelSupport;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +40,12 @@ class AiEvalSchedulerTest {
     @BeforeEach
     void setUp() {
         aiProperties = new AiProperties();
-        scheduler = new AiEvalScheduler(jdbcTemplate, chatModel, new AiModelSupport(mock(AiCallLogRecorder.class)), aiProperties, new ObjectMapper());
+        scheduler = new AiEvalScheduler(
+                jdbcTemplate,
+                chatModel,
+                new AiModelSupport(mock(AiCallLogRecorder.class)),
+                aiProperties,
+                new ObjectMapper());
     }
 
     private static ChatResponse textResponse(String text) {
@@ -112,8 +117,7 @@ class AiEvalSchedulerTest {
     @DisplayName("查询失败 -> 告警返回不抛异常")
     void eval_queryFailure_swallowed() {
         aiProperties.getEval().setEnabled(true);
-        when(jdbcTemplate.queryForList(anyString(), any(Integer.class)))
-                .thenThrow(new RuntimeException("db down"));
+        when(jdbcTemplate.queryForList(anyString(), any(Integer.class))).thenThrow(new RuntimeException("db down"));
 
         scheduler.evaluateUnjudgedCalls();
 

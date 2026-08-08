@@ -37,8 +37,7 @@ public class AiEvalScheduler {
             严格按 JSON 输出（不要多余文字）：{"score": 分数, "comment": "一句话评语，不超过40字"}
             """;
 
-    private static final String QUERY_SQL =
-            """
+    private static final String QUERY_SQL = """
             SELECT id, scope, prompt_hash, response_text
             FROM eo_ai_call_log
             WHERE judge_score IS NULL AND success = 1

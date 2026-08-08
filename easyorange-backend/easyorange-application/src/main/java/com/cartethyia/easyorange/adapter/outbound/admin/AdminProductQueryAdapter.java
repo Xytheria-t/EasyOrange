@@ -25,7 +25,6 @@ import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRep
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
-import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
@@ -342,7 +341,8 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
         PageResult<ProductReport> reportPage =
                 productReportQueryRepository.findByStatus(status != null ? String.valueOf(status) : null, page, size);
 
-        List<ReportRecord> records = reportPage.records().stream().map(this::toReportRecord).toList();
+        List<ReportRecord> records =
+                reportPage.records().stream().map(this::toReportRecord).toList();
         return new ReportQueryResult(records, reportPage.total(), page, size);
     }
 
@@ -420,7 +420,9 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
                     .map(this::toCategoryRecord)
                     .toList();
         }
-        return categoryQueryRepository.findByParentId(parentId).stream().map(this::toCategoryRecord).toList();
+        return categoryQueryRepository.findByParentId(parentId).stream()
+                .map(this::toCategoryRecord)
+                .toList();
     }
 
     @Override
@@ -428,7 +430,9 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        return categoryQueryRepository.findByIds(ids).stream().map(this::toCategoryRecord).toList();
+        return categoryQueryRepository.findByIds(ids).stream()
+                .map(this::toCategoryRecord)
+                .toList();
     }
 
     @Override
@@ -496,7 +500,8 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
     @Override
     public ProductStats getProductStats() {
         return new ProductStats(
-                productQueryRepository.countByStatus(null), productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode()));
+                productQueryRepository.countByStatus(null),
+                productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode()));
     }
 
     @Override
@@ -536,14 +541,13 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
                         + limit)
                 .stream()
                 .map(row -> {
-                    String statusCode = row.get("status") != null ? row.get("status").toString() : null;
+                    String statusCode =
+                            row.get("status") != null ? row.get("status").toString() : null;
                     return new TopProductRecord(
                             String.valueOf(row.get("id")),
                             (String) row.get("name"),
                             row.get("view_count") != null ? ((Number) row.get("view_count")).intValue() : 0,
-                            row.get("price") != null
-                                    ? (BigDecimal) row.get("price")
-                                    : BigDecimal.ZERO,
+                            row.get("price") != null ? (BigDecimal) row.get("price") : BigDecimal.ZERO,
                             (String) row.get("main_image"),
                             statusCode,
                             PRODUCT_STATUS_MAP.getOrDefault(statusCode, "未知"));
@@ -554,9 +558,7 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
     // ==================== 私有方法 ====================
 
     private Product findProductOrThrow(String productId) {
-        return productRepository
-                .findById(ProductId.of(productId))
-                .orElseThrow(() -> BusinessException.of("商品不存在"));
+        return productRepository.findById(ProductId.of(productId)).orElseThrow(() -> BusinessException.of("商品不存在"));
     }
 
     private static AuditAction parseAction(Integer actionCode) {
@@ -636,7 +638,11 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
 
     private ReportHistoryRecord toReportHistoryRecord(ReportHandleHistory history) {
         return new ReportHistoryRecord(
-                history.getId(), history.getReportId(), history.getOperatorId(), history.getAction(), history.getRemark(),
+                history.getId(),
+                history.getReportId(),
+                history.getOperatorId(),
+                history.getAction(),
+                history.getRemark(),
                 history.getCreateTime());
     }
 

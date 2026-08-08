@@ -17,8 +17,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AiCallLogRecorder {
 
-    private static final String INSERT_SQL =
-            """
+    private static final String INSERT_SQL = """
             INSERT INTO eo_ai_call_log
                 (id, scope, model, prompt_hash, response_text, latency_ms, success, error_msg)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
