@@ -47,12 +47,4 @@ const storage = {
     },
 };
 
-const StorageUtils = {
-    get: storage.get,
-    has: storage.has,
-    set: storage.set,
-    remove: storage.remove,
-    clear: storage.clear,
-};
-
-export { StorageUtils, storage };
+export { storage };

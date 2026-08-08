@@ -1067,7 +1067,7 @@
 }
 
 .credit-icon {
-    color: #d97706;
+    color: var(--status-warning);
 }
 
 .ai-tools-bar {

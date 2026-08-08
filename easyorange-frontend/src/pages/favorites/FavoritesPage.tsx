@@ -11,6 +11,7 @@ import { CONDITION_LABEL_MAP } from '@/constants';
 import { usePagination } from '@/hooks/usePagination';
 import { useUIStore } from '@/store/uiStore';
 import type { Favorite } from '@/types';
+import { formatPrice, formatRelativeTime } from '@/utils';
 import './favorites.css';
 
 const CONDITION_ICONS: Record<number, string> = {
@@ -97,38 +98,6 @@ export default function FavoritesPage() {
         e.preventDefault();
         setRemovingId(productId);
         removeMutation.mutate(productId);
-    };
-
-    const formatPrice = (price: number) => {
-        return price % 1 === 0 ? price.toString() : price.toFixed(2);
-    };
-
-    const formatRelativeTime = (dateString: string) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = now.getTime() - date.getTime();
-        const minutes = Math.floor(diff / (1000 * 60));
-        if (minutes < 1) {
-            return '刚刚';
-        }
-        if (minutes < 60) {
-            return `${minutes}分钟前`;
-        }
-        const hours = Math.floor(minutes / 60);
-        if (hours < 24) {
-            return `${hours}小时前`;
-        }
-        const days = Math.floor(hours / 24);
-        if (days === 1) {
-            return '昨天';
-        }
-        if (days < 7) {
-            return `${days}天前`;
-        }
-        if (days < 30) {
-            return `${Math.floor(days / 7)}周前`;
-        }
-        return `${date.getMonth() + 1}月${date.getDate()}日`;
     };
 
     if (isLoading) {

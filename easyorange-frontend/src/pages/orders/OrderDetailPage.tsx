@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import './order-detail.css';
 import {
@@ -21,6 +21,7 @@ import { getOrderStatusFromCode, getOrderStatusLabel } from '@/constants';
 import { useCancelOrder, useOrderDetail, usePayOrder, useReceiveOrder, useRefundOrder } from '@/hooks';
 import { useUIStore } from '@/store';
 import type { OrderStatus } from '@/types';
+import { orderErrorMessage } from '@/utils/order';
 
 const STATUS_HERO_MAP: Record<OrderStatus, { gradient: string; icon: typeof Clock; hint: string }> = {
     PENDING_PAYMENT: {
@@ -86,23 +87,6 @@ function OrderDetailPage() {
 
     const isActionLoading = isCancelling || payOrder.isPending || receiveOrder.isPending || refundOrder.isPending;
 
-    const getErrorMessage = useCallback((err: unknown, action: string): string => {
-        if (err instanceof Error) {
-            const msg = err.message;
-            if (msg.includes('B3007') || msg.includes('无法取消')) {
-                return '该订单当前无法取消，可能已支付或已发货';
-            }
-            if (msg.includes('B3001') || msg.includes('不存在')) {
-                return '订单信息已变更，请刷新页面重试';
-            }
-            if (msg.includes('B3003') || msg.includes('非订单所有者')) {
-                return '您没有权限操作此订单';
-            }
-            return msg;
-        }
-        return `${action}失败，请重试`;
-    }, []);
-
     if (isLoading) {
         return (
             <div className="order-detail-loading">
@@ -143,7 +127,7 @@ function OrderDetailPage() {
             await cancelOrder.mutateAsync({ id: id ?? '' });
             addToast({ type: 'success', message: '订单已取消' });
         } catch (err: unknown) {
-            addToast({ type: 'error', message: getErrorMessage(err, '取消订单') });
+            addToast({ type: 'error', message: orderErrorMessage(err, '取消订单失败，请重试') });
         } finally {
             setIsCancelling(false);
         }
@@ -154,7 +138,7 @@ function OrderDetailPage() {
             await payOrder.mutateAsync(id ?? '');
             addToast({ type: 'success', message: '支付请求已提交' });
         } catch (err: unknown) {
-            addToast({ type: 'error', message: getErrorMessage(err, '支付') });
+            addToast({ type: 'error', message: orderErrorMessage(err, '支付失败，请重试') });
         }
     };
 
@@ -163,7 +147,7 @@ function OrderDetailPage() {
             await receiveOrder.mutateAsync(id ?? '');
             addToast({ type: 'success', message: '已确认收货' });
         } catch (err: unknown) {
-            addToast({ type: 'error', message: getErrorMessage(err, '确认收货') });
+            addToast({ type: 'error', message: orderErrorMessage(err, '确认收货失败，请重试') });
         }
     };
 
@@ -172,7 +156,7 @@ function OrderDetailPage() {
             await refundOrder.mutateAsync({ id: id ?? '' });
             addToast({ type: 'success', message: '退款申请已提交' });
         } catch (err: unknown) {
-            addToast({ type: 'error', message: getErrorMessage(err, '申请退款') });
+            addToast({ type: 'error', message: orderErrorMessage(err, '申请退款失败，请重试') });
         }
     };
 

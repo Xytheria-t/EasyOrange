@@ -371,7 +371,7 @@
 
 .insight-icon.green {
     background: rgba(16, 185, 129, 0.1);
-    color: #059669;
+    color: var(--status-success);
 }
 
 .insight-icon.purple {

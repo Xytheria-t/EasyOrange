@@ -226,13 +226,13 @@
 .result-success .result-icon-inner {
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(52, 211, 153, 0.1) 100%);
     border-color: rgba(16, 185, 129, 0.3);
-    color: #10b981;
+    color: var(--success);
 }
 
 .result-failed .result-icon-inner {
     background: linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(251, 113, 133, 0.1) 100%);
     border-color: rgba(244, 63, 94, 0.3);
-    color: #f43f5e;
+    color: var(--error);
 }
 
 .result-pending .result-icon-inner {

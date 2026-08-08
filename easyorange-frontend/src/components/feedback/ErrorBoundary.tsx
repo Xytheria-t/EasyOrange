@@ -23,7 +23,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         return { hasError: true, error };
     }
 
-    componentDidCatch(_error: Error, _errorInfo: React.ErrorInfo): void {
+    override componentDidCatch(_error: Error, _errorInfo: React.ErrorInfo): void {
         // Error caught by boundary
     }
 
@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         window.location.reload();
     };
 
-    render() {
+    override render() {
         if (this.state.hasError) {
             if (this.props.fallback) {
                 return this.props.fallback;

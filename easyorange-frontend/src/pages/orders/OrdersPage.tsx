@@ -18,6 +18,7 @@ import { getOrderStatusFromCode, getOrderStatusLabel } from '@/constants';
 import { useCancelOrder, useListUrlState, useMyOrders, usePayOrder, useReceiveOrder } from '@/hooks';
 import { useUIStore } from '@/store';
 import type { Order, OrderStatus } from '@/types';
+import { orderErrorMessage } from '@/utils/order';
 import './orders-page.css';
 
 const STATUS_TAB_MAP: { id: string; label: string; icon: typeof Package; statusCode?: number }[] = [
@@ -32,17 +33,17 @@ const STATUS_TAB_MAP: { id: string; label: string; icon: typeof Package; statusC
 const STATUS_STYLE_MAP: Record<OrderStatus, { bg: string; text: string; border: string; glow: string; dot: string }> = {
     PENDING_PAYMENT: {
         bg: 'rgba(251, 191, 36, 0.08)',
-        text: '#D97706',
+        text: 'var(--status-warning)',
         border: 'rgba(251, 191, 36, 0.2)',
         glow: '0 0 20px rgba(251, 191, 36, 0.15)',
         dot: '#FBBF24',
     },
     PAID: {
         bg: 'rgba(59, 130, 246, 0.08)',
-        text: '#2563EB',
+        text: 'var(--status-info)',
         border: 'rgba(59, 130, 246, 0.2)',
         glow: '0 0 20px rgba(59, 130, 246, 0.15)',
-        dot: '#3B82F6',
+        dot: 'var(--status-info-dot)',
     },
     SHIPPED: {
         bg: 'rgba(139, 92, 246, 0.08)',
@@ -53,10 +54,10 @@ const STATUS_STYLE_MAP: Record<OrderStatus, { bg: string; text: string; border: 
     },
     COMPLETED: {
         bg: 'rgba(16, 185, 129, 0.08)',
-        text: '#059669',
+        text: 'var(--status-success)',
         border: 'rgba(16, 185, 129, 0.2)',
         glow: '0 0 20px rgba(16, 185, 129, 0.15)',
-        dot: '#10B981',
+        dot: 'var(--status-success-dot)',
     },
     CANCELLED: {
         bg: 'rgba(168, 160, 152, 0.08)',
@@ -67,10 +68,10 @@ const STATUS_STYLE_MAP: Record<OrderStatus, { bg: string; text: string; border: 
     },
     REFUNDED: {
         bg: 'rgba(244, 63, 94, 0.08)',
-        text: '#E11D48',
+        text: 'var(--status-error)',
         border: 'rgba(244, 63, 94, 0.2)',
         glow: '0 0 20px rgba(244, 63, 94, 0.15)',
-        dot: '#F43F5E',
+        dot: 'var(--status-error-dot)',
     },
 };
 
@@ -115,30 +116,13 @@ function OrdersPage() {
 
     const orders = data?.records ?? [];
 
-    const getErrorMessage = useCallback((err: unknown): string => {
-        if (err instanceof Error) {
-            const msg = err.message;
-            if (msg.includes('B3007') || msg.includes('无法取消')) {
-                return '该订单当前无法取消，可能已支付或已发货';
-            }
-            if (msg.includes('B3001') || msg.includes('不存在')) {
-                return '订单信息已变更，请刷新页面重试';
-            }
-            if (msg.includes('B3003') || msg.includes('非订单所有者')) {
-                return '您没有权限操作此订单';
-            }
-            return msg;
-        }
-        return '操作失败，请重试';
-    }, []);
-
     const handleCancel = async (id: string) => {
         setCancellingId(id);
         try {
             await cancelOrder.mutateAsync({ id });
             addToast({ type: 'success', message: '订单已取消' });
         } catch (err: unknown) {
-            addToast({ type: 'error', message: getErrorMessage(err) });
+            addToast({ type: 'error', message: orderErrorMessage(err) });
         } finally {
             setCancellingId(null);
         }
@@ -149,7 +133,7 @@ function OrdersPage() {
             await payOrder.mutateAsync(id);
             addToast({ type: 'success', message: '支付请求已提交' });
         } catch (err: unknown) {
-            addToast({ type: 'error', message: getErrorMessage(err) });
+            addToast({ type: 'error', message: orderErrorMessage(err) });
         }
     };
 
@@ -158,7 +142,7 @@ function OrdersPage() {
             await receiveOrder.mutateAsync(id);
             addToast({ type: 'success', message: '已确认收货' });
         } catch (err: unknown) {
-            addToast({ type: 'error', message: getErrorMessage(err) });
+            addToast({ type: 'error', message: orderErrorMessage(err) });
         }
     };
 

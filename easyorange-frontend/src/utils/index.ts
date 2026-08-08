@@ -4,7 +4,7 @@
  */
 
 // 类名工具
-export { cn } from './cn';
+export { cn } from '@/lib/utils';
 // 错误处理
 export { errorHandler } from './errorHandler';
 

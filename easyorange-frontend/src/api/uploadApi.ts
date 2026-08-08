@@ -15,6 +15,7 @@ export const uploadFile = async (file: File) => {
         method: 'POST',
         body: formData,
         headers: {},
+        dedupe: false,
     });
 };
 
@@ -28,6 +29,7 @@ export const uploadFiles = async (files: File[]) => {
         method: 'POST',
         body: formData,
         headers: {},
+        dedupe: false,
     });
 };
 

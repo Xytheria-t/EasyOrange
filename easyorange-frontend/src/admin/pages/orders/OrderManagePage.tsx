@@ -11,12 +11,12 @@ import { OrderDetailModal } from './OrderDetailModal';
 
 const STATUS_FILTER_OPTIONS = [
     { value: '', label: '全部状态' },
-    { value: '0', label: '待付款' },
-    { value: '1', label: '待发货' },
-    { value: '2', label: '已发货' },
-    { value: '3', label: '已完成' },
-    { value: '4', label: '已取消' },
-    { value: '5', label: '退款中' },
+    { value: 'PENDING_PAYMENT', label: '待付款' },
+    { value: 'PAID', label: '待发货' },
+    { value: 'SHIPPED', label: '已发货' },
+    { value: 'COMPLETED', label: '已完成' },
+    { value: 'CANCELLED', label: '已取消' },
+    { value: 'REFUNDED', label: '退款中' },
 ];
 
 export default function OrderManagePage() {
@@ -132,7 +132,7 @@ export default function OrderManagePage() {
         {
             key: 'status',
             title: '状态',
-            render: value => <StatusBadge status={value as number} type="order" />,
+            render: value => <StatusBadge status={value as string} type="order" />,
         },
         {
             key: 'createTime',

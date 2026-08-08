@@ -673,19 +673,19 @@
 }
 
 .toast-item.toast-success {
-    background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--success) 0%, var(--status-success) 100%);
 }
 
 .toast-item.toast-error {
-    background: linear-gradient(135deg, var(--error) 0%, #e11d48 100%);
+    background: linear-gradient(135deg, var(--error) 0%, var(--status-error) 100%);
 }
 
 .toast-item.toast-warning {
-    background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+    background: linear-gradient(135deg, var(--warning) 0%, var(--status-warning) 100%);
 }
 
 .toast-item.toast-info {
-    background: linear-gradient(135deg, var(--info) 0%, #2563eb 100%);
+    background: linear-gradient(135deg, var(--info) 0%, var(--status-info) 100%);
 }
 
 .toast-message {

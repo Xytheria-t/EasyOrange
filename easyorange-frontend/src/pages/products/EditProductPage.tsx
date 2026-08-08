@@ -1,4 +1,3 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
     AlertTriangle,
     ArrowLeft,
@@ -15,18 +14,16 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ConfirmModal } from '@/admin/components/ConfirmModal';
-import { uploadFile } from '@/api/uploadApi';
 import { Input, Label } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { CONDITION_LABEL_MAP } from '@/constants';
 import { useCategories, useDeleteProduct, useProduct, useUpdateProduct } from '@/hooks';
-import { type PublishFormData, publishSchema } from '@/schemas/publishSchema';
-import { compressImage } from '@/utils/imageCompress';
+import { buildProductPayload, useProductForm } from '@/hooks/useProductForm';
 import './edit-product.css';
 
 function EditProductPage() {
@@ -37,33 +34,19 @@ function EditProductPage() {
     const deleteProduct = useDeleteProduct();
     const { data: categories } = useCategories();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const {
         register,
         handleSubmit: rhfHandleSubmit,
         watch,
-        setValue,
         control,
         reset,
         formState,
-    } = useForm<PublishFormData>({
-        resolver: zodResolver(publishSchema),
-        reValidateMode: 'onChange',
-        defaultValues: {
-            name: '',
-            description: '',
-            price: '',
-            originalPrice: '',
-            categoryId: '',
-            conditionLevel: '',
-            stock: '1',
-            location: '',
-            contactMethod: '',
-            imageUrls: [],
-        },
-    });
+        handleImageSelect,
+        handleImageUrlRemove,
+        uploadingIndex,
+    } = useProductForm();
 
     const vals = watch();
 
@@ -84,66 +67,9 @@ function EditProductPage() {
         }
     }, [product, reset]);
 
-    const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files) {
-            return;
-        }
-
-        for (const file of Array.from(files)) {
-            const currentImages = watch('imageUrls');
-            if (currentImages.length >= 9) {
-                break;
-            }
-            if (!file.type.startsWith('image/')) {
-                continue;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                continue;
-            }
-
-            const index = currentImages.length;
-            setUploadingIndex(index);
-            try {
-                const compressed = await compressImage(file);
-                const result = await uploadFile(compressed);
-                if (result.data?.url) {
-                    setValue('imageUrls', [...watch('imageUrls'), result.data.url], { shouldValidate: true });
-                }
-            } catch {
-                // image upload failed silently - error handled by parent
-            } finally {
-                setUploadingIndex(null);
-            }
-        }
-
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
-    const handleImageUrlRemove = (index: number) => {
-        setValue(
-            'imageUrls',
-            watch('imageUrls').filter((_, i) => i !== index),
-            { shouldValidate: true }
-        );
-    };
-
     const onSubmit = rhfHandleSubmit(async data => {
         try {
-            await updateProduct.mutateAsync({
-                name: data.name.trim(),
-                description: data.description.trim(),
-                price: Number(data.price),
-                originalPrice: data.originalPrice ? Number(data.originalPrice) : undefined,
-                categoryId: data.categoryId,
-                conditionLevel: Number(data.conditionLevel),
-                stock: Number(data.stock) || 1,
-                location: data.location.trim() || undefined,
-                contactMethod: data.contactMethod.trim() || undefined,
-                imageUrls: data.imageUrls,
-            });
+            await updateProduct.mutateAsync(buildProductPayload(data));
             navigate(`/products/${id}`);
         } catch {
             // update failed silently - error toast handled by hook

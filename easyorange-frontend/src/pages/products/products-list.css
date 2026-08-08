@@ -1398,7 +1398,7 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #10b981;
+    background: var(--status-success-dot);
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
     animation: statusPulse 2s ease-in-out infinite;
 }
@@ -1418,7 +1418,7 @@
 .status-text {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #059669;
+    color: var(--status-success);
     letter-spacing: 0.02em;
 }
 
@@ -2067,7 +2067,7 @@
     justify-content: center;
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.08));
     border-radius: var(--radius-lg);
-    color: #059669;
+    color: var(--status-success);
     flex-shrink: 0;
 }
 
@@ -2105,7 +2105,7 @@
     top: 0.5em;
     width: 6px;
     height: 6px;
-    background: #10b981;
+    background: var(--status-success-dot);
     border-radius: 50%;
     box-shadow: 0 0 4px rgba(16, 185, 129, 0.3);
 }

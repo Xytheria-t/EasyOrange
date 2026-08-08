@@ -1,4 +1,4 @@
-import type { ProductStatus } from '@/types';
+import type { OrderStatus, ProductStatus } from '@/types';
 
 export interface AdminUser {
     userId: string;
@@ -125,7 +125,7 @@ export interface UpdateStatusRequest {
 }
 
 export interface UpdateUserStatusRequest {
-    status: number;
+    status: string;
 }
 
 export interface ActionResponse {
@@ -155,9 +155,9 @@ export interface AdminOrder {
     items: AdminOrderItem[];
     totalAmount: number;
     singleItem: boolean;
-    status: number;
+    status: OrderStatus;
     statusDesc: string;
-    paymentStatus: number;
+    paymentStatus: string;
     paymentStatusDesc: string;
     createTime: string | null;
 }
@@ -170,9 +170,9 @@ export interface AdminOrderDetail {
     items: AdminOrderDetailItem[];
     totalAmount: number;
     singleItem: boolean;
-    status: number;
+    status: OrderStatus;
     statusDesc: string;
-    paymentStatus: number;
+    paymentStatus: string;
     paymentNo: string | null;
     paidAmount: number | null;
     refundedAmount: number | null;

@@ -99,7 +99,7 @@ describe('FavoritesPage', () => {
         expect(await screen.findByText('测试商品0')).toBeInTheDocument();
         expect(screen.getByText('电子产品')).toBeInTheDocument();
         expect(screen.getByText('¥99.99')).toBeInTheDocument();
-        expect(screen.getByText('¥150')).toBeInTheDocument();
+        expect(screen.getByText('¥150.00')).toBeInTheDocument();
         expect(screen.getByText('1')).toBeInTheDocument(); // count badge
     });
 

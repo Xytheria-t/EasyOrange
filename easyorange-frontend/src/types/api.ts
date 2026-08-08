@@ -5,7 +5,6 @@ export interface RequestOptions extends Omit<RequestInit, 'body' | 'headers' | '
     params?: Record<string, unknown>;
     timeout?: number;
     retries?: number;
-    cache?: boolean;
     signal?: AbortSignal;
     dedupe?: boolean;
     skipAuth?: boolean;

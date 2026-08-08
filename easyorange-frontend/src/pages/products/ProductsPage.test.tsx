@@ -19,7 +19,6 @@ const mockUseSemanticSearch = vi.hoisted(() =>
         total: 0,
         search: vi.fn(),
         toggleSemanticMode: vi.fn(),
-        setResults: vi.fn(),
     }))
 );
 

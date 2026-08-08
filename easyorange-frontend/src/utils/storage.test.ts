@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { StorageUtils, storage } from './storage';
+import { storage } from './storage';
 
 describe('storage', () => {
     beforeEach(() => {
@@ -77,16 +77,6 @@ describe('storage', () => {
             storage.clear();
             expect(localStorage.getItem('a')).toBeNull();
             expect(localStorage.getItem('b')).toBeNull();
-        });
-    });
-
-    describe('StorageUtils', () => {
-        it('exposes the same methods as storage', () => {
-            StorageUtils.set('utils', 'works');
-            expect(StorageUtils.get('utils')).toBe('works');
-            expect(StorageUtils.has('utils')).toBe(true);
-            StorageUtils.remove('utils');
-            expect(StorageUtils.has('utils')).toBe(false);
         });
     });
 });

@@ -12,9 +12,9 @@ import { UserDetailModal } from './UserDetailModal';
 
 const STATUS_FILTER_OPTIONS = [
     { value: '', label: '全部状态' },
-    { value: '0', label: '正常' },
-    { value: '1', label: '禁用' },
-    { value: '2', label: '锁定' },
+    { value: 'NORMAL', label: '正常' },
+    { value: 'DISABLED', label: '禁用' },
+    { value: 'LOCKED', label: '锁定' },
 ];
 
 const USER_TYPE_FILTER_OPTIONS = [
@@ -74,7 +74,7 @@ export default function UserManagePage() {
             }
             await updateStatusMutation.mutateAsync({
                 id: selectedUser.userId,
-                data: { status: Number(status) },
+                data: { status },
             });
             setModalOpen(false);
             setSelectedUser(null);
@@ -143,7 +143,7 @@ export default function UserManagePage() {
         {
             key: 'status',
             title: '状态',
-            render: (_value, record) => <StatusBadge status={record.statusDesc ?? record.status ?? ''} type="user" />,
+            render: (_value, record) => <StatusBadge status={record.status ?? ''} type="user" />,
         },
         {
             key: 'createTime',

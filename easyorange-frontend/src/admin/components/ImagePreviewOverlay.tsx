@@ -12,10 +12,11 @@ interface ImagePreviewOverlayProps {
 export function ImagePreviewOverlay({ src, onClose }: ImagePreviewOverlayProps) {
     return (
         <>
-            <button
+            <Button
                 type="button"
+                variant="ghost"
                 aria-label="关闭预览（点击空白处或按 Esc）"
-                className="fixed inset-0 z-50 cursor-default border-0 bg-[rgba(42,37,32,0.88)] p-0"
+                className="fixed inset-0 z-50 cursor-default border-0 bg-[rgba(42,37,32,0.88)] p-0 hover:bg-[rgba(42,37,32,0.88)]"
                 style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
                 onClick={onClose}
                 onKeyDown={e => {

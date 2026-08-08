@@ -39,7 +39,6 @@ function ProductsPage() {
     } = useListUrlState();
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState(urlKeyword);
     const [semanticPage, setSemanticPage] = useState(1);
 
     const queryParams = useMemo<{
@@ -68,10 +67,6 @@ function ProductsPage() {
     }, [urlKeyword, filters]);
 
     const activeFilter: ToolsPlazaFilter = queryParams.hasDiscount ? 'discount' : 'all';
-
-    useEffect(() => {
-        setSearchQuery(urlKeyword || '');
-    }, [urlKeyword]);
 
     const {
         data: infiniteData,
@@ -264,20 +259,19 @@ function ProductsPage() {
     }, [filters, setUrlState]);
 
     const handleSearchSubmit = useCallback(
-        (e: React.FormEvent) => {
+        (e: React.FormEvent<HTMLFormElement>) => {
             e.preventDefault();
-            const trimmed = searchQuery.trim();
+            const trimmed = (new FormData(e.currentTarget).get('keyword') as string | null)?.trim() ?? '';
             if (trimmed === urlKeyword) {
                 return;
             }
             setSemanticPage(1);
             setUrlKeyword(trimmed);
         },
-        [searchQuery, urlKeyword, setUrlKeyword]
+        [urlKeyword, setUrlKeyword]
     );
 
     const handleSearchClear = useCallback(() => {
-        setSearchQuery('');
         setSemanticPage(1);
         setUrlKeyword('');
     }, [setUrlKeyword]);
@@ -357,13 +351,14 @@ function ProductsPage() {
                     <form className="search-bar" onSubmit={handleSearchSubmit}>
                         <Search size={16} className="search-bar-icon" />
                         <Input
+                            key={urlKeyword}
                             type="text"
+                            name="keyword"
                             className="search-bar-input"
                             placeholder="搜索托管商品..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
+                            defaultValue={urlKeyword}
                         />
-                        {searchQuery && (
+                        {urlKeyword && (
                             <Button
                                 type="button"
                                 variant="ghost"

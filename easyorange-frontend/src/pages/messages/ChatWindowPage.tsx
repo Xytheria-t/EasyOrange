@@ -5,6 +5,7 @@ import { ChatHeader, ChatInputBar, MessageList } from '@/components/chat';
 import { useChatMessages, useMessageRecall, useStompChat } from '@/hooks/chat';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/chatStore';
+import { WS_MESSAGE_TYPE_CHAT } from '@/types/message';
 import './chat-window.css';
 
 function ChatWindowPage() {
@@ -56,7 +57,7 @@ function ChatWindowPage() {
             sendMessage({
                 receiverId: targetUserId,
                 content: content.trim(),
-                type: 2,
+                type: WS_MESSAGE_TYPE_CHAT,
                 conversationId,
             });
         },

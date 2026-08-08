@@ -8,38 +8,38 @@ export interface OrderDetailModalProps {
     onClose: () => void;
 }
 
-const STATUS_CONFIG: Record<number, { bg: string; color: string; dot: string; label: string }> = {
-    0: {
+const STATUS_CONFIG: Record<string, { bg: string; color: string; dot: string; label: string }> = {
+    PENDING_PAYMENT: {
         bg: 'linear-gradient(135deg, rgba(249,158,11,0.10), rgba(251,191,36,0.06))',
         color: '#D97706',
         dot: '#F59E0B',
         label: '待付款',
     },
-    1: {
+    PAID: {
         bg: 'linear-gradient(135deg, rgba(59,130,246,0.10), rgba(96,165,250,0.06))',
         color: '#2563EB',
         dot: '#3B82F6',
         label: '待发货',
     },
-    2: {
+    SHIPPED: {
         bg: 'linear-gradient(135deg, rgba(139,92,246,0.10), rgba(167,139,250,0.06))',
         color: '#7C3AED',
         dot: '#8B5CF6',
         label: '已发货',
     },
-    3: {
+    COMPLETED: {
         bg: 'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(52,211,153,0.06))',
         color: '#059669',
         dot: '#10B981',
         label: '已完成',
     },
-    4: {
+    CANCELLED: {
         bg: 'linear-gradient(135deg, rgba(156,163,175,0.10), rgba(209,213,219,0.06))',
         color: '#6B7280',
         dot: '#9CA3AF',
         label: '已取消',
     },
-    5: {
+    REFUNDED: {
         bg: 'linear-gradient(135deg, rgba(244,63,94,0.10), rgba(251,113,133,0.06))',
         color: '#E11D48',
         dot: '#F43F5E',
@@ -47,10 +47,10 @@ const STATUS_CONFIG: Record<number, { bg: string; color: string; dot: string; la
     },
 };
 
-const PAYMENT_STATUS: Record<number, string> = {
-    0: '未支付',
-    1: '已支付',
-    2: '已退款',
+const PAYMENT_STATUS: Record<string, string> = {
+    UNPAID: '未支付',
+    PAID: '已支付',
+    REFUNDED: '已退款',
 };
 
 function formatDateTime(dateString: string | null) {
@@ -74,7 +74,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
     }
 
     const orderData = order as AdminOrderDetail | undefined;
-    const statusCfg = STATUS_CONFIG[orderData?.status ?? 0] ?? STATUS_CONFIG[0];
+    const statusCfg = STATUS_CONFIG[orderData?.status ?? 'PENDING_PAYMENT'] ?? STATUS_CONFIG.PENDING_PAYMENT;
 
     return (
         <AdminDetailModal

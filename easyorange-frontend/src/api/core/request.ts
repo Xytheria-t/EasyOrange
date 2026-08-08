@@ -1,6 +1,6 @@
 import { getStoredToken, handleUnauthorized, refreshAccessToken } from '@/features/auth/session';
 import { type ApiCode, isSuccessCode, type RequestOptions, type Result } from '@/types';
-import { clearCache, getCacheKey, getFromCache, setToCache } from './cache';
+import { buildQueryString, escapeHtml } from '@/utils/format';
 import {
     addRequestInterceptor,
     addResponseInterceptor,
@@ -27,17 +27,6 @@ class ApiClientError extends Error {
         this.details = details;
     }
 }
-
-const escapeHtml = (str: string): string => {
-    const htmlEscapes: Record<string, string> = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-    };
-    return str.replace(/[&<>"']/g, ch => htmlEscapes[ch]);
-};
 
 const parseError = async (response: Response): Promise<ApiClientError> => {
     let message = `HTTP error! status: ${response.status}`;
@@ -74,12 +63,13 @@ const isRetryable = (status: ApiCode): boolean => {
     return status === 0 || status === 408 || status === 429 || status >= 500;
 };
 
+/** POST 等非幂等方法重试会重复副作用（如重复发消息），重试仅限幂等方法。 */
+const isIdempotentMethod = (method: string): boolean =>
+    method === 'GET' || method === 'PUT' || method === 'DELETE' || method === 'PATCH';
+
 const buildQueryParams = (params: Record<string, unknown>): string => {
-    const filtered = Object.entries(params).filter(([, v]) => v !== null && v !== undefined && v !== '');
-    if (filtered.length === 0) {
-        return '';
-    }
-    return `?${new URLSearchParams(filtered.map(([k, v]) => [k, String(v)])).toString()}`;
+    const query = buildQueryString(params);
+    return query ? `?${query}` : '';
 };
 
 const PUBLIC_ENDPOINTS = new Set(['/auth/login', '/auth/register', '/auth/password/reset', '/auth/sms-code']);
@@ -101,7 +91,6 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
         params,
         timeout = DEFAULT_TIMEOUT,
         retries = DEFAULT_RETRIES,
-        cache = false,
         signal,
         dedupe = true,
         skipAuth = false,
@@ -109,15 +98,7 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
 
     const queryString = params ? buildQueryParams(params) : '';
     const url = `${API_BASE_URL}${endpoint}${queryString}`;
-    const cacheKey = getCacheKey(endpoint, { body, params });
     const requestKey = requestManager.generateKey(endpoint, { method, body });
-
-    if (cache && method === 'GET') {
-        const cachedData = getFromCache<Result<T>>(cacheKey);
-        if (cachedData) {
-            return cachedData;
-        }
-    }
 
     if (dedupe && requestManager.isDuplicate(requestKey)) {
         throw new ApiClientError('重复请求已取消', 0);
@@ -204,10 +185,6 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
 
                 const data = (await processedResponse.json()) as Result<T>;
 
-                if (cache && method === 'GET' && data && isSuccessCode(data.code)) {
-                    setToCache(cacheKey, data);
-                }
-
                 if (!isSuccessCode(data.code)) {
                     throw new ApiClientError(data.message || '请求失败', data.code, data.data);
                 }
@@ -218,6 +195,7 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
 
                 const shouldRetry =
                     attempt < retries &&
+                    isIdempotentMethod(method) &&
                     error instanceof ApiClientError &&
                     isRetryable(error.status) &&
                     !controller.signal.aborted;
@@ -255,7 +233,6 @@ export {
     addRequestInterceptor,
     addResponseInterceptor,
     buildQueryParams,
-    clearCache,
     request,
     requestManager,
 };

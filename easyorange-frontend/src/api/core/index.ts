@@ -1,4 +1,3 @@
-export { clearCache as clearRequestCache, getCacheKey, getFromCache, setToCache } from './cache';
 export type { RequestConfig, RequestInterceptor, ResponseInterceptor } from './interceptors';
 export {
     API_BASE_URL,
@@ -6,7 +5,6 @@ export {
     addRequestInterceptor,
     addResponseInterceptor,
     buildQueryParams,
-    clearCache,
     request,
     requestManager,
 } from './request';

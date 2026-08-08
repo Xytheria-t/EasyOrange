@@ -116,7 +116,7 @@ export function parseQueryString(queryString = window.location.search): Record<s
     return result;
 }
 
-export function buildQueryString(params: Record<string, string | number | boolean | null | undefined>): string {
+export function buildQueryString(params: Record<string, unknown>): string {
     const filtered = Object.entries(params)
         .filter(([, value]) => value !== null && value !== undefined && value !== '')
         .map(([key, value]) => [key, String(value)]);

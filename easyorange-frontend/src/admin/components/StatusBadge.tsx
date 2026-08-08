@@ -1,6 +1,5 @@
 import { Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
-import type { ProductStatus } from '@/types';
 
 export interface StatusBadgeProps {
     status: number | string;
@@ -8,13 +7,15 @@ export interface StatusBadgeProps {
     className?: string;
 }
 
-const userStatusConfig: Record<number, { label: string; variant: StatusVariant }> = {
-    0: { label: '正常', variant: 'success' },
-    1: { label: '禁用', variant: 'error' },
-    2: { label: '锁定', variant: 'warning' },
+type StatusConfig = { label: string; variant: StatusVariant };
+
+const userStatusConfig: Record<string, StatusConfig> = {
+    NORMAL: { label: '正常', variant: 'success' },
+    DISABLED: { label: '禁用', variant: 'error' },
+    LOCKED: { label: '锁定', variant: 'warning' },
 };
 
-const productStatusConfig: Record<ProductStatus, { label: string; variant: StatusVariant }> = {
+const productStatusConfig: Record<string, StatusConfig> = {
     DRAFT: { label: '草稿', variant: 'default' },
     ONLINE: { label: '上架', variant: 'success' },
     SOLD: { label: '已售', variant: 'info' },
@@ -23,16 +24,16 @@ const productStatusConfig: Record<ProductStatus, { label: string; variant: Statu
     REJECTED: { label: '已驳回', variant: 'error' },
 };
 
-const orderStatusConfig: Record<number, { label: string; variant: StatusVariant }> = {
-    0: { label: '待付款', variant: 'warning' },
-    1: { label: '待发货', variant: 'info' },
-    2: { label: '已发货', variant: 'info' },
-    3: { label: '已完成', variant: 'success' },
-    4: { label: '已取消', variant: 'default' },
-    5: { label: '退款中', variant: 'error' },
+const orderStatusConfig: Record<string, StatusConfig> = {
+    PENDING_PAYMENT: { label: '待付款', variant: 'warning' },
+    PAID: { label: '待发货', variant: 'info' },
+    SHIPPED: { label: '已发货', variant: 'info' },
+    COMPLETED: { label: '已完成', variant: 'success' },
+    CANCELLED: { label: '已取消', variant: 'default' },
+    REFUNDED: { label: '退款中', variant: 'error' },
 };
 
-const reportStatusConfig: Record<number, { label: string; variant: StatusVariant }> = {
+const reportStatusConfig: Record<string, StatusConfig> = {
     0: { label: '待处理', variant: 'error' },
     1: { label: '处理中', variant: 'warning' },
     2: { label: '已处理', variant: 'success' },
@@ -43,33 +44,33 @@ type StatusVariant = 'success' | 'warning' | 'error' | 'info' | 'default';
 
 const variantConfig: Record<StatusVariant, { bg: string; color: string; dot: string }> = {
     success: {
-        bg: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.05))',
-        color: '#059669',
-        dot: '#10B981',
+        bg: 'var(--status-success-bg)',
+        color: 'var(--status-success)',
+        dot: 'var(--status-success-dot)',
     },
     warning: {
-        bg: 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.05))',
-        color: '#D97706',
-        dot: '#F59E0B',
+        bg: 'var(--status-warning-bg)',
+        color: 'var(--status-warning)',
+        dot: 'var(--status-warning-dot)',
     },
     error: {
-        bg: 'linear-gradient(135deg, rgba(244,63,94,0.10), rgba(244,63,94,0.05))',
-        color: '#E11D48',
-        dot: '#F43F5E',
+        bg: 'var(--status-error-bg)',
+        color: 'var(--status-error)',
+        dot: 'var(--status-error-dot)',
     },
     info: {
-        bg: 'linear-gradient(135deg, rgba(59,130,246,0.10), rgba(59,130,246,0.05))',
-        color: '#2563EB',
-        dot: '#3B82F6',
+        bg: 'var(--status-info-bg)',
+        color: 'var(--status-info)',
+        dot: 'var(--status-info-dot)',
     },
     default: {
-        bg: 'linear-gradient(135deg, rgba(168,160,152,0.10), rgba(168,160,152,0.05))',
-        color: '#9B9590',
-        dot: '#C4BCB4',
+        bg: 'var(--status-default-bg)',
+        color: 'var(--status-default)',
+        dot: 'var(--status-default-dot)',
     },
 };
 
-const configMap = {
+const configMap: Record<StatusBadgeProps['type'], Record<string, StatusConfig>> = {
     user: userStatusConfig,
     product: productStatusConfig,
     order: orderStatusConfig,
@@ -77,20 +78,7 @@ const configMap = {
 };
 
 export function StatusBadge({ status, type, className }: StatusBadgeProps) {
-    let config: { label: string; variant: StatusVariant } | undefined;
-    if (type === 'product' && typeof status === 'string') {
-        config = productStatusConfig[status as ProductStatus];
-    }
-    if (!config && typeof status === 'number') {
-        config = (configMap[type] as Record<number, { label: string; variant: StatusVariant }>)[status];
-    }
-    if (!config && typeof status === 'string') {
-        const numericStatus = Number(status);
-        if (!Number.isNaN(numericStatus)) {
-            config = (configMap[type] as Record<number, { label: string; variant: StatusVariant }>)[numericStatus];
-        }
-    }
-
+    const config = configMap[type][String(status)];
     const fallbackLabel = typeof status === 'string' && status.trim() ? status : '未知';
     const { label, variant } = config ?? { label: fallbackLabel, variant: 'default' as StatusVariant };
     const vs = variantConfig[variant];

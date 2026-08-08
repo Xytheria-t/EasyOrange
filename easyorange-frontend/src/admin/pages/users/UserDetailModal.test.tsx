@@ -14,7 +14,7 @@ const mockUser: AdminUser = {
     realName: null,
     userType: '01',
     userTypeDesc: '学生',
-    status: '0',
+    status: 'NORMAL',
     statusDesc: '正常',
     loginIp: null,
     loginDate: null,
@@ -61,7 +61,7 @@ describe('UserDetailModal', () => {
         render(<UserDetailModal {...defaultProps} onSave={onSave} />);
         fireEvent.click(screen.getByText('禁用'));
         fireEvent.click(screen.getByText('保存修改'));
-        await waitFor(() => expect(onSave).toHaveBeenCalledWith('1'));
+        await waitFor(() => expect(onSave).toHaveBeenCalledWith('DISABLED'));
     });
 
     it('disables save button when status unchanged', () => {

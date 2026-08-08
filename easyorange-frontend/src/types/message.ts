@@ -10,6 +10,9 @@ export interface ChatSession {
 
 export type ChatMessageType = 'TEXT' | 'IMAGE' | 'PRODUCT' | 'RECALLED';
 
+/** WS 发送协议的消息类型（与后端 MessageType.CHAT 的 code 对齐） */
+export const WS_MESSAGE_TYPE_CHAT = 2;
+
 export type ChatMessageStatus = 'SENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED' | 'RECALLED';
 
 export interface ChatMessage {

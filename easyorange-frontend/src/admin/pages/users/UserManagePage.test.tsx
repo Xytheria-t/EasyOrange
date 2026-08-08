@@ -132,7 +132,7 @@ const sampleUsers: AdminUser[] = [
         realName: null,
         userType: '01',
         userTypeDesc: '学生',
-        status: '0',
+        status: 'NORMAL',
         statusDesc: '正常',
         loginIp: null,
         loginDate: null,
@@ -150,7 +150,7 @@ const sampleUsers: AdminUser[] = [
         realName: null,
         userType: '02',
         userTypeDesc: '教师',
-        status: '1',
+        status: 'DISABLED',
         statusDesc: '禁用',
         loginIp: null,
         loginDate: null,
@@ -247,7 +247,7 @@ describe('UserManagePage', () => {
 
         const selects = screen.getAllByTestId('admin-select');
         const statusSelect = selects[0];
-        fireEvent.change(statusSelect, { target: { value: '0' } });
+        fireEvent.change(statusSelect, { target: { value: 'NORMAL' } });
 
         expect(mockUseAdminUsers).toHaveBeenCalled();
     });
@@ -311,7 +311,7 @@ describe('UserManagePage', () => {
             realName: null,
             userType: '01',
             userTypeDesc: '学生',
-            status: '0',
+            status: 'NORMAL',
             statusDesc: '正常',
             loginIp: null,
             loginDate: null,

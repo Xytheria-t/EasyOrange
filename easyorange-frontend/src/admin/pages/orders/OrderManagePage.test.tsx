@@ -130,9 +130,9 @@ const samplePageData: PageResult<AdminOrder> = {
             ],
             totalAmount: 100.0,
             singleItem: true,
-            status: 0,
+            status: 'PENDING_PAYMENT',
             statusDesc: '待付款',
-            paymentStatus: 0,
+            paymentStatus: 'UNPAID',
             paymentStatusDesc: '未支付',
             createTime: '2026-05-16T10:00:00',
         },
@@ -156,9 +156,9 @@ const samplePageData: PageResult<AdminOrder> = {
             ],
             totalAmount: 200.0,
             singleItem: true,
-            status: 1,
+            status: 'PAID',
             statusDesc: '待发货',
-            paymentStatus: 1,
+            paymentStatus: 'PAID',
             paymentStatusDesc: '已支付',
             createTime: '2026-05-16T12:00:00',
         },
@@ -241,7 +241,7 @@ describe('OrderManagePage', () => {
 
         const selects = screen.getAllByTestId('admin-select');
         const statusSelect = selects[0];
-        fireEvent.change(statusSelect, { target: { value: '1' } });
+        fireEvent.change(statusSelect, { target: { value: 'PAID' } });
 
         expect(mockUseAdminOrders).toHaveBeenCalled();
     });
@@ -287,9 +287,9 @@ describe('OrderManagePage', () => {
                 ],
                 totalAmount: (i + 1) * 100,
                 singleItem: true,
-                status: i % 3,
+                status: ['PENDING_PAYMENT', 'PAID', 'SHIPPED'][i % 3],
                 statusDesc: ['待付款', '待发货', '已发货'][i % 3],
-                paymentStatus: i % 2,
+                paymentStatus: ['UNPAID', 'PAID'][i % 2],
                 paymentStatusDesc: i % 2 === 0 ? '未支付' : '已支付',
                 createTime: '2026-05-16T10:00:00',
             })),

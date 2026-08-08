@@ -25,7 +25,7 @@ export const registerSchema = z
             .regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字和下划线'),
         password: z.string().min(8, '密码至少需要8个字符').max(128, '密码不能超过128个字符'),
         confirmPassword: z.string().min(1, '请确认密码'),
-        agreeTerms: z.literal(true, { message: '请同意服务条款和隐私政策' }),
+        agreeTerms: z.boolean().refine(v => v, '请同意服务条款和隐私政策'),
     })
     .refine(data => data.password === data.confirmPassword, {
         message: '两次输入的密码不一致',

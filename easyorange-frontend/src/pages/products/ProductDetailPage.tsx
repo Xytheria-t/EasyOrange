@@ -1,10 +1,10 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import './product-detail.css';
 import {
     ArrowLeft,
     ChevronRight as BreadcrumbSep,
     Check,
-    ChevronLeft,
     ChevronRight,
     Clock,
     Copy,
@@ -16,7 +16,6 @@ import {
     MessageSquare,
     Pencil,
     Send,
-    Share2,
     Shield,
     ShoppingCart,
     Sparkles,
@@ -27,7 +26,8 @@ import {
     User,
     Zap,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { favoriteApi } from '@/api/favoriteApi';
 import { messageApi } from '@/api/messageApi';
@@ -46,32 +46,17 @@ import {
     Textarea,
 } from '@/components/ui';
 import { Button } from '@/components/ui/button';
-import { buildThumbnailUrl, Image, preloadImages } from '@/components/ui/Image';
+import { Image, preloadImages } from '@/components/ui/Image';
 import { CONDITION_LABEL_MAP, STATUS_LABEL_MAP } from '@/constants';
 import { useCreateOrder, useProduct, useSimilarProducts } from '@/hooks';
 import { useAiQa } from '@/hooks/useAiQa';
+import { type OrderFormData, orderFormSchema, type ReviewFormData, reviewSchema } from '@/schemas/productDetailSchema';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import type { ChatMessage } from '@/types/message';
 import { formatRelativeTime } from '@/utils';
-
-interface OrderFormData {
-    phone: string;
-    remark: string;
-}
-
-interface ReviewFormData {
-    rating: number;
-    content: string;
-}
-
-interface ChatMessage {
-    id: number;
-    senderId: number;
-    receiverId: number;
-    content: string;
-    createTime: string;
-    isMine: boolean;
-}
+import { normalizeChatMessages } from '@/utils/message';
+import { ProductGallery } from './components/ProductGallery';
 
 function ProductDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -96,18 +81,25 @@ function ProductDetailPage() {
     const queryClient = useQueryClient();
     const createOrder = useCreateOrder();
     const { qaHistory: aiQaHistory, isLoading: aiQaLoading, ask: aiAsk } = useAiQa();
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [imageLoaded, setImageLoaded] = useState(false);
     const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
     const [showOrderModal, setShowOrderModal] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
     const [showChatModal, setShowChatModal] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
-    const [orderForm, setOrderForm] = useState<OrderFormData>({ phone: '', remark: '' });
-    const [reviewForm, setReviewForm] = useState<ReviewFormData>({ rating: 5, content: '' });
+    const orderForm = useForm<OrderFormData>({
+        resolver: zodResolver(orderFormSchema),
+        defaultValues: { phone: '', remark: '' },
+        reValidateMode: 'onChange',
+    });
+    const reviewForm = useForm<ReviewFormData>({
+        resolver: zodResolver(reviewSchema),
+        defaultValues: { rating: 5, content: '' },
+        reValidateMode: 'onChange',
+    });
     const [chatMessage, setChatMessage] = useState('');
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [copied, setCopied] = useState(false);
+    const reviewRating = reviewForm.watch('rating');
 
     const productId = id ?? '';
 
@@ -148,45 +140,28 @@ function ProductDetailPage() {
     }, [productId]);
 
     useEffect(() => {
-        setCurrentImageIndex(0);
-        setImageLoaded(false);
-    }, []);
-
-    useEffect(() => {
         if (!showChatModal || !product?.sellerId || !token) {
             return;
         }
         const loadChatHistory = async () => {
             try {
                 const response = await messageApi.getConversation(product.sellerId);
-                const rawData = response.data as unknown as Record<string, unknown>[];
-                const messages = (rawData ?? []).map(message => ({
-                    id: message.id as number,
-                    senderId: message.senderId as number,
-                    receiverId: message.receiverId as number,
-                    content: message.content as string,
-                    createTime: message.createTime as string,
-                    isMine: message.senderId === user?.userId,
-                }));
-                setChatMessages(messages.reverse());
+                setChatMessages(normalizeChatMessages(response.data ?? []).reverse());
             } catch {
                 setChatMessages([]);
             }
         };
         loadChatHistory();
-    }, [showChatModal, product?.sellerId, token, user?.userId]);
+    }, [showChatModal, product?.sellerId, token]);
 
     const submitReview = useMutation({
-        mutationFn: async () => {
-            await reviewApi.createReview(productId, {
-                rating: reviewForm.rating,
-                content: reviewForm.content,
-            });
+        mutationFn: async ({ rating, content }: ReviewFormData) => {
+            await reviewApi.createReview(productId, { rating, content });
         },
         onSuccess: () => {
             addToast({ type: 'success', message: '评价提交成功' });
             setShowReviewModal(false);
-            setReviewForm({ rating: 5, content: '' });
+            reviewForm.reset();
             queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
         },
         onError: () => {
@@ -206,17 +181,6 @@ function ProductDetailPage() {
             addToast({ type: 'error', message: '重新提交失败，请重试' });
         },
     });
-
-    const preloadAdjacentImages = useCallback((centerIdx: number, allImages: string[]) => {
-        if (allImages.length <= 1) {
-            return;
-        }
-        const prevIdx = (centerIdx - 1 + allImages.length) % allImages.length;
-        const nextIdx = (centerIdx + 1) % allImages.length;
-        preloadImages([allImages[prevIdx], allImages[nextIdx]], { width: 600, format: 'webp', quality: 80 }).catch(
-            () => {}
-        );
-    }, []);
 
     if (isLoading) {
         return (
@@ -262,18 +226,6 @@ function ProductDetailPage() {
     const isRejected = product.status === 'REJECTED';
     const hasDiscount = product.originalPrice != null && product.originalPrice > product.price;
     const discountPercent = hasDiscount ? Math.round((1 - product.price / (product.originalPrice as number)) * 100) : 0;
-
-    const handlePrevImage = () => {
-        const prevIndex = (currentImageIndex - 1 + images.length) % images.length;
-        setCurrentImageIndex(prevIndex);
-        preloadAdjacentImages(prevIndex, images);
-    };
-
-    const handleNextImage = () => {
-        const nextIndex = (currentImageIndex + 1) % images.length;
-        setCurrentImageIndex(nextIndex);
-        preloadAdjacentImages(nextIndex, images);
-    };
 
     const handleFavoriteToggle = async () => {
         if (!token) {
@@ -373,8 +325,12 @@ function ProductDetailPage() {
                     senderId: user?.userId ?? '',
                     receiverId: product.sellerId,
                     content: chatMessage.trim(),
+                    type: 'TEXT',
+                    status: 'SENT',
                     createTime: new Date().toISOString(),
-                } as unknown as ChatMessage,
+                    readTime: null,
+                    recalledAt: null,
+                },
             ]);
             setChatMessage('');
             addToast({ type: 'success', message: '消息已发送' });
@@ -387,37 +343,25 @@ function ProductDetailPage() {
         setChatMessage(text);
     };
 
-    const handleSubmitReview = () => {
-        if (!reviewForm.content.trim()) {
-            addToast({ type: 'error', message: '请填写评价内容' });
-            return;
-        }
-        submitReview.mutate();
-    };
+    const handleSubmitReview = reviewForm.handleSubmit(values => {
+        submitReview.mutate(values);
+    });
 
-    const handleOrderFormChange = (field: keyof OrderFormData, value: string) => {
-        setOrderForm(prev => ({ ...prev, [field]: value }));
-    };
-
-    const handleSubmitOrder = async () => {
-        if (!orderForm.phone.trim() || !/^1[3-9]\d{9}$/.test(orderForm.phone)) {
-            addToast({ type: 'error', message: '请填写正确的手机号' });
-            return;
-        }
+    const handleSubmitOrder = orderForm.handleSubmit(async values => {
         try {
             const orderId = await createOrder.mutateAsync({
                 items: [{ productId: product.id, quantity: 1 }],
-                phone: orderForm.phone.trim(),
-                remark: orderForm.remark.trim() || undefined,
+                phone: values.phone.trim(),
+                remark: values.remark.trim() || undefined,
             });
             setShowOrderModal(false);
-            setOrderForm({ phone: '', remark: '' });
+            orderForm.reset();
             addToast({ type: 'success', message: '订单创建成功' });
             navigate(`/orders/${orderId}`);
         } catch {
             addToast({ type: 'error', message: '创建订单失败，请重试' });
         }
-    };
+    });
 
     const quickReplies = ['这个商品还在吗？', '能便宜点吗？', '可以面交吗？', '商品有什么瑕疵吗？'];
 
@@ -457,124 +401,14 @@ function ProductDetailPage() {
                 </nav>
 
                 <div className="pdp-hero">
-                    <div className="pdp-gallery">
-                        <div className="pdp-gallery-main">
-                            <div className={`pdp-gallery-image-wrapper ${imageLoaded ? 'loaded' : ''}`}>
-                                {(() => {
-                                    const fileIdMatch = images[currentImageIndex]?.match(/\/api\/file\/([^/]+)/);
-                                    const fileId = fileIdMatch?.[1];
-                                    const thumbSrc = fileId
-                                        ? buildThumbnailUrl(fileId, 400)
-                                        : images[currentImageIndex];
-                                    return (
-                                        <>
-                                            {!imageLoaded && (
-                                                <Image
-                                                    src={thumbSrc}
-                                                    alt={`${product.title} - 缩略预览`}
-                                                    className="pdp-gallery-image"
-                                                    loading="eager"
-                                                    fetchPriority="high"
-                                                    placeholder="blur"
-                                                    style={{
-                                                        width: '100%',
-                                                        height: '100%',
-                                                        objectFit: 'contain',
-                                                        position: 'absolute',
-                                                        inset: 0,
-                                                    }}
-                                                />
-                                            )}
-                                            <Image
-                                                src={images[currentImageIndex]}
-                                                alt={`${product.title} - 图片 ${currentImageIndex + 1}`}
-                                                className="pdp-gallery-image"
-                                                loading="eager"
-                                                fetchPriority="high"
-                                                placeholder={imageLoaded ? 'none' : 'none'}
-                                                onLoad={() => setImageLoaded(true)}
-                                                style={{
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    objectFit: 'contain',
-                                                    position: imageLoaded ? 'relative' : 'absolute',
-                                                    inset: 0,
-                                                    zIndex: imageLoaded ? 1 : 0,
-                                                }}
-                                            />
-                                        </>
-                                    );
-                                })()}
-                            </div>
-
-                            {isSold && (
-                                <div className="pdp-sold-overlay">
-                                    <span className="pdp-sold-badge">已售出</span>
-                                </div>
-                            )}
-
-                            {images.length > 1 && (
-                                <>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={handlePrevImage}
-                                        className="pdp-gallery-nav pdp-gallery-prev"
-                                    >
-                                        <ChevronLeft size={20} />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={handleNextImage}
-                                        className="pdp-gallery-nav pdp-gallery-next"
-                                    >
-                                        <ChevronRight size={20} />
-                                    </Button>
-                                    <div className="pdp-gallery-counter">
-                                        {currentImageIndex + 1} / {images.length}
-                                    </div>
-                                </>
-                            )}
-
-                            <div className="pdp-gallery-actions">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className={`pdp-action-fab ${isFavorited ? 'favorited' : ''}`}
-                                    onClick={handleFavoriteToggle}
-                                    disabled={isFavoriteLoading}
-                                >
-                                    <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="pdp-action-fab" onClick={handleShare}>
-                                    <Share2 size={18} />
-                                </Button>
-                            </div>
-                        </div>
-
-                        {images.length > 1 && (
-                            <div className="pdp-gallery-thumbs">
-                                {images.map((img, idx) => (
-                                    <Button
-                                        key={img}
-                                        variant="ghost"
-                                        onClick={() => setCurrentImageIndex(idx)}
-                                        className={`pdp-thumb ${idx === currentImageIndex ? 'active' : ''}`}
-                                    >
-                                        <Image
-                                            src={img}
-                                            alt={`缩略图 ${idx + 1}`}
-                                            loading="lazy"
-                                            placeholder="skeleton"
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                        />
-                                        <div className="pdp-thumb-indicator" />
-                                    </Button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                    <ProductGallery
+                        images={images}
+                        isFavorited={isFavorited}
+                        isFavoriteLoading={isFavoriteLoading}
+                        isSold={isSold}
+                        onFavoriteToggle={handleFavoriteToggle}
+                        onShare={handleShare}
+                    />
 
                     <div className="pdp-info">
                         <div className="pdp-info-sticky">
@@ -1047,20 +881,21 @@ function ProductDetailPage() {
                             <Input
                                 id="order-phone"
                                 type="tel"
-                                value={orderForm.phone}
-                                onChange={e => handleOrderFormChange('phone', e.target.value)}
-                                placeholder="请输入手机号"
                                 maxLength={11}
+                                placeholder="请输入手机号"
+                                {...orderForm.register('phone')}
                             />
+                            {orderForm.formState.errors.phone && (
+                                <p className="pdp-form-error">{orderForm.formState.errors.phone.message}</p>
+                            )}
                         </div>
                         <div className="pdp-form-group">
                             <Label htmlFor="order-remark">备注</Label>
                             <Textarea
                                 id="order-remark"
-                                value={orderForm.remark}
-                                onChange={e => handleOrderFormChange('remark', e.target.value)}
                                 placeholder="选填，对资产方留言"
                                 rows={3}
+                                {...orderForm.register('remark')}
                             />
                         </div>
                     </div>
@@ -1156,7 +991,10 @@ function ProductDetailPage() {
                     <div className="pdp-chat-messages">
                         {chatMessages.length > 0 ? (
                             chatMessages.map(msg => (
-                                <div key={msg.id} className={`pdp-chat-message ${msg.isMine ? 'mine' : 'theirs'}`}>
+                                <div
+                                    key={msg.id}
+                                    className={`pdp-chat-message ${msg.senderId === user?.userId ? 'mine' : 'theirs'}`}
+                                >
                                     <div className="pdp-chat-bubble">{msg.content}</div>
                                     <span className="pdp-chat-time">{formatRelativeTime(msg.createTime)}</span>
                                 </div>
@@ -1237,11 +1075,11 @@ function ProductDetailPage() {
                                         key={star}
                                         variant="ghost"
                                         size="icon"
-                                        className={`pdp-review-star ${star <= reviewForm.rating ? 'active' : ''}`}
-                                        onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
+                                        className={`pdp-review-star ${star <= reviewRating ? 'active' : ''}`}
+                                        onClick={() => reviewForm.setValue('rating', star)}
                                         aria-label={`${star}星`}
                                     >
-                                        <Star size={24} fill={star <= reviewForm.rating ? 'currentColor' : 'none'} />
+                                        <Star size={24} fill={star <= reviewRating ? 'currentColor' : 'none'} />
                                     </Button>
                                 ))}
                             </fieldset>
@@ -1250,11 +1088,13 @@ function ProductDetailPage() {
                             <Label htmlFor="review-content">评价内容</Label>
                             <Textarea
                                 id="review-content"
-                                value={reviewForm.content}
-                                onChange={e => setReviewForm(prev => ({ ...prev, content: e.target.value }))}
                                 placeholder="分享您的购买体验..."
                                 rows={4}
+                                {...reviewForm.register('content')}
                             />
+                            {reviewForm.formState.errors.content && (
+                                <p className="pdp-form-error">{reviewForm.formState.errors.content.message}</p>
+                            )}
                         </div>
                     </div>
 

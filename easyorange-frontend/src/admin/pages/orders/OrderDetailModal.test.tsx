@@ -30,9 +30,9 @@ const sampleOrderDetail: AdminOrderDetail = {
     ],
     totalAmount: 100.0,
     singleItem: true,
-    status: 0,
+    status: 'PENDING_PAYMENT',
     statusDesc: '待付款',
-    paymentStatus: 0,
+    paymentStatus: 'UNPAID',
     paymentNo: null,
     paidAmount: null,
     refundedAmount: null,
@@ -168,7 +168,7 @@ describe('OrderDetailModal', () => {
     it('renders cancel reason when available', () => {
         const orderWithCancel: AdminOrderDetail = {
             ...sampleOrderDetail,
-            status: 4,
+            status: 'CANCELLED',
             cancelReason: '认领方申请取消',
         };
         setupMocks({ data: orderWithCancel });

@@ -1,4 +1,3 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
     AlertCircle,
     Camera,
@@ -19,10 +18,9 @@ import {
     Upload,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { productApi } from '@/api/productApi';
-import { uploadFile } from '@/api/uploadApi';
 import { AiCopyGeneration } from '@/components/ai/AiCopyGeneration';
 import { AiPhotoCapture } from '@/components/ai/AiPhotoCapture';
 import { AiPricingBadge } from '@/components/ai/AiPricingBadge';
@@ -35,9 +33,8 @@ import { useCategories, useCreateProduct } from '@/hooks';
 import { useAiCopyGeneration } from '@/hooks/useAiCopyGeneration';
 import { useAiPricing } from '@/hooks/useAiPricing';
 import { useAutoListing } from '@/hooks/useAutoListing';
-import { type PublishFormData, publishSchema } from '@/schemas/publishSchema';
-import { useUIStore } from '@/store/uiStore';
-import { compressImage } from '@/utils/imageCompress';
+import { buildProductPayload, useProductForm } from '@/hooks/useProductForm';
+import type { PublishFormData } from '@/schemas/publishSchema';
 import './publish.css';
 
 const CONDITION_ICONS: Record<number, string> = {
@@ -58,7 +55,6 @@ function PublishPage() {
     const navigate = useNavigate();
     const createProduct = useCreateProduct();
     const { data: categories } = useCategories();
-    const addToast = useUIStore(s => s.addToast);
     const { suggestion, isLoading: aiPricingLoading, getPricing, clearSuggestion } = useAiPricing();
     const {
         result: autoListingResult,
@@ -67,7 +63,6 @@ function PublishPage() {
         clearResult: clearAutoListing,
     } = useAutoListing();
     const { result: copyResult, isLoading: copyLoading, generateCopy, clearResult: clearCopy } = useAiCopyGeneration();
-    const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [activeSection, setActiveSection] = useState(0);
@@ -82,22 +77,11 @@ function PublishPage() {
         setValue,
         control,
         formState,
-    } = useForm<PublishFormData>({
-        resolver: zodResolver(publishSchema),
-        reValidateMode: 'onChange',
-        defaultValues: {
-            name: '',
-            description: '',
-            price: '',
-            originalPrice: '',
-            categoryId: '',
-            conditionLevel: '',
-            stock: '1',
-            location: '',
-            contactMethod: '',
-            imageUrls: [],
-        },
-    });
+        processFiles,
+        handleImageSelect,
+        handleImageUrlRemove,
+        uploadingIndex,
+    } = useProductForm();
 
     const vals = watch();
 
@@ -132,54 +116,6 @@ function PublishPage() {
             clearAutoListing();
         }
     }, [autoListingResult, categories, setValue, clearAutoListing]);
-
-    const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files) {
-            return;
-        }
-        await processFiles(Array.from(files));
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
-    const processFiles = async (files: File[]) => {
-        for (const file of files) {
-            const currentImages = watch('imageUrls');
-            if (currentImages.length >= 9) {
-                break;
-            }
-            if (!file.type.startsWith('image/')) {
-                continue;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                continue;
-            }
-
-            const index = currentImages.length;
-            setUploadingIndex(index);
-            try {
-                const compressed = await compressImage(file);
-                const result = await uploadFile(compressed);
-                if (result.data?.url) {
-                    setValue('imageUrls', [...watch('imageUrls'), result.data.url], { shouldValidate: true });
-                }
-            } catch {
-                addToast({ type: 'error', message: '图片上传失败，请重试' });
-            } finally {
-                setUploadingIndex(null);
-            }
-        }
-    };
-
-    const handleImageUrlRemove = (index: number) => {
-        setValue(
-            'imageUrls',
-            watch('imageUrls').filter((_, i) => i !== index),
-            { shouldValidate: true }
-        );
-    };
 
     const handleDragStart = (index: number) => {
         dragItemRef.current = index;
@@ -235,18 +171,7 @@ function PublishPage() {
     };
 
     const handleFormSubmit = async (data: PublishFormData, isDraft: boolean) => {
-        const payload = {
-            name: data.name.trim(),
-            description: data.description.trim(),
-            price: Number(data.price),
-            originalPrice: data.originalPrice ? Number(data.originalPrice) : undefined,
-            categoryId: data.categoryId,
-            conditionLevel: Number(data.conditionLevel),
-            stock: Number(data.stock) || 1,
-            location: data.location.trim() || undefined,
-            contactMethod: data.contactMethod.trim() || undefined,
-            imageUrls: data.imageUrls,
-        };
+        const payload = buildProductPayload(data);
 
         try {
             const productId = (await createProduct.mutateAsync(payload)) as string;

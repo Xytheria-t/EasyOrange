@@ -96,19 +96,22 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
     return (
         <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}>
             <div className={`max-w-[75%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
-                <button
+                <Button
                     type="button"
-                    className={`chat-bubble ${isOwn ? 'chat-bubble-own' : 'chat-bubble-other'} ${isRecalled ? 'chat-bubble-recalled' : ''}`}
+                    variant="ghost"
+                    tabIndex={-1}
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                     onContextMenu={showMenu}
-                    tabIndex={-1}
                     onKeyDown={() => {}}
                     aria-label={
                         isRecalled
                             ? '已撤回的消息'
                             : `${isOwn ? '我' : '对方'}的消息：${message.content?.slice(0, 30) || ''}`
                     }
+                    className={`chat-bubble ${isOwn ? 'chat-bubble-own' : 'chat-bubble-other'} ${
+                        isRecalled ? 'chat-bubble-recalled' : ''
+                    } font-normal tracking-normal text-left hover:bg-transparent`}
                 >
                     {isRecalled ? (
                         <span className="italic opacity-60">[消息已撤回]</span>
@@ -155,7 +158,7 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
                             </>
                         )}
                     </div>
-                </button>
+                </Button>
 
                 {menuVisible && (
                     <div

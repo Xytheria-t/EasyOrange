@@ -42,17 +42,17 @@ const STATUS_STYLE_MAP: Record<ProductStatus, { bg: string; text: string; border
         },
         ONLINE: {
             bg: 'rgba(16, 185, 129, 0.08)',
-            text: '#059669',
+            text: 'var(--status-success)',
             border: 'rgba(16, 185, 129, 0.2)',
             glow: '0 0 20px rgba(16, 185, 129, 0.15)',
-            dot: '#10B981',
+            dot: 'var(--status-success-dot)',
         },
         SOLD: {
             bg: 'rgba(59, 130, 246, 0.08)',
-            text: '#2563EB',
+            text: 'var(--status-info)',
             border: 'rgba(59, 130, 246, 0.2)',
             glow: '0 0 20px rgba(59, 130, 246, 0.15)',
-            dot: '#3B82F6',
+            dot: 'var(--status-info-dot)',
         },
         OFFLINE: {
             bg: 'rgba(168, 160, 152, 0.08)',
@@ -63,17 +63,17 @@ const STATUS_STYLE_MAP: Record<ProductStatus, { bg: string; text: string; border
         },
         PENDING_REVIEW: {
             bg: 'rgba(251, 191, 36, 0.08)',
-            text: '#D97706',
+            text: 'var(--status-warning)',
             border: 'rgba(251, 191, 36, 0.2)',
             glow: '0 0 20px rgba(251, 191, 36, 0.15)',
             dot: '#FBBF24',
         },
         REJECTED: {
             bg: 'rgba(244, 63, 94, 0.08)',
-            text: '#E11D48',
+            text: 'var(--status-error)',
             border: 'rgba(244, 63, 94, 0.2)',
             glow: '0 0 20px rgba(244, 63, 94, 0.15)',
-            dot: '#F43F5E',
+            dot: 'var(--status-error-dot)',
         },
     };
 

@@ -76,7 +76,7 @@
 
 .connection-status.reconnecting {
     background-color: #fffbeb;
-    color: #d97706;
+    color: var(--status-warning);
 }
 
 .connection-status.disconnected {

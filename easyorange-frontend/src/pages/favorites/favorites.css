@@ -1025,7 +1025,7 @@
     border-radius: var(--radius-full);
     font-size: 0.625rem;
     font-weight: 700;
-    color: #059669;
+    color: var(--status-success);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -1066,7 +1066,7 @@
 
 .favorites-ai-feature .feature-icon.price-drop {
     background: rgba(16, 185, 129, 0.1);
-    color: #059669;
+    color: var(--status-success);
 }
 
 .favorites-ai-feature .feature-icon.alert {

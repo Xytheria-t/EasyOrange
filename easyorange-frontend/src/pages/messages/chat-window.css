@@ -85,12 +85,12 @@
 }
 
 .status-connected {
-    background: linear-gradient(90deg, #10b981, #34d399);
+    background: linear-gradient(90deg, var(--success), #34d399);
 }
 
 .status-connecting,
 .status-reconnecting {
-    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    background: linear-gradient(90deg, var(--warning), #fbbf24);
     animation: statusPulse 1.5s ease-in-out infinite;
 }
 
@@ -189,7 +189,7 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: #10b981;
+    background: var(--success);
     border: 2.5px solid white;
     box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3);
 }
@@ -204,7 +204,7 @@
 
 .chat-header-status {
     font-size: 0.75rem;
-    color: #10b981;
+    color: var(--success);
     font-weight: 500;
     line-height: 1.3;
 }

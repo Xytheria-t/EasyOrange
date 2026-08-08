@@ -353,14 +353,16 @@ function SearchPage() {
                                         <div className="search-history-tags">
                                             {searchHistory.map(item => (
                                                 <div key={item} className="search-history-tag">
-                                                    <button
+                                                    <Button
                                                         type="button"
-                                                        className="search-history-tag-main"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="search-history-tag-main font-normal px-3 py-1.5"
                                                         onClick={() => handleHotKeywordClick(item)}
                                                     >
                                                         <Clock size={10} />
                                                         <span>{item}</span>
-                                                    </button>
+                                                    </Button>
                                                     <Button
                                                         type="button"
                                                         variant="ghost"

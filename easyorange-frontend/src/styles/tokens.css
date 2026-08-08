@@ -75,6 +75,23 @@
     --info: #3b82f6;
     --info-light: #dbeafe;
 
+    /* Status palette (状态色板) */
+    --status-success: #059669; /* 成功-文本/深色 */
+    --status-success-dot: #10b981; /* 成功-圆点 */
+    --status-success-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.05));
+    --status-warning: #d97706;
+    --status-warning-dot: #f59e0b;
+    --status-warning-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.05));
+    --status-error: #e11d48;
+    --status-error-dot: #f43f5e;
+    --status-error-bg: linear-gradient(135deg, rgba(244, 63, 94, 0.1), rgba(244, 63, 94, 0.05));
+    --status-info: #2563eb;
+    --status-info-dot: #3b82f6;
+    --status-info-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+    --status-default: #9b9590;
+    --status-default-dot: #c4bcb4;
+    --status-default-bg: linear-gradient(135deg, rgba(168, 160, 152, 0.1), rgba(168, 160, 152, 0.05));
+
     /* Neutral scale - Warmer */
     --white: #ffffff;
     --gray-25: #fefefe;

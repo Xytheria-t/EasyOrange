@@ -13,25 +13,25 @@ export interface UserDetailModalProps {
 }
 
 const statusOptions: { value: string; label: string; emoji: string }[] = [
-    { value: '0', label: '正常', emoji: '✅' },
-    { value: '1', label: '禁用', emoji: '🚫' },
-    { value: '2', label: '锁定', emoji: '🔒' },
+    { value: 'NORMAL', label: '正常', emoji: '✅' },
+    { value: 'DISABLED', label: '禁用', emoji: '🚫' },
+    { value: 'LOCKED', label: '锁定', emoji: '🔒' },
 ];
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; dot: string; label: string }> = {
-    '0': {
+    NORMAL: {
         bg: 'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(52,211,153,0.06))',
         color: '#059669',
         dot: '#10B981',
         label: '正常',
     },
-    '1': {
+    DISABLED: {
         bg: 'linear-gradient(135deg, rgba(244,63,94,0.10), rgba(251,113,133,0.06))',
         color: '#E11D48',
         dot: '#F43F5E',
         label: '禁用',
     },
-    '2': {
+    LOCKED: {
         bg: 'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(251,191,36,0.06))',
         color: '#D97706',
         dot: '#F59E0B',
@@ -40,7 +40,7 @@ const STATUS_STYLES: Record<string, { bg: string; color: string; dot: string; la
 };
 
 export function UserDetailModal({ open, user, onClose, onSave, loading = false }: UserDetailModalProps) {
-    const [selectedStatus, setSelectedStatus] = useState<string>(user?.status ?? '0');
+    const [selectedStatus, setSelectedStatus] = useState<string>(user?.status ?? 'NORMAL');
 
     if (!open || !user) {
         return null;
@@ -74,7 +74,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
     };
 
     const avatarGradient = pickAvatarGradient(user.userId ?? '');
-    const currentStatusStyle = STATUS_STYLES[selectedStatus] ?? STATUS_STYLES['0'];
+    const currentStatusStyle = STATUS_STYLES[selectedStatus] ?? STATUS_STYLES.NORMAL;
 
     return (
         <AdminDetailModal

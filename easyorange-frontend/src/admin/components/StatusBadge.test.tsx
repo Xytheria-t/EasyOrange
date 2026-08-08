@@ -5,18 +5,18 @@ import { StatusBadge } from './StatusBadge';
 
 describe('StatusBadge', () => {
     describe('user status', () => {
-        it('renders 正常 for status 0', () => {
-            renderWithProviders(<StatusBadge status={0} type="user" />);
+        it('renders 正常 for status NORMAL', () => {
+            renderWithProviders(<StatusBadge status="NORMAL" type="user" />);
             expect(screen.getByText('正常')).toBeInTheDocument();
         });
 
-        it('renders 禁用 for status 1', () => {
-            renderWithProviders(<StatusBadge status={1} type="user" />);
+        it('renders 禁用 for status DISABLED', () => {
+            renderWithProviders(<StatusBadge status="DISABLED" type="user" />);
             expect(screen.getByText('禁用')).toBeInTheDocument();
         });
 
-        it('renders 锁定 for status 2', () => {
-            renderWithProviders(<StatusBadge status={2} type="user" />);
+        it('renders 锁定 for status LOCKED', () => {
+            renderWithProviders(<StatusBadge status="LOCKED" type="user" />);
             expect(screen.getByText('锁定')).toBeInTheDocument();
         });
     });
@@ -59,13 +59,13 @@ describe('StatusBadge', () => {
     });
 
     describe('order status', () => {
-        it('renders 待付款 for status 0', () => {
-            renderWithProviders(<StatusBadge status={0} type="order" />);
+        it('renders 待付款 for status PENDING_PAYMENT', () => {
+            renderWithProviders(<StatusBadge status="PENDING_PAYMENT" type="order" />);
             expect(screen.getByText('待付款')).toBeInTheDocument();
         });
 
-        it('renders 已完成 for status 3', () => {
-            renderWithProviders(<StatusBadge status={3} type="order" />);
+        it('renders 已完成 for status COMPLETED', () => {
+            renderWithProviders(<StatusBadge status="COMPLETED" type="order" />);
             expect(screen.getByText('已完成')).toBeInTheDocument();
         });
     });
@@ -83,7 +83,7 @@ describe('StatusBadge', () => {
     });
 
     describe('fallback', () => {
-        it('renders 未知 for invalid numeric status', () => {
+        it('renders 未知 for unknown numeric status', () => {
             renderWithProviders(<StatusBadge status={999} type="user" />);
             expect(screen.getByText('未知')).toBeInTheDocument();
         });
