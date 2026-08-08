@@ -26,35 +26,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.cartethyia</groupId>
-            <artifactId>easyorange-user</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>com.cartethyia</groupId>
-            <artifactId>easyorange-product</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>com.cartethyia</groupId>
-            <artifactId>easyorange-order</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>com.cartethyia</groupId>
-            <artifactId>easyorange-payment</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>com.cartethyia</groupId>
-            <artifactId>easyorange-ai</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>

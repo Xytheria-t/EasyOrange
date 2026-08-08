@@ -15,26 +15,12 @@ import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.Product
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductSummary;
-import com.cartethyia.easyorange.common.domain.Money;
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
-import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
-import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
-import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
-import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
-import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
-import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
-import com.cartethyia.easyorange.product.domain.valueobject.Version;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -50,15 +36,6 @@ class AdminProductServiceTest {
 
     @Mock
     private AdminProductQueryPort adminProductQueryPort;
-
-    @Mock
-    private ProductRepository productRepository;
-
-    @Mock
-    private ProductCacheEvictionPort productCachePort;
-
-    @Mock
-    private DomainEventPublisher domainEventPublisher;
 
     @Spy
     private AdminProductAssembler adminProductAssembler = new AdminProductAssembler();
@@ -109,12 +86,16 @@ class AdminProductServiceTest {
     }
 
     private String describeStatus(String code) {
-        if (code == null) return "未知状态";
-        try {
-            return ProductStatus.fromCode(code).getDesc();
-        } catch (IllegalArgumentException e) {
-            return "未知状态";
-        }
+        return switch (code) {
+            case "1" -> "草稿";
+            case "2" -> "待审核";
+            case "3" -> "已驳回";
+            case "4" -> "上架";
+            case "5" -> "下架";
+            case "6" -> "已售出";
+            case null -> "未知状态";
+            default -> "未知状态";
+        };
     }
 
     @Nested
@@ -193,80 +174,14 @@ class AdminProductServiceTest {
     class UpdateProductStatusTests {
 
         @Test
-        @DisplayName("更新商品状态成功 — ONLINE -> OFFLINE")
+        @DisplayName("更新商品状态委托端口")
         void updateProductStatus_success() {
-            Product product = Product.builder()
-                    .id(ProductId.of(PRODUCT_ID))
-                    .sellerId(SellerId.of("1"))
-                    .categoryId(CategoryId.of("1"))
-                    .title(ProductTitle.of("测试商品"))
-                    .price(Money.of(new BigDecimal("99.99")))
-                    .stock(StockQuantity.of(10))
-                    .version(Version.INITIAL)
-                    .status(ProductStatus.ONLINE)
-                    .tags(TagSet.empty())
-                    .createTime(LocalDateTime.now())
-                    .updateTime(LocalDateTime.now())
-                    .build();
-            when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.of(product));
-
             UpdateStatusRequest request = new UpdateStatusRequest();
-            request.setStatus(ProductStatus.OFFLINE.getCode());
+            request.setStatus("OFFLINE");
 
             productService.updateProductStatus(PRODUCT_ID, request);
 
-            verify(productRepository).save(argThat(p -> p.getStatus() == ProductStatus.OFFLINE));
-            verify(productCachePort).evictProductCache(PRODUCT_ID);
-        }
-
-        @Test
-        @DisplayName("不存在的商品更新状态抛出异常")
-        void updateProductStatus_notFound_throws() {
-            when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.empty());
-
-            UpdateStatusRequest request = new UpdateStatusRequest();
-            request.setStatus(ProductStatus.OFFLINE.getCode());
-
-            assertThatThrownBy(() -> productService.updateProductStatus(PRODUCT_ID, request))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("商品不存在");
-        }
-
-        @Test
-        @DisplayName("无效状态编码抛出异常")
-        void updateProductStatus_invalidStatus_throws() {
-            UpdateStatusRequest request = new UpdateStatusRequest();
-            request.setStatus("999");
-
-            assertThatThrownBy(() -> productService.updateProductStatus(PRODUCT_ID, request))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("无效的商品状态");
-        }
-
-        @Test
-        @DisplayName("不支持的状态转换抛出异常")
-        void updateProductStatus_unsupportedTransition_throws() {
-            Product product = Product.builder()
-                    .id(ProductId.of(PRODUCT_ID))
-                    .sellerId(SellerId.of("1"))
-                    .categoryId(CategoryId.of("1"))
-                    .title(ProductTitle.of("测试商品"))
-                    .price(Money.of(new BigDecimal("99.99")))
-                    .stock(StockQuantity.of(10))
-                    .version(Version.INITIAL)
-                    .status(ProductStatus.DRAFT)
-                    .tags(TagSet.empty())
-                    .createTime(LocalDateTime.now())
-                    .updateTime(LocalDateTime.now())
-                    .build();
-            when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.of(product));
-
-            UpdateStatusRequest request = new UpdateStatusRequest();
-            request.setStatus(ProductStatus.PENDING_REVIEW.getCode());
-
-            assertThatThrownBy(() -> productService.updateProductStatus(PRODUCT_ID, request))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("不支持");
+            verify(adminProductQueryPort).applyProductStatus(PRODUCT_ID, "OFFLINE");
         }
     }
 }

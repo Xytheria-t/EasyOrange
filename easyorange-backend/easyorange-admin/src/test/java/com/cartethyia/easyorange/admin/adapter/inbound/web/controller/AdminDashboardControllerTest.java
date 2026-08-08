@@ -14,7 +14,6 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TopProdu
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
 import com.cartethyia.easyorange.admin.service.AdminDashboardService;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -171,7 +170,7 @@ class AdminDashboardControllerTest {
                 .name("Top1")
                 .viewCount(1000)
                 .price(BigDecimal.valueOf(99))
-                .status(ProductStatus.ONLINE.getCode())
+                .status("ONLINE")
                 .statusDesc("上架")
                 .build());
         when(adminDashboardService.getTopProducts(10)).thenReturn(topProducts);

@@ -11,7 +11,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
 import com.cartethyia.easyorange.admin.service.AdminProductService;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -39,14 +38,14 @@ class AdminProductControllerTest {
                         .productId("1")
                         .name("Product1")
                         .price(BigDecimal.valueOf(100))
-                        .status(ProductStatus.ONLINE.getCode())
+                        .status("ONLINE")
                         .statusDesc("上架")
                         .build(),
                 AdminProductResponse.builder()
                         .productId("2")
                         .name("Product2")
                         .price(BigDecimal.valueOf(200))
-                        .status(ProductStatus.DRAFT.getCode())
+                        .status("DRAFT")
                         .statusDesc("草稿")
                         .build());
         var pageResult = PageResult.of(products, 2L, 1, 20);
@@ -66,14 +65,14 @@ class AdminProductControllerTest {
         var products = List.of(AdminProductResponse.builder()
                 .productId("1")
                 .name("Online")
-                .status(ProductStatus.ONLINE.getCode())
+                .status("ONLINE")
                 .build());
         var pageResult = PageResult.of(products, 1L, 1, 20);
         when(adminProductService.listProducts(any())).thenReturn(pageResult);
 
-        mockMvc.perform(get("/api/admin/products?status=" + ProductStatus.ONLINE.getCode()))
+        mockMvc.perform(get("/api/admin/products?status=" + "ONLINE"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.records[0].status").value(ProductStatus.ONLINE.getCode()));
+                .andExpect(jsonPath("$.data.records[0].status").value("ONLINE"));
     }
 
     @Test
@@ -83,7 +82,7 @@ class AdminProductControllerTest {
                 .name("DetailProduct")
                 .description("A detailed product")
                 .price(BigDecimal.valueOf(150))
-                .status(ProductStatus.ONLINE.getCode())
+                .status("ONLINE")
                 .statusDesc("上架")
                 .build();
         when(adminProductService.getProductDetail("1")).thenReturn(product);
@@ -102,7 +101,7 @@ class AdminProductControllerTest {
 
         mockMvc.perform(put("/api/admin/products/1/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\": \"" + ProductStatus.OFFLINE.getCode() + "\", \"reason\": \"下架商品\"}"))
+                        .content("{\"status\": \"" + "OFFLINE" + "\", \"reason\": \"下架商品\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("A0000"));
     }

@@ -53,16 +53,14 @@ easyorange-admin/
 
 ```
 easyorange-admin ──optional──> easyorange-common   (Result, PageResult, BusinessException)
-                 ──optional──> easyorange-user     (通过 AdminUserQueryPort)
-                 ──optional──> easyorange-product  (通过 AdminProductQueryPort)
-                 ──optional──> easyorange-order    (通过 AdminOrderQueryPort)
-                 ──optional──> easyorange-payment  (支付信息查询)
+                 ──optional──> easyorange-framework (TokenService, SecurityContextUtil)
+                 (其余业务模块零依赖 — 2026-08-08 收口，所有跨模块访问经 domain/port/)
 ```
 
 **跨模块通信**：通过 `domain/port/` 端口接口解耦，适配器实现在 `easyorange-application/adapter/outbound/admin/`：
-- `AdminProductQueryAdapter` → ProductMapper
-- `AdminUserQueryAdapter` → UserMapper
-- `AdminOrderQueryAdapter` → OrderMapper
+- `AdminProductQueryAdapter` → ProductMapper / ProductRepository / 举报·审核·分类·AI 审核
+- `AdminUserQueryAdapter` → UserMapper（含用户状态/角色/密码管理）
+- `AdminOrderQueryAdapter` → OrderMapper / OrderReadRepository / OrderRepository
 - `AdminRatingQueryAdapter` → ProductRatingMapper
 
 ## 常见开发任务

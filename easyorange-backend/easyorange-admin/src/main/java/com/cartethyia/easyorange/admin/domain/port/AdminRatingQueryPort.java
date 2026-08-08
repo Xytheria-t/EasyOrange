@@ -20,6 +20,11 @@ public interface AdminRatingQueryPort {
     RatingSummary getRatingDetail(String ratingId);
 
     /**
+     * 删除评价（逻辑删除），不存在或已删除时抛出 BusinessException
+     */
+    void deleteRating(String ratingId);
+
+    /**
      * 评价查询条件
      */
     record RatingQueryCondition(

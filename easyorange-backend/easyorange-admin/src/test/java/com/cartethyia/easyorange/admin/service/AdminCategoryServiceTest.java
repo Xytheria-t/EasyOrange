@@ -2,18 +2,17 @@ package com.cartethyia.easyorange.admin.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryCreateRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryUpdateRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryTreeResponse;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.CategoryRecord;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
-import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
-import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -27,14 +26,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminCategoryService 单元测试")
-@SuppressWarnings("unchecked")
 class AdminCategoryServiceTest {
 
     @Mock
-    private CategoryMapper categoryMapper;
-
-    @Mock
-    private CategoryQueryRepository categoryQueryRepository;
+    private AdminProductQueryPort adminProductQueryPort;
 
     @InjectMocks
     private AdminCategoryService categoryService;
@@ -42,18 +37,8 @@ class AdminCategoryServiceTest {
     private static final String CATEGORY_ID = "1";
     private static final String PARENT_ID = "10";
 
-    private CategoryDO createCategory(String id, String name, String parentId, Integer level) {
-        CategoryDO cat = CategoryDO.builder()
-                .name(name)
-                .parentId(parentId)
-                .level(level)
-                .sortOrder(0)
-                .status(1)
-                .build();
-        cat.setId(id);
-        cat.setDelFlag(0);
-        cat.setCreateTime(LocalDateTime.now());
-        return cat;
+    private CategoryRecord createCategory(String id, String name, String parentId, Integer level) {
+        return new CategoryRecord(id, name, parentId, level, null, 0, 1, LocalDateTime.now());
     }
 
     @Nested
@@ -63,10 +48,10 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("获取分类树结构")
         void categoryTree_returnsTree() {
-            CategoryDO parent = createCategory(CATEGORY_ID, "电子数码", null, 1);
-            CategoryDO child = createCategory(PARENT_ID, "手机", CATEGORY_ID, 2);
+            CategoryRecord parent = createCategory(CATEGORY_ID, "电子数码", null, 1);
+            CategoryRecord child = createCategory(PARENT_ID, "手机", CATEGORY_ID, 2);
 
-            when(categoryMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(parent, child));
+            when(adminProductQueryPort.listCategories(null)).thenReturn(List.of(parent, child));
 
             List<CategoryTreeResponse> tree = categoryService.categoryTree();
 
@@ -79,11 +64,25 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("没有分类时返回空列表")
         void categoryTree_empty_returnsEmpty() {
-            when(categoryMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+            when(adminProductQueryPort.listCategories(null)).thenReturn(List.of());
 
             List<CategoryTreeResponse> tree = categoryService.categoryTree();
 
             assertThat(tree).isEmpty();
+        }
+
+        @Test
+        @DisplayName("禁用的分类不进入树")
+        void categoryTree_disabledFiltered() {
+            CategoryRecord enabled = createCategory(CATEGORY_ID, "电子数码", null, 1);
+            CategoryRecord disabled = new CategoryRecord(PARENT_ID, "已禁用", null, 1, null, 0, 0, LocalDateTime.now());
+
+            when(adminProductQueryPort.listCategories(null)).thenReturn(List.of(enabled, disabled));
+
+            List<CategoryTreeResponse> tree = categoryService.categoryTree();
+
+            assertThat(tree).hasSize(1);
+            assertThat(tree.get(0).name()).isEqualTo("电子数码");
         }
     }
 
@@ -94,48 +93,36 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("创建一级分类成功")
         void createCategory_root_success() {
-            when(categoryQueryRepository.findByName("新分类")).thenReturn(null);
-            // Set ID on insert to avoid NPE in toCategoryResponse (entity.id would be null after mocked insert)
-            doAnswer(invocation -> {
-                        CategoryDO entity = invocation.getArgument(0);
-                        entity.setId("99");
-                        return 1;
-                    })
-                    .when(categoryMapper)
-                    .insert(any(CategoryDO.class));
+            when(adminProductQueryPort.findCategoryByName("新分类")).thenReturn(null);
+            when(adminProductQueryPort.createCategory("新分类", null, 1, 1))
+                    .thenReturn(createCategory("99", "新分类", null, 1));
 
             CategoryCreateRequest request = new CategoryCreateRequest("新分类", null, 1);
 
             categoryService.createCategory(request);
 
-            verify(categoryMapper).insert(any(CategoryDO.class));
+            verify(adminProductQueryPort).createCategory("新分类", null, 1, 1);
         }
 
         @Test
         @DisplayName("创建子分类成功")
         void createCategory_child_success() {
-            CategoryDO parent = createCategory(CATEGORY_ID, "电子数码", null, 1);
-            when(categoryMapper.selectById(CATEGORY_ID)).thenReturn(parent);
-            when(categoryQueryRepository.findByName("手机")).thenReturn(null);
-            doAnswer(invocation -> {
-                        CategoryDO entity = invocation.getArgument(0);
-                        entity.setId("99");
-                        return 1;
-                    })
-                    .when(categoryMapper)
-                    .insert(any(CategoryDO.class));
+            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "电子数码", null, 1));
+            when(adminProductQueryPort.findCategoryByName("手机")).thenReturn(null);
+            when(adminProductQueryPort.createCategory("手机", CATEGORY_ID, 0, 2))
+                    .thenReturn(createCategory("99", "手机", CATEGORY_ID, 2));
 
             CategoryCreateRequest request = new CategoryCreateRequest("手机", CATEGORY_ID, null);
 
             categoryService.createCategory(request);
 
-            verify(categoryMapper).insert(any(CategoryDO.class));
+            verify(adminProductQueryPort).createCategory("手机", CATEGORY_ID, 0, 2);
         }
 
         @Test
         @DisplayName("父分类不存在抛出异常")
         void createCategory_parentNotFound_throws() {
-            when(categoryMapper.selectById(CATEGORY_ID)).thenReturn(null);
+            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(null);
 
             CategoryCreateRequest request = new CategoryCreateRequest("新分类", CATEGORY_ID, null);
 
@@ -147,9 +134,8 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("同名一级分类抛出异常")
         void createCategory_duplicateName_throws() {
-            CategoryReadModel existing =
-                    new CategoryReadModel(CATEGORY_ID, "已存在", null, 1, null, 0, 1, LocalDateTime.now(), 0);
-            when(categoryQueryRepository.findByName("已存在")).thenReturn(existing);
+            when(adminProductQueryPort.findCategoryByName("已存在"))
+                    .thenReturn(createCategory(CATEGORY_ID, "已存在", null, 1));
 
             CategoryCreateRequest request = new CategoryCreateRequest("已存在", null, null);
 
@@ -166,21 +152,21 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("更新分类成功")
         void updateCategory_success() {
-            CategoryDO existing = createCategory(CATEGORY_ID, "旧名称", null, 1);
-            when(categoryMapper.selectById(CATEGORY_ID)).thenReturn(existing);
-            when(categoryQueryRepository.countProductsByCategoryIds(anyList())).thenReturn(Map.of(CATEGORY_ID, 0L));
+            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "旧名称", null, 1));
+            when(adminProductQueryPort.findCategoryByName("新名称")).thenReturn(null);
+            when(adminProductQueryPort.countProductsByCategoryIds(anyList())).thenReturn(Map.of(CATEGORY_ID, 0L));
 
             CategoryUpdateRequest request = new CategoryUpdateRequest("新名称", null, 2);
 
             categoryService.updateCategory(CATEGORY_ID, request);
 
-            verify(categoryMapper).updateById(any(CategoryDO.class));
+            verify(adminProductQueryPort).updateCategory(any(CategoryRecord.class));
         }
 
         @Test
         @DisplayName("更新不存在的分类抛出异常")
         void updateCategory_notFound_throws() {
-            when(categoryMapper.selectById(CATEGORY_ID)).thenReturn(null);
+            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(null);
 
             CategoryUpdateRequest request = new CategoryUpdateRequest("新名称", null, null);
 
@@ -197,26 +183,36 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("删除空分类成功")
         void deleteCategory_noChildren_success() {
-            CategoryDO cat = createCategory(CATEGORY_ID, "测试分类", null, 1);
-            when(categoryMapper.selectById(CATEGORY_ID)).thenReturn(cat);
-            when(categoryMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-            when(categoryQueryRepository.countProductsByCategoryIds(anyList())).thenReturn(Map.of(CATEGORY_ID, 0L));
+            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "测试分类", null, 1));
+            when(adminProductQueryPort.countCategoryChildren(CATEGORY_ID)).thenReturn(0L);
+            when(adminProductQueryPort.countProductsByCategoryIds(anyList())).thenReturn(Map.of(CATEGORY_ID, 0L));
 
             categoryService.deleteCategory(CATEGORY_ID);
 
-            verify(categoryMapper).updateById(any(CategoryDO.class));
+            verify(adminProductQueryPort).deleteCategory(CATEGORY_ID);
         }
 
         @Test
         @DisplayName("有子分类时无法删除")
         void deleteCategory_hasChildren_throws() {
-            CategoryDO cat = createCategory(CATEGORY_ID, "测试分类", null, 1);
-            when(categoryMapper.selectById(CATEGORY_ID)).thenReturn(cat);
-            when(categoryMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(2L);
+            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "测试分类", null, 1));
+            when(adminProductQueryPort.countCategoryChildren(CATEGORY_ID)).thenReturn(2L);
 
             assertThatThrownBy(() -> categoryService.deleteCategory(CATEGORY_ID))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("子分类");
+        }
+
+        @Test
+        @DisplayName("有商品关联时无法删除")
+        void deleteCategory_hasProducts_throws() {
+            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "测试分类", null, 1));
+            when(adminProductQueryPort.countCategoryChildren(CATEGORY_ID)).thenReturn(0L);
+            when(adminProductQueryPort.countProductsByCategoryIds(anyList())).thenReturn(Map.of(CATEGORY_ID, 3L));
+
+            assertThatThrownBy(() -> categoryService.deleteCategory(CATEGORY_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("关联商品");
         }
     }
 
@@ -227,18 +223,17 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("更新分类状态成功")
         void updateStatus_success() {
-            CategoryDO cat = createCategory(CATEGORY_ID, "测试", null, 1);
-            when(categoryMapper.selectById(CATEGORY_ID)).thenReturn(cat);
+            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "测试", null, 1));
 
             categoryService.updateStatus(CATEGORY_ID, 0);
 
-            verify(categoryMapper).updateById(any(CategoryDO.class));
+            verify(adminProductQueryPort).updateCategory(any(CategoryRecord.class));
         }
 
         @Test
         @DisplayName("更新不存在的分类状态抛出异常")
         void updateStatus_notFound_throws() {
-            when(categoryMapper.selectById(CATEGORY_ID)).thenReturn(null);
+            when(adminProductQueryPort.getCategory(CATEGORY_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> categoryService.updateStatus(CATEGORY_ID, 0))
                     .isInstanceOf(BusinessException.class)

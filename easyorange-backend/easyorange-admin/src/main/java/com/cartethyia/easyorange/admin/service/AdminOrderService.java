@@ -5,9 +5,12 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrd
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderItemDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderItemInfo;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderSummary;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.ProductInfo;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
@@ -15,18 +18,16 @@ import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserInfo;
 import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
-import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
-import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,8 +44,6 @@ public class AdminOrderService {
 
     private final AdminOrderQueryPort adminOrderQueryPort;
     private final AdminUserQueryPort adminUserQueryPort;
-    private final OrderReadRepository orderReadRepository;
-    private final OrderRepository orderRepository;
 
     public PageResult<AdminOrderResponse> listOrders(AdminOrderQueryRequest request) {
         LocalDateTime startTime = parseStartTime(request.getStartTime());
@@ -91,14 +90,16 @@ public class AdminOrderService {
 
     @Transactional(readOnly = true)
     public AdminOrderDetailResponse getOrderDetail(String id) {
-        OrderReadModel model =
-                orderReadRepository.findById(new OrderId(id)).orElseThrow(() -> BusinessException.of("订单不存在"));
+        OrderDetail model = adminOrderQueryPort.getOrderDetail(id);
+        if (model == null) {
+            throw BusinessException.of("订单不存在");
+        }
 
         UserInfo buyer = adminUserQueryPort.getUserInfo(model.buyerId());
         UserInfo seller = adminUserQueryPort.getUserInfo(model.sellerId());
 
         List<String> productIds = model.items().stream()
-                .map(OrderItemReadModel::productId)
+                .map(OrderItemDetail::productId)
                 .distinct()
                 .toList();
         Map<String, ProductInfo> productMap = adminOrderQueryPort.getProducts(productIds);
@@ -140,68 +141,35 @@ public class AdminOrderService {
 
     @Transactional(readOnly = true)
     public OrderStatsResponse getOrderStats() {
-        long totalOrders = orderReadRepository.countByStatus(null);
-        long pendingPayment = orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT);
-        long paid = orderReadRepository.countByStatus(OrderStatus.PAID);
-        long shipped = orderReadRepository.countByStatus(OrderStatus.SHIPPED);
-        long toReceive = shipped;
-        long completed = orderReadRepository.countByStatus(OrderStatus.COMPLETED);
-        long cancelled = orderReadRepository.countByStatus(OrderStatus.CANCELLED);
-        long refunded = orderReadRepository.countByStatus(OrderStatus.REFUNDED);
-
-        LocalDate today = LocalDate.now();
-        LocalDateTime todayStart = today.atStartOfDay();
-
-        OrderQueryCondition todayCondition =
-                new OrderQueryCondition(null, null, null, null, null, todayStart, null, null, null);
-        long todayOrders = adminOrderQueryPort.queryOrders(todayCondition).total();
-
-        BigDecimal totalRevenue = BigDecimal.ZERO;
-        BigDecimal todayRevenue = BigDecimal.ZERO;
+        OrderStats stats = adminOrderQueryPort.getOrderStats();
 
         return OrderStatsResponse.builder()
-                .totalOrders(totalOrders)
-                .todayOrders(todayOrders)
-                .pendingPayment(pendingPayment)
-                .toShip(paid)
-                .toReceive(toReceive)
-                .completed(completed)
-                .cancelled(cancelled)
-                .refunded(refunded)
-                .totalRevenue(totalRevenue)
-                .todayRevenue(todayRevenue)
+                .totalOrders(stats.totalOrders())
+                .todayOrders(stats.todayOrders())
+                .pendingPayment(stats.pendingPayment())
+                .toShip(stats.toShip())
+                .toReceive(stats.toReceive())
+                .completed(stats.completed())
+                .cancelled(stats.cancelled())
+                .refunded(stats.refunded())
+                .totalRevenue(BigDecimal.ZERO)
+                .todayRevenue(BigDecimal.ZERO)
                 .build();
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void cancelOrder(String id, String reason) {
-        var aggregate = orderRepository.findById(OrderId.of(id)).orElseThrow(() -> BusinessException.of("订单不存在"));
-
-        if (aggregate.status() == OrderStatus.PENDING_PAYMENT) {
-            var result = aggregate.cancel(reason);
-            orderRepository.update(result.aggregate());
-        } else if (aggregate.status() == OrderStatus.PAID) {
-            var result = aggregate.forceCancel(reason);
-            orderRepository.update(result.aggregate());
-        } else {
-            throw BusinessException.of("当前订单状态不允许取消");
-        }
+        adminOrderQueryPort.cancelOrder(id, reason);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void forceComplete(String id, String reason) {
-        var aggregate = orderRepository.findById(OrderId.of(id)).orElseThrow(() -> BusinessException.of("订单不存在"));
-
-        var result = aggregate.confirmReceipt();
-        orderRepository.update(result.aggregate());
+        adminOrderQueryPort.forceComplete(id);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void refundOrder(String id, String reason) {
-        var aggregate = orderRepository.findById(OrderId.of(id)).orElseThrow(() -> BusinessException.of("订单不存在"));
-
-        var result = aggregate.refund(reason);
-        orderRepository.update(result.aggregate());
+        adminOrderQueryPort.refundOrder(id, reason);
     }
 
     private LocalDateTime parseStartTime(String startTimeStr) {

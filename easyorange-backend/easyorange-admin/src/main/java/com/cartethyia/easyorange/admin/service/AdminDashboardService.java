@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ActivityResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.DashboardStatsResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.PendingItemsResponse;
@@ -9,19 +8,19 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentUs
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TopProductResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
-import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
-import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.RecentProductRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.TopProductRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.RecentUser;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserStats;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,73 +34,50 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminDashboardService {
 
-    private final UserMapper userMapper;
-    private final ProductQueryRepository productQueryRepository;
-    private final ProductReportQueryRepository productReportQueryRepository;
-    private final OrderReadRepository orderReadRepository;
+    private final AdminUserQueryPort adminUserQueryPort;
+    private final AdminProductQueryPort adminProductQueryPort;
+    private final AdminOrderQueryPort adminOrderQueryPort;
     private final JdbcTemplate jdbcTemplate;
 
     private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final DateTimeFormatter DATETIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final int TREND_MONTHS = 6;
-    private static final Map<String, String> PRODUCT_STATUS_MAP;
-
-    static {
-        Map<String, String> map = new HashMap<>();
-        for (ProductStatus s : ProductStatus.values()) {
-            map.put(s.getCode(), s.getDesc());
-        }
-        PRODUCT_STATUS_MAP = Map.copyOf(map);
-    }
 
     public DashboardStatsResponse getDashboardStats() {
-        long totalUsers = ChainWrappers.lambdaQueryChain(userMapper)
-                .eq(UserDO::getDelFlag, 0)
-                .count();
-
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        long todayNewUsers = ChainWrappers.lambdaQueryChain(userMapper)
-                .eq(UserDO::getDelFlag, 0)
-                .ge(UserDO::getCreateTime, todayStart)
-                .count();
-
-        long totalProducts = productQueryRepository.countByStatus(null);
-        long pendingProducts = productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode());
-        long totalOrders = orderReadRepository.countByStatus(null);
-        long pendingReports = productReportQueryRepository.countPendingReports();
+        UserStats userStats = adminUserQueryPort.getUserStats();
+        AdminProductQueryPort.ProductStats productStats = adminProductQueryPort.getProductStats();
+        long totalOrders = adminOrderQueryPort.getOrderStats().totalOrders();
+        ReportStats reportStats = adminProductQueryPort.getReportStats();
 
         return DashboardStatsResponse.builder()
-                .totalUsers(totalUsers)
-                .todayNewUsers(todayNewUsers)
-                .totalProducts(totalProducts)
-                .pendingProducts(pendingProducts)
+                .totalUsers(userStats.totalUsers())
+                .todayNewUsers(userStats.todayNewUsers())
+                .totalProducts(productStats.total())
+                .pendingProducts(productStats.pending())
                 .totalOrders(totalOrders)
                 .todayOrders(0L)
                 .totalRevenue(0L)
-                .pendingReports(pendingReports)
+                .pendingReports(reportStats.pending())
                 .build();
     }
 
     public PendingItemsResponse getPendingItems() {
-        long pendingReports = productReportQueryRepository.countPendingReports();
-        long pendingOrders = orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT);
-        long pendingProducts = productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode());
+        ReportStats reportStats = adminProductQueryPort.getReportStats();
+        long pendingOrders = adminOrderQueryPort.getOrderStats().pendingPayment();
+        long pendingProducts = adminProductQueryPort.getProductStats().pending();
 
         List<PendingItemsResponse.PendingReportItem> recentReports =
-                productReportQueryRepository.findPendingReports(1, 5).stream()
+                adminProductQueryPort.queryReports(0, 1, 5).records().stream()
                         .map(report -> PendingItemsResponse.PendingReportItem.builder()
-                                .id(report.getId())
-                                .productId(report.getProductId())
-                                .reason(report.getReason())
-                                .createTime(
-                                        report.getCreateTime() != null
-                                                ? report.getCreateTime().toString()
-                                                : null)
+                                .id(report.id())
+                                .productId(report.productId())
+                                .reason(report.reason())
+                                .createTime(report.createTime() != null ? report.createTime().toString() : null)
                                 .build())
                         .toList();
 
         return PendingItemsResponse.builder()
-                .pendingReports(pendingReports)
+                .pendingReports(reportStats.pending())
                 .pendingOrders(pendingOrders)
                 .pendingProducts(pendingProducts)
                 .recentReports(recentReports)
@@ -109,21 +85,13 @@ public class AdminDashboardService {
     }
 
     public List<RecentUserResponse> getRecentUsers(int limit) {
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-
-        return ChainWrappers.lambdaQueryChain(userMapper)
-                .eq(UserDO::getDelFlag, 0)
-                .ge(UserDO::getCreateTime, todayStart)
-                .orderByDesc(UserDO::getCreateTime)
-                .last("LIMIT " + limit)
-                .list()
-                .stream()
+        return adminUserQueryPort.getRecentUsers(limit).stream()
                 .map(this::toRecentUserResponse)
                 .toList();
     }
 
     public List<RecentProductResponse> getRecentProducts(int limit) {
-        return productQueryRepository.findProductsByIds(getRecentProductIds(limit)).stream()
+        return adminProductQueryPort.getRecentProducts(limit).stream()
                 .map(this::toRecentProductResponse)
                 .toList();
     }
@@ -246,29 +214,16 @@ public class AdminDashboardService {
 
     @Transactional(readOnly = true)
     public List<TopProductResponse> getTopProducts(int limit) {
-        return jdbcTemplate
-                .queryForList("SELECT p.id, p.name, p.view_count, p.price, p.status, "
-                        + "(SELECT pi.image_url FROM eo_product_image pi WHERE pi.product_id = p.id AND pi.del_flag = 0 ORDER BY pi.is_main DESC, pi.sort_order ASC LIMIT 1) AS main_image "
-                        + "FROM eo_product p WHERE p.del_flag = 0 AND p.status = 'ONLINE' "
-                        + "ORDER BY p.view_count DESC LIMIT "
-                        + limit)
-                .stream()
-                .map(row -> {
-                    String statusCode =
-                            row.get("status") != null ? row.get("status").toString() : null;
-                    return TopProductResponse.builder()
-                            .productId(String.valueOf(row.get("id")))
-                            .name((String) row.get("name"))
-                            .viewCount(row.get("view_count") != null ? ((Number) row.get("view_count")).intValue() : 0)
-                            .price(
-                                    row.get("price") != null
-                                            ? (java.math.BigDecimal) row.get("price")
-                                            : java.math.BigDecimal.ZERO)
-                            .mainImage((String) row.get("main_image"))
-                            .status(statusCode)
-                            .statusDesc(PRODUCT_STATUS_MAP.getOrDefault(statusCode, "未知"))
-                            .build();
-                })
+        return adminProductQueryPort.getTopProducts(limit).stream()
+                .map(row -> TopProductResponse.builder()
+                        .productId(row.productId())
+                        .name(row.name())
+                        .viewCount(row.viewCount())
+                        .price(row.price())
+                        .mainImage(row.mainImage())
+                        .status(row.status())
+                        .statusDesc(row.statusDesc())
+                        .build())
                 .toList();
     }
 
@@ -291,30 +246,23 @@ public class AdminDashboardService {
         return result;
     }
 
-    private List<String> getRecentProductIds(int limit) {
-        return jdbcTemplate.queryForList(
-                "SELECT id FROM eo_product WHERE del_flag = 0 ORDER BY create_time DESC LIMIT " + limit, String.class);
-    }
-
-    private RecentUserResponse toRecentUserResponse(UserDO entity) {
+    private RecentUserResponse toRecentUserResponse(RecentUser user) {
         return RecentUserResponse.builder()
-                .userId(entity.getId())
-                .username(entity.getUsername())
-                .nickname(entity.getNickName())
-                .avatar(entity.getAvatar())
-                .email(entity.getEmail())
-                .phone(entity.getPhone())
-                .userType(entity.getUserType() != null ? entity.getUserType().getCode() : null)
-                .userTypeDesc(
-                        entity.getUserType() != null ? entity.getUserType().getDescription() : null)
-                .status(entity.getStatus() != null ? entity.getStatus().getCode() : null)
-                .statusDesc(entity.getStatus() != null ? entity.getStatus().getDescription() : null)
-                .createTime(entity.getCreateTime())
+                .userId(user.id())
+                .username(user.username())
+                .nickname(user.nickName())
+                .avatar(user.avatar())
+                .email(user.email())
+                .phone(user.phone())
+                .userType(user.userType())
+                .userTypeDesc(user.userTypeDesc())
+                .status(user.status())
+                .statusDesc(user.statusDesc())
+                .createTime(user.createTime())
                 .build();
     }
 
-    private RecentProductResponse toRecentProductResponse(
-            com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel model) {
+    private RecentProductResponse toRecentProductResponse(RecentProductRecord model) {
         return RecentProductResponse.builder()
                 .productId(model.id())
                 .sellerId(model.sellerId())
@@ -323,8 +271,7 @@ public class AdminDashboardService {
                 .mainImage(model.mainImageUrl())
                 .status(model.status())
                 .statusDesc(model.statusDesc())
-                .sellerId(model.sellerId())
-                .sellerName(model.username())
+                .sellerName(model.sellerName())
                 .categoryName(model.categoryName())
                 .viewCount(model.views())
                 .createTime(model.createTime())

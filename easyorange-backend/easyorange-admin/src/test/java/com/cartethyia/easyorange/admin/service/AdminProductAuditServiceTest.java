@@ -1,62 +1,33 @@
 package com.cartethyia.easyorange.admin.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAuditRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAuditRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
-import com.cartethyia.easyorange.ai.service.AiReviewService;
-import com.cartethyia.easyorange.common.domain.Money;
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.AuditLogRecord;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
-import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
-import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
-import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusException;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
-import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
-import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.domain.valueobject.*;
-import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminProductAuditService 单元测试")
 class AdminProductAuditServiceTest {
-
-    @Mock
-    private ProductRepository productRepository;
-
-    @Mock
-    private ProductAuditLogRepository productAuditLogRepository;
-
-    @Mock
-    private DomainEventPublisher domainEventPublisher;
-
-    @Mock
-    private ObjectMapper objectMapper;
-
-    @Mock
-    private AiReviewService aiReviewService;
 
     @Mock
     private AdminProductQueryPort adminProductQueryPort;
@@ -66,44 +37,23 @@ class AdminProductAuditServiceTest {
 
     private static final String PRODUCT_ID = "100";
     private static final String OPERATOR_ID = "1";
-    private static final String SELLER_ID = "2";
 
-    private Product createProductInPendingReview() {
-        var t = Product.create(new ProductCreateSpec(
-                SellerId.of(SELLER_ID),
-                CategoryId.of("1"),
-                ProductTitle.of("测试商品"),
-                Money.of(new BigDecimal("99.99")),
+    private AuditLogRecord createAuditLog() {
+        return new AuditLogRecord(
+                "1",
+                PRODUCT_ID,
+                OPERATOR_ID,
+                "管理员",
+                "1",
+                "通过",
                 null,
-                StockQuantity.of(10),
-                ConditionLevel.GOOD,
-                TradeLocation.of("北京"),
-                ContactMethod.of("微信"),
-                ProductDescription.of("描述"),
-                ImageSet.of(List.of("http://img/1.jpg"))));
-        return t.aggregate().assignId(PRODUCT_ID).submitForReview(SELLER_ID).aggregate();
-    }
-
-    private Product createProductWithStatus(ProductStatus status) {
-        var t = Product.create(new ProductCreateSpec(
-                SellerId.of(SELLER_ID),
-                CategoryId.of("1"),
-                ProductTitle.of("测试商品"),
-                Money.of(new BigDecimal("99.99")),
+                List.of(),
+                "PENDING_REVIEW",
+                "待审核",
+                "ONLINE",
+                "上架",
                 null,
-                StockQuantity.of(10),
-                ConditionLevel.GOOD,
-                TradeLocation.of("北京"),
-                ContactMethod.of("微信"),
-                ProductDescription.of("描述"),
-                ImageSet.of(List.of("http://img/1.jpg"))));
-        var p = t.aggregate().assignId(PRODUCT_ID);
-        if (status == ProductStatus.PENDING_REVIEW) {
-            return p.submitForReview(SELLER_ID).aggregate();
-        } else if (status == ProductStatus.ONLINE) {
-            return p.submitForReview(SELLER_ID).aggregate().approve(null).aggregate();
-        }
-        return p;
+                LocalDateTime.now());
     }
 
     @Nested
@@ -111,11 +61,8 @@ class AdminProductAuditServiceTest {
     class AuditProductTests {
 
         @Test
-        @DisplayName("审核通过 — 商品状态变为上架")
-        void auditProduct_approve_setsOnline() {
-            when(productRepository.findById(ProductId.of(PRODUCT_ID)))
-                    .thenReturn(Optional.of(createProductInPendingReview()));
-
+        @DisplayName("审核通过 — 委托端口并携带操作人信息")
+        void auditProduct_approve_delegatesToPort() {
             ProductAuditRequest request = new ProductAuditRequest(1, null, null, null);
 
             TestSecurityUtil.setSecurityContext(OPERATOR_ID);
@@ -125,20 +72,13 @@ class AdminProductAuditServiceTest {
                 TestSecurityUtil.clearSecurityContext();
             }
 
-            ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
-            verify(productRepository).save(productCaptor.capture());
-            assertThat(productCaptor.getValue().getStatus()).isEqualTo(ProductStatus.ONLINE);
-
-            verify(productAuditLogRepository).save(any(ProductAuditLog.class));
-            verify(domainEventPublisher).publish(any(ProductAuditedEvent.class));
+            verify(adminProductQueryPort)
+                    .auditProduct(eq(PRODUCT_ID), eq(1), eq(null), eq(null), eq(null), eq(OPERATOR_ID), any());
         }
 
         @Test
-        @DisplayName("审核拒绝 — 商品状态变为驳回")
-        void auditProduct_reject_setsRejected() {
-            when(productRepository.findById(ProductId.of(PRODUCT_ID)))
-                    .thenReturn(Optional.of(createProductInPendingReview()));
-
+        @DisplayName("审核拒绝带原因")
+        void auditProduct_reject_delegatesToPort() {
             ProductAuditRequest request = new ProductAuditRequest(2, "商品信息不完整", null, null);
 
             TestSecurityUtil.setSecurityContext(OPERATOR_ID);
@@ -148,59 +88,8 @@ class AdminProductAuditServiceTest {
                 TestSecurityUtil.clearSecurityContext();
             }
 
-            ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
-            verify(productRepository).save(productCaptor.capture());
-            assertThat(productCaptor.getValue().getStatus()).isEqualTo(ProductStatus.REJECTED);
-
-            verify(productAuditLogRepository).save(any(ProductAuditLog.class));
-            verify(domainEventPublisher).publish(any(ProductAuditedEvent.class));
-        }
-
-        @Test
-        @DisplayName("拒绝时未填写原因抛出异常")
-        void auditProduct_rejectWithoutReason_throws() {
-            when(productRepository.findById(ProductId.of(PRODUCT_ID)))
-                    .thenReturn(Optional.of(createProductInPendingReview()));
-
-            ProductAuditRequest request = new ProductAuditRequest(2, null, null, null);
-
-            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
-            try {
-                assertThatThrownBy(() -> auditService.auditProduct(PRODUCT_ID, request))
-                        .isInstanceOf(BusinessException.class)
-                        .hasMessageContaining("拒绝时必须填写原因");
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
-        }
-
-        @Test
-        @DisplayName("商品不存在时抛出异常")
-        void auditProduct_productNotFound_throws() {
-            when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.empty());
-
-            ProductAuditRequest request = new ProductAuditRequest(1, null, null, null);
-
-            assertThatThrownBy(() -> auditService.auditProduct(PRODUCT_ID, request))
-                    .isInstanceOf(ProductNotFoundException.class)
-                    .hasMessageContaining("资产不存在");
-        }
-
-        @Test
-        @DisplayName("非待审核状态的商品不能审核")
-        void auditProduct_notPendingReview_throws() {
-            Product onlineProduct = createProductWithStatus(ProductStatus.ONLINE);
-            when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.of(onlineProduct));
-
-            ProductAuditRequest request = new ProductAuditRequest(1, null, null, null);
-
-            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
-            try {
-                assertThatThrownBy(() -> auditService.auditProduct(PRODUCT_ID, request))
-                        .isInstanceOf(InvalidProductStatusException.class);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(adminProductQueryPort)
+                    .auditProduct(eq(PRODUCT_ID), eq(2), eq("商品信息不完整"), eq(null), eq(null), eq(OPERATOR_ID), any());
         }
     }
 
@@ -210,18 +99,7 @@ class AdminProductAuditServiceTest {
 
         @Test
         @DisplayName("批量审核成功")
-        void batchAudit_mixOfSuccessAndFailure() {
-            Product product1 = createProductInPendingReview();
-            Product product2 = createProductInPendingReview();
-
-            // product1 returned for ID 100 (via ProductId), product2 returned for ID 101
-            // The createProductInPendingReview uses PRODUCT_ID, so we need two distinct products
-            Product p1 = product1;
-            Product p2 = product2;
-
-            when(productRepository.findById(ProductId.of("100"))).thenReturn(Optional.of(p1));
-            when(productRepository.findById(ProductId.of("101"))).thenReturn(Optional.of(p2));
-
+        void batchAudit_allSuccess() {
             BatchAuditRequest request = new BatchAuditRequest();
             request.setItems(List.of(
                     new BatchAuditRequest.AuditItem("100", 1, "通过", null),
@@ -233,18 +111,17 @@ class AdminProductAuditServiceTest {
 
                 assertThat(result.success()).isEqualTo(2);
                 assertThat(result.failed()).isZero();
-                verify(productRepository, times(2)).save(any(Product.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
         }
 
         @Test
-        @DisplayName("批量审核中跳过不存在的商品")
-        void batchAudit_skipNotFound() {
-            when(productRepository.findById(ProductId.of("100"))).thenReturn(Optional.empty());
-            when(productRepository.findById(ProductId.of("101")))
-                    .thenReturn(Optional.of(createProductInPendingReview()));
+        @DisplayName("批量审核中跳过失败项")
+        void batchAudit_skipFailedItems() {
+            doThrow(BusinessException.of("资产不存在"))
+                    .when(adminProductQueryPort)
+                    .auditProduct(eq("100"), eq(1), any(), any(), any(), any(), any());
 
             BatchAuditRequest request = new BatchAuditRequest();
             request.setItems(List.of(
@@ -257,6 +134,8 @@ class AdminProductAuditServiceTest {
 
                 assertThat(result.success()).isEqualTo(1);
                 assertThat(result.failed()).isEqualTo(1);
+                assertThat(result.errors()).hasSize(1);
+                assertThat(result.errors().get(0)).contains("100");
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -270,16 +149,7 @@ class AdminProductAuditServiceTest {
         @Test
         @DisplayName("获取审核记录列表")
         void getAuditLogs_returnsLogs() {
-            ProductAuditLog log = ProductAuditLog.builder()
-                    .productId(PRODUCT_ID)
-                    .operatorId(OPERATOR_ID)
-                    .operatorName("管理员")
-                    .action("1")
-                    .beforeStatus(ProductStatus.PENDING_REVIEW.getCode())
-                    .afterStatus(ProductStatus.ONLINE.getCode())
-                    .build();
-
-            when(productAuditLogRepository.findByProductId(PRODUCT_ID)).thenReturn(List.of(log));
+            when(adminProductQueryPort.getAuditLogs(PRODUCT_ID)).thenReturn(List.of(createAuditLog()));
 
             List<AuditLogResponse> logs = auditService.getAuditLogs(PRODUCT_ID);
 
@@ -287,12 +157,13 @@ class AdminProductAuditServiceTest {
             assertThat(logs.get(0).productId()).isEqualTo(PRODUCT_ID);
             assertThat(logs.get(0).action()).isEqualTo(1);
             assertThat(logs.get(0).actionDesc()).isEqualTo("通过");
+            assertThat(logs.get(0).afterStatusDesc()).isEqualTo("上架");
         }
 
         @Test
         @DisplayName("没有审核记录时返回空列表")
         void getAuditLogs_empty_returnsEmptyList() {
-            when(productAuditLogRepository.findByProductId(PRODUCT_ID)).thenReturn(List.of());
+            when(adminProductQueryPort.getAuditLogs(PRODUCT_ID)).thenReturn(List.of());
 
             List<AuditLogResponse> logs = auditService.getAuditLogs(PRODUCT_ID);
 

@@ -18,12 +18,9 @@ import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.domain.entity.ProductRating;
-import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -46,9 +43,6 @@ class AdminRatingServiceTest {
     @Mock
     private AdminProductQueryPort adminProductQueryPort;
 
-    @Mock
-    private ProductRatingRepository productRatingRepository;
-
     @Spy
     private AdminRatingAssembler assembler = new AdminRatingAssembler();
 
@@ -66,11 +60,6 @@ class AdminRatingServiceTest {
 
     private AdminUserQueryPort.UserInfo createUser(String id, String username, String nickname) {
         return new AdminUserQueryPort.UserInfo(id, username, nickname, "http://example.com/avatar.png", null);
-    }
-
-    private ProductRating createRating(String id) {
-        return ProductRating.reconstitute(
-                id, PRODUCT_ID, USER_ID, null, 5, "好商品", null, null, 5, 1, LocalDateTime.now(), LocalDateTime.now());
     }
 
     @Nested
@@ -167,10 +156,8 @@ class AdminRatingServiceTest {
     class DeleteReviewTests {
 
         @Test
-        @DisplayName("删除评价成功")
+        @DisplayName("删除评价委托端口")
         void deleteReview_success() {
-            when(productRatingRepository.findById(REVIEW_ID)).thenReturn(Optional.of(createRating(REVIEW_ID)));
-
             AdminRatingDeleteRequest request = new AdminRatingDeleteRequest();
             request.setReason("违规内容");
 
@@ -179,16 +166,18 @@ class AdminRatingServiceTest {
 
                 reviewService.deleteReview(REVIEW_ID, request);
 
-                verify(productRatingRepository).deleteById(REVIEW_ID);
+                verify(adminRatingQueryPort).deleteRating(REVIEW_ID);
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
         }
 
         @Test
-        @DisplayName("删除不存在的评价抛出异常")
+        @DisplayName("端口抛出评价不存在异常向上传播")
         void deleteReview_notFound_throwsException() {
-            when(productRatingRepository.findById("999")).thenReturn(Optional.empty());
+            org.mockito.Mockito.doThrow(BusinessException.of("评价不存在或已被删除"))
+                    .when(adminRatingQueryPort)
+                    .deleteRating("999");
 
             AdminRatingDeleteRequest request = new AdminRatingDeleteRequest();
             request.setReason("test");

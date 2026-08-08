@@ -14,8 +14,6 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrd
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.admin.service.AdminOrderService;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -48,9 +46,9 @@ class AdminOrderControllerTest {
                 "seller1",
                 List.of(new AdminOrderResponse.ItemInfo("100", "Product1")),
                 BigDecimal.valueOf(199),
-                OrderStatus.PENDING_PAYMENT.getCode(),
+                "PENDING_PAYMENT",
                 "待付款",
-                PaymentStatus.UNPAID.getCode(),
+                "UNPAID",
                 "未支付",
                 LocalDateTime.of(2026, 5, 16, 10, 0)));
         var pageResult = PageResult.of(orders, 1L, 1, 20);
@@ -61,7 +59,7 @@ class AdminOrderControllerTest {
                 .andExpect(jsonPath("$.code").value("A0000"))
                 .andExpect(jsonPath("$.data.records[0].orderId").value("1"))
                 .andExpect(jsonPath("$.data.records[0].orderNo").value("ORD001"))
-                .andExpect(jsonPath("$.data.records[0].status").value(OrderStatus.PENDING_PAYMENT.getCode()))
+                .andExpect(jsonPath("$.data.records[0].status").value("PENDING_PAYMENT"))
                 .andExpect(jsonPath("$.data.total").value(1));
     }
 
@@ -75,7 +73,7 @@ class AdminOrderControllerTest {
                 .products(List.of(new AdminOrderDetailResponse.ProductInfo(
                         "100", "Product1", "img.jpg", BigDecimal.valueOf(199))))
                 .totalAmount(BigDecimal.valueOf(199))
-                .status(OrderStatus.PENDING_PAYMENT.getCode())
+                .status("PENDING_PAYMENT")
                 .statusDesc("待付款")
                 .createTime(LocalDateTime.of(2026, 5, 16, 10, 0))
                 .build();

@@ -11,7 +11,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminUserResponse;
 import com.cartethyia.easyorange.admin.service.AdminUserService;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -38,13 +37,13 @@ class AdminUserControllerTest {
                 AdminUserResponse.builder()
                         .userId("1")
                         .username("alice")
-                        .status(UserStatus.NORMAL.getCode())
+                        .status("NORMAL")
                         .statusDesc("正常")
                         .build(),
                 AdminUserResponse.builder()
                         .userId("2")
                         .username("bob")
-                        .status(UserStatus.NORMAL.getCode())
+                        .status("NORMAL")
                         .statusDesc("正常")
                         .build());
         var pageResult = PageResult.of(users, 2L, 1, 20);
@@ -81,7 +80,7 @@ class AdminUserControllerTest {
                 .username("alice")
                 .nickname("Alice")
                 .email("alice@test.com")
-                .status(UserStatus.NORMAL.getCode())
+                .status("NORMAL")
                 .statusDesc("正常")
                 .createTime(LocalDateTime.of(2026, 1, 1, 0, 0))
                 .build();
@@ -101,7 +100,7 @@ class AdminUserControllerTest {
 
         mockMvc.perform(put("/api/admin/users/1/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\": \"" + UserStatus.NORMAL.getCode() + "\", \"reason\": \"启用用户\"}"))
+                        .content("{\"status\": \"" + "NORMAL" + "\", \"reason\": \"启用用户\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("A0000"));
     }

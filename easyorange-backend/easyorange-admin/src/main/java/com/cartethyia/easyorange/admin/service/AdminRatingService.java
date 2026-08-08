@@ -13,11 +13,9 @@ import com.cartethyia.easyorange.admin.domain.port.AdminRatingQueryPort.RatingQu
 import com.cartethyia.easyorange.admin.domain.port.AdminRatingQueryPort.RatingSummary;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserInfo;
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +31,6 @@ public class AdminRatingService {
     private final AdminRatingQueryPort adminRatingQueryPort;
     private final AdminUserQueryPort adminUserQueryPort;
     private final AdminProductQueryPort adminProductQueryPort;
-    private final ProductRatingRepository productRatingRepository;
     private final AdminRatingAssembler assembler;
 
     @Transactional(readOnly = true)
@@ -87,13 +84,9 @@ public class AdminRatingService {
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteReview(String id, AdminRatingDeleteRequest request) {
-        productRatingRepository
-                .findById(id)
-                .orElseThrow(() -> BusinessException.of(AdminResultCode.RATING_NOT_FOUND_OR_DELETED));
+        adminRatingQueryPort.deleteRating(id);
 
         String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        productRatingRepository.deleteById(id);
-
         log.info("action=admin_delete_review reviewId={} operatorId={} reason={}", id, operatorId, request.getReason());
     }
 }

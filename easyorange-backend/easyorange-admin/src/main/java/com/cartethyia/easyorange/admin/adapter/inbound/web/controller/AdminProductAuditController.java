@@ -4,8 +4,8 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAudi
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAuditRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.AiReviewRecord;
 import com.cartethyia.easyorange.admin.service.AdminProductAuditService;
-import com.cartethyia.easyorange.ai.dto.AiReviewResult;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -38,7 +38,7 @@ public class AdminProductAuditController {
     }
 
     @GetMapping("/{id}/ai-review")
-    public Result<AiReviewResult> getAiReview(@PathVariable String id) {
+    public Result<AiReviewRecord> getAiReview(@PathVariable String id) {
         return Result.success(adminProductAuditService.getAiReview(id));
     }
 }

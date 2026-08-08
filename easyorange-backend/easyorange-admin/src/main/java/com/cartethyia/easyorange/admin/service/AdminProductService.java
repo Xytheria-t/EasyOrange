@@ -8,14 +8,8 @@ import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryResult;
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
-import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
@@ -33,9 +27,6 @@ import org.springframework.util.StringUtils;
 public class AdminProductService {
 
     private final AdminProductQueryPort adminProductQueryPort;
-    private final ProductRepository productRepository;
-    private final ProductCacheEvictionPort productCachePort;
-    private final DomainEventPublisher domainEventPublisher;
     private final AdminProductAssembler adminProductAssembler;
 
     @Transactional(readOnly = true)
@@ -80,31 +71,7 @@ public class AdminProductService {
 
     @Transactional(rollbackFor = Exception.class)
     public void updateProductStatus(String id, UpdateStatusRequest request) {
-        ProductStatus newStatus;
-        try {
-            newStatus = ProductStatus.fromCode(request.getStatus());
-        } catch (IllegalArgumentException ex) {
-            throw BusinessException.of("无效的商品状态");
-        }
-
-        Product product = productRepository.findById(ProductId.of(id)).orElseThrow(() -> BusinessException.of("商品不存在"));
-
-        applyStatusTransition(product, newStatus);
-        productCachePort.evictProductCache(id);
-    }
-
-    private void applyStatusTransition(Product product, ProductStatus newStatus) {
-        var transition =
-                switch (newStatus) {
-                    case ONLINE -> product.putOnline();
-                    case OFFLINE -> product.takeOffline();
-                    case SOLD -> product.markAsSold().orElse(null);
-                    default -> throw BusinessException.of("不支持将该商品状态改为: " + newStatus.getDesc());
-                };
-        if (transition != null) {
-            productRepository.save(transition.aggregate());
-            domainEventPublisher.publish(transition.event());
-        }
+        adminProductQueryPort.applyProductStatus(id, request.getStatus());
     }
 
     private LocalDateTime parseDate(String dateStr, boolean endOfDay) {

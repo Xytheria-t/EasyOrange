@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.admin.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -13,16 +12,17 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentUs
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TopProductResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
-import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
-import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
-import com.cartethyia.easyorange.product.domain.entity.ProductReport;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
-import com.cartethyia.easyorange.user.domain.enums.UserStatus;
-import com.cartethyia.easyorange.user.domain.enums.UserType;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.TopProductRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.RecentUser;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserStats;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -43,16 +43,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 class AdminDashboardServiceTest {
 
     @Mock
-    private UserMapper userMapper;
+    private AdminUserQueryPort adminUserQueryPort;
 
     @Mock
-    private ProductQueryRepository productQueryRepository;
+    private AdminProductQueryPort adminProductQueryPort;
 
     @Mock
-    private ProductReportQueryRepository productReportQueryRepository;
-
-    @Mock
-    private OrderReadRepository orderReadRepository;
+    private AdminOrderQueryPort adminOrderQueryPort;
 
     @Mock
     private JdbcTemplate jdbcTemplate;
@@ -60,15 +57,19 @@ class AdminDashboardServiceTest {
     @InjectMocks
     private AdminDashboardService dashboardService;
 
-    private UserDO createTestUser() {
-        return UserDO.builder()
-                .id("1")
-                .username("testuser")
-                .nickName("测试用户")
-                .userType(UserType.fromCode("01"))
-                .status(UserStatus.NORMAL)
-                .createTime(LocalDateTime.now())
-                .build();
+    private RecentUser createTestUser() {
+        return new RecentUser(
+                "1",
+                "testuser",
+                "测试用户",
+                null,
+                null,
+                null,
+                "01",
+                "普通用户",
+                "NORMAL",
+                "正常",
+                LocalDateTime.now());
     }
 
     @Nested
@@ -78,12 +79,10 @@ class AdminDashboardServiceTest {
         @Test
         @DisplayName("获取仪表盘统计数据")
         void getDashboardStats_returnsStats() {
-            when(userMapper.selectCount(any())).thenReturn(100L, 5L);
-            when(productQueryRepository.countByStatus(null)).thenReturn(200L);
-            when(productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode()))
-                    .thenReturn(10L);
-            when(orderReadRepository.countByStatus(null)).thenReturn(300L);
-            when(productReportQueryRepository.countPendingReports()).thenReturn(8L);
+            when(adminUserQueryPort.getUserStats()).thenReturn(new UserStats(100, 5));
+            when(adminProductQueryPort.getProductStats()).thenReturn(new AdminProductQueryPort.ProductStats(200, 10));
+            when(adminOrderQueryPort.getOrderStats()).thenReturn(new OrderStats(300, 0, 0, 0, 0, 0, 0, 0));
+            when(adminProductQueryPort.getReportStats()).thenReturn(new ReportStats(20, 8, 0, 0, 0));
 
             DashboardStatsResponse stats = dashboardService.getDashboardStats();
 
@@ -103,12 +102,17 @@ class AdminDashboardServiceTest {
         @Test
         @DisplayName("获取待处理事项")
         void getPendingItems_returnsItems() {
-            when(productReportQueryRepository.countPendingReports()).thenReturn(3L);
-            when(orderReadRepository.countByStatus(any(OrderStatus.class))).thenReturn(5L);
-            when(productQueryRepository.countByStatus(anyString())).thenReturn(7L);
-            when(productReportQueryRepository.findPendingReports(anyInt(), anyInt()))
-                    .thenReturn(List.of(ProductReport.reconstitute(
-                            "1", "100", "1", "虚假信息", null, null, LocalDateTime.now(), LocalDateTime.now(), "1")));
+            when(adminProductQueryPort.getReportStats()).thenReturn(new ReportStats(5, 3, 0, 0, 0));
+            when(adminOrderQueryPort.getOrderStats()).thenReturn(new OrderStats(10, 0, 5, 0, 0, 0, 0, 0));
+            when(adminProductQueryPort.getProductStats()).thenReturn(new AdminProductQueryPort.ProductStats(100, 7));
+            when(adminProductQueryPort.queryReports(0, 1, 5))
+                    .thenReturn(new ReportQueryResult(
+                            List.of(new ReportRecord(
+                                    "1", "100", "1", "1", "虚假信息", "虚假信息", "0", "待处理", null,
+                                    LocalDateTime.now(), LocalDateTime.now(), true)),
+                            1,
+                            1,
+                            5));
 
             PendingItemsResponse items = dashboardService.getPendingItems();
 
@@ -116,6 +120,7 @@ class AdminDashboardServiceTest {
             assertThat(items.getPendingOrders()).isEqualTo(5);
             assertThat(items.getPendingProducts()).isEqualTo(7);
             assertThat(items.getRecentReports()).hasSize(1);
+            assertThat(items.getRecentReports().get(0).getProductId()).isEqualTo("100");
         }
     }
 
@@ -126,7 +131,7 @@ class AdminDashboardServiceTest {
         @Test
         @DisplayName("获取最近注册用户")
         void getRecentUsers_returnsUsers() {
-            when(userMapper.selectList(any())).thenReturn(List.of(createTestUser()));
+            when(adminUserQueryPort.getRecentUsers(5)).thenReturn(List.of(createTestUser()));
 
             List<RecentUserResponse> users = dashboardService.getRecentUsers(5);
 
@@ -235,22 +240,17 @@ class AdminDashboardServiceTest {
         @Test
         @DisplayName("获取 Top 浏览量商品")
         void getTopProducts_returnsProducts() {
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("id", 1L);
-            row.put("name", "高等数学教材");
-            row.put("view_count", 1024);
-            row.put("price", new java.math.BigDecimal("59.00"));
-            row.put("main_image", "http://example.com/img.jpg");
-            row.put("status", 1);
-
-            when(jdbcTemplate.queryForList(anyString())).thenReturn(List.of(row));
+            when(adminProductQueryPort.getTopProducts(10))
+                    .thenReturn(List.of(new TopProductRecord(
+                            "1", "高等数学教材", 1024, new BigDecimal("59.00"), "http://example.com/img.jpg", "ONLINE",
+                            "上架")));
 
             List<TopProductResponse> result = dashboardService.getTopProducts(10);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("高等数学教材");
             assertThat(result.get(0).getViewCount()).isEqualTo(1024);
-            assertThat(result.get(0).getPrice()).isEqualByComparingTo(new java.math.BigDecimal("59.00"));
+            assertThat(result.get(0).getPrice()).isEqualByComparingTo(new BigDecimal("59.00"));
         }
     }
 }
