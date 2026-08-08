@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.interceptor;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
+import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
@@ -85,21 +87,7 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
     private String resolveUserKey(HttpServletRequest request) {
         return SecurityContextUtil.getCurrentUserId()
                 .map(id -> "user:" + id)
-                .orElseGet(() -> "ip:" + getClientIp(request));
-    }
-
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("X-Real-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
-        }
-        return ip != null ? ip : "unknown";
+                .orElseGet(() -> "ip:" + RequestUtil.getClientIp(request));
     }
 
     private String extractStaleKey(HttpServletRequest request, AiCallScope scope) {
@@ -117,11 +105,7 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
         try {
             var md = MessageDigest.getInstance("SHA-256");
             byte[] digest = md.digest(content.getBytes(StandardCharsets.UTF_8));
-            var sb = new StringBuilder(32);
-            for (int i = 0; i < 16; i++) {
-                sb.append(String.format("%02x", digest[i]));
-            }
-            return sb.toString();
+            return HexFormat.of().formatHex(digest, 0, 16);
         } catch (NoSuchAlgorithmException e) {
             return null;
         }

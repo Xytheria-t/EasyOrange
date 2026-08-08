@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
+import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.dto.CopyGenerationResult;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
@@ -20,6 +21,7 @@ public class AiCopyGenerationService {
     private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
+    private final AiModelSupport aiModelSupport;
 
     @TokenBudget(scenario = "copy", maxTokensPerCall = 2500, dailyTokenLimit = 500_000)
     public CopyGenerationResult generateCopy(
@@ -49,7 +51,7 @@ public class AiCopyGenerationService {
                 styleDesc);
 
         try {
-            String jsonResponse = AiModelSupport.callJson(chatModel, systemPrompt, userMessage);
+            String jsonResponse = aiModelSupport.callJson(chatModel, AiCallScope.COPY, systemPrompt, userMessage);
             if (jsonResponse == null) {
                 log.warn("LLM returned null for copy generation");
                 return null;

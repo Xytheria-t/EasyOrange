@@ -15,6 +15,7 @@ public class AiProperties {
     private Cache cache = new Cache();
     private RateLimit rateLimit = new RateLimit();
     private Budget budget = new Budget();
+    private Eval eval = new Eval();
 
     @Data
     public static class DeepSeek {
@@ -86,5 +87,17 @@ public class AiProperties {
             private int maxTokensPerCall = 2000;
             private int dailyTokenLimit = 500_000;
         }
+    }
+
+    /**
+     * LLM-as-Judge 离线评估配置 — 定时对 eo_ai_call_log 中未评审的成功调用打分（1-5 + 评语）。
+     * <p>
+     * 回答「怎么判断 AI 输出质量」：输出质量从「感觉还行」变成「可量化、可回归」。
+     */
+    @Data
+    public static class Eval {
+        private boolean enabled = false;
+        private String cron = "0 0 3 * * ?";
+        private int batchSize = 50;
     }
 }

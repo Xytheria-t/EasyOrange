@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.cartethyia.easyorange.ai.adapter.outbound.AiCallLogRecorder;
+import com.cartethyia.easyorange.ai.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.dto.QaRequest;
 import com.cartethyia.easyorange.ai.dto.QaResponse;
 import com.cartethyia.easyorange.ai.prompt.TestPromptRegistry;
@@ -32,7 +34,7 @@ class AiQaServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AiQaService(chatModel, new TestPromptRegistry());
+        service = new AiQaService(chatModel, new TestPromptRegistry(), new AiModelSupport(mock(AiCallLogRecorder.class)));
     }
 
     private QaRequest createRequest(String question) {

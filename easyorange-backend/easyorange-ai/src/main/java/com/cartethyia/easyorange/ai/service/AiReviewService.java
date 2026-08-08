@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
+import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.dto.AiReviewResult;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
@@ -21,6 +22,7 @@ public class AiReviewService {
     private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
+    private final AiModelSupport aiModelSupport;
 
     @TokenBudget(scenario = "review", maxTokensPerCall = 2000, dailyTokenLimit = 500_000)
     public AiReviewResult reviewProduct(
@@ -52,7 +54,7 @@ public class AiReviewService {
                 imageUrls != null ? imageUrls.size() : 0);
 
         try {
-            String jsonResponse = AiModelSupport.callJson(chatModel, systemPrompt, userMessage);
+            String jsonResponse = aiModelSupport.callJson(chatModel, AiCallScope.REVIEW, systemPrompt, userMessage);
             if (jsonResponse == null) {
                 return new AiReviewResult(true, "通过", 50, List.of(), "AI 无法分析，默认通过");
             }

@@ -40,8 +40,12 @@ ai/
 │   ├── AutoListingService.java        # 拍照上架
 │   ├── SemanticSearchService.java     # 语义搜索
 │   └── CreditScoringService.java      # 信用评分
-├── adapter/outbound/
-│   └── AiSearchEnhancerAdapter.java  # AI 导购搜索增强管道 (4 路并行，ForkJoinPool 虚拟线程)
+├── adapter/
+│   ├── inbound/job/AiEvalScheduler.java # LLM-as-Judge 离线评估（默认关闭 easyorange.ai.eval.enabled=false）
+│   └── outbound/
+│       ├── AiCallLogRecorder.java       # AI 调用日志（eo_ai_call_log，失败仅告警不阻塞主链路）
+│       ├── AiSearchEnhancerAdapter.java # AI 导购搜索增强管道 (4 路并行，ForkJoinPool 虚拟线程)
+│       └── tool/                        # 搜索增强工具集（SearchToolRegistry / IntentDetectionTool 等）
 ├── dto/                            # 业务 DTO (AiReviewRequest/Result, CopyGenerationRequest/Result, PricingRequest/Suggestion, AutoListingResult, CreditScoreResult, QaRequest/Response, SemanticSearchQuery/Result)
 └── controller/                     # API 接口 (可选, 部分控制器在 easyorange-application)
 ```
@@ -56,6 +60,7 @@ ai/
 - **纯规则零 LLM**：`NaturalLanguageDetector` 和 `ProductTagger` 不调任何 LLM，通过规则引擎 + 数据库查询完成，确保亚毫秒级响应
 - **并行容错**：`AiSearchEnhancer` 内 4 个子步骤使用 `CompletableFuture` 并行执行，单步骤超时/失败不影响其他步骤。5s 总超时控制。使用 `ForkJoinPool.commonPool()`（Java 21+ 虚拟线程），无需自定义线程池。取消操作使用 `cancel(false)` 避免中断虚拟线程 carrier 线程
 - **Embedding 真实现**：查询侧 `SemanticSearchService` 用 `embeddingModel.embed(keyword)` 生成查询向量经 `ProductSearchQueryPort` 传入 ES kNN；索引侧 `ElasticsearchProductSearchIndexAdapter`（easyorange-application 模块）注入 `ObjectProvider<EmbeddingModel>` best-effort 写入 `nameEmbedding`（失败降级 null，不阻塞索引）
+- **LLM-as-Judge 离线评估**（2026-08-08 新增）：`AiCallLogRecorder` 记录每次 LLM/Embedding 调用到 `eo_ai_call_log`，`AiEvalScheduler` 定时对未评审成功调用打分（1-5 + 评语）；默认关闭（`easyorange.ai.eval.enabled=false`），把 AI 输出质量从「感觉还行」变成「可量化、可回归」
 - **限流拦截器**：`AiRateLimitInterceptor` 拦截 `/api/ai/**`，按端点独立令牌桶 (5-30次/分)，超限时优先返回 stale 缓存
 
 ## 限流与预算

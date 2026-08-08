@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
+import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.dto.PricingSuggestion;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
@@ -21,6 +22,7 @@ public class AiPricingService {
     private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
+    private final AiModelSupport aiModelSupport;
 
     @TokenBudget(scenario = "pricing", maxTokensPerCall = 2000, dailyTokenLimit = 500_000)
     public PricingSuggestion suggestPrice(
@@ -46,7 +48,7 @@ public class AiPricingService {
                 originalPrice != null ? "¥" + originalPrice : "未知");
 
         try {
-            String jsonResponse = AiModelSupport.callJson(chatModel, systemPrompt, userMessage);
+            String jsonResponse = aiModelSupport.callJson(chatModel, AiCallScope.PRICING, systemPrompt, userMessage);
             if (jsonResponse == null) {
                 return null;
             }

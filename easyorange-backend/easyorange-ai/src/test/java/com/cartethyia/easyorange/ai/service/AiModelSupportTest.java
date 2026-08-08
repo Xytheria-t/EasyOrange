@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.cartethyia.easyorange.ai.adapter.outbound.AiCallLogRecorder;
+import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,6 +30,16 @@ class AiModelSupportTest {
     @Mock
     private EmbeddingModel embeddingModel;
 
+    @Mock
+    private AiCallLogRecorder callLogRecorder;
+
+    private AiModelSupport aiModelSupport;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        aiModelSupport = new AiModelSupport(callLogRecorder);
+    }
+
     private static ChatResponse textResponse(String text) {
         return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
     }
@@ -41,10 +53,49 @@ class AiModelSupportTest {
         void callText_success() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("你好"));
 
-            String result = AiModelSupport.callText(chatModel, "system", "user");
+            String result = aiModelSupport.callText(chatModel, "system", "user");
 
             assertThat(result).isEqualTo("你好");
             verify(chatModel).call(any(Prompt.class));
+        }
+
+        @Test
+        @DisplayName("带 scope 调用 -> 成功时记录日志（scope/model/promptHash/耗时）")
+        void callText_withScope_recordsLog() {
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("你好"));
+
+            String result = aiModelSupport.callText(chatModel, AiCallScope.QA, "system", "user");
+
+            assertThat(result).isEqualTo("你好");
+            verify(callLogRecorder)
+                    .record(
+                            eq("QA"),
+                            anyString(),
+                            anyString(),
+                            eq("你好"),
+                            anyLong(),
+                            eq(true),
+                            isNull());
+        }
+
+        @Test
+        @DisplayName("带 scope 调用失败 -> 记录失败日志后重抛异常")
+        void callText_withScope_recordsFailure() {
+            when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("API timeout"));
+
+            org.assertj.core.api.Assertions.assertThatThrownBy(
+                            () -> aiModelSupport.callText(chatModel, AiCallScope.QA, "system", "user"))
+                    .isInstanceOf(RuntimeException.class);
+
+            verify(callLogRecorder)
+                    .record(
+                            eq("QA"),
+                            anyString(),
+                            anyString(),
+                            isNull(),
+                            anyLong(),
+                            eq(false),
+                            anyString());
         }
     }
 
@@ -57,7 +108,7 @@ class AiModelSupportTest {
         void callJson_success() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"key\":\"value\"}"));
 
-            String result = AiModelSupport.callJson(chatModel, "system", "user");
+            String result = aiModelSupport.callJson(chatModel, "system", "user");
 
             assertThat(result).isEqualTo("{\"key\":\"value\"}");
             verify(chatModel).call(any(Prompt.class));
@@ -73,7 +124,7 @@ class AiModelSupportTest {
         void embed_convertsArray() {
             when(embeddingModel.embed("iPhone 14")).thenReturn(new float[] {1.0f, 2.5f, -3.0f});
 
-            List<Float> result = AiModelSupport.embed(embeddingModel, "iPhone 14");
+            List<Float> result = aiModelSupport.embed(embeddingModel, "iPhone 14");
 
             assertThat(result).containsExactly(1.0f, 2.5f, -3.0f);
             verify(embeddingModel).embed("iPhone 14");
@@ -89,7 +140,7 @@ class AiModelSupportTest {
         void analyzeImages_success() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("看到一个九成新的手机"));
 
-            String result = AiModelSupport.analyzeImages(
+            String result = aiModelSupport.analyzeImages(
                     chatModel, List.of("http://example.com/a.jpg", "http://example.com/b.jpg"), "请描述图片内容");
 
             assertThat(result).isEqualTo("看到一个九成新的手机");

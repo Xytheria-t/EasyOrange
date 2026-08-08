@@ -43,22 +43,15 @@ public class AiModelConfig {
      */
     @Bean
     @Primary
-    public ChatModel chatModel(
-            AiProperties props, ObservationRegistry observationRegistry, MeterRegistry meterRegistry) {
+    public ChatModel chatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
         var deepseek = props.getDeepseek();
         if (hasNoText(deepseek.getApiKey())) {
             return new UnconfiguredChatModel("easyorange.ai.deepseek.api-key 为空，请配置 DEEPSEEK_API_KEY");
         }
         return OpenAiChatModel.builder()
-                .openAiClient(setupClient(
-                        deepseek.getBaseUrl(),
-                        deepseek.getApiKey(),
-                        deepseek.getModel(),
-                        deepseek.getTimeout(),
-                        observationRegistry,
-                        meterRegistry))
+                .openAiClient(syncClient(deepseek.getBaseUrl(), deepseek.getApiKey(), deepseek.getModel(), deepseek.getTimeout(), obs, meters))
                 .options(OpenAiChatOptions.builder().model(deepseek.getModel()).build())
-                .observationRegistry(observationRegistry)
+                .observationRegistry(obs)
                 .build();
     }
 
@@ -66,22 +59,15 @@ public class AiModelConfig {
      * 视觉模型 — Qwen-VL（DashScope OpenAI 兼容端点），拍照上架图片识别专用。
      */
     @Bean
-    public ChatModel visionChatModel(
-            AiProperties props, ObservationRegistry observationRegistry, MeterRegistry meterRegistry) {
+    public ChatModel visionChatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
         var qwenVl = props.getQwenVl();
         if (hasNoText(qwenVl.getApiKey())) {
             return new UnconfiguredChatModel("easyorange.ai.qwen-vl.api-key 为空，请配置 QWEN_VL_API_KEY");
         }
         return OpenAiChatModel.builder()
-                .openAiClient(setupClient(
-                        qwenVl.getBaseUrl(),
-                        qwenVl.getApiKey(),
-                        qwenVl.getModel(),
-                        qwenVl.getTimeout(),
-                        observationRegistry,
-                        meterRegistry))
+                .openAiClient(syncClient(qwenVl.getBaseUrl(), qwenVl.getApiKey(), qwenVl.getModel(), qwenVl.getTimeout(), obs, meters))
                 .options(OpenAiChatOptions.builder().model(qwenVl.getModel()).build())
-                .observationRegistry(observationRegistry)
+                .observationRegistry(obs)
                 .build();
     }
 
@@ -89,25 +75,19 @@ public class AiModelConfig {
      * Embedding 模型 — DashScope text-embedding-v3（OpenAI 兼容端点）。
      */
     @Bean
-    public EmbeddingModel embeddingModel(
-            AiProperties props, ObservationRegistry observationRegistry, MeterRegistry meterRegistry) {
+    public EmbeddingModel embeddingModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
         var embedding = props.getEmbedding();
         if (hasNoText(embedding.getApiKey())) {
             return new UnconfiguredEmbeddingModel("easyorange.ai.embedding.api-key 为空，请配置 EMBEDDING_API_KEY");
         }
         return OpenAiEmbeddingModel.builder()
-                .openAiClient(setupClient(
-                        embedding.getBaseUrl(),
-                        embedding.getApiKey(),
-                        embedding.getModel(),
-                        embedding.getTimeout(),
-                        observationRegistry,
-                        meterRegistry))
+                .openAiClient(
+                        syncClient(embedding.getBaseUrl(), embedding.getApiKey(), embedding.getModel(), embedding.getTimeout(), obs, meters))
                 .options(OpenAiEmbeddingOptions.builder()
                         .model(embedding.getModel())
                         .dimensions(embedding.getDimensions())
                         .build())
-                .observationRegistry(observationRegistry)
+                .observationRegistry(obs)
                 .build();
     }
 
@@ -115,7 +95,11 @@ public class AiModelConfig {
         return value == null || value.isBlank();
     }
 
-    private static OpenAIClient setupClient(
+/**
+     * OpenAI 兼容供应商的统一同步客户端装配。非本项目使用的 Azure/stubbing/自定义头等
+     * 能力传空值即可——两个供应商（DeepSeek / DashScope）均走 apiKey + base-url 直连。
+     */
+    private static OpenAIClient syncClient(
             String baseUrl,
             String apiKey,
             String model,
@@ -125,19 +109,19 @@ public class AiModelConfig {
         return OpenAiSetup.setupSyncClient(
                 baseUrl,
                 apiKey,
-                null,
-                null,
-                null,
-                null,
-                false,
-                false,
+                null, // credential — 仅 apiKey 认证
+                null, // azureServiceVersion
+                null, // organizationId
+                null, // projectId
+                false, // streaming
+                false, // parallelToolCalls
                 model,
                 Duration.ofMillis(timeoutMillis),
                 MAX_RETRIES,
-                null,
-                Map.of(),
+                null, // proxy
+                Map.of(), // defaultHeaders
                 observationRegistry,
                 meterRegistry,
-                List.of());
+                List.of()); // OpenAiHttpClientBuilderCustomizer
     }
 }

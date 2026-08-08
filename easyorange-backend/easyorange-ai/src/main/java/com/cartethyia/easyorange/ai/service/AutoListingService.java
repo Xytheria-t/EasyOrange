@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
+import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
@@ -27,6 +28,7 @@ public class AutoListingService {
 
     private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
+    private final AiModelSupport aiModelSupport;
 
     @TokenBudget(scenario = "auto_listing", maxTokensPerCall = 3000, dailyTokenLimit = 500_000)
     public AutoListingResult analyzeImages(List<String> imageUrls) {
@@ -34,13 +36,13 @@ public class AutoListingService {
             String visualPrompt = loadPrompt(VISUAL_PROMPT_NAME);
             String systemPrompt = loadPrompt(SYSTEM_PROMPT_NAME);
 
-            String visualResult = AiModelSupport.analyzeImages(visionChatModel, imageUrls, visualPrompt);
+            String visualResult = aiModelSupport.analyzeImages(visionChatModel, imageUrls, visualPrompt);
             if (visualResult == null) {
                 log.warn("Vision analysis returned null for {} images", imageUrls.size());
                 return null;
             }
 
-            String jsonResponse = AiModelSupport.callJson(chatModel, systemPrompt, visualResult);
+            String jsonResponse = aiModelSupport.callJson(chatModel, AiCallScope.AUTO_LISTING, systemPrompt, visualResult);
             if (jsonResponse == null) {
                 log.warn("LLM returned null for auto listing generation");
                 return null;

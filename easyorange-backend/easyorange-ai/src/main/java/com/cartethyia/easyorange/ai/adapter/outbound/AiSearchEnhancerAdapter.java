@@ -1,32 +1,44 @@
 package com.cartethyia.easyorange.ai.adapter.outbound;
 
-import com.cartethyia.easyorange.ai.service.AiModelSupport;
+import com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchTool;
+import com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchToolContext;
+import com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchToolRegistry;
 import com.cartethyia.easyorange.ai.service.NaturalLanguageDetector;
-import com.cartethyia.easyorange.ai.service.ProductTagger;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.framework.cache.CacheUtils;
 import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.util.DigestUtils;
 
+/**
+ * AI 导购搜索增强管道 — 4 路并行 Tool Calling（Tool Registry 模式）。
+ * <p>
+ * 用户自然语言查询进来，从 {@link SearchToolRegistry} 取 4 个工具并行执行：
+ * intent_detection（LLM 意图识别）/ product_tagging（规则标签）/ market_analysis（LLM 市场分析）/
+ * question_suggestion（LLM 建议问题）。单步骤失败降级不影响整体，5s 总超时，
+ * 结果经 Redis 5min TTL 缓存。
+ */
 @Slf4j
 @Primary
 @Component
 public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
     private final NaturalLanguageDetector nlDetector;
-    private final ChatModel chatModel;
-    private final ProductTagger productTagger;
+    private final SearchToolRegistry toolRegistry;
     private final RedisTemplate<Object, Object> redisTemplate;
 
     private static final int TIMEOUT_SECONDS = 5;
@@ -34,32 +46,17 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     private static final String CACHE_KEY_PREFIX = "ai:search:enhance:";
     private static final int TOP_PRODUCTS_LIMIT = 5;
 
-    private static final String INTENT_SYSTEM_PROMPT = """
-        你是 EasyOrange — AI 工程化 的 AI 导购助手。
-        用户输入了一段自然语言商品搜索需求。
-        请用一句简洁的话总结用户想找什么，不超过30个字。
-        直接输出总结，不要前缀。
-        示例: "想找5000以内适合编程的笔记本"
-        """;
-    private static final String QUESTIONS_SYSTEM_PROMPT = """
-        基于用户需求和搜索结果，生成2-3个用户可能想追问的问题。
-        每个问题不超过15个字。
-        用逗号分隔输出，不要序号。
-        """;
-    private static final String MARKET_SYSTEM_PROMPT = """
-        你是 EasyOrange — AI 工程化 的市场分析助手。根据搜索到的资产价格信息，
-        用一句话概括当前市场价格情况（如均价、性价比等），不超过40个字。
-        直接输出分析结果，不要前缀。
-        """;
+    private static final String TOOL_INTENT = "intent_detection";
+    private static final String TOOL_TAGS = "product_tagging";
+    private static final String TOOL_MARKET = "market_analysis";
+    private static final String TOOL_QUESTIONS = "question_suggestion";
 
     public AiSearchEnhancerAdapter(
             NaturalLanguageDetector nlDetector,
-            ChatModel chatModel,
-            ProductTagger productTagger,
+            SearchToolRegistry toolRegistry,
             ObjectProvider<RedisTemplate<Object, Object>> redisTemplateProvider) {
         this.nlDetector = nlDetector;
-        this.chatModel = chatModel;
-        this.productTagger = productTagger;
+        this.toolRegistry = toolRegistry;
         this.redisTemplate = redisTemplateProvider.getIfAvailable();
     }
 
@@ -88,32 +85,12 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         }
 
         List<ProductReadModel> top5 = topProducts.subList(0, Math.min(TOP_PRODUCTS_LIMIT, topProducts.size()));
+        var context = new SearchToolContext(keyword, top5, buildMarketContext(top5));
 
-        CompletableFuture<String> intentFuture =
-                CompletableFuture.supplyAsync(() -> AiModelSupport.callText(chatModel, INTENT_SYSTEM_PROMPT, keyword));
-
-        CompletableFuture<Map<String, List<String>>> tagsFuture =
-                CompletableFuture.supplyAsync(() -> productTagger.tagProducts(top5));
-
-        String marketContext = buildMarketContext(top5);
-        CompletableFuture<String> marketFuture = CompletableFuture.supplyAsync(() -> {
-            try {
-                return AiModelSupport.callText(chatModel, MARKET_SYSTEM_PROMPT, marketContext);
-            } catch (Exception e) {
-                log.warn("Market analysis failed", e);
-                return null;
-            }
-        });
-
-        CompletableFuture<List<String>> questionsFuture = CompletableFuture.supplyAsync(() -> {
-            try {
-                String result = AiModelSupport.callText(chatModel, QUESTIONS_SYSTEM_PROMPT, keyword);
-                return result != null ? Arrays.asList(result.split("[,，]")) : List.of();
-            } catch (Exception e) {
-                log.warn("Suggested questions failed", e);
-                return List.of();
-            }
-        });
+        CompletableFuture<String> intentFuture = runTool(TOOL_INTENT, context);
+        CompletableFuture<Map<String, List<String>>> tagsFuture = runTool(TOOL_TAGS, context);
+        CompletableFuture<String> marketFuture = runTool(TOOL_MARKET, context);
+        CompletableFuture<List<String>> questionsFuture = runTool(TOOL_QUESTIONS, context);
 
         try {
             CompletableFuture.allOf(intentFuture, tagsFuture, marketFuture, questionsFuture)
@@ -150,6 +127,14 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         return Optional.of(result);
     }
 
+    /**
+     * 从注册表取工具并提交并行执行；工具内部已处理各自降级（LLM 工具捕获异常返回降级值）。
+     */
+    @SuppressWarnings("unchecked")
+    private <T> CompletableFuture<T> runTool(String name, SearchToolContext context) {
+        return (CompletableFuture<T>) toolRegistry.get(name).run(context);
+    }
+
     private Optional<AiEnhancement> collectAndCache(String cacheKey, Optional<AiEnhancement> result) {
         result.ifPresent(enhancement -> writeToCache(cacheKey, enhancement));
         return result;
@@ -167,17 +152,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     }
 
     private static String md5(String input) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
-            var sb = new StringBuilder(digest.length * 2);
-            for (byte b : digest) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("MD5 algorithm not available", e);
-        }
+        return DigestUtils.md5DigestAsHex(input.getBytes(StandardCharsets.UTF_8));
     }
 
     private Optional<AiEnhancement> collectPartialResults(

@@ -11,7 +11,8 @@ public enum AiCallScope {
     COPY(1, 3600, 20, "generate-copy"),
     AUTO_LISTING(1, 3600, 5, "auto-listing"),
     SEMANTIC(1, 3600, 30, "semantic-search"),
-    QA(1, 900, 20, "qa");
+    QA(1, 900, 20, "qa"),
+    SEARCH_ENHANCE(1, 3600, 30, "search-enhance");
 
     private final int version;
     private final int ttlSeconds;

@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
+import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.dto.SemanticSearchResult;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
 import java.util.List;
@@ -17,6 +18,7 @@ public class SemanticSearchService {
 
     private final EmbeddingModel embeddingModel;
     private final Optional<ProductSearchQueryPort> searchQueryPort;
+    private final AiModelSupport aiModelSupport;
 
     @TokenBudget(scenario = "semantic", maxTokensPerCall = 500, dailyTokenLimit = 200_000)
     public SemanticSearchResult search(String keyword, int pageNum, int pageSize) {
@@ -29,7 +31,7 @@ public class SemanticSearchService {
             return SemanticSearchResult.empty(pageNum, pageSize);
         }
 
-        List<Float> embedding = AiModelSupport.embed(embeddingModel, keyword);
+        List<Float> embedding = aiModelSupport.embed(embeddingModel, AiCallScope.SEMANTIC, keyword);
         if (embedding.isEmpty()) {
             log.warn("Empty embedding generated for keyword: {}", keyword);
             return SemanticSearchResult.empty(pageNum, pageSize);

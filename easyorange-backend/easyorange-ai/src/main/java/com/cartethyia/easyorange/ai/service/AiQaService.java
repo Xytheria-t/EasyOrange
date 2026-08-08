@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.budget.TokenBudget;
+import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.dto.QaRequest;
 import com.cartethyia.easyorange.ai.dto.QaResponse;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
@@ -19,6 +20,7 @@ public class AiQaService {
 
     private final ChatModel chatModel;
     private final PromptRegistry promptRegistry;
+    private final AiModelSupport aiModelSupport;
 
     @TokenBudget(scenario = "qa", maxTokensPerCall = 1000, dailyTokenLimit = 200_000)
     public QaResponse answerQuestion(QaRequest request) {
@@ -27,7 +29,7 @@ public class AiQaService {
         log.debug("Answering question for productId={}, question={}", request.productId(), request.question());
 
         try {
-            String answer = AiModelSupport.callText(chatModel, systemPrompt, userMessage);
+            String answer = aiModelSupport.callText(chatModel, AiCallScope.QA, systemPrompt, userMessage);
 
             if (answer == null || answer.isBlank()) {
                 log.warn("AI returned empty answer for productId={}", request.productId());

@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.cartethyia.easyorange.ai.adapter.outbound.AiCallLogRecorder;
+import com.cartethyia.easyorange.ai.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.adapter.outbound.AiSearchEnhancerAdapter;
+import com.cartethyia.easyorange.ai.adapter.outbound.tool.*;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import java.math.BigDecimal;
@@ -56,7 +59,15 @@ class AiSearchEnhancerTest {
     void setUp() {
         lenient().when(redisTemplateProvider.getIfAvailable()).thenReturn(redisTemplate);
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOps);
-        enhancer = new AiSearchEnhancerAdapter(nlDetector, chatModel, productTagger, redisTemplateProvider);
+        enhancer = new AiSearchEnhancerAdapter(nlDetector, buildRegistry(), redisTemplateProvider);
+    }
+
+    private SearchToolRegistry buildRegistry() {
+        return new SearchToolRegistry(List.of(
+                new IntentDetectionTool(chatModel, new AiModelSupport(mock(AiCallLogRecorder.class))),
+                new ProductTaggingTool(productTagger),
+                new MarketAnalysisTool(chatModel, new AiModelSupport(mock(AiCallLogRecorder.class))),
+                new QuestionSuggestionTool(chatModel, new AiModelSupport(mock(AiCallLogRecorder.class)))));
     }
 
     private ProductReadModel product(String id, String title, BigDecimal price) {
@@ -166,7 +177,7 @@ class AiSearchEnhancerTest {
         @DisplayName("Redis 缓存未配置 -> 正常走增强流程")
         void tryEnhance_noRedisConfigured() {
             when(redisTemplateProvider.getIfAvailable()).thenReturn(null);
-            enhancer = new AiSearchEnhancerAdapter(nlDetector, chatModel, productTagger, redisTemplateProvider);
+            enhancer = new AiSearchEnhancerAdapter(nlDetector, buildRegistry(), redisTemplateProvider);
             when(nlDetector.isNaturalLanguage("找电脑")).thenReturn(true);
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of()));
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("想找电脑"));
