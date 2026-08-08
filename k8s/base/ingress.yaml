@@ -1,0 +1,38 @@
+# 入口网关 — base 使用 traefik（k3s 内置 IngressClass，demo 零额外安装）
+# 生产演进: 换 nginx-ingress/cert-manager + TLS（见 README「上线前清单」），traefik 对 WebSocket 自动升级透传
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: easyorange
+  labels:
+    app.kubernetes.io/name: easyorange
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: easyorange.local
+      http:
+        paths:
+          - path: /api/
+            pathType: Prefix
+            backend:
+              service:
+                name: easyorange-app
+                port:
+                  number: 8080
+          - path: /ws/
+            pathType: Prefix
+            backend:
+              service:
+                name: easyorange-app
+                port:
+                  number: 8080
+          # 静态站 + 其余路径 → 前端 nginx（内部再反代 /api /ws）
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: easyorange-frontend
+                port:
+                  number: 80

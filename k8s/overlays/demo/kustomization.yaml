@@ -1,0 +1,31 @@
+# =============================================================================
+# demo overlay — k3s 单机自包含演示（基础设施中间件也在集群内）
+# =============================================================================
+# 与 compose.yaml 语义对齐:
+#   • MySQL 8.4 / Redis 7.4 / RabbitMQ 3.13 以 StatefulSet 方式托管（demo-only，
+#     生产环境应换托管服务/Operator，见 README）
+#   • 本地镜像 easyorange-backend:local / easyorange-frontend:local（docker build 后导入 k3s）
+#   • HTTP 演示环境覆盖: in-cluster MySQL 无 TLS（prod 配置默认 useSSL=true 需覆盖为 false）、
+#     refresh cookie 允许非 Secure（HTTPS 上线后移除该覆盖）
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - infra
+images:
+  - name: easyorange-backend:latest
+    newName: easyorange-backend
+    newTag: local
+  - name: easyorange-frontend:latest
+    newName: easyorange-frontend
+    newTag: local
+secretGenerator:
+  - name: easyorange-secrets
+    envs:
+      - env/backend.env
+  - name: easyorange-jwt-keys
+    files:
+      - private.pem=env/jwt/private.pem
+      - public.pem=env/jwt/public.pem
+patches:
+  - path: patch-configmap.yaml

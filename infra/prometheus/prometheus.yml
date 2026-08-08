@@ -1,0 +1,25 @@
+# EasyOrange Prometheus 采集配置
+# 挂载至 compose.yaml 的 prometheus 服务，应用多实例自动发现（dns_sd），无需改配置
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+
+scrape_configs:
+  # 后端应用实例 — Docker DNS 返回 easyorange-app 服务的全部容器 IP，
+  # --scale easyorange-app=N 后自动采集所有实例（target 标签 = instance）
+  - job_name: easyorange
+    metrics_path: /actuator/prometheus
+    dns_sd_configs:
+      - names:
+          - easyorange-app
+        type: A
+        port: 8080
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: (.*):\d+
+        target_label: instance
+        replacement: $1
+
+  - job_name: prometheus
+    static_configs:
+      - targets: [localhost:9090]

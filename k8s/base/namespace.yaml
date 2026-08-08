@@ -1,0 +1,11 @@
+# 应用命名空间 — Pod Security 基线准入（infra 中间件以 root 运行，只能到 baseline）
+# backend/frontend 本身已满足 restricted（非 root + seccomp + 丢弃全部 cap），warn/audit 层实时提示
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: easyorange
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

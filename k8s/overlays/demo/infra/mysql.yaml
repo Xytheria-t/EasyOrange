@@ -1,0 +1,76 @@
+# =============================================================================
+# MySQL 8.4 — demo-only StatefulSet（与 compose.yaml 语义对齐）
+# ⚠ 生产环境禁用裸 StatefulSet：无 HA、无备份、无故障转移。
+#   现代实践 = 托管数据库（RDS/Aurora/Cloud SQL）+ ExternalSecret 注入连接串
+# =============================================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  labels:
+    app.kubernetes.io/name: easyorange
+    app.kubernetes.io/component: mysql
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: easyorange
+      app.kubernetes.io/component: mysql
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: easyorange
+        app.kubernetes.io/component: mysql
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          imagePullPolicy: IfNotPresent
+          args:
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_0900_ai_ci
+            - --mysql-native-password=ON
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: easyorange-infra-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: easyorange
+            - name: MYSQL_USER
+              value: easyorange_app
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: easyorange-infra-secrets
+                  key: EASYORANGE_DB_PASSWORD
+          ports:
+            - name: mysql
+              containerPort: 3306
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 10Gi

@@ -1,0 +1,44 @@
+# =============================================================================
+# 业务告警规则 — PrometheusRule
+# =============================================================================
+# 抓取的是 Micrometer 暴露的 http.server.requests（Prometheus 名 http_server_requests_seconds_count）
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: easyorange-rules
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: easyorange
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: easyorange.rules
+      rules:
+        - alert: EasyOrangeBackendDown
+          expr: up{namespace="easyorange"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "后端 Pod 不可达（探活失败）"
+            description: "easyorange-backend 已 5 分钟无指标上报，检查 Deployment 副本数与 Pod 状态"
+
+        - alert: EasyOrangeHigh5xxRate
+          expr: |
+            sum(rate(http_server_requests_seconds_count{status=~"5..", namespace="easyorange"}[5m]))
+              / clamp_min(sum(rate(http_server_requests_seconds_count{namespace="easyorange"}[5m])), 1) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "5xx 错误率超过 5%"
+            description: "最近 5 分钟 5xx 占比 {{ $value | humanizePercentage }}，检查上游依赖与限流降级"
+
+        - alert: EasyOrangeHighP99Latency
+          expr: histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{namespace="easyorange"}[5m])) by (le)) > 2
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "P99 延迟超过 2s"
+            description: "最近 10 分钟 P99 持续超过 2 秒，检查慢 SQL / 外部依赖 / 限流排队"

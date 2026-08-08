@@ -1,0 +1,87 @@
+# =============================================================================
+# EasyOrange Frontend — nginx 静态站 + /api /ws 反代（nginx.conf 内置 upstream easyorange-app:8080）
+# =============================================================================
+# 设计要点:
+#   • nginx:alpine 默认 root 启动 → 覆盖为非 root(uid 101)，符合 restricted 准入
+#   • 只读根文件系统: pid(/var/run)、日志(/var/log/nginx)、缓存/temp(/var/cache/nginx) 走 emptyDir
+#   • 端口 80 非 root 可绑（containerd 默认 enable_unprivileged_ports）
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: easyorange-frontend
+  labels:
+    app.kubernetes.io/name: easyorange
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: easyorange
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: easyorange
+        app.kubernetes.io/component: frontend
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nginx
+          image: easyorange-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          volumeMounts:
+            - name: run
+              mountPath: /var/run
+            - name: cache
+              mountPath: /var/cache/nginx
+            - name: logs
+              mountPath: /var/log/nginx
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 101           # nginx 用户
+            runAsGroup: 101
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: run
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}

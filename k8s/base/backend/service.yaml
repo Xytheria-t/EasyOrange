@@ -1,0 +1,17 @@
+# Service 名必须是 easyorange-app —— 前端 nginx.conf 的 upstream 直连该 DNS 名
+apiVersion: v1
+kind: Service
+metadata:
+  name: easyorange-app
+  labels:
+    app.kubernetes.io/name: easyorange
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: easyorange
+    app.kubernetes.io/component: backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

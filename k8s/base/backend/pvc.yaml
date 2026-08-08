@@ -1,0 +1,14 @@
+# 文件上传存储 — 平台不碰货，图片/附件持久化到 PVC
+# 注意: ReadWriteOnce 在单节点 k3s 下多副本可共享；多节点生产需 RWX（NFS/SMB）或对象存储（S3/OSS），见 README
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: easyorange-uploads
+  labels:
+    app.kubernetes.io/name: easyorange
+    app.kubernetes.io/component: backend
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi

@@ -1,0 +1,139 @@
+# =============================================================================
+# 零信任网络策略 — 默认拒绝 + 显式放行
+# =============================================================================
+# 注意: k3s 默认 flannel 无 NetworkPolicy 控制器，策略在 demo 上不生效（惰性）;
+#       换用支持策略的 CNI（Cilium/kube-router/canal）后自动启用，详见 README
+# 拓扑:
+#   traefik(kube-system) ──> backend:8080 ──> mysql:3306 / redis:6379 / rabbitmq:5672
+#      └──> frontend:80 ──> backend:8080          └──> 公网 443（LLM/AI 供应商）
+#   所有 Pod 出站仅 DNS（kube-dns:53）；kubelet 探针来自节点，天然不受 NetworkPolicy 限制
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  labels:
+    app.kubernetes.io/name: easyorange
+spec:
+  podSelector: {}          # 命名空间内所有 Pod
+  policyTypes: [Ingress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-ingress
+  labels:
+    app.kubernetes.io/name: easyorange
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: backend
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        # Ingress 控制器（k3s traefik 位于 kube-system）
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+        # 前端 nginx 反代（/api /ws）
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: frontend
+        # Prometheus Operator 抓取（kube-prometheus-stack，monitoring 命名空间）
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - port: 8080
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-egress
+  labels:
+    app.kubernetes.io/name: easyorange
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: backend
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: mysql
+      ports:
+        - port: 3306
+          protocol: TCP
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: redis
+      ports:
+        - port: 6379
+          protocol: TCP
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: rabbitmq
+      ports:
+        - port: 5672
+          protocol: TCP
+    # LLM/AI 供应商（DeepSeek/DashScope）+ 一般 HTTPS 出站
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP
+    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-egress
+  labels:
+    app.kubernetes.io/name: easyorange
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: frontend
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend
+      ports:
+        - port: 8080
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

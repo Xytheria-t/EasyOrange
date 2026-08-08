@@ -1,0 +1,15 @@
+# PodDisruptionBudget — 节点运维（drain/升级）时至少保留 1 个副本，配合
+# maxUnavailable=0 滚动策略，任何时刻对外服务不中断
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: easyorange-backend
+  labels:
+    app.kubernetes.io/name: easyorange
+    app.kubernetes.io/component: backend
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: easyorange
+      app.kubernetes.io/component: backend

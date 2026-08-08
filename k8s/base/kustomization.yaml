@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# base 可被任意环境 overlay 引用（demo/prod/云托管…）
+# base 本身不可直接 apply：easyorange-secrets / easyorange-jwt-keys 由 overlay 提供
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - backend/deployment.yaml
+  - backend/service.yaml
+  - backend/hpa.yaml
+  - backend/pdb.yaml
+  - backend/pvc.yaml
+  - frontend/deployment.yaml
+  - frontend/service.yaml
+  - ingress.yaml
+  - network-policy.yaml

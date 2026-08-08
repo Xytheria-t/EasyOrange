@@ -1,0 +1,10 @@
+# demo 环境覆盖项（HTTP + 集群内无 TLS 中间件）
+# HTTPS 上线后删除 JWT_REFRESH_COOKIE_SECURE 覆盖；MySQL 启用 TLS/换托管库后删除 SPRING_DATASOURCE_URL
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: easyorange-config
+data:
+  SPRING_DATA_REDIS_SSL: "false"
+  JWT_REFRESH_COOKIE_SECURE: "false"
+  SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/easyorange?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&connectTimeout=5000&socketTimeout=30000&connectionCollation=utf8mb4_0900_ai_ci&allowPublicKeyRetrieval=true"

@@ -1,0 +1,10 @@
+# Grafana datasource provisioning — 随仓库版本化，启动即注入
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false

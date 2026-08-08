@@ -1,0 +1,47 @@
+name: Backend CI
+
+# 仅后端变更触发（easyorange-backend/**），前端/文档/CI 改动自动跳过本 workflow。
+# 分支保护里 required check 名为 "Backend CI / backend"，skip 视为通过。
+on:
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - easyorange-backend/**
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - easyorange-backend/**
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # 后端门禁：一次 verify 完成 11 模块单测 + JaCoCo（80% 行/60% 分支）+ Spotless 格式。
+  # 唯一 merge-freeze 后端闸门。OWASP / PIT 慢扫描为独立 schedule workflow
+  # （security-scan.yml / pit-mutation.yml），不进 PR 路径。
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup JDK 25
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Backend verify (11 modules, JaCoCo + Spotless gates)
+        run: ./mvnw verify -B -Pci
+        working-directory: easyorange-backend

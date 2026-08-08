@@ -1,0 +1,14 @@
+# 依赖自动升级：actions 每周检查，避免停留在旧主版本（供应链安全）。
+# 生产依赖（maven/npm）升级走人工评审 —— OWASP 豁免项与版本钉扎见 AGENTS.md，不自动开 PR。
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    # 合并为单一 PR，避免每周一堆升级噪音
+    groups:
+      actions:
+        patterns:
+          - '*'

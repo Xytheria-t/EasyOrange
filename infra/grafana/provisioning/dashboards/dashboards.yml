@@ -1,0 +1,12 @@
+# Grafana dashboard provisioning — 同目录下的 *.json 自动导入 EasyOrange 文件夹
+apiVersion: 1
+providers:
+  - name: EasyOrange
+    orgId: 1
+    folder: EasyOrange
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/provisioning/dashboards
