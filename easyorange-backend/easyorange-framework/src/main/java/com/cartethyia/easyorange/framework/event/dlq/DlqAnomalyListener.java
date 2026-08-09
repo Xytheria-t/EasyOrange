@@ -68,7 +68,7 @@ public class DlqAnomalyListener {
                 reason,
                 originalRoutingKey,
                 props.getMessageId(),
-                message.getBody() != null ? message.getBody().length : 0,
+                message.getBody().length,
                 extractXDeathSummary(headers));
     }
 

@@ -79,10 +79,6 @@ coverage/
 # AI 生成的代码地图
 **/codemap.md
 
-# ---------- 个人使用文档（不随仓库分发） ----------
-# 面试/简历等个人用途内容，仅本地保留，不进版本控制
-doc/interview/
-
 # 测试产物
 test-results/
 playwright-report/

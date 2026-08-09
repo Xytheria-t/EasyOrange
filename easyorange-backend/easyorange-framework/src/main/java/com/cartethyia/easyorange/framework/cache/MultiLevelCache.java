@@ -212,7 +212,7 @@ public class MultiLevelCache {
         l1Cache.invalidateAll();
         try {
             var keys = CacheUtils.scan(redisTemplate, config.keyPrefix() + "*");
-            if (keys != null && !keys.isEmpty()) {
+            if (!keys.isEmpty()) {
                 redisTemplate.delete(keys);
             }
         } catch (Exception e) {

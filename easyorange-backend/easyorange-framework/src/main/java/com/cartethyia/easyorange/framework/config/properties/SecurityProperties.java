@@ -1,8 +1,6 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,8 +36,7 @@ public class SecurityProperties {
 
     private String logoutUrl = "/api/auth/logout";
 
-    @Min(4)
-    @Max(31)
+    /** 范围由 {@link #validate()} 运行时校验（启动即失败，含中文错误提示）。 */
     private int passwordEncoderStrength = 10;
 
     @PostConstruct

@@ -115,13 +115,13 @@ public class MessageCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(MarkAsReadBatchCommand command) {
-        BizRequire.notEmpty(command.messageIds(), "消息ID列表不能为空");
-        BizRequire.requireTrue(
-                command.messageIds() != null && !command.messageIds().contains(null), "消息ID不能为null");
+        var messageIds = command.messageIds();
+        BizRequire.notEmpty(messageIds, "消息ID列表不能为空");
+        BizRequire.requireTrue(!messageIds.contains(null), "消息ID不能为null");
 
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        for (String messageId : command.messageIds()) {
+        for (String messageId : messageIds) {
             try {
                 Message aggregate = messageRepository.findById(messageId).orElse(null);
                 if (aggregate != null && aggregate.isOwnedBy(userId) && aggregate.isUnread()) {
@@ -135,10 +135,7 @@ public class MessageCommandHandler {
             }
         }
 
-        log.info(
-                "action=mark_batch_read userId={} count={}",
-                userId,
-                command.messageIds().size());
+        log.info("action=mark_batch_read userId={} count={}", userId, messageIds.size());
     }
 
     @Transactional(rollbackFor = Exception.class)

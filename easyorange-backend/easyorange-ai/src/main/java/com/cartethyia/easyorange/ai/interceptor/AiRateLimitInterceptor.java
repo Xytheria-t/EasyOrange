@@ -15,6 +15,7 @@ import java.util.HexFormat;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -90,7 +91,7 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
                 .orElseGet(() -> "ip:" + RequestUtil.getClientIp(request));
     }
 
-    private String extractStaleKey(HttpServletRequest request, AiCallScope scope) {
+    private @Nullable String extractStaleKey(HttpServletRequest request, AiCallScope scope) {
         try {
             String body = request.getReader().lines().reduce("", (a, b) -> a + b);
             if (body.isEmpty()) return null;
@@ -101,7 +102,7 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
         }
     }
 
-    private static String fingerprint(String content) {
+    private static @Nullable String fingerprint(String content) {
         try {
             var md = MessageDigest.getInstance("SHA-256");
             byte[] digest = md.digest(content.getBytes(StandardCharsets.UTF_8));

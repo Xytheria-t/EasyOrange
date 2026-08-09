@@ -4,13 +4,16 @@
 #-------------------------------------------------------------------------------#
 
 name: Qodana
+# 只在后端 Java 变更的 PR（pr-mode 仅分析变更文件）+ 手动触发运行。
+# 不配 push：全量扫描无 baseline 会把存量警告（当前 44 个）当 "new problems" 刷屏 develop，
+# 而 PR 变更文件分析已能拦住回归。Qodana 非 required check，pull_request 配 paths 无
+# required-check 陷阱（该陷阱仅限 required check），只改前端/工作流的 PR 不白跑 JVM 分析。
+# 需要全量体检时用 workflow_dispatch 手动触发。
 on:
   workflow_dispatch:
   pull_request:
-  push:
-    branches:
-      - main
-      - develop
+    paths:
+      - 'easyorange-backend/**'
 
 jobs:
   qodana:
@@ -30,7 +33,7 @@ jobs:
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
-          # pr-mode=true 时 PR 事件只分析变更文件（快）；push 到 main/develop 仍全量扫描
+          # pr-mode=true：PR 事件只分析变更文件（快、只报新增问题）
           pr-mode: true
           use-caches: true
           post-pr-comment: true

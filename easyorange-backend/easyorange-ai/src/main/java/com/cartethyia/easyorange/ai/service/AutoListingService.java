@@ -6,7 +6,6 @@ import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -15,20 +14,30 @@ import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AutoListingService {
 
     private static final String VISUAL_PROMPT_NAME = "auto_listing_visual";
     private static final String SYSTEM_PROMPT_NAME = "auto_listing_system";
 
     private final ChatModel chatModel;
-
-    @Qualifier("visionChatModel")
     private final ChatModel visionChatModel;
-
     private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
     private final AiModelSupport aiModelSupport;
+
+    // Lombok 构造器不会把 @Qualifier 复制到参数上，故手写显式构造器以保留 "visionChatModel" 限定
+    public AutoListingService(
+            ChatModel chatModel,
+            @Qualifier("visionChatModel") ChatModel visionChatModel,
+            ObjectMapper objectMapper,
+            PromptRegistry promptRegistry,
+            AiModelSupport aiModelSupport) {
+        this.chatModel = chatModel;
+        this.visionChatModel = visionChatModel;
+        this.objectMapper = objectMapper;
+        this.promptRegistry = promptRegistry;
+        this.aiModelSupport = aiModelSupport;
+    }
 
     @TokenBudget(scenario = "auto_listing", maxTokensPerCall = 3000, dailyTokenLimit = 500_000)
     public AutoListingResult analyzeImages(List<String> imageUrls) {

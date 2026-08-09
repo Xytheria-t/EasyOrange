@@ -95,20 +95,20 @@ public class Product {
 
     // ==================== State Transitions ====================
     // Lifecycle: DRAFT → PENDING_REVIEW → ONLINE ⇄ OFFLINE → SOLD（终端），REJECTED 可循环提交审核。
-    // 所有转换的合法性统一由 transitionTo(target, action) 通过 ProductStatus 状态机表裁决。
+    // 所有转换的合法性统一由 transitionTo(target) 通过 ProductStatus 状态机表裁决。
 
     public Transition<Product, ProductSubmittedForReviewEvent> submitForReview(String userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
             throw new InvalidProductStatusException("只能提交自己的资产审核", id, status);
         }
         return new Transition<>(
-                transitionTo(ProductStatus.PENDING_REVIEW, "提交审核"),
+                transitionTo(ProductStatus.PENDING_REVIEW),
                 new ProductSubmittedForReviewEvent(
                         id.value(), userId, sellerId.value(), status, ProductStatus.PENDING_REVIEW));
     }
 
     public Transition<Product, ProductAuditedEvent> approve(String reason) {
-        var updated = transitionTo(ProductStatus.ONLINE, "审核通过");
+        var updated = transitionTo(ProductStatus.ONLINE);
         validateOnline();
         return new Transition<>(
                 updated,
@@ -123,7 +123,7 @@ public class Product {
 
     public Transition<Product, ProductAuditedEvent> reject(String reason) {
         return new Transition<>(
-                transitionTo(ProductStatus.REJECTED, "审核拒绝"),
+                transitionTo(ProductStatus.REJECTED),
                 new ProductAuditedEvent(
                         id.value(),
                         title.value(),
@@ -134,14 +134,14 @@ public class Product {
     }
 
     public Transition<Product, ProductPutOnlineEvent> putOnline() {
-        var updated = transitionTo(ProductStatus.ONLINE, "上架");
+        var updated = transitionTo(ProductStatus.ONLINE);
         validateOnline();
         return new Transition<>(updated, new ProductPutOnlineEvent(id.value(), sellerId.value()));
     }
 
     public Transition<Product, ProductTakeOfflineEvent> takeOffline() {
         return new Transition<>(
-                transitionTo(ProductStatus.OFFLINE, "下架"), new ProductTakeOfflineEvent(id.value(), sellerId.value()));
+                transitionTo(ProductStatus.OFFLINE), new ProductTakeOfflineEvent(id.value(), sellerId.value()));
     }
 
     public Transition<Product, ProductTakeOfflineEvent> takeOffline(String userId) {
@@ -156,13 +156,14 @@ public class Product {
             return Optional.empty(); // 幂等：订单完成链路重复触发时忽略
         }
         return Optional.of(new Transition<>(
-                transitionTo(ProductStatus.SOLD, "标记已售"), new ProductMarkedSoldEvent(id.value(), sellerId.value())));
+                transitionTo(ProductStatus.SOLD), new ProductMarkedSoldEvent(id.value(), sellerId.value())));
     }
 
     /** 状态机守卫：目标状态非法时抛出 {@link InvalidProductStatusException}，否则返回新状态。 */
-    private Product transitionTo(ProductStatus target, String action) {
+    private Product transitionTo(ProductStatus target) {
         if (!status.canTransitionTo(target)) {
-            throw new InvalidProductStatusException("不允许" + action, id, status);
+            throw new InvalidProductStatusException(
+                    "不允许从 " + status.getDesc() + " 转换到 " + target.getDesc(), id, status);
         }
         return toBuilder().status(target).updateTime(LocalDateTime.now()).build();
     }

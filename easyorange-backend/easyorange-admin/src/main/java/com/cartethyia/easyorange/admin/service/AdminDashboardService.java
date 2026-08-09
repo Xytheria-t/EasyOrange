@@ -149,7 +149,8 @@ public class AdminDashboardService {
                         "SELECT id, nickname, create_time FROM eo_user WHERE del_flag = 0 ORDER BY create_time DESC LIMIT 5")
                 .stream()
                 .map(row -> {
-                    long id = ((Number) row.get("id")).longValue();
+                    var idValue = row.get("id");
+                    long id = idValue != null ? ((Number) idValue).longValue() : 0L;
                     String nickname = row.get("nickname") != null ? (String) row.get("nickname") : "用户" + id;
                     return ActivityResponse.builder()
                             .time(toLocalDateTime(row.get("create_time")).format(DATETIME_FORMAT))

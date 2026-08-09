@@ -541,12 +541,14 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
                         + limit)
                 .stream()
                 .map(row -> {
-                    String statusCode =
-                            row.get("status") != null ? row.get("status").toString() : null;
+                    // 先取到局部再判空：避免重复 map.get() 被数据流分析视为可能为 null
+                    var statusValue = row.get("status");
+                    var viewCountValue = row.get("view_count");
+                    String statusCode = statusValue != null ? statusValue.toString() : null;
                     return new TopProductRecord(
                             String.valueOf(row.get("id")),
                             (String) row.get("name"),
-                            row.get("view_count") != null ? ((Number) row.get("view_count")).intValue() : 0,
+                            viewCountValue != null ? ((Number) viewCountValue).intValue() : 0,
                             row.get("price") != null ? (BigDecimal) row.get("price") : BigDecimal.ZERO,
                             (String) row.get("main_image"),
                             statusCode,

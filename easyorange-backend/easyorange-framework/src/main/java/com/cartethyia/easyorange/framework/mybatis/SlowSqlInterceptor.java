@@ -63,8 +63,8 @@ import org.springframework.stereotype.Component;
 public class SlowSqlInterceptor implements Interceptor {
 
     private final SlowSqlProperties properties;
-    private final Timer slowSqlTimer;
-    private final Timer sqlTimer;
+    private final @Nullable Timer slowSqlTimer;
+    private final @Nullable Timer sqlTimer;
 
     public SlowSqlInterceptor(SlowSqlProperties properties, @Nullable MeterRegistry meterRegistry) {
         this.properties = properties;

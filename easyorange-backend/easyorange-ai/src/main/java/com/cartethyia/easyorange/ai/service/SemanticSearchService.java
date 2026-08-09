@@ -5,10 +5,10 @@ import com.cartethyia.easyorange.ai.dto.SemanticSearchResult;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 public class SemanticSearchService {
 
     private final EmbeddingModel embeddingModel;
-    private final Optional<ProductSearchQueryPort> searchQueryPort;
+    private final ObjectProvider<ProductSearchQueryPort> searchQueryPort;
     private final AiModelSupport aiModelSupport;
 
     @TokenBudget(scenario = "semantic", maxTokensPerCall = 500, dailyTokenLimit = 200_000)
@@ -26,7 +26,8 @@ public class SemanticSearchService {
             return SemanticSearchResult.empty(pageNum, pageSize);
         }
 
-        if (searchQueryPort.isEmpty()) {
+        var port = searchQueryPort.getIfAvailable();
+        if (port == null) {
             log.warn("Semantic search unavailable: ES search adapter not configured");
             return SemanticSearchResult.empty(pageNum, pageSize);
         }
@@ -40,7 +41,7 @@ public class SemanticSearchService {
         var query = new ProductSearchQueryPort.ProductSearchQuery(
                 keyword, null, null, null, null, null, null, pageNum, pageSize, embedding, true);
 
-        var result = searchQueryPort.get().search(query);
+        var result = port.search(query);
 
         return new SemanticSearchResult(result.records(), result.total(), result.current(), result.size());
     }

@@ -215,7 +215,7 @@ public class Payment {
      * 取消支付：从 PAYING 回退到 PENDING（中间态，不发事件）。
      */
     public Payment cancelPay() {
-        if (!PaymentStatus.PAYING.equals(this.status)) {
+        if (!canConfirmPay()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有支付中状态可以取消支付");
         }
         return withStatus(PaymentStatus.PENDING, nextVersion());
@@ -267,7 +267,7 @@ public class Payment {
      * 取消退款：从 REFUNDING 回退到 SUCCESS（中间态，不发事件）。
      */
     public Payment cancelRefund() {
-        if (!PaymentStatus.REFUNDING.equals(this.status)) {
+        if (!canConfirmRefund()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有退款中状态可以取消退款");
         }
         return withStatus(PaymentStatus.SUCCESS, nextVersion());

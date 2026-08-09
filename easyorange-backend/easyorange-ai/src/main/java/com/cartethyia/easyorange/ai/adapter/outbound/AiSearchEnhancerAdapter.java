@@ -99,7 +99,9 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
             marketFuture.cancel(false);
             questionsFuture.cancel(false);
             return collectAndCache(
-                    cacheKey, collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture));
+                    cacheKey,
+                    collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture)
+                            .orElse(null));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("AI search enhancement interrupted for keyword: {}", keyword);
@@ -107,7 +109,9 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         } catch (ExecutionException e) {
             log.warn("AI search enhancement failed for keyword: {}", keyword, e.getCause());
             return collectAndCache(
-                    cacheKey, collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture));
+                    cacheKey,
+                    collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture)
+                            .orElse(null));
         }
 
         String intentExplanation = intentFuture.getNow(null);
@@ -133,9 +137,11 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         return (CompletableFuture<T>) toolRegistry.get(name).run(context);
     }
 
-    private Optional<AiEnhancement> collectAndCache(String cacheKey, Optional<AiEnhancement> result) {
-        result.ifPresent(enhancement -> writeToCache(cacheKey, enhancement));
-        return result;
+    private Optional<AiEnhancement> collectAndCache(String cacheKey, AiEnhancement result) {
+        if (result != null) {
+            writeToCache(cacheKey, result);
+        }
+        return Optional.ofNullable(result);
     }
 
     private void writeToCache(String cacheKey, AiEnhancement enhancement) {

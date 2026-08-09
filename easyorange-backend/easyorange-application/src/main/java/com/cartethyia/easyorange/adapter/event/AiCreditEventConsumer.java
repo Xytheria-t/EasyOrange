@@ -56,10 +56,7 @@ public class AiCreditEventConsumer {
                 return;
             }
             creditScoringService.recalculateScore(event.reporterId());
-            log.info(
-                    "action=recalculate_credit_after_report userId={} approved={}",
-                    event.reporterId(),
-                    event.approved());
+            log.info("action=recalculate_credit_after_report userId={} approved=true", event.reporterId());
         });
     }
 }

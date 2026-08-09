@@ -56,10 +56,7 @@ public class ProductSearchIndexAdapter implements ProductSearchIndexPort {
             String searchText = buildSearchText(product, detail);
 
             productMapper.updateSearchText(productId, searchText);
-            log.debug(
-                    "Updated search_text for productId={}, length={}",
-                    productId,
-                    searchText != null ? searchText.length() : 0);
+            log.debug("Updated search_text for productId={}, length={}", productId, searchText.length());
         } catch (Exception e) {
             log.error("Failed to update search index for productId={}", productId, e);
         }

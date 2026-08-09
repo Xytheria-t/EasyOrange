@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.common.util;
 import com.cartethyia.easyorange.common.enums.IResultCode;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import java.util.Collection;
+import org.jetbrains.annotations.Contract;
 
 public class BizRequire {
 
@@ -26,6 +27,8 @@ public class BizRequire {
 
     // --- notEmpty ---
 
+    // 契约：参数为 null 时抛业务异常（fail）——供 Qodana/IDE 数据流分析推断 null-after-call
+    @Contract(value = "null, _ -> fail")
     public static <T> void notEmpty(Collection<T> collection, String message) {
         if (collection == null || collection.isEmpty()) fail(message);
     }

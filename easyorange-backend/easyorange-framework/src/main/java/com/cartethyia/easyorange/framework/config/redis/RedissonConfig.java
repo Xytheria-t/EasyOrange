@@ -29,7 +29,7 @@ public class RedissonConfig {
     public RedissonClient redissonClient(DataRedisProperties properties) {
         Config config = new Config();
 
-        String host = properties.getHost() != null ? properties.getHost() : "localhost";
+        String host = properties.getHost();
         int port = properties.getPort() > 0 ? properties.getPort() : 6379;
         String password = properties.getPassword();
         int database = properties.getDatabase();

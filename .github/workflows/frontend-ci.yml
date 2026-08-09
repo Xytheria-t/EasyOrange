@@ -2,8 +2,8 @@ name: Frontend CI
 
 # 分支保护 required check 名为 "Frontend CI / frontend"。⚠️ 禁止在 on.pull_request 配 paths
 # 过滤：只改 .github/** 的 PR（如 Dependabot 升级 action）会让本 workflow 不触发，
-# required check 永不报告 → PR 永久 BLOCKED。改为恒触发 + changes job 用 paths-filter 判定，
-# 无前端变更时 frontend job 被 skip（GitHub 视 skipped required check 为通过）。
+# required check 永不报告 → PR 永久 BLOCKED。恒触发 + 步骤内 paths-filter 门控：
+# 无前端变更时构建步骤被跳过，job 照常运行并报告 → required check 稳定通过。
 on:
   push:
     branches:
@@ -25,11 +25,10 @@ permissions:
   contents: read
 
 jobs:
-  changes:
+  # 前端门禁：lint + 单测 + typecheck + 生产构建 + Playwright E2E。
+  frontend:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,55 +41,52 @@ jobs:
           filters: |
             frontend:
               - 'easyorange-frontend/**'
-
-  # 前端门禁：lint + 单测 + typecheck + 生产构建 + Playwright E2E。
-  frontend:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: changes
-    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
       - name: Setup Node.js
+        if: steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: easyorange-frontend/package-lock.json
-
       - name: Install frontend dependencies
         # 强制官方 registry + 全局替换 lockfile 里的 npmmirror host：避免 CI 从
         # registry.npmmirror.com 拉包遇 503（该镜像在境外 runner 上不稳定）
+        if: steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         run: npm ci --registry=https://registry.npmjs.org --replace-registry-host=always
         working-directory: easyorange-frontend
-
       - name: Lint check
+        if: steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         run: npm run lint:check
         working-directory: easyorange-frontend
-
       - name: Run frontend tests
+        if: steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         run: npm test
         working-directory: easyorange-frontend
-
       - name: Typecheck
+        if: steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         run: npm run typecheck
         working-directory: easyorange-frontend
-
       # 生产构建：tsc + vite build（rolldown），验证产物可生成；同时产出 dist 供下方 E2E 使用
       - name: Frontend production build
+        if: steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         run: npm run build
         working-directory: easyorange-frontend
-
       # E2E（Playwright）—— 纯 mock 双 Token 会话恢复流，跑在 vite preview（生产构建产物
       # dist，由上方 build 步骤产出），不依赖后端。代码更新 → 已跑过的 E2E 自动重跑：
       # 前端组件/路由/data-testid/文案变更会被立刻捕获。
-      # 若 CI 环境出现偶发抖动，可降级 continue-on-error 观察（不建议，会失去门禁意义）
+      # 浏览器缓存跨 run 复用，避免每次全量下载（~150MB）：
+      # --with-deps 的 apt 依赖库照装（快速），仅跳过 chromium 二进制下载。
+      - name: Cache Playwright browsers
+        if: steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('easyorange-frontend/package-lock.json') }}
       - name: Install Playwright chromium
+        if: steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         run: npx playwright install --with-deps chromium
         working-directory: easyorange-frontend
-
       - name: Run E2E tests
+        if: steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         run: npx playwright test
         working-directory: easyorange-frontend

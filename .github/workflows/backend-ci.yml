@@ -2,8 +2,8 @@ name: Backend CI
 
 # 分支保护 required check 名为 "Backend CI / backend"。⚠️ 禁止在 on.pull_request 配 paths
 # 过滤：只改 .github/** 的 PR（如 Dependabot 升级 action）会让本 workflow 不触发，
-# required check 永不报告 → PR 永久 BLOCKED。改为恒触发 + changes job 用 paths-filter 判定，
-# 无后端变更时 backend job 被 skip（GitHub 视 skipped required check 为通过）。
+# required check 永不报告 → PR 永久 BLOCKED。恒触发 + 步骤内 paths-filter 门控：
+# 无后端变更时 JDK/verify 步骤被跳过，job 照常运行并报告 → required check 稳定通过。
 on:
   push:
     branches:
@@ -25,11 +25,12 @@ permissions:
   contents: read
 
 jobs:
-  changes:
+  # 后端门禁：一次 verify 完成 11 模块单测 + JaCoCo（80% 行/60% 分支）+ Spotless 格式。
+  # 唯一 merge-freeze 后端闸门。OWASP / PIT 慢扫描为独立 schedule workflow
+  # （security-scan.yml / pit-mutation.yml），不进 PR 路径。
+  backend:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,28 +43,16 @@ jobs:
           filters: |
             backend:
               - 'easyorange-backend/**'
-
-  # 后端门禁：一次 verify 完成 11 模块单测 + JaCoCo（80% 行/60% 分支）+ Spotless 格式。
-  # 唯一 merge-freeze 后端闸门。OWASP / PIT 慢扫描为独立 schedule workflow
-  # （security-scan.yml / pit-mutation.yml），不进 PR 路径。
-  backend:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: changes
-    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
       - name: Setup JDK 25
+        if: steps.filter.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
-
       - name: Backend verify (11 modules, JaCoCo + Spotless gates)
-        # -DskipITs=true：只跳过 failsafe（*IT），IT 需要本地 docker compose dev 栈
+        # -DskipITs=true：仅跳过 failsafe（*IT），IT 需要本地 docker compose dev 栈
         # （MySQL/Redis/RabbitMQ），CI runner 上没有。surefire 单测 + JaCoCo/Spotless 门禁照跑。
+        if: steps.filter.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
         run: ./mvnw verify -B -Pci -DskipITs=true
         working-directory: easyorange-backend

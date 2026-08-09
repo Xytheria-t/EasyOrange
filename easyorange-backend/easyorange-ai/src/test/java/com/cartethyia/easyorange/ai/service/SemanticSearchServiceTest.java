@@ -9,7 +9,6 @@ import com.cartethyia.easyorange.ai.dto.SemanticSearchResult;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
 import com.cartethyia.easyorange.product.application.port.query.SearchResult;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.beans.factory.ObjectProvider;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("SemanticSearchService 测试")
@@ -36,7 +36,7 @@ class SemanticSearchServiceTest {
         @DisplayName("空白关键词返回空结果")
         void search_blankKeyword() {
             SemanticSearchService service = new SemanticSearchService(
-                    embeddingModel, Optional.of(searchQueryPort), new AiModelSupport(mock(AiCallLogRecorder.class)));
+                    embeddingModel, provider(searchQueryPort), new AiModelSupport(mock(AiCallLogRecorder.class)));
 
             SemanticSearchResult result = service.search("  ", 2, 10);
 
@@ -51,7 +51,7 @@ class SemanticSearchServiceTest {
         @DisplayName("null 关键词返回空结果")
         void search_nullKeyword() {
             SemanticSearchService service = new SemanticSearchService(
-                    embeddingModel, Optional.of(searchQueryPort), new AiModelSupport(mock(AiCallLogRecorder.class)));
+                    embeddingModel, provider(searchQueryPort), new AiModelSupport(mock(AiCallLogRecorder.class)));
 
             SemanticSearchResult result = service.search(null, 1, 10);
 
@@ -63,7 +63,9 @@ class SemanticSearchServiceTest {
         @DisplayName("ES 适配器未配置时返回空结果")
         void search_portEmpty() {
             SemanticSearchService service = new SemanticSearchService(
-                    embeddingModel, Optional.empty(), new AiModelSupport(mock(AiCallLogRecorder.class)));
+                    embeddingModel,
+                    provider((ProductSearchQueryPort) null),
+                    new AiModelSupport(mock(AiCallLogRecorder.class)));
 
             SemanticSearchResult result = service.search("iPhone", 1, 10);
 
@@ -75,7 +77,7 @@ class SemanticSearchServiceTest {
         @DisplayName("Embedding 为空时返回空结果")
         void search_emptyEmbedding() {
             SemanticSearchService service = new SemanticSearchService(
-                    embeddingModel, Optional.of(searchQueryPort), new AiModelSupport(mock(AiCallLogRecorder.class)));
+                    embeddingModel, provider(searchQueryPort), new AiModelSupport(mock(AiCallLogRecorder.class)));
             when(embeddingModel.embed("iPhone")).thenReturn(new float[0]);
 
             SemanticSearchResult result = service.search("iPhone", 1, 10);
@@ -88,7 +90,7 @@ class SemanticSearchServiceTest {
         @DisplayName("正常流程 — 查询向量传入 ES 并返回结果")
         void search_success() {
             SemanticSearchService service = new SemanticSearchService(
-                    embeddingModel, Optional.of(searchQueryPort), new AiModelSupport(mock(AiCallLogRecorder.class)));
+                    embeddingModel, provider(searchQueryPort), new AiModelSupport(mock(AiCallLogRecorder.class)));
             when(embeddingModel.embed("编程笔记本")).thenReturn(new float[] {0.1f, 0.2f, 0.3f});
             when(searchQueryPort.search(any(ProductSearchQueryPort.ProductSearchQuery.class)))
                     .thenReturn(new SearchResult(List.of(), 5L, 1, 10, List.of(), List.of(), List.of()));
@@ -103,5 +105,15 @@ class SemanticSearchServiceTest {
                             && q.queryEmbedding().equals(List.of(0.1f, 0.2f, 0.3f))
                             && q.useSemanticSearch()));
         }
+    }
+
+    /** 构造最小 ObjectProvider：bean 为 null 时 getIfAvailable() 返回 null（模拟可选依赖缺失）。 */
+    private static <T> ObjectProvider<T> provider(T bean) {
+        return new ObjectProvider<T>() {
+            @Override
+            public T getIfAvailable() {
+                return bean;
+            }
+        };
     }
 }

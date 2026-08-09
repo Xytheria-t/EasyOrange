@@ -173,7 +173,7 @@ public class AuditLogAspect {
                 .requestUrl(RequestUtil.getFullRequestUrl(request))
                 .clientIp(RequestUtil.getClientIp(request))
                 .username(userCtx.map(AuthUser::username).orElse("anonymous"))
-                .operatorType(resolveOperatorType(userCtx))
+                .operatorType(resolveOperatorType(userCtx.orElse(null)))
                 .status(e != null ? 1 : 0)
                 .errorMsg(e != null ? AuditLogUtil.truncate(e.getMessage(), 2000) : null)
                 .createdAt(LocalDateTime.now())
@@ -277,8 +277,8 @@ public class AuditLogAspect {
         return BusinessType.OTHER;
     }
 
-    private static int resolveOperatorType(java.util.Optional<AuthUser> userCtx) {
-        return userCtx.map(u -> u.roles().contains("ADMIN") ? 1 : 2).orElse(0);
+    private static int resolveOperatorType(AuthUser userCtx) {
+        return userCtx != null && userCtx.roles().contains("ADMIN") ? 1 : 2;
     }
 
     // ───────────────────────── Request param handling ─────────────────────────

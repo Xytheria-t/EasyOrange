@@ -67,7 +67,7 @@ public class ProductReportQueryHandler {
                 report.getProductId(),
                 productName,
                 report.getReasonType(),
-                reasonType != null ? reasonType.getDesc() : null,
+                reasonType.getDesc(),
                 report.getReason(),
                 report.statusCode(),
                 statusDesc,

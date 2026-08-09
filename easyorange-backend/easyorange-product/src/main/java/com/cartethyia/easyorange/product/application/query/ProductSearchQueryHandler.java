@@ -12,9 +12,9 @@ import com.cartethyia.easyorange.product.application.query.readmodel.ProductRead
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,8 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductSearchQueryHandler {
 
     private final ProductQueryRepository productQueryRepository;
-    private final Optional<ProductSearchQueryPort> searchQueryPort;
-    private final Optional<AiSearchEnhancerPort> aiSearchEnhancer;
+    private final ObjectProvider<ProductSearchQueryPort> searchQueryPort;
+    private final ObjectProvider<AiSearchEnhancerPort> aiSearchEnhancer;
 
     @Transactional(readOnly = true)
     public ProductSearchResult search(ProductSearchCriteria criteria, boolean aiEnhanced) {
@@ -33,7 +33,9 @@ public class ProductSearchQueryHandler {
         PageResult<ProductReadModel> page;
         List<FacetBucket> facets = List.of();
 
-        if (searchQueryPort.isPresent()) {
+        // ES 检索 adapter 未配置（elasticsearch.enabled=false）时回退 DB 检索
+        var esPort = searchQueryPort.getIfAvailable();
+        if (esPort != null) {
             var query = new ProductSearchQueryPort.ProductSearchQuery(
                     criteria.keyword(),
                     criteria.categoryId(),
@@ -46,7 +48,7 @@ public class ProductSearchQueryHandler {
                     criteria.effectivePageSize(),
                     null,
                     false);
-            var searchResult = searchQueryPort.get().search(query);
+            var searchResult = esPort.search(query);
             readModels = searchResult.records();
             facets = mergeFacetsList(searchResult);
             page = PageResult.of(
@@ -56,10 +58,9 @@ public class ProductSearchQueryHandler {
             readModels = page.records();
         }
 
-        var aiEnhancement = aiEnhanced && aiSearchEnhancer.isPresent() && !readModels.isEmpty()
-                ? aiSearchEnhancer
-                        .get()
-                        .tryEnhance(criteria.keyword(), takeTop(readModels, 5))
+        var enhancer = aiSearchEnhancer.getIfAvailable();
+        var aiEnhancement = aiEnhanced && enhancer != null && !readModels.isEmpty()
+                ? enhancer.tryEnhance(criteria.keyword(), takeTop(readModels, 5))
                         .orElse(null)
                 : null;
 

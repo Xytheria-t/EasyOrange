@@ -12,20 +12,19 @@ public class CustomMetaObjectHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
         var now = LocalDateTime.now();
-        var userId = SecurityContextUtil.getCurrentUserId().orElse(null);
         this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, now);
         this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, now);
-        this.strictInsertFill(metaObject, "createBy", String.class, userId);
-        this.strictInsertFill(metaObject, "updateBy", String.class, userId);
+        // 未登录（无 userId）时跳过 createBy/updateBy 填充，避免向 strictFill 传 null
+        SecurityContextUtil.getCurrentUserId().ifPresent(userId -> {
+            this.strictInsertFill(metaObject, "createBy", String.class, userId);
+            this.strictInsertFill(metaObject, "updateBy", String.class, userId);
+        });
     }
 
     @Override
     public void updateFill(MetaObject metaObject) {
         this.strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
-        this.strictUpdateFill(
-                metaObject,
-                "updateBy",
-                String.class,
-                SecurityContextUtil.getCurrentUserId().orElse(null));
+        SecurityContextUtil.getCurrentUserId()
+                .ifPresent(userId -> this.strictUpdateFill(metaObject, "updateBy", String.class, userId));
     }
 }

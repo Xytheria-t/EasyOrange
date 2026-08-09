@@ -85,9 +85,10 @@ public class ImageQueryService {
         if (!imageProcessingService.isImage(fileEntry.mimeType)) {
             return new ImageQueryResult(null, null, null, false);
         }
-        int targetWidth = findClosestPresetWidth(width);
+        // 响应式尺寸按预设宽度取整，宽高一致（方形缩略）
+        int targetSize = findClosestPresetWidth(width);
         var entry = getCachedOrProcess(
-                fileEntry.path.toFile(), fileId, targetWidth, targetWidth, format, quality, ifNoneMatch);
+                fileEntry.path.toFile(), fileId, targetSize, targetSize, format, quality, ifNoneMatch);
         return toResult(entry);
     }
 

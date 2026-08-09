@@ -18,10 +18,12 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -88,7 +90,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String method = request.getMethod().toUpperCase(Locale.ROOT);
 
         // 写请求需要缓存 body 以便 filter 和 controller 都能读取
-        CachedBodyHttpServletRequestWrapper wrappedRequest = null;
+        @Nullable CachedBodyHttpServletRequestWrapper wrappedRequest = null;
         if (WRITE_METHODS.contains(method)) {
             wrappedRequest = new CachedBodyHttpServletRequestWrapper(request);
         }
@@ -100,6 +102,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             Rule matchedRule = findMatchingRule(method, effectiveRequest.getRequestURI());
 
             // 命中规则或写请求时才需要解析 handler；仅解析一次供限流/防重复用，避免每请求重复解析
+            @Nullable
             HandlerMethod handlerMethod =
                     (matchedRule != null || WRITE_METHODS.contains(method)) ? resolveHandler(effectiveRequest) : null;
 
@@ -109,7 +112,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
             // 防重 — 写方法且没有 @SkipRepeatSubmit 时检查
             if (WRITE_METHODS.contains(method) && !hasSkipAnnotation(handlerMethod, SkipRepeatSubmit.class)) {
-                checkRepeatSubmit(effectiveRequest, method, wrappedRequest.getCachedBody());
+                // 写方法必已在上方缓存 body；requireNonNull 显式向数据流分析保证非空
+                checkRepeatSubmit(
+                        effectiveRequest,
+                        method,
+                        Objects.requireNonNull(wrappedRequest).getCachedBody());
             }
 
             filterChain.doFilter(wrappedRequest != null ? wrappedRequest : request, response);
@@ -118,7 +125,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
     }
 
-    private Rule findMatchingRule(String method, String uri) {
+    private @Nullable Rule findMatchingRule(String method, String uri) {
         for (Rule rule : properties.getRules()) {
             if (matchesMethod(rule, method) && PATH_MATCHER.match(rule.getPathPattern(), uri)) {
                 return rule;
@@ -221,7 +228,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
      * 解析请求对应的目标 {@link HandlerMethod}，解析失败返回 {@code null}（放行默认规则）。
      * 每次请求至多解析一次，由调用方在命中规则或写请求时懒惰触发。
      */
-    private HandlerMethod resolveHandler(HttpServletRequest request) {
+    private @Nullable HandlerMethod resolveHandler(HttpServletRequest request) {
         List<HandlerMapping> handlerMappings = handlerMappingsProvider.getIfAvailable(List::of);
         for (HandlerMapping mapping : handlerMappings) {
             try {
@@ -239,7 +246,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     /**
      * 检查目标方法/类是否有 Skip 注解（方法级优先，其次类级）。
      */
-    private boolean hasSkipAnnotation(HandlerMethod handlerMethod, Class<? extends Annotation> annotationClass) {
+    private boolean hasSkipAnnotation(
+            @Nullable HandlerMethod handlerMethod, Class<? extends Annotation> annotationClass) {
         return handlerMethod != null
                 && (handlerMethod.getMethodAnnotation(annotationClass) != null
                         || handlerMethod.getBeanType().isAnnotationPresent(annotationClass));

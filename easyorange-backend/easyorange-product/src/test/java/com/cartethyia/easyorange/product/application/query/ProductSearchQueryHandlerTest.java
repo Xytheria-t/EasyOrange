@@ -5,7 +5,9 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
@@ -13,13 +15,13 @@ import com.cartethyia.easyorange.product.application.query.readmodel.SearchHisto
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProductSearchQueryHandler 测试")
@@ -33,7 +35,8 @@ class ProductSearchQueryHandlerTest {
 
     @BeforeEach
     void setUp() {
-        searchQueryHandler = new ProductSearchQueryHandler(productQueryRepository, Optional.empty(), Optional.empty());
+        searchQueryHandler = new ProductSearchQueryHandler(
+                productQueryRepository, provider((ProductSearchQueryPort) null), provider((AiSearchEnhancerPort) null));
 
         testProduct = new ProductReadModel(
                 "1",
@@ -182,5 +185,15 @@ class ProductSearchQueryHandlerTest {
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
+    }
+
+    /** 构造最小 ObjectProvider：bean 为 null 时 getIfAvailable() 返回 null（模拟可选依赖缺失）。 */
+    private static <T> ObjectProvider<T> provider(T bean) {
+        return new ObjectProvider<T>() {
+            @Override
+            public T getIfAvailable() {
+                return bean;
+            }
+        };
     }
 }

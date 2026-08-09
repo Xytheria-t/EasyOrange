@@ -12,6 +12,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -37,11 +38,8 @@ public class AiModelSupport {
      * 普通文本生成：system + user 双消息。
      */
     public String callText(ChatModel chatModel, String systemPrompt, String userMessage) {
-        return chatModel
-                .call(new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage))))
-                .getResult()
-                .getOutput()
-                .getText();
+        return outputText(
+                chatModel.call(new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)))));
     }
 
     /**
@@ -62,11 +60,8 @@ public class AiModelSupport {
                         .type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
                         .build())
                 .build();
-        return chatModel
-                .call(new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)), jsonOptions))
-                .getResult()
-                .getOutput()
-                .getText();
+        return outputText(chatModel.call(
+                new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)), jsonOptions)));
     }
 
     /**
@@ -107,11 +102,15 @@ public class AiModelSupport {
                         .build())
                 .toList();
         Message userMessage = UserMessage.builder().text(prompt).media(media).build();
-        return visionChatModel
-                .call(new Prompt(userMessage))
-                .getResult()
-                .getOutput()
-                .getText();
+        return outputText(visionChatModel.call(new Prompt(userMessage)));
+    }
+
+    /**
+     * 提取模型文本输出；模型可能不返回结果（返回空串），避免 NPE。
+     */
+    private static String outputText(ChatResponse response) {
+        var result = response.getResult();
+        return result != null ? result.getOutput().getText() : "";
     }
 
     /**

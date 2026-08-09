@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -48,7 +49,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(
-            HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+            HttpServletRequest request, HttpServletResponse response, Object handler, @Nullable Exception ex) {
         var uri = request.getRequestURI();
         if (shouldSkipLogging(uri)) return;
 

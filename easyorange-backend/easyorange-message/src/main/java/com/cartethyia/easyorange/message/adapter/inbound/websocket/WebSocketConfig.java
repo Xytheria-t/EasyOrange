@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.message.adapter.inbound.websocket;
 
 import com.cartethyia.easyorange.message.domain.constant.MessageConstant;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -12,13 +11,18 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
-@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthInterceptor webSocketAuthInterceptor;
-
-    @Qualifier("taskScheduler")
     private final ThreadPoolTaskScheduler taskScheduler;
+
+    // Lombok 构造器不会把 @Qualifier 复制到参数上，手写显式构造器以限定 "taskScheduler"
+    public WebSocketConfig(
+            WebSocketAuthInterceptor webSocketAuthInterceptor,
+            @Qualifier("taskScheduler") ThreadPoolTaskScheduler taskScheduler) {
+        this.webSocketAuthInterceptor = webSocketAuthInterceptor;
+        this.taskScheduler = taskScheduler;
+    }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {

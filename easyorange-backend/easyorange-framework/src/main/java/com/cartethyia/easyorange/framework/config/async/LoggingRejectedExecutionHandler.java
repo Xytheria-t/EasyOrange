@@ -28,7 +28,7 @@ public class LoggingRejectedExecutionHandler implements RejectedExecutionHandler
         if (discard) {
             log.warn("线程池 [{}] 丢弃任务: {}", executorName, r.getClass().getSimpleName());
         } else {
-            log.warn("线程池 [{}] 由调用线程执行任务: {}", executorName);
+            log.warn("线程池 [{}] 由调用线程执行任务", executorName);
             if (!executor.isShutdown()) {
                 r.run();
             }
