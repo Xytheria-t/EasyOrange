@@ -68,7 +68,7 @@
 - 审核结果触发站内消息通知（AUDIT_SUCCESS / AUDIT_REJECTED）
 - 审核记录持久化至 `eo_product_audit_log` 表（action: 1通过/2拒绝/3重提交; 含维度JSON+前后状态快照）
 
-状态机定义在 `ProductStatus.java`：枚举按生命周期声明（DRAFT → PENDING_REVIEW → REJECTED → ONLINE → OFFLINE → SOLD），所有合法转换集中在一张 `ALLOWED_TRANSITIONS` 表（单一事实来源，行内注释标注各转换的触发动作），聚合根通过 `transitionTo(target, action)` 统一守卫。终端状态用 `isTerminal()`（仅 SOLD）判断。delete 不改变 status，单独由 `canDelete()` 守卫（SOLD 状态下的商品不可删除以保留订单追溯记录）。库存恢复不变量 `canRestoreStock()`（SOLD/OFFLINE 不可恢复库存）由 `Product.restoreStock()` 调用。进入 ONLINE 只有 `approve`（审核通过）和 `putOnline`（管理员直上架）两条路径，统一经 `Product.validateOnline()`（isComplete + hasValidPrice + hasStock）守卫，禁止新增第三条绕过校验的上架路径。
+状态机合法转换的**唯一事实来源**是 `ProductAction.java` 动作表（每个动作声明 `sources` 前置状态集 + `target` 目标状态），状态枚举 `ProductStatus.java` 只声明状态本身，`canTransitionTo` 由动作表派生，聚合根经 `transitionTo(ProductAction)` 统一守卫。终端状态用 `isTerminal()`（仅 SOLD）判断。delete 不改变 status，单独由 `canDelete()` 守卫（SOLD 状态下的商品不可删除以保留订单追溯记录）。库存恢复不变量 `canRestoreStock()`（SOLD/OFFLINE 不可恢复库存）由 `Product.restoreStock()` 调用。进入 ONLINE 只有 `approve`（审核通过）和 `putOnline`（管理员直上架）两条路径，统一经 `Product.validateOnline()`（isComplete + hasValidPrice + hasStock）守卫，禁止新增第三条绕过校验的上架路径。
 
 ## AI 能力清单
 

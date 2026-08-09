@@ -53,8 +53,7 @@ payment/
 │   ├── aggregate/
 │   │   ├── Payment.java                  # 不可变聚合根（字段 final，状态转换返回 Transition<Payment, E> / 新实例）
 │   │   ├── PaymentCreateSpec.java                 # record 收敛 create() 工厂参数
-│   │   ├── PaymentReconstructSpec.java            # record 收敛 from() 重建参数（15 字段）
-│   │   └── PaymentStatusGuard.java                # 支付状态机合法转换谓词（canPay/canRefund/...）
+│   │   └── PaymentReconstructSpec.java            # record 收敛 from() 重建参数（15 字段）
 │   ├── valueobject/
 │   │   ├── PaymentId.java                         # String UUID v7
 │   │   ├── PaymentNo.java
@@ -76,6 +75,7 @@ payment/
 │   │   ├── PaymentRepositoryPort.java
 │   │   └── IdempotencyKeyRepositoryPort.java
 │   ├── constant/
+│   │   ├── PaymentAction.java                     # 支付状态机动作表（sources 谓词，唯一事实来源）
 │   │   ├── PaymentStatus.java                     # code 为 String："PENDING"/"SUCCESS"/"REFUNDED"/...（已语义化）
 │   │   ├── PaymentMethod.java                     # code 为 String："WECHAT"/"ALIPAY"/"BALANCE"
 │   │   └── PaymentResultCode.java
