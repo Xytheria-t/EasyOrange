@@ -221,6 +221,13 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 ## 开发规范
 
 - 编码规则见 `.claude/rules/ecc/` 目录（ECC 分层规则集：common 通用 + java/typescript/react/web 语言专用，按文件路径自动激活，语言级规则优先级高于 common）
+- **多会话并发合并协议**（本仓库常多个 AI 会话并行，隔离 + 基线统一由此协议保证，所有会话必须遵守）：
+  1. **建分支基于本地 develop**（非 origin/develop）：`git worktree add .claude/worktrees/<name> -b feat/<name> $(git rev-parse develop)`。本地 develop 被会话实时推进，是**最新真相**；`origin/develop` 是推送快照，基于它开发会造成基线漂移（各会话改动互相不包含）
+  2. **合回前先 `git merge develop`**：把其他会话已合入的改动拉进本分支，**冲突在会话内解决**——能 merge 成功 = 无冲突；跳过此步直接合回是并发冲突的根源
+  3. **合回用 `git merge --no-ff`**：保留合并提交作为可整体回滚点（AI 的中间提交勿 squash 碾平）；develop 被主 checkout 占用无法 checkout 时，用 `git update-ref refs/heads/develop HEAD` fast-forward 等价物
+  4. **合回即推送** `git push origin develop`：云端备份 + 基线统一一次完成；不攒推送——否则主 checkout 只能 `-f` 强刷（丢未提交改动），且后续会话基于过期基线
+  5. **收尾删分支 + 删 worktree**：`git branch -d <name> && git worktree remove ...`
+  6. **门禁 = pre-commit hook + 本地测试**：合回前改动涉及模块的单测/集成测试通过（个人项目不必每次推远端 CI，push 触发 GitHub Actions 兜底）
 - **开发中指标收口延后**：开发阶段（未整体完成前）每次改动只做**增量验证**——跑改动涉及模块/文件的单测与集成测试即可，不做全量测试统计、不核查 JaCoCo/PIT 覆盖率、不刷新 `doc/工程指标.md` 的测试数数字（这些只在开发整体收口时统一跑一次并落档）。用户明确要求核查时除外
 - 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
 - 数据库变更必须通过 Flyway 迁移脚本
