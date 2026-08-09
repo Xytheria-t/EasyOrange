@@ -5,10 +5,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort.ProductSearchQuery;
 import com.cartethyia.easyorange.product.application.port.query.SearchResult;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,10 +19,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
-import org.springframework.data.elasticsearch.core.query.StringQuery;
 import tools.jackson.databind.ObjectMapper;
 
 @SuppressWarnings("unchecked")
@@ -46,7 +48,7 @@ class ElasticsearchProductSearchQueryAdapterTest {
         when(searchHits.getSearchHits()).thenReturn(List.of());
         when(searchHits.getTotalHits()).thenReturn(0L);
         when(searchHits.getAggregations()).thenReturn(null);
-        when(elasticsearchOperations.search(any(StringQuery.class), eq(ProductDocument.class)))
+        when(elasticsearchOperations.search(any(NativeQuery.class), eq(ProductDocument.class)))
                 .thenReturn(searchHits);
 
         ProductSearchQuery query =
@@ -80,8 +82,8 @@ class ElasticsearchProductSearchQueryAdapterTest {
                 .tags(List.of("tag1", "tag2"))
                 .mainImage("http://example.com/main.jpg")
                 .images(List.of("http://example.com/main.jpg"))
-                .createTime(LocalDateTime.of(2025, 1, 1, 0, 0))
-                .updateTime(LocalDateTime.of(2025, 1, 2, 0, 0))
+                .createTime(1735689600000L)
+                .updateTime(1735776000000L)
                 .build();
 
         SearchHit<ProductDocument> hit = mock(SearchHit.class);
@@ -92,7 +94,7 @@ class ElasticsearchProductSearchQueryAdapterTest {
         when(searchHits.getTotalHits()).thenReturn(1L);
         when(searchHits.getAggregations()).thenReturn(null);
 
-        when(elasticsearchOperations.search(any(StringQuery.class), eq(ProductDocument.class)))
+        when(elasticsearchOperations.search(any(NativeQuery.class), eq(ProductDocument.class)))
                 .thenReturn(searchHits);
 
         ProductSearchQuery query =
@@ -130,7 +132,7 @@ class ElasticsearchProductSearchQueryAdapterTest {
         when(searchHits.getTotalHits()).thenReturn(0L);
         when(searchHits.getAggregations()).thenReturn(null);
 
-        ArgumentCaptor<StringQuery> queryCaptor = ArgumentCaptor.forClass(StringQuery.class);
+        ArgumentCaptor<NativeQuery> queryCaptor = ArgumentCaptor.forClass(NativeQuery.class);
         when(elasticsearchOperations.search(queryCaptor.capture(), eq(ProductDocument.class)))
                 .thenReturn(searchHits);
 
@@ -138,10 +140,10 @@ class ElasticsearchProductSearchQueryAdapterTest {
                 new ProductSearchQuery("手机", "300", null, null, null, null, null, 1, 20, null, false);
         adapter.search(query);
 
-        StringQuery capturedQuery = queryCaptor.getValue();
-        String json = capturedQuery.getSource();
-        assertThat(json).contains("categoryId");
-        assertThat(json).contains("300");
+        NativeQuery capturedQuery = queryCaptor.getValue();
+        String dsl = decode(capturedQuery);
+        assertThat(dsl).contains("categoryId");
+        assertThat(dsl).contains("300");
     }
 
     @Test
@@ -152,17 +154,17 @@ class ElasticsearchProductSearchQueryAdapterTest {
         when(searchHits.getTotalHits()).thenReturn(0L);
         when(searchHits.getAggregations()).thenReturn(null);
 
-        ArgumentCaptor<StringQuery> queryCaptor = ArgumentCaptor.forClass(StringQuery.class);
+        ArgumentCaptor<NativeQuery> queryCaptor = ArgumentCaptor.forClass(NativeQuery.class);
         when(elasticsearchOperations.search(queryCaptor.capture(), eq(ProductDocument.class)))
                 .thenReturn(searchHits);
 
         ProductSearchQuery query = new ProductSearchQuery(null, null, null, null, null, null, null, 1, 20, null, false);
         adapter.search(query);
 
-        StringQuery capturedQuery = queryCaptor.getValue();
-        String json = capturedQuery.getSource();
-        assertThat(json).contains("match_all");
-        assertThat(json).doesNotContain("multi_match");
+        NativeQuery capturedQuery = queryCaptor.getValue();
+        String dsl = decode(capturedQuery);
+        assertThat(dsl).contains("match_all");
+        assertThat(dsl).doesNotContain("multi_match");
     }
 
     @Test
@@ -173,7 +175,7 @@ class ElasticsearchProductSearchQueryAdapterTest {
         when(searchHits.getTotalHits()).thenReturn(0L);
         when(searchHits.getAggregations()).thenReturn(null);
 
-        ArgumentCaptor<StringQuery> queryCaptor = ArgumentCaptor.forClass(StringQuery.class);
+        ArgumentCaptor<NativeQuery> queryCaptor = ArgumentCaptor.forClass(NativeQuery.class);
         when(elasticsearchOperations.search(queryCaptor.capture(), eq(ProductDocument.class)))
                 .thenReturn(searchHits);
 
@@ -191,10 +193,10 @@ class ElasticsearchProductSearchQueryAdapterTest {
                 false);
         adapter.search(query);
 
-        StringQuery capturedQuery = queryCaptor.getValue();
-        String json = capturedQuery.getSource();
-        assertThat(json).contains("range");
-        assertThat(json).contains("price");
+        NativeQuery capturedQuery = queryCaptor.getValue();
+        String dsl = decode(capturedQuery);
+        assertThat(dsl).contains("range");
+        assertThat(dsl).contains("price");
     }
 
     @Test
@@ -205,7 +207,7 @@ class ElasticsearchProductSearchQueryAdapterTest {
         when(searchHits.getTotalHits()).thenReturn(0L);
         when(searchHits.getAggregations()).thenReturn(null);
 
-        ArgumentCaptor<StringQuery> queryCaptor = ArgumentCaptor.forClass(StringQuery.class);
+        ArgumentCaptor<NativeQuery> queryCaptor = ArgumentCaptor.forClass(NativeQuery.class);
         when(elasticsearchOperations.search(queryCaptor.capture(), eq(ProductDocument.class)))
                 .thenReturn(searchHits);
 
@@ -213,7 +215,16 @@ class ElasticsearchProductSearchQueryAdapterTest {
                 new ProductSearchQuery(null, null, null, null, null, null, "price_asc", 1, 20, null, false);
         adapter.search(query);
 
-        StringQuery capturedQuery = queryCaptor.getValue();
-        assertThat(capturedQuery.getSource()).contains("\"price\"", "\"asc\"");
+        NativeQuery capturedQuery = queryCaptor.getValue();
+        assertThat(capturedQuery.getSortOptions()).singleElement().satisfies(so -> {
+            assertThat(so.field().field()).isEqualTo("price");
+            assertThat(so.field().order()).isEqualTo(SortOrder.Asc);
+        });
+    }
+
+    /** NativeQuery 把 query DSL 以 wrapper 查询承载（base64），解码后断言其内容 */
+    private static String decode(NativeQuery nativeQuery) {
+        return new String(
+                Base64.getDecoder().decode(nativeQuery.getQuery().wrapper().query()), StandardCharsets.UTF_8);
     }
 }

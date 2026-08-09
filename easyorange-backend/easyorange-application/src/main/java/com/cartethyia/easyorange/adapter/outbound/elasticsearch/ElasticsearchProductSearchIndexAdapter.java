@@ -10,6 +10,8 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.Pr
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -191,9 +193,20 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
                 .mainImage(mainImage)
                 .images(imageUrls)
                 .nameEmbedding(embedName(product.getName()))
-                .createTime(product.getCreateTime())
-                .updateTime(product.getUpdateTime())
+                .createTime(toEpochMillis(product.getCreateTime()))
+                .updateTime(toEpochMillis(product.getUpdateTime()))
                 .build();
+    }
+
+    /**
+     * LocalDateTime → epoch 毫秒：ES 文档时间以 Long（epoch_millis）存储，规避 Spring Data ES 6
+     * 对 LocalDateTime 的默认序列化陷阱。zone 用系统默认时区——与库里 DATETIME 同为本地墙钟语义。
+     */
+    private static Long toEpochMillis(LocalDateTime value) {
+        if (value == null) {
+            return null;
+        }
+        return value.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
     /**

@@ -10,7 +10,7 @@
 | **前端** | TypeScript, React |
 | **数据库** | MySQL 8.4, Redis 7.4 |
 | **消息队列** | RabbitMQ 3.13 (Spring AMQP 4.0.x) |
-| **搜索引擎** | Elasticsearch 8.17.3 (IK 中文分词器) |
+| **搜索引擎** | Elasticsearch 9.2.8 (IK 中文分词器) |
 | **认证** | JWT Access (RSA) + Opaque Refresh (Redis, HttpOnly Cookie) |
 | **迁移** | Flyway 11.15.0 |
 | **部署** | Docker, docker-compose, compose.yaml (@ServiceConnection) + **K8s/kustomize** (k8s/, 无状态应用层) |
@@ -321,10 +321,15 @@ cd easyorange-backend && ./mvnw clean package -DskipTests
 # 启动开发环境 (MySQL 8.4 + Redis 7.4 + RabbitMQ 3.13)
 docker compose -f compose.yaml up -d
 
-# 可选: ES 搜索（compose 未含 ES 服务；手动构建 IK 镜像并运行）
+# 可选: ES 搜索（compose.yaml 已含 elasticsearch 服务，profile: search 显式启用；首次会构建 IK 镜像，略慢）
+docker compose --profile search up -d elasticsearch      # 构建并启动 ES（IK 分词，端口 9200）
+#   # 手动构建等价命令：
 #   docker build -t easyorange-elasticsearch:local infra/elasticsearch && \
 #   docker run -d --name easyorange-es -p 9200:9200 -e discovery.type=single-node \
 #     -e xpack.security.enabled=false easyorange-elasticsearch:local
+
+# ES 打开后访问 `POST /api/admin/search/reindex`（需 admin token）做全量重建；
+# ElasticsearchProductSearchIT（`mvn verify`）会用真实 ES 跑写入→检索→筛选→排序→facet 全链路的回归。
 
 # 后端应用容器化 + 多实例压测栈（Prometheus :9090 + Grafana :3000，dashboard 自动 provisioning）
 # 注：app/prometheus/grafana 在 fullstack profile 下——裸 `docker compose up -d` 仍是纯开发三件套，热循环零影响

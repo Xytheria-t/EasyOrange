@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,9 +43,16 @@ public class ProductDocument {
     private String sellerName;
     private String sellerAvatar;
 
-    @Field(type = FieldType.Auto)
+    @Field(type = FieldType.Dense_Vector)
     private List<Float> nameEmbedding;
 
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    /**
+     * 时间以 epoch 毫秒（long）存储：Spring Data ES 6 对 LocalDateTime 的默认序列化不可靠
+     * （无注解→ISO-8601 且按 UTC 转换，丢墙钟语义；注解 epoch_millis 又要求带时区类型，直接抛异常）。
+     * 以 Long 落库由适配器在 DO↔readModel 边界显式转换，语义与 MySQL DATETIME（本地墙钟）一致，
+     * 且 {@code product-mapping.json} 的 date/epoch_millis 格式与之对齐，排序/过滤按数字天然成立。
+     */
+    private Long createTime;
+
+    private Long updateTime;
 }

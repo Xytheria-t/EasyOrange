@@ -1,8 +1,0 @@
-{
-  "properties": {
-    "name": {
-      "type": "text",
-      "analyzer": "ik_max_word"
-    }
-  }
-}

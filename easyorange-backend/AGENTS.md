@@ -11,7 +11,7 @@ Spring Boot 4.0.7 + Java 25 后端，采用 DDD + 六边形架构。
 | MapStruct | 1.6.3 |
 | ArchUnit | 1.4.1 |
 | Resilience4j | 2.2.0 |
-| Spring Data Elasticsearch | 6.0.3 |
+| Spring Data Elasticsearch | 6.0.6 |
 
 ## 事务约定
 

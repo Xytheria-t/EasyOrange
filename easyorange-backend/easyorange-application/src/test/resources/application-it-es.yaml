@@ -1,0 +1,20 @@
+# ES 集成测试 profile（ElasticsearchProductSearchIT 激活）— 与 it 一起激活（@ActiveProfiles({"it","it-es"})），
+# 继承基础 it 配置（MySQL/Redis/RabbitMQ 直连、flyway validate 关闭等）。本文件只做一件事：
+#   打开 easyorange.search.elasticsearch.enabled —— 触发 ES 索引适配器/查询适配器/ElasticsearchIndexManager 装配。
+#
+# 前置：ES 需已运行（`docker compose --profile search up -d elasticsearch`，见 AGENTS.md）。
+# 不沿用 compose 自动拉起：与现有 IT 一致（dev 栈由开发者预先 `docker compose up -d`，测试直连 localhost）。
+# 且 Boot 在测试内默认 skip compose（spring.docker.compose.skip.in-tests=true），避免重复拉起引发容器名冲突。
+spring:
+  docker:
+    compose:
+      services:
+        - mysql
+        - redis
+        - rabbitmq
+        - elasticsearch   # 仅文档化意图；skip.in-tests=true 时实际不拉起，ES 需预先运行
+
+easyorange:
+  search:
+    elasticsearch:
+      enabled: true

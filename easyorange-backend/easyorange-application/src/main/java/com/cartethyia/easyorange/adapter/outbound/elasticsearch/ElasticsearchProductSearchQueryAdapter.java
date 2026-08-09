@@ -1,10 +1,17 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.AggregationRange;
 import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
 import com.cartethyia.easyorange.product.application.port.query.SearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -14,10 +21,11 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchAggregation;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchAggregations;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.client.elc.Queries;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
-import org.springframework.data.elasticsearch.core.query.StringQuery;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -39,36 +47,32 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         int page = Math.max(query.pageNum(), 1);
         int size = Math.max(query.pageSize(), 1);
 
-        ObjectNode root = objectMapper.createObjectNode();
-
         boolean useKnn = query.useSemanticSearch()
                 && query.queryEmbedding() != null
                 && !query.queryEmbedding().isEmpty();
 
-        if (useKnn) {
-            ObjectNode knn = objectMapper.createObjectNode();
-            knn.put("field", "nameEmbedding");
-            ArrayNode queryVector = knn.putArray("query_vector");
-            for (Float v : query.queryEmbedding()) {
-                queryVector.add(v);
-            }
-            knn.put("k", size * 2);
-            knn.put("num_candidates", 100);
-            root.set("knn", knn);
+        var queryBuilder = NativeQuery.builder().withPageable(PageRequest.of(page - 1, size));
 
-            root.set("query", buildFilterQuery(query));
+        if (useKnn) {
+            queryBuilder.withKnnSearches(knn -> knn.field("nameEmbedding")
+                    .queryVector(query.queryEmbedding())
+                    .k(size * 2)
+                    .numCandidates(100));
+            queryBuilder.withQuery(
+                    Queries.wrapperQueryAsQuery(buildFilterQuery(query).toString()));
         } else {
-            root.set("query", buildQuery(query));
+            queryBuilder.withQuery(Queries.wrapperQueryAsQuery(buildQuery(query).toString()));
         }
 
-        root.set("sort", buildSort(query.sort()));
-        root.set("aggs", buildAggregations());
+        queryBuilder.withSort(sortOptions(query.sort()));
+        queryBuilder.withAggregation("category", categoryAgg());
+        queryBuilder.withAggregation("conditionLevel", conditionAgg());
+        queryBuilder.withAggregation("priceRanges", priceRangeAgg());
 
-        String queryJson = root.toString();
-
-        // Execute search
-        SearchHits<ProductDocument> searchHits = elasticsearchOperations.search(
-                new StringQuery(queryJson, PageRequest.of(page - 1, size)), ProductDocument.class);
+        // 用 NativeQuery 组装请求体：SDE 的 StringQuery 会把整段 body 当作 query DSL 包进 wrapper 查询，
+        // 形成 {"query":{"query":…,"sort":…,"aggs":…}} 被 ES 拒收（unknown query [query]）。
+        SearchHits<ProductDocument> searchHits =
+                elasticsearchOperations.search(queryBuilder.build(), ProductDocument.class);
 
         // Convert documents
         List<ProductReadModel> records = searchHits.getSearchHits().stream()
@@ -106,35 +110,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         bool.set("must", must);
 
         // Filter clauses
-        ArrayNode filter = objectMapper.createArrayNode();
-        if (query.status() != null) {
-            filter.add(objectMapper
-                    .createObjectNode()
-                    .set("term", objectMapper.createObjectNode().put("status", query.status())));
-        }
-        if (query.categoryId() != null) {
-            filter.add(objectMapper
-                    .createObjectNode()
-                    .set("term", objectMapper.createObjectNode().put("categoryId", query.categoryId())));
-        }
-        if (query.conditionLevel() != null) {
-            filter.add(objectMapper
-                    .createObjectNode()
-                    .set("term", objectMapper.createObjectNode().put("conditionLevel", query.conditionLevel())));
-        }
-        if (query.minPrice() != null || query.maxPrice() != null) {
-            ObjectNode range = objectMapper.createObjectNode();
-            ObjectNode priceRange = objectMapper.createObjectNode();
-            if (query.minPrice() != null) {
-                priceRange.put("gte", query.minPrice());
-            }
-            if (query.maxPrice() != null) {
-                priceRange.put("lte", query.maxPrice());
-            }
-            range.set("price", priceRange);
-            filter.add(objectMapper.createObjectNode().set("range", range));
-        }
-
+        ArrayNode filter = buildFilterClauses(query);
         if (filter.size() > 0) {
             bool.set("filter", filter);
         }
@@ -149,6 +125,16 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         must.add(objectMapper.createObjectNode().set("match_all", objectMapper.createObjectNode()));
         bool.set("must", must);
 
+        ArrayNode filter = buildFilterClauses(query);
+        if (filter.size() > 0) {
+            bool.set("filter", filter);
+        }
+
+        return objectMapper.createObjectNode().set("bool", bool);
+    }
+
+    /** 复用过滤子句（status/categoryId/conditionLevel/price），供全文检索与语义 kNN 共用，避免重复漂移 */
+    private ArrayNode buildFilterClauses(ProductSearchQuery query) {
         ArrayNode filter = objectMapper.createArrayNode();
         if (query.status() != null) {
             filter.add(objectMapper
@@ -178,73 +164,39 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
             filter.add(objectMapper.createObjectNode().set("range", range));
         }
 
-        if (filter.size() > 0) {
-            bool.set("filter", filter);
-        }
-
-        return objectMapper.createObjectNode().set("bool", bool);
+        return filter;
     }
 
-    private ArrayNode buildSort(String sortField) {
-        ArrayNode sort = objectMapper.createArrayNode();
+    private List<SortOptions> sortOptions(String sortField) {
         String sortKey = sortField != null ? sortField : "relevance";
-        switch (sortKey) {
+        return switch (sortKey) {
             case "price_asc" ->
-                sort.add(objectMapper
-                        .createObjectNode()
-                        .set("price", objectMapper.createObjectNode().put("order", "asc")));
+                List.of(SortOptions.of(so -> so.field(f -> f.field("price").order(SortOrder.Asc))));
             case "price_desc" ->
-                sort.add(objectMapper
-                        .createObjectNode()
-                        .set("price", objectMapper.createObjectNode().put("order", "desc")));
+                List.of(SortOptions.of(so -> so.field(f -> f.field("price").order(SortOrder.Desc))));
             case "newest" ->
-                sort.add(objectMapper
-                        .createObjectNode()
-                        .set("createTime", objectMapper.createObjectNode().put("order", "desc")));
+                List.of(SortOptions.of(so -> so.field(f -> f.field("createTime").order(SortOrder.Desc))));
             case "popular" ->
-                sort.add(objectMapper
-                        .createObjectNode()
-                        .set("viewCount", objectMapper.createObjectNode().put("order", "desc")));
-            default ->
-                sort.add(objectMapper
-                        .createObjectNode()
-                        .set("_score", objectMapper.createObjectNode().put("order", "desc")));
-        }
-        return sort;
+                List.of(SortOptions.of(so -> so.field(f -> f.field("viewCount").order(SortOrder.Desc))));
+            default -> List.of(SortOptions.of(so -> so.score(s -> s.order(SortOrder.Desc))));
+        };
     }
 
-    private ObjectNode buildAggregations() {
-        ObjectNode aggs = objectMapper.createObjectNode();
+    private Aggregation categoryAgg() {
+        return Aggregation.of(a -> a.terms(t -> t.field("categoryId").size(20)));
+    }
 
-        // category terms
-        ObjectNode categoryAgg = objectMapper.createObjectNode();
-        categoryAgg.set(
-                "terms",
-                objectMapper.createObjectNode().put("field", "categoryId").put("size", 20));
-        aggs.set("category", categoryAgg);
+    private Aggregation conditionAgg() {
+        return Aggregation.of(a -> a.terms(t -> t.field("conditionLevel").size(10)));
+    }
 
-        // conditionLevel terms
-        ObjectNode conditionAgg = objectMapper.createObjectNode();
-        conditionAgg.set(
-                "terms",
-                objectMapper.createObjectNode().put("field", "conditionLevel").put("size", 10));
-        aggs.set("conditionLevel", conditionAgg);
-
-        // priceRanges range
-        ObjectNode priceRanges = objectMapper.createObjectNode();
-        ObjectNode rangeField = objectMapper.createObjectNode();
-        rangeField.put("field", "price");
-        ArrayNode ranges = rangeField.putArray("ranges");
-        ranges.add(objectMapper.createObjectNode().put("to", 100).put("key", "*-100"));
-        ranges.add(
-                objectMapper.createObjectNode().put("from", 100).put("to", 500).put("key", "100-500"));
-        ranges.add(
-                objectMapper.createObjectNode().put("from", 500).put("to", 1000).put("key", "500-1000"));
-        ranges.add(objectMapper.createObjectNode().put("from", 1000).put("key", "1000-*"));
-        priceRanges.set("range", rangeField);
-        aggs.set("priceRanges", priceRanges);
-
-        return aggs;
+    private Aggregation priceRangeAgg() {
+        return Aggregation.of(a -> a.range(r -> r.field("price")
+                .ranges(
+                        AggregationRange.of(rr -> rr.to(100d).key("*-100")),
+                        AggregationRange.of(rr -> rr.from(100d).to(500d).key("100-500")),
+                        AggregationRange.of(rr -> rr.from(500d).to(1000d).key("500-1000")),
+                        AggregationRange.of(rr -> rr.from(1000d).key("1000-*")))));
     }
 
     private ProductReadModel toReadModel(ProductDocument doc) {
@@ -264,9 +216,17 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 .location(doc.getLocation())
                 .images(Objects.requireNonNullElseGet(doc.getImages(), List::of))
                 .mainImageUrl(Objects.requireNonNullElse(doc.getMainImage(), ""))
-                .createTime(doc.getCreateTime())
-                .updateTime(doc.getUpdateTime())
+                .createTime(fromEpochMillis(doc.getCreateTime()))
+                .updateTime(fromEpochMillis(doc.getUpdateTime()))
                 .build();
+    }
+
+    /** epoch millis → LocalDateTime（与索引写入 side 的 {@code toEpochMillis} 互逆，同一系统时区口径） */
+    private static LocalDateTime fromEpochMillis(Long epochMillis) {
+        if (epochMillis == null) {
+            return null;
+        }
+        return Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
 
     private List<FacetBucket> extractAggBuckets(SearchHits<?> searchHits, String aggName) {
@@ -278,20 +238,24 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
 
         var aggregate = agg.aggregation().getAggregate();
 
-        // Try string terms (keyword fields)
-        var sterms = aggregate.sterms();
-        if (sterms != null && sterms.buckets() != null) {
-            return sterms.buckets().array().stream()
-                    .map(b -> new FacetBucket(b.key().stringValue(), b.key().stringValue(), b.docCount()))
-                    .toList();
+        // 先按变体类型判空再取值：Aggregate.sterms()/lterms() 在变体不匹配时抛 IllegalStateException（不返回 null）
+        if (aggregate.isSterms()) {
+            var sterms = aggregate.sterms();
+            if (sterms != null && sterms.buckets() != null) {
+                return sterms.buckets().array().stream()
+                        .map(b -> new FacetBucket(b.key().stringValue(), b.key().stringValue(), b.docCount()))
+                        .toList();
+            }
         }
 
-        // Try long terms (integer fields — categoryId, conditionLevel are integers)
-        var lterms = aggregate.lterms();
-        if (lterms != null && lterms.buckets() != null) {
-            return lterms.buckets().array().stream()
-                    .map(b -> new FacetBucket(String.valueOf(b.key()), String.valueOf(b.key()), b.docCount()))
-                    .toList();
+        // Long terms（integer 字段 — categoryId/conditionLevel 映射为数字类型，bucket.key() 为原始 long）
+        if (aggregate.isLterms()) {
+            var lterms = aggregate.lterms();
+            if (lterms != null && lterms.buckets() != null) {
+                return lterms.buckets().array().stream()
+                        .map(b -> new FacetBucket(String.valueOf(b.key()), String.valueOf(b.key()), b.docCount()))
+                        .toList();
+            }
         }
 
         return List.of();

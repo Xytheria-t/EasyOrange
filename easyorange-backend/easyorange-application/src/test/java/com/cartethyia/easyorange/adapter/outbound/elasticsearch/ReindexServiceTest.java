@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -29,6 +28,9 @@ class ReindexServiceTest {
     private ElasticsearchOperations elasticsearchOperations;
 
     @Mock
+    private ElasticsearchIndexManager indexManager;
+
+    @Mock
     private ElasticsearchProductSearchIndexAdapter indexAdapter;
 
     @Mock
@@ -39,34 +41,29 @@ class ReindexServiceTest {
     @BeforeEach
     void setUp() {
         when(elasticsearchOperations.indexOps(ProductDocument.class)).thenReturn(indexOps);
-        reindexService = new ReindexService(productMapper, elasticsearchOperations, indexAdapter);
+        reindexService = new ReindexService(productMapper, elasticsearchOperations, indexManager, indexAdapter);
     }
 
     @Test
-    @DisplayName("全量重建应删除旧索引并写入新数据")
-    void reindexAll_shouldRecreateIndexAndIndexProducts() {
+    @DisplayName("全量重建：删除旧索引 → 重建索引 → 批量写入（走预加载路径，无 N+1）")
+    void reindexAll_shouldRecreateFromMappingAndBulkIndex() {
         when(indexOps.exists()).thenReturn(true);
 
         ProductDO product1 = ProductDO.builder().id("100").name("商品1").build();
         ProductDO product2 = ProductDO.builder().id("200").name("商品2").build();
-        List<ProductDO> products = List.of(product1, product2);
-        when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(products);
-
-        ProductDocument doc1 = ProductDocument.builder().id("100").name("商品1").build();
-        ProductDocument doc2 = ProductDocument.builder().id("200").name("商品2").build();
-        when(indexAdapter.buildDocument(product1)).thenReturn(doc1);
-        when(indexAdapter.buildDocument(product2)).thenReturn(doc2);
+        when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(product1, product2));
 
         int count = reindexService.reindexAll();
 
         assertThat(count).isEqualTo(2);
         verify(indexOps).delete();
-        verify(elasticsearchOperations).save(anyList());
+        verify(indexManager).createProductIndex();
+        verify(indexAdapter).indexProducts(List.of("100", "200"));
     }
 
     @Test
-    @DisplayName("无在线商品时应跳过批量保存")
-    void reindexAll_shouldHandleEmptyProducts() {
+    @DisplayName("无在线商品时重建空索引但跳过批量写入")
+    void reindexAll_shouldSkipBulkWriteWhenNoOnlineProducts() {
         when(indexOps.exists()).thenReturn(false);
         when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
 
@@ -74,17 +71,19 @@ class ReindexServiceTest {
 
         assertThat(count).isZero();
         verify(indexOps, never()).delete();
-        verify(elasticsearchOperations, never()).save(anyList());
+        verify(indexManager).createProductIndex();
+        verify(indexAdapter).indexProducts(List.of());
     }
 
     @Test
-    @DisplayName("索引不存在时不调用删除")
-    void reindexAll_shouldNotDeleteIfIndexNotExists() {
+    @DisplayName("索引不存在时不调用删除，但仍重建索引")
+    void reindexAll_shouldNotDeleteWhenIndexMissing() {
         when(indexOps.exists()).thenReturn(false);
         when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
 
         reindexService.reindexAll();
 
         verify(indexOps, never()).delete();
+        verify(indexManager).createProductIndex();
     }
 }
