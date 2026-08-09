@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.architecture;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.library.GeneralCodingRules.NO_CLASSES_SHOULD_ACCESS_STANDARD_STREAMS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.tngtech.archunit.core.domain.Dependency;
@@ -14,63 +15,55 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import java.util.ArrayList;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 
 /**
- * 架构守卫测试 — 使用 ArchUnit 1.4.x 真实 API（@AnalyzeClasses + @ArchTest）。
+ * 架构守卫测试 — 使用 ArchUnit 真实 API（@AnalyzeClasses + @ArchTest），覆盖 DDD/CQRS 分层。
  * <p>
- * 11 条 @ArchTest 规则守护 DDD/CQRS 分层（规则 1 含 3 项子检查）：
+ * 10 条 @ArchTest 规则：
  * <ol>
- *   <li>domain 层零框架依赖（3 项：禁框架 / 禁 web 层 / 禁 DTO）</li>
+ *   <li>domain 层白名单准入（onlyDependOnClassesThat，合并原「禁框架/web/DTO」3 项子检查为 1 条）</li>
  *   <li>command handler 禁止依赖 query handler（CQRS 写读分离）</li>
  *   <li>query handler 禁止依赖 command handler（CQRS 读写分离）</li>
  *   <li>业务模块间仅通过 domain.port / domain.valueobject 通信</li>
- *   <li>端口接口必须有适配器实现</li>
+ *   <li>端口接口必须有适配器实现（以实现关系 isAssignableFrom 判定，替代名字猜测）</li>
  *   <li>禁止 infrastructure/ 包（已废弃，用 adapter/outbound/）</li>
- *   <li>domain/application 禁止反向依赖 adapter 实现（已知技术债豁免见规则 7 注释）</li>
+ *   <li>domain/application 禁止反向依赖 adapter 实现（已知技术债由 FreezingArchRule 冻结在
+ *       {@code src/test/resources/archunit_store/}，重构移除后自动解除，无需删豁免名单）</li>
  *   <li>controller 禁止直连 mapper（必须经由 application 服务）</li>
- *   <li>禁止 System.out / e.printStackTrace()（统一 SLF4J）</li>
+ *   <li>禁止 System.out / System.err（复用 ArchUnit GeneralCodingRules）</li>
+ *   <li>禁止 e.printStackTrace()（统一 SLF4J）</li>
  * </ol>
- * 无白名单 — 所有规则必须严格合规。
+ * 除 FreezingArchRule 冻结的已知技术债外无任何白名单 — 新违规直接失败。
  */
 @AnalyzeClasses(packages = "com.cartethyia.easyorange", importOptions = ImportOption.DoNotIncludeTests.class)
 @DisplayName("DDD/CQRS architecture rules (ArchUnit)")
+// @ArchTest 的字段/方法由 ArchUnit JUnit5 扩展通过反射执行，静态分析会误报「未使用」；类级 Suppress 一次消噪。
+@SuppressWarnings("unused")
 class ArchitectureRulesTest {
 
-    // ==================== Rule 1: Domain 层纯度 ====================
+    // ==================== Rule 1: Domain 层纯度（白名单准入） ====================
 
     @ArchTest
-    static final ArchRule domain_should_not_depend_on_frameworks = noClasses()
+    static final ArchRule domain_only_depends_on_allowlist = classes()
             .that()
             .resideInAPackage("..domain..")
             .should()
-            .dependOnClassesThat()
+            .onlyDependOnClassesThat()
             .resideInAnyPackage(
-                    "org.springframework..",
-                    "com.baomidou..",
-                    "jakarta.servlet..",
-                    "com.cartethyia.easyorange.framework..")
-            .because("domain 层必须零框架依赖 — 禁止 Spring/MyBatis/servlet/project-framework");
-
-    @ArchTest
-    static final ArchRule domain_should_not_depend_on_web_layers = noClasses()
-            .that()
-            .resideInAPackage("..domain..")
-            .should()
-            .dependOnClassesThat()
-            .resideInAnyPackage("..controller..", "..mapper..", "..service.impl..")
-            .because("domain 层禁止依赖 adapter/application 层");
-
-    @ArchTest
-    static final ArchRule domain_should_not_depend_on_dto_layers = noClasses()
-            .that()
-            .resideInAPackage("..domain..")
-            .should()
-            .dependOnClassesThat()
-            .resideInAnyPackage("..dto.request..", "..dto.vo..")
-            .because("domain 层禁止依赖 DTO");
+                    "java..",
+                    "jakarta.annotation..",
+                    "lombok..",
+                    "org.slf4j..",
+                    "org.jetbrains.annotations..",
+                    "com.fasterxml.jackson.annotation..",
+                    "com.cartethyia.easyorange.common..",
+                    "com.cartethyia.easyorange..domain..")
+            .because("domain 层仅允许白名单依赖（JDK/jakarta.annotation/Lombok/Jackson-annotation/SLF4J/"
+                    + "common/domain），新增任何框架或分层依赖直接失败");
 
     // ==================== Rule 2: CQRS — 命令 handler ≠ 查询 handler ====================
 
@@ -114,7 +107,7 @@ class ArchitectureRulesTest {
             .because("业务模块间仅通过 domain.port / domain.valueobject 通信，禁止直接导入其他模块内部类");
 
     private static ArchCondition<JavaClass> notDirectlyDependOnOtherBusinessModuleInternals() {
-        return new ArchCondition<JavaClass>("not directly depend on other business modules' internals") {
+        return new ArchCondition<>("not directly depend on other business modules' internals") {
             @Override
             public void check(JavaClass javaClass, ConditionEvents events) {
                 var dependentModule = extractModule(javaClass.getPackageName());
@@ -133,9 +126,9 @@ class ArchitectureRulesTest {
                     var targetPackage = target.getPackageName();
                     if (!targetPackage.contains(".domain.port.") && !targetPackage.contains(".domain.valueobject.")) {
                         events.add(SimpleConditionEvent.violated(
-                                javaClass,
-                                javaClass.getSimpleName() + " -> " + target.getSimpleName() + " (" + targetPackage
-                                        + ")"));
+                            javaClass,
+                            javaClass.getSimpleName() + " -> " + target.getSimpleName() + " (" + targetPackage
+                                + ")"));
                     }
                 }
             }
@@ -154,39 +147,26 @@ class ArchitectureRulesTest {
     // ==================== Rule 5: 端口接口必须有适配器实现 ====================
 
     private static final Set<String> PORT_ALLOWLIST = Set.of();
-    private static final Set<String> PORT_ADAPTER_SUFFIXES =
-            Set.of("Adapter", "Repository", "Store", "Verifier", "Publisher", "Storage", "Impl");
 
     @ArchTest
     static void port_interfaces_must_have_adapter_implementations(JavaClasses classes) {
-        var ports = new ArrayList<JavaClass>();
-        var adapters = new ArrayList<JavaClass>();
-
-        for (JavaClass cls : classes) {
-            if (cls.getPackageName().contains(".domain.port.")
-                    && cls.getSimpleName().endsWith("Port")) {
-                ports.add(cls);
-            }
-            if (cls.getPackageName().contains(".adapter.outbound.")) {
-                var name = cls.getSimpleName();
-                if (PORT_ADAPTER_SUFFIXES.stream().anyMatch(name::endsWith)) {
-                    adapters.add(cls);
-                }
-            }
-        }
-
         var missing = new ArrayList<String>();
-        for (var port : ports) {
+        for (JavaClass port : classes) {
+            if (!port.getPackageName().contains(".domain.port.")
+                    || !port.getSimpleName().endsWith("Port")) {
+                continue;
+            }
             if (PORT_ALLOWLIST.contains(port.getSimpleName())) {
                 continue;
             }
-            var coreName = port.getSimpleName().replace("Port", "");
-            var hasAdapter = adapters.stream().anyMatch(a -> a.getSimpleName().contains(coreName));
+            var hasAdapter = classes.stream()
+                    .anyMatch(candidate -> !candidate.equals(port)
+                            && candidate.getPackageName().contains(".adapter.outbound.")
+                            && candidate.getAllClassesSelfIsAssignableTo().contains(port));
             if (!hasAdapter) {
                 missing.add(port.getSimpleName());
             }
         }
-
         assertThat(missing)
                 .withFailMessage(
                         () -> "Port interfaces without adapter implementations:\n" + String.join("\n", missing))
@@ -201,28 +181,22 @@ class ArchitectureRulesTest {
             .resideInAPackage("..infrastructure..")
             .because("infrastructure/ 包已废弃，所有实现应放在 adapter/outbound/ 下");
 
-    // ==================== Rule 7: 依赖方向 — 上层不依赖 adapter ====================
+    // ==================== Rule 7: 依赖方向 — 上层不依赖 adapter（技术债冻结） ====================
 
-    // 已知技术债（豁免，待重构为「domain.port 仓库 + adapter 实现」后移除豁免）：
-    // product 模块存在 application 层直连 MyBatis mapper 的既有分层异味：
-    //   • SearchHistoryBufferAppService  — 直接构造 SearchHistoryDO + 注入 SearchHistoryMapper
-    //   • ViewCountBatchProcessor        — 直接注入 ProductMapper
-    //   • ProductReportQueryHandler      — 直接注入 ProductMapper
-    // 规则继续守护其余所有 domain/application 代码及未来新增代码。
+    // 已知技术债（被 FreezingArchRule 自动冻结在 src/test/resources/archunit_store/，重构后自动解除，
+    // 无需删本文件的豁免名单；快照为 archunit 实际报送的违规行，与此处描述互为印证）：
+    //   • SearchHistoryBufferAppService  — application 直构 SearchHistoryDO + 注入 SearchHistoryMapper
+    //   • ViewCountBatchProcessor        — application 直注 ProductMapper（batchAddViewCounts）
+    //   • ProductReportQueryHandler      — application 方法直接返回 adapter.inbound web DTO
+    // 规则继续拦截 domain/application 对 adapter 的新增依赖。
     @ArchTest
-    static final ArchRule domain_and_application_should_not_depend_on_adapter = noClasses()
+    static final ArchRule domain_and_application_should_not_depend_on_adapter = FreezingArchRule.freeze(noClasses()
             .that()
             .resideInAnyPackage("..domain..", "..application..")
-            .and()
-            .doNotHaveSimpleName("SearchHistoryBufferAppService")
-            .and()
-            .doNotHaveSimpleName("ViewCountBatchProcessor")
-            .and()
-            .doNotHaveSimpleName("ProductReportQueryHandler")
             .should()
             .dependOnClassesThat()
             .resideInAPackage("..adapter..")
-            .because("依赖方向: domain/application 只能依赖端口(domain.port)，禁止反向依赖 adapter 实现");
+            .because("依赖方向: domain/application 只能依赖端口(domain.port)，禁止反向依赖 adapter 实现"));
 
     // ==================== Rule 8: Web 层不直连持久层 ====================
 
@@ -235,13 +209,14 @@ class ArchitectureRulesTest {
             .resideInAPackage("..mapper..")
             .because("Web/controller 层禁止直接依赖 mapper，必须经由 application 服务");
 
-    // ==================== Rule 9: 禁止 System.out / printStackTrace ====================
+    // ==================== Rule 9: 统一 SLF4J 日志 ====================
 
     @ArchTest
-    static final ArchRule no_system_out_or_print_stack_trace = noClasses()
+    static final ArchRule no_standard_streams = NO_CLASSES_SHOULD_ACCESS_STANDARD_STREAMS;
+
+    @ArchTest
+    static final ArchRule no_print_stack_trace = noClasses()
             .should()
-            .accessField(System.class, "out")
-            .orShould()
             .callMethod(Throwable.class, "printStackTrace")
-            .because("禁止 System.out / e.printStackTrace() — 统一走 SLF4J(org.slf4j) 日志");
+            .because("禁止 e.printStackTrace() — 统一走 SLF4J(org.slf4j) 日志");
 }

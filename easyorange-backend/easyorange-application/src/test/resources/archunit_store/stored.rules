@@ -1,0 +1,3 @@
+#
+#Sun Aug 09 14:29:57 CST 2026
+no\ classes\ that\ reside\ in\ any\ package\ ['..domain..',\ '..application..']\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..adapter..',\ because\ \u4F9D\u8D56\u65B9\u5411\:\ domain/application\ \u53EA\u80FD\u4F9D\u8D56\u7AEF\u53E3(domain.port)\uFF0C\u7981\u6B62\u53CD\u5411\u4F9D\u8D56\ adapter\ \u5B9E\u73B0=433c3ec9-7ce6-4e64-bba1-63e99e52da26
