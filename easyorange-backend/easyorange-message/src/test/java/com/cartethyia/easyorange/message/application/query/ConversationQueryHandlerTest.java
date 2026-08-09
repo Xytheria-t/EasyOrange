@@ -10,6 +10,7 @@ import com.cartethyia.easyorange.message.application.query.dto.ConversationListV
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
+import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
@@ -48,7 +49,7 @@ class ConversationQueryHandlerTest {
                 id,
                 senderId,
                 receiverId,
-                2,
+                MessageType.CHAT,
                 "",
                 content,
                 ReadStatus.UNREAD,
@@ -151,7 +152,7 @@ class ConversationQueryHandlerTest {
                     "5",
                     null,
                     CURRENT_USER_ID,
-                    1,
+                    MessageType.SYSTEM,
                     "系统通知",
                     "订单已支付",
                     ReadStatus.UNREAD,

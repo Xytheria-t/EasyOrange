@@ -4,19 +4,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-public class Favorite {
-
-    private final String id;
-    private final String userId;
-    private final String productId;
-    private final LocalDateTime createTime;
-
-    private Favorite(String id, String userId, String productId, LocalDateTime createTime) {
-        this.id = id;
-        this.userId = userId;
-        this.productId = productId;
-        this.createTime = createTime;
-    }
+public record Favorite(String id, String userId, String productId, LocalDateTime createTime) {
 
     public static Favorite create(FavoriteCreateSpec spec) {
         if (spec.userId() == null || spec.userId().isBlank()) {
@@ -32,20 +20,20 @@ public class Favorite {
         return new Favorite(id, userId, productId, createTime);
     }
 
-    public boolean belongsTo(String userId) {
-        return Objects.equals(this.userId, userId);
-    }
-
     public void validateOwnership(String userId) {
-        if (!belongsTo(userId)) {
+        if (!Objects.equals(this.userId, userId)) {
             throw BusinessException.of("无权操作他人的收藏");
         }
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Favorite other)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Favorite other)) {
+            return false;
+        }
         return id != null && id.equals(other.id);
     }
 
@@ -57,21 +45,5 @@ public class Favorite {
     @Override
     public String toString() {
         return "Favorite{id=" + id + ", userId=" + userId + ", productId=" + productId + "}";
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public String getProductId() {
-        return productId;
-    }
-
-    public LocalDateTime getCreateTime() {
-        return createTime;
     }
 }

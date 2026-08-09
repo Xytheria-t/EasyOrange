@@ -3,17 +3,14 @@ package com.cartethyia.easyorange.message.domain.aggregate;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
-import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
-import com.cartethyia.easyorange.message.domain.event.MessageReadEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
-import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.UnauthorizedOperationException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
- * 消息聚合根 —— 不可变对象
+ * 消息聚合根 —— 不可变 record
  * <p>
  * 核心不变量：
  * <ul>
@@ -21,143 +18,62 @@ import java.time.LocalDateTime;
  *   <li>只有发送者可以撤回消息</li>
  *   <li>撤回必须在 2 分钟内完成</li>
  *   <li>已撤回的消息不能再次撤回</li>
- *   <li>标题和内容必须经过 XSS 转义</li>
+ *   <li>标题和内容以原始文本存储；XSS 防护由渲染端文本输出承担，写入不做转义（避免文本渲染时双转义）</li>
  * </ul>
  */
-public class Message {
-
-    private final String id;
-    private final String senderId;
-    private final String receiverId;
-    private final Integer type;
-    private final String title;
-    private final String content;
-    private final ReadStatus isRead;
-    private final LocalDateTime readTime;
-    private final String businessId;
-    private final MessageStatus msgStatus;
-    private final LocalDateTime recalledAt;
-    private final LocalDateTime createTime;
-
-    private Message(
-            String id,
-            String senderId,
-            String receiverId,
-            Integer type,
-            String title,
-            String content,
-            ReadStatus isRead,
-            LocalDateTime readTime,
-            String businessId,
-            MessageStatus msgStatus,
-            LocalDateTime recalledAt,
-            LocalDateTime createTime) {
-        this.id = id;
-        this.senderId = senderId;
-        this.receiverId = receiverId;
-        this.type = type;
-        this.title = title;
-        this.content = content;
-        this.isRead = isRead;
-        this.readTime = readTime;
-        this.businessId = businessId;
-        this.msgStatus = msgStatus;
-        this.recalledAt = recalledAt;
-        this.createTime = createTime;
-    }
-
-    // ==================== Getters ====================
-
-    public String id() {
-        return id;
-    }
-
-    public String senderId() {
-        return senderId;
-    }
-
-    public String receiverId() {
-        return receiverId;
-    }
-
-    public Integer type() {
-        return type;
-    }
-
-    public String title() {
-        return title;
-    }
-
-    public String content() {
-        return content;
-    }
-
-    public ReadStatus isRead() {
-        return isRead;
-    }
-
-    public LocalDateTime readTime() {
-        return readTime;
-    }
-
-    public String businessId() {
-        return businessId;
-    }
-
-    public MessageStatus msgStatus() {
-        return msgStatus;
-    }
-
-    public LocalDateTime recalledAt() {
-        return recalledAt;
-    }
-
-    public LocalDateTime createTime() {
-        return createTime;
-    }
+public record Message(
+        String id,
+        String senderId,
+        String receiverId,
+        MessageType type,
+        String title,
+        String content,
+        ReadStatus isRead,
+        LocalDateTime readTime,
+        String businessId,
+        MessageStatus msgStatus,
+        LocalDateTime recalledAt,
+        LocalDateTime createTime) {
 
     // ==================== Factory ====================
 
     /**
      * 创建普通消息
      */
-    public static MessageCreateResult create(
-            String senderId, String receiverId, Integer type, String title, String content, String businessId) {
-        Message aggregate = new Message(
+    public static Message create(
+            String senderId, String receiverId, MessageType type, String title, String content, String businessId) {
+        return new Message(
                 null,
                 senderId,
                 receiverId,
                 type,
-                escapeHtml(title),
-                escapeHtml(content),
+                title,
+                content,
                 ReadStatus.UNREAD,
                 null,
                 businessId,
                 MessageStatus.SENT,
                 null,
-                null);
-        return new MessageCreateResult(aggregate, new MessageSentEvent(null, senderId, receiverId, type));
+                LocalDateTime.now());
     }
 
     /**
      * 创建系统消息
      */
-    public static MessageCreateResult createSystem(String receiverId, String title, String content, String businessId) {
-        Message aggregate = new Message(
+    public static Message createSystem(String receiverId, String title, String content, String businessId) {
+        return new Message(
                 null,
                 null,
                 receiverId,
-                Integer.valueOf(MessageType.SYSTEM.getCode()),
-                escapeHtml(title),
-                escapeHtml(content),
+                MessageType.SYSTEM,
+                title,
+                content,
                 ReadStatus.UNREAD,
                 null,
                 businessId,
+                MessageStatus.SENT,
                 null,
-                null,
-                null);
-        return new MessageCreateResult(
-                aggregate, new MessageSentEvent(null, null, receiverId, Integer.valueOf(MessageType.SYSTEM.getCode())));
+                LocalDateTime.now());
     }
 
     // ==================== Reconstruction ====================
@@ -169,7 +85,7 @@ public class Message {
             String id,
             String senderId,
             String receiverId,
-            Integer type,
+            MessageType type,
             String title,
             String content,
             ReadStatus isRead,
@@ -210,26 +126,19 @@ public class Message {
     // ==================== State Transitions ====================
 
     /**
-     * 发送消息（返回领域事件）
-     */
-    public MessageSentEvent send() {
-        return new MessageSentEvent(this.id, this.senderId, this.receiverId, this.type);
-    }
-
-    /**
-     * 标记消息为已读
+     * 标记消息为已读（幂等：已读返回自身）。
      *
-     * @return 包含更新后聚合根和领域事件的结果；如果已读则返回 null
+     * @return 已读后的消息；若本就已读则返回当前实例
      * @throws UnauthorizedOperationException 如果 userId 不是接收者
      */
-    public MessageReadResult read(String userId) {
-        if (!this.receiverId.equals(userId)) {
+    public Message read(String userId) {
+        if (!isOwnedBy(userId)) {
             throw new UnauthorizedOperationException("Only receiver can read this message");
         }
         if (ReadStatus.READ == this.isRead) {
-            return null;
+            return this;
         }
-        Message updated = new Message(
+        return new Message(
                 this.id,
                 this.senderId,
                 this.receiverId,
@@ -242,7 +151,6 @@ public class Message {
                 this.msgStatus,
                 this.recalledAt,
                 this.createTime);
-        return new MessageReadResult(updated, new MessageReadEvent(this.id, userId));
     }
 
     /**
@@ -281,53 +189,17 @@ public class Message {
     }
 
     /**
-     * 删除消息
+     * 删除消息（仅校验接收者权限；删除动作由应用层执行）。
      *
-     * @return 领域事件
      * @throws UnauthorizedOperationException 如果 userId 不是接收者
      */
-    public MessageDeletedEvent delete(String userId) {
-        if (!this.receiverId.equals(userId)) {
+    public void delete(String userId) {
+        if (!isOwnedBy(userId)) {
             throw new UnauthorizedOperationException("Not authorized to delete");
         }
-        return new MessageDeletedEvent(this.id, userId);
     }
 
-    // ==================== Internal ====================
-
-    private static String escapeHtml(String input) {
-        if (input == null) {
-            return null;
-        }
-        return input.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#x27;");
-    }
-
-    // ==================== Result Records ====================
-
-    public record MessageCreateResult(Message aggregate, MessageSentEvent event) {}
-
-    public record MessageReadResult(Message aggregate, MessageReadEvent event) {}
+    // ==================== Result Record ====================
 
     public record MessageRecallResult(Message aggregate, MessageRecalledEvent event) {}
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Message other)) return false;
-        return id != null && id.equals(other.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : 0;
-    }
-
-    @Override
-    public String toString() {
-        return "Message{id=" + id + ", type=" + type + ", msgStatus=" + msgStatus + "}";
-    }
 }

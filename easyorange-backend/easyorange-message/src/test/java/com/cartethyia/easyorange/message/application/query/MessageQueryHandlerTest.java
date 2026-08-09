@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
+import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
@@ -53,7 +54,7 @@ class MessageQueryHandlerTest {
                 MESSAGE_ID,
                 SENDER_ID,
                 USER_ID,
-                2,
+                MessageType.CHAT,
                 "标题",
                 "内容",
                 ReadStatus.UNREAD,

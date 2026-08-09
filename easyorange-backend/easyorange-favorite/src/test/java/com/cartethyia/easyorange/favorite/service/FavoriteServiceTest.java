@@ -185,10 +185,10 @@ class FavoriteServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.total()).isEqualTo(2L);
         assertThat(result.records()).hasSize(2);
-        assertThat(result.records().get(0).getId()).isEqualTo("1");
-        assertThat(result.records().get(0).getProductId()).isEqualTo("2001");
-        assertThat(result.records().get(1).getId()).isEqualTo("2");
-        assertThat(result.records().get(1).getProductId()).isEqualTo("2002");
+        assertThat(result.records().get(0).id()).isEqualTo("1");
+        assertThat(result.records().get(0).productId()).isEqualTo("2001");
+        assertThat(result.records().get(1).id()).isEqualTo("2");
+        assertThat(result.records().get(1).productId()).isEqualTo("2002");
     }
 
     @Test

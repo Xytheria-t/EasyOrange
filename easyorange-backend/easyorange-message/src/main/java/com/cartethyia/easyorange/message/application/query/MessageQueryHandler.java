@@ -7,7 +7,6 @@ import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
-import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
@@ -107,8 +106,8 @@ public class MessageQueryHandler {
                 .id(aggregate.id())
                 .senderId(aggregate.senderId())
                 .receiverId(aggregate.receiverId())
-                .type(aggregate.type())
-                .typeDesc(MessageType.getDescByCode(String.valueOf(aggregate.type())))
+                .type(aggregate.type() == null ? null : Integer.valueOf(aggregate.type().getCode()))
+                .typeDesc(aggregate.type() == null ? null : aggregate.type().getDesc())
                 .title(aggregate.title())
                 .content(aggregate.content())
                 .isRead(Integer.valueOf(aggregate.isRead().getCode()))

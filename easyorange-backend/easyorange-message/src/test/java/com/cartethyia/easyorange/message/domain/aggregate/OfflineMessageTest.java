@@ -1,8 +1,10 @@
 package com.cartethyia.easyorange.message.domain.aggregate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.cartethyia.easyorange.message.domain.constant.MessageConstant;
+import com.cartethyia.easyorange.message.domain.enums.PushStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +27,7 @@ class OfflineMessageTest {
         assertThat(aggregate.userId()).isEqualTo("u001");
         assertThat(aggregate.messageId()).isEqualTo("m001");
         assertThat(aggregate.pushChannel()).isEqualTo("email");
-        assertThat(aggregate.pushStatus()).isEqualTo(MessageConstant.PUSH_STATUS_PENDING);
+        assertThat(aggregate.pushStatus()).isEqualTo(PushStatus.PENDING);
         assertThat(aggregate.retryCount()).isEqualTo(MessageConstant.DEFAULT_RETRY_COUNT);
         assertThat(aggregate.maxRetryCount()).isEqualTo(MessageConstant.DEFAULT_MAX_RETRY_COUNT);
     }
@@ -35,13 +37,13 @@ class OfflineMessageTest {
     @Test
     @DisplayName("fromRaw 应正确重建所有字段")
     void fromRaw_shouldReconstructAllFields() {
-        var aggregate = OfflineMessage.fromRaw("id-1", "u001", "m001", "sms", MessageConstant.PUSH_STATUS_PUSHED, 2, 5);
+        var aggregate = OfflineMessage.fromRaw("id-1", "u001", "m001", "sms", PushStatus.PUSHED, 2, 5);
 
         assertThat(aggregate.id()).isEqualTo("id-1");
         assertThat(aggregate.userId()).isEqualTo("u001");
         assertThat(aggregate.messageId()).isEqualTo("m001");
         assertThat(aggregate.pushChannel()).isEqualTo("sms");
-        assertThat(aggregate.pushStatus()).isEqualTo(MessageConstant.PUSH_STATUS_PUSHED);
+        assertThat(aggregate.pushStatus()).isEqualTo(PushStatus.PUSHED);
         assertThat(aggregate.retryCount()).isEqualTo(2);
         assertThat(aggregate.maxRetryCount()).isEqualTo(5);
     }
@@ -74,7 +76,7 @@ class OfflineMessageTest {
     @DisplayName("canRetry — retryCount 小于 maxRetryCount 应返回 true")
     void canRetry_whenUnderMax_shouldReturnTrue() {
         var aggregate =
-                OfflineMessage.fromRaw("id-1", "u001", "m001", "email", MessageConstant.PUSH_STATUS_FAILED, 0, 3);
+                OfflineMessage.fromRaw("id-1", "u001", "m001", "email", PushStatus.FAILED, 0, 3);
 
         assertThat(aggregate.canRetry()).isTrue();
     }
@@ -83,7 +85,7 @@ class OfflineMessageTest {
     @DisplayName("canRetry — retryCount 等于 maxRetryCount 应返回 false")
     void canRetry_whenAtMax_shouldReturnFalse() {
         var aggregate =
-                OfflineMessage.fromRaw("id-1", "u001", "m001", "email", MessageConstant.PUSH_STATUS_FAILED, 3, 3);
+                OfflineMessage.fromRaw("id-1", "u001", "m001", "email", PushStatus.FAILED, 3, 3);
 
         assertThat(aggregate.canRetry()).isFalse();
     }
@@ -96,7 +98,7 @@ class OfflineMessageTest {
         var aggregate = OfflineMessage.create("u001", "m001", "email");
         var pushed = aggregate.markAsPushed();
 
-        assertThat(pushed.pushStatus()).isEqualTo(MessageConstant.PUSH_STATUS_PUSHED);
+        assertThat(pushed.pushStatus()).isEqualTo(PushStatus.PUSHED);
         assertThat(pushed.retryCount()).isEqualTo(aggregate.retryCount());
         // 不变字段应保持不变
         assertThat(pushed.id()).isEqualTo(aggregate.id());
@@ -105,7 +107,7 @@ class OfflineMessageTest {
         assertThat(pushed.pushChannel()).isEqualTo(aggregate.pushChannel());
         assertThat(pushed.maxRetryCount()).isEqualTo(aggregate.maxRetryCount());
         // 原始对象不受影响（不可变性）
-        assertThat(aggregate.pushStatus()).isEqualTo(MessageConstant.PUSH_STATUS_PENDING);
+        assertThat(aggregate.pushStatus()).isEqualTo(PushStatus.PENDING);
     }
 
     // ==================== State Transitions: markAsFailed ====================
@@ -116,7 +118,7 @@ class OfflineMessageTest {
         var aggregate = OfflineMessage.create("u001", "m001", "email");
         var failed = aggregate.markAsFailed();
 
-        assertThat(failed.pushStatus()).isEqualTo(MessageConstant.PUSH_STATUS_FAILED);
+        assertThat(failed.pushStatus()).isEqualTo(PushStatus.FAILED);
         assertThat(failed.retryCount()).isEqualTo(aggregate.retryCount());
         // 不变字段应保持不变
         assertThat(failed.id()).isEqualTo(aggregate.id());
@@ -125,7 +127,7 @@ class OfflineMessageTest {
         assertThat(failed.pushChannel()).isEqualTo(aggregate.pushChannel());
         assertThat(failed.maxRetryCount()).isEqualTo(aggregate.maxRetryCount());
         // 原始对象不受影响
-        assertThat(aggregate.pushStatus()).isEqualTo(MessageConstant.PUSH_STATUS_PENDING);
+        assertThat(aggregate.pushStatus()).isEqualTo(PushStatus.PENDING);
     }
 
     // ==================== State Transitions: incrementRetry ====================
@@ -146,5 +148,14 @@ class OfflineMessageTest {
         assertThat(retried.maxRetryCount()).isEqualTo(aggregate.maxRetryCount());
         // 原始对象不受影响
         assertThat(aggregate.retryCount()).isEqualTo(MessageConstant.DEFAULT_RETRY_COUNT);
+    }
+
+    @Test
+    @DisplayName("incrementRetry 达上限时抛异常")
+    void incrementRetry_atMax_shouldThrow() {
+        var aggregate =
+                OfflineMessage.fromRaw("id-1", "u001", "m001", "email", PushStatus.FAILED, 3, 3);
+
+        assertThatThrownBy(aggregate::incrementRetry).isInstanceOf(IllegalStateException.class);
     }
 }

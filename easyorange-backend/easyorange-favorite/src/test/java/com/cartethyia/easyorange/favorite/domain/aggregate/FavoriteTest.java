@@ -28,11 +28,11 @@ class FavoriteTest {
 
             Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID));
 
-            assertThat(favorite.getUserId()).isEqualTo(USER_ID);
-            assertThat(favorite.getProductId()).isEqualTo(PRODUCT_ID);
-            assertThat(favorite.getId()).isNull();
-            assertThat(favorite.getCreateTime()).isNotNull();
-            assertThat(favorite.getCreateTime()).isAfterOrEqualTo(before);
+            assertThat(favorite.userId()).isEqualTo(USER_ID);
+            assertThat(favorite.productId()).isEqualTo(PRODUCT_ID);
+            assertThat(favorite.id()).isNull();
+            assertThat(favorite.createTime()).isNotNull();
+            assertThat(favorite.createTime()).isAfterOrEqualTo(before);
         }
 
         @Test
@@ -78,39 +78,10 @@ class FavoriteTest {
 
             Favorite favorite = Favorite.reconstitute(FAVORITE_ID, USER_ID, PRODUCT_ID, createTime);
 
-            assertThat(favorite.getId()).isEqualTo(FAVORITE_ID);
-            assertThat(favorite.getUserId()).isEqualTo(USER_ID);
-            assertThat(favorite.getProductId()).isEqualTo(PRODUCT_ID);
-            assertThat(favorite.getCreateTime()).isEqualTo(createTime);
-        }
-    }
-
-    @Nested
-    @DisplayName("belongsTo")
-    class BelongsToTests {
-
-        @Test
-        @DisplayName("userId 匹配时返回 true")
-        void belongsTo_sameUser_returnsTrue() {
-            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID));
-
-            assertThat(favorite.belongsTo(USER_ID)).isTrue();
-        }
-
-        @Test
-        @DisplayName("userId 不匹配时返回 false")
-        void belongsTo_differentUser_returnsFalse() {
-            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID));
-
-            assertThat(favorite.belongsTo("other-user")).isFalse();
-        }
-
-        @Test
-        @DisplayName("传入 null userId 时返回 false（Objects.equals 安全处理 null）")
-        void belongsTo_nullUserId_returnsFalse() {
-            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID));
-
-            assertThat(favorite.belongsTo(null)).isFalse();
+            assertThat(favorite.id()).isEqualTo(FAVORITE_ID);
+            assertThat(favorite.userId()).isEqualTo(USER_ID);
+            assertThat(favorite.productId()).isEqualTo(PRODUCT_ID);
+            assertThat(favorite.createTime()).isEqualTo(createTime);
         }
     }
 

@@ -6,11 +6,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class MessageConstant {
 
-    // ==================== 推送状态 ====================
-    public static final int PUSH_STATUS_PENDING = 0;
-    public static final int PUSH_STATUS_PUSHED = 1;
-    public static final int PUSH_STATUS_FAILED = 2;
-
     // ==================== 重试常量 ====================
     public static final int DEFAULT_RETRY_COUNT = 0;
     public static final int DEFAULT_MAX_RETRY_COUNT = 3;

@@ -65,10 +65,10 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
     @Override
     public Favorite save(Favorite favorite) {
         FavoriteDO softDeleted =
-                mapper.selectSoftDeletedByUserIdAndProductId(favorite.getUserId(), favorite.getProductId());
+                mapper.selectSoftDeletedByUserIdAndProductId(favorite.userId(), favorite.productId());
 
         if (softDeleted != null) {
-            mapper.reviveById(softDeleted.getId(), favorite.getUserId());
+            mapper.reviveById(softDeleted.getId(), favorite.userId());
             FavoriteDO revived = mapper.selectById(softDeleted.getId());
             return Favorite.reconstitute(
                     revived.getId(), revived.getUserId(), revived.getProductId(), revived.getCreateTime());
@@ -117,9 +117,9 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
 
     private FavoriteDO toDataObject(Favorite favorite) {
         FavoriteDO dataObject = new FavoriteDO();
-        dataObject.setId(favorite.getId());
-        dataObject.setUserId(favorite.getUserId());
-        dataObject.setProductId(favorite.getProductId());
+        dataObject.setId(favorite.id());
+        dataObject.setUserId(favorite.userId());
+        dataObject.setProductId(favorite.productId());
         return dataObject;
     }
 }

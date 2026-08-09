@@ -48,7 +48,7 @@ public class FavoriteService {
                 .orElseThrow(() -> BusinessException.of("未收藏过该商品"));
 
         favorite.validateOwnership(userId);
-        favoriteRepository.removeById(favorite.getId());
+        favoriteRepository.removeById(favorite.id());
     }
 
     @Transactional(rollbackFor = Exception.class)

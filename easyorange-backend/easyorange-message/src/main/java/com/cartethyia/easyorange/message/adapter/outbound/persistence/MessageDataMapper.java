@@ -2,6 +2,8 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
+import com.cartethyia.easyorange.message.domain.enums.MessageType;
+import com.cartethyia.easyorange.message.domain.enums.PushStatus;
 import java.util.List;
 import org.mapstruct.Mapper;
 
@@ -18,7 +20,7 @@ public interface MessageDataMapper {
                 .id(aggregate.id())
                 .senderId(aggregate.senderId())
                 .receiverId(aggregate.receiverId())
-                .type(aggregate.type())
+                .type(typeCode(aggregate.type()))
                 .title(aggregate.title())
                 .content(aggregate.content())
                 .isRead(aggregate.isRead())
@@ -37,7 +39,7 @@ public interface MessageDataMapper {
                 entity.getId(),
                 entity.getSenderId(),
                 entity.getReceiverId(),
-                entity.getType(),
+                toType(entity.getType()),
                 entity.getTitle(),
                 entity.getContent(),
                 entity.getIsRead(),
@@ -66,7 +68,7 @@ public interface MessageDataMapper {
                 .userId(aggregate.userId())
                 .messageId(aggregate.messageId())
                 .pushChannel(aggregate.pushChannel())
-                .pushStatus(aggregate.pushStatus())
+                .pushStatus(pushStatusCode(aggregate.pushStatus()))
                 .retryCount(aggregate.retryCount())
                 .maxRetryCount(aggregate.maxRetryCount())
                 .build();
@@ -81,7 +83,7 @@ public interface MessageDataMapper {
                 entity.getUserId(),
                 entity.getMessageId(),
                 entity.getPushChannel(),
-                entity.getPushStatus(),
+                toPushStatus(entity.getPushStatus()),
                 entity.getRetryCount(),
                 entity.getMaxRetryCount());
     }
@@ -91,5 +93,23 @@ public interface MessageDataMapper {
             return List.of();
         }
         return entities.stream().map(this::toAggregate).toList();
+    }
+
+    // ==================== Enum ↔ TINYINT 转换（DB 列存 int，domain 用语义枚举） ====================
+
+    private static Integer typeCode(MessageType type) {
+        return type == null ? null : Integer.valueOf(type.getCode());
+    }
+
+    private static MessageType toType(Integer code) {
+        return code == null ? null : MessageType.fromCode(String.valueOf(code));
+    }
+
+    private static Integer pushStatusCode(PushStatus status) {
+        return status == null ? null : Integer.valueOf(status.getCode());
+    }
+
+    private static PushStatus toPushStatus(Integer code) {
+        return code == null ? null : PushStatus.fromCode(String.valueOf(code));
     }
 }

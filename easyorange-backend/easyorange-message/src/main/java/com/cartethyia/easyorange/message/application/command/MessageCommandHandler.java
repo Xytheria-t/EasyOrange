@@ -6,12 +6,9 @@ import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
 import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
-import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageCreateResult;
-import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageReadResult;
 import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageRecallResult;
 import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
-import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
@@ -46,15 +43,13 @@ public class MessageCommandHandler {
         String filteredContent = sensitiveWordFilterService.filter(command.content());
         String filteredTitle = sensitiveWordFilterService.filter(command.title());
 
-        MessageCreateResult result = Message.create(
+        Message saved = messageRepository.save(Message.create(
                 senderId,
                 command.receiverId(),
                 normalizeType(command.type()),
                 filteredTitle,
                 filteredContent,
-                command.businessId());
-
-        Message saved = messageRepository.save(result.aggregate());
+                command.businessId()));
 
         boolean online = messageNotifier.isUserOnline(saved.receiverId());
         offlineMessageStoreService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);
@@ -69,10 +64,8 @@ public class MessageCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(SendSystemMessageCommand command) {
-        MessageCreateResult result =
-                Message.createSystem(command.receiverId(), command.title(), command.content(), command.businessId());
-
-        Message saved = messageRepository.save(result.aggregate());
+        Message saved = messageRepository.save(
+                Message.createSystem(command.receiverId(), command.title(), command.content(), command.businessId()));
 
         boolean online = messageNotifier.isUserOnline(saved.receiverId());
         offlineMessageStoreService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);
@@ -85,7 +78,7 @@ public class MessageCommandHandler {
                             "title", saved.title() != null ? saved.title() : "",
                             "content", saved.content() != null ? saved.content() : "",
                             "businessId", saved.businessId() != null ? saved.businessId() : "",
-                            "type", saved.type(),
+                            "type", saved.type() == null ? null : Integer.valueOf(saved.type().getCode()),
                             "createTime",
                                     saved.createTime() != null
                                             ? saved.createTime().toString()
@@ -106,10 +99,7 @@ public class MessageCommandHandler {
         BizRequire.requireTrue(aggregate.isOwnedBy(userId), MessageResultCode.MESSAGE_NOT_OWNER);
 
         if (aggregate.isUnread()) {
-            MessageReadResult readResult = aggregate.read(userId);
-            if (readResult != null) {
-                messageRepository.update(readResult.aggregate());
-            }
+            messageRepository.update(aggregate.read(userId));
         }
     }
 
@@ -125,10 +115,7 @@ public class MessageCommandHandler {
             try {
                 Message aggregate = messageRepository.findById(messageId).orElse(null);
                 if (aggregate != null && aggregate.isOwnedBy(userId) && aggregate.isUnread()) {
-                    MessageReadResult readResult = aggregate.read(userId);
-                    if (readResult != null) {
-                        messageRepository.update(readResult.aggregate());
-                    }
+                    messageRepository.update(aggregate.read(userId));
                 }
             } catch (Exception e) {
                 log.warn("action=mark_read_batch_fail messageId={}", messageId, e);
@@ -181,7 +168,7 @@ public class MessageCommandHandler {
 
         BizRequire.requireTrue(aggregate.isOwnedBy(userId), MessageResultCode.MESSAGE_NOT_OWNER);
 
-        MessageDeletedEvent event = aggregate.delete(userId);
+        aggregate.delete(userId);
         messageRepository.delete(command.messageId());
 
         log.info("action=delete_message messageId={} userId={}", command.messageId(), userId);
@@ -193,15 +180,14 @@ public class MessageCommandHandler {
      * REST 发送（ProductDetailPage 联系卖家）不带 type、WS 前端发送 type:0，二者都应在
      * 边界归一化为 CHAT，避免 eo_message.type 落入无效值（0）导致分类/未读统计失准。
      */
-    private static Integer normalizeType(Integer type) {
+    private static MessageType normalizeType(Integer type) {
         if (type == null) {
-            return Integer.valueOf(MessageType.CHAT.getCode());
+            return MessageType.CHAT;
         }
         try {
-            MessageType.fromCode(String.valueOf(type));
-            return type;
+            return MessageType.fromCode(String.valueOf(type));
         } catch (IllegalArgumentException e) {
-            return Integer.valueOf(MessageType.CHAT.getCode());
+            return MessageType.CHAT;
         }
     }
 

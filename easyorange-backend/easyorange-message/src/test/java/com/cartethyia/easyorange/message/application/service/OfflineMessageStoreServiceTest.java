@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
 import com.cartethyia.easyorange.message.domain.constant.MessageConstant;
+import com.cartethyia.easyorange.message.domain.enums.PushStatus;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -45,7 +46,7 @@ class OfflineMessageStoreServiceTest {
             assertThat(saved.userId()).isEqualTo(USER_ID);
             assertThat(saved.messageId()).isEqualTo(MESSAGE_ID);
             assertThat(saved.pushChannel()).isEqualTo(PUSH_CHANNEL);
-            assertThat(saved.pushStatus()).isEqualTo(MessageConstant.PUSH_STATUS_PENDING);
+            assertThat(saved.pushStatus()).isEqualTo(PushStatus.PENDING);
         }
 
         @Test

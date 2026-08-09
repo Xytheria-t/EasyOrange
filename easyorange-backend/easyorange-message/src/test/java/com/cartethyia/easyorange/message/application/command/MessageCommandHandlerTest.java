@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.message.application.service.OfflineMessageStore
 import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
+import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
@@ -70,7 +71,7 @@ class MessageCommandHandlerTest {
                 MESSAGE_ID,
                 USER_ID,
                 RECEIVER_ID,
-                2,
+                MessageType.CHAT,
                 "标题",
                 "hello",
                 ReadStatus.UNREAD,
@@ -86,7 +87,7 @@ class MessageCommandHandlerTest {
                 MESSAGE_ID,
                 USER_ID,
                 RECEIVER_ID,
-                2,
+                MessageType.CHAT,
                 "标题",
                 "hello",
                 ReadStatus.UNREAD,
@@ -114,7 +115,7 @@ class MessageCommandHandlerTest {
                     MESSAGE_ID,
                     USER_ID,
                     RECEIVER_ID,
-                    2,
+                    MessageType.CHAT,
                     "标题",
                     "hello",
                     ReadStatus.UNREAD,
@@ -170,7 +171,7 @@ class MessageCommandHandlerTest {
                     MESSAGE_ID,
                     USER_ID,
                     RECEIVER_ID,
-                    2,
+                    MessageType.CHAT,
                     "标题",
                     "包含***",
                     ReadStatus.UNREAD,
@@ -206,7 +207,7 @@ class MessageCommandHandlerTest {
             try {
                 commandHandler.handle(command);
 
-                verify(messageRepository).save(argThat(msg -> msg.type() == 2));
+                verify(messageRepository).save(argThat(msg -> msg.type() == MessageType.CHAT));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -228,7 +229,7 @@ class MessageCommandHandlerTest {
                     MESSAGE_ID,
                     null,
                     RECEIVER_ID,
-                    1,
+                    MessageType.SYSTEM,
                     "系统通知",
                     "您的商品已审核通过",
                     ReadStatus.UNREAD,
@@ -316,7 +317,7 @@ class MessageCommandHandlerTest {
                     "101",
                     USER_ID,
                     RECEIVER_ID,
-                    2,
+                    MessageType.CHAT,
                     "标题",
                     "hello",
                     ReadStatus.UNREAD,
@@ -329,7 +330,7 @@ class MessageCommandHandlerTest {
                     "102",
                     USER_ID,
                     RECEIVER_ID,
-                    2,
+                    MessageType.CHAT,
                     "标题",
                     "hello",
                     ReadStatus.UNREAD,

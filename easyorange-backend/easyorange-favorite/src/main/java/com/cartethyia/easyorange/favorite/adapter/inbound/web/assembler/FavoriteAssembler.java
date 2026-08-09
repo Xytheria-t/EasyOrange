@@ -26,7 +26,7 @@ public class FavoriteAssembler {
             return PageResult.empty(pageNum, pageSize);
         }
 
-        List<String> productIds = favorites.stream().map(Favorite::getProductId).collect(Collectors.toList());
+        List<String> productIds = favorites.stream().map(Favorite::productId).collect(Collectors.toList());
 
         List<ProductInfo> products = productInfoPort.findProductsByIds(productIds);
         if (products.isEmpty()) {
@@ -46,7 +46,7 @@ public class FavoriteAssembler {
                 productDetailInfos.stream().collect(Collectors.toMap(ProductDetailInfo::id, p -> p, (a, b) -> a));
 
         Map<String, Favorite> favoriteByProductId =
-                favorites.stream().collect(Collectors.toMap(Favorite::getProductId, f -> f, (a, b) -> a));
+                favorites.stream().collect(Collectors.toMap(Favorite::productId, f -> f, (a, b) -> a));
 
         List<FavoriteResponse> responses = productIds.stream()
                 .map(productId -> {
@@ -56,10 +56,10 @@ public class FavoriteAssembler {
                         return null;
                     }
                     return FavoriteResponse.builder()
-                            .id(fav.getId())
-                            .productId(fav.getProductId())
+                            .id(fav.id())
+                            .productId(fav.productId())
                             .product(productDetail)
-                            .createTime(fav.getCreateTime())
+                            .createTime(fav.createTime())
                             .build();
                 })
                 .filter(r -> r != null)
