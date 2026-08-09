@@ -101,7 +101,6 @@ product/
 │   │   ├── StockRestoredEvent.java
 │   │   └── ReportProcessedEvent.java
 │   ├── port/
-│   │   ├── OutboundPort.java            # 标记接口 (跨模块出站端口)
 │   │   ├── ProductCacheEvictionPort.java # 缓存驱逐端口（domain 层，仅 evict）
 │   │   ├── ProductSnapshotPort.java
 │   │   ├── SellerInfoPort.java          # 资产方信息查询 (跨模块)

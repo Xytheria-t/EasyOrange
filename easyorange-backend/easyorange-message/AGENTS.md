@@ -118,7 +118,7 @@ message/
 ## 安全要点
 
 - WebSocket 连接必须 JWT 认证
-- 消息内容 XSS 过滤 (`HtmlUtils.htmlEscape`)
+- 消息标题/内容原样存储，XSS 防护在渲染端文本输出（前端 `escapeHtml` 处理，聚合根不转义）
 - 用户只能读取/删除自己的消息
 - 消息发送限流
 

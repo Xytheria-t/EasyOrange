@@ -1,6 +1,6 @@
 # EasyOrange — LLM × DDD：Java 架构工程化实战
 
-> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。**两条技术主线**：AI 应用工程化（6 决策点 + 轻量 Agent 编排 + 8 件套工程化）+ 架构落地（DDD + 分布式可靠性 + ADR/ArchUnit/PIT 治理三板斧）。**业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**工程亮点**：DDD 六边形 + CQRS · 事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路 · 分布式锁防超卖 · AI 8 件套（Spring AI 2.0 框架化 + Redisson 令牌桶 + stale 降级 + Prompt YAML + TokenBudget + Embedding 真实现 + 多模态 Vision + 4 路并行 Tool Calling）· ES 搜索 + IK 分词 · ArchUnit 11 条规则 · 9 ADR · 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重门禁）· SpringDoc OpenAPI 3 · Biome 0 errors。**2025 年 11 月启动**。
+> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。**两条技术主线**：AI 应用工程化（6 决策点 + 轻量 Agent 编排 + 8 件套工程化）+ 架构落地（DDD + 分布式可靠性 + ADR/ArchUnit/PIT 治理三板斧）。**业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**工程亮点**：DDD 六边形 + CQRS · 事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路 · 分布式锁防超卖 · AI 8 件套（Spring AI 2.0 框架化 + Redisson 令牌桶 + stale 降级 + Prompt YAML + TokenBudget + Embedding 真实现 + 多模态 Vision + 4 路并行 Tool Calling）· ES 搜索 + IK 分词 · ArchUnit 10 条规则 · 9 ADR · 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重门禁）· SpringDoc OpenAPI 3 · Biome 0 errors。**2025 年 11 月启动**。
 
 ## 技术栈
 
@@ -68,7 +68,7 @@
 - 审核结果触发站内消息通知（AUDIT_SUCCESS / AUDIT_REJECTED）
 - 审核记录持久化至 `eo_product_audit_log` 表（action: 1通过/2拒绝/3重提交; 含维度JSON+前后状态快照）
 
-状态机定义在 `ProductStatus.java`：枚举按生命周期声明（DRAFT → PENDING_REVIEW → REJECTED → ONLINE → OFFLINE → SOLD），所有合法转换集中在一张 `ALLOWED_TRANSITIONS` 表（单一事实来源，行内注释标注各转换的触发动作），聚合根通过 `transitionTo(target, action)` 统一守卫。终端状态用 `isTerminal()`（仅 SOLD）判断。delete 不改变 status，单独由 `canDelete()` 守卫（SOLD 状态下的商品不可删除以保留订单追溯记录）。库存恢复不变量 `canRestoreStock()`（SOLD/OFFLINE 不可恢复库存）由 `Product.restoreStock()` 调用。进入 ONLINE 只有 `approve`（审核通过）和 `putOnline`（管理员直上架）两条路径，统一经 `Product.validateOnline()`（isComplete + hasValidPrice + hasStock）守卫，禁止新增第三条绕过校验的上架路径。
+状态机定义在 `ProductStatus.java`：枚举按生命周期声明（DRAFT → PENDING_REVIEW → REJECTED → ONLINE → OFFLINE → SOLD），所有合法转换集中在一张 `ALLOWED_TRANSITIONS` 表（单一事实来源，行内注释标注各转换的触发动作），聚合根通过 `transitionTo(target)` 统一守卫。终端状态用 `isTerminal()`（仅 SOLD）判断。delete 不改变 status，单独由 `canDelete()` 守卫（SOLD 状态下的商品不可删除以保留订单追溯记录）。库存恢复不变量 `canRestoreStock()`（SOLD/OFFLINE 不可恢复库存）由 `Product.restoreStock()` 调用。进入 ONLINE 只有 `approve`（审核通过）和 `putOnline`（管理员直上架）两条路径，统一经 `Product.validateOnline()`（isComplete + hasValidPrice + hasStock）守卫，禁止新增第三条绕过校验的上架路径。
 
 ## AI 能力清单
 
@@ -117,7 +117,7 @@ easy-orange/
 ## 后端架构核心原则
 
 1. **DDD 分层**: domain → application → adapter，依赖方向单向向内
-2. **CQRS**: 命令与查询分离 (product, order, payment 模块)
+2. **CQRS**: 命令与查询分离 (product, order, payment, message 模块)
 3. **六边形架构**: domain 层通过 port 接口与外部解耦
 4. **不可变性**: 聚合根用 `@Builder(toBuilder = true)`，值对象用 `record`
 5. **领域事件**: `DomainEventPublisher` 发布事件 → `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher` → Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子） → 异步从 `EVENT_PUBLICATION` 读取并发布到 **RabbitMQ Topic Exchange** (`eo.domain.events`)。路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）→ `DlqRetryScheduler` 每 5 分钟扫描 DLQ，重试次数 < 3 重投主队列，超过 3 次的毒消息转储 `eo.dlq.terminal` 等待人工介入。Modulith 的 at-least-once 语义 + 消费者 `EventIdempotencyChecker` 确保精确一次处理。审计日志同样走 Outbox 模式（`AuditLogAspect` 发布 `AuditLogEvent` → `AuditLogEventConsumer` 异步入库）。采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**traceId 全链路传递**：Brave `TracingFilter` 从 HTTP 头提取 traceId → 写入 MDC → `MdcTaskDecorator` 传递到 @Async 虚拟线程 → `EventMetadataMessagePostProcessor` 发布前把 traceId 注入 RabbitMQ message header → 消费者端 `EventMetadata.from(message, event)` decode 回 MDC → 日志 + Micrometer metrics 统一关联。**已实现 10 个事件消费者**: ProductEventConsumer (内部 CQRS 投影), AiProductEventConsumer (AI 估值/文案), OrderNotificationEventConsumer (站内信), OrderLifecycleEventConsumer (订单生命周期: 取消/退款恢复库存, 完成标记售出), AiCreditEventConsumer (信用分), ProductAuditEventConsumer (审核通知), ReportProcessedEventConsumer (举报通知), WebSocketEventConsumer (消息撤回广播), PaymentMetricsConsumer (支付指标), **AuditLogEventConsumer (审计日志 Outbox 入库)**

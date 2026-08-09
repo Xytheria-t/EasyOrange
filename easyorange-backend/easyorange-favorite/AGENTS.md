@@ -33,7 +33,6 @@ favorite/
     │   ├── Favorite.java              # 收藏聚合根 (不可变)
     │   └── FavoriteCreateSpec.java    # record 收敛 create() 工厂参数
     ├── port/
-    │   ├── OutboundPort.java
     │   └── ProductInfoPort.java       # 商品信息端口
     ├── repository/
     │   └── FavoriteRepository.java    # 仓储接口
