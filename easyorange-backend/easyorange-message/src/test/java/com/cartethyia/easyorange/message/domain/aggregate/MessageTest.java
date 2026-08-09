@@ -42,8 +42,8 @@ class MessageTest {
         @Test
         @DisplayName("标题和内容原样存储，XSS 防护在渲染端文本输出")
         void create_storesRawText_xssHandledAtRender() {
-            Message message =
-                    Message.create(SENDER_ID, RECEIVER_ID, MessageType.CHAT, "<script>alert('xss')</script>", "<b>bold</b>", null);
+            Message message = Message.create(
+                    SENDER_ID, RECEIVER_ID, MessageType.CHAT, "<script>alert('xss')</script>", "<b>bold</b>", null);
 
             assertThat(message.title()).isEqualTo("<script>alert('xss')</script>");
             assertThat(message.content()).isEqualTo("<b>bold</b>");
@@ -70,7 +70,8 @@ class MessageTest {
         @Test
         @DisplayName("系统消息标题和内容原样存储")
         void createSystem_storesRawContent() {
-            Message message = Message.createSystem(RECEIVER_ID, "<script>alert(1)</script>", "<img onerror='alert(1)'>", null);
+            Message message =
+                    Message.createSystem(RECEIVER_ID, "<script>alert(1)</script>", "<img onerror='alert(1)'>", null);
 
             assertThat(message.title()).isEqualTo("<script>alert(1)</script>");
             assertThat(message.content()).isEqualTo("<img onerror='alert(1)'>");

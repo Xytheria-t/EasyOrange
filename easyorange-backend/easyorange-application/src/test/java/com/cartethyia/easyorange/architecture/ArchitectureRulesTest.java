@@ -126,9 +126,9 @@ class ArchitectureRulesTest {
                     var targetPackage = target.getPackageName();
                     if (!targetPackage.contains(".domain.port.") && !targetPackage.contains(".domain.valueobject.")) {
                         events.add(SimpleConditionEvent.violated(
-                            javaClass,
-                            javaClass.getSimpleName() + " -> " + target.getSimpleName() + " (" + targetPackage
-                                + ")"));
+                                javaClass,
+                                javaClass.getSimpleName() + " -> " + target.getSimpleName() + " (" + targetPackage
+                                        + ")"));
                     }
                 }
             }

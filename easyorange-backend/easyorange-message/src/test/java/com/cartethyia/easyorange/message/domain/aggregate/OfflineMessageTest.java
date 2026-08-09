@@ -75,8 +75,7 @@ class OfflineMessageTest {
     @Test
     @DisplayName("canRetry — retryCount 小于 maxRetryCount 应返回 true")
     void canRetry_whenUnderMax_shouldReturnTrue() {
-        var aggregate =
-                OfflineMessage.fromRaw("id-1", "u001", "m001", "email", PushStatus.FAILED, 0, 3);
+        var aggregate = OfflineMessage.fromRaw("id-1", "u001", "m001", "email", PushStatus.FAILED, 0, 3);
 
         assertThat(aggregate.canRetry()).isTrue();
     }
@@ -84,8 +83,7 @@ class OfflineMessageTest {
     @Test
     @DisplayName("canRetry — retryCount 等于 maxRetryCount 应返回 false")
     void canRetry_whenAtMax_shouldReturnFalse() {
-        var aggregate =
-                OfflineMessage.fromRaw("id-1", "u001", "m001", "email", PushStatus.FAILED, 3, 3);
+        var aggregate = OfflineMessage.fromRaw("id-1", "u001", "m001", "email", PushStatus.FAILED, 3, 3);
 
         assertThat(aggregate.canRetry()).isFalse();
     }
@@ -153,8 +151,7 @@ class OfflineMessageTest {
     @Test
     @DisplayName("incrementRetry 达上限时抛异常")
     void incrementRetry_atMax_shouldThrow() {
-        var aggregate =
-                OfflineMessage.fromRaw("id-1", "u001", "m001", "email", PushStatus.FAILED, 3, 3);
+        var aggregate = OfflineMessage.fromRaw("id-1", "u001", "m001", "email", PushStatus.FAILED, 3, 3);
 
         assertThatThrownBy(aggregate::incrementRetry).isInstanceOf(IllegalStateException.class);
     }

@@ -78,7 +78,10 @@ public class MessageCommandHandler {
                             "title", saved.title() != null ? saved.title() : "",
                             "content", saved.content() != null ? saved.content() : "",
                             "businessId", saved.businessId() != null ? saved.businessId() : "",
-                            "type", saved.type() == null ? null : Integer.valueOf(saved.type().getCode()),
+                            "type",
+                                    saved.type() == null
+                                            ? null
+                                            : Integer.valueOf(saved.type().getCode()),
                             "createTime",
                                     saved.createTime() != null
                                             ? saved.createTime().toString()

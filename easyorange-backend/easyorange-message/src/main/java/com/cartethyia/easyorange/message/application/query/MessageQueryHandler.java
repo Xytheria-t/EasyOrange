@@ -106,7 +106,10 @@ public class MessageQueryHandler {
                 .id(aggregate.id())
                 .senderId(aggregate.senderId())
                 .receiverId(aggregate.receiverId())
-                .type(aggregate.type() == null ? null : Integer.valueOf(aggregate.type().getCode()))
+                .type(
+                        aggregate.type() == null
+                                ? null
+                                : Integer.valueOf(aggregate.type().getCode()))
                 .typeDesc(aggregate.type() == null ? null : aggregate.type().getDesc())
                 .title(aggregate.title())
                 .content(aggregate.content())

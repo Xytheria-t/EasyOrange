@@ -71,7 +71,12 @@ public record OfflineMessage(
      */
     public OfflineMessage markAsPushed() {
         return new OfflineMessage(
-                this.id, this.userId, this.messageId, this.pushChannel, PushStatus.PUSHED, this.retryCount,
+                this.id,
+                this.userId,
+                this.messageId,
+                this.pushChannel,
+                PushStatus.PUSHED,
+                this.retryCount,
                 this.maxRetryCount);
     }
 
@@ -80,7 +85,12 @@ public record OfflineMessage(
      */
     public OfflineMessage markAsFailed() {
         return new OfflineMessage(
-                this.id, this.userId, this.messageId, this.pushChannel, PushStatus.FAILED, this.retryCount,
+                this.id,
+                this.userId,
+                this.messageId,
+                this.pushChannel,
+                PushStatus.FAILED,
+                this.retryCount,
                 this.maxRetryCount);
     }
 
@@ -94,7 +104,12 @@ public record OfflineMessage(
             throw new IllegalStateException("已达最大重试次数：" + this.maxRetryCount);
         }
         return new OfflineMessage(
-                this.id, this.userId, this.messageId, this.pushChannel, this.pushStatus, this.retryCount + 1,
+                this.id,
+                this.userId,
+                this.messageId,
+                this.pushChannel,
+                this.pushStatus,
+                this.retryCount + 1,
                 this.maxRetryCount);
     }
 }

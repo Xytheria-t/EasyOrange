@@ -64,8 +64,7 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
 
     @Override
     public Favorite save(Favorite favorite) {
-        FavoriteDO softDeleted =
-                mapper.selectSoftDeletedByUserIdAndProductId(favorite.userId(), favorite.productId());
+        FavoriteDO softDeleted = mapper.selectSoftDeletedByUserIdAndProductId(favorite.userId(), favorite.productId());
 
         if (softDeleted != null) {
             mapper.reviveById(softDeleted.getId(), favorite.userId());
