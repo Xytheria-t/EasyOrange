@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.payment.domain.aggregate;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentAction;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
@@ -161,27 +160,27 @@ public class Payment {
     // ==================== Guard Methods ====================
 
     public boolean canPay() {
-        return PaymentAction.PAY.canApply(this.status);
+        return PaymentStatusGuard.canPay(this.status);
     }
 
     public boolean canRefund() {
-        return PaymentAction.REFUND.canApply(this.status);
+        return PaymentStatusGuard.canRefund(this.status);
     }
 
     public boolean canClose() {
-        return PaymentAction.CLOSE.canApply(this.status);
+        return PaymentStatusGuard.canClose(this.status);
     }
 
     public boolean canFail() {
-        return PaymentAction.FAIL.canApply(this.status);
+        return PaymentStatusGuard.canFail(this.status);
     }
 
     public boolean canConfirmPay() {
-        return PaymentAction.CONFIRM_PAY.canApply(this.status);
+        return PaymentStatusGuard.canConfirmPay(this.status);
     }
 
     public boolean canConfirmRefund() {
-        return PaymentAction.CONFIRM_REFUND.canApply(this.status);
+        return PaymentStatusGuard.canConfirmRefund(this.status);
     }
 
     // ==================== State Transitions ====================

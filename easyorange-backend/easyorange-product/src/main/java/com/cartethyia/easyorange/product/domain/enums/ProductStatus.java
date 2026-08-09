@@ -2,7 +2,8 @@ package com.cartethyia.easyorange.product.domain.enums;
 
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
-import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -23,20 +24,26 @@ public enum ProductStatus implements BaseCodeEnum {
 
     private final String desc;
 
+    // === 状态机：单一事实来源 ===
+    // 键为当前状态，值为允许到达的目标状态；各转换的触发动作见行内注释。
+    private static final Map<ProductStatus, Set<ProductStatus>> ALLOWED_TRANSITIONS = Map.of(
+            DRAFT, Set.of(PENDING_REVIEW, ONLINE), // 提交审核 submitForReview / 管理员直接上架 putOnline（绕过审核）
+            PENDING_REVIEW, Set.of(ONLINE, REJECTED), // 审核通过 approve / 审核拒绝 reject
+            REJECTED, Set.of(PENDING_REVIEW), // 重新提交审核 submitForReview（循环）
+            ONLINE, Set.of(OFFLINE, SOLD), // 下架 takeOffline / 标记售出 markAsSold（订单完成时触发）
+            OFFLINE, Set.of(ONLINE) // 重新上架 putOnline（relist）
+            );
+
     public static ProductStatus fromCode(String code) {
         return BaseCodeEnum.fromCode(ProductStatus.class, code);
     }
 
     /**
      * 从当前状态到目标状态的转换是否合法。
-     * <p>
-     * 状态机合法转换的**唯一事实来源**是 {@link ProductAction}，本方法由此派生，
-     * 避免两份状态机定义漂移。
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean canTransitionTo(ProductStatus target) {
-        return Arrays.stream(ProductAction.values())
-                .anyMatch(action -> action.sources().contains(this) && action.target() == target);
+        return ALLOWED_TRANSITIONS.getOrDefault(this, Set.of()).contains(target);
     }
 
     /**
