@@ -29,6 +29,13 @@ class BizRequireTest {
         void notNull_nonNullObject_noException() {
             assertDoesNotThrow(() -> BizRequire.notNull(new Object(), "不能为空"));
         }
+
+        @Test
+        @DisplayName("校验通过时返回入参，支持赋值")
+        void notNull_nonNullObject_returnsSameObject() {
+            var value = new Object();
+            assertSame(value, BizRequire.notNull(value, "不能为空"));
+        }
     }
 
     @Nested
@@ -75,6 +82,13 @@ class BizRequireTest {
         void notBlank_valid_noException() {
             assertDoesNotThrow(() -> BizRequire.notBlank("hello", "不能为空"));
         }
+
+        @Test
+        @DisplayName("校验通过时返回入参")
+        void notBlank_valid_returnsSameString() {
+            var value = "hello";
+            assertSame(value, BizRequire.notBlank(value, "不能为空"));
+        }
     }
 
     @Nested
@@ -97,6 +111,13 @@ class BizRequireTest {
         @DisplayName("非空集合不抛出")
         void notEmpty_nonEmptyCollection_noException() {
             assertDoesNotThrow(() -> BizRequire.notEmpty(List.of("a"), "不能为空"));
+        }
+
+        @Test
+        @DisplayName("校验通过时返回原集合并保持具体类型")
+        void notEmpty_nonEmptyCollection_returnsSameCollection() {
+            List<String> list = List.of("a");
+            assertSame(list, BizRequire.notEmpty(list, "不能为空"));
         }
     }
 }
