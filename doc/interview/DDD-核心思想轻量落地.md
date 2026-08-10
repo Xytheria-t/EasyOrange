@@ -21,7 +21,7 @@
 - **为什么轻量**：状态机只给**真正有状态生命周期**的聚合上（Order / Product 强状态、Payment 中等），User 没有状态机就不硬造；规则只在「动作表 / 状态机表 / Guard」写一处，不散在应用层。跨聚合一致性交给事件（见 1.4），不搞聚合内嵌反规范化——聚合保持小而纯。
 
 ### 1.2 不变量（Invariant）只写一处
-- **落点**：`Order.createOrder()` 里 `BizRequire` 链——不能认领自己、必须有至少一件资产、金额必须 > 0；状态合法性由 `OrderAction.canApply(status, paymentStatus)` 裁决（`OrderAction.java:96`，每个动作声明 `sources/target/targetPaymentStatus/requiresReason/resultCode/paymentGuard`）。
+- **落点**：`Order.createOrder()` 里 `BizRequire` 链——不能认领自己、必须有至少一件资产、金额必须 > 0；状态合法性由 `OrderAction.canApply(status, paymentStatus)` 裁决（`OrderAction.java:96`，每个动作声明 `sources/target/targetPaymentStatus/closureKind/resultCode/paymentGuard`）。
 - **为什么轻量**：规则**只写一处**，测试直接打聚合根（`Payment` 聚合根测试 75 个全绿）。不需要额外规则引擎 / Guard 框架，`BizRequire` 一个静态方法就够。状态裁决按模块各归其位：**Order 用 `OrderAction` 动作表、Product 用 `ProductStatus.ALLOWED_TRANSITIONS` 表、Payment 用 `PaymentStatusGuard` 谓词**——「状态合法性由谁说了算」这一问要能答出来。
 
 ### 1.3 值对象（Value Object）——按值等价的不可变类型

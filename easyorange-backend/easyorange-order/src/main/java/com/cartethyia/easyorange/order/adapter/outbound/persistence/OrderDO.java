@@ -33,6 +33,8 @@ public class OrderDO extends BaseDO {
     private String remark;
     private String cancelReason;
     private LocalDateTime cancelTime;
+    private String refundReason;
+    private LocalDateTime refundTime;
 
     @Version
     private Integer version;

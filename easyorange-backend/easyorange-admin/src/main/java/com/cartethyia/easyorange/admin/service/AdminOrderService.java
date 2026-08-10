@@ -136,6 +136,8 @@ public class AdminOrderService {
                 .createTime(model.createTime())
                 .updateTime(model.updateTime())
                 .cancelTime(model.cancelTime())
+                .refundReason(model.refundReason())
+                .refundTime(model.refundTime())
                 .build();
     }
 

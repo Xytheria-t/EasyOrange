@@ -37,11 +37,14 @@ public enum OrderStatus implements BaseCodeEnum {
     }
 
     /**
-     * 从当前状态到目标状态的转换是否合法。
+     * 仅按状态维度判断转换是否可达 —— 由 {@link OrderAction} 派生：存在任一动作以本状态为前置、
+     * 以目标为去向即为合法。
      * <p>
-     * 由 {@link OrderAction} 派生：存在任一动作允许从当前状态到达目标状态即为合法。
+     * 注意这是**状态子集投影**：忽略支付维度（paymentGuard）。需要含支付约束的完整判定请用
+     * {@link OrderAction#canApply(OrderStatus, com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus)}，
+     * 二者可能给出不同结论
+     * （如 UNPAID 订单在状态维度可达 REFUNDED，但 canApply 会拒绝）。
      */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean canTransitionTo(OrderStatus target) {
         return Arrays.stream(OrderAction.values())
                 .anyMatch(action -> action.sources().contains(this) && action.target() == target);

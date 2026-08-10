@@ -523,6 +523,8 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 | remark | VARCHAR(500) | | 备注 |
 | cancel_reason | VARCHAR(500) | | 取消原因 |
 | cancel_time | DATETIME | | 取消时间 |
+| refund_reason | VARCHAR(500) | | 退款原因 |
+| refund_time | DATETIME | | 退款时间 |
 | + 公共字段 | | | |
 
 **索引**：

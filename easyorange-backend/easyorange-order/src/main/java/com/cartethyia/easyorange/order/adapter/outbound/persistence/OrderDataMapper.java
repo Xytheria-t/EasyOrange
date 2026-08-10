@@ -67,6 +67,8 @@ public class OrderDataMapper {
                 orderDO.getRemark(),
                 orderDO.getCancelReason(),
                 orderDO.getCancelTime(),
+                orderDO.getRefundReason(),
+                orderDO.getRefundTime(),
                 orderDO.getCreateTime(),
                 orderDO.getUpdateTime());
     }
@@ -115,6 +117,8 @@ public class OrderDataMapper {
                 .remark(aggregate.remark())
                 .cancelReason(aggregate.cancelReason())
                 .cancelTime(aggregate.cancelTime())
+                .refundReason(aggregate.refundReason())
+                .refundTime(aggregate.refundTime())
                 .build();
     }
 
@@ -147,7 +151,9 @@ public class OrderDataMapper {
                 Phone.of(orderDO.getPhone()),
                 orderDO.getRemark(),
                 orderDO.getCancelReason(),
-                orderDO.getCancelTime());
+                orderDO.getCancelTime(),
+                orderDO.getRefundReason(),
+                orderDO.getRefundTime());
     }
 
     private String toJson(ProductSnapshot snapshot) {

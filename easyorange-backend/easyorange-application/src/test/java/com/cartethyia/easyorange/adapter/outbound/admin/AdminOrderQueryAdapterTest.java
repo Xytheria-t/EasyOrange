@@ -86,6 +86,8 @@ class AdminOrderQueryAdapterTest {
                 Phone.of("13800138000"),
                 "备注",
                 null,
+                null,
+                null,
                 null));
     }
 

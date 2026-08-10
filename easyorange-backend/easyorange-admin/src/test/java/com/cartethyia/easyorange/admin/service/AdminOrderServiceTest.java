@@ -84,6 +84,8 @@ class AdminOrderServiceTest {
                 null,
                 LocalDateTime.now(),
                 LocalDateTime.now(),
+                null,
+                null,
                 null);
     }
 

@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.order.domain.aggregate;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.order.domain.constant.ClosureKind;
 import com.cartethyia.easyorange.order.domain.constant.OrderAction;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
@@ -71,6 +72,8 @@ public class Order {
     private final String remark;
     private final String cancelReason;
     private final LocalDateTime cancelTime;
+    private final String refundReason;
+    private final LocalDateTime refundTime;
     private final Clock clock;
 
     private Order(
@@ -87,6 +90,8 @@ public class Order {
             String remark,
             String cancelReason,
             LocalDateTime cancelTime,
+            String refundReason,
+            LocalDateTime refundTime,
             Clock clock) {
         this.id = id;
         this.orderNo = orderNo;
@@ -101,6 +106,8 @@ public class Order {
         this.remark = remark;
         this.cancelReason = cancelReason;
         this.cancelTime = cancelTime;
+        this.refundReason = refundReason;
+        this.refundTime = refundTime;
         this.clock = clock != null ? clock : Clock.systemDefaultZone();
     }
 
@@ -136,6 +143,8 @@ public class Order {
                 spec.address(),
                 spec.phone(),
                 spec.remark(),
+                null,
+                null,
                 null,
                 null,
                 null);
@@ -174,6 +183,8 @@ public class Order {
                 spec.remark(),
                 spec.cancelReason(),
                 spec.cancelTime(),
+                spec.refundReason(),
+                spec.refundTime(),
                 null);
     }
 
@@ -241,19 +252,23 @@ public class Order {
     /**
      * 状态机守卫 — 所有转换的唯一入口。
      * <p>
-     * 校验动作在当前订单状态（status + paymentStatus）下是否合法、终止性动作是否附带原因，
-     * 然后一次性应用副作用：目标状态 + 目标支付状态 + 关闭原因/时间。任何新增转换都必须
-     * 先声明 {@link OrderAction}，再经此方法执行，禁止绕过守卫直接修改状态。
+     * 校验动作在当前订单状态（status + paymentStatus）下是否合法、关闭类动作是否附带原因，
+     * 然后一次性应用副作用：目标状态 + 目标支付状态 + 按 {@link ClosureKind} 归因的关闭原因/时间。
+     * 任何新增转换都必须先声明 {@link OrderAction}，再经此方法执行，禁止绕过守卫直接修改状态。
      */
     private Order transitionTo(OrderAction action, String reason) {
         BizRequire.requireTrue(action.canApply(status, paymentStatus), action.resultCode());
-        BizRequire.requireTrue(!action.requiresReason() || (reason != null && !reason.isBlank()), action.resultCode());
-        return toBuilder()
+        BizRequire.requireTrue(
+                action.closureKind() == ClosureKind.NONE || (reason != null && !reason.isBlank()), action.resultCode());
+        var builder = toBuilder()
                 .status(action.target())
-                .paymentStatus(action.targetPaymentStatus() != null ? action.targetPaymentStatus() : paymentStatus)
-                .cancelReason(action.requiresReason() ? reason : cancelReason)
-                .cancelTime(action.requiresReason() ? now() : cancelTime)
-                .build();
+                .paymentStatus(action.targetPaymentStatus() != null ? action.targetPaymentStatus() : paymentStatus);
+        switch (action.closureKind()) {
+            case CANCEL -> builder = builder.cancelReason(reason).cancelTime(now());
+            case REFUND -> builder = builder.refundReason(reason).refundTime(now());
+            case NONE -> {}
+        }
+        return builder.build();
     }
 
     // ==================== Internal Helpers ====================

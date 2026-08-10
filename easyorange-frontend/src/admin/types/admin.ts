@@ -183,6 +183,8 @@ export interface AdminOrderDetail {
     payTime: string | null;
     updateTime: string | null;
     cancelTime: string | null;
+    refundReason: string | null;
+    refundTime: string | null;
 }
 
 export interface AdminOrderDetailItem {

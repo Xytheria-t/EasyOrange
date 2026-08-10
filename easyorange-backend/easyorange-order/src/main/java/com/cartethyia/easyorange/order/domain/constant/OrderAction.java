@@ -11,7 +11,8 @@ import lombok.experimental.Accessors;
  * 订单状态机动作 — 订单生命周期所有合法转换的**唯一事实来源**。
  * <p>
  * 每个动作声明：前置状态集合（sources）、目标状态（target）、目标支付状态（targetPaymentStatus，
- * null 表示不变）、是否需要原因、非法时的错误码，以及额外的支付前置条件（paymentGuard）。
+ * null 表示不变）、关闭归因类型（closureKind，NONE 无需原因 / CANCEL 记入取消字段 / REFUND 记入退款字段）、
+ * 非法时的错误码，以及额外的支付前置条件（paymentGuard）。
  * {@link OrderStatus#canTransitionTo(OrderStatus)} 由此派生，聚合根统一经
  * {@code Order#transitionTo(OrderAction, String)} 守卫。
  * <pre>
@@ -38,7 +39,7 @@ public enum OrderAction {
             Set.of(OrderStatus.PENDING_PAYMENT),
             OrderStatus.PAID,
             PaymentStatus.PAID,
-            false,
+            ClosureKind.NONE,
             OrderResultCode.ORDER_STATUS_ERROR,
             null),
     CANCEL(
@@ -46,7 +47,7 @@ public enum OrderAction {
             Set.of(OrderStatus.PENDING_PAYMENT),
             OrderStatus.CANCELLED,
             null,
-            true,
+            ClosureKind.CANCEL,
             OrderResultCode.ORDER_CANNOT_CANCEL,
             null),
     FORCE_CANCEL(
@@ -54,16 +55,23 @@ public enum OrderAction {
             Set.of(OrderStatus.PENDING_PAYMENT, OrderStatus.PAID),
             OrderStatus.CANCELLED,
             null,
-            true,
+            ClosureKind.CANCEL,
             OrderResultCode.ORDER_STATUS_ERROR,
             null),
-    SHIP("发货", Set.of(OrderStatus.PAID), OrderStatus.SHIPPED, null, false, OrderResultCode.ORDER_STATUS_ERROR, null),
+    SHIP(
+            "发货",
+            Set.of(OrderStatus.PAID),
+            OrderStatus.SHIPPED,
+            null,
+            ClosureKind.NONE,
+            OrderResultCode.ORDER_STATUS_ERROR,
+            null),
     CONFIRM_RECEIPT(
             "确认收货",
             Set.of(OrderStatus.SHIPPED),
             OrderStatus.COMPLETED,
             null,
-            false,
+            ClosureKind.NONE,
             OrderResultCode.ORDER_STATUS_ERROR,
             null),
     REFUND(
@@ -71,7 +79,7 @@ public enum OrderAction {
             Set.of(OrderStatus.PAID, OrderStatus.SHIPPED),
             OrderStatus.REFUNDED,
             PaymentStatus.REFUNDED,
-            true,
+            ClosureKind.REFUND,
             OrderResultCode.ORDER_CANNOT_REFUND,
             payment -> payment == PaymentStatus.PAID);
 
@@ -83,8 +91,8 @@ public enum OrderAction {
     private final OrderStatus target;
     /** 动作执行后的目标支付状态；null 表示支付状态不变 */
     private final PaymentStatus targetPaymentStatus;
-    /** 是否需要关闭原因（取消/退款等终止性动作），需要时聚合根会记录 cancelReason/cancelTime */
-    private final boolean requiresReason;
+    /** 关闭归因类型：NONE 无原因；CANCEL 记入 cancel_reason/cancel_time；REFUND 记入 refund_reason/refund_time */
+    private final ClosureKind closureKind;
     /** 非法触发时的错误码 */
     private final OrderResultCode resultCode;
     /** 额外的支付前置条件；null 表示无额外限制 */

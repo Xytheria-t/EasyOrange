@@ -32,6 +32,8 @@ import java.util.List;
  * @param remark         备注
  * @param cancelReason   取消原因
  * @param cancelTime     取消时间
+ * @param refundReason   退款原因
+ * @param refundTime     退款时间
  */
 public record OrderReconstructSpec(
         OrderId id,
@@ -46,4 +48,6 @@ public record OrderReconstructSpec(
         Phone phone,
         String remark,
         String cancelReason,
-        LocalDateTime cancelTime) {}
+        LocalDateTime cancelTime,
+        String refundReason,
+        LocalDateTime refundTime) {}

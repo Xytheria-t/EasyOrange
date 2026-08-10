@@ -183,7 +183,9 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
                 model.cancelReason(),
                 model.createTime(),
                 model.updateTime(),
-                model.cancelTime());
+                model.cancelTime(),
+                model.refundReason(),
+                model.refundTime());
     }
 
     private OrderSummary toOrderSummary(OrderDO order) {

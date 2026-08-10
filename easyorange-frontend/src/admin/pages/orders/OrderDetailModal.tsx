@@ -75,6 +75,9 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
 
     const orderData = order as AdminOrderDetail | undefined;
     const statusCfg = STATUS_CONFIG[orderData?.status ?? 'PENDING_PAYMENT'] ?? STATUS_CONFIG.PENDING_PAYMENT;
+    const isRefunded = orderData?.status === 'REFUNDED';
+    const closeReason = orderData ? (isRefunded ? orderData.refundReason : orderData.cancelReason) : null;
+    const closeTime = formatDateTime(orderData ? (isRefunded ? orderData.refundTime : orderData.cancelTime) : null);
 
     return (
         <AdminDetailModal
@@ -234,7 +237,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                         <InfoCell label="下单时间" value={formatDateTime(orderData.createTime)} />
                         <InfoCell label="支付时间" value={formatDateTime(orderData.payTime)} />
                         <InfoCell label="更新时间" value={formatDateTime(orderData.updateTime)} />
-                        <InfoCell label="取消时间" value={formatDateTime(orderData.cancelTime)} />
+                        <InfoCell label={isRefunded ? '退款时间' : '取消时间'} value={closeTime} />
                     </div>
 
                     {/* Payment No */}
@@ -295,11 +298,13 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                             </p>
                         </div>
                     )}
-                    {orderData.cancelReason && (
+                    {closeReason && (
                         <div className="rounded-[14px] border border-[rgba(244,63,94,0.15)] bg-[linear-gradient(135deg,rgba(244,63,94,0.04),rgba(251,113,133,0.02))] px-4 py-[0.85rem]">
-                            <p className="mb-[0.35rem] text-[0.78rem] font-semibold text-[#E11D48]">取消原因</p>
+                            <p className="mb-[0.35rem] text-[0.78rem] font-semibold text-[#E11D48]">
+                                {isRefunded ? '退款原因' : '取消原因'}
+                            </p>
                             <p className="whitespace-pre-wrap text-[0.87rem] leading-relaxed text-[#4A4540]">
-                                {orderData.cancelReason}
+                                {closeReason}
                             </p>
                         </div>
                     )}

@@ -110,6 +110,8 @@ public final class OrderTestFixture {
         private String remark = "备注";
         private String cancelReason = null;
         private java.time.LocalDateTime cancelTime = null;
+        private String refundReason = null;
+        private java.time.LocalDateTime refundTime = null;
 
         public OrderReconstructSpecBuilder id(String id) {
             this.id = OrderId.of(id);
@@ -150,7 +152,9 @@ public final class OrderTestFixture {
                     phone,
                     remark,
                     cancelReason,
-                    cancelTime);
+                    cancelTime,
+                    refundReason,
+                    refundTime);
         }
     }
 

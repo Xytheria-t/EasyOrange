@@ -136,6 +136,7 @@ class OrderTest {
             assertThat(result.event().reason()).isEqualTo("不想要了");
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(result.aggregate().cancelReason()).isEqualTo("不想要了");
+            assertThat(result.aggregate().refundReason()).isNull();
         }
 
         @ParameterizedTest(name = "[{index}] {0}状态不能取消")
@@ -223,6 +224,17 @@ class OrderTest {
 
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.REFUNDED);
             assertThat(result.event().reason()).isEqualTo("快递损坏");
+        }
+
+        @Test
+        @DisplayName("退款原因记入 refundReason，不污染 cancelReason")
+        void refund_recordsReasonIntoRefundFields_only() {
+            var result = paidOrder().refund("商品有问题");
+
+            assertThat(result.aggregate().refundReason()).isEqualTo("商品有问题");
+            assertThat(result.aggregate().refundTime()).isNotNull();
+            assertThat(result.aggregate().cancelReason()).isNull();
+            assertThat(result.aggregate().cancelTime()).isNull();
         }
 
         @ParameterizedTest(name = "[{index}] {0}状态不能退款")

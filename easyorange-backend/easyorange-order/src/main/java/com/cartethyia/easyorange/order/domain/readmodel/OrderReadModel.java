@@ -24,5 +24,7 @@ public record OrderReadModel(
         String remark,
         String cancelReason,
         LocalDateTime cancelTime,
+        String refundReason,
+        LocalDateTime refundTime,
         LocalDateTime createTime,
         LocalDateTime updateTime) {}

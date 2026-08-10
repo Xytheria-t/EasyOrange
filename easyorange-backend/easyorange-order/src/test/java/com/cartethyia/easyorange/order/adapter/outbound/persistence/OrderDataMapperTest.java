@@ -86,6 +86,8 @@ class OrderDataMapperTest {
                 Phone.of(PHONE),
                 REMARK,
                 null,
+                null,
+                null,
                 null));
     }
 

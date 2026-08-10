@@ -82,6 +82,8 @@ class OrderNotificationEventConsumerTest {
                 null,
                 null,
                 null,
+                null,
+                null,
                 null);
     }
 

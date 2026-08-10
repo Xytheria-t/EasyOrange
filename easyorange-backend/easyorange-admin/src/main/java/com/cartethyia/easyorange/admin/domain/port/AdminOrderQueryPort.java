@@ -112,7 +112,9 @@ public interface AdminOrderQueryPort {
             String cancelReason,
             LocalDateTime createTime,
             LocalDateTime updateTime,
-            LocalDateTime cancelTime) {}
+            LocalDateTime cancelTime,
+            String refundReason,
+            LocalDateTime refundTime) {}
 
     /**
      * 订单项详情

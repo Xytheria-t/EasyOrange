@@ -63,6 +63,8 @@ class OrderReadModelAssemblerTest {
                 REMARK,
                 CANCEL_REASON,
                 CANCEL_TIME,
+                null,
+                null,
                 CREATE_TIME,
                 UPDATE_TIME);
     }
@@ -170,6 +172,8 @@ class OrderReadModelAssemblerTest {
                     null,
                     null,
                     null,
+                    null,
+                    null,
                     CREATE_TIME,
                     UPDATE_TIME);
 
@@ -205,6 +209,8 @@ class OrderReadModelAssemblerTest {
                     "上海市浦东新区",
                     "13900139000",
                     "备注2",
+                    null,
+                    null,
                     null,
                     null,
                     LocalDateTime.now(),

@@ -91,14 +91,14 @@ class OrderActionTest {
     }
 
     @Test
-    @DisplayName("仅关闭类动作需要原因")
-    void actionMetadata_requiresReasonOnlyForCloseActions() {
-        assertThat(OrderAction.CANCEL.requiresReason()).isTrue();
-        assertThat(OrderAction.FORCE_CANCEL.requiresReason()).isTrue();
-        assertThat(OrderAction.REFUND.requiresReason()).isTrue();
-        assertThat(OrderAction.PAY.requiresReason()).isFalse();
-        assertThat(OrderAction.SHIP.requiresReason()).isFalse();
-        assertThat(OrderAction.CONFIRM_RECEIPT.requiresReason()).isFalse();
+    @DisplayName("关闭类动作按归因类型记录原因")
+    void actionMetadata_closureKindForCloseActions() {
+        assertThat(OrderAction.CANCEL.closureKind()).isEqualTo(ClosureKind.CANCEL);
+        assertThat(OrderAction.FORCE_CANCEL.closureKind()).isEqualTo(ClosureKind.CANCEL);
+        assertThat(OrderAction.REFUND.closureKind()).isEqualTo(ClosureKind.REFUND);
+        assertThat(OrderAction.PAY.closureKind()).isEqualTo(ClosureKind.NONE);
+        assertThat(OrderAction.SHIP.closureKind()).isEqualTo(ClosureKind.NONE);
+        assertThat(OrderAction.CONFIRM_RECEIPT.closureKind()).isEqualTo(ClosureKind.NONE);
     }
 
     @Test

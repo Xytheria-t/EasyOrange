@@ -82,6 +82,8 @@ class OrderQueryHandlerTest {
                 "备注",
                 null,
                 null,
+                null,
+                null,
                 LocalDateTime.now(),
                 LocalDateTime.now());
 

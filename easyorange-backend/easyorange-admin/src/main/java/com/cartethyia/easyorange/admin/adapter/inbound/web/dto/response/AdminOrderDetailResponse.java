@@ -25,7 +25,9 @@ public record AdminOrderDetailResponse(
         LocalDateTime createTime,
         LocalDateTime payTime,
         LocalDateTime updateTime,
-        LocalDateTime cancelTime) {
+        LocalDateTime cancelTime,
+        String refundReason,
+        LocalDateTime refundTime) {
     public record BuyerInfo(String userId, String nickname, String avatar, String phone) {}
 
     public record SellerInfo(String userId, String nickname, String avatar, String phone) {}
