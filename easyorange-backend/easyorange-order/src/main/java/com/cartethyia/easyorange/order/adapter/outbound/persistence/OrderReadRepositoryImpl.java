@@ -11,7 +11,9 @@ import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
@@ -46,7 +48,7 @@ public class OrderReadRepositoryImpl extends BaseRepository<OrderMapper, OrderDO
     @Override
     public PageResult<OrderReadModel> findPage(OrderQueryCondition condition) {
         Page<OrderDO> page = new Page<>(condition.pageNum(), condition.pageSize());
-        var wrapper = lambdaQuery();
+        var wrapper = new LambdaQueryWrapper<OrderDO>();
 
         wrapper.eq(StringUtils.isNotBlank(condition.orderNo()), OrderDO::getOrderNo, condition.orderNo());
         wrapper.eq(condition.status() != null, OrderDO::getStatus, condition.status());
@@ -55,13 +57,29 @@ public class OrderReadRepositoryImpl extends BaseRepository<OrderMapper, OrderDO
 
         wrapper.orderByDesc(OrderDO::getCreateTime);
 
-        Page<OrderDO> orderPage = wrapper.page(page);
+        Page<OrderDO> orderPage = mapper.selectPage(page, wrapper);
 
-        return PageResult.of(
-                orderPage.getRecords().stream().map(dataMapper::toReadModel).toList(),
-                orderPage.getTotal(),
-                (int) orderPage.getCurrent(),
-                (int) orderPage.getSize());
+        List<String> orderIds =
+                orderPage.getRecords().stream().map(OrderDO::getId).toList();
+        Map<String, List<OrderItemReadModel>> itemsByOrderId = loadItemsByOrderId(orderIds);
+        List<OrderReadModel> records = orderPage.getRecords().stream()
+                .map(orderDO ->
+                        dataMapper.toReadModel(orderDO, itemsByOrderId.getOrDefault(orderDO.getId(), List.of())))
+                .toList();
+
+        return PageResult.of(records, orderPage.getTotal(), (int) orderPage.getCurrent(), (int) orderPage.getSize());
+    }
+
+    /** 批加载订单明细（一次 IN 查询，避免分页 N+1），按 orderId 分组。 */
+    private Map<String, List<OrderItemReadModel>> loadItemsByOrderId(List<String> orderIds) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            return Map.of();
+        }
+        return orderItemMapper
+                .selectList(new LambdaQueryWrapper<OrderItemDO>().in(OrderItemDO::getOrderId, orderIds))
+                .stream()
+                .collect(Collectors.groupingBy(
+                        OrderItemDO::getOrderId, Collectors.mapping(dataMapper::toItemReadModel, Collectors.toList())));
     }
 
     @Override
