@@ -138,13 +138,15 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 | **common** | 通用基础 | 统一响应体 / 异常 / 领域事件接口 / 工具 |
 | **framework** | 框架适配层 | Security（双 Token）/ Redis / MyBatis / RabbitMQ / 限流 / 审计 AOP |
 | **user** | 业务限界上下文 | 认证（双 Token）、用户资料、信用分 |
-| **product** | 业务限界上下文 | 商品（CQRS）+ 审核 / 举报 + ES 搜索 + 语义检索 |
-| **order** | 业务限界上下文 | 订单（CQRS）+ 单事务 + 分布式锁 + 生命周期事件 |
-| **payment** | 业务限界上下文 | 支付（CQRS）+ 幂等 + Mock 网关 |
-| **message** | 业务限界上下文 | 消息（CQRS）+ 站内信 + WebSocket / STOMP 实时沟通 |
+| **product** | 业务限界上下文 | 商品（CQRS · 物化 ReadModel）+ 审核 / 举报 + ES 搜索 + 语义检索 |
+| **order** | 业务限界上下文 | 订单（CQRS · 读仓储分离）+ 单事务 + 分布式锁 + 生命周期事件 |
+| **payment** | 业务限界上下文 | 支付（CQRS · Handler 级）+ 幂等 + Mock 网关 |
+| **message** | 业务限界上下文 | 消息（CQRS · Handler 级）+ 站内信 + WebSocket / STOMP 实时沟通 |
 | **favorite** | 业务限界上下文 | 收藏 + 批量校验 |
 | **ai** | 业务限界上下文 | Spring AI 框架化 + Agent 编排 + 令牌桶 / 预算 / Prompt |
 | **admin** | 管理端边界 | 后台 API（用户 / 商品审核 / 订单 / 举报 / 统计） |
+
+> CQRS 深度分级（物化 ReadModel / 读仓储分离 / Handler 级分离）唯一权威出处为 [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)。
 
 ## 技术栈
 

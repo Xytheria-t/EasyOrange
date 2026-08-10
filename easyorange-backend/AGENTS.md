@@ -36,6 +36,16 @@ Spring Boot 4.0.7 + Java 25 后端，采用 DDD + 六边形架构。
 | 响应 DTO | `*Response` / `*VO` | `UserResponse`, `OrderVO` |
 | 数据对象 | `*DO` | `UserDO`, `PaymentDO` |
 
+## CQRS 深度分级
+
+四模块 CQRS 同档不分「上/不上」，按查询侧与写侧差异度分三档（唯一权威出处 [ADR-0002](../doc/adr/0002-cqrs-scope-4-modules.md)）：
+
+- **物化 ReadModel（product）**：独立读模型 + 事件驱动同步。ES 索引由 `ProductEventConsumer` → `ProductSearchIndexPort` 异步投影，读模型在 `application/query/readmodel/`。
+- **读仓储分离（order）**：独立 `OrderReadRepository` 接口 + 只读事务 + `OrderReadModel` DTO，读同一张写表。
+- **Handler 级分离（payment / message）**：`*CommandHandler` / `*QueryHandler` 分文件 + 独立查询仓储（`MessageQueryRepository`），无独立 ReadModel。
+
+三档均受 ArchUnit 守卫：`*CommandHandler` 禁止依赖 `*QueryHandler`，反之亦然（写侧不依赖读侧）。favorite / user 刻意不做 CQRS。
+
 ## 服务层方法返回值约定
 
 应用服务（`application/service/`、`application/command/`）的 public 方法遵循以下约定：
