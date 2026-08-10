@@ -1,8 +1,6 @@
 package com.cartethyia.easyorange.order.application.command;
 
-import static com.cartethyia.easyorange.order.application.command.CreateOrderCommand.CreateOrderItem;
 import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.aReconstructSpec;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -10,7 +8,6 @@ import static org.mockito.Mockito.*;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.order.application.service.OrderCreationService;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -24,7 +21,6 @@ import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -45,9 +41,6 @@ class OrderCommandHandlerTest {
     private DomainEventPublisher domainEventPublisher;
 
     @Mock
-    private OrderCreationService orderCreationService;
-
-    @Mock
     private OrderCachePort orderCachePort;
 
     @InjectMocks
@@ -57,27 +50,6 @@ class OrderCommandHandlerTest {
     private static final String SELLER_ID = "2";
     private static final String ORDER_ID = "100";
     private static final String PRODUCT_ID = "200";
-
-    @Nested
-    @DisplayName("handle(CreateOrderCommand)")
-    class CreateOrderTests {
-
-        @Test
-        @DisplayName("正常创建订单")
-        void handle_createOrder_success() {
-            CreateOrderCommand command = new CreateOrderCommand(
-                    List.of(new CreateOrderItem(PRODUCT_ID, 1)), "北京市朝阳区", "13800138000", "尽快发货", null);
-
-            CreateOrderResult expectedResult = new CreateOrderResult(ORDER_ID, "ORD123");
-            when(orderCreationService.createOrder(command)).thenReturn(expectedResult);
-
-            CreateOrderResult result = commandHandler.handle(command);
-
-            assertThat(result.orderId()).isEqualTo(ORDER_ID);
-            assertThat(result.orderNo()).isEqualTo("ORD123");
-            verify(orderCreationService).createOrder(command);
-        }
-    }
 
     @Nested
     @DisplayName("handle(PayOrderCommand)")

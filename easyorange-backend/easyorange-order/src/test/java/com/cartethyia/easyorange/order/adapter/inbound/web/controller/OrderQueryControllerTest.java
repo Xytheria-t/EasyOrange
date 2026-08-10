@@ -11,6 +11,7 @@ import com.cartethyia.easyorange.order.application.command.OrderCommandHandler;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.OrderListQuery;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
+import com.cartethyia.easyorange.order.application.service.OrderCreationService;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -39,6 +40,9 @@ class OrderQueryControllerTest {
 
     @MockitoBean
     private OrderQueryHandler queryHandler;
+
+    @MockitoBean
+    private OrderCreationService orderCreationService;
 
     private OrderVO createOrderVO(String id, String orderNo, String status, String statusDesc) {
         return OrderVO.builder()

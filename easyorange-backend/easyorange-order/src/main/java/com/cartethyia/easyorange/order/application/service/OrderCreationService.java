@@ -1,16 +1,30 @@
 package com.cartethyia.easyorange.order.application.service;
 
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
+import com.cartethyia.easyorange.order.domain.aggregate.OrderCreateSpec;
+import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
+import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
 import com.cartethyia.easyorange.order.domain.port.LockPort;
+import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
+import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
+import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
+import com.cartethyia.easyorange.order.domain.valueobject.Address;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.valueobject.Phone;
+import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 /**
  * 订单创建服务
@@ -31,8 +45,13 @@ public class OrderCreationService {
     private static final long LOCK_TRY_TIMEOUT_SECONDS = 10;
 
     private final LockPort lockPort;
-    private final OrderCreationExecutor orderCreationExecutor;
+    private final OrderRepository orderRepository;
+    private final DomainEventPublisher eventPublisher;
+    private final PaymentGatewayPort paymentGatewayPort;
+    private final OrderCachePort<?> orderCachePort;
+    private final OrderPreparation preparationService;
     private final ProductOrderPort productOrderPort;
+    private final IdGenerator idGenerator;
 
     /**
      * 执行订单创建
@@ -59,7 +78,24 @@ public class OrderCreationService {
      * 执行下单流程 — 全部步骤在同一事务内，失败由回滚兜底
      */
     private CreateOrderResult createOrderFlow(CreateOrderCommand command) {
-        Transition<Order, OrderCreatedEvent> result = orderCreationExecutor.createOrder(command);
+        String buyerId = SecurityContextUtil.getCurrentUserIdOrThrow();
+
+        // 准备订单项数据（含资产存在/在线/库存/同资产方校验）
+        OrderPreparation.PreparationResult preparation = preparationService.prepareOrderItems(command.items());
+
+        // 创建订单聚合根（通过 spec record 收敛 7 个参数）
+        Transition<Order, OrderCreatedEvent> result = Order.createOrder(new OrderCreateSpec(
+                OrderId.of(idGenerator.generateId()),
+                UserId.of(buyerId),
+                preparation.sellerId(),
+                preparation.orderItems(),
+                Address.of(resolveAddress(command)),
+                Phone.of(command.phone()),
+                command.remark()));
+
+        // 保存并发布事件
+        orderRepository.save(result.aggregate());
+        eventPublisher.publish(result.event());
 
         // 同步扣减库存（同一事务，失败时随事务整体回滚）
         for (var item : command.items()) {
@@ -67,10 +103,40 @@ public class OrderCreationService {
         }
 
         // 创建支付（同一事务，失败时随事务整体回滚）
-        orderCreationExecutor.createPayment(result.event(), command);
-        orderCreationExecutor.evictSellerCache(result.aggregate().sellerId().value());
+        createPayment(result.event(), command);
+        orderCachePort.evictSellerOrders(result.aggregate().sellerId().value());
 
         return new CreateOrderResult(
                 result.aggregate().id().value(), result.aggregate().orderNo().value());
+    }
+
+    /**
+     * 创建支付。
+     *
+     * @param orderEvent 订单创建事件
+     * @param command    创建订单命令
+     * @throws PaymentGatewayAdapterException 如果支付创建失败
+     */
+    private void createPayment(OrderCreatedEvent orderEvent, CreateOrderCommand command) {
+        try {
+            paymentGatewayPort.createPayment(new PaymentGatewayPort.CreatePaymentRequest(
+                    orderEvent.orderId(),
+                    orderEvent.totalAmount(),
+                    StringUtils.hasText(command.paymentMethod())
+                            ? command.paymentMethod()
+                            : OrderConstant.DEFAULT_PAYMENT_METHOD,
+                    OrderConstant.PAYMENT_BIZ_TYPE,
+                    OrderConstant.PAYMENT_DESC));
+        } catch (Exception e) {
+            throw new PaymentGatewayAdapterException(
+                    "支付创建失败 orderId=" + orderEvent.orderId() + ": " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 解析地址：如果未指定则返回默认值。
+     */
+    private static String resolveAddress(CreateOrderCommand command) {
+        return StringUtils.hasText(command.address()) ? command.address() : OrderConstant.DEFAULT_ADDRESS;
     }
 }

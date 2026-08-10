@@ -58,7 +58,7 @@ public class OrderAutoConfirmTask {
             return false;
         }
 
-        Transition<Order, OrderCompletedEvent> result = aggregate.confirmReceipt();
+        Transition<Order, OrderCompletedEvent> result = aggregate.confirmReceipt(LocalDateTime.now());
         orderRepository.update(result.aggregate());
 
         orderCachePort.evictOrderCache(

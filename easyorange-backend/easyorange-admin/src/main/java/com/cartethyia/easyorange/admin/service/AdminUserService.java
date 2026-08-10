@@ -7,22 +7,22 @@ import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserQueryResult;
-import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminUserService {
-
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(CommonConstant.DATETIME_FORMAT);
 
     private final AdminUserQueryPort adminUserQueryPort;
 
@@ -64,8 +64,9 @@ public class AdminUserService {
             return null;
         }
         try {
-            return LocalDateTime.parse(startTime + " 00:00:00", DATE_FORMATTER);
-        } catch (Exception ignored) {
+            return LocalDate.parse(startTime).atStartOfDay();
+        } catch (DateTimeParseException e) {
+            log.warn("无法解析时间: {}, 格式应为 yyyy-MM-dd", startTime);
             return null;
         }
     }
@@ -75,8 +76,9 @@ public class AdminUserService {
             return null;
         }
         try {
-            return LocalDateTime.parse(endTime + " 23:59:59", DATE_FORMATTER);
-        } catch (Exception ignored) {
+            return LocalDate.parse(endTime).atTime(23, 59, 59);
+        } catch (DateTimeParseException e) {
+            log.warn("无法解析时间: {}, 格式应为 yyyy-MM-dd", endTime);
             return null;
         }
     }

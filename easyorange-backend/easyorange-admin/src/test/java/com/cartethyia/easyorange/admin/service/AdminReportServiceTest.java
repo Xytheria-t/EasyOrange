@@ -17,10 +17,11 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchHan
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportHistoryRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportQueryResult;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportHistoryRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
@@ -40,6 +41,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminReportService 单元测试")
 class AdminReportServiceTest {
+
+    @Mock
+    private AdminReportQueryPort adminReportQueryPort;
 
     @Mock
     private AdminProductQueryPort adminProductQueryPort;
@@ -101,7 +105,7 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("分页查询举报列表")
         void listReports_withStatus_returnsPage() {
-            when(adminProductQueryPort.queryReports(0, 1, 20))
+            when(adminReportQueryPort.queryReports(0, 1, 20))
                     .thenReturn(new ReportQueryResult(List.of(createPendingReport()), 1, 1, 20));
             when(adminUserQueryPort.getUserInfos(anyList()))
                     .thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
@@ -122,7 +126,7 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("无状态筛选时不传 status 给端口")
         void listReports_withoutStatus_passesNull() {
-            when(adminProductQueryPort.queryReports(null, 1, 20))
+            when(adminReportQueryPort.queryReports(null, 1, 20))
                     .thenReturn(new ReportQueryResult(List.of(createPendingReport()), 1, 1, 20));
             when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of());
             when(adminProductQueryPort.getProductInfos(anyList())).thenReturn(Map.of());
@@ -130,7 +134,7 @@ class AdminReportServiceTest {
             PageResult<AdminReportResponse> result = reportService.listReports(1, 20, null);
 
             assertThat(result.records()).hasSize(1);
-            verify(adminProductQueryPort).queryReports(null, 1, 20);
+            verify(adminReportQueryPort).queryReports(null, 1, 20);
         }
     }
 
@@ -141,7 +145,7 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("获取举报详情成功")
         void getReportDetail_success() {
-            when(adminProductQueryPort.getReportDetail(REPORT_ID)).thenReturn(createPendingReport());
+            when(adminReportQueryPort.getReportDetail(REPORT_ID)).thenReturn(createPendingReport());
             when(adminUserQueryPort.getUserInfos(anyList()))
                     .thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
             when(adminProductQueryPort.getProductInfos(anyList()))
@@ -156,7 +160,7 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("举报不存在时抛出异常")
         void getReportDetail_notFound_throws() {
-            when(adminProductQueryPort.getReportDetail(REPORT_ID)).thenReturn(null);
+            when(adminReportQueryPort.getReportDetail(REPORT_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> reportService.getReportDetail(REPORT_ID))
                     .isInstanceOf(BusinessException.class)
@@ -182,14 +186,14 @@ class AdminReportServiceTest {
                 TestSecurityUtil.clearSecurityContext();
             }
 
-            verify(adminProductQueryPort).handleReport(REPORT_ID, "resolve", "已核实处理", OPERATOR_ID);
+            verify(adminReportQueryPort).handleReport(REPORT_ID, "resolve", "已核实处理", OPERATOR_ID);
         }
 
         @Test
         @DisplayName("端口抛出业务异常向上传播")
         void handleReport_portThrows_propagates() {
             doThrow(BusinessException.of("该举报已被处理"))
-                    .when(adminProductQueryPort)
+                    .when(adminReportQueryPort)
                     .handleReport(eq(REPORT_ID), eq("resolve"), any(), any());
 
             ReportHandleRequest request = new ReportHandleRequest();
@@ -225,7 +229,7 @@ class AdminReportServiceTest {
                 assertThat(result.success()).isEqualTo(2);
                 assertThat(result.failed()).isZero();
                 assertThat(result.errors()).isEmpty();
-                verify(adminProductQueryPort, org.mockito.Mockito.times(2)).handleReport(any(), any(), any(), any());
+                verify(adminReportQueryPort, org.mockito.Mockito.times(2)).handleReport(any(), any(), any(), any());
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -236,7 +240,7 @@ class AdminReportServiceTest {
         void batchHandleReports_partialFailure_aggregatesErrors() {
             org.mockito.Mockito.lenient()
                     .doThrow(BusinessException.of("该举报已被处理"))
-                    .when(adminProductQueryPort)
+                    .when(adminReportQueryPort)
                     .handleReport(eq("101"), any(), any(), any());
 
             BatchHandleRequest request = new BatchHandleRequest();
@@ -292,7 +296,7 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("获取举报统计")
         void getReportStats_returnsStats() {
-            when(adminProductQueryPort.getReportStats()).thenReturn(new ReportStats(10, 5, 2, 2, 1));
+            when(adminReportQueryPort.getReportStats()).thenReturn(new ReportStats(10, 5, 2, 2, 1));
 
             ReportStatsResponse stats = reportService.getReportStats();
 
@@ -308,7 +312,7 @@ class AdminReportServiceTest {
             ReportHistoryRecord history =
                     new ReportHistoryRecord("1", REPORT_ID, OPERATOR_ID, "resolve", "已处理", LocalDateTime.now());
 
-            when(adminProductQueryPort.getReportHistory(REPORT_ID)).thenReturn(List.of(history));
+            when(adminReportQueryPort.getReportHistory(REPORT_ID)).thenReturn(List.of(history));
             when(adminUserQueryPort.getUserInfos(anyList()))
                     .thenReturn(Map.of(OPERATOR_ID, createUser(OPERATOR_ID, "管理员")));
 

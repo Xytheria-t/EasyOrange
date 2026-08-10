@@ -4,9 +4,9 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAudi
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAuditRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.AiReviewRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.AuditLogRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort.AiReviewRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort.AuditLogRecord;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import java.util.ArrayList;
@@ -21,11 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminProductAuditService {
 
-    private final AdminProductQueryPort adminProductQueryPort;
+    private final AdminProductAuditQueryPort adminProductAuditQueryPort;
 
     @Transactional(rollbackFor = Exception.class)
     public void auditProduct(String id, ProductAuditRequest request) {
-        adminProductQueryPort.auditProduct(
+        adminProductAuditQueryPort.auditProduct(
                 id,
                 request.action(),
                 request.reason(),
@@ -42,7 +42,7 @@ public class AdminProductAuditService {
 
         for (BatchAuditRequest.AuditItem item : request.getItems()) {
             try {
-                adminProductQueryPort.auditProduct(
+                adminProductAuditQueryPort.auditProduct(
                         item.productId(),
                         item.action(),
                         item.reason(),
@@ -61,13 +61,13 @@ public class AdminProductAuditService {
 
     @Transactional(readOnly = true)
     public List<AuditLogResponse> getAuditLogs(String productId) {
-        return adminProductQueryPort.getAuditLogs(productId).stream()
+        return adminProductAuditQueryPort.getAuditLogs(productId).stream()
                 .map(this::toAuditLogResponse)
                 .toList();
     }
 
     public AiReviewRecord getAiReview(String productId) {
-        return adminProductQueryPort.getAiReview(productId);
+        return adminProductAuditQueryPort.getAiReview(productId);
     }
 
     private String operatorId() {

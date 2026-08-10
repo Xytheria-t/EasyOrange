@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.order.application.service.OrderCreationService;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
@@ -12,6 +11,7 @@ import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
@@ -26,45 +26,40 @@ public class OrderCommandHandler {
 
     private final OrderRepository orderRepository;
     private final DomainEventPublisher domainEventPublisher;
-    private final OrderCreationService orderCreationService;
     private final OrderCachePort<?> orderCachePort;
-
-    public CreateOrderResult handle(CreateOrderCommand command) {
-        return orderCreationService.createOrder(command);
-    }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(PayOrderCommand command) {
         var aggregate = validateBuyer(command.orderId());
-        var result = aggregate.pay();
+        var result = aggregate.pay(LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(CancelOrderCommand command) {
         var aggregate = validateBuyer(command.orderId());
-        var result = aggregate.cancel(command.reason());
+        var result = aggregate.cancel(command.reason(), LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(ShipOrderCommand command) {
         var aggregate = validateSeller(command.orderId());
-        var result = aggregate.ship();
+        var result = aggregate.ship(LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(ConfirmReceiptCommand command) {
         var aggregate = validateBuyer(command.orderId());
-        var result = aggregate.confirmReceipt();
+        var result = aggregate.confirmReceipt(LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(RefundOrderCommand command) {
         var aggregate = validateBuyer(command.orderId());
-        var result = aggregate.refund(command.reason());
+        var result = aggregate.refund(command.reason(), LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 

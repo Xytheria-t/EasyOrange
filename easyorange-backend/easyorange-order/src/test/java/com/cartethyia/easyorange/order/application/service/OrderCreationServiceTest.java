@@ -84,9 +84,15 @@ class OrderCreationServiceTest {
     void setUp() throws InterruptedException {
         var lockManager = new RedissonLockAdapter(redissonClient);
         var preparationService = new OrderPreparation(productOrderPort, productQueryPort, idGenerator);
-        var orderCreationExecutor = new OrderCreationExecutor(
-                orderRepository, eventPublisher, paymentGatewayPort, orderCachePort, preparationService, idGenerator);
-        service = new OrderCreationService(lockManager, orderCreationExecutor, productOrderPort);
+        service = new OrderCreationService(
+                lockManager,
+                orderRepository,
+                eventPublisher,
+                paymentGatewayPort,
+                orderCachePort,
+                preparationService,
+                productOrderPort,
+                idGenerator);
 
         Collection<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(BUYER_ID, null, authorities);

@@ -20,6 +20,7 @@ import com.cartethyia.easyorange.order.application.command.PayOrderCommand;
 import com.cartethyia.easyorange.order.application.command.RefundOrderCommand;
 import com.cartethyia.easyorange.order.application.command.ShipOrderCommand;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
+import com.cartethyia.easyorange.order.application.service.OrderCreationService;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -48,6 +49,9 @@ class OrderCommandControllerTest {
     private OrderCommandAssembler assembler;
 
     @MockitoBean
+    private OrderCreationService orderCreationService;
+
+    @MockitoBean
     private OrderQueryHandler queryHandler;
 
     private static final String ORDER_ID = "100";
@@ -64,7 +68,7 @@ class OrderCommandControllerTest {
             var items = List.of(new CreateOrderCommand.CreateOrderItem("200", 1));
             var command = new CreateOrderCommand(items, "北京市朝阳区", "13800138000", "尽快发货", null);
             when(assembler.toCreateCommand(any())).thenReturn(command);
-            when(commandHandler.handle(command)).thenReturn(createResult);
+            when(orderCreationService.createOrder(command)).thenReturn(createResult);
 
             String requestBody = """
                     {
@@ -82,7 +86,7 @@ class OrderCommandControllerTest {
                     .andExpect(jsonPath("$.code").value("A0000"))
                     .andExpect(jsonPath("$.data").value(ORDER_ID));
 
-            verify(commandHandler).handle(any(CreateOrderCommand.class));
+            verify(orderCreationService).createOrder(any(CreateOrderCommand.class));
         }
 
         @Test

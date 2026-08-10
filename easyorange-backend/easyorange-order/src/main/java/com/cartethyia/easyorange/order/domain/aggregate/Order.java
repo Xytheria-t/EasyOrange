@@ -20,7 +20,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import java.math.BigDecimal;
-import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -42,7 +41,7 @@ import lombok.experimental.Accessors;
  *   CANCELLED        CANCELLED   REFUNDED
  * </pre>
  * 状态机合法转换的单一事实来源见 {@link OrderAction}，所有转换统一经
- * {@link #transitionTo(OrderAction, String)} 守卫（一处校验合法性 + 一处应用副作用）。
+ * {@link #transitionTo(OrderAction, String, LocalDateTime)} 守卫（一处校验合法性 + 一处应用副作用）。
  * <p>
  * 核心不变量：
  * <ul>
@@ -74,7 +73,6 @@ public class Order {
     private final LocalDateTime cancelTime;
     private final String refundReason;
     private final LocalDateTime refundTime;
-    private final Clock clock;
 
     private Order(
             OrderId id,
@@ -91,8 +89,7 @@ public class Order {
             String cancelReason,
             LocalDateTime cancelTime,
             String refundReason,
-            LocalDateTime refundTime,
-            Clock clock) {
+            LocalDateTime refundTime) {
         this.id = id;
         this.orderNo = orderNo;
         this.buyerId = buyerId;
@@ -108,7 +105,6 @@ public class Order {
         this.cancelTime = cancelTime;
         this.refundReason = refundReason;
         this.refundTime = refundTime;
-        this.clock = clock != null ? clock : Clock.systemDefaultZone();
     }
 
     // ==================== Factory ====================
@@ -143,7 +139,6 @@ public class Order {
                 spec.address(),
                 spec.phone(),
                 spec.remark(),
-                null,
                 null,
                 null,
                 null,
@@ -184,8 +179,7 @@ public class Order {
                 spec.cancelReason(),
                 spec.cancelTime(),
                 spec.refundReason(),
-                spec.refundTime(),
-                null);
+                spec.refundTime());
     }
 
     // ==================== Status Queries ====================
@@ -205,15 +199,15 @@ public class Order {
     // ==================== State Transitions ====================
 
     /** 支付订单 */
-    public Transition<Order, OrderPaidEvent> pay() {
+    public Transition<Order, OrderPaidEvent> pay(LocalDateTime now) {
         return new Transition<>(
-                transitionTo(OrderAction.PAY, null), new OrderPaidEvent(id.value(), PaymentStatus.PAID.getCode()));
+                transitionTo(OrderAction.PAY, null, now), new OrderPaidEvent(id.value(), PaymentStatus.PAID.getCode()));
     }
 
     /** 取消订单（买家路径，仅限待付款） */
-    public Transition<Order, OrderCancelledEvent> cancel(String reason) {
+    public Transition<Order, OrderCancelledEvent> cancel(String reason, LocalDateTime now) {
         return new Transition<>(
-                transitionTo(OrderAction.CANCEL, reason),
+                transitionTo(OrderAction.CANCEL, reason, now),
                 new OrderCancelledEvent(id.value(), extractProductIds(), reason));
     }
 
@@ -222,28 +216,28 @@ public class Order {
      * <p>
      * 正常用户取消只允许待付款订单，管理端可以强制取消已付款订单。
      */
-    public Transition<Order, OrderCancelledEvent> forceCancel(String reason) {
+    public Transition<Order, OrderCancelledEvent> forceCancel(String reason, LocalDateTime now) {
         return new Transition<>(
-                transitionTo(OrderAction.FORCE_CANCEL, reason),
+                transitionTo(OrderAction.FORCE_CANCEL, reason, now),
                 new OrderCancelledEvent(id.value(), extractProductIds(), reason));
     }
 
     /** 发货 */
-    public Transition<Order, OrderShippedEvent> ship() {
-        return new Transition<>(transitionTo(OrderAction.SHIP, null), new OrderShippedEvent(id.value()));
+    public Transition<Order, OrderShippedEvent> ship(LocalDateTime now) {
+        return new Transition<>(transitionTo(OrderAction.SHIP, null, now), new OrderShippedEvent(id.value()));
     }
 
     /** 确认收货 */
-    public Transition<Order, OrderCompletedEvent> confirmReceipt() {
+    public Transition<Order, OrderCompletedEvent> confirmReceipt(LocalDateTime now) {
         return new Transition<>(
-                transitionTo(OrderAction.CONFIRM_RECEIPT, null),
+                transitionTo(OrderAction.CONFIRM_RECEIPT, null, now),
                 new OrderCompletedEvent(id.value(), extractProductIds()));
     }
 
     /** 退款 */
-    public Transition<Order, OrderRefundedEvent> refund(String reason) {
+    public Transition<Order, OrderRefundedEvent> refund(String reason, LocalDateTime now) {
         return new Transition<>(
-                transitionTo(OrderAction.REFUND, reason),
+                transitionTo(OrderAction.REFUND, reason, now),
                 new OrderRefundedEvent(id.value(), extractProductIds(), reason));
     }
 
@@ -255,8 +249,10 @@ public class Order {
      * 校验动作在当前订单状态（status + paymentStatus）下是否合法、关闭类动作是否附带原因，
      * 然后一次性应用副作用：目标状态 + 目标支付状态 + 按 {@link ClosureKind} 归因的关闭原因/时间。
      * 任何新增转换都必须先声明 {@link OrderAction}，再经此方法执行，禁止绕过守卫直接修改状态。
+     *
+     * @param now 关闭类动作的归因时间（由应用层传入，保证时间源不落在领域模型上）
      */
-    private Order transitionTo(OrderAction action, String reason) {
+    private Order transitionTo(OrderAction action, String reason, LocalDateTime now) {
         BizRequire.requireTrue(action.canApply(status, paymentStatus), action.resultCode());
         BizRequire.requireTrue(
                 action.closureKind() == ClosureKind.NONE || (reason != null && !reason.isBlank()), action.resultCode());
@@ -264,19 +260,14 @@ public class Order {
                 .status(action.target())
                 .paymentStatus(action.targetPaymentStatus() != null ? action.targetPaymentStatus() : paymentStatus);
         switch (action.closureKind()) {
-            case CANCEL -> builder = builder.cancelReason(reason).cancelTime(now());
-            case REFUND -> builder = builder.refundReason(reason).refundTime(now());
+            case CANCEL -> builder = builder.cancelReason(reason).cancelTime(now);
+            case REFUND -> builder = builder.refundReason(reason).refundTime(now);
             case NONE -> {}
         }
         return builder.build();
     }
 
     // ==================== Internal Helpers ====================
-
-    /** 取消/退款时间取自注入的 {@link Clock}（测试可注入固定时钟保证确定性）。 */
-    private LocalDateTime now() {
-        return LocalDateTime.now(clock);
-    }
 
     private List<String> extractProductIds() {
         return items.stream().map(i -> i.productId().value()).toList();

@@ -12,13 +12,14 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentUs
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TopProductResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
+import com.cartethyia.easyorange.admin.domain.port.AdminDashboardQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminDashboardQueryPort.TopProductRecord;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderStats;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportQueryResult;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportStats;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.TopProductRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.RecentUser;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserStats;
@@ -46,7 +47,10 @@ class AdminDashboardServiceTest {
     private AdminUserQueryPort adminUserQueryPort;
 
     @Mock
-    private AdminProductQueryPort adminProductQueryPort;
+    private AdminDashboardQueryPort adminDashboardQueryPort;
+
+    @Mock
+    private AdminReportQueryPort adminReportQueryPort;
 
     @Mock
     private AdminOrderQueryPort adminOrderQueryPort;
@@ -70,9 +74,10 @@ class AdminDashboardServiceTest {
         @DisplayName("获取仪表盘统计数据")
         void getDashboardStats_returnsStats() {
             when(adminUserQueryPort.getUserStats()).thenReturn(new UserStats(100, 5));
-            when(adminProductQueryPort.getProductStats()).thenReturn(new AdminProductQueryPort.ProductStats(200, 10));
+            when(adminDashboardQueryPort.getProductStats())
+                    .thenReturn(new AdminDashboardQueryPort.ProductStats(200, 10));
             when(adminOrderQueryPort.getOrderStats()).thenReturn(new OrderStats(300, 0, 0, 0, 0, 0, 0, 0));
-            when(adminProductQueryPort.getReportStats()).thenReturn(new ReportStats(20, 8, 0, 0, 0));
+            when(adminReportQueryPort.getReportStats()).thenReturn(new ReportStats(20, 8, 0, 0, 0));
 
             DashboardStatsResponse stats = dashboardService.getDashboardStats();
 
@@ -92,10 +97,11 @@ class AdminDashboardServiceTest {
         @Test
         @DisplayName("获取待处理事项")
         void getPendingItems_returnsItems() {
-            when(adminProductQueryPort.getReportStats()).thenReturn(new ReportStats(5, 3, 0, 0, 0));
+            when(adminReportQueryPort.getReportStats()).thenReturn(new ReportStats(5, 3, 0, 0, 0));
             when(adminOrderQueryPort.getOrderStats()).thenReturn(new OrderStats(10, 0, 5, 0, 0, 0, 0, 0));
-            when(adminProductQueryPort.getProductStats()).thenReturn(new AdminProductQueryPort.ProductStats(100, 7));
-            when(adminProductQueryPort.queryReports(0, 1, 5))
+            when(adminDashboardQueryPort.getProductStats())
+                    .thenReturn(new AdminDashboardQueryPort.ProductStats(100, 7));
+            when(adminReportQueryPort.queryReports(0, 1, 5))
                     .thenReturn(new ReportQueryResult(
                             List.of(new ReportRecord(
                                     "1",
@@ -240,7 +246,7 @@ class AdminDashboardServiceTest {
         @Test
         @DisplayName("获取 Top 浏览量商品")
         void getTopProducts_returnsProducts() {
-            when(adminProductQueryPort.getTopProducts(10))
+            when(adminDashboardQueryPort.getTopProducts(10))
                     .thenReturn(List.of(new TopProductRecord(
                             "1",
                             "高等数学教材",

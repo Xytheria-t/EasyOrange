@@ -15,12 +15,11 @@ import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderSumm
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.ProductInfo;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserInfo;
-import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -39,8 +38,6 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 public class AdminOrderService {
-
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(CommonConstant.DATETIME_FORMAT);
 
     private final AdminOrderQueryPort adminOrderQueryPort;
     private final AdminUserQueryPort adminUserQueryPort;
@@ -179,9 +176,9 @@ public class AdminOrderService {
             return null;
         }
         try {
-            return LocalDateTime.parse(startTimeStr + " 00:00:00", DATE_FORMATTER);
+            return LocalDate.parse(startTimeStr).atStartOfDay();
         } catch (DateTimeParseException e) {
-            log.warn("无法解析开始时间: {}, 格式应为 yyyy-MM-dd", startTimeStr);
+            log.warn("无法解析时间: {}, 格式应为 yyyy-MM-dd", startTimeStr);
             return null;
         }
     }
@@ -191,9 +188,9 @@ public class AdminOrderService {
             return null;
         }
         try {
-            return LocalDateTime.parse(endTimeStr + " 23:59:59", DATE_FORMATTER);
+            return LocalDate.parse(endTimeStr).atTime(23, 59, 59);
         } catch (DateTimeParseException e) {
-            log.warn("无法解析结束时间: {}, 格式应为 yyyy-MM-dd", endTimeStr);
+            log.warn("无法解析时间: {}, 格式应为 yyyy-MM-dd", endTimeStr);
             return null;
         }
     }

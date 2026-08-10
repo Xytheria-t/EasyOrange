@@ -4,8 +4,8 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminRep
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
 import com.cartethyia.easyorange.admin.domain.enums.ReportHandleAction;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportHistoryRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportHistoryRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportRecord;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserInfo;
 import org.springframework.stereotype.Component;
 

@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -79,7 +80,7 @@ public class OrderTimeoutTask {
             return false;
         }
 
-        Transition<Order, OrderCancelledEvent> result = aggregate.cancel("订单超时自动取消");
+        Transition<Order, OrderCancelledEvent> result = aggregate.cancel("订单超时自动取消", LocalDateTime.now());
         orderRepository.update(result.aggregate());
 
         orderCachePort.evictOrderCache(

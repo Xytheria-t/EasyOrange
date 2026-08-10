@@ -38,16 +38,13 @@ public class OrderPreparation {
     /**
      * 准备订单项数据
      *
-     * @param items   订单项请求列表
-     * @param buyerId 认领方 ID
+     * @param items 订单项请求列表
      * @return 准备结果
      * @throws OrderDomainException 如果资产不存在、已下架或库存不足
      */
-    public PreparationResult prepareOrderItems(List<CreateOrderCommand.CreateOrderItem> items, String buyerId) {
-        BizRequire.notEmpty(items, "订单资产不能为空");
-
+    public PreparationResult prepareOrderItems(List<CreateOrderCommand.CreateOrderItem> items) {
         // 批量获取快照并校验，返回已确认存在的快照集与资产方 ID
-        ValidatedSnapshots validated = loadAndValidateSnapshots(items, buyerId);
+        ValidatedSnapshots validated = loadAndValidateSnapshots(items);
 
         // 批量获取资产详情并构建订单项（构建只消费校验后的快照，消除隐式非空契约）
         Map<String, ProductDetail> productDetailMap =
@@ -58,10 +55,10 @@ public class OrderPreparation {
     }
 
     /**
-     * 批量加载资产快照，校验（存在、在线、库存、非自购、同一资产方）并返回资产方 ID 与校验后的快照。
+     * 批量加载资产快照，校验（存在、在线、库存、同一资产方）并返回资产方 ID 与校验后的快照。
+     * 买家不可认领自己的资产由 {@code Order.createOrder} 的领域不变量统一把关。
      */
-    private ValidatedSnapshots loadAndValidateSnapshots(
-            List<CreateOrderCommand.CreateOrderItem> items, String buyerId) {
+    private ValidatedSnapshots loadAndValidateSnapshots(List<CreateOrderCommand.CreateOrderItem> items) {
         Map<String, ProductOrderPort.ProductSnapshot> snapshotMap =
                 fetchByIds(items, productOrderPort::getSnapshots, ProductOrderPort.ProductSnapshot::productId);
 
@@ -76,7 +73,6 @@ public class OrderPreparation {
 
             if (sellerId == null) {
                 sellerId = snapshot.sellerId();
-                BizRequire.requireTrue(!Objects.equals(sellerId, buyerId), "不能认领自己的资产");
             } else {
                 BizRequire.requireTrue(Objects.equals(snapshot.sellerId(), sellerId), "订单中的资产必须来自同一资产方");
             }

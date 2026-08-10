@@ -10,10 +10,11 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportSt
 import com.cartethyia.easyorange.admin.domain.enums.AdminResultCode;
 import com.cartethyia.easyorange.admin.domain.enums.ReportHandleAction;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportHistoryRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportQueryResult;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportHistoryRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminReportService {
 
+    private final AdminReportQueryPort adminReportQueryPort;
     private final AdminProductQueryPort adminProductQueryPort;
     private final AdminReportAssembler assembler;
     private final AdminUserQueryPort adminUserQueryPort;
@@ -41,7 +43,7 @@ public class AdminReportService {
         int page = pageNum != null ? pageNum : 1;
         int size = pageSize != null ? pageSize : 20;
 
-        ReportQueryResult reportPage = adminProductQueryPort.queryReports(status, page, size);
+        ReportQueryResult reportPage = adminReportQueryPort.queryReports(status, page, size);
 
         List<String> productIds = reportPage.records().stream()
                 .map(ReportRecord::productId)
@@ -69,7 +71,7 @@ public class AdminReportService {
 
     @Transactional(readOnly = true)
     public AdminReportResponse getReportDetail(String id) {
-        ReportRecord report = adminProductQueryPort.getReportDetail(id);
+        ReportRecord report = adminReportQueryPort.getReportDetail(id);
         BizRequire.notNull(report, AdminResultCode.REPORT_NOT_FOUND);
 
         AdminUserQueryPort.UserInfo reporter =
@@ -88,12 +90,12 @@ public class AdminReportService {
     public void handleReport(String id, ReportHandleRequest request) {
         String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
         String remark = request.getRemark() != null ? request.getRemark() : "";
-        adminProductQueryPort.handleReport(id, request.getAction(), remark, operatorId);
+        adminReportQueryPort.handleReport(id, request.getAction(), remark, operatorId);
     }
 
     @Transactional(readOnly = true)
     public List<ReportHandleHistoryResponse> getReportHistory(String reportId) {
-        List<ReportHistoryRecord> histories = adminProductQueryPort.getReportHistory(reportId);
+        List<ReportHistoryRecord> histories = adminReportQueryPort.getReportHistory(reportId);
         Map<String, AdminUserQueryPort.UserInfo> operatorMap = adminUserQueryPort.getUserInfos(histories.stream()
                 .map(ReportHistoryRecord::operatorId)
                 .distinct()
@@ -117,7 +119,7 @@ public class AdminReportService {
         int success = 0;
         for (String reportId : request.getReportIds()) {
             try {
-                adminProductQueryPort.handleReport(reportId, request.getAction(), remark, operatorId);
+                adminReportQueryPort.handleReport(reportId, request.getAction(), remark, operatorId);
                 success++;
             } catch (BusinessException e) {
                 errors.add("举报ID " + reportId + ": " + e.getMessage());
@@ -128,7 +130,7 @@ public class AdminReportService {
 
     @Transactional(readOnly = true)
     public ReportStatsResponse getReportStats() {
-        ReportStats stats = adminProductQueryPort.getReportStats();
+        ReportStats stats = adminReportQueryPort.getReportStats();
         return ReportStatsResponse.builder()
                 .totalReports(stats.total())
                 .pendingReports(stats.pending())

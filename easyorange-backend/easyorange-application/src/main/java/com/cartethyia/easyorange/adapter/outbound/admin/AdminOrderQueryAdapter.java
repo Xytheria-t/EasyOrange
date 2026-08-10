@@ -136,9 +136,9 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
         var aggregate = findOrderOrThrow(orderId);
 
         if (aggregate.status() == OrderStatus.PENDING_PAYMENT) {
-            persistAndPublish(aggregate.cancel(reason));
+            persistAndPublish(aggregate.cancel(reason, LocalDateTime.now()));
         } else if (aggregate.status() == OrderStatus.PAID) {
-            persistAndPublish(aggregate.forceCancel(reason));
+            persistAndPublish(aggregate.forceCancel(reason, LocalDateTime.now()));
         } else {
             throw BusinessException.of("当前订单状态不允许取消");
         }
@@ -147,13 +147,13 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
     @Override
     public void forceComplete(String orderId) {
         var aggregate = findOrderOrThrow(orderId);
-        persistAndPublish(aggregate.confirmReceipt());
+        persistAndPublish(aggregate.confirmReceipt(LocalDateTime.now()));
     }
 
     @Override
     public void refundOrder(String orderId, String reason) {
         var aggregate = findOrderOrThrow(orderId);
-        persistAndPublish(aggregate.refund(reason));
+        persistAndPublish(aggregate.refund(reason, LocalDateTime.now()));
     }
 
     private Order findOrderOrThrow(String orderId) {

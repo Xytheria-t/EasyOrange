@@ -4,15 +4,14 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryC
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryUpdateRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryTreeResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.CategoryRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminCategoryQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminCategoryQueryPort.CategoryRecord;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,12 +21,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminCategoryService {
 
-    private final AdminProductQueryPort adminProductQueryPort;
+    private final AdminCategoryQueryPort adminCategoryQueryPort;
 
     private static final int MAX_CATEGORY_LEVEL = 3;
 
     public List<CategoryResponse> listCategories(String parentId) {
-        List<CategoryRecord> entities = adminProductQueryPort.listCategories(parentId);
+        List<CategoryRecord> entities = adminCategoryQueryPort.listCategories(parentId);
 
         Map<String, Long> productCountMap = countProductMaps(entities);
         Map<String, String> parentNameMap = buildParentNameMap(entities);
@@ -38,33 +37,31 @@ public class AdminCategoryService {
     }
 
     public List<CategoryTreeResponse> categoryTree() {
-        List<CategoryRecord> all = adminProductQueryPort.listCategories(null).stream()
+        Map<String, List<CategoryRecord>> groupedByParent = adminCategoryQueryPort.listCategories(null).stream()
                 .filter(cat -> Objects.equals(cat.status(), 1))
-                .toList();
-
-        Map<String, List<CategoryRecord>> groupedByParent = all.stream()
                 .collect(Collectors.groupingBy(
                         cat -> cat.parentId() != null ? cat.parentId() : "0", LinkedHashMap::new, Collectors.toList()));
+        return buildChildren(groupedByParent, "0");
+    }
 
-        Function<String, List<CategoryTreeResponse>> buildChildren = new Function<>() {
-            @Override
-            public List<CategoryTreeResponse> apply(String pid) {
-                List<CategoryRecord> children = groupedByParent.getOrDefault(pid, List.of());
-                return children.stream()
-                        .map(cat -> new CategoryTreeResponse(
-                                cat.id(), cat.name(), cat.level(), cat.sortOrder(), cat.status(), apply(cat.id())))
-                        .collect(Collectors.toList());
-            }
-        };
-
-        return buildChildren.apply("0");
+    private List<CategoryTreeResponse> buildChildren(
+            Map<String, List<CategoryRecord>> groupedByParent, String parentId) {
+        return groupedByParent.getOrDefault(parentId, List.of()).stream()
+                .map(cat -> new CategoryTreeResponse(
+                        cat.id(),
+                        cat.name(),
+                        cat.level(),
+                        cat.sortOrder(),
+                        cat.status(),
+                        buildChildren(groupedByParent, cat.id())))
+                .toList();
     }
 
     @Transactional(rollbackFor = Exception.class)
     public CategoryResponse createCategory(CategoryCreateRequest request) {
         int level = 1;
         if (request.parentId() != null) {
-            CategoryRecord parent = adminProductQueryPort.getCategory(request.parentId());
+            CategoryRecord parent = adminCategoryQueryPort.getCategory(request.parentId());
             if (parent == null) {
                 throw BusinessException.of("父分类不存在");
             }
@@ -78,14 +75,14 @@ public class AdminCategoryService {
         }
 
         CategoryRecord created =
-                adminProductQueryPort.createCategory(request.name(), request.parentId(), request.sortOrder(), level);
+                adminCategoryQueryPort.createCategory(request.name(), request.parentId(), request.sortOrder(), level);
 
         return toCategoryResponse(created, Map.of(), Map.of());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public CategoryResponse updateCategory(String id, CategoryUpdateRequest request) {
-        CategoryRecord entity = adminProductQueryPort.getCategory(id);
+        CategoryRecord entity = adminCategoryQueryPort.getCategory(id);
         if (entity == null) {
             throw BusinessException.of("分类不存在");
         }
@@ -94,7 +91,7 @@ public class AdminCategoryService {
         Integer level = entity.level();
 
         if (request.parentId() != null && !Objects.equals(request.parentId(), entity.parentId())) {
-            CategoryRecord parent = adminProductQueryPort.getCategory(request.parentId());
+            CategoryRecord parent = adminCategoryQueryPort.getCategory(request.parentId());
             if (parent == null) {
                 throw BusinessException.of("父分类不存在");
             }
@@ -129,7 +126,7 @@ public class AdminCategoryService {
                 entity.status(),
                 entity.createTime());
 
-        adminProductQueryPort.updateCategory(updated);
+        adminCategoryQueryPort.updateCategory(updated);
 
         Map<String, Long> productCountMap = countProductMaps(List.of(updated));
         return toCategoryResponse(updated, productCountMap, Map.of());
@@ -137,11 +134,11 @@ public class AdminCategoryService {
 
     @Transactional(rollbackFor = Exception.class)
     public void updateStatus(String id, Integer status) {
-        CategoryRecord entity = adminProductQueryPort.getCategory(id);
+        CategoryRecord entity = adminCategoryQueryPort.getCategory(id);
         if (entity == null) {
             throw BusinessException.of("分类不存在");
         }
-        adminProductQueryPort.updateCategory(new CategoryRecord(
+        adminCategoryQueryPort.updateCategory(new CategoryRecord(
                 entity.id(),
                 entity.name(),
                 entity.parentId(),
@@ -154,12 +151,12 @@ public class AdminCategoryService {
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteCategory(String id) {
-        CategoryRecord entity = adminProductQueryPort.getCategory(id);
+        CategoryRecord entity = adminCategoryQueryPort.getCategory(id);
         if (entity == null) {
             throw BusinessException.of("分类不存在");
         }
 
-        if (adminProductQueryPort.countCategoryChildren(id) > 0) {
+        if (adminCategoryQueryPort.countCategoryChildren(id) > 0) {
             throw BusinessException.of("该分类下存在子分类，无法删除");
         }
 
@@ -167,18 +164,18 @@ public class AdminCategoryService {
             throw BusinessException.of("该分类下存在关联商品，无法删除");
         }
 
-        adminProductQueryPort.deleteCategory(id);
+        adminCategoryQueryPort.deleteCategory(id);
     }
 
     private void checkDuplicateName(String name, String parentId) {
-        CategoryRecord existing = adminProductQueryPort.findCategoryByName(name);
+        CategoryRecord existing = adminCategoryQueryPort.findCategoryByName(name);
         if (existing != null && Objects.equals(existing.parentId(), parentId)) {
             throw BusinessException.of("同级下已存在同名分类");
         }
     }
 
     private void checkDuplicateNameAtRoot(String name) {
-        CategoryRecord existing = adminProductQueryPort.findCategoryByName(name);
+        CategoryRecord existing = adminCategoryQueryPort.findCategoryByName(name);
         if (existing != null && existing.parentId() == null) {
             throw BusinessException.of("已存在同名的一级分类");
         }
@@ -189,11 +186,11 @@ public class AdminCategoryService {
             return Map.of();
         }
         List<String> ids = categories.stream().map(CategoryRecord::id).collect(Collectors.toList());
-        return adminProductQueryPort.countProductsByCategoryIds(ids);
+        return adminCategoryQueryPort.countProductsByCategoryIds(ids);
     }
 
     private Long countProductsByCategoryId(String categoryId) {
-        Map<String, Long> result = adminProductQueryPort.countProductsByCategoryIds(List.of(categoryId));
+        Map<String, Long> result = adminCategoryQueryPort.countProductsByCategoryIds(List.of(categoryId));
         return result.getOrDefault(categoryId, 0L);
     }
 
@@ -208,7 +205,7 @@ public class AdminCategoryService {
         }
 
         List<CategoryRecord> parents =
-                adminProductQueryPort.getCategoriesByIds(parentIds.stream().toList());
+                adminCategoryQueryPort.getCategoriesByIds(parentIds.stream().toList());
         return parents.stream().collect(Collectors.toMap(CategoryRecord::id, CategoryRecord::name, (a, b) -> a));
     }
 

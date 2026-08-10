@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
  * null 表示不变）、关闭归因类型（closureKind，NONE 无需原因 / CANCEL 记入取消字段 / REFUND 记入退款字段）、
  * 非法时的错误码，以及额外的支付前置条件（paymentGuard）。
  * {@link OrderStatus#canTransitionTo(OrderStatus)} 由此派生，聚合根统一经
- * {@code Order#transitionTo(OrderAction, String)} 守卫。
+ * {@code Order#transitionTo(OrderAction, String, LocalDateTime)} 守卫。
  * <pre>
  * PENDING_PAYMENT ──PAY──→ PAID ──SHIP──→ SHIPPED ──CONFIRM_RECEIPT──→ COMPLETED
  *       │                   │  │                     │

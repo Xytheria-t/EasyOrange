@@ -8,10 +8,11 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentUs
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TopProductResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
+import com.cartethyia.easyorange.admin.domain.port.AdminDashboardQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminDashboardQueryPort.RecentProductRecord;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.RecentProductRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ReportStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.RecentUser;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserStats;
@@ -34,7 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminDashboardService {
 
     private final AdminUserQueryPort adminUserQueryPort;
-    private final AdminProductQueryPort adminProductQueryPort;
+    private final AdminDashboardQueryPort adminDashboardQueryPort;
+    private final AdminReportQueryPort adminReportQueryPort;
     private final AdminOrderQueryPort adminOrderQueryPort;
     private final JdbcTemplate jdbcTemplate;
 
@@ -44,9 +46,9 @@ public class AdminDashboardService {
 
     public DashboardStatsResponse getDashboardStats() {
         UserStats userStats = adminUserQueryPort.getUserStats();
-        AdminProductQueryPort.ProductStats productStats = adminProductQueryPort.getProductStats();
+        AdminDashboardQueryPort.ProductStats productStats = adminDashboardQueryPort.getProductStats();
         long totalOrders = adminOrderQueryPort.getOrderStats().totalOrders();
-        ReportStats reportStats = adminProductQueryPort.getReportStats();
+        ReportStats reportStats = adminReportQueryPort.getReportStats();
 
         return DashboardStatsResponse.builder()
                 .totalUsers(userStats.totalUsers())
@@ -61,12 +63,12 @@ public class AdminDashboardService {
     }
 
     public PendingItemsResponse getPendingItems() {
-        ReportStats reportStats = adminProductQueryPort.getReportStats();
+        ReportStats reportStats = adminReportQueryPort.getReportStats();
         long pendingOrders = adminOrderQueryPort.getOrderStats().pendingPayment();
-        long pendingProducts = adminProductQueryPort.getProductStats().pending();
+        long pendingProducts = adminDashboardQueryPort.getProductStats().pending();
 
         List<PendingItemsResponse.PendingReportItem> recentReports =
-                adminProductQueryPort.queryReports(0, 1, 5).records().stream()
+                adminReportQueryPort.queryReports(0, 1, 5).records().stream()
                         .map(report -> PendingItemsResponse.PendingReportItem.builder()
                                 .id(report.id())
                                 .productId(report.productId())
@@ -93,7 +95,7 @@ public class AdminDashboardService {
     }
 
     public List<RecentProductResponse> getRecentProducts(int limit) {
-        return adminProductQueryPort.getRecentProducts(limit).stream()
+        return adminDashboardQueryPort.getRecentProducts(limit).stream()
                 .map(this::toRecentProductResponse)
                 .toList();
     }
@@ -217,7 +219,7 @@ public class AdminDashboardService {
 
     @Transactional(readOnly = true)
     public List<TopProductResponse> getTopProducts(int limit) {
-        return adminProductQueryPort.getTopProducts(limit).stream()
+        return adminDashboardQueryPort.getTopProducts(limit).stream()
                 .map(row -> TopProductResponse.builder()
                         .productId(row.productId())
                         .name(row.name())
