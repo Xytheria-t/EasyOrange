@@ -242,6 +242,43 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 - **Java `var` 使用规范**: 局部变量推荐使用 `var` 的场景：同一类型构造器（`Foo x = new Foo()` → `var x = new Foo()`）、显式 cast（`Type x = (Type) expr` → `var x = (Type) expr`）、StringBuilder/ByteArrayOutputStream 等无泛型构造器。**不推荐**的场景：接口类型到实现类型的赋值（`List<X> x = new ArrayList<>()` → 保持 `List<X>`，使用 `var` 会丢失接口抽象）
 - **可靠性工程模式**（2026-07-27 企业级差距优化后落地）：① **审计日志 Outbox** — `AuditLogAspect` 不再直接入库，改为发布 `AuditLogEvent` 走 Spring Modulith Outbox（事务一致 + 崩溃恢复），`AuditLogEventConsumer` 异步消费写库；② **DLQ 三级重试** — `DlqRetryScheduler` 每 5 分钟扫描 DLQ，重试次数 < 3 重投主队列，超限转储 `eo.dlq.terminal`；③ **Redisson 分布式令牌桶** — `DistributedRateLimiter` 基于 `RRateLimiter` 替代 `increment+expire` 固定窗口，解决原子性缺口 + 边界突刺；④ **L1 缓存广播失效** — `MultiLevelCache` evict 时 Redis Pub/Sub 广播，`CacheInvalidationListener` 订阅清除本地 Caffeine；⑤ **订单创建一致性** — 下单链路 = 本地单 `@Transactional`（订单/库存/支付/Outbox 原子提交）+ Redisson 分布式锁（按 productId 排序防死锁防超卖）+ Outbox 事件副作用；**拒绝 Saga**：单库场景下反向补偿与回滚重复、失败状态随事务回滚丢失，决策记录见 [ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)；⑥ **Redis 熔断降级** — `Resilience4jConfig` 提供 `CircuitBreakerRegistry`（COUNT_BASED 10/失败率 50%/开路 60s），Redis 缓存操作统一熔断 + 多级降级（L1 Caffeine → L2 Redis → DB）；⑦ **SpringDoc OpenAPI 3** — `/v3/api-docs` + `/swagger-ui.html`
 
+### 多会话并发协作（worktree 自动隔离 + squash+FF 合并协议）
+
+EasyOrange 常被多个 AI 会话并发改动同一仓库。隔离与基线统一由以下协议保证，所有会话必须遵守。
+
+**Worktree 自动隔离**：全局 `SessionStart` hook（`~/.claude/hooks/claude-detect-multi-session.sh`，机器级基础设施）检测到本仓库已有其他活跃 Claude 会话（main checkout 或任意 worktree）时，向新会话注入 **`⚠️ MULTI-SESSION`** 标记。标记出现时：
+1. 动手修改/新增代码**之前**必须先 `EnterWorktree` 进独立 worktree，再编辑、提交
+2. 已处于 worktree 中的会话忽略标记、正常干活
+3. 禁止直接在共享 checkout（主工作区）改文件
+4. 只读查询、搜索、回答问题不受此约束
+
+> 说明：后台会话另有原生 `worktree.bgIsolation: 'worktree'` 兜底（主 checkout 的 Edit/Write 会被拒绝），此规则重点覆盖交互式会话；hook 按 `--session-id` 去重并排除自身祖先进程，不会把子 agent 或 `bg-spare`/`bg-pty-host` 辅助进程误判为独立会话。标记注入依赖本机全局 hook，其他机器需自行部署同样的 hook。
+
+**多会话并发合并协议**：
+1. **建分支基于本地 develop**（非 origin/develop）：`git worktree add .claude/worktrees/<name> -b feat/<name> $(git rev-parse develop)`。本地 develop 被会话实时推进，是**最新真相**；`origin/develop` 只是推送快照，基于它开发会造成基线漂移（各会话改动互相不包含）
+2. **合回前先 `git merge develop`**：把其他会话已合入的改动拉进本分支，**冲突在会话内解决**——能 merge 成功 = 无冲突；跳过此步直接合回是并发冲突的根源
+3. **合回用 squash + fast-forward**：分支上 n 个提交用 `git reset --soft develop && git commit -m "feat(...): 任务标题"` 合成 1 个，再 `git update-ref refs/heads/develop HEAD` ff 合回（develop 被主 checkout 占用无法 checkout 时用此等价物）。develop 常年**一条直线、每任务=1 提交**、无 merge commit——历史压缩靠 squash，推送只是外发动作，勿再造大合并提交
+4. **每日收工整体推送 = 把当天全部任务提交 squash 成一个大而详细的提交**（不是逐任务小提交外发）。develop 被主 checkout 占用，用临时 worktree 代替 reset：
+   ```bash
+   git fetch origin
+   WT=.claude/worktrees/squash-daily
+   git worktree add "$WT" -b tmp-squash "$(git rev-parse develop)"
+   git -C "$WT" reset --soft origin/develop        # 暂存自上次推送以来的全部改动
+   git -C "$WT" commit -F - <<'EOF'                # 无待推改动则跳过；大而详细的提交信息
+   feat: 2026-08-10 收口
+
+   - docs(agents): 多会话并发协议下沉项目级
+   - feat(order): 下单链路收敛与 admin 查询端口拆分
+   EOF
+   git update-ref refs/heads/develop "$(git -C "$WT" rev-parse HEAD)"
+   git worktree remove "$WT" && git branch -D tmp-squash
+   git tag -f daily-$(date +%Y%m%d) develop
+   git push origin +develop +refs/tags/daily-$(date +%Y%m%d)   # 历史重写 → force push
+   ```
+   每日 tag 是回滚点（`git reset --hard daily-YYYYMMDD` 按日回滚）；推送前当日局部回滚靠 `git revert <sha>`。其他会话下次 `git merge develop` 会把这个大提交整体并入，内容与逐任务合并无差异
+5. **收尾删分支 + 删 worktree**：`git branch -d <name> && git worktree remove ...`
+6. **门禁 = pre-commit hook + 本地测试**：合回前改动涉及模块的单测/集成测试通过（个人项目不必每次推远端 CI，push 触发 GitHub Actions 兜底）
+
 ### ECC 编码规则激活表
 
 | 路径 | 激活规则 |
