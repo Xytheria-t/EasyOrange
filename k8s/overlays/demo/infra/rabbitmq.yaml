@@ -1,4 +1,4 @@
-# RabbitMQ 3.13 — demo-only StatefulSet（单节点；含 management 插件便于排查）
+# RabbitMQ 4.3 — demo-only StatefulSet（单节点；含 management 插件便于排查）
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -22,7 +22,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: rabbitmq
-          image: rabbitmq:3.13-management
+          image: rabbitmq:4.3.4-management
           imagePullPolicy: IfNotPresent
           env:
             - name: RABBITMQ_DEFAULT_USER

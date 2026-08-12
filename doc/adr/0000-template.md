@@ -28,7 +28,7 @@
 
 代码引用示例：
 
-- 实现：[OrderCreationService.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/service/OrderCreationService.java)
+- 实现：[OrderCommandHandler.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/command/OrderCommandHandler.java)
 
 ## 后果（Consequences）
 

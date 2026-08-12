@@ -1,6 +1,6 @@
 services:
   mysql:
-    image: mysql:8.4
+    image: mysql:8.4.11
     container_name: easyorange-mysql
     hostname: easyorange-mysql
     restart: unless-stopped
@@ -26,7 +26,7 @@ services:
       start_period: 30s
 
   redis:
-    image: redis:7.4-alpine
+    image: redis:8.10.0-alpine
     container_name: easyorange-redis
     hostname: easyorange-redis
     restart: unless-stopped
@@ -43,7 +43,7 @@ services:
       start_period: 10s
 
   rabbitmq:
-    image: rabbitmq:3.13-management
+    image: rabbitmq:4.3.4-management
     container_name: easyorange-rabbitmq
     hostname: easyorange-rabbitmq
     restart: unless-stopped
@@ -117,7 +117,7 @@ services:
         condition: service_healthy
 
   prometheus:
-    image: prom/prometheus:v3.2.1
+    image: prom/prometheus:v3.13.2
     container_name: easyorange-prometheus
     restart: unless-stopped
     profiles: [fullstack]
@@ -133,7 +133,7 @@ services:
         condition: service_started
 
   grafana:
-    image: grafana/grafana-oss:11.3.0
+    image: grafana/grafana-oss:13.0.2
     container_name: easyorange-grafana
     restart: unless-stopped
     profiles: [fullstack]

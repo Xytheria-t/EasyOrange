@@ -38,14 +38,9 @@ order/
 │       └── config/
 │           └── OrderTimeoutProperties.java  # 超时配置
 ├── application/
-│   ├── service/                              # 应用服务（下单链路）
-│   │   ├── OrderCreationService.java         # 订单创建（本地单事务 + 分布式锁，见 ADR-0007）
-│   │   ├── DistributedLockManager.java       # 分布式锁管理（productId 排序防死锁）
-│   │   ├── OrderPreparationService.java      # 商品数据准备
-│   │   └── OrderCreationExecutor.java        # 订单创建执行
-│   ├── command/                             # 命令（CQRS Write，sealed OrderCommand 接口）
-│   │   ├── OrderCommandHandler.java
-│   │   ├── OrderCommand.java                 # sealed 接口，permits 7 个命令 record
+│   ├── command/                             # 命令（CQRS Write，全部命令由 Handler 收口）
+│   │   ├── OrderCommandHandler.java         # 订单命令唯一执行器（创建/支付/取消/发货/确认收货/退款）
+│   │   ├── OrderPreparation.java            # 创建流水线的订单项准备组件（校验/构建）
 │   │   ├── CreateOrderCommand.java / CreateOrderResult.java
 │   │   ├── PayOrderCommand.java
 │   │   ├── CancelOrderCommand.java
@@ -116,10 +111,10 @@ order/
 
 **执行流程**：
 ```
-OrderCreationService.createOrder() ─ @Transactional(rollbackFor=Exception.class) ─
-  1. DistributedLockManager 获取商品锁（key=eo:order:lock:product:{productId}，按 productId 排序避免死锁）
-  2. OrderPreparationService 准备商品数据（校验在线、库存、非自购）
-  3. OrderCreationExecutor 创建订单 + 发布事件（Outbox 同事务原子）
+OrderCommandHandler.handle(CreateOrderCommand) ─ @Transactional(rollbackFor=Exception.class) ─
+  1. LockPort 获取商品锁（key=eo:order:lock:product:{productId}，按 productId 排序避免死锁）
+  2. OrderPreparation 准备商品数据（校验在线、库存、非自购）
+  3. Order.createOrder 创建订单 + 发布事件（Outbox 同事务原子）
   4. ProductOrderPort.decreaseStock() 同步扣库存（同事务）
   5. PaymentGatewayPort 创建支付记录（同事务）
   6. 任一步失败 → 业务事务整体回滚，抛 OrderCreationException（库存/支付同事务回滚，无补偿路径）
@@ -189,7 +184,7 @@ PENDING_PAYMENT ──PAY──→ PAID ──SHIP──→ SHIPPED ──CONFIR
 2. `Order` 添加转换方法，内部委托 `transitionTo(新动作, reason)` 并构造对应领域事件（返回 `Transition<Order, XxxEvent>`）
 3. 添加对应领域事件
 4. `OrderCommandHandler` 添加命令处理（命令为 record）
-5. 如涉及下单链路，检查 `OrderCreationService` 执行顺序与事务回滚语义（单事务内，无需补偿）
+5. 如涉及下单链路，检查 `OrderCommandHandler.handle(CreateOrderCommand)` 执行顺序与事务回滚语义（单事务内，无需补偿）
 6. Flyway 迁移：`status` 列 CHECK 约束追加新 code
 7. 在 `OrderActionTest` 中补充前置状态/目标状态断言，`OrderTest` 补充转换用例
 
@@ -222,7 +217,6 @@ PENDING_PAYMENT ──PAY──→ PAID ──SHIP──→ SHIPPED ──CONFIR
 | `OrderCreateSpec` | `Order.createOrder()` 工厂参数 | orderId, buyerId, sellerId, items, address, phone, remark |
 | `OrderReconstructSpec` | `Order.from()` 重建参数 | id, orderNo, buyerId, sellerId, items, totalAmount, status, paymentStatus, ... |
 | `Transition<Order, E>` | 状态转换结果（聚合根新实例 + 领域事件） | aggregate, event |
-| `OrderCommand` | sealed 接口（permits 7 个命令 record） | — |
 | `CreateOrderCommand` | 创建订单命令（record） | items, address, phone, remark, paymentMethod |
 | `PayOrderCommand` / `ShipOrderCommand` / `ConfirmReceiptCommand` | 单字段命令（record） | orderId |
 | `CancelOrderCommand` / `RefundOrderCommand` | 带原因命令（record） | orderId, reason |

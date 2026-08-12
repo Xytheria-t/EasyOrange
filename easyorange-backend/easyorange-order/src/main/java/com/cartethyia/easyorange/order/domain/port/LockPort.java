@@ -14,7 +14,7 @@ public interface LockPort {
      * 执行带锁的操作。
      *
      * @param lockKeys    锁的键列表（调用方需自行排序以避免死锁）
-     * @param lockTimeout 锁的超时时间（秒）
+     * @param lockTimeout 获取锁的等待超时（秒）；持有期由实现决定（Redisson watchdog 续期，随事务提交释放）
      * @param operation   要执行的操作
      * @param <T>         操作返回类型
      * @return 操作结果

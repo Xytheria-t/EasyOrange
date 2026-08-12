@@ -20,7 +20,7 @@ public class OrderCommandAssembler {
 
     /**
      * 创建订单请求 → 创建订单命令。
-     * paymentMethod 不来自前端请求，由 OrderCreationService 在创建支付时使用默认值。
+     * paymentMethod 不来自前端请求，由 OrderCommandHandler 在创建支付时使用默认值。
      */
     public CreateOrderCommand toCreateCommand(CreateOrderRequest request) {
         var items = request.getItems().stream()

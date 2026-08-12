@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 /**
  * 订单生命周期事件消费者 — 订单状态变更后的跨模块协作。
  * <p>
- * 注意：下单时的库存扣减已在 {@code OrderCreationService} 中同步完成（同事务），
+ * 注意：下单时的库存扣减已在 {@code OrderCommandHandler} 中同步完成（同事务），
  * {@code OrderCreatedEvent} 不再触发异步库存预留。
  * <p>
  * 职责：

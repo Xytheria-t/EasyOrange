@@ -12,7 +12,7 @@
 
 ADR-0001 决定订单创建采用 Saga 编排 + 反向补偿，ADR-0007 初版进一步收敛为「单事务编排 + Saga 表仅作可观测性」。落地检查发现演进后的实现仍然是一层装饰，且单库场景下比「不做 Saga」更差：
 
-1. **原子性本就不需要 Saga**：`OrderCreationService.createOrder()` 上的 `@Transactional` 使订单、库存扣减（`ProductOrderPort.decreaseStock`，REQUIRED 传播）与支付创建（`PaymentGatewayPort.createPayment`，REQUIRED 传播）全部进入**同一 MySQL 事务**，任一步失败数据库整体回滚，无需任何编排/补偿。
+1. **原子性本就不需要 Saga**：`OrderCommandHandler.handle(CreateOrderCommand)` 上的 `@Transactional` 使订单、库存扣减（`ProductOrderPort.decreaseStock`，REQUIRED 传播）与支付创建（`PaymentGatewayPort.createPayment`，REQUIRED 传播）全部进入**同一 MySQL 事务**，任一步失败数据库整体回滚，无需任何编排/补偿。
 2. **补偿要么冗余、要么死**：事务内补偿 lambda 与回滚重复劳动（已被初版删除）；若未来跨库/异步，内存补偿在进程崩溃后无法重建，持久化的只有状态快照，二者脱节。
 3. **失败状态从未落库**：`SagaCoordinator` 的写操作即使 `REQUIRES_NEW` 独立提交，也只为每次成功下单多付出 3~4 次额外写事务；失败场景的业务现场（订单行等）仍随业务事务回滚，`eo_saga` 表留下的只是一行 `FAILED(errorMessage)`，卡单检测的真实抓手是 MySQL 事务本身而非 Saga 表。
 4. **「比不做更好」不成立**：单库下纯本地事务 + 分布式锁 + Outbox 在正确性、成本、代码量上全部优于带 Saga 表的方案——保留 Saga 的唯一收益是「形式上更符合分布式事务惯例」，而架构应由实际的一致性、成本与可维护性支撑，不应由形式驱动。
@@ -23,17 +23,17 @@ ADR-0001 决定订单创建采用 Saga 编排 + 反向补偿，ADR-0007 初版�
 
 **移除订单创建的 Saga 层**，回归最简可靠形态：
 
-1. **原子性 = 本地单事务**。`OrderCreationService.createOrder()` 在单一 `@Transactional(rollbackFor = Exception.class)` 内依次执行：获取分布式锁 → 准备商品 → 创建订单 + 发布 `OrderCreatedEvent`（Outbox 同事务原子）→ `decreaseStock` → `createPayment`。任一步失败事务整体回滚，抛 `OrderCreationException`，**无补偿路径**。
-2. **并发控制 = 分布式锁**。`DistributedLockManager`（Redisson，key=`eo:order:lock:product:{productId}`，按 `productId` 排序防死锁，10s 超时）是防超卖的唯一手段，与事务并行存在。
+1. **原子性 = 本地单事务**。`OrderCommandHandler.handle(CreateOrderCommand)` 在单一 `@Transactional(rollbackFor = Exception.class)` 内依次执行：获取分布式锁 → 准备商品 → 创建订单 + 发布 `OrderCreatedEvent`（Outbox 同事务原子）→ `decreaseStock` → `createPayment`。任一步失败事务整体回滚，抛 `OrderCreationException`，**无补偿路径**。
+2. **并发控制 = 分布式锁**。`LockPort` / [RedissonLockAdapter.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/adapter/outbound/lock/RedissonLockAdapter.java)（Redisson，key=`eo:order:lock:product:{productId}`，按 `productId` 排序防死锁，10s 获取超时，leaseTime=`-1` 由 watchdog 续期，锁在事务提交后释放）负责同商品下单**排队串行**；库存扣减由 `ProductRepository` 乐观锁版本检查**兜底防超卖**（并发时抛 `ConcurrentUpdateException` 使订单回滚）。
 3. **副作用 = Outbox 事件**。库存/支付为同事务直写；下游状态变更（取消/退款恢复库存、完成标记售出）由 `OrderLifecycleEventConsumer` 消费订单生命周期事件异步触发。
 
 已删除的 Saga 代码（`git rm`）：`CreateOrderSaga`、`SagaCoordinator`、`SagaTimeoutScheduler`、`SagaException`、`SagaRepository`、`SagaState`、`SagaStatus`、`SagaDO`、`SagaMapper`、`SagaRepositoryImpl`、`OrderCompensationService`。`eo_saga` 表由 `V2__drop_order_saga_table.sql` 删除（`DROP TABLE eo_saga_status`）。
 
 关键实现：
 
-- 编排入口：[OrderCreationService.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/service/OrderCreationService.java)
-- 锁：`DistributedLockManager.java`、执行：`OrderPreparationService.java` / `OrderCreationExecutor.java`（均位于 `application/service/`）
-- 生命周期消费者：[OrderLifecycleEventConsumer.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/adapter/inbound/mq/subscriber/OrderLifecycleEventConsumer.java)（队列 `eo.order.lifecycle`）
+- 下单入口：[OrderCommandHandler.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/command/OrderCommandHandler.java)
+- 锁：[RedissonLockAdapter.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/adapter/outbound/lock/RedissonLockAdapter.java)（`LockPort` 的 Redisson 实现）、执行：`OrderPreparation.java`
+- 生命周期消费者：[OrderLifecycleEventConsumer.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/adapter/inbound/messaging/OrderLifecycleEventConsumer.java)（队列 `eo.order.lifecycle`）
 
 核心驱动力：
 
@@ -47,7 +47,7 @@ ADR-0001 决定订单创建采用 Saga 编排 + 反向补偿，ADR-0007 初版�
 
 - 每次下单少 3~4 次 `REQUIRES_NEW` 独立写事务，RT 与连接池占用下降
 - 删除约 10 个 Saga 相关类，模块结构更贴近实际运行语义
-- 测试更直观：`OrderCreationServiceTest` 断言成功路径与失败回滚，无状态机分支
+- 测试更直观：`OrderCommandHandlerCreateTest` 断言成功路径与失败回滚，无状态机分支
 
 ### 负向后果
 

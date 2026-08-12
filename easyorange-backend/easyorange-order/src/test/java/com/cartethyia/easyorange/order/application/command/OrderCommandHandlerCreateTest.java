@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.application.service;
+package com.cartethyia.easyorange.order.application.command;
 
 import static com.cartethyia.easyorange.order.application.command.CreateOrderCommand.CreateOrderItem;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,8 +12,6 @@ import static org.mockito.Mockito.*;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.order.adapter.outbound.lock.RedissonLockAdapter;
-import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
-import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
@@ -45,8 +43,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("OrderCreationService 下单流程测试")
-class OrderCreationServiceTest {
+@DisplayName("OrderCommandHandler 下单流程测试")
+class OrderCommandHandlerCreateTest {
 
     @Mock
     private OrderRepository orderRepository;
@@ -75,7 +73,7 @@ class OrderCreationServiceTest {
     @Mock
     private IdGenerator idGenerator;
 
-    private OrderCreationService service;
+    private OrderCommandHandler commandHandler;
 
     private static final String BUYER_ID = "1";
     private static final String SELLER_ID = "2";
@@ -84,12 +82,12 @@ class OrderCreationServiceTest {
     void setUp() throws InterruptedException {
         var lockManager = new RedissonLockAdapter(redissonClient);
         var preparationService = new OrderPreparation(productOrderPort, productQueryPort, idGenerator);
-        service = new OrderCreationService(
-                lockManager,
+        commandHandler = new OrderCommandHandler(
                 orderRepository,
                 eventPublisher,
-                paymentGatewayPort,
                 orderCachePort,
+                lockManager,
+                paymentGatewayPort,
                 preparationService,
                 productOrderPort,
                 idGenerator);
@@ -115,7 +113,7 @@ class OrderCreationServiceTest {
         when(productOrderPort.getSnapshots(any())).thenReturn(List.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenReturn("1");
 
-        CreateOrderResult result = service.createOrder(command);
+        CreateOrderResult result = commandHandler.handle(command);
 
         assertThat(result).isNotNull();
         assertThat(result.orderNo()).isEqualTo("ORD" + "018f7c1d-0000-7000-8000-000000000001");
@@ -136,7 +134,7 @@ class OrderCreationServiceTest {
         when(productOrderPort.getSnapshots(any())).thenReturn(List.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenThrow(new RuntimeException("支付失败"));
 
-        assertThatThrownBy(() -> service.createOrder(command))
+        assertThatThrownBy(() -> commandHandler.handle(command))
                 .isInstanceOf(PaymentGatewayAdapterException.class)
                 .hasMessageContaining("支付失败");
         // 无事务内反向补偿：订单/库存/支付随事务整体回滚
@@ -152,7 +150,7 @@ class OrderCreationServiceTest {
 
         when(productOrderPort.getSnapshots(any())).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.createOrder(command))
+        assertThatThrownBy(() -> commandHandler.handle(command))
                 .isInstanceOf(OrderDomainException.class)
                 .hasMessageContaining("资产不存在");
     }
@@ -166,7 +164,7 @@ class OrderCreationServiceTest {
         CreateOrderCommand command =
                 new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", null, null);
 
-        assertThatThrownBy(() -> service.createOrder(command))
+        assertThatThrownBy(() -> commandHandler.handle(command))
                 .isInstanceOf(OrderCreationException.class)
                 .hasMessageContaining("繁忙");
     }

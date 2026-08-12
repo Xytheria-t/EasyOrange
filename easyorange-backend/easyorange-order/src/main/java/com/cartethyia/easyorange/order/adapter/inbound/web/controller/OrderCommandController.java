@@ -9,7 +9,6 @@ import com.cartethyia.easyorange.order.application.command.ConfirmReceiptCommand
 import com.cartethyia.easyorange.order.application.command.OrderCommandHandler;
 import com.cartethyia.easyorange.order.application.command.PayOrderCommand;
 import com.cartethyia.easyorange.order.application.command.ShipOrderCommand;
-import com.cartethyia.easyorange.order.application.service.OrderCreationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,13 +22,11 @@ public class OrderCommandController {
 
     private final OrderCommandHandler commandHandler;
     private final OrderCommandAssembler assembler;
-    private final OrderCreationService orderCreationService;
 
     @PostMapping
     public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        return Result.success(orderCreationService
-                .createOrder(assembler.toCreateCommand(request))
-                .orderId());
+        return Result.success(
+                commandHandler.handle(assembler.toCreateCommand(request)).orderId());
     }
 
     @PutMapping("/{id}/cancel")

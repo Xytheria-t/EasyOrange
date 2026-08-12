@@ -1,5 +1,5 @@
 # =============================================================================
-# MySQL 8.4 — demo-only StatefulSet（与 compose.yaml 语义对齐）
+# MySQL 8.4 LTS（8.4.11）— demo-only StatefulSet（与 compose.yaml 语义对齐）
 # ⚠ 生产环境禁用裸 StatefulSet：无 HA、无备份、无故障转移。
 #   现代实践 = 托管数据库（RDS/Aurora/Cloud SQL）+ ExternalSecret 注入连接串
 # =============================================================================
@@ -26,7 +26,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: mysql
-          image: mysql:8.4
+          image: mysql:8.4.11
           imagePullPolicy: IfNotPresent
           args:
             - --character-set-server=utf8mb4

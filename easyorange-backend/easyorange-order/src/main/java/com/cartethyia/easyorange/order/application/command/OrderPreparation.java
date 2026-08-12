@@ -1,10 +1,9 @@
-package com.cartethyia.easyorange.order.application.service;
+package com.cartethyia.easyorange.order.application.command;
 
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
@@ -24,7 +23,7 @@ import org.springframework.stereotype.Component;
 /**
  * 订单项准备组件 — 负责资产数据准备、校验、构建订单项。
  * <p>
- * 作为 {@code OrderCreationService} 创建流水线的支持组件，非独立服务。
+ * 作为 {@code OrderCommandHandler} 创建流水线的支持组件，非独立服务。
  */
 @Slf4j
 @Component

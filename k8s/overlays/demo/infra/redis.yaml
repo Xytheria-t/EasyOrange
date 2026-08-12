@@ -1,4 +1,4 @@
-# Redis 7.4 — demo-only StatefulSet（AOF 持久化 + 256MB LRU，与 compose.yaml 语义对齐）
+# Redis 8.10 — demo-only StatefulSet（AOF 持久化 + 256MB LRU，与 compose.yaml 语义对齐）
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -22,7 +22,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: redis
-          image: redis:7.4-alpine
+          image: redis:8.10.0-alpine
           imagePullPolicy: IfNotPresent
           command:
             - redis-server

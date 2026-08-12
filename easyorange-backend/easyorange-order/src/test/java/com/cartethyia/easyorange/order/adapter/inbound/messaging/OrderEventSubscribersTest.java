@@ -67,7 +67,7 @@ class OrderEventSubscribersTest {
         }
 
         @Test
-        @DisplayName("收到订单创建事件后不再异步预留库存（已由 OrderCreationService 同步扣减）")
+        @DisplayName("收到订单创建事件后不再异步预留库存（已由 OrderCommandHandler 同步扣减）")
         void onOrderCreated_shouldNotReserveStock() {
             OrderCreatedEvent event = new OrderCreatedEvent(
                     ORDER_ID,

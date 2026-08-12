@@ -1,7 +1,7 @@
 # EasyOrange Frontend - 多阶段构建
 
 # 构建阶段
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /build
 
