@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.user.application.service;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.domain.aggregate.ContactUpdateSpec;
 import com.cartethyia.easyorange.user.domain.aggregate.PersonalUpdateSpec;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
@@ -33,14 +32,13 @@ public class ProfileAppService {
             String nickname, String email, String phone, String gender, String realName, String studentId) {}
 
     @Transactional(readOnly = true)
-    public User getCurrentUser() {
-        var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public User getCurrentUser(String userId) {
         return userRepository.findById(userId).orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public User updateUserInfo(UpdateCommand cmd) {
-        User currentUser = getCurrentUser();
+    public User updateUserInfo(String userId, UpdateCommand cmd) {
+        User currentUser = getCurrentUser(userId);
         if (!hasAny(cmd)) throw BusinessException.of("没有需要更新的字段");
 
         profileUpdateService.validateUniqueContact(cmd.email(), cmd.phone(), cmd.studentId(), currentUser);
@@ -61,10 +59,10 @@ public class ProfileAppService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public User uploadAvatar(byte[] content, String contentType, String filename) {
+    public User uploadAvatar(String userId, byte[] content, String contentType, String filename) {
         Avatar.validate(content);
 
-        User currentUser = getCurrentUser();
+        User currentUser = getCurrentUser(userId);
         var currentAvatar = Optional.ofNullable(currentUser.getPersonalInfo())
                 .map(PersonalInfo::avatar)
                 .orElse(null);

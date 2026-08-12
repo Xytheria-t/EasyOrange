@@ -91,20 +91,4 @@ class PaymentViewAssemblerTest {
             assertThat(result.size()).isEqualTo(10);
         }
     }
-
-    @Nested
-    @DisplayName("toPaymentResponseWithOrderInfo")
-    class ToPaymentResponseWithOrderInfoTests {
-
-        @Test
-        @DisplayName("追加订单号与用户名")
-        void toPaymentResponseWithOrderInfo_addsOrderInfo() {
-            PaymentResponse response = assembler.toPaymentResponseWithOrderInfo(aggregate(), "ORDER_NO_1", "张三");
-
-            assertThat(response.getOrderNo()).isEqualTo("ORDER_NO_1");
-            assertThat(response.getUsername()).isEqualTo("张三");
-            assertThat(response.getId()).isEqualTo("1001");
-            assertThat(response.getStatus()).isEqualTo("SUCCESS");
-        }
-    }
 }

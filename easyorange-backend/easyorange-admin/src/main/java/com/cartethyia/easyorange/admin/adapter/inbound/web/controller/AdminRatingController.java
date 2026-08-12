@@ -6,9 +6,11 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminRat
 import com.cartethyia.easyorange.admin.service.AdminRatingService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "管理后台-评价", description = "评价管理")
@@ -30,8 +32,11 @@ public class AdminRatingController {
     }
 
     @DeleteMapping("/{id}")
-    public Result<Void> deleteReview(@PathVariable String id, @Valid @RequestBody AdminRatingDeleteRequest request) {
-        adminRatingService.deleteReview(id, request);
+    public Result<Void> deleteReview(
+            @AuthenticationPrincipal AuthUser user,
+            @PathVariable String id,
+            @Valid @RequestBody AdminRatingDeleteRequest request) {
+        adminRatingService.deleteReview(user.userId(), id, request);
         return Result.success();
     }
 }

@@ -2,6 +2,8 @@ package com.cartethyia.easyorange.order.adapter.inbound.job;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
+import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
+import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
@@ -9,11 +11,8 @@ import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +24,7 @@ public class OrderTimeoutTask {
     private final OrderRepository orderRepository;
     private final DomainEventPublisher domainEventPublisher;
     private final OrderTimeoutProperties properties;
-    private final RedissonClient redissonClient;
+    private final DistributedLockPort lockPort;
     private final OrderCachePort<?> orderCachePort;
 
     private static final String CANCEL_LOCK_PREFIX = "eo:order:lock:cancel:";
@@ -44,31 +43,20 @@ public class OrderTimeoutTask {
         int cancelled = 0;
         for (Order aggregate : expiredOrders) {
             String lockKey = CANCEL_LOCK_PREFIX + aggregate.id().value();
-            RLock lock = redissonClient.getLock(lockKey);
-
-            boolean locked;
+            boolean cancelledOrder = false;
             try {
-                locked = lock.tryLock(0, 30, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.warn("超时取消获取锁被中断，跳过 orderId={}", aggregate.id().value());
+                // waitTimeout=0 非阻塞获取：拿不到即跳过，不阻塞扫描；watchdog 覆盖单次取消的全部时长
+                cancelledOrder = lockPort.executeWithLocks(
+                        List.of(lockKey), 0L, () -> cancelExpiredOrder(aggregate));
+            } catch (LockAcquisitionException e) {
+                log.warn("超时取消获取锁失败/被中断，跳过 orderId={}", aggregate.id().value());
                 continue;
-            }
-            if (!locked) {
-                log.warn("超时取消获取锁失败，跳过 orderId={}", aggregate.id().value());
-                continue;
-            }
-
-            try {
-                if (cancelExpiredOrder(aggregate)) {
-                    cancelled++;
-                }
             } catch (Exception e) {
                 log.error("取消超时订单失败: orderId={}", aggregate.id().value(), e);
-            } finally {
-                if (lock.isHeldByCurrentThread()) {
-                    lock.unlock();
-                }
+                continue;
+            }
+            if (cancelledOrder) {
+                cancelled++;
             }
         }
 

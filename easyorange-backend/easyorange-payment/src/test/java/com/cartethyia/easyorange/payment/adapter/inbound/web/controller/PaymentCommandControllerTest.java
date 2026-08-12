@@ -2,10 +2,12 @@ package com.cartethyia.easyorange.payment.adapter.inbound.web.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentCommandMapper;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentCommandMapperImpl;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.CreatePaymentRequest;
@@ -41,6 +43,12 @@ class PaymentCommandControllerTest {
 
     private PaymentCommandController controller;
 
+    private static final String USER_ID = "3001";
+
+    private static AuthUser currentUser() {
+        return new AuthUser(USER_ID, "tester");
+    }
+
     @BeforeEach
     void setUp() {
         controller = new PaymentCommandController(commandHandler, signatureVerifier, mapper);
@@ -54,9 +62,9 @@ class PaymentCommandControllerTest {
         @DisplayName("创建支付成功返回支付 ID")
         void createPayment_success() {
             CreatePaymentRequest request = new CreatePaymentRequest("2001", new BigDecimal("100.00"), "WECHAT", null);
-            when(commandHandler.handle(any(CreatePaymentCommand.class))).thenReturn("1001");
+            when(commandHandler.handle(eq(USER_ID), any(CreatePaymentCommand.class))).thenReturn("1001");
 
-            Result<PaymentResponse> result = controller.createPayment(request);
+            Result<PaymentResponse> result = controller.createPayment(currentUser(), request);
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().getId()).isEqualTo("1001");

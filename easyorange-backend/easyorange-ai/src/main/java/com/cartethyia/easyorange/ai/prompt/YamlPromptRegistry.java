@@ -147,21 +147,9 @@ public class YamlPromptRegistry implements PromptRegistry {
     }
 
     @Override
-    public Optional<PromptTemplate> get(String name, String version) {
-        return templatesByName.getOrDefault(name, List.of()).stream()
-                .filter(t -> t.version().equals(version))
-                .findFirst();
-    }
-
-    @Override
     public Optional<PromptTemplate> getLatest(String name) {
         return templatesByName.getOrDefault(name, List.of()).stream()
                 .max(Comparator.comparing(PromptTemplate::version, YamlPromptRegistry::compareVersions));
-    }
-
-    @Override
-    public List<PromptTemplate> listVersions(String name) {
-        return templatesByName.getOrDefault(name, List.of());
     }
 
     /**

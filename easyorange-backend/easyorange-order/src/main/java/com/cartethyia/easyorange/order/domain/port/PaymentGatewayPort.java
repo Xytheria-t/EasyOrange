@@ -9,5 +9,10 @@ public interface PaymentGatewayPort {
     void refundPayment(String orderId, String reason);
 
     record CreatePaymentRequest(
-            String orderId, BigDecimal amount, String paymentMethod, String attach, String description) {}
+            String orderId,
+            BigDecimal amount,
+            String paymentMethod,
+            String attach,
+            String description,
+            String buyerId) {}
 }

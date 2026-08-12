@@ -7,10 +7,12 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAud
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort.AiReviewRecord;
 import com.cartethyia.easyorange.admin.service.AdminProductAuditService;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "管理后台-审核", description = "商品审核")
@@ -22,14 +24,18 @@ public class AdminProductAuditController {
     private final AdminProductAuditService adminProductAuditService;
 
     @PutMapping("/{id}/audit")
-    public Result<Void> auditProduct(@PathVariable String id, @Valid @RequestBody ProductAuditRequest request) {
-        adminProductAuditService.auditProduct(id, request);
+    public Result<Void> auditProduct(
+            @AuthenticationPrincipal AuthUser operator,
+            @PathVariable String id,
+            @Valid @RequestBody ProductAuditRequest request) {
+        adminProductAuditService.auditProduct(operator, id, request);
         return Result.success();
     }
 
     @PostMapping("/batch-audit")
-    public Result<BatchAuditResultResponse> batchAudit(@Valid @RequestBody BatchAuditRequest request) {
-        return Result.success(adminProductAuditService.batchAudit(request));
+    public Result<BatchAuditResultResponse> batchAudit(
+            @AuthenticationPrincipal AuthUser operator, @Valid @RequestBody BatchAuditRequest request) {
+        return Result.success(adminProductAuditService.batchAudit(operator, request));
     }
 
     @GetMapping("/{id}/audit-logs")

@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
 import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
 import java.util.Optional;
@@ -32,7 +31,6 @@ class ProductRatingCommandHandlerTest {
     @Test
     @DisplayName("创建评价应保存领域实体并返回 ID")
     void createReview_shouldCreateAndSave() {
-        TestSecurityUtil.setSecurityContext("1");
         try {
             doAnswer(invocation -> {
                         ProductRating rating = invocation.getArgument(0);
@@ -47,7 +45,7 @@ class ProductRatingCommandHandlerTest {
 
             var command = new CreateProductRatingCommand("10", 5, "非常好的商品");
 
-            String reviewId = commandHandler.createReview(command);
+            String reviewId = commandHandler.createReview("1", command);
 
             assertThat(reviewId).isEqualTo("100");
 
@@ -58,75 +56,53 @@ class ProductRatingCommandHandlerTest {
                             && r.getContent().value().equals("非常好的商品")));
         } catch (Exception e) {
             throw new RuntimeException(e);
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
         }
     }
 
     @Test
     @DisplayName("删除自己的评价应调用软删除")
     void deleteReview_ownReview_shouldSoftDelete() {
-        TestSecurityUtil.setSecurityContext("1");
-        try {
-            ProductRating rating = ProductRating.create("10", "1", 4, "不错");
-            when(productRatingRepository.findById("100")).thenReturn(Optional.of(rating));
+        ProductRating rating = ProductRating.create("10", "1", 4, "不错");
+        when(productRatingRepository.findById("100")).thenReturn(Optional.of(rating));
 
-            commandHandler.deleteReview("100");
+        commandHandler.deleteReview("1", "100");
 
-            verify(productRatingRepository).update(argThat(r -> r.getStatus() == 0));
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
+        verify(productRatingRepository).update(argThat(r -> r.getStatus() == 0));
     }
 
     @Test
     @DisplayName("删除不存在的评价应抛出异常")
     void deleteReview_notFound_shouldThrow() {
-        TestSecurityUtil.setSecurityContext("1");
-        try {
-            when(productRatingRepository.findById("999")).thenReturn(Optional.empty());
+        when(productRatingRepository.findById("999")).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> commandHandler.deleteReview("999"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("评价不存在");
+        assertThatThrownBy(() -> commandHandler.deleteReview("1", "999"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("评价不存在");
 
-            verify(productRatingRepository, never()).update(any());
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
+        verify(productRatingRepository, never()).update(any());
     }
 
     @Test
     @DisplayName("删除他人的评价应抛出异常")
     void deleteReview_notOwner_shouldThrow() {
-        TestSecurityUtil.setSecurityContext("2");
-        try {
-            ProductRating rating = ProductRating.create("10", "1", 4, "不错");
-            when(productRatingRepository.findById("100")).thenReturn(Optional.of(rating));
+        ProductRating rating = ProductRating.create("10", "1", 4, "不错");
+        when(productRatingRepository.findById("100")).thenReturn(Optional.of(rating));
 
-            assertThatThrownBy(() -> commandHandler.deleteReview("100"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("只能删除自己的评价");
+        assertThatThrownBy(() -> commandHandler.deleteReview("2", "100"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("只能删除自己的评价");
 
-            verify(productRatingRepository, never()).update(any());
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
+        verify(productRatingRepository, never()).update(any());
     }
 
     @Test
     @DisplayName("点赞评价应增加点赞数")
     void likeReview_shouldIncrementLikes() {
-        TestSecurityUtil.setSecurityContext("1");
-        try {
-            ProductRating rating = ProductRating.create("10", "1", 4, "不错");
-            when(productRatingRepository.findById("100")).thenReturn(Optional.of(rating));
+        ProductRating rating = ProductRating.create("10", "1", 4, "不错");
+        when(productRatingRepository.findById("100")).thenReturn(Optional.of(rating));
 
-            commandHandler.likeReview("100");
+        commandHandler.likeReview("100");
 
-            verify(productRatingRepository).update(argThat(r -> r.getLikes() == 1));
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
+        verify(productRatingRepository).update(argThat(r -> r.getLikes() == 1));
     }
 }

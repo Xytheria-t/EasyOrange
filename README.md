@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 在 DDD 六边形架构里集成 LLM：AI 链路**可换供应商、可降级、可观测**的工程化实战项目。
 >
-> **11 模块解耦 · 33 Port 编译期隔离 · 10 事件消费者 · 9 条 ADR · 2,400+ 测试守卫 · AI 6 决策点 × 8 项工程化**
+> **11 模块解耦 · 35 Port 编译期隔离 · 10 事件消费者 · 9 条 ADR · 2,400+ 测试守卫 · AI 6 决策点 × 8 项工程化**
 >
 > 业务载体：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。
 
@@ -17,7 +17,7 @@ EasyOrange 在两条技术主线上都有独立且完整的落地，可分别展
 
 | AI 应用工程化 | 架构落地 |
 |---|---|
-| **Spring AI 2.0 框架化** — 6 决策点直接注入 `ChatModel` / `EmbeddingModel` bean，切换供应商只改配置不改业务代码（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） | **DDD 六边形 + CQRS** — 33 Port 编译期隔离，domain 层零框架依赖；CQRS 仅 product / order / payment / message 4 模块（[ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)） |
+| **Spring AI 2.0 框架化** — 6 决策点直接注入 `ChatModel` / `EmbeddingModel` bean，切换供应商只改配置不改业务代码（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） | **DDD 六边形 + CQRS** — 35 Port 编译期隔离，domain 层零框架依赖；CQRS 仅 product / order / payment / message 4 模块（[ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)） |
 | **轻量级 Agent 编排** — `AiSearchEnhancer` 4 路并行 Tool Calling，单步骤 5s 超时降级，无 LangChain4j 黑盒 | **拒绝 Saga** — 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件副作用（[ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)） |
 | **限流 / 预算 / 降级** — Redisson 分布式令牌桶 + stale 降级 + `@TokenBudget` 日预算 AOP | **事件驱动可靠投递** — Spring Modulith Outbox → RabbitMQ → DLQ 三级重试 + traceId 全链路 |
 | **Prompt 工程化** — 6 个 YAML 模板版本化渲染 | **架构治理** — ArchUnit 10 条规则守卫分层 + 9 条 ADR 记录决策 |
@@ -82,7 +82,7 @@ flowchart TB
 
 ### 事件驱动：Outbox → RabbitMQ → DLQ
 
-领域事件与应用事务**同原子**写入 `EVENT_PUBLICATION` → 异步 externalize 到 RabbitMQ Topic Exchange → 每个消费者独占队列 + `EventIdempotencyChecker` 精确一次 → 失败进队列级 DLQ（`DlqRetryScheduler` 5 分钟重投 <3 次，毒消息转储 `eo.dlq.terminal`）。审计日志同样走 Outbox。traceId 经 Brave → MDC → MQ header 全链路传递。详见 [AGENTS.md](./AGENTS.md)「后端架构核心原则」。
+领域事件与应用事务**同原子**写入 `EVENT_PUBLICATION` → 异步 externalize 到 RabbitMQ Topic Exchange → 每个消费者独占队列 + `EventIdempotencyChecker` 精确一次 → 失败进队列级 DLQ（`DlqRetryScheduler` 5 分钟重投 <3 次，毒消息转储 `eo.dlq.terminal`）。审计日志同样走 Outbox。traceId 经 Brave → MDC → MQ header 全链路传递。详见 [doc/agents/架构参考.md](doc/agents/架构参考.md)「后端架构核心原则」。
 
 ### 订单创建（拒绝 Saga）
 
@@ -173,19 +173,19 @@ docker compose up -d prometheus grafana                                    # Pro
 k6 run --vus 50 --duration 30s load-tests/product-list.js                  # k6 压测（阈值 p95<500ms 内置）
 ```
 
-> 零配置启动：敏感配置复制 `.env.example` → `.env`。完整命令（PIT 变异测试、JaCoCo、OWASP、E2E）见 [AGENTS.md](./AGENTS.md)「常用命令」。
+> 零配置启动：敏感配置复制 `.env.example` → `.env`。完整命令（PIT 变异测试、JaCoCo、OWASP、E2E）见 [doc/agents/常用命令.md](doc/agents/常用命令.md)。
 
 ## 文档地图
 
 | 资源 | 内容 |
 |---|---|
-| [AGENTS.md](./AGENTS.md) | 唯一规范来源：技术栈、数据库表、状态机、错误码、模块依赖、开发规范 |
+| [AGENTS.md](./AGENTS.md) | 唯一规范来源：定位 / 项目结构 / 技术栈 / 硬约束 / 参考索引（细分内容见 [doc/agents/](doc/agents/)） |
 | [PRODUCT_DIRECTION.md](doc/PRODUCT_DIRECTION.md) | 业务场景（C2C 资产流转：固定价格 + 直发 + 平台不碰货） |
 | [DATABASE.md](doc/DATABASE.md) | 数据库表结构与设计 |
 | [doc/工程指标.md](doc/工程指标.md) | 测试数 / 覆盖率单一事实来源（2,400+ 为取整下限） |
 | [doc/架构/](doc/架构/) | 架构规范（系统架构 / DDD / 安全认证 / 数据库迁移 / 部署） |
 | [doc/集成/](doc/集成/) | 业务专题（AI 资产管理 / API 速查） |
-| [doc/adr/](doc/adr/) | 8 条架构决策记录 |
+| [doc/adr/](doc/adr/) | 9 条架构决策记录 |
 
 ## 项目结构
 

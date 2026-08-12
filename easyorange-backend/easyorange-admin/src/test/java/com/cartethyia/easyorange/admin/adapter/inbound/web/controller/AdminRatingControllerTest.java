@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
@@ -12,13 +13,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminRatingResponse;
 import com.cartethyia.easyorange.admin.service.AdminRatingService;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,6 +37,20 @@ class AdminRatingControllerTest {
 
     @MockitoBean
     private AdminRatingService adminReviewService;
+
+    private static final String USER_ID = "10";
+
+    @BeforeEach
+    void setUp() {
+        var authUser = new AuthUser(USER_ID, "admin");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(authUser, null, List.of()));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     void listReviews_shouldReturnPaginatedReviews() throws Exception {
@@ -113,7 +133,7 @@ class AdminRatingControllerTest {
 
     @Test
     void deleteReview_withReason_shouldSucceed() throws Exception {
-        doNothing().when(adminReviewService).deleteReview(eq("1"), any());
+        doNothing().when(adminReviewService).deleteReview(anyString(), eq("1"), any());
 
         mockMvc.perform(delete("/api/admin/reviews/1")
                         .contentType(MediaType.APPLICATION_JSON)

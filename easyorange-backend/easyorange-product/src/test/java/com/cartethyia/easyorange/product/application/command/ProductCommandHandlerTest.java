@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductTestFixture;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
@@ -44,49 +43,39 @@ class ProductCommandHandlerTest {
     @Test
     @DisplayName("创建商品应调用仓储保存")
     void createProduct_shouldSaveToRepository() {
-        TestSecurityUtil.setSecurityContext(1L);
-        try {
-            when(productRepository.save(any(Product.class))).thenAnswer(invocation -> {
-                Product p = invocation.getArgument(0);
-                return p.assignId("42");
-            });
+        when(productRepository.save(any(Product.class))).thenAnswer(invocation -> {
+            Product p = invocation.getArgument(0);
+            return p.assignId("42");
+        });
 
-            CreateProductCommand command = new CreateProductCommand(
-                    "2",
-                    "测试商品",
-                    new BigDecimal("100"),
-                    null,
-                    10,
-                    "1",
-                    "北京",
-                    "微信",
-                    "描述",
-                    java.util.List.of("http://img/1.jpg"));
+        CreateProductCommand command = new CreateProductCommand(
+                "2",
+                "测试商品",
+                new BigDecimal("100"),
+                null,
+                10,
+                "1",
+                "北京",
+                "微信",
+                "描述",
+                java.util.List.of("http://img/1.jpg"));
 
-            String productId = commandHandler.createProduct(command);
+        String productId = commandHandler.createProduct("1", command);
 
-            assertThat(productId).isEqualTo("42");
-            verify(productRepository).save(any(Product.class));
-            verify(domainEventPublisher).publish(any(ProductCreatedEvent.class));
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
+        assertThat(productId).isEqualTo("42");
+        verify(productRepository).save(any(Product.class));
+        verify(domainEventPublisher).publish(any(ProductCreatedEvent.class));
     }
 
     @Test
     @DisplayName("更新不存在的商品应抛出异常")
     void updateProduct_whenNotFound_shouldThrow() {
-        TestSecurityUtil.setSecurityContext(1L);
-        try {
-            when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.empty());
+        when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.empty());
 
-            UpdateProductCommand command =
-                    new UpdateProductCommand("999", null, "新名称", null, null, null, null, null, null, null, null);
+        UpdateProductCommand command =
+                new UpdateProductCommand("999", null, "新名称", null, null, null, null, null, null, null, null);
 
-            assertThatThrownBy(() -> commandHandler.updateProduct(command))
-                    .isInstanceOf(ProductNotFoundException.class);
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
+        assertThatThrownBy(() -> commandHandler.updateProduct("1", command))
+                .isInstanceOf(ProductNotFoundException.class);
     }
 }

@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.tool;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -24,19 +23,11 @@ public class SearchToolRegistry {
                 }));
     }
 
-    public Collection<SearchTool<?>> all() {
-        return tools.values();
-    }
-
     public SearchTool<?> get(String name) {
         SearchTool<?> tool = tools.get(name);
         if (tool == null) {
             throw new NoSuchElementException("Unknown search tool: " + name);
         }
         return tool;
-    }
-
-    public boolean contains(String name) {
-        return tools.containsKey(name);
     }
 }

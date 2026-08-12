@@ -15,7 +15,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserInfo;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -83,10 +82,9 @@ public class AdminRatingService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void deleteReview(String id, AdminRatingDeleteRequest request) {
+    public void deleteReview(String operatorId, String id, AdminRatingDeleteRequest request) {
         adminRatingQueryPort.deleteRating(id);
 
-        String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
         log.info("action=admin_delete_review reviewId={} operatorId={} reason={}", id, operatorId, request.getReason());
     }
 }

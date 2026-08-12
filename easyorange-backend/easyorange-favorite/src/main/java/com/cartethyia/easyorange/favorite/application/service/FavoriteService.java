@@ -7,7 +7,6 @@ import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.aggregate.FavoriteCreateSpec;
 import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +27,7 @@ public class FavoriteService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void addFavorite(String productId) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public void addFavorite(String userId, String productId) {
         BizRequire.requireTrue(productInfoPort.productExists(productId), "商品不存在");
         BizRequire.requireTrue(!productInfoPort.isOwnProduct(userId, productId), "不能收藏自己的商品");
         BizRequire.requireTrue(!favoriteRepository.existsByUserIdAndProductId(userId, productId), "已收藏过该商品");
@@ -40,9 +37,7 @@ public class FavoriteService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void removeFavorite(String productId) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public void removeFavorite(String userId, String productId) {
         Favorite favorite = favoriteRepository
                 .findByUserIdAndProductId(userId, productId)
                 .orElseThrow(() -> BusinessException.of("未收藏过该商品"));
@@ -52,9 +47,7 @@ public class FavoriteService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void removeManyFavorites(List<String> ids) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public void removeManyFavorites(String userId, List<String> ids) {
         if (ids == null || ids.isEmpty()) {
             return;
         }
@@ -66,9 +59,7 @@ public class FavoriteService {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<Favorite> queryFavorites(int pageNum, int pageSize) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public PageResult<Favorite> queryFavorites(String userId, int pageNum, int pageSize) {
         long offset = (pageNum - 1L) * pageSize;
         long total = favoriteRepository.countByUserId(userId);
         List<Favorite> favorites = favoriteRepository.findByUserId(userId, offset, pageSize);
@@ -77,20 +68,17 @@ public class FavoriteService {
     }
 
     @Transactional(readOnly = true)
-    public boolean isFavorited(String productId) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public boolean isFavorited(String userId, String productId) {
         return favoriteRepository.existsByUserIdAndProductId(userId, productId);
     }
 
     @Transactional(readOnly = true)
-    public long getFavoriteCount() {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public long getFavoriteCount(String userId) {
         return favoriteRepository.countByUserId(userId);
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Boolean> batchCheckFavorited(List<String> productIds) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public Map<String, Boolean> batchCheckFavorited(String userId, List<String> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return Map.of();
         }

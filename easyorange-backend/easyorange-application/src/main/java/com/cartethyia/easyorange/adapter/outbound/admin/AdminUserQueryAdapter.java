@@ -156,14 +156,6 @@ public class AdminUserQueryAdapter implements AdminUserQueryPort {
     }
 
     @Override
-    public long countAdminUsers() {
-        return ChainWrappers.lambdaQueryChain(userMapper)
-                .eq(UserDO::getUserType, UserType.ADMIN)
-                .eq(UserDO::getDelFlag, 0)
-                .count();
-    }
-
-    @Override
     public UserStats getUserStats() {
         long totalUsers = ChainWrappers.lambdaQueryChain(userMapper)
                 .eq(UserDO::getDelFlag, 0)

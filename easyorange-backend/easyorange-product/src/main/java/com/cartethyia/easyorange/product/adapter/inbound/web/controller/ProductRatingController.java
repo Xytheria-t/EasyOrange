@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.CreateRatingRequest;
 import com.cartethyia.easyorange.product.application.command.ProductRatingCommandHandler;
 import com.cartethyia.easyorange.product.application.query.ProductRatingQueryHandler;
@@ -10,6 +11,7 @@ import com.cartethyia.easyorange.product.application.query.dto.RatingStatsVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,13 +45,15 @@ public class ProductRatingController {
 
     @PostMapping("/{productId}/reviews")
     public Result<String> createReview(
-            @PathVariable String productId, @Valid @RequestBody CreateRatingRequest request) {
-        return Result.success(reviewCommandHandler.createReview(request.toCommand(productId)));
+            @AuthenticationPrincipal AuthUser user,
+            @PathVariable String productId,
+            @Valid @RequestBody CreateRatingRequest request) {
+        return Result.success(reviewCommandHandler.createReview(user.userId(), request.toCommand(productId)));
     }
 
     @DeleteMapping("/reviews/{reviewId}")
-    public Result<Void> deleteReview(@PathVariable String reviewId) {
-        reviewCommandHandler.deleteReview(reviewId);
+    public Result<Void> deleteReview(@AuthenticationPrincipal AuthUser user, @PathVariable String reviewId) {
+        reviewCommandHandler.deleteReview(user.userId(), reviewId);
         return Result.success();
     }
 

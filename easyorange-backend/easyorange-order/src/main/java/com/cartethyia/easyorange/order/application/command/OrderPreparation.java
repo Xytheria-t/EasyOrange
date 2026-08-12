@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,7 +24,6 @@ import org.springframework.stereotype.Component;
  * <p>
  * 作为 {@code OrderCommandHandler} 创建流水线的支持组件，非独立服务。
  */
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OrderPreparation {
@@ -39,7 +37,7 @@ public class OrderPreparation {
      *
      * @param items 订单项请求列表
      * @return 准备结果
-     * @throws OrderDomainException 如果资产不存在、已下架或库存不足
+     * @throws OrderDomainException 如果资产不存在、已下架、库存不足或详情缺失
      */
     public PreparationResult prepareOrderItems(List<CreateOrderCommand.CreateOrderItem> items) {
         // 批量获取快照并校验，返回已确认存在的快照集与资产方 ID
@@ -131,8 +129,9 @@ public class OrderPreparation {
      */
     private static ProductSnapshot buildProductSnapshot(String productId, ProductDetail detail, Money price) {
         if (detail == null) {
-            log.warn("商品详情缺失，快照字段将使用空值回退: productId={}", productId);
-            return ProductSnapshot.builder().productId(productId).price(price).build();
+            // 快照与详情来自不同读源（ProductOrderPort / ProductQueryPort），详情缺失说明跨端口数据不一致。
+            // 空值回退会把脏快照写进订单，这里抛错随事务整体回滚，交由客户端重试。
+            throw new OrderDomainException("资产详情缺失: " + productId);
         }
         return ProductSnapshot.builder()
                 .productId(productId)

@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductSearchRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.FacetBucketResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKeywordResponse;
@@ -20,6 +21,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -73,8 +75,9 @@ public class ProductSearchController {
 
     @GetMapping("/history")
     public Result<List<SearchHistoryResponse>> getMySearchHistory(
+            @AuthenticationPrincipal AuthUser user,
             @RequestParam(defaultValue = "20") @Max(50) Integer limit) {
-        List<SearchHistoryReadModel> histories = searchQueryHandler.getMySearchHistory(limit);
+        List<SearchHistoryReadModel> histories = searchQueryHandler.getMySearchHistory(user.userId(), limit);
         var responses = histories.stream()
                 .map(h -> SearchHistoryResponse.builder()
                         .id(h.id())
@@ -86,14 +89,15 @@ public class ProductSearchController {
     }
 
     @DeleteMapping("/history")
-    public Result<Void> clearMySearchHistory() {
-        searchQueryHandler.clearMySearchHistory();
+    public Result<Void> clearMySearchHistory(@AuthenticationPrincipal AuthUser user) {
+        searchQueryHandler.clearMySearchHistory(user.userId());
         return Result.success();
     }
 
     @DeleteMapping("/history/{historyId}")
-    public Result<Void> deleteSearchHistory(@PathVariable String historyId) {
-        searchQueryHandler.deleteSearchHistory(historyId);
+    public Result<Void> deleteSearchHistory(
+            @AuthenticationPrincipal AuthUser user, @PathVariable String historyId) {
+        searchQueryHandler.deleteSearchHistory(user.userId(), historyId);
         return Result.success();
     }
 
@@ -120,8 +124,10 @@ public class ProductSearchController {
     }
 
     @PostMapping("/record")
-    public Result<Void> recordSearch(@RequestParam @Size(max = 100, message = "关键词不能超过 100 个字符") String keyword) {
-        searchQueryHandler.recordSearch(keyword);
+    public Result<Void> recordSearch(
+            @AuthenticationPrincipal AuthUser user,
+            @RequestParam @Size(max = 100, message = "关键词不能超过 100 个字符") String keyword) {
+        searchQueryHandler.recordSearch(user.userId(), keyword);
         return Result.success();
     }
 

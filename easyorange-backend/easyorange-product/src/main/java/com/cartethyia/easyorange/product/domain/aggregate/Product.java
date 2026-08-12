@@ -84,6 +84,7 @@ public class Product {
                 .location(spec.location())
                 .contactMethod(spec.contactMethod())
                 .description(spec.description())
+                .images(spec.images())
                 .tags(TagSet.empty())
                 .priceUpdateTime(LocalDateTime.now())
                 .createTime(LocalDateTime.now())

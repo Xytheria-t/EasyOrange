@@ -22,6 +22,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -278,7 +279,12 @@ public class AuditLogAspect {
     }
 
     private static int resolveOperatorType(AuthUser userCtx) {
-        return userCtx != null && userCtx.roles().contains("ADMIN") ? 1 : 2;
+        if (userCtx == null) {
+            return 2;
+        }
+        // 角色不存于 AuthUser，改由已授予的 authorities（源自 JWT claim）判定
+        var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+        return authorities.stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())) ? 1 : 2;
     }
 
     // ───────────────────────── Request param handling ─────────────────────────

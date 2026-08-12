@@ -19,7 +19,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -87,8 +86,7 @@ public class AdminReportService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handleReport(String id, ReportHandleRequest request) {
-        String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void handleReport(String operatorId, String id, ReportHandleRequest request) {
         String remark = request.getRemark() != null ? request.getRemark() : "";
         adminReportQueryPort.handleReport(id, request.getAction(), remark, operatorId);
     }
@@ -107,11 +105,10 @@ public class AdminReportService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public BatchHandleResultResponse batchHandleReports(BatchHandleRequest request) {
+    public BatchHandleResultResponse batchHandleReports(String operatorId, BatchHandleRequest request) {
         BizRequire.requireTrue(!request.getReportIds().isEmpty(), AdminResultCode.REPORT_LIST_EMPTY);
         BizRequire.requireTrue(request.getReportIds().size() <= 50, AdminResultCode.REPORT_BATCH_LIMIT_EXCEEDED);
 
-        String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
         String remark = request.getRemark() != null ? request.getRemark() : "";
         ReportHandleAction.fromCode(request.getAction());
 

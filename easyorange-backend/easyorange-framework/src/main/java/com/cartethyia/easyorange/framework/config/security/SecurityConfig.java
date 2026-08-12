@@ -20,7 +20,6 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -99,6 +98,9 @@ public class SecurityConfig {
                         // 精确匹配优先于 product-paths 前缀放行：/api/products/my 需登录（CLAUDE.md product-paths 陷阱）
                         .requestMatchers(HttpMethod.GET, "/api/products/my/**")
                         .authenticated()
+                        // 管理后台仅 ADMIN/MANAGER 可访问（UserType#getDefaultRoles 均含 ROLE_ADMIN）
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
                         .requestMatchers(
                                 HttpMethod.GET,
                                 securityProperties.getProductPaths().toArray(String[]::new))
@@ -209,24 +211,13 @@ public class SecurityConfig {
                 throw new BadJwtException("Refresh token not allowed for API access");
             }
 
-            List<String> authorityStrings = jwt.getClaimAsStringList("authorities");
-            if (authorityStrings == null) {
-                authorityStrings = List.of();
-            }
-            var authorities =
-                    authorityStrings.stream().map(SimpleGrantedAuthority::new).toList();
-            var roles = authorityStrings.stream()
-                    .filter(a -> a.startsWith("ROLE_"))
-                    .map(a -> a.substring(5))
-                    .collect(Collectors.toSet());
+            var authorities = jwt.getClaimAsStringList("authorities");
+            var granted = authorities != null
+                    ? authorities.stream().map(SimpleGrantedAuthority::new).toList()
+                    : List.<SimpleGrantedAuthority>of();
+            var user = new AuthUser(jwt.getSubject(), jwt.getClaimAsString("username"));
 
-            var user = AuthUser.builder()
-                    .userId(jwt.getSubject())
-                    .username(jwt.getClaimAsString("username"))
-                    .roles(roles)
-                    .build();
-
-            var authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
+            var authentication = new UsernamePasswordAuthenticationToken(user, null, granted);
             authentication.setDetails(jwt);
             return authentication;
         };

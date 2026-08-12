@@ -3,16 +3,15 @@ package com.cartethyia.easyorange.payment.application.command;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
+import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.cartethyia.easyorange.payment.application.metrics.PaymentMetricsService;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentCreateSpec;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
-import com.cartethyia.easyorange.payment.domain.exception.LockAcquisitionException;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.port.LockPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
@@ -29,14 +28,12 @@ public class PaymentCommandHandler {
     private final PaymentRepositoryPort paymentRepository;
     private final DomainEventPublisher domainEventPublisher;
     private final PaymentGatewayPort paymentGateway;
-    private final LockPort lockPort;
+    private final DistributedLockPort lockPort;
     private final PaymentMetricsService metricsService;
     private final IdGenerator idGenerator;
 
     @Transactional(rollbackFor = Exception.class)
-    public String handle(CreatePaymentCommand command) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public String handle(String userId, CreatePaymentCommand command) {
         String paymentId = idGenerator.generateId();
         var spec = new PaymentCreateSpec(
                 paymentId,
@@ -61,7 +58,7 @@ public class PaymentCommandHandler {
      * 网关失败时回退状态，无需跨服务编排。
      */
     public void handle(PayCommand command) {
-        String lockKey = "payment:pay:" + command.paymentNo();
+        String lockKey = "payment:lock:pay:" + command.paymentNo();
 
         executeWithLock(lockKey, () -> {
             final String paymentId = preparePayPhase1(command.paymentNo());
@@ -108,7 +105,7 @@ public class PaymentCommandHandler {
      * 退款：两阶段（本地事务 + 外部网关），与支付一致遵循 ADR-0007 拒绝 Saga。
      */
     public void handle(RefundPaymentCommand command) {
-        String lockKey = "payment:refund:" + command.paymentId();
+        String lockKey = "payment:lock:refund:" + command.paymentId();
 
         executeWithLock(lockKey, () -> {
             BigDecimal refundAmount = command.refundAmount();
@@ -126,13 +123,16 @@ public class PaymentCommandHandler {
 
     /**
      * 带锁执行并记录并发冲突指标 — 锁获取失败由用例层记录，指标属支付域而不属锁基础设施。
+     * <p>
+     * 复用框架锁的 {@link LockAcquisitionException} 作为传输 + 响应载体：catch 后清掉基础设施
+     * 携带的内部细节（含 key），以支付域的统一文案重抛（RuntimeException，全局兜底 500），契约不变。
      */
     private void executeWithLock(String lockKey, Runnable operation) {
         try {
-            lockPort.executeWithLock(lockKey, operation);
+            lockPort.executeWithLock(lockKey, 0L, operation);
         } catch (LockAcquisitionException e) {
             metricsService.recordConcurrentConflict();
-            throw e;
+            throw new LockAcquisitionException("系统繁忙，请稍后重试");
         }
     }
 

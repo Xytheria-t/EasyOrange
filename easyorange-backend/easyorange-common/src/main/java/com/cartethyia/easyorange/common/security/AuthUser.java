@@ -1,13 +1,9 @@
 package com.cartethyia.easyorange.common.security;
 
-import java.util.Set;
-import lombok.Builder;
-
-@Builder
-public record AuthUser(String userId, String username, Set<String> roles, Set<String> permissions, Long loginTime) {
-
-    public AuthUser {
-        roles = roles == null || roles.isEmpty() ? Set.of() : Set.copyOf(roles);
-        permissions = permissions == null || permissions.isEmpty() ? Set.of() : Set.copyOf(permissions);
-    }
-}
+/**
+ * 当前登录用户身份（仅身份，不含角色/权限）。
+ * <p>
+ * 角色与权限由 JWT 的 {@code authorities} claim 解析为 Spring 授权，
+ * 经 {@code @PreAuthorize} / {@code hasRole} 或路径规则生效，不在此重复保存。
+ */
+public record AuthUser(String userId, String username) {}

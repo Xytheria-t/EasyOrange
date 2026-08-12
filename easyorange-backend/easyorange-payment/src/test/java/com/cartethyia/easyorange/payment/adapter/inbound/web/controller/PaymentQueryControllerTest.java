@@ -2,10 +2,12 @@ package com.cartethyia.easyorange.payment.adapter.inbound.web.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentViewAssembler;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.QueryPaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
@@ -35,6 +37,12 @@ class PaymentQueryControllerTest {
     private final PaymentViewAssembler assembler = new PaymentViewAssembler();
 
     private PaymentQueryController controller;
+
+    private static final String USER_ID = "3001";
+
+    private static AuthUser currentUser() {
+        return new AuthUser(USER_ID, "tester");
+    }
 
     @BeforeEach
     void setUp() {
@@ -117,9 +125,10 @@ class PaymentQueryControllerTest {
         void getMyPayments_blankStatus_queriesAll() {
             QueryPaymentRequest request =
                     QueryPaymentRequest.builder().pageNum(1).pageSize(10).build();
-            when(queryHandler.getMyPayments(any())).thenReturn(PageResult.of(List.of(aggregate()), 1L, 1, 10));
+            when(queryHandler.getMyPayments(eq(USER_ID), any(PaymentListQuery.class)))
+                    .thenReturn(PageResult.of(List.of(aggregate()), 1L, 1, 10));
 
-            Result<PageResult<PaymentResponse>> result = controller.getMyPayments(request);
+            Result<PageResult<PaymentResponse>> result = controller.getMyPayments(currentUser(), request);
 
             assertThat(result.data().records()).hasSize(1);
             assertThat(result.data().total()).isEqualTo(1L);

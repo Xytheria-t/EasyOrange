@@ -53,8 +53,4 @@ public class LocalRateLimiter {
         var threshold = System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(CLEAN_INTERVAL_SECONDS);
         windows.entrySet().removeIf(e -> e.getValue().get(0) < threshold);
     }
-
-    public void clear() {
-        windows.clear();
-    }
 }

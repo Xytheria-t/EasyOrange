@@ -5,7 +5,6 @@ import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductUpdateSpec;
@@ -37,9 +36,7 @@ public class ProductCommandHandler {
 
     // ==================== CRUD ====================
 
-    public String createProduct(CreateProductCommand command) {
-        var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public String createProduct(String userId, CreateProductCommand command) {
         var product = Product.create(new ProductCreateSpec(
                 SellerId.of(userId),
                 CategoryId.of(command.categoryId()),
@@ -58,9 +55,9 @@ public class ProductCommandHandler {
         return created.getId().value();
     }
 
-    public void updateProduct(UpdateProductCommand command) {
+    public void updateProduct(String userId, UpdateProductCommand command) {
         var productId = ProductId.of(command.id());
-        var product = verifyOwnership(productId, SecurityContextUtil.getCurrentUserIdOrThrow());
+        var product = verifyOwnership(productId, userId);
 
         mutate(
                 product,
@@ -77,8 +74,7 @@ public class ProductCommandHandler {
                         mapIfPresent(command.imageUrls(), ImageSet::of))));
     }
 
-    public void deleteProduct(String id) {
-        var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void deleteProduct(String userId, String id) {
         var pid = ProductId.of(id);
         var product = findByIdOrThrow(pid);
 
@@ -105,8 +101,7 @@ public class ProductCommandHandler {
 
     // ==================== Status Transitions ====================
 
-    public void submitForReview(String productId) {
-        var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void submitForReview(String userId, String productId) {
         var product = findByIdOrThrow(ProductId.of(productId));
         mutate(product, p -> p.submitForReview(userId));
     }
@@ -116,8 +111,7 @@ public class ProductCommandHandler {
         mutate(product, Product::putOnline);
     }
 
-    public void takeOffline(String productId) {
-        var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void takeOffline(String userId, String productId) {
         var product = findByIdOrThrow(ProductId.of(productId));
         mutate(product, p -> p.takeOffline(userId));
     }

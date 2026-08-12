@@ -100,7 +100,7 @@ order/
 │       └── OrderOperationException.java
 ```
 
-> **跨模块适配器位置**：order 模块定义的 `ProductOrderPort` / `ProductQueryPort` / `PaymentGatewayPort` / `UserInfoPort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/ProductOrderAdapter`、`product/OrderProductQueryAdapter`、`payment/OrderPaymentGatewayAdapter`、`user/OrderUserInfoAdapter`。`OrderCachePort` 的实现 `RedisOrderCacheAdapter` 位于 order 模块自身 `adapter/outbound/cache/`，因其仅操作订单域缓存。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
+> **跨模块适配器位置**：order 模块定义的 `ProductOrderPort` / `ProductQueryPort` / `PaymentGatewayPort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/ProductOrderAdapter`、`product/OrderProductQueryAdapter`、`payment/OrderPaymentGatewayAdapter`。`OrderCachePort` 的实现 `RedisOrderCacheAdapter` 位于 order 模块自身 `adapter/outbound/cache/`，因其仅操作订单域缓存。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
 
 > **Money 值对象**：`Money` 不在 order 模块，位于 `easyorange-common`。order 模块通过 `Money` 使用金额，但不重复定义。
 > **ProductId 值对象**：`ProductId` 同样位于 `easyorange-common`（`common/domain/ProductId.java`，与 `Money` 同模式，带 `@JsonValue`/`@JsonCreator`），order 与 product 模块共享同一实现，不各自重复定义（2026-08-08 收敛）。
@@ -112,7 +112,7 @@ order/
 **执行流程**：
 ```
 OrderCommandHandler.handle(CreateOrderCommand) ─ @Transactional(rollbackFor=Exception.class) ─
-  1. LockPort 获取商品锁（key=eo:order:lock:product:{productId}，按 productId 排序避免死锁）
+  1. DistributedLockPort 获取商品锁（key=eo:order:lock:product:{productId}，按 productId 排序避免死锁）
   2. OrderPreparation 准备商品数据（校验在线、库存、非自购）
   3. Order.createOrder 创建订单 + 发布事件（Outbox 同事务原子）
   4. ProductOrderPort.decreaseStock() 同步扣库存（同事务）
@@ -148,7 +148,6 @@ OrderCommandHandler.handle(CreateOrderCommand) ─ @Transactional(rollbackFor=Ex
 | `ProductOrderPort` | `ProductOrderAdapter` | product |
 | `ProductQueryPort` | `OrderProductQueryAdapter` | product |
 | `PaymentGatewayPort` | `OrderPaymentGatewayAdapter` | payment |
-| `UserInfoPort` | `OrderUserInfoAdapter` | user |
 | `OrderCachePort` | `RedisOrderCacheAdapter` | Redis |
 
 所有跨模块依赖已标记为 `<optional>true</optional>`，通过 Port 接口 + 适配器模式完全隔离。

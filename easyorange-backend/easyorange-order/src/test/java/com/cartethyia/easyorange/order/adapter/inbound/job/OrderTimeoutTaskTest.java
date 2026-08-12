@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
+import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -13,7 +15,6 @@ import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,10 +23,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("OrderTimeoutTask 单元测试")
 class OrderTimeoutTaskTest {
 
@@ -39,10 +41,7 @@ class OrderTimeoutTaskTest {
     private OrderTimeoutProperties properties;
 
     @Mock
-    private RedissonClient redissonClient;
-
-    @Mock
-    private RLock lock;
+    private DistributedLockPort lockPort;
 
     @Mock
     private OrderCachePort orderCachePort;
@@ -60,6 +59,9 @@ class OrderTimeoutTaskTest {
     void setUp() {
         expiredOrder1 = orderWithStatus(ORDER_ID_1, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID);
         expiredOrder2 = orderWithStatus(ORDER_ID_2, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID);
+        // 默认锁端口正常：直接执行锁内操作（获取锁成功），返回其 boolean 结果
+        when(lockPort.executeWithLocks(anyList(), anyLong(), any()))
+                .thenAnswer(inv -> ((DistributedLockPort.LockOperation<?>) inv.getArgument(2)).execute());
     }
 
     @Nested
@@ -68,12 +70,9 @@ class OrderTimeoutTaskTest {
 
         @Test
         @DisplayName("正常取消所有已过期订单")
-        void cancelExpiredOrders_shouldCancelAllExpired() throws InterruptedException {
+        void cancelExpiredOrders_shouldCancelAllExpired() {
             when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findExpiredOrders(anyInt())).thenReturn(List.of(expiredOrder1, expiredOrder2));
-            when(redissonClient.getLock(anyString())).thenReturn(lock);
-            when(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
-            when(lock.isHeldByCurrentThread()).thenReturn(true);
 
             orderTimeoutTask.cancelExpiredOrders();
 
@@ -84,19 +83,14 @@ class OrderTimeoutTaskTest {
 
         @Test
         @DisplayName("获取锁失败时跳过该订单，不影响其他订单")
-        void cancelExpiredOrders_withLockFailure_shouldSkipOrder() throws InterruptedException {
+        void cancelExpiredOrders_withLockFailure_shouldSkipOrder() {
             when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findExpiredOrders(anyInt())).thenReturn(List.of(expiredOrder1, expiredOrder2));
-            // First order fails to acquire lock, second succeeds
-            RLock lock1 = mock(RLock.class);
-            RLock lock2 = mock(RLock.class);
-            when(redissonClient.getLock(argThat((String key) -> key != null && key.contains(ORDER_ID_1))))
-                    .thenReturn(lock1);
-            when(redissonClient.getLock(argThat((String key) -> key != null && key.contains(ORDER_ID_2))))
-                    .thenReturn(lock2);
-            when(lock1.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(false);
-            when(lock2.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
-            when(lock2.isHeldByCurrentThread()).thenReturn(true);
+            // First order fails to acquire lock, second succeeds（doThrow 风格：避免 when() 内先调用命中 setUp 的 thenAnswer 桩）
+            doThrow(new LockAcquisitionException("busy"))
+                    .doAnswer(inv -> ((DistributedLockPort.LockOperation<?>) inv.getArgument(2)).execute())
+                    .when(lockPort)
+                    .executeWithLocks(anyList(), anyLong(), any());
 
             orderTimeoutTask.cancelExpiredOrders();
 
@@ -121,12 +115,9 @@ class OrderTimeoutTaskTest {
 
         @Test
         @DisplayName("部分订单取消失败时继续处理剩余订单")
-        void cancelExpiredOrders_withPartialFailure_shouldContinue() throws InterruptedException {
+        void cancelExpiredOrders_withPartialFailure_shouldContinue() {
             when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findExpiredOrders(anyInt())).thenReturn(List.of(expiredOrder1, expiredOrder2));
-            when(redissonClient.getLock(anyString())).thenReturn(lock);
-            when(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
-            when(lock.isHeldByCurrentThread()).thenReturn(true);
             // First order update throws exception
             doThrow(new RuntimeException("更新失败"))
                     .doNothing()

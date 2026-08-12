@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.message.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.application.query.ConversationQueryHandler;
 import com.cartethyia.easyorange.message.application.query.MessageQueryHandler;
@@ -14,6 +15,7 @@ import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "消息系统", description = "消息查询")
@@ -26,33 +28,36 @@ public class MessageQueryController {
     private final ConversationQueryHandler conversationQueryHandler;
 
     @GetMapping("/conversations")
-    public Result<List<ConversationListVO>> getConversations() {
-        return Result.success(conversationQueryHandler.getConversations());
+    public Result<List<ConversationListVO>> getConversations(@AuthenticationPrincipal AuthUser user) {
+        return Result.success(conversationQueryHandler.getConversations(user.userId()));
     }
 
     @GetMapping("/{id}")
-    public Result<MessageVO> getMessageDetail(@PathVariable String id) {
-        return Result.success(queryHandler.getMessageDetail(id));
+    public Result<MessageVO> getMessageDetail(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
+        return Result.success(queryHandler.getMessageDetail(user.userId(), id));
     }
 
     @GetMapping("/list")
-    public Result<PageResult<MessageVO>> getMyMessages(QueryMessageRequest request) {
-        return Result.success(queryHandler.getMyMessages(toMessageQuery(request)));
+    public Result<PageResult<MessageVO>> getMyMessages(
+            @AuthenticationPrincipal AuthUser user, QueryMessageRequest request) {
+        return Result.success(queryHandler.getMyMessages(user.userId(), toMessageQuery(request)));
     }
 
     @GetMapping("/unread")
-    public Result<PageResult<MessageVO>> getUnreadMessages(QueryMessageRequest request) {
-        return Result.success(queryHandler.getUnreadMessages(toMessageQuery(request)));
+    public Result<PageResult<MessageVO>> getUnreadMessages(
+            @AuthenticationPrincipal AuthUser user, QueryMessageRequest request) {
+        return Result.success(queryHandler.getUnreadMessages(user.userId(), toMessageQuery(request)));
     }
 
     @GetMapping("/unread-count")
-    public Result<UnreadCountVO> getUnreadCount() {
-        return Result.success(queryHandler.getUnreadCount());
+    public Result<UnreadCountVO> getUnreadCount(@AuthenticationPrincipal AuthUser user) {
+        return Result.success(queryHandler.getUnreadCount(user.userId()));
     }
 
     @GetMapping("/conversation/{userId}")
-    public Result<List<ConversationVO>> getConversation(@PathVariable String userId) {
-        return Result.success(conversationQueryHandler.getConversation(userId));
+    public Result<List<ConversationVO>> getConversation(
+            @AuthenticationPrincipal AuthUser user, @PathVariable String userId) {
+        return Result.success(conversationQueryHandler.getConversation(user.userId(), userId));
     }
 
     /** 边界层 DTO → 领域查询参数，非法 isRead code 由 {@link ReadStatus#fromCode(String)} 抛 IllegalArgumentException 映射为 400。 */

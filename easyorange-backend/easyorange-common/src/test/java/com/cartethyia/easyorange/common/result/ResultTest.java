@@ -105,18 +105,6 @@ class ResultTest {
             assertFalse(Result.error("操作失败").isSuccess());
             assertFalse(Result.error("msg").isSuccess());
         }
-
-        @Test
-        @DisplayName("withMessage 复制并修改消息")
-        void withMessage_copyAndChange() {
-            Result<String> original = Result.success("data");
-            Result<String> modified = original.withMessage("新消息");
-
-            assertEquals("data", modified.data());
-            assertEquals("新消息", modified.message());
-            assertEquals(original.code(), modified.code());
-            assertEquals(original.timestamp(), modified.timestamp());
-        }
     }
 
     @Nested

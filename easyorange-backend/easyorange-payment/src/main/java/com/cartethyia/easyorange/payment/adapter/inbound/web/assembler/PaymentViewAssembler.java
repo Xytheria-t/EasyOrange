@@ -39,26 +39,4 @@ public class PaymentViewAssembler {
                 page.records().stream().map(this::toPaymentResponse).toList();
         return PageResult.of(records, page.total(), page.current(), page.size());
     }
-
-    public PaymentResponse toPaymentResponseWithOrderInfo(Payment aggregate, String orderNo, String username) {
-        PaymentResponse response = toPaymentResponse(aggregate);
-        return PaymentResponse.builder()
-                .id(response.getId())
-                .paymentNo(response.getPaymentNo())
-                .orderId(response.getOrderId())
-                .orderNo(orderNo)
-                .userId(response.getUserId())
-                .username(username)
-                .amount(response.getAmount())
-                .paymentMethod(response.getPaymentMethod())
-                .paymentMethodDesc(response.getPaymentMethodDesc())
-                .status(response.getStatus())
-                .statusDesc(response.getStatusDesc())
-                .transactionId(response.getTransactionId())
-                .refundReason(response.getRefundReason())
-                .refundTime(response.getRefundTime())
-                .createTime(response.getCreateTime())
-                .updateTime(response.getUpdateTime())
-                .build();
-    }
 }

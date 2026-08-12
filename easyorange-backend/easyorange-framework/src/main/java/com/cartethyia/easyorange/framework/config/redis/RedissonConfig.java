@@ -40,6 +40,11 @@ public class RedissonConfig {
                 .setConnectionMinimumIdleSize(2)
                 .setConnectionPoolSize(4);
 
+        // 显式固定 watchdog 续期周期（显示默认 30s）：watchdog 按此周期为 leaseTime=-1 的锁续期，
+        // 事务正常结束经 afterCompletion 释放即停。注意这**不是**持有上限——事务卡住时 watchdog 会一直续，
+        // 上限靠 DistributedRedissonLockAdapter 的持有时长告警兜底（见 LockProperties.holdWarnThreshold）。
+        config.setLockWatchdogTimeout(Duration.ofSeconds(30).toNanos());
+
         if (password != null && !password.isEmpty()) {
             config.setPassword(password);
         }

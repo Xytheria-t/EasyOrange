@@ -8,7 +8,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort.AiReviewRecord;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort.AuditLogRecord;
 import com.cartethyia.easyorange.common.security.AuthUser;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -24,19 +23,19 @@ public class AdminProductAuditService {
     private final AdminProductAuditQueryPort adminProductAuditQueryPort;
 
     @Transactional(rollbackFor = Exception.class)
-    public void auditProduct(String id, ProductAuditRequest request) {
+    public void auditProduct(AuthUser operator, String id, ProductAuditRequest request) {
         adminProductAuditQueryPort.auditProduct(
                 id,
                 request.action(),
                 request.reason(),
                 request.remark(),
                 request.dimensions(),
-                operatorId(),
-                operatorName());
+                operator.userId(),
+                operator.username());
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public BatchAuditResultResponse batchAudit(BatchAuditRequest request) {
+    public BatchAuditResultResponse batchAudit(AuthUser operator, BatchAuditRequest request) {
         List<String> errors = new ArrayList<>();
         int successCount = 0;
 
@@ -48,8 +47,8 @@ public class AdminProductAuditService {
                         item.reason(),
                         null,
                         item.dimensions(),
-                        operatorId(),
-                        operatorName());
+                        operator.userId(),
+                        operator.username());
                 successCount++;
             } catch (Exception e) {
                 errors.add("商品ID " + item.productId() + ": " + e.getMessage());
@@ -68,14 +67,6 @@ public class AdminProductAuditService {
 
     public AiReviewRecord getAiReview(String productId) {
         return adminProductAuditQueryPort.getAiReview(productId);
-    }
-
-    private String operatorId() {
-        return SecurityContextUtil.getCurrentUserIdOrThrow();
-    }
-
-    private String operatorName() {
-        return SecurityContextUtil.getUserContext().map(AuthUser::username).orElse("管理员");
     }
 
     private AuditLogResponse toAuditLogResponse(AuditLogRecord log) {

@@ -3,91 +3,78 @@ package com.cartethyia.easyorange.framework.util;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.security.AuthUser;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.experimental.UtilityClass;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.Optional;
+
+/**
+ * 当前登录用户访问器。
+ * <p>
+ * 约定：{@code SecurityContextHolder} 的 principal 恒为 {@link AuthUser}
+ * （由 {@code SecurityConfig#jwtAuthenticationConverter} 注入，测试用 {@link TestSecurityUtil}）。
+ * 匿名请求（permitAll 路径）视为未登录，返回 {@code empty}。
+ */
 @UtilityClass
 public class SecurityContextUtil {
 
-    // ==================== Current User ID ====================
+    // ==================== Current User ID (High-level API) ====================
 
-    public static String getCurrentUserIdOrThrow() {
-        return getCurrentUserId().orElseThrow(() -> BusinessException.of(ResultCode.UNAUTHORIZED, "用户未登录"));
-    }
-
+    /**
+     * 获取当前用户ID，未登录时返回 empty。
+     */
     public static Optional<String> getCurrentUserId() {
-        return getAuthentication().flatMap(auth -> convertPrincipal(auth.getPrincipal()));
+        return getUserContext().map(AuthUser::userId);
     }
 
-    // ==================== User Context ====================
+    // ==================== User Context (Core API) ====================
 
+    /**
+     * 获取当前登录用户上下文，未登录时返回 empty。
+     */
     public static Optional<AuthUser> getUserContext() {
-        return getAuthentication().map(auth -> {
-            if (auth.getPrincipal() instanceof AuthUser u) return u;
-            return buildAuthUser(auth);
-        });
+        return getAuthentication().flatMap(SecurityContextUtil::extractUser);
     }
 
+    /**
+     * 获取当前登录用户上下文，未登录时抛出业务异常。
+     */
     public static AuthUser getUserContextOrThrow() {
         return getUserContext().orElseThrow(() -> BusinessException.of(ResultCode.UNAUTHORIZED, "用户未登录"));
     }
 
     // ==================== Context Management ====================
 
+    /**
+     * 清除当前线程的安全上下文（通常在请求结束或测试清理时调用）。
+     */
     public static void clearContext() {
         SecurityContextHolder.clearContext();
     }
 
-    // ==================== Private Helpers ====================
+    // ==================== Private Helpers (Foundation) ====================
 
+    /**
+     * 获取当前有效的 Authentication。
+     * <p>
+     * 过滤掉 null、未认证、以及 AnonymousAuthenticationToken。
+     */
     private static Optional<Authentication> getAuthentication() {
         return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
-                .filter(Authentication::isAuthenticated);
+            .filter(Authentication::isAuthenticated)
+            // AnonymousAuthenticationToken.isAuthenticated() == true，必须显式排除
+            .filter(auth -> !(auth instanceof AnonymousAuthenticationToken));
     }
 
-    private static Optional<String> convertPrincipal(Object principal) {
-        if (principal == null) return Optional.empty();
-        return switch (principal) {
-            case Long id -> Optional.of(String.valueOf(id));
-            case AuthUser user -> Optional.ofNullable(user.userId());
-            case String s -> Optional.of(s);
-            default -> Optional.empty();
-        };
-    }
-
-    private static AuthUser buildAuthUser(Authentication auth) {
-        var authorities = auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toSet());
-
-        return AuthUser.builder()
-                .userId(convertPrincipal(auth.getPrincipal()).orElse(null))
-                .username(extractUsername(auth))
-                .roles(extractRoles(authorities))
-                .permissions(extractPermissions(authorities))
-                .build();
-    }
-
-    private static String extractUsername(Authentication auth) {
-        // Principal is never AuthUser here (handled in getUserContext)
-        if (auth.getCredentials() instanceof String credentials) return credentials;
-        if (auth.getPrincipal() instanceof String s) return s;
-        return auth.getName();
-    }
-
-    private static Set<String> extractRoles(Set<String> authorities) {
-        return authorities.stream()
-                .filter(a -> a.startsWith("ROLE_"))
-                .map(a -> a.substring("ROLE_".length()))
-                .collect(Collectors.toSet());
-    }
-
-    private static Set<String> extractPermissions(Set<String> authorities) {
-        return authorities.stream().filter(a -> !a.startsWith("ROLE_")).collect(Collectors.toSet());
+    /**
+     * 约定 principal 恒为 {@link AuthUser}（见类注释），否则为配置错误，快速失败。
+     */
+    private static Optional<AuthUser> extractUser(Authentication auth) {
+        if (auth.getPrincipal() instanceof AuthUser user) {
+            return Optional.of(user);
+        }
+        throw new IllegalStateException("Authentication principal 必须是 AuthUser，实际为 " + auth.getPrincipal());
     }
 }

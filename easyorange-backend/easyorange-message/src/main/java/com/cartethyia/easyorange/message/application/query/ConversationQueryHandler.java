@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.message.application.query;
 
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationListVO;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
@@ -30,9 +29,7 @@ public class ConversationQueryHandler {
     private final UserInfoPort userInfoPort;
 
     @Transactional(readOnly = true)
-    public List<ConversationVO> getConversation(String otherUserId) {
-        String currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public List<ConversationVO> getConversation(String currentUserId, String otherUserId) {
         List<Message> messages = queryRepository.findConversation(currentUserId, otherUserId);
         if (messages.isEmpty()) {
             return List.of();
@@ -44,9 +41,7 @@ public class ConversationQueryHandler {
     }
 
     @Transactional(readOnly = true)
-    public List<ConversationListVO> getConversations() {
-        String currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public List<ConversationListVO> getConversations(String currentUserId) {
         List<Message> messages = queryRepository.findRecentForUser(currentUserId);
         if (messages.isEmpty()) {
             return List.of();

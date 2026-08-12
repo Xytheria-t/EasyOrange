@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
@@ -68,18 +67,15 @@ public class ProductSearchQueryHandler {
     }
 
     @Transactional(readOnly = true)
-    public List<SearchHistoryReadModel> getMySearchHistory(Integer limit) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public List<SearchHistoryReadModel> getMySearchHistory(String userId, Integer limit) {
         return productQueryRepository.findSearchHistoryByUserId(userId, limit);
     }
 
-    public void clearMySearchHistory() {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void clearMySearchHistory(String userId) {
         productQueryRepository.clearSearchHistory(userId);
     }
 
-    public void deleteSearchHistory(String historyId) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void deleteSearchHistory(String userId, String historyId) {
         productQueryRepository.deleteSearchHistoryById(historyId, userId);
     }
 
@@ -93,8 +89,7 @@ public class ProductSearchQueryHandler {
         return productQueryRepository.findSearchSuggestions(keyword, limit);
     }
 
-    public void recordSearch(String keyword) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void recordSearch(String userId, String keyword) {
         productQueryRepository.saveSearchHistory(userId, keyword);
     }
 

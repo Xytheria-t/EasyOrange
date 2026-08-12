@@ -52,6 +52,8 @@ public class AdminUserSecurityService {
     @Transactional(rollbackFor = Exception.class)
     public void changeUserRole(String id, UserRoleRequest request) {
         adminUserQueryPort.setUserType(id, request.getRole());
+        // 角色即时生效：吊销该用户全部会话，下次登录/刷新按新角色签发
+        tokenService.revokeAllUserSessions(id);
     }
 
     private UserAuth requireUser(String id) {

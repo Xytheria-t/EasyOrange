@@ -76,17 +76,6 @@ public class ProductReportQueryHandler {
                 report.getUpdateTime());
     }
 
-    @Transactional(readOnly = true)
-    public PageResult<ProductReportResponse> getPendingReports(int pageNum, int pageSize) {
-        List<ProductReport> reports = productReportQueryRepository.findPendingReports(pageNum, pageSize);
-        long total = productReportQueryRepository.countPendingReports();
-
-        List<ProductReportResponse> voList =
-                reports.stream().map(this::toResponse).collect(Collectors.toList());
-
-        return PageResult.of(voList, total, pageNum, pageSize);
-    }
-
     private ProductReportResponse toResponse(ProductReport report) {
         if (report == null) {
             return null;

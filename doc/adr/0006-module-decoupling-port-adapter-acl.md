@@ -5,6 +5,8 @@
 - **决策者**：后端架构
 - **标签**：`ddd` `port-adapter` `module-decoupling` `acl` `modularity`
 
+> **现状更新（2026-08-12）**：Port 数已从决策时点的 33 演化为 **35**（order/payment `LockPort` 收敛为 framework `DistributedLockPort`、`UserInfoPort` 单查下线、admin 查询端口拆分）。本记录保留 2026-08-08 决策时点的 33 口径；现役计数命令见 [doc/工程指标.md](../工程指标.md)。
+
 ---
 
 ## 上下文（Context）

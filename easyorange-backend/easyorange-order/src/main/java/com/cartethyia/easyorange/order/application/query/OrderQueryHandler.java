@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.order.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.assembler.OrderReadModelAssembler;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
@@ -36,12 +35,11 @@ public class OrderQueryHandler {
     private final OrderReadModelAssembler readModelAssembler;
 
     @Transactional(readOnly = true)
-    public OrderVO getOrderDetailForOwner(String orderId) {
+    public OrderVO getOrderDetailForOwner(String userId, String orderId) {
         OrderReadModel order = orderReadRepository
                 .findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
 
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         if (!order.buyerId().equals(userId) && !order.sellerId().equals(userId)) {
             throw new OrderDomainException(OrderResultCode.ORDER_NOT_OWNER);
         }
@@ -73,8 +71,7 @@ public class OrderQueryHandler {
      * buyerId 自动填充为当前登录用户。
      */
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> getMyOrders(OrderListQuery query) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public PageResult<OrderVO> getMyOrders(String userId, OrderListQuery query) {
         return queryOrdersWithCache(userId, null, query);
     }
 
@@ -83,8 +80,7 @@ public class OrderQueryHandler {
      * sellerId 自动填充为当前登录用户。
      */
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> getSoldOrders(OrderListQuery query) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public PageResult<OrderVO> getSoldOrders(String userId, OrderListQuery query) {
         return queryOrdersWithCache(null, userId, query);
     }
 

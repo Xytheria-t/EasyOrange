@@ -3,11 +3,13 @@ package com.cartethyia.easyorange.payment.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
+import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.cartethyia.easyorange.payment.application.command.ClosePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.PayCommand;
@@ -18,16 +20,13 @@ import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
-import com.cartethyia.easyorange.payment.domain.exception.LockAcquisitionException;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.port.LockPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
 import java.math.BigDecimal;
 import java.util.Optional;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -56,7 +55,7 @@ class PaymentCommandHandlerTest {
     private IdGenerator idGenerator;
 
     @Mock
-    private LockPort lockPort;
+    private DistributedLockPort lockPort;
 
     @Mock
     private PaymentMetricsService metricsService;
@@ -71,21 +70,15 @@ class PaymentCommandHandlerTest {
 
     @BeforeEach
     void setUp() {
-        TestSecurityUtil.setSecurityContext("3001");
         testAggregate = buildAggregate(PaymentStatus.PENDING);
-    }
-
-    @AfterEach
-    void tearDown() {
-        TestSecurityUtil.clearSecurityContext();
     }
 
     @Test
     @DisplayName("锁获取失败时用例层记录并发冲突指标并抛异常")
     void executeWithLock_lockConflict_recordsMetricAndThrows() {
-        doThrow(new LockAcquisitionException("系统繁忙，请稍后重试"))
+        doThrow(new LockAcquisitionException("busy"))
                 .when(lockPort)
-                .executeWithLock(anyString(), any(Runnable.class));
+                .executeWithLock(anyString(), anyLong(), any(Runnable.class));
 
         assertThatThrownBy(() -> commandHandler.handle(new PayCommand("PAY123", null, null)))
                 .isInstanceOf(LockAcquisitionException.class);
@@ -105,7 +98,7 @@ class PaymentCommandHandlerTest {
 
             when(idGenerator.generateId()).thenReturn("1001");
 
-            String paymentId = commandHandler.handle(command);
+            String paymentId = commandHandler.handle("3001", command);
 
             assertThat(paymentId).isNotNull();
             verify(paymentRepository).save(aggregateCaptor.capture());
@@ -267,11 +260,11 @@ class PaymentCommandHandlerTest {
         @BeforeEach
         void enableLockWrapper() {
             doAnswer(invocation -> {
-                        invocation.getArgument(1, Runnable.class).run();
+                        invocation.getArgument(2, Runnable.class).run();
                         return null;
                     })
                     .when(lockPort)
-                    .executeWithLock(anyString(), any(Runnable.class));
+                    .executeWithLock(anyString(), anyLong(), any(Runnable.class));
         }
 
         @Test
@@ -312,11 +305,11 @@ class PaymentCommandHandlerTest {
         @BeforeEach
         void enableLockWrapper() {
             doAnswer(invocation -> {
-                        invocation.getArgument(1, Runnable.class).run();
+                        invocation.getArgument(2, Runnable.class).run();
                         return null;
                     })
                     .when(lockPort)
-                    .executeWithLock(anyString(), any(Runnable.class));
+                    .executeWithLock(anyString(), anyLong(), any(Runnable.class));
         }
 
         @Test

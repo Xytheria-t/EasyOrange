@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.product.application.query.ProductQueryHandler;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
@@ -15,16 +14,6 @@ import org.springframework.stereotype.Component;
 public class OrderProductQueryAdapter implements ProductQueryPort {
 
     private final ProductQueryHandler productQueryHandler;
-
-    @Override
-    public Optional<ProductDetail> getProductById(String productId) {
-        try {
-            ProductVO product = productQueryHandler.getProductById(productId);
-            return Optional.ofNullable(product).map(this::toDetail);
-        } catch (Exception e) {
-            return Optional.empty();
-        }
-    }
 
     @Override
     public List<ProductDetail> getProductsByIds(List<String> productIds) {

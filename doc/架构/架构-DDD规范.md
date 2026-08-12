@@ -231,19 +231,23 @@ throw BusinessException.of(UserResultCode.USER_NOT_FOUND);
 当跨模块通过直接依赖调用或集成外部系统时，必须使用防腐层将外部模型转换为内部模型：
 
 ```java
-// adapter/outbound/messaging/UserInfoAdapter.java
-public class UserInfoAdapter implements UserInfoPort {
+// easyorange-application/.../adapter/outbound/user/MessageUserInfoAdapter.java
+public class MessageUserInfoAdapter implements UserInfoPort {
     private final UserRepository userRepository;
 
-    public UserInfoResponse getUserInfo(String userId) {
-        return userRepository.findById(userId)
-            .map(this::toUserInfoResponse)
-            .orElseThrow(() -> new OrderDomainException("用户不存在"));
+    @Override
+    public Map<String, UserInfo> getUserInfoMap(Collection<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        return userRepository.findAllByIds(userIds).stream()
+            .collect(Collectors.toMap(User::getId, this::toUserInfo, (a, _) -> a));
     }
 
-    // 外部 User 模型 → 内部 Order 模块的 UserInfoResponse
-    private UserInfoResponse toUserInfoResponse(User user) {
-        return new UserInfoResponse(user.getId(), user.getUsername(), user.getContactInfo().phone());
+    // 外部 user 模块 User 聚合 → message 模块内部 UserInfo 值对象（只暴露需要的字段）
+    private UserInfo toUserInfo(User user) {
+        String avatar = user.getPersonalInfo() != null ? user.getPersonalInfo().avatar() : null;
+        return UserInfo.of(user.getId(), user.getUsername(), avatar);
     }
 }
 ```
@@ -252,10 +256,12 @@ public class UserInfoAdapter implements UserInfoPort {
 
 | 模块 | 跨模块调用 | ACL 实现 | 状态 |
 |------|-----------|---------|------|
-| order → user | 查询用户信息 | `UserInfoAdapter`（实现 `UserInfoPort`） | ✅ 已隔离 |
-| order → product | 查询商品/扣减库存 | `ProductQueryAdapter`/`ProductInventoryAdapter` | ✅ 已隔离 |
-| order → payment | 发起支付 | `PaymentGatewayAdapter`（实现 `PaymentGatewayPort`） | ✅ 已隔离 |
-| favorite → product | 查询商品信息 | `ProductInfoPort`/`FavoriteProductInfoAdapter` | ✅ 已隔离（`<optional>true</optional>`） |
+| message → user | 批量查用户名/头像 | `MessageUserInfoAdapter`（`UserInfoPort` 唯一实现；2026-08-12 起 order 侧单查已下线） | ✅ 已隔离 |
+| product → user | 查资产方信息 | `SellerInfoAdapter`（实现 `SellerInfoPort`） | ✅ 已隔离 |
+| order → product | 查商品 / 扣减恢复库存 | `OrderProductQueryAdapter` / `ProductOrderAdapter` | ✅ 已隔离 |
+| order → payment | 发起支付 | `OrderPaymentGatewayAdapter`（实现 `PaymentGatewayPort`） | ✅ 已隔离 |
+| favorite → product | 查询商品信息 | `FavoriteProductInfoAdapter`（实现 `ProductInfoPort`） | ✅ 已隔离（`<optional>true</optional>`） |
+| admin → product/order/user | 聚合查询 | `AdminProductQueryAdapter` 等（`AdminProductQueryPort` 等 8 个查询端口） | ✅ 已隔离 |
 
 ### 跨模块 RPC 版本兼容策略 `[演进]`
 

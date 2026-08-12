@@ -34,8 +34,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -100,16 +98,6 @@ class OrderQueryHandlerTest {
         when(orderCachePort.getOrderList(any())).thenReturn(Optional.empty());
     }
 
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
-    }
-
-    private void authenticateAs(String userId) {
-        SecurityContextHolder.getContext()
-                .setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, List.of()));
-    }
-
     @Nested
     @DisplayName("getOrderDetailForOwner")
     class GetOrderDetailForOwnerTest {
@@ -119,7 +107,7 @@ class OrderQueryHandlerTest {
         void nonExistingOrder_throwsNotFound() {
             when(orderReadRepository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> handler.getOrderDetailForOwner("999"))
+            assertThatThrownBy(() -> handler.getOrderDetailForOwner(BUYER_ID, "999"))
                     .isInstanceOf(OrderDomainException.class)
                     .extracting("code")
                     .isEqualTo("B3001");
@@ -128,10 +116,9 @@ class OrderQueryHandlerTest {
         @Test
         @DisplayName("非订单所有方访问抛出 ORDER_NOT_OWNER")
         void nonOwner_throwsNotOwner() {
-            authenticateAs("999");
             when(orderReadRepository.findById(any())).thenReturn(Optional.of(testOrderReadModel));
 
-            assertThatThrownBy(() -> handler.getOrderDetailForOwner("1"))
+            assertThatThrownBy(() -> handler.getOrderDetailForOwner("999", "1"))
                     .isInstanceOf(OrderDomainException.class)
                     .extracting("code")
                     .isEqualTo("B3003");
@@ -140,11 +127,10 @@ class OrderQueryHandlerTest {
         @Test
         @DisplayName("买方访问自己的订单返回详情且不脱敏")
         void buyerOwner_returnsVOWithoutMask() {
-            authenticateAs(BUYER_ID);
             when(orderReadRepository.findById(any())).thenReturn(Optional.of(testOrderReadModel));
             when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(testProductDetail()));
 
-            OrderVO result = handler.getOrderDetailForOwner("1");
+            OrderVO result = handler.getOrderDetailForOwner(BUYER_ID, "1");
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo("1");
@@ -156,11 +142,10 @@ class OrderQueryHandlerTest {
         @Test
         @DisplayName("卖方访问自己的订单返回详情")
         void sellerOwner_returnsVO() {
-            authenticateAs(SELLER_ID);
             when(orderReadRepository.findById(any())).thenReturn(Optional.of(testOrderReadModel));
             when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(testProductDetail()));
 
-            OrderVO result = handler.getOrderDetailForOwner("1");
+            OrderVO result = handler.getOrderDetailForOwner(SELLER_ID, "1");
 
             assertThat(result).isNotNull();
             verify(readModelAssembler).toOrderVO(eq(testOrderReadModel), anyMap(), eq(false));
@@ -205,11 +190,10 @@ class OrderQueryHandlerTest {
         @Test
         @DisplayName("缓存命中时直接返回缓存，不查仓储")
         void myOrders_cacheHit_returnsCachedWithoutQueryingRepository() {
-            authenticateAs(BUYER_ID);
             PageResult<OrderVO> cached = PageResult.of(List.of(mockOrderVO), 1L, 1, 10);
             when(orderCachePort.getOrderList(any())).thenReturn(Optional.of(cached));
 
-            PageResult<OrderVO> result = handler.getMyOrders(new OrderListQuery(null, null, null, null, 1, 10));
+            PageResult<OrderVO> result = handler.getMyOrders(BUYER_ID, new OrderListQuery(null, null, null, null, 1, 10));
 
             assertThat(result).isSameAs(cached);
             verify(orderReadRepository, never()).findPage(any());
@@ -218,12 +202,11 @@ class OrderQueryHandlerTest {
         @Test
         @DisplayName("缓存未命中时查询仓储并写入缓存")
         void myOrders_cacheMiss_queriesAndPuts() {
-            authenticateAs(BUYER_ID);
             PageResult<OrderReadModel> pageResult = PageResult.of(List.of(testOrderReadModel), 1L, 1, 10);
             when(orderReadRepository.findPage(any(OrderQueryCondition.class))).thenReturn(pageResult);
             when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(testProductDetail()));
 
-            handler.getMyOrders(new OrderListQuery(null, null, null, null, 1, 10));
+            handler.getMyOrders(BUYER_ID, new OrderListQuery(null, null, null, null, 1, 10));
 
             verify(orderReadRepository).findPage(any(OrderQueryCondition.class));
             verify(orderCachePort).putOrderList("eo:order:list:key", PageResult.of(List.of(mockOrderVO), 1L, 1, 10));
@@ -232,11 +215,10 @@ class OrderQueryHandlerTest {
         @Test
         @DisplayName("缓存 key 包含分页参数，避免跨页污染")
         void myOrders_pageTwo_usesPaginationInCacheKey() {
-            authenticateAs(BUYER_ID);
             when(orderReadRepository.findPage(any(OrderQueryCondition.class)))
                     .thenReturn(PageResult.of(List.of(testOrderReadModel), 1L, 2, 10));
 
-            handler.getMyOrders(new OrderListQuery(null, null, null, null, 2, 10));
+            handler.getMyOrders(BUYER_ID, new OrderListQuery(null, null, null, null, 2, 10));
 
             verify(orderCachePort).buildOrderListKey(eq(BUYER_ID), any(), eq(2), eq(10));
         }
@@ -244,12 +226,11 @@ class OrderQueryHandlerTest {
         @Test
         @DisplayName("orderNo 过滤时绕过缓存直接查询")
         void soldOrders_withOrderNoFilter_skipsCache() {
-            authenticateAs(SELLER_ID);
             when(orderReadRepository.findPage(any(OrderQueryCondition.class)))
                     .thenReturn(PageResult.of(List.of(testOrderReadModel), 1L, 1, 10));
             when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(testProductDetail()));
 
-            handler.getSoldOrders(new OrderListQuery("ORD001", null, null, null, 1, 10));
+            handler.getSoldOrders(SELLER_ID, new OrderListQuery("ORD001", null, null, null, 1, 10));
 
             verify(orderCachePort, never()).getOrderList(any());
             verify(orderCachePort, never()).putOrderList(any(), any());

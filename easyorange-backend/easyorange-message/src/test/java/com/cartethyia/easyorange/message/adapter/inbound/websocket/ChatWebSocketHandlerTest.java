@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.WsMessage;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
@@ -74,26 +73,21 @@ class ChatWebSocketHandlerTest {
         @Test
         @DisplayName("正常发送聊天消息")
         void handleChatMessage_normal_sendsMessage() {
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                handler.handleChatMessage(wsMessage, principal);
+            handler.handleChatMessage(wsMessage, principal);
 
-                verify(messageCommandHandler).handle(commandCaptor.capture());
+            verify(messageCommandHandler).handle(eq(USER_ID), commandCaptor.capture());
 
-                SendMessageCommand cmd = commandCaptor.getValue();
-                assertThat(cmd.receiverId()).isEqualTo(RECEIVER_ID);
-                assertThat(cmd.type()).isEqualTo(2);
-                assertThat(cmd.title()).isEqualTo("你好");
-                assertThat(cmd.content()).isEqualTo("hello");
-                assertThat(cmd.conversationId()).isEqualTo(CONVERSATION_ID);
+            SendMessageCommand cmd = commandCaptor.getValue();
+            assertThat(cmd.receiverId()).isEqualTo(RECEIVER_ID);
+            assertThat(cmd.type()).isEqualTo(2);
+            assertThat(cmd.title()).isEqualTo("你好");
+            assertThat(cmd.content()).isEqualTo("hello");
+            assertThat(cmd.conversationId()).isEqualTo(CONVERSATION_ID);
 
-                verify(messagingTemplate).convertAndSend(eq("/queue/chat/" + CONVERSATION_ID), eq(wsMessage));
-                verify(messagingTemplate)
-                        .convertAndSendToUser(
-                                eq(String.valueOf(RECEIVER_ID)), eq("/queue/unread-count"), any(Map.class));
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messagingTemplate).convertAndSend(eq("/queue/chat/" + CONVERSATION_ID), eq(wsMessage));
+            verify(messagingTemplate)
+                    .convertAndSendToUser(
+                            eq(String.valueOf(RECEIVER_ID)), eq("/queue/unread-count"), any(Map.class));
         }
 
         @Test
@@ -101,15 +95,10 @@ class ChatWebSocketHandlerTest {
         void handleChatMessage_nullTitle_usesDefault() {
             wsMessage.setTitle(null);
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                handler.handleChatMessage(wsMessage, principal);
+            handler.handleChatMessage(wsMessage, principal);
 
-                verify(messageCommandHandler).handle(commandCaptor.capture());
-                assertThat(commandCaptor.getValue().title()).isEmpty();
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageCommandHandler).handle(eq(USER_ID), commandCaptor.capture());
+            assertThat(commandCaptor.getValue().title()).isEmpty();
         }
 
         @Test
@@ -117,15 +106,10 @@ class ChatWebSocketHandlerTest {
         void handleChatMessage_nullType_passesThrough() {
             wsMessage.setType(null);
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                handler.handleChatMessage(wsMessage, principal);
+            handler.handleChatMessage(wsMessage, principal);
 
-                verify(messageCommandHandler).handle(commandCaptor.capture());
-                assertThat(commandCaptor.getValue().type()).isNull();
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageCommandHandler).handle(eq(USER_ID), commandCaptor.capture());
+            assertThat(commandCaptor.getValue().type()).isNull();
         }
 
         @Test
@@ -133,35 +117,25 @@ class ChatWebSocketHandlerTest {
         void handleChatMessage_withBusinessId_passesCorrectly() {
             wsMessage.setBusinessId("999");
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                handler.handleChatMessage(wsMessage, principal);
+            handler.handleChatMessage(wsMessage, principal);
 
-                verify(messageCommandHandler).handle(commandCaptor.capture());
-                assertThat(commandCaptor.getValue().businessId()).isEqualTo("999");
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageCommandHandler).handle(eq(USER_ID), commandCaptor.capture());
+            assertThat(commandCaptor.getValue().businessId()).isEqualTo("999");
         }
 
         @Test
         @DisplayName("发送消息时未读通知包含正确字段")
         void handleChatMessage_unreadNotification_containsCorrectFields() {
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                handler.handleChatMessage(wsMessage, principal);
+            handler.handleChatMessage(wsMessage, principal);
 
-                verify(messagingTemplate)
-                        .convertAndSendToUser(
-                                eq(String.valueOf(RECEIVER_ID)), eq("/queue/unread-count"), mapCaptor.capture());
-                Map<String, Object> notification = mapCaptor.getValue();
-                assertThat(notification)
-                        .containsEntry("conversationId", CONVERSATION_ID)
-                        .containsEntry("increment", 1)
-                        .containsKey("timestamp");
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messagingTemplate)
+                    .convertAndSendToUser(
+                            eq(String.valueOf(RECEIVER_ID)), eq("/queue/unread-count"), mapCaptor.capture());
+            Map<String, Object> notification = mapCaptor.getValue();
+            assertThat(notification)
+                    .containsEntry("conversationId", CONVERSATION_ID)
+                    .containsEntry("increment", 1)
+                    .containsKey("timestamp");
         }
     }
 
@@ -192,18 +166,13 @@ class ChatWebSocketHandlerTest {
         @Test
         @DisplayName("正常发送正在输入指示")
         void handleTyping_normal_broadcasts() {
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                handler.handleTyping(wsMessage, principal);
+            handler.handleTyping(wsMessage, principal);
 
-                verify(typingService).setTyping(CONVERSATION_ID, USER_ID);
-                verify(messagingTemplate)
-                        .convertAndSend(eq("/topic/chat/" + CONVERSATION_ID + "/typing"), (Object) mapCaptor.capture());
-                Map<String, Object> payload = mapCaptor.getValue();
-                assertThat(payload).containsEntry("userId", USER_ID).containsKey("timestamp");
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(typingService).setTyping(CONVERSATION_ID, USER_ID);
+            verify(messagingTemplate)
+                    .convertAndSend(eq("/topic/chat/" + CONVERSATION_ID + "/typing"), (Object) mapCaptor.capture());
+            Map<String, Object> payload = mapCaptor.getValue();
+            assertThat(payload).containsEntry("userId", USER_ID).containsKey("timestamp");
         }
 
         @Test
@@ -211,29 +180,19 @@ class ChatWebSocketHandlerTest {
         void handleTyping_nullConversationId_stillSetsTyping() {
             wsMessage.setConversationId(null);
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                handler.handleTyping(wsMessage, principal);
+            handler.handleTyping(wsMessage, principal);
 
-                verify(typingService).setTyping(null, USER_ID);
-                verify(messagingTemplate).convertAndSend(eq("/topic/chat/null/typing"), (Object) any(Map.class));
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(typingService).setTyping(null, USER_ID);
+            verify(messagingTemplate).convertAndSend(eq("/topic/chat/null/typing"), (Object) any(Map.class));
         }
 
         @Test
         @DisplayName("正在输入时广播到正确主题")
         void handleTyping_broadcastsToCorrectTopic() {
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                handler.handleTyping(wsMessage, principal);
+            handler.handleTyping(wsMessage, principal);
 
-                verify(messagingTemplate)
-                        .convertAndSend(eq("/topic/chat/" + CONVERSATION_ID + "/typing"), (Object) any(Map.class));
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messagingTemplate)
+                    .convertAndSend(eq("/topic/chat/" + CONVERSATION_ID + "/typing"), (Object) any(Map.class));
         }
     }
 

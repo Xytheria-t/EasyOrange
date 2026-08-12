@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
@@ -50,6 +51,9 @@ class AdminProductAuditQueryAdapterTest {
     private ProductMapper productMapper;
 
     @Mock
+    private ProductDetailMapper productDetailMapper;
+
+    @Mock
     private ProductRepository productRepository;
 
     @Mock
@@ -71,6 +75,7 @@ class AdminProductAuditQueryAdapterTest {
     void setUp() {
         adapter = new AdminProductAuditQueryAdapter(
                 productMapper,
+                productDetailMapper,
                 productRepository,
                 productAuditLogRepository,
                 aiReviewService,

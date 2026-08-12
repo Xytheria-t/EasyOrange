@@ -11,6 +11,7 @@ import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
@@ -45,6 +46,7 @@ public class AdminProductAuditQueryAdapter implements AdminProductAuditQueryPort
     private static final TypeReference<List<String>> DIMENSIONS_TYPE = new TypeReference<>() {};
 
     private final ProductMapper productMapper;
+    private final ProductDetailMapper productDetailMapper;
     private final ProductRepository productRepository;
     private final ProductAuditLogRepository productAuditLogRepository;
     private final AiReviewService aiReviewService;
@@ -58,7 +60,7 @@ public class AdminProductAuditQueryAdapter implements AdminProductAuditQueryPort
             return null;
         }
 
-        List<ProductDetailDO> details = productMapper.selectDetailsByProductIds(List.of(productId));
+        List<ProductDetailDO> details = productDetailMapper.selectDetailsByProductIds(List.of(productId));
         String description = details.isEmpty() ? null : details.get(0).getDescription();
 
         List<CategoryDO> categories = productMapper.selectCategoriesByIds(List.of(product.getCategoryId()));

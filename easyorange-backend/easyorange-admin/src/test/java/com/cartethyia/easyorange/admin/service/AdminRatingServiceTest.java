@@ -17,7 +17,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminRatingQueryPort.RatingSu
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -161,15 +160,9 @@ class AdminRatingServiceTest {
             AdminRatingDeleteRequest request = new AdminRatingDeleteRequest();
             request.setReason("违规内容");
 
-            TestSecurityUtil.setSecurityContext(1L);
-            try {
+            reviewService.deleteReview("1", REVIEW_ID, request);
 
-                reviewService.deleteReview(REVIEW_ID, request);
-
-                verify(adminRatingQueryPort).deleteRating(REVIEW_ID);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(adminRatingQueryPort).deleteRating(REVIEW_ID);
         }
 
         @Test
@@ -182,7 +175,7 @@ class AdminRatingServiceTest {
             AdminRatingDeleteRequest request = new AdminRatingDeleteRequest();
             request.setReason("test");
 
-            assertThatThrownBy(() -> reviewService.deleteReview("999", request))
+            assertThatThrownBy(() -> reviewService.deleteReview("1", "999", request))
                     .isInstanceOf(BusinessException.class)
                     .hasMessage("评价不存在或已被删除");
         }

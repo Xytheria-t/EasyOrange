@@ -29,8 +29,6 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
 
     // -- 批量查询 --
 
-    List<ProductDetailDO> selectDetailsByProductIds(@Param("productIds") List<String> productIds);
-
     List<ProductImageDO> selectImagesByProductIds(@Param("productIds") List<String> productIds);
 
     List<CategoryDO> selectCategoriesByIds(@Param("categoryIds") List<String> categoryIds);

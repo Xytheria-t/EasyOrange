@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.order.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.QueryOrderRequest;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.OrderListQuery;
@@ -10,6 +11,7 @@ import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "订单管理", description = "订单查询")
@@ -21,18 +23,18 @@ public class OrderQueryController {
     private final OrderQueryHandler queryHandler;
 
     @GetMapping("/owned/{id}")
-    public Result<OrderVO> getOrderDetail(@PathVariable String id) {
-        return Result.success(queryHandler.getOrderDetailForOwner(id));
+    public Result<OrderVO> getOrderDetail(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
+        return Result.success(queryHandler.getOrderDetailForOwner(user.userId(), id));
     }
 
     @GetMapping("/my")
-    public Result<PageResult<OrderVO>> getMyOrders(@Valid QueryOrderRequest request) {
-        return Result.success(queryHandler.getMyOrders(toScopedListQuery(request)));
+    public Result<PageResult<OrderVO>> getMyOrders(@AuthenticationPrincipal AuthUser user, @Valid QueryOrderRequest request) {
+        return Result.success(queryHandler.getMyOrders(user.userId(), toScopedListQuery(request)));
     }
 
     @GetMapping("/sold")
-    public Result<PageResult<OrderVO>> getSoldOrders(@Valid QueryOrderRequest request) {
-        return Result.success(queryHandler.getSoldOrders(toScopedListQuery(request)));
+    public Result<PageResult<OrderVO>> getSoldOrders(@AuthenticationPrincipal AuthUser user, @Valid QueryOrderRequest request) {
+        return Result.success(queryHandler.getSoldOrders(user.userId(), toScopedListQuery(request)));
     }
 
     @GetMapping

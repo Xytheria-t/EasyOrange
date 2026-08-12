@@ -45,18 +45,4 @@ public class SensitiveWordFilterService {
 
         return result;
     }
-
-    /**
-     * 判断内容是否包含敏感词。
-     *
-     * @param content 待检查文本；可为 null 或空白
-     * @return 至少命中一个敏感词返回 true，否则 false
-     */
-    public boolean containsSensitive(String content) {
-        if (content == null || content.isBlank()) {
-            return false;
-        }
-        String lower = content.toLowerCase();
-        return SENSITIVE_WORDS.stream().anyMatch(lower::contains);
-    }
 }

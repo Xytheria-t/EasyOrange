@@ -18,23 +18,6 @@ public class ProductReportQueryRepositoryImpl extends BaseRepository<ProductRepo
     }
 
     @Override
-    public List<ProductReport> findPendingReports(int pageNum, int pageSize) {
-        Page<ProductReportDO> page = new Page<>(pageNum, pageSize);
-        Page<ProductReportDO> resultPage = lambdaQuery()
-                .eq(ProductReportDO::getStatus, ProductReportStatus.PENDING.getCode())
-                .orderByDesc(ProductReportDO::getCreateTime)
-                .page(page);
-        return resultPage.getRecords().stream().map(this::convertToDomain).toList();
-    }
-
-    @Override
-    public long countPendingReports() {
-        return lambdaQuery()
-                .eq(ProductReportDO::getStatus, ProductReportStatus.PENDING.getCode())
-                .count();
-    }
-
-    @Override
     public PageResult<ProductReport> findByStatus(String status, int pageNum, int pageSize) {
         Page<ProductReportDO> page = new Page<>(pageNum, pageSize);
         var wrapper = lambdaQuery();

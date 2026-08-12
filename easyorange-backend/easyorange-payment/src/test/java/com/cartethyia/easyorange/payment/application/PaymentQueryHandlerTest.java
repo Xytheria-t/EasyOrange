@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.payment.application.query.PaymentListQuery;
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
@@ -16,8 +15,6 @@ import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,15 +33,7 @@ class PaymentQueryHandlerTest {
     @InjectMocks
     private PaymentQueryHandler queryHandler;
 
-    @BeforeEach
-    void setUp() {
-        TestSecurityUtil.setSecurityContext("3001");
-    }
-
-    @AfterEach
-    void tearDown() {
-        TestSecurityUtil.clearSecurityContext();
-    }
+    private static final String USER_ID = "3001";
 
     private Payment createTestAggregate(String id, String paymentNo, PaymentStatus status) {
         var spec = new PaymentReconstructSpec(
@@ -120,7 +109,7 @@ class PaymentQueryHandlerTest {
                     .thenReturn(List.of(aggregate));
             when(paymentQueryRepository.countByUserIdAndStatus("3001", null)).thenReturn(1L);
 
-            var result = queryHandler.getMyPayments(new PaymentListQuery(null, null, null, null));
+            var result = queryHandler.getMyPayments(USER_ID, new PaymentListQuery(null, null, null, null));
 
             assertThat(result.records()).hasSize(1);
             assertThat(result.total()).isEqualTo(1L);

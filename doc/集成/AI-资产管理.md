@@ -16,7 +16,7 @@ EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 - 调用去重（`AiModelSupport` — `callText` / `callJson` / `embed` / `analyzeImages`）
 - 限流拦截器（`AiRateLimitInterceptor`）+ 异常降级（Redis 不可用时 fail-open + stale 缓存降级）
 - 可观测性（Spring AI 2.0 内置 Observation + Micrometer → `/actuator/prometheus`，原 `AiMetricsService` 已删除）
-- Prompt 版本化（`ai/prompt/` — `YamlPromptRegistry` 启动时加载 `classpath:prompts/*.yml` + `PromptRenderer` `{var}` 渲染 + `quoteReplacement` 安全）
+- Prompt 版本化（`ai/prompt/` — `YamlPromptRegistry` 启动时加载 `classpath:prompts/*.yml`，模板即 system prompt，业务变量由服务内联 `String.format` 填充）
 - Token 预算治理（`ai/budget/` — `@TokenBudget` 注解 + `TokenBudgetAspect` AOP 切面 + `InMemoryTokenBudgetStore` 日预算控制，超限抛 `TokenBudgetExceededException`）
 - Embedding 真实现（查询侧 kNN + 索引侧 `nameEmbedding` 写入，dimensions=1024 与 ES `dense_vector` 映射对齐）
 - 路由键自动派生（`ProductCreatedEvent` → `product.created`）

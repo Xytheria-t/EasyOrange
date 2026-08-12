@@ -20,7 +20,10 @@ import com.cartethyia.easyorange.order.application.command.PayOrderCommand;
 import com.cartethyia.easyorange.order.application.command.RefundOrderCommand;
 import com.cartethyia.easyorange.order.application.command.ShipOrderCommand;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -28,13 +31,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(OrderCommandController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@WithMockUser
 @DisplayName("OrderCommandController 控制器测试")
 class OrderCommandControllerTest {
 
@@ -50,8 +53,21 @@ class OrderCommandControllerTest {
     @MockitoBean
     private OrderQueryHandler queryHandler;
 
+    private static final String USER_ID = "1";
     private static final String ORDER_ID = "100";
     private static final String ORDER_NO = "ORD100";
+
+    @BeforeEach
+    void setUp() {
+        var authUser = new AuthUser(USER_ID, "tester");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(authUser, null, List.of()));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Nested
     @DisplayName("POST /api/orders")
@@ -64,7 +80,7 @@ class OrderCommandControllerTest {
             var items = List.of(new CreateOrderCommand.CreateOrderItem("200", 1));
             var command = new CreateOrderCommand(items, "北京市朝阳区", "13800138000", "尽快发货", null);
             when(assembler.toCreateCommand(any())).thenReturn(command);
-            when(commandHandler.handle(command)).thenReturn(createResult);
+            when(commandHandler.handle(USER_ID, command)).thenReturn(createResult);
 
             String requestBody = """
                     {
@@ -82,7 +98,7 @@ class OrderCommandControllerTest {
                     .andExpect(jsonPath("$.code").value("A0000"))
                     .andExpect(jsonPath("$.data").value(ORDER_ID));
 
-            verify(commandHandler).handle(any(CreateOrderCommand.class));
+            verify(commandHandler).handle(eq(USER_ID), any(CreateOrderCommand.class));
         }
 
         @Test
@@ -143,7 +159,7 @@ class OrderCommandControllerTest {
                             .content("{\"reason\":\"不想要了\"}"))
                     .andExpect(status().isOk());
 
-            verify(commandHandler).handle(any(CancelOrderCommand.class));
+            verify(commandHandler).handle(eq(USER_ID), any(CancelOrderCommand.class));
         }
     }
 
@@ -158,7 +174,7 @@ class OrderCommandControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("A0000"));
 
-            verify(commandHandler).handle(any(PayOrderCommand.class));
+            verify(commandHandler).handle(eq(USER_ID), any(PayOrderCommand.class));
         }
     }
 
@@ -173,7 +189,7 @@ class OrderCommandControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("A0000"));
 
-            verify(commandHandler).handle(any(ShipOrderCommand.class));
+            verify(commandHandler).handle(eq(USER_ID), any(ShipOrderCommand.class));
         }
     }
 
@@ -188,7 +204,7 @@ class OrderCommandControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("A0000"));
 
-            verify(commandHandler).handle(any(ConfirmReceiptCommand.class));
+            verify(commandHandler).handle(eq(USER_ID), any(ConfirmReceiptCommand.class));
         }
     }
 
@@ -215,7 +231,7 @@ class OrderCommandControllerTest {
                             .content("{\"reason\":\"商品有问题\"}"))
                     .andExpect(status().isOk());
 
-            verify(commandHandler).handle(any(RefundOrderCommand.class));
+            verify(commandHandler).handle(eq(USER_ID), any(RefundOrderCommand.class));
         }
     }
 }

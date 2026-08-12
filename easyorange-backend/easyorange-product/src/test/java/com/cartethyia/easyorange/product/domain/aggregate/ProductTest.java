@@ -56,6 +56,14 @@ class ProductTest {
     }
 
     @Test
+    @DisplayName("创建商品时应保留图片")
+    void create_shouldKeepImages() {
+        var p = Product.create(ProductTestFixture.defaultCreateSpec()).aggregate();
+
+        assertThat(p.getImages().isEmpty()).isFalse();
+    }
+
+    @Test
     @DisplayName("库存不足时应抛出 InsufficientStockException")
     void decrementStock_whenNoStock_shouldThrow() {
         var p = Product.create(ProductTestFixture.aProduct().stock(0).build()).aggregate();

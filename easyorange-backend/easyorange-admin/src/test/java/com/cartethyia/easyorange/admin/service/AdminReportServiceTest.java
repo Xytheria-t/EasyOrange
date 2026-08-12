@@ -25,7 +25,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportSt
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -179,12 +178,7 @@ class AdminReportServiceTest {
             request.setAction("resolve");
             request.setRemark("已核实处理");
 
-            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
-            try {
-                reportService.handleReport(REPORT_ID, request);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            reportService.handleReport(OPERATOR_ID, REPORT_ID, request);
 
             verify(adminReportQueryPort).handleReport(REPORT_ID, "resolve", "已核实处理", OPERATOR_ID);
         }
@@ -199,14 +193,9 @@ class AdminReportServiceTest {
             ReportHandleRequest request = new ReportHandleRequest();
             request.setAction("resolve");
 
-            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
-            try {
-                assertThatThrownBy(() -> reportService.handleReport(REPORT_ID, request))
-                        .isInstanceOf(BusinessException.class)
-                        .hasMessageContaining("已被处理");
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThatThrownBy(() -> reportService.handleReport(OPERATOR_ID, REPORT_ID, request))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("已被处理");
         }
     }
 
@@ -221,18 +210,13 @@ class AdminReportServiceTest {
             request.setReportIds(List.of("100", "101"));
             request.setAction("dismiss");
 
-            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
-            try {
-                BatchHandleResultResponse result = reportService.batchHandleReports(request);
+            BatchHandleResultResponse result = reportService.batchHandleReports(OPERATOR_ID, request);
 
-                assertThat(result.total()).isEqualTo(2);
-                assertThat(result.success()).isEqualTo(2);
-                assertThat(result.failed()).isZero();
-                assertThat(result.errors()).isEmpty();
-                verify(adminReportQueryPort, org.mockito.Mockito.times(2)).handleReport(any(), any(), any(), any());
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(result.total()).isEqualTo(2);
+            assertThat(result.success()).isEqualTo(2);
+            assertThat(result.failed()).isZero();
+            assertThat(result.errors()).isEmpty();
+            verify(adminReportQueryPort, org.mockito.Mockito.times(2)).handleReport(any(), any(), any(), any());
         }
 
         @Test
@@ -247,18 +231,13 @@ class AdminReportServiceTest {
             request.setReportIds(List.of("100", "101"));
             request.setAction("dismiss");
 
-            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
-            try {
-                BatchHandleResultResponse result = reportService.batchHandleReports(request);
+            BatchHandleResultResponse result = reportService.batchHandleReports(OPERATOR_ID, request);
 
-                assertThat(result.total()).isEqualTo(2);
-                assertThat(result.success()).isEqualTo(1);
-                assertThat(result.failed()).isEqualTo(1);
-                assertThat(result.errors()).hasSize(1);
-                assertThat(result.errors().get(0)).contains("101");
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(result.total()).isEqualTo(2);
+            assertThat(result.success()).isEqualTo(1);
+            assertThat(result.failed()).isEqualTo(1);
+            assertThat(result.errors()).hasSize(1);
+            assertThat(result.errors().get(0)).contains("101");
         }
 
         @Test
@@ -268,7 +247,7 @@ class AdminReportServiceTest {
             request.setReportIds(List.of());
             request.setAction("dismiss");
 
-            assertThatThrownBy(() -> reportService.batchHandleReports(request))
+            assertThatThrownBy(() -> reportService.batchHandleReports(OPERATOR_ID, request))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("不能为空");
         }
@@ -283,7 +262,7 @@ class AdminReportServiceTest {
             request.setReportIds(ids);
             request.setAction("dismiss");
 
-            assertThatThrownBy(() -> reportService.batchHandleReports(request))
+            assertThatThrownBy(() -> reportService.batchHandleReports(OPERATOR_ID, request))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("不能超过50条");
         }

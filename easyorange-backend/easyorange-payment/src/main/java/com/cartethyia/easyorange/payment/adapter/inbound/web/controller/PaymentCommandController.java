@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.payment.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentCommandMapper;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.CreatePaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.PaymentCallback;
@@ -11,6 +12,7 @@ import com.cartethyia.easyorange.payment.domain.port.CallbackSignatureVerifierPo
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "支付管理", description = "支付发起/确认/退款")
@@ -26,8 +28,9 @@ public class PaymentCommandController {
     private final PaymentCommandMapper paymentCommandMapper;
 
     @PostMapping
-    public Result<PaymentResponse> createPayment(@Valid @RequestBody CreatePaymentRequest request) {
-        String paymentId = commandHandler.handle(paymentCommandMapper.toCreateCommand(request, null));
+    public Result<PaymentResponse> createPayment(
+            @AuthenticationPrincipal AuthUser user, @Valid @RequestBody CreatePaymentRequest request) {
+        String paymentId = commandHandler.handle(user.userId(), paymentCommandMapper.toCreateCommand(request, null));
         PaymentResponse response = PaymentResponse.builder().id(paymentId).build();
         return Result.success(response);
     }

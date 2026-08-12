@@ -14,13 +14,18 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHa
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.admin.service.AdminReportService;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,6 +38,20 @@ class AdminReportControllerTest {
 
     @MockitoBean
     private AdminReportService adminReportService;
+
+    private static final String USER_ID = "10";
+
+    @BeforeEach
+    void setUp() {
+        var authUser = new AuthUser(USER_ID, "admin");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(authUser, null, List.of()));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     void listReports_shouldReturnPaginatedReports() throws Exception {
@@ -158,7 +177,7 @@ class AdminReportControllerTest {
 
     @Test
     void handleReport_validAction_shouldSucceed() throws Exception {
-        doNothing().when(adminReportService).handleReport(anyString(), any());
+        doNothing().when(adminReportService).handleReport(anyString(), anyString(), any());
 
         mockMvc.perform(put("/api/admin/reports/1/handle")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -185,7 +204,7 @@ class AdminReportControllerTest {
 
     @Test
     void batchHandleReports_shouldSucceed() throws Exception {
-        when(adminReportService.batchHandleReports(any()))
+        when(adminReportService.batchHandleReports(anyString(), any()))
                 .thenReturn(new BatchHandleResultResponse(3, 3, 0, List.of()));
 
         mockMvc.perform(

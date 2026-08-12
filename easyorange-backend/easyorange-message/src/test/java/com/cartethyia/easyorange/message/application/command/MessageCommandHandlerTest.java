@@ -8,7 +8,6 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
 import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
@@ -25,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -62,9 +60,6 @@ class MessageCommandHandlerTest {
     private static final String USER_ID = "1";
     private static final String RECEIVER_ID = "2";
     private static final String MESSAGE_ID = "100";
-
-    @BeforeEach
-    void setUp() {}
 
     private Message createTestMessage() {
         return Message.fromRaw(
@@ -126,16 +121,11 @@ class MessageCommandHandlerTest {
                     LocalDateTime.now());
             when(messageRepository.save(any(Message.class))).thenReturn(savedAggregate);
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(USER_ID, command);
 
-                verify(messageRepository).save(any(Message.class));
-                verify(rateLimiterService).allowSendMessage(USER_ID);
-                verify(sensitiveWordFilterService).filter("hello");
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageRepository).save(any(Message.class));
+            verify(rateLimiterService).allowSendMessage(USER_ID);
+            verify(sensitiveWordFilterService).filter("hello");
         }
 
         @Test
@@ -145,16 +135,11 @@ class MessageCommandHandlerTest {
 
             when(rateLimiterService.allowSendMessage(anyString())).thenReturn(false);
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                assertThatThrownBy(() -> commandHandler.handle(command))
-                        .isInstanceOf(MessageDomainException.class)
-                        .hasMessageContaining("发送过于频繁");
+            assertThatThrownBy(() -> commandHandler.handle(USER_ID, command))
+                    .isInstanceOf(MessageDomainException.class)
+                    .hasMessageContaining("发送过于频繁");
 
-                verify(messageRepository, never()).save(any());
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageRepository, never()).save(any());
         }
 
         @Test
@@ -182,14 +167,9 @@ class MessageCommandHandlerTest {
                     LocalDateTime.now());
             when(messageRepository.save(any(Message.class))).thenReturn(savedAggregate);
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(USER_ID, command);
 
-                verify(messageRepository).save(argThat(msg -> msg.content().equals("包含***")));
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageRepository).save(argThat(msg -> msg.content().equals("包含***")));
         }
 
         @Test
@@ -203,14 +183,9 @@ class MessageCommandHandlerTest {
 
             when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(USER_ID, command);
 
-                verify(messageRepository).save(argThat(msg -> msg.type() == MessageType.CHAT));
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageRepository).save(argThat(msg -> msg.type() == MessageType.CHAT));
         }
     }
 
@@ -260,14 +235,9 @@ class MessageCommandHandlerTest {
             Message aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(RECEIVER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(RECEIVER_ID, command);
 
-                verify(messageRepository).update(any(Message.class));
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageRepository).update(any(Message.class));
         }
 
         @Test
@@ -277,12 +247,8 @@ class MessageCommandHandlerTest {
 
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.empty());
 
-            TestSecurityUtil.setSecurityContext(RECEIVER_ID);
-            try {
-                assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(MessageNotFoundException.class);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThatThrownBy(() -> commandHandler.handle(RECEIVER_ID, command))
+                    .isInstanceOf(MessageNotFoundException.class);
         }
 
         @Test
@@ -293,12 +259,7 @@ class MessageCommandHandlerTest {
             Message aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext("999");
-            try {
-                assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(BusinessException.class);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThatThrownBy(() -> commandHandler.handle("999", command)).isInstanceOf(BusinessException.class);
         }
     }
 
@@ -344,14 +305,9 @@ class MessageCommandHandlerTest {
             when(messageRepository.findById("101")).thenReturn(Optional.of(msg2));
             when(messageRepository.findById("102")).thenReturn(Optional.of(msg3));
 
-            TestSecurityUtil.setSecurityContext(RECEIVER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(RECEIVER_ID, command);
 
-                verify(messageRepository, times(3)).update(any(Message.class));
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageRepository, times(3)).update(any(Message.class));
         }
 
         @Test
@@ -363,14 +319,9 @@ class MessageCommandHandlerTest {
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(msg1));
             when(messageRepository.findById("999")).thenReturn(Optional.empty());
 
-            TestSecurityUtil.setSecurityContext(RECEIVER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(RECEIVER_ID, command);
 
-                verify(messageRepository, times(1)).update(any(Message.class));
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageRepository, times(1)).update(any(Message.class));
         }
     }
 
@@ -386,15 +337,10 @@ class MessageCommandHandlerTest {
             Message aggregate = createTestMessageForRecall();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(USER_ID, command);
 
-                verify(messageRepository).update(any(Message.class));
-                verify(domainEventPublisher).publish(any(MessageRecalledEvent.class));
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageRepository).update(any(Message.class));
+            verify(domainEventPublisher).publish(any(MessageRecalledEvent.class));
         }
 
         @Test
@@ -404,12 +350,8 @@ class MessageCommandHandlerTest {
 
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.empty());
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(MessageNotFoundException.class);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThatThrownBy(() -> commandHandler.handle(USER_ID, command))
+                    .isInstanceOf(MessageNotFoundException.class);
         }
 
         @Test
@@ -420,14 +362,9 @@ class MessageCommandHandlerTest {
             Message aggregate = createTestMessageForRecall();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext("999");
-            try {
-                assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(BusinessException.class);
+            assertThatThrownBy(() -> commandHandler.handle("999", command)).isInstanceOf(BusinessException.class);
 
-                verify(messageRepository, never()).update(any());
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageRepository, never()).update(any());
         }
     }
 
@@ -443,14 +380,9 @@ class MessageCommandHandlerTest {
             Message aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(RECEIVER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(RECEIVER_ID, command);
 
-                verify(messageRepository).delete(MESSAGE_ID);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageRepository).delete(MESSAGE_ID);
         }
 
         @Test
@@ -461,14 +393,9 @@ class MessageCommandHandlerTest {
             Message aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext("999");
-            try {
-                assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(BusinessException.class);
+            assertThatThrownBy(() -> commandHandler.handle("999", command)).isInstanceOf(BusinessException.class);
 
-                verify(messageRepository, never()).delete(anyString());
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(messageRepository, never()).delete(anyString());
         }
     }
 }

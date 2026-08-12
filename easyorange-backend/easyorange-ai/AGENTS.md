@@ -14,11 +14,10 @@ ai/
 │   └── AiStaleCacheConfig.java     # Stale 缓存 (Caffeine, 24h TTL, 限流降级用)
 ├── interceptor/
 │   └── AiRateLimitInterceptor.java # AI 限流拦截器，Redis 令牌桶 + stale 降级
-├── prompt/                         # Prompt 版本管理 (YAML 加载 + 渲染器)
-│   ├── PromptTemplate.java         # record 值类型 (name/version/template/variables)
-│   ├── PromptRegistry.java         # 接口 getPrompt(name, version)
-│   ├── YamlPromptRegistry.java     # @Component，启动时加载 classpath:prompts/*.yml
-│   └── PromptRenderer.java         # 静态渲染器 ({var} 替换 + quoteReplacement 安全)
+├── prompt/                         # Prompt 版本管理 (YAML 加载，模板即 system prompt)
+│   ├── PromptTemplate.java         # record 值类型 (name/version/template/description)
+│   ├── PromptRegistry.java         # 接口 getLatest(name)
+│   └── YamlPromptRegistry.java     # @Component，启动时加载 classpath:prompts/*.yml；业务变量由服务内联 String.format 填充（原 PromptRenderer {var} 渲染已移除，2026-08-12）
 ├── budget/                         # Token 预算治理 (@TokenBudget AOP)
 │   ├── TokenBudget.java            # @注解 (scenario / maxPerCall / dailyTokenLimit)
 │   ├── TokenBudgetStore.java       # 接口 + 嵌套 record TokenUsage
@@ -125,7 +124,6 @@ AiEnhancement DTO → SearchPageResponse.aiEnhancement
 | `JdbcCreditScoreFetcherTest` | 批量查询/空输入/降级逐个查询 |
 | `SemanticSearchServiceTest` | 空白/null/端口缺失/空向量/正常 kNN 查询 |
 | `AiRateLimitInterceptorTest` | 非 AI 路径/限流/fail-open/429/X-Forwarded-For |
-| `PromptRendererTest` | {var} 替换 / quoteReplacement 安全 / null 边界 / 缺失变量保留 (8 测试) |
 | `YamlPromptRegistryTest` | YAML 加载 / 版本路由 / 缺失异常 / 资源解析 (7 测试) |
 | `TokenBudgetAspectTest` | 预算未超通过 / 超限抛 TokenBudgetExceededException / maxPerCall=0 跳过 / dailyLimit=0 不限 |
 | `InMemoryTokenBudgetStoreTest` | recordUsage 累加 / getTodayUsage 跨日重置 / 并发安全 |

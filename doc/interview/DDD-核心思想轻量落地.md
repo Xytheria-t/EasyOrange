@@ -2,7 +2,7 @@
 
 > 本项目 DDD 是**「展示核心思想、拒绝过度设计」的克制落地**。本文档给你面试讲 DDD 时用：每个核心思想 → 具体文件落点 → 为什么这样是轻量的。与 [话术集.md](话术集.md) 互补——那边是「通用叙事 + 高频追问」，这边是「DDD 专项清单 + 取舍话术」。
 >
-> 一句话定位：**DDD 六边形 + CQRS，domain → application → adapter 单向依赖**。11 个 Maven 模块、4 个核心聚合根（Product / Order / Payment / User）、33 个 Port 接口编译期隔离、ArchUnit 10 条规则在 CI 守分层不被破坏（注意：老口径写 11，实际代码与 `ArchitectureRulesTest` 自身 javadoc 都是 10）。代码里的聚合根不止 4 个，另有 `Favorite` / `Message` / `OfflineMessage` 三个简单聚合——只有不可变快照字段 + 所有权校验、无状态机，不占讲点。
+> 一句话定位：**DDD 六边形 + CQRS，domain → application → adapter 单向依赖**。11 个 Maven 模块、4 个核心聚合根（Product / Order / Payment / User）、35 个 Port 接口编译期隔离、ArchUnit 10 条规则在 CI 守分层不被破坏（注意：老口径写 11，实际代码与 `ArchitectureRulesTest` 自身 javadoc 都是 10）。代码里的聚合根不止 4 个，另有 `Favorite` / `Message` / `OfflineMessage` 三个简单聚合——只有不可变快照字段 + 所有权校验、无状态机，不占讲点。
 
 ---
 
@@ -37,7 +37,7 @@
 - **为什么轻量**：明确「新对象 vs 从库重建」两条路径——重建时库里的数据已被校验过，不再重复触发不变量，性能与正确性都对。参数用 record spec 收敛，避免长参数列表。
 
 ### 1.6 仓储 + 端口（Repository & Port / 六边形）
-- **落点**：`OrderRepository` + `OrderReadRepository`（CQRS 读写分离，见 1.8）、`LockPort` / `PaymentGatewayPort` / `ProductQueryPort`…（**33 个 Port** 编译期隔离）。
+- **落点**：`OrderRepository` + `OrderReadRepository`（CQRS 读写分离，见 1.8）、`DistributedLockPort` / `PaymentGatewayPort` / `ProductQueryPort`…（**35 个 Port** 编译期隔离）。
 - **为什么轻量**：domain 只依赖接口，实现全部放 adapter。依赖方向单向（domain → application → adapter），换实现（Redis/Mem 锁、Rabbit/NATS 总线）只改 adapter，domain/application 一行不动。
 
 ### 1.7 领域服务 vs 应用服务（Domain vs Application Service）
@@ -103,6 +103,6 @@
 
 > 直接把下面这段背下来，临场改写即可。
 
-「这个项目是 DDD 六边形 + CQRS 的克制落地。核心是 4 个聚合根——Order、Payment、Product、User，都是不可变对象。**Order 走最完整的状态机**：单一入口 `transitionTo(action, reason)` 守卫，返回 `Transition<事件>` 发领域事件；Product 也有状态机（单参 `transitionTo(target)`，目标状态驱动）；Payment 用 `PaymentStatusGuard` 谓词守卫、终态才产事件；User 没有状态机，只有不变量方法。跨模块副作用（扣库存 / 恢复库存 / 标记售出）由事件 + Outbox 异步触发，聚合不碰持久化。领域层只依赖 Port 接口，33 个 Port 编译期隔离，ArchUnit 10 条规则在 CI 守分层。
+「这个项目是 DDD 六边形 + CQRS 的克制落地。核心是 4 个聚合根——Order、Payment、Product、User，都是不可变对象。**Order 走最完整的状态机**：单一入口 `transitionTo(action, reason)` 守卫，返回 `Transition<事件>` 发领域事件；Product 也有状态机（单参 `transitionTo(target)`，目标状态驱动）；Payment 用 `PaymentStatusGuard` 谓词守卫、终态才产事件；User 没有状态机，只有不变量方法。跨模块副作用（扣库存 / 恢复库存 / 标记售出）由事件 + Outbox 异步触发，聚合不碰持久化。领域层只依赖 Port 接口，35 个 Port 编译期隔离，ArchUnit 10 条规则在 CI 守分层。
 
 我特意做了几个**轻量化取舍**：首先是**拒绝 Saga**——单库部署下本地事务 + Outbox 比 Saga 更强，挂个失效状态机是过度设计；二是 CQRS 只做 4 个模块（product/order 有 ReadModel、payment/message 是 Handler 级），收益小于成本就不做；三是值对象只对有规则的字段做。这些取舍比堆 DDD 模式更能体现架构判断力。」

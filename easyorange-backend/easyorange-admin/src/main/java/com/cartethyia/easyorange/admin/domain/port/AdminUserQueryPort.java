@@ -56,11 +56,6 @@ public interface AdminUserQueryPort {
     void setPassword(String userId, String encodedPassword);
 
     /**
-     * 统计管理员数量（UserType.ADMIN 且未删除）
-     */
-    long countAdminUsers();
-
-    /**
      * 仪表板统计：用户总数与今日新增
      */
     UserStats getUserStats();

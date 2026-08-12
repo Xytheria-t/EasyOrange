@@ -41,8 +41,4 @@ public record Result<T>(String code, String message, T data, long timestamp) {
     public boolean isSuccess() {
         return ResultCode.SUCCESS.getCode().equals(code);
     }
-
-    public Result<T> withMessage(String message) {
-        return new Result<>(this.code, message, this.data, this.timestamp);
-    }
 }

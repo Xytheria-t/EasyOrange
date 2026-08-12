@@ -9,10 +9,12 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportSt
 import com.cartethyia.easyorange.admin.service.AdminReportService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "管理后台-举报", description = "举报处理")
@@ -42,14 +44,18 @@ public class AdminReportController {
     }
 
     @PutMapping("/{id}/handle")
-    public Result<Void> handleReport(@PathVariable String id, @Valid @RequestBody ReportHandleRequest request) {
-        adminReportService.handleReport(id, request);
+    public Result<Void> handleReport(
+            @AuthenticationPrincipal AuthUser user,
+            @PathVariable String id,
+            @Valid @RequestBody ReportHandleRequest request) {
+        adminReportService.handleReport(user.userId(), id, request);
         return Result.success();
     }
 
     @PutMapping("/batch-handle")
-    public Result<BatchHandleResultResponse> batchHandleReports(@Valid @RequestBody BatchHandleRequest request) {
-        return Result.success(adminReportService.batchHandleReports(request));
+    public Result<BatchHandleResultResponse> batchHandleReports(
+            @AuthenticationPrincipal AuthUser user, @Valid @RequestBody BatchHandleRequest request) {
+        return Result.success(adminReportService.batchHandleReports(user.userId(), request));
     }
 
     @GetMapping("/stats")

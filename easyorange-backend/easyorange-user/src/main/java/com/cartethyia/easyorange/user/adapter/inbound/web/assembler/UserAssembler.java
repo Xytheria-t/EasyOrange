@@ -11,7 +11,6 @@ import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import java.time.LocalDateTime;
-import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
@@ -31,8 +30,7 @@ public class UserAssembler {
         return r;
     }
 
-    public UserProfileResponse toProfileResponse(
-            User user, Set<String> roles, Set<String> permissions, Long loginTime) {
+    public UserProfileResponse toProfileResponse(User user) {
         var r = new UserProfileResponse();
         r.setUserId(user.getId());
         r.setUsername(user.getUsername());
@@ -42,9 +40,6 @@ public class UserAssembler {
         r.setStatusDesc(userStatus != null ? userStatus.getDescription() : null);
         r.setGender(genderCode(personalInfo));
         r.setUserType(user.getUserType());
-        r.setRoles(roles);
-        r.setPermissions(permissions);
-        r.setLoginTime(loginTime);
         return r;
     }
 

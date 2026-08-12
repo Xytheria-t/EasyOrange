@@ -3,9 +3,10 @@ package com.cartethyia.easyorange.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.ai.dto.CreditScoreResult;
 import com.cartethyia.easyorange.ai.service.CreditScoringService;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,9 +22,8 @@ public class CreditScoreController {
     private final CreditScoringService creditScoringService;
 
     @GetMapping("/me")
-    public Result<CreditScoreResult> getMyCredit() {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        return Result.success(creditScoringService.getCreditScore(userId));
+    public Result<CreditScoreResult> getMyCredit(@AuthenticationPrincipal AuthUser user) {
+        return Result.success(creditScoringService.getCreditScore(user.userId()));
     }
 
     @GetMapping("/{userId}")
@@ -32,9 +32,8 @@ public class CreditScoreController {
     }
 
     @PostMapping("/recalculate")
-    public Result<Void> recalculateScore() {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        creditScoringService.recalculateScore(userId);
+    public Result<Void> recalculateScore(@AuthenticationPrincipal AuthUser user) {
+        creditScoringService.recalculateScore(user.userId());
         return Result.success();
     }
 }

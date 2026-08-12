@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.message.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
@@ -32,9 +31,7 @@ public class MessageQueryHandler {
     private final UserInfoPort userInfoPort;
 
     @Transactional(readOnly = true)
-    public MessageVO getMessageDetail(String messageId) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public MessageVO getMessageDetail(String userId, String messageId) {
         Message aggregate = queryRepository.findById(messageId);
         if (aggregate == null) {
             throw new MessageNotFoundException(messageId);
@@ -46,22 +43,19 @@ public class MessageQueryHandler {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<MessageVO> getMyMessages(MessageQuery query) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public PageResult<MessageVO> getMyMessages(String userId, MessageQuery query) {
         PageResult<Message> messagePage = queryRepository.findByReceiverId(query, userId);
         return toMessageVOPage(messagePage);
     }
 
     @Transactional(readOnly = true)
-    public PageResult<MessageVO> getUnreadMessages(MessageQuery query) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public PageResult<MessageVO> getUnreadMessages(String userId, MessageQuery query) {
         PageResult<Message> messagePage = queryRepository.findUnreadByReceiverId(query, userId);
         return toMessageVOPage(messagePage);
     }
 
     @Transactional(readOnly = true)
-    public UnreadCountVO getUnreadCount() {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public UnreadCountVO getUnreadCount(String userId) {
         UnreadCount count = queryRepository.countUnreadByReceiverId(userId);
         return UnreadCountVO.builder()
                 .total(count.total())

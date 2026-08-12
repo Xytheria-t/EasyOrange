@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.ai.prompt;
 /**
  * Prompt 模板 — 版本化的 Prompt 资源。
  * <p>
- * 模板内容使用 {@code {var}} 占位符，由 {@link PromptRenderer} 进行变量插值。
+ * 模板内容使用 {@code {var}} 占位符。
  *
  * @param name        模板名（如 "product_tag_generation"）
  * @param version     语义化版本（如 "v1.0.0"）

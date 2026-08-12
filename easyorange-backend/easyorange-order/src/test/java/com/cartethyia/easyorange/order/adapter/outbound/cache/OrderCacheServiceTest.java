@@ -96,23 +96,13 @@ class OrderCacheServiceTest {
     }
 
     @Test
-    @DisplayName("删除订单列表缓存")
-    void testEvictOrderListCache() {
-        String cacheKey = "eo:order:list:999999:status:0:page:1:size:10";
-
-        orderCachePort.evictOrderList(cacheKey);
-
-        verify(redisTemplate).delete(cacheKey);
-    }
-
-    @Test
     @DisplayName("buildOrderListKey 构建正确的缓存键")
     void testBuildOrderListKey() {
-        String keyWithStatus = orderCachePort.buildOrderListKey("123", "1");
+        String keyWithStatus = orderCachePort.buildOrderListKey("123", "1", 1, 10);
         assertThat(keyWithStatus).isEqualTo("eo:order:list:123:status:1:page:1:size:10");
 
-        String keyWithoutStatus = orderCachePort.buildOrderListKey("123", null);
-        assertThat(keyWithoutStatus).isEqualTo("eo:order:list:123:status:all:page:1:size:10");
+        String keyWithoutStatus = orderCachePort.buildOrderListKey("123", null, 2, 20);
+        assertThat(keyWithoutStatus).isEqualTo("eo:order:list:123:status:all:page:2:size:20");
     }
 
     @Test
@@ -120,22 +110,9 @@ class OrderCacheServiceTest {
     void testNullCacheKey_skipsOperation() {
         orderCachePort.putOrderList(null, testOrderPage);
         orderCachePort.getOrderList(null);
-        orderCachePort.evictOrderList(null);
 
         verify(valueOperations, never()).set(anyString(), any(), anyLong(), any());
         verify(valueOperations, never()).get(anyString());
-        verify(redisTemplate, never()).delete(anyString());
-    }
-
-    @Test
-    @DisplayName("清除认领方订单缓存")
-    void testEvictBuyerOrders() {
-        String buyerId = "123456";
-        when(redisTemplate.keys(anyString())).thenReturn(Set.of());
-
-        orderCachePort.evictBuyerOrders(buyerId);
-
-        verify(redisTemplate).keys("eo:order:list:123456:*");
     }
 
     @Test

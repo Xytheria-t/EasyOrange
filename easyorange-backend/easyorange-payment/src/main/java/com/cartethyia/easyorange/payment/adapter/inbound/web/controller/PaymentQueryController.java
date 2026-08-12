@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.payment.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentViewAssembler;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.QueryPaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
@@ -14,6 +15,7 @@ import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "支付管理", description = "支付查询")
@@ -50,10 +52,11 @@ public class PaymentQueryController {
     public record PaymentStatusResponse(String status, String paymentMethod, LocalDateTime payTime) {}
 
     @GetMapping("/my")
-    public Result<PageResult<PaymentResponse>> getMyPayments(@Valid QueryPaymentRequest request) {
+    public Result<PageResult<PaymentResponse>> getMyPayments(
+            @AuthenticationPrincipal AuthUser user, @Valid QueryPaymentRequest request) {
         PaymentListQuery query = new PaymentListQuery(
                 null, resolveStatus(request.getStatus()), request.getPageNum(), request.getPageSize());
-        PageResult<Payment> result = queryHandler.getMyPayments(query);
+        PageResult<Payment> result = queryHandler.getMyPayments(user.userId(), query);
         return Result.success(paymentViewAssembler.toPageResult(result));
     }
 

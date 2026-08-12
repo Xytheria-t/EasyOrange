@@ -34,16 +34,6 @@ public class QuestionSuggestionTool implements SearchTool<List<String>> {
     }
 
     @Override
-    public String description() {
-        return "基于用户需求生成 2-3 个可能追问的问题（每个不超过15字）";
-    }
-
-    @Override
-    public SearchToolKind kind() {
-        return SearchToolKind.LLM;
-    }
-
-    @Override
     public CompletableFuture<List<String>> run(SearchToolContext context) {
         return CompletableFuture.supplyAsync(() -> {
             try {

@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationListVO;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
@@ -77,17 +76,12 @@ class ConversationQueryHandlerTest {
                             CURRENT_USER_ID, new UserInfo(CURRENT_USER_ID, "当前用户", null),
                             OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "对方用户", "avatar.jpg")));
 
-            TestSecurityUtil.setSecurityContext(CURRENT_USER_ID);
-            try {
-                List<ConversationVO> result = handler.getConversation(OTHER_USER_ID);
+            List<ConversationVO> result = handler.getConversation(CURRENT_USER_ID, OTHER_USER_ID);
 
-                assertThat(result).hasSize(2);
-                assertThat(result.get(0).getContent()).isEqualTo("你好");
-                assertThat(result.get(0).getSenderId()).isEqualTo(CURRENT_USER_ID);
-                assertThat(result.get(0).getReceiverId()).isEqualTo(OTHER_USER_ID);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0).getContent()).isEqualTo("你好");
+            assertThat(result.get(0).getSenderId()).isEqualTo(CURRENT_USER_ID);
+            assertThat(result.get(0).getReceiverId()).isEqualTo(OTHER_USER_ID);
         }
 
         @Test
@@ -95,14 +89,9 @@ class ConversationQueryHandlerTest {
         void getConversation_noMessages_returnsEmpty() {
             when(queryRepository.findConversation(anyString(), anyString())).thenReturn(List.of());
 
-            TestSecurityUtil.setSecurityContext(CURRENT_USER_ID);
-            try {
-                List<ConversationVO> result = handler.getConversation(OTHER_USER_ID);
+            List<ConversationVO> result = handler.getConversation(CURRENT_USER_ID, OTHER_USER_ID);
 
-                assertThat(result).isEmpty();
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(result).isEmpty();
         }
     }
 
@@ -124,25 +113,20 @@ class ConversationQueryHandlerTest {
                             OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "用户2", "a.jpg"),
                             THIRD_USER_ID, new UserInfo(THIRD_USER_ID, "用户3", "b.jpg"))));
 
-            TestSecurityUtil.setSecurityContext(CURRENT_USER_ID);
-            try {
-                List<ConversationListVO> result = handler.getConversations();
+            List<ConversationListVO> result = handler.getConversations(CURRENT_USER_ID);
 
-                assertThat(result).hasSize(2);
-                ConversationListVO convWithUser2 = result.stream()
-                        .filter(c -> c.getTargetUserId().equals(OTHER_USER_ID))
-                        .findFirst()
-                        .orElseThrow();
-                ConversationListVO convWithUser3 = result.stream()
-                        .filter(c -> c.getTargetUserId().equals(THIRD_USER_ID))
-                        .findFirst()
-                        .orElseThrow();
+            assertThat(result).hasSize(2);
+            ConversationListVO convWithUser2 = result.stream()
+                    .filter(c -> c.getTargetUserId().equals(OTHER_USER_ID))
+                    .findFirst()
+                    .orElseThrow();
+            ConversationListVO convWithUser3 = result.stream()
+                    .filter(c -> c.getTargetUserId().equals(THIRD_USER_ID))
+                    .findFirst()
+                    .orElseThrow();
 
-                assertThat(convWithUser2.getTargetUserName()).isEqualTo("用户2");
-                assertThat(convWithUser3.getTargetUserName()).isEqualTo("用户3");
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(convWithUser2.getTargetUserName()).isEqualTo("用户2");
+            assertThat(convWithUser3.getTargetUserName()).isEqualTo("用户3");
         }
 
         @Test
@@ -167,20 +151,15 @@ class ConversationQueryHandlerTest {
             when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(Map.of(OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "用户2", null)));
 
-            TestSecurityUtil.setSecurityContext(CURRENT_USER_ID);
-            try {
-                List<ConversationListVO> result = handler.getConversations();
+            List<ConversationListVO> result = handler.getConversations(CURRENT_USER_ID);
 
-                assertThat(result).hasSize(2);
-                ConversationListVO systemConv = result.stream()
-                        .filter(c -> c.getTargetUserId().equals("system"))
-                        .findFirst()
-                        .orElseThrow();
-                assertThat(systemConv.getTargetUserName()).isEqualTo("系统通知");
-                assertThat(systemConv.getUnreadCount()).isEqualTo(1);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(result).hasSize(2);
+            ConversationListVO systemConv = result.stream()
+                    .filter(c -> c.getTargetUserId().equals("system"))
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(systemConv.getTargetUserName()).isEqualTo("系统通知");
+            assertThat(systemConv.getUnreadCount()).isEqualTo(1);
         }
 
         @Test
@@ -188,14 +167,9 @@ class ConversationQueryHandlerTest {
         void getConversations_noMessages_returnsEmpty() {
             when(queryRepository.findRecentForUser(CURRENT_USER_ID)).thenReturn(List.of());
 
-            TestSecurityUtil.setSecurityContext(CURRENT_USER_ID);
-            try {
-                List<ConversationListVO> result = handler.getConversations();
+            List<ConversationListVO> result = handler.getConversations(CURRENT_USER_ID);
 
-                assertThat(result).isEmpty();
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(result).isEmpty();
         }
     }
 }

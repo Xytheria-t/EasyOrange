@@ -14,7 +14,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAud
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort.AuditLogRecord;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -37,6 +37,10 @@ class AdminProductAuditServiceTest {
 
     private static final String PRODUCT_ID = "100";
     private static final String OPERATOR_ID = "1";
+
+    private static AuthUser operator() {
+        return new AuthUser(OPERATOR_ID, "管理员");
+    }
 
     private AuditLogRecord createAuditLog() {
         return new AuditLogRecord(
@@ -65,12 +69,7 @@ class AdminProductAuditServiceTest {
         void auditProduct_approve_delegatesToPort() {
             ProductAuditRequest request = new ProductAuditRequest(1, null, null, null);
 
-            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
-            try {
-                auditService.auditProduct(PRODUCT_ID, request);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            auditService.auditProduct(operator(), PRODUCT_ID, request);
 
             verify(adminProductAuditQueryPort)
                     .auditProduct(eq(PRODUCT_ID), eq(1), eq(null), eq(null), eq(null), eq(OPERATOR_ID), any());
@@ -81,12 +80,7 @@ class AdminProductAuditServiceTest {
         void auditProduct_reject_delegatesToPort() {
             ProductAuditRequest request = new ProductAuditRequest(2, "商品信息不完整", null, null);
 
-            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
-            try {
-                auditService.auditProduct(PRODUCT_ID, request);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            auditService.auditProduct(operator(), PRODUCT_ID, request);
 
             verify(adminProductAuditQueryPort)
                     .auditProduct(eq(PRODUCT_ID), eq(2), eq("商品信息不完整"), eq(null), eq(null), eq(OPERATOR_ID), any());
@@ -105,15 +99,10 @@ class AdminProductAuditServiceTest {
                     new BatchAuditRequest.AuditItem("100", 1, "通过", null),
                     new BatchAuditRequest.AuditItem("101", 2, "信息不符", null)));
 
-            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
-            try {
-                BatchAuditResultResponse result = auditService.batchAudit(request);
+            BatchAuditResultResponse result = auditService.batchAudit(operator(), request);
 
-                assertThat(result.success()).isEqualTo(2);
-                assertThat(result.failed()).isZero();
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(result.success()).isEqualTo(2);
+            assertThat(result.failed()).isZero();
         }
 
         @Test
@@ -128,17 +117,12 @@ class AdminProductAuditServiceTest {
                     new BatchAuditRequest.AuditItem("100", 1, "通过", null),
                     new BatchAuditRequest.AuditItem("101", 1, "通过", null)));
 
-            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
-            try {
-                BatchAuditResultResponse result = auditService.batchAudit(request);
+            BatchAuditResultResponse result = auditService.batchAudit(operator(), request);
 
-                assertThat(result.success()).isEqualTo(1);
-                assertThat(result.failed()).isEqualTo(1);
-                assertThat(result.errors()).hasSize(1);
-                assertThat(result.errors().get(0)).contains("100");
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(result.success()).isEqualTo(1);
+            assertThat(result.failed()).isEqualTo(1);
+            assertThat(result.errors()).hasSize(1);
+            assertThat(result.errors().get(0)).contains("100");
         }
     }
 

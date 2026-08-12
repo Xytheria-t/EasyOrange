@@ -143,18 +143,8 @@ class AutoListingServiceTest {
 
     private static final PromptRegistry EMPTY_REGISTRY = new PromptRegistry() {
         @Override
-        public Optional<PromptTemplate> get(String name, String version) {
-            return Optional.empty();
-        }
-
-        @Override
         public Optional<PromptTemplate> getLatest(String name) {
             return Optional.empty();
-        }
-
-        @Override
-        public List<PromptTemplate> listVersions(String name) {
-            return List.of();
         }
     };
 }

@@ -4,15 +4,16 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
+import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderCreateSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
+import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
-import com.cartethyia.easyorange.order.domain.port.LockPort;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
@@ -39,7 +40,7 @@ import org.springframework.util.StringUtils;
  * 全部步骤运行在同一 {@code @Transactional} 事务内，任一步失败由数据库整体回滚兜底
  * （订单 / 库存 / 支付 / Outbox 事件原子提交）。
  * <p>
- * 一致性语义：本地单事务保证原子性；并发下单由 {@link LockPort} 按 productId 排队串行，
+ * 一致性语义：本地单事务保证原子性；并发下单由 {@link DistributedLockPort} 按 productId 排队串行，
  * 库存扣减由乐观锁版本检查最终兜底防超卖；事件副作用经 Outbox 与应用事务同原子持久化。
  * 为何不使用 Saga 见 ADR-0007。
  * 异常不做二次包装，直接抛给 {@code GlobalExceptionHandler} 按错误码映射。
@@ -51,11 +52,12 @@ public class OrderCommandHandler {
 
     private static final String ORDER_LOCK_PREFIX = "eo:order:lock:product:";
     private static final long LOCK_TRY_TIMEOUT_SECONDS = 10;
+    private static final String LOCK_BUSY_MESSAGE = "资产下单繁忙，请稍后重试";
 
     private final OrderRepository orderRepository;
     private final DomainEventPublisher domainEventPublisher;
     private final OrderCachePort<?> orderCachePort;
-    private final LockPort lockPort;
+    private final DistributedLockPort lockPort;
     private final PaymentGatewayPort paymentGatewayPort;
     private final OrderPreparation preparationService;
     private final ProductOrderPort productOrderPort;
@@ -65,11 +67,18 @@ public class OrderCommandHandler {
 
     /**
      * 执行订单创建 — 分布式锁在事务外获取、提交后释放，创建流程在事务内执行。
+     * <p>
+     * 锁基础设施的 {@link LockAcquisitionException} 在用例边界映射为 {@link OrderCreationException}，
+     * 保留订单域的错误码（B0002→400）与提示文案。
      */
     @Transactional(rollbackFor = Exception.class)
-    public CreateOrderResult handle(CreateOrderCommand command) {
-        return lockPort.executeWithLocks(
-                buildLockKeys(command), LOCK_TRY_TIMEOUT_SECONDS, () -> createOrderFlow(command));
+    public CreateOrderResult handle(String userId, CreateOrderCommand command) {
+        try {
+            return lockPort.executeWithLocks(
+                    buildLockKeys(command), LOCK_TRY_TIMEOUT_SECONDS, () -> createOrderFlow(userId, command));
+        } catch (LockAcquisitionException e) {
+            throw new OrderCreationException(LOCK_BUSY_MESSAGE);
+        }
     }
 
     /**
@@ -87,9 +96,7 @@ public class OrderCommandHandler {
     /**
      * 执行下单流程 — 全部步骤在同一事务内，失败由回滚兜底。
      */
-    private CreateOrderResult createOrderFlow(CreateOrderCommand command) {
-        String buyerId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    private CreateOrderResult createOrderFlow(String buyerId, CreateOrderCommand command) {
         // 准备订单项数据（含资产存在/在线/库存/同资产方校验）
         OrderPreparation.PreparationResult preparation = preparationService.prepareOrderItems(command.items());
 
@@ -143,7 +150,8 @@ public class OrderCommandHandler {
                             ? command.paymentMethod()
                             : OrderConstant.DEFAULT_PAYMENT_METHOD,
                     OrderConstant.PAYMENT_BIZ_TYPE,
-                    OrderConstant.PAYMENT_DESC));
+                    OrderConstant.PAYMENT_DESC,
+                    orderEvent.buyerId()));
         } catch (Exception e) {
             throw new PaymentGatewayAdapterException(
                     "支付创建失败 orderId=" + orderEvent.orderId() + ": " + e.getMessage(), e);
@@ -153,36 +161,36 @@ public class OrderCommandHandler {
     // ==================== 状态转换 ====================
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(PayOrderCommand command) {
-        var aggregate = validateBuyer(command.orderId());
+    public void handle(String userId, PayOrderCommand command) {
+        var aggregate = validateBuyer(userId, command.orderId());
         var result = aggregate.pay(LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(CancelOrderCommand command) {
-        var aggregate = validateBuyer(command.orderId());
+    public void handle(String userId, CancelOrderCommand command) {
+        var aggregate = validateBuyer(userId, command.orderId());
         var result = aggregate.cancel(command.reason(), LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(ShipOrderCommand command) {
-        var aggregate = validateSeller(command.orderId());
+    public void handle(String userId, ShipOrderCommand command) {
+        var aggregate = validateSeller(userId, command.orderId());
         var result = aggregate.ship(LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(ConfirmReceiptCommand command) {
-        var aggregate = validateBuyer(command.orderId());
+    public void handle(String userId, ConfirmReceiptCommand command) {
+        var aggregate = validateBuyer(userId, command.orderId());
         var result = aggregate.confirmReceipt(LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(RefundOrderCommand command) {
-        var aggregate = validateBuyer(command.orderId());
+    public void handle(String userId, RefundOrderCommand command) {
+        var aggregate = validateBuyer(userId, command.orderId());
         var result = aggregate.refund(command.reason(), LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
@@ -208,17 +216,16 @@ public class OrderCommandHandler {
         }
     }
 
-    private Order validateBuyer(String orderId) {
-        return validateOwner(orderId, Order::buyerId);
+    private Order validateBuyer(String userId, String orderId) {
+        return validateOwner(userId, orderId, Order::buyerId);
     }
 
-    private Order validateSeller(String orderId) {
-        return validateOwner(orderId, Order::sellerId);
+    private Order validateSeller(String userId, String orderId) {
+        return validateOwner(userId, orderId, Order::sellerId);
     }
 
-    private Order validateOwner(String orderId, Function<Order, UserId> ownerExtractor) {
+    private Order validateOwner(String userId, String orderId, Function<Order, UserId> ownerExtractor) {
         var aggregate = findOrder(orderId);
-        var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         BizRequire.requireTrue(
                 Objects.equals(ownerExtractor.apply(aggregate).value(), userId), OrderResultCode.ORDER_NOT_OWNER);
         return aggregate;

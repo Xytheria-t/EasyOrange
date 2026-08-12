@@ -23,18 +23,17 @@ public class ProductOrderAdapter implements ProductOrderPort {
         return productSnapshotPort
                 .findSnapshots(productIds.stream().map(ProductId::of).toList())
                 .stream()
-                .map(this::toSnapshot)
+                .map(ProductOrderAdapter::toSnapshot)
                 .toList();
     }
 
-    private ProductSnapshot toSnapshot(ProductSnapshotPort.ProductOrderSnapshot snapshot) {
+    private static ProductSnapshot toSnapshot(ProductSnapshotPort.ProductOrderSnapshot snapshot) {
         return new ProductSnapshot(
                 snapshot.productId().value(),
                 snapshot.sellerId().value(),
                 snapshot.price().value(),
                 snapshot.status() == ProductStatus.ONLINE,
-                snapshot.stock().value(),
-                snapshot.location());
+                snapshot.stock().value());
     }
 
     @Override

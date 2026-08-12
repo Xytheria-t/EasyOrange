@@ -8,14 +8,4 @@ public record CategoryTreeResponse(
         Integer level,
         Integer sortOrder,
         Integer status,
-        List<CategoryTreeResponse> children) {
-    public static CategoryTreeResponse from(CategoryResponse vo, List<CategoryTreeResponse> children) {
-        return new CategoryTreeResponse(
-                vo.categoryId(),
-                vo.name(),
-                vo.level(),
-                vo.sortOrder(),
-                vo.status(),
-                children != null ? children : List.of());
-    }
-}
+        List<CategoryTreeResponse> children) {}

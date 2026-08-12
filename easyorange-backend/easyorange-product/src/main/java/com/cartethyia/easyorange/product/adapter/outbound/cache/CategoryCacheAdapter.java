@@ -10,7 +10,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -95,29 +94,13 @@ public class CategoryCacheAdapter implements CategoryCachePort {
     }
 
     @Override
-    public Optional<CategoryReadModel> getCategoryById(String id) {
-        if (id == null) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(cachedSingle("id:" + id, () -> {
-            var all = categoryQueryRepository.findByIds(List.of(id));
-            return all != null && !all.isEmpty() ? all.getFirst() : null;
-        }));
-    }
-
-    @Override
-    public void evictAll() {
-        cache.clear();
-    }
-
-    @Override
     public void evictByLevel(Integer level) {
-        cache.evict("level:" + level);
+        if (level != null) cache.evict("level:" + level);
     }
 
     @Override
     public void evictByParentId(String parentId) {
-        cache.evict("parent:" + parentId);
+        if (parentId != null) cache.evict("parent:" + parentId);
     }
 
     // ── Private helpers ──
@@ -126,15 +109,6 @@ public class CategoryCacheAdapter implements CategoryCachePort {
     private List<CategoryReadModel> cachedList(String key, Supplier<List<CategoryReadModel>> loader) {
         try {
             return (List<CategoryReadModel>) cache.<List>get(key, List.class, loader::get);
-        } catch (Exception e) {
-            log.warn("action=category_cache_get_failed, key={}", key, e);
-            return loader.get();
-        }
-    }
-
-    private CategoryReadModel cachedSingle(String key, Supplier<CategoryReadModel> loader) {
-        try {
-            return cache.get(key, CategoryReadModel.class, loader);
         } catch (Exception e) {
             log.warn("action=category_cache_get_failed, key={}", key, e);
             return loader.get();

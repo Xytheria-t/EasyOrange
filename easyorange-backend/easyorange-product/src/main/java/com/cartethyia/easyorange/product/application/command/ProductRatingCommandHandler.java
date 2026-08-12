@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.product.application.command;
 
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
 import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,9 +15,7 @@ public class ProductRatingCommandHandler {
     private final ProductRatingRepository productRatingRepository;
 
     @Transactional(rollbackFor = Exception.class)
-    public String createReview(CreateProductRatingCommand command) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public String createReview(String userId, CreateProductRatingCommand command) {
         ProductRating rating = ProductRating.create(command.productId(), userId, command.rating(), command.content());
         productRatingRepository.save(rating);
 
@@ -33,9 +30,7 @@ public class ProductRatingCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void deleteReview(String reviewId) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public void deleteReview(String userId, String reviewId) {
         ProductRating rating =
                 productRatingRepository.findById(reviewId).orElseThrow(() -> new IllegalArgumentException("评价不存在"));
 

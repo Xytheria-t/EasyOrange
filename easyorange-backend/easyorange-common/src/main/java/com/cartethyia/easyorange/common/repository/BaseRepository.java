@@ -36,10 +36,6 @@ public abstract class BaseRepository<M extends BaseMapper<T>, T> {
         return lambdaQuery().in(column, values).list();
     }
 
-    protected <R> boolean exists(SFunction<T, R> column, R value) {
-        return value != null && lambdaQuery().eq(column, value).exists();
-    }
-
     protected long count() {
         return lambdaQuery().count();
     }

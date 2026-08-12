@@ -7,7 +7,6 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -63,16 +62,11 @@ class OrderCommandHandlerTest {
             Order aggregate = createPendingPaymentOrder();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(BUYER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(BUYER_ID, command);
 
-                verify(orderRepository).update(any(Order.class));
-                verify(domainEventPublisher).publish(any(OrderPaidEvent.class));
-                verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(orderRepository).update(any(Order.class));
+            verify(domainEventPublisher).publish(any(OrderPaidEvent.class));
+            verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
         }
 
         @Test
@@ -82,12 +76,7 @@ class OrderCommandHandlerTest {
 
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.empty());
 
-            TestSecurityUtil.setSecurityContext(BUYER_ID);
-            try {
-                assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(OrderDomainException.class);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThatThrownBy(() -> commandHandler.handle(BUYER_ID, command)).isInstanceOf(OrderDomainException.class);
         }
 
         @Test
@@ -98,15 +87,10 @@ class OrderCommandHandlerTest {
             Order aggregate = createPendingPaymentOrder();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext("999");
-            try {
-                assertThatThrownBy(() -> commandHandler.handle(command))
-                        .isInstanceOf(BusinessException.class)
-                        .extracting(e -> ((BusinessException) e).getCode())
-                        .isEqualTo(OrderResultCode.ORDER_NOT_OWNER.getCode());
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThatThrownBy(() -> commandHandler.handle("999", command))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(OrderResultCode.ORDER_NOT_OWNER.getCode());
         }
     }
 
@@ -122,16 +106,11 @@ class OrderCommandHandlerTest {
             Order aggregate = createPendingPaymentOrder();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(BUYER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(BUYER_ID, command);
 
-                verify(orderRepository).update(any(Order.class));
-                verify(domainEventPublisher).publish(any(OrderCancelledEvent.class));
-                verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(orderRepository).update(any(Order.class));
+            verify(domainEventPublisher).publish(any(OrderCancelledEvent.class));
+            verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
         }
     }
 
@@ -147,16 +126,11 @@ class OrderCommandHandlerTest {
             Order aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(SELLER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(SELLER_ID, command);
 
-                verify(orderRepository).update(any(Order.class));
-                verify(domainEventPublisher).publish(any(OrderShippedEvent.class));
-                verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(orderRepository).update(any(Order.class));
+            verify(domainEventPublisher).publish(any(OrderShippedEvent.class));
+            verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
         }
 
         @Test
@@ -167,15 +141,10 @@ class OrderCommandHandlerTest {
             Order aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext("999");
-            try {
-                assertThatThrownBy(() -> commandHandler.handle(command))
-                        .isInstanceOf(BusinessException.class)
-                        .extracting(e -> ((BusinessException) e).getCode())
-                        .isEqualTo(OrderResultCode.ORDER_NOT_OWNER.getCode());
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThatThrownBy(() -> commandHandler.handle("999", command))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(OrderResultCode.ORDER_NOT_OWNER.getCode());
         }
     }
 
@@ -191,16 +160,11 @@ class OrderCommandHandlerTest {
             Order aggregate = createShippedAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(BUYER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(BUYER_ID, command);
 
-                verify(orderRepository).update(any(Order.class));
-                verify(domainEventPublisher).publish(any(OrderCompletedEvent.class));
-                verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(orderRepository).update(any(Order.class));
+            verify(domainEventPublisher).publish(any(OrderCompletedEvent.class));
+            verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
         }
     }
 
@@ -216,16 +180,11 @@ class OrderCommandHandlerTest {
             Order aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(BUYER_ID);
-            try {
-                commandHandler.handle(command);
+            commandHandler.handle(BUYER_ID, command);
 
-                verify(orderRepository).update(any(Order.class));
-                verify(domainEventPublisher).publish(any(OrderRefundedEvent.class));
-                verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            verify(orderRepository).update(any(Order.class));
+            verify(domainEventPublisher).publish(any(OrderRefundedEvent.class));
+            verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
         }
 
         @Test
@@ -236,15 +195,10 @@ class OrderCommandHandlerTest {
             Order aggregate = createPaidButUnpaidOrder();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(BUYER_ID);
-            try {
-                assertThatThrownBy(() -> commandHandler.handle(command))
-                        .isInstanceOf(BusinessException.class)
-                        .extracting(e -> ((BusinessException) e).getCode())
-                        .isEqualTo(OrderResultCode.ORDER_CANNOT_REFUND.getCode());
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThatThrownBy(() -> commandHandler.handle(BUYER_ID, command))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(OrderResultCode.ORDER_CANNOT_REFUND.getCode());
         }
     }
 

@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.payment.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
@@ -32,10 +31,9 @@ public class PaymentQueryHandler {
     }
 
     /**
-     * 我的支付记录 — userId 自动填充为当前登录用户。
+     * 我的支付记录 — userId 由 Web 边界解析。
      */
-    public PageResult<Payment> getMyPayments(PaymentListQuery query) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public PageResult<Payment> getMyPayments(String userId, PaymentListQuery query) {
         return queryPaymentsInternal(userId, query.status(), query.pageNum(), query.pageSize());
     }
 

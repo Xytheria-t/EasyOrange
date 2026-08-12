@@ -32,16 +32,6 @@ public class MarketAnalysisTool implements SearchTool<String> {
     }
 
     @Override
-    public String description() {
-        return "基于搜索结果价格信息概括当前市场价格情况（不超过40字）";
-    }
-
-    @Override
-    public SearchToolKind kind() {
-        return SearchToolKind.LLM;
-    }
-
-    @Override
     public CompletableFuture<String> run(SearchToolContext context) {
         return CompletableFuture.supplyAsync(() -> {
             try {

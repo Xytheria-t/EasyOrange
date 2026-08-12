@@ -27,7 +27,7 @@ application/
 │       │       ├── elasticsearch/         # ES 搜索索引适配器（ElasticsearchIndexManager / ProductDocument / ReindexService / 索引读写适配器）
 │       │       ├── payment/               # OrderPaymentGatewayAdapter
 │       │       ├── product/               # ProductOrderAdapter / OrderProductQueryAdapter / ProductNotificationAdapter / ProductSearchIndexAdapter / FavoriteProductInfoAdapter
-│       │       └── user/                  # MessageUserInfoAdapter / OrderUserInfoAdapter / SellerInfoAdapter
+│       │       └── user/                  # MessageUserInfoAdapter / SellerInfoAdapter
 ├── src/main/resources/
 │   ├── application.yaml                   # 基础配置
 │   ├── application-dev.yaml               # 开发环境
@@ -132,7 +132,6 @@ easyorange-application
 | `OrderPaymentGatewayAdapter` | `PaymentGatewayPort` | order | 支付网关调用 |
 | `ProductOrderAdapter` | `ProductOrderPort` | order | 订单生命周期产品操作 |
 | `OrderProductQueryAdapter` | `ProductQueryPort` | order | 商品查询 |
-| `OrderUserInfoAdapter` | `UserInfoPort` | order | 用户信息查询 |
 | `SellerInfoAdapter` | `SellerInfoPort` | product | 资产方信息查询 |
 | `MessageUserInfoAdapter` | `UserInfoPort` | message | 用户信息查询 |
 | `FavoriteProductInfoAdapter` | `ProductInfoPort` | favorite | 商品信息查询 |

@@ -48,21 +48,6 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     }
 
     @Override
-    public void evictOrderList(String cacheKey) {
-        if (cacheKey == null) return;
-        try {
-            redisTemplate.delete(cacheKey);
-        } catch (Exception e) {
-            log.warn("Failed to evict order list cache: key={}", cacheKey, e);
-        }
-    }
-
-    @Override
-    public void evictBuyerOrders(String buyerId) {
-        if (buyerId != null) evictByPattern(KEY_PREFIX + buyerId + ":*");
-    }
-
-    @Override
     public void evictSellerOrders(String sellerId) {
         if (sellerId != null) evictByPattern(KEY_PREFIX + sellerId + ":*");
     }
@@ -82,11 +67,6 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
             key.append(":page:").append(pageNum).append(":size:").append(pageSize);
         }
         return key.toString();
-    }
-
-    @Override
-    public String buildOrderListKey(String userId, String status) {
-        return buildOrderListKey(userId, status, 1, 10);
     }
 
     private void evictByPattern(String pattern) {

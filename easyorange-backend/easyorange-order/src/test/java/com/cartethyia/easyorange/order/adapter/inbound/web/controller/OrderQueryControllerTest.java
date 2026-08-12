@@ -1,12 +1,14 @@
 package com.cartethyia.easyorange.order.adapter.inbound.web.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.order.application.command.OrderCommandHandler;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.OrderListQuery;
@@ -15,19 +17,21 @@ import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(OrderQueryController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@WithMockUser
 @DisplayName("OrderQueryController 控制器测试")
 class OrderQueryControllerTest {
 
@@ -39,6 +43,20 @@ class OrderQueryControllerTest {
 
     @MockitoBean
     private OrderQueryHandler queryHandler;
+
+    private static final String USER_ID = "1";
+
+    @BeforeEach
+    void setUp() {
+        var authUser = new AuthUser(USER_ID, "tester");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(authUser, null, List.of()));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
 
     private OrderVO createOrderVO(String id, String orderNo, String status, String statusDesc) {
         return OrderVO.builder()
@@ -65,7 +83,7 @@ class OrderQueryControllerTest {
         @DisplayName("存在的订单应返回订单详情")
         void getOrderDetail_withExistingId_shouldReturnOrder() throws Exception {
             OrderVO vo = createOrderVO("100", "ORD100", OrderStatus.PENDING_PAYMENT.getCode(), "待付款");
-            when(queryHandler.getOrderDetailForOwner("100")).thenReturn(vo);
+            when(queryHandler.getOrderDetailForOwner(USER_ID, "100")).thenReturn(vo);
 
             mockMvc.perform(get("/api/orders/owned/{id}", 100L))
                     .andExpect(status().isOk())
@@ -79,7 +97,7 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("不存在的订单应返回空 data")
         void getOrderDetail_withNonExistentId_shouldReturnNullData() throws Exception {
-            when(queryHandler.getOrderDetailForOwner("999")).thenReturn(null);
+            when(queryHandler.getOrderDetailForOwner(USER_ID, "999")).thenReturn(null);
 
             mockMvc.perform(get("/api/orders/owned/{id}", 999L))
                     .andExpect(status().isOk())
@@ -90,7 +108,7 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("handler 异常应包装为 ServletException")
         void getOrderDetail_whenHandlerThrows_shouldThrowServletException() {
-            when(queryHandler.getOrderDetailForOwner("100")).thenThrow(new RuntimeException("订单不存在"));
+            when(queryHandler.getOrderDetailForOwner(USER_ID, "100")).thenThrow(new RuntimeException("订单不存在"));
 
             org.junit.jupiter.api.Assertions.assertThrows(
                     jakarta.servlet.ServletException.class, () -> mockMvc.perform(get("/api/orders/owned/{id}", 100L)));
@@ -108,7 +126,7 @@ class OrderQueryControllerTest {
                     createOrderVO("100", "ORD100", OrderStatus.PENDING_PAYMENT.getCode(), "待付款"),
                     createOrderVO("101", "ORD101", OrderStatus.PAID.getCode(), "已付款"));
             PageResult<OrderVO> pageResult = PageResult.of(records, 2L, 1, 10);
-            when(queryHandler.getMyOrders(any(OrderListQuery.class))).thenReturn(pageResult);
+            when(queryHandler.getMyOrders(eq(USER_ID), any(OrderListQuery.class))).thenReturn(pageResult);
 
             mockMvc.perform(get("/api/orders/my").param("pageNum", "1").param("pageSize", "10"))
                     .andExpect(status().isOk())
@@ -125,7 +143,7 @@ class OrderQueryControllerTest {
         @DisplayName("无订单时应返回空分页")
         void getMyOrders_withNoData_shouldReturnEmptyPage() throws Exception {
             PageResult<OrderVO> emptyResult = PageResult.empty(1, 10);
-            when(queryHandler.getMyOrders(any(OrderListQuery.class))).thenReturn(emptyResult);
+            when(queryHandler.getMyOrders(eq(USER_ID), any(OrderListQuery.class))).thenReturn(emptyResult);
 
             mockMvc.perform(get("/api/orders/my"))
                     .andExpect(status().isOk())
@@ -145,7 +163,7 @@ class OrderQueryControllerTest {
         void getSoldOrders_withData_shouldReturnPage() throws Exception {
             List<OrderVO> records = List.of(createOrderVO("100", "ORD100", OrderStatus.SHIPPED.getCode(), "已发货"));
             PageResult<OrderVO> pageResult = PageResult.of(records, 1L, 1, 10);
-            when(queryHandler.getSoldOrders(any(OrderListQuery.class))).thenReturn(pageResult);
+            when(queryHandler.getSoldOrders(eq(USER_ID), any(OrderListQuery.class))).thenReturn(pageResult);
 
             mockMvc.perform(get("/api/orders/sold"))
                     .andExpect(status().isOk())
@@ -158,7 +176,7 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("无售出订单应返回空分页")
         void getSoldOrders_withNoData_shouldReturnEmptyPage() throws Exception {
-            when(queryHandler.getSoldOrders(any(OrderListQuery.class))).thenReturn(PageResult.empty(1, 10));
+            when(queryHandler.getSoldOrders(eq(USER_ID), any(OrderListQuery.class))).thenReturn(PageResult.empty(1, 10));
 
             mockMvc.perform(get("/api/orders/sold"))
                     .andExpect(status().isOk())

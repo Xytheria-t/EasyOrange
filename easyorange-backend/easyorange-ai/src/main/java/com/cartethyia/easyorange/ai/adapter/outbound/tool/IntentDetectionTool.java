@@ -32,16 +32,6 @@ public class IntentDetectionTool implements SearchTool<String> {
     }
 
     @Override
-    public String description() {
-        return "解析用户自然语言搜索需求，总结用户想找什么（不超过30字）";
-    }
-
-    @Override
-    public SearchToolKind kind() {
-        return SearchToolKind.LLM;
-    }
-
-    @Override
     public CompletableFuture<String> run(SearchToolContext context) {
         return CompletableFuture.supplyAsync(
                 () -> aiModelSupport.callText(chatModel, AiCallScope.SEARCH_ENHANCE, SYSTEM_PROMPT, context.keyword()));

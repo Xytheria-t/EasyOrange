@@ -12,9 +12,7 @@ import com.cartethyia.easyorange.favorite.application.service.FavoriteService;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import java.util.*;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,14 +37,7 @@ class FavoriteServiceTest {
 
     @BeforeEach
     void setUp() {
-        TestSecurityUtil.setSecurityContext(TEST_USER_ID);
-
         favoriteService = new FavoriteService(favoriteRepository, productInfoPort);
-    }
-
-    @AfterEach
-    void tearDown() {
-        TestSecurityUtil.clearSecurityContext();
     }
 
     @Test
@@ -58,7 +49,7 @@ class FavoriteServiceTest {
                 .thenReturn(false);
         when(favoriteRepository.save(any(Favorite.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        favoriteService.addFavorite(TEST_PRODUCT_ID);
+        favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID);
 
         verify(favoriteRepository).save(any(Favorite.class));
     }
@@ -68,7 +59,7 @@ class FavoriteServiceTest {
     void addFavorite_productNotFound() {
         when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(false);
 
-        assertThatThrownBy(() -> favoriteService.addFavorite(TEST_PRODUCT_ID))
+        assertThatThrownBy(() -> favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("商品不存在");
 
@@ -83,7 +74,7 @@ class FavoriteServiceTest {
         when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
                 .thenReturn(true);
 
-        assertThatThrownBy(() -> favoriteService.addFavorite(TEST_PRODUCT_ID))
+        assertThatThrownBy(() -> favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("已收藏过该商品");
 
@@ -96,7 +87,7 @@ class FavoriteServiceTest {
         when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(true);
         when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(true);
 
-        assertThatThrownBy(() -> favoriteService.addFavorite(TEST_PRODUCT_ID))
+        assertThatThrownBy(() -> favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("不能收藏自己的商品");
 
@@ -110,7 +101,7 @@ class FavoriteServiceTest {
         when(favoriteRepository.findByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
                 .thenReturn(Optional.of(favorite));
 
-        favoriteService.removeFavorite(TEST_PRODUCT_ID);
+        favoriteService.removeFavorite(TEST_USER_ID, TEST_PRODUCT_ID);
 
         verify(favoriteRepository).removeById("1");
     }
@@ -121,7 +112,7 @@ class FavoriteServiceTest {
         when(favoriteRepository.findByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> favoriteService.removeFavorite(TEST_PRODUCT_ID))
+        assertThatThrownBy(() -> favoriteService.removeFavorite(TEST_USER_ID, TEST_PRODUCT_ID))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("未收藏过该商品");
 
@@ -139,7 +130,7 @@ class FavoriteServiceTest {
         when(favoriteRepository.findByIds(favoriteIds)).thenReturn(List.of(favorite1, favorite2, favorite3));
         when(favoriteRepository.removeByIds(favoriteIds)).thenReturn(3);
 
-        favoriteService.removeManyFavorites(favoriteIds);
+        favoriteService.removeManyFavorites(TEST_USER_ID, favoriteIds);
 
         verify(favoriteRepository).findByIds(favoriteIds);
         verify(favoriteRepository).removeByIds(favoriteIds);
@@ -148,7 +139,7 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("批量移除收藏 - 空列表时不执行")
     void removeManyFavorites_emptyList() {
-        favoriteService.removeManyFavorites(List.of());
+        favoriteService.removeManyFavorites(TEST_USER_ID, List.of());
 
         verify(favoriteRepository, never()).findByIds(any());
         verify(favoriteRepository, never()).removeByIds(any());
@@ -163,7 +154,7 @@ class FavoriteServiceTest {
 
         when(favoriteRepository.findByIds(favoriteIds)).thenReturn(List.of(ownFavorite, otherUserFavorite));
 
-        assertThatThrownBy(() -> favoriteService.removeManyFavorites(favoriteIds))
+        assertThatThrownBy(() -> favoriteService.removeManyFavorites(TEST_USER_ID, favoriteIds))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("无权操作他人的收藏");
 
@@ -180,7 +171,7 @@ class FavoriteServiceTest {
         when(favoriteRepository.findByUserId(eq(TEST_USER_ID), eq(0L), eq(10L)))
                 .thenReturn(List.of(favorite1, favorite2));
 
-        PageResult<Favorite> result = favoriteService.queryFavorites(1, 10);
+        PageResult<Favorite> result = favoriteService.queryFavorites(TEST_USER_ID, 1, 10);
 
         assertThat(result).isNotNull();
         assertThat(result.total()).isEqualTo(2L);
@@ -197,7 +188,7 @@ class FavoriteServiceTest {
         when(favoriteRepository.countByUserId(TEST_USER_ID)).thenReturn(0L);
         when(favoriteRepository.findByUserId(eq(TEST_USER_ID), eq(0L), eq(10L))).thenReturn(List.of());
 
-        PageResult<Favorite> result = favoriteService.queryFavorites(1, 10);
+        PageResult<Favorite> result = favoriteService.queryFavorites(TEST_USER_ID, 1, 10);
 
         assertThat(result).isNotNull();
         assertThat(result.total()).isEqualTo(0L);
@@ -210,7 +201,7 @@ class FavoriteServiceTest {
         when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, "2001"))
                 .thenReturn(true);
 
-        boolean result = favoriteService.isFavorited("2001");
+        boolean result = favoriteService.isFavorited(TEST_USER_ID, "2001");
 
         assertThat(result).isTrue();
     }
@@ -221,7 +212,7 @@ class FavoriteServiceTest {
         when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, "2001"))
                 .thenReturn(false);
 
-        boolean result = favoriteService.isFavorited("2001");
+        boolean result = favoriteService.isFavorited(TEST_USER_ID, "2001");
 
         assertThat(result).isFalse();
     }
@@ -231,7 +222,7 @@ class FavoriteServiceTest {
     void getFavoriteCount() {
         when(favoriteRepository.countByUserId(TEST_USER_ID)).thenReturn(5L);
 
-        long count = favoriteService.getFavoriteCount();
+        long count = favoriteService.getFavoriteCount(TEST_USER_ID);
 
         assertThat(count).isEqualTo(5L);
     }
@@ -243,7 +234,7 @@ class FavoriteServiceTest {
         when(favoriteRepository.findFavoritedProductIds(TEST_USER_ID, productIds))
                 .thenReturn(Set.of("2001", "2003"));
 
-        Map<String, Boolean> result = favoriteService.batchCheckFavorited(productIds);
+        Map<String, Boolean> result = favoriteService.batchCheckFavorited(TEST_USER_ID, productIds);
 
         assertThat(result).hasSize(3);
         assertThat(result.get("2001")).isTrue();
@@ -254,7 +245,7 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("批量检查收藏状态 - 空列表")
     void batchCheckFavorited_emptyList() {
-        Map<String, Boolean> result = favoriteService.batchCheckFavorited(List.of());
+        Map<String, Boolean> result = favoriteService.batchCheckFavorited(TEST_USER_ID, List.of());
 
         assertThat(result).isEmpty();
         verify(favoriteRepository, never()).findFavoritedProductIds(any(), any());

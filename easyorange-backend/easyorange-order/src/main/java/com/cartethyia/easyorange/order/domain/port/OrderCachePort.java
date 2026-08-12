@@ -9,15 +9,9 @@ public interface OrderCachePort<T> {
 
     void putOrderList(String cacheKey, PageResult<T> pageResult);
 
-    void evictOrderList(String cacheKey);
-
-    void evictBuyerOrders(String buyerId);
-
     void evictSellerOrders(String sellerId);
 
     void evictOrderCache(String buyerId, String sellerId);
 
     String buildOrderListKey(String userId, String status, Integer pageNum, Integer pageSize);
-
-    String buildOrderListKey(String userId, String status);
 }

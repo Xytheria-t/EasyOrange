@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.user.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.auth.TokenRefreshResult;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.web.cookie.RefreshCookie;
@@ -23,6 +24,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "认证授权", description = "登录/注册/刷新令牌/密码重置")
@@ -104,8 +106,9 @@ public class AuthController {
     }
 
     @PutMapping("/password/change")
-    public Result<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        credentialAppService.changePassword(request.oldPassword(), request.newPassword());
+    public Result<Void> changePassword(
+            @AuthenticationPrincipal AuthUser user, @Valid @RequestBody ChangePasswordRequest request) {
+        credentialAppService.changePassword(user.userId(), request.oldPassword(), request.newPassword());
         return Result.success();
     }
 

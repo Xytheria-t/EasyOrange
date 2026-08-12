@@ -66,33 +66,4 @@ class SensitiveWordFilterServiceTest {
             assertThat(result).isEqualTo("文本内容");
         }
     }
-
-    @Nested
-    @DisplayName("containsSensitive")
-    class ContainsSensitiveTests {
-
-        @Test
-        @DisplayName("null 内容返回 false")
-        void containsSensitive_null_returnsFalse() {
-            assertThat(filterService.containsSensitive(null)).isFalse();
-        }
-
-        @Test
-        @DisplayName("空白内容返回 false")
-        void containsSensitive_blank_returnsFalse() {
-            assertThat(filterService.containsSensitive("  ")).isFalse();
-        }
-
-        @Test
-        @DisplayName("正常文本返回 false")
-        void containsSensitive_normalText_returnsFalse() {
-            assertThat(filterService.containsSensitive("正常文本")).isFalse();
-        }
-
-        @Test
-        @DisplayName("包含敏感词返回 true")
-        void containsSensitive_containsSensitive_returnsTrue() {
-            assertThat(filterService.containsSensitive("这是敏感词示例")).isTrue();
-        }
-    }
 }

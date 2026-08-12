@@ -3,11 +3,11 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.product;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import java.util.ArrayList;
-import java.util.HashSet;
+import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,16 +21,19 @@ public class ProductRepositoryImpl extends BaseRepository<ProductMapper, Product
     private final ProductDetailMapper productDetailMapper;
     private final ProductImageMapper productImageMapper;
     private final ProductDataMapper dataMapper;
+    private final IdGenerator idGenerator;
 
     public ProductRepositoryImpl(
             ProductMapper productMapper,
             ProductDetailMapper productDetailMapper,
             ProductImageMapper productImageMapper,
-            ProductDataMapper dataMapper) {
+            ProductDataMapper dataMapper,
+            IdGenerator idGenerator) {
         super(productMapper);
         this.productDetailMapper = productDetailMapper;
         this.productImageMapper = productImageMapper;
         this.dataMapper = dataMapper;
+        this.idGenerator = idGenerator;
     }
 
     @Override
@@ -50,13 +53,7 @@ public class ProductRepositoryImpl extends BaseRepository<ProductMapper, Product
 
     @Override
     public Optional<Product> findById(ProductId id) {
-        var productDO = mapper.selectById(id.value());
-        if (productDO == null) {
-            return Optional.empty();
-        }
-        var detailDO = productDetailMapper.selectById(productDO.getId());
-        var imageDOs = mapper.selectImagesByProductIds(List.of(productDO.getId()));
-        return Optional.of(dataMapper.toDomain(productDO, detailDO, imageDOs));
+        return findByIds(List.of(id)).stream().findFirst();
     }
 
     @Override
@@ -72,16 +69,14 @@ public class ProductRepositoryImpl extends BaseRepository<ProductMapper, Product
 
     private Product insert(Product product) {
         var productDO = dataMapper.toDataObject(product);
+        productDO.setId(idGenerator.generateId());
         mapper.insert(productDO);
         var saved = product.assignId(productDO.getId());
         var detailDO = dataMapper.toDetailDO(saved.getId(), saved.getDescription());
         if (detailDO != null) {
             productDetailMapper.insert(detailDO);
         }
-        var imageDOs = dataMapper.toImageDOs(saved.getId(), saved.getImages());
-        if (!imageDOs.isEmpty()) {
-            productImageMapper.batchInsert(imageDOs);
-        }
+        insertImages(saved.getId(), saved.getImages());
         return saved;
     }
 
@@ -90,7 +85,7 @@ public class ProductRepositoryImpl extends BaseRepository<ProductMapper, Product
             throw new ConcurrentUpdateException("商品更新冲突: id=" + product.getId().value());
         }
         upsertDetail(product);
-        syncImages(product);
+        replaceImages(product);
         return product;
     }
 
@@ -120,25 +115,17 @@ public class ProductRepositoryImpl extends BaseRepository<ProductMapper, Product
         }
     }
 
-    private void syncImages(Product product) {
-        var productId = product.getId().value();
-        var existingImages = mapper.selectImagesByProductIds(List.of(productId));
-        var newImages = dataMapper.toImageDOs(product.getId(), product.getImages());
-        var existingUrls =
-                existingImages.stream().map(ProductImageDO::getImageUrl).collect(Collectors.toSet());
-        var newUrls = newImages.stream().map(ProductImageDO::getImageUrl).collect(Collectors.toSet());
-        var urlsToDelete = new HashSet<>(existingUrls);
-        urlsToDelete.removeAll(newUrls);
-        if (!urlsToDelete.isEmpty()) {
-            productImageMapper.deleteByProductIdAndUrls(productId, new ArrayList<>(urlsToDelete));
-        }
-        var urlsToAdd = new HashSet<>(newUrls);
-        urlsToAdd.removeAll(existingUrls);
-        if (!urlsToAdd.isEmpty()) {
-            var imagesToAdd = newImages.stream()
-                    .filter(img -> urlsToAdd.contains(img.getImageUrl()))
-                    .toList();
-            productImageMapper.batchInsert(imagesToAdd);
-        }
+    private void insertImages(ProductId productId, ImageSet imageSet) {
+        var imageDOs = dataMapper.toImageDOs(productId, imageSet);
+        if (imageDOs.isEmpty()) return;
+        imageDOs.forEach(img -> img.setId(idGenerator.generateId()));
+        productImageMapper.batchInsert(imageDOs);
+    }
+
+    // 图片整组替换：物理删全量再重插。行 id 无外部引用，isMain/sortOrder 完全由列表顺序推导，
+    // 全量重写同时修正了旧实现"仅按 URL 求差、顺序变更不生效"的缺陷。
+    private void replaceImages(Product product) {
+        productImageMapper.deleteByProductId(product.getId().value());
+        insertImages(product.getId(), product.getImages());
     }
 }

@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.user.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.adapter.inbound.web.assembler.UserAssembler;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.profile.UpdateProfileRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileResponse;
@@ -12,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,14 +25,13 @@ public class UserController {
     private final UserAssembler userAssembler;
 
     @GetMapping("/me")
-    public Result<UserProfileResponse> getCurrentUser() {
-        AuthUser authUser = SecurityContextUtil.getUserContextOrThrow();
-        return Result.success(userAssembler.toProfileResponse(
-                profileAppService.getCurrentUser(), authUser.roles(), authUser.permissions(), authUser.loginTime()));
+    public Result<UserProfileResponse> getCurrentUser(@AuthenticationPrincipal AuthUser authUser) {
+        return Result.success(userAssembler.toProfileResponse(profileAppService.getCurrentUser(authUser.userId())));
     }
 
     @PutMapping("/me")
-    public Result<UserResponse> updateUserInfo(@Valid @RequestBody UpdateProfileRequest request) {
+    public Result<UserResponse> updateUserInfo(
+            @AuthenticationPrincipal AuthUser user, @Valid @RequestBody UpdateProfileRequest request) {
         var cmd = new ProfileAppService.UpdateCommand(
                 request.nickname(),
                 request.email(),
@@ -40,13 +39,14 @@ public class UserController {
                 request.gender(),
                 request.realName(),
                 request.studentId());
-        return Result.success(userAssembler.toResponse(profileAppService.updateUserInfo(cmd)));
+        return Result.success(userAssembler.toResponse(profileAppService.updateUserInfo(user.userId(), cmd)));
     }
 
     @PostMapping("/avatar")
-    public Result<UserResponse> uploadAvatar(@RequestParam("avatar") MultipartFile avatar) throws IOException {
-        var user = profileAppService.uploadAvatar(
-                avatar.getBytes(), avatar.getContentType(), avatar.getOriginalFilename());
-        return Result.success(userAssembler.toResponse(user));
+    public Result<UserResponse> uploadAvatar(
+            @AuthenticationPrincipal AuthUser user, @RequestParam("avatar") MultipartFile avatar) throws IOException {
+        var updatedUser = profileAppService.uploadAvatar(
+                user.userId(), avatar.getBytes(), avatar.getContentType(), avatar.getOriginalFilename());
+        return Result.success(userAssembler.toResponse(updatedUser));
     }
 }

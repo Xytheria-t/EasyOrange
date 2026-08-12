@@ -8,7 +8,6 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
@@ -81,18 +80,13 @@ class MessageQueryHandlerTest {
                             USER_ID,
                             new UserInfo(USER_ID, "接收者", null)));
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                MessageVO vo = queryHandler.getMessageDetail(MESSAGE_ID);
+            MessageVO vo = queryHandler.getMessageDetail(USER_ID, MESSAGE_ID);
 
-                assertThat(vo).isNotNull();
-                assertThat(vo.getId()).isEqualTo(MESSAGE_ID);
-                assertThat(vo.getSenderId()).isEqualTo(SENDER_ID);
-                assertThat(vo.getReceiverId()).isEqualTo(USER_ID);
-                assertThat(vo.getTitle()).isEqualTo("标题");
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(vo).isNotNull();
+            assertThat(vo.getId()).isEqualTo(MESSAGE_ID);
+            assertThat(vo.getSenderId()).isEqualTo(SENDER_ID);
+            assertThat(vo.getReceiverId()).isEqualTo(USER_ID);
+            assertThat(vo.getTitle()).isEqualTo("标题");
         }
 
         @Test
@@ -100,13 +94,8 @@ class MessageQueryHandlerTest {
         void getMessageDetail_notFound_throws() {
             when(queryRepository.findById(MESSAGE_ID)).thenReturn(null);
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                assertThatThrownBy(() -> queryHandler.getMessageDetail(MESSAGE_ID))
-                        .isInstanceOf(MessageNotFoundException.class);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThatThrownBy(() -> queryHandler.getMessageDetail(USER_ID, MESSAGE_ID))
+                    .isInstanceOf(MessageNotFoundException.class);
         }
 
         @Test
@@ -115,13 +104,8 @@ class MessageQueryHandlerTest {
             Message aggregate = createTestMessage();
             when(queryRepository.findById(MESSAGE_ID)).thenReturn(aggregate);
 
-            TestSecurityUtil.setSecurityContext("999");
-            try {
-                assertThatThrownBy(() -> queryHandler.getMessageDetail(MESSAGE_ID))
-                        .isInstanceOf(BusinessException.class);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThatThrownBy(() -> queryHandler.getMessageDetail("999", MESSAGE_ID))
+                    .isInstanceOf(BusinessException.class);
         }
     }
 
@@ -144,15 +128,10 @@ class MessageQueryHandlerTest {
                             USER_ID,
                             new UserInfo(USER_ID, "接收者", null)));
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                PageResult<MessageVO> result = queryHandler.getMyMessages(query);
+            PageResult<MessageVO> result = queryHandler.getMyMessages(USER_ID, query);
 
-                assertThat(result.records()).hasSize(1);
-                assertThat(result.total()).isEqualTo(1);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(result.records()).hasSize(1);
+            assertThat(result.total()).isEqualTo(1);
         }
 
         @Test
@@ -163,15 +142,10 @@ class MessageQueryHandlerTest {
             when(queryRepository.findByReceiverId(any(MessageQuery.class), anyString()))
                     .thenReturn(pageResult);
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                PageResult<MessageVO> result = queryHandler.getMyMessages(query);
+            PageResult<MessageVO> result = queryHandler.getMyMessages(USER_ID, query);
 
-                assertThat(result.records()).isEmpty();
-                assertThat(result.total()).isZero();
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(result.records()).isEmpty();
+            assertThat(result.total()).isZero();
         }
     }
 
@@ -194,14 +168,9 @@ class MessageQueryHandlerTest {
                             USER_ID,
                             new UserInfo(USER_ID, "接收者", null)));
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                PageResult<MessageVO> result = queryHandler.getUnreadMessages(query);
+            PageResult<MessageVO> result = queryHandler.getUnreadMessages(USER_ID, query);
 
-                assertThat(result.records()).hasSize(1);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(result.records()).hasSize(1);
         }
     }
 
@@ -215,15 +184,10 @@ class MessageQueryHandlerTest {
             UnreadCount count = new UnreadCount(5L, 2L, 3L, 0L, 0L, 0L);
             when(queryRepository.countUnreadByReceiverId(anyString())).thenReturn(count);
 
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            try {
-                UnreadCountVO result = queryHandler.getUnreadCount();
+            UnreadCountVO result = queryHandler.getUnreadCount(USER_ID);
 
-                assertThat(result).isNotNull();
-                assertThat(result.getTotal()).isEqualTo(5L);
-            } finally {
-                TestSecurityUtil.clearSecurityContext();
-            }
+            assertThat(result).isNotNull();
+            assertThat(result.getTotal()).isEqualTo(5L);
         }
     }
 }

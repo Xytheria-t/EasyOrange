@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.product.adapter.inbound.web.assembler.CategoryAssembler;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductCreateRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductQueryRequest;
@@ -23,6 +23,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,7 +55,8 @@ public class ProductController {
      * Resource CRUD
      */
     @PostMapping
-    public Result<String> createProduct(@Valid @RequestBody ProductCreateRequest request) {
+    public Result<String> createProduct(
+            @AuthenticationPrincipal AuthUser user, @Valid @RequestBody ProductCreateRequest request) {
         var cmd = new CreateProductCommand(
                 request.categoryId(),
                 request.name(),
@@ -66,11 +68,12 @@ public class ProductController {
                 request.contactMethod(),
                 request.description(),
                 request.imageUrls());
-        return Result.success(commandHandler.createProduct(cmd));
+        return Result.success(commandHandler.createProduct(user.userId(), cmd));
     }
 
     @PutMapping("/{id}")
-    public Result<Void> updateProduct(@PathVariable String id, @Valid @RequestBody ProductUpdateRequest request) {
+    public Result<Void> updateProduct(
+            @AuthenticationPrincipal AuthUser user, @PathVariable String id, @Valid @RequestBody ProductUpdateRequest request) {
         var cmd = new UpdateProductCommand(
                 id,
                 request.categoryId(),
@@ -83,13 +86,13 @@ public class ProductController {
                 request.contactMethod(),
                 request.description(),
                 request.imageUrls());
-        commandHandler.updateProduct(cmd);
+        commandHandler.updateProduct(user.userId(), cmd);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
-    public Result<Void> deleteProduct(@PathVariable String id) {
-        commandHandler.deleteProduct(id);
+    public Result<Void> deleteProduct(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
+        commandHandler.deleteProduct(user.userId(), id);
         return Result.success();
     }
 
@@ -97,8 +100,8 @@ public class ProductController {
      * Product state transitions (lifecycle order)
      */
     @PutMapping("/{id}/submit")
-    public Result<Void> submitForReview(@PathVariable String id) {
-        commandHandler.submitForReview(id);
+    public Result<Void> submitForReview(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
+        commandHandler.submitForReview(user.userId(), id);
         return Result.success();
     }
 
@@ -110,8 +113,8 @@ public class ProductController {
     }
 
     @PutMapping("/{productId}/offline")
-    public Result<Void> takeOffline(@PathVariable String productId) {
-        commandHandler.takeOffline(productId);
+    public Result<Void> takeOffline(@AuthenticationPrincipal AuthUser user, @PathVariable String productId) {
+        commandHandler.takeOffline(user.userId(), productId);
         return Result.success();
     }
 
@@ -156,11 +159,11 @@ public class ProductController {
 
     @GetMapping("/my")
     public Result<PageResult<ProductVO>> getMyProducts(
+            @AuthenticationPrincipal AuthUser user,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "20") Integer pageSize,
             @RequestParam(required = false) String status) {
-        String currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        return Result.success(queryHandler.getMyProducts(currentUserId, status, pageNum, pageSize));
+        return Result.success(queryHandler.getMyProducts(user.userId(), status, pageNum, pageSize));
     }
 
     @GetMapping("/category/{categoryId}")

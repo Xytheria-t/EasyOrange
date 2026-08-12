@@ -265,34 +265,6 @@ class UserRepositoryImplTest {
     }
 
     @Nested
-    @DisplayName("updateLoginInfo")
-    class UpdateLoginInfoTests {
-
-        @Test
-        @DisplayName("应使用 update wrapper 更新登录信息")
-        void shouldUpdateLoginInfoWithWrapper() {
-            when(userMapper.update(isNull(), any())).thenReturn(1);
-
-            userRepository.updateLoginInfo("1", "192.168.1.1");
-
-            verify(userMapper).update(isNull(), any());
-        }
-    }
-
-    @Nested
-    @DisplayName("deleteById")
-    class DeleteByIdTests {
-
-        @Test
-        @DisplayName("应委托给 mapper 删除")
-        void shouldDelegateToMapper() {
-            userRepository.deleteById("1");
-
-            verify(userMapper).deleteById("1");
-        }
-    }
-
-    @Nested
     @DisplayName("findByLoginIdentifier")
     class FindByLoginIdentifierTests {
 

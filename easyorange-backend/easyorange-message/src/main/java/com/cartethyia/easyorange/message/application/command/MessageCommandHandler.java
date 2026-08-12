@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.message.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
 import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
@@ -33,9 +32,7 @@ public class MessageCommandHandler {
     private final MessageNotifierPort messageNotifier;
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(SendMessageCommand command) {
-        String senderId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public void handle(String senderId, SendMessageCommand command) {
         if (!rateLimiterService.allowSendMessage(senderId)) {
             throw new MessageDomainException("发送过于频繁，请稍后再试");
         }
@@ -92,9 +89,7 @@ public class MessageCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(MarkAsReadCommand command) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public void handle(String userId, MarkAsReadCommand command) {
         Message aggregate = messageRepository
                 .findById(command.messageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
@@ -107,12 +102,10 @@ public class MessageCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(MarkAsReadBatchCommand command) {
+    public void handle(String userId, MarkAsReadBatchCommand command) {
         var messageIds = command.messageIds();
         BizRequire.notEmpty(messageIds, "消息ID列表不能为空");
         BizRequire.requireTrue(!messageIds.contains(null), "消息ID不能为null");
-
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         for (String messageId : messageIds) {
             try {
@@ -129,23 +122,19 @@ public class MessageCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handleMarkAllAsRead() {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void handleMarkAllAsRead(String userId) {
         messageRepository.markAllAsRead(userId);
         log.info("action=mark_all_read userId={}", userId);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handleMarkAsReadByType(Integer type) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void handleMarkAsReadByType(String userId, Integer type) {
         messageRepository.markAsReadByType(userId, type);
         log.info("action=mark_type_read userId={} type={}", userId, type);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(RecallMessageCommand command) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public void handle(String userId, RecallMessageCommand command) {
         Message aggregate = messageRepository
                 .findById(command.messageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
@@ -162,9 +151,7 @@ public class MessageCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(DeleteMessageCommand command) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
+    public void handle(String userId, DeleteMessageCommand command) {
         Message aggregate = messageRepository
                 .findById(command.messageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.messageId()));

@@ -10,13 +10,9 @@
         </foreach>
     </insert>
 
-    <delete id="deleteByProductIdAndUrls">
+    <delete id="deleteByProductId">
         DELETE FROM eo_product_image
         WHERE product_id = #{productId}
-        AND image_url IN
-        <foreach collection="urls" item="url" open="(" separator="," close=")">
-            #{url}
-        </foreach>
     </delete>
 
 </mapper>

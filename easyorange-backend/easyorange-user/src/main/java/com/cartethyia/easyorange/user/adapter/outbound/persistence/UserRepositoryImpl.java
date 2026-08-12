@@ -1,21 +1,16 @@
 package com.cartethyia.easyorange.user.adapter.outbound.persistence;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
-import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 @Primary
 @Repository
@@ -103,28 +98,6 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
         if (mapper.updateById(entity) == 0) {
             throw new ConcurrentUpdateException("用户更新冲突: id=" + user.getId());
         }
-    }
-
-    /**
-     * 更新用户登录信息（IP和时间），使用独立事务确保登录记录不受主业务事务影响。
-     * 即使用户注册/登录主流程失败，登录记录也应被保存用于安全审计。
-     */
-    @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void updateLoginInfo(String userId, String loginIp) {
-        boolean updated = lambdaUpdate()
-                .eq(UserDO::getId, userId)
-                .set(UserDO::getLoginDate, LocalDateTime.now())
-                .set(UserDO::getLoginIp, loginIp)
-                .update();
-        if (!updated) {
-            throw BusinessException.of(UserResultCode.USER_NOT_FOUND);
-        }
-    }
-
-    @Override
-    public void deleteById(String id) {
-        mapper.deleteById(id);
     }
 
     // ========== Aggregate methods ==========

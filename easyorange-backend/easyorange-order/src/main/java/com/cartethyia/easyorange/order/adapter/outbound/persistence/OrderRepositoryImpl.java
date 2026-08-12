@@ -39,9 +39,9 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
     @Override
     public void update(Order aggregate) {
         mapper.updateById(dataMapper.toDataObject(aggregate));
-        var orderId = aggregate.id().value();
-        orderItemMapper.delete(new LambdaQueryWrapper<OrderItemDO>().eq(OrderItemDO::getOrderId, orderId));
-        batchInsertItems(orderId, aggregate.items());
+        // 订单项为不可变快照，整组物理替换；逻辑删除会让每次状态流转累积 del_flag=1 脏行。
+        orderItemMapper.deleteByOrderId(aggregate.id().value());
+        batchInsertItems(aggregate.id().value(), aggregate.items());
     }
 
     @Override

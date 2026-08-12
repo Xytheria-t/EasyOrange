@@ -24,6 +24,19 @@ test.describe('认证流程', () => {
     await page.locator('[data-testid="tab-login"]').click();
     await expect(page.locator('[data-testid="tab-login"].auth-page-tab--active')).toBeVisible();
 
+    // mock 登录 API 返回业务失败（与「登录成功」用例对齐，使本用例不依赖真实后端）
+    await page.route('**/api/auth/login**', async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                code: 'A0001',
+                message: '用户名或密码错误',
+                data: null,
+            }),
+        });
+    });
+
     // 输入无效凭证
     await page.locator('[data-testid="input-account"]').fill('nonexistent_user');
     await page.locator('[data-testid="input-password"]').fill('wrongpassword123');

@@ -24,7 +24,7 @@ ADR-0001 决定订单创建采用 Saga 编排 + 反向补偿，ADR-0007 初版�
 **移除订单创建的 Saga 层**，回归最简可靠形态：
 
 1. **原子性 = 本地单事务**。`OrderCommandHandler.handle(CreateOrderCommand)` 在单一 `@Transactional(rollbackFor = Exception.class)` 内依次执行：获取分布式锁 → 准备商品 → 创建订单 + 发布 `OrderCreatedEvent`（Outbox 同事务原子）→ `decreaseStock` → `createPayment`。任一步失败事务整体回滚，抛 `OrderCreationException`，**无补偿路径**。
-2. **并发控制 = 分布式锁**。`LockPort` / [RedissonLockAdapter.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/adapter/outbound/lock/RedissonLockAdapter.java)（Redisson，key=`eo:order:lock:product:{productId}`，按 `productId` 排序防死锁，10s 获取超时，leaseTime=`-1` 由 watchdog 续期，锁在事务提交后释放）负责同商品下单**排队串行**；库存扣减由 `ProductRepository` 乐观锁版本检查**兜底防超卖**（并发时抛 `ConcurrentUpdateException` 使订单回滚）。
+2. **并发控制 = 分布式锁**。`DistributedLockPort` / [DistributedRedissonLockAdapter.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/lock/DistributedRedissonLockAdapter.java)（Redisson，key=`eo:order:lock:product:{productId}`，按 `productId` 排序防死锁，10s 获取超时，leaseTime=`-1` 由 watchdog 续期，锁在事务提交后释放）负责同商品下单**排队串行**；库存扣减由 `ProductRepository` 乐观锁版本检查**兜底防超卖**（并发时抛 `ConcurrentUpdateException` 使订单回滚）。
 3. **副作用 = Outbox 事件**。库存/支付为同事务直写；下游状态变更（取消/退款恢复库存、完成标记售出）由 `OrderLifecycleEventConsumer` 消费订单生命周期事件异步触发。
 
 已删除的 Saga 代码（`git rm`）：`CreateOrderSaga`、`SagaCoordinator`、`SagaTimeoutScheduler`、`SagaException`、`SagaRepository`、`SagaState`、`SagaStatus`、`SagaDO`、`SagaMapper`、`SagaRepositoryImpl`、`OrderCompensationService`。`eo_saga` 表由 `V2__drop_order_saga_table.sql` 删除（`DROP TABLE eo_saga_status`）。
@@ -32,7 +32,7 @@ ADR-0001 决定订单创建采用 Saga 编排 + 反向补偿，ADR-0007 初版�
 关键实现：
 
 - 下单入口：[OrderCommandHandler.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/command/OrderCommandHandler.java)
-- 锁：[RedissonLockAdapter.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/adapter/outbound/lock/RedissonLockAdapter.java)（`LockPort` 的 Redisson 实现）、执行：`OrderPreparation.java`
+- 锁：[DistributedRedissonLockAdapter.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/lock/DistributedRedissonLockAdapter.java)（`DistributedLockPort` 的 Redisson 实现，收敛 order/payment/超时任务三处用法）、执行：`OrderPreparation.java`
 - 生命周期消费者：[OrderLifecycleEventConsumer.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/adapter/inbound/messaging/OrderLifecycleEventConsumer.java)（队列 `eo.order.lifecycle`）
 
 核心驱动力：

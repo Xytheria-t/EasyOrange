@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.product.application.command;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.framework.metrics.BusinessMetricsService;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.service.ProductReportDomainService;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,14 +25,14 @@ class ProductReportCommandHandlerTest {
     private ProductReportRepository productReportRepository;
 
     @Mock
-    private DomainEventPublisher domainEventPublisher;
+    private BusinessMetricsService businessMetricsService;
 
     private ProductReportCommandHandler handler;
 
     @BeforeEach
     void setUp() {
         handler = new ProductReportCommandHandler(
-                productReportDomainService, productReportRepository, domainEventPublisher);
+                productReportDomainService, productReportRepository, businessMetricsService);
     }
 
     @Test

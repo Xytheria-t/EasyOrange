@@ -69,11 +69,6 @@ public class PaymentRepositoryImpl extends BaseRepository<PaymentMapper, Payment
     }
 
     @Override
-    public Optional<Payment> findAggregateByPaymentNo(String paymentNo) {
-        return findByPaymentNo(paymentNo);
-    }
-
-    @Override
     public Optional<Payment> findAggregateByOrderId(String orderId) {
         return findByOrderId(orderId);
     }

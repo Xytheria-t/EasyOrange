@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.user.application.service.ProfileAppService.UpdateCommand;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.aggregate.UserTestFixture;
@@ -16,7 +15,6 @@ import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.ProfileUpdateService;
 import com.cartethyia.easyorange.user.domain.valueobject.Avatar;
 import java.util.Optional;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -50,11 +48,6 @@ class ProfileAppServiceTest {
                 new ProfileAppService(userRepository, avatarFilePort, domainEventPublisher, profileUpdateService);
     }
 
-    @AfterEach
-    void tearDown() {
-        TestSecurityUtil.clearSecurityContext();
-    }
-
     @Nested
     @DisplayName("getCurrentUser")
     class GetCurrentUser {
@@ -62,11 +55,10 @@ class ProfileAppServiceTest {
         @Test
         @DisplayName("成功获取当前用户信息")
         void success() {
-            setSecurityContext();
             User user = UserTestFixture.normalUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-            User result = profileAppService.getCurrentUser();
+            User result = profileAppService.getCurrentUser(USER_ID);
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(USER_ID);
@@ -75,10 +67,9 @@ class ProfileAppServiceTest {
         @Test
         @DisplayName("用户不存在时抛出异常")
         void userNotFound() {
-            setSecurityContext();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> profileAppService.getCurrentUser()).isInstanceOf(BusinessException.class);
+            assertThatThrownBy(() -> profileAppService.getCurrentUser(USER_ID)).isInstanceOf(BusinessException.class);
         }
     }
 
@@ -89,61 +80,56 @@ class ProfileAppServiceTest {
         @Test
         @DisplayName("成功更新邮箱")
         void updateEmail() {
-            setSecurityContext();
             User user = UserTestFixture.normalUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-            profileAppService.updateUserInfo(new UpdateCommand(null, "new@example.com", null, null, null, null));
+            profileAppService.updateUserInfo(USER_ID, new UpdateCommand(null, "new@example.com", null, null, null, null));
         }
 
         @Test
         @DisplayName("更新已存在的邮箱时抛出异常")
         void emailAlreadyExists() {
-            setSecurityContext();
             User user = UserTestFixture.normalUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(userRepository.findByEmail("existing@example.com")).thenReturn(Optional.of(user));
 
             assertThatThrownBy(() -> profileAppService.updateUserInfo(
-                            new UpdateCommand(null, "existing@example.com", null, null, null, null)))
+                            USER_ID, new UpdateCommand(null, "existing@example.com", null, null, null, null)))
                     .isInstanceOf(BusinessException.class);
         }
 
         @Test
         @DisplayName("更新已存在的手机号时抛出异常")
         void phoneAlreadyExists() {
-            setSecurityContext();
             User user = UserTestFixture.normalUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(userRepository.findByPhone("13900000000")).thenReturn(Optional.of(user));
 
             assertThatThrownBy(() -> profileAppService.updateUserInfo(
-                            new UpdateCommand(null, null, "13900000000", null, null, null)))
+                            USER_ID, new UpdateCommand(null, null, "13900000000", null, null, null)))
                     .isInstanceOf(BusinessException.class);
         }
 
         @Test
         @DisplayName("更新已存在的学号时抛出异常")
         void studentIdAlreadyExists() {
-            setSecurityContext();
             User user = UserTestFixture.normalUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(userRepository.findByStudentId("2022001")).thenReturn(Optional.of(user));
 
             assertThatThrownBy(() -> profileAppService.updateUserInfo(
-                            new UpdateCommand(null, null, null, null, null, "2022001")))
+                            USER_ID, new UpdateCommand(null, null, null, null, null, "2022001")))
                     .isInstanceOf(BusinessException.class);
         }
 
         @Test
         @DisplayName("没有需要更新的字段时抛出异常")
         void noFieldsToUpdate() {
-            setSecurityContext();
             User user = UserTestFixture.normalUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() ->
-                            profileAppService.updateUserInfo(new UpdateCommand(null, null, null, null, null, null)))
+            assertThatThrownBy(() -> profileAppService.updateUserInfo(
+                            USER_ID, new UpdateCommand(null, null, null, null, null, null)))
                     .isInstanceOf(BusinessException.class);
         }
     }
@@ -155,7 +141,6 @@ class ProfileAppServiceTest {
         @Test
         @DisplayName("成功上传头像")
         void success() {
-            setSecurityContext();
             User user = UserTestFixture.normalUser();
             byte[] content = "image-data".getBytes();
             Avatar avatar = Avatar.uploaded("/avatar/new.png", content, "image/png");
@@ -164,7 +149,7 @@ class ProfileAppServiceTest {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(avatarFilePort.upload(content, "image/png", "avatar.png", USER_ID))
                     .thenReturn("/avatar/new.png");
-            var result = profileAppService.uploadAvatar(content, "image/png", "avatar.png");
+            var result = profileAppService.uploadAvatar(USER_ID, content, "image/png", "avatar.png");
 
             assertThat(result.getId()).isEqualTo(USER_ID);
             assertThat(result.getPersonalInfo().avatar()).isEqualTo("/avatar/new.png");
@@ -174,7 +159,7 @@ class ProfileAppServiceTest {
         @Test
         @DisplayName("头像为空时抛出异常")
         void emptyContent() {
-            assertThatThrownBy(() -> profileAppService.uploadAvatar(new byte[0], "image/png", "avatar.png"))
+            assertThatThrownBy(() -> profileAppService.uploadAvatar(USER_ID, new byte[0], "image/png", "avatar.png"))
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getCode())
                     .isEqualTo(UserResultCode.AVATAR_EMPTY.getCode());
@@ -184,16 +169,10 @@ class ProfileAppServiceTest {
         @DisplayName("头像超过5MB时抛出异常")
         void exceedsMaxSize() {
             byte[] content = new byte[6 * 1024 * 1024];
-            assertThatThrownBy(() -> profileAppService.uploadAvatar(content, "image/png", "avatar.png"))
+            assertThatThrownBy(() -> profileAppService.uploadAvatar(USER_ID, content, "image/png", "avatar.png"))
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getCode())
                     .isEqualTo(UserResultCode.AVATAR_TOO_LARGE.getCode());
         }
-    }
-
-    // ==================== Test Helpers ====================
-
-    private void setSecurityContext() {
-        TestSecurityUtil.setSecurityContext(USER_ID);
     }
 }

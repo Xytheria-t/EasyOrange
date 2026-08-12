@@ -1,14 +1,15 @@
-package com.cartethyia.easyorange.order.adapter.outbound.lock;
+package com.cartethyia.easyorange.framework.lock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
+import com.cartethyia.easyorange.framework.config.properties.LockProperties;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,8 +28,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("RedissonLockAdapter 多锁行为测试")
-class RedissonLockAdapterTest {
+@DisplayName("DistributedRedissonLockAdapter 多锁行为测试")
+class DistributedLockAdapterTest {
 
     @Mock
     private RedissonClient redissonClient;
@@ -39,11 +40,11 @@ class RedissonLockAdapterTest {
     @Mock
     private RLock lock2;
 
-    private RedissonLockAdapter adapter;
+    private DistributedRedissonLockAdapter adapter;
 
     @BeforeEach
     void setUp() {
-        adapter = new RedissonLockAdapter(redissonClient);
+        adapter = new DistributedRedissonLockAdapter(redissonClient, new LockProperties());
         when(lock1.isHeldByCurrentThread()).thenReturn(true);
         when(lock2.isHeldByCurrentThread()).thenReturn(true);
     }
@@ -51,16 +52,17 @@ class RedissonLockAdapterTest {
     @Test
     @DisplayName("全部锁获取成功：执行操作并逆序释放所有锁")
     void executeWithLocks_allAcquired_runsOperationAndReleases() throws InterruptedException {
-        when(redissonClient.getLock("p1")).thenReturn(lock1);
-        when(redissonClient.getLock("p2")).thenReturn(lock2);
+        when(redissonClient.getLock("eo:order:lock:product:100")).thenReturn(lock1);
+        when(redissonClient.getLock("eo:order:lock:product:200")).thenReturn(lock2);
         when(lock1.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
         when(lock2.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
 
         AtomicBoolean executed = new AtomicBoolean(false);
-        String result = adapter.executeWithLocks(List.of("p1", "p2"), 10, () -> {
-            executed.set(true);
-            return "ok";
-        });
+        String result = adapter.executeWithLocks(
+                List.of("eo:order:lock:product:100", "eo:order:lock:product:200"), 10, () -> {
+                    executed.set(true);
+                    return "ok";
+                });
 
         assertThat(result).isEqualTo("ok");
         assertThat(executed).isTrue();
@@ -81,8 +83,7 @@ class RedissonLockAdapterTest {
                     executed.set(true);
                     return null;
                 }))
-                .isInstanceOf(OrderCreationException.class)
-                .hasMessageContaining("繁忙");
+                .isInstanceOf(LockAcquisitionException.class);
 
         assertThat(executed).isFalse();
         verify(lock1).unlock();
@@ -96,8 +97,7 @@ class RedissonLockAdapterTest {
         when(lock1.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenThrow(new InterruptedException());
 
         assertThatThrownBy(() -> adapter.executeWithLocks(List.of("p1"), 10, () -> null))
-                .isInstanceOf(OrderCreationException.class)
-                .hasMessageContaining("繁忙");
+                .isInstanceOf(LockAcquisitionException.class);
 
         // assert + 清除中断位，避免污染后续测试线程
         assertThat(Thread.interrupted()).isTrue();
@@ -123,5 +123,16 @@ class RedissonLockAdapterTest {
         } finally {
             TransactionSynchronizationManager.clearSynchronization();
         }
+    }
+
+    @Test
+    @DisplayName("waitTimeout=0 即非阻塞尝试：拿不到立即失败，可被调用方捕获降级")
+    void executeWithLocks_zeroWaitTimeout_nonBlockingTry() throws InterruptedException {
+        when(redissonClient.getLock("p1")).thenReturn(lock1);
+        when(lock1.tryLock(eq(0L), anyLong(), any(TimeUnit.class))).thenReturn(false);
+
+        assertThatThrownBy(() -> adapter.executeWithLocks(List.of("p1"), 0, () -> "should-not-run"))
+                .isInstanceOf(LockAcquisitionException.class);
+        verify(lock1, never()).unlock();
     }
 }

@@ -20,32 +20,12 @@ class SearchToolRegistryTest {
         }
 
         @Override
-        public String description() {
-            return "dummy tool";
-        }
-
-        @Override
-        public SearchToolKind kind() {
-            return SearchToolKind.RULE;
-        }
-
-        @Override
         public CompletableFuture<String> run(SearchToolContext context) {
             return CompletableFuture.completedFuture("ok");
         }
     };
 
     private static final SearchToolContext CTX = new SearchToolContext("找电脑", List.<ProductReadModel>of(), "");
-
-    @Test
-    @DisplayName("自动收集所有工具 -> all() 返回全部")
-    void registry_collectsAllTools() {
-        var registry = new SearchToolRegistry(List.of(DUMMY));
-
-        assertThat(registry.all()).hasSize(1).containsExactly(DUMMY);
-        assertThat(registry.contains("dummy")).isTrue();
-        assertThat(registry.contains("missing")).isFalse();
-    }
 
     @Test
     @DisplayName("get 按名字取工具 -> 执行正常")
@@ -65,16 +45,6 @@ class SearchToolRegistryTest {
             @Override
             public String name() {
                 return "dummy";
-            }
-
-            @Override
-            public String description() {
-                return "duplicate";
-            }
-
-            @Override
-            public SearchToolKind kind() {
-                return SearchToolKind.RULE;
             }
 
             @Override
@@ -99,20 +69,10 @@ class SearchToolRegistryTest {
     }
 
     @Test
-    @DisplayName("工具元数据完整性 -> name/description/kind 非空")
-    void tool_metadataComplete() {
-        assertThat(DUMMY.name()).isNotBlank();
-        assertThat(DUMMY.description()).isNotBlank();
-        assertThat(DUMMY.kind()).isNotNull();
-        assertThat(DUMMY.kind()).isEqualTo(SearchToolKind.RULE);
-    }
-
-    @Test
-    @DisplayName("空注册表 -> all() 为空集合，get 抛错")
+    @DisplayName("空注册表 -> get 抛错")
     void registry_emptyAllowed() {
         var registry = new SearchToolRegistry(List.of());
 
-        assertThat(registry.all()).isEmpty();
         assertThatThrownBy(() -> registry.get("anything")).isInstanceOf(NoSuchElementException.class);
     }
 }

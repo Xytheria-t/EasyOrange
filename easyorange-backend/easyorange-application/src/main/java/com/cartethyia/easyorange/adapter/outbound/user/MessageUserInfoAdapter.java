@@ -6,7 +6,6 @@ import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
@@ -18,14 +17,6 @@ import org.springframework.stereotype.Component;
 public class MessageUserInfoAdapter implements UserInfoPort {
 
     private final UserRepository userRepository;
-
-    @Override
-    public Optional<UserInfo> getUserInfo(String userId) {
-        if (userId == null) {
-            return Optional.empty();
-        }
-        return userRepository.findById(userId).map(this::toUserInfo);
-    }
 
     @Override
     public Map<String, UserInfo> getUserInfoMap(Collection<String> userIds) {

@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.admin.domain.port.AdminCategoryQueryPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
+import com.cartethyia.easyorange.product.application.port.cache.CategoryCachePort;
 import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import java.util.List;
@@ -25,6 +26,7 @@ public class AdminCategoryQueryAdapter implements AdminCategoryQueryPort {
 
     private final CategoryMapper categoryMapper;
     private final CategoryQueryRepository categoryQueryRepository;
+    private final CategoryCachePort categoryCachePort;
 
     @Override
     public CategoryRecord getCategory(String categoryId) {
@@ -78,6 +80,8 @@ public class AdminCategoryQueryAdapter implements AdminCategoryQueryPort {
                 .build();
 
         categoryMapper.insert(entity);
+        categoryCachePort.evictByLevel(level);
+        categoryCachePort.evictByParentId(parentId);
         return toCategoryRecord(entity);
     }
 
@@ -87,12 +91,18 @@ public class AdminCategoryQueryAdapter implements AdminCategoryQueryPort {
         if (entity == null || entity.getDelFlag() != 0) {
             throw BusinessException.of("分类不存在");
         }
+        Integer oldLevel = entity.getLevel();
+        String oldParentId = entity.getParentId();
         entity.setName(category.name());
         entity.setParentId(category.parentId());
         entity.setLevel(category.level());
         entity.setSortOrder(category.sortOrder());
         entity.setStatus(category.status());
         categoryMapper.updateById(entity);
+        categoryCachePort.evictByLevel(oldLevel);
+        categoryCachePort.evictByLevel(category.level());
+        categoryCachePort.evictByParentId(oldParentId);
+        categoryCachePort.evictByParentId(category.parentId());
     }
 
     @Override
@@ -103,6 +113,8 @@ public class AdminCategoryQueryAdapter implements AdminCategoryQueryPort {
         }
         entity.setDelFlag(2);
         categoryMapper.updateById(entity);
+        categoryCachePort.evictByLevel(entity.getLevel());
+        categoryCachePort.evictByParentId(entity.getParentId());
     }
 
     @Override

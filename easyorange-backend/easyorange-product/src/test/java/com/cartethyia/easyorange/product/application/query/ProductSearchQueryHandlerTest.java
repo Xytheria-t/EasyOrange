@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
@@ -107,45 +106,30 @@ class ProductSearchQueryHandlerTest {
     @Test
     @DisplayName("获取搜索历史应返回历史列表")
     void getMySearchHistory_shouldReturnHistory() {
-        TestSecurityUtil.setSecurityContext(1L);
-        try {
-            SearchHistoryReadModel history = new SearchHistoryReadModel("100", "手机", LocalDateTime.now());
-            when(productQueryRepository.findSearchHistoryByUserId("1", 10)).thenReturn(List.of(history));
+        SearchHistoryReadModel history = new SearchHistoryReadModel("100", "手机", LocalDateTime.now());
+        when(productQueryRepository.findSearchHistoryByUserId("1", 10)).thenReturn(List.of(history));
 
-            List<SearchHistoryReadModel> result = searchQueryHandler.getMySearchHistory(10);
+        List<SearchHistoryReadModel> result = searchQueryHandler.getMySearchHistory("1", 10);
 
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).id()).isEqualTo("100");
-            assertThat(result.get(0).keyword()).isEqualTo("手机");
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo("100");
+        assertThat(result.get(0).keyword()).isEqualTo("手机");
     }
 
     @Test
     @DisplayName("清除搜索历史应委托给 ProductQueryRepository")
     void clearMySearchHistory_shouldDelegate() {
-        TestSecurityUtil.setSecurityContext(1L);
-        try {
-            searchQueryHandler.clearMySearchHistory();
+        searchQueryHandler.clearMySearchHistory("1");
 
-            verify(productQueryRepository).clearSearchHistory("1");
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
+        verify(productQueryRepository).clearSearchHistory("1");
     }
 
     @Test
     @DisplayName("删除单条搜索历史应委托给 ProductQueryRepository")
     void deleteSearchHistory_shouldDelegate() {
-        TestSecurityUtil.setSecurityContext(1L);
-        try {
-            searchQueryHandler.deleteSearchHistory("100");
+        searchQueryHandler.deleteSearchHistory("1", "100");
 
-            verify(productQueryRepository).deleteSearchHistoryById("100", "1");
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
+        verify(productQueryRepository).deleteSearchHistoryById("100", "1");
     }
 
     @Test
@@ -177,14 +161,9 @@ class ProductSearchQueryHandlerTest {
     @Test
     @DisplayName("记录搜索应委托给 ProductQueryRepository")
     void recordSearch_shouldDelegate() {
-        TestSecurityUtil.setSecurityContext(1L);
-        try {
-            searchQueryHandler.recordSearch("手机");
+        searchQueryHandler.recordSearch("1", "手机");
 
-            verify(productQueryRepository).saveSearchHistory("1", "手机");
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
+        verify(productQueryRepository).saveSearchHistory("1", "手机");
     }
 
     /** 构造最小 ObjectProvider：bean 为 null 时 getIfAvailable() 返回 null（模拟可选依赖缺失）。 */

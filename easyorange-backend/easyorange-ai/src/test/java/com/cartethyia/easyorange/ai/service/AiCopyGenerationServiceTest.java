@@ -129,19 +129,8 @@ class AiCopyGenerationServiceTest {
     private static final com.cartethyia.easyorange.ai.prompt.PromptRegistry EMPTY_REGISTRY =
             new com.cartethyia.easyorange.ai.prompt.PromptRegistry() {
                 @Override
-                public java.util.Optional<com.cartethyia.easyorange.ai.prompt.PromptTemplate> get(
-                        String name, String version) {
-                    return java.util.Optional.empty();
-                }
-
-                @Override
                 public java.util.Optional<com.cartethyia.easyorange.ai.prompt.PromptTemplate> getLatest(String name) {
                     return java.util.Optional.empty();
-                }
-
-                @Override
-                public java.util.List<com.cartethyia.easyorange.ai.prompt.PromptTemplate> listVersions(String name) {
-                    return java.util.List.of();
                 }
             };
 }

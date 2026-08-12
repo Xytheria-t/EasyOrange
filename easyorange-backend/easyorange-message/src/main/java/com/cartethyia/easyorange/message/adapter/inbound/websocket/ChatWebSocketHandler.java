@@ -38,7 +38,8 @@ public class ChatWebSocketHandler {
                 payload.getContent(),
                 payload.getBusinessId(),
                 payload.getConversationId());
-        messageCommandHandler.handle(command);
+        // STOMP 线程 SecurityContextHolder 不可用，显式传主身份
+        messageCommandHandler.handle(userId, command);
 
         String dest = "/queue/chat/" + payload.getConversationId();
         messagingTemplate.convertAndSend(dest, payload);

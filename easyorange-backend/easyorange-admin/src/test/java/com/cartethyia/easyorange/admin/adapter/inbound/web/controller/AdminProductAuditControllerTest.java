@@ -15,13 +15,18 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAu
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.admin.service.AdminProductAuditService;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -35,9 +40,25 @@ class AdminProductAuditControllerTest {
     @MockitoBean
     private AdminProductAuditService adminProductAuditService;
 
+    private static final String USER_ID = "10";
+
+    @BeforeEach
+    void setUp() {
+        var authUser = new AuthUser(USER_ID, "admin");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(authUser, null, List.of()));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
     void auditProduct_approve_shouldSucceed() throws Exception {
-        doNothing().when(adminProductAuditService).auditProduct(eq("1"), any(ProductAuditRequest.class));
+        doNothing()
+                .when(adminProductAuditService)
+                .auditProduct(any(AuthUser.class), eq("1"), any(ProductAuditRequest.class));
 
         mockMvc.perform(put("/api/admin/products/1/audit")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -48,7 +69,9 @@ class AdminProductAuditControllerTest {
 
     @Test
     void auditProduct_rejectWithReason_shouldSucceed() throws Exception {
-        doNothing().when(adminProductAuditService).auditProduct(eq("1"), any(ProductAuditRequest.class));
+        doNothing()
+                .when(adminProductAuditService)
+                .auditProduct(any(AuthUser.class), eq("1"), any(ProductAuditRequest.class));
 
         mockMvc.perform(
                         put("/api/admin/products/1/audit")
@@ -70,7 +93,8 @@ class AdminProductAuditControllerTest {
     @Test
     void batchAudit_shouldReturnResult() throws Exception {
         var result = new BatchAuditResultResponse(3, 2, 1, List.of("商品ID 3: 不存在"));
-        when(adminProductAuditService.batchAudit(any(BatchAuditRequest.class))).thenReturn(result);
+        when(adminProductAuditService.batchAudit(any(AuthUser.class), any(BatchAuditRequest.class)))
+                .thenReturn(result);
 
         mockMvc.perform(post("/api/admin/products/batch-audit")
                         .contentType(MediaType.APPLICATION_JSON)

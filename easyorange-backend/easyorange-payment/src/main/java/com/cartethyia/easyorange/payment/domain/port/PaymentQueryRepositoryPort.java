@@ -9,8 +9,6 @@ public interface PaymentQueryRepositoryPort {
 
     Optional<Payment> findAggregateById(String id);
 
-    Optional<Payment> findAggregateByPaymentNo(String paymentNo);
-
     Optional<Payment> findAggregateByOrderId(String orderId);
 
     /**

@@ -10,5 +10,5 @@ public interface ProductImageMapper extends BaseMapper<ProductImageDO> {
 
     void batchInsert(@Param("images") List<ProductImageDO> images);
 
-    void deleteByProductIdAndUrls(@Param("productId") String productId, @Param("urls") List<String> urls);
+    void deleteByProductId(@Param("productId") String productId);
 }

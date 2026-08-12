@@ -2,19 +2,17 @@ package com.cartethyia.easyorange.framework.metrics;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Component;
 
 /**
  * 业务指标服务 — 记录核心业务流程的 Metrics 数据，
  * 暴露给 Prometheus 抓取（/actuator/prometheus）。
+ * <p>
+ * 计数器由 {@code BusinessMetricsEventListener}（基于领域事件）和
+ * 命令边界（举报提交）驱动，随业务动作递增。
  */
 @Component
 public class BusinessMetricsService {
-
-    private final MeterRegistry meterRegistry;
 
     // ── 计数器 ──────────────────────────────────────────────────────
     private final Counter userRegistrationCounter;
@@ -23,14 +21,7 @@ public class BusinessMetricsService {
     private final Counter paymentCompletedCounter;
     private final Counter reportFiledCounter;
 
-    // ── 仪表 ────────────────────────────────────────────────────────
-    private final AtomicLong activeUsersGauge;
-
-    // ── 计时器 ──────────────────────────────────────────────────────
-    private final Timer orderProcessingTimer;
-
     public BusinessMetricsService(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
 
         // 注册计数器
         this.userRegistrationCounter = Counter.builder("easyorange.users.registered")
@@ -51,18 +42,6 @@ public class BusinessMetricsService {
 
         this.reportFiledCounter = Counter.builder("easyorange.reports.filed")
                 .description("Total number of reports filed")
-                .register(meterRegistry);
-
-        // 注册仪表 — 活跃用户数
-        this.activeUsersGauge = new AtomicLong(0);
-        io.micrometer.core.instrument.Gauge.builder("easyorange.users.active", activeUsersGauge, AtomicLong::get)
-                .description("Current number of active users")
-                .register(meterRegistry);
-
-        // 注册计时器
-        this.orderProcessingTimer = Timer.builder("easyorange.orders.processing.time")
-                .description("Time taken to process an order")
-                .publishPercentiles(0.5, 0.95, 0.99)
                 .register(meterRegistry);
     }
 
@@ -91,24 +70,5 @@ public class BusinessMetricsService {
     /** 举报提交 +1 */
     public void incrementReportFiled() {
         reportFiledCounter.increment();
-    }
-
-    // ── 仪表方法 ────────────────────────────────────────────────────
-
-    /** 设置活跃用户数 */
-    public void setActiveUsers(long count) {
-        activeUsersGauge.set(count);
-    }
-
-    // ── 计时器方法 ──────────────────────────────────────────────────
-
-    /** 记录订单处理耗时 */
-    public void recordOrderProcessingTime(long duration, TimeUnit unit) {
-        orderProcessingTimer.record(duration, unit);
-    }
-
-    /** 获取订单处理计时器（适合 try-with-resources 或 lambda 采样） */
-    public Timer getOrderProcessingTimer() {
-        return orderProcessingTimer;
     }
 }

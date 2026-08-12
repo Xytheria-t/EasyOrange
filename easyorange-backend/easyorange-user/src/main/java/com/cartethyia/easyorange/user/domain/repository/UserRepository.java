@@ -29,10 +29,6 @@ public interface UserRepository {
 
     void update(User user);
 
-    void updateLoginInfo(String userId, String loginIp);
-
-    void deleteById(String id);
-
     // ========== Aggregate methods ==========
 
     long count();
