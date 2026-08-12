@@ -12,7 +12,7 @@ import org.springframework.context.ApplicationContext;
  * 分布式锁收敛守卫：order/payment/超时任务共用 framework 的单一锁端口，
  * 运行时必须恰好一个 {@link DistributedLockPort} Bean（防止重复实现回归）。
  */
-class DistributedLockBeanTest extends AbstractIntegrationTest {
+class DistributedLockBeanIT extends AbstractIntegrationTest {
 
     @Autowired
     private ApplicationContext applicationContext;
