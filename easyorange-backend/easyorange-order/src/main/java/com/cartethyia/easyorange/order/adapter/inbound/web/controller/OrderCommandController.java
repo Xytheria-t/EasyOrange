@@ -26,9 +26,11 @@ public class OrderCommandController {
     private final OrderCommandAssembler assembler;
 
     @PostMapping
-    public Result<String> createOrder(@AuthenticationPrincipal AuthUser user, @Valid @RequestBody CreateOrderRequest request) {
-        return Result.success(
-                commandHandler.handle(user.userId(), assembler.toCreateCommand(request)).orderId());
+    public Result<String> createOrder(
+            @AuthenticationPrincipal AuthUser user, @Valid @RequestBody CreateOrderRequest request) {
+        return Result.success(commandHandler
+                .handle(user.userId(), assembler.toCreateCommand(request))
+                .orderId());
     }
 
     @PutMapping("/{id}/cancel")

@@ -73,7 +73,9 @@ public class ProductController {
 
     @PutMapping("/{id}")
     public Result<Void> updateProduct(
-            @AuthenticationPrincipal AuthUser user, @PathVariable String id, @Valid @RequestBody ProductUpdateRequest request) {
+            @AuthenticationPrincipal AuthUser user,
+            @PathVariable String id,
+            @Valid @RequestBody ProductUpdateRequest request) {
         var cmd = new UpdateProductCommand(
                 id,
                 request.categoryId(),

@@ -53,8 +53,7 @@ public class MessageCommandController {
     }
 
     @PutMapping("/read")
-    public Result<Void> markAsReadBatch(
-            @AuthenticationPrincipal AuthUser user, @RequestBody List<String> ids) {
+    public Result<Void> markAsReadBatch(@AuthenticationPrincipal AuthUser user, @RequestBody List<String> ids) {
         commandHandler.handle(user.userId(), new MarkAsReadBatchCommand(ids));
         return Result.success();
     }

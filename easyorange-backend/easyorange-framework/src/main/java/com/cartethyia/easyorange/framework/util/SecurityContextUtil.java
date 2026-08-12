@@ -3,12 +3,11 @@ package com.cartethyia.easyorange.framework.util;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.security.AuthUser;
+import java.util.Optional;
 import lombok.experimental.UtilityClass;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-import java.util.Optional;
 
 /**
  * 当前登录用户访问器。
@@ -63,9 +62,9 @@ public class SecurityContextUtil {
      */
     private static Optional<Authentication> getAuthentication() {
         return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
-            .filter(Authentication::isAuthenticated)
-            // AnonymousAuthenticationToken.isAuthenticated() == true，必须显式排除
-            .filter(auth -> !(auth instanceof AnonymousAuthenticationToken));
+                .filter(Authentication::isAuthenticated)
+                // AnonymousAuthenticationToken.isAuthenticated() == true，必须显式排除
+                .filter(auth -> !(auth instanceof AnonymousAuthenticationToken));
     }
 
     /**

@@ -86,8 +86,7 @@ class ChatWebSocketHandlerTest {
 
             verify(messagingTemplate).convertAndSend(eq("/queue/chat/" + CONVERSATION_ID), eq(wsMessage));
             verify(messagingTemplate)
-                    .convertAndSendToUser(
-                            eq(String.valueOf(RECEIVER_ID)), eq("/queue/unread-count"), any(Map.class));
+                    .convertAndSendToUser(eq(String.valueOf(RECEIVER_ID)), eq("/queue/unread-count"), any(Map.class));
         }
 
         @Test

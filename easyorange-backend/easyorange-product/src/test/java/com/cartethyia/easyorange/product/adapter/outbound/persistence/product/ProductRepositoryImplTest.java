@@ -53,12 +53,14 @@ class ProductRepositoryImplTest {
 
         assertThat(saved.getId().value()).isEqualTo("prod-id");
 
-        verify(productMapper).insert(argThat((ProductDO entity) -> entity.getId().equals("prod-id")));
+        verify(productMapper)
+                .insert(argThat((ProductDO entity) -> entity.getId().equals("prod-id")));
 
-        verify(productDetailMapper).insert(argThat((ProductDetailDO d) -> d.getProductId().equals("prod-id")));
+        verify(productDetailMapper)
+                .insert(argThat((ProductDetailDO d) -> d.getProductId().equals("prod-id")));
 
-        verify(productImageMapper).batchInsert(argThat(images ->
-                images.size() == 1
+        verify(productImageMapper)
+                .batchInsert(argThat(images -> images.size() == 1
                         && images.getFirst().getId().equals("img-id-1")
                         && images.getFirst().getProductId().equals("prod-id")));
     }
@@ -74,8 +76,9 @@ class ProductRepositoryImplTest {
 
         verify(productMapper).updateById(any(ProductDO.class));
         verify(productImageMapper).deleteByProductId("1");
-        verify(productImageMapper).batchInsert(argThat(images ->
-                images.size() == 1 && images.getFirst().getId().equals("img-id-2")));
+        verify(productImageMapper)
+                .batchInsert(argThat(images ->
+                        images.size() == 1 && images.getFirst().getId().equals("img-id-2")));
     }
 
     @Test
@@ -84,7 +87,6 @@ class ProductRepositoryImplTest {
         when(productMapper.updateById(any(ProductDO.class))).thenReturn(0);
 
         var product = ProductTestFixture.defaultProduct();
-        assertThatThrownBy(() -> productRepository.save(product))
-                .isInstanceOf(ConcurrentUpdateException.class);
+        assertThatThrownBy(() -> productRepository.save(product)).isInstanceOf(ConcurrentUpdateException.class);
     }
 }

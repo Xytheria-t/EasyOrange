@@ -83,7 +83,8 @@ class ProfileAppServiceTest {
             User user = UserTestFixture.normalUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-            profileAppService.updateUserInfo(USER_ID, new UpdateCommand(null, "new@example.com", null, null, null, null));
+            profileAppService.updateUserInfo(
+                    USER_ID, new UpdateCommand(null, "new@example.com", null, null, null, null));
         }
 
         @Test

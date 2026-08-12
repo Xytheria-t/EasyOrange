@@ -28,12 +28,14 @@ public class OrderQueryController {
     }
 
     @GetMapping("/my")
-    public Result<PageResult<OrderVO>> getMyOrders(@AuthenticationPrincipal AuthUser user, @Valid QueryOrderRequest request) {
+    public Result<PageResult<OrderVO>> getMyOrders(
+            @AuthenticationPrincipal AuthUser user, @Valid QueryOrderRequest request) {
         return Result.success(queryHandler.getMyOrders(user.userId(), toScopedListQuery(request)));
     }
 
     @GetMapping("/sold")
-    public Result<PageResult<OrderVO>> getSoldOrders(@AuthenticationPrincipal AuthUser user, @Valid QueryOrderRequest request) {
+    public Result<PageResult<OrderVO>> getSoldOrders(
+            @AuthenticationPrincipal AuthUser user, @Valid QueryOrderRequest request) {
         return Result.success(queryHandler.getSoldOrders(user.userId(), toScopedListQuery(request)));
     }
 

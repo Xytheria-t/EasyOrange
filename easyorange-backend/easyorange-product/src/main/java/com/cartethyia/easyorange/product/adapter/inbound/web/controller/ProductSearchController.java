@@ -75,8 +75,7 @@ public class ProductSearchController {
 
     @GetMapping("/history")
     public Result<List<SearchHistoryResponse>> getMySearchHistory(
-            @AuthenticationPrincipal AuthUser user,
-            @RequestParam(defaultValue = "20") @Max(50) Integer limit) {
+            @AuthenticationPrincipal AuthUser user, @RequestParam(defaultValue = "20") @Max(50) Integer limit) {
         List<SearchHistoryReadModel> histories = searchQueryHandler.getMySearchHistory(user.userId(), limit);
         var responses = histories.stream()
                 .map(h -> SearchHistoryResponse.builder()
@@ -95,8 +94,7 @@ public class ProductSearchController {
     }
 
     @DeleteMapping("/history/{historyId}")
-    public Result<Void> deleteSearchHistory(
-            @AuthenticationPrincipal AuthUser user, @PathVariable String historyId) {
+    public Result<Void> deleteSearchHistory(@AuthenticationPrincipal AuthUser user, @PathVariable String historyId) {
         searchQueryHandler.deleteSearchHistory(user.userId(), historyId);
         return Result.success();
     }

@@ -148,8 +148,7 @@ class SecurityContextUtilTest {
         @Test
         @DisplayName("clearContext should clear SecurityContextHolder")
         void clearContext_shouldClearSecurityContextHolder() {
-            SecurityContextHolder.getContext().setAuthentication(authenticatedToken(
-                    new AuthUser("1", "testuser")));
+            SecurityContextHolder.getContext().setAuthentication(authenticatedToken(new AuthUser("1", "testuser")));
 
             SecurityContextUtil.clearContext();
 

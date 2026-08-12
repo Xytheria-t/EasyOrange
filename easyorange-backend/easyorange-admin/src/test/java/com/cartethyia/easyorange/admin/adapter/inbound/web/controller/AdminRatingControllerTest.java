@@ -43,8 +43,8 @@ class AdminRatingControllerTest {
     @BeforeEach
     void setUp() {
         var authUser = new AuthUser(USER_ID, "admin");
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(authUser, null, List.of()));
+        SecurityContextHolder.getContext()
+                .setAuthentication(new UsernamePasswordAuthenticationToken(authUser, null, List.of()));
     }
 
     @AfterEach

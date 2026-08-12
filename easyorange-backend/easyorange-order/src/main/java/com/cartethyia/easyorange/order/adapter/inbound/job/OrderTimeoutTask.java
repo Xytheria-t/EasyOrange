@@ -46,8 +46,7 @@ public class OrderTimeoutTask {
             boolean cancelledOrder = false;
             try {
                 // waitTimeout=0 非阻塞获取：拿不到即跳过，不阻塞扫描；watchdog 覆盖单次取消的全部时长
-                cancelledOrder = lockPort.executeWithLocks(
-                        List.of(lockKey), 0L, () -> cancelExpiredOrder(aggregate));
+                cancelledOrder = lockPort.executeWithLocks(List.of(lockKey), 0L, () -> cancelExpiredOrder(aggregate));
             } catch (LockAcquisitionException e) {
                 log.warn("超时取消获取锁失败/被中断，跳过 orderId={}", aggregate.id().value());
                 continue;

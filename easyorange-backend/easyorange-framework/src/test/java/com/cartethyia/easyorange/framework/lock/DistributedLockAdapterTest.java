@@ -58,8 +58,8 @@ class DistributedLockAdapterTest {
         when(lock2.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
 
         AtomicBoolean executed = new AtomicBoolean(false);
-        String result = adapter.executeWithLocks(
-                List.of("eo:order:lock:product:100", "eo:order:lock:product:200"), 10, () -> {
+        String result =
+                adapter.executeWithLocks(List.of("eo:order:lock:product:100", "eo:order:lock:product:200"), 10, () -> {
                     executed.set(true);
                     return "ok";
                 });

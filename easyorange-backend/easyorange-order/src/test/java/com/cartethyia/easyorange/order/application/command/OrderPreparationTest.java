@@ -58,8 +58,8 @@ class OrderPreparationTest {
     }
 
     private static ProductDetail detail(String productId) {
-        return new ProductDetail(productId, "资产-" + productId, new BigDecimal("99.99"), "ONLINE",
-                List.of("img1"), "描述", "A");
+        return new ProductDetail(
+                productId, "资产-" + productId, new BigDecimal("99.99"), "ONLINE", List.of("img1"), "描述", "A");
     }
 
     @Test
@@ -67,8 +67,7 @@ class OrderPreparationTest {
     void prepare_validItems_returnsSellerAndEnrichedOrderItems() {
         when(productOrderPort.getSnapshots(any()))
                 .thenReturn(List.of(snapshot("100", SELLER_ID, true, 10), snapshot("101", SELLER_ID, true, 3)));
-        when(productQueryPort.getProductsByIds(any()))
-                .thenReturn(List.of(detail("100"), detail("101")));
+        when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(detail("100"), detail("101")));
 
         var result = preparation.prepareOrderItems(List.of(item("100", 2), item("101", 1)));
 

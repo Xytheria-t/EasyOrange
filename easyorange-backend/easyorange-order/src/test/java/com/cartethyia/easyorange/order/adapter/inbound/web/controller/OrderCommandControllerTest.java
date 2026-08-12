@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.order.adapter.inbound.web.assembler.OrderCommandAssembler;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.CancelOrderRequest;
 import com.cartethyia.easyorange.order.application.command.CancelOrderCommand;
@@ -20,7 +21,6 @@ import com.cartethyia.easyorange.order.application.command.PayOrderCommand;
 import com.cartethyia.easyorange.order.application.command.RefundOrderCommand;
 import com.cartethyia.easyorange.order.application.command.ShipOrderCommand;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
-import com.cartethyia.easyorange.common.security.AuthUser;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,8 +60,8 @@ class OrderCommandControllerTest {
     @BeforeEach
     void setUp() {
         var authUser = new AuthUser(USER_ID, "tester");
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(authUser, null, List.of()));
+        SecurityContextHolder.getContext()
+                .setAuthentication(new UsernamePasswordAuthenticationToken(authUser, null, List.of()));
     }
 
     @AfterEach

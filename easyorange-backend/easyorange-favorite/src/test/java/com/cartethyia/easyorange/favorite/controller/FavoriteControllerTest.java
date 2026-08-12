@@ -144,7 +144,8 @@ class FavoriteControllerTest {
     @DisplayName("批量检查收藏状态")
     void testBatchCheckFavorited() {
         Map<String, Boolean> checkResult = Map.of("2001", true, "2002", false);
-        when(favoriteService.batchCheckFavorited(USER_ID, List.of("2001", "2002"))).thenReturn(checkResult);
+        when(favoriteService.batchCheckFavorited(USER_ID, List.of("2001", "2002")))
+                .thenReturn(checkResult);
 
         BatchCheckRequest request = new BatchCheckRequest();
         request.setProductIds(List.of("2001", "2002"));

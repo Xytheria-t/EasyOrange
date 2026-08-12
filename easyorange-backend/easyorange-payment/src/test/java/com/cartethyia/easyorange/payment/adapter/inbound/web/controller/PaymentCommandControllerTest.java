@@ -62,7 +62,8 @@ class PaymentCommandControllerTest {
         @DisplayName("创建支付成功返回支付 ID")
         void createPayment_success() {
             CreatePaymentRequest request = new CreatePaymentRequest("2001", new BigDecimal("100.00"), "WECHAT", null);
-            when(commandHandler.handle(eq(USER_ID), any(CreatePaymentCommand.class))).thenReturn("1001");
+            when(commandHandler.handle(eq(USER_ID), any(CreatePaymentCommand.class)))
+                    .thenReturn("1001");
 
             Result<PaymentResponse> result = controller.createPayment(currentUser(), request);
 

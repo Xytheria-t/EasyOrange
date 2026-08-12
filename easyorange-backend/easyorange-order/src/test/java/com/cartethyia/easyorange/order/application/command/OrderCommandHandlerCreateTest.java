@@ -89,8 +89,8 @@ class OrderCommandHandlerCreateTest {
                 .thenAnswer(inv -> ((DistributedLockPort.LockOperation<?>) inv.getArgument(2)).execute());
         // 详情读源默认返回商品 100 的详情（OrderPreparation 对缺失详情抛错回滚，成功路径必须给出详情）
         when(productQueryPort.getProductsByIds(any()))
-                .thenReturn(List.of(new ProductDetail("100", "iPhone 15", new BigDecimal("99.99"), "ONLINE",
-                        List.of("img1"), "描述", "A")));
+                .thenReturn(List.of(new ProductDetail(
+                        "100", "iPhone 15", new BigDecimal("99.99"), "ONLINE", List.of("img1"), "描述", "A")));
         when(idGenerator.generateId()).thenReturn("018f7c1d-0000-7000-8000-000000000001");
     }
 
@@ -150,9 +150,7 @@ class OrderCommandHandlerCreateTest {
     @DisplayName("获取分布式锁失败时抛异常（基础设施异常在用例边界映射为 OrderCreationException）")
     void createOrder_lockFailed_throws() {
         // doThrow 风格：避免 when() 内先调用该方法命中 setUp 的 thenAnswer 桩（其 any() 参数此时为 null）
-        doThrow(new LockAcquisitionException("busy"))
-                .when(lockPort)
-                .executeWithLocks(anyList(), anyLong(), any());
+        doThrow(new LockAcquisitionException("busy")).when(lockPort).executeWithLocks(anyList(), anyLong(), any());
 
         CreateOrderCommand command =
                 new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", null, null);

@@ -24,7 +24,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -193,7 +192,8 @@ class OrderQueryHandlerTest {
             PageResult<OrderVO> cached = PageResult.of(List.of(mockOrderVO), 1L, 1, 10);
             when(orderCachePort.getOrderList(any())).thenReturn(Optional.of(cached));
 
-            PageResult<OrderVO> result = handler.getMyOrders(BUYER_ID, new OrderListQuery(null, null, null, null, 1, 10));
+            PageResult<OrderVO> result =
+                    handler.getMyOrders(BUYER_ID, new OrderListQuery(null, null, null, null, 1, 10));
 
             assertThat(result).isSameAs(cached);
             verify(orderReadRepository, never()).findPage(any());

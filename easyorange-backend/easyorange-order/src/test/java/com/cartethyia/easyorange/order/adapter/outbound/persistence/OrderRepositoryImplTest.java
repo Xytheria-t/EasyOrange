@@ -39,8 +39,8 @@ class OrderRepositoryImplTest {
         orderRepository.save(order);
 
         verify(orderMapper).insert(argThat((OrderDO o) -> o.getId().equals("1")));
-        verify(orderItemMapper).batchInsert(argThat(items ->
-                items.size() == 1
+        verify(orderItemMapper)
+                .batchInsert(argThat(items -> items.size() == 1
                         && items.getFirst().getOrderId().equals("1")
                         && items.getFirst().getId().equals("1")));
     }
@@ -54,7 +54,8 @@ class OrderRepositoryImplTest {
 
         verify(orderMapper).updateById(any(OrderDO.class));
         verify(orderItemMapper).deleteByOrderId("1");
-        verify(orderItemMapper).batchInsert(argThat(items ->
-                items.size() == 1 && items.getFirst().getOrderId().equals("1")));
+        verify(orderItemMapper)
+                .batchInsert(argThat(items ->
+                        items.size() == 1 && items.getFirst().getOrderId().equals("1")));
     }
 }

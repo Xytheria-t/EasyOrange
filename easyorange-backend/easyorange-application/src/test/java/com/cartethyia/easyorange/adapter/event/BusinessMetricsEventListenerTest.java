@@ -29,8 +29,10 @@ class BusinessMetricsEventListenerTest {
         listener.onPaymentSucceeded(new PaymentSucceededEvent("pay1", "tx1"));
 
         assertThat(meterRegistry.counter("easyorange.users.registered").count()).isEqualTo(2);
-        assertThat(meterRegistry.counter("easyorange.products.published").count()).isEqualTo(1);
+        assertThat(meterRegistry.counter("easyorange.products.published").count())
+                .isEqualTo(1);
         assertThat(meterRegistry.counter("easyorange.orders.created").count()).isEqualTo(1);
-        assertThat(meterRegistry.counter("easyorange.payments.completed").count()).isEqualTo(1);
+        assertThat(meterRegistry.counter("easyorange.payments.completed").count())
+                .isEqualTo(1);
     }
 }

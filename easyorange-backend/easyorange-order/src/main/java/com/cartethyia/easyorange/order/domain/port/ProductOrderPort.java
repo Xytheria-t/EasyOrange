@@ -17,8 +17,7 @@ public interface ProductOrderPort {
 
     void markAsSold(String productId);
 
-    record ProductSnapshot(
-            String productId, String sellerId, BigDecimal price, boolean isOnline, int stockQuantity) {
+    record ProductSnapshot(String productId, String sellerId, BigDecimal price, boolean isOnline, int stockQuantity) {
         public boolean hasStock() {
             return stockQuantity > 0;
         }
