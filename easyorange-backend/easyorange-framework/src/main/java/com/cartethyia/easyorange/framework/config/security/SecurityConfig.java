@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.framework.config.security;
 
+import com.cartethyia.easyorange.common.enums.IResultCode;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
@@ -12,6 +13,7 @@ import com.cartethyia.easyorange.framework.web.filter.TokenRevocationFilter;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import com.nimbusds.jwt.proc.ExpiredJWTException;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,6 +39,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.converter.RsaKeyConverters;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.jwt.BadJwtException;
@@ -86,8 +89,11 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint((_, response, _) -> errorResponseWriter.write(
-                                response, HttpServletResponse.SC_UNAUTHORIZED, ResultCode.UNAUTHORIZED, "认证失败，请重新登录"))
+                        .authenticationEntryPoint((_, response, ex) -> {
+                            var code = resolveAuthFailureCode(ex);
+                            errorResponseWriter.write(
+                                    response, HttpServletResponse.SC_UNAUTHORIZED, code, code.getMessage());
+                        })
                         .accessDeniedHandler((_, response, _) -> errorResponseWriter.write(
                                 response, HttpServletResponse.SC_FORBIDDEN, ResultCode.FORBIDDEN, "权限不足")))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -203,6 +209,29 @@ public class SecurityConfig {
     }
 
     // ========== Private Helpers ==========
+
+    /**
+     * 认证失败 → 业务错误码：JWT 过期（Spring {@code BadJwtException("JWT expired at ...")}
+     * 消息或 nimbus {@link ExpiredJWTException}，两层 cause 链均检测）→ A04011「登录已过期」，
+     * 其余（无效/缺失/吊销/刷新令牌误用）→ A0401「未登录」。
+     */
+    static IResultCode resolveAuthFailureCode(AuthenticationException ex) {
+        return isExpiredToken(ex) ? ResultCode.TOKEN_EXPIRED : ResultCode.UNAUTHORIZED;
+    }
+
+    private static boolean isExpiredToken(AuthenticationException ex) {
+        for (Throwable t = ex; t != null; t = t.getCause()) {
+            if (t instanceof ExpiredJWTException) {
+                return true;
+            }
+            if (t instanceof BadJwtException bad
+                    && bad.getMessage() != null
+                    && bad.getMessage().startsWith("JWT expired")) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
         return jwt -> {

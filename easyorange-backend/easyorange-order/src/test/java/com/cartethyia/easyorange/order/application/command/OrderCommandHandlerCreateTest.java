@@ -21,8 +21,8 @@ import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
-import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
-import com.cartethyia.easyorange.order.domain.port.ProductOrderPort.ProductSnapshot;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort.ProductSnapshot;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
@@ -46,7 +46,7 @@ class OrderCommandHandlerCreateTest {
     private OrderRepository orderRepository;
 
     @Mock
-    private ProductOrderPort productOrderPort;
+    private ProductInventoryPort productInventoryPort;
 
     @Mock
     private PaymentGatewayPort paymentGatewayPort;
@@ -73,7 +73,7 @@ class OrderCommandHandlerCreateTest {
 
     @BeforeEach
     void setUp() {
-        var preparationService = new OrderPreparation(productOrderPort, productQueryPort, idGenerator);
+        var preparationService = new OrderPreparation(productInventoryPort, productQueryPort, idGenerator);
         commandHandler = new OrderCommandHandler(
                 orderRepository,
                 eventPublisher,
@@ -81,7 +81,7 @@ class OrderCommandHandlerCreateTest {
                 lockPort,
                 paymentGatewayPort,
                 preparationService,
-                productOrderPort,
+                productInventoryPort,
                 idGenerator);
 
         // 默认锁端口正常：直接执行锁内操作（真实行为由 DistributedLockAdapterTest 覆盖）
@@ -101,7 +101,7 @@ class OrderCommandHandlerCreateTest {
                 new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", "备注", null);
 
         ProductSnapshot snapshot = new ProductSnapshot("100", SELLER_ID, new BigDecimal("99.99"), true, 10);
-        when(productOrderPort.getSnapshots(any())).thenReturn(List.of(snapshot));
+        when(productInventoryPort.getSnapshots(any())).thenReturn(List.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenReturn("1");
 
         CreateOrderResult result = commandHandler.handle(BUYER_ID, command);
@@ -111,7 +111,7 @@ class OrderCommandHandlerCreateTest {
         verify(paymentGatewayPort).createPayment(any());
         verify(orderRepository).save(any(Order.class));
         verify(eventPublisher).publish(any());
-        verify(productOrderPort).decreaseStock("100", 1);
+        verify(productInventoryPort).decreaseStock("100", 1);
         verify(lockPort).executeWithLocks(anyList(), anyLong(), any());
     }
 
@@ -122,14 +122,14 @@ class OrderCommandHandlerCreateTest {
                 new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", null, null);
 
         ProductSnapshot snapshot = new ProductSnapshot("100", SELLER_ID, new BigDecimal("99.99"), true, 10);
-        when(productOrderPort.getSnapshots(any())).thenReturn(List.of(snapshot));
+        when(productInventoryPort.getSnapshots(any())).thenReturn(List.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenThrow(new RuntimeException("支付失败"));
 
         assertThatThrownBy(() -> commandHandler.handle(BUYER_ID, command))
                 .isInstanceOf(PaymentGatewayAdapterException.class)
                 .hasMessageContaining("支付失败");
         // 无事务内反向补偿：订单/库存/支付随事务整体回滚
-        verify(productOrderPort, never()).restoreStock(anyString(), anyInt());
+        verify(productInventoryPort, never()).restoreStock(anyString(), anyInt());
         verify(orderRepository, never()).update(any(Order.class));
     }
 
@@ -139,7 +139,7 @@ class OrderCommandHandlerCreateTest {
         CreateOrderCommand command =
                 new CreateOrderCommand(List.of(new CreateOrderItem("999", 1)), "北京市朝阳区", "13800138000", null, null);
 
-        when(productOrderPort.getSnapshots(any())).thenReturn(List.of());
+        when(productInventoryPort.getSnapshots(any())).thenReturn(List.of());
 
         assertThatThrownBy(() -> commandHandler.handle(BUYER_ID, command))
                 .isInstanceOf(OrderDomainException.class)

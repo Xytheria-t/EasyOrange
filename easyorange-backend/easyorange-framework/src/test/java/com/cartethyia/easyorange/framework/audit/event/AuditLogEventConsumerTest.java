@@ -89,7 +89,6 @@ class AuditLogEventConsumerTest {
 
             consumer.onAuditLog(event, buildMessage());
 
-            verify(idempotencyChecker, never()).isDuplicate(any(), any());
             verify(idempotencyChecker, never()).tryMark(any(), any());
         }
 

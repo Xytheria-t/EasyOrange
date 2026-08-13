@@ -2,6 +2,8 @@ package com.cartethyia.easyorange.ai.interceptor;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
+import com.cartethyia.easyorange.common.enums.ResultCode;
+import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
@@ -12,7 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -71,7 +72,8 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
                     }
                 }
 
-                writeJson(response, 429, Map.of("success", false, "message", "AI 服务繁忙，请稍后重试"));
+                // 与全局约定一致，限流错误也返回 Result 信封（code=A0429）
+                writeJson(response, 429, Result.error(ResultCode.TOO_MANY_REQUESTS, "AI 服务繁忙，请稍后重试"));
                 return false;
             }
         } catch (Exception e) {

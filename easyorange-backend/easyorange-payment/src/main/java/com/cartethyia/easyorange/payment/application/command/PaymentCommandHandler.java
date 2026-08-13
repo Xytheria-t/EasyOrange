@@ -12,25 +12,42 @@ import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 支付命令处理器 — CQRS Write 侧应用服务，收口支付全部用例（创建/支付/退款/关闭）。
+ * <p>
+ * 支付与退款走「准备 → 网关 → 确认」顺序两阶段（单数据库场景下遵循 ADR-0007「拒绝 Saga」：
+ * 本地事务提供原子性，外部网关调用无法纳入同一事务）。每个 phase 的事务边界在
+ * {@link PaymentPhaseExecutor}（独立 Bean，Spring 代理生效），编排方法自身不持有事务，
+ * 避免事务跨网关调用。
+ */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentCommandHandler {
 
+    private static final String PAY_LOCK_PREFIX = "payment:lock:pay:";
+    private static final String REFUND_LOCK_PREFIX = "payment:lock:refund:";
+    /**
+     * 锁等待 0 秒：并发重复回调立即失败返回 429（可重试），由网关重试兜底；
+     * 不排队等待，避免回调线程挂在可能长时间运行的网关调用之后。
+     */
+    private static final long LOCK_TRY_TIMEOUT_SECONDS = 0;
+
     private final PaymentRepositoryPort paymentRepository;
     private final DomainEventPublisher domainEventPublisher;
-    private final PaymentGatewayPort paymentGateway;
+    private final IdGenerator idGenerator;
     private final DistributedLockPort lockPort;
     private final PaymentMetricsService metricsService;
-    private final IdGenerator idGenerator;
+    private final PaymentPhaseExecutor phaseExecutor;
 
     @Transactional(rollbackFor = Exception.class)
     public String handle(String userId, CreatePaymentCommand command) {
@@ -58,118 +75,42 @@ public class PaymentCommandHandler {
      * 网关失败时回退状态，无需跨服务编排。
      */
     public void handle(PayCommand command) {
-        String lockKey = "payment:lock:pay:" + command.paymentNo();
+        String lockKey = PAY_LOCK_PREFIX + command.paymentNo();
 
         executeWithLock(lockKey, () -> {
-            final String paymentId = preparePayPhase1(command.paymentNo());
-            PaymentResult payResult = invokePayGateway(paymentId);
+            String paymentId = phaseExecutor.preparePayPhase1(command.paymentNo());
+            PaymentResult payResult = phaseExecutor.invokePayGateway(paymentId);
             if (payResult.isSuccess()) {
-                confirmPayPhase2(paymentId, payResult);
+                phaseExecutor.confirmPayPhase2(paymentId, payResult);
             } else {
-                rollbackPayStatus(paymentId);
+                phaseExecutor.rollbackPayStatus(paymentId);
             }
         });
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public String preparePayPhase1(String paymentNo) {
-        Payment aggregate = paymentRepository
-                .findByPaymentNo(paymentNo)
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-
-        Payment updated = aggregate.preparePay();
-        paymentRepository.update(updated);
-
-        return updated.id();
-    }
-
-    public PaymentResult invokePayGateway(String paymentId) {
-        Payment aggregate = paymentRepository
-                .findById(paymentId)
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        return paymentGateway.pay(aggregate);
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public void confirmPayPhase2(String paymentId, PaymentResult result) {
-        Payment aggregate = paymentRepository
-                .findById(paymentId)
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-
-        var confirmed = aggregate.confirmPay(result);
-        paymentRepository.update(confirmed.aggregate());
-        domainEventPublisher.publish(confirmed.event());
     }
 
     /**
      * 退款：两阶段（本地事务 + 外部网关），与支付一致遵循 ADR-0007 拒绝 Saga。
      */
     public void handle(RefundPaymentCommand command) {
-        String lockKey = "payment:lock:refund:" + command.paymentId();
+        String lockKey = REFUND_LOCK_PREFIX + command.paymentId();
 
         executeWithLock(lockKey, () -> {
             BigDecimal refundAmount = command.refundAmount();
             String paymentId = command.paymentId();
 
-            prepareRefundPhase1(paymentId, refundAmount);
-            RefundResult refundResult = invokeRefundGateway(paymentId, refundAmount);
+            phaseExecutor.prepareRefundPhase1(paymentId, refundAmount);
+            RefundResult refundResult = phaseExecutor.invokeRefundGateway(paymentId, refundAmount);
             if (refundResult.isSuccess()) {
-                confirmRefundPhase2(paymentId, refundResult, refundAmount);
+                phaseExecutor.confirmRefundPhase2(paymentId, refundResult, refundAmount);
             } else {
-                rollbackRefundStatus(paymentId);
+                phaseExecutor.rollbackRefundStatus(paymentId);
             }
         });
     }
 
     /**
-     * 带锁执行并记录并发冲突指标 — 锁获取失败由用例层记录，指标属支付域而不属锁基础设施。
-     * <p>
-     * 复用框架锁的 {@link LockAcquisitionException} 作为传输 + 响应载体：catch 后清掉基础设施
-     * 携带的内部细节（含 key），以支付域的统一文案重抛（RuntimeException，全局兜底 500），契约不变。
+     * 关闭支付。
      */
-    private void executeWithLock(String lockKey, Runnable operation) {
-        try {
-            lockPort.executeWithLock(lockKey, 0L, operation);
-        } catch (LockAcquisitionException e) {
-            metricsService.recordConcurrentConflict();
-            throw new LockAcquisitionException("系统繁忙，请稍后重试");
-        }
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public String prepareRefundPhase1(String paymentId, BigDecimal refundAmount) {
-        Payment aggregate = paymentRepository
-                .findById(paymentId)
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-
-        if (refundAmount == null) {
-            refundAmount = aggregate.amount();
-        }
-
-        Payment updated = aggregate.prepareRefund(refundAmount);
-        paymentRepository.update(updated);
-
-        return paymentId;
-    }
-
-    public RefundResult invokeRefundGateway(String paymentId, BigDecimal refundAmount) {
-        Payment aggregate = paymentRepository
-                .findById(paymentId)
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        return paymentGateway.refund(aggregate, refundAmount);
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public void confirmRefundPhase2(String paymentId, RefundResult result, BigDecimal refundAmount) {
-        Payment aggregate = paymentRepository
-                .findById(paymentId)
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-
-        var confirmed = aggregate.confirmRefund(result, refundAmount);
-        paymentRepository.update(confirmed.aggregate());
-        domainEventPublisher.publish(confirmed.event());
-    }
-
     @Transactional(rollbackFor = Exception.class)
     public void handle(ClosePaymentCommand command) {
         Payment aggregate = paymentRepository
@@ -181,21 +122,19 @@ public class PaymentCommandHandler {
         domainEventPublisher.publish(result.event());
     }
 
-    @Transactional(rollbackFor = Exception.class)
-    public void rollbackPayStatus(String paymentId) {
-        Payment aggregate = paymentRepository
-                .findById(paymentId)
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        Payment updated = aggregate.cancelPay();
-        paymentRepository.update(updated);
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public void rollbackRefundStatus(String paymentId) {
-        Payment aggregate = paymentRepository
-                .findById(paymentId)
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        Payment updated = aggregate.cancelRefund();
-        paymentRepository.update(updated);
+    /**
+     * 带锁执行并记录并发冲突指标 — 锁获取失败由用例层记录，指标属支付域而不属锁基础设施。
+     * <p>
+     * 锁争用映射为支付域 {@link PaymentResultCode#PAYMENT_BUSY}（A0429 → 429，可重试语义），
+     * 而非把基础设施异常直接上抛落入 500 兜底；原异常带锁 key 记 warn 日志供运维定位。
+     */
+    private void executeWithLock(String lockKey, Runnable operation) {
+        try {
+            lockPort.executeWithLock(lockKey, LOCK_TRY_TIMEOUT_SECONDS, operation);
+        } catch (LockAcquisitionException e) {
+            metricsService.recordConcurrentConflict();
+            log.warn("支付处理锁争用, key={}", lockKey, e);
+            throw PaymentDomainException.of(PaymentResultCode.PAYMENT_BUSY);
+        }
     }
 }

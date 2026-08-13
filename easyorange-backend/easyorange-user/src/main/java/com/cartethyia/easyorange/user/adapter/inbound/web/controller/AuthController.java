@@ -1,6 +1,8 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
+import com.cartethyia.easyorange.common.enums.ResultCode;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.auth.TokenRefreshResult;
@@ -78,7 +80,8 @@ public class AuthController {
     public Result<TokenRefreshResult> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         var refreshToken = readRefreshTokenCookie(request);
         if (refreshToken == null) {
-            return Result.error("刷新令牌缺失，请重新登录");
+            // 刷新令牌缺失 = 未认证：401 + A0401，前端按 HTTP 401 触发重新登录流程
+            throw BusinessException.of(ResultCode.UNAUTHORIZED, "刷新令牌缺失，请重新登录");
         }
         var result = authAppService.refreshToken(refreshToken);
         refreshCookie.write(response, result.refreshToken());

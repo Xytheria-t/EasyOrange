@@ -66,7 +66,7 @@ public class RabbitMQConfig {
 
         record QueueSpec(String name, String... routingKeys) {}
 
-        for (var q : List.of(
+        var specs = List.of(
                 new QueueSpec(QUEUE_PRODUCT_CQRS, "product.#", "stock.#"),
                 new QueueSpec(QUEUE_ORDER_NOTIFICATION, "order.#"),
                 new QueueSpec(
@@ -77,7 +77,9 @@ public class RabbitMQConfig {
                 new QueueSpec(QUEUE_MESSAGE_WEBSOCKET, "message.recalled"),
                 new QueueSpec(QUEUE_PAYMENT_METRICS, "payment.#"),
                 new QueueSpec(QUEUE_AI_PRODUCT, "product.created", "product.updated", "product.marked.sold"),
-                new QueueSpec(QUEUE_AI_CREDIT, "order.completed", "report.processed"))) {
+                new QueueSpec(QUEUE_AI_CREDIT, "order.completed", "report.processed"));
+
+        for (var q : specs) {
             var queue = QueueBuilder.durable(q.name())
                     .quorum()
                     .withArgument("x-dead-letter-exchange", DLQ_EXCHANGE_NAME)
@@ -99,7 +101,7 @@ public class RabbitMQConfig {
         var terminalQueue = QueueBuilder.durable(TERMINAL_QUEUE).quorum().build();
         declarables.add(terminalQueue);
 
-        log.info("Declared RabbitMQ topology: {} queues with DLQs and bindings, 1 terminal queue", 11);
+        log.info("Declared RabbitMQ topology: {} queues with DLQs and bindings, 1 terminal queue", specs.size());
         return new Declarables(declarables);
     }
 

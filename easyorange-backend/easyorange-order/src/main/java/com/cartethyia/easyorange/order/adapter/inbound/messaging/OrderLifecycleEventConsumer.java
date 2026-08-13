@@ -9,7 +9,7 @@ import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
-import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
@@ -25,9 +25,9 @@ import org.springframework.stereotype.Component;
  * <p>
  * 职责：
  * <ul>
- *   <li>{@code OrderCancelledEvent} → 调用 {@code ProductOrderPort.restoreStock} 恢复库存</li>
- *   <li>{@code OrderCompletedEvent} → 调用 {@code ProductOrderPort.markAsSold} 标记售出</li>
- *   <li>{@code OrderRefundedEvent} → 调用 {@code ProductOrderPort.restoreStock} 恢复库存 + {@code PaymentGatewayPort.refundPayment} 触发支付退款</li>
+ *   <li>{@code OrderCancelledEvent} → 调用 {@code ProductInventoryPort.restoreStock} 恢复库存</li>
+ *   <li>{@code OrderCompletedEvent} → 调用 {@code ProductInventoryPort.markAsSold} 标记售出</li>
+ *   <li>{@code OrderRefundedEvent} → 调用 {@code ProductInventoryPort.restoreStock} 恢复库存 + {@code PaymentGatewayPort.refundPayment} 触发支付退款</li>
  * </ul>
  */
 @Slf4j
@@ -37,16 +37,16 @@ import org.springframework.stereotype.Component;
 public class OrderLifecycleEventConsumer {
 
     private final EventConsumerHandler handler;
-    private final ProductOrderPort productOrderPort;
+    private final ProductInventoryPort productInventoryPort;
     private final PaymentGatewayPort paymentGatewayPort;
 
     public OrderLifecycleEventConsumer(
             EventIdempotencyChecker idempotencyChecker,
             EventMetricsService metricsService,
-            ProductOrderPort productOrderPort,
+            ProductInventoryPort productInventoryPort,
             PaymentGatewayPort paymentGatewayPort) {
         this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService);
-        this.productOrderPort = productOrderPort;
+        this.productInventoryPort = productInventoryPort;
         this.paymentGatewayPort = paymentGatewayPort;
     }
 
@@ -63,7 +63,7 @@ public class OrderLifecycleEventConsumer {
     public void onOrderCancelled(OrderCancelledEvent event, Message message) {
         handler.handle(event, message, metadata -> {
             for (var productId : event.productIds()) {
-                productOrderPort.restoreStock(productId);
+                productInventoryPort.restoreStock(productId);
             }
         });
     }
@@ -72,7 +72,7 @@ public class OrderLifecycleEventConsumer {
     public void onOrderCompleted(OrderCompletedEvent event, Message message) {
         handler.handle(event, message, metadata -> {
             for (var productId : event.productIds()) {
-                productOrderPort.markAsSold(productId);
+                productInventoryPort.markAsSold(productId);
             }
         });
     }
@@ -81,7 +81,7 @@ public class OrderLifecycleEventConsumer {
     public void onOrderRefunded(OrderRefundedEvent event, Message message) {
         handler.handle(event, message, metadata -> {
             for (var productId : event.productIds()) {
-                productOrderPort.restoreStock(productId);
+                productInventoryPort.restoreStock(productId);
             }
             paymentGatewayPort.refundPayment(event.orderId(), event.reason());
         });

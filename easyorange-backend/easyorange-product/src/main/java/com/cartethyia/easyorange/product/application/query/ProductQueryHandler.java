@@ -17,6 +17,7 @@ import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,13 +42,7 @@ public class ProductQueryHandler {
 
     @Transactional(readOnly = true)
     public ProductVO getProductById(String id) {
-        return productCachePort
-                .getProductCache(id, () -> {
-                    var product = productRepository
-                            .findById(ProductId.of(id))
-                            .orElseThrow(() -> new ProductNotFoundException(ProductId.of(id)));
-                    return assembleProductVO(product);
-                })
+        return Optional.ofNullable(productCachePort.getProductCache(id, () -> loadProductVO(id)))
                 .orElseThrow(() -> new ProductNotFoundException(ProductId.of(id)));
     }
 
@@ -115,6 +110,14 @@ public class ProductQueryHandler {
     }
 
     // ── Aggregate assembly path ──
+
+    /** 回源 loader：商品不存在时返回 null（不落缓存），由调用方决定是否抛 404。 */
+    private ProductVO loadProductVO(String id) {
+        return productRepository
+                .findById(ProductId.of(id))
+                .map(this::assembleProductVO)
+                .orElse(null);
+    }
 
     private ProductVO assembleProductVO(Product product) {
         var ctx = fetchAssemblyContext(List.of(product));

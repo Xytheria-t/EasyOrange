@@ -20,6 +20,7 @@ import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
 import com.cartethyia.easyorange.product.domain.exception.InsufficientStockException;
 import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusException;
+import com.cartethyia.easyorange.product.domain.exception.ProductNotOwnerException;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
@@ -100,7 +101,7 @@ public class Product {
 
     public Transition<Product, ProductSubmittedForReviewEvent> submitForReview(String userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw new InvalidProductStatusException("只能提交自己的资产审核", id, status);
+            throw new ProductNotOwnerException(id, "只能提交自己的资产审核");
         }
         return new Transition<>(
                 transitionTo(ProductStatus.PENDING_REVIEW),
@@ -147,7 +148,7 @@ public class Product {
 
     public Transition<Product, ProductTakeOfflineEvent> takeOffline(String userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw new InvalidProductStatusException("只能下架自己的资产", id, status);
+            throw new ProductNotOwnerException(id, "只能下架自己的资产");
         }
         return takeOffline();
     }
@@ -178,7 +179,10 @@ public class Product {
 
     // ==================== Mutations ====================
 
-    public Transition<Product, ProductUpdatedEvent> update(ProductUpdateSpec spec) {
+    public Transition<Product, ProductUpdatedEvent> update(String userId, ProductUpdateSpec spec) {
+        if (!this.sellerId.equals(SellerId.of(userId))) {
+            throw new ProductNotOwnerException(id, "只能修改自己的资产");
+        }
         var builder = toBuilder();
         if (spec.categoryId() != null) builder.categoryId(spec.categoryId());
         if (spec.title() != null && !spec.title().value().isBlank()) builder.title(spec.title());
@@ -200,7 +204,7 @@ public class Product {
 
     public Transition<Product, ProductDeletedEvent> delete(String userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw new InvalidProductStatusException("无权删除此资产", id, status);
+            throw new ProductNotOwnerException(id, "无权删除此资产");
         }
         if (!status.canDelete()) {
             throw new InvalidProductStatusException("不允许删除", id, status);

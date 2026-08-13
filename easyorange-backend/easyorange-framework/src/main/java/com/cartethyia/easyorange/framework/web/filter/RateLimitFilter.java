@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.framework.web.filter;
 
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
+import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.RepeatSubmitConfig;
@@ -256,7 +257,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // ==================== 工具方法 ====================
 
     private void writeErrorResponse(HttpServletResponse response, BusinessException ex) throws IOException {
-        errorResponseWriter.write(response, HttpStatus.TOO_MANY_REQUESTS.value(), ex.getCode(), ex.getMessage());
+        errorResponseWriter.write(
+                response, HttpStatus.TOO_MANY_REQUESTS.value(), ResultCode.TOO_MANY_REQUESTS, ex.getMessage());
     }
 
     private String md5(byte[] input) {

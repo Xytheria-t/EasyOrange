@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchToolContext;
 import com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchToolRegistry;
 import com.cartethyia.easyorange.ai.service.NaturalLanguageDetector;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
-import com.cartethyia.easyorange.framework.cache.CacheUtils;
 import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import java.nio.charset.StandardCharsets;
@@ -71,8 +70,9 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
         if (redisTemplate != null) {
             try {
+                // 反序列化失败/类型不符时抛异常，由下方 catch 降级重算（原 CacheUtils.cast 语义等价）
                 AiEnhancement cached =
-                        CacheUtils.cast(redisTemplate.opsForValue().get(cacheKey), AiEnhancement.class);
+                        (AiEnhancement) redisTemplate.opsForValue().get(cacheKey);
                 if (cached != null) {
                     log.debug("AI enhancement cache hit for keyword: {}", keyword);
                     return Optional.of(cached);

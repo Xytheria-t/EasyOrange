@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tools.jackson.databind.ObjectMapper;
@@ -90,19 +91,23 @@ class AiRateLimitInterceptorTest {
     }
 
     @Test
-    @DisplayName("限流超时返回 429")
+    @DisplayName("限流超时返回 429 且响应体为 Result 信封")
     void rateLimitExceeded() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/ai/review");
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
         when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                 .thenReturn(false);
         when(request.getReader()).thenReturn(new BufferedReader(new StringReader("")));
-        when(response.getWriter()).thenReturn(mock(java.io.PrintWriter.class));
+        var writer = mock(java.io.PrintWriter.class);
+        when(response.getWriter()).thenReturn(writer);
 
         boolean result = interceptor.preHandle(request, response, null);
 
         assertThat(result).isFalse();
         verify(response).setStatus(429);
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(writer).write(captor.capture());
+        assertThat(captor.getValue()).contains("A0429");
     }
 
     @Test

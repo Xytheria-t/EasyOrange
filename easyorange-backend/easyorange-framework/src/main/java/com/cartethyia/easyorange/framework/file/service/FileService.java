@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.framework.file.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.common.constant.CommonConstant;
+import com.cartethyia.easyorange.common.enums.FileResultCode;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.file.FileException;
 import com.cartethyia.easyorange.common.util.FileSizeFormat;
@@ -83,14 +84,14 @@ public class FileService {
 
     public UploadFileVO getFileInfo(String fileId) {
         var entity = uploadFileMapper.selectById(fileId);
-        if (entity == null) throw BusinessException.of("文件不存在");
+        if (entity == null) throw FileException.of(FileResultCode.FILE_NOT_FOUND, "文件不存在");
         return toVo(entity);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteFile(String fileId) {
         var entity = uploadFileMapper.selectById(fileId);
-        if (entity == null) throw BusinessException.of("文件不存在");
+        if (entity == null) throw FileException.of(FileResultCode.FILE_NOT_FOUND, "文件不存在");
 
         var userId = SecurityContextUtil.getCurrentUserId().orElseThrow(() -> BusinessException.of("用户未登录"));
 
@@ -110,7 +111,7 @@ public class FileService {
     @Transactional(rollbackFor = Exception.class)
     public void bindBusiness(String fileId, String businessType, String businessId) {
         var entity = uploadFileMapper.selectById(fileId);
-        if (entity == null) throw BusinessException.of("文件不存在");
+        if (entity == null) throw FileException.of(FileResultCode.FILE_NOT_FOUND, "文件不存在");
         entity.setBusinessType(businessType);
         entity.setBusinessId(businessId);
         uploadFileMapper.updateById(entity);
@@ -130,12 +131,12 @@ public class FileService {
 
     public Resource downloadFile(String fileId) {
         var entity = uploadFileMapper.selectById(fileId);
-        if (entity == null) throw BusinessException.of("文件不存在");
+        if (entity == null) throw FileException.of(FileResultCode.FILE_NOT_FOUND, "文件不存在");
 
         var path = fileStorage.getPath(entity.getStorageKey());
         if (!path.toFile().exists()) {
             log.error("文件不存在：fileId={}", fileId);
-            throw FileException.of("文件不存在：" + entity.getFileName());
+            throw FileException.of(FileResultCode.FILE_NOT_FOUND, "文件不存在：" + entity.getFileName());
         }
         log.info("action=prepare_download, fileId={}, fileName={}", fileId, entity.getFileName());
         return new FileSystemResource(path);

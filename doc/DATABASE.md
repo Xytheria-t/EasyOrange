@@ -687,14 +687,13 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 |------|------|------|------|
 | id | VARCHAR(36) | PK | 日志主键 |
 | title | VARCHAR(50) | | 模块标题 |
-| business_type | TINYINT | NOT NULL DEFAULT 0 | 业务类型 |
+| business_type | VARCHAR(50) | NOT NULL DEFAULT '0' | 业务类型 |
 | method | VARCHAR(100) | | 方法名称 |
 | request_method | VARCHAR(10) | | 请求方式 |
 | operator_type | TINYINT | NOT NULL DEFAULT 0 | 操作类别 |
 | username | VARCHAR(50) | | 操作人员 |
 | request_url | VARCHAR(255) | | 请求 URL |
 | client_ip | VARCHAR(128) | | 客户端 IP |
-| oper_location | VARCHAR(255) | | 操作地点 |
 | request_params | TEXT | | 请求参数（敏感字段已掩码） |
 | response_data | TEXT | | 响应数据 |
 | status | TINYINT | NOT NULL DEFAULT 0 | 状态（0 正常 / 1 异常） |

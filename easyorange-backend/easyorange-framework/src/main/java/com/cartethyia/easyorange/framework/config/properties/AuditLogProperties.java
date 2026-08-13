@@ -1,27 +1,31 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
+import com.cartethyia.easyorange.common.enums.BusinessType;
+import jakarta.validation.constraints.Min;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 /**
  * 审计日志配置属性
  * <p>
- * 用于控制审计日志的记录行为，包括是否启用、日志级别、
- * 是否保存请求/响应数据等。
+ * 用于控制审计日志的记录行为，包括是否启用、是否保存请求/响应数据等。
  * </p>
  * 配置示例：
  * <pre>{@code
  * audit:
  *   enabled: true
- *   log-level: DETAILED
  *   save-request-data: false
  *   save-response-data: false
+ *   retention-days: 180
  * }</pre>
  */
 @Data
+@Validated
 @ConfigurationProperties(prefix = "audit")
 public class AuditLogProperties {
 
@@ -34,15 +38,10 @@ public class AuditLogProperties {
     private boolean enabled = true;
 
     /**
-     * 日志记录级别
-     * <p>
-     * - DISABLED: 不记录任何日志
-     * - BASIC: 仅记录基本信息（操作时间、操作人、IP、操作类型）
-     * - DETAILED: 记录完整信息（包含请求参数和响应数据）
-     * </p>
-     * 默认为 BASIC
+     * 审计日志保留天数，超期由 AuditLogCleanupTask 每日清理。
      */
-    private LogLevel logLevel = LogLevel.BASIC;
+    @Min(1)
+    private int retentionDays = 180;
 
     /**
      * 是否保存请求数据
@@ -98,13 +97,13 @@ public class AuditLogProperties {
     private Map<String, String> moduleNames = defaultModuleNames();
 
     /**
-     * 方法名前缀 → 操作标题映射
+     * 方法名前缀 → 操作映射（标题 + 业务类型）
      * <p>
-     * 用于从方法名推导审计日志的操作标题。
-     * 按长优先匹配。
+     * 审计日志推导的单一事实来源：从方法名前缀同时推导操作标题与业务类型，
+     * 避免标题映射与类型映射两套表各自维护而漂移。按长优先匹配。
      * </p>
      */
-    private Map<String, String> methodTitles = defaultMethodTitles();
+    private Map<String, MethodMapping> methodMappings = defaultMethodMappings();
 
     private static Map<String, String> defaultModuleNames() {
         var map = new LinkedHashMap<String, String>();
@@ -129,46 +128,68 @@ public class AuditLogProperties {
         return map;
     }
 
-    private static Map<String, String> defaultMethodTitles() {
-        var map = new LinkedHashMap<String, String>();
-        map.put("create", "创建");
-        map.put("add", "新增");
-        map.put("save", "保存");
-        map.put("update", "更新");
-        map.put("edit", "编辑");
-        map.put("modify", "修改");
-        map.put("delete", "删除");
-        map.put("remove", "删除");
-        map.put("import", "导入");
-        map.put("export", "导出");
-        map.put("approve", "审批");
-        map.put("reject", "驳回");
-        map.put("process", "处理");
-        map.put("upload", "上传");
-        map.put("download", "下载");
-        map.put("login", "登录");
-        map.put("logout", "登出");
-        map.put("register", "注册");
-        map.put("reset", "重置");
-        map.put("change", "修改");
-        map.put("cancel", "取消");
-        map.put("confirm", "确认");
-        map.put("submit", "提交");
-        map.put("audit", "审核");
-        map.put("assign", "分配");
-        map.put("unbind", "解绑");
-        map.put("bind", "绑定");
-        map.put("mark", "标记");
-        map.put("report", "举报");
-        map.put("handle", "处理");
-        map.put("send", "发送");
-        map.put("publish", "发布");
-        map.put("batch", "批量操作");
-        map.put("sync", "同步");
-        map.put("refresh", "刷新");
-        map.put("clear", "清空");
-        map.put("recover", "恢复");
-        map.put("archive", "归档");
+    private static Map<String, MethodMapping> defaultMethodMappings() {
+        var map = new LinkedHashMap<String, MethodMapping>();
+
+        // 新增类操作
+        map.put("create", new MethodMapping("创建", BusinessType.ADD));
+        map.put("add", new MethodMapping("新增", BusinessType.ADD));
+        map.put("save", new MethodMapping("保存", BusinessType.ADD));
+        map.put("register", new MethodMapping("注册", BusinessType.ADD));
+        map.put("upload", new MethodMapping("上传", BusinessType.ADD));
+        map.put("import", new MethodMapping("导入", BusinessType.ADD));
+
+        // 修改类操作
+        map.put("update", new MethodMapping("更新", BusinessType.UPDATE));
+        map.put("edit", new MethodMapping("编辑", BusinessType.UPDATE));
+        map.put("modify", new MethodMapping("修改", BusinessType.UPDATE));
+        map.put("change", new MethodMapping("修改", BusinessType.UPDATE));
+        map.put("reset", new MethodMapping("重置", BusinessType.UPDATE));
+        map.put("mark", new MethodMapping("标记", BusinessType.UPDATE));
+        map.put("approve", new MethodMapping("审批", BusinessType.UPDATE));
+        map.put("reject", new MethodMapping("驳回", BusinessType.UPDATE));
+        map.put("process", new MethodMapping("处理", BusinessType.UPDATE));
+        map.put("handle", new MethodMapping("处理", BusinessType.UPDATE));
+        map.put("bind", new MethodMapping("绑定", BusinessType.UPDATE));
+        map.put("unbind", new MethodMapping("解绑", BusinessType.UPDATE));
+        map.put("toggle", new MethodMapping("切换", BusinessType.UPDATE));
+        map.put("audit", new MethodMapping("审核", BusinessType.UPDATE));
+        map.put("enable", new MethodMapping("启用", BusinessType.UPDATE));
+        map.put("disable", new MethodMapping("停用", BusinessType.UPDATE));
+        map.put("ban", new MethodMapping("封禁", BusinessType.UPDATE));
+        map.put("unban", new MethodMapping("解封", BusinessType.UPDATE));
+        map.put("force", new MethodMapping("强制操作", BusinessType.UPDATE));
+        map.put("unlock", new MethodMapping("解锁", BusinessType.UPDATE));
+        map.put("recall", new MethodMapping("撤回", BusinessType.UPDATE));
+        map.put("send", new MethodMapping("发送", BusinessType.UPDATE));
+        map.put("typing", new MethodMapping("输入中", BusinessType.UPDATE));
+        map.put("reply", new MethodMapping("回复", BusinessType.UPDATE));
+        map.put("like", new MethodMapping("点赞", BusinessType.UPDATE));
+        map.put("report", new MethodMapping("举报", BusinessType.UPDATE));
+        map.put("confirm", new MethodMapping("确认", BusinessType.UPDATE));
+        map.put("submit", new MethodMapping("提交", BusinessType.UPDATE));
+        map.put("assign", new MethodMapping("分配", BusinessType.UPDATE));
+        map.put("publish", new MethodMapping("发布", BusinessType.UPDATE));
+        map.put("batch", new MethodMapping("批量操作", BusinessType.UPDATE));
+        map.put("sync", new MethodMapping("同步", BusinessType.UPDATE));
+        map.put("refresh", new MethodMapping("刷新", BusinessType.UPDATE));
+        map.put("clear", new MethodMapping("清空", BusinessType.UPDATE));
+        map.put("recover", new MethodMapping("恢复", BusinessType.UPDATE));
+        map.put("archive", new MethodMapping("归档", BusinessType.UPDATE));
+
+        // 删除类操作
+        map.put("delete", new MethodMapping("删除", BusinessType.DELETE));
+        map.put("remove", new MethodMapping("删除", BusinessType.DELETE));
+        map.put("cancel", new MethodMapping("取消", BusinessType.DELETE));
+
+        // 登录类操作
+        map.put("login", new MethodMapping("登录", BusinessType.LOGIN));
+        map.put("logout", new MethodMapping("登出", BusinessType.LOGIN));
+
+        // 其它（仅记录标题，不归属具体业务类型）
+        map.put("export", new MethodMapping("导出", BusinessType.OTHER));
+        map.put("download", new MethodMapping("下载", BusinessType.OTHER));
+
         return map;
     }
 
@@ -176,19 +197,37 @@ public class AuditLogProperties {
         return Map.copyOf(moduleNames);
     }
 
-    public Map<String, String> getMethodTitles() {
-        return Map.copyOf(methodTitles);
+    public Map<String, MethodMapping> getMethodMappings() {
+        return Map.copyOf(methodMappings);
     }
 
     /**
-     * 日志记录级别枚举
+     * 按长优先匹配方法名前缀，返回对应的操作映射。
+     *
+     * @param methodName Controller 方法名
+     * @return 命中的映射；无命中（或入参为 null）时返回 empty，
+     *     调用方回退为原始方法名 + {@link BusinessType#OTHER}
      */
-    public enum LogLevel {
-        /** 禁用日志 */
-        DISABLED,
-        /** 仅记录基本信息 */
-        BASIC,
-        /** 记录完整信息 */
-        DETAILED
+    public Optional<MethodMapping> findMapping(String methodName) {
+        if (methodName == null) {
+            return Optional.empty();
+        }
+        String bestKey = null;
+        int bestLen = 0;
+        for (String key : methodMappings.keySet()) {
+            if (methodName.startsWith(key) && key.length() > bestLen) {
+                bestKey = key;
+                bestLen = key.length();
+            }
+        }
+        return bestKey == null ? Optional.empty() : Optional.of(methodMappings.get(bestKey));
     }
+
+    /**
+     * 方法名前缀对应的审计规则：操作标题与业务类型。
+     *
+     * @param title        操作标题，如 "创建"
+     * @param businessType 业务类型，如 {@link BusinessType#ADD}
+     */
+    public record MethodMapping(String title, BusinessType businessType) {}
 }

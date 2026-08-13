@@ -11,10 +11,10 @@ import com.cartethyia.easyorange.framework.util.AuditLogUtil;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -22,6 +22,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -38,7 +39,7 @@ import tools.jackson.databind.node.ObjectNode;
  * <p>
  * 拦截所有 RestController 的写操作方法，通过 Spring Modulith Outbox 异步记录审计日志。
  * 约定优于注解：方法名以 get/query/find/list 等前缀开头视为读操作，跳过记录。
- * 模块名和操作标题通过 {@link AuditLogProperties} 的映射表推导。
+ * 模块名、操作标题和业务类型通过 {@link AuditLogProperties} 的映射表推导。
  * </p>
  * <p>
  * 事件流：切面发布 {@link AuditLogEvent} → Modulith 写入 {@code EVENT_PUBLICATION} 表
@@ -75,6 +76,19 @@ public class AuditLogAspect {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
+    // ───────────────────────── Constants ─────────────────────────
+
+    /** 操作状态：正常（对齐 {@link AuditLog#getStatus()} 注释） */
+    private static final int STATUS_SUCCESS = 0;
+    /** 操作状态：异常 */
+    private static final int STATUS_FAILURE = 1;
+    /** 操作类别：管理员（1=管理员, 2=普通用户, 0=未登录，见 {@link AuditLog#getOperatorType()}） */
+    private static final int OPERATOR_ADMIN = 1;
+    /** 操作类别：普通用户 */
+    private static final int OPERATOR_USER = 2;
+    /** 操作类别：未登录 */
+    private static final int OPERATOR_ANONYMOUS = 0;
+
     // ───────────────────────── Pointcut ─────────────────────────
 
     @Pointcut("within(@org.springframework.web.bind.annotation.RestController *)")
@@ -101,8 +115,7 @@ public class AuditLogAspect {
         }
         try {
             var signature = (MethodSignature) joinPoint.getSignature();
-            Method method = signature.getMethod();
-            String methodName = method.getName();
+            String methodName = signature.getMethod().getName();
 
             if (isReadOperation(methodName)) {
                 return;
@@ -111,7 +124,7 @@ public class AuditLogAspect {
             HttpServletRequest request = RequestUtil.getRequest();
             if (request == null) return;
 
-            AuditLog auditLog = buildAuditLog(joinPoint, method, methodName, e, jsonResult, request, costTime);
+            AuditLog auditLog = buildAuditLog(joinPoint, methodName, e, jsonResult, request, costTime);
             publishAuditLog(auditLog);
 
         } catch (Exception exp) {
@@ -139,8 +152,7 @@ public class AuditLogAspect {
      */
     private void publishAuditLog(AuditLog auditLog) {
         try {
-            transactionTemplate.executeWithoutResult(
-                    status -> domainEventPublisher.publish(AuditLogEvent.of(auditLog)));
+            transactionTemplate.executeWithoutResult(_ -> domainEventPublisher.publish(AuditLogEvent.of(auditLog)));
         } catch (Exception e) {
             log.warn("Outbox 发布审计日志失败，降级为直接入库: method={}", auditLog.getMethod(), e);
             auditLogService.insertAuditLog(auditLog);
@@ -151,7 +163,6 @@ public class AuditLogAspect {
 
     private AuditLog buildAuditLog(
             ProceedingJoinPoint joinPoint,
-            Method method,
             String methodName,
             Exception e,
             Object jsonResult,
@@ -161,8 +172,9 @@ public class AuditLogAspect {
         String className = joinPoint.getTarget().getClass().getSimpleName();
 
         String moduleName = deriveModuleName(className);
-        String operationTitle = deriveTitle(methodName);
-        BusinessType businessType = deriveBusinessType(methodName);
+        var rule = auditLogProperties.findMapping(methodName).orElse(null);
+        String operationTitle = rule != null ? rule.title() : methodName;
+        BusinessType businessType = rule != null ? rule.businessType() : BusinessType.OTHER;
 
         var userCtx = SecurityContextUtil.getUserContext();
 
@@ -175,10 +187,10 @@ public class AuditLogAspect {
                 .clientIp(RequestUtil.getClientIp(request))
                 .username(userCtx.map(AuthUser::username).orElse("anonymous"))
                 .operatorType(resolveOperatorType(userCtx.orElse(null)))
-                .status(e != null ? 1 : 0)
+                .status(e != null ? STATUS_FAILURE : STATUS_SUCCESS)
                 .errorMsg(e != null ? AuditLogUtil.truncate(e.getMessage(), 2000) : null)
                 .createdAt(LocalDateTime.now())
-                .duration((int) costTime);
+                .duration(Math.toIntExact(costTime));
 
         if (auditLogProperties.isSaveRequestData()) {
             String params = argsArrayToString(joinPoint.getArgs());
@@ -187,7 +199,8 @@ public class AuditLogAspect {
 
         if (auditLogProperties.isSaveResponseData() && jsonResult != null) {
             try {
-                String json = objectMapper.writeValueAsString(jsonResult);
+                // 与请求参数一致，响应数据同样做敏感字段掩码
+                String json = maskSensitiveFields(objectMapper.writeValueAsString(jsonResult));
                 builder.responseData(AuditLogUtil.truncate(json, 2000));
             } catch (JacksonException ex) {
                 log.warn("Failed to serialize response data for audit log", ex);
@@ -217,74 +230,17 @@ public class AuditLogAspect {
         return bestMatch != null ? bestMatch : lookup;
     }
 
-    private String deriveTitle(String methodName) {
-        if (methodName == null || methodName.isEmpty()) return methodName;
-
-        Map<String, String> mapping = auditLogProperties.getMethodTitles();
-        String bestMatch = null;
-        int bestLen = 0;
-        for (var entry : mapping.entrySet()) {
-            if (methodName.startsWith(entry.getKey()) && entry.getKey().length() > bestLen) {
-                bestMatch = entry.getValue();
-                bestLen = entry.getKey().length();
-            }
-        }
-        return bestMatch != null ? bestMatch : methodName;
-    }
-
-    private static BusinessType deriveBusinessType(String methodName) {
-        if (methodName.startsWith("create")
-                || methodName.startsWith("add")
-                || methodName.startsWith("save")
-                || methodName.startsWith("register")
-                || methodName.startsWith("upload")
-                || methodName.startsWith("import")) {
-            return BusinessType.ADD;
-        }
-        if (methodName.startsWith("update")
-                || methodName.startsWith("edit")
-                || methodName.startsWith("modify")
-                || methodName.startsWith("change")
-                || methodName.startsWith("reset")
-                || methodName.startsWith("mark")
-                || methodName.startsWith("approve")
-                || methodName.startsWith("reject")
-                || methodName.startsWith("process")
-                || methodName.startsWith("handle")
-                || methodName.startsWith("bind")
-                || methodName.startsWith("unbind")
-                || methodName.startsWith("toggle")
-                || methodName.startsWith("audit")
-                || methodName.startsWith("enable")
-                || methodName.startsWith("disable")
-                || methodName.startsWith("ban")
-                || methodName.startsWith("unban")
-                || methodName.startsWith("force")
-                || methodName.startsWith("unlock")
-                || methodName.startsWith("recall")
-                || methodName.startsWith("send")
-                || methodName.startsWith("typing")
-                || methodName.startsWith("reply")
-                || methodName.startsWith("like")
-                || methodName.startsWith("report")) {
-            return BusinessType.UPDATE;
-        }
-        if (methodName.startsWith("delete") || methodName.startsWith("remove") || methodName.startsWith("cancel")) {
-            return BusinessType.DELETE;
-        }
-        if (methodName.startsWith("login") || methodName.startsWith("logout")) {
-            return BusinessType.LOGIN;
-        }
-        return BusinessType.OTHER;
-    }
-
     private static int resolveOperatorType(AuthUser userCtx) {
         if (userCtx == null) {
-            return 2;
+            return OPERATOR_ANONYMOUS;
         }
         // 角色不存于 AuthUser，改由已授予的 authorities（源自 JWT claim）判定
-        var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
-        return authorities.stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())) ? 1 : 2;
+        var authorities = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .map(Authentication::getAuthorities)
+                .orElseGet(List::of);
+        return authorities.stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))
+                ? OPERATOR_ADMIN
+                : OPERATOR_USER;
     }
 
     // ───────────────────────── Request param handling ─────────────────────────
@@ -327,6 +283,8 @@ public class AuditLogAspect {
         if (json == null || json.isEmpty()) return json;
         List<String> sensitiveFields = auditLogProperties.getSensitiveFields();
         if (sensitiveFields == null || sensitiveFields.isEmpty()) return json;
+        // 快速路径：原始 JSON 不含任何敏感字段名，无需解析掩码（避免整棵树反序列化）
+        if (sensitiveFields.stream().noneMatch(json::contains)) return json;
 
         try {
             JsonNode root = objectMapper.readTree(json);

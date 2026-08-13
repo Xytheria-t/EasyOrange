@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
@@ -14,14 +16,15 @@ import com.cartethyia.easyorange.payment.application.command.ClosePaymentCommand
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
+import com.cartethyia.easyorange.payment.application.command.PaymentPhaseExecutor;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
 import com.cartethyia.easyorange.payment.application.metrics.PaymentMetricsService;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
@@ -49,9 +52,6 @@ class PaymentCommandHandlerTest {
     private DomainEventPublisher domainEventPublisher;
 
     @Mock
-    private PaymentGatewayPort paymentGateway;
-
-    @Mock
     private IdGenerator idGenerator;
 
     @Mock
@@ -59,6 +59,9 @@ class PaymentCommandHandlerTest {
 
     @Mock
     private PaymentMetricsService metricsService;
+
+    @Mock
+    private PaymentPhaseExecutor phaseExecutor;
 
     @InjectMocks
     private PaymentCommandHandler commandHandler;
@@ -74,14 +77,16 @@ class PaymentCommandHandlerTest {
     }
 
     @Test
-    @DisplayName("锁获取失败时用例层记录并发冲突指标并抛异常")
-    void executeWithLock_lockConflict_recordsMetricAndThrows() {
+    @DisplayName("锁获取失败时记录并发冲突指标并抛支付域繁忙异常（A0429→429）")
+    void executeWithLock_lockConflict_recordsMetricAndThrowsBusy() {
         doThrow(new LockAcquisitionException("busy"))
                 .when(lockPort)
                 .executeWithLock(anyString(), anyLong(), any(Runnable.class));
 
         assertThatThrownBy(() -> commandHandler.handle(new PayCommand("PAY123", null, null)))
-                .isInstanceOf(LockAcquisitionException.class);
+                .isInstanceOf(PaymentDomainException.class)
+                .satisfies(e -> assertThat(((PaymentDomainException) e).getCode())
+                        .isEqualTo(PaymentResultCode.PAYMENT_BUSY.getCode()));
 
         verify(metricsService).recordConcurrentConflict();
     }
@@ -109,118 +114,83 @@ class PaymentCommandHandlerTest {
     }
 
     @Nested
-    @DisplayName("handle(PayCommand) - 两阶段")
-    class PayCommandTests {
+    @DisplayName("handle(PayCommand) - 两阶段编排")
+    class PayFlowTests {
 
-        @Test
-        @DisplayName("支付成功 - 阶段1预处理")
-        void preparePayPhase1_success() {
-            when(paymentRepository.findByPaymentNo("PAY123")).thenReturn(Optional.of(testAggregate));
-
-            String paymentId = commandHandler.preparePayPhase1("PAY123");
-
-            assertThat(paymentId).isEqualTo("1001");
-            verify(paymentRepository).update(aggregateCaptor.capture());
-            assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.PAYING);
+        @BeforeEach
+        void enableLockWrapper() {
+            doAnswer(invocation -> {
+                        invocation.getArgument(2, Runnable.class).run();
+                        return null;
+                    })
+                    .when(lockPort)
+                    .executeWithLock(anyString(), anyLong(), any(Runnable.class));
         }
 
         @Test
-        @DisplayName("支付成功 - 阶段2确认")
-        void confirmPayPhase2_success() {
-            Payment payingAggregate = buildAggregate(PaymentStatus.PAYING);
-            when(paymentRepository.findById("1001")).thenReturn(Optional.of(payingAggregate));
+        @DisplayName("支付成功 - 网关成功走完整两阶段")
+        void handle_pay_success() {
+            when(phaseExecutor.preparePayPhase1("PAY123")).thenReturn("1001");
+            when(phaseExecutor.invokePayGateway("1001")).thenReturn(PaymentResult.success("TXN_123"));
 
-            commandHandler.confirmPayPhase2("1001", PaymentResult.success("TXN_123"));
+            commandHandler.handle(new PayCommand("PAY123", null, null));
 
-            verify(paymentRepository).update(aggregateCaptor.capture());
-            assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.SUCCESS);
-            verify(domainEventPublisher).publish(any());
+            verify(phaseExecutor).confirmPayPhase2(eq("1001"), any(PaymentResult.class));
+            verify(phaseExecutor, never()).rollbackPayStatus(anyString());
         }
 
         @Test
-        @DisplayName("支付记录不存在抛出异常")
-        void handle_pay_notFound() {
-            when(paymentRepository.findByPaymentNo("NOT_EXIST")).thenReturn(Optional.empty());
+        @DisplayName("支付失败 - 网关失败回退 PENDING")
+        void handle_pay_gatewayFailure_rollsBack() {
+            when(phaseExecutor.preparePayPhase1("PAY123")).thenReturn("1001");
+            when(phaseExecutor.invokePayGateway("1001")).thenReturn(PaymentResult.failure("网关拒绝"));
 
-            assertThatThrownBy(() -> commandHandler.preparePayPhase1("NOT_EXIST"))
-                    .isInstanceOf(PaymentDomainException.class);
-        }
-    }
+            commandHandler.handle(new PayCommand("PAY123", null, null));
 
-    @Nested
-    @DisplayName("handle(RefundPaymentCommand) - 两阶段")
-    class RefundCommandTests {
-
-        @Test
-        @DisplayName("退款预处理成功")
-        void prepareRefundPhase1_success() {
-            Payment paidAggregate = buildAggregate(PaymentStatus.SUCCESS);
-            when(paymentRepository.findById("1001")).thenReturn(Optional.of(paidAggregate));
-
-            String paymentId = commandHandler.prepareRefundPhase1("1001", new BigDecimal("100.00"));
-
-            assertThat(paymentId).isEqualTo("1001");
-            verify(paymentRepository).update(aggregateCaptor.capture());
-            assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.REFUNDING);
-        }
-
-        @Test
-        @DisplayName("退款预处理退款金额为空时以支付金额为默认")
-        void prepareRefundPhase1_nullAmount_usesAggregateAmount() {
-            Payment paidAggregate = buildAggregate(PaymentStatus.SUCCESS);
-            when(paymentRepository.findById("1001")).thenReturn(Optional.of(paidAggregate));
-
-            commandHandler.prepareRefundPhase1("1001", null);
-
-            verify(paymentRepository).update(aggregateCaptor.capture());
-            assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.REFUNDING);
-        }
-
-        @Test
-        @DisplayName("退款确认成功")
-        void confirmRefundPhase2_success() {
-            Payment refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
-            when(paymentRepository.findById("1001")).thenReturn(Optional.of(refundingAggregate));
-
-            commandHandler.confirmRefundPhase2("1001", RefundResult.success("REF_123"), new BigDecimal("100.00"));
-
-            verify(paymentRepository).update(aggregateCaptor.capture());
-            assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.REFUNDED);
-            verify(domainEventPublisher).publish(any());
+            verify(phaseExecutor).rollbackPayStatus("1001");
+            verify(phaseExecutor, never()).confirmPayPhase2(anyString(), any());
         }
     }
 
     @Nested
-    @DisplayName("rollbackPayStatus 支付状态回退")
-    class RollbackPayStatusTests {
+    @DisplayName("handle(RefundPaymentCommand) - 两阶段编排")
+    class RefundFlowTests {
 
-        @Test
-        @DisplayName("PAYING 状态回退到 PENDING")
-        void rollbackPayStatus_success() {
-            Payment payingAggregate = buildAggregate(PaymentStatus.PAYING);
-            when(paymentRepository.findById("1001")).thenReturn(Optional.of(payingAggregate));
-
-            commandHandler.rollbackPayStatus("1001");
-
-            verify(paymentRepository).update(aggregateCaptor.capture());
-            assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.PENDING);
+        @BeforeEach
+        void enableLockWrapper() {
+            doAnswer(invocation -> {
+                        invocation.getArgument(2, Runnable.class).run();
+                        return null;
+                    })
+                    .when(lockPort)
+                    .executeWithLock(anyString(), anyLong(), any(Runnable.class));
         }
-    }
-
-    @Nested
-    @DisplayName("rollbackRefundStatus 退款状态回退")
-    class RollbackRefundStatusTests {
 
         @Test
-        @DisplayName("REFUNDING 状态回退到 SUCCESS")
-        void rollbackRefundStatus_success() {
-            Payment refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
-            when(paymentRepository.findById("1001")).thenReturn(Optional.of(refundingAggregate));
+        @DisplayName("退款成功 - 网关成功走完整两阶段")
+        void handle_refund_success() {
+            when(phaseExecutor.invokeRefundGateway("1001", new BigDecimal("100.00")))
+                    .thenReturn(RefundResult.success("REF_123"));
 
-            commandHandler.rollbackRefundStatus("1001");
+            commandHandler.handle(new RefundPaymentCommand("1001", new BigDecimal("100.00"), "用户申请"));
 
-            verify(paymentRepository).update(aggregateCaptor.capture());
-            assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.SUCCESS);
+            verify(phaseExecutor).prepareRefundPhase1("1001", new BigDecimal("100.00"));
+            verify(phaseExecutor)
+                    .confirmRefundPhase2(eq("1001"), any(RefundResult.class), eq(new BigDecimal("100.00")));
+            verify(phaseExecutor, never()).rollbackRefundStatus(anyString());
+        }
+
+        @Test
+        @DisplayName("退款网关失败 - 回退 SUCCESS")
+        void handle_refund_gatewayFailure_rollsBack() {
+            when(phaseExecutor.invokeRefundGateway("1001", new BigDecimal("100.00")))
+                    .thenReturn(RefundResult.failure("网关拒绝"));
+
+            commandHandler.handle(new RefundPaymentCommand("1001", new BigDecimal("100.00"), "用户申请"));
+
+            verify(phaseExecutor).prepareRefundPhase1("1001", new BigDecimal("100.00"));
+            verify(phaseExecutor).rollbackRefundStatus("1001");
+            verify(phaseExecutor, never()).confirmRefundPhase2(anyString(), any(), any());
         }
     }
 
@@ -250,104 +220,6 @@ class PaymentCommandHandlerTest {
             ClosePaymentCommand command = new ClosePaymentCommand("9999");
 
             assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(PaymentDomainException.class);
-        }
-    }
-
-    @Nested
-    @DisplayName("handle(PayCommand) - 两阶段")
-    class PayFlowTests {
-
-        @BeforeEach
-        void enableLockWrapper() {
-            doAnswer(invocation -> {
-                        invocation.getArgument(2, Runnable.class).run();
-                        return null;
-                    })
-                    .when(lockPort)
-                    .executeWithLock(anyString(), anyLong(), any(Runnable.class));
-        }
-
-        @Test
-        @DisplayName("支付成功 - 网关成功走完整两阶段")
-        void handle_pay_success() {
-            Payment payingAggregate = buildAggregate(PaymentStatus.PAYING);
-            when(paymentRepository.findByPaymentNo("PAY123")).thenReturn(Optional.of(testAggregate));
-            when(paymentRepository.findById("1001")).thenReturn(Optional.of(payingAggregate));
-            when(paymentGateway.pay(any())).thenReturn(PaymentResult.success("TXN_123"));
-
-            commandHandler.handle(new PayCommand("PAY123", null, null));
-
-            verify(paymentGateway).pay(any());
-            verify(paymentRepository, times(2)).update(aggregateCaptor.capture());
-            assertThat(aggregateCaptor.getAllValues().get(1).status()).isEqualTo(PaymentStatus.SUCCESS);
-            verify(domainEventPublisher).publish(any());
-        }
-
-        @Test
-        @DisplayName("支付失败 - 网关失败回退 PENDING")
-        void handle_pay_gatewayFailure_rollsBack() {
-            Payment payingAggregate = buildAggregate(PaymentStatus.PAYING);
-            when(paymentRepository.findByPaymentNo("PAY123")).thenReturn(Optional.of(testAggregate));
-            when(paymentRepository.findById("1001")).thenReturn(Optional.of(payingAggregate));
-            when(paymentGateway.pay(any())).thenReturn(PaymentResult.failure("网关拒绝"));
-
-            commandHandler.handle(new PayCommand("PAY123", null, null));
-
-            verify(paymentRepository, times(2)).update(aggregateCaptor.capture());
-            assertThat(aggregateCaptor.getAllValues().get(1).status()).isEqualTo(PaymentStatus.PENDING);
-        }
-    }
-
-    @Nested
-    @DisplayName("handle(RefundPaymentCommand) - 两阶段")
-    class RefundFlowTests {
-
-        @BeforeEach
-        void enableLockWrapper() {
-            doAnswer(invocation -> {
-                        invocation.getArgument(2, Runnable.class).run();
-                        return null;
-                    })
-                    .when(lockPort)
-                    .executeWithLock(anyString(), anyLong(), any(Runnable.class));
-        }
-
-        @Test
-        @DisplayName("退款成功 - 网关成功走完整两阶段")
-        void handle_refund_success() {
-            Payment successAggregate = buildAggregate(PaymentStatus.SUCCESS);
-            Payment refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
-            when(paymentRepository.findById("1001"))
-                    .thenReturn(
-                            Optional.of(successAggregate),
-                            Optional.of(refundingAggregate),
-                            Optional.of(refundingAggregate));
-            when(paymentGateway.refund(any(), any())).thenReturn(RefundResult.success("REF_123"));
-
-            commandHandler.handle(new RefundPaymentCommand("1001", new BigDecimal("100.00"), "用户申请"));
-
-            verify(paymentGateway).refund(any(), any());
-            verify(paymentRepository, times(2)).update(aggregateCaptor.capture());
-            assertThat(aggregateCaptor.getAllValues().get(1).status()).isEqualTo(PaymentStatus.REFUNDED);
-            verify(domainEventPublisher).publish(any());
-        }
-
-        @Test
-        @DisplayName("退款网关失败 - 回退 SUCCESS")
-        void handle_refund_gatewayFailure_rollsBack() {
-            Payment successAggregate = buildAggregate(PaymentStatus.SUCCESS);
-            Payment refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
-            when(paymentRepository.findById("1001"))
-                    .thenReturn(
-                            Optional.of(successAggregate),
-                            Optional.of(refundingAggregate),
-                            Optional.of(refundingAggregate));
-            when(paymentGateway.refund(any(), any())).thenReturn(RefundResult.failure("网关拒绝"));
-
-            commandHandler.handle(new RefundPaymentCommand("1001", new BigDecimal("100.00"), "用户申请"));
-
-            verify(paymentRepository, times(2)).update(aggregateCaptor.capture());
-            assertThat(aggregateCaptor.getAllValues().get(1).status()).isEqualTo(PaymentStatus.SUCCESS);
         }
     }
 

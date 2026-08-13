@@ -204,7 +204,7 @@ public class AdminDashboardService {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT DAYOFWEEK(created_at) AS day_of_week, HOUR(created_at) AS hour, COUNT(*) AS cnt "
                         + "FROM eo_audit_log WHERE created_at >= ? "
-                        + "GROUP BY DAYOFWEEK(oper_time), HOUR(oper_time) "
+                        + "GROUP BY DAYOFWEEK(created_at), HOUR(created_at) "
                         + "ORDER BY day_of_week, hour",
                 since);
         List<UserActivityHeatmapResponse> result = new ArrayList<>();

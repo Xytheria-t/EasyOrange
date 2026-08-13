@@ -169,15 +169,15 @@ public interface ProductCacheEvictionPort {
 }
 
 // application/port/ProductCachePort.java
-public interface ProductCachePort extends ProductCacheEvictionPort {
-    Optional<ProductVO> getProductCache(String productId);
-    void setProductCache(String productId, ProductVO product);
+public interface ProductCachePort {
+    ProductVO getProductCache(String productId, Supplier<ProductVO> loader);  // null = 未命中或不存在
 }
 
-// adapter/outbound/cache/ProductCacheAdapter.java — MultiLevelCache 实现，仅 implements ProductCachePort
+// adapter/outbound/cache/ProductCacheAdapter.java — Spring Cache 注解式实现（@Cacheable/@CacheEvict，纯 Redis 单层）
+// 写侧失效：ProductCacheEvictionPort.evictProductCache(productId)
 ```
 
-`CategoryCachePort` 同理，已从 domain 层移至 application 层，移除泛型 `<T>` 参数，直接使用 `CategoryReadModel`。
+`CategoryCachePort` 同理，已从 domain 层移至 application 层，移除泛型 `<T>` 参数，直接使用 `CategoryReadModel`。缓存实现基于 Spring Cache（framework `RedisCacheConfig`），不再手写多级缓存（2026-08-13）。
 
 ## 库存并发控制
 
@@ -208,6 +208,6 @@ public interface ProductCachePort extends ProductCacheEvictionPort {
 
 ## 跨模块交互
 
-- **order 模块**: 通过 `ProductOrderPort` 操作产品生命周期（快照、库存、售出）
+- **order 模块**: 通过 `ProductInventoryPort` 操作产品生命周期（快照、库存、售出）
 - **favorite 模块**: 通过 `ProductInfoPort`（`FavoriteProductInfoAdapter` 在 application 模块实现）查询商品信息
 - order/favorite 对 product 的 Maven 依赖均为 `<optional>true</optional>`，通过 Port 接口隔离领域模型

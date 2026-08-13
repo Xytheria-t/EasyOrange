@@ -13,14 +13,14 @@ public record SearchPageResponse<T>(
         List<FacetBucketResponse> facets,
         AiEnhancement aiEnhancement) {
     public static <T> SearchPageResponse<T> of(List<T> records, long total, int current, int size) {
-        int pages = calcPages(total, size);
+        int pages = PageResult.calcPages(total, size);
         return new SearchPageResponse<>(
                 records != null ? records : List.of(), total, current, size, pages, List.of(), null);
     }
 
     public static <T> SearchPageResponse<T> of(
             List<T> records, long total, int current, int size, List<FacetBucketResponse> facets) {
-        int pages = calcPages(total, size);
+        int pages = PageResult.calcPages(total, size);
         return new SearchPageResponse<>(
                 records != null ? records : List.of(),
                 total,
@@ -39,9 +39,5 @@ public record SearchPageResponse<T>(
     public SearchPageResponse<T> withAiEnhancement(AiEnhancement aiEnhancement) {
         return new SearchPageResponse<>(
                 this.records, this.total, this.current, this.size, this.pages, this.facets, aiEnhancement);
-    }
-
-    private static int calcPages(long total, int size) {
-        return size > 0 ? (int) ((total + size - 1) / size) : 0;
     }
 }

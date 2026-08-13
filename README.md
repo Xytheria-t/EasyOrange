@@ -155,7 +155,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 | **前端** | React 19 · TypeScript · Vite · TanStack Query 5 · Zustand 5 · Tailwind 4 · shadcn/ui · Biome |
 | **数据 / 消息** | MySQL 8.4（Flyway）· Redis 7.4 · RabbitMQ 3.13 · Elasticsearch 8（可选） |
 | **AI** | Spring AI 2.0 · DeepSeek · Qwen-VL · DashScope Embedding |
-| **可靠性** | Resilience4j · Redisson（分布式锁 / 令牌桶）· Spring Modulith Outbox |
+| **可靠性** | Redisson（分布式锁 / 令牌桶）· Spring Modulith Outbox · CacheErrorHandler fail-open |
 | **可观测** | Micrometer + Prometheus · Brave（traceId）· Spring AI Observation · 结构化日志 |
 | **DevOps** | Docker / docker-compose · GitHub Actions · Flyway 11 |
 

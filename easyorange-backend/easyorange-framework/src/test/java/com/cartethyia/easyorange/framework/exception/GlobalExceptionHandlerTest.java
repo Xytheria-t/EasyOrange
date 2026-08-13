@@ -6,11 +6,17 @@ import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @DisplayName("GlobalExceptionHandler 单元测试")
 class GlobalExceptionHandlerTest {
@@ -76,6 +82,66 @@ class GlobalExceptionHandlerTest {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(response.getBody().code()).isEqualTo(ResultCode.BUSINESS_ERROR.getCode());
             assertThat(response.getBody().message()).isEqualTo("业务错误");
+        }
+    }
+
+    @Nested
+    @DisplayName("handle(框架异常)")
+    class FrameworkExceptionTests {
+
+        @Test
+        @DisplayName("AuthenticationException 应返回 401 而非 500")
+        void handleAuthenticationException_returnsUnauthorized() {
+            var ex = new InsufficientAuthenticationException("未登录");
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+            assertThat(response.getBody().code()).isEqualTo(ResultCode.UNAUTHORIZED.getCode());
+        }
+
+        @Test
+        @DisplayName("HttpMediaTypeNotSupportedException 应返回 415")
+        void handleMediaTypeNotSupported_returnsUnsupportedMediaType() {
+            var ex = new HttpMediaTypeNotSupportedException(MediaType.APPLICATION_XML, List.of());
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+            assertThat(response.getBody().code()).isEqualTo(ResultCode.PARAM_ERROR.getCode());
+        }
+
+        @Test
+        @DisplayName("IllegalArgumentException 应落 500 兜底（非业务异常，提示编程错误）")
+        void handleIllegalArgumentException_returnsInternalServerError() {
+            var ex = new IllegalArgumentException("非法参数");
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+            assertThat(response.getBody().code()).isEqualTo(ResultCode.INTERNAL_SERVER_ERROR.getCode());
+        }
+
+        @Test
+        @DisplayName("NoResourceFoundException 应返回 404")
+        void handleNoResourceFound_returnsNotFound() {
+            var ex = new NoResourceFoundException(HttpMethod.GET, "/no-such.png", "/no-such.png");
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(response.getBody().code()).isEqualTo(ResultCode.NOT_FOUND.getCode());
+        }
+
+        @Test
+        @DisplayName("A0429 错误码应映射到 429")
+        void handleTooManyRequests_mapsTo429() {
+            BaseBusinessException ex = BusinessException.of(ResultCode.TOO_MANY_REQUESTS, "请求过于频繁");
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+            assertThat(response.getBody().code()).isEqualTo(ResultCode.TOO_MANY_REQUESTS.getCode());
         }
     }
 

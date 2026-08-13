@@ -4,6 +4,14 @@ import com.cartethyia.easyorange.common.enums.IResultCode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * user 模块错误码
+ * <p>
+ * 错误码范围：B1001-B1999。HTTP 状态映射见 {@link IResultCode#resolveStatus(String)}。
+ * </p>
+ *
+ * @see IResultCode
+ */
 @Getter
 @AllArgsConstructor
 public enum UserResultCode implements IResultCode {

@@ -13,16 +13,10 @@ public final class ProductCacheConstant {
     public static final String SEARCH_HISTORY_KEY_PREFIX = APP_PREFIX + "search:history:user:";
     public static final int SEARCH_HISTORY_MAX_SIZE = 20;
 
-    public static final String PRODUCT_INFO_KEY = PRODUCT_PREFIX + "info:";
-    public static final String PRODUCT_LIST_KEY = PRODUCT_PREFIX + "list:";
-
-    public static String infoKey(Object id) {
-        return PRODUCT_INFO_KEY + id;
-    }
-
-    public static String listKey(Object categoryId) {
-        return PRODUCT_LIST_KEY + categoryId;
-    }
+    /** 商品详情缓存（Spring Cache cacheName，Redis key 形如 {@code eo:product:info::<id>}） */
+    public static final String PRODUCT_INFO_CACHE = PRODUCT_PREFIX + "info";
+    /** 分类列表缓存（Spring Cache cacheName，key 形如 {@code level:1} / {@code parent:<parentId>}） */
+    public static final String CATEGORY_LIST_CACHE = APP_PREFIX + "category:list";
 
     public static String searchHistoryKey(String userId) {
         return SEARCH_HISTORY_KEY_PREFIX + userId;

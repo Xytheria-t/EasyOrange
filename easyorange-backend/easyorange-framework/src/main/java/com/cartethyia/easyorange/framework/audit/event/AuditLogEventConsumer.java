@@ -31,13 +31,15 @@ public class AuditLogEventConsumer {
             EventIdempotencyChecker idempotencyChecker,
             EventMetricsService metricsService,
             AuditLogService auditLogService) {
+        // 审计日志不做幂等去重：审计允许重复写，但「先标记后处理」的瞬断可能把未处理事件
+        // 短路成重复跳过而静默丢失记录——重复一条审计可接受，丢失不可接受
         this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService, false);
         this.auditLogService = auditLogService;
     }
 
     @RabbitHandler
     public void onAuditLog(AuditLogEvent event, Message message) {
-        handler.handle(event, message, metadata -> {
+        handler.handle(event, message, _ -> {
             var auditLog = event.auditLog();
             log.info(
                     "审计日志入库: method={} status={} user={} ip={} duration={}ms",

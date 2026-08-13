@@ -4,7 +4,7 @@ package com.cartethyia.easyorange.framework.util;
  * 审计日志工具类
  * <p>
  * 提供字符串截断等工具方法。
- * 模块名推导和操作标题推导参见 {@link com.cartethyia.easyorange.framework.audit.aspect.AuditLogAspect}，
+ * 模块名、操作标题和业务类型推导参见 {@link com.cartethyia.easyorange.framework.audit.aspect.AuditLogAspect}，
  * 映射数据源自 {@link com.cartethyia.easyorange.framework.config.properties.AuditLogProperties}。
  * </p>
  *

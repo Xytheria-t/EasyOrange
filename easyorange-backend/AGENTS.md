@@ -10,7 +10,6 @@ Spring Boot 4.0.7 + Java 25 后端，采用 DDD + 六边形架构。
 |------|------|
 | MapStruct | 1.6.3 |
 | ArchUnit | 1.4.1 |
-| Resilience4j | 2.2.0 |
 | Spring Data Elasticsearch | 6.0.6 |
 
 ## 事务约定
@@ -189,11 +188,7 @@ slow-sql:
 
 ### Redis 熔断保护
 
-Redis 缓存操作统一使用 **Resilience4j CircuitBreaker** + 多级降级（L1 Caffeine → L2 Redis → DB）。
-
-`Resilience4jConfig` 在 framework 模块提供 `CircuitBreakerRegistry` Bean（自动绑定 Micrometer 指标）。默认配置：COUNT_BASED 滑动窗口 10、最小调用 5、失败率阈值 50%、开路 60s、Half-Open 3 次探测。
-
-**新增缓存适配器时**：注入 `CircuitBreakerRegistry`，用 `CircuitBreaker.decorateSupplier()` / `decorateRunnable()` 包装 Redis 操作，异常时降级到 DB + 本地缓存。参考 `CategoryCacheAdapter` 模式。
+Resilience4j CircuitBreaker 已移除（2026-08-13，随手写多级缓存一并删除，无消费者）。Redis 缓存故障降级由 `RedisCacheConfig` 的 `CacheErrorHandler` fail-open 统一承担（读直查 DB / 写放弃本次缓存），不再逐点包熔断。
 
 ### AI 调用重试与并发隔离（Spring AI 客户端内置）
 

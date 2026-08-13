@@ -93,8 +93,7 @@ class OrderNotificationEventConsumerTest {
         return new Message(new byte[0], props);
     }
 
-    private void mockLockSuccess() {
-        when(idempotencyChecker.isDuplicate(anyString(), anyString())).thenReturn(false);
+    private void mockClaimSuccess() {
         when(idempotencyChecker.tryMark(anyString(), anyString())).thenReturn(true);
     }
 
@@ -109,7 +108,7 @@ class OrderNotificationEventConsumerTest {
         @Test
         @DisplayName("订单创建后发送站内信通知")
         void onOrderCreated_shouldSendNotification() {
-            mockLockSuccess();
+            mockClaimSuccess();
 
             OrderCreatedEvent event = new OrderCreatedEvent(
                     ORDER_ID,
@@ -121,7 +120,6 @@ class OrderNotificationEventConsumerTest {
 
             consumer.onOrderCreated(event, buildMessage());
 
-            verify(idempotencyChecker).isDuplicate(eq(CONSUMER_ID + ":OrderCreated"), anyString());
             verify(idempotencyChecker).tryMark(eq(CONSUMER_ID + ":OrderCreated"), anyString());
 
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
@@ -141,14 +139,13 @@ class OrderNotificationEventConsumerTest {
         @Test
         @DisplayName("订单支付后发送站内信通知")
         void onOrderPaid_shouldSendNotification() {
-            mockLockSuccess();
+            mockClaimSuccess();
             mockFindOrderReadModel();
 
             OrderPaidEvent event = new OrderPaidEvent(ORDER_ID, "1");
 
             consumer.onOrderPaid(event, buildMessage());
 
-            verify(idempotencyChecker).isDuplicate(eq(CONSUMER_ID + ":OrderPaid"), anyString());
             verify(idempotencyChecker).tryMark(eq(CONSUMER_ID + ":OrderPaid"), anyString());
 
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
@@ -168,7 +165,7 @@ class OrderNotificationEventConsumerTest {
         @Test
         @DisplayName("订单发货后发送站内信通知")
         void onOrderShipped_shouldSendNotification() {
-            mockLockSuccess();
+            mockClaimSuccess();
             mockFindOrderReadModel();
 
             OrderShippedEvent event = new OrderShippedEvent(ORDER_ID);
@@ -184,7 +181,7 @@ class OrderNotificationEventConsumerTest {
         @Test
         @DisplayName("订单完成后发送站内信通知")
         void onOrderCompleted_shouldSendNotification() {
-            mockLockSuccess();
+            mockClaimSuccess();
             mockFindOrderReadModel();
 
             OrderCompletedEvent event = new OrderCompletedEvent(ORDER_ID, List.of(PRODUCT_ID));
@@ -200,7 +197,7 @@ class OrderNotificationEventConsumerTest {
         @Test
         @DisplayName("订单取消后发送站内信通知")
         void onOrderCancelled_shouldSendNotification() {
-            mockLockSuccess();
+            mockClaimSuccess();
             mockFindOrderReadModel();
 
             OrderCancelledEvent event = new OrderCancelledEvent(ORDER_ID, List.of(PRODUCT_ID), "取消原因");
@@ -216,14 +213,13 @@ class OrderNotificationEventConsumerTest {
         @Test
         @DisplayName("订单退款后发送站内信通知")
         void onOrderRefunded_shouldSendNotification() {
-            mockLockSuccess();
+            mockClaimSuccess();
             mockFindOrderReadModel();
 
             OrderRefundedEvent event = new OrderRefundedEvent(ORDER_ID, List.of(PRODUCT_ID), "退款原因");
 
             consumer.onOrderRefunded(event, buildMessage());
 
-            verify(idempotencyChecker).isDuplicate(eq(CONSUMER_ID + ":OrderRefunded"), anyString());
             verify(idempotencyChecker).tryMark(eq(CONSUMER_ID + ":OrderRefunded"), anyString());
 
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
@@ -241,28 +237,8 @@ class OrderNotificationEventConsumerTest {
     class IdempotencyTests {
 
         @Test
-        @DisplayName("重复事件不发送通知")
+        @DisplayName("重复事件（领取处理权失败）不发送通知")
         void onEvent_withDuplicateEvent_shouldSkip() {
-            when(idempotencyChecker.isDuplicate(anyString(), anyString())).thenReturn(true);
-
-            OrderCreatedEvent event = new OrderCreatedEvent(
-                    ORDER_ID,
-                    BUYER_ID,
-                    SELLER_ID,
-                    List.of(new OrderCreatedEvent.OrderItemPayload(
-                            PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
-                    BigDecimal.valueOf(99.99));
-
-            consumer.onOrderCreated(event, buildMessage());
-
-            verify(idempotencyChecker, never()).tryMark(anyString(), anyString());
-            verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
-        }
-
-        @Test
-        @DisplayName("锁竞争失败时不发送通知")
-        void onEvent_whenLockFails_shouldSkip() {
-            when(idempotencyChecker.isDuplicate(anyString(), anyString())).thenReturn(false);
             when(idempotencyChecker.tryMark(anyString(), anyString())).thenReturn(false);
 
             OrderCreatedEvent event = new OrderCreatedEvent(
@@ -275,6 +251,7 @@ class OrderNotificationEventConsumerTest {
 
             consumer.onOrderCreated(event, buildMessage());
 
+            verify(idempotencyChecker).tryMark(anyString(), anyString());
             verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
         }
     }
@@ -286,7 +263,7 @@ class OrderNotificationEventConsumerTest {
         @Test
         @DisplayName("订单不存在时跳过通知")
         void onEvent_whenOrderNotFound_shouldSkip() {
-            mockLockSuccess();
+            mockClaimSuccess();
             when(orderReadRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.empty());
 
             OrderPaidEvent event = new OrderPaidEvent(ORDER_ID, "1");

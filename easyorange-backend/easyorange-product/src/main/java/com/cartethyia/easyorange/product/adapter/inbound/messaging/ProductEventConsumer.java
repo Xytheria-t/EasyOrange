@@ -66,9 +66,6 @@ public class ProductEventConsumer {
 
     private void handleCreated(ProductCreatedEvent e) {
         var productId = e.productId();
-        if (e.data().categoryId() != null) {
-            productCachePort.evictProductListCache(e.data().categoryId());
-        }
         if (notificationPort != null)
             tryRun(() ->
                     notificationPort.notifyProductCreated(productId, e.data().userId()));
@@ -76,9 +73,6 @@ public class ProductEventConsumer {
     }
 
     private void handleUpdated(ProductUpdatedEvent e) {
-        if (e.data().categoryId() != null) {
-            productCachePort.evictProductListCache(e.data().categoryId());
-        }
         if (searchIndexPort != null) tryRun(() -> searchIndexPort.updateProductIndex(e.productId()));
     }
 

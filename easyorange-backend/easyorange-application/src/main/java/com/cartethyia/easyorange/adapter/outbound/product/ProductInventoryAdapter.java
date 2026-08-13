@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.outbound.product;
 
 import com.cartethyia.easyorange.common.domain.ProductId;
-import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import com.cartethyia.easyorange.product.application.command.ProductCommandHandler;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductSnapshotPort;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Primary
 @Component
 @RequiredArgsConstructor
-public class ProductOrderAdapter implements ProductOrderPort {
+public class ProductInventoryAdapter implements ProductInventoryPort {
 
     private final ProductSnapshotPort productSnapshotPort;
     private final ProductCommandHandler productCommandHandler;
@@ -23,11 +23,11 @@ public class ProductOrderAdapter implements ProductOrderPort {
         return productSnapshotPort
                 .findSnapshots(productIds.stream().map(ProductId::of).toList())
                 .stream()
-                .map(ProductOrderAdapter::toSnapshot)
+                .map(ProductInventoryAdapter::toSnapshot)
                 .toList();
     }
 
-    private static ProductSnapshot toSnapshot(ProductSnapshotPort.ProductOrderSnapshot snapshot) {
+    private static ProductSnapshot toSnapshot(ProductSnapshotPort.ProductSnapshot snapshot) {
         return new ProductSnapshot(
                 snapshot.productId().value(),
                 snapshot.sellerId().value(),

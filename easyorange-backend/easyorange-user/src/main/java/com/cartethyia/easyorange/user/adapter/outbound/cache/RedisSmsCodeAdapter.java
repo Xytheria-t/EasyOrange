@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.user.adapter.outbound.cache;
 
-import com.cartethyia.easyorange.framework.cache.CacheUtils;
 import com.cartethyia.easyorange.user.domain.constant.UserSecurityConstant;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
@@ -71,7 +70,9 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
             }
         }
 
-        String stored = CacheUtils.cast(redisTemplate.opsForValue().get(CODE_KEY + phone), String.class);
+        // GenericJacksonJsonRedisSerializer 反序列化 JSON 字符串恒为 String，直接强转
+        // （原 CacheUtils.cast 对 String 目标类型等价于强转，Number→String 本就会失败）
+        String stored = (String) redisTemplate.opsForValue().get(CODE_KEY + phone);
         if (stored == null || !stored.equals(code)) {
             return VerifyResult.NOT_FOUND;
         }

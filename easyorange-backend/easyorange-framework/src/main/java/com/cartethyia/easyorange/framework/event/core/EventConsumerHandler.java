@@ -27,6 +27,8 @@ public final class EventConsumerHandler {
 
     public void handle(DomainEvent event, Message message, Consumer<EventMetadata> consumer) {
         var metadata = EventMetadata.from(message, event);
+        var eventId = metadata.eventId();
+        var namespace = consumerId + ":" + event.eventType();
         // 把 RabbitMQ 头里透传的 traceId 回填 MDC，使消费处理及其下游（@Async、缓存失效等）日志继承同一链路
         var previousMdc = MDC.getCopyOfContextMap();
         var messageTraceId = metadata.traceId();
@@ -36,8 +38,8 @@ public final class EventConsumerHandler {
         var sample = metricsService.startTimer();
         var outcome = "success";
         try {
-            var eventId = metadata.eventId();
-            if (idempotencyEnabled && eventId != null && isDuplicate(event.eventType(), eventId)) {
+            // 原子领取处理权：tryMark = SET NX EX，返回 false 表示重复（已处理或他人处理中）
+            if (idempotencyEnabled && eventId != null && !idempotencyChecker.tryMark(namespace, eventId)) {
                 log.info(
                         "重复跳过: type={} aggregateId={} eventId={} consumer={}",
                         event.eventType(),
@@ -62,9 +64,14 @@ public final class EventConsumerHandler {
                     "处理失败: type={} aggregateId={} eventId={} consumer={}",
                     event.eventType(),
                     event.aggregateId(),
-                    metadata.eventId(),
+                    eventId,
                     consumerId,
                     e);
+            // 撤销幂等标记，使容器重试 / DLQ 重投能够重新执行；否则「先标记后处理」会把瞬时失败
+            // 短路成重复跳过而静默丢失事件
+            if (idempotencyEnabled && eventId != null) {
+                idempotencyChecker.unmark(namespace, eventId);
+            }
             throw e;
         } finally {
             metricsService.recordReceived(event.eventType(), outcome);
@@ -80,10 +87,5 @@ public final class EventConsumerHandler {
         } else {
             MDC.setContextMap(previousMdc);
         }
-    }
-
-    private boolean isDuplicate(String eventType, String eventId) {
-        var namespace = consumerId + ":" + eventType;
-        return idempotencyChecker.isDuplicate(namespace, eventId) || !idempotencyChecker.tryMark(namespace, eventId);
     }
 }

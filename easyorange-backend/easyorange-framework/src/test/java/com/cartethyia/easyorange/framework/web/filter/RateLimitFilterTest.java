@@ -160,6 +160,7 @@ class RateLimitFilterTest {
         filter.doFilter(req, res, (r, s) -> invoked.set(true));
 
         assertThat(res.getStatus()).isEqualTo(429);
+        assertThat(res.getContentAsString()).contains("A0429");
         assertThat(invoked).isFalse();
         verify(localRateLimiter).tryAcquire(anyString(), anyInt(), anyLong());
     }
@@ -204,6 +205,7 @@ class RateLimitFilterTest {
         filter.doFilter(req, res, (r, s) -> invoked.set(true));
 
         assertThat(res.getStatus()).isEqualTo(429);
+        assertThat(res.getContentAsString()).contains("A0429");
         assertThat(invoked).isFalse();
         verify(valueOps).setIfAbsent(anyString(), any(), anyLong(), any());
     }

@@ -33,22 +33,31 @@ import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 @AutoConfigureBefore(DataRedisAutoConfiguration.class)
 public class RedisConfig {
 
+    /** JSON 序列化器 — RedisTemplate 与 Spring Cache（{@code RedisCacheConfig}）共用，保证序列化约定一致。 */
+    @Bean
+    public GenericJacksonJsonRedisSerializer jsonRedisSerializer() {
+        return buildJsonSerializer();
+    }
+
     @Bean
     public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-        var typeValidator = BasicPolymorphicTypeValidator.builder()
-                .allowIfBaseType(Object.class)
-                .build();
         var stringSerializer = StringRedisSerializer.UTF_8;
-        var jsonSerializer = GenericJacksonJsonRedisSerializer.builder()
-                .enableDefaultTyping(typeValidator)
-                .build();
 
         RedisTemplate<Object, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
         template.setKeySerializer(stringSerializer);
         template.setHashKeySerializer(stringSerializer);
-        template.setValueSerializer(jsonSerializer);
-        template.setHashValueSerializer(jsonSerializer);
+        template.setValueSerializer(buildJsonSerializer());
+        template.setHashValueSerializer(buildJsonSerializer());
         return template;
+    }
+
+    private static GenericJacksonJsonRedisSerializer buildJsonSerializer() {
+        var typeValidator = BasicPolymorphicTypeValidator.builder()
+                .allowIfBaseType(Object.class)
+                .build();
+        return GenericJacksonJsonRedisSerializer.builder()
+                .enableDefaultTyping(typeValidator)
+                .build();
     }
 }

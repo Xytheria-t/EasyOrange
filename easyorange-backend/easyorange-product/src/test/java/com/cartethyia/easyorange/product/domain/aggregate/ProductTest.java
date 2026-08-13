@@ -16,6 +16,7 @@ import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
 import com.cartethyia.easyorange.product.domain.exception.InsufficientStockException;
 import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusException;
+import com.cartethyia.easyorange.product.domain.exception.ProductNotOwnerException;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
@@ -134,11 +135,23 @@ class ProductTest {
     void update_shouldModifyFields() {
         var p = ProductTestFixture.defaultProduct();
 
-        var t = p.update(updateWith(CategoryId.of("99"), ProductTitle.of("新名称"), Money.of(new BigDecimal("200"))));
+        var t = p.update("1", updateWith(CategoryId.of("99"), ProductTitle.of("新名称"), Money.of(new BigDecimal("200"))));
 
         assertThat(t.aggregate().getCategoryId().value()).isEqualTo("99");
         assertThat(t.aggregate().getTitle().value()).isEqualTo("新名称");
         assertThat(t.aggregate().getPrice().value()).isEqualByComparingTo(new BigDecimal("200"));
+    }
+
+    @Test
+    @DisplayName("非所有者更新商品应抛出 ProductNotOwnerException")
+    void update_notOwner_shouldThrow() {
+        var p = ProductTestFixture.defaultProduct();
+
+        assertThatThrownBy(() -> p.update(
+                        "999",
+                        updateWith(CategoryId.of("99"), ProductTitle.of("新名称"), Money.of(new BigDecimal("200")))))
+                .isInstanceOf(ProductNotOwnerException.class)
+                .hasMessageContaining("只能修改自己的资产");
     }
 
     // ==================== submitForReview ====================
@@ -159,7 +172,9 @@ class ProductTest {
     void submitForReview_notOwner_shouldThrow() {
         var p = ProductTestFixture.defaultProduct();
 
-        assertThatThrownBy(() -> p.submitForReview("999")).isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> p.submitForReview("999"))
+                .isInstanceOf(ProductNotOwnerException.class)
+                .hasMessageContaining("只能提交自己的资产审核");
     }
 
     @Test
@@ -308,7 +323,9 @@ class ProductTest {
     void takeOffline_notOwner_shouldThrow() {
         var p = ProductTestFixture.onlineProduct();
 
-        assertThatThrownBy(() -> p.takeOffline("999")).isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> p.takeOffline("999"))
+                .isInstanceOf(ProductNotOwnerException.class)
+                .hasMessageContaining("只能下架自己的资产");
     }
 
     // ==================== delete ====================
@@ -328,7 +345,9 @@ class ProductTest {
     void delete_notOwner_shouldThrow() {
         var p = ProductTestFixture.defaultProduct();
 
-        assertThatThrownBy(() -> p.delete("999")).isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> p.delete("999"))
+                .isInstanceOf(ProductNotOwnerException.class)
+                .hasMessageContaining("无权删除此资产");
     }
 
     @Test

@@ -16,7 +16,7 @@ import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
-import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
@@ -60,7 +60,7 @@ public class OrderCommandHandler {
     private final DistributedLockPort lockPort;
     private final PaymentGatewayPort paymentGatewayPort;
     private final OrderPreparation preparationService;
-    private final ProductOrderPort productOrderPort;
+    private final ProductInventoryPort productInventoryPort;
     private final IdGenerator idGenerator;
 
     // ==================== 订单创建 ====================
@@ -116,7 +116,7 @@ public class OrderCommandHandler {
 
         // 同步扣减库存（同一事务，失败时随事务整体回滚）
         for (var item : command.items()) {
-            productOrderPort.decreaseStock(item.productId(), item.quantity());
+            productInventoryPort.decreaseStock(item.productId(), item.quantity());
         }
 
         // 创建支付（同一事务，失败时随事务整体回滚）

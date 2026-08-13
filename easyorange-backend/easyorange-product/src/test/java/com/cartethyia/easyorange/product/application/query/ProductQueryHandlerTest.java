@@ -85,7 +85,7 @@ class ProductQueryHandlerTest {
     @Test
     @DisplayName("缓存命中时直接返回缓存数据")
     void getProductById_cacheHit_shouldReturnCached() {
-        when(productCachePort.getProductCache(eq("1"), any())).thenReturn(Optional.of(testProductVO));
+        when(productCachePort.getProductCache(eq("1"), any())).thenReturn(testProductVO);
 
         ProductVO result = queryHandler.getProductById("1");
 
@@ -99,7 +99,7 @@ class ProductQueryHandlerTest {
     void getProductById_cacheMiss_shouldLoadViaLoader() {
         when(productCachePort.getProductCache(eq("1"), any())).thenAnswer(invocation -> {
             Supplier<ProductVO> loader = invocation.getArgument(1);
-            return Optional.ofNullable(loader.get());
+            return loader.get();
         });
         when(productRepository.findById(ProductId.of("1"))).thenReturn(Optional.of(testProduct));
         when(productQueryRepository.findImagesByProductIds(any())).thenReturn(List.of());
@@ -118,7 +118,7 @@ class ProductQueryHandlerTest {
     @Test
     @DisplayName("查询不存在的商品应抛出异常")
     void getProductById_notFound_shouldThrow() {
-        when(productCachePort.getProductCache(eq("999"), any())).thenReturn(Optional.empty());
+        when(productCachePort.getProductCache(eq("999"), any())).thenReturn(null);
 
         assertThatThrownBy(() -> queryHandler.getProductById("999")).isInstanceOf(ProductNotFoundException.class);
     }

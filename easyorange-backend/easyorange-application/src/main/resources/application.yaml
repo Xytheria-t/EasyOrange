@@ -393,3 +393,12 @@ spring:
         published: PT5M           # PUBLISHED 超过 5 分钟标记为 FAILED
         processing: PT10M         # PROCESSING 超过 10 分钟标记为 FAILED
         check-interval: PT1M      # 每分钟检查一次
+
+---
+# -------------------------------------------------------------------
+# 缓存（Spring Cache 注解式，纯 Redis 单层）
+# -------------------------------------------------------------------
+easyorange:
+  cache:
+    # 统一 TTL：一致性靠写路径事件显式 evict，TTL 仅作兜底
+    default-ttl: 30m

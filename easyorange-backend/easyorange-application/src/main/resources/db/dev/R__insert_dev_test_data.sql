@@ -928,24 +928,24 @@ ON DUPLICATE KEY UPDATE
 
 INSERT INTO `eo_audit_log` (
     `id`, `title`, `business_type`, `method`, `request_method`, `operator_type`,
-    `username`, `request_url`, `client_ip`, `oper_location`,
+    `username`, `request_url`, `client_ip`,
     `status`, `duration`, `created_at`
 ) VALUES
-(1, '用户管理', 1, 'UserController.register()',  'POST', 1, 'testuser',  '/api/user/register', '192.168.1.100', '宽带', 0, 156, NOW() - INTERVAL 90 DAY),
-(2, '商品管理', 2, 'ProductController.create()',  'POST', 1, 'testuser',  '/api/product/create', '192.168.1.100', '宽带', 0, 89,  NOW() - INTERVAL 30 DAY),
-(3, '商品管理', 2, 'ProductController.create()',  'POST', 1, 'liming',    '/api/product/create', '10.0.0.55',    '图书馆', 0, 112, NOW() - INTERVAL 25 DAY),
-(4, '订单管理', 2, 'OrderController.create()',    'POST', 1, 'liming',    '/api/order/create',   '10.0.0.55',    '图书馆', 0, 234, NOW() - INTERVAL 60 DAY),
-(5, '支付管理', 2, 'PaymentController.pay()',     'POST', 1, 'liming',    '/api/payment/pay',    '10.0.0.55',    '图书馆', 0, 567, NOW() - INTERVAL 60 DAY),
-(6, '商品管理', 3, 'ProductController.update()',  'PUT',  1, 'testuser',  '/api/product/1',      '192.168.1.100', '宽带', 0, 67,  NOW() - INTERVAL 20 DAY),
-(7, '用户管理', 2, 'UserController.login()',      'POST', 1, 'wangfang',  '/api/user/login',     '172.16.0.23',  '同城', 0, 45,  NOW() - INTERVAL 45 DAY),
-(8, '订单管理', 2, 'OrderController.create()',    'POST', 1, 'wangfang',  '/api/order/create',   '172.16.0.23',  '同城', 0, 189, NOW() - INTERVAL 55 DAY),
-(9, '收藏管理', 2, 'FavoriteController.add()',    'POST', 1, 'zhaowei',   '/api/favorite/add',   '192.168.2.34', '教学楼', 0, 34,  NOW() - INTERVAL 8 DAY),
-(10, '商品管理', 1, 'ProductController.search()',  'GET',  1, 'sunli',     '/api/product/search', '192.168.2.34', '教学楼', 0, 78,  NOW() - INTERVAL 15 DAY),
-(11, '用户管理', 2, 'UserController.login()',      'POST', 1, 'huangjie',  '/api/user/login',     '10.0.1.100',   '同城', 0, 38,  NOW() - INTERVAL 180 DAY),
-(12, '商品管理', 2, 'ProductController.create()',  'POST', 1, 'huangjie',  '/api/product/create', '10.0.1.100',   '同城', 0, 95,  NOW() - INTERVAL 14 DAY),
-(13, '订单管理', 2, 'OrderController.cancel()',    'PUT',  1, 'wanghai',   '/api/order/20/cancel','10.0.0.88',    '图书馆', 0, 123, NOW() - INTERVAL 7 DAY),
-(14, '支付管理', 2, 'PaymentController.refund()',  'POST', 1, 'zhangmei',  '/api/payment/refund', '172.16.0.45',  '同城', 0, 456, NOW() - INTERVAL 6 DAY),
-(15, '系统管理', 4, 'AdminController.exportLog()',  'GET',  2, 'admin',     '/api/admin/log/export','10.0.0.1',    '服务器', 0, 2345, NOW() - INTERVAL 3 DAY)
+(1, '用户管理', 1, 'UserController.register()',  'POST', 1, 'testuser',  '/api/user/register', '192.168.1.100', 0, 156, NOW() - INTERVAL 90 DAY),
+(2, '商品管理', 2, 'ProductController.create()',  'POST', 1, 'testuser',  '/api/product/create', '192.168.1.100', 0, 89,  NOW() - INTERVAL 30 DAY),
+(3, '商品管理', 2, 'ProductController.create()',  'POST', 1, 'liming',    '/api/product/create', '10.0.0.55',    0, 112, NOW() - INTERVAL 25 DAY),
+(4, '订单管理', 2, 'OrderController.create()',    'POST', 1, 'liming',    '/api/order/create',   '10.0.0.55',    0, 234, NOW() - INTERVAL 60 DAY),
+(5, '支付管理', 2, 'PaymentController.pay()',     'POST', 1, 'liming',    '/api/payment/pay',    '10.0.0.55',    0, 567, NOW() - INTERVAL 60 DAY),
+(6, '商品管理', 3, 'ProductController.update()',  'PUT',  1, 'testuser',  '/api/product/1',      '192.168.1.100', 0, 67,  NOW() - INTERVAL 20 DAY),
+(7, '用户管理', 2, 'UserController.login()',      'POST', 1, 'wangfang',  '/api/user/login',     '172.16.0.23',  0, 45,  NOW() - INTERVAL 45 DAY),
+(8, '订单管理', 2, 'OrderController.create()',    'POST', 1, 'wangfang',  '/api/order/create',   '172.16.0.23',  0, 189, NOW() - INTERVAL 55 DAY),
+(9, '收藏管理', 2, 'FavoriteController.add()',    'POST', 1, 'zhaowei',   '/api/favorite/add',   '192.168.2.34', 0, 34,  NOW() - INTERVAL 8 DAY),
+(10, '商品管理', 1, 'ProductController.search()',  'GET',  1, 'sunli',     '/api/product/search', '192.168.2.34', 0, 78,  NOW() - INTERVAL 15 DAY),
+(11, '用户管理', 2, 'UserController.login()',      'POST', 1, 'huangjie',  '/api/user/login',     '10.0.1.100',   0, 38,  NOW() - INTERVAL 180 DAY),
+(12, '商品管理', 2, 'ProductController.create()',  'POST', 1, 'huangjie',  '/api/product/create', '10.0.1.100',   0, 95,  NOW() - INTERVAL 14 DAY),
+(13, '订单管理', 2, 'OrderController.cancel()',    'PUT',  1, 'wanghai',   '/api/order/20/cancel','10.0.0.88',    0, 123, NOW() - INTERVAL 7 DAY),
+(14, '支付管理', 2, 'PaymentController.refund()',  'POST', 1, 'zhangmei',  '/api/payment/refund', '172.16.0.45',  0, 456, NOW() - INTERVAL 6 DAY),
+(15, '系统管理', 4, 'AdminController.exportLog()',  'GET',  2, 'admin',     '/api/admin/log/export','10.0.0.1',    0, 2345, NOW() - INTERVAL 3 DAY)
 AS new
 ON DUPLICATE KEY UPDATE
     `title` = new.`title`,

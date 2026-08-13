@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
-import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OrderPreparation {
 
-    private final ProductOrderPort productOrderPort;
+    private final ProductInventoryPort productInventoryPort;
     private final ProductQueryPort productQueryPort;
     private final IdGenerator idGenerator;
 
@@ -56,12 +56,12 @@ public class OrderPreparation {
      * 买家不可认领自己的资产由 {@code Order.createOrder} 的领域不变量统一把关。
      */
     private ValidatedSnapshots loadAndValidateSnapshots(List<CreateOrderCommand.CreateOrderItem> items) {
-        Map<String, ProductOrderPort.ProductSnapshot> snapshotMap =
-                fetchByIds(items, productOrderPort::getSnapshots, ProductOrderPort.ProductSnapshot::productId);
+        Map<String, ProductInventoryPort.ProductSnapshot> snapshotMap =
+                fetchByIds(items, productInventoryPort::getSnapshots, ProductInventoryPort.ProductSnapshot::productId);
 
         String sellerId = null;
         for (CreateOrderCommand.CreateOrderItem item : items) {
-            ProductOrderPort.ProductSnapshot snapshot = snapshotMap.get(item.productId());
+            ProductInventoryPort.ProductSnapshot snapshot = snapshotMap.get(item.productId());
             if (snapshot == null) {
                 throw new OrderDomainException("资产不存在: " + item.productId());
             }
@@ -96,7 +96,7 @@ public class OrderPreparation {
      */
     private List<OrderItem> buildOrderItems(
             List<CreateOrderCommand.CreateOrderItem> items,
-            Map<String, ProductOrderPort.ProductSnapshot> snapshotMap,
+            Map<String, ProductInventoryPort.ProductSnapshot> snapshotMap,
             Map<String, ProductDetail> productDetailMap) {
         return items.stream()
                 .map(item -> buildOrderItem(item, snapshotMap.get(item.productId()), productDetailMap))
@@ -108,7 +108,7 @@ public class OrderPreparation {
      */
     private OrderItem buildOrderItem(
             CreateOrderCommand.CreateOrderItem item,
-            ProductOrderPort.ProductSnapshot snapshot,
+            ProductInventoryPort.ProductSnapshot snapshot,
             Map<String, ProductDetail> productDetailMap) {
         Money unitPrice = Money.of(snapshot.price());
         Money subtotal = unitPrice.multiply(item.quantity());
@@ -129,7 +129,7 @@ public class OrderPreparation {
      */
     private static ProductSnapshot buildProductSnapshot(String productId, ProductDetail detail, Money price) {
         if (detail == null) {
-            // 快照与详情来自不同读源（ProductOrderPort / ProductQueryPort），详情缺失说明跨端口数据不一致。
+            // 快照与详情来自不同读源（ProductInventoryPort / ProductQueryPort），详情缺失说明跨端口数据不一致。
             // 空值回退会把脏快照写进订单，这里抛错随事务整体回滚，交由客户端重试。
             throw new OrderDomainException("资产详情缺失: " + productId);
         }
@@ -154,7 +154,7 @@ public class OrderPreparation {
     /**
      * 校验后的快照集（内部传递用：已确认每个商品 id 都存在于快照 map 中）
      */
-    private record ValidatedSnapshots(UserId sellerId, Map<String, ProductOrderPort.ProductSnapshot> snapshots) {}
+    private record ValidatedSnapshots(UserId sellerId, Map<String, ProductInventoryPort.ProductSnapshot> snapshots) {}
 
     /**
      * 准备结果

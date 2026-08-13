@@ -81,7 +81,7 @@ order/
 │   │   └── OrderItemReadModel.java
 │   ├── port/                              # 出站端口
 │   │   ├── OrderCachePort.java             # 缓存端口
-│   │   ├── ProductOrderPort.java       # 订单生命周期产品操作端口
+│   │   ├── ProductInventoryPort.java       # 订单生命周期产品操作端口
 │   │   ├── ProductQueryPort.java           # 商品查询端口
 │   │   ├── PaymentGatewayPort.java         # 支付网关端口
 │   │   ├── UserInfoPort.java              # 用户信息端口
@@ -100,7 +100,7 @@ order/
 │       └── OrderOperationException.java
 ```
 
-> **跨模块适配器位置**：order 模块定义的 `ProductOrderPort` / `ProductQueryPort` / `PaymentGatewayPort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/ProductOrderAdapter`、`product/OrderProductQueryAdapter`、`payment/OrderPaymentGatewayAdapter`。`OrderCachePort` 的实现 `RedisOrderCacheAdapter` 位于 order 模块自身 `adapter/outbound/cache/`，因其仅操作订单域缓存。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
+> **跨模块适配器位置**：order 模块定义的 `ProductInventoryPort` / `ProductQueryPort` / `PaymentGatewayPort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/ProductInventoryAdapter`、`product/ProductQueryAdapter`、`payment/OrderPaymentGatewayAdapter`。`OrderCachePort` 的实现 `RedisOrderCacheAdapter` 位于 order 模块自身 `adapter/outbound/cache/`，因其仅操作订单域缓存。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
 
 > **Money 值对象**：`Money` 不在 order 模块，位于 `easyorange-common`。order 模块通过 `Money` 使用金额，但不重复定义。
 > **ProductId 值对象**：`ProductId` 同样位于 `easyorange-common`（`common/domain/ProductId.java`，与 `Money` 同模式，带 `@JsonValue`/`@JsonCreator`），order 与 product 模块共享同一实现，不各自重复定义（2026-08-08 收敛）。
@@ -115,12 +115,12 @@ OrderCommandHandler.handle(CreateOrderCommand) ─ @Transactional(rollbackFor=Ex
   1. DistributedLockPort 获取商品锁（key=eo:order:lock:product:{productId}，按 productId 排序避免死锁）
   2. OrderPreparation 准备商品数据（校验在线、库存、非自购）
   3. Order.createOrder 创建订单 + 发布事件（Outbox 同事务原子）
-  4. ProductOrderPort.decreaseStock() 同步扣库存（同事务）
+  4. ProductInventoryPort.decreaseStock() 同步扣库存（同事务）
   5. PaymentGatewayPort 创建支付记录（同事务）
   6. 任一步失败 → 业务事务整体回滚，抛 OrderCreationException（库存/支付同事务回滚，无补偿路径）
 ```
 
-**库存恢复**：仅由 `OrderLifecycleEventConsumer` 消费订单取消/退款事件时调用 `ProductOrderPort.restoreStock()` 恢复；完成事件触发 `markAsSold`。
+**库存恢复**：仅由 `OrderLifecycleEventConsumer` 消费订单取消/退款事件时调用 `ProductInventoryPort.restoreStock()` 恢复；完成事件触发 `markAsSold`。
 
 ## CQRS 架构
 
@@ -145,8 +145,8 @@ OrderCommandHandler.handle(CreateOrderCommand) ─ @Transactional(rollbackFor=Ex
 
 | 端口 | 适配器 | 目标模块 |
 |------|--------|---------|
-| `ProductOrderPort` | `ProductOrderAdapter` | product |
-| `ProductQueryPort` | `OrderProductQueryAdapter` | product |
+| `ProductInventoryPort` | `ProductInventoryAdapter` | product |
+| `ProductQueryPort` | `ProductQueryAdapter` | product |
 | `PaymentGatewayPort` | `OrderPaymentGatewayAdapter` | payment |
 | `OrderCachePort` | `RedisOrderCacheAdapter` | Redis |
 

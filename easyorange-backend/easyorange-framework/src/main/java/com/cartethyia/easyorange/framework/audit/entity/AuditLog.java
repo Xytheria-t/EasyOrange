@@ -52,13 +52,10 @@ public class AuditLog {
     /** 请求 URL */
     private String requestUrl;
 
-    /** 操作地点（预留） */
-    private String operLocation;
-
     /** 请求参数（JSON 字符串，敏感字段已掩码） */
     private String requestParams;
 
-    /** 响应数据（JSON 字符串） */
+    /** 响应数据（JSON 字符串，敏感字段已掩码） */
     private String responseData;
 
     /** 操作状态（0 正常, 1 异常） */

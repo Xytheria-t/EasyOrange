@@ -4,10 +4,9 @@ com.cartethyia.easyorange.framework.config.async.ThreadPoolConfig
 com.cartethyia.easyorange.framework.config.redis.RedisConfig
 com.cartethyia.easyorange.framework.config.database.MybatisPlusConfig
 com.cartethyia.easyorange.framework.config.web.WebMvcConfig
-com.cartethyia.easyorange.framework.config.cache.LocalCacheConfig
+com.cartethyia.easyorange.framework.config.cache.RedisCacheConfig
 com.cartethyia.easyorange.framework.config.idgen.IdGeneratorConfig
 com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig
 com.cartethyia.easyorange.framework.metrics.MetricsConfig
 com.cartethyia.easyorange.framework.config.redis.RedissonConfig
 com.cartethyia.easyorange.framework.messaging.config.EventExternalizationConfig
-com.cartethyia.easyorange.framework.config.resilience4j.Resilience4jConfig

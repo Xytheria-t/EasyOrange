@@ -132,30 +132,33 @@ spring:
 
 easyorange:
   cache:
-    # 图片处理缓存
+    # Spring Cache 统一 TTL — 一致性靠写路径显式 evict，TTL 仅作兜底（默认 30m）
+    default-ttl: 30m
+    # 图片处理缓存（Caffeine，独立使用）
     image:
       max-size: 1000
       expire-hours: 24
-    # L1 本地缓存（Caffeine）
-    l1:
-      max-size: 5000
-      expire-minutes: 10
-    # L2 共享缓存（Redis）— 负缓存哨兵默认 30s；L1 TTL 必须 ≤ L2 TTL
-    l2:
-      expire-minutes: 30
-      negative-expire-seconds: 30
 ```
 
-### 缓存类型转换
+### Spring Cache 注解式 + Redis 单层
 
-`RedisCache` 薄封装层已移除（2026-07-17），类型安全转换通过 `CacheUtils.cast()` 实现：
+手写多级缓存（`MultiLevelCache` + Pub/Sub 广播）与 `CacheUtils` / `LocalCacheConfig` 已移除（2026-08-13），缓存统一走 `RedisCacheConfig`：
+
+- `@EnableCaching` + `RedisCacheManager`：String key + `GenericJacksonJsonRedisSerializer` value（与 `RedisConfig` 序列化约定一致，值可读可调试）；key 形如 `eo:product:info::<id>`
+- 统一短 TTL（`easyorange.cache.default-ttl`），**一致性靠写路径显式 `@CacheEvict` + TTL 兜底**，不再需要 L1/L2 配平与跨节点广播
+- `CacheErrorHandler` fail-open：Redis 故障时读 → 直查 DB，写 → 放弃本次缓存（替代旧逐点 try-catch）
+- **序列化注意**：`java.*` 包 final 类型（`Optional`、`List.of()` 的不可变列表）不带类型信息、无法反序列化 —— 缓存值必须用 POJO/record（`com.cartethyia.*`）或可变 `ArrayList`
 
 ```java
-// 类型安全转换 (支持 Number 跨类型)
-String val = CacheUtils.cast(redisTemplate.opsForValue().get(key), String.class);
-```
+// 读：未命中自动执行方法体回源（null 返回值不落缓存）
+@Cacheable(cacheNames = "productInfoCache", key = "#productId",
+           condition = "#productId != null", unless = "#result == null")
+public ProductVO getProductCache(String productId, Supplier<ProductVO> loader) { ... }
 
-`CacheUtils.cast()` 在类型不匹配时抛出 `ClassCastException`（同标准 Java 语义），不再使用自定义异常。
+// 失效：写路径显式触发
+@CacheEvict(cacheNames = "productInfoCache", key = "#productId", condition = "#productId != null")
+public void evictProductCache(String productId) { }
+```
 
 ---
 
@@ -169,7 +172,7 @@ String val = CacheUtils.cast(redisTemplate.opsForValue().get(key), String.class)
 domainEventPublisher.publish(new UserCreatedEvent(userId));
 ```
 
-事件通过 `RabbitMQDomainEventPublisher` 发布到 `eo.domain.events` Topic Exchange，各模块 `@RabbitListener` 消费者异步处理。
+事件通过 `ModulithDomainEventPublisher`（`@Primary`，Spring Modulith Outbox）与应用事务同原子持久化，提交后异步外发到 `eo.domain.events` Topic Exchange，各模块 `@RabbitListener` 消费者异步处理。
 
 **注意事项**：
 
@@ -227,12 +230,10 @@ spring:
 
 easyorange:
   cache:
-    l1:
-      max-size: 5000
-      expire-minutes: 10
-    l2:
-      expire-minutes: 30
-      negative-expire-seconds: 30
+    default-ttl: 30m
+    image:
+      max-size: 1000
+      expire-hours: 24
 ```
 
 ---

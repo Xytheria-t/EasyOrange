@@ -119,16 +119,6 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Resilience4j CircuitBreaker + Micrometer metrics（无 Spring Boot starter，兼容 Boot 4） -->
-        <dependency>
-            <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-circuitbreaker</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-micrometer</artifactId>
-        </dependency>
-
     </dependencies>
 
 </project>

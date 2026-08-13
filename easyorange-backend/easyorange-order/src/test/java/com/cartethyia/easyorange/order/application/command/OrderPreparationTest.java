@@ -9,8 +9,8 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
-import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
-import com.cartethyia.easyorange.order.domain.port.ProductOrderPort.ProductSnapshot;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort.ProductSnapshot;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import java.math.BigDecimal;
@@ -30,7 +30,7 @@ import org.mockito.quality.Strictness;
 class OrderPreparationTest {
 
     @Mock
-    private ProductOrderPort productOrderPort;
+    private ProductInventoryPort productInventoryPort;
 
     @Mock
     private ProductQueryPort productQueryPort;
@@ -45,7 +45,7 @@ class OrderPreparationTest {
 
     @BeforeEach
     void setUp() {
-        preparation = new OrderPreparation(productOrderPort, productQueryPort, idGenerator);
+        preparation = new OrderPreparation(productInventoryPort, productQueryPort, idGenerator);
         when(idGenerator.generateId()).thenReturn(ITEM_ID);
     }
 
@@ -65,7 +65,7 @@ class OrderPreparationTest {
     @Test
     @DisplayName("成功准备：返回资产方 ID 与回填详情的订单项")
     void prepare_validItems_returnsSellerAndEnrichedOrderItems() {
-        when(productOrderPort.getSnapshots(any()))
+        when(productInventoryPort.getSnapshots(any()))
                 .thenReturn(List.of(snapshot("100", SELLER_ID, true, 10), snapshot("101", SELLER_ID, true, 3)));
         when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(detail("100"), detail("101")));
 
@@ -87,7 +87,7 @@ class OrderPreparationTest {
     @Test
     @DisplayName("资产不存在时抛异常")
     void prepare_missingProduct_throws() {
-        when(productOrderPort.getSnapshots(any())).thenReturn(List.of());
+        when(productInventoryPort.getSnapshots(any())).thenReturn(List.of());
 
         assertThatThrownBy(() -> preparation.prepareOrderItems(List.of(item("999", 1))))
                 .isInstanceOf(OrderDomainException.class)
@@ -97,7 +97,7 @@ class OrderPreparationTest {
     @Test
     @DisplayName("资产已下架时抛异常")
     void prepare_offlineProduct_throws() {
-        when(productOrderPort.getSnapshots(any())).thenReturn(List.of(snapshot("100", SELLER_ID, false, 10)));
+        when(productInventoryPort.getSnapshots(any())).thenReturn(List.of(snapshot("100", SELLER_ID, false, 10)));
 
         assertThatThrownBy(() -> preparation.prepareOrderItems(List.of(item("100", 1))))
                 .isInstanceOf(BusinessException.class)
@@ -107,7 +107,7 @@ class OrderPreparationTest {
     @Test
     @DisplayName("资产库存不足时抛异常")
     void prepare_noStock_throws() {
-        when(productOrderPort.getSnapshots(any())).thenReturn(List.of(snapshot("100", SELLER_ID, true, 0)));
+        when(productInventoryPort.getSnapshots(any())).thenReturn(List.of(snapshot("100", SELLER_ID, true, 0)));
 
         assertThatThrownBy(() -> preparation.prepareOrderItems(List.of(item("100", 1))))
                 .isInstanceOf(BusinessException.class)
@@ -117,7 +117,7 @@ class OrderPreparationTest {
     @Test
     @DisplayName("订单项来自不同资产方时抛异常")
     void prepare_differentSellers_throws() {
-        when(productOrderPort.getSnapshots(any()))
+        when(productInventoryPort.getSnapshots(any()))
                 .thenReturn(List.of(snapshot("100", SELLER_ID, true, 10), snapshot("101", "3", true, 10)));
 
         assertThatThrownBy(() -> preparation.prepareOrderItems(List.of(item("100", 1), item("101", 1))))
@@ -128,7 +128,7 @@ class OrderPreparationTest {
     @Test
     @DisplayName("快照存在但详情缺失时抛异常（跨读源不一致，回滚而非写入脏快照）")
     void prepare_missingDetail_throws() {
-        when(productOrderPort.getSnapshots(any())).thenReturn(List.of(snapshot("100", SELLER_ID, true, 10)));
+        when(productInventoryPort.getSnapshots(any())).thenReturn(List.of(snapshot("100", SELLER_ID, true, 10)));
         // getProductsByIds 未打桩 → 返回空列表，模拟详情读源缺数据
 
         assertThatThrownBy(() -> preparation.prepareOrderItems(List.of(item("100", 1))))

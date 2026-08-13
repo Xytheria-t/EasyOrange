@@ -19,12 +19,12 @@ public class ProductSnapshotPortImpl implements ProductSnapshotPort {
     }
 
     @Override
-    public Optional<ProductOrderSnapshot> findSnapshot(ProductId productId) {
+    public Optional<ProductSnapshot> findSnapshot(ProductId productId) {
         return productRepository.findById(productId).map(this::toSnapshot);
     }
 
-    private ProductOrderSnapshot toSnapshot(Product product) {
-        return new ProductOrderSnapshot(
+    private ProductSnapshot toSnapshot(Product product) {
+        return new ProductSnapshot(
                 product.getId(),
                 product.getSellerId(),
                 product.getPrice(),

@@ -6,8 +6,8 @@
 
 ```
 framework/
-├── async/             # AsyncManager（异步任务管理）
-├── cache/             # CacheUtils + MultiLevelCache（多级缓存门面，回源用 java.util.function.Supplier）
+├── async/             # 线程池配置（ThreadPoolConfig + MdcTaskDecorator，AsyncManager 已移除）
+├── cache/             # RedisCacheConfig（Spring Cache 注解式 + Redis 单层，@EnableCaching / CacheManager / fail-open CacheErrorHandler）
 ├── config/            # 框架配置（线程池/Jackson/MDC/缓存/Redis/Security/WebMVC/Properties）
 ├── event/             # 领域事件基础设施（EventConsumerHandler / EventMetadata / EventMetricsService / EventIdempotencyChecker / DlqAnomalyListener）
 ├── exception/         # GlobalExceptionHandler（全局异常处理，统一返回 Result<T> 信封）
@@ -60,8 +60,8 @@ JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthe
 redisTemplate.opsForValue().set(key, value);
 redisTemplate.opsForValue().set(key, value, timeout, unit);
 Object obj = redisTemplate.opsForValue().get(key);
-// 类型安全转换使用 CacheUtils.cast()
-String val = CacheUtils.cast(redisTemplate.opsForValue().get(key), String.class);
+// 反序列化值按需强转（GenericJacksonJsonRedisSerializer 带类型信息，字符串恒为 String）
+String val = (String) redisTemplate.opsForValue().get(key);
 redisTemplate.delete(key);
 redisTemplate.delete(List.of(key1, key2));
 
@@ -77,11 +77,18 @@ redisTemplate.opsForValue().increment(key, delta); // +delta
 // Hash 操作
 redisTemplate.opsForHash().putAll(key, map);
 
-// SCAN 扫描
-CacheUtils.scan(redisTemplate, pattern, count);  // 基于 SCAN 的批量扫描
+// SCAN 扫描（避免 KEYS * 阻塞）
+Set<String> keys = redisTemplate.execute((RedisCallback<Set<String>>) conn -> {
+    try (Cursor<byte[]> cursor = conn.keyCommands().scan(
+            ScanOptions.scanOptions().match(pattern).count(1000).build())) {
+        Set<String> result = new HashSet<>();
+        while (cursor.hasNext()) result.add(new String(cursor.next(), StandardCharsets.UTF_8));
+        return result;
+    }
+});
 ```
 
-> **技巧**: `CacheUtils.cast(obj, clazz)` 支持 Number 跨类型转换（Long ↔ Integer）。`CacheUtils.scan()` 使用 `SCAN` 命令（cursor 迭代），避免 `KEYS *` 阻塞 Redis。需要 Lua 脚本时直接调用 `redisTemplate.execute(redisScript, keys, args)`。
+> **技巧**: 反序列化值按需强转（`GenericJacksonJsonRedisSerializer` 带类型信息，字符串恒为 String）。需要 Lua 脚本时直接调用 `redisTemplate.execute(redisScript, keys, args)`。
 
 ### 分布式锁
 
@@ -139,32 +146,31 @@ public class MdcTaskDecorator implements TaskDecorator {
 
 ### 布隆过滤器 (bloom/)
 
-布隆过滤器已移除（2026-07-31）：`BloomFilter` / `RedisBitmapBloomFilter` / `BloomFilterConfig` 随 product 模块缓存穿透方案简化一并删除，缓存穿透统一由 `MultiLevelCache` 内置负缓存（NullValue 哨兵 30s）承担。
+布隆过滤器已移除（2026-07-31）：`BloomFilter` / `RedisBitmapBloomFilter` / `BloomFilterConfig` 随 product 模块缓存穿透方案简化一并删除；手写多级缓存亦已移除（2026-08-13），缓存统一走 Spring Cache 注解式 + Redis 单层（见 `RedisCacheConfig`），不做负缓存（TTL 兜底 + 写路径显式 evict）。
 
-### 多级缓存门面 (cache/)
+### Spring Cache 注解式缓存 (cache/)
+
+手写多级缓存（`MultiLevelCache` + Pub/Sub 广播）已移除（2026-08-13），统一为 **Spring Cache 注解 + 纯 Redis 单层**：
 
 ```java
-// L1 Caffeine → L2 Redis → DB 三级串联
-ProductDetail detail = multiLevelCache.get(
-    "product:detail:" + id,
-    ProductDetail.class,
-    () -> repository.findDetail(id)
-);
+// 读：缓存未命中自动执行方法体回源（null 返回值不落缓存）
+@Cacheable(cacheNames = ProductCacheConstant.PRODUCT_INFO_CACHE, key = "#productId", condition = "#productId != null", unless = "#result == null")
+public ProductVO getProductCache(String productId, Supplier<ProductVO> loader) { ... }
 
-// 手动失效 (同时清除 L1 + L2 + 广播其他节点)
-multiLevelCache.evict("product:detail:" + id);
+// 失效：写路径事件显式触发
+@CacheEvict(cacheNames = ProductCacheConstant.PRODUCT_INFO_CACHE, key = "#productId", condition = "#productId != null")
+public void evictProductCache(String productId) { }
 ```
 
-**行为约定（2026-07-31 重构后）**：
-- 构造使用单一 `MultiLevelCache.Config` record（`Config.of(prefix, l2Ttl)` 便捷工厂），**旧的多参构造器已删除**；校验 `l1Ttl ≤ l2Ttl`、`negativeTtl ≤ l2Ttl`，违反直接抛 `IllegalArgumentException`
-- **负缓存**：回源为 null 时以 `NullValue` 哨兵缓存（L1+L2，默认 30s），`get` 会返回缓存的 null 而不重复回源
-- **击穿防护**：回源走 Caffeine 原子单飞；配置了 `RedissonClient` 时叠加跨节点分布式锁（锁超时 fail-open）
-- **可观测**：指标 `easyorange.cache.requests{result=l1_hit|l2_hit|l2_negative|load}` + `easyorange.cache.load` Timer
-- `evictL2` 已删除，列表类缓存失效统一用 `evict()`（本节点 L1 同样过期，仅删 L2 会留本地陈旧值）
+**行为约定**：
+- 配置在 `config/cache/RedisCacheConfig`：`@EnableCaching` + `RedisCacheManager`（String key + `GenericJacksonJsonRedisSerializer` value，与 `RedisConfig` 一致）+ 统一 TTL（`easyorange.cache.default-ttl`，默认 30m）+ `CacheErrorHandler` fail-open（Redis 故障降级直查 DB，替代旧逐点 try-catch）
+- **序列化注意**：`java.*` 包 final 类型（`Optional`、`List.of()` 的不可变列表）不带类型信息、无法反序列化 — 缓存值必须用 POJO/record（`com.cartethyia.*`）或可变 `ArrayList`
+- 缓存 key 形如 `eo:product:info::<id>`（cacheName::key，`RedisCacheManager` 默认前缀）
+- 图片处理缓存 `imageProcessCache`（Caffeine）保留独立使用
 
-### Resilience4j CircuitBreaker (resilience4j/)
+### Resilience4j (resilience4j/) — 已移除
 
-`Resilience4jConfig` 提供 `CircuitBreakerRegistry` Bean（自动绑定 Micrometer 指标）。默认配置：COUNT_BASED 滑动窗口 10、最小调用 5、失败率阈值 50%、开路 60s、Half-Open 3 次探测，记录 `RedisConnectionFailureException` / `QueryTimeoutException`。Redis 缓存操作统一走熔断 + 多级降级（参考 `CategoryCacheAdapter`）。
+`Resilience4jConfig`（CircuitBreakerRegistry）已删除（2026-08-13，随手写多级缓存一并移除，无消费者）。Redis 缓存故障降级统一由 `RedisCacheConfig` 的 `CacheErrorHandler` fail-open 承担；pom 不再依赖 resilience4j。
 
 > **AI 重试/Bulkhead 已移除（2026-08-03，ADR-0008）**：原 `aiLlmRetry` / `aiVisionRetry` / `aiLlmBulkhead` / `aiVisionBulkhead` / `dbHeavyBulkhead` 预注册实例已随 Spring AI 框架化删除——重试与并发隔离由 `AiModelConfig` 的 `OpenAiSetup.setupSyncClient`（openai-java 客户端内置）承担。AI 模块不再注入本模块的 `Retry` / `Bulkhead` bean。
 
@@ -219,7 +225,7 @@ idempotency:
 - **JacksonConfig 统一使用 Jackson 3.x**：不再配置 Jackson 2.x `ObjectMapper`。通过 `JsonMapperBuilderCustomizer` 注册 `ToStringSerializer`（Long→String 防止 JS 精度丢失）到 Spring Boot 4 自动配置的 Jackson 3 `ObjectMapper`；同时保留 `jsonMapper()` Bean 供显式注入。两者均注册 `Long.class` 和 `long` 基本类型序列化。
 - **`ParameterNamesModule` 由 Spring Boot 4 自动配置**，领域事件 record 无需 @JsonCreator 注解即可反序列化；JacksonConfig 不再需要手动注册
 - **WebMvcConfig 不再重写 `extendMessageConverters`**：Spring Boot 4.0 使用 Jackson 3.x 的 HTTP 消息转换器，`MappingJackson2HttpMessageConverter`（Jackson 2.x）配置已无效
-- **RedisConfig 显式配置序列化器（2026-07-23）**：Spring Boot 4 `DataRedisAutoConfiguration` 不设任何序列化器（默认 `JdkSerializationRedisSerializer`，二进制 key/value 破坏 Lua `tonumber` 且不可读）。`RedisConfig` 通过 `@AutoConfigureBefore` 注入自定义 `@Bean RedisTemplate<Object, Object>`：`StringRedisSerializer`（key/hashKey）+ `GenericJacksonJsonRedisSerializer.builder().enableDefaultTyping(BasicPolymorphicTypeValidator).build()`（value/hashValue，含默认类型信息以便 `CacheUtils.cast()` 还原为原类型）。修改序列化策略时须同步评估所有 `RedisTemplate` 使用方
+- **RedisConfig 显式配置序列化器（2026-07-23）**：Spring Boot 4 `DataRedisAutoConfiguration` 不设任何序列化器（默认 `JdkSerializationRedisSerializer`，二进制 key/value 破坏 Lua `tonumber` 且不可读）。`RedisConfig` 通过 `@AutoConfigureBefore` 注入自定义 `@Bean RedisTemplate<Object, Object>`：`StringRedisSerializer`（key/hashKey）+ `GenericJacksonJsonRedisSerializer.builder().enableDefaultTyping(BasicPolymorphicTypeValidator).build()`（value/hashValue，含默认类型信息以便反序列化还原为原类型）。修改序列化策略时须同步评估所有 `RedisTemplate` 使用方
 - **配置属性类统一使用 `@ConfigurationProperties` + `@ConfigurationPropertiesScan` 模式**（纯 POJO，无需 `@Component`）：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖。主应用类 `EasyOrangeApplication` 已添加 `@ConfigurationPropertiesScan`，自动扫描所有 `@ConfigurationProperties` 类。推荐加 `@Validated` + Jakarta Validation 约束（`@Min`/`@NotBlank`/`@NotNull` 等）实现启动时 fail-fast 验证，替代手写 `@PostConstruct validate()`— 后者仅在需要输出警告而非错误时保留
 - **`IdempotencyKeyFilter` 幂等过滤器（替代原 `IdempotencyAspect`）**：作为 `@Component` 自动注册为 servlet filter（`OncePerRequestFilter` 防重复执行），并在 `SecurityConfig` 用 `addFilterBefore(idempotencyKeyFilter, AnonymousAuthenticationFilter.class)` 置于安全链最外层，以抓取最终响应。缓存的是序列化响应而非类型化返回值。修改 filter 顺序时需评估与 `RateLimitFilter`/安全过滤器的包裹关系
 - **`RateLimitFilter` 支持 `@SkipRateLimit`/`@SkipRepeatSubmit`**：Filter 通过 `HandlerMapping` 解析目标 Controller 方法，检查方法或类上的 Skip 注解后跳过对应检查。支持类级（`@Inherited` 继承）和方法级。无法解析 handler（如静态资源）时放行默认规则

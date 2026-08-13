@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.framework.messaging.config;
 
 import com.cartethyia.easyorange.common.event.DomainEvent;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -9,18 +8,15 @@ import org.springframework.modulith.events.EventExternalizationConfiguration;
 import org.springframework.modulith.events.RoutingTarget;
 
 /**
- * Configures Spring Modulith's event externalization to RabbitMQ.
+ * 配置 Spring Modulith 事件外部化到 RabbitMQ。
  * <p>
- * All domain events implementing {@link DomainEvent} are externalized to the
- * {@value RabbitMQConfig#EXCHANGE_NAME} Topic Exchange. The routing key is derived from
- * the event class name by convention: CamelCase → dot.case lowercase
- * (e.g. {@code OrderCreatedEvent} → {@code order.created}).
+ * 所有实现 {@link DomainEvent} 的领域事件都会外部化到
+ * {@value RabbitMQConfig#EXCHANGE_NAME} Topic Exchange。路由键由事件类名按约定推导：
+ * CamelCase → 全小写点分（如 {@code OrderCreatedEvent} → {@code order.created}）。
  * <p>
- * This config is active when RabbitMQ is enabled (default). When disabled,
- * events are still persisted in the {@code EVENT_PUBLICATION} table but never
- * externalized — useful for local development without RabbitMQ.
+ * 本配置在 RabbitMQ 启用时生效（默认）。禁用时事件仍持久化到 {@code EVENT_PUBLICATION} 表，
+ * 但不会外部化——便于本地开发时无需启动 RabbitMQ。
  */
-@Slf4j
 @AutoConfiguration
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class EventExternalizationConfig {
@@ -37,13 +33,15 @@ public class EventExternalizationConfig {
     }
 
     /**
-     * Converts a domain event class name to a RabbitMQ routing key.
-     * Convention: CamelCase → dot.case lowercase, with trailing "Event" suffix stripped.
+     * 将领域事件类型名转换为 RabbitMQ 路由键。
+     * 约定：CamelCase → 全小写点分。
      * <p>
-     * Examples:
+     * "Event" 后缀已由 {@link DomainEvent#eventType()} 剥离。
+     * <p>
+     * 示例：
      * <pre>
-     *   ProductCreatedEvent  → "product.created"
-     *   OrderPaidEvent      → "order.paid"
+     *   OrderCreated        → "order.created"
+     *   ProductMarkedSold   → "product.marked.sold"
      * </pre>
      */
     private static String toRoutingKey(DomainEvent event) {

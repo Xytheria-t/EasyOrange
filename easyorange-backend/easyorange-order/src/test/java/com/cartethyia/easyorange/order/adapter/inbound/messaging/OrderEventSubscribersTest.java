@@ -10,7 +10,7 @@ import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
-import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.util.List;
@@ -38,7 +38,7 @@ class OrderEventSubscribersTest {
     class OrderLifecycleEventConsumerTests {
 
         @Mock
-        private ProductOrderPort productOrderPort;
+        private ProductInventoryPort productInventoryPort;
 
         @Mock
         private PaymentGatewayPort paymentGatewayPort;
@@ -50,14 +50,11 @@ class OrderEventSubscribersTest {
 
         @BeforeEach
         void setUp() {
-            // Allow idempotency check to pass through (fail-open: returns true when Redis unavailable)
-            lenient()
-                    .when(idempotencyChecker.isDuplicate(anyString(), anyString()))
-                    .thenReturn(false);
+            // Allow idempotency claim to pass through (fail-open: returns true when Redis unavailable)
             lenient().when(idempotencyChecker.tryMark(anyString(), anyString())).thenReturn(true);
             var metricsService = new EventMetricsService(new SimpleMeterRegistry());
             consumer = new OrderLifecycleEventConsumer(
-                    idempotencyChecker, metricsService, productOrderPort, paymentGatewayPort);
+                    idempotencyChecker, metricsService, productInventoryPort, paymentGatewayPort);
         }
 
         private Message buildMessage() {
@@ -79,8 +76,8 @@ class OrderEventSubscribersTest {
 
             consumer.onOrderCreated(event, buildMessage());
 
-            verify(productOrderPort, never()).restoreStock(anyString());
-            verify(productOrderPort, never()).markAsSold(anyString());
+            verify(productInventoryPort, never()).restoreStock(anyString());
+            verify(productInventoryPort, never()).markAsSold(anyString());
         }
 
         @Test
@@ -90,7 +87,7 @@ class OrderEventSubscribersTest {
 
             consumer.onOrderCancelled(event, buildMessage());
 
-            verify(productOrderPort).restoreStock(PRODUCT_ID);
+            verify(productInventoryPort).restoreStock(PRODUCT_ID);
         }
 
         @Test
@@ -100,7 +97,7 @@ class OrderEventSubscribersTest {
 
             consumer.onOrderCompleted(event, buildMessage());
 
-            verify(productOrderPort).markAsSold(PRODUCT_ID);
+            verify(productInventoryPort).markAsSold(PRODUCT_ID);
         }
 
         @Test
@@ -110,7 +107,7 @@ class OrderEventSubscribersTest {
 
             consumer.onOrderRefunded(event, buildMessage());
 
-            verify(productOrderPort).restoreStock(PRODUCT_ID);
+            verify(productInventoryPort).restoreStock(PRODUCT_ID);
             verify(paymentGatewayPort).refundPayment(ORDER_ID, "退款原因");
         }
     }

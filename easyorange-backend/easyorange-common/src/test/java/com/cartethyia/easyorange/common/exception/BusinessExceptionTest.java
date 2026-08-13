@@ -6,6 +6,8 @@ import com.cartethyia.easyorange.common.enums.ResultCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.ErrorResponse;
 
 /**
  * {@link BusinessException} 单元测试
@@ -107,6 +109,77 @@ class BusinessExceptionTest {
 
             // Assert
             assertThat(exception.defaultCode()).isEqualTo(ResultCode.BUSINESS_ERROR.getCode());
+        }
+    }
+
+    @Nested
+    @DisplayName("StatusCode Tests")
+    class StatusCodeTests {
+
+        @Test
+        @DisplayName("B 前缀错误码应映射到 400")
+        void bCode_shouldMapToBadRequest() {
+            // Arrange
+            BusinessException exception = BusinessException.of("业务异常");
+
+            // Assert
+            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        }
+
+        @Test
+        @DisplayName("A0403 错误码应映射到 403")
+        void a0403_shouldMapToForbidden() {
+            // Arrange
+            BusinessException exception = BusinessException.of(ResultCode.FORBIDDEN);
+
+            // Assert
+            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        }
+
+        @Test
+        @DisplayName("A0429 错误码应映射到 429")
+        void a0429_shouldMapToTooManyRequests() {
+            // Arrange
+            BusinessException exception = BusinessException.of(ResultCode.TOO_MANY_REQUESTS);
+
+            // Assert
+            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        }
+
+        @Test
+        @DisplayName("C 前缀错误码应映射到 500")
+        void cCode_shouldMapToInternalServerError() {
+            // Arrange
+            BusinessException exception = BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR);
+
+            // Assert
+            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        @Test
+        @DisplayName("D 前缀错误码应映射到 502")
+        void dCode_shouldMapToBadGateway() {
+            // Arrange
+            BusinessException exception = BusinessException.of(ResultCode.UPSTREAM_ERROR);
+
+            // Assert
+            assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
+        }
+    }
+
+    @Nested
+    @DisplayName("ErrorResponse Tests")
+    class ErrorResponseTests {
+
+        @Test
+        @DisplayName("业务异常应实现 Spring ErrorResponse（状态码单一来源）")
+        void shouldImplementErrorResponse() {
+            // Arrange
+            BusinessException exception = BusinessException.of(ResultCode.FORBIDDEN);
+
+            // Assert
+            assertThat(exception).isInstanceOf(ErrorResponse.class);
+            assertThat(((ErrorResponse) exception).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         }
     }
 

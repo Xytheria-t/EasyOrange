@@ -10,16 +10,16 @@ import java.util.Optional;
 
 public interface ProductSnapshotPort {
 
-    Optional<ProductOrderSnapshot> findSnapshot(ProductId productId);
+    Optional<ProductSnapshot> findSnapshot(ProductId productId);
 
-    default List<ProductOrderSnapshot> findSnapshots(List<ProductId> productIds) {
+    default List<ProductSnapshot> findSnapshots(List<ProductId> productIds) {
         return productIds.stream()
                 .map(this::findSnapshot)
                 .flatMap(Optional::stream)
                 .toList();
     }
 
-    record ProductOrderSnapshot(
+    record ProductSnapshot(
             ProductId productId,
             SellerId sellerId,
             Money price,

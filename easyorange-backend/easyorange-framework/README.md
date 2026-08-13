@@ -9,13 +9,12 @@
 ### 核心功能
 
 - **安全认证**：JWT 认证、密码加密、CORS 配置
-- **缓存抽象**：Redis 缓存封装、本地缓存（Caffeine）、多级缓存门面（L1 Caffeine → L2 Redis → DB 三级串联）
-- **缓存穿透防护**：`MultiLevelCache` 内置负缓存（`NullValue` 哨兵，默认 30s），回源 null 时写哨兵避免热点空 key 反复打库
+- **缓存**：Spring Cache 注解式 + Redis 单层（统一短 TTL，一致性靠写路径显式 evict；图片处理缓存保留独立 Caffeine）
+- **缓存故障降级**：`CacheErrorHandler` fail-open —— Redis 不可用时读直查 DB、写放弃本次缓存，注解侧零改动
 - **分布式 ID**：UUID v7 (RFC 9562) 生成器，零协调零依赖，时间有序
-- **一致性哈希**：基于 TreeMap + 虚拟节点的一致性哈希路由，用于缓存分片等场景
-- **领域事件**：事件发布与订阅机制
+- **领域事件**：事件发布与订阅机制（Outbox 模式，与应用事务同原子）
 - **异常处理**：全局异常处理、友好错误信息
-- **AOP 增强**：限流、防重复提交、审计日志
+- **Web 增强**：限流与防重（`RateLimitFilter` 配置驱动）、Idempotency-Key 幂等、审计日志（Outbox 异步入库）
 - **线程池管理**：异步任务执行、线程池监控
 - **文件服务**：文件上传、存储管理
 
@@ -70,10 +69,9 @@ public class Application {
 
 | 组件 | 说明 |
 |------|------|
+| `RedisCacheConfig` | Spring Cache 配置（`@EnableCaching` + `RedisCacheManager`：String key + JSON value，统一 TTL 由 `easyorange.cache.default-ttl` 控制，`CacheErrorHandler` fail-open）。手写多级缓存已移除（2026-08-13） |
+| `imageProcessCache` | Caffeine 图片处理缓存（`easyorange.cache.image.*`，expireAfterAccess 24h） |
 | `RedisTemplate<Object, Object>` | Spring Data Redis 标准模板（`RedisConfig` 显式配置 StringRedisSerializer + GenericJacksonJsonRedisSerializer） |
-| `CacheUtils` | 静态辅助（cast 类型安全转换 / scan SCAN 批量扫描） |
-| `LocalCacheConfig` | Caffeine 本地缓存配置（imageProcessCache / l1Cache） |
-| `MultiLevelCache` | 多级缓存门面（L1 Caffeine → L2 Redis → DB 三级串联，自动回填，含负缓存防穿透） |
 | `RedissonClient` | Redisson 分布式锁（RLock，替代旧版 Lua 自旋锁） |
 
 ### 分布式基础设施
@@ -88,15 +86,15 @@ public class Application {
 | 组件 | 说明 |
 |------|------|
 | `DomainEventPublisher` | 领域事件发布接口 |
-| `RabbitMQDomainEventPublisher` | 领域事件发布实现（RabbitMQ Topic Exchange） |
+| `ModulithDomainEventPublisher` | `@Primary` 发布实现：Spring Modulith Outbox（`EVENT_PUBLICATION` 表与应用事务同原子）→ 异步外发 RabbitMQ Topic Exchange |
 
-### AOP 组件
+### Web 过滤器组件
 
 | 组件 | 说明 |
 |------|------|
-| `RateLimiterAspect` | 限流切面 |
-| `RepeatSubmitAspect` | 防重复提交切面 |
-| `AuditLogAspect` | 审计日志切面（@Around + Builder + @Async） |
+| `RateLimitFilter` | 限流 + 防连点统一过滤器（配置驱动：GET 走本地 200/60s/IP，写走 Redisson 分布式令牌桶，fail-open） |
+| `IdempotencyKeyFilter` | Idempotency-Key 幂等（配置驱动，24h 响应缓存，非 2xx 不缓存） |
+| `AuditLogAspect` | 审计日志切面（@Around + Builder + @Async，Outbox 模式异步入库） |
 
 ## 使用示例
 
@@ -126,31 +124,19 @@ public class AuthController {
 ### 缓存使用
 
 ```java
-@Service
-public class UserService {
-    
-    private final RedisTemplate<Object, Object> redisTemplate;
-    
-    public User getUserById(Long id) {
-        String key = "user:" + id;
-        
-        // 先查缓存 (使用 CacheUtils.cast 类型安全转换)
-        User user = CacheUtils.cast(redisTemplate.opsForValue().get(key), User.class);
-        if (user != null) {
-            return user;
-        }
-        
-        // 查数据库
-        user = userRepository.findById(id).orElse(null);
-        if (user != null) {
-            // 缓存结果
-            redisTemplate.opsForValue().set(key, user, 30, TimeUnit.MINUTES);
-        }
-        
-        return user;
-    }
+// 读：缓存未命中自动执行方法体回源（null 返回值不落缓存），TTL 由 easyorange.cache.default-ttl 统一控制
+@Cacheable(cacheNames = "productInfoCache", key = "#productId", condition = "#productId != null", unless = "#result == null")
+public ProductVO getProductCache(String productId, Supplier<ProductVO> loader) {
+    return productId == null ? null : loader.get();
+}
+
+// 失效：写路径显式触发（商品领域事件 / MQ 事件消费），Redis 故障由 CacheErrorHandler fail-open 降级
+@CacheEvict(cacheNames = "productInfoCache", key = "#productId", condition = "#productId != null")
+public void evictProductCache(String productId) {
 }
 ```
+
+> 序列化注意：`java.*` 包 final 类型（`Optional`、`List.of()` 不可变列表）不带类型信息、无法反序列化 —— 缓存值必须用 POJO/record（`com.cartethyia.*`）或可变 `ArrayList`。
 
 ### 领域事件
 
@@ -188,37 +174,19 @@ public class UserEventListener {
 }
 ```
 
-### 限流
+### 限流与防重（过滤器，配置驱动）
 
-```java
-@RestController
-@RequestMapping("/api")
-public class ApiController {
-    
-    @RateLimiter(key = "api", time = 1, timeUnit = TimeUnit.MINUTES, count = 100)
-    @GetMapping("/data")
-    public Result<Data> getData() {
-        // 限制每分钟最多 100 次请求
-        return Result.ok(dataService.getData());
-    }
-}
+```yaml
+easyorange:
+  ratelimit:
+    rules:            # 规则列表（按路径前缀匹配，GET 本地限流 / 写走 Redisson 分布式令牌桶）
+      - pattern: /api/**
+        ...
+    repeat:           # 防连点：3s 间隔 + 请求体 hash
+      interval-seconds: 3
 ```
 
-### 防重复提交
-
-```java
-@RestController
-@RequestMapping("/api")
-public class OrderController {
-    
-    @RepeatSubmit(interval = 5, timeUnit = TimeUnit.SECONDS, message = "请勿重复提交")
-    @PostMapping("/order")
-    public Result<Order> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        // 5 秒内防止重复提交
-        return Result.ok(orderService.createOrder(request));
-    }
-}
-```
+> 原 `@RateLimiter` / `@RepeatSubmit` AOP 注解已移除，统一收敛到 `RateLimitFilter`（见 `RateLimitFilterProperties`）。幂等请用 `Idempotency-Key` 头（`IdempotencyKeyFilter`）。
 
 ## 配置说明
 

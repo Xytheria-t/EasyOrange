@@ -1,6 +1,8 @@
 package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
+import com.cartethyia.easyorange.product.domain.exception.RatingNotFoundException;
+import com.cartethyia.easyorange.product.domain.exception.RatingNotOwnerException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,10 +34,10 @@ public class ProductRatingCommandHandler {
     @Transactional(rollbackFor = Exception.class)
     public void deleteReview(String userId, String reviewId) {
         ProductRating rating =
-                productRatingRepository.findById(reviewId).orElseThrow(() -> new IllegalArgumentException("评价不存在"));
+                productRatingRepository.findById(reviewId).orElseThrow(() -> new RatingNotFoundException(reviewId));
 
         if (!rating.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("只能删除自己的评价");
+            throw new RatingNotOwnerException(reviewId);
         }
 
         rating.delete();
@@ -47,7 +49,7 @@ public class ProductRatingCommandHandler {
     @Transactional(rollbackFor = Exception.class)
     public void likeReview(String reviewId) {
         ProductRating rating =
-                productRatingRepository.findById(reviewId).orElseThrow(() -> new IllegalArgumentException("评价不存在"));
+                productRatingRepository.findById(reviewId).orElseThrow(() -> new RatingNotFoundException(reviewId));
         rating.like();
         productRatingRepository.update(rating);
         log.info("action=like_review reviewId={}", reviewId);

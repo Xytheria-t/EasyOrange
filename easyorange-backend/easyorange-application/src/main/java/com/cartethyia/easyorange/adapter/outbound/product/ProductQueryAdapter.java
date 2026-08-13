@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Primary
 @Component
 @RequiredArgsConstructor
-public class OrderProductQueryAdapter implements ProductQueryPort {
+public class ProductQueryAdapter implements ProductQueryPort {
 
     private final ProductQueryHandler productQueryHandler;
 

@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.order.domain.port;
 import java.math.BigDecimal;
 import java.util.List;
 
-public interface ProductOrderPort {
+public interface ProductInventoryPort {
 
     List<ProductSnapshot> getSnapshots(List<String> productIds);
 

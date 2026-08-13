@@ -26,7 +26,7 @@ application/
 │       │       ├── admin/                 # AdminProductQueryAdapter / AdminUserQueryAdapter / AdminOrderQueryAdapter / AdminRatingQueryAdapter
 │       │       ├── elasticsearch/         # ES 搜索索引适配器（ElasticsearchIndexManager / ProductDocument / ReindexService / 索引读写适配器）
 │       │       ├── payment/               # OrderPaymentGatewayAdapter
-│       │       ├── product/               # ProductOrderAdapter / OrderProductQueryAdapter / ProductNotificationAdapter / ProductSearchIndexAdapter / FavoriteProductInfoAdapter
+│       │       ├── product/               # ProductInventoryAdapter / ProductQueryAdapter / ProductNotificationAdapter / ProductSearchIndexAdapter / FavoriteProductInfoAdapter
 │       │       └── user/                  # MessageUserInfoAdapter / SellerInfoAdapter
 ├── src/main/resources/
 │   ├── application.yaml                   # 基础配置
@@ -88,7 +88,7 @@ easyorange-application
 - ~~`thread-pool.*` — 线程池配置~~（已移除，改用虚拟线程，仅保留 `taskScheduler` 硬编码为 poolSize=5）
 - `file.upload.*` — 文件上传路径 (`path`) 和 URL 前缀 (`url-prefix`)
 - ~~`easyorange.idgen.*`~~ — ID 生成器配置（已移除，UUID v7 零配置零依赖）
-- `easyorange.cache.*` — 多级缓存配置（`image.max-size`、`image.expire-hours`、`l1.max-size`、`l1.expire-minutes`、`l2.expire-minutes`、`l2.negative-expire-seconds`；负缓存默认 30s，L1 TTL 必须 ≤ L2 TTL）
+- `easyorange.cache.*` — 缓存配置（`image.max-size`/`image.expire-hours` 图片处理本地缓存；`default-ttl` Spring Cache 统一 TTL，默认 30m，一致性靠写路径显式 evict + TTL 兜底）
 - ~~`http-client.*`~~ — HTTP 客户端超时和协议版本（已删除，Spring Boot 4 自动配置 RestClient）
 
 ### 日志配置 (logback-spring.xml)
@@ -130,8 +130,8 @@ easyorange-application
 | 适配器 | 端口接口 | 模块 | 功能 |
 |--------|---------|------|------|
 | `OrderPaymentGatewayAdapter` | `PaymentGatewayPort` | order | 支付网关调用 |
-| `ProductOrderAdapter` | `ProductOrderPort` | order | 订单生命周期产品操作 |
-| `OrderProductQueryAdapter` | `ProductQueryPort` | order | 商品查询 |
+| `ProductInventoryAdapter` | `ProductInventoryPort` | order | 订单生命周期产品操作 |
+| `ProductQueryAdapter` | `ProductQueryPort` | order | 商品查询 |
 | `SellerInfoAdapter` | `SellerInfoPort` | product | 资产方信息查询 |
 | `MessageUserInfoAdapter` | `UserInfoPort` | message | 用户信息查询 |
 | `FavoriteProductInfoAdapter` | `ProductInfoPort` | favorite | 商品信息查询 |

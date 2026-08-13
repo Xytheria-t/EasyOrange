@@ -6,15 +6,15 @@
 
 ### Issue tracker
 
-Issues 与 PRDs 存放在 GitHub issues，用 `gh` CLI 读写。See `docs/agents/issue-tracker.md`.
+Issues 与 PRDs 存放在 GitHub issues，用 `gh` CLI 读写（命令模板见 [doc/agents/常用命令.md](doc/agents/常用命令.md)「GitHub Issues / PR」）。
 
 ### Triage labels
 
-默认 triage label 词汇：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`。See `docs/agents/triage-labels.md`.
+默认 triage label 词汇：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`。
 
 ### Domain docs
 
-single-context 布局：根目录 `CONTEXT.md` + `doc/adr/`。See `docs/agents/domain.md`.
+single-context 布局：领域术语与 ADR 消费约定见 [doc/agents/领域参考.md](doc/agents/领域参考.md)「Agent 领域文档消费约定」。
 
 ## 项目结构
 
@@ -22,7 +22,7 @@ single-context 布局：根目录 `CONTEXT.md` + `doc/adr/`。See `docs/agents/d
 easy-orange/
 ├── easyorange-backend/          # Spring Boot 后端 (11 Maven 模块)
 ├── easyorange-frontend/         # React 前端 (Vite + TypeScript + TanStack Query)
-├── doc/                         # 项目文档（架构 / 集成 / ADR / DATABASE / PRODUCT_DIRECTION）
+├── doc/                         # 项目文档（架构 / 集成 / ADR / agents 参考 / DATABASE / PRODUCT_DIRECTION）
 ├── infra/                       # 基础设施即代码（Prometheus / Grafana / ES IK 镜像）
 ├── k8s/                         # K8s 部署（kustomize，无状态应用层）
 ├── load-tests/                  # k6 压测脚本
@@ -63,7 +63,7 @@ easy-orange/
 | 数据库表清单 / 商品状态机 / 举报处理工作流 / AI 能力清单 | [领域参考.md](doc/agents/领域参考.md) | 动表结构、状态流转、AI 链路时 |
 | 后端架构核心原则 / 模块依赖关系 / 错误码规范 / 已知问题 | [架构参考.md](doc/agents/架构参考.md) | 改架构、跨模块、异常/错误码、排查已知坑时 |
 | 环境变量 / ECC 激活表 / 后端约定 / 前端约定 | [开发规范.md](doc/agents/开发规范.md) | 写后端/前端代码前 |
-| 常用命令 / CI/CD | [常用命令.md](doc/agents/常用命令.md) | 构建、测试、启动、部署时 |
+| 常用命令（构建/测试/gh CLI）/ CI/CD | [常用命令.md](doc/agents/常用命令.md) | 构建、测试、启动、部署、GitHub issues 时 |
 | 架构文档（技术栈/系统架构/模块结构/DDD规范/安全认证/数据库迁移/部署演进） | [doc/架构/架构.md](doc/架构/架构.md) | 深入架构规范时 |
 | AI 资产管理（6 决策点 / 营销文案 / WebSocket 协议） | [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md) | 动 AI 决策点或沟通链路时 |
 | 后端所有 REST + WebSocket 端点 | [doc/集成/API-速查.md](doc/集成/API-速查.md) | 找端点、写接口时 |

@@ -10,7 +10,6 @@ import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductUpdateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotOwnerException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
@@ -37,7 +36,7 @@ public class ProductCommandHandler {
     // ==================== CRUD ====================
 
     public String createProduct(String userId, CreateProductCommand command) {
-        var product = Product.create(new ProductCreateSpec(
+        var created = Product.create(new ProductCreateSpec(
                 SellerId.of(userId),
                 CategoryId.of(command.categoryId()),
                 ProductTitle.of(command.name()),
@@ -50,28 +49,29 @@ public class ProductCommandHandler {
                 ProductDescription.of(command.description()),
                 ImageSet.of(command.imageUrls())));
 
-        var created = productRepository.save(product.aggregate());
-        domainEventPublisher.publish(product.event());
-        return created.getId().value();
+        var saved = productRepository.save(created.aggregate());
+        domainEventPublisher.publish(created.event());
+        return saved.getId().value();
     }
 
     public void updateProduct(String userId, UpdateProductCommand command) {
-        var productId = ProductId.of(command.id());
-        var product = verifyOwnership(productId, userId);
+        var product = findByIdOrThrow(ProductId.of(command.id()));
 
         mutate(
                 product,
-                p -> p.update(new ProductUpdateSpec(
-                        mapIfPresent(command.categoryId(), CategoryId::of),
-                        mapIfPresent(command.name(), ProductTitle::of),
-                        mapIfPresent(command.price(), Money::of),
-                        mapIfPresent(command.originalPrice(), Money::of),
-                        mapIfPresent(command.stock(), StockQuantity::of),
-                        command.conditionLevel() != null ? parseConditionLevel(command.conditionLevel()) : null,
-                        mapIfPresent(command.location(), TradeLocation::of),
-                        mapIfPresent(command.contactMethod(), ContactMethod::of),
-                        mapIfPresent(command.description(), ProductDescription::of),
-                        mapIfPresent(command.imageUrls(), ImageSet::of))));
+                p -> p.update(
+                        userId,
+                        new ProductUpdateSpec(
+                                mapIfPresent(command.categoryId(), CategoryId::of),
+                                mapIfPresent(command.name(), ProductTitle::of),
+                                mapIfPresent(command.price(), Money::of),
+                                mapIfPresent(command.originalPrice(), Money::of),
+                                mapIfPresent(command.stock(), StockQuantity::of),
+                                mapIfPresent(command.conditionLevel(), this::parseConditionLevel),
+                                mapIfPresent(command.location(), TradeLocation::of),
+                                mapIfPresent(command.contactMethod(), ContactMethod::of),
+                                mapIfPresent(command.description(), ProductDescription::of),
+                                mapIfPresent(command.imageUrls(), ImageSet::of))));
     }
 
     public void deleteProduct(String userId, String id) {
@@ -85,18 +85,22 @@ public class ProductCommandHandler {
 
     // ==================== Stock ====================
 
-    public void decrementStock(String productId, Integer quantity) {
+    public void decrementStock(String productId) {
+        decrementStock(productId, 1);
+    }
+
+    public void decrementStock(String productId, int quantity) {
         var product = findByIdOrThrow(ProductId.of(productId));
-        mutate(product, p -> p.decrementStock(quantity != null ? quantity : 1));
+        mutate(product, p -> p.decrementStock(quantity));
     }
 
     public void restoreStock(String productId) {
-        restoreStock(productId, null);
+        restoreStock(productId, 1);
     }
 
-    public void restoreStock(String productId, Integer quantity) {
+    public void restoreStock(String productId, int quantity) {
         var product = findByIdOrThrow(ProductId.of(productId));
-        mutate(product, p -> p.restoreStock(quantity != null ? quantity : 1));
+        mutate(product, p -> p.restoreStock(quantity));
     }
 
     // ==================== Status Transitions ====================
@@ -151,13 +155,5 @@ public class ProductCommandHandler {
 
     private Product findByIdOrThrow(ProductId id) {
         return productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
-    }
-
-    private Product verifyOwnership(ProductId productId, String userId) {
-        var product = findByIdOrThrow(productId);
-        if (!product.getSellerId().equals(SellerId.of(userId))) {
-            throw new ProductNotOwnerException(productId);
-        }
-        return product;
     }
 }
