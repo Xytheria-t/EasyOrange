@@ -1,0 +1,145 @@
+# ===================================================================
+# EasyOrange 金标准评测集（Golden Set）
+# 用途：评估进 CI — Judge 回归打分 + 检索指标（hit@5 / MRR）采样
+# 结构：
+#   id              用例 ID（chat-* 生成质量 / retr-* 检索质量）
+#   scope           场景（chat）
+#   question        用户问题
+#   reference_answer Judge 对照参考（chat 类必须有）
+#   gold_doc_ids    期望命中的知识库文档 ID（retr 类必须有，引用 R__seed_knowledge_docs.sql）
+# 维护：新增/修改用例走 PR，分数回归对比见 eval/baselines.yaml
+# ===================================================================
+cases:
+  # ---- 生成质量（chat + 知识库引用溯源）----
+  - id: chat-001
+    scope: chat
+    question: 平台交易流程是什么？
+    reference_answer: 交易流程：浏览商品下单、卖家确认后买家付款、卖家发货、买家确认收货、平台担保放款，平台不接触货物。
+    gold_doc_ids: [kb-0001]
+  - id: chat-002
+    scope: chat
+    question: 我怎么申请退款？
+    reference_answer: 未发货可申请全额退款；已发货未签收可申请退款并拦截物流；签收后 7 天内支持无理由退货，商品需保持完好。
+    gold_doc_ids: [kb-0002]
+  - id: chat-003
+    scope: chat
+    question: 运费由谁承担？
+    reference_answer: 默认买家承担；卖家可设满额包邮；无理由退货退货运费买家承担，质量问题退货卖家承担。
+    gold_doc_ids: [kb-0003]
+  - id: chat-004
+    scope: chat
+    question: 信用分怎么提升？
+    reference_answer: 按时发货、描述相符、及时确认收货、纠纷无责可加分；超时发货、虚假描述、恶意退款会扣分，每日更新一次。
+    gold_doc_ids: [kb-0004]
+  - id: chat-005
+    scope: chat
+    question: 平台能卖烟酒吗？
+    reference_answer: 不能。烟酒、处方药、医疗器械等特许经营商品禁售；虚拟物品仅限话费充值、游戏点卡等白名单品类。
+    gold_doc_ids: [kb-0005]
+  - id: chat-006
+    scope: chat
+    question: 下单后什么时候发货？
+    reference_answer: 卖家确认订单后买家付款，随后卖家安排发货，买家在物流签收后确认收货，平台担保放款。
+    gold_doc_ids: [kb-0001]
+  - id: chat-007
+    scope: chat
+    question: 签收后还能退吗？
+    reference_answer: 签收后 7 天内支持无理由退货，退回商品需保持完好、不影响二次销售；质量问题可申诉，平台介入仲裁。
+    gold_doc_ids: [kb-0002]
+  - id: chat-008
+    scope: chat
+    question: 信用分等级怎么划分？
+    reference_answer: 90 分以上优质用户（优先展示、更快放款），70-89 良好，60-69 一般，60 分以下限制部分交易功能。
+    gold_doc_ids: [kb-0004]
+  - id: chat-009
+    scope: chat
+    question: 商品有质量问题退货谁出运费？
+    reference_answer: 因商品质量问题或描述不符导致的退货，退货运费由卖家承担；无理由退货由买家承担。
+    gold_doc_ids: [kb-0003]
+  - id: chat-010
+    scope: chat
+    question: 二手手机能卖吗？
+    reference_answer: 可以。二手手机、数码、书籍、服饰等个人闲置物品可正常发布，但需如实描述成色与瑕疵。
+    gold_doc_ids: [kb-0005]
+  # ---- 生成质量（chat 通用，无知识库引用）----
+  - id: chat-011
+    scope: chat
+    question: 你好，你是谁？
+    reference_answer: 我是 EasyOrange 平台 AI 助手，可以回答平台交易、退款、运费、信用分等规则问题。
+  - id: chat-012
+    scope: chat
+    question: 你能做什么？
+    reference_answer: 我可以解答平台规则问题（交易流程、退款、运费、信用分、禁售品类），也能陪你闲聊。
+  - id: chat-013
+    scope: chat
+    question: 谢谢你的帮助
+    reference_answer: 不客气，有需要随时问我。
+  - id: chat-014
+    scope: chat
+    question: 今天天气怎么样？
+    reference_answer: 抱歉，我无法获取实时天气信息，建议查看天气 App。
+  - id: chat-015
+    scope: chat
+    question: 什么是 AI？
+    reference_answer: AI 是人工智能，指让机器模拟人类智能的技术，比如自然语言处理、图像识别等。
+  - id: chat-016
+    scope: chat
+    question: 你能推荐一下买什么类型的数码产品吗？
+    reference_answer: 可以按预算和用途推荐，比如手机、平板、耳机，请告诉我你的预算和偏好。
+  - id: chat-017
+    scope: chat
+    question: 在吗？
+    reference_answer: 在的，有什么可以帮你？
+  - id: chat-018
+    scope: chat
+    question: 这个平台是什么？
+    reference_answer: EasyOrange 是 C2C 资产流转平台，买卖双方直接交易，平台提供担保、仲裁与 AI 智能服务。
+  - id: chat-019
+    scope: chat
+    question: 你会写代码吗？
+    reference_answer: 我可以提供代码思路和示例，但更擅长解答 EasyOrange 平台相关问题。
+  - id: chat-020
+    scope: chat
+    question: 再见
+    reference_answer: 再见，有需要随时回来找我。
+  # ---- 检索质量（hit@5 / MRR，无生成）----
+  - id: retr-001
+    scope: chat
+    question: 交易流程
+    gold_doc_ids: [kb-0001]
+  - id: retr-002
+    scope: chat
+    question: 怎么退款
+    gold_doc_ids: [kb-0002]
+  - id: retr-003
+    scope: chat
+    question: 运费谁出
+    gold_doc_ids: [kb-0003]
+  - id: retr-004
+    scope: chat
+    question: 信用分规则
+    gold_doc_ids: [kb-0004]
+  - id: retr-005
+    scope: chat
+    question: 禁售商品
+    gold_doc_ids: [kb-0005]
+  - id: retr-006
+    scope: chat
+    question: 确认收货后钱怎么到卖家
+    gold_doc_ids: [kb-0001]
+  - id: retr-007
+    scope: chat
+    question: 七天无理由退货
+    gold_doc_ids: [kb-0002]
+  - id: retr-008
+    scope: chat
+    question: 满多少包邮
+    gold_doc_ids: [kb-0003]
+  - id: retr-009
+    scope: chat
+    question: 信用分扣分
+    gold_doc_ids: [kb-0004]
+  - id: retr-010
+    scope: chat
+    question: 可以卖处方药吗
+    gold_doc_ids: [kb-0005]

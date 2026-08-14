@@ -1,5 +1,6 @@
-package com.cartethyia.easyorange.ai.service;
+package com.cartethyia.easyorange.ai.adapter.outbound.persistence;
 
+import com.cartethyia.easyorange.ai.service.CreditScoringService;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;

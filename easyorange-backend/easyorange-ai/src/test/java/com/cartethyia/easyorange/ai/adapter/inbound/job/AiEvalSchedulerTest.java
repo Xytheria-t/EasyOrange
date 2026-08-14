@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.AiCallLogRecorder;
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.service.AiJudge;
 import com.cartethyia.easyorange.ai.service.AiModelSupport;
 import java.util.List;
 import java.util.Map;
@@ -42,10 +43,8 @@ class AiEvalSchedulerTest {
         aiProperties = new AiProperties();
         scheduler = new AiEvalScheduler(
                 jdbcTemplate,
-                chatModel,
-                new AiModelSupport(mock(AiCallLogRecorder.class)),
-                aiProperties,
-                new ObjectMapper());
+                new AiJudge(chatModel, new AiModelSupport(mock(AiCallLogRecorder.class)), new ObjectMapper()),
+                aiProperties);
     }
 
     private static ChatResponse textResponse(String text) {
