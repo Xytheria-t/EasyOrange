@@ -18,6 +18,7 @@ const ReportManagePage = lazy(() => import('./pages/reports/ReportManagePage'));
 const StatsPage = lazy(() => import('./pages/stats/StatsPage'));
 const CategoryManagePage = lazy(() => import('./pages/categories/CategoryManagePage'));
 const RatingManagePage = lazy(() => import('./pages/ratings/RatingManagePage'));
+const KnowledgePage = lazy(() => import('./pages/knowledge/KnowledgePage'));
 
 export function AdminRoutes() {
     return (
@@ -33,6 +34,7 @@ export function AdminRoutes() {
                         <Route path="categories" element={<CategoryManagePage />} />
                         <Route path="reviews" element={<RatingManagePage />} />
                         <Route path="stats" element={<StatsPage />} />
+                        <Route path="knowledge" element={<KnowledgePage />} />
                     </Route>
                 </Route>
             </Routes>

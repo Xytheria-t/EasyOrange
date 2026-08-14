@@ -18,6 +18,12 @@ export {
 } from './useAdminDashboard';
 export { useAdminGuard } from './useAdminGuard';
 export {
+    useAdminKnowledgeDocs,
+    useCreateKnowledgeDoc,
+    useDeleteKnowledgeDoc,
+    useReindexKnowledge,
+} from './useAdminKnowledge';
+export {
     useAdminCancelOrder,
     useAdminOrderDetail,
     useAdminOrderStats,

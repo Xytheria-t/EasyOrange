@@ -21,7 +21,9 @@ import type {
     CategoryResponse,
     CategoryTreeResponse,
     CategoryUpdateRequest,
+    CreateKnowledgeDocRequest,
     DashboardStats,
+    KnowledgeDoc,
     OrderInterventionRequest,
     OrderStatsResponse,
     PendingItems,
@@ -265,6 +267,31 @@ export const adminApi = {
         return request<void>(`${ADMIN_API_PREFIX}/reviews/${id}`, {
             method: 'DELETE',
             body: data,
+        });
+    },
+
+    getKnowledgeDocs(pageNum = 1, pageSize = 10) {
+        return request<PageResult<KnowledgeDoc>>(`${ADMIN_API_PREFIX}/knowledge`, {
+            params: { pageNum, pageSize },
+        });
+    },
+
+    createKnowledgeDoc(data: CreateKnowledgeDocRequest) {
+        return request<string>(`${ADMIN_API_PREFIX}/knowledge`, {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    deleteKnowledgeDoc(id: string) {
+        return request<void>(`${ADMIN_API_PREFIX}/knowledge/${id}`, {
+            method: 'DELETE',
+        });
+    },
+
+    reindexKnowledge() {
+        return request<number>(`${ADMIN_API_PREFIX}/knowledge/reindex`, {
+            method: 'POST',
         });
     },
 };

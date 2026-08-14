@@ -437,3 +437,20 @@ export interface TopProductItem {
     status: number;
     statusDesc: string;
 }
+
+/** 知识库文档（RAG 摄入管线，管理端） */
+export interface KnowledgeDoc {
+    id: string;
+    title: string;
+    content: string;
+    source: string;
+    status: 'PENDING' | 'INDEXED' | 'FAILED';
+    chunkCount: number;
+    createTime: string;
+}
+
+export interface CreateKnowledgeDocRequest {
+    title: string;
+    content: string;
+    source: string;
+}

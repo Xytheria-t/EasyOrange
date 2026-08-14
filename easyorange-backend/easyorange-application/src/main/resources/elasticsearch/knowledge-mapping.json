@@ -1,0 +1,16 @@
+{
+  "properties": {
+    "id": { "type": "keyword" },
+    "docId": { "type": "keyword" },
+    "chunkIndex": { "type": "integer" },
+    "title": {
+      "type": "text",
+      "analyzer": "ik_max_word",
+      "search_analyzer": "ik_smart",
+      "fields": { "keyword": { "type": "keyword" } }
+    },
+    "content": { "type": "text", "analyzer": "ik_max_word", "search_analyzer": "ik_smart" },
+    "source": { "type": "keyword" },
+    "embedding": { "type": "dense_vector", "dims": 1024, "index": true, "similarity": "cosine" }
+  }
+}
