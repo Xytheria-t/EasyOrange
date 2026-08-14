@@ -84,8 +84,22 @@
 | 智能问答 | `POST /api/ai/qa` | productId, question |
 | 智能文案 | `POST /api/ai/generate-copy` | productInfo + style (standard/detailed/concise/emotional) |
 | 语义搜索 | `GET /api/ai/semantic-search` | keyword, pageNum, pageSize |
+| AI 对话（多轮 Agent） | `POST /api/ai/chat` | question, sessionId, forceFresh |
+| AI 对话（SSE 流式） | `POST /api/ai/chat/stream` | question, sessionId；事件：token / sources / done / error |
+| AI 输出反馈 | `POST /api/ai/feedback` | scope, question, answer, helpful, comment, callLogId |
+| 知识库检索（RAG） | `GET /api/ai/knowledge/search` | keyword, topK |
 | AI 议价 | ~~已下线~~ | — | — |
 | 智能导购搜索 | `GET /api/ai/guide-search` | query, filters |
+
+### 平台运维（RAG 知识库 / 评估）
+
+| 功能 | 方法+路径 | 参数 |
+|------|----------|------|
+| 知识库列表 | `GET /api/admin/knowledge` | pageNum, pageSize |
+| 新增知识库文档（自动摄入） | `POST /api/admin/knowledge` | title, content, source |
+| 删除知识库文档 | `DELETE /api/admin/knowledge/{id}` | — |
+| 补索引（重试 PENDING） | `POST /api/admin/knowledge/reindex` | — |
+| 反馈导出为金标准用例 | `GET /api/admin/ai/feedback/export` | limit |
 
 ## 八、信用
 

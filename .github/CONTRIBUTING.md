@@ -63,7 +63,7 @@ ci: enable JaCoCo gate in workflow
    ```bash
    git config core.hooksPath .githooks
    ```
-4. **开发**：遵循 [`.claude/rules/ecc/`](.claude/rules/ecc/) 下的编码规范（ECC 分层规则集，common 通用 + java/typescript/react/web 语言专用）
+4. **开发**：遵循 [`../.claude/rules/ecc/`](../.claude/rules/ecc/) 下的编码规范（ECC 分层规则集，common 通用 + java/typescript/react/web 语言专用）
 5. **本地验证**：
    ```bash
    # 后端
@@ -120,7 +120,7 @@ ci: enable JaCoCo gate in workflow
 - **领域事件实现 `DomainEvent` 接口**
 - **CQRS 限于 product/order/payment/message 四模块**
 
-详见 [`doc/架构/架构-DDD规范.md`](doc/架构/架构-DDD规范.md) 与 [`AGENTS.md`](AGENTS.md)。
+详见 [`../doc/架构/架构-DDD规范.md`](../doc/架构/架构-DDD规范.md) 与 [`../AGENTS.md`](../AGENTS.md)。
 
 ## 问题与讨论
 

@@ -1,6 +1,6 @@
 # ADR 索引 — 架构决策记录
 
-> 共 10 篇（0000–0009）。**推荐阅读顺序**：先读「现役决策」（按主题：事务一致性 → 模块边界 → 消息选型 → CQRS → AI → 治理），再按需翻阅「已替代历史」（决策反转链）。
+> 共 11 篇（0000–0010）。**推荐阅读顺序**：先读「现役决策」（按主题：事务一致性 → 模块边界 → 消息选型 → CQRS → AI → 治理），再按需翻阅「已替代历史」（决策反转链）与「演进方案」（不实施，触发条件未到）。
 
 ## 现役决策（按主题阅读顺序）
 
@@ -12,6 +12,7 @@
 | [0002](0002-cqrs-scope-4-modules.md) | CQRS 范围 | 仅 product/order/payment/message 四模块上 CQRS，ArchUnit 守卫边界 | 2026-07-14 |
 | [0008](0008-ai-spring-ai-framework.md) | AI 框架化 | 全面框架化 Spring AI 2.0，删除自研 Port/Adapter/指标（**Supersedes ADR-0003**） | 2026-08-03 |
 | [0004](0004-ai-bulkhead-token-budget.md) | AI 治理 | `@TokenBudget` AOP 日预算仍现役；Bulkhead 已删（**部分替代**，见 0008） | 2026-07-26 |
+| [0010](0010-order-saga-evolution-plan.md) | 订单一致性（演进） | **真 Saga 演进方案（Proposed）**：拆库判据 + 编排 + Outbox 补偿自愈 + 代码骨架，触发条件未到不实施 | 2026-08-14 |
 | [0009](0009-domain-service-placement.md) | DDD 治理 | 领域服务数量是领域性质产物，禁止按数量对齐模块 | 2026-08-06 |
 
 ## 已替代历史（决策反转链）

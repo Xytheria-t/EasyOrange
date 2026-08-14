@@ -4,30 +4,12 @@
 
 ## Agent skills
 
-### Issue tracker
-
-Issues 与 PRDs 存放在 GitHub issues，用 `gh` CLI 读写（命令模板见 [doc/agents/常用命令.md](doc/agents/常用命令.md)「GitHub Issues / PR」）。
-
-### Triage labels
-
-默认 triage label 词汇：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`。
-
-### Domain docs
-
-single-context 布局：领域术语与 ADR 消费约定见 [doc/agents/领域参考.md](doc/agents/领域参考.md)「Agent 领域文档消费约定」。
+- **Issue tracker**：Issues 与 PRDs 存放在 GitHub issues，用 `gh` CLI 读写（命令模板见 [doc/agents/常用命令.md](doc/agents/常用命令.md)「GitHub Issues / PR」）；默认 triage label：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`
+- **Domain docs**：single-context 布局，领域术语与 ADR 消费约定见 [doc/agents/领域参考.md](doc/agents/领域参考.md)「Agent 领域文档消费约定」
 
 ## 项目结构
 
-```
-easy-orange/
-├── easyorange-backend/          # Spring Boot 后端 (11 Maven 模块)
-├── easyorange-frontend/         # React 前端 (Vite + TypeScript + TanStack Query)
-├── doc/                         # 项目文档（架构 / 集成 / ADR / agents 参考 / DATABASE / PRODUCT_DIRECTION）
-├── infra/                       # 基础设施即代码（Prometheus / Grafana / ES IK 镜像）
-├── k8s/                         # K8s 部署（kustomize，无状态应用层）
-├── load-tests/                  # k6 压测脚本
-└── .claude/rules/ecc/           # AI 编码规则 (ECC: common/java/typescript/react/web)
-```
+monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模块规范见模块内 `AGENTS.md`）· `easyorange-frontend/`（React + Vite + TypeScript + TanStack Query）· `doc/`（架构 / 集成 / ADR / agents 参考 / DATABASE / PRODUCT_DIRECTION）· `infra/`（IaC：Prometheus / Grafana / ES IK 镜像）· `k8s/`（K8s kustomize，无状态应用层）· `load-tests/`（k6 压测）· `.claude/rules/ecc/`（AI 编码规则 ECC：common/java/typescript/react/web）
 
 ## 技术栈
 
@@ -45,7 +27,7 @@ easy-orange/
 ## 全局硬约束（任何改动都适用，违反即返工）
 
 - **API 统一返回 `Result<T>`**；分页返回 `PageResult<T>`；搜索返回 `SearchPageResponse<T>`（含 `records/total/current/size/pages` + `facets` + `aiEnhancement`）。判断成功：`"A0000".equals(code)`
-- **数据库变更必须通过 Flyway 迁移脚本**（CREATE TABLE 用紧凑格式，禁止对齐列）；DO 枚举字段通过 TypeHandler 持久化
+- **数据库变更必须通过 Flyway 迁移脚本**（CREATE TABLE 用紧凑格式，禁止对齐列）；DO 枚举字段经 `@EnumValue` 注解持久化（内置 `MybatisEnumTypeHandler`，禁止手写 TypeHandler）
 - **DDD 分层**：domain → application → adapter，依赖方向单向向内；聚合根不可变（`@Builder(toBuilder = true)`），值对象用 `record`
 - **CQRS + ACL 隔离**：命令与查询分离（product/order/payment/message）；跨模块必须通过 Port/ACL 适配，禁止直接依赖领域模型/Mapper
 - **Assembler 模式**：DTO 转换统一在 `adapter/inbound/web/assembler/`，禁止在 Controller/Service 直接构造 Response DTO

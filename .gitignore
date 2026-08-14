@@ -71,6 +71,7 @@ coverage/
 .trae/
 .agents/
 .superpowers/
+.zcode/
 
 # 但 .claude/rules/ 是项目编码规范，纳入版本控制
 !.claude/rules/

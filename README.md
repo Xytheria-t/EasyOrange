@@ -105,6 +105,13 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 
 [`AiSearchEnhancerAdapter`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/AiSearchEnhancerAdapter.java) 基于 Spring AI 手写轻量 Agent Planner：4 路 Tool Calling（LLM 意图识别 / 商品标签生成 / 市场分析 / 建议问题生成），`CompletableFuture` 虚拟线程并行，单步骤 5s 超时降级不影响整体，无 LangChain4j 黑盒。
 
+### AI 对话 / RAG 完整链路 / 评估闭环（2026-08-14 扩展）
+
+- **多轮 Agent 对话**（[`AiChatService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/service/AiChatService.java)）：Redis 会话短期记忆 + `eo_user_preference` 画像长期记忆 + 单步 ReAct 工具决策；**SSE 流式**（`/api/ai/chat/stream`，事件协议 token/sources/done/error），前端 Playground 打字机效果
+- **RAG 完整链路**（[`KnowledgeIngestionService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/service/KnowledgeIngestionService.java)）：文档摄入管线（分块 500+overlap50 → embed → ES `knowledge_docs` 索引，启动补索引）+ kNN+BM25 混合召回 → Java Cosine 重排 → [来源:标题] 引用溯源
+- **评估进 CI**：30 条金标准集（`eval/golden-set.yaml`）+ LLM-as-Judge 对照参考打分 + `EvalGate` 门禁（低于基线 4.0-0.3 卡 build）+ hit@5/MRR 检索指标 + 👍/👎 反馈飞轮自动扩充评测集
+- **成本治理**：语义缓存（余弦相似度命中复用，阈值 0.92）+ 模型路由（场景 → bean 配置）
+
 ### AI 工程化 8 件套
 
 框架化 / Embedding 真实现 / 令牌桶限流 / stale 降级 / TokenBudget / Prompt YAML 版本化 / 多模态 Vision / 4 路并行 Tool Calling。完整机制见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md)。
@@ -203,8 +210,8 @@ easy-orange/
 
 ## 贡献与许可
 
-- **贡献**：Conventional Commits · `main / develop / feature/* / bugfix/*`，见 [CONTRIBUTING.md](./CONTRIBUTING.md)
-- **安全**：漏洞报告见 [SECURITY.md](./SECURITY.md)
+- **贡献**：Conventional Commits · `main / develop / feature/* / bugfix/*`，见 [CONTRIBUTING.md](./.github/CONTRIBUTING.md)
+- **安全**：漏洞报告见 [SECURITY.md](./.github/SECURITY.md)
 - **许可**：MIT License
 
 ---

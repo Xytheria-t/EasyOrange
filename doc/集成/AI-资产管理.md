@@ -86,6 +86,57 @@ EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 > 平台**不碰货、不囤货、不经手资金**。物流走资产方→认领方 C2C 直发。
 > 业务简化原则：业务场景的简化是为了让架构与工程本身成为主角。
 
+
+---
+
+## 七、AI 对话与 RAG 完整链路（2026-08-14 新增）
+
+> 面试口径：从「轻量 RAG（标题级）」演进到「RAG 完整链路 + 评估闭环 + 流式对话 + 反馈飞轮」，
+> 对应 01 §五 盲区标注里 RAG 分块/评测集/流式/Agent 记忆四条「绕法」→「实答」。
+
+### 7.1 知识库摄入管线（解析 → 分块 → embed → ES 索引）
+
+- 表：`eo_knowledge_doc`（标题/正文/来源/索引状态 PENDING|INDEXED|FAILED/分块数）+ 种子文档 `R__seed_knowledge_docs.sql`（kb-0001~kb-0005 平台规则）
+- 分块：`KnowledgeIngestionService.chunkContent` — 固定 chunk size 500 + overlap 50，切点优先落换行（不切断句子）
+- Embedding：text-embedding-v3（1024 维），单块 embed 失败降级 null 照常写入（best-effort）
+- 索引：ES `knowledge_docs` 索引（dense_vector 1024 + IK 分词，`knowledge-mapping.json`）
+- 补索引：`KnowledgeBootstrapIndexer` 启动时重试 PENDING 文档（保持文档 ID 稳定，金标准集引用同一批 ID）
+- 管理端：`/api/admin/knowledge`（新增即摄入 / 列表 / 删除 / 补索引）
+
+### 7.2 混合召回 + Cosine 重排（引用溯源）
+
+`KnowledgeRetrievalService`：查询向量化 → ES kNN（num_candidates=100）+ BM25（title^2/content）混合召回 → **Java 原生 Cosine 重排收口** → 返回带 docId/title 的命中；ES 关闭时降级 MySQL LIKE（`KnowledgeFallbackAdapter`）。聊天回答末尾用 `[来源:标题]` 标注（`AiChatService`）。
+
+### 7.3 AI 对话（多轮 Agent + SSE 流式）
+
+- 编排（单步 ReAct，`AiChatService`）：记忆装配（Redis 会话窗口 + 用户画像表）→ 工具决策（LLM 输出 JSON 决定是否检索知识库，顺带提取用户偏好）→ 执行工具 → 生成回答
+- 记忆：短期 = Redis List（`eo:chat:session:{sessionId}`，TTL 24h，最近 N 轮）；长期 = `eo_user_preference` 用户画像表（跨会话持久，聊天时注入 prompt）
+- 流式：`POST /api/ai/chat/stream` → SseEmitter，事件协议 token / sources / done / error；前端 fetch + ReadableStream 消费（可带 Authorization 头）
+- 预算：流式方法在流结束前返回，`@TokenBudget` AOP 拦不住 → `AiChatService` 手动执行同一套预算检查（超限 onError 降级）
+
+### 7.4 评估进 CI（金标准集 + Judge 回归 + 门禁）
+
+- 金标准集：`eval/golden-set.yaml` 30 条用例（20 chat 生成质量 + 10 检索质量），`eval/baselines.yaml` 基线（chat: 4.0）
+- 生成质量：`GoldenSetEvaluator.evaluateGeneration` — 对每条用例调真实对话 → `AiJudge` 对照参考打分（`judgeAgainstReference`）→ 聚合平均分
+- 检索质量：`evaluateRetrieval` — hit@5 / MRR，逐条落 `eo_retrieval_metric`（按 run_id 聚合）
+- 门禁：`EvalGate` 低于「基线 - 0.3」即失败；`GoldenSetRegressionIT`（failsafe，`EASYORANGE_AI_API_KEY` 存在时执行）卡 CI
+- 定时：`AiEvalScheduler`（生成 Judge，3 点）+ `RetrievalEvalScheduler`（检索指标，3:15，默认关闭）
+
+### 7.5 反馈飞轮（👍/👎 → 自动扩充评测集）
+
+- 入库：`POST /api/ai/feedback` → `eo_ai_feedback`（scope/问题/回答/helpful/评语/关联调用日志）
+- 导出：`GET /api/admin/ai/feedback/export` → 未导出反馈渲染为 golden-set.yaml 用例片段（导出即标记 exported=1），人工审核后合入评测集
+
+### 7.6 成本优化（语义缓存 + 模型路由）
+
+- 语义缓存：`SemanticCacheService` — 查询向量化 → Redis Hash 内 Cosine 相似度匹配（阈值 0.92）→ 相似问题复用历史回答；条目超上限淘汰最旧；Redis/embedding 不可用 fail-open
+- 模型路由：`AiModelRouter` — 场景 → 模型 bean 名（`easyorange.ai.routing.scenarios`），接入第二个模型只需改配置
+
+### 7.7 可观测（AI dashboard）
+
+`infra/grafana/provisioning/dashboards/ai-overview.json`：LLM 调用延迟 p50/p95（spring_ai 直方图）、/api/ai/* QPS 与 429 限流率、AI 调用量（eo_ai_call_log 小时聚合）、**Judge 均分趋势（日）**、RAG 检索指标（最近 10 次回归 hit@5/MRR）——新增 MySQL 数据源（`datasources.yml`）。
+
+
 ---
 
 **相关模块**：`easyorange-product` / `easyorange-ai` / `easyorange-order` / `easyorange-message` / `easyorange-application`

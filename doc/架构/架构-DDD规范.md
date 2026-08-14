@@ -290,7 +290,7 @@ public class MessageUserInfoAdapter implements UserInfoPort {
 | 端口接口有适配器实现 | `domain.port.*Port` 接口必须在 `adapter.outbound` 有实现 | ArchUnit `JavaClasses` 方法测试 |
 | 禁止 infrastructure/ 包 | 已废弃，用 `adapter/outbound/` | ArchUnit `noClasses().resideInAPackage()` |
 
-~~**已知白名单**~~ ✅ 已全部消除（2026-07-04）：`MessageQueryRepository` 改用 domain record、`PaymentQueryRepositoryPort` 移至 `domain/port/`、`CallbackSignatureVerifierPort` 确认结构正确后移除。`PORT_ALLOWLIST` 现为空集。
+~~**已知白名单**~~ ✅ 已全部消除（2026-07-04）：`MessageQueryRepository` 改用 domain record、`PaymentQueryRepository` 移至 `application/port/query/`、`CallbackSignatureVerifierPort` 确认结构正确后移除。`PORT_ALLOWLIST` 现为空集。
 
 ### 测试分层策略
 
