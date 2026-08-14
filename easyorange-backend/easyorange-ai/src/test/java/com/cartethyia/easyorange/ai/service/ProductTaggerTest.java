@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.when;
 
+import com.cartethyia.easyorange.ai.adapter.outbound.persistence.CreditScoreFetcher;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import java.math.BigDecimal;
 import java.util.List;

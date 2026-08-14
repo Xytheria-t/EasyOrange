@@ -6,6 +6,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.messages.Message;
@@ -70,6 +71,33 @@ public class AiModelSupport {
     public String callJson(ChatModel chatModel, AiCallScope scope, String systemPrompt, String userMessage) {
         return recordCall(
                 scope, chatModel, systemPrompt, userMessage, () -> callJson(chatModel, systemPrompt, userMessage));
+    }
+
+    /**
+     * 流式文本生成（带调用日志）：逐 token 回调 {@code tokenConsumer}，阻塞至流结束返回完整文本。
+     * <p>
+     * 供 SSE 场景使用（AiChatService 把 token 回调接到 SseEmitter）；调用日志/耗时统计
+     * 与 {@link #callText} 一致，落库的 response_text 是完整拼接结果（Judge 数据源不缺流式调用）。
+     */
+    public String callTextStream(
+            ChatModel chatModel,
+            AiCallScope scope,
+            String systemPrompt,
+            String userMessage,
+            Consumer<String> tokenConsumer) {
+        return recordCall(scope, chatModel, systemPrompt, userMessage, () -> {
+            var sb = new StringBuilder();
+            chatModel.stream(new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage))))
+                    .doOnNext(response -> {
+                        String token = outputText(response);
+                        if (token != null && !token.isEmpty()) {
+                            sb.append(token);
+                            tokenConsumer.accept(token);
+                        }
+                    })
+                    .blockLast();
+            return sb.toString();
+        });
     }
 
     /**

@@ -1,5 +1,7 @@
 import type { RawProduct } from '@/types';
+import type { ChatAnswer, ChatFeedbackRequest, ChatRequest, ChatStreamEvent, KnowledgeHit } from '@/types/ai';
 import { request } from './core/request';
+import { streamChat } from './core/stream';
 
 export interface PricingSuggestion {
     suggestedPrice: number;
@@ -110,5 +112,34 @@ export const aiApi = {
             method: 'POST',
             body: params,
         });
+    },
+
+    /** AI 对话（多轮 Agent + 知识库引用溯源，非流式） */
+    chat(data: ChatRequest) {
+        return request<ChatAnswer>('/ai/chat', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    /** 知识库检索（RAG 检索侧演示） */
+    knowledgeSearch(keyword: string, topK = 5) {
+        return request<KnowledgeHit[]>('/ai/knowledge/search', {
+            method: 'GET',
+            params: { keyword, topK },
+        });
+    },
+
+    /** AI 输出反馈（👍/👎 反馈飞轮） */
+    feedback(data: ChatFeedbackRequest) {
+        return request<void>('/ai/feedback', {
+            method: 'POST',
+            body: data,
+        });
+    },
+
+    /** SSE 流式对话（fetch + ReadableStream，可带 Authorization 头） */
+    chatStream(data: ChatRequest, onEvent: (event: ChatStreamEvent) => void, signal?: AbortSignal) {
+        return streamChat('/ai/chat/stream', data, onEvent, signal);
     },
 };

@@ -12,7 +12,9 @@ public enum AiCallScope {
     AUTO_LISTING(1, 3600, 5, "auto-listing"),
     SEMANTIC(1, 3600, 30, "semantic-search"),
     QA(1, 900, 20, "qa"),
-    SEARCH_ENHANCE(1, 3600, 30, "search-enhance");
+    SEARCH_ENHANCE(1, 3600, 30, "search-enhance"),
+    CHAT(1, 3600, 20, "chat"),
+    KNOWLEDGE(1, 3600, 60, "knowledge");
 
     private final int version;
     private final int ttlSeconds;

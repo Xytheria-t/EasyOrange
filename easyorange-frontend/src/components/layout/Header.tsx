@@ -117,6 +117,13 @@ export function Header() {
                     >
                         <span className="floating-nav__link-text">商品</span>
                     </Link>
+                    <Link
+                        to="/playground"
+                        className={`floating-nav__link ${location.pathname === '/playground' ? 'active' : ''}`}
+                        aria-current={location.pathname === '/playground' ? 'page' : undefined}
+                    >
+                        <span className="floating-nav__link-text">AI 助手</span>
+                    </Link>
                 </nav>
 
                 {/* 右侧操作区 */}

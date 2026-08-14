@@ -16,6 +16,9 @@ public class AiProperties {
     private RateLimit rateLimit = new RateLimit();
     private Budget budget = new Budget();
     private Eval eval = new Eval();
+    private Routing routing = new Routing();
+    private SemanticCache semanticCache = new SemanticCache();
+    private Chat chat = new Chat();
 
     @Data
     public static class DeepSeek {
@@ -99,5 +102,49 @@ public class AiProperties {
         private boolean enabled = false;
         private String cron = "0 0 3 * * ?";
         private int batchSize = 50;
+        /** RAG 检索指标回归（hit@5 / MRR）— 仅需 embedding，不需要 LLM 生成。 */
+        private boolean retrievalEnabled = false;
+
+        private String retrievalCron = "0 15 3 * * ?";
+    }
+
+    /**
+     * 模型路由配置 — 按场景把调用分给不同模型 bean（简单任务走快模型 / 复杂任务走强模型）。
+     * <p>
+     * 键为场景名（如 chat_tool），值为 Spring bean 名；未配置的场景回退 {@link #defaultModel}。
+     * 当前只有 chatModel 一个文本模型，路由为配置驱动的演进位：
+     * 接入第二个模型（如 deepseek-reasoner）时仅需在 {@code easyorange.ai.routing.scenarios}
+     * 里把对应场景指向新 bean 名，代码零改动。
+     */
+    @Data
+    public static class Routing {
+        private String defaultModel = "chatModel";
+        private Map<String, String> scenarios = new HashMap<>();
+    }
+
+    /**
+     * 语义缓存配置 — Embedding 相似度命中即复用历史回答（跨用户、近似问题共享），
+     * 同时是「成本优化」的落地：相同意图的问题不再重复调 LLM。
+     */
+    @Data
+    public static class SemanticCache {
+        private boolean enabled = true;
+        /** 余弦相似度命中阈值（0.92 表示高度近义问题命中）。 */
+        private double similarityThreshold = 0.92;
+        /** 每个 scope 最多缓存的条目数，超出淘汰最旧条目。 */
+        private int maxEntries = 500;
+
+        private int ttlHours = 24;
+    }
+
+    /**
+     * 多轮对话记忆配置 — Redis 会话窗口（短期记忆）+ 画像注入（长期记忆）。
+     */
+    @Data
+    public static class Chat {
+        /** 会话 TTL（小时），过期即遗忘短期记忆。 */
+        private int sessionTtlHours = 24;
+        /** 注入 prompt 的历史轮数（最近 N 轮）。 */
+        private int historyLimit = 6;
     }
 }

@@ -1,0 +1,193 @@
+/* ============ AI PLAYGROUND - 流式对话 ============ */
+.playground {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 140px);
+}
+
+.playground__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.playground__header-icon {
+    color: var(--primary-500);
+    width: 28px;
+    height: 28px;
+}
+
+.playground__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+}
+
+.playground__subtitle {
+    font-size: 0.8125rem;
+    color: var(--text-tertiary);
+}
+
+.playground__chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+    padding: 0.25rem 0.25rem 1rem;
+}
+
+.playground-msg {
+    display: flex;
+    gap: 0.625rem;
+    align-items: flex-start;
+}
+
+.playground-msg--user {
+    flex-direction: row-reverse;
+}
+
+.playground-msg__avatar {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.playground-msg--user .playground-msg__avatar {
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+}
+
+.playground-msg--assistant .playground-msg__avatar {
+    background: linear-gradient(135deg, var(--purple-400), var(--primary-500));
+}
+
+.playground-msg__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    max-width: 82%;
+}
+
+.playground-msg--user .playground-msg__body {
+    align-items: flex-end;
+}
+
+.playground-msg__sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.playground-msg__source {
+    font-size: 0.6875rem;
+    color: var(--primary-600);
+    background: rgba(249, 115, 22, 0.08);
+    border: 1px solid rgba(249, 115, 22, 0.15);
+    border-radius: 999px;
+    padding: 0.125rem 0.5rem;
+}
+
+.playground-msg__bubble {
+    padding: 0.625rem 0.875rem;
+    border-radius: var(--radius-lg);
+    font-size: 0.90625rem;
+    line-height: 1.65;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.playground-msg--assistant .playground-msg__bubble {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-top-left-radius: 4px;
+}
+
+.playground-msg--user .playground-msg__bubble {
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    color: white;
+    border-top-right-radius: 4px;
+}
+
+.playground-msg__bubble--error {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: var(--rose-600);
+}
+
+.playground-msg__feedback {
+    display: flex;
+    gap: 0.375rem;
+}
+
+.playground-msg__feedback-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.2s var(--ease-out);
+}
+
+.playground-msg__feedback-btn:hover {
+    color: var(--primary-600);
+    border-color: rgba(249, 115, 22, 0.3);
+}
+
+.playground-msg__feedback-btn.is-active {
+    color: var(--primary-600);
+    background: rgba(249, 115, 22, 0.1);
+    border-color: rgba(249, 115, 22, 0.3);
+}
+
+.playground__suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.playground__suggestion {
+    font-size: 0.8125rem;
+    color: var(--primary-700);
+    background: rgba(249, 115, 22, 0.06);
+    border: 1px solid rgba(249, 115, 22, 0.18);
+    border-radius: 999px;
+    padding: 0.375rem 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s var(--ease-out);
+}
+
+.playground__suggestion:hover {
+    background: rgba(249, 115, 22, 0.12);
+}
+
+.playground__suggestion:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.playground__input {
+    display: flex;
+    gap: 0.625rem;
+    position: sticky;
+    bottom: 0;
+    background: var(--background, #fff);
+    padding-top: 0.75rem;
+}

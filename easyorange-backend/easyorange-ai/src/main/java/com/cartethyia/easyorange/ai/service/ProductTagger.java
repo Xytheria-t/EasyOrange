@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.ai.service;
 
+import com.cartethyia.easyorange.ai.adapter.outbound.persistence.CreditScoreFetcher;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import java.math.BigDecimal;
 import java.util.*;
