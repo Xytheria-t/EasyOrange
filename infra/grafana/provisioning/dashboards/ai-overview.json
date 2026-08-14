@@ -1,0 +1,159 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(spring_ai_chat_model_call_duration_seconds_bucket[5m])))",
+          "legendFormat": "p95 LLM 调用"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(spring_ai_chat_model_call_duration_seconds_bucket[5m])))",
+          "legendFormat": "p50 LLM 调用"
+        }
+      ],
+      "title": "LLM 调用延迟（p50 / p95，秒）",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "reqps" },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (uri) (rate(http_server_requests_seconds_count{uri=~\"/api/ai/.*\"}[5m]))",
+          "legendFormat": "{{uri}}"
+        }
+      ],
+      "title": "AI 端点 QPS（/api/ai/*）",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 30, "lineWidth": 2 },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(http_server_requests_seconds_count{uri=~\"/api/ai/.*\",status=\"429\"}[5m])) / clamp_min(sum(rate(http_server_requests_seconds_count{uri=~\"/api/ai/.*\"}[5m])), 0.0001)",
+          "legendFormat": "429 限流率"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(http_server_requests_seconds_count{uri=~\"/api/ai/.*\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_requests_seconds_count{uri=~\"/api/ai/.*\"}[5m])), 0.0001)",
+          "legendFormat": "5xx 错误率"
+        }
+      ],
+      "title": "AI 端点降级 / 错误率（429 限流 · 5xx）",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mysql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "datasource": { "type": "mysql", "uid": "mysql" },
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroup(created_at, '1h') AS time, COUNT(*) AS calls FROM eo_ai_call_log WHERE $__timeFilter(created_at) GROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "AI 调用量（eo_ai_call_log / 小时）",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mysql" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "max": 5, "min": 1, "unit": "short" },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "datasource": { "type": "mysql", "uid": "mysql" },
+          "format": "time_series",
+          "rawSql": "SELECT $__timeGroup(created_at, '1d') AS time, AVG(judge_score) AS avg_score FROM eo_ai_call_log WHERE judge_score IS NOT NULL AND $__timeFilter(created_at) GROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "LLM-as-Judge 均分趋势（每日，基线 4.0）",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mysql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [{ "options": { "0": { "text": "未跑" }, "1": { "text": "有数据" } }, "type": "value" }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "options": { "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": false },
+      "targets": [
+        {
+          "datasource": { "type": "mysql", "uid": "mysql" },
+          "format": "table",
+          "rawSql": "SELECT run_id, COUNT(*) AS samples, ROUND(AVG(hit_at_5), 4) AS hit_rate, ROUND(AVG(reciprocal_rank), 4) AS mrr FROM eo_retrieval_metric GROUP BY run_id ORDER BY MAX(created_at) DESC LIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "RAG 检索指标（最近 10 次回归：hit@5 / MRR）",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["ai", "llm", "rag"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "AI 工程化观测（LLM · RAG · 评估）",
+  "uid": "ai-overview",
+  "version": 1
+}

@@ -8,3 +8,17 @@ datasources:
     url: http://prometheus:9090
     isDefault: true
     editable: false
+  # MySQL 数据源 — AI 观测面板的 Judge 均分 / 调用量趋势数据源
+  # 连接信息经环境变量注入（docker compose 的 GRAFANA_MYSQL_* 变量），默认连本地 3306
+  - name: MySQL
+    type: mysql
+    uid: mysql
+    access: proxy
+    url: ${GRAFANA_MYSQL_HOST:mysql}:${GRAFANA_MYSQL_PORT:3306}
+    database: ${GRAFANA_MYSQL_DB:easyorange}
+    user: ${GRAFANA_MYSQL_USER:easyorange}
+    jsonData:
+      maxOpenConns: 5
+    secureJsonData:
+      password: ${GRAFANA_MYSQL_PASSWORD:easyorange_app_dev}
+    editable: false
