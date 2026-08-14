@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.order.application.query.assembler;
 
 import com.cartethyia.easyorange.common.util.MaskUtils;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
+import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

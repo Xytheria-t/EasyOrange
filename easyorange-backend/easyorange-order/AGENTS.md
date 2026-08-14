@@ -25,14 +25,13 @@ order/
 │   └── outbound/
 │       ├── persistence/                     # 持久化
 │       │   ├── OrderRepositoryImpl.java
-│       │   ├── OrderReadRepositoryImpl.java
+│       │   ├── OrderQueryRepositoryImpl.java
 │       │   ├── OrderDO.java
 │       │   ├── OrderMapper.java
 │       │   ├── OrderItemDO.java             # eo_order_item 实体
 │       │   ├── OrderItemMapper.java         # 行项 MyBatis Mapper
 │       │   ├── OrderDataMapper.java        # MapStruct: DO ↔ Domain
-│       │   └── typehandler/                 # OrderStatusTypeHandler, PaymentStatusTypeHandler（VARCHAR ↔ 枚举）
-│       ├── cache/                           # 缓存
+│       │   ├── cache/                           # 缓存
 │       │   ├── RedisOrderCacheAdapter.java  # 实现 OrderCachePort
 │       │   └── OrderCacheConstant.java
 │       └── config/
@@ -50,8 +49,13 @@ order/
 │   ├── query/                               # 查询 (CQRS Read)
 │   │   ├── OrderQueryHandler.java
 │   │   ├── OrderListQuery.java              # record 收敛查询参数（orderNo, status: OrderStatus, buyerId, sellerId, pageNum, pageSize）
+│   │   ├── readmodel/
+│   │   │   ├── OrderReadModel.java
+│   │   │   └── OrderItemReadModel.java
 │   │   └── assembler/
 │   │       └── OrderReadModelAssembler.java  # ReadModel → OrderVO（应用层组装）
+│   ├── port/query/
+│   │   └── OrderQueryRepository.java        # 读仓储（countByStatus 入参为 OrderStatus 枚举）
 │   ├── event/                               # 事件订阅
 │   │   └── OrderLifecycleEventConsumer.java # RabbitMQ 订单生命周期消费者（取消/退款恢复库存, 完成标记售出）
 │   └── dto/
@@ -76,9 +80,6 @@ order/
 │   │   ├── OrderCompletedEvent.java
 │   │   ├── OrderCancelledEvent.java
 │   │   └── OrderRefundedEvent.java
-│   ├── readmodel/
-│   │   ├── OrderReadModel.java
-│   │   └── OrderItemReadModel.java
 │   ├── port/                              # 出站端口
 │   │   ├── OrderCachePort.java             # 缓存端口
 │   │   ├── ProductInventoryPort.java       # 订单生命周期产品操作端口
@@ -87,8 +88,7 @@ order/
 │   │   ├── UserInfoPort.java              # 用户信息端口
 │   │   └── OrderQueryCondition.java        # record 查询条件（status 为 OrderStatus 枚举）
 │   ├── repository/                         # 仓储接口
-│   │   ├── OrderRepository.java            # 写仓储
-│   │   └── OrderReadRepository.java        # 读仓储（countByStatus 入参为 OrderStatus 枚举）
+│   │   └── OrderRepository.java            # 写仓储
 │   ├── constant/
 │   │   ├── OrderConstant.java
 │   │   ├── OrderStatus.java                # 状态枚举：code 为 String（"PENDING_PAYMENT"/"PAID"/...）
@@ -126,7 +126,7 @@ OrderCommandHandler.handle(CreateOrderCommand) ─ @Transactional(rollbackFor=Ex
 
 **Command 侧**: `OrderCommandController` → `OrderCommandHandler` → `Order` → `OrderRepository`
 
-**Query 侧**: `OrderQueryController` → `OrderQueryHandler` → `OrderReadRepository` → `OrderReadModel`
+**Query 侧**: `OrderQueryController` → `OrderQueryHandler` → `OrderQueryRepository` → `OrderReadModel`
 
 ## 对象映射策略
 
@@ -168,7 +168,7 @@ PENDING_PAYMENT ──PAY──→ PAID ──SHIP──→ SHIPPED ──CONFIR
 
 - `CANCEL`（买家）：仅限待付款；`FORCE_CANCEL`（管理端）：待付款或已付款
 - `REFUND`（退款）：已付款或已发货，且支付状态必须为已支付（paymentGuard）
-- 状态码使用 String code（`OrderStatus.PENDING_PAYMENT.getCode()` → `"PENDING_PAYMENT"`），由 `OrderStatusTypeHandler` / `PaymentStatusTypeHandler` 完成 VARCHAR 列互转，详见下方「枚举字符串化」章节。
+- 状态码使用 String code（`OrderStatus.PENDING_PAYMENT.getCode()` → `"PENDING_PAYMENT"`），经 `@EnumValue` 注解完成 VARCHAR 列互转，详见下方「枚举字符串化」章节。
 
 ## 定时任务
 
@@ -192,7 +192,7 @@ PENDING_PAYMENT ──PAY──→ PAID ──SHIP──→ SHIPPED ──CONFIR
 1. `OrderListQuery` record 添加字段
 2. 请求 DTO `adapter/inbound/web/dto/request/` 添加字段
 3. Controller 提取参数构造 `OrderListQuery` 传给 `OrderQueryHandler.listOrders()`
-4. `OrderReadRepository` 修改查询
+4. `OrderQueryRepository` 修改查询
 5. `OrderReadModel` 添加字段
 6. `OrderReadModelAssembler` 更新
 7. 测试
@@ -202,7 +202,7 @@ PENDING_PAYMENT ──PAY──→ PAID ──SHIP──→ SHIPPED ──CONFIR
 `OrderStatus` / `PaymentStatus` 的 `code` 字段为 String（非 Integer），统一全链路字符串化：
 
 - **DB 层**：`eo_order.status` / `eo_order.payment_status` 为 `VARCHAR(20)`，带 CHECK 约束
-- **MyBatis**：`OrderStatusTypeHandler` / `PaymentStatusTypeHandler`（继承 `BaseEnumTypeHandler`）完成 enum ↔ String 互转
+- **MyBatis**：枚举 `code` 字段标 `@EnumValue`，内置 `MybatisEnumTypeHandler` 完成 enum ↔ String 互转
 - **领域层**：`Order` / `OrderReconstructSpec` 直接使用枚举类型，无 String.valueOf 转换
 - **读模型 / VO**：`OrderReadModel` / `OrderVO` 的 status 字段为 `String code`
 - **JSON 序列化**：`@JsonValue` 标注在 `code` 上，前端收到的就是 `"PENDING_PAYMENT"` 而非 `0`

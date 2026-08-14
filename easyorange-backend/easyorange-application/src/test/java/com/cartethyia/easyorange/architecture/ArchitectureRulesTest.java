@@ -59,11 +59,12 @@ class ArchitectureRulesTest {
                     "lombok..",
                     "org.slf4j..",
                     "org.jetbrains.annotations..",
+                    "com.baomidou.mybatisplus.annotation..",
                     "com.fasterxml.jackson.annotation..",
                     "com.cartethyia.easyorange.common..",
                     "com.cartethyia.easyorange..domain..")
-            .because("domain 层仅允许白名单依赖（JDK/jakarta.annotation/Lombok/Jackson-annotation/SLF4J/"
-                    + "common/domain），新增任何框架或分层依赖直接失败");
+            .because("domain 层仅允许白名单依赖（JDK/jakarta.annotation/Lombok/Jackson-annotation/"
+                    + "MyBatis-Plus-annotation/SLF4J/common/domain），新增任何框架或分层依赖直接失败");
 
     // ==================== Rule 2: CQRS — 命令 handler ≠ 查询 handler ====================
 
@@ -152,8 +153,12 @@ class ArchitectureRulesTest {
     static void port_interfaces_must_have_adapter_implementations(JavaClasses classes) {
         var missing = new ArrayList<String>();
         for (JavaClass port : classes) {
-            if (!port.getPackageName().contains(".domain.port.")
-                    || !port.getSimpleName().endsWith("Port")) {
+            // domain/port（跨模块与领域端口）与 application/port（读侧与应用端口）都是端口契约，
+            // 统一要求有 adapter/outbound 实现；framework/lock 等非业务端口包不受约束。
+            // 注意匹配不带尾点：接口/实现可能直接位于包根（如 ...domain.port 或 ...adapter.outbound）。
+            var inPortPackage = port.getPackageName().contains(".domain.port")
+                    || port.getPackageName().contains(".application.port");
+            if (!inPortPackage || !port.getSimpleName().endsWith("Port")) {
                 continue;
             }
             if (PORT_ALLOWLIST.contains(port.getSimpleName())) {
@@ -161,7 +166,7 @@ class ArchitectureRulesTest {
             }
             var hasAdapter = classes.stream()
                     .anyMatch(candidate -> !candidate.equals(port)
-                            && candidate.getPackageName().contains(".adapter.outbound.")
+                            && candidate.getPackageName().contains(".adapter.outbound")
                             && candidate.getAllClassesSelfIsAssignableTo().contains(port));
             if (!hasAdapter) {
                 missing.add(port.getSimpleName());

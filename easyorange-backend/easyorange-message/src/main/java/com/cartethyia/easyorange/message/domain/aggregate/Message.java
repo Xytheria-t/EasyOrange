@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.message.domain.aggregate;
 
+import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
@@ -185,7 +186,8 @@ public record Message(
                 MessageStatus.RECALLED,
                 now,
                 this.createTime);
-        return new MessageRecallResult(updated, new MessageRecalledEvent(this.id, conversationId, operatorId, now));
+        return new MessageRecallResult(
+                updated, new MessageRecalledEvent(UuidV7.generateId(), this.id, conversationId, operatorId, now));
     }
 
     /**

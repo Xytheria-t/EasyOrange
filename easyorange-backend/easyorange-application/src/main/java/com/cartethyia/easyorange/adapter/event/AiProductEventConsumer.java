@@ -9,7 +9,7 @@ import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductMarkedSoldEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductUpdatedEvent;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
@@ -38,6 +38,12 @@ import org.springframework.stereotype.Component;
 @RabbitListener(queues = RabbitMQConfig.QUEUE_AI_PRODUCT, containerFactory = "domainEventContainerFactory")
 public class AiProductEventConsumer {
 
+    /** AI 结果缓存统一 TTL — 24h */
+    private static final Duration CACHE_TTL = Duration.ofHours(24);
+
+    private static final String VALUATION_KEY_PREFIX = "eo:ai:valuation:";
+    private static final String COPY_KEY_PREFIX = "eo:ai:copy:";
+
     private final EventConsumerHandler handler;
     private final AiPricingService pricingService;
     private final AiCopyGenerationService copyGenerationService;
@@ -57,12 +63,12 @@ public class AiProductEventConsumer {
 
     @RabbitHandler
     public void onProductCreated(ProductCreatedEvent event, Message message) {
-        handler.handle(event, message, metadata -> {
+        handler.handle(event, message, () -> {
             var data = event.data();
             var suggestion = pricingService.suggestPrice(
                     data.name(), data.description(), null, data.conditionLevel(), data.originalPrice());
             if (suggestion != null) {
-                redisTemplate.opsForValue().set("eo:ai:valuation:" + event.productId(), suggestion, 24, TimeUnit.HOURS);
+                redisTemplate.opsForValue().set(VALUATION_KEY_PREFIX + event.productId(), suggestion, CACHE_TTL);
                 log.info(
                         "event=product_created_valuated productId={} suggestedPrice={}",
                         event.productId(),
@@ -73,7 +79,7 @@ public class AiProductEventConsumer {
 
     @RabbitHandler
     public void onProductUpdated(ProductUpdatedEvent event, Message message) {
-        handler.handle(event, message, metadata -> {
+        handler.handle(event, message, () -> {
             var data = event.data();
             var copyResult = copyGenerationService.generateCopy(
                     data.name(),
@@ -82,25 +88,25 @@ public class AiProductEventConsumer {
                     data.originalPrice() != null ? data.originalPrice().toString() : null,
                     "standard");
             if (copyResult != null) {
-                redisTemplate.opsForValue().set("eo:ai:copy:" + event.productId(), copyResult, 24, TimeUnit.HOURS);
+                redisTemplate.opsForValue().set(COPY_KEY_PREFIX + event.productId(), copyResult, CACHE_TTL);
                 log.info(
                         "event=product_updated_copy_generated productId={} copyTitle={}",
                         event.productId(),
                         copyResult.title());
             }
-            redisTemplate.delete("eo:ai:valuation:" + event.productId());
+            redisTemplate.delete(VALUATION_KEY_PREFIX + event.productId());
         });
     }
 
     @RabbitHandler
     public void onProductMarkedSold(ProductMarkedSoldEvent event, Message message) {
-        handler.handle(event, message, metadata -> {
+        handler.handle(event, message, () -> {
             log.info(
                     "event=product_marked_sold productId={} sellerId={} action=record_sale_price",
                     event.productId(),
                     event.sellerId());
-            redisTemplate.delete("eo:ai:valuation:" + event.productId());
-            redisTemplate.delete("eo:ai:copy:" + event.productId());
+            redisTemplate.delete(VALUATION_KEY_PREFIX + event.productId());
+            redisTemplate.delete(COPY_KEY_PREFIX + event.productId());
         });
     }
 }

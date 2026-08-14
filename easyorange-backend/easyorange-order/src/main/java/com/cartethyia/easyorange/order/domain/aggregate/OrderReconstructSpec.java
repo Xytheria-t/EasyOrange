@@ -17,7 +17,7 @@ import java.util.List;
  * <p>
  * 收敛 from/fromRaw 的 13 个长参数为单一 record，统一两个重建入口。
  * 状态字段使用领域枚举类型（{@link OrderStatus}/{@link PaymentStatus}），
- * 由 TypeHandler 完成与 DB VARCHAR 列的互转，消除 String.valueOf/Integer.valueOf 转换代码。
+ * 由 {@code @EnumValue} 注解完成与 DB VARCHAR 列的互转，消除 String.valueOf/Integer.valueOf 转换代码。
  *
  * @param id             订单 ID
  * @param orderNo        订单号

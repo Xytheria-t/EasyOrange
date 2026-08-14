@@ -3,10 +3,10 @@ package com.cartethyia.easyorange.order.application.query.assembler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
+import com.cartethyia.easyorange.order.application.query.readmodel.OrderItemReadModel;
+import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

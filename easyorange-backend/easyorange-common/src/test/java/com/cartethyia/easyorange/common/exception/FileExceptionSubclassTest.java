@@ -63,6 +63,11 @@ class FileExceptionSubclassTest {
         String aggregate = "root";
         DomainEvent event = new DomainEvent() {
             @Override
+            public String eventId() {
+                return "evt-1";
+            }
+
+            @Override
             public String aggregateId() {
                 return "1";
             }

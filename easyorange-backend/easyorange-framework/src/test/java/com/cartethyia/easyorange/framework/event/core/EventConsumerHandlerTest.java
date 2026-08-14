@@ -53,19 +53,22 @@ class EventConsumerHandlerTest {
     }
 
     private AuditLogEvent buildEvent() {
-        return AuditLogEvent.of(AuditLog.builder()
-                .title("商品管理-创建")
-                .businessType("1")
-                .method("ProductController.create()")
-                .requestMethod("POST")
-                .requestUrl("/api/products")
-                .clientIp("192.168.1.100")
-                .username("admin")
-                .operatorType(1)
-                .status(0)
-                .duration(55)
-                .requestParams("{\"name\":\"手机\"}")
-                .build());
+        // 事件自带固定 eventId（生产代码由 UuidV7 生成，此处注入常量以便断言幂等键）
+        return new AuditLogEvent(
+                EVENT_ID,
+                AuditLog.builder()
+                        .title("商品管理-创建")
+                        .businessType("1")
+                        .method("ProductController.create()")
+                        .requestMethod("POST")
+                        .requestUrl("/api/products")
+                        .clientIp("192.168.1.100")
+                        .username("admin")
+                        .operatorType(1)
+                        .status(0)
+                        .duration(55)
+                        .requestParams("{\"name\":\"手机\"}")
+                        .build());
     }
 
     @Nested
@@ -78,7 +81,7 @@ class EventConsumerHandlerTest {
             when(idempotencyChecker.tryMark(eq(NAMESPACE), eq(EVENT_ID))).thenReturn(true);
 
             AtomicBoolean executed = new AtomicBoolean(false);
-            handler.handle(buildEvent(), buildMessage(), metadata -> executed.set(true));
+            handler.handle(buildEvent(), buildMessage(), () -> executed.set(true));
 
             assertThat(executed).isTrue();
         }
@@ -89,19 +92,33 @@ class EventConsumerHandlerTest {
             when(idempotencyChecker.tryMark(eq(NAMESPACE), eq(EVENT_ID))).thenReturn(false);
 
             AtomicBoolean executed = new AtomicBoolean(false);
-            handler.handle(buildEvent(), buildMessage(), metadata -> executed.set(true));
+            handler.handle(buildEvent(), buildMessage(), () -> executed.set(true));
 
             assertThat(executed).isFalse();
         }
 
         @Test
-        @DisplayName("消息无 eventId → 跳过幂等检查，正常处理")
+        @DisplayName("事件无 eventId（历史消息载荷缺失）→ 跳过幂等检查，正常处理")
         void handle_withoutEventId_skipsIdempotencyCheck() {
-            var props = new MessageProperties();
-            var message = new Message(new byte[0], props);
+            var message = new Message(new byte[0], new MessageProperties());
+            var eventWithoutId = new AuditLogEvent(
+                    null,
+                    AuditLog.builder()
+                            .title("商品管理-创建")
+                            .businessType("1")
+                            .method("ProductController.create()")
+                            .requestMethod("POST")
+                            .requestUrl("/api/products")
+                            .clientIp("192.168.1.100")
+                            .username("admin")
+                            .operatorType(1)
+                            .status(0)
+                            .duration(55)
+                            .requestParams("{\"name\":\"手机\"}")
+                            .build());
 
             AtomicBoolean executed = new AtomicBoolean(false);
-            handler.handle(buildEvent(), message, metadata -> executed.set(true));
+            handler.handle(eventWithoutId, message, () -> executed.set(true));
 
             assertThat(executed).isTrue();
             verify(idempotencyChecker, never()).tryMark(any(), any());
@@ -118,7 +135,7 @@ class EventConsumerHandlerTest {
             when(idempotencyChecker.tryMark(eq(NAMESPACE), eq(EVENT_ID))).thenReturn(true);
             var failure = new IllegalStateException("boom");
 
-            assertThatThrownBy(() -> handler.handle(buildEvent(), buildMessage(), metadata -> {
+            assertThatThrownBy(() -> handler.handle(buildEvent(), buildMessage(), () -> {
                         throw failure;
                     }))
                     .isSameAs(failure);
@@ -133,7 +150,7 @@ class EventConsumerHandlerTest {
             handler = new EventConsumerHandler(CONSUMER_ID, idempotencyChecker, metricsService, false);
 
             AtomicBoolean executed = new AtomicBoolean(false);
-            handler.handle(buildEvent(), buildMessage(), metadata -> executed.set(true));
+            handler.handle(buildEvent(), buildMessage(), () -> executed.set(true));
 
             assertThat(executed).isTrue();
             verify(idempotencyChecker, never()).tryMark(any(), any());

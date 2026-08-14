@@ -9,10 +9,10 @@ import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderDO;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemDO;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
+import com.cartethyia.easyorange.order.application.port.query.OrderQueryRepository;
+import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
@@ -41,7 +41,7 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final ProductMapper productMapper;
-    private final OrderReadRepository orderReadRepository;
+    private final OrderQueryRepository orderReadRepository;
     private final OrderRepository orderRepository;
     private final DomainEventPublisher domainEventPublisher;
 

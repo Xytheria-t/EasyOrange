@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.message.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
@@ -17,6 +18,7 @@ public enum ReadStatus implements BaseCodeEnum {
     UNREAD("0", "未读"),
     READ("1", "已读");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

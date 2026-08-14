@@ -37,7 +37,7 @@ public class WebSocketEventConsumer {
         handler.handle(
                 event,
                 message,
-                metadata -> chatWebSocketHandler.broadcastRecallEvent(
+                () -> chatWebSocketHandler.broadcastRecallEvent(
                         event.conversationId(), event.messageId(), event.operatorId()));
     }
 }

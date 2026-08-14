@@ -12,21 +12,15 @@ import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChe
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
-import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
-import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -54,37 +48,12 @@ class OrderNotificationEventConsumerTest {
     @Mock
     private MessageCommandHandler messageCommandHandler;
 
-    @Mock
-    private OrderReadRepository orderReadRepository;
-
     private OrderNotificationEventConsumer consumer;
-
-    private OrderReadModel orderReadModel;
 
     @BeforeEach
     void setUp() {
         var metricsService = new EventMetricsService(new SimpleMeterRegistry());
-        consumer = new OrderNotificationEventConsumer(
-                idempotencyChecker, metricsService, messageCommandHandler, orderReadRepository);
-        orderReadModel = new OrderReadModel(
-                ORDER_ID,
-                "ORD" + ORDER_ID,
-                BUYER_ID,
-                SELLER_ID,
-                List.of(),
-                BigDecimal.valueOf(99.99),
-                OrderStatus.PENDING_PAYMENT.getCode(),
-                "待付款",
-                PaymentStatus.UNPAID.getCode(),
-                "地址",
-                "13800138000",
-                "备注",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
+        consumer = new OrderNotificationEventConsumer(idempotencyChecker, metricsService, messageCommandHandler);
     }
 
     private Message buildMessage() {
@@ -97,20 +66,30 @@ class OrderNotificationEventConsumerTest {
         when(idempotencyChecker.tryMark(anyString(), anyString())).thenReturn(true);
     }
 
-    private void mockFindOrderReadModel() {
-        when(orderReadRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(orderReadModel));
+    /** 事件载荷自包含 buyerId，通知无需回查订单 — 断言通知内容即验证全部行为。 */
+    private void verifyNotificationSent(String eventType, String title, String content) {
+        verify(idempotencyChecker).tryMark(eq(CONSUMER_ID + ":" + eventType), anyString());
+
+        var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
+        verify(messageCommandHandler).handle(captor.capture());
+        var command = captor.getValue();
+        assertThat(command.receiverId()).isEqualTo(BUYER_ID);
+        assertThat(command.title()).isEqualTo(title);
+        assertThat(command.content()).isEqualTo(content);
+        assertThat(command.businessId()).isEqualTo(ORDER_ID);
     }
 
     @Nested
-    @DisplayName("onOrderCreated")
-    class OnOrderCreatedTests {
+    @DisplayName("订单事件 → 站内信通知")
+    class NotificationTests {
 
         @Test
-        @DisplayName("订单创建后发送站内信通知")
+        @DisplayName("订单创建后通知买家")
         void onOrderCreated_shouldSendNotification() {
             mockClaimSuccess();
 
             OrderCreatedEvent event = new OrderCreatedEvent(
+                    "evt-1",
                     ORDER_ID,
                     BUYER_ID,
                     SELLER_ID,
@@ -120,115 +99,76 @@ class OrderNotificationEventConsumerTest {
 
             consumer.onOrderCreated(event, buildMessage());
 
-            verify(idempotencyChecker).tryMark(eq(CONSUMER_ID + ":OrderCreated"), anyString());
-
-            var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
-            verify(messageCommandHandler).handle(captor.capture());
-            var command = captor.getValue();
-            assertThat(command.receiverId()).isEqualTo(BUYER_ID);
-            assertThat(command.title()).isEqualTo("订单已创建");
-            assertThat(command.content()).isEqualTo("您的订单已创建，订单号: " + ORDER_ID);
-            assertThat(command.businessId()).isEqualTo(ORDER_ID);
+            verifyNotificationSent("OrderCreated", "订单已创建", "您的订单已创建，订单号: " + ORDER_ID);
         }
-    }
-
-    @Nested
-    @DisplayName("onOrderPaid")
-    class OnOrderPaidTests {
 
         @Test
-        @DisplayName("订单支付后发送站内信通知")
+        @DisplayName("订单支付后通知买家")
         void onOrderPaid_shouldSendNotification() {
             mockClaimSuccess();
-            mockFindOrderReadModel();
 
-            OrderPaidEvent event = new OrderPaidEvent(ORDER_ID, "1");
+            consumer.onOrderPaid(new OrderPaidEvent("evt-2", ORDER_ID, BUYER_ID, "1"), buildMessage());
 
-            consumer.onOrderPaid(event, buildMessage());
-
-            verify(idempotencyChecker).tryMark(eq(CONSUMER_ID + ":OrderPaid"), anyString());
-
-            var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
-            verify(messageCommandHandler).handle(captor.capture());
-            var command = captor.getValue();
-            assertThat(command.receiverId()).isEqualTo(BUYER_ID);
-            assertThat(command.title()).isEqualTo("订单已支付");
-            assertThat(command.content()).isEqualTo("您的订单已支付成功，订单号: " + ORDER_ID);
-            assertThat(command.businessId()).isEqualTo(ORDER_ID);
+            verifyNotificationSent("OrderPaid", "订单已支付", "您的订单已支付成功，订单号: " + ORDER_ID);
         }
-    }
-
-    @Nested
-    @DisplayName("onOrderShipped")
-    class OnOrderShippedTests {
 
         @Test
-        @DisplayName("订单发货后发送站内信通知")
+        @DisplayName("订单发货后通知买家")
         void onOrderShipped_shouldSendNotification() {
             mockClaimSuccess();
-            mockFindOrderReadModel();
 
-            OrderShippedEvent event = new OrderShippedEvent(ORDER_ID);
+            consumer.onOrderShipped(new OrderShippedEvent("evt-3", ORDER_ID, BUYER_ID), buildMessage());
 
-            consumer.onOrderShipped(event, buildMessage());
+            verifyNotificationSent("OrderShipped", "订单已发货", "您的订单已发货，订单号: " + ORDER_ID);
         }
-    }
-
-    @Nested
-    @DisplayName("onOrderCompleted")
-    class OnOrderCompletedTests {
 
         @Test
-        @DisplayName("订单完成后发送站内信通知")
+        @DisplayName("订单完成后通知买家")
         void onOrderCompleted_shouldSendNotification() {
             mockClaimSuccess();
-            mockFindOrderReadModel();
 
-            OrderCompletedEvent event = new OrderCompletedEvent(ORDER_ID, List.of(PRODUCT_ID));
+            consumer.onOrderCompleted(
+                    new OrderCompletedEvent("evt-4", ORDER_ID, BUYER_ID, SELLER_ID, List.of(PRODUCT_ID)),
+                    buildMessage());
 
-            consumer.onOrderCompleted(event, buildMessage());
+            verifyNotificationSent("OrderCompleted", "订单已完成", "您的订单已完成，订单号: " + ORDER_ID);
         }
-    }
-
-    @Nested
-    @DisplayName("onOrderCancelled")
-    class OnOrderCancelledTests {
 
         @Test
-        @DisplayName("订单取消后发送站内信通知")
+        @DisplayName("订单取消后通知买家")
         void onOrderCancelled_shouldSendNotification() {
             mockClaimSuccess();
-            mockFindOrderReadModel();
 
-            OrderCancelledEvent event = new OrderCancelledEvent(ORDER_ID, List.of(PRODUCT_ID), "取消原因");
+            consumer.onOrderCancelled(
+                    new OrderCancelledEvent("evt-5", ORDER_ID, BUYER_ID, List.of(PRODUCT_ID), "取消原因"), buildMessage());
 
-            consumer.onOrderCancelled(event, buildMessage());
+            verifyNotificationSent("OrderCancelled", "订单已取消", "您的订单已取消，订单号: " + ORDER_ID);
+        }
+
+        @Test
+        @DisplayName("订单退款后通知买家")
+        void onOrderRefunded_shouldSendNotification() {
+            mockClaimSuccess();
+
+            consumer.onOrderRefunded(
+                    new OrderRefundedEvent("evt-6", ORDER_ID, BUYER_ID, List.of(PRODUCT_ID), "退款原因"), buildMessage());
+
+            verifyNotificationSent("OrderRefunded", "订单已退款", "您的订单已退款，订单号: " + ORDER_ID);
         }
     }
 
     @Nested
-    @DisplayName("onOrderRefunded")
-    class OnOrderRefundedTests {
+    @DisplayName("旧版消息兼容（滚动部署窗口）")
+    class LegacyPayloadTests {
 
         @Test
-        @DisplayName("订单退款后发送站内信通知")
-        void onOrderRefunded_shouldSendNotification() {
+        @DisplayName("旧版消息（无 buyerId）降级跳过，不发送通知")
+        void onEvent_withoutBuyerId_shouldSkip() {
             mockClaimSuccess();
-            mockFindOrderReadModel();
 
-            OrderRefundedEvent event = new OrderRefundedEvent(ORDER_ID, List.of(PRODUCT_ID), "退款原因");
+            consumer.onOrderPaid(new OrderPaidEvent("evt-8", ORDER_ID, null, "1"), buildMessage());
 
-            consumer.onOrderRefunded(event, buildMessage());
-
-            verify(idempotencyChecker).tryMark(eq(CONSUMER_ID + ":OrderRefunded"), anyString());
-
-            var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
-            verify(messageCommandHandler).handle(captor.capture());
-            var command = captor.getValue();
-            assertThat(command.receiverId()).isEqualTo(BUYER_ID);
-            assertThat(command.title()).isEqualTo("订单已退款");
-            assertThat(command.content()).isEqualTo("您的订单已退款，订单号: " + ORDER_ID);
-            assertThat(command.businessId()).isEqualTo(ORDER_ID);
+            verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
         }
     }
 
@@ -241,35 +181,9 @@ class OrderNotificationEventConsumerTest {
         void onEvent_withDuplicateEvent_shouldSkip() {
             when(idempotencyChecker.tryMark(anyString(), anyString())).thenReturn(false);
 
-            OrderCreatedEvent event = new OrderCreatedEvent(
-                    ORDER_ID,
-                    BUYER_ID,
-                    SELLER_ID,
-                    List.of(new OrderCreatedEvent.OrderItemPayload(
-                            PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
-                    BigDecimal.valueOf(99.99));
-
-            consumer.onOrderCreated(event, buildMessage());
+            consumer.onOrderPaid(new OrderPaidEvent("evt-7", ORDER_ID, BUYER_ID, "1"), buildMessage());
 
             verify(idempotencyChecker).tryMark(anyString(), anyString());
-            verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
-        }
-    }
-
-    @Nested
-    @DisplayName("订单不存在处理")
-    class OrderNotFoundTests {
-
-        @Test
-        @DisplayName("订单不存在时跳过通知")
-        void onEvent_whenOrderNotFound_shouldSkip() {
-            mockClaimSuccess();
-            when(orderReadRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.empty());
-
-            OrderPaidEvent event = new OrderPaidEvent(ORDER_ID, "1");
-
-            consumer.onOrderPaid(event, buildMessage());
-
             verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
         }
     }

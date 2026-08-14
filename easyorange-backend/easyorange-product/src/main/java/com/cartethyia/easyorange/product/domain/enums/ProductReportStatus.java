@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,7 @@ public enum ProductReportStatus implements BaseCodeEnum {
     RESOLVED("2", "已解决"),
     DISMISSED("3", "已驳回");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

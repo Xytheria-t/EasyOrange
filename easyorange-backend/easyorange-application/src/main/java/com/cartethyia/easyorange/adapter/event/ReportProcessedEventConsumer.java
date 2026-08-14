@@ -34,7 +34,7 @@ public class ReportProcessedEventConsumer {
 
     @RabbitHandler
     public void onReportProcessed(ReportProcessedEvent event, Message message) {
-        handler.handle(event, message, metadata -> {
+        handler.handle(event, message, () -> {
             var title = event.approved() ? "举报处理结果：已受理" : "举报处理结果：已驳回";
             var content = buildContent(event);
             messageCommandHandler.handle(

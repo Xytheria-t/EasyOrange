@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.order.domain.constant;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
@@ -7,7 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * 订单状态枚举 — code 为有意义字符串，DB 列 VARCHAR(20)，由 {@code OrderStatusTypeHandler} 持久化。
+ * 订单状态枚举 — code 为有意义字符串，DB 列 VARCHAR(20)，经 {@code @EnumValue} 持久化。
  * <p>
  * 状态机合法转换的**唯一事实来源**是 {@link OrderAction}，本枚举仅声明状态本身；
  * {@link #canTransitionTo(OrderStatus)} 由动作定义派生，避免两份状态机定义漂移。
@@ -27,6 +28,7 @@ public enum OrderStatus implements BaseCodeEnum {
     CANCELLED("CANCELLED", "已取消"),
     REFUNDED("REFUNDED", "已退款");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

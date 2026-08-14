@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
+import com.cartethyia.easyorange.payment.application.port.query.PaymentQueryRepository;
 import com.cartethyia.easyorange.payment.application.query.PaymentListQuery;
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
@@ -11,7 +12,6 @@ import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PaymentQueryHandlerTest {
 
     @Mock
-    private PaymentQueryRepositoryPort paymentQueryRepository;
+    private PaymentQueryRepository paymentQueryRepository;
 
     @InjectMocks
     private PaymentQueryHandler queryHandler;

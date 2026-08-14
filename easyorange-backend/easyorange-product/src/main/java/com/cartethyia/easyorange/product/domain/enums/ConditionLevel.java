@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,7 @@ public enum ConditionLevel implements BaseCodeEnum {
     GOOD("3", "轻微使用痕迹"),
     FAIR("4", "明显使用痕迹");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

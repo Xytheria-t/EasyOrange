@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.message.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
@@ -20,6 +21,7 @@ public enum MessageType implements BaseCodeEnum {
     PAYMENT("4", "支付消息"),
     ACTIVITY("5", "活动通知");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

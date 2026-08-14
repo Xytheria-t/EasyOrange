@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import com.cartethyia.easyorange.message.application.port.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationListVO;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
@@ -12,7 +13,6 @@ import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
-import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import java.time.LocalDateTime;
 import java.util.HashMap;

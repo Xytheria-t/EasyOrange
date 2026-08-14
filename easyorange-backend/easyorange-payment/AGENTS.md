@@ -21,13 +21,12 @@ payment/
 │       ├── gateway/
 │       │   └── PaymentGatewayAdapter.java        # 支付网关适配器（实现 PaymentGatewayPort）
 │       ├── persistence/
-│       │   ├── PaymentRepositoryImpl.java     # 写仓储（实现 PaymentRepositoryPort + PaymentQueryRepositoryPort）
+│       │   ├── PaymentRepositoryImpl.java     # 写仓储（实现 PaymentRepository + PaymentQueryRepository）
 │       │   ├── IdempotencyKeyRepositoryImpl.java
 │       │   ├── PaymentConfigRepository.java
 │       │   ├── converter/
 │       │   │   └── PaymentDataMapper.java        # MapStruct：PaymentDO ↔ Payment（基于 PaymentCreateSpec / PaymentReconstructSpec）
 │       │   ├── mapper/                            # PaymentMapper, IdempotencyKeyMapper, PaymentConfigMapper
-│       │   ├── typehandler/                       # PaymentStatusTypeHandler, PaymentMethodTypeHandler（VARCHAR ↔ 枚举）
 │       │   └── {PaymentDO, IdempotencyKeyDO, PaymentConfigDO}
 │       └── security/
 │           └── CallbackSignatureVerifier.java    # HMAC-SHA256 回调验签（实现 CallbackSignatureVerifierPort）
@@ -42,6 +41,8 @@ payment/
 │   ├── query/                                    # 查询（CQRS Read）
 │   │   ├── PaymentQueryHandler.java
 │   │   └── PaymentListQuery.java                  # record 收敛查询参数（userId, status: PaymentStatus, pageNum, pageSize）
+│   ├── port/query/
+│   │   └── PaymentQueryRepository.java            # 读仓储（status 参数为 PaymentStatus 枚举，类型安全）
 │   ├── idempotency/
 │   │   └── IdempotencyService.java                # 幂等服务（SHA-256 请求哈希）
 │   ├── lock/
@@ -69,11 +70,10 @@ payment/
 │   ├── port/                                      # 出站端口
 │   │   ├── PaymentGatewayPort.java
 │   │   ├── CallbackSignatureVerifierPort.java
-│   │   ├── PaymentQueryRepositoryPort.java        # status 参数为 PaymentStatus 枚举（类型安全）
 │   │   ├── PaymentResult.java                     # 网关支付结果
 │   │   └── RefundResult.java                      # 网关退款结果
 │   ├── repository/
-│   │   ├── PaymentRepositoryPort.java
+│   │   ├── PaymentRepository.java                 # 写仓储
 │   │   └── IdempotencyKeyRepositoryPort.java
 │   ├── constant/
 │   │   ├── PaymentStatus.java                     # code 为 String："PENDING"/"SUCCESS"/"REFUNDED"/...（已语义化）
@@ -140,9 +140,9 @@ CLOSED    FAILED   REFUNDING → REFUNDED
 `PaymentStatus` / `PaymentMethod` 的 `code` 字段为 String（非 Integer），全链路字符串化：
 
 - **DB 层**：`eo_payment.status` / `eo_payment.payment_method` 为 `VARCHAR(20)`，带 CHECK 约束
-- **MyBatis**：`PaymentStatusTypeHandler` / `PaymentMethodTypeHandler`（继承 `BaseEnumTypeHandler`）完成 enum ↔ String 互转
+- **MyBatis**：枚举 `code` 字段标 `@EnumValue`，内置 `MybatisEnumTypeHandler` 完成 enum ↔ String 互转
 - **领域层**：`Payment` / `PaymentReconstructSpec` 直接使用枚举类型，无 String.valueOf 转换
-- **查询端口**：`PaymentQueryRepositoryPort.findByUserIdAndStatus(String, PaymentStatus, ...)` 入参为枚举类型
+- **查询端口**：`PaymentQueryRepository.findByUserIdAndStatus(String, PaymentStatus, ...)` 入参为枚举类型
 - **JSON 序列化**：`@JsonValue` 标注在 `code` 上，前端收到的就是 `"SUCCESS"` / `"WECHAT"` 而非 `1`
 
 ## 常见开发任务
@@ -152,7 +152,7 @@ CLOSED    FAILED   REFUNDING → REFUNDED
 1. `PaymentMethod` 枚举新增值（code 为 String，如 `"UNIONPAY"`）
 2. `PaymentGatewayAdapter` 添加新网关调用逻辑
 3. Flyway 迁移：`eo_payment.payment_method` 列 CHECK 约束追加新 code
-4. `PaymentMethodTypeHandler` 已通过 `fromCode()` 自动适配（throw on unknown）
+4. 新枚举值自动适配（`fromCode()` throw on unknown）
 5. 添加模拟支付支持（`MockPaymentController` `@Profile("dev")` 通过 `PaymentCreateSpec` 创建聚合根）
 6. 测试
 

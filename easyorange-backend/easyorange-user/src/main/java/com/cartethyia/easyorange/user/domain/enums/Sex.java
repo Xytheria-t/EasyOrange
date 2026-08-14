@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,6 +12,7 @@ public enum Sex {
     MALE("1", "男"),
     UNKNOWN("2", "未知");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

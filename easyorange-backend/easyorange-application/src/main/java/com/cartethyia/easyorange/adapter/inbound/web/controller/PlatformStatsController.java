@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.order.application.port.query.OrderQueryRepository;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
@@ -20,7 +20,7 @@ public class PlatformStatsController {
 
     private final UserRepository userRepository;
     private final ProductQueryRepository productQueryRepository;
-    private final OrderReadRepository orderReadRepository;
+    private final OrderQueryRepository orderReadRepository;
 
     @GetMapping("/platform")
     public Result<PlatformStatsVO> getPlatformStats() {

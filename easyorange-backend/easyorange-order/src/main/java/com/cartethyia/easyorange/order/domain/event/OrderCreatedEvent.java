@@ -4,7 +4,12 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record OrderCreatedEvent(
-        String orderId, String buyerId, String sellerId, List<OrderItemPayload> items, BigDecimal totalAmount)
+        String eventId,
+        String orderId,
+        String buyerId,
+        String sellerId,
+        List<OrderItemPayload> items,
+        BigDecimal totalAmount)
         implements OrderEvent {
 
     public OrderCreatedEvent {

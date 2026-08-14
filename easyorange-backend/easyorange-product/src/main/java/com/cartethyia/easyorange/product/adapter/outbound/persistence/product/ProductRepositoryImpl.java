@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
+import com.cartethyia.easyorange.product.domain.valueobject.ViewCountEntry;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -65,6 +66,14 @@ public class ProductRepositoryImpl extends BaseRepository<ProductMapper, Product
                 .in(ProductDO::getId, ids.stream().map(ProductId::value).toList())
                 .list();
         return productDOs.isEmpty() ? List.of() : toDomainList(productDOs);
+    }
+
+    @Override
+    public void batchAddViewCounts(List<ViewCountEntry> entries) {
+        if (entries == null || entries.isEmpty()) {
+            return;
+        }
+        mapper.batchAddViewCounts(entries);
     }
 
     private Product insert(Product product) {

@@ -5,7 +5,6 @@ import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChe
 import com.cartethyia.easyorange.framework.event.metadata.EventMetadata;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import java.util.Map;
-import java.util.function.Consumer;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -25,7 +24,7 @@ public final class EventConsumerHandler {
         this(consumerId, idempotencyChecker, metricsService, true);
     }
 
-    public void handle(DomainEvent event, Message message, Consumer<EventMetadata> consumer) {
+    public void handle(DomainEvent event, Message message, Runnable task) {
         var metadata = EventMetadata.from(message, event);
         var eventId = metadata.eventId();
         var namespace = consumerId + ":" + event.eventType();
@@ -56,7 +55,7 @@ public final class EventConsumerHandler {
                     eventId,
                     messageTraceId,
                     consumerId);
-            consumer.accept(metadata);
+            task.run();
             log.info("完成处理: type={} aggregateId={} consumer={}", event.eventType(), event.aggregateId(), consumerId);
         } catch (Exception e) {
             outcome = "failure";

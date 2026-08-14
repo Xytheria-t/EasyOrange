@@ -27,7 +27,7 @@ import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +46,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PaymentCommandHandlerTest {
 
     @Mock
-    private PaymentRepositoryPort paymentRepository;
+    private PaymentRepository paymentRepository;
 
     @Mock
     private DomainEventPublisher domainEventPublisher;

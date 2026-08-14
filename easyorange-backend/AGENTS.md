@@ -27,9 +27,10 @@ Spring Boot 4.0.7 + Java 25 后端，采用 DDD + 六边形架构。
 | 应用服务（非 CQRS） | `*AppService` | `AuthAppService`, `ProfileAppService` |
 | CQRS 命令处理器 | `*CommandHandler` | `OrderCommandHandler`, `ProductCommandHandler` |
 | CQRS 查询处理器 | `*QueryHandler` | `OrderQueryHandler`, `ProductQueryHandler` |
-| 仓储接口 | `*Repository` | `UserRepository` |
+| 写仓储接口 | `*Repository`（`domain/repository/`） | `UserRepository` |
+| 读仓储接口 | `*QueryRepository`（`application/port/query/`，读模型是 application 层概念） | `ProductQueryRepository` |
 | 仓储实现 | `*RepositoryImpl` (继承 `BaseRepository`) | `UserRepositoryImpl extends BaseRepository<UserMapper, UserDO>` |
-| 出站端口 | `*Port` | `PaymentGatewayPort` |
+| 出站端口 | `*Port`（`domain/port/`，跨模块/技术端口） | `PaymentGatewayPort` |
 | 控制器 | `*Controller` | `AuthController` |
 | 请求 DTO | `*Request` | `PasswordLoginRequest`, `RegisterRequest` |
 | 响应 DTO | `*Response` / `*VO` | `UserResponse`, `OrderVO` |

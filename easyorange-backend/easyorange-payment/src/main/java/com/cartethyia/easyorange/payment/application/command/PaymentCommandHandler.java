@@ -14,7 +14,7 @@ import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +42,7 @@ public class PaymentCommandHandler {
      */
     private static final long LOCK_TRY_TIMEOUT_SECONDS = 0;
 
-    private final PaymentRepositoryPort paymentRepository;
+    private final PaymentRepository paymentRepository;
     private final DomainEventPublisher domainEventPublisher;
     private final IdGenerator idGenerator;
     private final DistributedLockPort lockPort;

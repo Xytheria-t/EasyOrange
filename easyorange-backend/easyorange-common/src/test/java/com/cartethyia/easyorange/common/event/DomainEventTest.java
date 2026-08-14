@@ -41,7 +41,7 @@ class DomainEventTest {
         @Test
         @DisplayName("record implementing DomainEvent gets correct eventType")
         void recordImplementsDomainEvent() {
-            var event = new TestRecordEvent("foo");
+            var event = new TestRecordEvent("evt-1", "foo");
             assertThat(event.eventType()).isEqualTo("TestRecord");
             assertThat(event.value()).isEqualTo("foo");
         }
@@ -50,12 +50,22 @@ class DomainEventTest {
     // Test helper classes
     static class TestProductCreatedEvent implements DomainEvent {
         @Override
+        public String eventId() {
+            return "evt-1";
+        }
+
+        @Override
         public String aggregateId() {
             return "agg-1";
         }
     }
 
     static class TestDomainNotification implements DomainEvent {
+        @Override
+        public String eventId() {
+            return "evt-2";
+        }
+
         @Override
         public String aggregateId() {
             return "agg-2";
@@ -64,12 +74,17 @@ class DomainEventTest {
 
     static class TestLogin implements DomainEvent {
         @Override
+        public String eventId() {
+            return "evt-3";
+        }
+
+        @Override
         public String aggregateId() {
             return "user-1";
         }
     }
 
-    record TestRecordEvent(String value) implements DomainEvent {
+    record TestRecordEvent(String eventId, String value) implements DomainEvent {
         @Override
         public String aggregateId() {
             return value;

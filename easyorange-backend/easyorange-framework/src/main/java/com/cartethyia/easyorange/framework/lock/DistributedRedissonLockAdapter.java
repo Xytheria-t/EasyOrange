@@ -96,7 +96,8 @@ public class DistributedRedissonLockAdapter implements DistributedLockPort {
     }
 
     /**
-     * 批量释放锁（逆序释放，避免死锁）。
+     * 按获取逆序批量释放锁，确保资源依赖安全卸载。
+     * 仅释放当前线程持有的锁，单锁释放异常不中断后续释放。
      */
     private void releaseLocks(List<RLock> acquiredLocks) {
         for (int i = acquiredLocks.size() - 1; i >= 0; i--) {

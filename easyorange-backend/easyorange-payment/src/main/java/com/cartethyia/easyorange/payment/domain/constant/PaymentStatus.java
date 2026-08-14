@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.constant;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
@@ -17,6 +18,7 @@ public enum PaymentStatus implements BaseCodeEnum {
     PAYING("PAYING", "支付中"),
     REFUNDING("REFUNDING", "退款中");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

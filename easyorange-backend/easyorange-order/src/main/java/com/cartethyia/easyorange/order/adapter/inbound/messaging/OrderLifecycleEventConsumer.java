@@ -55,13 +55,12 @@ public class OrderLifecycleEventConsumer {
         handler.handle(
                 event,
                 message,
-                metadata -> log.debug(
-                        "Order created, stock already decremented synchronously: orderId={}", event.orderId()));
+                () -> log.debug("Order created, stock already decremented synchronously: orderId={}", event.orderId()));
     }
 
     @RabbitHandler
     public void onOrderCancelled(OrderCancelledEvent event, Message message) {
-        handler.handle(event, message, metadata -> {
+        handler.handle(event, message, () -> {
             for (var productId : event.productIds()) {
                 productInventoryPort.restoreStock(productId);
             }
@@ -70,7 +69,7 @@ public class OrderLifecycleEventConsumer {
 
     @RabbitHandler
     public void onOrderCompleted(OrderCompletedEvent event, Message message) {
-        handler.handle(event, message, metadata -> {
+        handler.handle(event, message, () -> {
             for (var productId : event.productIds()) {
                 productInventoryPort.markAsSold(productId);
             }
@@ -79,7 +78,7 @@ public class OrderLifecycleEventConsumer {
 
     @RabbitHandler
     public void onOrderRefunded(OrderRefundedEvent event, Message message) {
-        handler.handle(event, message, metadata -> {
+        handler.handle(event, message, () -> {
             for (var productId : event.productIds()) {
                 productInventoryPort.restoreStock(productId);
             }

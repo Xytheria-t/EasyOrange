@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.payment.domain.aggregate;
 
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.Transition;
+import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
@@ -121,6 +122,7 @@ public class Payment {
                 0);
 
         PaymentCreatedEvent event = new PaymentCreatedEvent(
+                UuidV7.generateId(),
                 spec.paymentId(),
                 paymentNo,
                 spec.orderId(),
@@ -136,7 +138,7 @@ public class Payment {
     /**
      * 从持久层重建聚合根（统一入口）。
      * <p>
-     * 状态字段使用领域枚举类型，由 TypeHandler 完成 VARCHAR 列互转。
+     * 状态字段使用领域枚举类型，由 {@code @EnumValue} 注解完成 VARCHAR 列互转。
      */
     public static Payment from(PaymentReconstructSpec spec) {
         return new Payment(
@@ -204,10 +206,12 @@ public class Payment {
         }
         if (result.isSuccess()) {
             Payment updated = withSuccess(result.getTransactionId());
-            return new Transition<>(updated, new PaymentSucceededEvent(this.id, result.getTransactionId()));
+            return new Transition<>(
+                    updated, new PaymentSucceededEvent(UuidV7.generateId(), this.id, result.getTransactionId()));
         } else {
             Payment updated = withStatus(PaymentStatus.FAILED, nextVersion());
-            return new Transition<>(updated, new PaymentFailedEvent(this.id, result.getErrorMessage()));
+            return new Transition<>(
+                    updated, new PaymentFailedEvent(UuidV7.generateId(), this.id, result.getErrorMessage()));
         }
     }
 
@@ -260,7 +264,7 @@ public class Payment {
         }
         Payment updated =
                 withRefundResult(newStatus, newRefundedAmount, refundEventReason, LocalDateTime.now(), nextVersion());
-        return new Transition<>(updated, new PaymentRefundedEvent(this.id, refundEventReason));
+        return new Transition<>(updated, new PaymentRefundedEvent(UuidV7.generateId(), this.id, refundEventReason));
     }
 
     /**
@@ -282,7 +286,7 @@ public class Payment {
         }
         Payment updated =
                 withRefundResult(PaymentStatus.REFUNDED, this.amount, refundReason, LocalDateTime.now(), nextVersion());
-        return new Transition<>(updated, new PaymentRefundedEvent(this.id, refundReason));
+        return new Transition<>(updated, new PaymentRefundedEvent(UuidV7.generateId(), this.id, refundReason));
     }
 
     /**
@@ -293,7 +297,7 @@ public class Payment {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有待支付状态可以标记为失败");
         }
         Payment updated = withStatus(PaymentStatus.FAILED, nextVersion());
-        return new Transition<>(updated, new PaymentFailedEvent(this.id, reason));
+        return new Transition<>(updated, new PaymentFailedEvent(UuidV7.generateId(), this.id, reason));
     }
 
     /**
@@ -304,7 +308,7 @@ public class Payment {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "当前状态不允许关闭: " + this.status);
         }
         Payment updated = withStatus(PaymentStatus.CLOSED, nextVersion());
-        return new Transition<>(updated, new PaymentClosedEvent(this.id));
+        return new Transition<>(updated, new PaymentClosedEvent(UuidV7.generateId(), this.id));
     }
 
     // ==================== Internal Helpers ====================

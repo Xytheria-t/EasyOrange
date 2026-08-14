@@ -133,16 +133,12 @@ easyorange:
   # -------------------------------------------------------------------
   rabbitmq:
     enabled: true
-    exchange: eo.domain.events
-    routing-key-prefix: ""
-    publisher:
-      confirms: true
-      returns: true
-      retry:
-        enabled: true
-        max-attempts: 3
-        initial-interval: 1s
-        multiplier: 2
+    retry:
+      enabled: true
+      max-attempts: 3
+      initial-interval: 1s
+      multiplier: 2
+      max-delay: 10s
     consumer:
       prefetch: 10
       default-requeue-rejected: false

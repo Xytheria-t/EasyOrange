@@ -23,8 +23,7 @@ product/
 │       │   ├── report/                  # 举报：ProductReportDO + ReportHandleHistoryDO + Mapper × 2 + RepositoryImpl × 3
 │       │   ├── rating/                  # 评价：ProductRatingDO + Mapper + RepositoryImpl × 2
 │       │   ├── search/                  # 搜索：HotKeywordDO + SearchHistoryDO + Mapper × 2
-│       │   └── typehandler/             # MyBatis 枚举 TypeHandler
-│       ├── scheduler/                  # 定时批处理
+│       │   ├── scheduler/                  # 定时批处理
 │       │   └── ViewCountFlushScheduler.java  # 浏览量 Redis→DB 定时刷入
 │       └── cache/                       # 缓存适配器
 │           ├── ProductCacheAdapter.java     # 实现 ProductCachePort（extends ProductCacheEvictionPort）

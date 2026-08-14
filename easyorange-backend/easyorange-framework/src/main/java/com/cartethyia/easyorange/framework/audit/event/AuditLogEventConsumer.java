@@ -39,7 +39,7 @@ public class AuditLogEventConsumer {
 
     @RabbitHandler
     public void onAuditLog(AuditLogEvent event, Message message) {
-        handler.handle(event, message, _ -> {
+        handler.handle(event, message, () -> {
             var auditLog = event.auditLog();
             log.info(
                     "审计日志入库: method={} status={} user={} ip={} duration={}ms",

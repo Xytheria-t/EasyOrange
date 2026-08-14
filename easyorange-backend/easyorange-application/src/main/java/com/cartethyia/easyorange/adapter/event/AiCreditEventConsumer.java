@@ -39,18 +39,26 @@ public class AiCreditEventConsumer {
 
     @RabbitHandler
     public void onOrderCompleted(OrderCompletedEvent event, Message message) {
-        handler.handle(
-                event,
-                message,
-                metadata -> log.info(
-                        "action=recalculate_credit_after_trade orderId={} productIds={}",
-                        event.orderId(),
-                        event.productIds()));
+        handler.handle(event, message, () -> {
+            if (event.buyerId() == null || event.sellerId() == null) {
+                // 滚动部署窗口兼容：旧版消息无 buyerId/sellerId 字段，降级跳过，由后续事件触发重算
+                log.warn("action=skip_credit_recalculation reason=missing_party_ids orderId={}", event.orderId());
+                return;
+            }
+            // 信用分统计口径覆盖买卖双方（buyer_id OR seller_id），成交后双方数据都变化，需一起重算
+            creditScoringService.recalculateScore(event.buyerId());
+            creditScoringService.recalculateScore(event.sellerId());
+            log.info(
+                    "action=recalculate_credit_after_trade orderId={} buyerId={} sellerId={}",
+                    event.orderId(),
+                    event.buyerId(),
+                    event.sellerId());
+        });
     }
 
     @RabbitHandler
     public void onReportProcessed(ReportProcessedEvent event, Message message) {
-        handler.handle(event, message, metadata -> {
+        handler.handle(event, message, () -> {
             if (!event.approved()) {
                 log.info("action=skip_credit_recalculation reason=report_dismissed reportId={}", event.reportId());
                 return;

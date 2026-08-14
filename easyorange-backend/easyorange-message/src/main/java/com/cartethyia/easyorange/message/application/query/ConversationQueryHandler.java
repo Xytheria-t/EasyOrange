@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.message.application.query;
 
+import com.cartethyia.easyorange.message.application.port.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationListVO;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
-import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import java.util.HashMap;
 import java.util.LinkedHashMap;

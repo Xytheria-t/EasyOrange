@@ -2,16 +2,16 @@ package com.cartethyia.easyorange.order.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
+import com.cartethyia.easyorange.order.application.port.query.OrderQueryRepository;
 import com.cartethyia.easyorange.order.application.query.assembler.OrderReadModelAssembler;
+import com.cartethyia.easyorange.order.application.query.readmodel.OrderItemReadModel;
+import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OrderQueryHandler {
 
-    private final OrderReadRepository orderReadRepository;
+    private final OrderQueryRepository orderReadRepository;
     private final ProductQueryPort productQueryPort;
     private final OrderCachePort<OrderVO> orderCachePort;
     private final OrderReadModelAssembler readModelAssembler;

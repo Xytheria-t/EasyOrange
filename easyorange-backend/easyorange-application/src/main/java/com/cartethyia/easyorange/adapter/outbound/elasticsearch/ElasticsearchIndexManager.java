@@ -30,6 +30,7 @@ public class ElasticsearchIndexManager {
     @PostConstruct
     public void initIndices() {
         createProductIndex();
+        createKnowledgeIndex();
     }
 
     void createProductIndex() {
@@ -51,6 +52,31 @@ public class ElasticsearchIndexManager {
         } catch (Exception e) {
             log.error("Failed to create ES index 'products'", e);
             throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "ES index creation failed", e);
+        }
+    }
+
+    /**
+     * RAG 知识库分块索引（dense_vector 1024 与 text-embedding-v3 对齐，复用 IK 分词 settings）。
+     */
+    void createKnowledgeIndex() {
+        IndexOperations indexOps = elasticsearchOperations.indexOps(KnowledgeChunkDocument.class);
+
+        if (indexOps.exists()) {
+            log.info("ES index 'knowledge_docs' already exists, skipping creation");
+            return;
+        }
+
+        try {
+            String settingsJson = readJson("elasticsearch/product-settings.json");
+            String mappingJson = readJson("elasticsearch/knowledge-mapping.json");
+
+            indexOps.create(Settings.parse(settingsJson));
+            indexOps.putMapping(Document.parse(mappingJson));
+
+            log.info("Created ES index 'knowledge_docs' with IK analyzer mapping");
+        } catch (Exception e) {
+            log.error("Failed to create ES index 'knowledge_docs'", e);
+            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "ES knowledge index creation failed", e);
         }
     }
 

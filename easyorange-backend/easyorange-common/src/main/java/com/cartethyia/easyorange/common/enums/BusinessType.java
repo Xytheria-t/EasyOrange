@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.common.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,6 +19,7 @@ public enum BusinessType implements BaseCodeEnum {
     DELETE("3", "删除"),
     LOGIN("4", "登录");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

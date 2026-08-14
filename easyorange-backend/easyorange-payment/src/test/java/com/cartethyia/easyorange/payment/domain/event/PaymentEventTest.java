@@ -13,7 +13,7 @@ class PaymentEventTest {
     @DisplayName("创建事件关联聚合根 ID")
     void createdEvent_aggregateId() {
         PaymentCreatedEvent event =
-                new PaymentCreatedEvent("1001", "PAY123", "2001", "3001", new BigDecimal("100.00"), "WECHAT");
+                new PaymentCreatedEvent("evt-1", "1001", "PAY123", "2001", "3001", new BigDecimal("100.00"), "WECHAT");
 
         assertThat(event.aggregateId()).isEqualTo("1001");
         assertThat(event.eventType()).isNotBlank();
@@ -22,24 +22,26 @@ class PaymentEventTest {
     @Test
     @DisplayName("成功事件关联聚合根 ID")
     void succeededEvent_aggregateId() {
-        assertThat(new PaymentSucceededEvent("1001", "TXN_1").aggregateId()).isEqualTo("1001");
+        assertThat(new PaymentSucceededEvent("evt-2", "1001", "TXN_1").aggregateId())
+                .isEqualTo("1001");
     }
 
     @Test
     @DisplayName("失败事件关联聚合根 ID")
     void failedEvent_aggregateId() {
-        assertThat(new PaymentFailedEvent("1001", "原因").aggregateId()).isEqualTo("1001");
+        assertThat(new PaymentFailedEvent("evt-3", "1001", "原因").aggregateId()).isEqualTo("1001");
     }
 
     @Test
     @DisplayName("退款事件关联聚合根 ID")
     void refundedEvent_aggregateId() {
-        assertThat(new PaymentRefundedEvent("1001", "用户退款").aggregateId()).isEqualTo("1001");
+        assertThat(new PaymentRefundedEvent("evt-4", "1001", "用户退款").aggregateId())
+                .isEqualTo("1001");
     }
 
     @Test
     @DisplayName("关闭事件关联聚合根 ID")
     void closedEvent_aggregateId() {
-        assertThat(new PaymentClosedEvent("1001").aggregateId()).isEqualTo("1001");
+        assertThat(new PaymentClosedEvent("evt-5", "1001").aggregateId()).isEqualTo("1001");
     }
 }

@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.order.domain.aggregate;
 
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.Transition;
+import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.order.domain.constant.ClosureKind;
 import com.cartethyia.easyorange.order.domain.constant.OrderAction;
@@ -151,7 +152,12 @@ public class Order {
                 .toList();
 
         OrderCreatedEvent event = new OrderCreatedEvent(
-                orderId.value(), spec.buyerId().value(), spec.sellerId().value(), itemPayloads, totalAmount.value());
+                UuidV7.generateId(),
+                orderId.value(),
+                spec.buyerId().value(),
+                spec.sellerId().value(),
+                itemPayloads,
+                totalAmount.value());
 
         return new Transition<>(aggregate, event);
     }
@@ -161,7 +167,7 @@ public class Order {
     /**
      * 从持久层重建聚合根（统一入口，含列表查询无行项场景）。
      * <p>
-     * 状态字段使用领域枚举类型，由 TypeHandler 完成 VARCHAR 列互转。
+     * 状态字段使用领域枚举类型，由 {@code @EnumValue} 注解完成 VARCHAR 列互转。
      */
     public static Order from(OrderReconstructSpec spec) {
         return new Order(
@@ -201,14 +207,16 @@ public class Order {
     /** 支付订单 */
     public Transition<Order, OrderPaidEvent> pay(LocalDateTime now) {
         return new Transition<>(
-                transitionTo(OrderAction.PAY, null, now), new OrderPaidEvent(id.value(), PaymentStatus.PAID.getCode()));
+                transitionTo(OrderAction.PAY, null, now),
+                new OrderPaidEvent(UuidV7.generateId(), id.value(), buyerId().value(), PaymentStatus.PAID.getCode()));
     }
 
     /** 取消订单（买家路径，仅限待付款） */
     public Transition<Order, OrderCancelledEvent> cancel(String reason, LocalDateTime now) {
         return new Transition<>(
                 transitionTo(OrderAction.CANCEL, reason, now),
-                new OrderCancelledEvent(id.value(), extractProductIds(), reason));
+                new OrderCancelledEvent(
+                        UuidV7.generateId(), id.value(), buyerId().value(), extractProductIds(), reason));
     }
 
     /**
@@ -219,26 +227,35 @@ public class Order {
     public Transition<Order, OrderCancelledEvent> forceCancel(String reason, LocalDateTime now) {
         return new Transition<>(
                 transitionTo(OrderAction.FORCE_CANCEL, reason, now),
-                new OrderCancelledEvent(id.value(), extractProductIds(), reason));
+                new OrderCancelledEvent(
+                        UuidV7.generateId(), id.value(), buyerId().value(), extractProductIds(), reason));
     }
 
     /** 发货 */
     public Transition<Order, OrderShippedEvent> ship(LocalDateTime now) {
-        return new Transition<>(transitionTo(OrderAction.SHIP, null, now), new OrderShippedEvent(id.value()));
+        return new Transition<>(
+                transitionTo(OrderAction.SHIP, null, now),
+                new OrderShippedEvent(UuidV7.generateId(), id.value(), buyerId().value()));
     }
 
     /** 确认收货 */
     public Transition<Order, OrderCompletedEvent> confirmReceipt(LocalDateTime now) {
         return new Transition<>(
                 transitionTo(OrderAction.CONFIRM_RECEIPT, null, now),
-                new OrderCompletedEvent(id.value(), extractProductIds()));
+                new OrderCompletedEvent(
+                        UuidV7.generateId(),
+                        id.value(),
+                        buyerId().value(),
+                        sellerId().value(),
+                        extractProductIds()));
     }
 
     /** 退款 */
     public Transition<Order, OrderRefundedEvent> refund(String reason, LocalDateTime now) {
         return new Transition<>(
                 transitionTo(OrderAction.REFUND, reason, now),
-                new OrderRefundedEvent(id.value(), extractProductIds(), reason));
+                new OrderRefundedEvent(
+                        UuidV7.generateId(), id.value(), buyerId().value(), extractProductIds(), reason));
     }
 
     // ==================== State Machine Guard ====================

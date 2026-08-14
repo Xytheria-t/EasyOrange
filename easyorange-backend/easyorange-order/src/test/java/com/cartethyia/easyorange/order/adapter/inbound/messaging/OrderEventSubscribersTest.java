@@ -67,6 +67,7 @@ class OrderEventSubscribersTest {
         @DisplayName("收到订单创建事件后不再异步预留库存（已由 OrderCommandHandler 同步扣减）")
         void onOrderCreated_shouldNotReserveStock() {
             OrderCreatedEvent event = new OrderCreatedEvent(
+                    "evt-1",
                     ORDER_ID,
                     BUYER_ID,
                     SELLER_ID,
@@ -83,7 +84,8 @@ class OrderEventSubscribersTest {
         @Test
         @DisplayName("收到订单取消事件后恢复库存")
         void onOrderCancelled_shouldRestoreStock() {
-            OrderCancelledEvent event = new OrderCancelledEvent(ORDER_ID, List.of(PRODUCT_ID), "取消原因");
+            OrderCancelledEvent event =
+                    new OrderCancelledEvent("evt-2", ORDER_ID, BUYER_ID, List.of(PRODUCT_ID), "取消原因");
 
             consumer.onOrderCancelled(event, buildMessage());
 
@@ -93,7 +95,8 @@ class OrderEventSubscribersTest {
         @Test
         @DisplayName("收到订单完成事件后标记商品已售")
         void onOrderCompleted_shouldMarkAsSold() {
-            OrderCompletedEvent event = new OrderCompletedEvent(ORDER_ID, List.of(PRODUCT_ID));
+            OrderCompletedEvent event =
+                    new OrderCompletedEvent("evt-3", ORDER_ID, BUYER_ID, SELLER_ID, List.of(PRODUCT_ID));
 
             consumer.onOrderCompleted(event, buildMessage());
 
@@ -103,7 +106,7 @@ class OrderEventSubscribersTest {
         @Test
         @DisplayName("收到订单退款事件后恢复库存并触发支付退款")
         void onOrderRefunded_shouldRestoreStockAndRefund() {
-            OrderRefundedEvent event = new OrderRefundedEvent(ORDER_ID, List.of(PRODUCT_ID), "退款原因");
+            OrderRefundedEvent event = new OrderRefundedEvent("evt-4", ORDER_ID, BUYER_ID, List.of(PRODUCT_ID), "退款原因");
 
             consumer.onOrderRefunded(event, buildMessage());
 

@@ -60,7 +60,7 @@ easyorange-admin ──optional──> easyorange-common   (Result, PageResult, 
 **跨模块通信**：通过 `domain/port/` 端口接口解耦，适配器实现在 `easyorange-application/adapter/outbound/admin/`：
 - `AdminProductQueryAdapter` → ProductMapper / ProductRepository / 举报·审核·分类·AI 审核
 - `AdminUserQueryAdapter` → UserMapper（含用户状态/角色/密码管理）
-- `AdminOrderQueryAdapter` → OrderMapper / OrderReadRepository / OrderRepository
+- `AdminOrderQueryAdapter` → OrderMapper / OrderQueryRepository / OrderRepository
 - `AdminRatingQueryAdapter` → ProductRatingMapper
 
 ## 常见开发任务

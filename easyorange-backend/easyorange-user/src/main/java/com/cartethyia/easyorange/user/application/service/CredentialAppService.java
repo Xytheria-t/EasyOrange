@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.user.application.service;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
@@ -38,6 +39,6 @@ public class CredentialAppService {
         User updated = passwordManagementService.changePassword(user, oldPassword, newPassword);
         userRepository.update(updated);
         tokenService.revokeAllUserSessions(userId);
-        domainEventPublisher.publish(new UserPasswordChangedEvent(userId));
+        domainEventPublisher.publish(new UserPasswordChangedEvent(UuidV7.generateId(), userId));
     }
 }

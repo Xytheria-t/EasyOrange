@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.product.domain.aggregate;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.Transition;
+import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
@@ -92,7 +93,7 @@ public class Product {
                 .updateTime(LocalDateTime.now())
                 .build();
 
-        return new Transition<>(p, new ProductCreatedEvent(ProductEvent.Data.from(p)));
+        return new Transition<>(p, new ProductCreatedEvent(UuidV7.generateId(), ProductEvent.Data.from(p)));
     }
 
     // ==================== State Transitions ====================
@@ -106,7 +107,12 @@ public class Product {
         return new Transition<>(
                 transitionTo(ProductStatus.PENDING_REVIEW),
                 new ProductSubmittedForReviewEvent(
-                        id.value(), userId, sellerId.value(), status, ProductStatus.PENDING_REVIEW));
+                        UuidV7.generateId(),
+                        id.value(),
+                        userId,
+                        sellerId.value(),
+                        status,
+                        ProductStatus.PENDING_REVIEW));
     }
 
     public Transition<Product, ProductAuditedEvent> approve(String reason) {
@@ -115,10 +121,11 @@ public class Product {
         return new Transition<>(
                 updated,
                 new ProductAuditedEvent(
+                        UuidV7.generateId(),
                         id.value(),
                         title.value(),
                         sellerId.value(),
-                        AuditAction.APPROVED.getCode(),
+                        AuditAction.APPROVED,
                         reason,
                         LocalDateTime.now()));
     }
@@ -127,10 +134,11 @@ public class Product {
         return new Transition<>(
                 transitionTo(ProductStatus.REJECTED),
                 new ProductAuditedEvent(
+                        UuidV7.generateId(),
                         id.value(),
                         title.value(),
                         sellerId.value(),
-                        AuditAction.REJECTED.getCode(),
+                        AuditAction.REJECTED,
                         reason,
                         LocalDateTime.now()));
     }
@@ -138,12 +146,13 @@ public class Product {
     public Transition<Product, ProductPutOnlineEvent> putOnline() {
         var updated = transitionTo(ProductStatus.ONLINE);
         validateOnline();
-        return new Transition<>(updated, new ProductPutOnlineEvent(id.value(), sellerId.value()));
+        return new Transition<>(updated, new ProductPutOnlineEvent(UuidV7.generateId(), id.value(), sellerId.value()));
     }
 
     public Transition<Product, ProductTakeOfflineEvent> takeOffline() {
         return new Transition<>(
-                transitionTo(ProductStatus.OFFLINE), new ProductTakeOfflineEvent(id.value(), sellerId.value()));
+                transitionTo(ProductStatus.OFFLINE),
+                new ProductTakeOfflineEvent(UuidV7.generateId(), id.value(), sellerId.value()));
     }
 
     public Transition<Product, ProductTakeOfflineEvent> takeOffline(String userId) {
@@ -158,7 +167,8 @@ public class Product {
             return Optional.empty(); // 幂等：订单完成链路重复触发时忽略
         }
         return Optional.of(new Transition<>(
-                transitionTo(ProductStatus.SOLD), new ProductMarkedSoldEvent(id.value(), sellerId.value())));
+                transitionTo(ProductStatus.SOLD),
+                new ProductMarkedSoldEvent(UuidV7.generateId(), id.value(), sellerId.value())));
     }
 
     /** 状态机守卫：目标状态非法时抛出 {@link InvalidProductStatusException}，否则返回新状态。 */
@@ -199,7 +209,7 @@ public class Product {
         if (spec.description() != null) builder.description(spec.description());
         if (spec.images() != null) builder.images(spec.images());
         var updated = builder.updateTime(LocalDateTime.now()).build();
-        return new Transition<>(updated, new ProductUpdatedEvent(ProductEvent.Data.from(updated)));
+        return new Transition<>(updated, new ProductUpdatedEvent(UuidV7.generateId(), ProductEvent.Data.from(updated)));
     }
 
     public Transition<Product, ProductDeletedEvent> delete(String userId) {
@@ -210,7 +220,8 @@ public class Product {
             throw new InvalidProductStatusException("不允许删除", id, status);
         }
         return new Transition<>(
-                toBuilder().updateTime(LocalDateTime.now()).build(), new ProductDeletedEvent(id.value(), userId));
+                toBuilder().updateTime(LocalDateTime.now()).build(),
+                new ProductDeletedEvent(UuidV7.generateId(), id.value(), userId));
     }
 
     // ==================== Utility ====================

@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.constant;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
@@ -12,6 +13,7 @@ public enum PaymentMethod implements BaseCodeEnum {
     ALIPAY("ALIPAY", "支付宝"),
     BALANCE("BALANCE", "余额支付");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

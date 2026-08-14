@@ -658,7 +658,7 @@
                             <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
                             <!-- 定向豁免无修复版/误报的 CVE（kotlin-stdlib、mysql-connector-j），见 dependency-suppression.xml -->
                             <suppressionFiles>
-                                <suppressionFile>${maven.multiModuleProjectDirectory}/dependency-suppression.xml</suppressionFile>
+                                <suppressionFile>${maven.multiModuleProjectDirectory}/owasp/dependency-suppression.xml</suppressionFile>
                             </suppressionFiles>
                         </configuration>
                         <executions>

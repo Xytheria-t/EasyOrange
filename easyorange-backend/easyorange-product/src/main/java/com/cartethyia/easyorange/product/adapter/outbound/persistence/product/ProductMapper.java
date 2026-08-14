@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.C
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import com.cartethyia.easyorange.product.domain.valueobject.ViewCountEntry;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
@@ -36,8 +37,6 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
     List<SellerReadModel> selectSellersByIds(@Param("sellerIds") Set<String> sellerIds);
 
     // -- 写入 --
-
-    record ViewCountEntry(String productId, int count) {}
 
     void batchAddViewCounts(@Param("entries") List<ViewCountEntry> entries);
 

@@ -13,7 +13,7 @@ framework/
 ├── exception/         # GlobalExceptionHandler（全局异常处理，统一返回 Result<T> 信封）
 ├── file/              # 文件上传下载（FileController/FileService/FileStorage）
 ├── idgen/             # UuidV7IdGenerator（UUID v7）
-├── mybatis/           # CodeEnumTypeHandler（通用枚举 TypeHandler 基类）
+├── mybatis/           # SlowSqlInterceptor（500ms 慢 SQL 指标）
 ├── messaging/         # RabbitMQ + Spring Modulith（EventExternalizationConfig / RabbitMQConfig / ModulithDomainEventPublisher）
 ├── metrics/           # BusinessMetricsService + MetricsConfig
 ├── audit/             # AuditLogAspect + AuditLogService（审计日志 AOP）

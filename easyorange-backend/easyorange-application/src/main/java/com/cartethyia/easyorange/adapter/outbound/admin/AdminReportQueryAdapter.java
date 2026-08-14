@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
@@ -108,6 +109,7 @@ public class AdminReportQueryAdapter implements AdminReportQueryPort {
 
     private void publishProcessedEvent(String reportId, ProductReport report) {
         domainEventPublisher.publish(new ReportProcessedEvent(
+                UuidV7.generateId(),
                 reportId,
                 report.getReporterId(),
                 report.getProductId(),

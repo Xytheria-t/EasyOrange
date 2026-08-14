@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException
 import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PaymentPhaseExecutor {
 
-    private final PaymentRepositoryPort paymentRepository;
+    private final PaymentRepository paymentRepository;
     private final DomainEventPublisher domainEventPublisher;
     private final PaymentGatewayPort paymentGateway;
 

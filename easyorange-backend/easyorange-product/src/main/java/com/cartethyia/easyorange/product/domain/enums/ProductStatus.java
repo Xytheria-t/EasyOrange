@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Map;
@@ -19,6 +20,7 @@ public enum ProductStatus implements BaseCodeEnum {
     OFFLINE("OFFLINE", "下架"),
     SOLD("SOLD", "已售出");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

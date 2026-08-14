@@ -54,7 +54,7 @@ class PaymentMetricsConsumerTest {
     @DisplayName("支付创建事件累加创建指标")
     void onPaymentCreated_recordsCreated() {
         consumer.onPaymentCreated(
-                new PaymentCreatedEvent("1001", "PAY123", "2001", "3001", new BigDecimal("100.00"), "WECHAT"),
+                new PaymentCreatedEvent("evt-1", "1001", "PAY123", "2001", "3001", new BigDecimal("100.00"), "WECHAT"),
                 message());
 
         assertThat(counter("payment.created.total", "payment").count()).isEqualTo(1);
@@ -63,7 +63,7 @@ class PaymentMetricsConsumerTest {
     @Test
     @DisplayName("支付成功事件累加成功指标")
     void onPaymentSucceeded_recordsSuccess() {
-        consumer.onPaymentSucceeded(new PaymentSucceededEvent("1001", "TXN_1"), message());
+        consumer.onPaymentSucceeded(new PaymentSucceededEvent("evt-2", "1001", "TXN_1"), message());
 
         assertThat(counter("payment.success.total", "payment").count()).isEqualTo(1);
     }
@@ -71,7 +71,7 @@ class PaymentMetricsConsumerTest {
     @Test
     @DisplayName("支付失败事件累加失败指标")
     void onPaymentFailed_recordsFailed() {
-        consumer.onPaymentFailed(new PaymentFailedEvent("1001", "失败"), message());
+        consumer.onPaymentFailed(new PaymentFailedEvent("evt-3", "1001", "失败"), message());
 
         assertThat(counter("payment.failed.total", "payment").count()).isEqualTo(1);
     }
@@ -79,7 +79,7 @@ class PaymentMetricsConsumerTest {
     @Test
     @DisplayName("退款事件累加退款指标")
     void onPaymentRefunded_recordsRefund() {
-        consumer.onPaymentRefunded(new PaymentRefundedEvent("1001", "用户退款"), message());
+        consumer.onPaymentRefunded(new PaymentRefundedEvent("evt-4", "1001", "用户退款"), message());
 
         assertThat(counter("payment.refund.total", "refund").count()).isEqualTo(1);
     }

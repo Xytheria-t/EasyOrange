@@ -11,14 +11,7 @@ import com.cartethyia.easyorange.product.domain.aggregate.ProductUpdateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
-import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
-import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
-import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
-import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
-import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
-import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
-import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
+import com.cartethyia.easyorange.product.domain.valueobject.*;
 import java.util.Optional;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
@@ -84,10 +77,6 @@ public class ProductCommandHandler {
     }
 
     // ==================== Stock ====================
-
-    public void decrementStock(String productId) {
-        decrementStock(productId, 1);
-    }
 
     public void decrementStock(String productId, int quantity) {
         var product = findByIdOrThrow(ProductId.of(productId));

@@ -2,7 +2,7 @@
 
 消息通知模块，DDD 六边形架构，支持站内消息、WebSocket 实时推送。
 
-> **架构现状**: 全模块已完成 DDD 分层迁移——聚合根在 `domain/aggregate/`（原 `entity/` 已消除），MyBatis Repository 实现在 `adapter/outbound/persistence/`（DO + Mapper + RepositoryImpl + typehandler），Controller 在 `adapter/inbound/web/controller/`，入站请求 DTO 在 `adapter/inbound/web/dto/request/`，应用层（CQRS + 定时服务 + 领域服务注册）在 `application/`，端口接口在 `domain/port/`。无分层的 `service/` / `entity/` / `dto/` 目录均已消除。
+> **架构现状**: 全模块已完成 DDD 分层迁移——聚合根在 `domain/aggregate/`（原 `entity/` 已消除），MyBatis Repository 实现在 `adapter/outbound/persistence/`（DO + Mapper + RepositoryImpl），Controller 在 `adapter/inbound/web/controller/`，入站请求 DTO 在 `adapter/inbound/web/dto/request/`，应用层（CQRS + 定时服务 + 领域服务注册）在 `application/`，端口接口在 `domain/port/`。无分层的 `service/` / `entity/` / `dto/` 目录均已消除。
 
 ## 目录结构
 
@@ -35,12 +35,9 @@ message/
 │       │   ├── MessageMapper.java
 │       │   ├── OfflineMessageMapper.java
 │       │   ├── MessageRepositoryImpl.java
-│       │   ├── MessageQueryRepositoryImpl.java
-│       │   ├── OfflineMessageRepositoryImpl.java
-│       │   └── typehandler/               # 枚举 TypeHandler
-│       │       ├── MessageStatusTypeHandler.java
-│       │       ├── MessageTypeTypeHandler.java
-│       │       └── ReadStatusTypeHandler.java
+│       │   ├── query/
+│       │   │   └── MessageQueryRepositoryImpl.java
+│       │   └── OfflineMessageRepositoryImpl.java
 │       └── websocket/
 │           └── WebSocketNotifier.java     # WebSocket 出站推送
 ├── application/                       # [DDD] 应用层 (CQRS)
@@ -80,9 +77,9 @@ message/
 │   │   └── UserInfoPort.java
 │   ├── repository/                    # 仓储接口 (实现已迁移到 adapter/outbound/)
 │   │   ├── MessageRepository.java
-│   │   ├── OfflineMessageRepository.java
-│   │   └── query/
-│   │       └── MessageQueryRepository.java
+│   │   └── OfflineMessageRepository.java
+│   ├── port/query/                    # 读仓储（读模型为 application 层概念）
+│   │   └── MessageQueryRepository.java
 │   ├── service/                       # 领域服务（纯领域规则，无仓储编排）
 │   │   └── SensitiveWordFilterService.java   # 消息内容敏感词过滤
 │   ├── constant/

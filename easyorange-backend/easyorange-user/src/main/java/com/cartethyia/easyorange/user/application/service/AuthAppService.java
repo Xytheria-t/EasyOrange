@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.user.application.service;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.framework.auth.TokenRotation;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
@@ -34,7 +35,7 @@ public class AuthAppService {
     public String register(String username, String password) {
         User user = registrationService.registerNewUser(username, password);
         User saved = userRepository.save(user);
-        domainEventPublisher.publish(new UserRegisteredEvent(saved.getId(), username));
+        domainEventPublisher.publish(new UserRegisteredEvent(UuidV7.generateId(), saved.getId(), username));
         return saved.getId();
     }
 

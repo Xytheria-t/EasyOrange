@@ -47,7 +47,7 @@ public class ProductEventConsumer {
 
     @RabbitHandler
     void handle(ProductEvent event, Message message) {
-        handler.handle(event, message, _ -> {
+        handler.handle(event, message, () -> {
             switch (event) {
                 case ProductCreatedEvent e -> handleCreated(e);
                 case ProductUpdatedEvent e -> handleUpdated(e);

@@ -4,7 +4,13 @@ import com.cartethyia.easyorange.common.event.DomainEvent;
 import java.math.BigDecimal;
 
 public record PaymentCreatedEvent(
-        String paymentId, String paymentNo, String orderId, String userId, BigDecimal amount, String paymentMethod)
+        String eventId,
+        String paymentId,
+        String paymentNo,
+        String orderId,
+        String userId,
+        BigDecimal amount,
+        String paymentMethod)
         implements DomainEvent {
     @Override
     public String aggregateId() {

@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
@@ -12,6 +13,7 @@ public enum UserStatus implements BaseCodeEnum {
     DISABLED("DISABLED", "禁用"),
     LOCKED("LOCKED", "锁定");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

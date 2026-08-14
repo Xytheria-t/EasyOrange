@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.framework.messaging.config;
 
 import com.cartethyia.easyorange.framework.event.metadata.EventMetadataMessagePostProcessor;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -124,20 +123,34 @@ public class RabbitMQConfig {
             EventMetadataMessagePostProcessor metadataPostProcessor) {
         var template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(jsonMessageConverter);
-        template.setMandatory(true);
-        // 发布前注入事件元数据（eventId / timestamp / traceId）到 message headers
+        // 投递前注入事件元数据（timestamp / traceId）到 message headers
         template.setBeforePublishPostProcessors(metadataPostProcessor);
+        // mandatory + ReturnsCallback：路由不到队列的消息显式告警，不静默丢失
+        template.setMandatory(true);
+        template.setReturnsCallback(returned -> log.error(
+                "消息路由失败（mandatory return）: exchange={} routingKey={} replyCode={} replyText={}",
+                returned.getExchange(),
+                returned.getRoutingKey(),
+                returned.getReplyCode(),
+                returned.getReplyText()));
+        // publisher confirm 由 spring.rabbitmq.publisher-confirm-type 开启（correlated），
+        // 这里仅做失败告警；投递可靠性由 Modulith outbox（事务 + 重启重投）兜底
+        template.setConfirmCallback((correlationData, ack, cause) -> {
+            if (!ack) {
+                log.error("消息确认失败（nack）: cause={}", cause);
+            }
+        });
         return template;
     }
 
     @Bean
     public RetryTemplate retryTemplate() {
-        var cfg = properties.getPublisher().getRetry();
+        var cfg = properties.getRetry();
         var policy = RetryPolicy.builder()
                 .maxRetries(cfg.getMaxAttempts() - 1)
                 .delay(cfg.getInitialInterval())
                 .multiplier(cfg.getMultiplier())
-                .maxDelay(Duration.ofMillis(10000))
+                .maxDelay(cfg.getMaxDelay())
                 .build();
         return new RetryTemplate(policy);
     }

@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.framework.audit.event;
 
 import com.cartethyia.easyorange.common.event.DomainEvent;
+import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.framework.audit.entity.AuditLog;
 
 /**
@@ -15,10 +16,10 @@ import com.cartethyia.easyorange.framework.audit.entity.AuditLog;
  *
  * @param auditLog 审计日志实体（id 由消费者端 IdGenerator 生成）
  */
-public record AuditLogEvent(AuditLog auditLog) implements DomainEvent {
+public record AuditLogEvent(String eventId, AuditLog auditLog) implements DomainEvent {
 
     public static AuditLogEvent of(AuditLog auditLog) {
-        return new AuditLogEvent(auditLog);
+        return new AuditLogEvent(UuidV7.generateId(), auditLog);
     }
 
     @Override

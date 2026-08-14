@@ -11,10 +11,10 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
+import com.cartethyia.easyorange.order.application.port.query.OrderQueryRepository;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
@@ -47,7 +47,7 @@ class AdminOrderQueryAdapterTest {
     private ProductMapper productMapper;
 
     @Mock
-    private OrderReadRepository orderReadRepository;
+    private OrderQueryRepository orderReadRepository;
 
     @Mock
     private OrderRepository orderRepository;

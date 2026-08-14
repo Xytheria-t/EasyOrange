@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.payment.application.command.CreatePaymentComman
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
 
     private final PaymentCommandHandler paymentCommandHandler;
-    private final PaymentRepositoryPort paymentRepository;
+    private final PaymentRepository paymentRepository;
 
     @Override
     public String createPayment(CreatePaymentRequest request) {

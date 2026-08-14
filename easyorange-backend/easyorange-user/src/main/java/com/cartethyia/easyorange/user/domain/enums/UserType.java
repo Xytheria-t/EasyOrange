@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.List;
@@ -13,6 +14,7 @@ public enum UserType implements BaseCodeEnum {
     NORMAL("01", "普通用户"),
     MANAGER("02", "管理员");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

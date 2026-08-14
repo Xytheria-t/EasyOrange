@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.message.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
@@ -20,6 +21,7 @@ public enum MessageStatus implements BaseCodeEnum {
     DELIVERED("DELIVERED", "已送达"),
     RECALLED("RECALLED", "已撤回");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

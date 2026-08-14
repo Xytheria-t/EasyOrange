@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,7 @@ public enum ReportReasonType implements BaseCodeEnum {
     VIOLATION("3", "违规内容"),
     OTHER("4", "其他");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

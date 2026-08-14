@@ -11,7 +11,7 @@ import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class MockPaymentController {
 
-    private final PaymentRepositoryPort paymentRepository;
+    private final PaymentRepository paymentRepository;
     private final IdGenerator idGenerator;
 
     @PostMapping("/create")

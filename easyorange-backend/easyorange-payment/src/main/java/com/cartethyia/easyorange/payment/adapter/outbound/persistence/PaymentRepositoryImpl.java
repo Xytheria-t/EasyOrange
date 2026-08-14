@@ -4,12 +4,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.PaymentDataMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentMapper;
+import com.cartethyia.easyorange.payment.application.port.query.PaymentQueryRepository;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.context.annotation.Primary;
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Repository;
 @Primary
 @Repository
 public class PaymentRepositoryImpl extends BaseRepository<PaymentMapper, PaymentDO>
-        implements PaymentRepositoryPort, PaymentQueryRepositoryPort {
+        implements PaymentRepository, PaymentQueryRepository {
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final PaymentDataMapper paymentDataMapper;

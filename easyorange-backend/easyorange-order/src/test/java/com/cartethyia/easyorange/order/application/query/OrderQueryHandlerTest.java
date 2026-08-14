@@ -12,14 +12,14 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
+import com.cartethyia.easyorange.order.application.port.query.OrderQueryRepository;
 import com.cartethyia.easyorange.order.application.query.assembler.OrderReadModelAssembler;
+import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -44,7 +44,7 @@ class OrderQueryHandlerTest {
     private static final String SELLER_ID = "200";
 
     @Mock
-    private OrderReadRepository orderReadRepository;
+    private OrderQueryRepository orderReadRepository;
 
     @Mock
     private ProductQueryPort productQueryPort;

@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.order.domain.valueobject;
 
+import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
@@ -8,7 +9,7 @@ import lombok.Getter;
 /**
  * 支付状态枚举 — 订单聚合根中使用的值对象。
  * <p>
- * code 为有意义字符串，DB 列 VARCHAR(20)，由 {@code PaymentStatusTypeHandler} 持久化。
+ * code 为有意义字符串，DB 列 VARCHAR(20)，经 {@code @EnumValue} 持久化。
  * </p>
  */
 @Getter
@@ -24,6 +25,7 @@ public enum PaymentStatus implements BaseCodeEnum {
     /** 已退款 */
     REFUNDED("REFUNDED", "已退款");
 
+    @EnumValue
     @JsonValue
     private final String code;
 

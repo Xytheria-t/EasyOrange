@@ -8,11 +8,17 @@ package com.cartethyia.easyorange.common.event;
  * <p>
  * 类型判别（RabbitMQ 路由）使用事件类 simple name 去掉 "Event" 后缀，而非 {@code @JsonTypeInfo}。
  * <p>
- * 事件元数据（eventId / occurredOn / traceId）通过 RabbitMQ message headers 传输，
- * 由 {@code EventMetadataMessagePostProcessor} 在发布时注入，消费端 {@code EventConsumerHandler} 在消费时读取。
- * 事件幂等去重基于 {@code metadata.eventId()}（UUID v7，每事件实例唯一），而非事件的语义内容。
+ * 事件元数据：eventId 由事件实例自身携带（UUID v7，事件创建时生成），随消息体传输——
+ * outbox 重投 / DLQ 重投时 ID 保持不变，消费端 {@code EventConsumerHandler} 基于
+ * {@link #eventId()} 幂等去重，而非事件的语义内容。traceId / occurredOn 通过 message headers 传输。
  */
 public interface DomainEvent {
+
+    /**
+     * 事件唯一 ID（UUID v7，事件实例创建时生成），用于跨服务追踪与消费端幂等去重。
+     * 实现应为 record 的第一个组件 {@code String eventId}，构造时经 {@code UuidV7.generateId()} 生成。
+     */
+    String eventId();
 
     /**
      * 事件类型名（去 "Event" 后缀）。

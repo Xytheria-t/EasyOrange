@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.payment.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.payment.application.port.query.PaymentQueryRepository;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PaymentQueryHandler {
 
-    private final PaymentQueryRepositoryPort paymentQueryRepository;
+    private final PaymentQueryRepository paymentQueryRepository;
 
     public Payment getPaymentById(String paymentId) {
         return paymentQueryRepository

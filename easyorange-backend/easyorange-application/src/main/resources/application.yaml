@@ -166,11 +166,12 @@ springdoc:
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cartethyia.easyorange.product.adapter.outbound.persistence, com.cartethyia.easyorange.product.application.query
-  type-handlers-package: com.cartethyia.easyorange.framework.config.database, com.cartethyia.easyorange.user.adapter.outbound.persistence.typehandler, com.cartethyia.easyorange.product.adapter.outbound.persistence.typehandler, com.cartethyia.easyorange.order.adapter.outbound.persistence.typehandler, com.cartethyia.easyorange.payment.adapter.outbound.persistence.typehandler, com.cartethyia.easyorange.message.adapter.outbound.persistence.typehandler
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
     default-statement-timeout: 30
+    # 枚举统一走 @EnumValue 注解字段持久化（MybatisEnumTypeHandler），不再手写 TypeHandler
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
   global-config:
     banner: false
     db-config:
@@ -370,10 +371,27 @@ easyorange:
         qa:                # 智能客服 — LLM 文本输出（50 字内），~1000 token/call
           max-tokens-per-call: 1000
           daily-token-limit: 200000
+        chat:              # AI 对话 — 工具决策 + 生成（流式/非流式），~1500 token/call
+          max-tokens-per-call: 1500
+          daily-token-limit: 300000
     eval:                  # LLM-as-Judge 离线评估 — 定时给 eo_ai_call_log 未评审记录打分
       enabled: false       # 默认关闭；开启后按 cron 每天对成功调用打分（1-5 + 评语）
       cron: "0 0 3 * * ?"
       batch-size: 50
+      retrieval-enabled: false   # RAG 检索指标回归（hit@5 / MRR）— 仅需 embedding，默认关闭
+      retrieval-cron: "0 15 3 * * ?"
+    routing:               # 模型路由 — 场景 → 模型 bean 名（接入第二个模型只需改配置）
+      default-model: chatModel
+      scenarios:
+        chat_tool: chatModel
+    semantic-cache:        # 语义缓存 — 相似问题复用历史回答（成本优化）
+      enabled: true
+      similarity-threshold: 0.92
+      max-entries: 500
+      ttl-hours: 24
+    chat:                  # 多轮对话记忆 — Redis 会话窗口（短期）
+      session-ttl-hours: 24
+      history-limit: 6
 
 ---
 # -------------------------------------------------------------------
