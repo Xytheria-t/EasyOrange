@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadMode
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +22,11 @@ public interface OrderQueryRepository {
      * @param status 订单状态，null 表示统计全部
      */
     long countByStatus(OrderStatus status);
+
+    /**
+     * 统计创建时间不早于指定时刻的订单数（全部状态）。
+     */
+    long countByCreatedAfter(LocalDateTime since);
 
     List<OrderItemReadModel> findItemsByOrderId(String orderId);
 }

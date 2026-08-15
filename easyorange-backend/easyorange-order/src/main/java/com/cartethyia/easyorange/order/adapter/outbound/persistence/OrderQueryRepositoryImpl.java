@@ -10,6 +10,7 @@ import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadMode
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
@@ -70,6 +71,11 @@ public class OrderQueryRepositoryImpl extends BaseRepository<OrderMapper, OrderD
             return lambdaQuery().count();
         }
         return lambdaQuery().eq(OrderDO::getStatus, status).count();
+    }
+
+    @Override
+    public long countByCreatedAfter(LocalDateTime since) {
+        return lambdaQuery().ge(OrderDO::getCreateTime, since).count();
     }
 
     @Override
