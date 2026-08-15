@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.adapter.outbound.cache;
 
-import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
+import com.cartethyia.easyorange.framework.auth.LoginCacheConstants;
 import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;

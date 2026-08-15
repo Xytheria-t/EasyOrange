@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.user.domain.repository;
 
 import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.enums.UserType;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -32,4 +33,7 @@ public interface UserRepository {
     // ========== Aggregate methods ==========
 
     long count();
+
+    /** 统计指定类型的未删除用户数（管理端「最后一个管理员不可变更」保护）。 */
+    long countByUserType(UserType userType);
 }

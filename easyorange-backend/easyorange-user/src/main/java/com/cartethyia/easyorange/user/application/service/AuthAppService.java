@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.framework.auth.TokenRotation;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.user.application.dto.UserView;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.event.UserRegisteredEvent;
@@ -47,7 +48,7 @@ public class AuthAppService {
         var roles = loggedIn.getUserType().getDefaultRoles();
         String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), roles);
         String refreshToken = tokenService.createRefreshToken(user.getId());
-        return new LoginContext(user, accessToken, refreshToken);
+        return new LoginContext(UserView.from(loggedIn), accessToken, refreshToken);
     }
 
     public void logout(String accessToken, String refreshToken) {
@@ -83,7 +84,7 @@ public class AuthAppService {
         return new RefreshResult(accessToken, rotation.newToken());
     }
 
-    public record LoginContext(User user, String accessToken, String refreshToken) {}
+    public record LoginContext(UserView user, String accessToken, String refreshToken) {}
 
     /** 刷新令牌结果：refresh 供 HttpOnly cookie 装配，access 供响应体。 */
     public record RefreshResult(String accessToken, String refreshToken) {}

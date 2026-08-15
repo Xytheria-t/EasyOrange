@@ -44,8 +44,10 @@ user/
 │       │   └── MockSmsSenderAdapter.java # 控制台日志发送（不真实发短信）
 │       ├── security/                    # 安全适配器
 │       │   └── PasswordEncoderAdapter.java
-│       └── storage/                     # 存储适配器
-│           └── LocalAvatarFileStorage.java
+│       ├── storage/                     # 存储适配器
+│       │   └── LocalAvatarFileStorage.java
+│       └── admin/                       # 管理端用户读写适配器（读投影经 Mapper，写操作委托 AdminUserManagementService）
+│           └── AdminUserManagementAdapter.java
 ├── application/
 │   └── service/                         # 应用服务（薄编排，不碰响应格式）
 │       ├── AuthAppService.java          # 认证+密码管理（注册/登录/登出/刷新/重置密码/修改密码）
@@ -71,7 +73,8 @@ user/
 │   │   ├── AuthenticationService.java   # 认证 + 密码管理（领域逻辑，持久化在 AuthAppService）
 │   │   ├── LoginSecurityService.java
 │   │   ├── ProfileUpdateService.java    # 用户资料更新 + 唯一性校验
-│   │   └── RegistrationService.java
+│   │   ├── RegistrationService.java
+│   │   └── AdminUserManagementService.java # 管理端用户写规则（解锁前置/最后一个管理员保护，持久化在端口适配器）
 │   ├── repository/
 │   │   └── UserRepository.java
 │   ├── port/                             # 出站端口
@@ -79,7 +82,9 @@ user/
 │   │   ├── LoginAttemptPort.java
 │   │   ├── PasswordEncoderPort.java
 │   │   ├── SmsCodePort.java
-│   │   └── SmsSenderPort.java
+│   │   ├── SmsSenderPort.java
+│   │   ├── UserQueryPort.java            # 用户只读端口（ACL，供其他模块读取公开信息）
+│   │   └── AdminUserManagementPort.java  # 管理端用户读写端口（ACL，查询逻辑+业务规则收敛于 user 模块）
 │   ├── constant/
 │   │   ├── UserConstant.java
 │   │   └── UserSecurityConstant.java

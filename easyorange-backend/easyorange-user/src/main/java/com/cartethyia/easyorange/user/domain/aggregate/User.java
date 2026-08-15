@@ -11,9 +11,9 @@ import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import java.util.Objects;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 
 @Getter
-@Builder(toBuilder = true)
 public class User {
 
     private final String id;
@@ -25,10 +25,27 @@ public class User {
     private final LoginInfo loginInfo;
     private final AuditInfo auditInfo;
 
-    public static User create(String username, String encodedPassword) {
-        Objects.requireNonNull(username, "用户名不能为空");
-        Objects.requireNonNull(encodedPassword, "密码不能为空");
+    @Builder(toBuilder = true)
+    private User(
+            String id,
+            @NonNull Credentials credentials,
+            UserType userType,
+            UserStatus status,
+            ContactInfo contactInfo,
+            PersonalInfo personalInfo,
+            LoginInfo loginInfo,
+            AuditInfo auditInfo) {
+        this.id = id;
+        this.credentials = credentials;
+        this.userType = userType;
+        this.status = status;
+        this.contactInfo = contactInfo;
+        this.personalInfo = personalInfo;
+        this.loginInfo = loginInfo;
+        this.auditInfo = auditInfo;
+    }
 
+    public static User create(String username, String encodedPassword) {
         return User.builder()
                 .credentials(new Credentials(username, encodedPassword))
                 .userType(UserType.NORMAL)
@@ -103,35 +120,33 @@ public class User {
                 .build();
     }
 
+    public User changeStatus(UserStatus newStatus, String operatorId) {
+        Objects.requireNonNull(newStatus, "用户状态不能为空");
+
+        return this.toBuilder()
+                .status(newStatus)
+                .auditInfo(updateAuditInfo(operatorId))
+                .build();
+    }
+
+    public User changeUserType(UserType newUserType, String operatorId) {
+        Objects.requireNonNull(newUserType, "用户角色不能为空");
+
+        return this.toBuilder()
+                .userType(newUserType)
+                .auditInfo(updateAuditInfo(operatorId))
+                .build();
+    }
+
     public User recordLogin(String loginIp) {
         return this.toBuilder().loginInfo(this.loginInfo.recordLogin(loginIp)).build();
     }
 
-    /**
-     * 返回用户名。
-     *
-     * @throws IllegalStateException if the User was constructed without credentials.
-     *                               Use {@link #create(String, String)} factory method instead of the builder directly.
-     */
     public String getUsername() {
-        if (credentials == null) {
-            throw new IllegalStateException(
-                    "User was constructed without credentials - use User.create() factory method");
-        }
         return credentials.username();
     }
 
-    /**
-     * 返回编码后的密码。
-     *
-     * @throws IllegalStateException if the User was constructed without credentials.
-     *                               Use {@link #create(String, String)} factory method instead of the builder directly.
-     */
     public String getPassword() {
-        if (credentials == null) {
-            throw new IllegalStateException(
-                    "User was constructed without credentials - use User.create() factory method");
-        }
         return credentials.encodedPassword();
     }
 

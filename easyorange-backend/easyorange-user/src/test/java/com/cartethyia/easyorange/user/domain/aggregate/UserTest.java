@@ -103,6 +103,68 @@ class UserTest {
     }
 
     @Nested
+    @DisplayName("changeStatus / changeUserType")
+    class ChangeStatusAndTypeTests {
+
+        @Test
+        @DisplayName("变更状态应返回新状态并保留其他字段")
+        void shouldChangeStatus() {
+            User user = UserTestFixture.normalUser();
+
+            User updatedUser = user.changeStatus(UserStatus.DISABLED, "1");
+
+            assertThat(updatedUser.getStatus()).isEqualTo(UserStatus.DISABLED);
+            assertThat(updatedUser.getUsername()).isEqualTo(UserTestFixture.USERNAME);
+            assertThat(updatedUser.getUserType()).isEqualTo(UserType.NORMAL);
+            assertThat(user.getStatus()).isEqualTo(UserStatus.NORMAL);
+        }
+
+        @Test
+        @DisplayName("变更角色应返回新角色并保留其他字段")
+        void shouldChangeUserType() {
+            User user = UserTestFixture.normalUser();
+
+            User updatedUser = user.changeUserType(UserType.MANAGER, "1");
+
+            assertThat(updatedUser.getUserType()).isEqualTo(UserType.MANAGER);
+            assertThat(updatedUser.getStatus()).isEqualTo(UserStatus.NORMAL);
+            assertThat(user.getUserType()).isEqualTo(UserType.NORMAL);
+        }
+
+        @Test
+        @DisplayName("带操作人变更应创建审计信息")
+        void shouldCreateAuditInfoWithOperator() {
+            User user = UserTestFixture.minimalUser();
+
+            User updatedUser = user.changeStatus(UserStatus.LOCKED, "operator-1");
+
+            assertThat(updatedUser.getAuditInfo()).isNotNull();
+            assertThat(updatedUser.getAuditInfo().createBy()).isEqualTo("operator-1");
+            assertThat(updatedUser.getAuditInfo().updateBy()).isEqualTo("operator-1");
+        }
+
+        @Test
+        @DisplayName("状态为空应抛出异常")
+        void shouldThrowWhenStatusIsNull() {
+            User user = UserTestFixture.normalUser();
+
+            assertThatThrownBy(() -> user.changeStatus(null, "1"))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("用户状态");
+        }
+
+        @Test
+        @DisplayName("角色为空应抛出异常")
+        void shouldThrowWhenUserTypeIsNull() {
+            User user = UserTestFixture.normalUser();
+
+            assertThatThrownBy(() -> user.changeUserType(null, "1"))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("用户角色");
+        }
+    }
+
+    @Nested
     @DisplayName("recordLogin")
     class RecordLoginTests {
 
@@ -239,7 +301,7 @@ class UserTest {
         @Test
         @DisplayName("正常状态用户应返回 true")
         void shouldReturnTrueForNormalStatus() {
-            User user = User.builder().status(UserStatus.NORMAL).build();
+            User user = UserTestFixture.normalUser();
 
             assertThat(user.isEnabled()).isTrue();
         }
@@ -247,7 +309,7 @@ class UserTest {
         @Test
         @DisplayName("非正常状态用户应返回 false")
         void shouldReturnFalseForNonNormalStatus() {
-            User user = User.builder().status(UserStatus.DISABLED).build();
+            User user = UserTestFixture.disabledUser();
 
             assertThat(user.isEnabled()).isFalse();
         }

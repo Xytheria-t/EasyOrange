@@ -117,7 +117,7 @@ class AuthAppServiceTest {
             var result = service.login(credential);
 
             assertThat(result).isNotNull();
-            assertThat(result.user().getId()).isEqualTo(USER_ID);
+            assertThat(result.user().id()).isEqualTo(USER_ID);
             assertThat(result.accessToken()).isEqualTo("access-token");
             assertThat(result.refreshToken()).isEqualTo("refresh-token");
             verify(authenticationService).authenticate(credential);
@@ -142,7 +142,7 @@ class AuthAppServiceTest {
             var result = service.login(credential);
 
             assertThat(result).isNotNull();
-            assertThat(result.user().getId()).isEqualTo(USER_ID);
+            assertThat(result.user().id()).isEqualTo(USER_ID);
             assertThat(result.accessToken()).isEqualTo("access-token");
             assertThat(result.refreshToken()).isEqualTo("refresh-token");
             verify(authenticationService).authenticate(credential);

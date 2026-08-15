@@ -286,29 +286,46 @@ class UserRepositoryImplTest {
         }
 
         @Test
-        @DisplayName("应通过邮箱查找用户")
+        @DisplayName("应通过邮箱查找用户（username 探测未命中后继续）")
         void shouldFindByEmail() {
             UserDO entity = buildTestEntity();
-            when(userMapper.selectOne(any())).thenReturn(entity);
+            // 第一次 selectOne 为 username 探测（返回 null），第二次为 email 探测（命中）
+            when(userMapper.selectOne(any())).thenReturn(null, entity);
             when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByLoginIdentifier("test@example.com");
 
             assertThat(result).isPresent();
             assertThat(result.get().getContactInfo().email()).isEqualTo("test@example.com");
+            verify(userMapper, times(2)).selectOne(any());
         }
 
         @Test
-        @DisplayName("应通过手机号查找用户")
+        @DisplayName("应通过手机号查找用户（username/email 探测未命中后继续）")
         void shouldFindByPhone() {
             UserDO entity = buildTestEntity();
-            when(userMapper.selectOne(any())).thenReturn(entity);
+            when(userMapper.selectOne(any())).thenReturn(null, null, entity);
             when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByLoginIdentifier("13812345678");
 
             assertThat(result).isPresent();
             assertThat(result.get().getContactInfo().phone()).isEqualTo("13812345678");
+            verify(userMapper, times(3)).selectOne(any());
+        }
+
+        @Test
+        @DisplayName("同时命中用户名与邮箱时应优先返回用户名匹配且不再继续探测")
+        void shouldPreferUsernameMatch() {
+            UserDO entity = buildTestEntity();
+            when(userMapper.selectOne(any())).thenReturn(entity);
+            when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
+
+            Optional<User> result = userRepository.findByLoginIdentifier("testuser");
+
+            assertThat(result).isPresent();
+            assertThat(result.get().getUsername()).isEqualTo("testuser");
+            verify(userMapper, times(1)).selectOne(any());
         }
     }
 
@@ -345,6 +362,27 @@ class UserRepositoryImplTest {
 
             assertThat(result).isPresent();
             assertThat(result.get().getContactInfo().email()).isEqualTo("test@example.com");
+        }
+    }
+
+    @Nested
+    @DisplayName("countByUserType")
+    class CountByUserTypeTests {
+
+        @Test
+        @DisplayName("应统计指定类型的未删除用户数")
+        void shouldCountActiveUsersByType() {
+            when(userMapper.selectCount(any())).thenReturn(3L);
+
+            assertThat(userRepository.countByUserType(UserType.ADMIN)).isEqualTo(3L);
+            verify(userMapper).selectCount(any());
+        }
+
+        @Test
+        @DisplayName("类型为 null 时返回 0 且不查询")
+        void shouldReturnZeroForNullType() {
+            assertThat(userRepository.countByUserType(null)).isZero();
+            verify(userMapper, never()).selectCount(any());
         }
     }
 }

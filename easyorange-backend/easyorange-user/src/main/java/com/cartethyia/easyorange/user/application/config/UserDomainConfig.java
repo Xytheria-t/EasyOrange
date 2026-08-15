@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
 import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
+import com.cartethyia.easyorange.user.domain.service.AdminUserManagementService;
 import com.cartethyia.easyorange.user.domain.service.AuthenticationService;
 import com.cartethyia.easyorange.user.domain.service.LoginSecurityService;
 import com.cartethyia.easyorange.user.domain.service.PasswordManagementService;
@@ -15,6 +16,11 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 public class UserDomainConfig {
+
+    @Bean
+    AdminUserManagementService adminUserManagementService(UserRepository userRepository) {
+        return new AdminUserManagementService(userRepository);
+    }
 
     @Bean
     LoginSecurityService loginSecurityService(LoginAttemptPort loginAttemptPort) {

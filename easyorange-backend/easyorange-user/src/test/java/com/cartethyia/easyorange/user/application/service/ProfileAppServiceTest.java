@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.user.application.dto.UserView;
 import com.cartethyia.easyorange.user.application.service.ProfileAppService.UpdateCommand;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.aggregate.UserTestFixture;
@@ -58,10 +59,10 @@ class ProfileAppServiceTest {
             User user = UserTestFixture.normalUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-            User result = profileAppService.getCurrentUser(USER_ID);
+            UserView result = profileAppService.getCurrentUser(USER_ID);
 
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(USER_ID);
+            assertThat(result.id()).isEqualTo(USER_ID);
         }
 
         @Test
@@ -152,8 +153,8 @@ class ProfileAppServiceTest {
                     .thenReturn("/avatar/new.png");
             var result = profileAppService.uploadAvatar(USER_ID, content, "image/png", "avatar.png");
 
-            assertThat(result.getId()).isEqualTo(USER_ID);
-            assertThat(result.getPersonalInfo().avatar()).isEqualTo("/avatar/new.png");
+            assertThat(result.id()).isEqualTo(USER_ID);
+            assertThat(result.personalInfo().avatar()).isEqualTo("/avatar/new.png");
             verify(avatarFilePort).deleteIfExists("/avatar/test.png");
         }
 

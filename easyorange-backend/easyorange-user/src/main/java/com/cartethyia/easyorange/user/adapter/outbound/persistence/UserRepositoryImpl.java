@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import java.util.Collection;
 import java.util.List;
@@ -68,15 +69,10 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
             return Optional.empty();
         }
 
-        var trimmed = identifier.trim();
-        return Optional.ofNullable(lambdaQuery()
-                        .eq(UserDO::getUsername, trimmed)
-                        .or()
-                        .eq(UserDO::getEmail, trimmed)
-                        .or()
-                        .eq(UserDO::getPhone, trimmed)
-                        .one())
-                .map(entityMapper::toDomain);
+        // 顺序探测 username/email/phone 三个唯一索引：OR 查询在 identifier 同时命中多行时
+        // .one() 会抛异常，且结果依赖 index_merge 优化器决策；顺序探测结果确定、平均更快
+        String trimmed = identifier.trim();
+        return findByUsername(trimmed).or(() -> findByEmail(trimmed)).or(() -> findByPhone(trimmed));
     }
 
     // ========== Write methods ==========
@@ -105,5 +101,16 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     @Override
     public long count() {
         return super.count();
+    }
+
+    @Override
+    public long countByUserType(UserType userType) {
+        if (userType == null) {
+            return 0L;
+        }
+        return lambdaQuery()
+                .eq(UserDO::getUserType, userType)
+                .eq(UserDO::getDelFlag, 0)
+                .count();
     }
 }
