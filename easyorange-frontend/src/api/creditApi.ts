@@ -19,10 +19,6 @@ export const creditApi = {
         return request<CreditScoreResult>('/credit/me');
     },
 
-    getUserCredit(userId: number) {
-        return request<CreditScoreResult>(`/credit/${userId}`);
-    },
-
     recalculateScore() {
         return request<void>('/credit/recalculate', {
             method: 'POST',

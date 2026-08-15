@@ -19,7 +19,6 @@ const docs: KnowledgeDoc[] = [
     {
         id: 'kb-0001',
         title: '平台交易流程',
-        content: '浏览商品 → 下单 → 付款 → 发货 → 确认收货',
         source: '平台规则',
         status: 'INDEXED',
         chunkCount: 2,
@@ -28,7 +27,6 @@ const docs: KnowledgeDoc[] = [
     {
         id: 'kb-0002',
         title: '退款规则',
-        content: '7 天无理由退货',
         source: '平台规则',
         status: 'PENDING',
         chunkCount: 0,

@@ -438,11 +438,10 @@ export interface TopProductItem {
     statusDesc: string;
 }
 
-/** 知识库文档（RAG 摄入管线，管理端） */
+/** 知识库文档（RAG 摄入管线，管理端）— 列表接口不返回正文（content） */
 export interface KnowledgeDoc {
     id: string;
     title: string;
-    content: string;
     source: string;
     status: 'PENDING' | 'INDEXED' | 'FAILED';
     chunkCount: number;
