@@ -92,7 +92,7 @@ payment/
 ## 幂等保护
 
 - `IdempotencyService` 对请求计算 SHA-256 哈希
-- 幂等键存储在 `eo_idempotency_key` 表
+- 幂等键存储由 framework 的 `IdempotencyKeyFilter` + Redis 承载（`eo_idempotency_key` 表已删除）
 - 重复请求直接返回之前的结果
 
 ## 分布式锁

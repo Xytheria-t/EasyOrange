@@ -36,7 +36,7 @@ application/
 │   ├── logback-spring.xml                 # 日志配置
 │   └── db/
 │       ├── migration/                     # Flyway 迁移脚本 (V=版本, R=可重复)
-│       │   ├── V1__init_schema.sql              # 完整 DDL（合并原 V1~V6）
+│       │   ├── V1__init_schema.sql              # 完整 DDL（合并原 V1~V9）
 │       │   ├── R__seed_categories.sql           # 分类种子数据（含二级）
 │       │   ├── R__seed_message_templates.sql    # 消息模板种子数据
 │       │   └── R__seed_payment_config.sql       # 支付渠道配置
@@ -110,7 +110,7 @@ easyorange-application
 - 迁移脚本中不写业务逻辑
 
 > **清库重置**：`DROP DATABASE easyorange; CREATE DATABASE easyorange;` 后重跑即可应用新 V1。
-> 因为合并后 V1 内容变更，已执行过旧 V1~V6 的数据库需要重置。
+> 因为合并后 V1 内容变更，已执行过旧 V1~V9 的数据库需要重置。
 
 ## 架构守卫测试
 

@@ -1,9 +1,11 @@
 -- ===================================================================
 -- EasyOrange - 数据库初始化（V1 合并版）
 -- 职责: 创建所有初始表结构、索引、约束（当前完整 DDL）
--- 说明: 合并原 V1~V6 为单文件，并折叠原 V2/V3 删表迁移（eo_saga_status / eo_message_template /
---       eo_message_subscription，对应 ADR-0007 弃 Saga 与 message 模块现代化收口）。
---       项目未发版，开发阶段标准化。
+-- 说明: 开发阶段合并 V1~V9 为单文件（项目未发版，无生产历史）。
+--       折叠删表/删列/加列迁移：eo_idempotency_key（原 V2）、eo_audit_log.oper_location（原 V5）、
+--       eo_order.refund_reason/refund_time（原 V4）；并入原 V3/V6/V7/V8/V9 新增的 AI 观测与
+--       知识库表（eo_ai_call_log / eo_ai_feedback / eo_knowledge_doc / eo_user_preference /
+--       eo_retrieval_metric）。更早的删表迁移（eo_saga_status 等，对应 ADR-0007）已在上次合并折叠。
 -- Database: MySQL 8.0
 -- Charset: utf8mb4
 -- ===================================================================
@@ -292,6 +294,8 @@ CREATE TABLE `eo_order` (
     `remark`         VARCHAR(500)  DEFAULT NULL COMMENT '备注',
     `cancel_reason`  VARCHAR(500)  DEFAULT NULL COMMENT '取消原因',
     `cancel_time`    DATETIME      DEFAULT NULL COMMENT '取消时间',
+    `refund_reason`  VARCHAR(500)  DEFAULT NULL COMMENT '退款原因',
+    `refund_time`    DATETIME      DEFAULT NULL COMMENT '退款时间',
     `create_time`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `create_by`      VARCHAR(36)   DEFAULT NULL COMMENT '创建者',
@@ -504,7 +508,6 @@ CREATE TABLE `eo_audit_log` (
     `username`       VARCHAR(50) DEFAULT NULL COMMENT '操作人员',
     `request_url`    VARCHAR(255) DEFAULT NULL COMMENT '请求 URL',
     `client_ip`      VARCHAR(128) DEFAULT NULL COMMENT '客户端 IP',
-    `oper_location`  VARCHAR(255) DEFAULT NULL COMMENT '操作地点',
     `request_params` TEXT        DEFAULT NULL COMMENT '请求参数',
     `response_data`  TEXT        DEFAULT NULL COMMENT '响应数据',
     `status`         TINYINT     NOT NULL DEFAULT 0 COMMENT '操作状态（0 正常 1 异常）',
@@ -562,6 +565,88 @@ CREATE TABLE `eo_audit_suggestion` (
     CONSTRAINT `chk_eo_audit_suggestion_status` CHECK (`status` IN (0, 1, 2)),
     CONSTRAINT `chk_eo_audit_suggestion_confidence` CHECK (`confidence` >= 0 AND `confidence` <= 1)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='AI 审核建议表';
+
+-- AI 调用日志（LLM-as-Judge 离线评估数据源：AiCallLogRecorder 记录 → AiEvalScheduler 打分 1-5）
+CREATE TABLE `eo_ai_call_log` (
+    `id`            VARCHAR(36)  NOT NULL COMMENT '主键 UUID v7',
+    `scope`         VARCHAR(32)  NOT NULL COMMENT 'AI 调用场景 (PRICING/REVIEW/COPY/AUTO_LISTING/SEMANTIC/QA/SEARCH_ENHANCE)',
+    `model`         VARCHAR(64)  NOT NULL COMMENT '模型标识',
+    `prompt_hash`   CHAR(32)     NOT NULL COMMENT 'system+user prompt 摘要 MD5（去重与回归用）',
+    `response_text` TEXT         NULL COMMENT '模型输出文本',
+    `latency_ms`    BIGINT       NOT NULL DEFAULT 0 COMMENT '调用耗时毫秒',
+    `success`       TINYINT(1)   NOT NULL DEFAULT 1 COMMENT '是否成功 1/0',
+    `error_msg`     VARCHAR(512) NULL COMMENT '失败原因',
+    `judge_score`   TINYINT      NULL COMMENT 'LLM-as-Judge 质量评分 1-5（NULL=待评估）',
+    `judge_comment` VARCHAR(255) NULL COMMENT '评审评语',
+    `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_ai_call_log_scope` (`scope`, `created_at`),
+    KEY `idx_ai_call_log_judge` (`judge_score`, `created_at`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COMMENT = 'AI 调用日志（LLM-as-Judge 离线评估数据源）';
+
+-- AI 输出用户反馈（反馈飞轮：👍/👎 入库，导出后自动扩充金标准评测集）
+CREATE TABLE `eo_ai_feedback` (
+    `id`            VARCHAR(36)  NOT NULL COMMENT '主键 UUID v7',
+    `scope`         VARCHAR(32)  NOT NULL COMMENT 'AI 调用场景 (QA/CHAT/SEMANTIC/...)',
+    `query_text`    TEXT         NULL COMMENT '用户问题',
+    `response_text` TEXT         NULL COMMENT 'AI 回答',
+    `helpful`       TINYINT(1)   NOT NULL DEFAULT 1 COMMENT '是否有帮助 1/0',
+    `comment`       VARCHAR(500) NULL COMMENT '用户补充意见',
+    `call_log_id`   VARCHAR(36)  NULL COMMENT '关联 eo_ai_call_log.id（可为空）',
+    `user_id`       VARCHAR(36)  NULL COMMENT '反馈用户 ID',
+    `exported`      TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否已导出进金标准评测集 1/0',
+    `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_ai_feedback_exported` (`exported`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='AI 输出用户反馈（反馈飞轮，导出后自动扩充金标准评测集）';
+
+-- RAG 知识库文档（文档摄入管线入口：解析 → 分块 → embed → ES 索引，status 记录索引状态）
+CREATE TABLE `eo_knowledge_doc` (
+    `id`          VARCHAR(36)  NOT NULL COMMENT '主键 UUID v7',
+    `title`       VARCHAR(200) NOT NULL COMMENT '文档标题',
+    `content`     LONGTEXT     NOT NULL COMMENT '文档正文（markdown/纯文本）',
+    `source`      VARCHAR(64)  NULL COMMENT '来源（运营/规则/商品详情等）',
+    `status`      VARCHAR(16)  NOT NULL DEFAULT 'PENDING' COMMENT '索引状态 PENDING/INDEXED/FAILED',
+    `chunk_count` INT          NOT NULL DEFAULT 0 COMMENT '分块数量（索引后回填）',
+    `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `create_by`   VARCHAR(36)  NULL COMMENT '创建人',
+    `update_by`   VARCHAR(36)  NULL COMMENT '更新人',
+    `del_flag`    TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除 0/1',
+    PRIMARY KEY (`id`),
+    KEY `idx_knowledge_doc_status` (`status`, `del_flag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='RAG 知识库文档（摄入后分块进 ES，支持启动补索引）';
+
+-- 用户长期画像（Agent 长期记忆：从对话提取偏好，聊天时注入 prompt，跨会话持久）
+CREATE TABLE `eo_user_preference` (
+    `id`          VARCHAR(36)  NOT NULL COMMENT '主键 UUID v7',
+    `user_id`     VARCHAR(36)  NOT NULL COMMENT '用户 ID',
+    `pref_key`    VARCHAR(64)  NOT NULL COMMENT '偏好键（如 style/condition/price_range）',
+    `pref_value`  VARCHAR(255) NOT NULL COMMENT '偏好值',
+    `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `create_by`   VARCHAR(36)  NULL COMMENT '创建人',
+    `update_by`   VARCHAR(36)  NULL COMMENT '更新人',
+    `del_flag`    TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除 0/1',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_user_pref` (`user_id`, `pref_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户长期画像（Agent 长期记忆，聊天气氛注入）';
+
+-- RAG 检索指标采样（金标准集回归：hit@5 / MRR 分量，按 run_id 聚合）
+CREATE TABLE `eo_retrieval_metric` (
+    `id`              VARCHAR(36)  NOT NULL COMMENT '主键 UUID v7',
+    `run_id`          VARCHAR(36)  NOT NULL COMMENT '评测批次 ID',
+    `case_id`         VARCHAR(64)  NOT NULL COMMENT '金标准用例 ID',
+    `query_text`      TEXT         NULL COMMENT '检索查询',
+    `gold_doc_ids`    VARCHAR(255) NULL COMMENT '期望命中文档 ID（逗号分隔）',
+    `hit_at_5`        TINYINT(1)   NOT NULL DEFAULT 0 COMMENT 'top-5 是否命中期望文档 1/0',
+    `reciprocal_rank` DECIMAL(6,4) NOT NULL DEFAULT 0 COMMENT '首个命中位置的倒数（MRR 分量，未命中为 0）',
+    `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_retrieval_metric_run` (`run_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='RAG 检索指标采样（hit@5 / MRR，金标准集回归数据源）';
 
 -- ===================================================================
 -- 10. 信用评分模块
@@ -647,27 +732,3 @@ CREATE TABLE IF NOT EXISTS EVENT_PUBLICATION_ARCHIVE (
     PRIMARY KEY (ID),
     INDEX EVENT_PUBLICATION_ARCHIVE_BY_COMPLETION_DATE_IDX (COMPLETION_DATE)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Spring Modulith 事件发布归档表';
-
--- ===================================================================
--- 12. 幂等性键表
--- ===================================================================
-
-CREATE TABLE `eo_idempotency_key` (
-    `id`              VARCHAR(36)  NOT NULL COMMENT '主键 ID',
-    `idempotency_key` VARCHAR(255) NOT NULL COMMENT '幂等性键',
-    `user_id`         VARCHAR(36)  NOT NULL COMMENT '用户 ID',
-    `request_hash`    VARCHAR(64)  NOT NULL COMMENT '请求哈希',
-    `response_data`   TEXT         DEFAULT NULL COMMENT '响应数据（JSON）',
-    `status`          VARCHAR(20)  NOT NULL DEFAULT 'PENDING' COMMENT '状态（PENDING/COMPLETED/FAILED）',
-    `expires_at`      DATETIME     NOT NULL COMMENT '过期时间',
-    `del_flag`        TINYINT      NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 1 删除）',
-    `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
-    `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间',
-    `create_by`       VARCHAR(36)  DEFAULT NULL COMMENT '创建人 ID',
-    `update_by`       VARCHAR(36)  DEFAULT NULL COMMENT '更新人 ID',
-    `version`         INT          NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_eo_idempotency_key_key` (`idempotency_key`),
-    KEY `idx_eo_idempotency_key_user_expires` (`user_id`, `expires_at`),
-    CONSTRAINT `chk_eo_idempotency_key_status` CHECK (`status` IN ('PENDING', 'COMPLETED', 'FAILED'))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='幂等性键表';

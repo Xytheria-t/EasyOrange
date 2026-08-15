@@ -15,7 +15,7 @@
 
 ## 表总览
 
-共 28 张表：26 张 `eo_*` 业务/观测表（其中 3 张预留）+ 2 张 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。`eo_idempotency_key` 已由 V2 迁移删除（幂等统一由 framework 的 `IdempotencyKeyFilter` + Redis 承载，2026-08 双 Token 收口）；`eo_ai_call_log` 由 V3 迁移新增（LLM-as-Judge 离线评估数据源，未提交前按 V3 计）。
+共 28 张表：26 张 `eo_*` 业务/观测表（其中 3 张预留）+ 2 张 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。`eo_idempotency_key` 已在开发阶段迁移合并时删除（幂等统一由 framework 的 `IdempotencyKeyFilter` + Redis 承载，2026-08 双 Token 收口）；AI 观测/知识库/画像表（`eo_ai_call_log` / `eo_ai_feedback` / `eo_knowledge_doc` / `eo_user_preference` / `eo_retrieval_metric` 共 5 张）已并入合并后的 `V1__init_schema.sql`（V1~V9 收口为单文件）。
 
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
@@ -46,7 +46,7 @@
 | 审计 | eo_audit_log | 审计日志 | AuditLog |
 | 事件 | EVENT_PUBLICATION | 领域事件注册表（Spring Modulith） | Modulith |
 | 事件 | EVENT_PUBLICATION_ARCHIVE | 领域事件归档表（Spring Modulith） | Modulith |
-| 观测 | eo_ai_call_log | AI 调用日志（LLM-as-Judge 数据源，V3 新增） | —（JDBC 直写） |
+| 观测 | eo_ai_call_log | AI 调用日志（LLM-as-Judge 数据源） | —（JDBC 直写） |
 
 ## 公共字段
 
@@ -746,7 +746,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ### eo_idempotency_key — 幂等性键表（已删除）
 
-> **注意**：此表已在 V1 初始化时创建，后由 **V2 迁移删除**（2026-08，双 Token 现代化收口 b5f0f879）——幂等保护统一由 framework 的 `IdempotencyKeyFilter` + Redis 实现承载，DB 表不再需要。下表仅为历史记录，当前数据库无此表。
+> **注意**：此表在早期版本中创建，开发阶段迁移合并（V1~V9 收口为单文件）时随表删除（2026-08，双 Token 现代化收口 b5f0f879）——幂等保护统一由 framework 的 `IdempotencyKeyFilter` + Redis 实现承载，DB 表不再需要。下表仅为历史记录，当前数据库无此表。
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -819,7 +819,7 @@ eo_message ──1:1── eo_message_archive (id)
 
 ---
 
-### eo_ai_call_log — AI 调用日志表（V3 新增）
+### eo_ai_call_log — AI 调用日志表
 
 > **现状**：`AiCallLogRecorder`（easyorange-ai/adapter/outbound/）在每次 LLM/Embedding 调用后 JDBC 直写一条（记录失败仅告警，不阻塞主链路）；`AiEvalScheduler`（adapter/inbound/job/）定时对 `judge_score IS NULL AND success = 1` 的记录用 ChatModel 打分（1-5 + 评语）。默认关闭（`easyorange.ai.eval.enabled=false`）。
 
