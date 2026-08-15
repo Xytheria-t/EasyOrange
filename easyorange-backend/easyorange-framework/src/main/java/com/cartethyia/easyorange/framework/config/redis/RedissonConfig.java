@@ -13,11 +13,14 @@ import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 import org.springframework.context.annotation.Bean;
 
 /**
- * Redisson 独立配置（不使用 Spring Boot Starter，避免与现有 RedisTemplate 冲突）。
+ * Redisson 独立配置 — 手写客户端而非 {@code redisson-spring-boot-starter}：
+ * starter 自动配置会注册 {@code RedissonConnectionFactory} + {@code RedisTemplate}，
+ * 与 Boot 默认 Lettuce 连接栈同为 {@code @ConditionalOnMissingBean} 竞争，可能整体接管
+ * 应用的 Redis 连接；本项目只需 RLock，不换连接栈。连接信息复用标准
+ * {@link DataRedisProperties}，与 Spring Data Redis 共享同一 Redis 实例。
  * <p>
- * 从标准 {@link DataRedisProperties} 读取连接信息，与 Spring Data Redis 共享同一 Redis 实例。
- * 适用于分布式锁（RLock 实现 {@link java.util.concurrent.locks.Lock} 接口 + Watch Dog 自动续期）。
- * </p>
+ * watchdog 续期语义（leaseTime=-1 的锁、长持有告警）见
+ * {@link com.cartethyia.easyorange.framework.lock.DistributedRedissonLockAdapter}。
  */
 @Slf4j
 @AutoConfiguration
@@ -30,7 +33,7 @@ public class RedissonConfig {
         Config config = new Config();
 
         String host = properties.getHost();
-        int port = properties.getPort() > 0 ? properties.getPort() : 6379;
+        int port = properties.getPort();
         String password = properties.getPassword();
         int database = properties.getDatabase();
 
@@ -39,11 +42,6 @@ public class RedissonConfig {
                 .setDatabase(database)
                 .setConnectionMinimumIdleSize(2)
                 .setConnectionPoolSize(4);
-
-        // 显式固定 watchdog 续期周期（显示默认 30s）：watchdog 按此周期为 leaseTime=-1 的锁续期，
-        // 事务正常结束经 afterCompletion 释放即停。注意这**不是**持有上限——事务卡住时 watchdog 会一直续，
-        // 上限靠 DistributedRedissonLockAdapter 的持有时长告警兜底（见 LockProperties.holdWarnThreshold）。
-        config.setLockWatchdogTimeout(Duration.ofSeconds(30).toNanos());
 
         if (password != null && !password.isEmpty()) {
             config.setPassword(password);

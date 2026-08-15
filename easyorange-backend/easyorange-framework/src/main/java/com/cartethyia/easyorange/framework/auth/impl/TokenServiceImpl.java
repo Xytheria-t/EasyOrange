@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.framework.auth.impl;
 
+import com.cartethyia.easyorange.framework.auth.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.auth.RefreshTokenStore;
 import com.cartethyia.easyorange.framework.auth.TokenRotation;
 import com.cartethyia.easyorange.framework.auth.TokenService;
-import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import java.time.Duration;
 import java.time.Instant;

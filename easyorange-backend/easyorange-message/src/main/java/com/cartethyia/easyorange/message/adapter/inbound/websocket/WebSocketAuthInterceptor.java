@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.adapter.inbound.websocket;
 
-import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
+import com.cartethyia.easyorange.framework.auth.LoginCacheConstants;
 import java.time.Instant;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

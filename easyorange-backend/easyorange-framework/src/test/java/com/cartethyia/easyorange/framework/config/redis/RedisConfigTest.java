@@ -30,7 +30,7 @@ class RedisConfigTest {
     @DisplayName("key/hashKey 使用 StringRedisSerializer（UTF-8 可读，Lua 兼容）")
     void redisTemplate_keyAndHashKey_useStringSerializer() {
         var config = new RedisConfig();
-        RedisTemplate<Object, Object> template = config.redisTemplate(connectionFactory);
+        RedisTemplate<Object, Object> template = config.redisTemplate(connectionFactory, config.jsonRedisSerializer());
 
         assertThat(template.getKeySerializer())
                 .as("key 序列化器必须是 StringRedisSerializer，否则 Lua tonumber(ARGV) 返回 nil")
@@ -42,7 +42,7 @@ class RedisConfigTest {
     @DisplayName("value/hashValue 使用 GenericJacksonJsonRedisSerializer（JSON + 类型信息）")
     void redisTemplate_valueAndHashValue_useJsonSerializer() {
         var config = new RedisConfig();
-        RedisTemplate<Object, Object> template = config.redisTemplate(connectionFactory);
+        RedisTemplate<Object, Object> template = config.redisTemplate(connectionFactory, config.jsonRedisSerializer());
 
         assertThat(template.getValueSerializer())
                 .as("value 序列化器必须是 GenericJacksonJsonRedisSerializer，否则 Redis CLI 不可读")
@@ -54,7 +54,7 @@ class RedisConfigTest {
     @DisplayName("connectionFactory 正确注入")
     void redisTemplate_connectionFactory_set() {
         var config = new RedisConfig();
-        RedisTemplate<Object, Object> template = config.redisTemplate(connectionFactory);
+        RedisTemplate<Object, Object> template = config.redisTemplate(connectionFactory, config.jsonRedisSerializer());
 
         assertThat(template.getConnectionFactory()).isSameAs(connectionFactory);
     }

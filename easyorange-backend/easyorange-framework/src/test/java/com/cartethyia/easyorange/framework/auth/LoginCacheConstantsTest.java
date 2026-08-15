@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.config.constant;
+package com.cartethyia.easyorange.framework.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

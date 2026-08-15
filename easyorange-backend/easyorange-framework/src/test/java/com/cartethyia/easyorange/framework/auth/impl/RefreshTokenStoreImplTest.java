@@ -12,8 +12,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.framework.auth.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.auth.RefreshTokenStore;
-import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

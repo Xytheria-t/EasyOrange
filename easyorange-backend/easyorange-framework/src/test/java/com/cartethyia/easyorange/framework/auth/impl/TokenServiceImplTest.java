@@ -8,10 +8,10 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.cartethyia.easyorange.framework.auth.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.auth.RefreshTokenStore;
 import com.cartethyia.easyorange.framework.auth.TokenRotation;
 import com.cartethyia.easyorange.framework.auth.TokenService;
-import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import java.time.Instant;
 import java.util.List;

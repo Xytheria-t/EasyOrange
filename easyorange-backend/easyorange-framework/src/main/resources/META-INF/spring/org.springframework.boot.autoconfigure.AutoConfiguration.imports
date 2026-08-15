@@ -1,10 +1,11 @@
 com.cartethyia.easyorange.framework.config.security.SecurityConfig
-com.cartethyia.easyorange.framework.config.async.JacksonConfig
+com.cartethyia.easyorange.framework.config.jackson.JacksonConfig
 com.cartethyia.easyorange.framework.config.async.ThreadPoolConfig
 com.cartethyia.easyorange.framework.config.redis.RedisConfig
 com.cartethyia.easyorange.framework.config.database.MybatisPlusConfig
 com.cartethyia.easyorange.framework.config.web.WebMvcConfig
 com.cartethyia.easyorange.framework.config.cache.RedisCacheConfig
+com.cartethyia.easyorange.framework.config.cache.ImageProcessCacheConfig
 com.cartethyia.easyorange.framework.config.idgen.IdGeneratorConfig
 com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig
 com.cartethyia.easyorange.framework.metrics.MetricsConfig

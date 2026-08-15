@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.web.filter;
 
 import com.cartethyia.easyorange.common.enums.ResultCode;
-import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
+import com.cartethyia.easyorange.framework.auth.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

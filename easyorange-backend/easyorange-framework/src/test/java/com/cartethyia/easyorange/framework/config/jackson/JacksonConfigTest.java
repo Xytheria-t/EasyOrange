@@ -1,8 +1,7 @@
-package com.cartethyia.easyorange.framework.config.web;
+package com.cartethyia.easyorange.framework.config.jackson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cartethyia.easyorange.framework.config.async.JacksonConfig;
 import java.math.BigInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -11,7 +10,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @DisplayName("JacksonConfig - Long精度处理测试")
-class WebMvcConfigTest {
+class JacksonConfigTest {
 
     private final JsonMapper jsonMapper = new JacksonConfig().jsonMapper();
 

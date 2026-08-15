@@ -2,8 +2,6 @@ package com.cartethyia.easyorange.framework.config.cache;
 
 import com.cartethyia.easyorange.framework.config.properties.CacheProperties;
 import com.cartethyia.easyorange.framework.config.redis.RedisConfig;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -22,7 +20,8 @@ import org.springframework.data.redis.serializer.RedisSerializationContext.Seria
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
- * 缓存配置 — Spring Cache 注解式 + Redis 单层（替代已移除的手写多级缓存）。
+ * Redis 缓存配置 — Spring Cache 注解式 + Redis 单层（替代已移除的手写多级缓存）。
+ * 进程内本地缓存（如图片处理）见 {@link ImageProcessCacheConfig}。
  * <p>
  * 设计要点：
  * <ul>
@@ -45,26 +44,6 @@ public class RedisCacheConfig implements CachingConfigurer {
 
     public RedisCacheConfig(CacheProperties cacheProperties) {
         this.cacheProperties = cacheProperties;
-    }
-
-    /**
-     * 图片处理缓存（通用 Object 类型，适配多种缓存值类型）
-     * <p>
-     * 使用方需自行 cast 缓存值：
-     * <pre>{@code
-     * @SuppressWarnings("unchecked")
-     * Cache<String, ImageProcessingCacheEntry> cache = (Cache<String, ImageProcessingCacheEntry>) imageProcessCache;
-     * }</pre>
-     */
-    @Bean("imageProcessCache")
-    @ConditionalOnMissingBean(name = "imageProcessCache")
-    public com.github.benmanes.caffeine.cache.Cache<String, Object> imageProcessCache() {
-        var imageProps = cacheProperties.getImage();
-        return Caffeine.newBuilder()
-                .maximumSize(imageProps.getMaxSize())
-                .expireAfterAccess(imageProps.getExpireHours(), TimeUnit.HOURS)
-                .recordStats()
-                .build();
     }
 
     /**
