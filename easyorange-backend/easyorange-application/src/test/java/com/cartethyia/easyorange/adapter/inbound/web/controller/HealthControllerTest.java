@@ -9,13 +9,13 @@ import org.junit.jupiter.api.Test;
 class HealthControllerTest {
 
     @Test
-    @DisplayName("health 端点应返回 UP 状态")
+    @DisplayName("health 端点应返回统一 Result 包装的 UP 状态")
     void health_returnsUpStatus() {
         HealthController controller = new HealthController();
         var result = controller.health();
 
-        assertThat(result.getBody()).isNotNull();
-        assertThat(result.getBody().get("status")).isEqualTo("UP");
-        assertThat(result.getBody().get("timestamp")).isNotNull();
+        assertThat(result.isSuccess()).isTrue();
+        assertThat(result.data().status()).isEqualTo("UP");
+        assertThat(result.data().timestamp()).isNotNull();
     }
 }

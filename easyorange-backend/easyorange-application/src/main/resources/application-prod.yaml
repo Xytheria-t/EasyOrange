@@ -5,6 +5,24 @@
 # 激活方式：spring.profiles.active=prod
 # ===================================================================
 
+# -------------------------------------------------------------------
+# 生产必需密钥契约（与 ProdSecrets 校验对齐）
+# 全部无默认值：缺失时占位符解析失败 → 启动中止；为空串时 @NotBlank 兜底。
+# 框架属性（datasource/redis/rabbitmq/jwt）统一从这里引用，避免散落环境变量名。
+# -------------------------------------------------------------------
+easyorange:
+  prod:
+    db-host: ${EASYORANGE_DB_HOST}
+    db-username: ${EASYORANGE_DB_USERNAME}
+    db-password: ${EASYORANGE_DB_PASSWORD}
+    redis-host: ${REDIS_HOST}
+    redis-password: ${REDIS_PASSWORD}
+    rabbitmq-host: ${RABBITMQ_HOST}
+    rabbitmq-user: ${RABBITMQ_USER}
+    rabbitmq-password: ${RABBITMQ_PASSWORD}
+    jwt-rsa-private-key: ${JWT_RSA_PRIVATE_KEY}
+    jwt-rsa-public-key: ${JWT_RSA_PUBLIC_KEY}
+
 spring:
   # -------------------------------------------------------------------
   # 启动期优化: 关 JMX + 关 banner
@@ -19,9 +37,9 @@ spring:
   # 注意: host 无默认值, 必须通过环境变量提供, 防止误连开发数据库
   # -------------------------------------------------------------------
   datasource:
-    url: jdbc:mysql://${EASYORANGE_DB_HOST}:${EASYORANGE_DB_PORT:3306}/${EASYORANGE_DB_NAME:easyorange}?useUnicode=true&characterEncoding=UTF-8&useSSL=true&serverTimezone=Asia/Shanghai&connectTimeout=5000&socketTimeout=30000&connectionCollation=utf8mb4_0900_ai_ci&allowPublicKeyRetrieval=false&verifyServerCertificate=true
-    username: ${EASYORANGE_DB_USERNAME}
-    password: ${EASYORANGE_DB_PASSWORD}
+    url: jdbc:mysql://${easyorange.prod.db-host}:${EASYORANGE_DB_PORT:3306}/${EASYORANGE_DB_NAME:easyorange}?useUnicode=true&characterEncoding=UTF-8&useSSL=true&serverTimezone=Asia/Shanghai&connectTimeout=5000&socketTimeout=30000&connectionCollation=utf8mb4_0900_ai_ci&allowPublicKeyRetrieval=false&verifyServerCertificate=true
+    username: ${easyorange.prod.db-username}
+    password: ${easyorange.prod.db-password}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 50
@@ -33,9 +51,9 @@ spring:
   # -------------------------------------------------------------------
   data:
     redis:
-      host: ${REDIS_HOST}
+      host: ${easyorange.prod.redis-host}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD}
+      password: ${easyorange.prod.redis-password}
       ssl: true
       lettuce:
         pool:
@@ -56,10 +74,10 @@ spring:
   # RabbitMQ 消息队列配置 - 生产环境
   # -------------------------------------------------------------------
   rabbitmq:
-    host: ${RABBITMQ_HOST}
+    host: ${easyorange.prod.rabbitmq-host}
     port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USER}
-    password: ${RABBITMQ_PASSWORD}
+    username: ${easyorange.prod.rabbitmq-user}
+    password: ${easyorange.prod.rabbitmq-password}
     publisher-confirm-type: correlated
     publisher-returns: true
 
@@ -83,8 +101,8 @@ file:
 # JWT Token 配置 - 生产环境
 # -------------------------------------------------------------------
 jwt:
-  private-key-location: ${JWT_RSA_PRIVATE_KEY}
-  public-key-location: ${JWT_RSA_PUBLIC_KEY}
+  private-key-location: ${easyorange.prod.jwt-rsa-private-key}
+  public-key-location: ${easyorange.prod.jwt-rsa-public-key}
   access-token-expiration: 60
   refresh-token-expiration: 7
   issuer: easyorange

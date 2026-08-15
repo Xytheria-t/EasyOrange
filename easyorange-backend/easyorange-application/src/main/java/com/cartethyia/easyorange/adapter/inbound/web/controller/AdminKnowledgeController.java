@@ -1,11 +1,14 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeDocEntity;
+import com.cartethyia.easyorange.adapter.inbound.web.assembler.KnowledgeDocAssembler;
+import com.cartethyia.easyorange.adapter.inbound.web.request.CreateKnowledgeDocRequest;
+import com.cartethyia.easyorange.adapter.inbound.web.response.KnowledgeDocVO;
 import com.cartethyia.easyorange.ai.knowledge.KnowledgeRepository;
 import com.cartethyia.easyorange.ai.service.KnowledgeIngestionService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,15 +34,15 @@ public class AdminKnowledgeController {
 
     /** 新增文档并摄入：解析 → 分块 → embed → ES 索引（best-effort）。 */
     @PostMapping
-    public Result<String> create(@RequestBody CreateKnowledgeDocRequest request) {
+    public Result<String> create(@Valid @RequestBody CreateKnowledgeDocRequest request) {
         String id = ingestionService.ingest(request.title(), request.content(), request.source());
         return Result.success(id);
     }
 
     @GetMapping
-    public Result<PageResult<KnowledgeDocEntity>> page(
+    public Result<PageResult<KnowledgeDocVO>> page(
             @RequestParam(defaultValue = "1") int pageNum, @RequestParam(defaultValue = "10") int pageSize) {
-        return Result.success(repository.page(pageNum, pageSize));
+        return Result.success(KnowledgeDocAssembler.toVOPage(repository.page(pageNum, pageSize)));
     }
 
     @DeleteMapping("/{id}")
@@ -53,6 +56,4 @@ public class AdminKnowledgeController {
     public Result<Integer> reindex() {
         return Result.success(ingestionService.reindexAllPending());
     }
-
-    public record CreateKnowledgeDocRequest(String title, String content, String source) {}
 }

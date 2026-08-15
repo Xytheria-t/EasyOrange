@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.adapter.outbound.elasticsearch.ReindexService;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/search")
 @RequiredArgsConstructor
-@ConditionalOnBean(ReindexService.class)
+@ConditionalOnProperty(name = "easyorange.search.elasticsearch.enabled", havingValue = "true")
 public class AdminSearchReindexController {
 
     private final ReindexService reindexService;
