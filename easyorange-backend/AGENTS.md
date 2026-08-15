@@ -206,4 +206,4 @@ AI 模块已全面框架化为 Spring AI 2.0（ADR-0008），自研 `CachingLlmA
 
 ### Admin 模块端口接口
 
-Admin 模块**禁止直接依赖其他模块的 Mapper/DO**，必须通过 `domain/port/`（`AdminProductQueryPort`, `AdminUserQueryPort`, `AdminOrderQueryPort`, `AdminRatingQueryPort`）接口查询，适配器在 `easyorange-application/adapter/outbound/admin/` 实现。
+Admin 模块**禁止直接依赖其他模块的 Mapper/DO**，必须通过 `domain/port/`（`AdminProductPort`, `AdminUserPort`, `AdminOrderPort`, `AdminRatingPort`）接口查询，适配器在 `easyorange-application/adapter/outbound/admin/` 实现。

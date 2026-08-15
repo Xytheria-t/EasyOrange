@@ -23,7 +23,7 @@ application/
 │       │   │   ├── HealthController.java              # 健康检查
 │       │   │   └── PlatformStatsController.java       # 平台统计
 │       │   └── outbound/                  # 跨模块适配器实现（完整清单见下方「跨模块适配器」表）
-│       │       ├── admin/                 # AdminProductQueryAdapter / AdminUserQueryAdapter / AdminOrderQueryAdapter / AdminRatingQueryAdapter
+│       │       ├── admin/                 # 8 个 Admin*Adapter（分类/仪表板/订单/商品/审核/评价/举报/用户）
 │       │       ├── elasticsearch/         # ES 搜索索引适配器（ElasticsearchIndexManager / ProductDocument / ReindexService / 索引读写适配器）
 │       │       ├── payment/               # OrderPaymentGatewayAdapter
 │       │       ├── product/               # ProductInventoryAdapter / ProductQueryAdapter / ProductNotificationAdapter / ProductSearchIndexAdapter / FavoriteProductInfoAdapter
@@ -139,10 +139,14 @@ easyorange-application
 | `ProductSearchIndexAdapter` | `ProductSearchIndexPort` | product | MySQL search_text 索引写入 |
 | `ElasticsearchProductSearchIndexAdapter` | `ProductSearchIndexPort` | product | ES 搜索索引写入（条件激活） |
 | `ElasticsearchProductSearchQueryAdapter` | — | — | ES 商品搜索查询（含分面聚合） |
-| `AdminProductQueryAdapter` | `AdminProductQueryPort` | admin | 管理端商品查询 |
-| `AdminOrderQueryAdapter` | `AdminOrderQueryPort` | admin | 管理端订单查询 |
-| `AdminUserQueryAdapter` | `AdminUserQueryPort` | admin | 管理端用户查询 |
-| `AdminRatingQueryAdapter` | `AdminRatingQueryPort` | admin | 管理端评价查询 |
+| `AdminCategoryAdapter` | `AdminCategoryPort` | admin | 管理端分类查询/操作 |
+| `AdminDashboardAdapter` | `AdminDashboardPort` | admin | 管理端仪表板聚合查询 |
+| `AdminOrderAdapter` | `AdminOrderPort` | admin | 管理端订单查询/干预 |
+| `AdminProductAdapter` | `AdminProductPort` | admin | 管理端商品查询/状态操作 |
+| `AdminProductAuditAdapter` | `AdminProductAuditPort` | admin | 管理端商品审核（含 AI 预审） |
+| `AdminRatingAdapter` | `AdminRatingPort` | admin | 管理端评价查询/删除 |
+| `AdminReportAdapter` | `AdminReportPort` | admin | 管理端举报查询/处理 |
+| `AdminUserAdapter` | `AdminUserPort` | admin | 管理端用户查询/操作（纯翻译层，委托 user 模块 `AdminUserManagementPort`） |
 
 `adapter/outbound/elasticsearch/` 搜索基础设施组件：
 

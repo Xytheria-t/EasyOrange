@@ -38,6 +38,14 @@ monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模
 - **STP 标准 API 优先**：优先框架/标准库内置功能，零新增自定义代码是最优方案（例：JWT 走 `oauth2ResourceServer()`，不手写 Filter/工具类）
 - **后端补充规范**（事务/命名/返回值/安全要点/踩坑警示/端口隔离）见 [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md)；**编码细则**按路径激活的 ECC 规则见 `.claude/rules/ecc/`
 
+## 提交规范（Git 工作流，2026-08 起）
+
+- **小步提交**：一个逻辑单元（功能/修复/重构/文档）一个提交，验证通过即提交；禁止攒「收口」大提交、禁止 `git add -A` 批量盲提
+- **消息格式**：`<type>[(<scope>)]: <一句中文描述>`；type 用 `feat|fix|refactor|docs|test|chore|perf|ci|style|build|revert`（日常以前 6 个为主）；一行说清改了什么/为什么，禁止 `+` 拼接多主题；一般无 body
+- **提交前检查**：`git status` + `git diff` 审阅；按文件分组 `git add <路径>`；禁止把 AI 产物/测试残留/临时文件混入提交
+- **历史纪律**：不重写已推送历史；确需整理先 `git bundle` 备份并校验 `HEAD^{tree}` 一致；tag 只在真实发布时打
+- **钩子**：仓库提供 `.githooks/`（commit-msg 格式校验 / pre-commit 秒级快检 / pre-push 按变更模块跑测试），启用 `git config core.hooksPath .githooks`，紧急时 `SKIP=git-hooks` 跳过
+
 ## 参考索引（按需读取，不常驻上下文）
 
 | 主题 | 位置 | 何时读 |

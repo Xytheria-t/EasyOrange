@@ -13,7 +13,7 @@
 
 项目拆分为 11 个 Maven 模块后，跨模块协作需求很快出现，且随业务增长持续增多：
 
-1. **查询侧同步依赖**：order 需要商品快照（`ProductQueryPort`）、user 信息（`UserInfoPort`）；product 需要资产方信息（`SellerInfoPort`）；message 需要用户信息（`UserInfoPort`）；favorite 需要商品信息（`ProductInfoPort`）；admin 需要聚合查询商品/订单/用户（`AdminProductQueryPort` 等）；ai 需要商品搜索（`ProductSearchQueryPort`）。
+1. **查询侧同步依赖**：order 需要商品快照（`ProductQueryPort`）、user 信息（`UserInfoPort`）；product 需要资产方信息（`SellerInfoPort`）；message 需要用户信息（`UserInfoPort`）；favorite 需要商品信息（`ProductInfoPort`）；admin 需要聚合查询商品/订单/用户（`AdminProductPort` 等）；ai 需要商品搜索（`ProductSearchQueryPort`）。
 2. **写操作跨模块副作用**：下单要扣库存（`ProductInventoryPort`）、订单状态变化要发站内信（`MessageNotifierPort`）、支付要回调校验（`CallbackSignatureVerifierPort`）、AI 估值要查信用（`JdbcCreditScoreFetcher` 走 `CreditScoreFetcher`）。
 3. **早期风险**：若这些协作直接 import 对方模块的 Mapper / DO / Service 类，模块边界形同虚设——依赖方向不可控、循环依赖必然出现、DDD 分层在模块粒度上失效。
 4. **已有先例教训**：`easyorange-order` 曾直接依赖 product 的 mapper 做库存扣减，导致「订单模块知道商品表的列」；后续重构才收敛。
@@ -32,7 +32,7 @@
 具体规则：
 
 1. **Port 归调用方**：谁需要数据/能力，谁在自己模块的 `domain/port/`（出站）或 `application/port/query/`（读侧）定义接口，签名只用 JDK 类型 + 本模块值对象。
-2. **Adapter 归应用模块**：`easyorange-application` 的 `adapter/outbound/` 下集中实现所有跨模块 Port（`ProductInventoryAdapter`、`ProductQueryAdapter`、`SellerInfoAdapter`、`MessageUserInfoAdapter`、`FavoriteProductInfoAdapter`、admin 四个 `Admin*QueryAdapter` 等），实现类标 `@Primary`（IntelliJ 误报 + 多实现冲突规避，见后端 AGENTS.md 踩坑警示）。
+2. **Adapter 归应用模块**：`easyorange-application` 的 `adapter/outbound/` 下集中实现所有跨模块 Port（`ProductInventoryAdapter`、`ProductQueryAdapter`、`SellerInfoAdapter`、`MessageUserInfoAdapter`、`FavoriteProductInfoAdapter`、admin 各 `Admin*Adapter`（8 个）等），实现类标 `@Primary`（IntelliJ 误报 + 多实现冲突规避，见后端 AGENTS.md 踩坑警示）。
 3. **Maven `<optional>true</optional>`**：业务模块之间的依赖全部 optional——编译期可见、运行时/传递依赖不可见，ArchUnit 在包级别兜底（规则 4/6）。
 4. **写操作事件化**：跨模块写副作用一律走领域事件 + Outbox（`OrderCreatedEvent` → 扣库存、完成/取消 → 恢复库存），不允许同步跨模块写（[ADR-0007](0007-order-local-tx-over-saga.md) 的本地单事务内只保留同事务必需的同步端口调用）。
 5. **ACL 语义**：跨模块只能看到 Port 接口与值对象，看不到对方聚合根/DO/Mapper——这就是防腐层的最小形态（接口即契约）。

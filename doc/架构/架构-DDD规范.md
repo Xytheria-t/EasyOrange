@@ -261,7 +261,7 @@ public class MessageUserInfoAdapter implements UserInfoPort {
 | order → product | 查商品 / 扣减恢复库存 | `ProductQueryAdapter` / `ProductInventoryAdapter` | ✅ 已隔离 |
 | order → payment | 发起支付 | `OrderPaymentGatewayAdapter`（实现 `PaymentGatewayPort`） | ✅ 已隔离 |
 | favorite → product | 查询商品信息 | `FavoriteProductInfoAdapter`（实现 `ProductInfoPort`） | ✅ 已隔离（`<optional>true</optional>`） |
-| admin → product/order/user | 聚合查询 | `AdminProductQueryAdapter` 等（`AdminProductQueryPort` 等 8 个查询端口） | ✅ 已隔离 |
+| admin → product/order/user | 聚合查询 | `AdminProductAdapter` 等（`AdminProductPort` 等 8 个 ACL 端口） | ✅ 已隔离 |
 
 ### 跨模块 RPC 版本兼容策略 `[演进]`
 
