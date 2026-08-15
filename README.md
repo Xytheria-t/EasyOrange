@@ -169,7 +169,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 ## 快速开始
 
 ```bash
-git clone https://github.com/471292781/EasyOrange.git && cd easy-orange
+git clone https://github.com/Xytheria-t/EasyOrange.git && cd easy-orange
 docker compose -f compose.yaml up -d                               # MySQL / Redis / RabbitMQ
 cd easyorange-backend && ./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application   # :8080
 cd easyorange-frontend && npm install && npm run dev               # :5173
@@ -218,6 +218,6 @@ easy-orange/
 
 <div align="center">
 
-**EasyOrange** · LLM × DDD：Java 架构工程化实战 · Java 25 + Spring Boot 4 · DDD + CQRS + 本地单事务/分布式锁 + 事件驱动 + AI 工程化 · [GitHub](https://github.com/471292781/EasyOrange)
+**EasyOrange** · LLM × DDD：Java 架构工程化实战 · Java 25 + Spring Boot 4 · DDD + CQRS + 本地单事务/分布式锁 + 事件驱动 + AI 工程化 · [GitHub](https://github.com/Xytheria-t/EasyOrange)
 
 </div>

@@ -60,5 +60,5 @@ EasyOrange 已实现的安全机制：
 
 ## 联系方式
 
-- 项目维护者：@cartethyia
+- 项目维护者：@Xytheria-t
 - 安全相关 Issue 标签：`security`
