@@ -8,7 +8,7 @@
 //
 // 用法：
 //   k6 run --vus 20 --duration 30s load-tests/order-create.js
-//   K6_USERNAME=testuser K6_PASSWORD=123456 PRODUCT_ID=<商品ID> k6 run load-tests/order-create.js
+//   K6_USERNAME=testuser K6_PASSWORD=Password123 PRODUCT_ID=<商品ID> k6 run load-tests/order-create.js
 //
 // 内置断言（对齐 doc/工程指标.md 写路径目标）：
 //   http_req_failed     < 1%（不含 429 限流响应——压测期间限流关闭）
@@ -21,7 +21,7 @@ import { check, sleep } from 'k6';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 const USERNAME = __ENV.K6_USERNAME || 'testuser';
-const PASSWORD = __ENV.K6_PASSWORD || '123456';
+const PASSWORD = __ENV.K6_PASSWORD || 'Password123';
 const PRODUCT_ID = __ENV.PRODUCT_ID || '';
 
 export const options = {
