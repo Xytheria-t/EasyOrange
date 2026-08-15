@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.assembler;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductDetail;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductSummary;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductSummary;
 import java.util.List;
 import org.springframework.stereotype.Component;
 

@@ -33,10 +33,14 @@ easyorange-admin/
     ├── domain/
     │   ├── enums/                    # 领域枚举（AdminResultCode / ReportHandleAction）
     │   └── port/                     # 端口接口（防腐层）
-    │       ├── AdminProductQueryPort.java  # 商品查询端口
-    │       ├── AdminUserQueryPort.java     # 用户查询端口
-    │       ├── AdminOrderQueryPort.java    # 订单查询端口
-    │       └── AdminRatingQueryPort.java   # 评价查询端口
+    │       ├── AdminCategoryPort.java      # 分类查询/操作端口
+    │       ├── AdminDashboardPort.java     # 仪表板聚合查询端口
+    │       ├── AdminOrderPort.java         # 订单查询/干预端口
+    │       ├── AdminProductAuditPort.java  # 商品审核端口（含 AI 预审）
+    │       ├── AdminProductPort.java       # 商品查询/状态操作端口
+    │       ├── AdminRatingPort.java        # 评价查询/删除端口
+    │       ├── AdminReportPort.java        # 举报查询/处理端口
+    │       └── AdminUserPort.java          # 用户查询/操作端口
     └── service/              # 业务服务层
 ```
 
@@ -58,10 +62,10 @@ easyorange-admin ──optional──> easyorange-common   (Result, PageResult, 
 ```
 
 **跨模块通信**：通过 `domain/port/` 端口接口解耦，适配器实现在 `easyorange-application/adapter/outbound/admin/`：
-- `AdminProductQueryAdapter` → ProductMapper / ProductRepository / 举报·审核·分类·AI 审核
-- `AdminUserQueryAdapter` → UserMapper（含用户状态/角色/密码管理）
-- `AdminOrderQueryAdapter` → OrderMapper / OrderQueryRepository / OrderRepository
-- `AdminRatingQueryAdapter` → ProductRatingMapper
+- `AdminProductAdapter` → ProductMapper / ProductRepository / 举报·审核·分类·AI 审核
+- `AdminUserAdapter` → UserMapper（含用户状态/角色/密码管理）
+- `AdminOrderAdapter` → OrderMapper / OrderQueryRepository / OrderRepository
+- `AdminRatingAdapter` → ProductRatingMapper
 
 ## 常见开发任务
 

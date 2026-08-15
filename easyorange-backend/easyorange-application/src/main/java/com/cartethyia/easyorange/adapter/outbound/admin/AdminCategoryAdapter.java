@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.admin.domain.port.AdminCategoryQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminCategoryPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
@@ -17,12 +17,12 @@ import org.springframework.stereotype.Component;
 /**
  * Admin 分类查询/操作适配器
  * <p>
- * 实现 {@link AdminCategoryQueryPort}，通过 Category Mapper / Repository 访问分类数据并转换为 Admin 模块需要的格式。
+ * 实现 {@link AdminCategoryPort}，通过 Category Mapper / Repository 访问分类数据并转换为 Admin 模块需要的格式。
  */
 @Primary
 @Component
 @RequiredArgsConstructor
-public class AdminCategoryQueryAdapter implements AdminCategoryQueryPort {
+public class AdminCategoryAdapter implements AdminCategoryPort {
 
     private final CategoryMapper categoryMapper;
     private final CategoryQueryRepository categoryQueryRepository;
@@ -111,8 +111,7 @@ public class AdminCategoryQueryAdapter implements AdminCategoryQueryPort {
         if (entity == null || entity.getDelFlag() != 0) {
             throw BusinessException.of("分类不存在");
         }
-        entity.setDelFlag(2);
-        categoryMapper.updateById(entity);
+        categoryMapper.deleteById(categoryId);
         categoryCachePort.evictByLevel(entity.getLevel());
         categoryCachePort.evictByParentId(entity.getParentId());
     }

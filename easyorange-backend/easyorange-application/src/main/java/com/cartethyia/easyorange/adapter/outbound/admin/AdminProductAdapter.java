@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.adapter.outbound.admin;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
@@ -27,13 +27,13 @@ import org.springframework.stereotype.Component;
 /**
  * Admin 商品查询/操作适配器
  * <p>
- * 实现 {@link AdminProductQueryPort}，通过 Product Mapper / Repository 访问商品数据并转换为 Admin 模块需要的格式。
- * 审核/举报/分类/仪表板功能域见同包下各自的 QueryAdapter。
+ * 实现 {@link AdminProductPort}，通过 Product Mapper / Repository 访问商品数据并转换为 Admin 模块需要的格式。
+ * 审核/举报/分类/仪表板功能域见同包下各自的 Adapter。
  */
 @Primary
 @Component
 @RequiredArgsConstructor
-public class AdminProductQueryAdapter implements AdminProductQueryPort {
+public class AdminProductAdapter implements AdminProductPort {
 
     private final ProductMapper productMapper;
     private final ProductDetailMapper productDetailMapper;

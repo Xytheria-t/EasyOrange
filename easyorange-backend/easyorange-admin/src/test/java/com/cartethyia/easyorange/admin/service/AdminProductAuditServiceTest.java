@@ -11,8 +11,8 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAudi
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAuditRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort.AuditLogRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort.AuditLogRecord;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import java.time.LocalDateTime;
@@ -30,7 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AdminProductAuditServiceTest {
 
     @Mock
-    private AdminProductAuditQueryPort adminProductAuditQueryPort;
+    private AdminProductAuditPort adminProductAuditPort;
 
     @InjectMocks
     private AdminProductAuditService auditService;
@@ -71,7 +71,7 @@ class AdminProductAuditServiceTest {
 
             auditService.auditProduct(operator(), PRODUCT_ID, request);
 
-            verify(adminProductAuditQueryPort)
+            verify(adminProductAuditPort)
                     .auditProduct(eq(PRODUCT_ID), eq(1), eq(null), eq(null), eq(null), eq(OPERATOR_ID), any());
         }
 
@@ -82,7 +82,7 @@ class AdminProductAuditServiceTest {
 
             auditService.auditProduct(operator(), PRODUCT_ID, request);
 
-            verify(adminProductAuditQueryPort)
+            verify(adminProductAuditPort)
                     .auditProduct(eq(PRODUCT_ID), eq(2), eq("商品信息不完整"), eq(null), eq(null), eq(OPERATOR_ID), any());
         }
     }
@@ -109,7 +109,7 @@ class AdminProductAuditServiceTest {
         @DisplayName("批量审核中跳过失败项")
         void batchAudit_skipFailedItems() {
             doThrow(BusinessException.of("资产不存在"))
-                    .when(adminProductAuditQueryPort)
+                    .when(adminProductAuditPort)
                     .auditProduct(eq("100"), eq(1), any(), any(), any(), any(), any());
 
             BatchAuditRequest request = new BatchAuditRequest();
@@ -133,7 +133,7 @@ class AdminProductAuditServiceTest {
         @Test
         @DisplayName("获取审核记录列表")
         void getAuditLogs_returnsLogs() {
-            when(adminProductAuditQueryPort.getAuditLogs(PRODUCT_ID)).thenReturn(List.of(createAuditLog()));
+            when(adminProductAuditPort.getAuditLogs(PRODUCT_ID)).thenReturn(List.of(createAuditLog()));
 
             List<AuditLogResponse> logs = auditService.getAuditLogs(PRODUCT_ID);
 
@@ -147,7 +147,7 @@ class AdminProductAuditServiceTest {
         @Test
         @DisplayName("没有审核记录时返回空列表")
         void getAuditLogs_empty_returnsEmptyList() {
-            when(adminProductAuditQueryPort.getAuditLogs(PRODUCT_ID)).thenReturn(List.of());
+            when(adminProductAuditPort.getAuditLogs(PRODUCT_ID)).thenReturn(List.of());
 
             List<AuditLogResponse> logs = auditService.getAuditLogs(PRODUCT_ID);
 

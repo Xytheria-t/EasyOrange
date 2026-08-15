@@ -8,7 +8,7 @@ import java.util.List;
  * Admin 模块的商品审核端口
  * 用于跨模块执行商品审核、查询审核日志与 AI 预审，遵循防腐层原则
  */
-public interface AdminProductAuditQueryPort {
+public interface AdminProductAuditPort {
 
     /**
      * 获取 AI 审核所需数据（跨表读），产品不存在或已删除时返回 null

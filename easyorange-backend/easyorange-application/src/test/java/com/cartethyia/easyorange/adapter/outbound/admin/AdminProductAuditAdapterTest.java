@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort.AuditLogRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort.AuditLogRecord;
 import com.cartethyia.easyorange.ai.service.AiReviewService;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
@@ -44,8 +44,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AdminProductAuditQueryAdapter 单元测试")
-class AdminProductAuditQueryAdapterTest {
+@DisplayName("AdminProductAuditAdapter 单元测试")
+class AdminProductAuditAdapterTest {
 
     @Mock
     private ProductMapper productMapper;
@@ -65,7 +65,7 @@ class AdminProductAuditQueryAdapterTest {
     @Mock
     private DomainEventPublisher domainEventPublisher;
 
-    private AdminProductAuditQueryAdapter adapter;
+    private AdminProductAuditAdapter adapter;
 
     private static final String PRODUCT_ID = "100";
     private static final String SELLER_ID = "1";
@@ -73,7 +73,7 @@ class AdminProductAuditQueryAdapterTest {
 
     @BeforeEach
     void setUp() {
-        adapter = new AdminProductAuditQueryAdapter(
+        adapter = new AdminProductAuditAdapter(
                 productMapper,
                 productDetailMapper,
                 productRepository,

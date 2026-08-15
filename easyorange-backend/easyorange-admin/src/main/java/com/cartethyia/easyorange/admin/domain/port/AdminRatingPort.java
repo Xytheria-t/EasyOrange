@@ -4,10 +4,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Admin 模块的评价查询端口
- * 用于跨模块查询评价信息，遵循防腐层原则
+ * Admin 模块的评价查询/操作端口
+ * 用于跨模块查询与删除评价信息，遵循防腐层原则
  */
-public interface AdminRatingQueryPort {
+public interface AdminRatingPort {
 
     /**
      * 分页查询评价列表（带条件查询）

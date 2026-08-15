@@ -8,7 +8,7 @@ import java.util.Map;
  * Admin 模块的用户查询/操作端口
  * 用于跨模块访问用户信息与执行管理操作，遵循防腐层原则
  */
-public interface AdminUserQueryPort {
+public interface AdminUserPort {
 
     /**
      * 根据用户 ID 查询用户信息

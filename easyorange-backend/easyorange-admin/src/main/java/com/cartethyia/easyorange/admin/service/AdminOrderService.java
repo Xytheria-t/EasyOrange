@@ -4,17 +4,17 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminOrde
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderDetail;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderItemDetail;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderItemInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderQueryCondition;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderQueryResult;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderStats;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderSummary;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.ProductInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderSummary;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.ProductInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.math.BigDecimal;
@@ -39,8 +39,8 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class AdminOrderService {
 
-    private final AdminOrderQueryPort adminOrderQueryPort;
-    private final AdminUserQueryPort adminUserQueryPort;
+    private final AdminOrderPort adminOrderPort;
+    private final AdminUserPort adminUserPort;
 
     public PageResult<AdminOrderResponse> listOrders(AdminOrderQueryRequest request) {
         LocalDateTime startTime = parseStartTime(request.getStartTime());
@@ -57,7 +57,7 @@ public class AdminOrderService {
                 request.getPageNum(),
                 request.getPageSize());
 
-        OrderQueryResult result = adminOrderQueryPort.queryOrders(condition);
+        OrderQueryResult result = adminOrderPort.queryOrders(condition);
 
         Set<String> userIds = new HashSet<>();
         result.records().forEach(o -> {
@@ -65,10 +65,10 @@ public class AdminOrderService {
             if (o.sellerId() != null) userIds.add(o.sellerId());
         });
         Map<String, UserInfo> userMap =
-                adminUserQueryPort.getUserInfos(userIds.stream().toList());
+                adminUserPort.getUserInfos(userIds.stream().toList());
 
         List<String> orderIds = result.records().stream().map(OrderSummary::id).toList();
-        Map<String, List<OrderItemInfo>> itemsMap = adminOrderQueryPort.getOrderItems(orderIds);
+        Map<String, List<OrderItemInfo>> itemsMap = adminOrderPort.getOrderItems(orderIds);
 
         Set<String> productIds = itemsMap.values().stream()
                 .flatMap(Collection::stream)
@@ -76,7 +76,7 @@ public class AdminOrderService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         Map<String, ProductInfo> productMap =
-                adminOrderQueryPort.getProducts(productIds.stream().toList());
+                adminOrderPort.getProducts(productIds.stream().toList());
 
         List<AdminOrderResponse> records = result.records().stream()
                 .map(order -> toAdminOrderResponse(order, userMap, itemsMap, productMap))
@@ -87,19 +87,19 @@ public class AdminOrderService {
 
     @Transactional(readOnly = true)
     public AdminOrderDetailResponse getOrderDetail(String id) {
-        OrderDetail model = adminOrderQueryPort.getOrderDetail(id);
+        OrderDetail model = adminOrderPort.getOrderDetail(id);
         if (model == null) {
             throw BusinessException.of("订单不存在");
         }
 
-        UserInfo buyer = adminUserQueryPort.getUserInfo(model.buyerId());
-        UserInfo seller = adminUserQueryPort.getUserInfo(model.sellerId());
+        UserInfo buyer = adminUserPort.getUserInfo(model.buyerId());
+        UserInfo seller = adminUserPort.getUserInfo(model.sellerId());
 
         List<String> productIds = model.items().stream()
                 .map(OrderItemDetail::productId)
                 .distinct()
                 .toList();
-        Map<String, ProductInfo> productMap = adminOrderQueryPort.getProducts(productIds);
+        Map<String, ProductInfo> productMap = adminOrderPort.getProducts(productIds);
 
         List<AdminOrderDetailResponse.ProductInfo> productInfos = model.items().stream()
                 .map(item -> {
@@ -140,7 +140,7 @@ public class AdminOrderService {
 
     @Transactional(readOnly = true)
     public OrderStatsResponse getOrderStats() {
-        OrderStats stats = adminOrderQueryPort.getOrderStats();
+        OrderStats stats = adminOrderPort.getOrderStats();
 
         return OrderStatsResponse.builder()
                 .totalOrders(stats.totalOrders())
@@ -158,17 +158,17 @@ public class AdminOrderService {
 
     @Transactional(rollbackFor = Exception.class)
     public void cancelOrder(String id, String reason) {
-        adminOrderQueryPort.cancelOrder(id, reason);
+        adminOrderPort.cancelOrder(id, reason);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void forceComplete(String id, String reason) {
-        adminOrderQueryPort.forceComplete(id);
+        adminOrderPort.forceComplete(id);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void refundOrder(String id, String reason) {
-        adminOrderQueryPort.refundOrder(id, reason);
+        adminOrderPort.refundOrder(id, reason);
     }
 
     private LocalDateTime parseStartTime(String startTimeStr) {

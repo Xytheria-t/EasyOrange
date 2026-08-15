@@ -8,8 +8,8 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UserRoleRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ResetPasswordResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserAuth;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserAuth;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +26,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 class AdminUserSecurityServiceTest {
 
     @Mock
-    private AdminUserQueryPort adminUserQueryPort;
+    private AdminUserPort adminUserPort;
 
     @Mock
     private BCryptPasswordEncoder passwordEncoder;
@@ -40,7 +40,7 @@ class AdminUserSecurityServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AdminUserSecurityService(adminUserQueryPort, passwordEncoder, tokenService);
+        service = new AdminUserSecurityService(adminUserPort, passwordEncoder, tokenService);
     }
 
     @Nested
@@ -52,7 +52,7 @@ class AdminUserSecurityServiceTest {
         void unlockUser_delegatesToPort() {
             service.unlockUser(USER_ID);
 
-            verify(adminUserQueryPort).unlockUser(USER_ID);
+            verify(adminUserPort).unlockUser(USER_ID);
         }
     }
 
@@ -63,19 +63,19 @@ class AdminUserSecurityServiceTest {
         @Test
         @DisplayName("重置密码成功并返回新密码")
         void resetPassword_success() {
-            when(adminUserQueryPort.getUserAuth(USER_ID)).thenReturn(new UserAuth("01", "NORMAL"));
+            when(adminUserPort.getUserAuth(USER_ID)).thenReturn(new UserAuth("01", "NORMAL"));
             when(passwordEncoder.encode(anyString())).thenReturn("encoded");
 
             ResetPasswordResponse response = service.resetPassword(USER_ID);
 
             assertThat(response.newPassword()).hasSize(12);
-            verify(adminUserQueryPort).setPassword(USER_ID, "encoded");
+            verify(adminUserPort).setPassword(USER_ID, "encoded");
         }
 
         @Test
         @DisplayName("用户不存在抛出异常")
         void resetPassword_notFound_throws() {
-            when(adminUserQueryPort.getUserAuth(USER_ID)).thenReturn(null);
+            when(adminUserPort.getUserAuth(USER_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> service.resetPassword(USER_ID))
                     .isInstanceOf(BusinessException.class)
@@ -90,7 +90,7 @@ class AdminUserSecurityServiceTest {
         @Test
         @DisplayName("强制下线成功并吊销全部令牌")
         void forceLogout_success() {
-            when(adminUserQueryPort.getUserAuth(USER_ID)).thenReturn(new UserAuth("01", "NORMAL"));
+            when(adminUserPort.getUserAuth(USER_ID)).thenReturn(new UserAuth("01", "NORMAL"));
 
             service.forceLogout(USER_ID);
 
@@ -100,7 +100,7 @@ class AdminUserSecurityServiceTest {
         @Test
         @DisplayName("用户不存在抛出异常")
         void forceLogout_notFound_throws() {
-            when(adminUserQueryPort.getUserAuth(USER_ID)).thenReturn(null);
+            when(adminUserPort.getUserAuth(USER_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> service.forceLogout(USER_ID))
                     .isInstanceOf(BusinessException.class)
@@ -120,7 +120,7 @@ class AdminUserSecurityServiceTest {
 
             service.changeUserRole(USER_ID, request);
 
-            verify(adminUserQueryPort).setUserType(USER_ID, "01");
+            verify(adminUserPort).setUserType(USER_ID, "01");
         }
     }
 }

@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.admin.domain.port.AdminRatingQueryPort.RatingSummary;
+import com.cartethyia.easyorange.admin.domain.port.AdminRatingPort.RatingSummary;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingMapper;
@@ -18,19 +18,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AdminRatingQueryAdapter 单元测试")
-class AdminRatingQueryAdapterTest {
+@DisplayName("AdminRatingAdapter 单元测试")
+class AdminRatingAdapterTest {
 
     @Mock
     private ProductRatingMapper ratingMapper;
 
-    private AdminRatingQueryAdapter adapter;
+    private AdminRatingAdapter adapter;
 
     private static final String REVIEW_ID = "100";
 
     @BeforeEach
     void setUp() {
-        adapter = new AdminRatingQueryAdapter(ratingMapper);
+        adapter = new AdminRatingAdapter(ratingMapper);
     }
 
     private ProductRatingDO review() {

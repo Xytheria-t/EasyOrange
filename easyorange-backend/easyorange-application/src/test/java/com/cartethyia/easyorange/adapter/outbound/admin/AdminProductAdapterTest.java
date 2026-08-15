@@ -38,8 +38,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AdminProductQueryAdapter 单元测试")
-class AdminProductQueryAdapterTest {
+@DisplayName("AdminProductAdapter 单元测试")
+class AdminProductAdapterTest {
 
     @Mock
     private ProductMapper productMapper;
@@ -59,14 +59,14 @@ class AdminProductQueryAdapterTest {
     @Mock
     private DomainEventPublisher domainEventPublisher;
 
-    private AdminProductQueryAdapter adapter;
+    private AdminProductAdapter adapter;
 
     private static final String PRODUCT_ID = "100";
     private static final String SELLER_ID = "1";
 
     @BeforeEach
     void setUp() {
-        adapter = new AdminProductQueryAdapter(
+        adapter = new AdminProductAdapter(
                 productMapper,
                 productDetailMapper,
                 productImageMapper,

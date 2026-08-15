@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.adapter.outbound.admin;
 
 import com.cartethyia.easyorange.admin.domain.enums.AdminResultCode;
 import com.cartethyia.easyorange.admin.domain.enums.ReportHandleAction;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
@@ -28,12 +28,12 @@ import org.springframework.stereotype.Component;
 /**
  * Admin 举报查询/处理适配器
  * <p>
- * 实现 {@link AdminReportQueryPort}，通过 ProductReport Repository 访问举报数据并转换为 Admin 模块需要的格式。
+ * 实现 {@link AdminReportPort}，通过 ProductReport Repository 访问举报数据并转换为 Admin 模块需要的格式。
  */
 @Primary
 @Component
 @RequiredArgsConstructor
-public class AdminReportQueryAdapter implements AdminReportQueryPort {
+public class AdminReportAdapter implements AdminReportPort {
 
     private final ProductReportQueryRepository productReportQueryRepository;
     private final ProductReportRepository productReportRepository;

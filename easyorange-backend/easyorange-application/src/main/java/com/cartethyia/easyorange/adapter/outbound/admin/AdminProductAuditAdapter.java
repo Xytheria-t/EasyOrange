@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
-import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort;
 import com.cartethyia.easyorange.ai.dto.AiReviewResult;
 import com.cartethyia.easyorange.ai.service.AiReviewService;
 import com.cartethyia.easyorange.common.domain.ProductId;
@@ -35,13 +35,13 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * Admin 商品审核适配器
  * <p>
- * 实现 {@link AdminProductAuditQueryPort}，执行商品审核、查询审核日志与 AI 预审。
+ * 实现 {@link AdminProductAuditPort}，执行商品审核、查询审核日志与 AI 预审。
  */
 @Slf4j
 @Primary
 @Component
 @RequiredArgsConstructor
-public class AdminProductAuditQueryAdapter implements AdminProductAuditQueryPort {
+public class AdminProductAuditAdapter implements AdminProductAuditPort {
 
     private static final TypeReference<List<String>> DIMENSIONS_TYPE = new TypeReference<>() {};
 

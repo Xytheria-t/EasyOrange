@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.adapter.outbound.admin;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderDO;
@@ -30,13 +30,13 @@ import org.springframework.stereotype.Component;
 /**
  * Admin 订单查询/操作适配器
  * <p>
- * 实现 {@link AdminOrderQueryPort}，通过 Order Mapper / Repository 访问订单数据并转换为 Admin 模块需要的格式。
+ * 实现 {@link AdminOrderPort}，通过 Order Mapper / Repository 访问订单数据并转换为 Admin 模块需要的格式。
  * 状态字段使用 String code，由 OrderDO 的 enum 字段直接 {@code getCode()} 派生。
  */
 @Primary
 @Component
 @RequiredArgsConstructor
-public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
+public class AdminOrderAdapter implements AdminOrderPort {
 
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
@@ -59,10 +59,10 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
             wrapper.eq(OrderDO::getSellerId, condition.sellerId());
         }
         if (condition.status() != null) {
-            wrapper.eq(OrderDO::getStatus, OrderStatus.fromCode(condition.status()));
+            wrapper.eq(OrderDO::getStatus, parseOrderStatus(condition.status()));
         }
         if (condition.paymentStatus() != null) {
-            wrapper.eq(OrderDO::getPaymentStatus, PaymentStatus.fromCode(condition.paymentStatus()));
+            wrapper.eq(OrderDO::getPaymentStatus, parsePaymentStatus(condition.paymentStatus()));
         }
         if (condition.startTime() != null) {
             wrapper.ge(OrderDO::getCreateTime, condition.startTime());
@@ -124,9 +124,7 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
         long refunded = orderReadRepository.countByStatus(OrderStatus.REFUNDED);
 
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        long todayOrders = queryOrders(
-                        new OrderQueryCondition(null, null, null, null, null, todayStart, null, null, null))
-                .total();
+        long todayOrders = orderReadRepository.countByCreatedAfter(todayStart);
 
         return new OrderStats(totalOrders, todayOrders, pendingPayment, paid, shipped, completed, cancelled, refunded);
     }
@@ -158,6 +156,22 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
 
     private Order findOrderOrThrow(String orderId) {
         return orderRepository.findById(OrderId.of(orderId)).orElseThrow(() -> BusinessException.of("订单不存在"));
+    }
+
+    private static OrderStatus parseOrderStatus(String code) {
+        try {
+            return OrderStatus.fromCode(code);
+        } catch (IllegalArgumentException e) {
+            throw BusinessException.of("无效的订单状态");
+        }
+    }
+
+    private static PaymentStatus parsePaymentStatus(String code) {
+        try {
+            return PaymentStatus.fromCode(code);
+        } catch (IllegalArgumentException e) {
+            throw BusinessException.of("无效的支付状态");
+        }
     }
 
     private void persistAndPublish(com.cartethyia.easyorange.common.event.Transition<Order, ?> result) {

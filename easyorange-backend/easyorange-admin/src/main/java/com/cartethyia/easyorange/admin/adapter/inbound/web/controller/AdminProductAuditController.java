@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAudi
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAuditRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditQueryPort.AiReviewRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort.AiReviewRecord;
 import com.cartethyia.easyorange.admin.service.AdminProductAuditService;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;

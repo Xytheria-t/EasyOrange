@@ -8,7 +8,7 @@ import java.util.Map;
  * Admin 模块的分类查询/操作端口
  * 用于跨模块查询与操作分类信息，遵循防腐层原则
  */
-public interface AdminCategoryQueryPort {
+public interface AdminCategoryPort {
 
     /**
      * 查询分类，不存在或已删除时返回 null

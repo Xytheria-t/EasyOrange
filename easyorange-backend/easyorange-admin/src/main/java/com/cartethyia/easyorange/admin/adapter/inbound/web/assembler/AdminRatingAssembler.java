@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.assembler;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminRatingResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminRatingQueryPort.RatingSummary;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminRatingPort.RatingSummary;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
 import org.springframework.stereotype.Component;
 
 @Component

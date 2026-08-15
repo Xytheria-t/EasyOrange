@@ -4,10 +4,10 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminProduc
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminProductQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductDetail;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryCondition;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryResult;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.time.LocalDate;
@@ -26,7 +26,7 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class AdminProductService {
 
-    private final AdminProductQueryPort adminProductQueryPort;
+    private final AdminProductPort adminProductPort;
     private final AdminProductAssembler adminProductAssembler;
 
     @Transactional(readOnly = true)
@@ -41,13 +41,13 @@ public class AdminProductService {
                 request.pageNum(),
                 request.pageSize());
 
-        ProductQueryResult result = adminProductQueryPort.queryProducts(condition);
+        ProductQueryResult result = adminProductPort.queryProducts(condition);
 
         List<String> productIds = result.records().stream()
-                .map(AdminProductQueryPort.ProductSummary::id)
+                .map(AdminProductPort.ProductSummary::id)
                 .toList();
 
-        Map<String, List<String>> imagesMap = adminProductQueryPort.getProductImages(productIds);
+        Map<String, List<String>> imagesMap = adminProductPort.getProductImages(productIds);
 
         List<AdminProductResponse> records = result.records().stream()
                 .map(p -> adminProductAssembler.toSummaryResponse(p, imagesMap.getOrDefault(p.id(), List.of())))
@@ -58,20 +58,19 @@ public class AdminProductService {
 
     @Transactional(readOnly = true)
     public AdminProductResponse getProductDetail(String id) {
-        ProductDetail productDetail = adminProductQueryPort.getProductDetail(id);
+        ProductDetail productDetail = adminProductPort.getProductDetail(id);
         if (productDetail == null) {
             throw BusinessException.of("商品不存在");
         }
 
-        List<String> images =
-                adminProductQueryPort.getProductImages(List.of(id)).getOrDefault(id, List.of());
+        List<String> images = adminProductPort.getProductImages(List.of(id)).getOrDefault(id, List.of());
 
         return adminProductAssembler.toDetailResponse(productDetail, images);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void updateProductStatus(String id, UpdateStatusRequest request) {
-        adminProductQueryPort.applyProductStatus(id, request.getStatus());
+        adminProductPort.applyProductStatus(id, request.getStatus());
     }
 
     private LocalDateTime parseDate(String dateStr, boolean endOfDay) {

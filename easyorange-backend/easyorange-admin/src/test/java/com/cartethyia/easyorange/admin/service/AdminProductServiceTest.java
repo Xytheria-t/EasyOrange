@@ -10,11 +10,11 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminProduc
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminProductQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductDetail;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryCondition;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryResult;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductSummary;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductSummary;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.math.BigDecimal;
@@ -35,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AdminProductServiceTest {
 
     @Mock
-    private AdminProductQueryPort adminProductQueryPort;
+    private AdminProductPort adminProductPort;
 
     @Spy
     private AdminProductAssembler adminProductAssembler = new AdminProductAssembler();
@@ -109,9 +109,9 @@ class AdminProductServiceTest {
                     new AdminProductQueryRequest(null, null, null, null, null, null, null, null);
             ProductSummary product = createProductSummary("1");
 
-            when(adminProductQueryPort.queryProducts(any(ProductQueryCondition.class)))
+            when(adminProductPort.queryProducts(any(ProductQueryCondition.class)))
                     .thenReturn(new ProductQueryResult(List.of(product), 1, 1, 20));
-            when(adminProductQueryPort.getProductImages(anyList())).thenReturn(Map.of());
+            when(adminProductPort.getProductImages(anyList())).thenReturn(Map.of());
 
             PageResult<AdminProductResponse> result = productService.listProducts(request);
 
@@ -127,9 +127,9 @@ class AdminProductServiceTest {
                     new AdminProductQueryRequest(null, null, "测试", null, "4", SELLER_ID, null, null);
             ProductSummary product = createProductSummary("4");
 
-            when(adminProductQueryPort.queryProducts(any(ProductQueryCondition.class)))
+            when(adminProductPort.queryProducts(any(ProductQueryCondition.class)))
                     .thenReturn(new ProductQueryResult(List.of(product), 1, 1, 20));
-            when(adminProductQueryPort.getProductImages(anyList())).thenReturn(Map.of());
+            when(adminProductPort.getProductImages(anyList())).thenReturn(Map.of());
 
             PageResult<AdminProductResponse> result = productService.listProducts(request);
 
@@ -146,8 +146,8 @@ class AdminProductServiceTest {
         @DisplayName("获取商品详情成功")
         void getProductDetail_success() {
             ProductDetail detail = createProductDetail("1");
-            when(adminProductQueryPort.getProductDetail(PRODUCT_ID)).thenReturn(detail);
-            when(adminProductQueryPort.getProductImages(anyList())).thenReturn(Map.of(PRODUCT_ID, List.of("img.jpg")));
+            when(adminProductPort.getProductDetail(PRODUCT_ID)).thenReturn(detail);
+            when(adminProductPort.getProductImages(anyList())).thenReturn(Map.of(PRODUCT_ID, List.of("img.jpg")));
 
             AdminProductResponse vo = productService.getProductDetail(PRODUCT_ID);
 
@@ -161,7 +161,7 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("商品不存在时抛出异常")
         void getProductDetail_notFound_throws() {
-            when(adminProductQueryPort.getProductDetail(PRODUCT_ID)).thenReturn(null);
+            when(adminProductPort.getProductDetail(PRODUCT_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> productService.getProductDetail(PRODUCT_ID))
                     .isInstanceOf(BusinessException.class)
@@ -181,7 +181,7 @@ class AdminProductServiceTest {
 
             productService.updateProductStatus(PRODUCT_ID, request);
 
-            verify(adminProductQueryPort).applyProductStatus(PRODUCT_ID, "OFFLINE");
+            verify(adminProductPort).applyProductStatus(PRODUCT_ID, "OFFLINE");
         }
     }
 }

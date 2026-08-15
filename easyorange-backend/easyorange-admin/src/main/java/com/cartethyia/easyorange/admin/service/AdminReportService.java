@@ -9,13 +9,13 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHa
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.admin.domain.enums.AdminResultCode;
 import com.cartethyia.easyorange.admin.domain.enums.ReportHandleAction;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportHistoryRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportQueryResult;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportStats;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportHistoryRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
@@ -32,17 +32,17 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminReportService {
 
-    private final AdminReportQueryPort adminReportQueryPort;
-    private final AdminProductQueryPort adminProductQueryPort;
+    private final AdminReportPort adminReportPort;
+    private final AdminProductPort adminProductPort;
     private final AdminReportAssembler assembler;
-    private final AdminUserQueryPort adminUserQueryPort;
+    private final AdminUserPort adminUserPort;
 
     @Transactional(readOnly = true)
     public PageResult<AdminReportResponse> listReports(Integer pageNum, Integer pageSize, Integer status) {
         int page = pageNum != null ? pageNum : 1;
         int size = pageSize != null ? pageSize : 20;
 
-        ReportQueryResult reportPage = adminReportQueryPort.queryReports(status, page, size);
+        ReportQueryResult reportPage = adminReportPort.queryReports(status, page, size);
 
         List<String> productIds = reportPage.records().stream()
                 .map(ReportRecord::productId)
@@ -53,9 +53,9 @@ public class AdminReportService {
                 .distinct()
                 .toList();
 
-        Map<String, AdminUserQueryPort.UserInfo> userMap = adminUserQueryPort.getUserInfos(reporterIds);
-        Map<String, AdminProductQueryPort.ProductInfo> productMap = adminProductQueryPort.getProductInfos(productIds);
-        Map<String, List<String>> imageMap = adminProductQueryPort.getProductImages(productIds);
+        Map<String, AdminUserPort.UserInfo> userMap = adminUserPort.getUserInfos(reporterIds);
+        Map<String, AdminProductPort.ProductInfo> productMap = adminProductPort.getProductInfos(productIds);
+        Map<String, List<String>> imageMap = adminProductPort.getProductImages(productIds);
 
         List<AdminReportResponse> records = reportPage.records().stream()
                 .map(r -> assembler.toAdminReportResponse(
@@ -70,17 +70,15 @@ public class AdminReportService {
 
     @Transactional(readOnly = true)
     public AdminReportResponse getReportDetail(String id) {
-        ReportRecord report = adminReportQueryPort.getReportDetail(id);
+        ReportRecord report = adminReportPort.getReportDetail(id);
         BizRequire.notNull(report, AdminResultCode.REPORT_NOT_FOUND);
 
-        AdminUserQueryPort.UserInfo reporter =
-                adminUserQueryPort.getUserInfos(List.of(report.reporterId())).get(report.reporterId());
-        AdminProductQueryPort.ProductInfo product = adminProductQueryPort
-                .getProductInfos(List.of(report.productId()))
-                .get(report.productId());
-        String productImage = firstImage(adminProductQueryPort
-                .getProductImages(List.of(report.productId()))
-                .get(report.productId()));
+        AdminUserPort.UserInfo reporter =
+                adminUserPort.getUserInfos(List.of(report.reporterId())).get(report.reporterId());
+        AdminProductPort.ProductInfo product =
+                adminProductPort.getProductInfos(List.of(report.productId())).get(report.productId());
+        String productImage = firstImage(
+                adminProductPort.getProductImages(List.of(report.productId())).get(report.productId()));
 
         return assembler.toAdminReportResponse(report, reporter, product, productImage);
     }
@@ -88,13 +86,13 @@ public class AdminReportService {
     @Transactional(rollbackFor = Exception.class)
     public void handleReport(String operatorId, String id, ReportHandleRequest request) {
         String remark = request.getRemark() != null ? request.getRemark() : "";
-        adminReportQueryPort.handleReport(id, request.getAction(), remark, operatorId);
+        adminReportPort.handleReport(id, request.getAction(), remark, operatorId);
     }
 
     @Transactional(readOnly = true)
     public List<ReportHandleHistoryResponse> getReportHistory(String reportId) {
-        List<ReportHistoryRecord> histories = adminReportQueryPort.getReportHistory(reportId);
-        Map<String, AdminUserQueryPort.UserInfo> operatorMap = adminUserQueryPort.getUserInfos(histories.stream()
+        List<ReportHistoryRecord> histories = adminReportPort.getReportHistory(reportId);
+        Map<String, AdminUserPort.UserInfo> operatorMap = adminUserPort.getUserInfos(histories.stream()
                 .map(ReportHistoryRecord::operatorId)
                 .distinct()
                 .toList());
@@ -116,7 +114,7 @@ public class AdminReportService {
         int success = 0;
         for (String reportId : request.getReportIds()) {
             try {
-                adminReportQueryPort.handleReport(reportId, request.getAction(), remark, operatorId);
+                adminReportPort.handleReport(reportId, request.getAction(), remark, operatorId);
                 success++;
             } catch (BusinessException e) {
                 errors.add("举报ID " + reportId + ": " + e.getMessage());
@@ -127,7 +125,7 @@ public class AdminReportService {
 
     @Transactional(readOnly = true)
     public ReportStatsResponse getReportStats() {
-        ReportStats stats = adminReportQueryPort.getReportStats();
+        ReportStats stats = adminReportPort.getReportStats();
         return ReportStatsResponse.builder()
                 .totalReports(stats.total())
                 .pendingReports(stats.pending())

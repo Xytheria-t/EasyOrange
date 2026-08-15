@@ -8,14 +8,14 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentUs
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TopProductResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminDashboardQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminDashboardQueryPort.RecentProductRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportStats;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.RecentUser;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort.RecentProductRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.RecentUser;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserStats;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -34,10 +34,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminDashboardService {
 
-    private final AdminUserQueryPort adminUserQueryPort;
-    private final AdminDashboardQueryPort adminDashboardQueryPort;
-    private final AdminReportQueryPort adminReportQueryPort;
-    private final AdminOrderQueryPort adminOrderQueryPort;
+    private final AdminUserPort adminUserPort;
+    private final AdminDashboardPort adminDashboardPort;
+    private final AdminReportPort adminReportPort;
+    private final AdminOrderPort adminOrderPort;
     private final JdbcTemplate jdbcTemplate;
 
     private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
@@ -45,10 +45,10 @@ public class AdminDashboardService {
     private static final int TREND_MONTHS = 6;
 
     public DashboardStatsResponse getDashboardStats() {
-        UserStats userStats = adminUserQueryPort.getUserStats();
-        AdminDashboardQueryPort.ProductStats productStats = adminDashboardQueryPort.getProductStats();
-        long totalOrders = adminOrderQueryPort.getOrderStats().totalOrders();
-        ReportStats reportStats = adminReportQueryPort.getReportStats();
+        UserStats userStats = adminUserPort.getUserStats();
+        AdminDashboardPort.ProductStats productStats = adminDashboardPort.getProductStats();
+        long totalOrders = adminOrderPort.getOrderStats().totalOrders();
+        ReportStats reportStats = adminReportPort.getReportStats();
 
         return DashboardStatsResponse.builder()
                 .totalUsers(userStats.totalUsers())
@@ -63,12 +63,12 @@ public class AdminDashboardService {
     }
 
     public PendingItemsResponse getPendingItems() {
-        ReportStats reportStats = adminReportQueryPort.getReportStats();
-        long pendingOrders = adminOrderQueryPort.getOrderStats().pendingPayment();
-        long pendingProducts = adminDashboardQueryPort.getProductStats().pending();
+        ReportStats reportStats = adminReportPort.getReportStats();
+        long pendingOrders = adminOrderPort.getOrderStats().pendingPayment();
+        long pendingProducts = adminDashboardPort.getProductStats().pending();
 
         List<PendingItemsResponse.PendingReportItem> recentReports =
-                adminReportQueryPort.queryReports(0, 1, 5).records().stream()
+                adminReportPort.queryReports(0, 1, 5).records().stream()
                         .map(report -> PendingItemsResponse.PendingReportItem.builder()
                                 .id(report.id())
                                 .productId(report.productId())
@@ -89,13 +89,13 @@ public class AdminDashboardService {
     }
 
     public List<RecentUserResponse> getRecentUsers(int limit) {
-        return adminUserQueryPort.getRecentUsers(limit).stream()
+        return adminUserPort.getRecentUsers(limit).stream()
                 .map(this::toRecentUserResponse)
                 .toList();
     }
 
     public List<RecentProductResponse> getRecentProducts(int limit) {
-        return adminDashboardQueryPort.getRecentProducts(limit).stream()
+        return adminDashboardPort.getRecentProducts(limit).stream()
                 .map(this::toRecentProductResponse)
                 .toList();
     }
@@ -219,7 +219,7 @@ public class AdminDashboardService {
 
     @Transactional(readOnly = true)
     public List<TopProductResponse> getTopProducts(int limit) {
-        return adminDashboardQueryPort.getTopProducts(limit).stream()
+        return adminDashboardPort.getTopProducts(limit).stream()
                 .map(row -> TopProductResponse.builder()
                         .productId(row.productId())
                         .name(row.name())

@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportRecord;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
@@ -44,8 +44,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AdminReportQueryAdapter 单元测试")
-class AdminReportQueryAdapterTest {
+@DisplayName("AdminReportAdapter 单元测试")
+class AdminReportAdapterTest {
 
     @Mock
     private ProductReportQueryRepository productReportQueryRepository;
@@ -65,7 +65,7 @@ class AdminReportQueryAdapterTest {
     @Mock
     private DomainEventPublisher domainEventPublisher;
 
-    private AdminReportQueryAdapter adapter;
+    private AdminReportAdapter adapter;
 
     private static final String PRODUCT_ID = "100";
     private static final String REPORT_ID = "200";
@@ -73,7 +73,7 @@ class AdminReportQueryAdapterTest {
 
     @BeforeEach
     void setUp() {
-        adapter = new AdminReportQueryAdapter(
+        adapter = new AdminReportAdapter(
                 productReportQueryRepository,
                 productReportRepository,
                 reportHandleHistoryRepository,

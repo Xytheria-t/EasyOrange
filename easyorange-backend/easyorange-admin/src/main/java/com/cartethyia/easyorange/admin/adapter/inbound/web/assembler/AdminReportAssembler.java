@@ -3,10 +3,10 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.assembler;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReportResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
 import com.cartethyia.easyorange.admin.domain.enums.ReportHandleAction;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportHistoryRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportHistoryRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
 import org.springframework.stereotype.Component;
 
 @Component

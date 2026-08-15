@@ -9,10 +9,10 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminUserQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminUserResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserDetail;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserQueryCondition;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryResult;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.time.LocalDateTime;
@@ -30,7 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AdminUserServiceTest {
 
     @Mock
-    private AdminUserQueryPort adminUserQueryPort;
+    private AdminUserPort adminUserPort;
 
     @InjectMocks
     private AdminUserService userService;
@@ -64,8 +64,7 @@ class AdminUserServiceTest {
         @Test
         @DisplayName("分页查询用户列表")
         void listUsers_defaultParams_returnsPage() {
-            when(adminUserQueryPort.queryUsers(any()))
-                    .thenReturn(new UserQueryResult(List.of(createTestUser()), 1, 1, 20));
+            when(adminUserPort.queryUsers(any())).thenReturn(new UserQueryResult(List.of(createTestUser()), 1, 1, 20));
 
             PageResult<AdminUserResponse> result = userService.listUsers(new AdminUserQueryRequest());
 
@@ -80,19 +79,18 @@ class AdminUserServiceTest {
             AdminUserQueryRequest request = new AdminUserQueryRequest();
             request.setKeyword("test");
 
-            when(adminUserQueryPort.queryUsers(any()))
-                    .thenReturn(new UserQueryResult(List.of(createTestUser()), 1, 1, 20));
+            when(adminUserPort.queryUsers(any())).thenReturn(new UserQueryResult(List.of(createTestUser()), 1, 1, 20));
 
             PageResult<AdminUserResponse> result = userService.listUsers(request);
 
             assertThat(result.records()).hasSize(1);
-            verify(adminUserQueryPort).queryUsers(any(UserQueryCondition.class));
+            verify(adminUserPort).queryUsers(any(UserQueryCondition.class));
         }
 
         @Test
         @DisplayName("查询结果为空")
         void listUsers_noResults_returnsEmptyPage() {
-            when(adminUserQueryPort.queryUsers(any())).thenReturn(new UserQueryResult(List.of(), 0, 1, 20));
+            when(adminUserPort.queryUsers(any())).thenReturn(new UserQueryResult(List.of(), 0, 1, 20));
 
             PageResult<AdminUserResponse> result = userService.listUsers(new AdminUserQueryRequest());
 
@@ -108,7 +106,7 @@ class AdminUserServiceTest {
         @Test
         @DisplayName("获取用户详情成功")
         void getUserDetail_success() {
-            when(adminUserQueryPort.getUserDetail(USER_ID)).thenReturn(createTestUser());
+            when(adminUserPort.getUserDetail(USER_ID)).thenReturn(createTestUser());
 
             AdminUserResponse vo = userService.getUserDetail(USER_ID);
 
@@ -120,7 +118,7 @@ class AdminUserServiceTest {
         @Test
         @DisplayName("用户不存在时抛出异常")
         void getUserDetail_notFound_throws() {
-            when(adminUserQueryPort.getUserDetail(USER_ID)).thenReturn(null);
+            when(adminUserPort.getUserDetail(USER_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> userService.getUserDetail(USER_ID))
                     .isInstanceOf(BusinessException.class)
@@ -140,7 +138,7 @@ class AdminUserServiceTest {
 
             userService.updateUserStatus(USER_ID, request);
 
-            verify(adminUserQueryPort).updateUserStatus(USER_ID, "DISABLED");
+            verify(adminUserPort).updateUserStatus(USER_ID, "DISABLED");
         }
     }
 }

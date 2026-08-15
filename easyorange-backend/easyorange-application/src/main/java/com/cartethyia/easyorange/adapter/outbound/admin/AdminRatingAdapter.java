@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.adapter.outbound.admin;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.admin.domain.enums.AdminResultCode;
-import com.cartethyia.easyorange.admin.domain.port.AdminRatingQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminRatingPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingMapper;
@@ -15,12 +15,12 @@ import org.springframework.util.StringUtils;
 
 /**
  * Admin 评价查询适配器
- * 实现 AdminRatingQueryPort，通过 ProductRating Mapper 查询数据并转换为 Admin 模块需要的格式
+ * 实现 AdminRatingPort，通过 ProductRating Mapper 查询数据并转换为 Admin 模块需要的格式
  */
 @Primary
 @Component
 @RequiredArgsConstructor
-public class AdminRatingQueryAdapter implements AdminRatingQueryPort {
+public class AdminRatingAdapter implements AdminRatingPort {
 
     private final ProductRatingMapper ratingMapper;
 

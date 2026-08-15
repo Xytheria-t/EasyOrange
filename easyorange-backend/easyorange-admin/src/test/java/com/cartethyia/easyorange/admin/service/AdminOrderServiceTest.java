@@ -12,17 +12,17 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminOrde
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderDetail;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderItemDetail;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderItemInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderQueryCondition;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderQueryResult;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderStats;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderSummary;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.ProductInfo;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderSummary;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.ProductInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.math.BigDecimal;
@@ -42,10 +42,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AdminOrderServiceTest {
 
     @Mock
-    private AdminOrderQueryPort adminOrderQueryPort;
+    private AdminOrderPort adminOrderPort;
 
     @Mock
-    private AdminUserQueryPort adminUserQueryPort;
+    private AdminUserPort adminUserPort;
 
     @InjectMocks
     private AdminOrderService orderService;
@@ -99,16 +99,16 @@ class AdminOrderServiceTest {
             AdminOrderQueryRequest request = new AdminOrderQueryRequest();
             OrderSummary order = createOrderSummary("PENDING_PAYMENT");
 
-            when(adminOrderQueryPort.queryOrders(any(OrderQueryCondition.class)))
+            when(adminOrderPort.queryOrders(any(OrderQueryCondition.class)))
                     .thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
-            when(adminUserQueryPort.getUserInfos(anyList()))
+            when(adminUserPort.getUserInfos(anyList()))
                     .thenReturn(Map.of(
                             BUYER_ID, new UserInfo(BUYER_ID, "buyer", "认领方", null, null),
                             SELLER_ID, new UserInfo(SELLER_ID, "seller", "资产方", null, null)));
-            when(adminOrderQueryPort.getOrderItems(anyList()))
+            when(adminOrderPort.getOrderItems(anyList()))
                     .thenReturn(Map.of(
                             ORDER_ID, List.of(new OrderItemInfo(ORDER_ID, PRODUCT_ID, 1, new BigDecimal("99.99")))));
-            when(adminOrderQueryPort.getProducts(anyList()))
+            when(adminOrderPort.getProducts(anyList()))
                     .thenReturn(Map.of(PRODUCT_ID, new ProductInfo(PRODUCT_ID, "测试商品", new BigDecimal("99.99"))));
 
             PageResult<AdminOrderResponse> result = orderService.listOrders(request);
@@ -123,11 +123,11 @@ class AdminOrderServiceTest {
         void listOrders_missingUserInfo_returnsNullNickname() {
             AdminOrderQueryRequest request = new AdminOrderQueryRequest();
             OrderSummary order = createOrderSummary("PENDING_PAYMENT");
-            when(adminOrderQueryPort.queryOrders(any(OrderQueryCondition.class)))
+            when(adminOrderPort.queryOrders(any(OrderQueryCondition.class)))
                     .thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
-            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of());
-            when(adminOrderQueryPort.getOrderItems(anyList())).thenReturn(Map.of());
-            when(adminOrderQueryPort.getProducts(anyList())).thenReturn(Map.of());
+            when(adminUserPort.getUserInfos(anyList())).thenReturn(Map.of());
+            when(adminOrderPort.getOrderItems(anyList())).thenReturn(Map.of());
+            when(adminOrderPort.getProducts(anyList())).thenReturn(Map.of());
 
             PageResult<AdminOrderResponse> result = orderService.listOrders(request);
 
@@ -143,11 +143,11 @@ class AdminOrderServiceTest {
             request.setStartTime("invalid");
             request.setEndTime("invalid");
             OrderSummary order = createOrderSummary("PENDING_PAYMENT");
-            when(adminOrderQueryPort.queryOrders(any(OrderQueryCondition.class)))
+            when(adminOrderPort.queryOrders(any(OrderQueryCondition.class)))
                     .thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
-            when(adminUserQueryPort.getUserInfos(anyList())).thenReturn(Map.of());
-            when(adminOrderQueryPort.getOrderItems(anyList())).thenReturn(Map.of());
-            when(adminOrderQueryPort.getProducts(anyList())).thenReturn(Map.of());
+            when(adminUserPort.getUserInfos(anyList())).thenReturn(Map.of());
+            when(adminOrderPort.getOrderItems(anyList())).thenReturn(Map.of());
+            when(adminOrderPort.getProducts(anyList())).thenReturn(Map.of());
 
             PageResult<AdminOrderResponse> result = orderService.listOrders(request);
 
@@ -162,12 +162,10 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("获取订单详情成功")
         void getOrderDetail_success() {
-            when(adminOrderQueryPort.getOrderDetail(ORDER_ID)).thenReturn(createOrderDetail("PENDING_PAYMENT"));
-            when(adminUserQueryPort.getUserInfo(BUYER_ID))
-                    .thenReturn(new UserInfo(BUYER_ID, "buyer", "认领方", null, null));
-            when(adminUserQueryPort.getUserInfo(SELLER_ID))
-                    .thenReturn(new UserInfo(SELLER_ID, "seller", "资产方", null, null));
-            when(adminOrderQueryPort.getProducts(anyList()))
+            when(adminOrderPort.getOrderDetail(ORDER_ID)).thenReturn(createOrderDetail("PENDING_PAYMENT"));
+            when(adminUserPort.getUserInfo(BUYER_ID)).thenReturn(new UserInfo(BUYER_ID, "buyer", "认领方", null, null));
+            when(adminUserPort.getUserInfo(SELLER_ID)).thenReturn(new UserInfo(SELLER_ID, "seller", "资产方", null, null));
+            when(adminOrderPort.getProducts(anyList()))
                     .thenReturn(Map.of(PRODUCT_ID, new ProductInfo(PRODUCT_ID, "测试商品", new BigDecimal("99.99"))));
 
             AdminOrderDetailResponse detail = orderService.getOrderDetail(ORDER_ID);
@@ -181,7 +179,7 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("订单不存在时抛出异常")
         void getOrderDetail_notFound_throws() {
-            when(adminOrderQueryPort.getOrderDetail(ORDER_ID)).thenReturn(null);
+            when(adminOrderPort.getOrderDetail(ORDER_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> orderService.getOrderDetail(ORDER_ID))
                     .isInstanceOf(BusinessException.class)
@@ -191,10 +189,10 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("订单详情中买/卖/商品缺失时返回空信息")
         void getOrderDetail_nullBuyerSellerProduct() {
-            when(adminOrderQueryPort.getOrderDetail(ORDER_ID)).thenReturn(createOrderDetail("PENDING_PAYMENT"));
-            when(adminUserQueryPort.getUserInfo(BUYER_ID)).thenReturn(null);
-            when(adminUserQueryPort.getUserInfo(SELLER_ID)).thenReturn(null);
-            when(adminOrderQueryPort.getProducts(anyList())).thenReturn(Map.of());
+            when(adminOrderPort.getOrderDetail(ORDER_ID)).thenReturn(createOrderDetail("PENDING_PAYMENT"));
+            when(adminUserPort.getUserInfo(BUYER_ID)).thenReturn(null);
+            when(adminUserPort.getUserInfo(SELLER_ID)).thenReturn(null);
+            when(adminOrderPort.getProducts(anyList())).thenReturn(Map.of());
 
             AdminOrderDetailResponse detail = orderService.getOrderDetail(ORDER_ID);
 
@@ -212,7 +210,7 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("获取订单统计")
         void getOrderStats_returnsStats() {
-            when(adminOrderQueryPort.getOrderStats()).thenReturn(new OrderStats(100, 10, 20, 30, 15, 25, 5, 5));
+            when(adminOrderPort.getOrderStats()).thenReturn(new OrderStats(100, 10, 20, 30, 15, 25, 5, 5));
 
             OrderStatsResponse stats = orderService.getOrderStats();
 
@@ -231,13 +229,13 @@ class AdminOrderServiceTest {
         void cancelOrder_delegatesToPort() {
             orderService.cancelOrder(ORDER_ID, "认领方申请取消");
 
-            verify(adminOrderQueryPort).cancelOrder(ORDER_ID, "认领方申请取消");
+            verify(adminOrderPort).cancelOrder(ORDER_ID, "认领方申请取消");
         }
 
         @Test
         @DisplayName("端口抛出业务异常向上传播")
         void cancelOrder_portThrows_propagates() {
-            doThrow(BusinessException.of("订单不存在")).when(adminOrderQueryPort).cancelOrder(ORDER_ID, "取消");
+            doThrow(BusinessException.of("订单不存在")).when(adminOrderPort).cancelOrder(ORDER_ID, "取消");
 
             assertThatThrownBy(() -> orderService.cancelOrder(ORDER_ID, "取消"))
                     .isInstanceOf(BusinessException.class)
@@ -249,7 +247,7 @@ class AdminOrderServiceTest {
         void forceComplete_delegatesToPort() {
             orderService.forceComplete(ORDER_ID, "强制完成");
 
-            verify(adminOrderQueryPort).forceComplete(ORDER_ID);
+            verify(adminOrderPort).forceComplete(ORDER_ID);
         }
 
         @Test
@@ -257,7 +255,7 @@ class AdminOrderServiceTest {
         void refundOrder_delegatesToPort() {
             orderService.refundOrder(ORDER_ID, "商品问题退款");
 
-            verify(adminOrderQueryPort).refundOrder(ORDER_ID, "商品问题退款");
+            verify(adminOrderPort).refundOrder(ORDER_ID, "商品问题退款");
         }
     }
 }

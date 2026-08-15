@@ -3,10 +3,10 @@ package com.cartethyia.easyorange.admin.service;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminUserQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminUserResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserDetail;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserQueryCondition;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryResult;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.time.LocalDate;
@@ -24,13 +24,13 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class AdminUserService {
 
-    private final AdminUserQueryPort adminUserQueryPort;
+    private final AdminUserPort adminUserPort;
 
     public PageResult<AdminUserResponse> listUsers(AdminUserQueryRequest request) {
         int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
         int pageSize = request.getPageSize() != null ? request.getPageSize() : 20;
 
-        UserQueryResult result = adminUserQueryPort.queryUsers(new UserQueryCondition(
+        UserQueryResult result = adminUserPort.queryUsers(new UserQueryCondition(
                 request.getKeyword(),
                 request.getUserType(),
                 request.getStatus(),
@@ -47,7 +47,7 @@ public class AdminUserService {
 
     @Transactional(readOnly = true)
     public AdminUserResponse getUserDetail(String id) {
-        UserDetail user = adminUserQueryPort.getUserDetail(id);
+        UserDetail user = adminUserPort.getUserDetail(id);
         if (user == null) {
             throw BusinessException.of("用户不存在");
         }
@@ -56,7 +56,7 @@ public class AdminUserService {
 
     @Transactional(rollbackFor = Exception.class)
     public void updateUserStatus(String id, UpdateStatusRequest request) {
-        adminUserQueryPort.updateUserStatus(id, request.getStatus());
+        adminUserPort.updateUserStatus(id, request.getStatus());
     }
 
     private LocalDateTime parseStartTime(String startTime) {

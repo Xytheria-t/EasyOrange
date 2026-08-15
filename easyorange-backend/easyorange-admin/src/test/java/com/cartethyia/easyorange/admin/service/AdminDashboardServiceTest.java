@@ -12,17 +12,17 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentUs
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TopProductResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminDashboardQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminDashboardQueryPort.TopProductRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderStats;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportQueryResult;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportQueryPort.ReportStats;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.RecentUser;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort.TopProductRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportRecord;
+import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.RecentUser;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserStats;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -44,16 +44,16 @@ import org.springframework.jdbc.core.JdbcTemplate;
 class AdminDashboardServiceTest {
 
     @Mock
-    private AdminUserQueryPort adminUserQueryPort;
+    private AdminUserPort adminUserPort;
 
     @Mock
-    private AdminDashboardQueryPort adminDashboardQueryPort;
+    private AdminDashboardPort adminDashboardPort;
 
     @Mock
-    private AdminReportQueryPort adminReportQueryPort;
+    private AdminReportPort adminReportPort;
 
     @Mock
-    private AdminOrderQueryPort adminOrderQueryPort;
+    private AdminOrderPort adminOrderPort;
 
     @Mock
     private JdbcTemplate jdbcTemplate;
@@ -73,11 +73,10 @@ class AdminDashboardServiceTest {
         @Test
         @DisplayName("获取仪表盘统计数据")
         void getDashboardStats_returnsStats() {
-            when(adminUserQueryPort.getUserStats()).thenReturn(new UserStats(100, 5));
-            when(adminDashboardQueryPort.getProductStats())
-                    .thenReturn(new AdminDashboardQueryPort.ProductStats(200, 10));
-            when(adminOrderQueryPort.getOrderStats()).thenReturn(new OrderStats(300, 0, 0, 0, 0, 0, 0, 0));
-            when(adminReportQueryPort.getReportStats()).thenReturn(new ReportStats(20, 8, 0, 0, 0));
+            when(adminUserPort.getUserStats()).thenReturn(new UserStats(100, 5));
+            when(adminDashboardPort.getProductStats()).thenReturn(new AdminDashboardPort.ProductStats(200, 10));
+            when(adminOrderPort.getOrderStats()).thenReturn(new OrderStats(300, 0, 0, 0, 0, 0, 0, 0));
+            when(adminReportPort.getReportStats()).thenReturn(new ReportStats(20, 8, 0, 0, 0));
 
             DashboardStatsResponse stats = dashboardService.getDashboardStats();
 
@@ -97,11 +96,10 @@ class AdminDashboardServiceTest {
         @Test
         @DisplayName("获取待处理事项")
         void getPendingItems_returnsItems() {
-            when(adminReportQueryPort.getReportStats()).thenReturn(new ReportStats(5, 3, 0, 0, 0));
-            when(adminOrderQueryPort.getOrderStats()).thenReturn(new OrderStats(10, 0, 5, 0, 0, 0, 0, 0));
-            when(adminDashboardQueryPort.getProductStats())
-                    .thenReturn(new AdminDashboardQueryPort.ProductStats(100, 7));
-            when(adminReportQueryPort.queryReports(0, 1, 5))
+            when(adminReportPort.getReportStats()).thenReturn(new ReportStats(5, 3, 0, 0, 0));
+            when(adminOrderPort.getOrderStats()).thenReturn(new OrderStats(10, 0, 5, 0, 0, 0, 0, 0));
+            when(adminDashboardPort.getProductStats()).thenReturn(new AdminDashboardPort.ProductStats(100, 7));
+            when(adminReportPort.queryReports(0, 1, 5))
                     .thenReturn(new ReportQueryResult(
                             List.of(new ReportRecord(
                                     "1",
@@ -137,7 +135,7 @@ class AdminDashboardServiceTest {
         @Test
         @DisplayName("获取最近注册用户")
         void getRecentUsers_returnsUsers() {
-            when(adminUserQueryPort.getRecentUsers(5)).thenReturn(List.of(createTestUser()));
+            when(adminUserPort.getRecentUsers(5)).thenReturn(List.of(createTestUser()));
 
             List<RecentUserResponse> users = dashboardService.getRecentUsers(5);
 
@@ -246,7 +244,7 @@ class AdminDashboardServiceTest {
         @Test
         @DisplayName("获取 Top 浏览量商品")
         void getTopProducts_returnsProducts() {
-            when(adminDashboardQueryPort.getTopProducts(10))
+            when(adminDashboardPort.getTopProducts(10))
                     .thenReturn(List.of(new TopProductRecord(
                             "1",
                             "高等数学教材",

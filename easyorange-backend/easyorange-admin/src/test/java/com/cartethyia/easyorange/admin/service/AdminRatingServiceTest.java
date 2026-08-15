@@ -10,11 +10,11 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminRating
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminRatingDeleteRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminRatingQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminRatingResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminRatingQueryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminRatingQueryPort.RatingQueryResult;
-import com.cartethyia.easyorange.admin.domain.port.AdminRatingQueryPort.RatingSummary;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminRatingPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminRatingPort.RatingQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminRatingPort.RatingSummary;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.time.LocalDateTime;
@@ -34,13 +34,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AdminRatingServiceTest {
 
     @Mock
-    private AdminRatingQueryPort adminRatingQueryPort;
+    private AdminRatingPort adminRatingPort;
 
     @Mock
-    private AdminUserQueryPort adminUserQueryPort;
+    private AdminUserPort adminUserPort;
 
     @Mock
-    private AdminProductQueryPort adminProductQueryPort;
+    private AdminProductPort adminProductPort;
 
     @Spy
     private AdminRatingAssembler assembler = new AdminRatingAssembler();
@@ -57,8 +57,8 @@ class AdminRatingServiceTest {
                 id, productId, userId, rating, content, null, 5, 1, LocalDateTime.now(), LocalDateTime.now());
     }
 
-    private AdminUserQueryPort.UserInfo createUser(String id, String username, String nickname) {
-        return new AdminUserQueryPort.UserInfo(id, username, nickname, "http://example.com/avatar.png", null);
+    private AdminUserPort.UserInfo createUser(String id, String username, String nickname) {
+        return new AdminUserPort.UserInfo(id, username, nickname, "http://example.com/avatar.png", null);
     }
 
     @Nested
@@ -73,11 +73,11 @@ class AdminRatingServiceTest {
             request.setPageSize(10);
 
             RatingSummary review = createSummary(REVIEW_ID, PRODUCT_ID, USER_ID, 5, "好商品");
-            when(adminRatingQueryPort.queryRatings(any())).thenReturn(new RatingQueryResult(List.of(review), 1, 1, 10));
-            when(adminUserQueryPort.getUserInfos(anyList()))
+            when(adminRatingPort.queryRatings(any())).thenReturn(new RatingQueryResult(List.of(review), 1, 1, 10));
+            when(adminUserPort.getUserInfos(anyList()))
                     .thenReturn(Map.of(USER_ID, createUser(USER_ID, "testuser", "测试用户")));
-            when(adminProductQueryPort.getProductInfos(anyList()))
-                    .thenReturn(Map.of(PRODUCT_ID, new AdminProductQueryPort.ProductInfo(PRODUCT_ID, "测试商品")));
+            when(adminProductPort.getProductInfos(anyList()))
+                    .thenReturn(Map.of(PRODUCT_ID, new AdminProductPort.ProductInfo(PRODUCT_ID, "测试商品")));
 
             PageResult<AdminRatingResponse> result = reviewService.listReviews(request);
 
@@ -98,7 +98,7 @@ class AdminRatingServiceTest {
             request.setPageNum(1);
             request.setPageSize(20);
 
-            when(adminRatingQueryPort.queryRatings(any())).thenReturn(new RatingQueryResult(List.of(), 0, 1, 20));
+            when(adminRatingPort.queryRatings(any())).thenReturn(new RatingQueryResult(List.of(), 0, 1, 20));
 
             PageResult<AdminRatingResponse> result = reviewService.listReviews(request);
 
@@ -116,11 +116,11 @@ class AdminRatingServiceTest {
         @DisplayName("查询评价详情成功")
         void getReviewDetail_returnsDetail() {
             RatingSummary review = createSummary(REVIEW_ID, PRODUCT_ID, USER_ID, 4, "还不错");
-            when(adminRatingQueryPort.getRatingDetail(REVIEW_ID)).thenReturn(review);
-            when(adminUserQueryPort.getUserInfos(anyList()))
+            when(adminRatingPort.getRatingDetail(REVIEW_ID)).thenReturn(review);
+            when(adminUserPort.getUserInfos(anyList()))
                     .thenReturn(Map.of(USER_ID, createUser(USER_ID, "testuser", "测试用户")));
-            when(adminProductQueryPort.getProductInfos(anyList()))
-                    .thenReturn(Map.of(PRODUCT_ID, new AdminProductQueryPort.ProductInfo(PRODUCT_ID, "测试商品")));
+            when(adminProductPort.getProductInfos(anyList()))
+                    .thenReturn(Map.of(PRODUCT_ID, new AdminProductPort.ProductInfo(PRODUCT_ID, "测试商品")));
 
             AdminRatingResponse result = reviewService.getReviewDetail(REVIEW_ID);
 
@@ -132,7 +132,7 @@ class AdminRatingServiceTest {
         @Test
         @DisplayName("评价不存在抛出异常")
         void getReviewDetail_notFound_throwsException() {
-            when(adminRatingQueryPort.getRatingDetail("999")).thenReturn(null);
+            when(adminRatingPort.getRatingDetail("999")).thenReturn(null);
 
             assertThatThrownBy(() -> reviewService.getReviewDetail("999"))
                     .isInstanceOf(BusinessException.class)
@@ -142,7 +142,7 @@ class AdminRatingServiceTest {
         @Test
         @DisplayName("已删除评价抛出异常")
         void getReviewDetail_deleted_throwsException() {
-            when(adminRatingQueryPort.getRatingDetail(REVIEW_ID)).thenReturn(null);
+            when(adminRatingPort.getRatingDetail(REVIEW_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> reviewService.getReviewDetail(REVIEW_ID))
                     .isInstanceOf(BusinessException.class)
@@ -162,14 +162,14 @@ class AdminRatingServiceTest {
 
             reviewService.deleteReview("1", REVIEW_ID, request);
 
-            verify(adminRatingQueryPort).deleteRating(REVIEW_ID);
+            verify(adminRatingPort).deleteRating(REVIEW_ID);
         }
 
         @Test
         @DisplayName("端口抛出评价不存在异常向上传播")
         void deleteReview_notFound_throwsException() {
             org.mockito.Mockito.doThrow(BusinessException.of("评价不存在或已被删除"))
-                    .when(adminRatingQueryPort)
+                    .when(adminRatingPort)
                     .deleteRating("999");
 
             AdminRatingDeleteRequest request = new AdminRatingDeleteRequest();

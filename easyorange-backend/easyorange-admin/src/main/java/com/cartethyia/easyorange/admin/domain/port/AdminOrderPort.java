@@ -9,7 +9,7 @@ import java.util.Map;
  * Admin 模块的订单查询/操作端口
  * 用于跨模块查询与操作订单信息，遵循防腐层原则
  */
-public interface AdminOrderQueryPort {
+public interface AdminOrderPort {
 
     /**
      * 查询订单列表（带条件查询）

@@ -7,7 +7,7 @@ import java.util.List;
  * Admin 模块的举报查询/处理端口
  * 用于跨模块查询与处理举报信息，遵循防腐层原则
  */
-public interface AdminReportQueryPort {
+public interface AdminReportPort {
 
     /**
      * 分页查询举报列表
