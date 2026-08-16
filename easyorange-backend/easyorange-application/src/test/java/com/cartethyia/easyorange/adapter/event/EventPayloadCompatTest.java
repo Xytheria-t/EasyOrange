@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.adapter.event;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
+import com.cartethyia.easyorange.payment.domain.event.PaymentSucceededEvent;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import org.junit.jupiter.api.DisplayName;
@@ -45,6 +46,19 @@ class EventPayloadCompatTest {
 
         assertThat(event.action()).isEqualTo(AuditAction.APPROVED);
         assertThat(event.reason()).isEqualTo("合规");
+    }
+
+    @Test
+    @DisplayName("旧版支付成功事件（无 orderId）反序列化 orderId 为 null 而非报错")
+    void paymentSucceededEvent_withoutOrderId_deserializesToNull() throws Exception {
+        var oldJson = """
+                {"eventId":"evt-4","paymentId":"p1","transactionId":"TXN_1"}
+                """;
+
+        var event = mapper.readValue(oldJson, PaymentSucceededEvent.class);
+
+        assertThat(event.paymentId()).isEqualTo("p1");
+        assertThat(event.orderId()).isNull();
     }
 
     @Test

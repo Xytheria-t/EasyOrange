@@ -63,7 +63,7 @@ class PaymentMetricsConsumerTest {
     @Test
     @DisplayName("支付成功事件累加成功指标")
     void onPaymentSucceeded_recordsSuccess() {
-        consumer.onPaymentSucceeded(new PaymentSucceededEvent("evt-2", "1001", "TXN_1"), message());
+        consumer.onPaymentSucceeded(new PaymentSucceededEvent("evt-2", "1001", "2001", "TXN_1"), message());
 
         assertThat(counter("payment.success.total", "payment").count()).isEqualTo(1);
     }

@@ -207,7 +207,8 @@ public class Payment {
         if (result.isSuccess()) {
             Payment updated = withSuccess(result.getTransactionId());
             return new Transition<>(
-                    updated, new PaymentSucceededEvent(UuidV7.generateId(), this.id, result.getTransactionId()));
+                    updated,
+                    new PaymentSucceededEvent(UuidV7.generateId(), this.id, this.orderId, result.getTransactionId()));
         } else {
             Payment updated = withStatus(PaymentStatus.FAILED, nextVersion());
             return new Transition<>(

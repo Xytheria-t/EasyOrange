@@ -198,7 +198,10 @@ class PaymentTest {
             assertThat(result.event())
                     .isInstanceOfSatisfying(
                             PaymentSucceededEvent.class,
-                            e -> assertThat(e.transactionId()).isEqualTo("TXN_001"));
+                            e -> {
+                                assertThat(e.transactionId()).isEqualTo("TXN_001");
+                                assertThat(e.orderId()).isEqualTo("2001");
+                            });
         }
 
         @Test

@@ -4,13 +4,14 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.MockPaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
+import com.cartethyia.easyorange.payment.application.command.PayCommand;
+import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentCreateSpec;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.math.BigDecimal;
@@ -28,6 +29,7 @@ public class MockPaymentController {
 
     private final PaymentRepository paymentRepository;
     private final IdGenerator idGenerator;
+    private final PaymentCommandHandler paymentCommandHandler;
 
     @PostMapping("/create")
     @Transactional(rollbackFor = Exception.class)
@@ -42,17 +44,21 @@ public class MockPaymentController {
         return Result.success(buildPaymentResponse(created.aggregate()));
     }
 
+    /**
+     * 模拟网关成功回调 — 经 {@link PaymentCommandHandler} 走「准备 → 网关 → 确认」两阶段，
+     * 成功时经 Outbox 发布 {@code PaymentSucceededEvent}（订单模块消费后置订单 PAID）。
+     * <p>
+     * 此处不开启事务：两阶段各自持有事务边界（见 {@code PaymentPhaseExecutor}），
+     * 控制器外层事务会把两个 phase 合并为跨网关调用的单一事务，违背设计约束。
+     */
     @PostMapping("/process")
-    @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> processMockPayment(@RequestBody MockPaymentRequest request) {
         Payment aggregate = paymentRepository
                 .findById(request.getPaymentId())
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
 
         if (Boolean.TRUE.equals(request.getSuccess())) {
-            Payment prepared = aggregate.preparePay();
-            var confirmed = prepared.confirmPay(PaymentResult.success("MOCK_TXN_" + System.currentTimeMillis()));
-            paymentRepository.update(confirmed.aggregate());
+            paymentCommandHandler.handle(new PayCommand(aggregate.paymentNo(), "MOCK_TXN_" + System.currentTimeMillis(), null));
         } else {
             var failed = aggregate.fail("模拟支付失败");
             paymentRepository.update(failed.aggregate());
@@ -65,14 +71,11 @@ public class MockPaymentController {
     }
 
     @PostMapping("/success/{paymentId}")
-    @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> mockPaymentSuccess(@PathVariable String paymentId) {
         Payment aggregate = paymentRepository
                 .findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        Payment prepared = aggregate.preparePay();
-        var confirmed = prepared.confirmPay(PaymentResult.success("MOCK_TXN_" + System.currentTimeMillis()));
-        paymentRepository.update(confirmed.aggregate());
+        paymentCommandHandler.handle(new PayCommand(aggregate.paymentNo(), "MOCK_TXN_" + System.currentTimeMillis(), null));
 
         return Result.success(buildPaymentResponse(paymentRepository
                 .findById(paymentId)

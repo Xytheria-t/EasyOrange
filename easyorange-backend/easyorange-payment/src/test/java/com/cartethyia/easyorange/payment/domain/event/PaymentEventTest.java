@@ -22,7 +22,7 @@ class PaymentEventTest {
     @Test
     @DisplayName("成功事件关联聚合根 ID")
     void succeededEvent_aggregateId() {
-        assertThat(new PaymentSucceededEvent("evt-2", "1001", "TXN_1").aggregateId())
+        assertThat(new PaymentSucceededEvent("evt-2", "1001", "2001", "TXN_1").aggregateId())
                 .isEqualTo("1001");
     }
 

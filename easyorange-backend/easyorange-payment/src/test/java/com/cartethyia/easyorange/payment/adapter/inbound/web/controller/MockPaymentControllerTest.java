@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.payment.adapter.inbound.web.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -9,6 +10,8 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.MockPaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
+import com.cartethyia.easyorange.payment.application.command.PayCommand;
+import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
@@ -34,11 +37,14 @@ class MockPaymentControllerTest {
     @Mock
     private IdGenerator idGenerator;
 
+    @Mock
+    private PaymentCommandHandler paymentCommandHandler;
+
     private MockPaymentController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new MockPaymentController(paymentRepository, idGenerator);
+        controller = new MockPaymentController(paymentRepository, idGenerator, paymentCommandHandler);
     }
 
     private Payment aggregate(PaymentStatus status) {
@@ -83,7 +89,7 @@ class MockPaymentControllerTest {
     class ProcessMockTests {
 
         @Test
-        @DisplayName("成功标记 - 进入成功状态")
+        @DisplayName("成功标记 - 经 PaymentCommandHandler 走两阶段支付")
         void processMockPayment_success_confirms() {
             when(paymentRepository.findById("1001"))
                     .thenReturn(
@@ -95,6 +101,10 @@ class MockPaymentControllerTest {
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().getStatus()).isEqualTo("SUCCESS");
+            verify(paymentCommandHandler)
+                    .handle(argThat((PayCommand cmd) ->
+                            cmd.paymentNo().equals("PAY123") && cmd.transactionId() != null
+                                    && cmd.transactionId().startsWith("MOCK_TXN_")));
         }
 
         @Test
@@ -118,7 +128,7 @@ class MockPaymentControllerTest {
     class MockOutcomeTests {
 
         @Test
-        @DisplayName("模拟支付成功")
+        @DisplayName("模拟支付成功 - 经 PaymentCommandHandler 走两阶段支付")
         void mockPaymentSuccess_confirms() {
             when(paymentRepository.findById("1001"))
                     .thenReturn(
@@ -128,6 +138,10 @@ class MockPaymentControllerTest {
             Result<PaymentResponse> result = controller.mockPaymentSuccess("1001");
 
             assertThat(result.data().getStatus()).isEqualTo("SUCCESS");
+            verify(paymentCommandHandler)
+                    .handle(argThat((PayCommand cmd) ->
+                            cmd.paymentNo().equals("PAY123") && cmd.transactionId() != null
+                                    && cmd.transactionId().startsWith("MOCK_TXN_")));
         }
 
         @Test
