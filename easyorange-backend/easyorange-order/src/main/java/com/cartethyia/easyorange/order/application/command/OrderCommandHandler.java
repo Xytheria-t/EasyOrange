@@ -126,8 +126,8 @@ public class OrderCommandHandler {
 
         // 创建支付（同一事务，失败时随事务整体回滚）
         createPayment(result.event(), command);
-        // 卖家订单列表缓存提交后再失效，避免提交前失效被并发读以旧数据重新填充
-        evictSellerOrdersAfterCommit(result.aggregate().sellerId().value());
+        // 买家/卖家订单列表缓存提交后再失效，避免提交前失效被并发读以旧数据重新填充
+        evictCacheAfterCommit(result.aggregate());
 
         return new CreateOrderResult(
                 result.aggregate().id().value(), result.aggregate().orderNo().value());
@@ -211,10 +211,6 @@ public class OrderCommandHandler {
         var buyerId = oldAggregate.buyerId().value();
         var sellerId = oldAggregate.sellerId().value();
         evictAfterCommit(() -> orderCachePort.evictOrderCache(buyerId, sellerId));
-    }
-
-    private void evictSellerOrdersAfterCommit(String sellerId) {
-        evictAfterCommit(() -> orderCachePort.evictSellerOrders(sellerId));
     }
 
     private void evictAfterCommit(Runnable evict) {

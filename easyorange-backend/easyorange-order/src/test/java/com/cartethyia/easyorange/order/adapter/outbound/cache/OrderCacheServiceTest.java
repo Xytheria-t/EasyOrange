@@ -116,17 +116,6 @@ class OrderCacheServiceTest {
     }
 
     @Test
-    @DisplayName("清除资产方订单缓存")
-    void testEvictSellerOrders() {
-        String sellerId = "789012";
-        when(redisTemplate.keys(anyString())).thenReturn(Set.of());
-
-        orderCachePort.evictSellerOrders(sellerId);
-
-        verify(redisTemplate).keys("eo:order:list:789012:*");
-    }
-
-    @Test
     @DisplayName("清除订单缓存同时清除认领方和资产方缓存")
     void testEvictOrderCache() {
         String buyerId = "111222";

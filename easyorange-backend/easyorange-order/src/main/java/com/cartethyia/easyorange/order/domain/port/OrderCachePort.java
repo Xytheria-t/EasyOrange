@@ -9,8 +9,7 @@ public interface OrderCachePort<T> {
 
     void putOrderList(String cacheKey, PageResult<T> pageResult);
 
-    void evictSellerOrders(String sellerId);
-
+    /** 失效买家与卖家双方的订单列表缓存。 */
     void evictOrderCache(String buyerId, String sellerId);
 
     String buildOrderListKey(String userId, String status, Integer pageNum, Integer pageSize);

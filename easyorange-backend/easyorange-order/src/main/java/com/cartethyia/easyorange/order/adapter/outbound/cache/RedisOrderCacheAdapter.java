@@ -48,11 +48,6 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     }
 
     @Override
-    public void evictSellerOrders(String sellerId) {
-        if (sellerId != null) evictByPattern(KEY_PREFIX + sellerId + ":*");
-    }
-
-    @Override
     public void evictOrderCache(String buyerId, String sellerId) {
         if (buyerId != null) evictByPattern(KEY_PREFIX + buyerId + ":*");
         if (sellerId != null) evictByPattern(KEY_PREFIX + sellerId + ":*");

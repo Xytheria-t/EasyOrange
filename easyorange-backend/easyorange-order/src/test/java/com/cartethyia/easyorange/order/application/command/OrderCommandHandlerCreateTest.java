@@ -139,6 +139,8 @@ class OrderCommandHandlerCreateTest {
         verify(eventPublisher).publish(any());
         verify(productInventoryPort).decreaseStock("100", 1);
         verify(lockPort).executeWithLocks(anyList(), anyLong(), any());
+        // 下单后买家与卖家列表缓存都要失效，否则买家 /my 列表 30 分钟内看不到新订单
+        verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
     }
 
     @Test
