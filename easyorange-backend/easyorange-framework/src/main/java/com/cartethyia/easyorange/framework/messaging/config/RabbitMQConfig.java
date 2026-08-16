@@ -11,6 +11,7 @@ import org.springframework.boot.amqp.autoconfigure.RabbitTemplateCustomizer;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @AutoConfiguration
@@ -96,9 +97,26 @@ public class RabbitMQConfig {
 
     // === Infrastructure Beans ===
 
+    /**
+     * 消费端转换器：复用全局 Jackson 3 {@code JsonMapper}（与投递侧 Modulith 转换器同一实例，
+     * Long→String 约定两侧一致），并显式信任事件所在包。
+     * <p>
+     * 监听器参数为具体事件类时，类型取自方法签名（{@code inferredArgumentType}），不经
+     * {@code __TypeId__} 信任检查；信任包只兜底无载荷参数的监听器（如 {@code DlqAnomalyListener}
+     * 消费 DLQ 消息），该路径按 {@code __TypeId__} 反序列化，默认仅信任 java.util/java.lang 会抛异常。
+     * {@code DefaultJacksonJavaTypeMapper} 按包名精确匹配（不支持前缀），事件类分布在各模块
+     * {@code domain.event} 包与 {@code framework.audit.event}，新增事件包时需同步补充。
+     */
     @Bean
-    public MessageConverter jsonMessageConverter() {
-        return new JacksonJsonMessageConverter();
+    public MessageConverter jsonMessageConverter(JsonMapper jsonMapper) {
+        return new JacksonJsonMessageConverter(
+                jsonMapper,
+                "com.cartethyia.easyorange.order.domain.event",
+                "com.cartethyia.easyorange.product.domain.event",
+                "com.cartethyia.easyorange.user.domain.event",
+                "com.cartethyia.easyorange.payment.domain.event",
+                "com.cartethyia.easyorange.message.domain.event",
+                "com.cartethyia.easyorange.framework.audit.event");
     }
 
     @Bean
