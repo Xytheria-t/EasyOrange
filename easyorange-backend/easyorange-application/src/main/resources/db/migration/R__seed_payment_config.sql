@@ -1,13 +1,8 @@
 -- ===================================================================
--- EasyOrange AI 智能托管平台 - 支付渠道种子数据
+-- EasyOrange - 支付渠道种子数据
 -- Description: Repeatable Migration - 支付渠道配置
--- Type: DML（可重复执行）
--- Database: MySQL 8.0
--- Charset: utf8mb4
--- 设计说明:
---   使用 ON DUPLICATE KEY UPDATE 保证幂等性
---   生产环境部署前应替换沙箱 app_id 为真实值
---   密钥存储在数据库中，生产环境建议使用密钥管理服务 (Vault/KMS)
+-- Type: DML（可重复执行，ON DUPLICATE KEY UPDATE 保证幂等）
+-- 注意：生产环境部署前应替换沙箱 app_id 为真实值
 -- ===================================================================
 
 START TRANSACTION;
