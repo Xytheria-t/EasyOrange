@@ -48,6 +48,7 @@ public class ProductEventConsumer {
     @RabbitHandler
     void handle(ProductEvent event, Message message) {
         handler.handle(event, message, () -> {
+            // sealed 穷尽匹配：新增事件类型必须在编译期显式决定处理策略，禁止静默丢弃
             switch (event) {
                 case ProductCreatedEvent e -> handleCreated(e);
                 case ProductUpdatedEvent e -> handleUpdated(e);
@@ -56,10 +57,12 @@ public class ProductEventConsumer {
                 case StockDecreasedEvent e -> checkLowStock(e.productId());
                 case StockRestoredEvent e -> handleStockRestored(e);
                 case ProductSubmittedForReviewEvent e -> productCachePort.evictProductCache(e.productId());
+                case ProductAuditedEvent e -> handleAudited(e);
                 case ProductPutOnlineEvent e -> handlePutOnline(e);
                 case ProductTakeOfflineEvent e -> handleTakeOffline(e);
-                default ->
-                    log.debug("No handler for event: {}", event.getClass().getSimpleName());
+                // 路由键 report.processed 绑定在 eo.report.notification 队列，不会到达本队列；
+                // 举报通过触发的商品下架副作用（缓存失效/索引移除）已由 ProductTakeOfflineEvent 覆盖。
+                case ReportProcessedEvent e -> log.debug("事件由 report.# 队列消费，本队列忽略: reportId={}", e.reportId());
             }
         });
     }
@@ -96,6 +99,12 @@ public class ProductEventConsumer {
     private void handlePutOnline(ProductPutOnlineEvent e) {
         productCachePort.evictProductCache(e.productId());
         if (searchIndexPort != null) tryRun(() -> searchIndexPort.indexProduct(e.productId()));
+    }
+
+    /** 审核结果（通过→ONLINE / 驳回→REJECTED）决定搜索可见性，需同步 ES 索引状态，否则商品在搜索结果中缺失或残留。 */
+    private void handleAudited(ProductAuditedEvent e) {
+        productCachePort.evictProductCache(e.productId());
+        if (searchIndexPort != null) tryRun(() -> searchIndexPort.updateProductIndex(e.productId()));
     }
 
     private void handleTakeOffline(ProductTakeOfflineEvent e) {
