@@ -9,7 +9,9 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
@@ -17,6 +19,9 @@ import org.springframework.stereotype.Repository;
 @Primary
 @Repository
 public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> implements OrderRepository {
+
+    /** 定时任务单次扫描上限 — 分批处理防止一次加载全表，剩余批次由下一轮 cron 继续。 */
+    private static final int SCAN_BATCH_LIMIT = 500;
 
     private final OrderDataMapper dataMapper;
     private final OrderItemMapper orderItemMapper;
@@ -38,10 +43,9 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
 
     @Override
     public void update(Order aggregate) {
+        // 订单项是创建后不可变的快照，仅 save() 写入；状态流转只更新订单主表，
+        // 不再整组删除重插（原实现会在聚合根缺行项时把订单项物理清空）。
         mapper.updateById(dataMapper.toDataObject(aggregate));
-        // 订单项为不可变快照，整组物理替换；逻辑删除会让每次状态流转累积 del_flag=1 脏行。
-        orderItemMapper.deleteByOrderId(aggregate.id().value());
-        batchInsertItems(aggregate.id().value(), aggregate.items());
     }
 
     @Override
@@ -57,24 +61,24 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
     @Override
     public List<Order> findExpiredOrders(int timeoutMinutes) {
         LocalDateTime threshold = LocalDateTime.now().minusMinutes(timeoutMinutes);
-        return lambdaQuery()
+        List<OrderDO> orderDOs = lambdaQuery()
                 .eq(OrderDO::getStatus, OrderStatus.PENDING_PAYMENT)
                 .lt(OrderDO::getCreateTime, threshold)
-                .list()
-                .stream()
-                .map(dataMapper::toAggregate)
-                .toList();
+                .orderByAsc(OrderDO::getCreateTime)
+                .last("LIMIT " + SCAN_BATCH_LIMIT)
+                .list();
+        return toAggregatesWithItems(orderDOs);
     }
 
     @Override
     public List<Order> findShippedOrdersBefore(LocalDateTime threshold) {
-        return lambdaQuery()
+        List<OrderDO> orderDOs = lambdaQuery()
                 .eq(OrderDO::getStatus, OrderStatus.SHIPPED)
                 .lt(OrderDO::getUpdateTime, threshold)
-                .list()
-                .stream()
-                .map(dataMapper::toAggregate)
-                .toList();
+                .orderByAsc(OrderDO::getCreateTime)
+                .last("LIMIT " + SCAN_BATCH_LIMIT)
+                .list();
+        return toAggregatesWithItems(orderDOs);
     }
 
     @Override
@@ -92,5 +96,25 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
         }
         orderItemMapper.batchInsert(
                 items.stream().map(item -> dataMapper.toItemDO(orderId, item)).toList());
+    }
+
+    /**
+     * 批量重建聚合根并附带行项 — 定时任务产生的领域事件依赖行项提取 productIds，
+     * 缺行项会导致库存恢复/售出标记等副作用静默失效。
+     */
+    private List<Order> toAggregatesWithItems(List<OrderDO> orderDOs) {
+        if (orderDOs.isEmpty()) {
+            return List.of();
+        }
+        List<String> orderIds = orderDOs.stream().map(OrderDO::getId).toList();
+        Map<String, List<OrderItem>> itemsByOrderId = orderItemMapper
+                .selectList(new LambdaQueryWrapper<OrderItemDO>().in(OrderItemDO::getOrderId, orderIds))
+                .stream()
+                .collect(Collectors.groupingBy(
+                        OrderItemDO::getOrderId, Collectors.mapping(dataMapper::toOrderItem, Collectors.toList())));
+        return orderDOs.stream()
+                .map(orderDO -> dataMapper.toAggregate(
+                        orderDO, itemsByOrderId.getOrDefault(orderDO.getId(), List.of())))
+                .toList();
     }
 }
