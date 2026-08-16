@@ -7,6 +7,8 @@
 #   - scope: 可选，小写字母/数字开头，可含 - 或 _
 #   - !: 破坏性变更标记（也可在 body 写 'BREAKING CHANGE: ...'）
 #   - 标题长度：硬上限 100；推荐 ≤ 72（超出会 warning）
+#   - 消息与内容一致：仅含文档文件（doc/ 或 *.md）的提交，type 必须为 docs
+#     （文档改动误标代码 type 会误导 bisect 与 changelog）
 #
 # 例外：merge / revert / fixup! / squash! / amend! 自动消息直接放行
 #
@@ -93,6 +95,20 @@ if [[ "$matched" -eq 0 ]]; then
   Skip with: SKIP=git-hooks git commit -m '...'
 EOF
   exit 1
+fi
+
+# 消息与内容一致性：仅含文档文件（doc/ 或 *.md）的提交必须标 docs
+# 文档提交误标代码 type（如 docs-only 却写 feat/fix）会误导 bisect 与 changelog。
+# 反向（docs type 带代码文件）不拦截：历史存在「docs 为主 + 少量收尾改动」的合理用法。
+staged=$(staged_files)
+if [[ -n "$staged" ]]; then
+  non_docs=$(grep -Ev '(^doc/|\.md$)' <<<"$staged" || true)
+  if [[ -z "$non_docs" ]]; then
+    type_used=$(sed -nE 's/^([a-z]+)(\([a-z0-9][a-z0-9_-]*\))?\!?: .*/\1/p' <<<"$title")
+    if [[ -n "$type_used" && "$type_used" != "docs" ]]; then
+      hook_fail "commit touches only doc files (doc/ or *.md) but type is '$type_used'; use 'docs'"
+    fi
+  fi
 fi
 
 # 风格告警（不阻断）

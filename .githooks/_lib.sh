@@ -50,8 +50,9 @@ hook_should_skip() {
 }
 
 # 返回暂存区文件列表（行分隔；ACMR = Added/Copied/Modified/Renamed）
+# quotePath=false：中文路径原样输出，便于 grep 匹配（默认会转义为 \xxx）
 staged_files() {
-  git diff --cached --name-only --diff-filter=ACMR
+  git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR
 }
 
 # ---------------------------------------------------------------------------
