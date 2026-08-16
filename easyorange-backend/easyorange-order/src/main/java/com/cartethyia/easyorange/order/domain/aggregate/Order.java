@@ -203,6 +203,11 @@ public class Order {
         return OrderAction.CANCEL.canApply(status, paymentStatus);
     }
 
+    /** 是否可支付（仅待付款状态可发起支付） */
+    public boolean canPay() {
+        return OrderAction.PAY.canApply(status, paymentStatus);
+    }
+
     /** 是否可确认收货（仅已发货状态可确认） */
     public boolean canConfirmReceipt() {
         return OrderAction.CONFIRM_RECEIPT.canApply(status, paymentStatus);

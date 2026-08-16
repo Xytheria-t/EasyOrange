@@ -11,6 +11,7 @@ import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderCreateSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -45,6 +47,7 @@ import org.springframework.util.StringUtils;
  * 异常不做二次包装，直接抛给 {@code GlobalExceptionHandler} 按错误码映射。
  * 状态转换命令经 {@link Order} 聚合根守卫执行。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderCommandHandler {
@@ -164,9 +167,37 @@ public class OrderCommandHandler {
 
     // ==================== 状态转换 ====================
 
-    @Transactional(rollbackFor = Exception.class)
+    /**
+     * 发起支付 — 校验买家身份与订单可支付状态后，委托支付模块执行「准备 → 网关 → 确认」两阶段；
+     * 订单置 PAID 不再在此直接发生，而是由「支付成功」事件桥接驱动（见 {@link #handlePaymentSucceeded}），
+     * 保证订单状态与支付单状态联动一致。本方法无本地写，不开事务，避免事务跨支付流程。
+     */
     public void handle(String userId, PayOrderCommand command) {
         var aggregate = validateBuyer(userId, command.orderId());
+        BizRequire.requireTrue(aggregate.canPay(), OrderResultCode.ORDER_STATUS_ERROR);
+        paymentGatewayPort.pay(command.orderId());
+    }
+
+    /**
+     * 支付成功事件桥接 — 订单置 PAID 的唯一入口（消费 {@code PaymentSucceededEvent}）。
+     * 订单已支付直接跳过（幂等，覆盖事件重复投递与重复支付单）；订单已取消（超时/买家取消/
+     * 管理端强制取消）时支付款已扣但订单不再流转，触发自动退款补偿（库存已在取消时恢复，
+     * 订单保持取消态不再更新）；其余非法状态由 {@link Order#pay} 守卫抛 {@code ORDER_STATUS_ERROR}，
+     * 消费失败进 DLQ/terminal 人工介入。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void handlePaymentSucceeded(String orderId) {
+        var aggregate = findOrder(orderId);
+        if (aggregate.status() == OrderStatus.PAID) {
+            log.info("支付成功事件跳过（订单已支付）: orderId={}", orderId);
+            return;
+        }
+        if (aggregate.status() == OrderStatus.CANCELLED) {
+            // 支付已成功但订单已取消：仅补偿退款，不改订单状态；退款失败仍走容器重试/DLQ 人工兜底
+            log.info("支付成功但订单已取消，自动退款: orderId={}", orderId);
+            paymentGatewayPort.refundPayment(orderId, OrderConstant.AUTO_REFUND_REASON);
+            return;
+        }
         var result = aggregate.pay(LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }

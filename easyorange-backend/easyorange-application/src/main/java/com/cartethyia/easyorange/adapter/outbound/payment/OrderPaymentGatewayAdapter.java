@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
+import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
@@ -29,6 +30,15 @@ public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
                 null, // payPassword
                 request.attach());
         return paymentCommandHandler.handle(request.buyerId(), command);
+    }
+
+    @Override
+    public void pay(String orderId) {
+        Payment payment = paymentRepository
+                .findByOrderId(orderId)
+                .orElseThrow(() -> BusinessException.of(OrderResultCode.ORDER_NOT_FOUND, "支付单不存在"));
+
+        paymentCommandHandler.handle(new PayCommand(payment.paymentNo(), null, null));
     }
 
     @Override
