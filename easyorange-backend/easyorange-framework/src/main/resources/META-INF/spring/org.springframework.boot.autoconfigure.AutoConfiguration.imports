@@ -11,3 +11,4 @@ com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig
 com.cartethyia.easyorange.framework.metrics.MetricsConfig
 com.cartethyia.easyorange.framework.config.redis.RedissonConfig
 com.cartethyia.easyorange.framework.messaging.config.EventExternalizationConfig
+com.cartethyia.easyorange.framework.config.database.TransactionTemplateConfig
