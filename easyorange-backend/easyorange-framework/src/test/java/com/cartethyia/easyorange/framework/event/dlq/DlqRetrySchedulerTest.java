@@ -92,20 +92,18 @@ class DlqRetrySchedulerTest {
      */
     private void mockQueue(GetResponse... responses) {
         AtomicInteger index = new AtomicInteger();
-        when(rabbitTemplate.execute(any(ChannelCallback.class)))
-                .thenAnswer(inv -> {
-                    Channel channel = mock(Channel.class);
-                    if (channelHolder[0] == null) {
-                        // 只捕获实际拉取到消息的（第一个）channel，用于断言 ack/nack
-                        channelHolder[0] = channel;
-                    }
-                    when(channel.basicGet(anyString(), eq(false)))
-                            .thenAnswer(inv2 -> {
-                                int i = index.getAndIncrement();
-                                return i < responses.length ? responses[i] : null;
-                            });
-                    return ((ChannelCallback<?>) inv.getArgument(0)).doInRabbit(channel);
-                });
+        when(rabbitTemplate.execute(any(ChannelCallback.class))).thenAnswer(inv -> {
+            Channel channel = mock(Channel.class);
+            if (channelHolder[0] == null) {
+                // 只捕获实际拉取到消息的（第一个）channel，用于断言 ack/nack
+                channelHolder[0] = channel;
+            }
+            when(channel.basicGet(anyString(), eq(false))).thenAnswer(inv2 -> {
+                int i = index.getAndIncrement();
+                return i < responses.length ? responses[i] : null;
+            });
+            return ((ChannelCallback<?>) inv.getArgument(0)).doInRabbit(channel);
+        });
     }
 
     private void mockEmptyQueue() {
@@ -169,8 +167,8 @@ class DlqRetrySchedulerTest {
 
             verify(rabbitTemplate, never()).send(eq(RabbitMQConfig.EXCHANGE_NAME), anyString(), any(Message.class));
             verify(channelHolder[0]).basicNack(deliveryTag, false, true);
-            var counter = meterRegistry.counter(
-                    "easyorange.events.dlq", "queue", ORIGINAL_QUEUE, "reason", "backoff_wait");
+            var counter =
+                    meterRegistry.counter("easyorange.events.dlq", "queue", ORIGINAL_QUEUE, "reason", "backoff_wait");
             org.junit.jupiter.api.Assertions.assertEquals(1.0, counter.count(), 0.001);
         }
 
@@ -288,13 +286,12 @@ class DlqRetrySchedulerTest {
         void retryFromDlq_singleQueueBatchLimit() throws Exception {
             var response = buildGetResponse(1L, 0, ROUTING_KEY, System.currentTimeMillis() - 10 * 60_000);
             // 模拟 basicGet 始终返回消息（不返回 null），BATCH_SIZE 应截断
-            when(rabbitTemplate.execute(any(ChannelCallback.class)))
-                    .thenAnswer(inv -> {
-                        Channel channel = mock(Channel.class);
-                        channelHolder[0] = channel;
-                        when(channel.basicGet(anyString(), eq(false))).thenReturn(response);
-                        return ((ChannelCallback<?>) inv.getArgument(0)).doInRabbit(channel);
-                    });
+            when(rabbitTemplate.execute(any(ChannelCallback.class))).thenAnswer(inv -> {
+                Channel channel = mock(Channel.class);
+                channelHolder[0] = channel;
+                when(channel.basicGet(anyString(), eq(false))).thenReturn(response);
+                return ((ChannelCallback<?>) inv.getArgument(0)).doInRabbit(channel);
+            });
 
             scheduler.retryFromDlq();
 

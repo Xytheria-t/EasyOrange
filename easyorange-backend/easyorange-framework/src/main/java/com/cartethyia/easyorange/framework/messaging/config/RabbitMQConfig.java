@@ -1,6 +1,8 @@
 package com.cartethyia.easyorange.framework.messaging.config;
 
 import com.cartethyia.easyorange.framework.event.metadata.EventMetadataMessagePostProcessor;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
@@ -10,9 +12,6 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import tools.jackson.databind.json.JsonMapper;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @AutoConfiguration
@@ -135,7 +134,8 @@ public class RabbitMQConfig {
      * （为事件外部化把 template 转换器换成 Jackson），Boot 会按序应用全部 RabbitTemplateCustomizer。
      */
     @Bean
-    public RabbitTemplateCustomizer eoRabbitTemplateCustomizer(EventMetadataMessagePostProcessor metadataPostProcessor) {
+    public RabbitTemplateCustomizer eoRabbitTemplateCustomizer(
+            EventMetadataMessagePostProcessor metadataPostProcessor) {
         return template -> {
             // 投递前注入事件元数据（timestamp / traceId）到 message headers
             template.setBeforePublishPostProcessors(metadataPostProcessor);

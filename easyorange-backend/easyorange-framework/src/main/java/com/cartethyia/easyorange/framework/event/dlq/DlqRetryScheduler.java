@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.framework.event.dlq;
 
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
-import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.GetResponse;
 import java.util.Date;
 import java.util.List;
@@ -56,6 +55,7 @@ public class DlqRetryScheduler {
 
     /** 单队列单次扫描最多拉取条数（包内可见供测试断言批次上限） */
     static final int BATCH_SIZE = 10;
+
     private static final int MAX_RETRIES = 3;
 
     /** 所有需要扫描的 DLQ 队列（与 RabbitMQConfig 中声明的主队列一一对应） */
@@ -188,12 +188,13 @@ public class DlqRetryScheduler {
             return true;
         }
         Object time = xDeath.get(0).get("time");
-        long deathMillis = switch (time) {
-            case null -> -1;
-            case Number n -> n.longValue();
-            case Date d -> d.getTime();
-            default -> -1;
-        };
+        long deathMillis =
+                switch (time) {
+                    case null -> -1;
+                    case Number n -> n.longValue();
+                    case Date d -> d.getTime();
+                    default -> -1;
+                };
         if (deathMillis < 0) {
             return true;
         }
