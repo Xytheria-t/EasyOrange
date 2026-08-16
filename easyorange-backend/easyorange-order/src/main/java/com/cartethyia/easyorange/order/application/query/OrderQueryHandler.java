@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -34,7 +33,6 @@ public class OrderQueryHandler {
     private final OrderCachePort<OrderVO> orderCachePort;
     private final OrderReadModelAssembler readModelAssembler;
 
-    @Transactional(readOnly = true)
     public OrderVO getOrderDetailForOwner(String userId, String orderId) {
         OrderReadModel order = orderReadRepository
                 .findById(OrderId.of(orderId))
@@ -48,18 +46,9 @@ public class OrderQueryHandler {
         return readModelAssembler.toOrderVO(order, productMap, false);
     }
 
-    private PageResult<OrderVO> doListOrders(OrderListQuery query) {
-        OrderQueryCondition condition = new OrderQueryCondition(
-                query.orderNo(), query.status(), query.buyerId(), query.sellerId(), query.pageNum(), query.pageSize());
-        PageResult<OrderReadModel> orderPage = orderReadRepository.findPage(condition);
-        List<OrderVO> voList = assembleOrderVOs(orderPage.records());
-        return PageResult.of(voList, orderPage.total(), orderPage.current(), orderPage.size());
-    }
-
     /**
      * 我的订单（认领方视角） — buyerId 自动填充为当前登录用户。
      */
-    @Transactional(readOnly = true)
     public PageResult<OrderVO> getMyOrders(String userId, OrderListQuery query) {
         return queryOrdersWithCache(userId, null, query);
     }
@@ -67,7 +56,6 @@ public class OrderQueryHandler {
     /**
      * 我售出的订单（资产方视角） — sellerId 自动填充为当前登录用户。
      */
-    @Transactional(readOnly = true)
     public PageResult<OrderVO> getSoldOrders(String userId, OrderListQuery query) {
         return queryOrdersWithCache(null, userId, query);
     }
@@ -82,7 +70,7 @@ public class OrderQueryHandler {
         String userId = buyerId != null ? buyerId : sellerId;
 
         if (query.orderNo() != null && !query.orderNo().isBlank()) {
-            return doListOrders(withUserScope(query, buyerId, sellerId));
+            return queryPage(buyerId, sellerId, query);
         }
 
         String statusCode = query.status() != null ? query.status().getCode() : null;
@@ -92,15 +80,17 @@ public class OrderQueryHandler {
             return cachedResult.get();
         }
 
-        PageResult<OrderVO> result = doListOrders(withUserScope(query, buyerId, sellerId));
+        PageResult<OrderVO> result = queryPage(buyerId, sellerId, query);
         orderCachePort.putOrderList(cacheKey, result);
         return result;
     }
 
-    /** 注入当前用户视角的 buyerId/sellerId 到查询条件。 */
-    private OrderListQuery withUserScope(OrderListQuery query, String buyerId, String sellerId) {
-        return new OrderListQuery(
+    private PageResult<OrderVO> queryPage(String buyerId, String sellerId, OrderListQuery query) {
+        OrderQueryCondition condition = new OrderQueryCondition(
                 query.orderNo(), query.status(), buyerId, sellerId, query.pageNum(), query.pageSize());
+        PageResult<OrderReadModel> orderPage = orderReadRepository.findPage(condition);
+        List<OrderVO> voList = assembleOrderVOs(orderPage.records());
+        return PageResult.of(voList, orderPage.total(), orderPage.current(), orderPage.size());
     }
 
     private List<OrderVO> assembleOrderVOs(List<OrderReadModel> orders) {
