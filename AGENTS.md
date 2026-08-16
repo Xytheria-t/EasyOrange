@@ -41,6 +41,7 @@ monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模
 ## 提交规范（Git 工作流，2026-08 起）
 
 - **小步提交**：一个逻辑单元（功能/修复/重构/文档）一个提交，验证通过即提交；禁止攒「收口」大提交、禁止 `git add -A` 批量盲提
+- **粒度边界**：一个特性/修复 1~2 个提交（跨模块大特性 2~3 个封顶）；同特性内的跨模块基建（队列注册、常量等）并入特性提交，不单独成提交；本地未推送前可 `amend`/`rebase` 整理，推送后遵守下方「历史纪律」
 - **消息格式**：`<type>[(<scope>)]: <一句中文描述>`；type 用 `feat|fix|refactor|docs|test|chore|perf|ci|style|build|revert`（日常以前 6 个为主）；一行说清改了什么/为什么，禁止 `+` 拼接多主题；一般无 body
 - **消息与内容对应**：仅含文档文件（`doc/`、`*.md`）的提交 type 必须为 `docs`（commit-msg 钩子机械校验，避免文档改动误标代码 type 误导 bisect/changelog）；代码为主体的提交不要标 `docs`
 - **提交前检查**：`git status` + `git diff` 审阅；按文件分组 `git add <路径>`；批量连发多个提交时逐一核对每条消息与 staged 内容对应；禁止把 AI 产物/测试残留/临时文件混入提交
