@@ -26,6 +26,7 @@ public class RabbitMQConfig {
     public static final String QUEUE_PRODUCT_CQRS = "eo.product.cqrs";
     public static final String QUEUE_ORDER_NOTIFICATION = "eo.order.notification";
     public static final String QUEUE_ORDER_LIFECYCLE = "eo.order.lifecycle";
+    public static final String QUEUE_ORDER_PAYMENT = "eo.order.payment";
     public static final String QUEUE_AUDIT_NOTIFICATION = "eo.audit.notification";
     public static final String QUEUE_AUDIT_LOG = "eo.audit.log";
     public static final String QUEUE_REPORT_NOTIFICATION = "eo.report.notification";
@@ -61,6 +62,7 @@ public class RabbitMQConfig {
                 new QueueSpec(QUEUE_ORDER_NOTIFICATION, "order.#"),
                 new QueueSpec(
                         QUEUE_ORDER_LIFECYCLE, "order.created", "order.cancelled", "order.completed", "order.refunded"),
+                new QueueSpec(QUEUE_ORDER_PAYMENT, "payment.succeeded"),
                 new QueueSpec(QUEUE_AUDIT_NOTIFICATION, "product.audited"),
                 new QueueSpec(QUEUE_AUDIT_LOG, "audit.log"),
                 new QueueSpec(QUEUE_REPORT_NOTIFICATION, "report.#"),

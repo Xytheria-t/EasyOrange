@@ -63,6 +63,7 @@ public class DlqRetryScheduler {
             RabbitMQConfig.QUEUE_PRODUCT_CQRS + ".dlq",
             RabbitMQConfig.QUEUE_ORDER_NOTIFICATION + ".dlq",
             RabbitMQConfig.QUEUE_ORDER_LIFECYCLE + ".dlq",
+            RabbitMQConfig.QUEUE_ORDER_PAYMENT + ".dlq",
             RabbitMQConfig.QUEUE_AUDIT_NOTIFICATION + ".dlq",
             RabbitMQConfig.QUEUE_AUDIT_LOG + ".dlq",
             RabbitMQConfig.QUEUE_REPORT_NOTIFICATION + ".dlq",
