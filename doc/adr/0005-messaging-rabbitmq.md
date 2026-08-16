@@ -14,7 +14,7 @@
 EasyOrange 的事件驱动架构已经落地：
 - 1 个 **Topic Exchange** `eo.domain.events`，路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`）
 - **11 个独立事件消费者**（每个模块独占一个队列 `eo.{name}`），完全是 pub/sub 模式：**同一条领域事件被多个下游各消费各的、各 ack 各的、各有各的失败重试链路**
-- **DLQ 三级重试链路**：队列级 `x-dead-letter-exchange` → 失败消息自动路由到 `eo.{name}.dlq` → `DlqRetryScheduler` 每 5 分钟扫描 DLQ → 按 `ExponentialBackoffRetryStrategy` 退避重投（1min/5min/15min）→ 超过 `max-retries=3` 的毒消息转储 `eo.dlq.terminal` 等待人工介入
+- **DLQ 三级重试链路**：队列级 `x-dead-letter-exchange` → 失败消息自动路由到 `eo.{name}.dlq` → `DlqRetryScheduler` 每 5 分钟扫描 DLQ → 按 `x-retry-count` 指数退避重投（1min/5min/15min，自死信时间起算，手动 ack 不丢消息）→ 超过 `max-retries=3` 的毒消息转储 `eo.dlq.terminal` 等待人工介入
 - **Spring Modulith Outbox 模式**：业务表 + `EVENT_PUBLICATION` 表与应用事务同原子写入，崩溃恢复时 Modulith 自动重发未完成事件
 - **幂等**：`EventIdempotencyChecker` 基于 Redis SETNX + TTL
 - **量级**：C2C 资产流转业务（商品创建/审核、下单/支付、通知、审计日志），预估每天几千到几万条事件，单节点吞吐 ~10k msg/s 绰绰有余
