@@ -14,6 +14,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @Component
@@ -24,6 +27,7 @@ public class OrderAutoConfirmTask {
     private final DomainEventPublisher domainEventPublisher;
     private final OrderTimeoutProperties properties;
     private final OrderCachePort<?> orderCachePort;
+    private final TransactionTemplate transactionTemplate;
 
     @Scheduled(cron = "${order.auto-confirm.cron:0 0 2 * * ?}")
     public void autoConfirmReceipt() {
@@ -42,7 +46,9 @@ public class OrderAutoConfirmTask {
         int confirmed = 0;
         for (Order aggregate : shippedOrders) {
             try {
-                if (autoConfirmOrder(aggregate)) {
+                // 确认收货在本地事务内执行：状态更新 + OrderCompletedEvent（Outbox）原子提交，
+                // 避免「更新已提交、事件未落 Outbox」的崩溃窗口导致商品漏标记售出
+                if (transactionTemplate.execute(status -> autoConfirmOrder(aggregate))) {
                     confirmed++;
                 }
             } catch (Exception e) {
@@ -60,11 +66,26 @@ public class OrderAutoConfirmTask {
 
         Transition<Order, OrderCompletedEvent> result = aggregate.confirmReceipt(LocalDateTime.now());
         orderRepository.update(result.aggregate());
-
-        orderCachePort.evictOrderCache(
-                aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
 
+        // 缓存提交后再失效，避免提交前失效被并发读以旧数据重新填充
+        evictOrderCacheAfterCommit(aggregate);
+
         return true;
+    }
+
+    private void evictOrderCacheAfterCommit(Order aggregate) {
+        var buyerId = aggregate.buyerId().value();
+        var sellerId = aggregate.sellerId().value();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    orderCachePort.evictOrderCache(buyerId, sellerId);
+                }
+            });
+        } else {
+            orderCachePort.evictOrderCache(buyerId, sellerId);
+        }
     }
 }

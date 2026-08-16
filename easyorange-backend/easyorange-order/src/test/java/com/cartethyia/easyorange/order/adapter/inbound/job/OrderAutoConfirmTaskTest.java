@@ -22,8 +22,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("OrderAutoConfirmTask 单元测试")
 class OrderAutoConfirmTaskTest {
 
@@ -39,6 +44,9 @@ class OrderAutoConfirmTaskTest {
     @Mock
     private OrderCachePort orderCachePort;
 
+    @Mock
+    private TransactionTemplate transactionTemplate;
+
     @InjectMocks
     private OrderAutoConfirmTask orderAutoConfirmTask;
 
@@ -52,6 +60,9 @@ class OrderAutoConfirmTaskTest {
     void setUp() {
         shippedOrder1 = orderWithStatus(ORDER_ID_1, OrderStatus.SHIPPED, PaymentStatus.PAID);
         shippedOrder2 = orderWithStatus(ORDER_ID_2, OrderStatus.SHIPPED, PaymentStatus.PAID);
+        // 事务模板直接执行回调（事务行为由真实事务路径的集成测试覆盖）
+        when(transactionTemplate.execute(any(TransactionCallback.class)))
+                .thenAnswer(inv -> ((TransactionCallback<?>) inv.getArgument(0)).doInTransaction(null));
     }
 
     @Nested
