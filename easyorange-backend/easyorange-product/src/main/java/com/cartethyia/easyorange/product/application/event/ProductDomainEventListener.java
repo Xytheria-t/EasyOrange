@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.product.application.event;
 
-import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
+import com.cartethyia.easyorange.product.domain.event.ProductEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductSubmittedForReviewEvent;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
@@ -26,16 +26,12 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ProductDomainEventListener {
 
-    private static final String PRODUCT_EVENT_PACKAGE = "com.cartethyia.easyorange.product.domain.event";
-
     private final ProductCacheEvictionPort productCachePort;
     private final ProductAuditLogRepository auditLogRepository;
 
     @EventListener
-    public void evictProductCache(DomainEvent event) {
-        if (event.getClass().getPackageName().startsWith(PRODUCT_EVENT_PACKAGE)) {
-            productCachePort.evictProductCache(event.aggregateId());
-        }
+    public void evictProductCache(ProductEvent event) {
+        productCachePort.evictProductCache(event.productId());
     }
 
     @EventListener
