@@ -1,6 +1,8 @@
 # ADR 0003 — AI 集成采用 Port/Adapter + 装饰器模式而非直接调用 LLM SDK
 
-- **状态**：已替代（Superseded by ADR-0008）
+> **状态**：**已替代（Superseded by ADR-0008）** — AI 集成已全面框架化为 Spring AI 2.0（2026-08-03），自研 Port/Adapter/装饰器/DTO/指标基础设施全部删除。本 ADR 保留 2025-11 至 2026-07 自研阶段的决策记录，文中代码引用均为已删除文件。
+
+- **状态**：已替代
 - **日期**：2026-07-14
 - **决策者**：后端架构
 - **标签**：`ai` `hexagonal` `decorator` `cache` `observability`

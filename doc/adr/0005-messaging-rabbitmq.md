@@ -5,6 +5,8 @@
 - **决策者**：后端架构
 - **标签**：`messaging` `event-driven` `rabbitmq` `kafka` `nats` `pulsar` `outbox` `dlq`
 
+> **现状更新（2026-08-07）**：事件消费者从决策时点的 11 收敛为 **10**（2026-08-04 支付 Saga 移除收口时，现役 DLQ 队列 10 个）；DLQ 重试实现收敛为 `DlqRetryScheduler` 内 `x-retry-count` 头驱动（固定 5 分钟扫描周期，退避由主队列 RetryTemplate 承担），`ExponentialBackoffRetryStrategy` 已删除并入该类，消费者统一处理基类 `AbstractDomainEventConsumer` 重构为 `EventConsumerHandler`。本记录保留 2026-07-30 决策时点的 11 消费者口径。
+
 ---
 
 ## 上下文（Context）
@@ -80,9 +82,9 @@ EasyOrange 的事件驱动架构已经落地：
   - [AGENTS.md](../../AGENTS.md) §11 领域事件机制 + traceId 传递链路
   - [README.md](../../README.md) §架构总览 + 拒绝项清单
 - 相关代码：
-  - [RabbitMQConfig.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/messaging/config/RabbitMQConfig.java)：交换机 + 11 队列 + DLQ 绑定声明
-  - [DlqRetryScheduler.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/dlq/DlqRetryScheduler.java) + [ExponentialBackoffRetryStrategy.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/dlq/ExponentialBackoffRetryStrategy.java)：DLQ 三级重试调度
-  - [AbstractDomainEventConsumer.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/core/AbstractDomainEventConsumer.java)：11 消费者统一 ack/nack/幂等/异常链
+  - [RabbitMQConfig.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/messaging/config/RabbitMQConfig.java)：交换机 + 10 队列 + DLQ 绑定声明（2026-08-04 起，见顶部现状更新）
+  - [DlqRetryScheduler.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/dlq/DlqRetryScheduler.java)：DLQ 分级重试调度（`x-retry-count` 头驱动，重试 ≥ 3 转储 `eo.dlq.terminal`；原 `ExponentialBackoffRetryStrategy` 已并入本类，见顶部现状更新）
+  - [EventConsumerHandler.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/core/EventConsumerHandler.java)：消费者统一处理（ack/nack/幂等/异常链，前身为 `AbstractDomainEventConsumer`）
   - [EventMetadataMessagePostProcessor.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/metadata/EventMetadataMessagePostProcessor.java)：traceId 注入 MQ 消息头
 - 重评估触发条件：
   1. 业务事件量级预估持续 > 10k msg/s 超过 1 周

@@ -1,10 +1,9 @@
 # ADR 0010 — 真 Saga / 事务性 Outbox 补偿演进方案（下单链路跨数据源时）
 
-- **状态**：提议（Proposed，不实施）
+- **状态**：提议
 - **日期**：2026-08-14
 - **决策者**：后端架构
 - **标签**：`transaction` `order` `saga` `outbox` `evolution`
-- **关联**：ADR-0001（已 Superseded 的 Saga vs 2PC 决策）、[ADR-0007](0007-order-local-tx-over-saga.md)（拒绝 Saga，本地单事务现状）、ADR-0005（MQ 选型）
 
 ---
 
@@ -138,3 +137,9 @@ public class DecreaseStockStep implements SagaStep {
 - 拆库是基础设施级变更（双数据源事务边界、Flyway 拆分、部署拓扑），本方案仅是编排层设计，不含数据迁移方案。
 - 编排 Saga 的每步补偿命令都要幂等设计（按 sagaId + step 去重），这是方案落地时的主要成本。
 - 方案长期保持 Proposed 不实施——与 ADR-0007 的「触发条件未到」保持一致，避免在单库下为假想场景引入复杂度（YAGNI）。
+
+## 备注（Notes）
+
+- 相关 ADR：[ADR-0007](0007-order-local-tx-over-saga.md)（现状：单库拒绝 Saga，本方案是其演进预案）、[ADR-0001](0001-order-saga-vs-2pc.md)（已替代历史：Saga vs 2PC 的完整对比）、[ADR-0005](0005-messaging-rabbitmq.md)（MQ 选型，`SagaScheduler` 与 `DlqRetryScheduler` 同构）
+- 相关文档：[doc/interview/01-话术与总纲.md](../interview/01-话术与总纲.md)（面试叙事「演进触发条件」应答）
+- 实施触发条件：正文「拆分判据」任一阈值满足（订单写入 QPS > 5k/s 且持续、支付模块需独立发布窗口、库存引入独立 Redis、故障爆炸半径扩大）时，按本方案重新评估

@@ -1,6 +1,6 @@
 # EasyOrange — LLM × DDD：Java 架构工程化实战
 
-> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。**两条技术主线**：AI 应用工程化（6 决策点 + 轻量 Agent 编排 + 8 件套工程化）+ 架构落地（DDD + 分布式可靠性 + ADR/ArchUnit/PIT 治理三板斧）。**业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**工程亮点**：DDD 六边形 + CQRS · 事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路 · 分布式锁防超卖 · AI 8 件套（Spring AI 2.0 框架化 + Redisson 令牌桶 + stale 降级 + Prompt YAML + TokenBudget + Embedding 真实现 + 多模态 Vision + 4 路并行 Tool Calling）· ES 搜索 + IK 分词 · ArchUnit 10 条规则 · 9 ADR · 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重门禁）· SpringDoc OpenAPI 3 · Biome 0 errors。**2025 年 11 月启动**。
+> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。**两条技术主线**：AI 应用工程化（6 决策点 + 轻量 Agent 编排 + 8 件套工程化）+ 架构落地（DDD + 分布式可靠性 + ADR/ArchUnit/PIT 治理三板斧）。**业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**工程亮点**：DDD 六边形 + CQRS · 事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路 · 分布式锁防超卖 · AI 8 件套（Spring AI 2.0 框架化 + Redisson 令牌桶 + stale 降级 + Prompt YAML + TokenBudget + Embedding 真实现 + 多模态 Vision + 4 路并行 Tool Calling）· ES 搜索 + IK 分词 · ArchUnit 10 条规则 · 10 ADR · 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重门禁）· SpringDoc OpenAPI 3 · Biome 0 errors。**2025 年 11 月启动**。
 
 ## Agent skills
 
@@ -58,7 +58,7 @@ monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模
 | AI 资产管理（6 决策点 / 营销文案 / WebSocket 协议） | [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md) | 动 AI 决策点或沟通链路时 |
 | 后端所有 REST + WebSocket 端点 | [doc/集成/API-速查.md](doc/集成/API-速查.md) | 找端点、写接口时 |
 | 测试数 / 覆盖率单一来源 | [doc/工程指标.md](doc/工程指标.md) | 收口统计时 |
-| ADR 决策记录（9 个，如 ADR-0007 拒绝 Saga） | `doc/adr/` | 做架构决策、改下单链路时 |
+| ADR 决策记录（10 个，如 ADR-0007 拒绝 Saga） | `doc/adr/` | 做架构决策、改下单链路时 |
 
 ## Repository Map
 

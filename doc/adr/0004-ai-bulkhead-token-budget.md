@@ -1,6 +1,8 @@
 # ADR 0004 — AI 调用隔离用 Resilience4j Bulkhead，预算治理用注解 + AOP
 
-- **状态**：接受
+> **状态**：**部分已替代（Partially superseded by ADR-0008）** — 有效部分：`@TokenBudget` AOP 日预算治理（现役）；失效部分：Bulkhead 并发隔离与 Resilience4j 配置（2026-08-03 随 ADR-0008 全面框架化删除，重试/并发隔离由 openai-java 客户端内置连接池承担；2026-08-13 Resilience4j 整体移除）。文中引用的 `Resilience4jConfig` / `CachingLlmAdapter` 代码均已删除，保留作历史记录。
+
+- **状态**：部分已替代
 - **日期**：2026-07-26
 - **决策者**：后端架构
 - **标签**：`ai` `resilience4j` `bulkhead` `token-budget` `aop` `observability`
@@ -78,6 +80,6 @@ AI 调用的并发隔离与预算治理分别采用以下方案：
 
 ## 备注（Notes）
 
-- 相关 ADR：[ADR 0003](./0003-ai-port-adapter-decorator.md)（AI Port/Adapter + 装饰器，本 ADR 的 Bulkhead 装饰在 `CachingLlmAdapter` 装饰器内部）
+- 相关 ADR：[ADR 0003](./0003-ai-port-adapter-decorator.md)（AI Port/Adapter + 装饰器，本 ADR 的 Bulkhead 装饰在其装饰器内部；该 ADR 已被 ADR-0008 替代）、[ADR 0008](./0008-ai-spring-ai-framework.md)（部分替代：Bulkhead 删除，`@TokenBudget` 保留）
 - 相关代码：[Resilience4jConfig.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/config/resilience4j/Resilience4jConfig.java)、[TokenBudgetAspect.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/budget/TokenBudgetAspect.java)、[CachingLlmAdapter.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/CachingLlmAdapter.java)
 - 后续演进触发：当供应商返回 `usage` 字段时，升级 TokenBudget 为精确计数；当 AI 场景 > 10 个时，考虑按 `AiCallScope` 自动派发 Bulkhead 而非硬编码具名实例。

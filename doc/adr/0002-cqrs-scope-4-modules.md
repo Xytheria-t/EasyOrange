@@ -86,5 +86,5 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 
 - 相关文档：[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「CQRS 模式」节、[README.md](../../README.md)「架构模式落地」表
 - 相关代码：[MessageCommandHandler.java](../../easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/command/MessageCommandHandler.java)、[MessageQueryHandler.java](../../easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/query/MessageQueryHandler.java)
-- 相关 ADR：[ADR 0007](./0007-order-local-tx-over-saga.md)（order 写链路：本地单事务 + 分布式锁 + Outbox，拒绝 Saga）、[ADR 0003](./0003-ai-port-adapter-decorator.md)（ai 模块选择 Port/Adapter 而非 CQRS）
+- 相关 ADR：[ADR 0007](./0007-order-local-tx-over-saga.md)（order 写链路：本地单事务 + 分布式锁 + Outbox，拒绝 Saga）、[ADR 0003](./0003-ai-port-adapter-decorator.md)（ai 模块选择 Port/Adapter 而非 CQRS；注：该 ADR 已被 [ADR 0008](./0008-ai-spring-ai-framework.md) 替代，ai 模块现为 Spring AI 框架化，「不上 CQRS」结论不变）
 - 重评估触发：user 或 favorite 模块出现独立的复杂查询维度、或 ArchUnit 守卫频繁被绕过时，重新评估 CQRS 范围。

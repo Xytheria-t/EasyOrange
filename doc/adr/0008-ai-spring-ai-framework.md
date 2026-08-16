@@ -1,6 +1,6 @@
 # ADR 0008 — AI 集成全面框架化为 Spring AI 2.0，删除自研 Port/Adapter/装饰器/指标基础设施
 
-- **状态**：接受（Supersedes ADR-0003）
+- **状态**：接受
 - **日期**：2026-08-03
 - **决策者**：后端架构
 - **标签**：`ai` `spring-ai` `stp` `framework-first` `openai`

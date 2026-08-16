@@ -1,7 +1,8 @@
 # ADR 0001 — 订单创建跨模块事务采用 Saga 而非 2PC
 
-> **状态**：**Superseded（已替代）** — 被 [ADR-0007](0007-order-local-tx-over-saga.md)（2026-08-02）整体替代：订单创建已移除 Saga 层，回归「本地单事务 + 分布式锁 + Outbox」。本 ADR 仅保留「拒绝 2PC/XA/TCC」的结论；其余内容（编排器、补偿、状态机、超时检测）为历史记录，代码与表结构均已删除。
+> **状态**：**已替代（Superseded by ADR-0007）** — 被 [ADR-0007](0007-order-local-tx-over-saga.md)（2026-08-02）整体替代：订单创建已移除 Saga 层，回归「本地单事务 + 分布式锁 + Outbox」。本 ADR 仅保留「拒绝 2PC/XA/TCC」的结论；其余内容（编排器、补偿、状态机、超时检测）为历史记录，代码与表结构均已删除。
 
+- **状态**：已替代
 - **日期**：2026-07-14
 - **决策者**：后端架构
 - **标签**：`saga` `distributed-transaction` `order` `event-driven`
