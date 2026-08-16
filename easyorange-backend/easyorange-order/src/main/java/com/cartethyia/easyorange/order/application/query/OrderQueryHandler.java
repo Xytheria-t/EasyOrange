@@ -48,16 +48,6 @@ public class OrderQueryHandler {
         return readModelAssembler.toOrderVO(order, productMap, false);
     }
 
-    /**
-     * 订单列表查询（管理端 / 通用） — 通过 OrderListQuery 收敛 6 个参数。
-     * Controller 通过代理调用本方法，事务注解生效。
-     */
-    @Transactional(readOnly = true)
-    public PageResult<OrderVO> listOrders(OrderListQuery query) {
-        return doListOrders(query);
-    }
-
-    /** listOrders 的实际实现 — 供同对象内部调用，避免 @Transactional 自调用失效。 */
     private PageResult<OrderVO> doListOrders(OrderListQuery query) {
         OrderQueryCondition condition = new OrderQueryCondition(
                 query.orderNo(), query.status(), query.buyerId(), query.sellerId(), query.pageNum(), query.pageSize());
@@ -67,8 +57,7 @@ public class OrderQueryHandler {
     }
 
     /**
-     * 我的订单（认领方视角） — 通过 OrderListQuery 收敛参数，与 listOrders 入口统一。
-     * buyerId 自动填充为当前登录用户。
+     * 我的订单（认领方视角） — buyerId 自动填充为当前登录用户。
      */
     @Transactional(readOnly = true)
     public PageResult<OrderVO> getMyOrders(String userId, OrderListQuery query) {
@@ -76,8 +65,7 @@ public class OrderQueryHandler {
     }
 
     /**
-     * 我售出的订单（资产方视角） — 通过 OrderListQuery 收敛参数，与 listOrders 入口统一。
-     * sellerId 自动填充为当前登录用户。
+     * 我售出的订单（资产方视角） — sellerId 自动填充为当前登录用户。
      */
     @Transactional(readOnly = true)
     public PageResult<OrderVO> getSoldOrders(String userId, OrderListQuery query) {

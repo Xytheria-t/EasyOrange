@@ -188,38 +188,4 @@ class OrderQueryControllerTest {
                     .andExpect(jsonPath("$.data.records.length()").value(0));
         }
     }
-
-    @Nested
-    @DisplayName("GET /api/orders")
-    class QueryOrdersTests {
-
-        @Test
-        @DisplayName("通用查询应返回分页结果")
-        void queryOrders_withFilters_shouldReturnPage() throws Exception {
-            List<OrderVO> records =
-                    List.of(createOrderVO("100", "ORD100", OrderStatus.PENDING_PAYMENT.getCode(), "待付款"));
-            PageResult<OrderVO> pageResult = PageResult.of(records, 1L, 1, 10);
-            when(queryHandler.listOrders(any(OrderListQuery.class))).thenReturn(pageResult);
-
-            mockMvc.perform(get("/api/orders")
-                            .param("status", OrderStatus.PENDING_PAYMENT.getCode())
-                            .param("pageNum", "1")
-                            .param("pageSize", "10"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value("A0000"))
-                    .andExpect(jsonPath("$.data.records.length()").value(1))
-                    .andExpect(jsonPath("$.data.records[0].status").value(OrderStatus.PENDING_PAYMENT.getCode()));
-        }
-
-        @Test
-        @DisplayName("无结果时应返回空分页")
-        void queryOrders_withNoResults_shouldReturnEmptyPage() throws Exception {
-            when(queryHandler.listOrders(any(OrderListQuery.class))).thenReturn(PageResult.empty(1, 10));
-
-            mockMvc.perform(get("/api/orders"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value("A0000"))
-                    .andExpect(jsonPath("$.data.records.length()").value(0));
-        }
-    }
 }

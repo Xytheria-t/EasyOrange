@@ -39,28 +39,11 @@ public class OrderQueryController {
         return Result.success(queryHandler.getSoldOrders(user.userId(), toScopedListQuery(request)));
     }
 
-    @GetMapping
-    public Result<PageResult<OrderVO>> queryOrders(@Valid QueryOrderRequest request) {
-        return Result.success(queryHandler.listOrders(toExplicitListQuery(request)));
-    }
-
     /** my/sold 场景：丢弃请求中的 buyerId/sellerId，用户 scope 由 application 层按当前登录人填充。 */
     private static OrderListQuery toScopedListQuery(QueryOrderRequest request) {
         OrderStatus status = resolveStatus(request.getStatus());
         return new OrderListQuery(
                 request.getOrderNo(), status, null, null, request.getPageNum(), request.getPageSize());
-    }
-
-    /** list/通用场景：透传请求中的 buyerId/sellerId 过滤条件。 */
-    private static OrderListQuery toExplicitListQuery(QueryOrderRequest request) {
-        OrderStatus status = resolveStatus(request.getStatus());
-        return new OrderListQuery(
-                request.getOrderNo(),
-                status,
-                request.getBuyerId(),
-                request.getSellerId(),
-                request.getPageNum(),
-                request.getPageSize());
     }
 
     /**

@@ -152,37 +152,6 @@ class OrderQueryHandlerTest {
     }
 
     @Nested
-    @DisplayName("listOrders")
-    class ListOrdersTest {
-
-        @Test
-        @DisplayName("分页查询返回结果")
-        void pageQuery_returnsPageResult() {
-            PageResult<OrderReadModel> pageResult = PageResult.of(List.of(testOrderReadModel), 1L, 1, 10);
-            when(orderReadRepository.findPage(any(OrderQueryCondition.class))).thenReturn(pageResult);
-            when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(testProductDetail()));
-
-            PageResult<OrderVO> result = handler.listOrders(new OrderListQuery(null, null, null, null, 1, 10));
-
-            assertThat(result).isNotNull();
-            assertThat(result.records()).hasSize(1);
-            assertThat(result.records().getFirst().getOrderNo()).isEqualTo("ORD001");
-        }
-
-        @Test
-        @DisplayName("空结果返回空列表")
-        void emptyResult_returnsEmptyPage() {
-            PageResult<OrderReadModel> emptyPage = PageResult.of(List.of(), 0L, 1, 10);
-            when(orderReadRepository.findPage(any(OrderQueryCondition.class))).thenReturn(emptyPage);
-
-            PageResult<OrderVO> result = handler.listOrders(new OrderListQuery(null, null, null, null, 1, 10));
-
-            assertThat(result).isNotNull();
-            assertThat(result.records()).isEmpty();
-        }
-    }
-
-    @Nested
     @DisplayName("getMyOrders / getSoldOrders 缓存")
     class CachedOrderListTest {
 
