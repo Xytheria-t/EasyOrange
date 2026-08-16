@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.adapter.outbound.cache;
+package com.cartethyia.easyorange.order.application.service;
 
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;

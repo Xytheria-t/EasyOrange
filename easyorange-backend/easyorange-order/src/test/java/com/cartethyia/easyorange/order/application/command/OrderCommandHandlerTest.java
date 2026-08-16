@@ -7,7 +7,7 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.order.adapter.outbound.cache.OrderCacheEvictor;
+import com.cartethyia.easyorange.order.application.service.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;

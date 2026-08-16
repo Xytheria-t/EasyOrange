@@ -11,7 +11,7 @@ import com.cartethyia.easyorange.order.adapter.outbound.config.OrderAutoConfirmP
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
-import com.cartethyia.easyorange.order.adapter.outbound.cache.OrderCacheEvictor;
+import com.cartethyia.easyorange.order.application.service.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import java.time.LocalDateTime;

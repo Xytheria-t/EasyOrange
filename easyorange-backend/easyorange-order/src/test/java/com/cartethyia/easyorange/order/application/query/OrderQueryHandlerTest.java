@@ -20,9 +20,11 @@ import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.order.domain.port.UserInfoPort;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -55,6 +57,9 @@ class OrderQueryHandlerTest {
     @Mock
     private OrderReadModelAssembler readModelAssembler;
 
+    @Mock
+    private UserInfoPort userInfoPort;
+
     private OrderQueryHandler handler;
 
     private OrderReadModel testOrderReadModel;
@@ -62,7 +67,8 @@ class OrderQueryHandlerTest {
 
     @BeforeEach
     void setUp() {
-        handler = new OrderQueryHandler(orderReadRepository, productQueryPort, orderCachePort, readModelAssembler);
+        handler = new OrderQueryHandler(
+                orderReadRepository, productQueryPort, orderCachePort, readModelAssembler, userInfoPort);
 
         testOrderReadModel = new OrderReadModel(
                 "1",
@@ -90,9 +96,10 @@ class OrderQueryHandlerTest {
                 .totalAmount(new BigDecimal("99.99"))
                 .build();
 
-        when(readModelAssembler.toOrderVO(any(OrderReadModel.class), anyMap(), anyBoolean()))
+        when(readModelAssembler.toOrderVO(any(OrderReadModel.class), anyMap(), anyMap(), anyBoolean()))
                 .thenReturn(mockOrderVO);
-        when(readModelAssembler.toOrderVOs(any(), anyMap())).thenReturn(List.of(mockOrderVO));
+        when(readModelAssembler.toOrderVOs(any(), anyMap(), anyMap())).thenReturn(List.of(mockOrderVO));
+        when(userInfoPort.findUsernames(any())).thenReturn(Map.of());
         when(orderCachePort.buildOrderListKey(any(), any(), any(), any())).thenReturn("eo:order:list:key");
         when(orderCachePort.getOrderList(any())).thenReturn(Optional.empty());
     }
@@ -135,7 +142,7 @@ class OrderQueryHandlerTest {
             assertThat(result.getId()).isEqualTo("1");
             assertThat(result.getOrderNo()).isEqualTo("ORD001");
             assertThat(result.getTotalAmount()).isEqualByComparingTo(new BigDecimal("99.99"));
-            verify(readModelAssembler).toOrderVO(eq(testOrderReadModel), anyMap(), eq(false));
+            verify(readModelAssembler).toOrderVO(eq(testOrderReadModel), anyMap(), anyMap(), eq(false));
         }
 
         @Test
@@ -147,7 +154,7 @@ class OrderQueryHandlerTest {
             OrderVO result = handler.getOrderDetailForOwner(SELLER_ID, "1");
 
             assertThat(result).isNotNull();
-            verify(readModelAssembler).toOrderVO(eq(testOrderReadModel), anyMap(), eq(false));
+            verify(readModelAssembler).toOrderVO(eq(testOrderReadModel), anyMap(), anyMap(), eq(false));
         }
     }
 

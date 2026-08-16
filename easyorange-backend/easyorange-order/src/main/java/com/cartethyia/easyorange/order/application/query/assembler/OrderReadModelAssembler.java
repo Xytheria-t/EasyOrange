@@ -13,14 +13,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class OrderReadModelAssembler {
 
-    public List<OrderVO> toOrderVOs(List<OrderReadModel> orders, Map<String, ProductDetail> productMap) {
+    public List<OrderVO> toOrderVOs(
+            List<OrderReadModel> orders, Map<String, ProductDetail> productMap, Map<String, String> usernames) {
         if (orders == null || orders.isEmpty()) {
             return List.of();
         }
-        return orders.stream().map(o -> toOrderVO(o, productMap, true)).toList();
+        return orders.stream().map(o -> toOrderVO(o, productMap, usernames, true)).toList();
     }
 
-    public OrderVO toOrderVO(OrderReadModel order, Map<String, ProductDetail> productMap, boolean maskSensitive) {
+    public OrderVO toOrderVO(
+            OrderReadModel order,
+            Map<String, ProductDetail> productMap,
+            Map<String, String> usernames,
+            boolean maskSensitive) {
         List<OrderVO.OrderItemVO> itemVOs = order.items().stream()
                 .map(item -> {
                     ProductDetail product = productMap.get(item.productId());
@@ -46,7 +51,9 @@ public class OrderReadModelAssembler {
                 .id(order.id())
                 .orderNo(order.orderNo())
                 .buyerId(order.buyerId())
+                .buyerUsername(usernames.get(order.buyerId()))
                 .sellerId(order.sellerId())
+                .sellerUsername(usernames.get(order.sellerId()))
                 .items(itemVOs)
                 .totalAmount(order.totalAmount())
                 .singleItem(itemVOs.size() == 1 && itemVOs.getFirst().getQuantity() == 1)

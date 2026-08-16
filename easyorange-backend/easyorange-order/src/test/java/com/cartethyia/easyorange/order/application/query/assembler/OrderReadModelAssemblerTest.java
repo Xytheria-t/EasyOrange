@@ -73,6 +73,10 @@ class OrderReadModelAssemblerTest {
         return new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, PRODUCT_IMAGES, null, null);
     }
 
+    private static Map<String, String> usernames() {
+        return Map.of(BUYER_ID, "认领方小明", SELLER_ID, "资产方张三");
+    }
+
     @Nested
     @DisplayName("toOrderVO")
     class ToOrderVOTests {
@@ -84,12 +88,14 @@ class OrderReadModelAssemblerTest {
             ProductDetail product = createProductDetail();
             Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, product);
 
-            OrderVO vo = assembler.toOrderVO(order, productMap, true);
+            OrderVO vo = assembler.toOrderVO(order, productMap, usernames(), true);
 
             assertThat(vo.getId()).isEqualTo(ORDER_ID);
             assertThat(vo.getOrderNo()).isEqualTo(ORDER_NO);
             assertThat(vo.getBuyerId()).isEqualTo(BUYER_ID);
+            assertThat(vo.getBuyerUsername()).isEqualTo("认领方小明");
             assertThat(vo.getSellerId()).isEqualTo(SELLER_ID);
+            assertThat(vo.getSellerUsername()).isEqualTo("资产方张三");
             assertThat(vo.getTotalAmount()).isEqualByComparingTo(AMOUNT);
             assertThat(vo.getSingleItem()).isTrue();
             assertThat(vo.getStatus()).isEqualTo(STATUS);
@@ -118,7 +124,7 @@ class OrderReadModelAssemblerTest {
             OrderReadModel order = createOrder();
             Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, createProductDetail());
 
-            OrderVO vo = assembler.toOrderVO(order, productMap, false);
+            OrderVO vo = assembler.toOrderVO(order, productMap, usernames(), false);
 
             assertThat(vo.getAddress()).isEqualTo(ADDRESS);
             assertThat(vo.getPhone()).contains("****");
@@ -131,7 +137,7 @@ class OrderReadModelAssemblerTest {
         void toOrderVO_withMissingProduct_shouldMapWithoutProductInfo() {
             OrderReadModel order = createOrder();
 
-            OrderVO vo = assembler.toOrderVO(order, Map.of(), true);
+            OrderVO vo = assembler.toOrderVO(order, Map.of(), usernames(), true);
 
             assertThat(vo.getId()).isEqualTo(ORDER_ID);
             assertThat(vo.getItems()).hasSize(1);
@@ -147,7 +153,7 @@ class OrderReadModelAssemblerTest {
                     new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, List.of(), null, null);
             Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, product);
 
-            OrderVO vo = assembler.toOrderVO(order, productMap, true);
+            OrderVO vo = assembler.toOrderVO(order, productMap, usernames(), true);
 
             assertThat(vo.getItems()).hasSize(1);
             assertThat(vo.getItems().get(0).getProductName()).isEqualTo(PRODUCT_TITLE);
@@ -177,7 +183,7 @@ class OrderReadModelAssemblerTest {
                     CREATE_TIME,
                     UPDATE_TIME);
 
-            OrderVO vo = assembler.toOrderVO(order, Map.of(), true);
+            OrderVO vo = assembler.toOrderVO(order, Map.of(), usernames(), true);
 
             assertThat(vo.getAddress()).isNull();
             assertThat(vo.getPhone()).isNull();
@@ -221,7 +227,7 @@ class OrderReadModelAssemblerTest {
                     new ProductDetail("201", "商品2", new BigDecimal("49.99"), "1", List.of("img2.jpg"), null, null);
             Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, product1, "201", product2);
 
-            List<OrderVO> vos = assembler.toOrderVOs(List.of(order1, order2), productMap);
+            List<OrderVO> vos = assembler.toOrderVOs(List.of(order1, order2), productMap, usernames());
 
             assertThat(vos).hasSize(2);
             assertThat(vos.get(0).getId()).isEqualTo(ORDER_ID);
@@ -232,13 +238,13 @@ class OrderReadModelAssemblerTest {
         @Test
         @DisplayName("空列表应返回空列表")
         void toOrderVOs_withEmptyList_shouldReturnEmptyList() {
-            assertThat(assembler.toOrderVOs(List.of(), Map.of())).isEmpty();
+            assertThat(assembler.toOrderVOs(List.of(), Map.of(), usernames())).isEmpty();
         }
 
         @Test
         @DisplayName("null 输入应返回空列表")
         void toOrderVOs_withNullList_shouldReturnEmptyList() {
-            assertThat(assembler.toOrderVOs(null, Map.of())).isEmpty();
+            assertThat(assembler.toOrderVOs(null, Map.of(), usernames())).isEmpty();
         }
     }
 

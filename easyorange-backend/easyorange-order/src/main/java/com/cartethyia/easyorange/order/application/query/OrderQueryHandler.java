@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.order.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ public class OrderQueryHandler {
     private final ProductQueryPort productQueryPort;
     private final OrderCachePort<OrderVO> orderCachePort;
     private final OrderReadModelAssembler readModelAssembler;
+    private final UserInfoPort userInfoPort;
 
     public OrderVO getOrderDetailForOwner(String userId, String orderId) {
         OrderReadModel order = orderReadRepository
@@ -43,7 +45,8 @@ public class OrderQueryHandler {
         }
 
         Map<String, ProductDetail> productMap = loadProductMap(order);
-        return readModelAssembler.toOrderVO(order, productMap, false);
+        Map<String, String> usernames = userInfoPort.findUsernames(Set.of(order.buyerId(), order.sellerId()));
+        return readModelAssembler.toOrderVO(order, productMap, usernames, false);
     }
 
     /**
@@ -103,9 +106,14 @@ public class OrderQueryHandler {
                 .map(OrderItemReadModel::productId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+        Set<String> userIds = orders.stream()
+                .flatMap(o -> java.util.stream.Stream.of(o.buyerId(), o.sellerId()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
         Map<String, ProductDetail> productMap = loadProducts(productIds);
-        return readModelAssembler.toOrderVOs(orders, productMap);
+        Map<String, String> usernames = userInfoPort.findUsernames(userIds);
+        return readModelAssembler.toOrderVOs(orders, productMap, usernames);
     }
 
     private Map<String, ProductDetail> loadProducts(Set<String> productIds) {

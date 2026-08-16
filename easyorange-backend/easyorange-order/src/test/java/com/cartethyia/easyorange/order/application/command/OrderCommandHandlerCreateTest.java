@@ -14,7 +14,7 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
 import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
-import com.cartethyia.easyorange.order.adapter.outbound.cache.OrderCacheEvictor;
+import com.cartethyia.easyorange.order.application.service.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
