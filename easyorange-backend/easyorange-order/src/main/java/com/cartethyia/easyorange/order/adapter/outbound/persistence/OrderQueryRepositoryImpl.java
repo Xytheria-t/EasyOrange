@@ -12,7 +12,9 @@ import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
@@ -59,7 +61,7 @@ public class OrderQueryRepositoryImpl extends BaseRepository<OrderMapper, OrderD
         Page<OrderDO> orderPage = wrapper.page(page);
 
         return PageResult.of(
-                orderPage.getRecords().stream().map(dataMapper::toReadModel).toList(),
+                toReadModelsWithItems(orderPage.getRecords()),
                 orderPage.getTotal(),
                 (int) orderPage.getCurrent(),
                 (int) orderPage.getSize());
@@ -84,6 +86,25 @@ public class OrderQueryRepositoryImpl extends BaseRepository<OrderMapper, OrderD
                 .selectList(new LambdaQueryWrapper<OrderItemDO>().eq(OrderItemDO::getOrderId, orderId))
                 .stream()
                 .map(dataMapper::toItemReadModel)
+                .toList();
+    }
+
+    /**
+     * 页内订单一次 IN 查询批量加载行项 — 列表读模型缺行项会导致前端商品名/图恒空。
+     */
+    private List<OrderReadModel> toReadModelsWithItems(List<OrderDO> orderDOs) {
+        if (orderDOs.isEmpty()) {
+            return List.of();
+        }
+        List<String> orderIds = orderDOs.stream().map(OrderDO::getId).toList();
+        Map<String, List<OrderItemReadModel>> itemsByOrderId = orderItemMapper
+                .selectList(new LambdaQueryWrapper<OrderItemDO>().in(OrderItemDO::getOrderId, orderIds))
+                .stream()
+                .collect(Collectors.groupingBy(
+                        OrderItemDO::getOrderId, Collectors.mapping(dataMapper::toItemReadModel, Collectors.toList())));
+        return orderDOs.stream()
+                .map(orderDO -> dataMapper.toReadModel(
+                        orderDO, itemsByOrderId.getOrDefault(orderDO.getId(), List.of())))
                 .toList();
     }
 }
