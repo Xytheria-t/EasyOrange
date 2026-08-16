@@ -5,7 +5,9 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
+import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
+import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
+import com.cartethyia.easyorange.order.adapter.outbound.config.OrderAutoConfirmProperties;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
@@ -39,7 +41,10 @@ class OrderAutoConfirmTaskTest {
     private DomainEventPublisher domainEventPublisher;
 
     @Mock
-    private OrderTimeoutProperties properties;
+    private OrderAutoConfirmProperties properties;
+
+    @Mock
+    private DistributedLockPort lockPort;
 
     @Mock
     private OrderCachePort orderCachePort;
@@ -63,6 +68,10 @@ class OrderAutoConfirmTaskTest {
         // 事务模板直接执行回调（事务行为由真实事务路径的集成测试覆盖）
         when(transactionTemplate.execute(any(TransactionCallback.class)))
                 .thenAnswer(inv -> ((TransactionCallback<?>) inv.getArgument(0)).doInTransaction(null));
+        // 默认锁端口正常：直接执行锁内操作
+        when(lockPort.executeWithLocks(anyList(), anyLong(), any()))
+                .thenAnswer(inv -> ((DistributedLockPort.LockOperation<?>) inv.getArgument(2)).execute());
+        when(properties.isEnabled()).thenReturn(true);
     }
 
     @Nested
@@ -72,7 +81,6 @@ class OrderAutoConfirmTaskTest {
         @Test
         @DisplayName("自动确认所有已发货订单")
         void autoConfirmReceipt_shouldConfirmAll() {
-            when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findShippedOrdersBefore(any(LocalDateTime.class)))
                     .thenReturn(List.of(shippedOrder1, shippedOrder2));
 
@@ -81,12 +89,12 @@ class OrderAutoConfirmTaskTest {
             verify(orderRepository, times(2)).update(any(Order.class));
             verify(domainEventPublisher, times(2)).publish(any(OrderCompletedEvent.class));
             verify(orderCachePort, times(2)).evictOrderCache(anyString(), anyString());
+            verify(lockPort, times(2)).executeWithLocks(anyList(), anyLong(), any());
         }
 
         @Test
         @DisplayName("没有已发货订单时不执行任何操作")
         void autoConfirmReceipt_withNoShippedOrders_shouldDoNothing() {
-            when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findShippedOrdersBefore(any(LocalDateTime.class)))
                     .thenReturn(List.of());
 
@@ -100,7 +108,6 @@ class OrderAutoConfirmTaskTest {
         @Test
         @DisplayName("处理异常时优雅跳过，不影响其他订单")
         void autoConfirmReceipt_withException_shouldHandleGracefully() {
-            when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findShippedOrdersBefore(any(LocalDateTime.class)))
                     .thenReturn(List.of(shippedOrder1, shippedOrder2));
 
@@ -116,6 +123,22 @@ class OrderAutoConfirmTaskTest {
             // Only the second succeeded past update
             verify(domainEventPublisher, times(1)).publish(any(OrderCompletedEvent.class));
             verify(orderCachePort, times(1)).evictOrderCache(anyString(), anyString());
+        }
+
+        @Test
+        @DisplayName("获取分布式锁失败时跳过该订单，不阻塞其他订单")
+        void autoConfirmReceipt_lockFailed_shouldSkipOrder() {
+            when(orderRepository.findShippedOrdersBefore(any(LocalDateTime.class)))
+                    .thenReturn(List.of(shippedOrder1, shippedOrder2));
+            doThrow(new LockAcquisitionException("busy"))
+                    .doAnswer(inv -> ((DistributedLockPort.LockOperation<?>) inv.getArgument(2)).execute())
+                    .when(lockPort)
+                    .executeWithLocks(anyList(), anyLong(), any());
+
+            orderAutoConfirmTask.autoConfirmReceipt();
+
+            verify(orderRepository, times(1)).update(any(Order.class));
+            verify(domainEventPublisher, times(1)).publish(any(OrderCompletedEvent.class));
         }
 
         @Test
