@@ -1,8 +1,6 @@
 package com.cartethyia.easyorange.framework.messaging.config;
 
 import com.cartethyia.easyorange.framework.event.metadata.EventMetadataMessagePostProcessor;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
@@ -12,6 +10,9 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @AutoConfiguration
@@ -146,7 +147,7 @@ public class RabbitMQConfig {
                     returned.getReplyCode(),
                     returned.getReplyText()));
             // publisher confirm 失败告警（correlated 模式，由 spring.rabbitmq.publisher-confirm-type 开启）
-            template.setConfirmCallback((correlationData, ack, cause) -> {
+            template.setConfirmCallback((_, ack, cause) -> {
                 if (!ack) {
                     log.error("消息确认失败（nack）: cause={}", cause);
                 }
