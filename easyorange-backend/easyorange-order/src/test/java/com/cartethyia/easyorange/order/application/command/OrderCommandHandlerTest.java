@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrderCommandHandler 单元测试")
@@ -41,6 +42,9 @@ class OrderCommandHandlerTest {
 
     @Mock
     private OrderCachePort orderCachePort;
+
+    @Mock
+    private TransactionTemplate transactionTemplate;
 
     @InjectMocks
     private OrderCommandHandler commandHandler;

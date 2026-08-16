@@ -31,14 +31,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 /**
  * 订单命令处理器 — CQRS Write 侧唯一应用服务，收口全部订单命令（创建/支付/取消/发货/确认收货/退款）。
  * <p>
  * 下单链路：分布式锁排队串行 → 准备商品数据 → 创建订单 → 同步扣减库存 → 创建支付，
- * 全部步骤运行在同一 {@code @Transactional} 事务内，任一步失败由数据库整体回滚兜底
- * （订单 / 库存 / 支付 / Outbox 事件原子提交）。
+ * 全部步骤运行在同一本地事务内（事务边界由 {@link TransactionTemplate} 显式控制，锁等待在事务外），
+ * 任一步失败由数据库整体回滚兜底（订单 / 库存 / 支付 / Outbox 事件原子提交）。
  * <p>
  * 一致性语义：本地单事务保证原子性；并发下单由 {@link DistributedLockPort} 按 productId 排队串行，
  * 库存扣减由乐观锁版本检查最终兜底防超卖；事件副作用经 Outbox 与应用事务同原子持久化。
@@ -62,20 +63,24 @@ public class OrderCommandHandler {
     private final OrderPreparation preparationService;
     private final ProductInventoryPort productInventoryPort;
     private final IdGenerator idGenerator;
+    private final TransactionTemplate transactionTemplate;
 
     // ==================== 订单创建 ====================
 
     /**
      * 执行订单创建 — 分布式锁在事务外获取、提交后释放，创建流程在事务内执行。
      * <p>
+     * 事务边界由 {@link TransactionTemplate} 显式控制：锁的 tryLock 等待（最长 10s）发生在事务开启之前，
+     * 不占用数据库连接；锁内仅执行 {@link #createOrderFlow} 流程，事务提交后由锁适配器释放锁。
      * 锁基础设施的 {@link LockAcquisitionException} 在用例边界映射为 {@link OrderCreationException}，
      * 保留订单域的错误码（B0002→400）与提示文案。
      */
-    @Transactional(rollbackFor = Exception.class)
     public CreateOrderResult handle(String userId, CreateOrderCommand command) {
         try {
             return lockPort.executeWithLocks(
-                    buildLockKeys(command), LOCK_TRY_TIMEOUT_SECONDS, () -> createOrderFlow(userId, command));
+                    buildLockKeys(command),
+                    LOCK_TRY_TIMEOUT_SECONDS,
+                    () -> transactionTemplate.execute(status -> createOrderFlow(userId, command)));
         } catch (LockAcquisitionException e) {
             throw new OrderCreationException(LOCK_BUSY_MESSAGE);
         }
@@ -121,7 +126,8 @@ public class OrderCommandHandler {
 
         // 创建支付（同一事务，失败时随事务整体回滚）
         createPayment(result.event(), command);
-        orderCachePort.evictSellerOrders(result.aggregate().sellerId().value());
+        // 卖家订单列表缓存提交后再失效，避免提交前失效被并发读以旧数据重新填充
+        evictSellerOrdersAfterCommit(result.aggregate().sellerId().value());
 
         return new CreateOrderResult(
                 result.aggregate().id().value(), result.aggregate().orderNo().value());
@@ -204,15 +210,23 @@ public class OrderCommandHandler {
     private void evictCacheAfterCommit(Order oldAggregate) {
         var buyerId = oldAggregate.buyerId().value();
         var sellerId = oldAggregate.sellerId().value();
+        evictAfterCommit(() -> orderCachePort.evictOrderCache(buyerId, sellerId));
+    }
+
+    private void evictSellerOrdersAfterCommit(String sellerId) {
+        evictAfterCommit(() -> orderCachePort.evictSellerOrders(sellerId));
+    }
+
+    private void evictAfterCommit(Runnable evict) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    orderCachePort.evictOrderCache(buyerId, sellerId);
+                    evict.run();
                 }
             });
         } else {
-            orderCachePort.evictOrderCache(buyerId, sellerId);
+            evict.run();
         }
     }
 

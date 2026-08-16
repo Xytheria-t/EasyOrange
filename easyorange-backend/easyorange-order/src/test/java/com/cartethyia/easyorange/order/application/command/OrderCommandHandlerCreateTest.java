@@ -36,6 +36,31 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
+
+/**
+ * Spring 7 已移除 ResourcelessTransactionManager；此最小实现仅维护事务状态与同步回调，
+ * 让 TransactionTemplate 在单测中按真实路径执行（提交时触发 afterCommit 等）。
+ */
+final class NoOpTransactionManager extends AbstractPlatformTransactionManager {
+
+    @Override
+    protected Object doGetTransaction() {
+        return new Object();
+    }
+
+    @Override
+    protected void doBegin(Object transaction, TransactionDefinition definition) {}
+
+    @Override
+    protected void doCommit(DefaultTransactionStatus status) {}
+
+    @Override
+    protected void doRollback(DefaultTransactionStatus status) {}
+}
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -82,7 +107,8 @@ class OrderCommandHandlerCreateTest {
                 paymentGatewayPort,
                 preparationService,
                 productInventoryPort,
-                idGenerator);
+                idGenerator,
+                new TransactionTemplate(new NoOpTransactionManager()));
 
         // 默认锁端口正常：直接执行锁内操作（真实行为由 DistributedLockAdapterTest 覆盖）
         when(lockPort.executeWithLocks(anyList(), anyLong(), any()))
