@@ -42,9 +42,11 @@ monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模
 
 - **小步提交**：一个逻辑单元（功能/修复/重构/文档）一个提交，验证通过即提交；禁止攒「收口」大提交、禁止 `git add -A` 批量盲提
 - **消息格式**：`<type>[(<scope>)]: <一句中文描述>`；type 用 `feat|fix|refactor|docs|test|chore|perf|ci|style|build|revert`（日常以前 6 个为主）；一行说清改了什么/为什么，禁止 `+` 拼接多主题；一般无 body
-- **提交前检查**：`git status` + `git diff` 审阅；按文件分组 `git add <路径>`；禁止把 AI 产物/测试残留/临时文件混入提交
+- **消息与内容对应**：仅含文档文件（`doc/`、`*.md`）的提交 type 必须为 `docs`（commit-msg 钩子机械校验，避免文档改动误标代码 type 误导 bisect/changelog）；代码为主体的提交不要标 `docs`
+- **提交前检查**：`git status` + `git diff` 审阅；按文件分组 `git add <路径>`；批量连发多个提交时逐一核对每条消息与 staged 内容对应；禁止把 AI 产物/测试残留/临时文件混入提交
+- **格式改动不独立成提交**：import 顺序、占位符改名等纯格式调整揉进所属逻辑提交；`style` type 仅用于修复 spotless/CI 格式校验失败的提交
 - **历史纪律**：不重写已推送历史；确需整理先 `git bundle` 备份并校验 `HEAD^{tree}` 一致；tag 只在真实发布时打
-- **钩子**：仓库提供 `.githooks/`（commit-msg 格式校验 / pre-commit 秒级快检 / pre-push 按变更模块跑测试），启用 `git config core.hooksPath .githooks`，紧急时 `SKIP=git-hooks` 跳过
+- **钩子**：仓库提供 `.githooks/`（commit-msg 格式 + 消息-内容一致性校验 / pre-commit 秒级快检 / pre-push 按变更模块跑测试），启用 `git config core.hooksPath .githooks`，紧急时 `SKIP=git-hooks` 跳过
 
 ## 参考索引（按需读取，不常驻上下文）
 

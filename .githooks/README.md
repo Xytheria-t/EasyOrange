@@ -12,7 +12,7 @@ git config core.hooksPath .githooks
 |------|------|------|
 | `pre-commit` | staged 内容快速检查（密钥 + 空白 + 冲突标记 + 大文件 + 前端 lint） | <1s~几秒 |
 | `pre-push` | 重门禁（后端 `mvn test` + 前端 `npm test`，按推送变更分发） | 数秒~数分钟 |
-| `commit-msg` | Conventional Commits 格式校验（标题 + breaking change） | <100ms |
+| `commit-msg` | Conventional Commits 格式校验（标题 + breaking change）+ 消息-内容一致性（纯文档提交必须标 `docs`） | <100ms |
 | `_lib.sh` | 共享工具（颜色、日志、SKIP、staged 文件、密钥扫描、快检函数） | — |
 
 **职责分层**：`pre-commit` 只放秒级快检，构建/测试的重活放 `pre-push`，避免每次提交付全量编译成本。
@@ -65,6 +65,7 @@ SKIP=1        git commit -m "..."   # 任何非空值都视为跳过
 - **scope**：可选，小写字母/数字 + `-` / `_`
 - **breaking change**：`feat!:` / `feat(scope)!:` 或 body 写 `BREAKING CHANGE: ...`
 - **长度**：硬上限 100 字符（>72 仅 warn）
+- **消息与内容一致**：仅含文档文件（`doc/` 或 `*.md`）的提交，type 必须为 `docs`，否则拒绝（文档改动误标代码 type 会误导 bisect 与 changelog）
 - **例外**：`Merge*` / `Revert*` / `fixup!` / `squash!` / `amend!` 直接放行
 
 ## 密钥扫描
