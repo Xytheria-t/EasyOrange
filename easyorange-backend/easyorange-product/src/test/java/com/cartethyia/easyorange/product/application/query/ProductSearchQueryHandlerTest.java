@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
+import com.cartethyia.easyorange.product.application.port.query.SearchResult;
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
@@ -28,6 +29,9 @@ class ProductSearchQueryHandlerTest {
 
     @Mock
     private ProductQueryRepository productQueryRepository;
+
+    @Mock
+    private ProductSearchQueryPort searchQueryPort;
 
     private ProductSearchQueryHandler searchQueryHandler;
     private ProductReadModel testProduct;
@@ -101,6 +105,40 @@ class ProductSearchQueryHandlerTest {
         searchQueryHandler.search(criteria, false);
 
         verify(productQueryRepository).searchProducts(any());
+    }
+
+    @Test
+    @DisplayName("ES 检索路径未显式指定状态时默认只搜上架商品")
+    void search_esPort_withoutStatus_shouldDefaultToOnline() {
+        var handler = new ProductSearchQueryHandler(
+                productQueryRepository, provider(searchQueryPort), provider((AiSearchEnhancerPort) null));
+        var criteria = new ProductSearchCriteria("手机", null, null, null, null, null, null, null, 1, 20);
+        when(searchQueryPort.search(any())).thenAnswer(inv -> {
+            var query = inv.getArgument(0, ProductSearchQueryPort.ProductSearchQuery.class);
+            assertThat(query.status()).isEqualTo("ONLINE");
+            return new SearchResult(List.of(testProduct), 1L, 1, 20, List.of(), List.of(), List.of());
+        });
+
+        var result = handler.search(criteria, false);
+
+        assertThat(result.page().records()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("ES 检索路径显式指定状态时按指定状态过滤")
+    void search_esPort_withStatus_shouldPassThrough() {
+        var handler = new ProductSearchQueryHandler(
+                productQueryRepository, provider(searchQueryPort), provider((AiSearchEnhancerPort) null));
+        var criteria = new ProductSearchCriteria("手机", null, "OFFLINE", null, null, null, null, null, 1, 20);
+        when(searchQueryPort.search(any())).thenAnswer(inv -> {
+            var query = inv.getArgument(0, ProductSearchQueryPort.ProductSearchQuery.class);
+            assertThat(query.status()).isEqualTo("OFFLINE");
+            return new SearchResult(List.of(), 0L, 1, 20, List.of(), List.of(), List.of());
+        });
+
+        handler.search(criteria, false);
+
+        verify(searchQueryPort).search(any());
     }
 
     @Test

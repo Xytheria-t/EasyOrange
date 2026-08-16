@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResu
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -35,10 +36,12 @@ public class ProductSearchQueryHandler {
         // ES 检索 adapter 未配置（elasticsearch.enabled=false）时回退 DB 检索
         var esPort = searchQueryPort.getIfAvailable();
         if (esPort != null) {
+            // 与 DB 回退路径一致：公开搜索未显式指定状态时默认只展示上架商品
+            var effectiveStatus = criteria.status() != null ? criteria.status() : ProductStatus.ONLINE.getCode();
             var query = new ProductSearchQueryPort.ProductSearchQuery(
                     criteria.keyword(),
                     criteria.categoryId(),
-                    criteria.status(),
+                    effectiveStatus,
                     criteria.minPrice(),
                     criteria.maxPrice(),
                     criteria.conditionLevel(),
