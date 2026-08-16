@@ -49,7 +49,7 @@
 | 订单详情 | `GET /api/orders/owned/{id}` | Access Token（双方） |
 | 我的订单（买入） | `GET /api/orders/my` | Access Token |
 | 卖出订单 | `GET /api/orders/sold` | Access Token |
-| 支付订单 | `PUT /api/orders/{id}/pay` | Access Token（认领方） |
+| 发起支付 | `PUT /api/orders/{id}/pay` | Access Token（认领方） |
 | 取消订单 | `PUT /api/orders/{id}/cancel` | Access Token（认领方） |
 | 发货 | `PUT /api/orders/{id}/ship` | Access Token（资产方） |
 | 确认收货 | `PUT /api/orders/{id}/receive` | Access Token（认领方） |

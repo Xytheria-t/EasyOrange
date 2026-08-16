@@ -59,7 +59,8 @@ order/
 │   ├── port/query/
 │   │   └── OrderQueryRepository.java        # 读仓储（countByStatus 入参为 OrderStatus 枚举）
 │   ├── event/                               # 事件订阅
-│   │   └── OrderLifecycleEventConsumer.java # RabbitMQ 订单生命周期消费者（取消/退款恢复库存, 完成标记售出）
+│   │   ├── OrderLifecycleEventConsumer.java # RabbitMQ 订单生命周期消费者（取消/退款恢复库存, 完成标记售出）
+│   │   └── PaymentSucceededEventConsumer.java # 支付成功事件桥接（payment.succeeded → 订单置 PAID）
 │   └── dto/
 │       └── OrderVO.java                      # 响应 VO
 ├── domain/
@@ -121,6 +122,8 @@ OrderCommandHandler.handle(CreateOrderCommand) ─ @Transactional(rollbackFor=Ex
 ```
 
 **库存恢复**：仅由 `OrderLifecycleEventConsumer` 消费订单取消/退款事件时调用 `ProductInventoryPort.restoreStock()` 恢复；完成事件触发 `markAsSold`。
+
+**支付桥接（订单 PAID 唯一来源）**：`PUT /api/orders/{id}/pay` 校验买家身份与 `canPay()` 后经 `PaymentGatewayPort.pay` 委托支付模块发起两阶段支付，**不再直接置 PAID**。支付成功由 payment 模块发布 `PaymentSucceededEvent`（routing key `payment.succeeded`，队列 `eo.order.payment`，事件含 orderId），`PaymentSucceededEventConsumer` 消费后调 `OrderCommandHandler.handlePaymentSucceeded` 经 `PAY` 守卫置 `PAID` 并发布 `OrderPaidEvent`。消费按 eventId 幂等（`EventConsumerHandler`）；订单已支付时跳过；订单已取消时触发自动退款（`refundPayment`，订单保持取消态不流转）；其余非法状态抛错经重试进 DLQ/terminal 人工介入。
 
 ## CQRS 架构
 

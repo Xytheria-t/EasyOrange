@@ -89,6 +89,9 @@ payment/
 
 领域事件通过 `DomainEventPublisher` 发布到 RabbitMQ Topic Exchange（`eo.domain.events`），由各模块 `@RabbitListener` 消费者异步处理。
 
+- `PaymentSucceededEvent`（routing key `payment.succeeded`）除支付模块自身指标消费（`PaymentMetricsConsumer`，`eo.payment.metrics`）外，被 order 模块 `PaymentSucceededEventConsumer`（队列 `eo.order.payment`）消费，用于「支付成功 → 订单置 PAID」桥接；事件携带 `orderId`。
+- `MockPaymentController`（`@Profile("dev")`）的成功路径（`/mock-payment/success`、`/mock-payment/process`）经 `PaymentCommandHandler` 走正规两阶段流程发布事件，与真实网关回调同路径。
+
 ## 幂等保护
 
 - `IdempotencyService` 对请求计算 SHA-256 哈希
