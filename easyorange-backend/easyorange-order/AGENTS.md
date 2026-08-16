@@ -30,12 +30,12 @@ order/
 │       │   ├── OrderMapper.java
 │       │   ├── OrderItemDO.java             # eo_order_item 实体
 │       │   ├── OrderItemMapper.java         # 行项 MyBatis Mapper
-│       │   ├── OrderDataMapper.java        # MapStruct: DO ↔ Domain
-│       │   ├── cache/                           # 缓存
-│       │   ├── RedisOrderCacheAdapter.java  # 实现 OrderCachePort
-│       │   └── OrderCacheConstant.java
+│       │   └── OrderDataMapper.java         # 手写 Component: DO ↔ Domain
+│       ├── cache/                           # 缓存
+│       │   └── RedisOrderCacheAdapter.java  # 实现 OrderCachePort
 │       └── config/
-│           └── OrderTimeoutProperties.java  # 超时配置
+│           ├── OrderTimeoutProperties.java  # 超时取消配置（order.timeout.*）
+│           └── OrderAutoConfirmProperties.java  # 自动确认配置（order.auto-confirm.*）
 ├── application/
 │   ├── command/                             # 命令（CQRS Write，全部命令由 Handler 收口）
 │   │   ├── OrderCommandHandler.java         # 订单命令唯一执行器（创建/支付/取消/发货/确认收货/退款）
@@ -46,6 +46,8 @@ order/
 │   │   ├── ShipOrderCommand.java
 │   │   ├── ConfirmReceiptCommand.java
 │   │   └── RefundOrderCommand.java
+│   ├── service/
+│   │   └── OrderCacheEvictor.java           # 事务提交后失效买卖家列表缓存（命令/任务共用）
 │   ├── query/                               # 查询 (CQRS Read)
 │   │   ├── OrderQueryHandler.java
 │   │   ├── OrderListQuery.java              # record 收敛查询参数（orderNo, status: OrderStatus, buyerId, sellerId, pageNum, pageSize）
@@ -95,12 +97,10 @@ order/
 │   │   ├── OrderAction.java                # 状态机唯一事实来源：动作（前置状态→目标状态+支付副作用）
 │   │   └── OrderResultCode.java
 │   └── exception/
-│       ├── OrderDomainException.java
-│       ├── OrderPermissionException.java
-│       └── OrderOperationException.java
+│       └── OrderDomainException.java
 ```
 
-> **跨模块适配器位置**：order 模块定义的 `ProductInventoryPort` / `ProductQueryPort` / `PaymentGatewayPort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/ProductInventoryAdapter`、`product/ProductQueryAdapter`、`payment/OrderPaymentGatewayAdapter`。`OrderCachePort` 的实现 `RedisOrderCacheAdapter` 位于 order 模块自身 `adapter/outbound/cache/`，因其仅操作订单域缓存。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
+> **跨模块适配器位置**：order 模块定义的 `ProductInventoryPort` / `ProductQueryPort` / `PaymentGatewayPort` / `UserInfoPort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/ProductInventoryAdapter`、`product/ProductQueryAdapter`、`payment/OrderPaymentGatewayAdapter`、`user/OrderUserInfoAdapter`。`OrderCachePort` 的实现 `RedisOrderCacheAdapter` 位于 order 模块自身 `adapter/outbound/cache/`，因其仅操作订单域缓存。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
 
 > **Money 值对象**：`Money` 不在 order 模块，位于 `easyorange-common`。order 模块通过 `Money` 使用金额，但不重复定义。
 > **ProductId 值对象**：`ProductId` 同样位于 `easyorange-common`（`common/domain/ProductId.java`，与 `Money` 同模式，带 `@JsonValue`/`@JsonCreator`），order 与 product 模块共享同一实现，不各自重复定义（2026-08-08 收敛）。
@@ -134,8 +134,8 @@ OrderCommandHandler.handle(CreateOrderCommand) ─ @Transactional(rollbackFor=Ex
 
 | Mapper | 方向 | 位置 | 说明 |
 |--------|------|------|------|
-| `OrderDataMapper` | DO ↔ Domain | `adapter/outbound/persistence/` | MapStruct 接口：OrderDO ↔ Order、OrderItemDO ↔ OrderItem |
-| `OrderReadModelAssembler` | ReadModel → VO | `application/query/assembler/` | OrderReadModel → OrderVO（含脱敏、商品信息填充） |
+| `OrderDataMapper` | DO ↔ Domain | `adapter/outbound/persistence/` | 手写 `@Component`：OrderDO ↔ Order、OrderItemDO ↔ OrderItem（含乐观锁 version 与 ProductSnapshot JSON 互转） |
+| `OrderReadModelAssembler` | ReadModel → VO | `application/query/assembler/` | OrderReadModel → OrderVO（含脱敏、商品/用户名填充） |
 
 `OrderDO` 是纯数据库实体，不含映射逻辑。所有持久化映射集中在 `OrderDataMapper`。
 
@@ -172,8 +172,10 @@ PENDING_PAYMENT ──PAY──→ PAID ──SHIP──→ SHIPPED ──CONFIR
 
 ## 定时任务
 
-- `OrderTimeoutTask`: 未支付订单超时自动取消
-- `OrderAutoConfirmTask`: 已发货订单超时自动确认收货
+- `OrderTimeoutTask`: 未支付订单超时自动取消（`order.timeout.*` 配置，每单分布式锁 + 本地事务 + Outbox 原子提交）
+- `OrderAutoConfirmTask`: 已发货订单超时自动确认收货（`order.auto-confirm.*` 独立配置，每单分布式锁，防止多实例重复确认）
+
+> **聚合根重建硬约束**：`OrderReconstructSpec.items` 允许为空，但**仅限纯查询路径**（列表/详情读模型）。任何会产生领域事件的写操作（命令、定时任务）必须加载行项重建，否则事件 `productIds` 为空导致库存恢复/售出标记静默失效。
 
 ## 常见开发任务
 
@@ -191,7 +193,7 @@ PENDING_PAYMENT ──PAY──→ PAID ──SHIP──→ SHIPPED ──CONFIR
 
 1. `OrderListQuery` record 添加字段
 2. 请求 DTO `adapter/inbound/web/dto/request/` 添加字段
-3. Controller 提取参数构造 `OrderListQuery` 传给 `OrderQueryHandler.listOrders()`
+3. Controller 提取参数构造 `OrderListQuery` 传给 `OrderQueryHandler.getMyOrders()/getSoldOrders()`
 4. `OrderQueryRepository` 修改查询
 5. `OrderReadModel` 添加字段
 6. `OrderReadModelAssembler` 更新

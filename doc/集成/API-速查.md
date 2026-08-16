@@ -46,7 +46,6 @@
 | 功能 | 方法+路径 | 鉴权 |
 |------|----------|------|
 | 创建订单 | `POST /api/orders` | Access Token |
-| 订单列表（通用） | `GET /api/orders` | Access Token |
 | 订单详情 | `GET /api/orders/owned/{id}` | Access Token（双方） |
 | 我的订单（买入） | `GET /api/orders/my` | Access Token |
 | 卖出订单 | `GET /api/orders/sold` | Access Token |

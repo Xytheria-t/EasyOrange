@@ -442,7 +442,7 @@ public class RegistrationService {
 | 全局技术常量 | `common/constant` | CommonConstant |
 | 框架层常量 | `framework/config/constant` | LoginCacheConstants |
 | 模块业务错误码 | `domain/constant/*ResultCode` | UserResultCode、ProductResultCode |
-| 技术常量（Redis Key 等） | `adapter/outbound/cache/` | OrderCacheConstant、ProductCacheConstant |
+| 技术常量（Redis Key 等） | `adapter/outbound/cache/` | ProductCacheConstant（order 的缓存 key 内聚在 RedisOrderCacheAdapter 内） |
 
 **包命名规范：**
 
