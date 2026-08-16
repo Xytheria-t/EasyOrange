@@ -13,6 +13,9 @@ import com.cartethyia.easyorange.order.domain.event.OrderEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
@@ -23,7 +26,7 @@ import org.springframework.stereotype.Component;
 /**
  * 订单通知消费者 — 将订单生命周期事件转为站内消息通知买家。
  * <p>
- * 监听 6 种订单事件，每个事件按状态映射为对应的系统消息标题/内容。
+ * 监听 6 种订单事件，按事件类型映射为对应的系统消息标题/内容（见 {@link NotificationTemplate}）。
  * 事件载荷自包含 buyerId（聚合根发布时携带），消费者无需回查订单。
  */
 @Slf4j
@@ -44,49 +47,59 @@ public class OrderNotificationEventConsumer {
     }
 
     @RabbitHandler
-    public void onOrderCreated(OrderCreatedEvent event, Message message) {
-        handler.handle(
-                event,
-                message,
-                () -> sendNotification(event.buyerId(), "订单已创建", "您的订单已创建，订单号: " + event.orderId(), event.orderId()));
+    public void onOrderEvent(OrderEvent event, Message message) {
+        handler.handle(event, message, () -> {
+            var template = NotificationTemplate.of(event.getClass());
+            var buyerId = event.buyerId();
+            if (buyerId == null || buyerId.isBlank()) {
+                // 滚动部署窗口兼容：旧版消息无 buyerId 字段，降级跳过并告警，不落脏数据
+                log.warn(
+                        "action=skip_notification reason=missing_buyer_id orderId={} title={}",
+                        event.orderId(),
+                        template.title());
+                return;
+            }
+            messageCommandHandler.handle(new SendSystemMessageCommand(
+                    buyerId, template.title(), template.content(event.orderId()), event.orderId()));
+        });
     }
 
-    @RabbitHandler
-    public void onOrderPaid(OrderPaidEvent event, Message message) {
-        handler.handle(event, message, () -> sendToBuyer(event, "订单已支付", "您的订单已支付成功，订单号: " + event.orderId()));
-    }
+    /** 订单事件类型 → 站内消息模板；内容为含订单号占位的格式串。 */
+    private enum NotificationTemplate {
+        CREATED(OrderCreatedEvent.class, "订单已创建", "您的订单已创建，订单号: %s"),
+        PAID(OrderPaidEvent.class, "订单已支付", "您的订单已支付成功，订单号: %s"),
+        SHIPPED(OrderShippedEvent.class, "订单已发货", "您的订单已发货，订单号: %s"),
+        COMPLETED(OrderCompletedEvent.class, "订单已完成", "您的订单已完成，订单号: %s"),
+        CANCELLED(OrderCancelledEvent.class, "订单已取消", "您的订单已取消，订单号: %s"),
+        REFUNDED(OrderRefundedEvent.class, "订单已退款", "您的订单已退款，订单号: %s");
 
-    @RabbitHandler
-    public void onOrderShipped(OrderShippedEvent event, Message message) {
-        handler.handle(event, message, () -> sendToBuyer(event, "订单已发货", "您的订单已发货，订单号: " + event.orderId()));
-    }
+        private static final Map<Class<?>, NotificationTemplate> BY_EVENT_TYPE =
+                Arrays.stream(values()).collect(Collectors.toUnmodifiableMap(t -> t.eventType, t -> t));
 
-    @RabbitHandler
-    public void onOrderCompleted(OrderCompletedEvent event, Message message) {
-        handler.handle(event, message, () -> sendToBuyer(event, "订单已完成", "您的订单已完成，订单号: " + event.orderId()));
-    }
+        private final Class<? extends OrderEvent> eventType;
+        private final String title;
+        private final String contentTemplate;
 
-    @RabbitHandler
-    public void onOrderCancelled(OrderCancelledEvent event, Message message) {
-        handler.handle(event, message, () -> sendToBuyer(event, "订单已取消", "您的订单已取消，订单号: " + event.orderId()));
-    }
-
-    @RabbitHandler
-    public void onOrderRefunded(OrderRefundedEvent event, Message message) {
-        handler.handle(event, message, () -> sendToBuyer(event, "订单已退款", "您的订单已退款，订单号: " + event.orderId()));
-    }
-
-    private void sendToBuyer(OrderEvent event, String title, String content) {
-        var buyerId = event.buyerId();
-        if (buyerId == null || buyerId.isBlank()) {
-            // 滚动部署窗口兼容：旧版消息无 buyerId 字段，降级跳过并告警，不落脏数据
-            log.warn("action=skip_notification reason=missing_buyer_id orderId={} title={}", event.orderId(), title);
-            return;
+        NotificationTemplate(Class<? extends OrderEvent> eventType, String title, String contentTemplate) {
+            this.eventType = eventType;
+            this.title = title;
+            this.contentTemplate = contentTemplate;
         }
-        sendNotification(buyerId, title, content, event.orderId());
-    }
 
-    private void sendNotification(String receiverId, String title, String content, String businessId) {
-        messageCommandHandler.handle(new SendSystemMessageCommand(receiverId, title, content, businessId));
+        static NotificationTemplate of(Class<?> eventType) {
+            var template = BY_EVENT_TYPE.get(eventType);
+            if (template == null) {
+                throw new IllegalArgumentException("unsupported order event type: " + eventType.getName());
+            }
+            return template;
+        }
+
+        String title() {
+            return title;
+        }
+
+        String content(String orderId) {
+            return contentTemplate.formatted(orderId);
+        }
     }
 }

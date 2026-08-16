@@ -97,7 +97,7 @@ class OrderNotificationEventConsumerTest {
                             PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
                     BigDecimal.valueOf(99.99));
 
-            consumer.onOrderCreated(event, buildMessage());
+            consumer.onOrderEvent(event, buildMessage());
 
             verifyNotificationSent("OrderCreated", "订单已创建", "您的订单已创建，订单号: " + ORDER_ID);
         }
@@ -107,7 +107,7 @@ class OrderNotificationEventConsumerTest {
         void onOrderPaid_shouldSendNotification() {
             mockClaimSuccess();
 
-            consumer.onOrderPaid(new OrderPaidEvent("evt-2", ORDER_ID, BUYER_ID, "1"), buildMessage());
+            consumer.onOrderEvent(new OrderPaidEvent("evt-2", ORDER_ID, BUYER_ID, "1"), buildMessage());
 
             verifyNotificationSent("OrderPaid", "订单已支付", "您的订单已支付成功，订单号: " + ORDER_ID);
         }
@@ -117,7 +117,7 @@ class OrderNotificationEventConsumerTest {
         void onOrderShipped_shouldSendNotification() {
             mockClaimSuccess();
 
-            consumer.onOrderShipped(new OrderShippedEvent("evt-3", ORDER_ID, BUYER_ID), buildMessage());
+            consumer.onOrderEvent(new OrderShippedEvent("evt-3", ORDER_ID, BUYER_ID), buildMessage());
 
             verifyNotificationSent("OrderShipped", "订单已发货", "您的订单已发货，订单号: " + ORDER_ID);
         }
@@ -127,7 +127,7 @@ class OrderNotificationEventConsumerTest {
         void onOrderCompleted_shouldSendNotification() {
             mockClaimSuccess();
 
-            consumer.onOrderCompleted(
+            consumer.onOrderEvent(
                     new OrderCompletedEvent("evt-4", ORDER_ID, BUYER_ID, SELLER_ID, List.of(PRODUCT_ID)),
                     buildMessage());
 
@@ -139,7 +139,7 @@ class OrderNotificationEventConsumerTest {
         void onOrderCancelled_shouldSendNotification() {
             mockClaimSuccess();
 
-            consumer.onOrderCancelled(
+            consumer.onOrderEvent(
                     new OrderCancelledEvent("evt-5", ORDER_ID, BUYER_ID, List.of(PRODUCT_ID), "取消原因"), buildMessage());
 
             verifyNotificationSent("OrderCancelled", "订单已取消", "您的订单已取消，订单号: " + ORDER_ID);
@@ -150,7 +150,7 @@ class OrderNotificationEventConsumerTest {
         void onOrderRefunded_shouldSendNotification() {
             mockClaimSuccess();
 
-            consumer.onOrderRefunded(
+            consumer.onOrderEvent(
                     new OrderRefundedEvent("evt-6", ORDER_ID, BUYER_ID, List.of(PRODUCT_ID), "退款原因"), buildMessage());
 
             verifyNotificationSent("OrderRefunded", "订单已退款", "您的订单已退款，订单号: " + ORDER_ID);
@@ -166,7 +166,26 @@ class OrderNotificationEventConsumerTest {
         void onEvent_withoutBuyerId_shouldSkip() {
             mockClaimSuccess();
 
-            consumer.onOrderPaid(new OrderPaidEvent("evt-8", ORDER_ID, null, "1"), buildMessage());
+            consumer.onOrderEvent(new OrderPaidEvent("evt-8", ORDER_ID, null, "1"), buildMessage());
+
+            verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
+        }
+
+        @Test
+        @DisplayName("旧版创建消息（无 buyerId）同样降级跳过，不落脏数据")
+        void onOrderCreated_withoutBuyerId_shouldSkip() {
+            mockClaimSuccess();
+
+            consumer.onOrderEvent(
+                    new OrderCreatedEvent(
+                            "evt-9",
+                            ORDER_ID,
+                            null,
+                            SELLER_ID,
+                            List.of(new OrderCreatedEvent.OrderItemPayload(
+                                    PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
+                            BigDecimal.valueOf(99.99)),
+                    buildMessage());
 
             verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
         }
@@ -181,7 +200,7 @@ class OrderNotificationEventConsumerTest {
         void onEvent_withDuplicateEvent_shouldSkip() {
             when(idempotencyChecker.tryMark(anyString(), anyString())).thenReturn(false);
 
-            consumer.onOrderPaid(new OrderPaidEvent("evt-7", ORDER_ID, BUYER_ID, "1"), buildMessage());
+            consumer.onOrderEvent(new OrderPaidEvent("evt-7", ORDER_ID, BUYER_ID, "1"), buildMessage());
 
             verify(idempotencyChecker).tryMark(anyString(), anyString());
             verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
