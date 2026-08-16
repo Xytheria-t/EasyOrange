@@ -63,7 +63,7 @@
 - 每个跨模块调用多一层「接口 + 适配器」样板代码（33 Port 对应 ~33 实现类）
 - Adapter 集中堆在 application 模块，该模块文件数偏多，导航成本上升
 - 查询链路多一跳方法调用 + 可能的 MapStruct 转换开销（可忽略，本地调用）
-- optional 标记依赖人肉维护，Maven 不校验（TD-011 技术债）
+- optional 标记依赖人肉维护，Maven 不校验（TD-011 技术债，2026-08-16 已由 CI 脚本闭环：除组合根 `easyorange-application` 外，跨领域模块依赖必须 `<optional>true</optional>`，违规即失败，见 [技术债务清单 TD-011](../技术债务清单.md)）
 
 ### 缓解措施
 
