@@ -4,10 +4,10 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
 import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
+import com.cartethyia.easyorange.order.adapter.outbound.cache.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
-import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,8 +15,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
@@ -28,7 +26,7 @@ public class OrderTimeoutTask {
     private final DomainEventPublisher domainEventPublisher;
     private final OrderTimeoutProperties properties;
     private final DistributedLockPort lockPort;
-    private final OrderCachePort<?> orderCachePort;
+    private final OrderCacheEvictor orderCacheEvictor;
     private final TransactionTemplate transactionTemplate;
 
     private static final String CANCEL_LOCK_PREFIX = "eo:order:lock:cancel:";
@@ -79,23 +77,8 @@ public class OrderTimeoutTask {
         domainEventPublisher.publish(result.event());
 
         // 缓存提交后再失效，避免提交前失效被并发读以旧数据重新填充
-        evictOrderCacheAfterCommit(aggregate);
+        orderCacheEvictor.evictOrderCacheAfterCommit(aggregate);
 
         return true;
-    }
-
-    private void evictOrderCacheAfterCommit(Order aggregate) {
-        var buyerId = aggregate.buyerId().value();
-        var sellerId = aggregate.sellerId().value();
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    orderCachePort.evictOrderCache(buyerId, sellerId);
-                }
-            });
-        } else {
-            orderCachePort.evictOrderCache(buyerId, sellerId);
-        }
     }
 }

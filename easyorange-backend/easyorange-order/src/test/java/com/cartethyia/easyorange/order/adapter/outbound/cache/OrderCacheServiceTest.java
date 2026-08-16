@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,7 +20,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.ValueOperations;
 
 @ExtendWith(MockitoExtension.class)
@@ -120,36 +121,39 @@ class OrderCacheServiceTest {
     void testEvictOrderCache() {
         String buyerId = "111222";
         String sellerId = "333444";
-        when(redisTemplate.keys(anyString())).thenReturn(Set.of());
+        Cursor<Object> cursor = emptyCursor();
+        when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(cursor);
 
         orderCachePort.evictOrderCache(buyerId, sellerId);
 
-        verify(redisTemplate).keys("eo:order:list:111222:*");
-        verify(redisTemplate).keys("eo:order:list:333444:*");
+        verify(redisTemplate).scan(argThat(opts -> "eo:order:list:111222:*".equals(opts.getPattern())));
+        verify(redisTemplate).scan(argThat(opts -> "eo:order:list:333444:*".equals(opts.getPattern())));
     }
 
     @Test
     @DisplayName("清除订单缓存时认领方 ID 为 null")
     void testEvictOrderCacheWithNullBuyerId() {
         String sellerId = "555666";
-        when(redisTemplate.keys(anyString())).thenReturn(Set.of());
+        Cursor<Object> cursor = emptyCursor();
+        when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(cursor);
 
         orderCachePort.evictOrderCache(null, sellerId);
 
-        verify(redisTemplate, never()).keys("eo:order:list:null:*");
-        verify(redisTemplate).keys("eo:order:list:555666:*");
+        verify(redisTemplate, never()).scan(argThat(opts -> "eo:order:list:null:*".equals(opts.getPattern())));
+        verify(redisTemplate).scan(argThat(opts -> "eo:order:list:555666:*".equals(opts.getPattern())));
     }
 
     @Test
     @DisplayName("清除订单缓存时资产方 ID 为 null")
     void testEvictOrderCacheWithNullSellerId() {
         String buyerId = "777888";
-        when(redisTemplate.keys(anyString())).thenReturn(Set.of());
+        Cursor<Object> cursor = emptyCursor();
+        when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(cursor);
 
         orderCachePort.evictOrderCache(buyerId, null);
 
-        verify(redisTemplate).keys("eo:order:list:777888:*");
-        verify(redisTemplate, never()).keys("eo:order:list:null:*");
+        verify(redisTemplate).scan(argThat(opts -> "eo:order:list:777888:*".equals(opts.getPattern())));
+        verify(redisTemplate, never()).scan(argThat(opts -> "eo:order:list:null:*".equals(opts.getPattern())));
     }
 
     @Test
@@ -157,6 +161,30 @@ class OrderCacheServiceTest {
     void testEvictOrderCacheWithNullIds() {
         orderCachePort.evictOrderCache(null, null);
 
-        verify(redisTemplate, never()).keys(anyString());
+        verify(redisTemplate, never()).scan(any(ScanOptions.class));
+    }
+
+    @Test
+    @DisplayName("SCAN 命中多个 key 时批量删除")
+    void testEvictOrderCache_scansAndDeletesKeys() {
+        String buyerId = "999111";
+        // CALLS_REAL_METHODS 让 Iterator.forEachRemaining 走真实遍历（默认 mock 会把 default 方法 mock 成 no-op）
+        Cursor<Object> cursor = mock(Cursor.class, CALLS_REAL_METHODS);
+        when(cursor.hasNext()).thenReturn(true, true, false);
+        when(cursor.next())
+                .thenReturn(
+                        "eo:order:list:999111:status:0:page:1:size:10",
+                        "eo:order:list:999111:status:1:page:2:size:20");
+        when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(cursor);
+
+        orderCachePort.evictOrderCache(buyerId, null);
+
+        verify(redisTemplate).delete(argThat(keys -> ((List<?>) keys).size() == 2));
+    }
+
+    private Cursor<Object> emptyCursor() {
+        Cursor<Object> cursor = mock(Cursor.class);
+        when(cursor.hasNext()).thenReturn(false);
+        return cursor;
     }
 }

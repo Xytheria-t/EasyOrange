@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.order.adapter.outbound.cache.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -16,7 +17,6 @@ import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
-import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
@@ -41,7 +41,7 @@ class OrderCommandHandlerTest {
     private DomainEventPublisher domainEventPublisher;
 
     @Mock
-    private OrderCachePort orderCachePort;
+    private OrderCacheEvictor orderCacheEvictor;
 
     @Mock
     private TransactionTemplate transactionTemplate;
@@ -70,7 +70,7 @@ class OrderCommandHandlerTest {
 
             verify(orderRepository).update(any(Order.class));
             verify(domainEventPublisher).publish(any(OrderPaidEvent.class));
-            verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
+            verify(orderCacheEvictor).evictOrderCacheAfterCommit(any(Order.class));
         }
 
         @Test
@@ -114,7 +114,7 @@ class OrderCommandHandlerTest {
 
             verify(orderRepository).update(any(Order.class));
             verify(domainEventPublisher).publish(any(OrderCancelledEvent.class));
-            verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
+            verify(orderCacheEvictor).evictOrderCacheAfterCommit(any(Order.class));
         }
     }
 
@@ -134,7 +134,7 @@ class OrderCommandHandlerTest {
 
             verify(orderRepository).update(any(Order.class));
             verify(domainEventPublisher).publish(any(OrderShippedEvent.class));
-            verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
+            verify(orderCacheEvictor).evictOrderCacheAfterCommit(any(Order.class));
         }
 
         @Test
@@ -168,7 +168,7 @@ class OrderCommandHandlerTest {
 
             verify(orderRepository).update(any(Order.class));
             verify(domainEventPublisher).publish(any(OrderCompletedEvent.class));
-            verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
+            verify(orderCacheEvictor).evictOrderCacheAfterCommit(any(Order.class));
         }
     }
 
@@ -188,7 +188,7 @@ class OrderCommandHandlerTest {
 
             verify(orderRepository).update(any(Order.class));
             verify(domainEventPublisher).publish(any(OrderRefundedEvent.class));
-            verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
+            verify(orderCacheEvictor).evictOrderCacheAfterCommit(any(Order.class));
         }
 
         @Test

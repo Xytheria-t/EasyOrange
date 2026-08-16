@@ -3,12 +3,16 @@ package com.cartethyia.easyorange.order.adapter.outbound.cache;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -65,9 +69,11 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     }
 
     private void evictByPattern(String pattern) {
-        try {
-            var keys = redisTemplate.keys(pattern);
-            if (keys != null && !keys.isEmpty()) {
+        // SCAN 游标遍历替代 KEYS 全键扫描，避免阻塞生产 Redis；游标式遍历期间新增的 key 留给 TTL 兜底
+        try (Cursor<Object> cursor = redisTemplate.scan(ScanOptions.scanOptions().match(pattern).count(100).build())) {
+            List<Object> keys = new ArrayList<>();
+            cursor.forEachRemaining(keys::add);
+            if (!keys.isEmpty()) {
                 redisTemplate.delete(keys);
             }
         } catch (Exception e) {

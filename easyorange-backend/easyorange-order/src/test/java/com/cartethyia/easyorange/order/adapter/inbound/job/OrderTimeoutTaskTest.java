@@ -11,7 +11,7 @@ import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutPrope
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
-import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
+import com.cartethyia.easyorange.order.adapter.outbound.cache.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import java.util.List;
@@ -46,7 +46,7 @@ class OrderTimeoutTaskTest {
     private DistributedLockPort lockPort;
 
     @Mock
-    private OrderCachePort orderCachePort;
+    private OrderCacheEvictor orderCacheEvictor;
 
     @Mock
     private TransactionTemplate transactionTemplate;
@@ -86,7 +86,7 @@ class OrderTimeoutTaskTest {
 
             verify(orderRepository, times(2)).update(any(Order.class));
             verify(domainEventPublisher, times(2)).publish(any(OrderCancelledEvent.class));
-            verify(orderCachePort, times(2)).evictOrderCache(anyString(), anyString());
+            verify(orderCacheEvictor, times(2)).evictOrderCacheAfterCommit(any());
         }
 
         @Test
@@ -105,7 +105,7 @@ class OrderTimeoutTaskTest {
             // Only second order should be processed
             verify(orderRepository, times(1)).update(any(Order.class));
             verify(domainEventPublisher, times(1)).publish(any(OrderCancelledEvent.class));
-            verify(orderCachePort, times(1)).evictOrderCache(anyString(), anyString());
+            verify(orderCacheEvictor, times(1)).evictOrderCacheAfterCommit(any());
         }
 
         @Test
@@ -118,7 +118,7 @@ class OrderTimeoutTaskTest {
 
             verify(orderRepository, never()).update(any());
             verify(domainEventPublisher, never()).publish(any());
-            verify(orderCachePort, never()).evictOrderCache(anyString(), anyString());
+            verify(orderCacheEvictor, never()).evictOrderCacheAfterCommit(any());
         }
 
         @Test
@@ -138,7 +138,7 @@ class OrderTimeoutTaskTest {
             verify(orderRepository, times(2)).update(any(Order.class));
             // Only the second order's event was published (first threw before publish)
             verify(domainEventPublisher, times(1)).publish(any(OrderCancelledEvent.class));
-            verify(orderCachePort, times(1)).evictOrderCache(anyString(), anyString());
+            verify(orderCacheEvictor, times(1)).evictOrderCacheAfterCommit(any());
         }
 
         @Test

@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
 import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
+import com.cartethyia.easyorange.order.adapter.outbound.cache.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderCreateSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
@@ -14,7 +15,6 @@ import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
-import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
@@ -29,8 +29,6 @@ import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
@@ -57,7 +55,7 @@ public class OrderCommandHandler {
 
     private final OrderRepository orderRepository;
     private final DomainEventPublisher domainEventPublisher;
-    private final OrderCachePort<?> orderCachePort;
+    private final OrderCacheEvictor orderCacheEvictor;
     private final DistributedLockPort lockPort;
     private final PaymentGatewayPort paymentGatewayPort;
     private final OrderPreparation preparationService;
@@ -127,7 +125,7 @@ public class OrderCommandHandler {
         // 创建支付（同一事务，失败时随事务整体回滚）
         createPayment(result.event(), command);
         // 买家/卖家订单列表缓存提交后再失效，避免提交前失效被并发读以旧数据重新填充
-        evictCacheAfterCommit(result.aggregate());
+        orderCacheEvictor.evictOrderCacheAfterCommit(result.aggregate());
 
         return new CreateOrderResult(
                 result.aggregate().id().value(), result.aggregate().orderNo().value());
@@ -204,26 +202,7 @@ public class OrderCommandHandler {
     private void persistAndPublish(Order oldAggregate, Transition<Order, ?> result) {
         orderRepository.update(result.aggregate());
         domainEventPublisher.publish(result.event());
-        evictCacheAfterCommit(oldAggregate);
-    }
-
-    private void evictCacheAfterCommit(Order oldAggregate) {
-        var buyerId = oldAggregate.buyerId().value();
-        var sellerId = oldAggregate.sellerId().value();
-        evictAfterCommit(() -> orderCachePort.evictOrderCache(buyerId, sellerId));
-    }
-
-    private void evictAfterCommit(Runnable evict) {
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    evict.run();
-                }
-            });
-        } else {
-            evict.run();
-        }
+        orderCacheEvictor.evictOrderCacheAfterCommit(oldAggregate);
     }
 
     private Order validateBuyer(String userId, String orderId) {
