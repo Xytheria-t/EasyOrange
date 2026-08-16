@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
-@RabbitListener(queues = RabbitMQConfig.QUEUE_ORDER_NOTIFICATION, containerFactory = "domainEventContainerFactory")
+@RabbitListener(queues = RabbitMQConfig.QUEUE_ORDER_NOTIFICATION)
 public class OrderNotificationEventConsumer {
 
     private final EventConsumerHandler handler;

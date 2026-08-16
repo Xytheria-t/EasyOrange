@@ -3,25 +3,17 @@ package com.cartethyia.easyorange.framework.messaging.config;
 import com.cartethyia.easyorange.framework.event.metadata.EventMetadataMessagePostProcessor;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.boot.amqp.autoconfigure.RabbitTemplateCustomizer;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.retry.RetryPolicy;
-import org.springframework.core.retry.RetryTemplate;
 
 @Slf4j
 @AutoConfiguration
-@RequiredArgsConstructor
-@EnableConfigurationProperties(RabbitMQProperties.class)
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class RabbitMQConfig {
 
@@ -42,8 +34,6 @@ public class RabbitMQConfig {
     // AI 事件驱动队列
     public static final String QUEUE_AI_PRODUCT = "eo.ai.product";
     public static final String QUEUE_AI_CREDIT = "eo.ai.credit";
-
-    private final RabbitMQProperties properties;
 
     // === Exchanges ===
 
@@ -116,57 +106,33 @@ public class RabbitMQConfig {
         return new EventMetadataMessagePostProcessor();
     }
 
+    /**
+     * RabbitTemplate 由 Boot 自动装配（连接 / 消息转换器 / 重试均由 {@code spring.rabbitmq.*} 属性驱动），
+     * 这里仅通过 Customizer 补充投递侧定制：
+     * mandatory 与 publisher confirm 由 {@code spring.rabbitmq.publisher-returns} / {@code publisher-confirm-type} 开启，
+     * 本定制只负责元数据注入与失败告警；投递可靠性由 Modulith outbox（事务 + 重启重投）兜底。
+     * <p>
+     * bean 名避开 {@code rabbitTemplateCustomizer}：Modulith 的 RabbitJacksonConfiguration 已占用该名
+     * （为事件外部化把 template 转换器换成 Jackson），Boot 会按序应用全部 RabbitTemplateCustomizer。
+     */
     @Bean
-    public RabbitTemplate rabbitTemplate(
-            ConnectionFactory connectionFactory,
-            MessageConverter jsonMessageConverter,
-            EventMetadataMessagePostProcessor metadataPostProcessor) {
-        var template = new RabbitTemplate(connectionFactory);
-        template.setMessageConverter(jsonMessageConverter);
-        // 投递前注入事件元数据（timestamp / traceId）到 message headers
-        template.setBeforePublishPostProcessors(metadataPostProcessor);
-        // mandatory + ReturnsCallback：路由不到队列的消息显式告警，不静默丢失
-        template.setMandatory(true);
-        template.setReturnsCallback(returned -> log.error(
-                "消息路由失败（mandatory return）: exchange={} routingKey={} replyCode={} replyText={}",
-                returned.getExchange(),
-                returned.getRoutingKey(),
-                returned.getReplyCode(),
-                returned.getReplyText()));
-        // publisher confirm 由 spring.rabbitmq.publisher-confirm-type 开启（correlated），
-        // 这里仅做失败告警；投递可靠性由 Modulith outbox（事务 + 重启重投）兜底
-        template.setConfirmCallback((correlationData, ack, cause) -> {
-            if (!ack) {
-                log.error("消息确认失败（nack）: cause={}", cause);
-            }
-        });
-        return template;
-    }
-
-    @Bean
-    public RetryTemplate retryTemplate() {
-        var cfg = properties.getRetry();
-        var policy = RetryPolicy.builder()
-                .maxRetries(cfg.getMaxAttempts() - 1)
-                .delay(cfg.getInitialInterval())
-                .multiplier(cfg.getMultiplier())
-                .maxDelay(cfg.getMaxDelay())
-                .build();
-        return new RetryTemplate(policy);
-    }
-
-    @Bean
-    public SimpleRabbitListenerContainerFactory domainEventContainerFactory(
-            ConnectionFactory connectionFactory, MessageConverter jsonMessageConverter, RetryTemplate retryTemplate) {
-        var factory = new SimpleRabbitListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setMessageConverter(jsonMessageConverter);
-        factory.setPrefetchCount(properties.getConsumer().getPrefetch());
-        factory.setConcurrentConsumers(properties.getConsumer().getConcurrency().getMin());
-        factory.setMaxConcurrentConsumers(
-                properties.getConsumer().getConcurrency().getMax());
-        factory.setDefaultRequeueRejected(properties.getConsumer().isDefaultRequeueRejected());
-        factory.setRetryTemplate(retryTemplate);
-        return factory;
+    public RabbitTemplateCustomizer eoRabbitTemplateCustomizer(EventMetadataMessagePostProcessor metadataPostProcessor) {
+        return template -> {
+            // 投递前注入事件元数据（timestamp / traceId）到 message headers
+            template.setBeforePublishPostProcessors(metadataPostProcessor);
+            // 路由不到队列的消息显式告警，不静默丢失
+            template.setReturnsCallback(returned -> log.error(
+                    "消息路由失败（mandatory return）: exchange={} routingKey={} replyCode={} replyText={}",
+                    returned.getExchange(),
+                    returned.getRoutingKey(),
+                    returned.getReplyCode(),
+                    returned.getReplyText()));
+            // publisher confirm 失败告警（correlated 模式，由 spring.rabbitmq.publisher-confirm-type 开启）
+            template.setConfirmCallback((correlationData, ack, cause) -> {
+                if (!ack) {
+                    log.error("消息确认失败（nack）: cause={}", cause);
+                }
+            });
+        };
     }
 }

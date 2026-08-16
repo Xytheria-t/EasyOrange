@@ -85,6 +85,24 @@ spring:
     connection-timeout: 5s
     socket-timeout: 30s
 
+  # RabbitMQ 监听容器 — 消费端容器由 Boot 自动装配（rabbitListenerContainerFactory），
+  # 本段为全部 profile 共享的容器行为默认值（dev/prod/it 继承，可局部覆盖）
+  rabbitmq:
+    listener:
+      type: simple
+      simple:
+        acknowledge-mode: auto
+        prefetch: 10
+        concurrency: 1
+        max-concurrency: 5
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-retries: 2        # 重试 2 次 + 首次投递 = 共 3 次尝试
+          initial-interval: 1s
+          multiplier: 2
+          max-interval: 10s
+
   lifecycle:
     timeout-per-shutdown-phase: 90s
 

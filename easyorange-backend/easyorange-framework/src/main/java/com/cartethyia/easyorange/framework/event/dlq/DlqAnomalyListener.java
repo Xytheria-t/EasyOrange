@@ -50,8 +50,7 @@ public class DlqAnomalyListener {
                 RabbitMQConfig.QUEUE_PAYMENT_METRICS + ".dlq",
                 RabbitMQConfig.QUEUE_AI_PRODUCT + ".dlq",
                 RabbitMQConfig.QUEUE_AI_CREDIT + ".dlq"
-            },
-            containerFactory = "domainEventContainerFactory")
+            })
     public void onDeadLetter(Message message) {
         var props = message.getMessageProperties();
         var headers = props.getHeaders();

@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
-@RabbitListener(queues = RabbitMQConfig.QUEUE_PRODUCT_CQRS, containerFactory = "domainEventContainerFactory")
+@RabbitListener(queues = RabbitMQConfig.QUEUE_PRODUCT_CQRS)
 public class ProductEventConsumer {
 
     private static final int LOW_STOCK_THRESHOLD = 5;

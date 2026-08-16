@@ -69,14 +69,6 @@ spring:
     password: ${RABBITMQ_PASSWORD:easyorange123}  # ⚠️ 仅限开发环境使用
     publisher-confirm-type: correlated
     publisher-returns: true
-    listener:
-      type: simple
-      simple:
-        acknowledge-mode: auto
-        prefetch: 10
-        concurrent-consumers: 1
-        max-concurrent-consumers: 5
-        default-requeue-rejected: false
 
 # -------------------------------------------------------------------
 # 日志配置 - 开发环境
@@ -127,24 +119,6 @@ easyorange:
         enabled: true
         default-aspect-ratio: 1:1
         min-entropy-threshold: 0.5
-
-  # -------------------------------------------------------------------
-  # RabbitMQ 消息队列配置 - 自定义业务配置
-  # -------------------------------------------------------------------
-  rabbitmq:
-    enabled: true
-    retry:
-      enabled: true
-      max-attempts: 3
-      initial-interval: 1s
-      multiplier: 2
-      max-delay: 10s
-    consumer:
-      prefetch: 10
-      default-requeue-rejected: false
-      concurrency:
-        min: 1
-        max: 5
 
 # -------------------------------------------------------------------
 # JWT Token 配置

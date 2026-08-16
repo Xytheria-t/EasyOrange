@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
-@RabbitListener(queues = RabbitMQConfig.QUEUE_AUDIT_LOG, containerFactory = "domainEventContainerFactory")
+@RabbitListener(queues = RabbitMQConfig.QUEUE_AUDIT_LOG)
 public class AuditLogEventConsumer {
 
     private final EventConsumerHandler handler;

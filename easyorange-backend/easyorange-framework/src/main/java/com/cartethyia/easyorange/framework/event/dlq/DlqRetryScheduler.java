@@ -23,7 +23,8 @@ import org.springframework.stereotype.Component;
  * <p>
  * 三级重试阶梯：
  * <ol>
- *   <li>主队列 RetryTemplate 快速重试（{@code maxAttempts=3}，指数退避 1s 起、10s 封顶）</li>
+ *   <li>主队列监听容器快速重试（{@code spring.rabbitmq.listener.simple.retry}：max-retries=2 即共 3 次尝试，
+ *       指数退避 1s 起、10s 封顶）</li>
  *   <li>消息进入 DLQ → 本调度器每 5 分钟（{@code fixedDelay=300000}）扫描，按 {@code x-retry-count}
  *       指数退避（1/5/15 分钟，自本次死信时间起算）重投主交换（原 routing key），{@code x-retry-count + 1}</li>
  *   <li>重试次数 ≥ {@code MAX_RETRIES}(3) → 转储 {@code eo.dlq.terminal} 队列，等待人工介入</li>

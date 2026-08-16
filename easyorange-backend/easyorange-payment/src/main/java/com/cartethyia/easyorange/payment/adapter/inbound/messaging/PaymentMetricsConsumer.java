@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
-@RabbitListener(queues = RabbitMQConfig.QUEUE_PAYMENT_METRICS, containerFactory = "domainEventContainerFactory")
+@RabbitListener(queues = RabbitMQConfig.QUEUE_PAYMENT_METRICS)
 public class PaymentMetricsConsumer {
 
     private final EventConsumerHandler handler;

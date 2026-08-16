@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
-@RabbitListener(queues = RabbitMQConfig.QUEUE_MESSAGE_WEBSOCKET, containerFactory = "domainEventContainerFactory")
+@RabbitListener(queues = RabbitMQConfig.QUEUE_MESSAGE_WEBSOCKET)
 public class WebSocketEventConsumer {
 
     private final EventConsumerHandler handler;
