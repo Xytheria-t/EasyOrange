@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductUpdateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
@@ -125,7 +126,7 @@ public class ProductCommandHandler {
         try {
             return ConditionLevel.fromCode(code);
         } catch (IllegalArgumentException ex) {
-            throw BusinessException.of("无效的成色等级: " + code);
+            throw BusinessException.of(ProductResultCode.INVALID_CONDITION_LEVEL, "无效的成色等级: " + code);
         }
     }
 

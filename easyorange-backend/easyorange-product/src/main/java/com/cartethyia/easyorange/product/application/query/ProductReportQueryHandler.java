@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepo
 import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
+import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
 import com.cartethyia.easyorange.product.domain.enums.ReportReasonType;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import java.util.List;
@@ -39,10 +40,10 @@ public class ProductReportQueryHandler {
     public ProductReportDetailResponse getReportDetail(String reportId, String currentUserId) {
         ProductReport report = productReportRepository.findById(reportId);
         if (report == null) {
-            throw BusinessException.of("举报记录不存在");
+            throw BusinessException.of(ProductResultCode.REPORT_NOT_FOUND);
         }
         if (!report.getReporterId().equals(currentUserId)) {
-            throw BusinessException.of("无权查看此举报记录");
+            throw BusinessException.of(ProductResultCode.REPORT_NOT_OWNER, "无权查看此举报记录");
         }
 
         String statusDesc =

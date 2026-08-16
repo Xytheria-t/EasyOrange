@@ -25,7 +25,11 @@ public enum ProductResultCode implements IResultCode {
     REPORT_ERROR("B2008", "举报业务异常"),
     PRODUCT_STATUS_INVALID("B2009", "资产状态不合法"),
     RATING_NOT_FOUND("B2010", "评价不存在"),
-    RATING_NOT_OWNER("B2011", "非评价作者");
+    RATING_NOT_OWNER("B2011", "非评价作者"),
+    INVALID_CONDITION_LEVEL("B2012", "成色等级不合法"),
+    INVALID_REPORT_TYPE("B2013", "举报类型不合法"),
+    REPORT_DUPLICATE("B2014", "重复举报"),
+    REPORT_NOT_OWNER("B2015", "非举报作者");
 
     private final String code;
     private final String message;
