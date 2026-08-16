@@ -20,12 +20,12 @@ public class ProductReportDomainService {
     private final ProductCacheEvictionPort productCachePort;
 
     /**
-     * Creates and saves a new product report.
+     * 创建并保存一条商品举报。
      *
-     * @param productId  the ID of the reported product
-     * @param reporterId the ID of the user submitting the report
-     * @param reason     the description of the report
-     * @param reasonType the category code of the report
+     * @param productId  被举报的商品 ID
+     * @param reporterId 提交举报的用户 ID
+     * @param reason     举报描述
+     * @param reasonType 举报类型编码
      */
     public void reportProduct(String productId, String reporterId, String reason, String reasonType) {
         ProductReport report = ProductReport.create(productId, reporterId, reason, reasonType);
@@ -33,17 +33,15 @@ public class ProductReportDomainService {
     }
 
     /**
-     * Processes a product report by approving or rejecting it.
+     * 处理举报：通过或驳回。
      * <p>
-     * When approved, the reported product is taken offline via the aggregate
-     * (preserving domain invariants and producing a domain event).
-     * When rejected, the report is marked as rejected without affecting the product.
+     * 通过时经由聚合根将商品下架（保持领域不变量并产生领域事件）；
+     * 驳回时仅将举报标记为已驳回，不影响商品。
      *
-     * @param reportId the ID of the report to process
-     * @param approved {@code true} to approve the report and take the product offline,
-     *                 {@code false} to reject the report
-     * @return the domain event if the product was taken offline, {@link Optional#empty()} otherwise
-     * @throws ReportNotFoundException if no report exists with the given ID
+     * @param reportId 举报 ID
+     * @param approved {@code true} 通过举报并将商品下架，{@code false} 驳回举报
+     * @return 商品下架领域事件；未下架时返回 {@link Optional#empty()}
+     * @throws ReportNotFoundException 举报记录不存在
      */
     public Optional<ProductTakeOfflineEvent> processReport(String reportId, boolean approved) {
         ProductReport report = productReportRepository.findById(reportId);
