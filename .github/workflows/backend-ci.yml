@@ -25,9 +25,9 @@ permissions:
   contents: read
 
 jobs:
-  # 后端门禁：一次 verify 完成 11 模块单测 + JaCoCo（80% 行/60% 分支）+ Spotless 格式。
-  # 唯一 merge-freeze 后端闸门。OWASP / PIT 慢扫描为独立 schedule workflow
-  # （security-scan.yml / pit-mutation.yml），不进 PR 路径。
+  # 后端门禁：一次 verify 完成 11 模块单测 + JaCoCo（80% 行/60% 分支）+ Spotless 格式 +
+  # 跨模块 optional 依赖校验（TD-011）。唯一 merge-freeze 后端闸门。OWASP / PIT 慢扫描为
+  # 独立 schedule workflow（security-scan.yml / pit-mutation.yml），不进 PR 路径。
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -43,6 +43,10 @@ jobs:
           filters: |
             backend:
               - 'easyorange-backend/**'
+      - name: Check cross-module optional deps (TD-011)
+        # 除组合根 easyorange-application 外，模块依赖其他领域模块必须 <optional>true</optional>。
+        if: steps.filter.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+        run: python3 .github/scripts/check-optional-deps.py easyorange-backend
       - name: Setup JDK 25
         if: steps.filter.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
