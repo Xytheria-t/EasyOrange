@@ -9,13 +9,14 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import com.cartethyia.easyorange.order.domain.valueobject.Version;
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * Order 聚合根重建参数对象 — 从持久层重建场景。
  * <p>
- * 收敛 from/fromRaw 的 13 个长参数为单一 record，统一两个重建入口。
+ * 收敛 from/fromRaw 的 14 个长参数为单一 record，统一两个重建入口。
  * 状态字段使用领域枚举类型（{@link OrderStatus}/{@link PaymentStatus}），
  * 由 {@code @EnumValue} 注解完成与 DB VARCHAR 列的互转，消除 String.valueOf/Integer.valueOf 转换代码。
  *
@@ -23,7 +24,7 @@ import java.util.List;
  * @param orderNo        订单号
  * @param buyerId        认领方 ID
  * @param sellerId       资产方 ID
- * @param items          订单资产列表（列表查询时可为空）
+ * @param items          订单资产列表（仅纯查询路径可为空；会产生领域事件的写操作必须带行项，否则事件 productIds 为空）
  * @param totalAmount    总金额
  * @param status         订单状态
  * @param paymentStatus  支付状态
@@ -34,6 +35,7 @@ import java.util.List;
  * @param cancelTime     取消时间
  * @param refundReason   退款原因
  * @param refundTime     退款时间
+ * @param version        乐观锁版本号（与 eo_order.version 列对应）
  */
 public record OrderReconstructSpec(
         OrderId id,
@@ -50,4 +52,5 @@ public record OrderReconstructSpec(
         String cancelReason,
         LocalDateTime cancelTime,
         String refundReason,
-        LocalDateTime refundTime) {}
+        LocalDateTime refundTime,
+        Version version) {}

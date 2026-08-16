@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -45,7 +46,10 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
     public void update(Order aggregate) {
         // 订单项是创建后不可变的快照，仅 save() 写入；状态流转只更新订单主表，
         // 不再整组删除重插（原实现会在聚合根缺行项时把订单项物理清空）。
-        mapper.updateById(dataMapper.toDataObject(aggregate));
+        // version 参与 WHERE 条件（@Version 乐观锁），0 行命中说明并发冲突，整体回滚避免发布过期事件。
+        if (mapper.updateById(dataMapper.toDataObject(aggregate)) == 0) {
+            throw new ConcurrentUpdateException("订单更新冲突: id=" + aggregate.id().value());
+        }
     }
 
     @Override

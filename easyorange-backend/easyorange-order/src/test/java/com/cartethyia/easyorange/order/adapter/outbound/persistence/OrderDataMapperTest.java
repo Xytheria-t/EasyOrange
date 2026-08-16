@@ -16,6 +16,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import com.cartethyia.easyorange.order.domain.valueobject.Version;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -56,6 +57,7 @@ class OrderDataMapperTest {
                 .address(ADDRESS)
                 .phone(PHONE)
                 .remark(REMARK)
+                .version(3)
                 .build();
         orderDO.setCreateTime(CREATE_TIME);
         orderDO.setUpdateTime(UPDATE_TIME);
@@ -88,7 +90,8 @@ class OrderDataMapperTest {
                 null,
                 null,
                 null,
-                null));
+                null,
+                Version.of(3)));
     }
 
     @Nested
@@ -115,6 +118,7 @@ class OrderDataMapperTest {
             assertThat(orderDO.getRemark()).isEqualTo(REMARK);
             assertThat(orderDO.getCancelReason()).isNull();
             assertThat(orderDO.getCancelTime()).isNull();
+            assertThat(orderDO.getVersion()).isEqualTo(3);
         }
     }
 
@@ -305,6 +309,7 @@ class OrderDataMapperTest {
             assertThat(restored.remark()).isEqualTo(original.remark());
             assertThat(restored.cancelReason()).isEqualTo(original.cancelReason());
             assertThat(restored.cancelTime()).isEqualTo(original.cancelTime());
+            assertThat(restored.version().value()).isEqualTo(original.version().value());
         }
 
         @Test
@@ -327,6 +332,7 @@ class OrderDataMapperTest {
             assertThat(converted.getRemark()).isEqualTo(original.getRemark());
             assertThat(converted.getCancelReason()).isEqualTo(original.getCancelReason());
             assertThat(converted.getCancelTime()).isEqualTo(original.getCancelTime());
+            assertThat(converted.getVersion()).isEqualTo(original.getVersion());
         }
     }
 }

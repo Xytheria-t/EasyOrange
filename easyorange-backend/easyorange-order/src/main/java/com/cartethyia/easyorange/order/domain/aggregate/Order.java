@@ -20,6 +20,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import com.cartethyia.easyorange.order.domain.valueobject.Version;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -74,6 +75,7 @@ public class Order {
     private final LocalDateTime cancelTime;
     private final String refundReason;
     private final LocalDateTime refundTime;
+    private final Version version;
 
     private Order(
             OrderId id,
@@ -90,7 +92,8 @@ public class Order {
             String cancelReason,
             LocalDateTime cancelTime,
             String refundReason,
-            LocalDateTime refundTime) {
+            LocalDateTime refundTime,
+            Version version) {
         this.id = id;
         this.orderNo = orderNo;
         this.buyerId = buyerId;
@@ -106,6 +109,7 @@ public class Order {
         this.cancelTime = cancelTime;
         this.refundReason = refundReason;
         this.refundTime = refundTime;
+        this.version = version;
     }
 
     // ==================== Factory ====================
@@ -143,7 +147,8 @@ public class Order {
                 null,
                 null,
                 null,
-                null);
+                null,
+                Version.INITIAL);
 
         List<OrderCreatedEvent.OrderItemPayload> itemPayloads = spec.items().stream()
                 .map(item -> new OrderCreatedEvent.OrderItemPayload(
@@ -185,7 +190,8 @@ public class Order {
                 spec.cancelReason(),
                 spec.cancelTime(),
                 spec.refundReason(),
-                spec.refundTime());
+                spec.refundTime(),
+                spec.version());
     }
 
     // ==================== Status Queries ====================

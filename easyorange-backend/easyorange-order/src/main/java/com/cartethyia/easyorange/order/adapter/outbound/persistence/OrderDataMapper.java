@@ -15,6 +15,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import com.cartethyia.easyorange.order.domain.valueobject.Version;
 import java.util.List;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -119,6 +120,7 @@ public class OrderDataMapper {
                 .cancelTime(aggregate.cancelTime())
                 .refundReason(aggregate.refundReason())
                 .refundTime(aggregate.refundTime())
+                .version(aggregate.version() != null ? aggregate.version().value() : null)
                 .build();
     }
 
@@ -153,7 +155,8 @@ public class OrderDataMapper {
                 orderDO.getCancelReason(),
                 orderDO.getCancelTime(),
                 orderDO.getRefundReason(),
-                orderDO.getRefundTime());
+                orderDO.getRefundTime(),
+                Version.of(orderDO.getVersion()));
     }
 
     private String toJson(ProductSnapshot snapshot) {

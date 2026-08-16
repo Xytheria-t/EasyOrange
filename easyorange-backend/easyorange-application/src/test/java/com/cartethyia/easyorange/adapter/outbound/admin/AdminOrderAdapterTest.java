@@ -21,6 +21,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
+import com.cartethyia.easyorange.order.domain.valueobject.Version;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import java.math.BigDecimal;
@@ -88,7 +89,8 @@ class AdminOrderAdapterTest {
                 null,
                 null,
                 null,
-                null));
+                null,
+                Version.INITIAL));
     }
 
     @Test

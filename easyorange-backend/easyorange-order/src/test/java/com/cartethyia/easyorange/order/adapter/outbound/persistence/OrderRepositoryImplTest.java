@@ -5,6 +5,7 @@ import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.
 import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.PRODUCT_ID;
 import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.SELLER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -16,6 +17,7 @@ import static org.mockito.Mockito.when;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisMapperBuilderAssistant;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -75,12 +77,23 @@ class OrderRepositoryImplTest {
     @DisplayName("update 只更新订单主表，不触碰订单行（行项创建后不可变快照）")
     void update_doesNotTouchItems() {
         var order = OrderTestFixture.pendingPaymentOrder();
+        when(orderMapper.updateById(any(OrderDO.class))).thenReturn(1);
 
         orderRepository.update(order);
 
         verify(orderMapper).updateById(any(OrderDO.class));
         verify(orderItemMapper, never()).deleteByOrderId(anyString());
         verify(orderItemMapper, never()).batchInsert(anyList());
+    }
+
+    @Test
+    @DisplayName("update 乐观锁冲突（0 行命中）应抛并发冲突异常")
+    void update_conflict_throwsConcurrentUpdateException() {
+        var order = OrderTestFixture.pendingPaymentOrder();
+        when(orderMapper.updateById(any(OrderDO.class))).thenReturn(0);
+
+        assertThatThrownBy(() -> orderRepository.update(order))
+                .isInstanceOf(ConcurrentUpdateException.class);
     }
 
     @Test
@@ -131,6 +144,7 @@ class OrderRepositoryImplTest {
                 .address("地址")
                 .phone("13800138000")
                 .remark("备注")
+                .version(0)
                 .build();
     }
 

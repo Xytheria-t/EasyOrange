@@ -10,6 +10,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import com.cartethyia.easyorange.order.domain.valueobject.Version;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -112,9 +113,15 @@ public final class OrderTestFixture {
         private java.time.LocalDateTime cancelTime = null;
         private String refundReason = null;
         private java.time.LocalDateTime refundTime = null;
+        private Version version = Version.INITIAL;
 
         public OrderReconstructSpecBuilder id(String id) {
             this.id = OrderId.of(id);
+            return this;
+        }
+
+        public OrderReconstructSpecBuilder version(Version version) {
+            this.version = version;
             return this;
         }
 
@@ -154,7 +161,8 @@ public final class OrderTestFixture {
                     cancelReason,
                     cancelTime,
                     refundReason,
-                    refundTime);
+                    refundTime,
+                    version);
         }
     }
 

@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
+import com.cartethyia.easyorange.order.domain.valueobject.Version;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,6 +43,7 @@ class OrderTest {
             assertThat(result.aggregate()).isNotNull();
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
             assertThat(result.aggregate().items()).hasSize(1);
+            assertThat(result.aggregate().version()).isEqualTo(Version.INITIAL);
         }
 
         @Test
@@ -81,7 +83,7 @@ class OrderTest {
         @Test
         @DisplayName("from 正确重建")
         void from_validSpec_returnsAggregate() {
-            var aggregate = pendingPaymentOrder();
+            var aggregate = Order.from(aReconstructSpec().version(Version.of(5)).build());
 
             assertThat(aggregate.id().value()).isEqualTo("1");
             assertThat(aggregate.orderNo().value()).isEqualTo("ORD1");
@@ -90,6 +92,18 @@ class OrderTest {
             assertThat(aggregate.items()).hasSize(1);
             assertThat(aggregate.totalAmount().value()).isEqualByComparingTo(AMOUNT);
             assertThat(aggregate.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+            assertThat(aggregate.version().value()).isEqualTo(5);
+        }
+
+        @Test
+        @DisplayName("状态转换保留乐观锁版本号")
+        void transition_preservesVersion() {
+            var aggregate = pendingPaymentOrder();
+
+            var paid = aggregate.pay(LocalDateTime.now()).aggregate();
+
+            assertThat(paid.status()).isEqualTo(OrderStatus.PAID);
+            assertThat(paid.version()).isEqualTo(aggregate.version());
         }
     }
 
