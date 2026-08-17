@@ -39,30 +39,30 @@ class FavoriteTest {
         @DisplayName("userId 为 null 时抛 IllegalArgumentException")
         void create_nullUserId_throws() {
             assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec(null, PRODUCT_ID)))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("userId");
         }
 
         @Test
-        @DisplayName("userId 为空字符串时抛 IllegalArgumentException")
+        @DisplayName("userId 为空字符串时抛 BusinessException")
         void create_emptyUserId_throws() {
             assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec("", PRODUCT_ID)))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("userId");
         }
 
         @Test
-        @DisplayName("productId 为 null 时抛 IllegalArgumentException")
+        @DisplayName("productId 为 null 时抛 BusinessException")
         void create_nullProductId_throws() {
             assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec(USER_ID, null)))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(BusinessException.class);
         }
 
         @Test
-        @DisplayName("productId 为空字符串时抛 IllegalArgumentException")
+        @DisplayName("productId 为空字符串时抛 BusinessException")
         void create_emptyProductId_throws() {
             assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec(USER_ID, "")))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("productId");
         }
     }

@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.favorite.application.service;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
@@ -12,9 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class FavoriteService {
 
@@ -30,17 +32,26 @@ public class FavoriteService {
     public void addFavorite(String userId, String productId) {
         BizRequire.requireTrue(productInfoPort.productExists(productId), "商品不存在");
         BizRequire.requireTrue(!productInfoPort.isOwnProduct(userId, productId), "不能收藏自己的商品");
-        BizRequire.requireTrue(!favoriteRepository.existsByUserIdAndProductId(userId, productId), "已收藏过该商品");
+        if (favoriteRepository.existsByUserIdAndProductId(userId, productId)) {
+            return;
+        }
 
         Favorite favorite = Favorite.create(new FavoriteCreateSpec(userId, productId));
-        favoriteRepository.save(favorite);
+        try {
+            favoriteRepository.save(favorite);
+        } catch (DuplicateKeyException e) {
+            // 并发重复收藏：唯一键 (user_id, product_id, del_flag) 兜底，幂等视为成功
+            log.warn("并发重复收藏被唯一键拦截, userId={}, productId={}", userId, productId);
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void removeFavorite(String userId, String productId) {
-        Favorite favorite = favoriteRepository
-                .findByUserIdAndProductId(userId, productId)
-                .orElseThrow(() -> BusinessException.of("未收藏过该商品"));
+        Favorite favorite =
+                favoriteRepository.findByUserIdAndProductId(userId, productId).orElse(null);
+        if (favorite == null) {
+            return;
+        }
 
         favorite.validateOwnership(userId);
         favoriteRepository.removeById(favorite.id());

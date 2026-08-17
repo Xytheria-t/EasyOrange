@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.favorite.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
@@ -15,13 +16,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, FavoriteDO> implements FavoriteRepository {
 
-    public FavoriteRepositoryImpl(FavoriteMapper mapper) {
-        super(mapper);
-    }
+    private final IdGenerator idGenerator;
 
-    @Override
-    public Optional<Favorite> findById(String id) {
-        return Optional.ofNullable(mapper.selectById(id)).map(this::toDomain);
+    public FavoriteRepositoryImpl(FavoriteMapper mapper, IdGenerator idGenerator) {
+        super(mapper);
+        this.idGenerator = idGenerator;
     }
 
     @Override
@@ -74,6 +73,7 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
         }
 
         FavoriteDO dataObject = toDataObject(favorite);
+        dataObject.setId(idGenerator.generateId());
         mapper.insert(dataObject);
         return Favorite.reconstitute(
                 dataObject.getId(), dataObject.getUserId(), dataObject.getProductId(), dataObject.getCreateTime());

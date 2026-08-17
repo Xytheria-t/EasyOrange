@@ -7,8 +7,6 @@ import java.util.Set;
 
 public interface FavoriteRepository {
 
-    Optional<Favorite> findById(String id);
-
     List<Favorite> findByIds(List<String> ids);
 
     Optional<Favorite> findByUserIdAndProductId(String userId, String productId);

@@ -194,7 +194,8 @@ mybatis-plus:
     banner: false
     db-config:
       logic-delete-field: delFlag
-      logic-delete-value: 2
+      # 与 BaseDO 的 @TableLogic(value="0", delval="1") 保持一致；全局值仅对未注解字段生效
+      logic-delete-value: 1
       logic-not-delete-value: 0
   pagination:
     enabled: true

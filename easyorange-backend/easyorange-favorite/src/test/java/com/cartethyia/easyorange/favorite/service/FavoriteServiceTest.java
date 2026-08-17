@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("收藏服务测试")
@@ -67,18 +68,28 @@ class FavoriteServiceTest {
     }
 
     @Test
-    @DisplayName("添加收藏 - 已收藏时抛出异常")
+    @DisplayName("添加收藏 - 已收藏时幂等成功（不重复插入）")
     void addFavorite_alreadyFavorited() {
         when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(true);
         when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
         when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
                 .thenReturn(true);
 
-        assertThatThrownBy(() -> favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("已收藏过该商品");
+        favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID);
 
         verify(favoriteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("添加收藏 - 并发重复收藏撞唯一键时幂等成功")
+    void addFavorite_duplicateKeyRace() {
+        when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(true);
+        when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
+        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
+                .thenReturn(false);
+        when(favoriteRepository.save(any(Favorite.class))).thenThrow(new DuplicateKeyException("duplicate"));
+
+        favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID);
     }
 
     @Test
@@ -107,14 +118,12 @@ class FavoriteServiceTest {
     }
 
     @Test
-    @DisplayName("移除收藏 - 未收藏时抛出异常")
+    @DisplayName("移除收藏 - 未收藏时幂等成功（不报错）")
     void removeFavorite_notFavorited() {
         when(favoriteRepository.findByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> favoriteService.removeFavorite(TEST_USER_ID, TEST_PRODUCT_ID))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage("未收藏过该商品");
+        favoriteService.removeFavorite(TEST_USER_ID, TEST_PRODUCT_ID);
 
         verify(favoriteRepository, never()).removeById(any());
     }

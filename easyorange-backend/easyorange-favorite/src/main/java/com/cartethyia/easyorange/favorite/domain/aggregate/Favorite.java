@@ -8,10 +8,10 @@ public record Favorite(String id, String userId, String productId, LocalDateTime
 
     public static Favorite create(FavoriteCreateSpec spec) {
         if (spec.userId() == null || spec.userId().isBlank()) {
-            throw new IllegalArgumentException("userId must not be blank");
+            throw BusinessException.of("userId 不能为空");
         }
         if (spec.productId() == null || spec.productId().isBlank()) {
-            throw new IllegalArgumentException("productId must not be blank");
+            throw BusinessException.of("productId 不能为空");
         }
         return new Favorite(null, spec.userId(), spec.productId(), LocalDateTime.now());
     }
