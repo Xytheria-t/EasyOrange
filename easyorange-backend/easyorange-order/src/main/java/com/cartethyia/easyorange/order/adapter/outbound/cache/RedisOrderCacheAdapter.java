@@ -70,7 +70,8 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
 
     private void evictByPattern(String pattern) {
         // SCAN 游标遍历替代 KEYS 全键扫描，避免阻塞生产 Redis；游标式遍历期间新增的 key 留给 TTL 兜底
-        try (Cursor<Object> cursor = redisTemplate.scan(ScanOptions.scanOptions().match(pattern).count(100).build())) {
+        try (Cursor<Object> cursor = redisTemplate.scan(
+                ScanOptions.scanOptions().match(pattern).count(100).build())) {
             List<Object> keys = new ArrayList<>();
             cursor.forEachRemaining(keys::add);
             if (!keys.isEmpty()) {

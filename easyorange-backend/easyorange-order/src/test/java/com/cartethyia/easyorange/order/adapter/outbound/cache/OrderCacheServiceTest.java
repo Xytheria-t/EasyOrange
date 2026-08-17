@@ -173,8 +173,7 @@ class OrderCacheServiceTest {
         when(cursor.hasNext()).thenReturn(true, true, false);
         when(cursor.next())
                 .thenReturn(
-                        "eo:order:list:999111:status:0:page:1:size:10",
-                        "eo:order:list:999111:status:1:page:2:size:20");
+                        "eo:order:list:999111:status:0:page:1:size:10", "eo:order:list:999111:status:1:page:2:size:20");
         when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(cursor);
 
         orderCachePort.evictOrderCache(buyerId, null);

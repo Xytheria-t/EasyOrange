@@ -78,9 +78,8 @@ class OrderQueryRepositoryImplTest {
         when(orderMapper.selectById("1")).thenReturn(orderDO());
         when(orderItemMapper.selectList(any())).thenReturn(List.of(itemDO()));
 
-        OrderReadModel readModel = orderQueryRepository
-                .findById(OrderId.of("1"))
-                .orElseThrow();
+        OrderReadModel readModel =
+                orderQueryRepository.findById(OrderId.of("1")).orElseThrow();
 
         assertThat(readModel.items()).hasSize(1);
         assertThat(readModel.items().getFirst().productId()).isEqualTo("100");

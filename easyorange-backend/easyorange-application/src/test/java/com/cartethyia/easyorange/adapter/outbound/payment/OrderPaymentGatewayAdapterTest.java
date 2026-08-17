@@ -67,7 +67,8 @@ class OrderPaymentGatewayAdapterTest {
 
         adapter.pay("2001");
 
-        verify(paymentCommandHandler).handle(argThat((PayCommand cmd) -> cmd.paymentNo().equals("PAY123")));
+        verify(paymentCommandHandler)
+                .handle(argThat((PayCommand cmd) -> cmd.paymentNo().equals("PAY123")));
     }
 
     @Test

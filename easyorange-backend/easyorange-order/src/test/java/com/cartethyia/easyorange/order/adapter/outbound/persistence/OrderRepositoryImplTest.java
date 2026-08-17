@@ -92,8 +92,7 @@ class OrderRepositoryImplTest {
         var order = OrderTestFixture.pendingPaymentOrder();
         when(orderMapper.updateById(any(OrderDO.class))).thenReturn(0);
 
-        assertThatThrownBy(() -> orderRepository.update(order))
-                .isInstanceOf(ConcurrentUpdateException.class);
+        assertThatThrownBy(() -> orderRepository.update(order)).isInstanceOf(ConcurrentUpdateException.class);
     }
 
     @Test
@@ -116,7 +115,8 @@ class OrderRepositoryImplTest {
         when(orderMapper.selectList(any())).thenReturn(List.of(shippedOrderDO()));
         when(orderItemMapper.selectList(any())).thenReturn(List.of(itemDO()));
 
-        List<Order> orders = orderRepository.findShippedOrdersBefore(LocalDateTime.now().minusDays(7));
+        List<Order> orders =
+                orderRepository.findShippedOrdersBefore(LocalDateTime.now().minusDays(7));
 
         assertThat(orders).hasSize(1);
         assertThat(orders.getFirst().items()).hasSize(1);

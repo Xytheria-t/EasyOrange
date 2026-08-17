@@ -18,7 +18,9 @@ public class OrderReadModelAssembler {
         if (orders == null || orders.isEmpty()) {
             return List.of();
         }
-        return orders.stream().map(o -> toOrderVO(o, productMap, usernames, true)).toList();
+        return orders.stream()
+                .map(o -> toOrderVO(o, productMap, usernames, true))
+                .toList();
     }
 
     public OrderVO toOrderVO(

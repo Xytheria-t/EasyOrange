@@ -14,10 +14,9 @@ import java.util.List;
  * Jakarta Bean Validation 注解作用于 record 组件（字段级）。
  */
 public record CreateOrderCommand(
-        @NotEmpty(message = "订单项不能为空")
-                @Size(max = 20, message = "单笔订单最多 20 件资产")
-                @Valid
-                List<CreateOrderItem> items,
+        @NotEmpty(message = "订单项不能为空") @Size(max = 20, message = "单笔订单最多 20 件资产") @Valid
+        List<CreateOrderItem> items,
+
         String address,
         String phone,
         String remark,

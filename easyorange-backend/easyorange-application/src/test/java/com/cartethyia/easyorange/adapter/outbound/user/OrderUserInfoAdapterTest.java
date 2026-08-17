@@ -28,12 +28,14 @@ class OrderUserInfoAdapterTest {
         var port = new OrderUserInfoAdapter(userQueryPort);
         when(userQueryPort.findAllByIds(any()))
                 .thenReturn(List.of(
-                        new UserInfo("1", "认领方小明", "小明", "avatar1"),
-                        new UserInfo("2", "资产方张三", "张三", "avatar2")));
+                        new UserInfo("1", "认领方小明", "小明", "avatar1"), new UserInfo("2", "资产方张三", "张三", "avatar2")));
 
         Map<String, String> usernames = port.findUsernames(Set.of("1", "2", "999"));
 
-        assertThat(usernames).containsEntry("1", "认领方小明").containsEntry("2", "资产方张三").hasSize(2);
+        assertThat(usernames)
+                .containsEntry("1", "认领方小明")
+                .containsEntry("2", "资产方张三")
+                .hasSize(2);
     }
 
     @Test

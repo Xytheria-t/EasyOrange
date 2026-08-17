@@ -4,8 +4,8 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
 import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
-import com.cartethyia.easyorange.order.application.service.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderAutoConfirmProperties;
+import com.cartethyia.easyorange.order.application.service.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
@@ -50,8 +50,8 @@ public class OrderAutoConfirmTask {
                 // waitTimeout=0 非阻塞获取：拿不到即跳过，不阻塞扫描；watchdog 覆盖单次确认的全部时长
                 // 确认收货在 TransactionTemplate 事务内执行：状态更新 + OrderCompletedEvent（Outbox）原子提交，
                 // 避免「更新已提交、事件未落 Outbox」的崩溃窗口导致商品漏标记售出
-                boolean confirmedOrder = lockPort.executeWithLocks(List.of(lockKey), 0L,
-                        () -> transactionTemplate.execute(status -> autoConfirmOrder(aggregate)));
+                boolean confirmedOrder = lockPort.executeWithLocks(
+                        List.of(lockKey), 0L, () -> transactionTemplate.execute(status -> autoConfirmOrder(aggregate)));
                 if (confirmedOrder) {
                     confirmed++;
                 }

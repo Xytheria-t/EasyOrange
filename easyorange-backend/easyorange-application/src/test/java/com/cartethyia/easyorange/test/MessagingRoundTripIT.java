@@ -96,10 +96,12 @@ class MessagingRoundTripIT extends AbstractIntegrationTest {
         static final AtomicReference<OrderCreatedEvent> RECEIVED = new AtomicReference<>();
         static final CountDownLatch LATCH = new CountDownLatch(1);
 
-        @RabbitListener(bindings = @QueueBinding(
-                value = @Queue(value = TYPED_QUEUE, durable = "true"),
-                exchange = @Exchange(value = RabbitMQConfig.EXCHANGE_NAME, type = ExchangeTypes.TOPIC),
-                key = TYPED_ROUTING_KEY))
+        @RabbitListener(
+                bindings =
+                        @QueueBinding(
+                                value = @Queue(value = TYPED_QUEUE, durable = "true"),
+                                exchange = @Exchange(value = RabbitMQConfig.EXCHANGE_NAME, type = ExchangeTypes.TOPIC),
+                                key = TYPED_ROUTING_KEY))
         public void onOrderCreated(OrderCreatedEvent event, Message message) {
             RECEIVED.set(event);
             LATCH.countDown();
@@ -113,10 +115,12 @@ class MessagingRoundTripIT extends AbstractIntegrationTest {
         static final AtomicReference<Message> RECEIVED = new AtomicReference<>();
         static final CountDownLatch LATCH = new CountDownLatch(1);
 
-        @RabbitListener(bindings = @QueueBinding(
-                value = @Queue(value = TYPEID_QUEUE, durable = "true"),
-                exchange = @Exchange(value = RabbitMQConfig.EXCHANGE_NAME, type = ExchangeTypes.TOPIC),
-                key = TYPEID_ROUTING_KEY))
+        @RabbitListener(
+                bindings =
+                        @QueueBinding(
+                                value = @Queue(value = TYPEID_QUEUE, durable = "true"),
+                                exchange = @Exchange(value = RabbitMQConfig.EXCHANGE_NAME, type = ExchangeTypes.TOPIC),
+                                key = TYPEID_ROUTING_KEY))
         public void onRawMessage(Message message) {
             RECEIVED.set(message);
             LATCH.countDown();

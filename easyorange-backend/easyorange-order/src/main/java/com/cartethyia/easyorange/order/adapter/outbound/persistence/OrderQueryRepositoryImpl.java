@@ -61,10 +61,8 @@ public class OrderQueryRepositoryImpl extends BaseRepository<OrderMapper, OrderD
         Page<OrderDO> orderPage = wrapper.page(page);
 
         return PageResult.of(
-                toReadModelsWithItems(orderPage.getRecords()),
-                orderPage.getTotal(),
-                (int) orderPage.getCurrent(),
-                (int) orderPage.getSize());
+                toReadModelsWithItems(orderPage.getRecords()), orderPage.getTotal(), (int) orderPage.getCurrent(), (int)
+                        orderPage.getSize());
     }
 
     @Override
@@ -97,14 +95,16 @@ public class OrderQueryRepositoryImpl extends BaseRepository<OrderMapper, OrderD
             return List.of();
         }
         List<String> orderIds = orderDOs.stream().map(OrderDO::getId).toList();
-        Map<String, List<OrderItemReadModel>> itemsByOrderId = orderItemMapper
-                .selectList(new LambdaQueryWrapper<OrderItemDO>().in(OrderItemDO::getOrderId, orderIds))
-                .stream()
-                .collect(Collectors.groupingBy(
-                        OrderItemDO::getOrderId, Collectors.mapping(dataMapper::toItemReadModel, Collectors.toList())));
+        Map<String, List<OrderItemReadModel>> itemsByOrderId =
+                orderItemMapper
+                        .selectList(new LambdaQueryWrapper<OrderItemDO>().in(OrderItemDO::getOrderId, orderIds))
+                        .stream()
+                        .collect(Collectors.groupingBy(
+                                OrderItemDO::getOrderId,
+                                Collectors.mapping(dataMapper::toItemReadModel, Collectors.toList())));
         return orderDOs.stream()
-                .map(orderDO -> dataMapper.toReadModel(
-                        orderDO, itemsByOrderId.getOrDefault(orderDO.getId(), List.of())))
+                .map(orderDO ->
+                        dataMapper.toReadModel(orderDO, itemsByOrderId.getOrDefault(orderDO.getId(), List.of())))
                 .toList();
     }
 }

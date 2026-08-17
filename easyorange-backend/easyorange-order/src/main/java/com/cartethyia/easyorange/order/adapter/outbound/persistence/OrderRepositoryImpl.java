@@ -111,14 +111,16 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
             return List.of();
         }
         List<String> orderIds = orderDOs.stream().map(OrderDO::getId).toList();
-        Map<String, List<OrderItem>> itemsByOrderId = orderItemMapper
-                .selectList(new LambdaQueryWrapper<OrderItemDO>().in(OrderItemDO::getOrderId, orderIds))
-                .stream()
-                .collect(Collectors.groupingBy(
-                        OrderItemDO::getOrderId, Collectors.mapping(dataMapper::toOrderItem, Collectors.toList())));
+        Map<String, List<OrderItem>> itemsByOrderId =
+                orderItemMapper
+                        .selectList(new LambdaQueryWrapper<OrderItemDO>().in(OrderItemDO::getOrderId, orderIds))
+                        .stream()
+                        .collect(Collectors.groupingBy(
+                                OrderItemDO::getOrderId,
+                                Collectors.mapping(dataMapper::toOrderItem, Collectors.toList())));
         return orderDOs.stream()
-                .map(orderDO -> dataMapper.toAggregate(
-                        orderDO, itemsByOrderId.getOrDefault(orderDO.getId(), List.of())))
+                .map(orderDO ->
+                        dataMapper.toAggregate(orderDO, itemsByOrderId.getOrDefault(orderDO.getId(), List.of())))
                 .toList();
     }
 }
