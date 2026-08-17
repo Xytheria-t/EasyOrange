@@ -8,6 +8,7 @@ public record ProductInfo(
         String id,
         String sellerId,
         String categoryId,
+        String categoryName,
         String title,
         String description,
         BigDecimal price,

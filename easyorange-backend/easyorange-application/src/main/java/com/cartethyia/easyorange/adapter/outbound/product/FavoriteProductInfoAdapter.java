@@ -60,6 +60,18 @@ public class FavoriteProductInfoAdapter implements ProductInfoPort {
                 productQueryRepository.findImagesByProductIds(productIds).stream()
                         .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
 
+        Map<String, String> categoryNames = productQueryRepository
+                .findCategoriesByIds(products.stream()
+                        .map(ProductInfo::categoryId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList())
+                .stream()
+                .collect(Collectors.toMap(
+                        ProductQueryRepository.CategoryInfo::id,
+                        ProductQueryRepository.CategoryInfo::name,
+                        (a, b) -> a));
+
         return products.stream()
                 .map(product -> {
                     List<ProductQueryRepository.ProductImageInfo> images =
@@ -77,6 +89,7 @@ public class FavoriteProductInfoAdapter implements ProductInfoPort {
                             .id(product.id())
                             .sellerId(product.sellerId())
                             .categoryId(product.categoryId())
+                            .categoryName(categoryNames.get(product.categoryId()))
                             .title(product.title())
                             .description(product.description())
                             .price(product.price())
@@ -111,6 +124,7 @@ public class FavoriteProductInfoAdapter implements ProductInfoPort {
                 model.id(),
                 model.sellerId(),
                 model.categoryId(),
+                model.categoryName(),
                 model.title(),
                 model.description(),
                 model.price(),
