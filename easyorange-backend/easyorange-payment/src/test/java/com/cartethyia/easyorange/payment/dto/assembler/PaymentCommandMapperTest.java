@@ -9,7 +9,7 @@ import com.cartethyia.easyorange.payment.adapter.inbound.web.request.PaymentCall
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.RefundRequest;
 import com.cartethyia.easyorange.payment.application.command.ClosePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
-import com.cartethyia.easyorange.payment.application.command.PayCommand;
+import com.cartethyia.easyorange.payment.application.command.PaymentCallbackCommand;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
@@ -40,23 +40,24 @@ class PaymentCommandMapperTest {
     }
 
     @Nested
-    @DisplayName("toPayCommand")
-    class ToPayCommandTests {
+    @DisplayName("toCallbackCommand")
+    class ToCallbackCommandTests {
 
         @Test
-        @DisplayName("回调转支付命令")
-        void toPayCommand_mapsCallback() {
+        @DisplayName("回调转支付确认命令")
+        void toCallbackCommand_mapsCallback() {
             PaymentCallback callback = PaymentCallback.builder()
                     .paymentNo("PAY123")
                     .transactionId("TXN_1")
+                    .amount(new BigDecimal("100.00"))
                     .attach("attach")
                     .build();
 
-            PayCommand command = mapper.toPayCommand(callback);
+            PaymentCallbackCommand command = mapper.toCallbackCommand(callback);
 
             assertThat(command.paymentNo()).isEqualTo("PAY123");
             assertThat(command.transactionId()).isEqualTo("TXN_1");
-            assertThat(command.attach()).isEqualTo("attach");
+            assertThat(command.amount()).isEqualByComparingTo("100.00");
         }
     }
 
@@ -69,9 +70,10 @@ class PaymentCommandMapperTest {
         void toRefundCommand_mapsRequest() {
             RefundRequest request = new RefundRequest("1001", new BigDecimal("50.00"), "部分退款");
 
-            RefundPaymentCommand command = mapper.toRefundCommand("1001", request);
+            RefundPaymentCommand command = mapper.toRefundCommand("1001", "3001", request);
 
             assertThat(command.paymentId()).isEqualTo("1001");
+            assertThat(command.userId()).isEqualTo("3001");
             assertThat(command.refundAmount()).isEqualByComparingTo("50.00");
             assertThat(command.refundReason()).isEqualTo("部分退款");
         }
@@ -79,9 +81,10 @@ class PaymentCommandMapperTest {
         @Test
         @DisplayName("支付 ID 转关闭命令")
         void toCloseCommand_mapsId() {
-            ClosePaymentCommand command = mapper.toCloseCommand("1001");
+            ClosePaymentCommand command = mapper.toCloseCommand("1001", "3001");
 
             assertThat(command.paymentId()).isEqualTo("1001");
+            assertThat(command.userId()).isEqualTo("3001");
         }
     }
 }

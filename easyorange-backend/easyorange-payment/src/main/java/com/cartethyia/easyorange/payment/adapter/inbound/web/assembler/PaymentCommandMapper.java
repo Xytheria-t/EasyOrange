@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.payment.adapter.inbound.web.request.PaymentCall
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.RefundRequest;
 import com.cartethyia.easyorange.payment.application.command.ClosePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
-import com.cartethyia.easyorange.payment.application.command.PayCommand;
+import com.cartethyia.easyorange.payment.application.command.PaymentCallbackCommand;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
 import org.mapstruct.Mapper;
 
@@ -17,13 +17,15 @@ public interface PaymentCommandMapper {
                 request.getOrderId(), request.getAmount(), request.getPaymentMethod(), request.getPayPassword(), null);
     }
 
-    PayCommand toPayCommand(PaymentCallback callback);
-
-    default RefundPaymentCommand toRefundCommand(String paymentId, RefundRequest request) {
-        return new RefundPaymentCommand(paymentId, request.getRefundAmount(), request.getRefundReason());
+    default PaymentCallbackCommand toCallbackCommand(PaymentCallback callback) {
+        return new PaymentCallbackCommand(callback.getPaymentNo(), callback.getTransactionId(), callback.getAmount());
     }
 
-    default ClosePaymentCommand toCloseCommand(String paymentId) {
-        return new ClosePaymentCommand(paymentId);
+    default RefundPaymentCommand toRefundCommand(String paymentId, String userId, RefundRequest request) {
+        return new RefundPaymentCommand(paymentId, userId, request.getRefundAmount(), request.getRefundReason());
+    }
+
+    default ClosePaymentCommand toCloseCommand(String paymentId, String userId) {
+        return new ClosePaymentCommand(paymentId, userId);
     }
 }

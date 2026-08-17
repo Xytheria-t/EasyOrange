@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.payment.adapter.inbound.web.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,7 +17,7 @@ import com.cartethyia.easyorange.payment.adapter.inbound.web.request.RefundReque
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
 import com.cartethyia.easyorange.payment.application.command.ClosePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
-import com.cartethyia.easyorange.payment.application.command.PayCommand;
+import com.cartethyia.easyorange.payment.application.command.PaymentCallbackCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
 import com.cartethyia.easyorange.payment.domain.port.CallbackSignatureVerifierPort;
@@ -77,7 +78,7 @@ class PaymentCommandControllerTest {
     class PaymentCallbackTests {
 
         @Test
-        @DisplayName("回调验签通过后处理支付")
+        @DisplayName("回调验签通过后直接确认支付成功")
         void paymentCallback_verifiesAndHandles() {
             PaymentCallback callback = PaymentCallback.builder()
                     .paymentNo("PAY123")
@@ -88,7 +89,7 @@ class PaymentCommandControllerTest {
             Result<Void> result = controller.paymentCallback(callback);
 
             verify(signatureVerifier).verify("PAY123", "TXN_1", "sign");
-            verify(commandHandler).handle(any(PayCommand.class));
+            verify(commandHandler).handle(any(PaymentCallbackCommand.class));
             assertThat(result.isSuccess()).isTrue();
         }
     }
@@ -98,22 +99,26 @@ class PaymentCommandControllerTest {
     class RefundCloseTests {
 
         @Test
-        @DisplayName("退款成功")
+        @DisplayName("退款成功（操作者身份透传）")
         void refund_success() {
             RefundRequest request = new RefundRequest("1001", new BigDecimal("100.00"), "用户申请");
 
-            Result<Void> result = controller.refund("1001", request);
+            Result<Void> result = controller.refund(currentUser(), "1001", request);
 
-            verify(commandHandler).handle(any(RefundPaymentCommand.class));
+            verify(commandHandler)
+                    .handle(argThat((RefundPaymentCommand cmd) ->
+                            cmd.paymentId().equals("1001") && cmd.userId().equals(USER_ID)));
             assertThat(result.isSuccess()).isTrue();
         }
 
         @Test
-        @DisplayName("关闭支付成功")
+        @DisplayName("关闭支付成功（操作者身份透传）")
         void close_success() {
-            Result<Void> result = controller.close("1001");
+            Result<Void> result = controller.close(currentUser(), "1001");
 
-            verify(commandHandler).handle(any(ClosePaymentCommand.class));
+            verify(commandHandler)
+                    .handle(argThat((ClosePaymentCommand cmd) ->
+                            cmd.paymentId().equals("1001") && cmd.userId().equals(USER_ID)));
             assertThat(result.isSuccess()).isTrue();
         }
     }

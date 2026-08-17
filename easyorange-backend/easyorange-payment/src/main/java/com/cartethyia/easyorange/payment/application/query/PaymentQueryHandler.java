@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,16 +19,24 @@ public class PaymentQueryHandler {
 
     private final PaymentQueryRepository paymentQueryRepository;
 
-    public Payment getPaymentById(String paymentId) {
-        return paymentQueryRepository
-                .findAggregateById(paymentId)
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
+    public Payment getPaymentById(String paymentId, String operatorId) {
+        return assertOwnership(paymentQueryRepository.findAggregateById(paymentId), operatorId);
     }
 
-    public Payment getPaymentByOrderId(String orderId) {
-        return paymentQueryRepository
-                .findAggregateByOrderId(orderId)
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
+    public Payment getPaymentByOrderId(String orderId, String operatorId) {
+        return assertOwnership(paymentQueryRepository.findAggregateByOrderId(orderId), operatorId);
+    }
+
+    /**
+     * 资源归属校验（越权防护）— 查询者必须与支付单所属用户一致，
+     * 不一致时按「记录不存在」处理（B4001→404），避免泄露支付单存在性。
+     */
+    private Payment assertOwnership(Optional<Payment> found, String operatorId) {
+        Payment payment = found.orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
+        if (!payment.userId().equals(operatorId)) {
+            throw PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND);
+        }
+        return payment;
     }
 
     /**

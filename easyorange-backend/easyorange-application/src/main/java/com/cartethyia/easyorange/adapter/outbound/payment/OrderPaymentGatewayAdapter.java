@@ -41,13 +41,17 @@ public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
         paymentCommandHandler.handle(new PayCommand(payment.paymentNo(), null, null));
     }
 
+    /**
+     * 订单取消自动退款 — 系统内部路径，操作者记为支付单所属用户（通过归属校验）。
+     */
     @Override
     public void refundPayment(String orderId, String reason) {
         Payment payment = paymentRepository
                 .findByOrderId(orderId)
                 .orElseThrow(() -> BusinessException.of(OrderResultCode.ORDER_NOT_FOUND, "支付单不存在"));
 
-        RefundPaymentCommand command = new RefundPaymentCommand(payment.id(), payment.amount(), reason);
+        RefundPaymentCommand command =
+                new RefundPaymentCommand(payment.id(), payment.userId(), payment.amount(), reason);
         paymentCommandHandler.handle(command);
     }
 }

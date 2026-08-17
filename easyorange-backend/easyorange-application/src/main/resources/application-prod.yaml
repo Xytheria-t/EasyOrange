@@ -186,6 +186,8 @@ security:
     - /api/health
     - /api/products/{id}/view
     - /api/products/batch
+    # 支付网关回调 — 匿名可达，安全性由 HMAC 签名校验承担（CallbackSignatureVerifier）
+    - /api/payments/callback
     # WebSocket 握手端点 — 由 WebSocketAuthInterceptor 自行完成 JWT 认证与吊销校验
     - /ws
     - /ws/**

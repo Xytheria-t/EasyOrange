@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.payment.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.payment.application.command.PayCommand;
+import com.cartethyia.easyorange.payment.application.command.PaymentCallbackCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.application.command.PaymentPhaseExecutor;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
@@ -37,8 +38,8 @@ class PaymentTransactionBoundaryTest {
             "confirmRefundPhase2",
             "rollbackRefundStatus");
 
-    private static final Set<String> ORCHESTRATION_WITH_GATEWAY =
-            Set.of(PayCommand.class.getName(), RefundPaymentCommand.class.getName());
+    private static final Set<String> ORCHESTRATION_COMMANDS = Set.of(
+            PayCommand.class.getName(), RefundPaymentCommand.class.getName(), PaymentCallbackCommand.class.getName());
 
     @Test
     void phaseMethodsAreDeclaredOnExecutorAndTransactional() {
@@ -62,7 +63,7 @@ class PaymentTransactionBoundaryTest {
         for (Method method : PaymentCommandHandler.class.getDeclaredMethods()) {
             if (method.getName().equals("handle")
                     && method.getParameterCount() == 1
-                    && ORCHESTRATION_WITH_GATEWAY.contains(method.getParameterTypes()[0].getName())) {
+                    && ORCHESTRATION_COMMANDS.contains(method.getParameterTypes()[0].getName())) {
                 assertThat(method.isAnnotationPresent(Transactional.class))
                         .as("编排方法 %s 不得持有事务（事务不得跨网关调用）", method)
                         .isFalse();

@@ -16,6 +16,7 @@ import com.cartethyia.easyorange.payment.domain.event.PaymentSucceededEvent;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
+import com.cartethyia.easyorange.payment.domain.valueobject.PaymentNo;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -101,7 +102,7 @@ public class Payment {
         BizRequire.requireTrue(spec.amount().compareTo(BigDecimal.ZERO) > 0, "支付金额必须大于0");
         BizRequire.notNull(spec.paymentMethod(), "支付方式不能为空");
 
-        String paymentNo = "PAY" + spec.paymentId().hashCode();
+        String paymentNo = PaymentNo.generate(spec.paymentId()).value();
         Money paymentAmount = Money.of(spec.amount());
 
         Payment aggregate = new Payment(

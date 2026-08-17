@@ -76,9 +76,9 @@ class PaymentQueryControllerTest {
         @Test
         @DisplayName("按 ID 查询返回支付响应")
         void getById_returnsResponse() {
-            when(queryHandler.getPaymentById("1001")).thenReturn(aggregate());
+            when(queryHandler.getPaymentById("1001", USER_ID)).thenReturn(aggregate());
 
-            Result<PaymentResponse> result = controller.getById("1001");
+            Result<PaymentResponse> result = controller.getById(currentUser(), "1001");
 
             assertThat(result.data().getId()).isEqualTo("1001");
             assertThat(result.data().getStatus()).isEqualTo("SUCCESS");
@@ -92,9 +92,9 @@ class PaymentQueryControllerTest {
         @Test
         @DisplayName("按订单 ID 查询")
         void getByOrderId_returnsResponse() {
-            when(queryHandler.getPaymentByOrderId("2001")).thenReturn(aggregate());
+            when(queryHandler.getPaymentByOrderId("2001", USER_ID)).thenReturn(aggregate());
 
-            Result<PaymentResponse> result = controller.getByOrderId("2001");
+            Result<PaymentResponse> result = controller.getByOrderId(currentUser(), "2001");
 
             assertThat(result.data().getOrderId()).isEqualTo("2001");
         }
@@ -107,9 +107,9 @@ class PaymentQueryControllerTest {
         @Test
         @DisplayName("返回状态响应")
         void getStatus_returnsStatus() {
-            when(queryHandler.getPaymentById("1001")).thenReturn(aggregate());
+            when(queryHandler.getPaymentById("1001", USER_ID)).thenReturn(aggregate());
 
-            Result<PaymentQueryController.PaymentStatusResponse> result = controller.getStatus("1001");
+            Result<PaymentQueryController.PaymentStatusResponse> result = controller.getStatus(currentUser(), "1001");
 
             assertThat(result.data().status()).isEqualTo("已支付");
             assertThat(result.data().paymentMethod()).isNotBlank();

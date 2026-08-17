@@ -36,21 +36,24 @@ public class PaymentCommandController {
     }
 
     @PostMapping("/callback")
-    public Result<Void> paymentCallback(@RequestBody PaymentCallback callback) {
+    public Result<Void> paymentCallback(@Valid @RequestBody PaymentCallback callback) {
         signatureVerifier.verify(callback.getPaymentNo(), callback.getTransactionId(), callback.getSign());
-        commandHandler.handle(paymentCommandMapper.toPayCommand(callback));
+        commandHandler.handle(paymentCommandMapper.toCallbackCommand(callback));
         return Result.success();
     }
 
     @PostMapping("/{id}/refund")
-    public Result<Void> refund(@PathVariable String id, @Valid @RequestBody RefundRequest request) {
-        commandHandler.handle(paymentCommandMapper.toRefundCommand(id, request));
+    public Result<Void> refund(
+            @AuthenticationPrincipal AuthUser user,
+            @PathVariable String id,
+            @Valid @RequestBody RefundRequest request) {
+        commandHandler.handle(paymentCommandMapper.toRefundCommand(id, user.userId(), request));
         return Result.success();
     }
 
     @PostMapping("/{id}/close")
-    public Result<Void> close(@PathVariable String id) {
-        commandHandler.handle(paymentCommandMapper.toCloseCommand(id));
+    public Result<Void> close(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
+        commandHandler.handle(paymentCommandMapper.toCloseCommand(id, user.userId()));
         return Result.success();
     }
 }

@@ -278,6 +278,8 @@ security:
     - /api/products/{id}/view
     - /api/products/batch
     - /api/products/categories/cache
+    # 支付网关回调 — 匿名可达，安全性由 HMAC 签名校验承担（CallbackSignatureVerifier）
+    - /api/payments/callback
     # Actuator 运维端点 — 仅放行健康/信息/指标抓取（探针与 Prometheus 需匿名访问）；
     # 其中的详细内容受 show-details: when-authorized 保护。env/configprops 等敏感端点不在暴露清单内
     - /actuator/health/**

@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
+import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
@@ -80,5 +81,19 @@ class OrderPaymentGatewayAdapterTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting(e -> ((BusinessException) e).getCode())
                 .isEqualTo(OrderResultCode.ORDER_NOT_FOUND.getCode());
+    }
+
+    @Test
+    @DisplayName("订单取消自动退款 - 操作者记为支付单所属用户（通过归属校验）")
+    void refundPayment_passesPaymentOwnerAsOperator() {
+        when(paymentRepository.findByOrderId("2001")).thenReturn(Optional.of(payment()));
+
+        adapter.refundPayment("2001", "订单取消");
+
+        verify(paymentCommandHandler)
+                .handle(argThat((RefundPaymentCommand cmd) -> cmd.paymentId().equals("1001")
+                        && cmd.userId().equals("3001")
+                        && cmd.refundAmount().compareTo(new BigDecimal("100.00")) == 0
+                        && cmd.refundReason().equals("订单取消")));
     }
 }

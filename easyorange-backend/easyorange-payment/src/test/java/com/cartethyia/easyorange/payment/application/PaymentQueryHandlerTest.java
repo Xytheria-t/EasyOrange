@@ -10,6 +10,7 @@ import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import java.math.BigDecimal;
@@ -60,12 +61,12 @@ class PaymentQueryHandlerTest {
     class GetByIdTests {
 
         @Test
-        @DisplayName("查询支付记录成功")
+        @DisplayName("查询本人支付记录成功")
         void getById_found() {
             Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.SUCCESS);
             when(paymentQueryRepository.findAggregateById("1001")).thenReturn(Optional.of(aggregate));
 
-            Payment result = queryHandler.getPaymentById("1001");
+            Payment result = queryHandler.getPaymentById("1001", USER_ID);
 
             assertThat(result.id()).isEqualTo("1001");
             assertThat(result.paymentNo()).isEqualTo("PAY123");
@@ -77,7 +78,20 @@ class PaymentQueryHandlerTest {
         void getById_notFound() {
             when(paymentQueryRepository.findAggregateById("9999")).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> queryHandler.getPaymentById("9999")).isInstanceOf(PaymentDomainException.class);
+            assertThatThrownBy(() -> queryHandler.getPaymentById("9999", USER_ID))
+                    .isInstanceOf(PaymentDomainException.class);
+        }
+
+        @Test
+        @DisplayName("越权查询他人支付单 - 按记录不存在拒绝")
+        void getById_ownershipMismatch_rejected() {
+            Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.SUCCESS);
+            when(paymentQueryRepository.findAggregateById("1001")).thenReturn(Optional.of(aggregate));
+
+            assertThatThrownBy(() -> queryHandler.getPaymentById("1001", "9999"))
+                    .isInstanceOf(PaymentDomainException.class)
+                    .satisfies(e -> assertThat(((PaymentDomainException) e).getCode())
+                            .isEqualTo(PaymentResultCode.PAYMENT_NOT_FOUND.getCode()));
         }
     }
 
@@ -86,14 +100,24 @@ class PaymentQueryHandlerTest {
     class GetByOrderIdTests {
 
         @Test
-        @DisplayName("按订单ID查询支付记录成功")
+        @DisplayName("按订单ID查询本人支付记录成功")
         void getByOrderId_found() {
             Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.PENDING);
             when(paymentQueryRepository.findAggregateByOrderId("2001")).thenReturn(Optional.of(aggregate));
 
-            Payment result = queryHandler.getPaymentByOrderId("2001");
+            Payment result = queryHandler.getPaymentByOrderId("2001", USER_ID);
 
             assertThat(result.orderId()).isEqualTo("2001");
+        }
+
+        @Test
+        @DisplayName("越权按订单ID查询他人支付单 - 按记录不存在拒绝")
+        void getByOrderId_ownershipMismatch_rejected() {
+            Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.PENDING);
+            when(paymentQueryRepository.findAggregateByOrderId("2001")).thenReturn(Optional.of(aggregate));
+
+            assertThatThrownBy(() -> queryHandler.getPaymentByOrderId("2001", "9999"))
+                    .isInstanceOf(PaymentDomainException.class);
         }
     }
 

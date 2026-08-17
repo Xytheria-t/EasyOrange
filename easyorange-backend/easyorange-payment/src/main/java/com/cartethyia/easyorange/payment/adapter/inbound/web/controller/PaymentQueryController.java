@@ -28,20 +28,20 @@ public class PaymentQueryController {
     private final PaymentViewAssembler paymentViewAssembler;
 
     @GetMapping("/{id}")
-    public Result<PaymentResponse> getById(@PathVariable String id) {
-        Payment aggregate = queryHandler.getPaymentById(id);
+    public Result<PaymentResponse> getById(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
+        Payment aggregate = queryHandler.getPaymentById(id, user.userId());
         return Result.success(paymentViewAssembler.toPaymentResponse(aggregate));
     }
 
     @GetMapping("/orders/{orderId}")
-    public Result<PaymentResponse> getByOrderId(@PathVariable String orderId) {
-        Payment aggregate = queryHandler.getPaymentByOrderId(orderId);
+    public Result<PaymentResponse> getByOrderId(@AuthenticationPrincipal AuthUser user, @PathVariable String orderId) {
+        Payment aggregate = queryHandler.getPaymentByOrderId(orderId, user.userId());
         return Result.success(paymentViewAssembler.toPaymentResponse(aggregate));
     }
 
     @GetMapping("/{id}/status")
-    public Result<PaymentStatusResponse> getStatus(@PathVariable String id) {
-        Payment aggregate = queryHandler.getPaymentById(id);
+    public Result<PaymentStatusResponse> getStatus(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
+        Payment aggregate = queryHandler.getPaymentById(id, user.userId());
         return Result.success(new PaymentStatusResponse(
                 aggregate.status().getDesc(),
                 com.cartethyia.easyorange.payment.domain.constant.PaymentMethod.getDescByCode(
