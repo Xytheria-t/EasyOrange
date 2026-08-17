@@ -58,7 +58,8 @@ public class MockPaymentController {
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
 
         if (Boolean.TRUE.equals(request.getSuccess())) {
-            paymentCommandHandler.handle(new PayCommand(aggregate.paymentNo(), "MOCK_TXN_" + System.currentTimeMillis(), null));
+            paymentCommandHandler.handle(
+                    new PayCommand(aggregate.paymentNo(), "MOCK_TXN_" + System.currentTimeMillis(), null));
         } else {
             var failed = aggregate.fail("模拟支付失败");
             paymentRepository.update(failed.aggregate());
@@ -75,7 +76,8 @@ public class MockPaymentController {
         Payment aggregate = paymentRepository
                 .findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        paymentCommandHandler.handle(new PayCommand(aggregate.paymentNo(), "MOCK_TXN_" + System.currentTimeMillis(), null));
+        paymentCommandHandler.handle(
+                new PayCommand(aggregate.paymentNo(), "MOCK_TXN_" + System.currentTimeMillis(), null));
 
         return Result.success(buildPaymentResponse(paymentRepository
                 .findById(paymentId)

@@ -102,9 +102,9 @@ class MockPaymentControllerTest {
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().getStatus()).isEqualTo("SUCCESS");
             verify(paymentCommandHandler)
-                    .handle(argThat((PayCommand cmd) ->
-                            cmd.paymentNo().equals("PAY123") && cmd.transactionId() != null
-                                    && cmd.transactionId().startsWith("MOCK_TXN_")));
+                    .handle(argThat((PayCommand cmd) -> cmd.paymentNo().equals("PAY123")
+                            && cmd.transactionId() != null
+                            && cmd.transactionId().startsWith("MOCK_TXN_")));
         }
 
         @Test
@@ -139,9 +139,9 @@ class MockPaymentControllerTest {
 
             assertThat(result.data().getStatus()).isEqualTo("SUCCESS");
             verify(paymentCommandHandler)
-                    .handle(argThat((PayCommand cmd) ->
-                            cmd.paymentNo().equals("PAY123") && cmd.transactionId() != null
-                                    && cmd.transactionId().startsWith("MOCK_TXN_")));
+                    .handle(argThat((PayCommand cmd) -> cmd.paymentNo().equals("PAY123")
+                            && cmd.transactionId() != null
+                            && cmd.transactionId().startsWith("MOCK_TXN_")));
         }
 
         @Test

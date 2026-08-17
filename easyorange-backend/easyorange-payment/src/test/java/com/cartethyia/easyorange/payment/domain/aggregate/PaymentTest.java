@@ -195,13 +195,10 @@ class PaymentTest {
 
             assertThat(result.aggregate().status()).isEqualTo(PaymentStatus.SUCCESS);
             assertThat(result.aggregate().transactionId()).isEqualTo("TXN_001");
-            assertThat(result.event())
-                    .isInstanceOfSatisfying(
-                            PaymentSucceededEvent.class,
-                            e -> {
-                                assertThat(e.transactionId()).isEqualTo("TXN_001");
-                                assertThat(e.orderId()).isEqualTo("2001");
-                            });
+            assertThat(result.event()).isInstanceOfSatisfying(PaymentSucceededEvent.class, e -> {
+                assertThat(e.transactionId()).isEqualTo("TXN_001");
+                assertThat(e.orderId()).isEqualTo("2001");
+            });
         }
 
         @Test
