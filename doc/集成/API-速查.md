@@ -74,9 +74,13 @@
 
 | 功能 | 方法+路径 | 鉴权 |
 |------|----------|------|
-| 收藏 | `POST /api/favorites` | Access Token |
+| 收藏 | `POST /api/favorites/{productId}` | Access Token |
 | 取消收藏 | `DELETE /api/favorites/{productId}` | Access Token |
-| 我的收藏 | `GET /api/favorites` | Access Token |
+| 批量取消收藏 | `DELETE /api/favorites/batch`（body: ids，最多 100 条） | Access Token |
+| 我的收藏 | `GET /api/favorites?pageNum=1&pageSize=20` | Access Token |
+| 是否已收藏 | `GET /api/favorites/check/{productId}` | Access Token |
+| 收藏数量 | `GET /api/favorites/count` | Access Token |
+| 批量检查收藏状态 | `POST /api/favorites/batch-check`（body: productIds，最多 100 个） | Access Token |
 | 站内消息列表 | `GET /api/messages` | Access Token |
 | 实时聊天 | WebSocket `/ws/chat` | STOMP Token |
 
