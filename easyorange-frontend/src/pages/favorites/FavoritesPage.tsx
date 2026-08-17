@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Bell, Brain, Clock, MapPin, RefreshCw, Sparkles, Trash2, TrendingDown, Zap } from 'lucide-react';
+import { ArrowRight, Bell, Clock, MapPin, RefreshCw, Sparkles, Trash2, TrendingDown, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { favoriteApi } from '@/api/favoriteApi';
@@ -73,6 +73,19 @@ export default function FavoritesPage() {
     const favorites = favoritesData?.records ?? [];
     const total = favoritesData?.total ?? 0;
     const totalPages = favoritesData?.pages ?? 1;
+
+    const priceDropCount = favorites.filter(f => {
+        const p = f.product;
+        return p != null && p.originalPrice != null && p.originalPrice > p.price;
+    }).length;
+    const lowStockCount = favorites.filter(f => {
+        const p = f.product;
+        return p != null && p.stock != null && p.stock <= 5;
+    }).length;
+    const hotCount = favorites.filter(f => {
+        const p = f.product;
+        return p != null && p.views != null && p.views > 200;
+    }).length;
 
     const toggleSelect = (id: string) => {
         setSelectedIds(prev => {
@@ -252,13 +265,13 @@ export default function FavoritesPage() {
                         <div className="favorites-ai-card">
                             <div className="favorites-ai-header">
                                 <div className="favorites-ai-icon">
-                                    <Brain size={18} />
+                                    <Sparkles size={18} />
                                 </div>
                                 <div className="favorites-ai-title">
-                                    <h3>AI收藏分析</h3>
+                                    <h3>收藏分析</h3>
                                     <span className="favorites-ai-badge">
                                         <Zap size={10} />
-                                        实时监控
+                                        实时统计
                                     </span>
                                 </div>
                             </div>
@@ -268,7 +281,7 @@ export default function FavoritesPage() {
                                         <TrendingDown size={14} />
                                     </div>
                                     <div className="feature-content">
-                                        <span className="feature-value">3件</span>
+                                        <span className="feature-value">{priceDropCount}件</span>
                                         <span className="feature-label">心动降价</span>
                                     </div>
                                 </div>
@@ -277,7 +290,7 @@ export default function FavoritesPage() {
                                         <Bell size={14} />
                                     </div>
                                     <div className="feature-content">
-                                        <span className="feature-value">2件</span>
+                                        <span className="feature-value">{lowStockCount}件</span>
                                         <span className="feature-label">库存紧张</span>
                                     </div>
                                 </div>
@@ -286,15 +299,11 @@ export default function FavoritesPage() {
                                         <Sparkles size={14} />
                                     </div>
                                     <div className="feature-content">
-                                        <span className="feature-value">5件</span>
-                                        <span className="feature-label">相似推荐</span>
+                                        <span className="feature-value">{hotCount}件</span>
+                                        <span className="feature-label">热门商品</span>
                                     </div>
                                 </div>
                             </div>
-                            <Button className="favorites-ai-btn">
-                                <Sparkles size={14} />
-                                查看智能推荐
-                            </Button>
                         </div>
                     </div>
 
