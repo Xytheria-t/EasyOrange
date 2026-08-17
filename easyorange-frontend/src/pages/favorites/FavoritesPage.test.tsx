@@ -35,6 +35,7 @@ function createMockPage(recordsCount = 1, totalOverride?: number) {
     const records = Array.from({ length: recordsCount }, (_, i) => ({
         id: `fav${i}`,
         productId: `prod${i}`,
+        priceSnapshot: 120,
         createTime: '2026-05-15T10:00:00Z',
         product: {
             id: `prod${i}`,
@@ -101,6 +102,12 @@ describe('FavoritesPage', () => {
         expect(screen.getByText('¥99.99')).toBeInTheDocument();
         expect(screen.getByText('¥150.00')).toBeInTheDocument();
         expect(screen.getByText('1')).toBeInTheDocument(); // count badge
+    });
+
+    it('shows price-drop-from-snapshot badge when price below snapshot', async () => {
+        mockGetList.mockResolvedValue({ data: createMockPage(1) });
+        renderPage();
+        expect(await screen.findByText('较收藏降 ¥20.01')).toBeInTheDocument();
     });
 
     it('selects item and batch removes', async () => {

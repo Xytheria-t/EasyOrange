@@ -58,6 +58,7 @@ public class FavoriteAssembler {
                     return FavoriteResponse.builder()
                             .id(fav.id())
                             .productId(fav.productId())
+                            .priceSnapshot(fav.priceSnapshot())
                             .product(productDetail)
                             .createTime(fav.createTime())
                             .build();

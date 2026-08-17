@@ -37,6 +37,9 @@ public class RabbitMQConfig {
     public static final String QUEUE_AI_PRODUCT = "eo.ai.product";
     public static final String QUEUE_AI_CREDIT = "eo.ai.credit";
 
+    // 收藏降价提醒
+    public static final String QUEUE_FAVORITE_PRICE_DROP = "eo.favorite.price-drop";
+
     // === Exchanges ===
 
     @Bean
@@ -69,7 +72,8 @@ public class RabbitMQConfig {
                 new QueueSpec(QUEUE_MESSAGE_WEBSOCKET, "message.recalled"),
                 new QueueSpec(QUEUE_PAYMENT_METRICS, "payment.#"),
                 new QueueSpec(QUEUE_AI_PRODUCT, "product.created", "product.updated", "product.marked.sold"),
-                new QueueSpec(QUEUE_AI_CREDIT, "order.completed", "report.processed"));
+                new QueueSpec(QUEUE_AI_CREDIT, "order.completed", "report.processed"),
+                new QueueSpec(QUEUE_FAVORITE_PRICE_DROP, "product.updated"));
 
         for (var q : specs) {
             var queue = QueueBuilder.durable(q.name())

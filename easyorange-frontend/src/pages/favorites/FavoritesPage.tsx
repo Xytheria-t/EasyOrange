@@ -321,6 +321,10 @@ export default function FavoritesPage() {
                             const discountPercent = hasDiscount
                                 ? Math.round((1 - product.price / (product.originalPrice as number)) * 100)
                                 : 0;
+                            const droppedFromSnapshot =
+                                fav.priceSnapshot != null && product.price < fav.priceSnapshot
+                                    ? fav.priceSnapshot - product.price
+                                    : null;
                             const isHot = product.views != null && product.views > 200;
                             const quickLocation = product.location?.trim() || '校内面交';
                             const sellerName = product.username || '匿名用户';
@@ -386,6 +390,11 @@ export default function FavoritesPage() {
                                             {hasDiscount && (
                                                 <span className="fav-badge fav-badge-discount">
                                                     -{discountPercent}%
+                                                </span>
+                                            )}
+                                            {droppedFromSnapshot != null && (
+                                                <span className="fav-badge fav-badge-discount">
+                                                    较收藏降 ¥{formatPrice(droppedFromSnapshot)}
                                                 </span>
                                             )}
                                             {isHot && (

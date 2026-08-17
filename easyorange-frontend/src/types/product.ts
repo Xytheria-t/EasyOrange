@@ -109,6 +109,7 @@ export interface FavoriteProduct {
 export interface Favorite {
     id: string;
     productId: string;
+    priceSnapshot: number | null;
     product: FavoriteProduct;
     createTime: string;
 }
