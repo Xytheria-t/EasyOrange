@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.favorite.adapter.outbound.persistence;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
 import com.cartethyia.easyorange.common.entity.BaseDO;
+import java.math.BigDecimal;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
@@ -15,6 +16,7 @@ public class FavoriteDO extends BaseDO {
 
     private String userId;
     private String productId;
+    private BigDecimal priceSnapshot;
 
     @Version
     private Integer version;

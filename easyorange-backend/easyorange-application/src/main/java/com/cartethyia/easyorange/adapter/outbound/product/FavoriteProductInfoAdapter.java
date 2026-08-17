@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepo
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,9 @@ public class FavoriteProductInfoAdapter implements ProductInfoPort {
     private final ProductQueryRepository productQueryRepository;
 
     @Override
-    public boolean productExists(String productId) {
-        return productRepository.findById(ProductId.of(productId)).isPresent();
+    public Optional<BigDecimal> findPriceByProductId(String productId) {
+        return Optional.ofNullable(productQueryRepository.findProductById(productId))
+                .map(ProductReadModel::price);
     }
 
     @Override

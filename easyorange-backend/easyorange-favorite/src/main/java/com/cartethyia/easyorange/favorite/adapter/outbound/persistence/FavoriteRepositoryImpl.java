@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -54,6 +55,13 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
     }
 
     @Override
+    public List<Favorite> findByProductId(String productId) {
+        return lambdaQuery().eq(FavoriteDO::getProductId, productId).eq(FavoriteDO::getDelFlag, 0).list().stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public long countByUserId(String userId) {
         return lambdaQuery()
                 .eq(FavoriteDO::getUserId, userId)
@@ -69,14 +77,22 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
             mapper.reviveById(softDeleted.getId(), favorite.userId());
             FavoriteDO revived = mapper.selectById(softDeleted.getId());
             return Favorite.reconstitute(
-                    revived.getId(), revived.getUserId(), revived.getProductId(), revived.getCreateTime());
+                    revived.getId(),
+                    revived.getUserId(),
+                    revived.getProductId(),
+                    revived.getPriceSnapshot(),
+                    revived.getCreateTime());
         }
 
         FavoriteDO dataObject = toDataObject(favorite);
         dataObject.setId(idGenerator.generateId());
         mapper.insert(dataObject);
         return Favorite.reconstitute(
-                dataObject.getId(), dataObject.getUserId(), dataObject.getProductId(), dataObject.getCreateTime());
+                dataObject.getId(),
+                dataObject.getUserId(),
+                dataObject.getProductId(),
+                dataObject.getPriceSnapshot(),
+                dataObject.getCreateTime());
     }
 
     @Override
@@ -109,9 +125,29 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
         return dataObjects.stream().map(FavoriteDO::getProductId).collect(Collectors.toSet());
     }
 
+    @Override
+    public boolean updatePriceSnapshot(String id, BigDecimal expectedSnapshot, BigDecimal newSnapshot) {
+        return lambdaUpdate()
+                .eq(FavoriteDO::getId, id)
+                .eq(FavoriteDO::getDelFlag, 0)
+                .nested(w -> {
+                    if (expectedSnapshot == null) {
+                        w.isNull(FavoriteDO::getPriceSnapshot);
+                    } else {
+                        w.eq(FavoriteDO::getPriceSnapshot, expectedSnapshot);
+                    }
+                })
+                .set(FavoriteDO::getPriceSnapshot, newSnapshot)
+                .update();
+    }
+
     private Favorite toDomain(FavoriteDO dataObject) {
         return Favorite.reconstitute(
-                dataObject.getId(), dataObject.getUserId(), dataObject.getProductId(), dataObject.getCreateTime());
+                dataObject.getId(),
+                dataObject.getUserId(),
+                dataObject.getProductId(),
+                dataObject.getPriceSnapshot(),
+                dataObject.getCreateTime());
     }
 
     private FavoriteDO toDataObject(Favorite favorite) {
@@ -119,6 +155,7 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
         dataObject.setId(favorite.id());
         dataObject.setUserId(favorite.userId());
         dataObject.setProductId(favorite.productId());
+        dataObject.setPriceSnapshot(favorite.priceSnapshot());
         return dataObject;
     }
 }

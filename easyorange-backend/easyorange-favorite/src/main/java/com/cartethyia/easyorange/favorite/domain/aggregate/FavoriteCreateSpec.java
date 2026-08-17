@@ -6,4 +6,4 @@ package com.cartethyia.easyorange.favorite.domain.aggregate;
  * 收敛 create() 参数为单一 record，对齐 product/order/payment 模块的 Spec 模式。
  * 纯 VO 字段，domain 层零框架依赖。
  */
-public record FavoriteCreateSpec(String userId, String productId) {}
+public record FavoriteCreateSpec(String userId, String productId, java.math.BigDecimal price) {}

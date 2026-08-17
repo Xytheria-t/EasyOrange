@@ -46,7 +46,7 @@ class FavoriteControllerTest {
     @Test
     @DisplayName("获取收藏列表成功")
     void testGetFavorites() {
-        Favorite favorite = Favorite.reconstitute("1", "1001", "2001", null);
+        Favorite favorite = Favorite.reconstitute("1", "1001", "2001", new java.math.BigDecimal("99.90"), null);
         PageResult<Favorite> pageResult = PageResult.of(List.of(favorite), 1L, 1, 10);
 
         FavoriteResponse favoriteResponse =

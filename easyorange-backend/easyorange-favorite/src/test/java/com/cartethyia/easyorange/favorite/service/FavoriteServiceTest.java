@@ -10,13 +10,16 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.favorite.application.service.FavoriteService;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
+import com.cartethyia.easyorange.favorite.domain.port.PriceDropNotificationPort;
 import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
+import java.math.BigDecimal;
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
@@ -31,20 +34,24 @@ class FavoriteServiceTest {
     @Mock
     private ProductInfoPort productInfoPort;
 
+    @Mock
+    private PriceDropNotificationPort priceDropNotificationPort;
+
     private FavoriteService favoriteService;
 
     private static final String TEST_USER_ID = "1001";
     private static final String TEST_PRODUCT_ID = "2001";
+    private static final BigDecimal TEST_PRICE = new BigDecimal("99.90");
 
     @BeforeEach
     void setUp() {
-        favoriteService = new FavoriteService(favoriteRepository, productInfoPort);
+        favoriteService = new FavoriteService(favoriteRepository, productInfoPort, priceDropNotificationPort);
     }
 
     @Test
     @DisplayName("添加收藏成功")
     void addFavorite_success() {
-        when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(true);
+        when(productInfoPort.findPriceByProductId(TEST_PRODUCT_ID)).thenReturn(Optional.of(TEST_PRICE));
         when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
         when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
                 .thenReturn(false);
@@ -52,13 +59,15 @@ class FavoriteServiceTest {
 
         favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID);
 
-        verify(favoriteRepository).save(any(Favorite.class));
+        ArgumentCaptor<Favorite> captor = ArgumentCaptor.forClass(Favorite.class);
+        verify(favoriteRepository).save(captor.capture());
+        assertThat(captor.getValue().priceSnapshot()).isEqualTo(TEST_PRICE);
     }
 
     @Test
     @DisplayName("添加收藏 - 商品不存在时抛出异常")
     void addFavorite_productNotFound() {
-        when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(false);
+        when(productInfoPort.findPriceByProductId(TEST_PRODUCT_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID))
                 .isInstanceOf(BusinessException.class)
@@ -70,7 +79,7 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("添加收藏 - 已收藏时幂等成功（不重复插入）")
     void addFavorite_alreadyFavorited() {
-        when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(true);
+        when(productInfoPort.findPriceByProductId(TEST_PRODUCT_ID)).thenReturn(Optional.of(TEST_PRICE));
         when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
         when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
                 .thenReturn(true);
@@ -83,7 +92,7 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("添加收藏 - 并发重复收藏撞唯一键时幂等成功")
     void addFavorite_duplicateKeyRace() {
-        when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(true);
+        when(productInfoPort.findPriceByProductId(TEST_PRODUCT_ID)).thenReturn(Optional.of(TEST_PRICE));
         when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
         when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
                 .thenReturn(false);
@@ -95,7 +104,7 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("添加收藏 - 不能收藏自己的商品")
     void addFavorite_cannotFavoriteOwnProduct() {
-        when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(true);
+        when(productInfoPort.findPriceByProductId(TEST_PRODUCT_ID)).thenReturn(Optional.of(TEST_PRICE));
         when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(true);
 
         assertThatThrownBy(() -> favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID))
@@ -108,7 +117,7 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("移除收藏成功")
     void removeFavorite_success() {
-        Favorite favorite = Favorite.reconstitute("1", TEST_USER_ID, TEST_PRODUCT_ID, null);
+        Favorite favorite = Favorite.reconstitute("1", TEST_USER_ID, TEST_PRODUCT_ID, TEST_PRICE, null);
         when(favoriteRepository.findByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
                 .thenReturn(Optional.of(favorite));
 
@@ -132,9 +141,9 @@ class FavoriteServiceTest {
     @DisplayName("批量移除收藏成功")
     void removeManyFavorites_success() {
         List<String> favoriteIds = List.of("1", "2", "3");
-        Favorite favorite1 = Favorite.reconstitute("1", TEST_USER_ID, "2001", null);
-        Favorite favorite2 = Favorite.reconstitute("2", TEST_USER_ID, "2002", null);
-        Favorite favorite3 = Favorite.reconstitute("3", TEST_USER_ID, "2003", null);
+        Favorite favorite1 = Favorite.reconstitute("1", TEST_USER_ID, "2001", TEST_PRICE, null);
+        Favorite favorite2 = Favorite.reconstitute("2", TEST_USER_ID, "2002", TEST_PRICE, null);
+        Favorite favorite3 = Favorite.reconstitute("3", TEST_USER_ID, "2003", TEST_PRICE, null);
 
         when(favoriteRepository.findByIds(favoriteIds)).thenReturn(List.of(favorite1, favorite2, favorite3));
         when(favoriteRepository.removeByIds(favoriteIds)).thenReturn(3);
@@ -158,8 +167,8 @@ class FavoriteServiceTest {
     @DisplayName("批量移除收藏 - 包含他人收藏时抛出异常")
     void removeManyFavorites_containsOtherUserFavorite() {
         List<String> favoriteIds = List.of("1", "2");
-        Favorite ownFavorite = Favorite.reconstitute("1", TEST_USER_ID, "2001", null);
-        Favorite otherUserFavorite = Favorite.reconstitute("2", "9999", "2002", null);
+        Favorite ownFavorite = Favorite.reconstitute("1", TEST_USER_ID, "2001", TEST_PRICE, null);
+        Favorite otherUserFavorite = Favorite.reconstitute("2", "9999", "2002", TEST_PRICE, null);
 
         when(favoriteRepository.findByIds(favoriteIds)).thenReturn(List.of(ownFavorite, otherUserFavorite));
 
@@ -173,8 +182,8 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("查询用户收藏列表")
     void queryFavorites_success() {
-        Favorite favorite1 = Favorite.reconstitute("1", TEST_USER_ID, "2001", null);
-        Favorite favorite2 = Favorite.reconstitute("2", TEST_USER_ID, "2002", null);
+        Favorite favorite1 = Favorite.reconstitute("1", TEST_USER_ID, "2001", TEST_PRICE, null);
+        Favorite favorite2 = Favorite.reconstitute("2", TEST_USER_ID, "2002", TEST_PRICE, null);
 
         when(favoriteRepository.countByUserId(TEST_USER_ID)).thenReturn(2L);
         when(favoriteRepository.findByUserId(eq(TEST_USER_ID), eq(0L), eq(10L)))
@@ -258,5 +267,71 @@ class FavoriteServiceTest {
 
         assertThat(result).isEmpty();
         verify(favoriteRepository, never()).findFavoritedProductIds(any(), any());
+    }
+
+    @Test
+    @DisplayName("降价提醒 - 新价低于快照时通知并更新快照")
+    void processPriceDrop_lowerPrice_notifiesAndUpdatesSnapshot() {
+        BigDecimal snapshot = new BigDecimal("100.00");
+        BigDecimal newPrice = new BigDecimal("80.00");
+        Favorite favorite = Favorite.reconstitute("1", TEST_USER_ID, "2001", snapshot, null);
+        when(favoriteRepository.findByProductId("2001")).thenReturn(List.of(favorite));
+        when(favoriteRepository.updatePriceSnapshot("1", snapshot, newPrice)).thenReturn(true);
+
+        favoriteService.processPriceDrop("2001", "测试商品", newPrice);
+
+        verify(priceDropNotificationPort).sendPriceDropNotification(TEST_USER_ID, "2001", "测试商品", snapshot, newPrice);
+        verify(favoriteRepository).updatePriceSnapshot("1", snapshot, newPrice);
+    }
+
+    @Test
+    @DisplayName("降价提醒 - 新价不低于快照时不通知也不更新")
+    void processPriceDrop_noDrop_doesNotNotify() {
+        Favorite favorite = Favorite.reconstitute("1", TEST_USER_ID, "2001", new BigDecimal("100.00"), null);
+        when(favoriteRepository.findByProductId("2001")).thenReturn(List.of(favorite));
+
+        favoriteService.processPriceDrop("2001", "测试商品", new BigDecimal("100.00"));
+        favoriteService.processPriceDrop("2001", "测试商品", new BigDecimal("120.00"));
+
+        verify(priceDropNotificationPort, never()).sendPriceDropNotification(any(), any(), any(), any(), any());
+        verify(favoriteRepository, never()).updatePriceSnapshot(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("降价提醒 - 快照为空（存量数据）时只回填不通知")
+    void processPriceDrop_nullSnapshot_backfillsWithoutNotify() {
+        Favorite favorite = Favorite.reconstitute("1", TEST_USER_ID, "2001", null, null);
+        when(favoriteRepository.findByProductId("2001")).thenReturn(List.of(favorite));
+        when(favoriteRepository.updatePriceSnapshot("1", null, new BigDecimal("80.00")))
+                .thenReturn(true);
+
+        favoriteService.processPriceDrop("2001", "测试商品", new BigDecimal("80.00"));
+
+        verify(favoriteRepository).updatePriceSnapshot("1", null, new BigDecimal("80.00"));
+        verify(priceDropNotificationPort, never()).sendPriceDropNotification(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("降价提醒 - 重复事件幂等：CAS 未命中时不重复通知")
+    void processPriceDrop_duplicateEvent_casMissSkipsNotify() {
+        Favorite favorite = Favorite.reconstitute("1", TEST_USER_ID, "2001", new BigDecimal("80.00"), null);
+        when(favoriteRepository.findByProductId("2001")).thenReturn(List.of(favorite));
+        when(favoriteRepository.updatePriceSnapshot("1", new BigDecimal("80.00"), new BigDecimal("70.00")))
+                .thenReturn(false);
+
+        favoriteService.processPriceDrop("2001", "测试商品", new BigDecimal("70.00"));
+
+        verify(priceDropNotificationPort, never()).sendPriceDropNotification(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("降价提醒 - 无收藏时无操作")
+    void processPriceDrop_noFavorites_noop() {
+        when(favoriteRepository.findByProductId("2001")).thenReturn(List.of());
+
+        favoriteService.processPriceDrop("2001", "测试商品", new BigDecimal("70.00"));
+
+        verify(favoriteRepository, never()).updatePriceSnapshot(any(), any(), any());
+        verify(priceDropNotificationPort, never()).sendPriceDropNotification(any(), any(), any(), any(), any());
     }
 }
