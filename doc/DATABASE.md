@@ -428,6 +428,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 | id | VARCHAR(36) | PK | 主键 ID |
 | user_id | VARCHAR(36) | NOT NULL | 用户 ID |
 | product_id | VARCHAR(36) | NOT NULL | 商品 ID |
+| price_snapshot | DECIMAL(10,2) | NULL | 价格快照（收藏时价格，降价通知后更新为最近通知价） |
 | + 公共字段 | | | |
 
 **索引**：
