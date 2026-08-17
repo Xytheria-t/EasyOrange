@@ -60,7 +60,14 @@
 | 功能 | 方法+路径 | 鉴权 |
 |------|----------|------|
 | 发起支付 | `POST /api/payments` | Access Token |
-| 支付详情 | `GET /api/payments/{id}` | Access Token |
+| 支付详情 | `GET /api/payments/{id}` | Access Token（仅本人，他人单按 404 处理） |
+| 按订单查支付 | `GET /api/payments/orders/{orderId}` | Access Token（仅本人） |
+| 支付状态 | `GET /api/payments/{id}/status` | Access Token（仅本人） |
+| 我的支付记录 | `GET /api/payments/my` | Access Token |
+| 支付列表（管理端） | `GET /api/payments` | ADMIN |
+| 退款 | `POST /api/payments/{id}/refund` | Access Token（仅本人） |
+| 关闭支付 | `POST /api/payments/{id}/close` | Access Token（仅本人） |
+| 支付网关回调 | `POST /api/payments/callback` | 匿名（HMAC 签名校验，金额须与支付单一致） |
 | 支付方式列表 | `GET /api/payment-methods` | 否 |
 
 ## 六、互动
