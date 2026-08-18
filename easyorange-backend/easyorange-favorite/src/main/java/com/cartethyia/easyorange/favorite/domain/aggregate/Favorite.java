@@ -7,17 +7,17 @@ import java.util.Objects;
 
 public record Favorite(String id, String userId, String productId, BigDecimal priceSnapshot, LocalDateTime createTime) {
 
-    public static Favorite create(FavoriteCreateSpec spec) {
-        if (spec.userId() == null || spec.userId().isBlank()) {
+    public static Favorite create(String userId, String productId, BigDecimal price) {
+        if (userId == null || userId.isBlank()) {
             throw BusinessException.of("userId 不能为空");
         }
-        if (spec.productId() == null || spec.productId().isBlank()) {
+        if (productId == null || productId.isBlank()) {
             throw BusinessException.of("productId 不能为空");
         }
-        if (spec.price() == null || spec.price().signum() < 0) {
+        if (price == null || price.signum() < 0) {
             throw BusinessException.of("收藏时必须记录商品价格快照");
         }
-        return new Favorite(null, spec.userId(), spec.productId(), spec.price(), LocalDateTime.now());
+        return new Favorite(null, userId, productId, price, LocalDateTime.now());
     }
 
     public static Favorite reconstitute(

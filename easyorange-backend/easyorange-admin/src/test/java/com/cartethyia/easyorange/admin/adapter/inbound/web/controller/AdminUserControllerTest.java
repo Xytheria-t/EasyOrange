@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminUserResponse;
+import com.cartethyia.easyorange.admin.service.AdminUserSecurityService;
 import com.cartethyia.easyorange.admin.service.AdminUserService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.time.LocalDateTime;
@@ -30,6 +31,9 @@ class AdminUserControllerTest {
 
     @MockitoBean
     private AdminUserService adminUserService;
+
+    @MockitoBean
+    private AdminUserSecurityService adminUserSecurityService;
 
     @Test
     void listUsers_shouldReturnPaginatedUsers() throws Exception {

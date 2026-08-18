@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.user.domain.constant;
 import java.util.regex.Pattern;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import com.cartethyia.easyorange.common.constant.CommonConstant;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class UserConstant {
@@ -13,7 +14,7 @@ public final class UserConstant {
     public static final int PASSWORD_MAX_LENGTH = 128;
     public static final String USERNAME_REGEX = "^[a-zA-Z0-9_]+$";
     public static final String PASSWORD_REGEX = "^.{8,128}$";
-    public static final String PHONE_REGEX = "^1[3-9]\\d{9}$";
+    public static final String PHONE_REGEX = CommonConstant.PHONE_REGEX;
     public static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
     public static final Pattern PHONE_PATTERN = Pattern.compile(PHONE_REGEX);
     public static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);

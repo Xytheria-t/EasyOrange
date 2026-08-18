@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
-import com.cartethyia.easyorange.favorite.domain.aggregate.FavoriteCreateSpec;
 import com.cartethyia.easyorange.favorite.domain.port.PriceDropNotificationPort;
 import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
@@ -45,7 +44,7 @@ public class FavoriteService {
             return;
         }
 
-        Favorite favorite = Favorite.create(new FavoriteCreateSpec(userId, productId, price));
+        Favorite favorite = Favorite.create(userId, productId, price);
         try {
             favoriteRepository.save(favorite);
         } catch (DuplicateKeyException e) {

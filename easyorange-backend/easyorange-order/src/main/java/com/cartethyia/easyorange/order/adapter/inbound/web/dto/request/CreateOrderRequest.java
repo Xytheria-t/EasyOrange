@@ -8,6 +8,7 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.cartethyia.easyorange.common.constant.CommonConstant;
 
 @Data
 @NoArgsConstructor
@@ -20,7 +21,7 @@ public class CreateOrderRequest {
     private String address;
 
     @NotBlank(message = "联系电话不能为空")
-    @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
+    @Pattern(regexp = CommonConstant.PHONE_REGEX, message = "手机号格式不正确")
     private String phone;
 
     private String remark;

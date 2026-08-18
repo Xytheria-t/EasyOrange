@@ -28,7 +28,7 @@ class FavoriteTest {
         void create_validParams_returnsNewFavorite() {
             var before = LocalDateTime.now().minusSeconds(1);
 
-            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID, PRICE));
+            Favorite favorite = Favorite.create(USER_ID, PRODUCT_ID, PRICE);
 
             assertThat(favorite.userId()).isEqualTo(USER_ID);
             assertThat(favorite.productId()).isEqualTo(PRODUCT_ID);
@@ -40,7 +40,7 @@ class FavoriteTest {
         @Test
         @DisplayName("userId 为 null 时抛 IllegalArgumentException")
         void create_nullUserId_throws() {
-            assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec(null, PRODUCT_ID, PRICE)))
+            assertThatThrownBy(() -> Favorite.create(null, PRODUCT_ID, PRICE))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("userId");
         }
@@ -48,7 +48,7 @@ class FavoriteTest {
         @Test
         @DisplayName("userId 为空字符串时抛 BusinessException")
         void create_emptyUserId_throws() {
-            assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec("", PRODUCT_ID, PRICE)))
+            assertThatThrownBy(() -> Favorite.create("", PRODUCT_ID, PRICE))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("userId");
         }
@@ -56,14 +56,14 @@ class FavoriteTest {
         @Test
         @DisplayName("productId 为 null 时抛 BusinessException")
         void create_nullProductId_throws() {
-            assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec(USER_ID, null, PRICE)))
+            assertThatThrownBy(() -> Favorite.create(USER_ID, null, PRICE))
                     .isInstanceOf(BusinessException.class);
         }
 
         @Test
         @DisplayName("productId 为空字符串时抛 BusinessException")
         void create_emptyProductId_throws() {
-            assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec(USER_ID, "", PRICE)))
+            assertThatThrownBy(() -> Favorite.create(USER_ID, "", PRICE))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("productId");
         }
@@ -71,7 +71,7 @@ class FavoriteTest {
         @Test
         @DisplayName("price 为 null 时抛 BusinessException")
         void create_nullPrice_throws() {
-            assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID, null)))
+            assertThatThrownBy(() -> Favorite.create(USER_ID, PRODUCT_ID, null))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("价格快照");
         }
@@ -79,7 +79,7 @@ class FavoriteTest {
         @Test
         @DisplayName("price 为负数时抛 BusinessException")
         void create_negativePrice_throws() {
-            assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID, new BigDecimal("-1"))))
+            assertThatThrownBy(() -> Favorite.create(USER_ID, PRODUCT_ID, new BigDecimal("-1")))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("价格快照");
         }
@@ -87,7 +87,7 @@ class FavoriteTest {
         @Test
         @DisplayName("正常创建时记录价格快照")
         void create_validParams_recordsPriceSnapshot() {
-            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID, PRICE));
+            Favorite favorite = Favorite.create(USER_ID, PRODUCT_ID, PRICE);
 
             assertThat(favorite.priceSnapshot()).isEqualTo(PRICE);
         }
@@ -167,7 +167,7 @@ class FavoriteTest {
         @Test
         @DisplayName("归属正确时不抛异常")
         void validateOwnership_sameUser_doesNotThrow() {
-            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID, PRICE));
+            Favorite favorite = Favorite.create(USER_ID, PRODUCT_ID, PRICE);
 
             assertThatCode(() -> favorite.validateOwnership(USER_ID)).doesNotThrowAnyException();
         }
@@ -175,7 +175,7 @@ class FavoriteTest {
         @Test
         @DisplayName("归属不正确时抛 BusinessException")
         void validateOwnership_differentUser_throwsBusinessException() {
-            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID, PRICE));
+            Favorite favorite = Favorite.create(USER_ID, PRODUCT_ID, PRICE);
 
             assertThatThrownBy(() -> favorite.validateOwnership("other-user"))
                     .isInstanceOf(BusinessException.class)
