@@ -69,7 +69,7 @@ cd easyorange-frontend && docker build -t easyorange-frontend:local . && cd ..
 docker save easyorange-backend:local easyorange-frontend:local | sudo k3s ctr images import -
 
 # 3. 准备敏感配置（生成 RSA 密钥对 + 填写密码）
-bash k8s/scripts/generate-jwt-keys.sh
+bash easyorange-backend/keys/generate-rsa-keypair.sh k8s/overlays/demo/env/jwt
 cp k8s/overlays/demo/env/backend.env.example k8s/overlays/demo/env/backend.env
 cp k8s/overlays/demo/infra/env/infra.env.example k8s/overlays/demo/infra/env/infra.env
 # 编辑 backend.env / infra.env 填写真实密码与 AI key（MYSQL_PASSWORD 必须与 EASYORANGE_DB_PASSWORD 一致）

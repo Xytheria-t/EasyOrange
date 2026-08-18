@@ -2,7 +2,7 @@
 # demo overlay — k3s 单机自包含演示（基础设施中间件也在集群内）
 # =============================================================================
 # 与 compose.yaml 语义对齐:
-#   • MySQL 8.4 / Redis 7.4 / RabbitMQ 3.13 以 StatefulSet 方式托管（demo-only，
+#   • MySQL 8.4.11 / Redis 8.10.0 / RabbitMQ 4.3.4 以 StatefulSet 方式托管（demo-only，
 #     生产环境应换托管服务/Operator，见 README）
 #   • 本地镜像 easyorange-backend:local / easyorange-frontend:local（docker build 后导入 k3s）
 #   • HTTP 演示环境覆盖: in-cluster MySQL 无 TLS（prod 配置默认 useSSL=true 需覆盖为 false）、

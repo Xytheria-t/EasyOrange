@@ -71,62 +71,6 @@ CreateOrderCommand
 
 这样编排器本身可以崩溃——补偿由事件驱动恢复，而不是依赖编排器进程存活（ADR-0007 指出的「内存补偿在进程崩溃后无法重建」被 Outbox + 事件消费解决）。
 
-### 四、代码骨架（示意，不落地）
-
-```java
-// 编排器：按顺序执行步骤，失败逆序补偿；步骤注册表代替手写 if/else
-public class OrderSagaOrchestrator {
-
-    private final SagaStateStore stateStore;      // eo_saga 持久化
-    private final List<SagaStep> steps;           // ①建单 ②扣库存 ③建支付
-
-    public SagaResult execute(CreateOrderCommand cmd) {
-        String sagaId = stateStore.begin(cmd);
-        for (int i = 0; i < steps.size(); i++) {
-            SagaStep step = steps.get(i);
-            try {
-                step.execute(cmd);                 // 每步：本地事务 + 各自 Outbox
-                stateStore.recordSuccess(sagaId, step.name());
-            } catch (Exception e) {
-                compensate(sagaId, i);             // 逆序执行 0..i-1 的补偿
-                stateStore.markFailed(sagaId, e.getMessage());
-                throw new SagaExecutionException(sagaId, e);
-            }
-        }
-        stateStore.markCompleted(sagaId);
-        return new SagaResult(sagaId, "COMPLETED");
-    }
-
-    private void compensate(String sagaId, int upToExclusive) {
-        for (int i = upToExclusive - 1; i >= 0; i--) {
-            steps.get(i).compensate(sagaId);       // 每个补偿：本地事务 + 幂等键
-        }
-    }
-}
-
-// 步骤：原子操作 = 本地事务 + 补偿命令
-public interface SagaStep {
-    String name();
-    void execute(CreateOrderCommand cmd);
-    void compensate(String sagaId);
-}
-
-// 示例：扣库存步骤（product 库）——失败时补偿是「恢复库存」
-public class DecreaseStockStep implements SagaStep {
-    private final ProductInventoryPort inventoryPort;
-
-    public void execute(CreateOrderCommand cmd) {
-        inventoryPort.decreaseStock(cmd.productId(), cmd.quantity());   // product 库本地事务
-    }
-
-    public void compensate(String sagaId) {
-        inventoryPort.restoreStock(sagaId);                             // 幂等：按 sagaId 去重
-    }
-}
-```
-
-配合的 `SagaScheduler`（每 5min 扫 `eo_saga`：STARTED 超时重放 / COMPENSATING 续跑 / FAILED 转储）与现有 `DlqRetryScheduler` 同构，代码量 ~150 行。
-
 ## 后果（Consequences）
 
 **正面**：
