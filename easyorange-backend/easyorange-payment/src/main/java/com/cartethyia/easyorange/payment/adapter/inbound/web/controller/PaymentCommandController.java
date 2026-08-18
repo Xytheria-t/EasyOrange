@@ -24,13 +24,10 @@ public class PaymentCommandController {
     private final PaymentCommandHandler commandHandler;
     private final CallbackSignatureVerifierPort signatureVerifier;
 
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-    private final PaymentCommandMapper paymentCommandMapper;
-
     @PostMapping
     public Result<PaymentResponse> createPayment(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody CreatePaymentRequest request) {
-        String paymentId = commandHandler.handle(user.userId(), paymentCommandMapper.toCreateCommand(request, null));
+        String paymentId = commandHandler.handle(user.userId(), PaymentCommandMapper.toCreateCommand(request, null));
         PaymentResponse response = PaymentResponse.builder().id(paymentId).build();
         return Result.success(response);
     }
@@ -38,7 +35,7 @@ public class PaymentCommandController {
     @PostMapping("/callback")
     public Result<Void> paymentCallback(@Valid @RequestBody PaymentCallback callback) {
         signatureVerifier.verify(callback.getPaymentNo(), callback.getTransactionId(), callback.getSign());
-        commandHandler.handle(paymentCommandMapper.toCallbackCommand(callback));
+        commandHandler.handle(PaymentCommandMapper.toCallbackCommand(callback));
         return Result.success();
     }
 
@@ -47,13 +44,13 @@ public class PaymentCommandController {
             @AuthenticationPrincipal AuthUser user,
             @PathVariable String id,
             @Valid @RequestBody RefundRequest request) {
-        commandHandler.handle(paymentCommandMapper.toRefundCommand(id, user.userId(), request));
+        commandHandler.handle(PaymentCommandMapper.toRefundCommand(id, user.userId(), request));
         return Result.success();
     }
 
     @PostMapping("/{id}/close")
     public Result<Void> close(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
-        commandHandler.handle(paymentCommandMapper.toCloseCommand(id, user.userId()));
+        commandHandler.handle(PaymentCommandMapper.toCloseCommand(id, user.userId()));
         return Result.success();
     }
 }

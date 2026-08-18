@@ -20,7 +20,6 @@ import com.cartethyia.easyorange.payment.application.command.PaymentCallbackComm
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.application.command.PaymentPhaseExecutor;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
-import com.cartethyia.easyorange.payment.application.metrics.PaymentMetricsService;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
@@ -41,7 +40,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PaymentCommandHandler 测试")
@@ -60,10 +61,10 @@ class PaymentCommandHandlerTest {
     private DistributedLockPort lockPort;
 
     @Mock
-    private PaymentMetricsService metricsService;
-
-    @Mock
     private PaymentPhaseExecutor phaseExecutor;
+
+    @Spy
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
     @InjectMocks
     private PaymentCommandHandler commandHandler;
@@ -90,7 +91,10 @@ class PaymentCommandHandlerTest {
                 .satisfies(e -> assertThat(((PaymentDomainException) e).getCode())
                         .isEqualTo(PaymentResultCode.PAYMENT_BUSY.getCode()));
 
-        verify(metricsService).recordConcurrentConflict();
+        assertThat(meterRegistry
+                        .counter("payment.concurrent.conflict.total", "type", "concurrency")
+                        .count())
+                .isEqualTo(1);
     }
 
     @Nested

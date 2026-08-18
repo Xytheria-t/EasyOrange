@@ -5,7 +5,8 @@ import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
 import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
-import com.cartethyia.easyorange.payment.application.metrics.PaymentMetricsService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentCreateSpec;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
@@ -47,7 +48,7 @@ public class PaymentCommandHandler {
     private final DomainEventPublisher domainEventPublisher;
     private final IdGenerator idGenerator;
     private final DistributedLockPort lockPort;
-    private final PaymentMetricsService metricsService;
+    private final MeterRegistry meterRegistry;
     private final PaymentPhaseExecutor phaseExecutor;
 
     @Transactional(rollbackFor = Exception.class)
@@ -184,7 +185,11 @@ public class PaymentCommandHandler {
         try {
             lockPort.executeWithLock(lockKey, LOCK_TRY_TIMEOUT_SECONDS, operation);
         } catch (LockAcquisitionException e) {
-            metricsService.recordConcurrentConflict();
+            Counter.builder("payment.concurrent.conflict.total")
+                    .description("Total number of concurrent payment conflicts")
+                    .tag("type", "concurrency")
+                    .register(meterRegistry)
+                    .increment();
             log.warn("支付处理锁争用, key={}", lockKey, e);
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_BUSY);
         }

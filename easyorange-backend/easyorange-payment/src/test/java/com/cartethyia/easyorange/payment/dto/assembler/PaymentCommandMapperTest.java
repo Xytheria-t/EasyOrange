@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.payment.dto.assembler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentCommandMapper;
-import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentCommandMapperImpl;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.CreatePaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.PaymentCallback;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.RefundRequest;
@@ -19,8 +18,6 @@ import org.junit.jupiter.api.Test;
 @DisplayName("PaymentCommandMapper 测试")
 class PaymentCommandMapperTest {
 
-    private final PaymentCommandMapper mapper = new PaymentCommandMapperImpl();
-
     @Nested
     @DisplayName("toCreateCommand")
     class ToCreateCommandTests {
@@ -30,7 +27,7 @@ class PaymentCommandMapperTest {
         void toCreateCommand_mapsRequest() {
             CreatePaymentRequest request = new CreatePaymentRequest("2001", new BigDecimal("100.00"), "WECHAT", "pwd");
 
-            CreatePaymentCommand command = mapper.toCreateCommand(request, null);
+            CreatePaymentCommand command = PaymentCommandMapper.toCreateCommand(request, null);
 
             assertThat(command.orderId()).isEqualTo("2001");
             assertThat(command.amount()).isEqualByComparingTo("100.00");
@@ -53,7 +50,7 @@ class PaymentCommandMapperTest {
                     .attach("attach")
                     .build();
 
-            PaymentCallbackCommand command = mapper.toCallbackCommand(callback);
+            PaymentCallbackCommand command = PaymentCommandMapper.toCallbackCommand(callback);
 
             assertThat(command.paymentNo()).isEqualTo("PAY123");
             assertThat(command.transactionId()).isEqualTo("TXN_1");
@@ -70,7 +67,7 @@ class PaymentCommandMapperTest {
         void toRefundCommand_mapsRequest() {
             RefundRequest request = new RefundRequest("1001", new BigDecimal("50.00"), "部分退款");
 
-            RefundPaymentCommand command = mapper.toRefundCommand("1001", "3001", request);
+            RefundPaymentCommand command = PaymentCommandMapper.toRefundCommand("1001", "3001", request);
 
             assertThat(command.paymentId()).isEqualTo("1001");
             assertThat(command.userId()).isEqualTo("3001");
@@ -81,7 +78,7 @@ class PaymentCommandMapperTest {
         @Test
         @DisplayName("支付 ID 转关闭命令")
         void toCloseCommand_mapsId() {
-            ClosePaymentCommand command = mapper.toCloseCommand("1001", "3001");
+            ClosePaymentCommand command = PaymentCommandMapper.toCloseCommand("1001", "3001");
 
             assertThat(command.paymentId()).isEqualTo("1001");
             assertThat(command.userId()).isEqualTo("3001");

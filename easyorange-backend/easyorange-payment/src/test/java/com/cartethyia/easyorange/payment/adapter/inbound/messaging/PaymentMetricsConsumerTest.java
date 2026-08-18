@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
-import com.cartethyia.easyorange.payment.application.metrics.PaymentMetricsService;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentRefundedEvent;
@@ -36,8 +35,7 @@ class PaymentMetricsConsumerTest {
     void setUp() {
         meterRegistry = new SimpleMeterRegistry();
         EventMetricsService eventMetricsService = new EventMetricsService(meterRegistry);
-        PaymentMetricsService metricsService = new PaymentMetricsService(meterRegistry);
-        consumer = new PaymentMetricsConsumer(idempotencyChecker, eventMetricsService, metricsService);
+        consumer = new PaymentMetricsConsumer(idempotencyChecker, eventMetricsService, meterRegistry);
     }
 
     private Message message() {

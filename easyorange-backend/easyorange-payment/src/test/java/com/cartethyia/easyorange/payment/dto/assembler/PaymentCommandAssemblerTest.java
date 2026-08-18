@@ -17,8 +17,6 @@ import org.junit.jupiter.api.Test;
 @DisplayName("PaymentCommandMapper 测试")
 class PaymentCommandAssemblerTest {
 
-    private final PaymentCommandMapper mapper = new PaymentCommandMapper() {};
-
     @Nested
     @DisplayName("toCreateCommand")
     class ToCreateCommandTests {
@@ -31,7 +29,7 @@ class PaymentCommandAssemblerTest {
             request.setPaymentMethod("1");
             request.setPayPassword("123456");
 
-            CreatePaymentCommand command = mapper.toCreateCommand(request, "2001");
+            CreatePaymentCommand command = PaymentCommandMapper.toCreateCommand(request, "2001");
 
             assertThat(command.orderId()).isEqualTo("1001");
             assertThat(command.paymentMethod()).isEqualTo("1");
@@ -53,7 +51,7 @@ class PaymentCommandAssemblerTest {
                     .attach("test_attach")
                     .build();
 
-            PaymentCallbackCommand command = mapper.toCallbackCommand(callback);
+            PaymentCallbackCommand command = PaymentCommandMapper.toCallbackCommand(callback);
 
             assertThat(command.paymentNo()).isEqualTo("PAY123");
             assertThat(command.transactionId()).isEqualTo("TXN456");
@@ -73,7 +71,7 @@ class PaymentCommandAssemblerTest {
             request.setRefundAmount(new BigDecimal("50.00"));
             request.setRefundReason("测试退款");
 
-            RefundPaymentCommand command = mapper.toRefundCommand("2001", "3001", request);
+            RefundPaymentCommand command = PaymentCommandMapper.toRefundCommand("2001", "3001", request);
 
             assertThat(command.paymentId()).isEqualTo("2001");
             assertThat(command.userId()).isEqualTo("3001");
@@ -89,7 +87,7 @@ class PaymentCommandAssemblerTest {
         @Test
         @DisplayName("正确转换 paymentId 到 ClosePaymentCommand（含操作者）")
         void toCloseCommand_convertsCorrectly() {
-            ClosePaymentCommand command = mapper.toCloseCommand("1001", "3001");
+            ClosePaymentCommand command = PaymentCommandMapper.toCloseCommand("1001", "3001");
 
             assertThat(command.paymentId()).isEqualTo("1001");
             assertThat(command.userId()).isEqualTo("3001");
