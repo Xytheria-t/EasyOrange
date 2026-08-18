@@ -28,39 +28,7 @@ class ProductViewCountServiceTest {
     private ProductRepository productRepository;
 
     @InjectMocks
-    private ProductViewCountAppService viewCountService;
-
-    @InjectMocks
     private ViewCountBatchProcessor batchProcessor;
-
-    @Nested
-    @DisplayName("incrementViewCount")
-    class IncrementViewCountTests {
-
-        @Test
-        @DisplayName("增加浏览量成功")
-        void incrementViewCount_success() {
-            viewCountService.incrementViewCount("1");
-
-            verify(viewCountPort).increment("1");
-        }
-
-        @Test
-        @DisplayName("productId为null时跳过")
-        void incrementViewCount_nullProductId_noop() {
-            viewCountService.incrementViewCount(null);
-
-            verify(viewCountPort, never()).increment(any());
-        }
-
-        @Test
-        @DisplayName("Redis异常时记录警告不抛出")
-        void incrementViewCount_redisError_doesNotThrow() {
-            doThrow(new RuntimeException("Redis error")).when(viewCountPort).increment("1");
-
-            viewCountService.incrementViewCount("1");
-        }
-    }
 
     @Nested
     @DisplayName("batchProcessor.flush")

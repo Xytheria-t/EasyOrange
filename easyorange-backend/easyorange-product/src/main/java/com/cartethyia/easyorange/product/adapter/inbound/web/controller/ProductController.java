@@ -16,7 +16,7 @@ import com.cartethyia.easyorange.product.application.query.CategoryQueryHandler;
 import com.cartethyia.easyorange.product.application.query.ProductQueryHandler;
 import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
-import com.cartethyia.easyorange.product.application.service.ProductViewCountAppService;
+import com.cartethyia.easyorange.product.application.port.cache.ViewCountPort;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -44,7 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProductController {
 
     private final ProductCommandHandler commandHandler;
-    private final ProductViewCountAppService viewCountService;
+    private final ViewCountPort viewCountPort;
     private final ProductQueryHandler queryHandler;
     private final CategoryQueryHandler categoryQueryHandler;
     private final CategoryAssembler categoryAssembler;
@@ -126,7 +126,13 @@ public class ProductController {
     @SkipRepeatSubmit
     @PostMapping("/{id}/view")
     public Result<Void> incrementViewCount(@PathVariable String id) {
-        viewCountService.incrementViewCount(id);
+        if (id != null) {
+            try {
+                viewCountPort.increment(id);
+            } catch (Exception e) {
+                log.warn("记录浏览量失败: productId={}", id, e);
+            }
+        }
         return Result.success();
     }
 
