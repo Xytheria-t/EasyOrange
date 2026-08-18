@@ -8,12 +8,8 @@ interface Toast {
 
 export interface UIState {
     toasts: Toast[];
-    isLoading: boolean;
-    loadingMessage: string;
     addToast: (toast: Omit<Toast, 'id'>) => void;
     removeToast: (id: string) => void;
-    showLoading: (message?: string) => void;
-    hideLoading: () => void;
 }
 
 let toastCounter = 0;
@@ -25,8 +21,6 @@ function generateToastId(): string {
 
 export const useUIStore = create<UIState>()(set => ({
     toasts: [],
-    isLoading: false,
-    loadingMessage: '',
 
     addToast: toast => {
         const id = generateToastId();
@@ -45,8 +39,4 @@ export const useUIStore = create<UIState>()(set => ({
         set(state => ({
             toasts: state.toasts.filter(t => t.id !== id),
         })),
-
-    showLoading: (message = '加载中...') => set({ isLoading: true, loadingMessage: message }),
-
-    hideLoading: () => set({ isLoading: false, loadingMessage: '' }),
 }));

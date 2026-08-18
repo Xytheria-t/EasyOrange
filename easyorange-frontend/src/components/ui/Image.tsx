@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import placeholderImage from '@/assets/placeholder.png';
 
 interface ImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'srcSet'> {
     src: string | undefined;
     fallback?: string;
     placeholder?: 'blur' | 'skeleton' | 'none';
-    retryCount?: number;
-    retryDelay?: number;
     containerClassName?: string;
     fetchPriority?: 'high' | 'low' | 'auto';
     widths?: number[];
@@ -14,37 +12,6 @@ interface ImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'sr
     quality?: number;
     lazy?: boolean;
 }
-
-class LRUCache<T> {
-    private cache = new Set<T>();
-    private maxSize: number;
-
-    constructor(maxSize = 100) {
-        this.maxSize = maxSize;
-    }
-
-    add(item: T): void {
-        if (this.cache.has(item)) {
-            this.cache.delete(item);
-        } else if (this.cache.size >= this.maxSize) {
-            const first = this.cache.values().next().value;
-            if (first !== undefined) {
-                this.cache.delete(first);
-            }
-        }
-        this.cache.add(item);
-    }
-
-    has(item: T): boolean {
-        return this.cache.has(item);
-    }
-
-    clear(): void {
-        this.cache.clear();
-    }
-}
-
-const imageCache = new LRUCache<string>(100);
 
 const PLACEHOLDER_BASE_STYLE: React.CSSProperties = {
     position: 'absolute',
@@ -157,14 +124,6 @@ function buildThumbnailUrl(fileId: string, size: number): string {
     return `/api/file/${fileId}/thumbnail?size=${size}`;
 }
 
-function getRetryUrl(url: string, retry: number): string {
-    if (retry === 0) {
-        return url;
-    }
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}_retry=${retry}`;
-}
-
 function useSupportsWebP(): boolean {
     const [supports] = useState(() => getWebPSupport());
     return supports;
@@ -175,8 +134,6 @@ export function Image({
     alt,
     fallback = placeholderImage,
     placeholder = 'blur',
-    retryCount = 2,
-    retryDelay = 1000,
     className,
     containerClassName,
     style,
@@ -190,15 +147,10 @@ export function Image({
 }: ImageProps) {
     const [error, setError] = useState(false);
     const [loaded, setLoaded] = useState(false);
-    const [retryIndex, setRetryIndex] = useState(0);
-    const imgRef = useRef<HTMLImageElement>(null);
-    const prevSrcRef = useRef<string>('');
-    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const supportsWebP = useSupportsWebP();
     const resolvedSrc = resolveImageUrl(src);
     const fileId = extractFileId(src);
-    const wasLoadedBefore = resolvedSrc ? imageCache.has(resolvedSrc) : false;
 
     const actualFormat = useMemo(() => {
         if (format === 'original') {
@@ -229,62 +181,16 @@ export function Image({
         };
     }, [fileId, actualFormat, quality, widths, resolvedSrc]);
 
-    useEffect(() => {
-        return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-                timeoutRef.current = null;
-            }
-        };
-    }, []);
-
-    useEffect(() => {
-        if (!resolvedSrc) {
-            return;
-        }
-
-        if (prevSrcRef.current !== resolvedSrc) {
-            prevSrcRef.current = resolvedSrc;
-            setError(false);
-            setLoaded(false);
-            setRetryIndex(0);
-        }
-    }, [resolvedSrc]);
-
-    useEffect(() => {
-        if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
-            queueMicrotask(() => {
-                setLoaded(true);
-                if (resolvedSrc) {
-                    imageCache.add(resolvedSrc);
-                }
-            });
-        }
-    }, [resolvedSrc]);
-
     const handleLoad = useCallback(
         (e: React.SyntheticEvent<HTMLImageElement>) => {
             setLoaded(true);
             setError(false);
-            if (resolvedSrc) {
-                imageCache.add(resolvedSrc);
-            }
             onLoad?.(e);
         },
-        [resolvedSrc, onLoad]
+        [onLoad]
     );
 
-    const handleError = useCallback(() => {
-        if (retryIndex < retryCount && resolvedSrc && !resolvedSrc.startsWith('data:')) {
-            timeoutRef.current = setTimeout(() => {
-                setRetryIndex(prev => prev + 1);
-            }, retryDelay);
-        } else {
-            setError(true);
-        }
-    }, [retryIndex, retryCount, retryDelay, resolvedSrc]);
-
-    const finalSrc = error ? fallback : getRetryUrl(mainSrc, retryIndex);
+    const finalSrc = error ? fallback : mainSrc;
     const showPlaceholder = placeholder !== 'none' && !loaded && !error;
 
     const placeholderStyle = placeholder === 'skeleton' ? SKELETON_STYLE : BLUR_STYLE;
@@ -314,16 +220,15 @@ export function Image({
         >
             {showPlaceholder && <div style={placeholderStyle} />}
             <img
-                ref={imgRef}
                 src={finalSrc}
                 srcSet={srcSet}
                 sizes={sizes}
                 alt={alt}
                 className={className}
-                loading={wasLoadedBefore || !lazy ? 'eager' : 'lazy'}
+                loading={lazy ? 'lazy' : 'eager'}
                 decoding="async"
                 fetchPriority={fetchPriority}
-                onError={handleError}
+                onError={() => setError(true)}
                 onLoad={handleLoad}
                 style={imgStyle}
                 {...props}
@@ -342,13 +247,7 @@ export function preloadImage(
 ): Promise<void> {
     return new Promise((resolve, reject) => {
         const img = new window.Image();
-        img.onload = () => {
-            const resolved = resolveImageUrl(src);
-            if (resolved) {
-                imageCache.add(resolved);
-            }
-            resolve();
-        };
+        img.onload = () => resolve();
         img.onerror = reject;
 
         const fileId = extractFileId(src);
@@ -370,10 +269,6 @@ export function preloadImages(
     // biome-ignore lint/suspicious/noConfusingVoidType: side-effect preload returns void[]
 ): Promise<void[]> {
     return Promise.all(sources.map(src => preloadImage(src, options)));
-}
-
-export function clearImageCache(): void {
-    imageCache.clear();
 }
 
 export { buildResponsiveUrl, buildThumbnailUrl, buildViewUrl };

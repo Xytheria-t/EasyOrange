@@ -61,26 +61,4 @@ describe('uiStore', () => {
             expect(useUIStore.getState().toasts).toHaveLength(1);
         });
     });
-
-    describe('showLoading / hideLoading', () => {
-        it('shows loading with default message', () => {
-            useUIStore.getState().showLoading();
-            const state = useUIStore.getState();
-            expect(state.isLoading).toBe(true);
-            expect(state.loadingMessage).toBe('加载中...');
-        });
-
-        it('shows loading with custom message', () => {
-            useUIStore.getState().showLoading('正在提交...');
-            expect(useUIStore.getState().loadingMessage).toBe('正在提交...');
-        });
-
-        it('hides loading', () => {
-            useUIStore.getState().showLoading();
-            useUIStore.getState().hideLoading();
-            const state = useUIStore.getState();
-            expect(state.isLoading).toBe(false);
-            expect(state.loadingMessage).toBe('');
-        });
-    });
 });

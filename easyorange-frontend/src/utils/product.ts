@@ -42,14 +42,3 @@ export function calculateDiscount(currentPrice: number, originalPrice?: number |
     }
     return Math.round((currentPrice / originalPrice) * 10) / 10;
 }
-
-export function getConditionNameFromString(condition: string): string {
-    const conditionMap: Record<string, string> = {
-        NEW: '全新',
-        LIKE_NEW: '几乎全新',
-        GOOD: '良好',
-        FAIR: '一般',
-        POOR: '较差',
-    };
-    return conditionMap[condition] || condition;
-}

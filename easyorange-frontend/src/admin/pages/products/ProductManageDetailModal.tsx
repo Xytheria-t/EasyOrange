@@ -4,6 +4,7 @@ import { ImagePreviewOverlay } from '@/admin/components/ImagePreviewOverlay';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { ProductStatus } from '@/types';
+import { formatDate } from '@/utils/format';
 import { useAdminProductDetail, useUpdateProductStatus } from '../../hooks';
 import type { AdminProduct } from '../../types/admin';
 
@@ -78,19 +79,6 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
         } catch {
             // error handled by react-query / global handler
         }
-    };
-
-    const formatDate = (dateString: string | null) => {
-        if (!dateString) {
-            return '—';
-        }
-        return new Date(dateString).toLocaleString('zh-CN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
     };
 
     const formatPrice = (price: number | null) => (price != null ? `¥${price.toFixed(2)}` : '—');
@@ -289,8 +277,8 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                         <InfoCell label="分类" value={productData.categoryName || '—'} />
                         <InfoCell label="资产方" value={productData.sellerName || '—'} />
                         <InfoCell label="浏览量" value={productData.viewCount ?? 0} />
-                        <InfoCell label="发布时间" value={formatDate(productData.createTime)} />
-                        <InfoCell label="更新时间" value={formatDate(productData.updateTime)} />
+                        <InfoCell label="发布时间" value={formatDate(productData.createTime ?? '')} />
+                        <InfoCell label="更新时间" value={formatDate(productData.updateTime ?? '')} />
                     </div>
 
                     {/* Status bar */}

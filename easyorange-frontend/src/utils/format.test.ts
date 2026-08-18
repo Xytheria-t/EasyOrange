@@ -1,30 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-    buildQueryString,
-    escapeHtml,
-    formatCondition,
-    formatCurrency,
-    formatDate,
-    formatPrice,
-    formatRelativeTime,
-    parseQueryString,
-} from './format';
-
-describe('formatCurrency', () => {
-    it('formats amount with default CNY currency', () => {
-        const result = formatCurrency(100);
-        expect(result).toContain('100');
-        expect(result).toContain('¥');
-    });
-
-    it('formats zero', () => {
-        expect(formatCurrency(0)).toContain('0');
-    });
-
-    it('formats decimal amount', () => {
-        expect(formatCurrency(99.99)).toContain('99.99');
-    });
-});
+import { buildQueryString, escapeHtml, formatDate, formatPrice, formatRelativeTime } from './format';
 
 describe('formatPrice', () => {
     it('formats integer to two decimal places', () => {
@@ -37,20 +12,6 @@ describe('formatPrice', () => {
 
     it('formats zero', () => {
         expect(formatPrice(0)).toBe('0.00');
-    });
-});
-
-describe('formatCondition', () => {
-    it('maps known condition strings', () => {
-        expect(formatCondition('new')).toBe('全新');
-        expect(formatCondition('like_new')).toBe('几乎全新');
-        expect(formatCondition('good')).toBe('良好');
-        expect(formatCondition('fair')).toBe('一般');
-        expect(formatCondition('poor')).toBe('较差');
-    });
-
-    it('returns original string for unknown condition', () => {
-        expect(formatCondition('unknown')).toBe('unknown');
     });
 });
 
@@ -141,17 +102,5 @@ describe('buildQueryString', () => {
 
     it('returns empty string for empty params', () => {
         expect(buildQueryString({})).toBe('');
-    });
-});
-
-describe('parseQueryString', () => {
-    it('parses query string', () => {
-        const result = parseQueryString('?keyword=test&page=1');
-        expect(result).toEqual({ keyword: 'test', page: '1' });
-    });
-
-    it('handles empty query string', () => {
-        const result = parseQueryString('');
-        expect(result).toEqual({});
     });
 });

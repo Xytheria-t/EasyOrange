@@ -11,4 +11,4 @@ export {
     HeroSection,
     ProductsSection,
 } from './sections';
-export { GlobalLoading, Image, ScrollProgressBar, ToastContainer } from './ui';
+export { Image, ScrollProgressBar, ToastContainer } from './ui';

@@ -3,26 +3,8 @@
  * @description 提供日期、数字、字符串等格式化功能
  */
 
-export function formatCurrency(amount: number, currency = 'CNY'): string {
-    return new Intl.NumberFormat('zh-CN', {
-        style: 'currency',
-        currency,
-    }).format(amount);
-}
-
 export function formatPrice(price: number): string {
     return price.toFixed(2);
-}
-
-export function formatCondition(condition: string): string {
-    const conditionMap: Record<string, string> = {
-        'new': '全新',
-        like_new: '几乎全新',
-        good: '良好',
-        fair: '一般',
-        poor: '较差',
-    };
-    return conditionMap[condition] || condition;
 }
 
 export function formatDate(date: Date | string | number, format: 'date' | 'time' | 'datetime' = 'datetime'): string {
@@ -105,15 +87,6 @@ export function escapeHtml(str: string | null | undefined): string {
     };
 
     return str.replace(/[&<>"'`=/]/g, char => HTML_ENTITIES[char]);
-}
-
-export function parseQueryString(queryString = window.location.search): Record<string, string> {
-    const params = new URLSearchParams(queryString.replace(/^\?/, ''));
-    const result: Record<string, string> = {};
-    params.forEach((value, key) => {
-        result[key] = value;
-    });
-    return result;
 }
 
 export function buildQueryString(params: Record<string, unknown>): string {

@@ -14,10 +14,6 @@ vi.mock('@/components/ui/Toast', () => ({
     ToastContainer: () => <div data-testid="toast-container" />,
 }));
 
-vi.mock('@/components/ui/Loading', () => ({
-    GlobalLoading: () => <div data-testid="global-loading" />,
-}));
-
 vi.mock('react-router-dom', () => ({
     Outlet: () => <div data-testid="outlet">Page Content</div>,
 }));
@@ -36,7 +32,6 @@ describe('AdminLayout', () => {
         expect(screen.getByTestId('admin-header')).toBeInTheDocument();
         expect(screen.getByTestId('outlet')).toBeInTheDocument();
         expect(screen.getByTestId('toast-container')).toBeInTheDocument();
-        expect(screen.getByTestId('global-loading')).toBeInTheDocument();
     });
 
     it('renders admin root class', () => {

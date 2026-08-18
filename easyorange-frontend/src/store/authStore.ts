@@ -35,6 +35,3 @@ export const useAuthStore = create<AuthState>()(set => ({
             token: null,
         }),
 }));
-
-/** 是否已认证（派生状态，从 token 存在性判断） */
-export const useIsAuthenticated = () => useAuthStore(state => !!state.token);

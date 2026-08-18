@@ -1,5 +1,4 @@
 import { Outlet } from 'react-router-dom';
-import { GlobalLoading } from '@/components/ui/Loading';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useAdminStore } from '../store';
 import { AdminHeader } from './AdminHeader';
@@ -21,7 +20,6 @@ export function AdminLayout() {
                 </div>
             </div>
             <ToastContainer />
-            <GlobalLoading />
         </div>
     );
 }

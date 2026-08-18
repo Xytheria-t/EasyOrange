@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearImageCache, Image } from './Image';
+import { Image } from './Image';
 
 // Mock placeholder image import
 vi.mock('@/assets/placeholder.png', () => ({
@@ -9,7 +9,6 @@ vi.mock('@/assets/placeholder.png', () => ({
 
 describe('Image', () => {
     beforeEach(() => {
-        clearImageCache();
         // Mock canvas to indicate WebP support
         HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/webp,test');
     });

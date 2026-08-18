@@ -42,9 +42,8 @@ export {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from './dropdown-menu';
-export { clearImageCache, Image, preloadImage, preloadImages } from './Image';
+export { Image, preloadImage, preloadImages } from './Image';
 export { Input } from './input';
-export { GlobalLoading } from './Loading';
 export { Label } from './label';
 export {
     Pagination,

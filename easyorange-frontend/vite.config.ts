@@ -8,12 +8,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const isAnalyze = process.env.ANALYZE === 'true' || process.env.NODE_ENV === 'analyze';
-const shouldVisualize = process.env.NODE_ENV === 'production' || isAnalyze;
 
 export default defineConfig({
     plugins: [
         react(),
-        ...(shouldVisualize ? [
+        ...(isAnalyze ? [
             visualizer({
                 open: false,
                 gzipSize: true,

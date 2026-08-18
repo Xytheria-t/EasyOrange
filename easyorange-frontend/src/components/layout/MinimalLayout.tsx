@@ -1,5 +1,4 @@
 import { Outlet } from 'react-router-dom';
-import { GlobalLoading } from '@/components/ui/Loading';
 import ScrollProgressBar from '@/components/ui/ScrollProgressBar';
 import { ToastContainer } from '@/components/ui/Toast';
 import { Header } from './Header';
@@ -13,7 +12,6 @@ function MinimalLayout() {
                 <Outlet />
             </main>
             <ToastContainer />
-            <GlobalLoading />
         </div>
     );
 }

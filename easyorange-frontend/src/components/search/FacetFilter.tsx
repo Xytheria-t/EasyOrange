@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { CONDITION_LABEL_MAP } from '@/constants';
 import type { FacetBucket } from '@/types/product';
 
 interface FacetFilterProps {
@@ -44,17 +45,6 @@ const GROUP_LABELS: Record<string, string> = {
     price: '价格区间',
 };
 
-function formatConditionLabel(value: string): string {
-    const labels: Record<string, string> = {
-        '1': '全新',
-        '2': '几乎全新',
-        '3': '轻微使用痕迹',
-        '4': '明显使用痕迹',
-        '5': '有缺陷',
-    };
-    return labels[value] ?? value;
-}
-
 function formatPriceLabel(value: string): string {
     const parts = value.split('-');
     if (parts.length === 2) {
@@ -75,7 +65,7 @@ function formatPriceLabel(value: string): string {
 function getItemLabel(group: string, value: string): string {
     switch (group) {
         case 'condition':
-            return formatConditionLabel(value);
+            return CONDITION_LABEL_MAP[Number(value)] ?? value;
         case 'price':
             return formatPriceLabel(value);
         default:

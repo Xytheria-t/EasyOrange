@@ -1,13 +1,6 @@
 import { getStoredToken, handleUnauthorized, refreshAccessToken } from '@/features/auth/session';
 import { type ApiCode, isSuccessCode, type RequestOptions, type Result } from '@/types';
 import { buildQueryString, escapeHtml } from '@/utils/format';
-import {
-    addRequestInterceptor,
-    addResponseInterceptor,
-    applyRequestInterceptors,
-    applyResponseInterceptors,
-    type RequestConfig,
-} from './interceptors';
 import { requestManager } from './requestManager';
 
 const API_BASE_URL = '/api';
@@ -15,6 +8,10 @@ const DEFAULT_TIMEOUT = 10000;
 const DEFAULT_RETRIES = 2;
 const RETRY_DELAY_BASE = 1000;
 const CLIENT_TYPE = 'web';
+
+interface RequestConfig extends RequestInit {
+    headers: Record<string, string>;
+}
 
 class ApiClientError extends Error {
     status: ApiCode;
@@ -104,7 +101,7 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
         throw new ApiClientError('重复请求已取消', 0);
     }
 
-    let config: RequestConfig = {
+    const config: RequestConfig = {
         method,
         credentials: 'include' as const,
         headers: {
@@ -130,8 +127,6 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
             config.headers.Authorization = `Bearer ${token}`;
         }
     }
-
-    config = await applyRequestInterceptors(config);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort('请求超时'), timeout);
@@ -166,10 +161,8 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
             try {
                 const response = await fetch(url, config);
 
-                const processedResponse = await applyResponseInterceptors(response);
-
-                if (!processedResponse.ok) {
-                    if (processedResponse.status === 401 && shouldHandleUnauthorized(endpoint, skipAuth)) {
+                if (!response.ok) {
+                    if (response.status === 401 && shouldHandleUnauthorized(endpoint, skipAuth)) {
                         if (authRefreshAttempts < MAX_AUTH_REFRESH_ATTEMPTS) {
                             authRefreshAttempts++;
                             const newToken = await refreshAccessToken();
@@ -180,10 +173,10 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
                         }
                         handleUnauthorized();
                     }
-                    throw await parseError(processedResponse);
+                    throw await parseError(response);
                 }
 
-                const data = (await processedResponse.json()) as Result<T>;
+                const data = (await response.json()) as Result<T>;
 
                 if (!isSuccessCode(data.code)) {
                     throw new ApiClientError(data.message || '请求失败', data.code, data.data);
@@ -227,12 +220,4 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
     }
 }
 
-export {
-    API_BASE_URL,
-    ApiClientError,
-    addRequestInterceptor,
-    addResponseInterceptor,
-    buildQueryParams,
-    request,
-    requestManager,
-};
+export { API_BASE_URL, ApiClientError, buildQueryParams, request, requestManager };

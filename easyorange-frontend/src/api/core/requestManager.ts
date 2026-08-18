@@ -32,29 +32,4 @@ export const requestManager = {
     stopTracking(key: string): void {
         this.pendingRequests.delete(key);
     },
-
-    cancel(key: string, reason = '请求已取消'): void {
-        const pending = this.pendingRequests.get(key);
-        if (pending?.controller) {
-            pending.controller.abort(reason);
-            this.pendingRequests.delete(key);
-        }
-    },
-
-    cancelAll(reason = '所有请求已取消'): void {
-        this.pendingRequests.forEach(pending => {
-            pending.controller?.abort(reason);
-        });
-        this.pendingRequests.clear();
-    },
-
-    cancelByPattern(pattern: RegExp | string, reason = '请求已取消'): void {
-        const regex = pattern instanceof RegExp ? pattern : new RegExp(pattern);
-        this.pendingRequests.forEach((pending, key) => {
-            if (regex.test(key)) {
-                pending.controller?.abort(reason);
-                this.pendingRequests.delete(key);
-            }
-        });
-    },
 };

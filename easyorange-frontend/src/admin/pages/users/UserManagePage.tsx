@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePagination } from '@/hooks/usePagination';
+import { formatDate } from '@/utils/format';
 import { AdminSelect } from '../../components/AdminSelect';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { pickAvatarGradient } from '../../components/avatarGradient';
@@ -82,9 +83,6 @@ export default function UserManagePage() {
         [selectedUser, updateStatusMutation]
     );
 
-    const formatDate = (dateString: string) =>
-        new Date(dateString).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
-
     const columns: Column<AdminUser>[] = [
         {
             key: 'username',
@@ -150,7 +148,7 @@ export default function UserManagePage() {
             title: '注册时间',
             sortable: true,
             render: value => (
-                <span style={{ color: '#9B9590', fontSize: '0.84rem' }}>{formatDate(value as string)}</span>
+                <span style={{ color: '#9B9590', fontSize: '0.84rem' }}>{formatDate(value as string, 'date')}</span>
             ),
         },
         {

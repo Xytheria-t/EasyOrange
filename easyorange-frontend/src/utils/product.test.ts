@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RawProduct } from '@/types';
-import { calculateDiscount, getConditionNameFromString, normalizeProduct } from './product';
+import { calculateDiscount, normalizeProduct } from './product';
 
 describe('normalizeProduct', () => {
     it('normalizes a raw product record', () => {
@@ -71,17 +71,5 @@ describe('calculateDiscount', () => {
     it('returns null when current >= original', () => {
         expect(calculateDiscount(100, 100)).toBeNull();
         expect(calculateDiscount(120, 100)).toBeNull();
-    });
-});
-
-describe('getConditionNameFromString', () => {
-    it('maps known condition strings', () => {
-        expect(getConditionNameFromString('NEW')).toBe('全新');
-        expect(getConditionNameFromString('LIKE_NEW')).toBe('几乎全新');
-        expect(getConditionNameFromString('GOOD')).toBe('良好');
-    });
-
-    it('returns original string for unknown condition', () => {
-        expect(getConditionNameFromString('UNKNOWN')).toBe('UNKNOWN');
     });
 });
