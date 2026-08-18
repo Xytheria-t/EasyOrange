@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
 import com.cartethyia.easyorange.message.application.service.RateLimiterService;
+import com.cartethyia.easyorange.message.application.service.SystemNotificationPayload;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageRecallResult;
 import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
@@ -13,7 +14,6 @@ import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundExcepti
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -68,21 +68,7 @@ public class MessageCommandHandler {
         offlineMessageStoreService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);
 
         if (online) {
-            messageNotifier.sendNotification(
-                    saved.receiverId(),
-                    Map.of(
-                            "id", saved.id(),
-                            "title", saved.title() != null ? saved.title() : "",
-                            "content", saved.content() != null ? saved.content() : "",
-                            "businessId", saved.businessId() != null ? saved.businessId() : "",
-                            "type",
-                                    saved.type() == null
-                                            ? null
-                                            : Integer.valueOf(saved.type().getCode()),
-                            "createTime",
-                                    saved.createTime() != null
-                                            ? saved.createTime().toString()
-                                            : ""));
+            messageNotifier.sendNotification(saved.receiverId(), SystemNotificationPayload.toMap(saved));
         }
 
         log.info("action=send_system_message messageId={} receiverId={}", saved.id(), command.receiverId());
