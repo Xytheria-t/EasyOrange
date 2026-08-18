@@ -51,7 +51,8 @@ class OrderTimeoutTaskTest {
     @Mock
     private TransactionTemplate transactionTemplate;
 
-    @InjectMocks
+    private OrderStateMigrationExecutor migrationExecutor;
+
     private OrderTimeoutTask orderTimeoutTask;
 
     private static final String ORDER_ID_1 = "100";
@@ -62,6 +63,9 @@ class OrderTimeoutTaskTest {
 
     @BeforeEach
     void setUp() {
+        migrationExecutor = new OrderStateMigrationExecutor(lockPort, transactionTemplate);
+        orderTimeoutTask = new OrderTimeoutTask(
+                orderRepository, domainEventPublisher, properties, orderCacheEvictor, migrationExecutor);
         expiredOrder1 = orderWithStatus(ORDER_ID_1, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID);
         expiredOrder2 = orderWithStatus(ORDER_ID_2, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID);
         // 默认锁端口正常：直接执行锁内操作（获取锁成功），返回其 boolean 结果

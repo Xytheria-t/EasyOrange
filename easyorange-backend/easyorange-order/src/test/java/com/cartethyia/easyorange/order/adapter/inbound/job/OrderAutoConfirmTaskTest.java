@@ -52,7 +52,8 @@ class OrderAutoConfirmTaskTest {
     @Mock
     private TransactionTemplate transactionTemplate;
 
-    @InjectMocks
+    private OrderStateMigrationExecutor migrationExecutor;
+
     private OrderAutoConfirmTask orderAutoConfirmTask;
 
     private static final String ORDER_ID_1 = "100";
@@ -63,6 +64,9 @@ class OrderAutoConfirmTaskTest {
 
     @BeforeEach
     void setUp() {
+        migrationExecutor = new OrderStateMigrationExecutor(lockPort, transactionTemplate);
+        orderAutoConfirmTask = new OrderAutoConfirmTask(
+                orderRepository, domainEventPublisher, properties, orderCacheEvictor, migrationExecutor);
         shippedOrder1 = orderWithStatus(ORDER_ID_1, OrderStatus.SHIPPED, PaymentStatus.PAID);
         shippedOrder2 = orderWithStatus(ORDER_ID_2, OrderStatus.SHIPPED, PaymentStatus.PAID);
         // 事务模板直接执行回调（事务行为由真实事务路径的集成测试覆盖）
