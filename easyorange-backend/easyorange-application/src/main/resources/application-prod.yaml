@@ -183,7 +183,6 @@ security:
     - /api/auth/sms-code
     - /api/auth/register
     - /api/auth/password-reset
-    - /api/health
     - /api/products/{id}/view
     - /api/products/batch
     # 支付网关回调 — 匿名可达，安全性由 HMAC 签名校验承担（CallbackSignatureVerifier）
