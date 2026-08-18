@@ -5,8 +5,8 @@ import java.util.Collection;
 /**
  * 认证令牌门面：access（JWT）与 refresh（opaque）统一入口。
  * <p>
- * access token 为 RSA 签名的短时 JWT；refresh token 为不透明随机串，由
- * {@link RefreshTokenStore} 存储，支持轮换、复用检测与按用户吊销。
+ * access token 为 RSA 签名的短时 JWT；refresh token 为不透明随机串（Redis 存储，
+ * 存 SHA-256 哈希），支持轮换、复用检测与按用户吊销。
  */
 public interface TokenService {
 
