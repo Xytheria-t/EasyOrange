@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
-import com.cartethyia.easyorange.favorite.domain.aggregate.FavoriteCreateSpec;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -34,13 +33,13 @@ class FavoriteRepositoryIT {
         String userId = UUID.randomUUID().toString();
         String productId = UUID.randomUUID().toString();
 
-        Favorite first = favoriteRepository.save(Favorite.create(new FavoriteCreateSpec(userId, productId, PRICE)));
+        Favorite first = favoriteRepository.save(Favorite.create(userId, productId, PRICE));
         assertThat(first.id()).as("首次收藏必须生成主键").isNotBlank();
 
         favoriteRepository.removeById(first.id());
         assertThat(favoriteRepository.countByUserId(userId)).isZero();
 
-        Favorite second = favoriteRepository.save(Favorite.create(new FavoriteCreateSpec(userId, productId, PRICE)));
+        Favorite second = favoriteRepository.save(Favorite.create(userId, productId, PRICE));
         assertThat(second.id()).as("再次收藏应复活原行而非新增").isEqualTo(first.id());
 
         assertThatCode(() -> favoriteRepository.removeById(second.id()))
@@ -48,7 +47,7 @@ class FavoriteRepositoryIT {
                 .doesNotThrowAnyException();
         assertThat(favoriteRepository.countByUserId(userId)).isZero();
 
-        Favorite third = favoriteRepository.save(Favorite.create(new FavoriteCreateSpec(userId, productId, PRICE)));
+        Favorite third = favoriteRepository.save(Favorite.create(userId, productId, PRICE));
         assertThat(third.id()).isEqualTo(first.id());
         favoriteRepository.removeById(third.id());
         assertThat(favoriteRepository.countByUserId(userId)).isZero();
@@ -60,11 +59,11 @@ class FavoriteRepositoryIT {
         String userId = UUID.randomUUID().toString();
         String productId = UUID.randomUUID().toString();
 
-        Favorite first = favoriteRepository.save(Favorite.create(new FavoriteCreateSpec(userId, productId, PRICE)));
+        Favorite first = favoriteRepository.save(Favorite.create(userId, productId, PRICE));
         favoriteRepository.removeById(first.id());
-        favoriteRepository.save(Favorite.create(new FavoriteCreateSpec(userId, productId, PRICE)));
+        favoriteRepository.save(Favorite.create(userId, productId, PRICE));
         favoriteRepository.removeById(first.id());
-        favoriteRepository.save(Favorite.create(new FavoriteCreateSpec(userId, productId, PRICE)));
+        favoriteRepository.save(Favorite.create(userId, productId, PRICE));
 
         assertThat(favoriteRepository.findByUserIdAndProductId(userId, productId))
                 .as("复活路径下只应存在一条 del_flag=0 记录")
@@ -76,7 +75,7 @@ class FavoriteRepositoryIT {
     void updatePriceSnapshot_casSemantics() {
         String userId = UUID.randomUUID().toString();
         String productId = UUID.randomUUID().toString();
-        Favorite saved = favoriteRepository.save(Favorite.create(new FavoriteCreateSpec(userId, productId, PRICE)));
+        Favorite saved = favoriteRepository.save(Favorite.create(userId, productId, PRICE));
 
         boolean miss =
                 favoriteRepository.updatePriceSnapshot(saved.id(), new BigDecimal("50.00"), new BigDecimal("40.00"));

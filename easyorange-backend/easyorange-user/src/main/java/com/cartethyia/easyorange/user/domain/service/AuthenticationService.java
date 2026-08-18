@@ -7,13 +7,11 @@ import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 /**
  * 登录认证领域服务 — 校验登录凭据（密码 / 短信）并返回认证用户。
  * 密码生命周期（修改/重置）见 {@link PasswordManagementService}。
  */
-@Component
 @RequiredArgsConstructor
 public class AuthenticationService {
 

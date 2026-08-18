@@ -5,13 +5,11 @@ import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 /**
  * 用户资料更新领域服务 — 聚合用户资料变更所需的业务规则校验和编排。
  * 将应用层 ProfileAppService 中的唯一性校验逻辑下沉到领域层，保持 domain 封装。
  */
-@Component
 @RequiredArgsConstructor
 public class ProfileUpdateService {
 

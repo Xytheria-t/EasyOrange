@@ -5,13 +5,11 @@ import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
-import org.springframework.stereotype.Component;
 
 /**
  * 管理端用户写操作领域服务 — 持有状态/角色/密码变更的业务规则（用户存在性、解锁前置、
  * 最后一个管理员保护），并完成聚合根状态迁移。持久化由端口适配器负责。
  */
-@Component
 public class AdminUserManagementService {
 
     private final UserRepository userRepository;
