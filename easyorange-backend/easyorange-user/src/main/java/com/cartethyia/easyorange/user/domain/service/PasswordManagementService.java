@@ -7,11 +7,13 @@ import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 /**
  * 密码生命周期领域服务 — 修改密码与重置密码的业务规则。
  * 与 {@link AuthenticationService}（登录认证）分离，各自聚焦单一职责。
  */
+@Component
 @RequiredArgsConstructor
 public class PasswordManagementService {
 

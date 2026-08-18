@@ -6,7 +6,9 @@ import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
+@Component
 @RequiredArgsConstructor
 public class RegistrationService {
 

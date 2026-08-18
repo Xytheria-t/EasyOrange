@@ -12,8 +12,9 @@ import org.springframework.stereotype.Component;
 /**
  * 内存实现的短信验证码适配器（开发/测试环境）。
  * <p>
- * 不依赖 Redis，不发送真实短信。应用重启后数据丢失。
- * 当存在 {@code redisSmsCodeAdapter} Bean 时自动跳过。
+ * 只负责验证码的生成、存储与有效期校验，不复制 {@code redisSmsCodeAdapter} 的
+ * 发送间隔/每日配额/验证次数等限流策略（策略归属生产适配器，双份实现会漂移）。
+ * 不依赖 Redis，不发送真实短信，应用重启后数据丢失。
  */
 @Component
 @ConditionalOnMissingBean(name = "redisSmsCodeAdapter")
@@ -21,31 +22,13 @@ import org.springframework.stereotype.Component;
 public class MockSmsCodeAdapter implements SmsCodePort {
 
     private final ConcurrentHashMap<String, CodeEntry> codes = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Instant> sendLimits = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Long> dailyCounts = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Long> verifyCounts = new ConcurrentHashMap<>();
 
     private final SmsSenderPort smsSenderPort;
 
     @Override
     public boolean send(String phone) {
-        // 发送间隔检查
-        Instant blockedUntil = sendLimits.get(phone);
-        if (blockedUntil != null && Instant.now().isBefore(blockedUntil)) {
-            return false;
-        }
-
-        // 每日配额检查
-        long daily = dailyCounts.merge(phone, 1L, Long::sum);
-        if (daily > UserSecurityConstant.SMS_MAX_DAILY) {
-            return false;
-        }
-
-        // 生成并存储验证码
         String code = SmsCodePort.generateCode();
         codes.put(phone, new CodeEntry(code, Instant.now()));
-        sendLimits.put(phone, Instant.now().plus(UserSecurityConstant.SMS_SEND_INTERVAL));
-
         smsSenderPort.send(phone, code);
         return true;
     }
@@ -54,13 +37,6 @@ public class MockSmsCodeAdapter implements SmsCodePort {
     public VerifyResult verify(String phone, String code) {
         if (code == null || code.isBlank()) {
             return VerifyResult.NOT_FOUND;
-        }
-
-        long attempts = verifyCounts.merge(phone, 1L, Long::sum);
-        if (attempts > UserSecurityConstant.SMS_MAX_VERIFY_ATTEMPTS) {
-            codes.remove(phone);
-            verifyCounts.remove(phone);
-            return VerifyResult.TOO_MANY_ATTEMPTS;
         }
 
         CodeEntry entry = codes.get(phone);
@@ -72,7 +48,6 @@ public class MockSmsCodeAdapter implements SmsCodePort {
         }
 
         codes.remove(phone);
-        verifyCounts.remove(phone);
         return VerifyResult.OK;
     }
 
