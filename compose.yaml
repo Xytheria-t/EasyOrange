@@ -145,6 +145,11 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_SERVER_ROOT_URL: http://localhost:3000
+      # AI 可观测性面板的 MySQL 数据源（datasources.yml 引用 GRAFANA_MYSQL_*）
+      GRAFANA_MYSQL_USER: easyorange_app
+      GRAFANA_MYSQL_PASSWORD: easyorange_app_dev
+      GRAFANA_MYSQL_HOST: mysql
+      GRAFANA_MYSQL_DB: easyorange
     volumes:
       # provisioning 即代码：datasource + dashboard 随仓库版本化
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
