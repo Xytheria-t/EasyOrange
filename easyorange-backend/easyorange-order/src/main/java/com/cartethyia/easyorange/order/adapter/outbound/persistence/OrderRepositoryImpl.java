@@ -15,10 +15,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
-@Primary
 @Repository
 public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> implements OrderRepository {
 
