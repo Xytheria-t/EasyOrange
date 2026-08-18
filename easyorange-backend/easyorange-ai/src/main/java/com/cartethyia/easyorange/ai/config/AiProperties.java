@@ -51,11 +51,11 @@ public class AiProperties {
         private int timeout = 30000;
     }
 
+    /**
+     * LLM 故障降级缓存（本地 Caffeine）— 成功回答写入，LLM 调用失败时返回旧结果兜底。
+     */
     @Data
     public static class Cache {
-        private boolean enabled = true;
-        private int l1MaxSize = 10000;
-        private int l1ExpireMinutes = 5;
         private int staleMaxSize = 5000;
         private int staleExpireHours = 24;
     }
@@ -109,12 +109,11 @@ public class AiProperties {
     }
 
     /**
-     * 模型路由配置 — 按场景把调用分给不同模型 bean（简单任务走快模型 / 复杂任务走强模型）。
+     * 模型路由配置 — 按场景把调用分给不同模型 bean（对话走文本模型 / 图片分析走视觉模型）。
      * <p>
-     * 键为场景名（如 chat_tool），值为 Spring bean 名；未配置的场景回退 {@link #defaultModel}。
-     * 当前只有 chatModel 一个文本模型，路由为配置驱动的演进位：
-     * 接入第二个模型（如 deepseek-reasoner）时仅需在 {@code easyorange.ai.routing.scenarios}
-     * 里把对应场景指向新 bean 名，代码零改动。
+     * 键为场景名（如 chat_tool / vision），值为 Spring bean 名；未配置的场景回退 {@link #defaultModel}。
+     * 已接入：chat_tool → chatModel（工具决策）、vision → visionChatModel（图片分析）。
+     * 接入新模型仅需在 {@code easyorange.ai.routing.scenarios} 里把场景指向新 bean 名，代码零改动。
      */
     @Data
     public static class Routing {

@@ -3,25 +3,24 @@ package com.cartethyia.easyorange.ai.interceptor;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.common.enums.ResultCode;
-import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.github.benmanes.caffeine.cache.Cache;
+import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
-import tools.jackson.databind.ObjectMapper;
 
+/**
+ * AI 模块限流拦截器 — scope 粒度令牌桶（如对话 20 次/分/用户）。
+ * <p>
+ * 降级分工：限流超限返回 429（fail-open 容忍 Redis 故障）；
+ * LLM 供应商故障的旧回答兜底在 {@code AiChatService} 服务层（stale-while-error），
+ * 拦截器不再承担缓存职责（历史设计因请求体字节依赖不可靠而移除）。
+ */
 @Slf4j
 @Component
 @NullMarked
@@ -29,18 +28,15 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
 
     private final DistributedRateLimiter distributedRateLimiter;
     private final AiProperties aiProperties;
-    private final ObjectMapper objectMapper;
-    private final Cache<String, Object> staleCache;
+    private final ErrorResponseWriter errorResponseWriter;
 
     public AiRateLimitInterceptor(
             DistributedRateLimiter distributedRateLimiter,
             AiProperties aiProperties,
-            ObjectMapper objectMapper,
-            @Qualifier("aiStaleCache") Cache<String, Object> staleCache) {
+            ErrorResponseWriter errorResponseWriter) {
         this.distributedRateLimiter = distributedRateLimiter;
         this.aiProperties = aiProperties;
-        this.objectMapper = objectMapper;
-        this.staleCache = staleCache;
+        this.errorResponseWriter = errorResponseWriter;
     }
 
     @Override
@@ -61,19 +57,8 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
 
             if (!allowed) {
                 log.debug("AI rate limit exceeded: scope={}, user={}", scope, userKey);
-
-                String staleKey = extractStaleKey(request, scope);
-                if (staleKey != null) {
-                    Object stale = staleCache.getIfPresent(staleKey);
-                    if (stale != null) {
-                        log.info("Serving stale cache for rate-limited request: {}", staleKey);
-                        writeJson(response, 200, stale);
-                        return false;
-                    }
-                }
-
                 // 与全局约定一致，限流错误也返回 Result 信封（code=A0429）
-                writeJson(response, 429, Result.error(ResultCode.TOO_MANY_REQUESTS, "AI 服务繁忙，请稍后重试"));
+                errorResponseWriter.write(response, 429, ResultCode.TOO_MANY_REQUESTS, "AI 服务繁忙，请稍后重试");
                 return false;
             }
         } catch (Exception e) {
@@ -91,32 +76,5 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
         return SecurityContextUtil.getCurrentUserId()
                 .map(id -> "user:" + id)
                 .orElseGet(() -> "ip:" + RequestUtil.getClientIp(request));
-    }
-
-    private @Nullable String extractStaleKey(HttpServletRequest request, AiCallScope scope) {
-        try {
-            String body = request.getReader().lines().reduce("", (a, b) -> a + b);
-            if (body.isEmpty()) return null;
-            String fp = fingerprint(body);
-            return scope.cacheKeyPrefix() + fp;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static @Nullable String fingerprint(String content) {
-        try {
-            var md = MessageDigest.getInstance("SHA-256");
-            byte[] digest = md.digest(content.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest, 0, 16);
-        } catch (NoSuchAlgorithmException e) {
-            return null;
-        }
-    }
-
-    private void writeJson(HttpServletResponse response, int status, Object body) throws Exception {
-        response.setStatus(status);
-        response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write(objectMapper.writeValueAsString(body));
     }
 }

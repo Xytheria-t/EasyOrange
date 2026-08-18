@@ -6,19 +6,15 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
+import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.StringReader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletResponse;
 import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,11 +33,6 @@ class AiRateLimitInterceptorTest {
     @Mock
     private HttpServletRequest request;
 
-    @Mock
-    private HttpServletResponse response;
-
-    private Cache<String, Object> staleCache;
-    private ObjectMapper objectMapper;
     private AiRateLimitInterceptor interceptor;
 
     @BeforeEach
@@ -49,9 +40,8 @@ class AiRateLimitInterceptorTest {
         lenient().when(aiProperties.getRateLimit()).thenReturn(rateLimitProps);
         lenient().when(rateLimitProps.isFailOpen()).thenReturn(true);
 
-        staleCache = Caffeine.newBuilder().build();
-        objectMapper = new ObjectMapper();
-        interceptor = new AiRateLimitInterceptor(distributedRateLimiter, aiProperties, objectMapper, staleCache);
+        interceptor = new AiRateLimitInterceptor(
+                distributedRateLimiter, aiProperties, new ErrorResponseWriter(new ObjectMapper()));
     }
 
     @Test
@@ -59,7 +49,7 @@ class AiRateLimitInterceptorTest {
     void nonAiPathPass() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/products");
 
-        boolean result = interceptor.preHandle(request, response, null);
+        boolean result = interceptor.preHandle(request, new MockHttpServletResponse(), null);
 
         assertThat(result).isTrue();
     }
@@ -72,7 +62,7 @@ class AiRateLimitInterceptorTest {
         when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                 .thenReturn(true);
 
-        boolean result = interceptor.preHandle(request, response, null);
+        boolean result = interceptor.preHandle(request, new MockHttpServletResponse(), null);
 
         assertThat(result).isTrue();
     }
@@ -85,7 +75,7 @@ class AiRateLimitInterceptorTest {
         when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                 .thenThrow(new RuntimeException("Redis down"));
 
-        boolean result = interceptor.preHandle(request, response, null);
+        boolean result = interceptor.preHandle(request, new MockHttpServletResponse(), null);
 
         assertThat(result).isTrue();
     }
@@ -97,17 +87,13 @@ class AiRateLimitInterceptorTest {
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
         when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                 .thenReturn(false);
-        when(request.getReader()).thenReturn(new BufferedReader(new StringReader("")));
-        var writer = mock(java.io.PrintWriter.class);
-        when(response.getWriter()).thenReturn(writer);
+        MockHttpServletResponse response = new MockHttpServletResponse();
 
         boolean result = interceptor.preHandle(request, response, null);
 
         assertThat(result).isFalse();
-        verify(response).setStatus(429);
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(writer).write(captor.capture());
-        assertThat(captor.getValue()).contains("A0429");
+        assertThat(response.getStatus()).isEqualTo(429);
+        assertThat(response.getContentAsString()).contains("A0429");
     }
 
     @Test
@@ -118,7 +104,7 @@ class AiRateLimitInterceptorTest {
         when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                 .thenReturn(true);
 
-        boolean result = interceptor.preHandle(request, response, null);
+        boolean result = interceptor.preHandle(request, new MockHttpServletResponse(), null);
 
         assertThat(result).isTrue();
     }

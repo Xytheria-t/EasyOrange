@@ -18,12 +18,13 @@ import com.cartethyia.easyorange.ai.knowledge.KnowledgeHit;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.github.benmanes.caffeine.cache.Cache;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -42,7 +43,6 @@ import tools.jackson.databind.ObjectMapper;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AiChatService {
 
     private static final String CHAT_PROMPT = "ai_chat_system";
@@ -65,26 +65,72 @@ public class AiChatService {
     private final TokenBudgetStore budgetStore;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
+    private final Cache<String, Object> staleCache;
+
+    // Lombok 构造器不会把 @Qualifier 复制到参数上，故手写显式构造器以保留 "aiStaleCache" 限定
+    public AiChatService(
+            ChatModel chatModel,
+            PromptRegistry promptRegistry,
+            AiModelSupport aiModelSupport,
+            SemanticCacheService semanticCache,
+            ChatSessionStore sessionStore,
+            UserPreferenceRepository preferenceRepository,
+            KnowledgeRetrievalService retrievalService,
+            AiModelRouter modelRouter,
+            TokenBudgetStore budgetStore,
+            AiProperties aiProperties,
+            ObjectMapper objectMapper,
+            @Qualifier("aiStaleCache") Cache<String, Object> staleCache) {
+        this.chatModel = chatModel;
+        this.promptRegistry = promptRegistry;
+        this.aiModelSupport = aiModelSupport;
+        this.semanticCache = semanticCache;
+        this.sessionStore = sessionStore;
+        this.preferenceRepository = preferenceRepository;
+        this.retrievalService = retrievalService;
+        this.modelRouter = modelRouter;
+        this.budgetStore = budgetStore;
+        this.aiProperties = aiProperties;
+        this.objectMapper = objectMapper;
+        this.staleCache = staleCache;
+    }
 
     /**
-     * 非流式回答（语义缓存 + 预算 AOP）。
+     * 非流式回答（语义缓存 + 预算 AOP + 故障降级）。
+     * <p>
+     * 降级语义：LLM 调用失败（供应商超时/异常）时返回 24h 窗口内的缓存旧回答，
+     * 保证问答可用性；缓存随每次成功回答无条件刷新（forceFresh 场景同样可兜底）。
      */
     @TokenBudget(scenario = "chat", maxTokensPerCall = 1500, dailyTokenLimit = 300_000)
     public ChatAnswer answer(ChatRequest request) {
         if (request.question() == null || request.question().isBlank()) {
             return new ChatAnswer("请描述你的问题", List.of(), request.sessionId());
         }
-        if (!request.forceFresh()) {
-            var cached = semanticCache.get(AiCallScope.CHAT, request.question(), ChatAnswer.class);
-            if (cached.isPresent()) {
-                return cached.get();
+        try {
+            if (!request.forceFresh()) {
+                var cached = semanticCache.get(AiCallScope.CHAT, request.question(), ChatAnswer.class);
+                if (cached.isPresent()) {
+                    return cached.get();
+                }
             }
+            ChatAnswer answer = agenticAnswer(request, null);
+            if (!request.forceFresh()) {
+                semanticCache.put(AiCallScope.CHAT, request.question(), answer);
+            }
+            staleCache.put(staleKey(request.question()), answer);
+            return answer;
+        } catch (Exception e) {
+            Object stale = staleCache.getIfPresent(staleKey(request.question()));
+            if (stale instanceof ChatAnswer degraded) {
+                log.warn("LLM 调用失败，降级返回缓存旧回答: {}", e.getMessage());
+                return degraded;
+            }
+            throw e;
         }
-        ChatAnswer answer = agenticAnswer(request, null);
-        if (!request.forceFresh()) {
-            semanticCache.put(AiCallScope.CHAT, request.question(), answer);
-        }
-        return answer;
+    }
+
+    private static String staleKey(String question) {
+        return AiCallScope.CHAT.cacheKeyPrefix() + question;
     }
 
     /**

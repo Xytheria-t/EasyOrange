@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,10 +24,13 @@ import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,11 +77,13 @@ class AiChatServiceTest {
     private TokenBudgetStore budgetStore;
 
     private AiProperties aiProperties;
+    private Cache<String, Object> staleCache;
     private AiChatService chatService;
 
     @BeforeEach
     void setUp() {
         aiProperties = new AiProperties();
+        staleCache = Caffeine.newBuilder().build();
         chatService = new AiChatService(
                 chatModel,
                 promptRegistry,
@@ -89,7 +95,8 @@ class AiChatServiceTest {
                 modelRouter,
                 budgetStore,
                 aiProperties,
-                new ObjectMapper());
+                new ObjectMapper(),
+                staleCache);
         // 部分用例（空问题/预算超限/缓存命中）不会走到工具决策，prompt/router stub 允许不被消费
         lenient()
                 .when(promptRegistry.getLatest("ai_chat_tool_system"))
@@ -275,6 +282,54 @@ class AiChatServiceTest {
         });
 
         assertThat(error.get()).contains("问题");
+    }
+
+    @Test
+    @DisplayName("LLM 故障且有缓存旧回答 -> 降级返回旧结果")
+    void answer_llmFailureFallsBackToStale() {
+        when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
+                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
+        when(aiModelSupport.callText(any(), any(), anyString(), anyString()))
+                .thenReturn("正常回答")
+                .thenThrow(new RuntimeException("DeepSeek 超时"));
+
+        ChatAnswer first = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
+        ChatAnswer degraded = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
+
+        assertThat(first.answer()).isEqualTo("正常回答");
+        assertThat(degraded.answer()).isEqualTo("正常回答");
+        verify(aiModelSupport, times(2)).callText(any(), any(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("LLM 故障且无缓存 -> 异常上抛（不做降级）")
+    void answer_llmFailureWithoutStaleRethrows() {
+        when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
+                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
+        when(aiModelSupport.callText(any(), any(), anyString(), anyString()))
+                .thenThrow(new RuntimeException("DeepSeek 超时"));
+
+        Assertions.assertThatThrownBy(() -> chatService.answer(new ChatRequest("怎么退款？", "sess-1", false)))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("DeepSeek 超时");
+    }
+
+    @Test
+    @DisplayName("forceFresh 成功回答同样写入降级缓存（后续故障可兜底）")
+    void answer_forceFreshWritesStaleCache() {
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
+                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
+        when(aiModelSupport.callText(any(), any(), anyString(), anyString()))
+                .thenReturn("新鲜回答")
+                .thenThrow(new RuntimeException("DeepSeek 超时"));
+
+        ChatAnswer first = chatService.answer(new ChatRequest("问题", "sess-1", true));
+        ChatAnswer degraded = chatService.answer(new ChatRequest("问题", "sess-1", true));
+
+        assertThat(first.answer()).isEqualTo("新鲜回答");
+        assertThat(degraded.answer()).isEqualTo("新鲜回答");
     }
 
     @Test
