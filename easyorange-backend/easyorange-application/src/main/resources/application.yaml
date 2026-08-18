@@ -401,10 +401,11 @@ easyorange:
       batch-size: 50
       retrieval-enabled: false   # RAG 检索指标回归（hit@5 / MRR）— 仅需 embedding，默认关闭
       retrieval-cron: "0 15 3 * * ?"
-    routing:               # 模型路由 — 场景 → 模型 bean 名（接入第二个模型只需改配置）
+    routing:               # 模型路由 — 场景 → 模型 bean 名（接入新模型只需改配置）
       default-model: chatModel
       scenarios:
-        chat_tool: chatModel
+        chat_tool: chatModel      # 工具决策（单步 ReAct）— 文本模型
+        vision: visionChatModel   # 图片分析（智能上架）— 视觉模型 Qwen-VL
     semantic-cache:        # 语义缓存 — 相似问题复用历史回答（成本优化）
       enabled: true
       similarity-threshold: 0.92

@@ -8,12 +8,12 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 /**
- * 模型路由 — 按场景选择模型 bean（简单任务走快模型 / 复杂任务走强模型）。
+ * 模型路由 — 按场景选择模型 bean（对话走 DeepSeek 文本模型 / 图片分析走 Qwen-VL 视觉模型）。
  * <p>
  * 场景 → bean 名的映射在 {@code easyorange.ai.routing.scenarios}（yaml 可热更新），
  * 未配置的场景回退 {@code easyorange.ai.routing.default-model}（默认 chatModel）。
- * 当前只有一个文本模型时路由恒为 chatModel，接入第二个模型（如 deepseek-reasoner）
- * 只需改配置，代码零改动 — 这是「成本治理」的演进位而非现状承诺。
+ * 已接入场景：chat_tool → chatModel（工具决策）、vision → visionChatModel（图片分析）；
+ * 接入新模型只需改配置，代码零改动 — 这是「成本治理」的演进位，新增模型按需接入。
  */
 @Component
 @RequiredArgsConstructor

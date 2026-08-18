@@ -36,15 +36,19 @@ class AutoListingServiceTest {
     @Mock
     private ChatModel visionChatModel;
 
+    @Mock
+    private AiModelRouter modelRouter;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private AutoListingService service;
 
     @BeforeEach
     void setUp() {
+        lenient().when(modelRouter.choose("vision")).thenReturn(visionChatModel);
         service = new AutoListingService(
                 chatModel,
-                visionChatModel,
+                modelRouter,
                 objectMapper,
                 new TestPromptRegistry(),
                 new AiModelSupport(mock(AiCallLogRecorder.class)));
@@ -129,7 +133,7 @@ class AutoListingServiceTest {
         void analyzeImages_missingPrompt() {
             service = new AutoListingService(
                     chatModel,
-                    visionChatModel,
+                    modelRouter,
                     objectMapper,
                     EMPTY_REGISTRY,
                     new AiModelSupport(mock(AiCallLogRecorder.class)));
