@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.message.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
-import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.application.service.SystemNotificationPayload;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageRecallResult;
@@ -24,16 +24,19 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MessageCommandHandler {
 
+    private static final String MESSAGE_RATE_KEY = "eo:rate:message:%s";
+    private static final int MAX_MESSAGES_PER_SECOND = 5;
+
     private final MessageRepository messageRepository;
     private final DomainEventPublisher domainEventPublisher;
     private final OfflineMessageStoreService offlineMessageStoreService;
-    private final RateLimiterService rateLimiterService;
+    private final DistributedRateLimiter distributedRateLimiter;
     private final SensitiveWordFilterService sensitiveWordFilterService;
     private final MessageNotifierPort messageNotifier;
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(String senderId, SendMessageCommand command) {
-        if (!rateLimiterService.allowSendMessage(senderId)) {
+        if (!allowSendMessage(senderId)) {
             throw new MessageDomainException("发送过于频繁，请稍后再试");
         }
 
@@ -148,6 +151,19 @@ public class MessageCommandHandler {
         messageRepository.delete(command.messageId());
 
         log.info("action=delete_message messageId={} userId={}", command.messageId(), userId);
+    }
+
+    /**
+     * 消息发送限流（Redisson RRateLimiter 令牌桶，5 条/秒/用户）— Redis 不可用时 fail-open 放行，
+     * 与框架 RateLimitFilter / AiRateLimitInterceptor 的降级策略一致。
+     */
+    private boolean allowSendMessage(String userId) {
+        try {
+            return distributedRateLimiter.tryAcquire(MESSAGE_RATE_KEY.formatted(userId), MAX_MESSAGES_PER_SECOND, 1);
+        } catch (Exception e) {
+            log.warn("action=rate_limit_fallback userId={}", userId, e);
+            return true;
+        }
     }
 
     /**

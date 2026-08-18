@@ -2,14 +2,15 @@ package com.cartethyia.easyorange.message.application.command;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
-import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
@@ -46,7 +47,7 @@ class MessageCommandHandlerTest {
     private OfflineMessageStoreService offlineMessageStoreService;
 
     @Mock
-    private RateLimiterService rateLimiterService;
+    private DistributedRateLimiter distributedRateLimiter;
 
     @Mock
     private SensitiveWordFilterService sensitiveWordFilterService;
@@ -102,7 +103,7 @@ class MessageCommandHandlerTest {
         void handle_sendMessage_success() {
             SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "hello", null, null);
 
-            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
 
@@ -124,7 +125,7 @@ class MessageCommandHandlerTest {
             commandHandler.handle(USER_ID, command);
 
             verify(messageRepository).save(any(Message.class));
-            verify(rateLimiterService).allowSendMessage(USER_ID);
+            verify(distributedRateLimiter).tryAcquire(eq("eo:rate:message:" + USER_ID), anyLong(), anyLong());
             verify(sensitiveWordFilterService).filter("hello");
         }
 
@@ -133,7 +134,7 @@ class MessageCommandHandlerTest {
         void handle_sendMessage_rateLimited_throws() {
             SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "hello", null, null);
 
-            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(false);
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(false);
 
             assertThatThrownBy(() -> commandHandler.handle(USER_ID, command))
                     .isInstanceOf(MessageDomainException.class)
@@ -147,7 +148,7 @@ class MessageCommandHandlerTest {
         void handle_sendMessage_sensitiveFilterApplied() {
             SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "包含敏感词示例", null, null);
 
-            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(true);
             when(sensitiveWordFilterService.filter("包含敏感词示例")).thenReturn("包含***");
             when(sensitiveWordFilterService.filter("标题")).thenReturn("标题");
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
@@ -177,7 +178,7 @@ class MessageCommandHandlerTest {
         void handle_sendMessage_nullType_defaultsToChat() {
             SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, null, "标题", "hello", null, null);
 
-            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
 

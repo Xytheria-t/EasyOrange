@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.message.domain.service;
 import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * 敏感词过滤服务 —— 纯领域服务。
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
  * 与 {@code OfflineMessageStoreService}（应用层编排）区分：本类留在 domain 层。
  */
 @Slf4j
+@Component
 public class SensitiveWordFilterService {
 
     private static final Set<String> SENSITIVE_WORDS = Set.of("敏感词示例");
