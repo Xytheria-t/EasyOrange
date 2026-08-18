@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
@@ -64,22 +65,27 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
 
     @Override
     public List<Order> findExpiredOrders(int timeoutMinutes) {
-        LocalDateTime threshold = LocalDateTime.now().minusMinutes(timeoutMinutes);
-        List<OrderDO> orderDOs = lambdaQuery()
-                .eq(OrderDO::getStatus, OrderStatus.PENDING_PAYMENT)
-                .lt(OrderDO::getCreateTime, threshold)
-                .orderByAsc(OrderDO::getCreateTime)
-                .last("LIMIT " + SCAN_BATCH_LIMIT)
-                .list();
-        return toAggregatesWithItems(orderDOs);
+        return scanByStatus(
+                OrderStatus.PENDING_PAYMENT, OrderDO::getCreateTime, LocalDateTime.now().minusMinutes(timeoutMinutes));
     }
 
     @Override
     public List<Order> findShippedOrdersBefore(LocalDateTime threshold) {
+        // 过滤与排序统一按 updateTime：发货时间才是确认的先后依据；若按 createTime 排序，
+        // 「创建晚但发货早」的订单会被更老创建时间的订单持续挤出批次。
+        return scanByStatus(OrderStatus.SHIPPED, OrderDO::getUpdateTime, threshold);
+    }
+
+    /**
+     * 定时任务单批扫描 — 过滤键与排序键共用同一时间列，按时间序取最早一批（上限见 SCAN_BATCH_LIMIT），
+     * 剩余批次由下一轮 cron 继续。
+     */
+    private List<Order> scanByStatus(
+            OrderStatus status, SFunction<OrderDO, LocalDateTime> timeColumn, LocalDateTime threshold) {
         List<OrderDO> orderDOs = lambdaQuery()
-                .eq(OrderDO::getStatus, OrderStatus.SHIPPED)
-                .lt(OrderDO::getUpdateTime, threshold)
-                .orderByAsc(OrderDO::getCreateTime)
+                .eq(OrderDO::getStatus, status)
+                .lt(timeColumn, threshold)
+                .orderByAsc(timeColumn)
                 .last("LIMIT " + SCAN_BATCH_LIMIT)
                 .list();
         return toAggregatesWithItems(orderDOs);
