@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  * RabbitMQ 死信路由：业务队列的 {@code x-dead-letter-exchange=eo.dlq}，
  * 消息重试耗尽或被拒绝时进入对应 {@code <queue>.dlq} 队列。
  * <p>
- * 监听方式：单个 @RabbitListener 同时监听 11 个 DLQ 队列（对应 11 个业务消费者队列，见 RabbitMQConfig），
+ * 监听方式：单个 @RabbitListener 同时监听 12 个 DLQ 队列（对应 12 个业务消费者队列，见 RabbitMQConfig），
  * 通过 message properties 的 {@code x-death} header 提取：
  * <ul>
  *   <li>原始 queue / exchange / routing-key</li>
@@ -50,7 +50,8 @@ public class DlqAnomalyListener {
                 RabbitMQConfig.QUEUE_MESSAGE_WEBSOCKET + ".dlq",
                 RabbitMQConfig.QUEUE_PAYMENT_METRICS + ".dlq",
                 RabbitMQConfig.QUEUE_AI_PRODUCT + ".dlq",
-                RabbitMQConfig.QUEUE_AI_CREDIT + ".dlq"
+                RabbitMQConfig.QUEUE_AI_CREDIT + ".dlq",
+                RabbitMQConfig.QUEUE_FAVORITE_PRICE_DROP + ".dlq"
             })
     public void onDeadLetter(Message message) {
         var props = message.getMessageProperties();
