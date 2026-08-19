@@ -15,7 +15,7 @@
 
 ## 表总览
 
-共 28 张表：26 张 `eo_*` 业务/观测表（其中 3 张预留）+ 2 张 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。`eo_idempotency_key` 已在开发阶段迁移合并时删除（幂等统一由 framework 的 `IdempotencyKeyFilter` + Redis 承载，2026-08 双 Token 收口）；AI 观测/知识库/画像表（`eo_ai_call_log` / `eo_ai_feedback` / `eo_knowledge_doc` / `eo_user_preference` / `eo_retrieval_metric` 共 5 张）已并入合并后的 `V1__init_schema.sql`（V1~V9 收口为单文件）。
+共 32 张表：30 张 `eo_*` 业务/观测表（其中 3 张预留）+ 2 张 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。`eo_idempotency_key` 已在开发阶段迁移合并时删除（幂等统一由 framework 的 `IdempotencyKeyFilter` + Redis 承载，2026-08 双 Token 收口）；AI 观测/知识库/画像表（`eo_ai_call_log` / `eo_ai_feedback` / `eo_knowledge_doc` / `eo_user_preference` / `eo_retrieval_metric` 共 5 张）已并入合并后的 `V1__init_schema.sql`（V1~V9 收口为单文件）。
 
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
@@ -47,6 +47,10 @@
 | 事件 | EVENT_PUBLICATION | 领域事件注册表（Spring Modulith） | Modulith |
 | 事件 | EVENT_PUBLICATION_ARCHIVE | 领域事件归档表（Spring Modulith） | Modulith |
 | 观测 | eo_ai_call_log | AI 调用日志（LLM-as-Judge 数据源） | —（JDBC 直写） |
+| 观测 | eo_ai_feedback | AI 输出用户反馈（反馈飞轮，导出后自动扩充金标准评测集） | — |
+| 观测 | eo_knowledge_doc | RAG 知识库文档（解析→分块→embed→ES 索引，启动补索引） | — |
+| 观测 | eo_user_preference | 用户长期画像（Agent 长期记忆，聊天气氛注入） | — |
+| 观测 | eo_retrieval_metric | RAG 检索指标采样（hit@5 / MRR，金标准集回归数据源） | — |
 
 ## 公共字段
 

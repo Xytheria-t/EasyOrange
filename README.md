@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 在 DDD 六边形架构里集成 LLM：AI 链路**可换供应商、可降级、可观测**的工程化实战项目。
 >
-> **11 模块解耦 · 35 Port 编译期隔离 · 10 事件消费者 · 10 条 ADR · 2,400+ 测试守卫 · AI 6 决策点 × 8 项工程化**
+> **11 模块解耦 · 35 Port 编译期隔离 · 12 事件消费者 · 10 条 ADR · 2,400+ 测试守卫 · AI 6 决策点 × 8 项工程化**
 >
 > 业务载体：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。
 
@@ -37,8 +37,8 @@ flowchart TB
     FAV["favorite"]
     ADMIN["admin · 管理端"]
     AI["ai · Spring AI + Agent"]
-    MQ[("RabbitMQ · 10 消费者 + DLQ")]
-    DB[("MySQL · 28 表")]
+    MQ[("RabbitMQ · 12 消费者 + DLQ")]
+    DB[("MySQL · 32 表")]
     REDIS[("Redis · 缓存 / 令牌桶 / 锁")]
     ES[("Elasticsearch · 可选")]
     LLM["DeepSeek / Qwen-VL / DashScope"]
@@ -75,7 +75,7 @@ flowchart TB
 - **前端**：React 19 SPA，C 端 + 管理端（暖橙指挥中心设计系统）双布局
 - **后端**：Spring Boot 4 聚合 11 个 Maven 模块，DDD 六边形 + CQRS 分层
 - **数据**：MySQL（Flyway 迁移）+ Redis（缓存 / 令牌桶 / 分布式锁 / 会话）+ Elasticsearch（可选，BM25 + kNN）
-- **消息**：Spring Modulith Outbox → RabbitMQ Topic Exchange，10 个事件消费者，DLQ 三级重试
+- **消息**：Spring Modulith Outbox → RabbitMQ Topic Exchange，12 个事件消费者，DLQ 三级重试
 - **AI**：DeepSeek（Chat）/ Qwen-VL（Vision）/ DashScope（Embedding），统一 OpenAI 兼容协议
 
 > 更完整的组件级架构见 [doc/架构/架构-系统架构.md](doc/架构/架构-系统架构.md)。
@@ -135,7 +135,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 | 全模块 CQRS | user / favorite / ai 等读写比均衡或调用外部 API，收益 < 维护成本 | 仅 product / order / payment / message 4 模块 | [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md) |
 | LangChain4j | Tool 调用反射黑盒 + 升级兼容差 | 手写 AiSearchEnhancer 4 路 Tool 编排 | [ADR-0008](doc/adr/0008-ai-spring-ai-framework.md) |
 | Milvus / PGVector | SKU < 10 万，向量库 ROI 低 | ES BM25 召回 + LLM semantic rerank（RAG 轻量版） | 隐含决策 |
-| Kafka / Pulsar 默认 MQ | Kafka 无原生 DLQ；1 事件 → 10 消费者模型不匹配；Pulsar 本地太重 | RabbitMQ Topic Exchange + 队列级 DLQ | [ADR-0005](doc/adr/0005-messaging-rabbitmq.md) |
+| Kafka / Pulsar 默认 MQ | Kafka 无原生 DLQ；1 事件 → 12 消费者模型不匹配；Pulsar 本地太重 | RabbitMQ Topic Exchange + 队列级 DLQ | [ADR-0005](doc/adr/0005-messaging-rabbitmq.md) |
 
 ## 模块结构
 
