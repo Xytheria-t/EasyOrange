@@ -56,8 +56,7 @@ class FavoriteTest {
         @Test
         @DisplayName("productId 为 null 时抛 BusinessException")
         void create_nullProductId_throws() {
-            assertThatThrownBy(() -> Favorite.create(USER_ID, null, PRICE))
-                    .isInstanceOf(BusinessException.class);
+            assertThatThrownBy(() -> Favorite.create(USER_ID, null, PRICE)).isInstanceOf(BusinessException.class);
         }
 
         @Test

@@ -29,6 +29,7 @@ import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +43,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PaymentCommandHandler 测试")

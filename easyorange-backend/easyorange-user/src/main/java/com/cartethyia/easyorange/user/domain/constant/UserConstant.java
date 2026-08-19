@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.user.domain.constant;
 
+import com.cartethyia.easyorange.common.constant.CommonConstant;
 import java.util.regex.Pattern;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import com.cartethyia.easyorange.common.constant.CommonConstant;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class UserConstant {

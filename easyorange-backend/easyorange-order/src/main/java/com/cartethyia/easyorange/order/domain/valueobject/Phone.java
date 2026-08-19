@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.domain.valueobject;
 
-import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.constant.CommonConstant;
+import com.cartethyia.easyorange.common.util.BizRequire;
 
 public record Phone(String value) {
     public Phone {

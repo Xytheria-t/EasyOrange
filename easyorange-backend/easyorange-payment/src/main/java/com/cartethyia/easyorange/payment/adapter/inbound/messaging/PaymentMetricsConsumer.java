@@ -38,9 +38,12 @@ public class PaymentMetricsConsumer {
             MeterRegistry meterRegistry) {
         this.handler =
                 new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, eventMetricsService, false);
-        this.paymentCreatedCounter = counter(meterRegistry, "payment.created.total", "Total number of payments created", "payment");
-        this.paymentSuccessCounter = counter(meterRegistry, "payment.success.total", "Total number of successful payments", "payment");
-        this.paymentFailedCounter = counter(meterRegistry, "payment.failed.total", "Total number of failed payments", "payment");
+        this.paymentCreatedCounter =
+                counter(meterRegistry, "payment.created.total", "Total number of payments created", "payment");
+        this.paymentSuccessCounter =
+                counter(meterRegistry, "payment.success.total", "Total number of successful payments", "payment");
+        this.paymentFailedCounter =
+                counter(meterRegistry, "payment.failed.total", "Total number of failed payments", "payment");
         this.refundCounter = counter(meterRegistry, "payment.refund.total", "Total number of refunds", "refund");
     }
 

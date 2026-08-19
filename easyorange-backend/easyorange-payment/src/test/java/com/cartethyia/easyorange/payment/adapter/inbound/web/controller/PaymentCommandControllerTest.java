@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
-import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentCommandMapper;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.CreatePaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.PaymentCallback;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.RefundRequest;

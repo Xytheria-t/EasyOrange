@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.auth.LoginCacheConstants;
-import com.cartethyia.easyorange.framework.auth.TokenRotation;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import java.nio.charset.StandardCharsets;

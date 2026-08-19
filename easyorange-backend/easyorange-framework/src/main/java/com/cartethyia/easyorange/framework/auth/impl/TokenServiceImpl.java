@@ -135,7 +135,8 @@ public class TokenServiceImpl implements TokenService {
 
         // 消费旧 token
         stringRedisTemplate.delete(SESSION_KEY + hash);
-        stringRedisTemplate.opsForValue()
+        stringRedisTemplate
+                .opsForValue()
                 .set(
                         USED_KEY + hash,
                         userId + ":" + System.currentTimeMillis(),
@@ -159,7 +160,8 @@ public class TokenServiceImpl implements TokenService {
             return;
         }
         stringRedisTemplate.delete(SESSION_KEY + hash);
-        stringRedisTemplate.opsForValue()
+        stringRedisTemplate
+                .opsForValue()
                 .set(
                         USED_KEY + hash,
                         userId + ":" + System.currentTimeMillis(),
@@ -186,7 +188,8 @@ public class TokenServiceImpl implements TokenService {
         if (hashes != null) {
             for (var h : hashes) {
                 stringRedisTemplate.delete(SESSION_KEY + h);
-                stringRedisTemplate.opsForValue()
+                stringRedisTemplate
+                        .opsForValue()
                         .set(
                                 USED_KEY + h,
                                 userId + ":" + System.currentTimeMillis(),

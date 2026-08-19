@@ -12,11 +12,11 @@ import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.Catego
 import com.cartethyia.easyorange.product.application.command.CreateProductCommand;
 import com.cartethyia.easyorange.product.application.command.ProductCommandHandler;
 import com.cartethyia.easyorange.product.application.command.UpdateProductCommand;
+import com.cartethyia.easyorange.product.application.port.cache.ViewCountPort;
 import com.cartethyia.easyorange.product.application.query.CategoryQueryHandler;
 import com.cartethyia.easyorange.product.application.query.ProductQueryHandler;
 import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
-import com.cartethyia.easyorange.product.application.port.cache.ViewCountPort;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;

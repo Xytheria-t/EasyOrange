@@ -20,8 +20,12 @@ public final class SystemNotificationPayload {
         payload.put("title", message.title() != null ? message.title() : "");
         payload.put("content", message.content() != null ? message.content() : "");
         payload.put("businessId", message.businessId() != null ? message.businessId() : "");
-        payload.put("type", message.type() == null ? null : Integer.valueOf(message.type().getCode()));
-        payload.put("createTime", message.createTime() != null ? message.createTime().toString() : "");
+        payload.put(
+                "type",
+                message.type() == null ? null : Integer.valueOf(message.type().getCode()));
+        payload.put(
+                "createTime",
+                message.createTime() != null ? message.createTime().toString() : "");
         return payload;
     }
 }

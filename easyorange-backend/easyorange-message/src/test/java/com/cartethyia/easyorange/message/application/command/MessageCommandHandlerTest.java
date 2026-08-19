@@ -103,7 +103,8 @@ class MessageCommandHandlerTest {
         void handle_sendMessage_success() {
             SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "hello", null, null);
 
-            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(true);
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                    .thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
 
@@ -134,7 +135,8 @@ class MessageCommandHandlerTest {
         void handle_sendMessage_rateLimited_throws() {
             SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "hello", null, null);
 
-            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(false);
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                    .thenReturn(false);
 
             assertThatThrownBy(() -> commandHandler.handle(USER_ID, command))
                     .isInstanceOf(MessageDomainException.class)
@@ -148,7 +150,8 @@ class MessageCommandHandlerTest {
         void handle_sendMessage_sensitiveFilterApplied() {
             SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "包含敏感词示例", null, null);
 
-            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(true);
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                    .thenReturn(true);
             when(sensitiveWordFilterService.filter("包含敏感词示例")).thenReturn("包含***");
             when(sensitiveWordFilterService.filter("标题")).thenReturn("标题");
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
@@ -178,7 +181,8 @@ class MessageCommandHandlerTest {
         void handle_sendMessage_nullType_defaultsToChat() {
             SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, null, "标题", "hello", null, null);
 
-            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(true);
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                    .thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
 

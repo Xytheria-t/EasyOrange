@@ -64,7 +64,9 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
     @Override
     public List<Order> findExpiredOrders(int timeoutMinutes) {
         return scanByStatus(
-                OrderStatus.PENDING_PAYMENT, OrderDO::getCreateTime, LocalDateTime.now().minusMinutes(timeoutMinutes));
+                OrderStatus.PENDING_PAYMENT,
+                OrderDO::getCreateTime,
+                LocalDateTime.now().minusMinutes(timeoutMinutes));
     }
 
     @Override

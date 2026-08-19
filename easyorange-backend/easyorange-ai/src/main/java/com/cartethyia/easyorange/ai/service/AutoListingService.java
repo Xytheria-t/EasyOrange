@@ -33,8 +33,7 @@ public class AutoListingService {
             String systemPrompt = loadPrompt(SYSTEM_PROMPT_NAME);
 
             // 视觉分析走场景路由（vision → visionChatModel），与文本生成解耦、可独立换模型
-            String visualResult =
-                    aiModelSupport.analyzeImages(modelRouter.choose("vision"), imageUrls, visualPrompt);
+            String visualResult = aiModelSupport.analyzeImages(modelRouter.choose("vision"), imageUrls, visualPrompt);
             if (visualResult == null) {
                 log.warn("Vision analysis returned null for {} images", imageUrls.size());
                 return null;
