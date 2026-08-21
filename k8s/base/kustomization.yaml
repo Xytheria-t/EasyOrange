@@ -12,5 +12,7 @@ resources:
   - backend/pvc.yaml
   - frontend/deployment.yaml
   - frontend/service.yaml
+  - frontend/hpa.yaml
+  - frontend/pdb.yaml
   - ingress.yaml
   - network-policy.yaml

@@ -1,0 +1,14 @@
+# 前端 PDB — 节点 drain 时至少保留 1 个副本，配合滚动策略保证静态资源持续可服务
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: easyorange-frontend
+  labels:
+    app.kubernetes.io/name: easyorange
+    app.kubernetes.io/component: frontend
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: easyorange
+      app.kubernetes.io/component: frontend

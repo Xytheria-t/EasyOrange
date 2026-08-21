@@ -1,0 +1,28 @@
+# 前端水平弹性 — 静态 nginx 服务，CPU 70% 触发扩容
+# behavior 与 backend 对齐：缩容稳定窗口 300s 防抖动，扩容 60s 快速响应
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: easyorange-frontend
+  labels:
+    app.kubernetes.io/name: easyorange
+    app.kubernetes.io/component: frontend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: easyorange-frontend
+  minReplicas: 2
+  maxReplicas: 4
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+    scaleUp:
+      stabilizationWindowSeconds: 60
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
