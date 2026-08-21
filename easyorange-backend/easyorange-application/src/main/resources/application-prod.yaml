@@ -205,4 +205,9 @@ security:
     - /error
   allowed-origins: ${CORS_ALLOWED_ORIGINS:}
 
-# 生产环境 API 文档已关闭
+# 生产环境 API 文档已关闭（应用层纵深防御；反向代理仍应拦截 /v3/api-docs 与 /swagger-ui 路径）
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
