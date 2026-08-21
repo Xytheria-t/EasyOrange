@@ -103,11 +103,11 @@ class ConversationQueryHandlerTest {
         @DisplayName("返回会话列表，按最新消息分组")
         void getConversations_returnsGroupedList() {
             Message msgWithUser2 = createMessage(CURRENT_USER_ID, OTHER_USER_ID, "最后一条给2", "3");
-            Message msgFromUser2 = createMessage(OTHER_USER_ID, CURRENT_USER_ID, "消息from2", "2");
             Message msgWithUser3 = createMessage(THIRD_USER_ID, CURRENT_USER_ID, "消息from3", "1");
 
-            when(queryRepository.findRecentForUser(CURRENT_USER_ID))
-                    .thenReturn(List.of(msgWithUser2, msgFromUser2, msgWithUser3));
+            when(queryRepository.findLatestPerConversation(CURRENT_USER_ID))
+                    .thenReturn(List.of(msgWithUser2, msgWithUser3));
+            when(queryRepository.countUnreadByConversation(CURRENT_USER_ID)).thenReturn(Map.of());
             when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(new HashMap<>(Map.of(
                             OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "用户2", "a.jpg"),
@@ -147,7 +147,8 @@ class ConversationQueryHandlerTest {
                     LocalDateTime.now());
             Message chatMsg = createMessage(OTHER_USER_ID, CURRENT_USER_ID, "嗨", "2");
 
-            when(queryRepository.findRecentForUser(CURRENT_USER_ID)).thenReturn(List.of(sysMsg, chatMsg));
+            when(queryRepository.findLatestPerConversation(CURRENT_USER_ID)).thenReturn(List.of(sysMsg, chatMsg));
+            when(queryRepository.countUnreadByConversation(CURRENT_USER_ID)).thenReturn(Map.of("system", 1));
             when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(Map.of(OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "用户2", null)));
 
@@ -165,7 +166,7 @@ class ConversationQueryHandlerTest {
         @Test
         @DisplayName("没有会话时返回空列表")
         void getConversations_noMessages_returnsEmpty() {
-            when(queryRepository.findRecentForUser(CURRENT_USER_ID)).thenReturn(List.of());
+            when(queryRepository.findLatestPerConversation(CURRENT_USER_ID)).thenReturn(List.of());
 
             List<ConversationListVO> result = handler.getConversations(CURRENT_USER_ID);
 

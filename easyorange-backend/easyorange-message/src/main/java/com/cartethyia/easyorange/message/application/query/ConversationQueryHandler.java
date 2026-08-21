@@ -6,7 +6,6 @@ import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,20 +41,16 @@ public class ConversationQueryHandler {
 
     @Transactional(readOnly = true)
     public List<ConversationListVO> getConversations(String currentUserId) {
-        List<Message> messages = queryRepository.findRecentForUser(currentUserId);
-        if (messages.isEmpty()) {
+        // 库端聚合：每个会话对方一条最新消息 + 按对方聚合的未读数，避免全量拉取用户所有消息
+        List<Message> latestPerConversation = queryRepository.findLatestPerConversation(currentUserId);
+        if (latestPerConversation.isEmpty()) {
             return List.of();
         }
+        Map<String, Integer> unreadCounts = queryRepository.countUnreadByConversation(currentUserId);
 
         Map<String, Message> latestByUser = new LinkedHashMap<>();
-        Map<String, Integer> unreadCounts = new HashMap<>();
-
-        for (Message msg : messages) {
-            String otherUserId = otherUserId(currentUserId, msg);
-            latestByUser.putIfAbsent(otherUserId, msg);
-            if (msg.receiverId() != null && msg.receiverId().equals(currentUserId) && msg.isUnread()) {
-                unreadCounts.merge(otherUserId, 1, Integer::sum);
-            }
+        for (Message msg : latestPerConversation) {
+            latestByUser.putIfAbsent(otherUserId(currentUserId, msg), msg);
         }
 
         // 排除固定占位 key，避免向用户仓库查询不存在的 "system" 用户

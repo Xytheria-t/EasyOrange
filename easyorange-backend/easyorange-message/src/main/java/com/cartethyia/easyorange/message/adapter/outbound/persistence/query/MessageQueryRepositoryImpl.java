@@ -106,26 +106,38 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
         return countMap.getOrDefault(Integer.valueOf(type.getCode()), 0L);
     }
 
+    /** 会话详情窗口上限：只取最近 N 条（降序取页后反转为时间升序），避免长会话全量加载。 */
+    private static final int CONVERSATION_HISTORY_LIMIT = 500;
+
     @Override
     public List<Message> findConversation(String userId, String otherUserId) {
-        return messageDataMapper.toAggregateList(lambdaQuery()
+        List<MessageDO> recent = lambdaQuery()
                 .and(w -> w.eq(MessageDO::getSenderId, userId)
                         .eq(MessageDO::getReceiverId, otherUserId)
                         .or()
                         .eq(MessageDO::getSenderId, otherUserId)
                         .eq(MessageDO::getReceiverId, userId))
                 .eq(MessageDO::getDelFlag, 0)
-                .orderByAsc(MessageDO::getCreateTime)
-                .list());
+                .orderByDesc(MessageDO::getCreateTime)
+                .page(new Page<>(1, CONVERSATION_HISTORY_LIMIT, false))
+                .getRecords();
+        List<Message> chronological = new java.util.ArrayList<>(messageDataMapper.toAggregateList(recent));
+        java.util.Collections.reverse(chronological);
+        return chronological;
     }
 
     @Override
-    public List<Message> findRecentForUser(String userId) {
-        return messageDataMapper.toAggregateList(lambdaQuery()
-                .and(w -> w.eq(MessageDO::getSenderId, userId).or().eq(MessageDO::getReceiverId, userId))
-                .eq(MessageDO::getDelFlag, 0)
-                .orderByDesc(MessageDO::getCreateTime)
-                .list());
+    public List<Message> findLatestPerConversation(String userId) {
+        return messageDataMapper.toAggregateList(mapper.selectLatestPerConversation(userId));
+    }
+
+    @Override
+    public Map<String, Integer> countUnreadByConversation(String userId) {
+        return mapper.countUnreadPerConversation(userId, Integer.valueOf(ReadStatus.UNREAD.getCode())).stream()
+                .collect(Collectors.toMap(
+                        row -> String.valueOf(row.get("other_id")),
+                        row -> ((Number) row.get("cnt")).intValue(),
+                        (a, b) -> a));
     }
 
     private PageResult<Message> toAggregatePageResult(Page<MessageDO> messagePage) {

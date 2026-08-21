@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
 import java.util.List;
+import java.util.Map;
 
 public interface MessageQueryRepository {
 
@@ -16,9 +17,12 @@ public interface MessageQueryRepository {
 
     UnreadCount countUnreadByReceiverId(String userId);
 
-    /** 两个用户之间的全部消息（create_time 升序）——会话详情。 */
+    /** 两个用户之间的近期消息（create_time 升序，最新 500 条窗口）——会话详情。 */
     List<Message> findConversation(String userId, String otherUserId);
 
-    /** 用户参与（收发任一方向）的最近消息（create_time 降序）——会话列表。 */
-    List<Message> findRecentForUser(String userId);
+    /** 每个会话对方的最新一条消息（create_time 降序，库端聚合）——会话列表。 */
+    List<Message> findLatestPerConversation(String userId);
+
+    /** 按会话对方聚合的未读数：key 为对方用户 ID（系统消息归并为 "system"）。 */
+    Map<String, Integer> countUnreadByConversation(String userId);
 }
