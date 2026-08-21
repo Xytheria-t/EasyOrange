@@ -67,14 +67,10 @@ export default function TopProductsChart({ data }: TopProductsChartProps) {
                         fontSize: '0.82rem',
                         boxShadow: '0 8px 24px rgba(42,37,32,0.08)',
                     }}
-                    formatter={(
-                        value: number,
-                        _name: string,
-                        item: { payload?: { fullName?: string; price?: number } }
-                    ) => {
-                        const payload = item?.payload;
+                    formatter={(value, _name, item) => {
+                        const payload = item?.payload as { fullName?: string; price?: number } | undefined;
                         return [
-                            `浏览量: ${value.toLocaleString()} | ¥${payload?.price?.toFixed(2) ?? '-'}`,
+                            `浏览量: ${value?.toLocaleString() ?? '-'} | ¥${payload?.price?.toFixed(2) ?? '-'}`,
                             payload?.fullName ?? '',
                         ];
                     }}
