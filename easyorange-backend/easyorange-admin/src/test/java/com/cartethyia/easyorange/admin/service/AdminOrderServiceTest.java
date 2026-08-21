@@ -211,7 +211,8 @@ class AdminOrderServiceTest {
         @DisplayName("获取订单统计")
         void getOrderStats_returnsStats() {
             when(adminOrderPort.getOrderStats())
-                    .thenReturn(new OrderStats(100, 10, 20, 30, 15, 25, 5, 5, new BigDecimal("5000.00"), new BigDecimal("200.00")));
+                    .thenReturn(new OrderStats(
+                            100, 10, 20, 30, 15, 25, 5, 5, new BigDecimal("5000.00"), new BigDecimal("200.00")));
 
             OrderStatsResponse stats = orderService.getOrderStats();
 

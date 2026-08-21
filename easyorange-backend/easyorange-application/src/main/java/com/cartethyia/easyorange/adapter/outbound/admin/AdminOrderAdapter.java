@@ -127,11 +127,12 @@ public class AdminOrderAdapter implements AdminOrderPort {
                         .groupBy("status"))
                 .stream()
                 .collect(Collectors.toMap(
-                        row -> String.valueOf(row.get("status")),
-                        row -> ((Number) row.get("cnt")).longValue()));
+                        row -> String.valueOf(row.get("status")), row -> ((Number) row.get("cnt")).longValue()));
 
-        long totalOrders = countsByStatus.values().stream().mapToLong(Long::longValue).sum();
-        long todayOrders = orderReadRepository.countByCreatedAfter(LocalDate.now().atStartOfDay());
+        long totalOrders =
+                countsByStatus.values().stream().mapToLong(Long::longValue).sum();
+        long todayOrders =
+                orderReadRepository.countByCreatedAfter(LocalDate.now().atStartOfDay());
 
         return new OrderStats(
                 totalOrders,

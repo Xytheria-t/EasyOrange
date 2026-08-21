@@ -76,7 +76,8 @@ class AdminDashboardServiceTest {
             when(adminUserPort.getUserStats()).thenReturn(new UserStats(100, 5));
             when(adminDashboardPort.getProductStats()).thenReturn(new AdminDashboardPort.ProductStats(200, 10));
             when(adminOrderPort.getOrderStats())
-                    .thenReturn(new OrderStats(300, 5, 0, 0, 0, 0, 0, 0, new BigDecimal("12345.60"), new BigDecimal("88.00")));
+                    .thenReturn(new OrderStats(
+                            300, 5, 0, 0, 0, 0, 0, 0, new BigDecimal("12345.60"), new BigDecimal("88.00")));
             when(adminReportPort.getReportStats()).thenReturn(new ReportStats(20, 8, 0, 0, 0));
 
             DashboardStatsResponse stats = dashboardService.getDashboardStats();
@@ -100,7 +101,8 @@ class AdminDashboardServiceTest {
         @DisplayName("获取待处理事项")
         void getPendingItems_returnsItems() {
             when(adminReportPort.getReportStats()).thenReturn(new ReportStats(5, 3, 0, 0, 0));
-            when(adminOrderPort.getOrderStats()).thenReturn(new OrderStats(10, 0, 5, 0, 0, 0, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO));
+            when(adminOrderPort.getOrderStats())
+                    .thenReturn(new OrderStats(10, 0, 5, 0, 0, 0, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO));
             when(adminDashboardPort.getProductStats()).thenReturn(new AdminDashboardPort.ProductStats(100, 7));
             when(adminReportPort.queryReports(0, 1, 5))
                     .thenReturn(new ReportQueryResult(

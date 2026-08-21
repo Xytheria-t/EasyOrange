@@ -31,12 +31,11 @@ public class FileService {
     private final UploadFileMapper uploadFileMapper;
     private final FileStorage fileStorage;
 
-    @Transactional(rollbackFor = Exception.class)
     public UploadFileVO uploadFile(MultipartFile file, String businessType) {
         return uploadFile(file, businessType, null);
     }
 
-    @Transactional(rollbackFor = Exception.class)
+    // 无 @Transactional：磁盘写入（getBytes/store）单条 insert 自原子，避免大文件上传期间长时间占用 DB 连接
     public UploadFileVO uploadFile(MultipartFile file, String businessType, String businessId) {
         Objects.requireNonNull(file, "上传文件不能为空");
         if (file.isEmpty()) throw BusinessException.of("上传文件不能为空");
@@ -50,6 +49,7 @@ public class FileService {
 
             var entity = new UploadFileDO();
             entity.setFileName(file.getOriginalFilename());
+            entity.setFilePath(storageKey);
             entity.setStorageKey(storageKey);
             entity.setFileUrl(fileStorage.getUrl(storageKey));
             entity.setFileSize(file.getSize());
