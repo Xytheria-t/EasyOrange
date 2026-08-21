@@ -22,3 +22,10 @@ datasources:
     secureJsonData:
       password: ${GRAFANA_MYSQL_PASSWORD:easyorange_app_dev}
     editable: false
+  # Loki 日志数据源 — Promtail 采集容器日志（含 level/traceId 标签），Explore 直接按 traceId 检索全链路日志
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false

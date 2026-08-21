@@ -1,0 +1,35 @@
+# =============================================================================
+# 业务告警规则（compose 侧）— 与 k8s/observability/prometheus-rule.yaml 同源，
+# 差异：compose 抓取无 namespace 标签，按 job="easyorange" 过滤
+# =============================================================================
+groups:
+  - name: easyorange.rules
+    rules:
+      - alert: EasyOrangeBackendDown
+        expr: up{job="easyorange"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "后端实例不可达（探活失败）"
+          description: "后端实例已 5 分钟无指标上报，检查容器/副本状态"
+
+      - alert: EasyOrangeHigh5xxRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{job="easyorange", status=~"5.."}[5m]))
+            / clamp_min(sum(rate(http_server_requests_seconds_count{job="easyorange"}[5m])), 1) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "5xx 错误率超过 5%"
+          description: "最近 5 分钟 5xx 占比 {{ $value | humanizePercentage }}，检查上游依赖与限流降级"
+
+      - alert: EasyOrangeHighP99Latency
+        expr: histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job="easyorange"}[5m])) by (le)) > 2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P99 延迟超过 2s"
+          description: "最近 10 分钟 P99 持续超过 2 秒，检查慢 SQL / 外部依赖 / 限流排队"

@@ -55,6 +55,8 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+      # 启用内置 rabbitmq_prometheus 插件（:15692/metrics），Prometheus 采集队列/消费指标
+      - ./infra/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_running"]
       interval: 10s
@@ -126,11 +128,82 @@ services:
       - --storage.tsdb.retention.time=7d
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
     ports:
       - "9090:9090"
     depends_on:
       easyorange-app:
         condition: service_started
+
+  # ---------------------------------------------------------------------------
+  # 告警 — Alertmanager 接收 Prometheus 告警并分组路由；本地演示无外部通知渠道，
+  # 告警在 :9093 UI 可视化，接渠道时改 infra/alertmanager/alertmanager.yml
+  # ---------------------------------------------------------------------------
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: easyorange-alertmanager
+    restart: unless-stopped
+    profiles: [fullstack]
+    volumes:
+      - ./infra/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "9093:9093"
+
+  # ---------------------------------------------------------------------------
+  # 日志聚合 — Loki + Promtail（docker_sd 采集本 compose 项目容器日志，含 traceId 标签）
+  # ---------------------------------------------------------------------------
+  loki:
+    image: grafana/loki:3.5.1
+    container_name: easyorange-loki
+    restart: unless-stopped
+    profiles: [fullstack]
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./infra/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:3.5.1
+    container_name: easyorange-promtail
+    restart: unless-stopped
+    profiles: [fullstack]
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./infra/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - promtail-positions:/tmp
+    depends_on:
+      loki:
+        condition: service_started
+
+  # ---------------------------------------------------------------------------
+  # 中间件 exporter — MySQL/Redis 指标（RabbitMQ 走内置 rabbitmq_prometheus 插件 :15692）
+  # ---------------------------------------------------------------------------
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.15.1
+    container_name: easyorange-mysqld-exporter
+    restart: unless-stopped
+    profiles: [fullstack]
+    command:
+      - --mysqld.address=mysql:3306
+      - --mysqld.username=easyorange_app
+    environment:
+      MYSQLD_EXPORTER_PASSWORD: easyorange_app_dev
+    ports:
+      - "9104:9104"
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.66.0
+    container_name: easyorange-redis-exporter
+    restart: unless-stopped
+    profiles: [fullstack]
+    environment:
+      REDIS_ADDR: redis://redis:6379
+      REDIS_PASSWORD: easyorange123
+    ports:
+      - "9121:9121"
 
   grafana:
     image: grafana/grafana-oss:13.0.2
@@ -166,3 +239,5 @@ volumes:
   rabbitmq-data:
   es-data:
   grafana-data:
+  loki-data:
+  promtail-positions:

@@ -1,0 +1,11 @@
+# EasyOrange Alertmanager — 本地演示：无真实通知渠道，告警在 UI（:9093）可视化
+# 接入真实渠道（钉钉/企业微信/Slack/邮件）时在 receivers 下补 webhook_configs / email_configs
+route:
+  receiver: default
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: default

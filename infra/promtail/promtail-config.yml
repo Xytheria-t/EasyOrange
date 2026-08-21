@@ -1,0 +1,38 @@
+# EasyOrange Promtail — 采集本 compose 项目容器日志推送到 Loki
+server:
+  http_listen_port: 9080
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 15s
+    relabel_configs:
+      # 仅保留本 compose 项目的容器（dev 栈 + fullstack 观测栈一并采集）
+      - source_labels: [__meta_docker_container_label_com_docker_compose_project]
+        regex: easyorange
+        action: keep
+      # 容器名（去掉前导 /）与 compose 服务名提升为标签，Grafana 按服务过滤
+      - source_labels: [__meta_docker_container_name]
+        regex: /(.*)
+        target_label: container
+      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+        target_label: compose_service
+      - source_labels: [__meta_docker_container_log_stream]
+        target_label: stream
+    pipeline_stages:
+      # 后端结构化日志（logstash JSON）解析出 level/traceId/logger；非 JSON 行静默跳过本阶段
+      - json:
+          expressions:
+            level: level
+            traceId: traceId
+            logger: logger
+      - labels:
+          level:
+          traceId:

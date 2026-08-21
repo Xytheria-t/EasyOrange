@@ -4,6 +4,14 @@ global:
   scrape_interval: 15s
   evaluation_interval: 30s
 
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: [alertmanager:9093]
+
 scrape_configs:
   # 后端应用实例 — Docker DNS 返回 easyorange-app 服务的全部容器 IP，
   # --scale easyorange-app=N 后自动采集所有实例（target 标签 = instance）
@@ -19,6 +27,26 @@ scrape_configs:
         regex: (.*):\d+
         target_label: instance
         replacement: $1
+
+  # -----------------------------------------------------------------
+  # 中间件层 — exporter 采集（compose --profile fullstack 拉起）
+  # -----------------------------------------------------------------
+  - job_name: mysqld
+    static_configs:
+      - targets: [mysqld-exporter:9104]
+
+  - job_name: redis
+    static_configs:
+      - targets: [redis-exporter:9121]
+
+  # RabbitMQ 内置 rabbitmq_prometheus 插件（infra/rabbitmq/enabled_plugins 挂载启用）
+  - job_name: rabbitmq
+    static_configs:
+      - targets: [rabbitmq:15692]
+
+  - job_name: alertmanager
+    static_configs:
+      - targets: [alertmanager:9093]
 
   - job_name: prometheus
     static_configs:
