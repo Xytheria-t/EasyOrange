@@ -13,8 +13,9 @@ import org.springframework.stereotype.Component;
 /**
  * 过期消息清理/归档定时任务 — 入站适配器。
  * <p>
- * 持久化统一走 {@link MessageMapper} 的 XML 批处理语句（selectMessagesBefore/batchInsertArchive/
- * deleteMessagesBefore），与 order 模块 {@code adapter/inbound/job/} 的定时任务惯例对齐。
+ * 归档先行：每月 1 日把超期消息按批原子搬入 {@code eo_message_archive}（见
+ * {@link MessageArchiveBatchHandler}）；每日兜底清理只物理删除「保留期 + 宽限期」之前的
+ * 消息，宽限期覆盖归档周期，保证归档任务总是先于物理删除看到超期数据。
  */
 @Slf4j
 @Component
@@ -22,13 +23,15 @@ import org.springframework.stereotype.Component;
 public class MessageArchiveTask {
 
     private final MessageMapper messageMapper;
+    private final MessageArchiveBatchHandler archiveBatchHandler;
     private final MessageRetentionProperties retentionProperties;
 
-    /** 每日 03:00 清理过期消息（分批 DELETE ... LIMIT 1000）。 */
+    /** 每日 03:00 兜底清理（分批 DELETE ... LIMIT 1000），只处理归档漏网的超期消息。 */
     @Scheduled(cron = "0 0 3 * * ?")
     public void cleanupExpiredMessages() {
         try {
-            LocalDateTime expireDate = LocalDateTime.now().minusDays(retentionProperties.getRetentionDays());
+            LocalDateTime expireDate = LocalDateTime.now()
+                    .minusDays(retentionProperties.getRetentionDays() + retentionProperties.getCleanupGraceDays());
             int totalDeleted = 0;
             int deleted;
             do {
@@ -39,13 +42,13 @@ public class MessageArchiveTask {
             log.info(
                     "Cleaned up {} expired messages (older than {} days)",
                     totalDeleted,
-                    retentionProperties.getRetentionDays());
+                    retentionProperties.getRetentionDays() + retentionProperties.getCleanupGraceDays());
         } catch (Exception e) {
             log.error("Failed to cleanup expired messages", e);
         }
     }
 
-    /** 每月 1 日 02:00 将过期消息归档到 eo_message_archive 后从主表删除。 */
+    /** 每月 1 日 02:00 将超期消息分批原子归档（写入归档表 + 主表物理删除同事务）。 */
     @Scheduled(cron = "0 0 2 1 * ?")
     public void archiveOldMessages() {
         try {
@@ -59,12 +62,9 @@ public class MessageArchiveTask {
                     break;
                 }
 
-                messageMapper.batchInsertArchive(messagesToArchive);
+                archiveBatchHandler.archiveBatch(messagesToArchive);
                 totalArchived += messagesToArchive.size();
                 batchCount++;
-
-                messageMapper.deleteByIds(
-                        messagesToArchive.stream().map(MessageDO::getId).toList());
 
                 log.info("Archived batch #{}: {} messages", batchCount, messagesToArchive.size());
             }

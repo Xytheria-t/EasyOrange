@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.message.adapter.inbound.job;
 
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -8,11 +9,13 @@ import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -23,16 +26,34 @@ class MessageArchiveTaskTest {
     @Mock
     private MessageMapper messageMapper;
 
+    @Mock
+    private MessageArchiveBatchHandler archiveBatchHandler;
+
     private MessageArchiveTask archiveTask;
 
     @org.junit.jupiter.api.BeforeEach
     void setUp() {
-        archiveTask = new MessageArchiveTask(messageMapper, new MessageRetentionProperties());
+        archiveTask = new MessageArchiveTask(messageMapper, archiveBatchHandler, new MessageRetentionProperties());
     }
 
     @Nested
     @DisplayName("cleanupExpiredMessages")
     class CleanupExpiredMessagesTests {
+
+        @Test
+        @DisplayName("清理阈值含宽限期（retentionDays + cleanupGraceDays），保证归档先于物理删除")
+        void cleanupExpiredMessages_cutoff_includesGraceDays() {
+            when(messageMapper.deleteMessagesBefore(any())).thenReturn(0);
+            LocalDateTime before = LocalDateTime.now();
+
+            archiveTask.cleanupExpiredMessages();
+
+            ArgumentCaptor<LocalDateTime> captor = ArgumentCaptor.forClass(LocalDateTime.class);
+            verify(messageMapper).deleteMessagesBefore(captor.capture());
+            // 默认 90 + 35 = 125 天前（允许 5s 误差）
+            org.assertj.core.api.Assertions.assertThat(captor.getValue())
+                    .isCloseTo(before.minusDays(125), within(5, ChronoUnit.SECONDS));
+        }
 
         @Test
         @DisplayName("有过期消息时分批清理直到删完")
@@ -42,16 +63,6 @@ class MessageArchiveTaskTest {
             archiveTask.cleanupExpiredMessages();
 
             verify(messageMapper, times(3)).deleteMessagesBefore(any());
-        }
-
-        @Test
-        @DisplayName("无过期消息时只查一次")
-        void cleanupExpiredMessages_noExpired_queriesOnce() {
-            when(messageMapper.deleteMessagesBefore(any())).thenReturn(0);
-
-            archiveTask.cleanupExpiredMessages();
-
-            verify(messageMapper, times(1)).deleteMessagesBefore(any());
         }
 
         @Test
@@ -70,8 +81,8 @@ class MessageArchiveTaskTest {
     class ArchiveOldMessagesTests {
 
         @Test
-        @DisplayName("有待归档消息时归档并删除原记录")
-        void archiveOldMessages_hasMessages_archivesAndDeletes() {
+        @DisplayName("有待归档消息时按批交给事务处理器（归档+物理删除原子）")
+        void archiveOldMessages_hasMessages_delegatesBatchAtomically() {
             MessageDO msg1 = MessageDO.builder()
                     .id("1")
                     .senderId("1")
@@ -99,8 +110,7 @@ class MessageArchiveTaskTest {
             archiveTask.archiveOldMessages();
 
             verify(messageMapper, times(2)).selectMessagesBefore(any());
-            verify(messageMapper).batchInsertArchive(any());
-            verify(messageMapper).deleteByIds(List.of("1", "2"));
+            verify(archiveBatchHandler).archiveBatch(List.of(msg1, msg2));
         }
 
         @Test
@@ -111,8 +121,7 @@ class MessageArchiveTaskTest {
             archiveTask.archiveOldMessages();
 
             verify(messageMapper, times(1)).selectMessagesBefore(any());
-            verify(messageMapper, never()).batchInsertArchive(any());
-            verify(messageMapper, never()).deleteByIds(any());
+            verify(archiveBatchHandler, never()).archiveBatch(any());
         }
 
         @Test
@@ -145,8 +154,7 @@ class MessageArchiveTaskTest {
 
             archiveTask.archiveOldMessages();
 
-            verify(messageMapper, times(2)).batchInsertArchive(any());
-            verify(messageMapper, times(2)).deleteByIds(any());
+            verify(archiveBatchHandler, times(2)).archiveBatch(any());
         }
 
         @Test
@@ -157,7 +165,33 @@ class MessageArchiveTaskTest {
             archiveTask.archiveOldMessages();
 
             verify(messageMapper, times(1)).selectMessagesBefore(any());
-            verify(messageMapper, never()).batchInsertArchive(any());
+            verify(archiveBatchHandler, never()).archiveBatch(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("MessageArchiveBatchHandler")
+    class BatchHandlerTests {
+
+        @Test
+        @DisplayName("归档写入与按 ID 物理删除在同一调用内成对执行")
+        void archiveBatch_insertsArchive_thenPhysicalDeletes() {
+            MessageDO msg = MessageDO.builder()
+                    .id("1")
+                    .senderId("1")
+                    .receiverId("2")
+                    .type(1)
+                    .title("t")
+                    .content("c")
+                    .isRead(ReadStatus.UNREAD)
+                    .createTime(LocalDateTime.now().minusDays(100))
+                    .build();
+            MessageArchiveBatchHandler handler = new MessageArchiveBatchHandler(messageMapper);
+
+            handler.archiveBatch(List.of(msg));
+
+            verify(messageMapper).batchInsertArchive(List.of(msg));
+            verify(messageMapper).deleteByIdsPhysical(List.of("1"));
         }
     }
 }
