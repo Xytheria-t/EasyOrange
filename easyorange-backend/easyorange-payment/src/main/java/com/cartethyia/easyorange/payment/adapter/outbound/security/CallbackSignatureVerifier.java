@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException
 import com.cartethyia.easyorange.payment.domain.port.CallbackSignatureVerifierPort;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import javax.crypto.Mac;
@@ -39,7 +40,10 @@ public class CallbackSignatureVerifier implements CallbackSignatureVerifierPort 
         String data = paymentNo + "|" + transactionId;
         String expectedSign = hmacSha256(data, callbackProperties.getSecret());
 
-        if (!expectedSign.equals(sign)) {
+        // 常量时间比较，避免逐字节短路泄露签名匹配进度
+        boolean matched = MessageDigest.isEqual(
+                expectedSign.getBytes(StandardCharsets.UTF_8), sign.getBytes(StandardCharsets.UTF_8));
+        if (!matched) {
             log.warn("回调签名验证失败 paymentNo={}", paymentNo);
             throw PaymentDomainException.of(PaymentResultCode.CALLBACK_SIGN_INVALID);
         }
