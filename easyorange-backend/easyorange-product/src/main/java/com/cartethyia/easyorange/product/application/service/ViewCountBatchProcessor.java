@@ -3,11 +3,9 @@ package com.cartethyia.easyorange.product.application.service;
 import com.cartethyia.easyorange.product.application.port.cache.ViewCountPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ViewCountEntry;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -22,8 +20,10 @@ public class ViewCountBatchProcessor {
         var entries = viewCountPort.findAllPending();
         if (entries.isEmpty()) return;
 
-        // Step 2: Batch update DB (transactional — Redis data is preserved if this fails)
-        doBatchUpdate(entries);
+        // Step 2: Batch update DB — batchAddViewCounts 为单条批处理 SQL（语句级原子），
+        // 失败时 Redis 计数保留待下轮重放；不加 @Transactional（同类自调用不生效，且单语句无增益）
+        productRepository.batchAddViewCounts(entries);
+        log.debug("batch update view count done: processed={}", entries.size());
 
         // Step 3: Clean up Redis (non-transactional, best-effort)
         try {
@@ -32,11 +32,5 @@ public class ViewCountBatchProcessor {
         } catch (Exception e) {
             log.error("action=cleanupViewCountCacheFailed entries={}", entries.size(), e);
         }
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    void doBatchUpdate(List<ViewCountEntry> entries) {
-        productRepository.batchAddViewCounts(entries);
-        log.debug("batch update view count done: processed={}", entries.size());
     }
 }
