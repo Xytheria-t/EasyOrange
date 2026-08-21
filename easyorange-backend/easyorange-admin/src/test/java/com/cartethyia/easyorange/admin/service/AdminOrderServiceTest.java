@@ -210,7 +210,8 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("获取订单统计")
         void getOrderStats_returnsStats() {
-            when(adminOrderPort.getOrderStats()).thenReturn(new OrderStats(100, 10, 20, 30, 15, 25, 5, 5));
+            when(adminOrderPort.getOrderStats())
+                    .thenReturn(new OrderStats(100, 10, 20, 30, 15, 25, 5, 5, new BigDecimal("5000.00"), new BigDecimal("200.00")));
 
             OrderStatsResponse stats = orderService.getOrderStats();
 
@@ -222,6 +223,8 @@ class AdminOrderServiceTest {
             assertThat(stats.completed()).isEqualTo(25);
             assertThat(stats.cancelled()).isEqualTo(5);
             assertThat(stats.refunded()).isEqualTo(5);
+            assertThat(stats.totalRevenue()).isEqualByComparingTo("5000.00");
+            assertThat(stats.todayRevenue()).isEqualByComparingTo("200.00");
         }
 
         @Test

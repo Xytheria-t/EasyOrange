@@ -75,7 +75,8 @@ class AdminDashboardServiceTest {
         void getDashboardStats_returnsStats() {
             when(adminUserPort.getUserStats()).thenReturn(new UserStats(100, 5));
             when(adminDashboardPort.getProductStats()).thenReturn(new AdminDashboardPort.ProductStats(200, 10));
-            when(adminOrderPort.getOrderStats()).thenReturn(new OrderStats(300, 0, 0, 0, 0, 0, 0, 0));
+            when(adminOrderPort.getOrderStats())
+                    .thenReturn(new OrderStats(300, 5, 0, 0, 0, 0, 0, 0, new BigDecimal("12345.60"), new BigDecimal("88.00")));
             when(adminReportPort.getReportStats()).thenReturn(new ReportStats(20, 8, 0, 0, 0));
 
             DashboardStatsResponse stats = dashboardService.getDashboardStats();
@@ -85,6 +86,8 @@ class AdminDashboardServiceTest {
             assertThat(stats.getTotalProducts()).isEqualTo(200);
             assertThat(stats.getPendingProducts()).isEqualTo(10);
             assertThat(stats.getTotalOrders()).isEqualTo(300);
+            assertThat(stats.getTodayOrders()).isEqualTo(5);
+            assertThat(stats.getTotalRevenue()).isEqualByComparingTo("12345.60");
             assertThat(stats.getPendingReports()).isEqualTo(8);
         }
     }
@@ -97,7 +100,7 @@ class AdminDashboardServiceTest {
         @DisplayName("获取待处理事项")
         void getPendingItems_returnsItems() {
             when(adminReportPort.getReportStats()).thenReturn(new ReportStats(5, 3, 0, 0, 0));
-            when(adminOrderPort.getOrderStats()).thenReturn(new OrderStats(10, 0, 5, 0, 0, 0, 0, 0));
+            when(adminOrderPort.getOrderStats()).thenReturn(new OrderStats(10, 0, 5, 0, 0, 0, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO));
             when(adminDashboardPort.getProductStats()).thenReturn(new AdminDashboardPort.ProductStats(100, 7));
             when(adminReportPort.queryReports(0, 1, 5))
                     .thenReturn(new ReportQueryResult(
@@ -185,8 +188,8 @@ class AdminDashboardServiceTest {
         @DisplayName("获取最近动态（有数据时返回合并列表）")
         void getRecentActivity_withData_returnsMergedList() {
             Map<String, Object> userRow = new HashMap<>();
-            userRow.put("id", 1L);
-            userRow.put("nickname", "张三");
+            userRow.put("user_id", "user-1");
+            userRow.put("nick_name", "张三");
             userRow.put("create_time", Timestamp.valueOf(LocalDateTime.now()));
 
             Map<String, Object> productRow = new HashMap<>();

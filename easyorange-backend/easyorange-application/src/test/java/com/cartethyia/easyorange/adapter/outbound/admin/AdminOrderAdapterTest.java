@@ -48,6 +48,9 @@ class AdminOrderAdapterTest {
     private ProductMapper productMapper;
 
     @Mock
+    private com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentMapper paymentMapper;
+
+    @Mock
     private OrderQueryRepository orderReadRepository;
 
     @Mock
@@ -68,6 +71,7 @@ class AdminOrderAdapterTest {
                 orderMapper,
                 orderItemMapper,
                 productMapper,
+                paymentMapper,
                 orderReadRepository,
                 orderRepository,
                 domainEventPublisher);

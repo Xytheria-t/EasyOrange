@@ -17,7 +17,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
@@ -151,8 +150,8 @@ public class AdminOrderService {
                 .completed(stats.completed())
                 .cancelled(stats.cancelled())
                 .refunded(stats.refunded())
-                .totalRevenue(BigDecimal.ZERO)
-                .todayRevenue(BigDecimal.ZERO)
+                .totalRevenue(stats.totalRevenue())
+                .todayRevenue(stats.todayRevenue())
                 .build();
     }
 

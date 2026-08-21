@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
@@ -16,8 +17,11 @@ import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
+import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
+import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,6 +45,7 @@ public class AdminOrderAdapter implements AdminOrderPort {
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final ProductMapper productMapper;
+    private final PaymentMapper paymentMapper;
     private final OrderQueryRepository orderReadRepository;
     private final OrderRepository orderRepository;
     private final DomainEventPublisher domainEventPublisher;
@@ -115,18 +120,47 @@ public class AdminOrderAdapter implements AdminOrderPort {
 
     @Override
     public OrderStats getOrderStats() {
-        long totalOrders = orderReadRepository.countByStatus(null);
-        long pendingPayment = orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT);
-        long paid = orderReadRepository.countByStatus(OrderStatus.PAID);
-        long shipped = orderReadRepository.countByStatus(OrderStatus.SHIPPED);
-        long completed = orderReadRepository.countByStatus(OrderStatus.COMPLETED);
-        long cancelled = orderReadRepository.countByStatus(OrderStatus.CANCELLED);
-        long refunded = orderReadRepository.countByStatus(OrderStatus.REFUNDED);
+        Map<String, Long> countsByStatus = orderMapper
+                .selectMaps(new QueryWrapper<OrderDO>()
+                        .select("status", "COUNT(*) AS cnt")
+                        .eq("del_flag", 0)
+                        .groupBy("status"))
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> String.valueOf(row.get("status")),
+                        row -> ((Number) row.get("cnt")).longValue()));
 
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        long todayOrders = orderReadRepository.countByCreatedAfter(todayStart);
+        long totalOrders = countsByStatus.values().stream().mapToLong(Long::longValue).sum();
+        long todayOrders = orderReadRepository.countByCreatedAfter(LocalDate.now().atStartOfDay());
 
-        return new OrderStats(totalOrders, todayOrders, pendingPayment, paid, shipped, completed, cancelled, refunded);
+        return new OrderStats(
+                totalOrders,
+                todayOrders,
+                countsByStatus.getOrDefault(OrderStatus.PENDING_PAYMENT.getCode(), 0L),
+                countsByStatus.getOrDefault(OrderStatus.PAID.getCode(), 0L),
+                countsByStatus.getOrDefault(OrderStatus.SHIPPED.getCode(), 0L),
+                countsByStatus.getOrDefault(OrderStatus.COMPLETED.getCode(), 0L),
+                countsByStatus.getOrDefault(OrderStatus.CANCELLED.getCode(), 0L),
+                countsByStatus.getOrDefault(OrderStatus.REFUNDED.getCode(), 0L),
+                sumSuccessfulPayments(null),
+                sumSuccessfulPayments(LocalDate.now().atStartOfDay()));
+    }
+
+    /**
+     * 营收口径：eo_payment 中状态 SUCCESS 的支付金额合计；今日营收按支付完成时间（update_time）过滤。
+     */
+    private BigDecimal sumSuccessfulPayments(LocalDateTime since) {
+        QueryWrapper<PaymentDO> wrapper = new QueryWrapper<PaymentDO>()
+                .select("IFNULL(SUM(amount), 0) AS total")
+                .eq("del_flag", 0)
+                .eq("status", "SUCCESS");
+        if (since != null) {
+            wrapper.ge("update_time", since);
+        }
+        return paymentMapper.selectMaps(wrapper).stream()
+                .map(row -> (BigDecimal) row.get("total"))
+                .findFirst()
+                .orElse(BigDecimal.ZERO);
     }
 
     @Override

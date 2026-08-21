@@ -122,7 +122,7 @@ public interface AdminOrderPort {
     record OrderItemDetail(String productId, Integer quantity, BigDecimal price) {}
 
     /**
-     * 订单状态统计
+     * 订单状态统计。营收口径：eo_payment 中状态 SUCCESS 的支付金额合计。
      */
     record OrderStats(
             long totalOrders,
@@ -132,5 +132,7 @@ public interface AdminOrderPort {
             long toReceive,
             long completed,
             long cancelled,
-            long refunded) {}
+            long refunded,
+            BigDecimal totalRevenue,
+            BigDecimal todayRevenue) {}
 }

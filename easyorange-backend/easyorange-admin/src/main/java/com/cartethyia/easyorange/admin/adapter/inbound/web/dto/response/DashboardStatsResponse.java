@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response;
 
+import java.math.BigDecimal;
 import lombok.Builder;
 import lombok.Data;
 
@@ -19,7 +20,7 @@ public class DashboardStatsResponse {
 
     private Long todayOrders;
 
-    private Long totalRevenue;
+    private BigDecimal totalRevenue;
 
     private Long pendingReports;
 }

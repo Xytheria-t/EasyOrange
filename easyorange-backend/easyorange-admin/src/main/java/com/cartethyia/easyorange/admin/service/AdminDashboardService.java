@@ -11,6 +11,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActi
 import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort.RecentProductRecord;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminReportPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
@@ -47,7 +48,7 @@ public class AdminDashboardService {
     public DashboardStatsResponse getDashboardStats() {
         UserStats userStats = adminUserPort.getUserStats();
         AdminDashboardPort.ProductStats productStats = adminDashboardPort.getProductStats();
-        long totalOrders = adminOrderPort.getOrderStats().totalOrders();
+        OrderStats orderStats = adminOrderPort.getOrderStats();
         ReportStats reportStats = adminReportPort.getReportStats();
 
         return DashboardStatsResponse.builder()
@@ -55,9 +56,9 @@ public class AdminDashboardService {
                 .todayNewUsers(userStats.todayNewUsers())
                 .totalProducts(productStats.total())
                 .pendingProducts(productStats.pending())
-                .totalOrders(totalOrders)
-                .todayOrders(0L)
-                .totalRevenue(0L)
+                .totalOrders(orderStats.totalOrders())
+                .todayOrders(orderStats.todayOrders())
+                .totalRevenue(orderStats.totalRevenue())
                 .pendingReports(reportStats.pending())
                 .build();
     }
@@ -148,12 +149,11 @@ public class AdminDashboardService {
     private Stream<ActivityResponse> getRecentUserActivities() {
         return jdbcTemplate
                 .queryForList(
-                        "SELECT id, nickname, create_time FROM eo_user WHERE del_flag = 0 ORDER BY create_time DESC LIMIT 5")
+                        "SELECT user_id, nick_name, create_time FROM eo_user WHERE del_flag = 0 ORDER BY create_time DESC LIMIT 5")
                 .stream()
                 .map(row -> {
-                    var idValue = row.get("id");
-                    long id = idValue != null ? ((Number) idValue).longValue() : 0L;
-                    String nickname = row.get("nickname") != null ? (String) row.get("nickname") : "用户" + id;
+                    String userId = String.valueOf(row.get("user_id"));
+                    String nickname = row.get("nick_name") != null ? (String) row.get("nick_name") : "用户" + userId;
                     return ActivityResponse.builder()
                             .time(toLocalDateTime(row.get("create_time")).format(DATETIME_FORMAT))
                             .text("新用户 " + nickname + " 完成注册")

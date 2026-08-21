@@ -42,7 +42,7 @@ class AdminDashboardControllerTest {
                 .pendingProducts(10L)
                 .totalOrders(300L)
                 .todayOrders(15L)
-                .totalRevenue(0L)
+                .totalRevenue(new BigDecimal("12345.60"))
                 .pendingReports(3L)
                 .build();
         when(adminDashboardService.getDashboardStats()).thenReturn(stats);
@@ -56,6 +56,7 @@ class AdminDashboardControllerTest {
                 .andExpect(jsonPath("$.data.pendingProducts").value(10))
                 .andExpect(jsonPath("$.data.totalOrders").value(300))
                 .andExpect(jsonPath("$.data.todayOrders").value(15))
+                .andExpect(jsonPath("$.data.totalRevenue").value(12345.60))
                 .andExpect(jsonPath("$.data.pendingReports").value(3));
     }
 
