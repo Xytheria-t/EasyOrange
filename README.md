@@ -192,7 +192,7 @@ k6 run --vus 50 --duration 30s load-tests/product-list.js                  # k6 
 | [doc/工程指标.md](doc/工程指标.md) | 测试数 / 覆盖率单一事实来源（2,400+ 为取整下限） |
 | [doc/架构/](doc/架构/) | 架构规范（系统架构 / DDD / 安全认证 / 数据库迁移 / 部署） |
 | [doc/集成/](doc/集成/) | 业务专题（AI 资产管理 / API 速查） |
-| [doc/adr/](doc/adr/) | 9 条架构决策记录 |
+| [doc/adr/](doc/adr/) | 10 条架构决策记录 |
 
 ## 项目结构
 
