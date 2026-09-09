@@ -14,6 +14,7 @@ import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.cache.RedisCacheWriter;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
@@ -49,6 +50,7 @@ public class RedisCacheConfig implements CachingConfigurer {
     /**
      * Spring Cache 的 Redis 实现 — String key + JSON value（与 {@link RedisConfig} 序列化约定一致）。
      * Redis key 形如 {@code <cacheName>::<key>}（如 {@code eo:product:info::<productId>}）。
+     * 写入路径包 {@link JitterTtlRedisCacheWriter} 给 TTL 加随机抖动，同批 key 错峰过期防雪崩。
      */
     @Bean
     @ConditionalOnMissingBean(CacheManager.class)
@@ -58,8 +60,11 @@ public class RedisCacheConfig implements CachingConfigurer {
                 .entryTtl(cacheProperties.getDefaultTtl())
                 .serializeKeysWith(SerializationPair.fromSerializer(StringRedisSerializer.UTF_8))
                 .serializeValuesWith(SerializationPair.fromSerializer(jsonRedisSerializer));
+        var cacheWriter = new JitterTtlRedisCacheWriter(
+                RedisCacheWriter.nonLockingRedisCacheWriter(connectionFactory), cacheProperties.getTtlJitter());
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaults)
+                .cacheWriter(cacheWriter)
                 .build();
     }
 
