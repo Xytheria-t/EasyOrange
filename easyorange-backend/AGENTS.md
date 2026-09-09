@@ -202,7 +202,7 @@ AI 模块已全面框架化为 Spring AI 2.0（ADR-0008），自研 `CachingLlmA
 
 ### AI 搜索增强并行管道
 
-`AiSearchEnhancerAdapter` 内 4 路 `CompletableFuture` 并行执行（LLM 意图识别、商品标签、市场分析、建议问题），使用 `ForkJoinPool.commonPool()`（Java 21+ 虚拟线程），无需自定义线程池。单步骤超时 5s，异常部分降级不影响整体。取消操作使用 `cancel(false)` 避免中断虚拟线程的 carrier 线程。
+`AiSearchEnhancerAdapter` 内 4 路 `CompletableFuture` 并行执行（LLM 意图识别、商品标签、市场分析、建议问题），`supplyAsync` 显式传 `SearchTool.VIRTUAL` 虚拟线程执行器（每任务一个虚拟线程，不占 `ForkJoinPool.commonPool()` 平台线程），无需自定义线程池。单步骤超时 5s，异常部分降级不影响整体。取消操作使用 `cancel(false)` 避免中断虚拟线程的 carrier 线程。
 
 ### Admin 模块端口接口
 

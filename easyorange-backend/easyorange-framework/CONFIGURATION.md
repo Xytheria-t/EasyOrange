@@ -93,7 +93,7 @@ jwt:
 | 旧组件 | 原参数 | 替换方案 |
 |--------|--------|---------|
 | `domainEventExecutor` | core=5, max=10, queue=1000 | 虚拟线程 — `@Async` 使用 Spring Boot 自动配置的 `SimpleAsyncTaskExecutor` |
-| `aiSearchExecutor` | core=4, max=8, queue=100 | 虚拟线程 — `CompletableFuture.supplyAsync()` 无参形式用 `ForkJoinPool.commonPool()` |
+| `aiSearchExecutor` | core=4, max=8, queue=100 | 虚拟线程 — `supplyAsync` 显式传 `SearchTool.VIRTUAL` 虚拟线程执行器（无参形式走 commonPool 平台线程） |
 | `webSocketInbound/OutboundExecutor` | core=4, max=10, queue=100 | 虚拟线程 — 删除自定义 channel 配置，Spring 默认线程 |
 | `thread-pool.*` 配置项 | 10 个 YAML 配置属性 | 已删除（死代码） |
 

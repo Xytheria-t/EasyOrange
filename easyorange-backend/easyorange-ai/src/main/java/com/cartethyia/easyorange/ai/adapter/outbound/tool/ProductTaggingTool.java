@@ -23,6 +23,6 @@ public class ProductTaggingTool implements SearchTool<Map<String, List<String>>>
 
     @Override
     public CompletableFuture<Map<String, List<String>>> run(SearchToolContext context) {
-        return CompletableFuture.supplyAsync(() -> productTagger.tagProducts(context.topProducts()));
+        return CompletableFuture.supplyAsync(() -> productTagger.tagProducts(context.topProducts()), VIRTUAL);
     }
 }
