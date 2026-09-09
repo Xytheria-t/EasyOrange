@@ -1,18 +1,19 @@
 # EasyOrange — LLM × DDD：Java 架构工程化实战
 
-> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。**两条技术主线**：AI 应用工程化（6 决策点 + 轻量 Agent 编排 + 8 件套工程化）+ 架构落地（DDD + 分布式可靠性 + ADR/ArchUnit/PIT 治理三板斧）。**业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**工程亮点**：DDD 六边形 + CQRS · 事件驱动 + Outbox + DLQ 三级重试 + traceId 全链路 · 分布式锁防超卖 · AI 8 件套（Spring AI 2.0 框架化 + Redisson 令牌桶 + stale 降级 + Prompt YAML + TokenBudget + Embedding 真实现 + 多模态 Vision + 4 路并行 Tool Calling）· ES 搜索 + IK 分词 · ArchUnit 10 条规则 · 10 ADR · 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重门禁）· SpringDoc OpenAPI 3 · Biome 0 errors。**2025 年 11 月启动**。
+> **定位**：LLM × DDD 工程化实战 — 在 DDD 六边形架构里工程化集成 LLM，让 AI 链路可换供应商、可降级、可观测。两条主线：AI 应用工程化（6 决策点 + 轻量 Agent 编排 + 8 件套）+ 架构落地（DDD + 分布式可靠性 + ADR/ArchUnit/PIT 治理三板斧）。
+> **业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），复杂度留给架构与 AI 工程化。
+> **口径**：可量化数字与定位口径以 [doc/工程指标.md](doc/工程指标.md) 为唯一来源；禁止「业务不是重点」等自我削弱叙事。
 
 ## Agent skills
 
 - **Issue tracker**：Issues 与 PRDs 存放在 GitHub issues，用 `gh` CLI 读写（命令模板见 [doc/agents/常用命令.md](doc/agents/常用命令.md)「GitHub Issues / PR」）；默认 triage label：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`
 - **Domain docs**：single-context 布局，领域术语与 ADR 消费约定见 [doc/agents/领域参考.md](doc/agents/领域参考.md)「Agent 领域文档消费约定」
 
-## 学习模式（2026-09 定，作者按 JD 吃透本项目）
+## 学习模式
 
-- **AI 默认当拷打官不当讲解员**：作者先自读代码 → 输出（合上文档写 ≤10 行白话讲解）→ AI 连环追问；讲解仅在卡住超 30 分钟后解锁。验收 = 拷打不破防；破防点记 `doc/interview/` 下清单（按清零状态组织，不按日期），下轮先考破防点直到清零
-- **学习队列（严格顺序）**：① 下单链路 → ② 缓存三防 → ③ AI 8 件套 → ④ JVM/GC → ⑤ ES/搜索 → ⑥ 取舍话术（纯背）。每章固定循环：AI 给读码路径卡（入口文件+阅读顺序+自检问题，不给讲解）→ 自读 → 白话 → 两轮拷打（模块内 + 跨模块串联）
-- **压测绑定章节**：实验跟优化走（每完成一个优化当场压 before/after 并记入 doc/工程指标.md），最终收口（#15）放最后。#14 慢 SQL 绑第②章首栈、#12 Zipkin E2E 绑第②章首栈、#13 G1 vs ZGC 绑第④章
-- **Issues 分工**：#18（DashScope rerank）/ #19（token usage 回填）由**作者亲手实现**——题面模式：AI 只出目标+验收，不给代码，写完 AI review + 追问实现理由；#16/#20/#21 由 AI 做
+- **AI 默认当拷打官不当讲解员**：作者先自读 → 合上文档写 ≤10 行白话讲解 → AI 连环追问；讲解仅在卡住超 30 分钟后解锁。验收 = 拷打不破防；破防点记 `doc/interview/` 下清单（按清零状态组织，不按日期），下轮先考破防点直到清零
+- **队列（严格顺序）**：① 下单链路 → ② 缓存三防 → ③ AI 8 件套 → ④ JVM/GC → ⑤ ES/搜索 → ⑥ 取舍话术（纯背）。每章循环：读码路径卡（入口文件 + 阅读顺序 + 自检问题，不给讲解）→ 自读 → 白话 → 两轮拷打（模块内 + 跨模块串联）
+- **压测与分工**：实验跟优化走（before/after 当场记入工程指标.md），最终收口仅 #15 在最后；#14/#12 绑②章首栈、#13 绑④章；#18/#19 作者亲手做（题面模式：AI 只出目标 + 验收，写完 review），#16/#20/#21 AI 做
 - **会话接口**：「开始第 N 章」= 给路径卡；「拷打第 N 章」= 当考官；「继续破防清单」= 先考破防点。算法刷题作者自理，不在本计划内
 
 ## 项目结构
@@ -46,7 +47,7 @@ monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模
 - **STP 标准 API 优先**：优先框架/标准库内置功能，零新增自定义代码是最优方案（例：JWT 走 `oauth2ResourceServer()`，不手写 Filter/工具类）
 - **后端补充规范**（事务/命名/返回值/安全要点/踩坑警示/端口隔离）见 [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md)；**编码细则**按路径激活的 ECC 规则见 `.claude/rules/ecc/`
 
-## 提交规范（Git 工作流，2026-08 起）
+## 提交规范（Git 工作流）
 
 - **小步提交**：一个逻辑单元（功能/修复/重构/文档）一个提交，验证通过即提交；禁止攒「收口」大提交、禁止 `git add -A` 批量盲提
 - **粒度边界**：一个特性/修复 1~2 个提交（跨模块大特性 2~3 个封顶）；同特性内的跨模块基建（队列注册、常量等）并入特性提交，不单独成提交；本地未推送前可 `amend`/`rebase` 整理，推送后遵守下方「历史纪律」
