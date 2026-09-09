@@ -1,0 +1,40 @@
+# ===================================================================
+# Docker 构建上下文过滤 - 加速 COPY, 减小上下文
+# ===================================================================
+
+# 依赖与构建产物 (容器内 npm ci / npm run build 自己产出)
+node_modules/
+dist/
+coverage/
+
+# 测试 (Playwright / Vitest, 镜像构建不需要)
+tests/
+test-results/
+playwright-report/
+blob-report/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 日志 / OS
+*.log
+.DS_Store
+Thumbs.db
+
+# 文档 (与构建无关)
+README.md
+
+# Docker 自身
+Dockerfile
+.dockerignore
+
+# 环境变量本地覆盖 (凭据不进镜像; .env.production / .env.development 参与 VITE_ 变量内联, 保留)
+.env.local
+.env.*.local
