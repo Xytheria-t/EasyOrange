@@ -107,6 +107,8 @@ services:
       SPRING_RABBITMQ_HOST: rabbitmq
       # 压测透传开关：RATE_LIMIT_FILTER_ENABLED=false docker compose up -d --scale easyorange-app=2
       RATE_LIMIT_FILTER_ENABLED: ${RATE_LIMIT_FILTER_ENABLED:-true}
+      # 链路追踪 span 上报 → compose 内 Zipkin（默认 localhost 在容器内不可达）
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     ports:
       # 端口区间：scale=1 占 8080，scale=N 依次占 8080..8080+N-1（无需改配置即可多实例）
       - "8080-8085:8080"
@@ -232,6 +234,18 @@ services:
     depends_on:
       prometheus:
         condition: service_started
+
+  # ---------------------------------------------------------------------------
+  # 链路追踪 — Zipkin 接收 Micrometer/Brave span（application.yaml 端点经
+  # ZIPKIN_ENDPOINT 环境变量指向本服务）。演示用内存存储，重启即清。
+  # ---------------------------------------------------------------------------
+  zipkin:
+    image: openzipkin/zipkin:3
+    container_name: easyorange-zipkin
+    restart: unless-stopped
+    profiles: [fullstack]
+    ports:
+      - "9411:9411"
 
 volumes:
   mysql-data:
