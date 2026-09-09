@@ -8,13 +8,7 @@
 
 - **Issue tracker**：Issues 与 PRDs 存放在 GitHub issues，用 `gh` CLI 读写（命令模板见 [doc/agents/常用命令.md](doc/agents/常用命令.md)「GitHub Issues / PR」）；默认 triage label：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`
 - **Domain docs**：single-context 布局，领域术语与 ADR 消费约定见 [doc/agents/领域参考.md](doc/agents/领域参考.md)「Agent 领域文档消费约定」
-
-## 学习模式
-
-- **AI 默认当拷打官不当讲解员**：作者先自读 → 合上文档写 ≤10 行白话讲解 → AI 连环追问；讲解仅在卡住超 30 分钟后解锁。验收 = 拷打不破防；破防点记 `doc/interview/` 下清单（按清零状态组织，不按日期），下轮先考破防点直到清零
-- **队列（严格顺序）**：① 下单链路 → ② 缓存三防 → ③ AI 8 件套 → ④ JVM/GC → ⑤ ES/搜索 → ⑥ 取舍话术（纯背）。每章循环：读码路径卡（入口文件 + 阅读顺序 + 自检问题，不给讲解）→ 自读 → 白话 → 两轮拷打（模块内 + 跨模块串联）
-- **压测与分工**：实验跟优化走（before/after 当场记入工程指标.md），最终收口仅 #15 在最后；#14/#12 绑②章首栈、#13 绑④章；#18/#19 作者亲手做（题面模式：AI 只出目标 + 验收，写完 review），#16/#20/#21 AI 做
-- **会话接口**：「开始第 N 章」= 给路径卡；「拷打第 N 章」= 当考官；「继续破防清单」= 先考破防点。算法刷题作者自理，不在本计划内
+- **面试准备 / 项目学习**：资料索引 [doc/interview/README.md](doc/interview/README.md)；学习队列与自测协议（会话接口 / 拷打规则 / 破防清单）见 [doc/interview/00-学习队列.md](doc/interview/00-学习队列.md)
 
 ## 项目结构
 
