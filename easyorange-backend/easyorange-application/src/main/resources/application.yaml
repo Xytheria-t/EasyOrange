@@ -442,3 +442,5 @@ easyorange:
   cache:
     # 统一 TTL：一致性靠写路径事件显式 evict，TTL 仅作兜底
     default-ttl: 30m
+    # TTL 抖动比例（0~1）：写入时按比例加随机偏移，错峰过期防雪崩（0 关闭）
+    ttl-jitter: 0.1

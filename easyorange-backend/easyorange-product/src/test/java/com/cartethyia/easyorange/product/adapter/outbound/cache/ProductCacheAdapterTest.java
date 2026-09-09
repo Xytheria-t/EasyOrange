@@ -6,6 +6,11 @@ import com.cartethyia.easyorange.product.application.port.cache.ProductCachePort
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -126,8 +131,8 @@ class ProductCacheAdapterTest {
     }
 
     @Test
-    @DisplayName("loader 返回 null：不落缓存，每次读取都重新回源")
-    void getProductCache_nullResult_notCached() {
+    @DisplayName("loader 返回 null：null 结果缓存防穿透，evict 后重新回源")
+    void getProductCache_nullResult_cached() {
         var calls = new AtomicInteger();
 
         cacheAdapter.getProductCache(PRODUCT_ID, () -> {
@@ -139,6 +144,59 @@ class ProductCacheAdapterTest {
             return null;
         });
 
+        assertThat(calls).hasValue(1);
+
+        evictionPort.evictProductCache(PRODUCT_ID);
+        cacheAdapter.getProductCache(PRODUCT_ID, () -> {
+            calls.incrementAndGet();
+            return null;
+        });
+
         assertThat(calls).hasValue(2);
+    }
+
+    @Test
+    @DisplayName("sync = true：并发同 key 回源只执行一次 loader（防击穿）")
+    void getProductCache_concurrentSameKey_singleLoader() throws Exception {
+        var calls = new AtomicInteger();
+        int threads = 8;
+        var start = new CountDownLatch(1);
+        var done = new CountDownLatch(threads);
+        var pool = Executors.newFixedThreadPool(threads);
+        var futures = new ArrayList<Future<ProductVO>>();
+
+        for (int i = 0; i < threads; i++) {
+            futures.add(pool.submit(() -> {
+                start.await();
+                try {
+                    return cacheAdapter.getProductCache(PRODUCT_ID, () -> {
+                        calls.incrementAndGet();
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                        return product(PRODUCT_ID);
+                    });
+                } finally {
+                    done.countDown();
+                }
+            }));
+        }
+        start.countDown();
+        assertThat(done.await(5, TimeUnit.SECONDS)).isTrue();
+        pool.shutdown();
+
+        var results = futures.stream()
+                .map(f -> {
+                    try {
+                        return f.get();
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+                })
+                .toList();
+        assertThat(results).containsOnly(product(PRODUCT_ID));
+        assertThat(calls).hasValue(1);
     }
 }
