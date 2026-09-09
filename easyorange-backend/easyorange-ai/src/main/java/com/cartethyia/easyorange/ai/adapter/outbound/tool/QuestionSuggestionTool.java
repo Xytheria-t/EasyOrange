@@ -35,15 +35,17 @@ public class QuestionSuggestionTool implements SearchTool<List<String>> {
 
     @Override
     public CompletableFuture<List<String>> run(SearchToolContext context) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                String result = aiModelSupport.callText(
-                        chatModel, AiCallScope.SEARCH_ENHANCE, SYSTEM_PROMPT, context.keyword());
-                return result != null ? Arrays.asList(result.split("[,，]")) : List.of();
-            } catch (Exception e) {
-                log.warn("Question suggestion tool failed", e);
-                return List.of();
-            }
-        });
+        return CompletableFuture.supplyAsync(
+                () -> {
+                    try {
+                        String result = aiModelSupport.callText(
+                                chatModel, AiCallScope.SEARCH_ENHANCE, SYSTEM_PROMPT, context.keyword());
+                        return result != null ? Arrays.asList(result.split("[,，]")) : List.of();
+                    } catch (Exception e) {
+                        log.warn("Question suggestion tool failed", e);
+                        return List.of();
+                    }
+                },
+                VIRTUAL);
     }
 }

@@ -33,14 +33,16 @@ public class MarketAnalysisTool implements SearchTool<String> {
 
     @Override
     public CompletableFuture<String> run(SearchToolContext context) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return aiModelSupport.callText(
-                        chatModel, AiCallScope.SEARCH_ENHANCE, SYSTEM_PROMPT, context.marketContext());
-            } catch (Exception e) {
-                log.warn("Market analysis tool failed", e);
-                return null;
-            }
-        });
+        return CompletableFuture.supplyAsync(
+                () -> {
+                    try {
+                        return aiModelSupport.callText(
+                                chatModel, AiCallScope.SEARCH_ENHANCE, SYSTEM_PROMPT, context.marketContext());
+                    } catch (Exception e) {
+                        log.warn("Market analysis tool failed", e);
+                        return null;
+                    }
+                },
+                VIRTUAL);
     }
 }
