@@ -1,0 +1,54 @@
+name: AI eval gate (nightly)
+
+# 金标准评测门禁（GoldenSetRegressionIT）—— 需要真实 DeepSeek key（产生 API 费用且慢），
+# nightly + 手动触发，不进 PR 路径（同 security-scan / pit-mutation 分工）。
+# Judge 平均分低于「基线 4.0 - 容忍 0.3」→ job 失败 = AI 质量回归，发布前必须处理。
+# Secret：EASYORANGE_AI_API_KEY（DeepSeek key）；DEEPSEEK_API_KEY 同值注入，
+# 供 application.yaml `easyorange.ai.deepseek.api-key` 装配真实 ChatModel。
+on:
+  schedule:
+    - cron: '30 3 * * *' # PIT（02:30）后错峰
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  EASYORANGE_AI_API_KEY: ${{ secrets.EASYORANGE_AI_API_KEY }}
+  DEEPSEEK_API_KEY: ${{ secrets.EASYORANGE_AI_API_KEY }}
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # key 缺失时 @EnabledIfEnvironmentVariable 会把 IT 静默跳过 → 门禁空转变绿；
+      # 显式守卫把「忘配 secret」变成可见失败而不是假绿。
+      - name: Guard API key secret
+        if: ${{ env.EASYORANGE_AI_API_KEY == '' }}
+        run: |
+          echo "::error::secret EASYORANGE_AI_API_KEY 未配置：Settings → Secrets and variables → Actions"
+          exit 1
+
+      - name: Setup JDK 25
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      # 分两步（同 pit-mutation 模式）：先 install 上游模块（-DskipTests 跳过执行、保留编译），
+      # 再对 application 单模块跑 failsafe——避免整仓单测重跑，信号聚焦评测门禁。
+      - name: Build upstream modules (skip tests)
+        run: ./mvnw -pl easyorange-application -am install -DskipTests -B
+        working-directory: easyorange-backend
+
+      # 基础设施由 spring-boot-docker-compose 按仓库根 compose.yaml（start-only）拉起
+      # mysql/redis/rabbitmq（runner 自带 Docker）；ES 不起，检索指标走 MySQL LIKE 降级路径。
+      # 仅跑 GoldenSetRegressionIT：30 金标准用例 × 真实 DeepSeek（生成 + Judge）+ hit@5/MRR。
+      - name: Golden set regression gate
+        run: ./mvnw -pl easyorange-application failsafe:integration-test failsafe:verify -Dit.test=GoldenSetRegressionIT -B
+        working-directory: easyorange-backend
