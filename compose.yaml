@@ -120,6 +120,24 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  # ---------------------------------------------------------------------------
+  # 前端镜像 — nginx 静态站 + 内部反代（/api /ws → easyorange-app upstream）。
+  # 与 easyorange-app 同 profile，docker compose --profile fullstack up -d --build
+  # 即一键全栈，浏览器访问 http://localhost（日常热循环开发仍走 npm run dev :5173）。
+  # HTTPS 可选：证书 + ssl.conf 挂载进 conf.d 后启用，见 easyorange-frontend/ssl.conf.example
+  # ---------------------------------------------------------------------------
+  easyorange-frontend:
+    profiles: [fullstack]
+    build: ./easyorange-frontend
+    image: easyorange-frontend:local
+    container_name: easyorange-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      easyorange-app:
+        condition: service_started
+
   prometheus:
     image: prom/prometheus:v3.13.2
     container_name: easyorange-prometheus

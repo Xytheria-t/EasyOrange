@@ -25,6 +25,10 @@ COPY --from=builder /build/dist /usr/share/nginx/html
 # 复制 nginx 配置
 COPY nginx.conf security-headers.conf /etc/nginx/
 
+# nginx.conf 通过 include /etc/nginx/conf.d/*.conf 可选加载 HTTPS 配置（ssl.conf.example），
+# 必须删掉官方镜像自带的欢迎页 default.conf，否则它抢占 80 端口的 default_server
+RUN rm -f /etc/nginx/conf.d/default.conf
+
 # 创建缓存目录
 RUN mkdir -p /var/cache/nginx/images && \
     chown -R nginx:nginx /var/cache/nginx
