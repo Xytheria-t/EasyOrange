@@ -7,6 +7,14 @@
 - **Issue tracker**：Issues 与 PRDs 存放在 GitHub issues，用 `gh` CLI 读写（命令模板见 [doc/agents/常用命令.md](doc/agents/常用命令.md)「GitHub Issues / PR」）；默认 triage label：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`
 - **Domain docs**：single-context 布局，领域术语与 ADR 消费约定见 [doc/agents/领域参考.md](doc/agents/领域参考.md)「Agent 领域文档消费约定」
 
+## 学习模式（2026-09 定，作者按 JD 吃透本项目）
+
+- **AI 默认当拷打官不当讲解员**：作者先自读代码 → 输出（合上文档写 ≤10 行白话讲解）→ AI 连环追问；讲解仅在卡住超 30 分钟后解锁。验收 = 拷打不破防；破防点记 `doc/interview/` 下清单（按清零状态组织，不按日期），下轮先考破防点直到清零
+- **学习队列（严格顺序）**：① 下单链路 → ② 缓存三防 → ③ AI 8 件套 → ④ JVM/GC → ⑤ ES/搜索 → ⑥ 取舍话术（纯背）。每章固定循环：AI 给读码路径卡（入口文件+阅读顺序+自检问题，不给讲解）→ 自读 → 白话 → 两轮拷打（模块内 + 跨模块串联）
+- **压测绑定章节**：实验跟优化走（每完成一个优化当场压 before/after 并记入 doc/工程指标.md），最终收口（#15）放最后。#14 慢 SQL 绑第②章首栈、#12 Zipkin E2E 绑第②章首栈、#13 G1 vs ZGC 绑第④章
+- **Issues 分工**：#18（DashScope rerank）/ #19（token usage 回填）由**作者亲手实现**——题面模式：AI 只出目标+验收，不给代码，写完 AI review + 追问实现理由；#16/#20/#21 由 AI 做
+- **会话接口**：「开始第 N 章」= 给路径卡；「拷打第 N 章」= 当考官；「继续破防清单」= 先考破防点。算法刷题作者自理，不在本计划内
+
 ## 项目结构
 
 monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模块规范见模块内 `AGENTS.md`）· `easyorange-frontend/`（React + Vite + TypeScript + TanStack Query）· `doc/`（架构 / 集成 / ADR / agents 参考 / DATABASE / PRODUCT_DIRECTION）· `infra/`（IaC：Prometheus / Grafana / ES IK 镜像）· `k8s/`（K8s kustomize，无状态应用层）· `load-tests/`（k6 压测）· `.claude/rules/ecc/`（AI 编码规则 ECC：common/java/typescript/react/web）
