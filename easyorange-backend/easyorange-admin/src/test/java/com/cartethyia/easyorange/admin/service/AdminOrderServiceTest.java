@@ -96,7 +96,8 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("分页查询订单列表")
         void listOrders_returnsPage() {
-            AdminOrderQueryRequest request = new AdminOrderQueryRequest();
+            AdminOrderQueryRequest request =
+                    new AdminOrderQueryRequest(null, null, null, null, null, null, null, 1, 20);
             OrderSummary order = createOrderSummary("PENDING_PAYMENT");
 
             when(adminOrderPort.queryOrders(any(OrderQueryCondition.class)))
@@ -121,7 +122,8 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("订单列表用户信息缺失时返回空昵称")
         void listOrders_missingUserInfo_returnsNullNickname() {
-            AdminOrderQueryRequest request = new AdminOrderQueryRequest();
+            AdminOrderQueryRequest request =
+                    new AdminOrderQueryRequest(null, null, null, null, null, null, null, 1, 20);
             OrderSummary order = createOrderSummary("PENDING_PAYMENT");
             when(adminOrderPort.queryOrders(any(OrderQueryCondition.class)))
                     .thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
@@ -139,9 +141,8 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("非法时间格式回退为空")
         void listOrders_invalidTimes_returnsNullTimes() {
-            AdminOrderQueryRequest request = new AdminOrderQueryRequest();
-            request.setStartTime("invalid");
-            request.setEndTime("invalid");
+            AdminOrderQueryRequest request =
+                    new AdminOrderQueryRequest(null, null, null, null, null, "invalid", "invalid", 1, 20);
             OrderSummary order = createOrderSummary("PENDING_PAYMENT");
             when(adminOrderPort.queryOrders(any(OrderQueryCondition.class)))
                     .thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));

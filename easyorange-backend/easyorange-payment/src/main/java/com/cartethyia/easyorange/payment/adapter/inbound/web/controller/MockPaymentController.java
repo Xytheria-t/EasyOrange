@@ -54,10 +54,10 @@ public class MockPaymentController {
     @PostMapping("/process")
     public Result<PaymentResponse> processMockPayment(@RequestBody MockPaymentRequest request) {
         Payment aggregate = paymentRepository
-                .findById(request.getPaymentId())
+                .findById(request.paymentId())
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
 
-        if (Boolean.TRUE.equals(request.getSuccess())) {
+        if (Boolean.TRUE.equals(request.success())) {
             paymentCommandHandler.handle(
                     new PayCommand(aggregate.paymentNo(), "MOCK_TXN_" + System.currentTimeMillis(), null));
         } else {
@@ -66,7 +66,7 @@ public class MockPaymentController {
         }
 
         aggregate = paymentRepository
-                .findById(request.getPaymentId())
+                .findById(request.paymentId())
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
         return Result.success(buildPaymentResponse(aggregate));
     }

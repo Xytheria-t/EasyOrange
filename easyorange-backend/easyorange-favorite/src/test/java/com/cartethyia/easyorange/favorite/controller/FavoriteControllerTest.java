@@ -93,8 +93,7 @@ class FavoriteControllerTest {
     @Test
     @DisplayName("批量移除收藏成功")
     void testRemoveManyFavorites() {
-        BatchRemoveRequest request = new BatchRemoveRequest();
-        request.setIds(List.of("1", "2", "3"));
+        BatchRemoveRequest request = new BatchRemoveRequest(List.of("1", "2", "3"));
         doNothing().when(favoriteService).removeManyFavorites(eq(USER_ID), any());
 
         var result = favoriteController.removeManyFavorites(currentUser(), request);
@@ -147,8 +146,7 @@ class FavoriteControllerTest {
         when(favoriteService.batchCheckFavorited(USER_ID, List.of("2001", "2002")))
                 .thenReturn(checkResult);
 
-        BatchCheckRequest request = new BatchCheckRequest();
-        request.setProductIds(List.of("2001", "2002"));
+        BatchCheckRequest request = new BatchCheckRequest(List.of("2001", "2002"));
         var result = favoriteController.batchCheckFavorited(currentUser(), request);
 
         assertThat(result).isNotNull();

@@ -66,7 +66,8 @@ class AdminUserServiceTest {
         void listUsers_defaultParams_returnsPage() {
             when(adminUserPort.queryUsers(any())).thenReturn(new UserQueryResult(List.of(createTestUser()), 1, 1, 20));
 
-            PageResult<AdminUserResponse> result = userService.listUsers(new AdminUserQueryRequest());
+            PageResult<AdminUserResponse> result =
+                    userService.listUsers(new AdminUserQueryRequest(null, null, null, null, null, null, null));
 
             assertThat(result.records()).hasSize(1);
             assertThat(result.records().get(0).getUsername()).isEqualTo("testuser");
@@ -76,8 +77,7 @@ class AdminUserServiceTest {
         @Test
         @DisplayName("带关键词搜索")
         void listUsers_withKeyword_filtersResults() {
-            AdminUserQueryRequest request = new AdminUserQueryRequest();
-            request.setKeyword("test");
+            AdminUserQueryRequest request = new AdminUserQueryRequest(null, null, "test", null, null, null, null);
 
             when(adminUserPort.queryUsers(any())).thenReturn(new UserQueryResult(List.of(createTestUser()), 1, 1, 20));
 
@@ -92,7 +92,8 @@ class AdminUserServiceTest {
         void listUsers_noResults_returnsEmptyPage() {
             when(adminUserPort.queryUsers(any())).thenReturn(new UserQueryResult(List.of(), 0, 1, 20));
 
-            PageResult<AdminUserResponse> result = userService.listUsers(new AdminUserQueryRequest());
+            PageResult<AdminUserResponse> result =
+                    userService.listUsers(new AdminUserQueryRequest(null, null, null, null, null, null, null));
 
             assertThat(result.records()).isEmpty();
             assertThat(result.total()).isZero();
@@ -133,8 +134,7 @@ class AdminUserServiceTest {
         @Test
         @DisplayName("更新用户状态委托端口")
         void updateUserStatus_success() {
-            UpdateStatusRequest request = new UpdateStatusRequest();
-            request.setStatus("DISABLED");
+            UpdateStatusRequest request = new UpdateStatusRequest("DISABLED", null);
 
             userService.updateUserStatus(USER_ID, request);
 

@@ -35,15 +35,15 @@ public class AdminRatingService {
     @Transactional(readOnly = true)
     public PageResult<AdminRatingResponse> listReviews(AdminRatingQueryRequest request) {
         RatingQueryCondition condition = new RatingQueryCondition(
-                request.getProductId(),
-                request.getUserId(),
-                request.getRating(),
-                request.getStatus(),
-                request.getKeyword(),
-                request.getStartTime(),
-                request.getEndTime(),
-                request.getPageNum(),
-                request.getPageSize());
+                request.productId(),
+                request.userId(),
+                request.rating(),
+                request.status(),
+                request.keyword(),
+                request.startTime(),
+                request.endTime(),
+                request.pageNum(),
+                request.pageSize());
 
         RatingQueryResult result = adminRatingPort.queryRatings(condition);
         if (result.records().isEmpty()) {
@@ -83,6 +83,6 @@ public class AdminRatingService {
     public void deleteReview(String operatorId, String id, AdminRatingDeleteRequest request) {
         adminRatingPort.deleteRating(id);
 
-        log.info("action=admin_delete_review reviewId={} operatorId={} reason={}", id, operatorId, request.getReason());
+        log.info("action=admin_delete_review reviewId={} operatorId={} reason={}", id, operatorId, request.reason());
     }
 }

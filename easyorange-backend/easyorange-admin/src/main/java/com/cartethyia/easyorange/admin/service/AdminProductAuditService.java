@@ -39,7 +39,7 @@ public class AdminProductAuditService {
         List<String> errors = new ArrayList<>();
         int successCount = 0;
 
-        for (BatchAuditRequest.AuditItem item : request.getItems()) {
+        for (BatchAuditRequest.AuditItem item : request.items()) {
             try {
                 adminProductAuditPort.auditProduct(
                         item.productId(),
@@ -55,7 +55,7 @@ public class AdminProductAuditService {
             }
         }
 
-        return new BatchAuditResultResponse(request.getItems().size(), successCount, errors.size(), errors);
+        return new BatchAuditResultResponse(request.items().size(), successCount, errors.size(), errors);
     }
 
     @Transactional(readOnly = true)

@@ -42,19 +42,19 @@ public class AdminOrderService {
     private final AdminUserPort adminUserPort;
 
     public PageResult<AdminOrderResponse> listOrders(AdminOrderQueryRequest request) {
-        LocalDateTime startTime = parseStartTime(request.getStartTime());
-        LocalDateTime endTime = parseEndTime(request.getEndTime());
+        LocalDateTime startTime = parseStartTime(request.startTime());
+        LocalDateTime endTime = parseEndTime(request.endTime());
 
         OrderQueryCondition condition = new OrderQueryCondition(
-                request.getOrderNo(),
-                request.getBuyerId(),
-                request.getSellerId(),
-                request.getStatus(),
-                request.getPaymentStatus(),
+                request.orderNo(),
+                request.buyerId(),
+                request.sellerId(),
+                request.status(),
+                request.paymentStatus(),
                 startTime,
                 endTime,
-                request.getPageNum(),
-                request.getPageSize());
+                request.pageNum(),
+                request.pageSize());
 
         OrderQueryResult result = adminOrderPort.queryOrders(condition);
 
