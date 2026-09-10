@@ -36,6 +36,8 @@ Spring Boot 4.0.7 + Java 25 后端，采用 DDD + 六边形架构。
 | 响应 DTO | `*Response` / `*VO` | `UserResponse`, `OrderVO` |
 | 数据对象 | `*DO` | `UserDO`, `PaymentDO` |
 
+> 请求 DTO 一律用 record（不可变、Jackson 3 构造器绑定）；默认值放紧凑构造器收敛（参照 `AdminUserQueryRequest`）。例外：继承 `PageRequest` 的分页查询 DTO（record 不能继承类，且 setter 级分页归一化是基类语义）与 WebSocket 信封 `WsMessage`。校验注解写在 record 组件上即生效；嵌套 DTO 列表必须加 `@Valid` 级联（如 `CreateOrderRequest.items`）。
+
 ## 服务层方法返回值约定
 
 应用服务（`application/service/`、`application/command/`）的 public 方法遵循以下约定：
