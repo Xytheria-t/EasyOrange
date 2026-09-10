@@ -27,15 +27,15 @@ public class AdminUserService {
     private final AdminUserPort adminUserPort;
 
     public PageResult<AdminUserResponse> listUsers(AdminUserQueryRequest request) {
-        int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
-        int pageSize = request.getPageSize() != null ? request.getPageSize() : 20;
+        int pageNum = request.pageNum();
+        int pageSize = request.pageSize();
 
         UserQueryResult result = adminUserPort.queryUsers(new UserQueryCondition(
-                request.getKeyword(),
-                request.getUserType(),
-                request.getStatus(),
-                parseStartTime(request.getStartTime()),
-                parseEndTime(request.getEndTime()),
+                request.keyword(),
+                request.userType(),
+                request.status(),
+                parseStartTime(request.startTime()),
+                parseEndTime(request.endTime()),
                 pageNum,
                 pageSize));
 
@@ -56,7 +56,7 @@ public class AdminUserService {
 
     @Transactional(rollbackFor = Exception.class)
     public void updateUserStatus(String id, UpdateStatusRequest request) {
-        adminUserPort.updateUserStatus(id, request.getStatus());
+        adminUserPort.updateUserStatus(id, request.status());
     }
 
     private LocalDateTime parseStartTime(String startTime) {

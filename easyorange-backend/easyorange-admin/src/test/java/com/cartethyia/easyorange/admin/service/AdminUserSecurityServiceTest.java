@@ -115,8 +115,7 @@ class AdminUserSecurityServiceTest {
         @Test
         @DisplayName("变更角色委托端口")
         void changeUserRole_delegatesToPort() {
-            UserRoleRequest request = new UserRoleRequest();
-            request.setRole("01");
+            UserRoleRequest request = new UserRoleRequest("01", null);
 
             service.changeUserRole(USER_ID, request);
 

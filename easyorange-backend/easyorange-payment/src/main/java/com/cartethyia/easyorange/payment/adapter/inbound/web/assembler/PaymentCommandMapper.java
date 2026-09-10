@@ -16,8 +16,7 @@ public final class PaymentCommandMapper {
     private PaymentCommandMapper() {}
 
     public static CreatePaymentCommand toCreateCommand(CreatePaymentRequest request, String userId) {
-        return new CreatePaymentCommand(
-                request.getOrderId(), request.getAmount(), request.getPaymentMethod(), request.getPayPassword(), null);
+        return new CreatePaymentCommand(request.orderId(), request.amount(), request.paymentMethod(), null, null);
     }
 
     public static PaymentCallbackCommand toCallbackCommand(PaymentCallback callback) {
@@ -25,7 +24,7 @@ public final class PaymentCommandMapper {
     }
 
     public static RefundPaymentCommand toRefundCommand(String paymentId, String userId, RefundRequest request) {
-        return new RefundPaymentCommand(paymentId, userId, request.getRefundAmount(), request.getRefundReason());
+        return new RefundPaymentCommand(paymentId, userId, request.refundAmount(), request.refundReason());
     }
 
     public static ClosePaymentCommand toCloseCommand(String paymentId, String userId) {

@@ -70,7 +70,7 @@ public class AdminProductService {
 
     @Transactional(rollbackFor = Exception.class)
     public void updateProductStatus(String id, UpdateStatusRequest request) {
-        adminProductPort.applyProductStatus(id, request.getStatus());
+        adminProductPort.applyProductStatus(id, request.status());
     }
 
     private LocalDateTime parseDate(String dateStr, boolean endOfDay) {

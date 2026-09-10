@@ -94,8 +94,7 @@ class AdminProductAuditServiceTest {
         @Test
         @DisplayName("批量审核成功")
         void batchAudit_allSuccess() {
-            BatchAuditRequest request = new BatchAuditRequest();
-            request.setItems(List.of(
+            BatchAuditRequest request = new BatchAuditRequest(List.of(
                     new BatchAuditRequest.AuditItem("100", 1, "通过", null),
                     new BatchAuditRequest.AuditItem("101", 2, "信息不符", null)));
 
@@ -112,8 +111,7 @@ class AdminProductAuditServiceTest {
                     .when(adminProductAuditPort)
                     .auditProduct(eq("100"), eq(1), any(), any(), any(), any(), any());
 
-            BatchAuditRequest request = new BatchAuditRequest();
-            request.setItems(List.of(
+            BatchAuditRequest request = new BatchAuditRequest(List.of(
                     new BatchAuditRequest.AuditItem("100", 1, "通过", null),
                     new BatchAuditRequest.AuditItem("101", 1, "通过", null)));
 

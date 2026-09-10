@@ -68,9 +68,8 @@ class AdminRatingServiceTest {
         @Test
         @DisplayName("分页查询返回评价列表")
         void listReviews_returnsPagedResults() {
-            AdminRatingQueryRequest request = new AdminRatingQueryRequest();
-            request.setPageNum(1);
-            request.setPageSize(10);
+            AdminRatingQueryRequest request =
+                    new AdminRatingQueryRequest(1, 10, null, null, null, null, null, null, null);
 
             RatingSummary review = createSummary(REVIEW_ID, PRODUCT_ID, USER_ID, 5, "好商品");
             when(adminRatingPort.queryRatings(any())).thenReturn(new RatingQueryResult(List.of(review), 1, 1, 10));
@@ -94,9 +93,8 @@ class AdminRatingServiceTest {
         @Test
         @DisplayName("空结果返回空分页")
         void listReviews_emptyResult_returnsEmptyPage() {
-            AdminRatingQueryRequest request = new AdminRatingQueryRequest();
-            request.setPageNum(1);
-            request.setPageSize(20);
+            AdminRatingQueryRequest request =
+                    new AdminRatingQueryRequest(1, 20, null, null, null, null, null, null, null);
 
             when(adminRatingPort.queryRatings(any())).thenReturn(new RatingQueryResult(List.of(), 0, 1, 20));
 
@@ -157,8 +155,7 @@ class AdminRatingServiceTest {
         @Test
         @DisplayName("删除评价委托端口")
         void deleteReview_success() {
-            AdminRatingDeleteRequest request = new AdminRatingDeleteRequest();
-            request.setReason("违规内容");
+            AdminRatingDeleteRequest request = new AdminRatingDeleteRequest("违规内容");
 
             reviewService.deleteReview("1", REVIEW_ID, request);
 
@@ -172,8 +169,7 @@ class AdminRatingServiceTest {
                     .when(adminRatingPort)
                     .deleteRating("999");
 
-            AdminRatingDeleteRequest request = new AdminRatingDeleteRequest();
-            request.setReason("test");
+            AdminRatingDeleteRequest request = new AdminRatingDeleteRequest("test");
 
             assertThatThrownBy(() -> reviewService.deleteReview("1", "999", request))
                     .isInstanceOf(BusinessException.class)

@@ -176,8 +176,7 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("更新商品状态委托端口")
         void updateProductStatus_success() {
-            UpdateStatusRequest request = new UpdateStatusRequest();
-            request.setStatus("OFFLINE");
+            UpdateStatusRequest request = new UpdateStatusRequest("OFFLINE", null);
 
             productService.updateProductStatus(PRODUCT_ID, request);
 

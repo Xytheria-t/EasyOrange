@@ -24,10 +24,7 @@ class PaymentCommandAssemblerTest {
         @Test
         @DisplayName("正确转换 CreatePaymentRequest 到 CreatePaymentCommand")
         void toCreateCommand_convertsCorrectly() {
-            CreatePaymentRequest request = new CreatePaymentRequest();
-            request.setOrderId("1001");
-            request.setPaymentMethod("1");
-            request.setPayPassword("123456");
+            CreatePaymentRequest request = new CreatePaymentRequest("1001", null, "1");
 
             CreatePaymentCommand command = PaymentCommandMapper.toCreateCommand(request, "2001");
 
@@ -66,10 +63,7 @@ class PaymentCommandAssemblerTest {
         @Test
         @DisplayName("正确转换 RefundRequest 到 RefundPaymentCommand（含操作者）")
         void toRefundCommand_convertsCorrectly() {
-            RefundRequest request = new RefundRequest();
-            request.setPaymentId("1001");
-            request.setRefundAmount(new BigDecimal("50.00"));
-            request.setRefundReason("测试退款");
+            RefundRequest request = new RefundRequest("1001", new BigDecimal("50.00"), "测试退款");
 
             RefundPaymentCommand command = PaymentCommandMapper.toRefundCommand("2001", "3001", request);
 

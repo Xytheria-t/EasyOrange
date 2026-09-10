@@ -38,19 +38,19 @@ public class AdminOrderController {
 
     @PutMapping("/{id}/cancel")
     public Result<Void> cancelOrder(@PathVariable String id, @Valid @RequestBody OrderInterventionRequest request) {
-        adminOrderService.cancelOrder(id, request.getReason());
+        adminOrderService.cancelOrder(id, request.reason());
         return Result.success();
     }
 
     @PutMapping("/{id}/force-complete")
     public Result<Void> forceComplete(@PathVariable String id, @Valid @RequestBody OrderInterventionRequest request) {
-        adminOrderService.forceComplete(id, request.getReason());
+        adminOrderService.forceComplete(id, request.reason());
         return Result.success();
     }
 
     @PutMapping("/{id}/refund")
     public Result<Void> refundOrder(@PathVariable String id, @Valid @RequestBody OrderInterventionRequest request) {
-        adminOrderService.refundOrder(id, request.getReason());
+        adminOrderService.refundOrder(id, request.reason());
         return Result.success();
     }
 }

@@ -172,9 +172,7 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("处理举报 — 委托端口并携带操作人")
         void handleReport_delegatesToPort() {
-            ReportHandleRequest request = new ReportHandleRequest();
-            request.setAction("resolve");
-            request.setRemark("已核实处理");
+            ReportHandleRequest request = new ReportHandleRequest("resolve", "已核实处理");
 
             reportService.handleReport(OPERATOR_ID, REPORT_ID, request);
 
@@ -188,8 +186,7 @@ class AdminReportServiceTest {
                     .when(adminReportPort)
                     .handleReport(eq(REPORT_ID), eq("resolve"), any(), any());
 
-            ReportHandleRequest request = new ReportHandleRequest();
-            request.setAction("resolve");
+            ReportHandleRequest request = new ReportHandleRequest("resolve", null);
 
             assertThatThrownBy(() -> reportService.handleReport(OPERATOR_ID, REPORT_ID, request))
                     .isInstanceOf(BusinessException.class)
@@ -204,9 +201,7 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("批量处理举报返回聚合结果")
         void batchHandleReports_success() {
-            BatchHandleRequest request = new BatchHandleRequest();
-            request.setReportIds(List.of("100", "101"));
-            request.setAction("dismiss");
+            BatchHandleRequest request = new BatchHandleRequest(List.of("100", "101"), "dismiss", null);
 
             BatchHandleResultResponse result = reportService.batchHandleReports(OPERATOR_ID, request);
 
@@ -225,9 +220,7 @@ class AdminReportServiceTest {
                     .when(adminReportPort)
                     .handleReport(eq("101"), any(), any(), any());
 
-            BatchHandleRequest request = new BatchHandleRequest();
-            request.setReportIds(List.of("100", "101"));
-            request.setAction("dismiss");
+            BatchHandleRequest request = new BatchHandleRequest(List.of("100", "101"), "dismiss", null);
 
             BatchHandleResultResponse result = reportService.batchHandleReports(OPERATOR_ID, request);
 
@@ -241,9 +234,7 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("空列表抛出异常")
         void batchHandleReports_emptyList_throws() {
-            BatchHandleRequest request = new BatchHandleRequest();
-            request.setReportIds(List.of());
-            request.setAction("dismiss");
+            BatchHandleRequest request = new BatchHandleRequest(List.of(), "dismiss", null);
 
             assertThatThrownBy(() -> reportService.batchHandleReports(OPERATOR_ID, request))
                     .isInstanceOf(BusinessException.class)
@@ -256,9 +247,7 @@ class AdminReportServiceTest {
             List<String> ids = java.util.stream.LongStream.range(1, 52)
                     .mapToObj(String::valueOf)
                     .toList();
-            BatchHandleRequest request = new BatchHandleRequest();
-            request.setReportIds(ids);
-            request.setAction("dismiss");
+            BatchHandleRequest request = new BatchHandleRequest(ids, "dismiss", null);
 
             assertThatThrownBy(() -> reportService.batchHandleReports(OPERATOR_ID, request))
                     .isInstanceOf(BusinessException.class)

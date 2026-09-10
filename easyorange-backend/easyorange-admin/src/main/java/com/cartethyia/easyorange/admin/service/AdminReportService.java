@@ -85,8 +85,8 @@ public class AdminReportService {
 
     @Transactional(rollbackFor = Exception.class)
     public void handleReport(String operatorId, String id, ReportHandleRequest request) {
-        String remark = request.getRemark() != null ? request.getRemark() : "";
-        adminReportPort.handleReport(id, request.getAction(), remark, operatorId);
+        String remark = request.remark() != null ? request.remark() : "";
+        adminReportPort.handleReport(id, request.action(), remark, operatorId);
     }
 
     @Transactional(readOnly = true)
@@ -104,23 +104,23 @@ public class AdminReportService {
 
     @Transactional(rollbackFor = Exception.class)
     public BatchHandleResultResponse batchHandleReports(String operatorId, BatchHandleRequest request) {
-        BizRequire.requireTrue(!request.getReportIds().isEmpty(), AdminResultCode.REPORT_LIST_EMPTY);
-        BizRequire.requireTrue(request.getReportIds().size() <= 50, AdminResultCode.REPORT_BATCH_LIMIT_EXCEEDED);
+        BizRequire.requireTrue(!request.reportIds().isEmpty(), AdminResultCode.REPORT_LIST_EMPTY);
+        BizRequire.requireTrue(request.reportIds().size() <= 50, AdminResultCode.REPORT_BATCH_LIMIT_EXCEEDED);
 
-        String remark = request.getRemark() != null ? request.getRemark() : "";
-        ReportHandleAction.fromCode(request.getAction());
+        String remark = request.remark() != null ? request.remark() : "";
+        ReportHandleAction.fromCode(request.action());
 
         List<String> errors = new ArrayList<>();
         int success = 0;
-        for (String reportId : request.getReportIds()) {
+        for (String reportId : request.reportIds()) {
             try {
-                adminReportPort.handleReport(reportId, request.getAction(), remark, operatorId);
+                adminReportPort.handleReport(reportId, request.action(), remark, operatorId);
                 success++;
             } catch (BusinessException e) {
                 errors.add("举报ID " + reportId + ": " + e.getMessage());
             }
         }
-        return new BatchHandleResultResponse(request.getReportIds().size(), success, errors.size(), errors);
+        return new BatchHandleResultResponse(request.reportIds().size(), success, errors.size(), errors);
     }
 
     @Transactional(readOnly = true)

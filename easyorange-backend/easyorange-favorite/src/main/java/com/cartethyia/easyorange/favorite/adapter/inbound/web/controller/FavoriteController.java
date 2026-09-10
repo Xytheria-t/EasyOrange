@@ -51,7 +51,7 @@ public class FavoriteController {
     @DeleteMapping("/batch")
     public Result<Void> removeManyFavorites(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody BatchRemoveRequest request) {
-        favoriteService.removeManyFavorites(user.userId(), request.getIds());
+        favoriteService.removeManyFavorites(user.userId(), request.ids());
         return Result.success();
     }
 
@@ -68,6 +68,6 @@ public class FavoriteController {
     @PostMapping("/batch-check")
     public Result<Map<String, Boolean>> batchCheckFavorited(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody BatchCheckRequest request) {
-        return Result.success(favoriteService.batchCheckFavorited(user.userId(), request.getProductIds()));
+        return Result.success(favoriteService.batchCheckFavorited(user.userId(), request.productIds()));
     }
 }
