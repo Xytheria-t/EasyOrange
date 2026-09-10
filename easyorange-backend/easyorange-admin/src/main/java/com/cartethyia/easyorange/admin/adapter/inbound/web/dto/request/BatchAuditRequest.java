@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -11,6 +12,7 @@ public class BatchAuditRequest {
 
     @NotEmpty(message = "审核列表不能为空")
     @Size(max = 50, message = "单次最多审核50条")
+    @Valid
     private List<AuditItem> items;
 
     public record AuditItem(

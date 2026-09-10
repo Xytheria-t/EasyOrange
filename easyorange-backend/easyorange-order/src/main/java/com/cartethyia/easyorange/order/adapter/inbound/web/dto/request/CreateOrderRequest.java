@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.inbound.web.dto.request;
 
 import com.cartethyia.easyorange.common.constant.CommonConstant;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -16,6 +17,7 @@ import lombok.NoArgsConstructor;
 public class CreateOrderRequest {
 
     @NotEmpty(message = "订单项不能为空")
+    @Valid
     private List<OrderItemRequest> items;
 
     private String address;
