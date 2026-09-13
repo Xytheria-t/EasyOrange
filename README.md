@@ -180,7 +180,7 @@ docker compose up -d prometheus grafana                                    # Pro
 k6 run --vus 50 --duration 30s load-tests/product-list.js                  # k6 压测（阈值 p95<500ms 内置）
 ```
 
-> 零配置启动：敏感配置复制 `.env.example` → `.env`。完整命令（PIT 变异测试、JaCoCo、OWASP、E2E）见 [doc/agents/常用命令.md](doc/agents/常用命令.md)。
+> 零配置启动：全部变量在 `application*.yaml` / `compose.yaml` 内都有开发默认值，**不建 `.env` 也能启动**；需要覆盖默认值时复制 `.env.example` → `.env`（Docker Compose 自动读取；终端 JVM 需 `set -a; source .env; set +a`）。完整命令（PIT 变异测试、JaCoCo、OWASP、E2E）见 [doc/agents/常用命令.md](doc/agents/常用命令.md)。
 
 ## 文档地图
 
