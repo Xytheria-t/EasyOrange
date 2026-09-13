@@ -81,7 +81,7 @@ public class OrderCommandHandler {
             return lockPort.executeWithLocks(
                     buildLockKeys(command),
                     LOCK_TRY_TIMEOUT_SECONDS,
-                    () -> transactionTemplate.execute(status -> createOrderFlow(userId, command)));
+                    () -> transactionTemplate.execute(_ -> createOrderFlow(userId, command)));
         } catch (LockAcquisitionException e) {
             throw new OrderCreationException(LOCK_BUSY_MESSAGE);
         }
