@@ -4,14 +4,40 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.context.ConfigurationPropertiesAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
+import org.springframework.context.annotation.Configuration;
 
+@ExtendWith(OutputCaptureExtension.class)
 @DisplayName("SecurityProperties Tests")
 class SecurityPropertiesTest {
+
+    private static Validator validator;
+
+    @BeforeAll
+    static void initValidator() {
+        validator = Validation.buildDefaultValidatorFactory().getValidator();
+    }
+
+    private static Set<ConstraintViolation<SecurityProperties>> violations(SecurityProperties properties) {
+        return validator.validate(properties);
+    }
 
     @Nested
     @DisplayName("Default Values")
@@ -45,6 +71,12 @@ class SecurityPropertiesTest {
         }
 
         @Test
+        @DisplayName("should protect refresh and logout with a custom header by default")
+        void csrfProtectedPaths_default_shouldCoverRefreshAndLogout() {
+            assertThat(properties.csrfProtectedPaths()).containsExactly("/api/auth/refresh", "/api/auth/logout");
+        }
+
+        @Test
         @DisplayName("should have default logout URL")
         void logoutUrl_default_shouldBeApiAuthLogout() {
             assertThat(properties.logoutUrl()).isEqualTo("/api/auth/logout");
@@ -58,74 +90,87 @@ class SecurityPropertiesTest {
     }
 
     @Nested
-    @DisplayName("validate")
-    class ValidateTests {
+    @DisplayName("路径列表缺省")
+    class NullPathNormalizationTests {
 
         @Test
         @DisplayName("路径列表缺省时收敛为空列表，不再抛 null 异常")
-        void validate_withMissingPaths_shouldPassWithEmptyLists() {
+        void missingPaths_shouldConvergeToEmptyLists() {
             var properties = new SecurityProperties(null, null, null, null, null, "/api/auth/logout", 10);
-
-            properties.validate();
 
             assertThat(properties.ignorePaths()).isEmpty();
             assertThat(properties.productPaths()).isEmpty();
             assertThat(properties.staticPaths()).isEmpty();
             assertThat(properties.allowedOrigins()).isEmpty();
         }
+    }
+
+    @Nested
+    @DisplayName("密码强度约束")
+    class PasswordEncoderStrengthTests {
 
         @Test
-        @DisplayName("should throw when password encoder strength is below 4")
-        void validate_withLowPasswordStrength_shouldThrow() {
+        @DisplayName("低于 4 违反约束")
+        void belowMin_shouldHaveViolation() {
             var properties = PropertyBindings.bind(SecurityProperties.class, "password-encoder-strength", "3");
 
-            assertThatThrownBy(properties::validate)
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("密码加密强度必须在 4-31 之间");
+            assertThat(violations(properties)).anyMatch(v -> v.getMessage().contains("密码加密强度必须在 4-31 之间"));
         }
 
         @Test
-        @DisplayName("should throw when password encoder strength is above 31")
-        void validate_withHighPasswordStrength_shouldThrow() {
+        @DisplayName("高于 31 违反约束")
+        void aboveMax_shouldHaveViolation() {
             var properties = PropertyBindings.bind(SecurityProperties.class, "password-encoder-strength", "32");
 
-            assertThatThrownBy(properties::validate)
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("密码加密强度必须在 4-31 之间");
+            assertThat(violations(properties)).anyMatch(v -> v.getMessage().contains("密码加密强度必须在 4-31 之间"));
         }
 
         @Test
-        @DisplayName("should pass with valid configuration")
-        void validate_withValidConfig_shouldPass() {
-            var properties = new SecurityProperties(
-                    List.of("/api/public/**"),
-                    List.of("/api/products/**"),
-                    List.of("/static/**"),
-                    List.of("https://example.com"),
-                    null,
-                    "/api/auth/logout",
-                    12);
-
-            // Should not throw
-            properties.validate();
+        @DisplayName("边界值 4 与 31 合法")
+        void bounds_shouldHaveNoViolations() {
+            assertThat(violations(PropertyBindings.bind(SecurityProperties.class, "password-encoder-strength", "4")))
+                    .isEmpty();
+            assertThat(violations(PropertyBindings.bind(SecurityProperties.class, "password-encoder-strength", "31")))
+                    .isEmpty();
         }
 
         @Test
-        @DisplayName("should warn but not throw for CORS wildcard")
-        void validate_withAllowedOriginsWildcard_shouldNotThrow() {
-            var properties = new SecurityProperties(null, null, null, List.of("*"), null, "/api/auth/logout", 10);
+        @DisplayName("偏离推荐区间（8 或 15）只是告警，不是约束违规")
+        void offRecommendedRange_shouldHaveNoViolations() {
+            assertThat(violations(PropertyBindings.bind(SecurityProperties.class, "password-encoder-strength", "8")))
+                    .isEmpty();
+            assertThat(violations(PropertyBindings.bind(SecurityProperties.class, "password-encoder-strength", "15")))
+                    .isEmpty();
+        }
+    }
 
-            // Should not throw, only logs warning
-            properties.validate();
+    @Nested
+    @DisplayName("启动期行为")
+    class StartupTests {
+
+        private final ApplicationContextRunner runner = new ApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(
+                        ConfigurationPropertiesAutoConfiguration.class, ValidationAutoConfiguration.class))
+                .withUserConfiguration(SecurityPropertiesOnlyConfig.class);
+
+        @Configuration(proxyBeanMethods = false)
+        @EnableConfigurationProperties(SecurityProperties.class)
+        static class SecurityPropertiesOnlyConfig {}
+
+        @Test
+        @DisplayName("越界强度由约束在绑定期拦下，启动即失败")
+        void outOfRangeStrength_shouldFailStartup() {
+            runner.withPropertyValues("security.password-encoder-strength=3")
+                    .run(context -> assertThat(context).hasFailed());
         }
 
         @Test
-        @DisplayName("should warn but not throw for low password strength")
-        void validate_withLowStrengthWarning_shouldNotThrow() {
-            var properties = PropertyBindings.bind(SecurityProperties.class, "password-encoder-strength", "8");
+        @DisplayName("CORS 通配只告警不拦启动（@PostConstruct 告警确实执行）")
+        void wildcardOrigins_shouldWarnWithoutFailingStartup(CapturedOutput output) {
+            runner.withPropertyValues("security.allowed-origins[0]=*", "security.password-encoder-strength=8")
+                    .run(context -> assertThat(context).hasNotFailed());
 
-            // Should not throw (only logs warning)
-            properties.validate();
+            assertThat(output).contains("CORS 允许所有源").doesNotContain("密码加密强度必须在 4-31 之间");
         }
     }
 
