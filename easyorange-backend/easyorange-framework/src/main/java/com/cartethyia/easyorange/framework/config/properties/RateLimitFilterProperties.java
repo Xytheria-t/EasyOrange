@@ -35,53 +35,57 @@ import org.springframework.validation.annotation.Validated;
  *     message: "不允许重复提交"
  *     methods: [POST, PUT, DELETE, PATCH]
  * }</pre>
+ *
+ * @param enabled 是否启用限流过滤器
+ * @param rules 限流规则列表
+ * @param repeatSubmit 重复提交防护配置
  */
 @Validated
 @ConfigurationProperties(prefix = "rate-limit-filter")
 public record RateLimitFilterProperties(
         @DefaultValue("true") boolean enabled,
-
         @Valid List<Rule> rules,
-
         @Valid RepeatSubmitConfig repeatSubmit) {
 
     public RateLimitFilterProperties {
         rules = rules == null ? List.of() : List.copyOf(rules);
         if (repeatSubmit == null) {
-            repeatSubmit = new RepeatSubmitConfig(true, 3000L, "不允许重复提交", List.of());
+            repeatSubmit = new RepeatSubmitConfig(
+                    RepeatSubmitConfig.DEFAULT_ENABLED,
+                    RepeatSubmitConfig.DEFAULT_INTERVAL_MS,
+                    RepeatSubmitConfig.DEFAULT_MESSAGE,
+                    List.of());
         }
     }
 
+    /**
+     * 限流策略 — 决定计数落在本地内存还是 Redis。
+     */
+    public enum Strategy {
+
+        /** 本地内存计数，单实例生效，零网络开销。 */
+        LOCAL,
+
+        /** Redis 计数，多实例共享配额。 */
+        REDIS
+    }
+
+    /**
+     * 单条限流规则。
+     *
+     * @param pathPattern Ant 风格路径模式，如 /api/products、/api/**
+     * @param methods HTTP 方法列表（不区分大小写），如 GET、POST；为空表示匹配所有方法
+     * @param strategy 限流策略
+     * @param maxRequests 窗口内最大请求数
+     * @param windowSeconds 时间窗口（秒）
+     * @param message 限流触发时的提示信息
+     */
     public record Rule(
-            /**
-             * Ant 风格路径模式，如 /api/products、/api/**
-             */
             @NotBlank String pathPattern,
-
-            /**
-             * HTTP 方法列表（不区分大小写），如 GET、POST。
-             * 为空表示匹配所有方法。
-             */
             List<String> methods,
-
-            /**
-             * local（本地内存）或 redis（分布式）
-             */
-            @DefaultValue("redis") String strategy,
-
-            /**
-             * 窗口内最大请求数
-             */
+            @DefaultValue("redis") Strategy strategy,
             @Min(1) @DefaultValue("100") int maxRequests,
-
-            /**
-             * 时间窗口（秒）
-             */
             @Min(1) @DefaultValue("60") int windowSeconds,
-
-            /**
-             * 限流触发时的提示信息
-             */
             @DefaultValue("请求过于频繁，请稍后重试") String message) {
 
         public Rule {
@@ -89,21 +93,23 @@ public record RateLimitFilterProperties(
         }
     }
 
+    /**
+     * 重复提交防护配置。
+     *
+     * @param enabled 是否启用
+     * @param intervalMs 防重间隔（毫秒）
+     * @param message 触发时的提示信息
+     * @param methods 需要防重的 HTTP 方法（不区分大小写）；为空表示所有写操作方法（POST/PUT/DELETE/PATCH）
+     */
     public record RepeatSubmitConfig(
-            @DefaultValue("true") boolean enabled,
-
-            /**
-             * 防重间隔（毫秒）
-             */
-            @Min(1) @DefaultValue("3000") long intervalMs,
-
-            @DefaultValue("不允许重复提交") String message,
-
-            /**
-             * 需要防重的 HTTP 方法（不区分大小写）。
-             * 为空表示所有写操作方法（POST/PUT/DELETE/PATCH）。
-             */
+            @DefaultValue(DEFAULT_ENABLED + "") boolean enabled,
+            @Min(1) @DefaultValue(DEFAULT_INTERVAL_MS + "") long intervalMs,
+            @DefaultValue(DEFAULT_MESSAGE) String message,
             List<String> methods) {
+
+        private static final boolean DEFAULT_ENABLED = true;
+        private static final long DEFAULT_INTERVAL_MS = 3000L;
+        private static final String DEFAULT_MESSAGE = "不允许重复提交";
 
         public RepeatSubmitConfig {
             methods = methods == null ? List.of() : List.copyOf(methods);

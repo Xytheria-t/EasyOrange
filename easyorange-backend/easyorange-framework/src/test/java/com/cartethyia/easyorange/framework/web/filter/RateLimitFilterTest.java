@@ -14,6 +14,7 @@ import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Rule;
+import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Strategy;
 import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
@@ -109,7 +110,7 @@ class RateLimitFilterTest {
     }
 
     private Rule localRule(String pathPattern) {
-        return new Rule(pathPattern, null, "local", 5, 60, "请求过于频繁，请稍后重试");
+        return new Rule(pathPattern, null, Strategy.LOCAL, 5, 60, "请求过于频繁，请稍后重试");
     }
 
     // ==================== 懒解析：GET 未命中规则不解析 handler ====================

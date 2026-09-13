@@ -35,7 +35,7 @@ public class RefreshCookie {
         return ResponseCookie.from(jwtProperties.refreshCookieName(), value)
                 .httpOnly(true)
                 .secure(jwtProperties.refreshCookieSecure())
-                .sameSite(jwtProperties.refreshCookieSameSite())
+                .sameSite(jwtProperties.refreshCookieSameSite().attributeValue())
                 .path(jwtProperties.refreshCookiePath())
                 .maxAge(Duration.ofSeconds(maxAgeSeconds))
                 .build();
