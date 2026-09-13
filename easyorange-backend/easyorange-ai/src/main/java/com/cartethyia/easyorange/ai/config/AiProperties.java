@@ -129,12 +129,17 @@ public record AiProperties(
      * LLM-as-Judge 离线评估配置 — 定时对 eo_ai_call_log 中未评审的成功调用打分（1-5 + 评语）。
      * <p>
      * 回答「怎么判断 AI 输出质量」：输出质量从「感觉还行」变成「可量化、可回归」。
+     *
+     * @param enabled 是否启用离线评估
+     * @param cron 评估任务调度表达式
+     * @param batchSize 单轮评估的最大样本数
+     * @param retrievalEnabled 是否启用 RAG 检索指标回归（hit@5 / MRR）— 仅需 embedding，不需要 LLM 生成
+     * @param retrievalCron 检索指标回归任务的调度表达式
      */
     public record Eval(
             @DefaultValue("false") boolean enabled,
             @DefaultValue("0 0 3 * * ?") String cron,
             @Min(1) @DefaultValue("50") int batchSize,
-            /** RAG 检索指标回归（hit@5 / MRR）— 仅需 embedding，不需要 LLM 生成。 */
             @DefaultValue("false") boolean retrievalEnabled,
             @DefaultValue("0 15 3 * * ?") String retrievalCron) {}
 
@@ -155,22 +160,28 @@ public record AiProperties(
     /**
      * 语义缓存配置 — Embedding 相似度命中即复用历史回答（跨用户、近似问题共享），
      * 同时是「成本优化」的落地：相同意图的问题不再重复调 LLM。
+     *
+     * @param enabled 是否启用语义缓存
+     * @param similarityThreshold 余弦相似度命中阈值（0.92 表示高度近义问题命中）
+     * @param maxEntries 每个 scope 最多缓存的条目数，超出淘汰最旧条目
+     * @param ttlHours 缓存条目 TTL（小时）
      */
     public record SemanticCache(
             @DefaultValue("true") boolean enabled,
-            /** 余弦相似度命中阈值（0.92 表示高度近义问题命中）。 */
+
             @DecimalMin("0.0") @DecimalMax("1.0") @DefaultValue("0.92")
             double similarityThreshold,
-            /** 每个 scope 最多缓存的条目数，超出淘汰最旧条目。 */
+
             @DefaultValue("500") int maxEntries,
             @DefaultValue("24") int ttlHours) {}
 
     /**
      * 多轮对话记忆配置 — Redis 会话窗口（短期记忆）+ 画像注入（长期记忆）。
+     *
+     * @param sessionTtlHours 会话 TTL（小时），过期即遗忘短期记忆
+     * @param historyLimit 注入 prompt 的历史轮数（最近 N 轮）
      */
     public record Chat(
-            /** 会话 TTL（小时），过期即遗忘短期记忆。 */
             @DefaultValue("24") int sessionTtlHours,
-            /** 注入 prompt 的历史轮数（最近 N 轮）。 */
             @DefaultValue("6") int historyLimit) {}
 }
