@@ -40,7 +40,13 @@ public class ProductReport {
         this.updateTime = updateTime;
     }
 
-    public static ProductReport create(String productId, String reporterId, String reason, String reasonType) {
+    /**
+     * 创建一条待处理的举报。
+     *
+     * @param id 举报 ID，由应用层 {@code IdGenerator} 生成（{@code BaseDO.id} 为 {@code IdType.INPUT}，数据库不回填）
+     */
+    public static ProductReport create(
+            String id, String productId, String reporterId, String reason, String reasonType) {
         if (productId == null) {
             throw new ReportDomainException("资产ID不能为空");
         }
@@ -52,7 +58,7 @@ public class ProductReport {
         }
         LocalDateTime now = LocalDateTime.now();
         return new ProductReport(
-                null, productId, reporterId, reason, reasonType, ProductReportStatus.PENDING, null, now, now);
+                id, productId, reporterId, reason, reasonType, ProductReportStatus.PENDING, null, now, now);
     }
 
     public static ProductReport reconstitute(
@@ -106,13 +112,6 @@ public class ProductReport {
 
     public String statusCode() {
         return status != null ? status.getCode() : null;
-    }
-
-    public ProductReport assignId(String id) {
-        if (this.id != null) {
-            return this;
-        }
-        return new ProductReport(id, productId, reporterId, reason, reasonType, status, remark, createTime, updateTime);
     }
 
     public static class ReportDomainException extends BaseBusinessException {

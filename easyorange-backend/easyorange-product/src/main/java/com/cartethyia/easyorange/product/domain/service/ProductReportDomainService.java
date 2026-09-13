@@ -22,13 +22,14 @@ public class ProductReportDomainService {
     /**
      * 创建并保存一条商品举报。
      *
+     * @param reportId   举报 ID，由应用层 {@code IdGenerator} 生成（{@code BaseDO.id} 为 {@code IdType.INPUT}，数据库不回填）
      * @param productId  被举报的商品 ID
      * @param reporterId 提交举报的用户 ID
      * @param reason     举报描述
      * @param reasonType 举报类型编码
      */
-    public void reportProduct(String productId, String reporterId, String reason, String reasonType) {
-        ProductReport report = ProductReport.create(productId, reporterId, reason, reasonType);
+    public void reportProduct(String reportId, String productId, String reporterId, String reason, String reasonType) {
+        ProductReport report = ProductReport.create(reportId, productId, reporterId, reason, reasonType);
         productReportRepository.save(report);
     }
 

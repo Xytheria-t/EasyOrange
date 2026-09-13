@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.admin.domain.port.AdminReportPort;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
@@ -41,6 +42,7 @@ public class AdminReportAdapter implements AdminReportPort {
     private final ProductRepository productRepository;
     private final ProductCacheEvictionPort productCacheEvictionPort;
     private final DomainEventPublisher domainEventPublisher;
+    private final IdGenerator idGenerator;
 
     @Override
     public ReportQueryResult queryReports(Integer status, Integer pageNum, Integer pageSize) {
@@ -102,7 +104,8 @@ public class AdminReportAdapter implements AdminReportPort {
                     case DISMISS, IGNORE, WARN_SENDER -> report.reject(result);
                 };
 
-        reportHandleHistoryRepository.save(ReportHandleHistory.create(reportId, operatorId, action.getCode(), result));
+        reportHandleHistoryRepository.save(
+                ReportHandleHistory.create(idGenerator.generateId(), reportId, operatorId, action.getCode(), result));
         productReportRepository.update(updated);
         publishProcessedEvent(reportId, updated);
     }

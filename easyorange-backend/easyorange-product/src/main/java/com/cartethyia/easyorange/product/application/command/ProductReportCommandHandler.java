@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.metrics.BusinessMetricsService;
 import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
 import com.cartethyia.easyorange.product.domain.enums.ReportReasonType;
@@ -17,6 +18,7 @@ public class ProductReportCommandHandler {
     private final ProductReportDomainService productReportDomainService;
     private final ProductReportRepository productReportRepository;
     private final BusinessMetricsService businessMetricsService;
+    private final IdGenerator idGenerator;
 
     @Transactional(rollbackFor = Exception.class)
     public void handleReport(String productId, String reporterId, String reason, String reasonType) {
@@ -26,7 +28,7 @@ public class ProductReportCommandHandler {
         if (productReportRepository.existsRecentReport(productId, reporterId)) {
             throw BusinessException.of(ProductResultCode.REPORT_DUPLICATE, "您已在24小时内举报过该商品，请耐心等待处理");
         }
-        productReportDomainService.reportProduct(productId, reporterId, reason, reasonType);
+        productReportDomainService.reportProduct(idGenerator.generateId(), productId, reporterId, reason, reasonType);
         businessMetricsService.incrementReportFiled();
     }
 }

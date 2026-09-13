@@ -48,6 +48,7 @@ public class ReportHandleHistoryRepositoryImpl extends BaseRepository<ReportHand
 
     private ReportHandleHistoryDO convertToDO(ReportHandleHistory history) {
         return ReportHandleHistoryDO.builder()
+                .id(history.getId())
                 .reportId(history.getReportId())
                 .operatorId(history.getOperatorId())
                 .action(history.getAction())

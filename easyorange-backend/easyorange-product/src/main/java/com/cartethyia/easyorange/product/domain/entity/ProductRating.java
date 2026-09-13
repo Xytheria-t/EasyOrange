@@ -48,22 +48,15 @@ public class ProductRating {
         this.updateTime = updateTime;
     }
 
-    /** Factory method for creating a new rating */
-    public static ProductRating create(String productId, String userId, int rating, String content) {
+    /**
+     * 创建新评价。
+     *
+     * @param id 评价 ID，由应用层 {@code IdGenerator} 生成（{@code BaseDO.id} 为 {@code IdType.INPUT}，数据库不回填）
+     */
+    public static ProductRating create(String id, String productId, String userId, int rating, String content) {
         var now = LocalDateTime.now();
         return new ProductRating(
-                null,
-                productId,
-                userId,
-                null,
-                Rating.of(rating),
-                ReviewContent.of(content),
-                null,
-                null,
-                0,
-                1,
-                now,
-                now);
+                id, productId, userId, null, Rating.of(rating), ReviewContent.of(content), null, null, 0, 1, now, now);
     }
 
     /** Reconstitute from persistence */
@@ -93,13 +86,6 @@ public class ProductRating {
                 status,
                 createTime,
                 updateTime);
-    }
-
-    /** Assign ID after persistence */
-    public ProductRating assignId(String id) {
-        if (this.id != null) return this;
-        this.id = id;
-        return this;
     }
 
     /** Like this review */

@@ -11,10 +11,12 @@ import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
+import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -40,6 +42,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -65,6 +68,9 @@ class AdminReportAdapterTest {
     @Mock
     private DomainEventPublisher domainEventPublisher;
 
+    @Mock
+    private IdGenerator idGenerator;
+
     private AdminReportAdapter adapter;
 
     private static final String PRODUCT_ID = "100";
@@ -79,7 +85,8 @@ class AdminReportAdapterTest {
                 reportHandleHistoryRepository,
                 productRepository,
                 productCacheEvictionPort,
-                domainEventPublisher);
+                domainEventPublisher,
+                idGenerator);
     }
 
     private Product createProductWithStatus(ProductStatus status) {
@@ -125,11 +132,14 @@ class AdminReportAdapterTest {
         @DisplayName("resolve 动作通过举报并发布事件")
         void resolve_succeeds() {
             when(productReportRepository.findById(REPORT_ID)).thenReturn(report(ProductReportStatus.PENDING));
+            when(idGenerator.generateId()).thenReturn("300");
 
             adapter.handleReport(REPORT_ID, "resolve", "已核实", "2");
 
             verify(productReportRepository).update(any(ProductReport.class));
-            verify(reportHandleHistoryRepository).save(any());
+            ArgumentCaptor<ReportHandleHistory> historyCaptor = ArgumentCaptor.forClass(ReportHandleHistory.class);
+            verify(reportHandleHistoryRepository).save(historyCaptor.capture());
+            assertThat(historyCaptor.getValue().getId()).as("处置历史主键由适配器生成").isEqualTo("300");
             verify(domainEventPublisher).publish(any(ReportProcessedEvent.class));
         }
 

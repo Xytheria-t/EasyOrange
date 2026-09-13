@@ -50,16 +50,17 @@ class ProductReportDomainServiceTest {
     @Test
     @DisplayName("举报商品时应创建并保存举报")
     void reportProduct_shouldCreateAndSave() {
-        domainService.reportProduct("1", "2", "假货", "1");
+        domainService.reportProduct("100", "1", "2", "假货", "1");
 
-        verify(productReportRepository).save(any(ProductReport.class));
+        ArgumentCaptor<ProductReport> captor = ArgumentCaptor.forClass(ProductReport.class);
+        verify(productReportRepository).save(captor.capture());
+        assertThat(captor.getValue().getId()).as("举报主键由应用层生成").isEqualTo("100");
     }
 
     @Test
     @DisplayName("批准举报后应将商品下架、清除缓存并返回事件")
     void processReport_withApprove_shouldOfflineProductAndEvictCache() {
-        ProductReport report = ProductReport.create(PRODUCT_ID, "2", "假货", "1");
-        report = report.assignId("100");
+        ProductReport report = ProductReport.create("100", PRODUCT_ID, "2", "假货", "1");
         when(productReportRepository.findById("100")).thenReturn(report);
         when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.of(createOnlineProduct()));
 
@@ -76,8 +77,7 @@ class ProductReportDomainServiceTest {
     @Test
     @DisplayName("驳回举报不应操作商品状态和缓存")
     void processReport_withReject_shouldNotTouchProduct() {
-        ProductReport report = ProductReport.create(PRODUCT_ID, "2", "假货", "1");
-        report = report.assignId("100");
+        ProductReport report = ProductReport.create("100", PRODUCT_ID, "2", "假货", "1");
         when(productReportRepository.findById("100")).thenReturn(report);
 
         var event = domainService.processReport("100", false);
@@ -101,8 +101,7 @@ class ProductReportDomainServiceTest {
     @Test
     @DisplayName("批准举报后应保持 remark 正确")
     void processReport_withApprove_shouldSetCorrectRemark() {
-        ProductReport report = ProductReport.create(PRODUCT_ID, "2", "假货", "1");
-        report = report.assignId("100");
+        ProductReport report = ProductReport.create("100", PRODUCT_ID, "2", "假货", "1");
         when(productReportRepository.findById("100")).thenReturn(report);
         when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.of(createOnlineProduct()));
 
