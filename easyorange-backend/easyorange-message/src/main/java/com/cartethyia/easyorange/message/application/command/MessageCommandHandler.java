@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.message.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
@@ -33,6 +34,7 @@ public class MessageCommandHandler {
     private final DistributedRateLimiter distributedRateLimiter;
     private final SensitiveWordFilterService sensitiveWordFilterService;
     private final MessageNotifierPort messageNotifier;
+    private final IdGenerator idGenerator;
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(String senderId, SendMessageCommand command) {
@@ -44,6 +46,7 @@ public class MessageCommandHandler {
         String filteredTitle = sensitiveWordFilterService.filter(command.title());
 
         Message saved = messageRepository.save(Message.create(
+                idGenerator.generateId(),
                 senderId,
                 command.receiverId(),
                 normalizeType(command.type()),
@@ -64,8 +67,12 @@ public class MessageCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(SendSystemMessageCommand command) {
-        Message saved = messageRepository.save(
-                Message.createSystem(command.receiverId(), command.title(), command.content(), command.businessId()));
+        Message saved = messageRepository.save(Message.createSystem(
+                idGenerator.generateId(),
+                command.receiverId(),
+                command.title(),
+                command.content(),
+                command.businessId()));
 
         boolean online = messageNotifier.isUserOnline(saved.receiverId());
         offlineMessageStoreService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);

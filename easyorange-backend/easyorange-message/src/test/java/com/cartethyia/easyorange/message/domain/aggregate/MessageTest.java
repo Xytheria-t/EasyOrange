@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Message 聚合根单元测试")
 class MessageTest {
 
+    private static final String MESSAGE_ID = "100";
     private static final String SENDER_ID = "1";
     private static final String RECEIVER_ID = "2";
     private static final String OTHER_USER_ID = "3";
@@ -28,8 +29,10 @@ class MessageTest {
         @Test
         @DisplayName("正常创建普通消息")
         void create_validParams_returnsMessage() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, MessageType.CHAT, "你好", "hello world", "100");
+            Message message =
+                    Message.create(MESSAGE_ID, SENDER_ID, RECEIVER_ID, MessageType.CHAT, "你好", "hello world", "100");
 
+            assertThat(message.id()).isEqualTo(MESSAGE_ID);
             assertThat(message.senderId()).isEqualTo(SENDER_ID);
             assertThat(message.receiverId()).isEqualTo(RECEIVER_ID);
             assertThat(message.type()).isEqualTo(MessageType.CHAT);
@@ -43,7 +46,13 @@ class MessageTest {
         @DisplayName("标题和内容原样存储，XSS 防护在渲染端文本输出")
         void create_storesRawText_xssHandledAtRender() {
             Message message = Message.create(
-                    SENDER_ID, RECEIVER_ID, MessageType.CHAT, "<script>alert('xss')</script>", "<b>bold</b>", null);
+                    MESSAGE_ID,
+                    SENDER_ID,
+                    RECEIVER_ID,
+                    MessageType.CHAT,
+                    "<script>alert('xss')</script>",
+                    "<b>bold</b>",
+                    null);
 
             assertThat(message.title()).isEqualTo("<script>alert('xss')</script>");
             assertThat(message.content()).isEqualTo("<b>bold</b>");
@@ -57,8 +66,9 @@ class MessageTest {
         @Test
         @DisplayName("正常创建系统消息")
         void createSystem_validParams_returnsSystemMessage() {
-            Message message = Message.createSystem(RECEIVER_ID, "系统通知", "您的商品已审核通过", null);
+            Message message = Message.createSystem(MESSAGE_ID, RECEIVER_ID, "系统通知", "您的商品已审核通过", null);
 
+            assertThat(message.id()).isEqualTo(MESSAGE_ID);
             assertThat(message.senderId()).isNull();
             assertThat(message.receiverId()).isEqualTo(RECEIVER_ID);
             assertThat(message.type()).isEqualTo(MessageType.SYSTEM);
@@ -70,8 +80,8 @@ class MessageTest {
         @Test
         @DisplayName("系统消息标题和内容原样存储")
         void createSystem_storesRawContent() {
-            Message message =
-                    Message.createSystem(RECEIVER_ID, "<script>alert(1)</script>", "<img onerror='alert(1)'>", null);
+            Message message = Message.createSystem(
+                    MESSAGE_ID, RECEIVER_ID, "<script>alert(1)</script>", "<img onerror='alert(1)'>", null);
 
             assertThat(message.title()).isEqualTo("<script>alert(1)</script>");
             assertThat(message.content()).isEqualTo("<img onerror='alert(1)'>");

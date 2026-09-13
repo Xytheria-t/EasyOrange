@@ -39,12 +39,20 @@ public record Message(
     // ==================== Factory ====================
 
     /**
-     * 创建普通消息
+     * 创建普通消息。
+     *
+     * @param id 消息 ID，由应用层 {@code IdGenerator} 生成（{@code BaseDO.id} 为 {@code IdType.INPUT}，数据库不回填）
      */
     public static Message create(
-            String senderId, String receiverId, MessageType type, String title, String content, String businessId) {
+            String id,
+            String senderId,
+            String receiverId,
+            MessageType type,
+            String title,
+            String content,
+            String businessId) {
         return new Message(
-                null,
+                id,
                 senderId,
                 receiverId,
                 type,
@@ -59,11 +67,13 @@ public record Message(
     }
 
     /**
-     * 创建系统消息
+     * 创建系统消息。
+     *
+     * @param id 消息 ID，由应用层 {@code IdGenerator} 生成（{@code BaseDO.id} 为 {@code IdType.INPUT}，数据库不回填）
      */
-    public static Message createSystem(String receiverId, String title, String content, String businessId) {
+    public static Message createSystem(String id, String receiverId, String title, String content, String businessId) {
         return new Message(
-                null,
+                id,
                 null,
                 receiverId,
                 MessageType.SYSTEM,
