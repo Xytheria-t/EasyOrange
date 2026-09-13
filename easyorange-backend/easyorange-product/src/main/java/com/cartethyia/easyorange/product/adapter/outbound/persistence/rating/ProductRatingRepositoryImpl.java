@@ -24,9 +24,7 @@ public class ProductRatingRepositoryImpl extends BaseRepository<ProductRatingMap
 
     @Override
     public void save(ProductRating rating) {
-        ProductRatingDO do_ = convertToDO(rating);
-        mapper.insert(do_);
-        rating.assignId(do_.getId());
+        mapper.insert(convertToDO(rating));
     }
 
     @Override

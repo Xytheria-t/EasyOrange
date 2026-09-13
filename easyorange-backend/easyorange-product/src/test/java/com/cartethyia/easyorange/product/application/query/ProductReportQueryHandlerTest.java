@@ -51,10 +51,8 @@ class ProductReportQueryHandlerTest {
         @Test
         @DisplayName("应返回分页结果")
         void shouldReturnPaginatedReports() {
-            ProductReport report1 = ProductReport.create("1", "2", "假货", "1");
-            report1 = report1.assignId("100");
-            ProductReport report2 = ProductReport.create("1", "3", "侵权", "2");
-            report2 = report2.assignId("101");
+            ProductReport report1 = ProductReport.create("100", "1", "2", "假货", "1");
+            ProductReport report2 = ProductReport.create("101", "1", "3", "侵权", "2");
 
             List<ProductReport> reports = List.of(report1, report2);
             PageResult<ProductReport> pageResult = PageResult.of(reports, 2L, 1, 20);
@@ -86,8 +84,7 @@ class ProductReportQueryHandlerTest {
         @Test
         @DisplayName("null 的记录应返回 null")
         void withNullReport_shouldReturnNull() {
-            ProductReport report = ProductReport.create("1", "2", "假货", "1");
-            report = report.assignId("100");
+            ProductReport report = ProductReport.create("100", "1", "2", "假货", "1");
 
             List<ProductReport> reports = Arrays.asList(report, null);
             when(productReportQueryRepository.findByReporterId("2", 1, 20))
@@ -111,8 +108,7 @@ class ProductReportQueryHandlerTest {
 
         @BeforeEach
         void setUp() {
-            report = ProductReport.create(PRODUCT_ID, REPORTER_ID, "假货", "1");
-            report = report.assignId("100");
+            report = ProductReport.create("100", PRODUCT_ID, REPORTER_ID, "假货", "1");
         }
 
         @Test

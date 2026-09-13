@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.application.command;
 
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
 import com.cartethyia.easyorange.product.domain.exception.RatingNotFoundException;
 import com.cartethyia.easyorange.product.domain.exception.RatingNotOwnerException;
@@ -15,10 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductRatingCommandHandler {
 
     private final ProductRatingRepository productRatingRepository;
+    private final IdGenerator idGenerator;
 
     @Transactional(rollbackFor = Exception.class)
     public String createReview(String userId, CreateProductRatingCommand command) {
-        ProductRating rating = ProductRating.create(command.productId(), userId, command.rating(), command.content());
+        ProductRating rating = ProductRating.create(
+                idGenerator.generateId(), command.productId(), userId, command.rating(), command.content());
         productRatingRepository.save(rating);
 
         log.info(

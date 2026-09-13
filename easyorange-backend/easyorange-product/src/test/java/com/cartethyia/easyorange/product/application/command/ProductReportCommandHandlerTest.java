@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.metrics.BusinessMetricsService;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.service.ProductReportDomainService;
@@ -27,23 +28,27 @@ class ProductReportCommandHandlerTest {
     @Mock
     private BusinessMetricsService businessMetricsService;
 
+    @Mock
+    private IdGenerator idGenerator;
+
     private ProductReportCommandHandler handler;
 
     @BeforeEach
     void setUp() {
         handler = new ProductReportCommandHandler(
-                productReportDomainService, productReportRepository, businessMetricsService);
+                productReportDomainService, productReportRepository, businessMetricsService, idGenerator);
     }
 
     @Test
     @DisplayName("正常举报应调用领域服务")
     void handleReport_shouldDelegateToDomainService() {
         when(productReportRepository.existsRecentReport("1", "2")).thenReturn(false);
+        when(idGenerator.generateId()).thenReturn("100");
 
         handler.handleReport("1", "2", "假货", "1");
 
         verify(productReportRepository).existsRecentReport("1", "2");
-        verify(productReportDomainService).reportProduct("1", "2", "假货", "1");
+        verify(productReportDomainService).reportProduct("100", "1", "2", "假货", "1");
     }
 
     @Test
@@ -55,6 +60,6 @@ class ProductReportCommandHandlerTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("已在24小时内举报过");
 
-        verify(productReportDomainService, never()).reportProduct(any(), any(), any(), any());
+        verify(productReportDomainService, never()).reportProduct(any(), any(), any(), any(), any());
     }
 }

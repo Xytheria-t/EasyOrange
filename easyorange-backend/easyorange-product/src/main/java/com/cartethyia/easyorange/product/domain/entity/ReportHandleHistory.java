@@ -25,11 +25,14 @@ public class ReportHandleHistory {
         this.createTime = createTime;
     }
 
-    public ReportHandleHistory(String reportId, String operatorId, String action, String remark) {
-        this(null, reportId, operatorId, action, remark, LocalDateTime.now());
-    }
-
-    public static ReportHandleHistory create(String reportId, String operatorId, String action, String remark) {
+    /**
+     * 创建一条举报处置历史。
+     *
+     * @param id 历史 ID，由调用方（应用层 / 出站适配器）经 {@code IdGenerator} 生成
+     *           （{@code BaseDO.id} 为 {@code IdType.INPUT}，数据库不回填）
+     */
+    public static ReportHandleHistory create(
+            String id, String reportId, String operatorId, String action, String remark) {
         if (reportId == null) {
             throw new HistoryDomainException("举报ID不能为空");
         }
@@ -39,16 +42,12 @@ public class ReportHandleHistory {
         if (action == null || action.isBlank()) {
             throw new HistoryDomainException("动作类型不能为空");
         }
-        return new ReportHandleHistory(reportId, operatorId, action, remark);
+        return new ReportHandleHistory(id, reportId, operatorId, action, remark, LocalDateTime.now());
     }
 
     public static ReportHandleHistory reconstitute(
             String id, String reportId, String operatorId, String action, String remark, LocalDateTime createTime) {
         return new ReportHandleHistory(id, reportId, operatorId, action, remark, createTime);
-    }
-
-    public ReportHandleHistory withId(String id) {
-        return new ReportHandleHistory(id, this.reportId, this.operatorId, this.action, this.remark, this.createTime);
     }
 
     public static class HistoryDomainException extends BaseBusinessException {
