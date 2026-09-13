@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.product.application.port.query.ProductRatingQue
 import com.cartethyia.easyorange.product.application.query.dto.ProductRatingVO;
 import com.cartethyia.easyorange.product.application.query.dto.RatingStatsVO;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
+import com.cartethyia.easyorange.product.domain.port.CompletedOrderPort;
 import com.cartethyia.easyorange.product.domain.port.SellerInfoPort;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerInfo;
 import java.math.BigDecimal;
@@ -27,6 +28,20 @@ public class ProductRatingQueryHandler {
 
     private final ProductRatingQueryRepository productRatingQueryRepository;
     private final SellerInfoPort sellerInfoPort;
+    private final CompletedOrderPort completedOrderPort;
+
+    /**
+     * 该用户当前能否评价此资产 —— 存在已完成订单且该订单尚未评价过。
+     * <p>
+     * 供前端决定是否展示评价入口：无成交记录的用户不该看到提交按钮（提交也只会得到 B2016）。
+     */
+    @Transactional(readOnly = true)
+    public boolean canReview(String userId, String productId) {
+        return completedOrderPort
+                .findCompletedOrderId(userId, productId)
+                .filter(orderId -> !productRatingQueryRepository.existsByUserIdAndOrderId(userId, orderId))
+                .isPresent();
+    }
 
     @Transactional(readOnly = true)
     public PageResult<ProductRatingVO> listReviews(String productId, Integer pageNum, Integer pageSize) {

@@ -28,6 +28,15 @@ public class ProductRatingRepositoryImpl extends BaseRepository<ProductRatingMap
     }
 
     @Override
+    public boolean existsByUserIdAndOrderId(String userId, String orderId) {
+        return lambdaQuery()
+                        .eq(ProductRatingDO::getUserId, userId)
+                        .eq(ProductRatingDO::getOrderId, orderId)
+                        .count()
+                > 0;
+    }
+
+    @Override
     public void update(ProductRating rating) {
         ProductRatingDO do_ = convertToDO(rating);
         mapper.updateById(do_);

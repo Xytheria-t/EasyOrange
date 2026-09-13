@@ -9,12 +9,14 @@ import com.cartethyia.easyorange.product.application.port.query.ProductRatingQue
 import com.cartethyia.easyorange.product.application.query.dto.ProductRatingVO;
 import com.cartethyia.easyorange.product.application.query.dto.RatingStatsVO;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
+import com.cartethyia.easyorange.product.domain.port.CompletedOrderPort;
 import com.cartethyia.easyorange.product.domain.port.SellerInfoPort;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerInfo;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,16 +34,45 @@ class ProductRatingQueryHandlerTest {
     @Mock
     private SellerInfoPort sellerInfoPort;
 
+    @Mock
+    private CompletedOrderPort completedOrderPort;
+
     private ProductRatingQueryHandler queryHandler;
 
     private ProductRating review;
 
     @BeforeEach
     void setUp() {
-        queryHandler = new ProductRatingQueryHandler(productRatingQueryRepository, sellerInfoPort);
+        queryHandler = new ProductRatingQueryHandler(productRatingQueryRepository, sellerInfoPort, completedOrderPort);
 
         review = ProductRating.reconstitute(
                 "100", "10", "1", null, 5, "非常好", null, null, 3, 1, LocalDateTime.now(), LocalDateTime.now());
+    }
+
+    @Test
+    @DisplayName("有已完成订单且未评价过时可评价")
+    void canReview_whenCompletedOrderNotReviewed_returnsTrue() {
+        when(completedOrderPort.findCompletedOrderId("1", "10")).thenReturn(Optional.of("200"));
+        when(productRatingQueryRepository.existsByUserIdAndOrderId("1", "200")).thenReturn(false);
+
+        assertThat(queryHandler.canReview("1", "10")).isTrue();
+    }
+
+    @Test
+    @DisplayName("无已完成订单时不可评价")
+    void canReview_whenNoCompletedOrder_returnsFalse() {
+        when(completedOrderPort.findCompletedOrderId("1", "10")).thenReturn(Optional.empty());
+
+        assertThat(queryHandler.canReview("1", "10")).isFalse();
+    }
+
+    @Test
+    @DisplayName("该订单已评价过时不可再评价")
+    void canReview_whenAlreadyReviewed_returnsFalse() {
+        when(completedOrderPort.findCompletedOrderId("1", "10")).thenReturn(Optional.of("200"));
+        when(productRatingQueryRepository.existsByUserIdAndOrderId("1", "200")).thenReturn(true);
+
+        assertThat(queryHandler.canReview("1", "10")).isFalse();
     }
 
     @Test

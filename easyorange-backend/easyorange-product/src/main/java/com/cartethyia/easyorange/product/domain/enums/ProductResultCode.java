@@ -29,7 +29,10 @@ public enum ProductResultCode implements IResultCode {
     INVALID_CONDITION_LEVEL("B2012", "成色等级不合法"),
     INVALID_REPORT_TYPE("B2013", "举报类型不合法"),
     REPORT_DUPLICATE("B2014", "重复举报"),
-    REPORT_NOT_OWNER("B2015", "非举报作者");
+    REPORT_NOT_OWNER("B2015", "非举报作者"),
+    RATING_ORDER_NOT_COMPLETED("B2016", "仅可评价已完成订单中的资产"),
+    RATING_ALREADY_EXISTS("B2017", "该订单已评价"),
+    RATING_ORDER_REQUIRED("B2018", "评价必须绑定订单");
 
     private final String code;
     private final String message;

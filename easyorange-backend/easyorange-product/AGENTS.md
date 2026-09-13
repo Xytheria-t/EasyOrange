@@ -103,6 +103,7 @@ product/
 │   │   ├── ProductCacheEvictionPort.java # 缓存驱逐端口（domain 层，仅 evict）
 │   │   ├── ProductSnapshotPort.java
 │   │   ├── SellerInfoPort.java          # 资产方信息查询 (跨模块)
+│   │   ├── CompletedOrderPort.java      # 已完成订单查询 (跨模块，评价资格校验)
 │   │   ├── ProductNotificationPort.java # 商品事件通知 (跨模块)
 │   │   └── ProductSearchIndexPort.java  # 搜索索引 (跨模块)
 │   ├── repository/
