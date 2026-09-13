@@ -5,27 +5,34 @@ import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.framework.metrics.BusinessMetricsService;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductUpdateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
+import com.cartethyia.easyorange.product.domain.enums.StockChangeType;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import com.cartethyia.easyorange.product.domain.repository.StockLedgerRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
 import java.util.Optional;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(rollbackFor = Exception.class)
 public class ProductCommandHandler {
 
     private final ProductRepository productRepository;
+    private final StockLedgerRepository stockLedgerRepository;
     private final DomainEventPublisher domainEventPublisher;
+    private final BusinessMetricsService businessMetricsService;
 
     // ==================== CRUD ====================
 
@@ -44,6 +51,9 @@ public class ProductCommandHandler {
                 ImageSet.of(command.imageUrls())));
 
         var saved = productRepository.save(created.aggregate());
+        // 库存基线落账：与资产创建同事务，给对账任务一个起点
+        var stock = saved.getStock().value();
+        stockLedgerRepository.record(new StockChange(StockChangeType.INIT, null, saved.getId(), stock, stock));
         domainEventPublisher.publish(created.event());
         return saved.getId().value();
     }
@@ -51,21 +61,23 @@ public class ProductCommandHandler {
     public void updateProduct(String userId, UpdateProductCommand command) {
         var product = findByIdOrThrow(ProductId.of(command.id()));
 
-        mutate(
-                product,
-                p -> p.update(
-                        userId,
-                        new ProductUpdateSpec(
-                                mapIfPresent(command.categoryId(), CategoryId::of),
-                                mapIfPresent(command.name(), ProductTitle::of),
-                                mapIfPresent(command.price(), Money::of),
-                                mapIfPresent(command.originalPrice(), Money::of),
-                                mapIfPresent(command.stock(), StockQuantity::of),
-                                mapIfPresent(command.conditionLevel(), this::parseConditionLevel),
-                                mapIfPresent(command.location(), TradeLocation::of),
-                                mapIfPresent(command.contactMethod(), ContactMethod::of),
-                                mapIfPresent(command.description(), ProductDescription::of),
-                                mapIfPresent(command.imageUrls(), ImageSet::of))));
+        var result = product.update(
+                userId,
+                new ProductUpdateSpec(
+                        mapIfPresent(command.categoryId(), CategoryId::of),
+                        mapIfPresent(command.name(), ProductTitle::of),
+                        mapIfPresent(command.price(), Money::of),
+                        mapIfPresent(command.originalPrice(), Money::of),
+                        mapIfPresent(command.stock(), StockQuantity::of),
+                        mapIfPresent(command.conditionLevel(), this::parseConditionLevel),
+                        mapIfPresent(command.location(), TradeLocation::of),
+                        mapIfPresent(command.contactMethod(), ContactMethod::of),
+                        mapIfPresent(command.description(), ProductDescription::of),
+                        mapIfPresent(command.imageUrls(), ImageSet::of)));
+
+        recordManualAdjustment(product, result.aggregate());
+        productRepository.save(result.aggregate());
+        domainEventPublisher.publish(result.event());
     }
 
     public void deleteProduct(String userId, String id) {
@@ -79,18 +91,40 @@ public class ProductCommandHandler {
 
     // ==================== Stock ====================
 
-    public void decrementStock(String productId, int quantity) {
-        var product = findByIdOrThrow(ProductId.of(productId));
-        mutate(product, p -> p.decrementStock(quantity));
+    /**
+     * 下单扣减库存 — 先以 {@code (DECREASE, orderId, productId)} 抢占流水落账权，再改库存并发布事件。
+     * <p>
+     * 抢不到（该订单已扣过这件资产）说明是重复投递，直接返回：库存与事件都不再重复发生。
+     * 落账与库存更新同事务，任一失败整体回滚。
+     */
+    public void decrementStock(String orderId, String productId, int quantity) {
+        var pid = ProductId.of(productId);
+        var product = findByIdOrThrow(pid);
+        var result = product.decrementStock(quantity);
+
+        if (!claimStockChange(StockChange.decrease(
+                orderId, pid, quantity, result.aggregate().getStock().value()))) {
+            return;
+        }
+        productRepository.save(result.aggregate());
+        domainEventPublisher.publish(result.event());
     }
 
-    public void restoreStock(String productId) {
-        restoreStock(productId, 1);
-    }
+    /**
+     * 取消 / 退款恢复库存 — 幂等语义同 {@link #decrementStock}：同一订单对同一资产只恢复一次，
+     * 恢复数量取下单时扣减的数量（由订单事件携带），不做「无条件 +1」。
+     */
+    public void restoreStock(String orderId, String productId, int quantity) {
+        var pid = ProductId.of(productId);
+        var product = findByIdOrThrow(pid);
+        var result = product.restoreStock(quantity);
 
-    public void restoreStock(String productId, int quantity) {
-        var product = findByIdOrThrow(ProductId.of(productId));
-        mutate(product, p -> p.restoreStock(quantity));
+        if (!claimStockChange(StockChange.restore(
+                orderId, pid, quantity, result.aggregate().getStock().value()))) {
+            return;
+        }
+        productRepository.save(result.aggregate());
+        domainEventPublisher.publish(result.event());
     }
 
     // ==================== Status Transitions ====================
@@ -116,6 +150,39 @@ public class ProductCommandHandler {
     }
 
     // ==================== Private Helpers ====================
+
+    /**
+     * 抢占流水落账权 — 落账失败即判定该变更此前已生效，跳过库存变更与事件发布并计数。
+     */
+    private boolean claimStockChange(StockChange change) {
+        if (stockLedgerRepository.recordIfAbsent(change)) {
+            return true;
+        }
+        log.info(
+                "库存变更已落账，跳过重复执行: type={} bizId={} productId={} delta={}",
+                change.changeType(),
+                change.bizId(),
+                change.productId().value(),
+                change.delta());
+        businessMetricsService.incrementStockChangeSkipped();
+        return false;
+    }
+
+    /**
+     * 卖家 / 管理端直接改库存时补落一条人工调整流水，否则对账任务会把这次人工变更判成漂移。
+     */
+    private void recordManualAdjustment(Product before, Product after) {
+        int delta = after.getStock().value() - before.getStock().value();
+        if (delta == 0) {
+            return;
+        }
+        stockLedgerRepository.record(new StockChange(
+                StockChangeType.ADJUST,
+                null,
+                after.getId(),
+                delta,
+                after.getStock().value()));
+    }
 
     private static <T, R> R mapIfPresent(T value, Function<T, R> mapper) {
         return value != null ? mapper.apply(value) : null;

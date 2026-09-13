@@ -7,9 +7,11 @@ import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
+import com.cartethyia.easyorange.order.domain.event.OrderItemRef;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
@@ -60,11 +62,7 @@ public class OrderLifecycleEventConsumer {
 
     @RabbitHandler
     public void onOrderCancelled(OrderCancelledEvent event, Message message) {
-        handler.handle(event, message, () -> {
-            for (var productId : event.productIds()) {
-                productInventoryPort.restoreStock(productId);
-            }
-        });
+        handler.handle(event, message, () -> restoreStock(event.orderId(), event.items(), "取消"));
     }
 
     @RabbitHandler
@@ -79,10 +77,24 @@ public class OrderLifecycleEventConsumer {
     @RabbitHandler
     public void onOrderRefunded(OrderRefundedEvent event, Message message) {
         handler.handle(event, message, () -> {
-            for (var productId : event.productIds()) {
-                productInventoryPort.restoreStock(productId);
-            }
+            restoreStock(event.orderId(), event.items(), "退款");
             paymentGatewayPort.refundPayment(event.orderId(), event.reason());
         });
+    }
+
+    /**
+     * 按事件携带的资产明细恢复库存（数量与下单扣减一致）。
+     * <p>
+     * 幂等由 product 模块的库存流水唯一键兜底：同一订单对同一资产重复投递只会恢复一次。
+     * 明细为空说明载荷缺字段（旧格式）或已损坏，此时显性失败进重试 / DLQ 人工介入——
+     * 若静默跳过，这批资产的库存会永久少回，且没有任何信号。
+     */
+    private void restoreStock(String orderId, List<OrderItemRef> items, String scene) {
+        if (items.isEmpty()) {
+            throw new IllegalStateException("订单" + scene + "事件缺少资产明细，无法恢复库存: orderId=" + orderId);
+        }
+        for (var item : items) {
+            productInventoryPort.restoreStock(orderId, item.productId(), item.quantity());
+        }
     }
 }

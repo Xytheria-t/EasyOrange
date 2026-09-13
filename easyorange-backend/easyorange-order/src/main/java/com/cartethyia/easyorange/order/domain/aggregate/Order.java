@@ -10,6 +10,7 @@ import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
+import com.cartethyia.easyorange.order.domain.event.OrderItemRef;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
@@ -227,7 +228,7 @@ public class Order {
         return new Transition<>(
                 transitionTo(OrderAction.CANCEL, reason, now),
                 new OrderCancelledEvent(
-                        UuidV7.generateId(), id.value(), buyerId().value(), extractProductIds(), reason));
+                        UuidV7.generateId(), id.value(), buyerId().value(), extractItems(), reason));
     }
 
     /**
@@ -239,7 +240,7 @@ public class Order {
         return new Transition<>(
                 transitionTo(OrderAction.FORCE_CANCEL, reason, now),
                 new OrderCancelledEvent(
-                        UuidV7.generateId(), id.value(), buyerId().value(), extractProductIds(), reason));
+                        UuidV7.generateId(), id.value(), buyerId().value(), extractItems(), reason));
     }
 
     /** 发货 */
@@ -266,7 +267,7 @@ public class Order {
         return new Transition<>(
                 transitionTo(OrderAction.REFUND, reason, now),
                 new OrderRefundedEvent(
-                        UuidV7.generateId(), id.value(), buyerId().value(), extractProductIds(), reason));
+                        UuidV7.generateId(), id.value(), buyerId().value(), extractItems(), reason));
     }
 
     // ==================== State Machine Guard ====================
@@ -299,5 +300,12 @@ public class Order {
 
     private List<String> extractProductIds() {
         return items.stream().map(i -> i.productId().value()).toList();
+    }
+
+    /** 资产明细（ID + 数量）— 库存恢复必须按实际数量回补，事件只带 ID 会迫使消费端按 1 猜。 */
+    private List<OrderItemRef> extractItems() {
+        return items.stream()
+                .map(i -> new OrderItemRef(i.productId().value(), i.quantity()))
+                .toList();
     }
 }

@@ -15,6 +15,7 @@ import com.cartethyia.easyorange.message.application.command.SendSystemMessageCo
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
+import com.cartethyia.easyorange.order.domain.event.OrderItemRef;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
@@ -140,7 +141,9 @@ class OrderNotificationEventConsumerTest {
             mockClaimSuccess();
 
             consumer.onOrderEvent(
-                    new OrderCancelledEvent("evt-5", ORDER_ID, BUYER_ID, List.of(PRODUCT_ID), "取消原因"), buildMessage());
+                    new OrderCancelledEvent(
+                            "evt-5", ORDER_ID, BUYER_ID, List.of(new OrderItemRef(PRODUCT_ID, 1)), "取消原因"),
+                    buildMessage());
 
             verifyNotificationSent("OrderCancelled", "订单已取消", "您的订单已取消，订单号: " + ORDER_ID);
         }
@@ -151,7 +154,9 @@ class OrderNotificationEventConsumerTest {
             mockClaimSuccess();
 
             consumer.onOrderEvent(
-                    new OrderRefundedEvent("evt-6", ORDER_ID, BUYER_ID, List.of(PRODUCT_ID), "退款原因"), buildMessage());
+                    new OrderRefundedEvent(
+                            "evt-6", ORDER_ID, BUYER_ID, List.of(new OrderItemRef(PRODUCT_ID, 1)), "退款原因"),
+                    buildMessage());
 
             verifyNotificationSent("OrderRefunded", "订单已退款", "您的订单已退款，订单号: " + ORDER_ID);
         }

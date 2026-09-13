@@ -21,6 +21,7 @@ import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.event.OrderItemRef;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -96,7 +97,7 @@ class OrderRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("findExpiredOrders 批量加载行项，取消事件可提取商品 ID（缺行项会导致库存永不恢复）")
+    @DisplayName("findExpiredOrders 批量加载行项，取消事件携带资产与数量（缺行项会导致库存永不恢复）")
     void findExpiredOrders_loadsItems() {
         when(orderMapper.selectList(any())).thenReturn(List.of(pendingPaymentOrderDO()));
         when(orderItemMapper.selectList(any())).thenReturn(List.of(itemDO()));
@@ -106,7 +107,12 @@ class OrderRepositoryImplTest {
         assertThat(orders).hasSize(1);
         assertThat(orders.getFirst().items()).hasSize(1);
         var transition = orders.getFirst().cancel("超时", LocalDateTime.now());
-        assertThat(transition.event().productIds()).containsExactly(PRODUCT_ID);
+        assertThat(transition.event().items())
+                .extracting(OrderItemRef::productId)
+                .containsExactly(PRODUCT_ID);
+        assertThat(transition.event().items())
+                .extracting(OrderItemRef::quantity)
+                .containsExactly(1);
     }
 
     @Test
