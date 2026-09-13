@@ -40,9 +40,6 @@ class OrderAutoConfirmTaskTest {
     private DomainEventPublisher domainEventPublisher;
 
     @Mock
-    private OrderAutoConfirmProperties properties;
-
-    @Mock
     private DistributedLockPort lockPort;
 
     @Mock
@@ -64,8 +61,7 @@ class OrderAutoConfirmTaskTest {
     @BeforeEach
     void setUp() {
         migrationExecutor = new OrderStateMigrationExecutor(lockPort, transactionTemplate);
-        orderAutoConfirmTask = new OrderAutoConfirmTask(
-                orderRepository, domainEventPublisher, properties, orderCacheEvictor, migrationExecutor);
+        orderAutoConfirmTask = task(true);
         shippedOrder1 = orderWithStatus(ORDER_ID_1, OrderStatus.SHIPPED, PaymentStatus.PAID);
         shippedOrder2 = orderWithStatus(ORDER_ID_2, OrderStatus.SHIPPED, PaymentStatus.PAID);
         // 事务模板直接执行回调（事务行为由真实事务路径的集成测试覆盖）
@@ -74,7 +70,16 @@ class OrderAutoConfirmTaskTest {
         // 默认锁端口正常：直接执行锁内操作
         when(lockPort.executeWithLocks(anyList(), anyLong(), any()))
                 .thenAnswer(inv -> ((DistributedLockPort.LockOperation<?>) inv.getArgument(2)).execute());
-        when(properties.isEnabled()).thenReturn(true);
+    }
+
+    /** 用例只关心 enabled 开关，其余取配置默认值。 */
+    private OrderAutoConfirmTask task(boolean enabled) {
+        return new OrderAutoConfirmTask(
+                orderRepository,
+                domainEventPublisher,
+                new OrderAutoConfirmProperties(enabled, 7, "0 0 2 * * ?"),
+                orderCacheEvictor,
+                migrationExecutor);
     }
 
     @Nested
@@ -147,7 +152,7 @@ class OrderAutoConfirmTaskTest {
         @Test
         @DisplayName("定时任务禁用时不执行任何操作")
         void autoConfirmReceipt_whenDisabled_shouldDoNothing() {
-            when(properties.isEnabled()).thenReturn(false);
+            orderAutoConfirmTask = task(false);
 
             orderAutoConfirmTask.autoConfirmReceipt();
 

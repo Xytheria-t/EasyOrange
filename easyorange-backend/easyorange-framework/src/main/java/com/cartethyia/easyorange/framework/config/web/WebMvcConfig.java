@@ -24,19 +24,19 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         var registration = registry.addInterceptor(loggingInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns(webMvcProperties.getExcludePaths().toArray(String[]::new));
-        if (webMvcProperties.getInterceptorOrder() != 0) {
-            registration.order(webMvcProperties.getInterceptorOrder());
+                .excludePathPatterns(webMvcProperties.excludePaths().toArray(String[]::new));
+        if (webMvcProperties.interceptorOrder() != 0) {
+            registration.order(webMvcProperties.interceptorOrder());
         }
     }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String absoluteUploadPath = Paths.get(fileUploadProperties.getPath())
+        String absoluteUploadPath = Paths.get(fileUploadProperties.path())
                 .toAbsolutePath()
                 .normalize()
                 .toString();
-        String urlPrefix = fileUploadProperties.getUrlPrefix();
+        String urlPrefix = fileUploadProperties.urlPrefix();
         String urlPattern = urlPrefix.endsWith("/") ? urlPrefix + "**" : urlPrefix + "/**";
 
         registry.addResourceHandler(urlPattern).addResourceLocations("file:" + absoluteUploadPath + "/");

@@ -22,7 +22,7 @@ public class RefreshCookie {
 
     public void write(HttpServletResponse response, String refreshToken) {
         long maxAgeSeconds =
-                Duration.ofDays(jwtProperties.getRefreshTokenExpiration()).getSeconds();
+                Duration.ofDays(jwtProperties.refreshTokenExpiration()).getSeconds();
         response.addHeader(
                 HttpHeaders.SET_COOKIE, build(refreshToken, maxAgeSeconds).toString());
     }
@@ -32,11 +32,11 @@ public class RefreshCookie {
     }
 
     private ResponseCookie build(String value, long maxAgeSeconds) {
-        return ResponseCookie.from(jwtProperties.getRefreshCookieName(), value)
+        return ResponseCookie.from(jwtProperties.refreshCookieName(), value)
                 .httpOnly(true)
-                .secure(jwtProperties.isRefreshCookieSecure())
-                .sameSite(jwtProperties.getRefreshCookieSameSite())
-                .path(jwtProperties.getRefreshCookiePath())
+                .secure(jwtProperties.refreshCookieSecure())
+                .sameSite(jwtProperties.refreshCookieSameSite())
+                .path(jwtProperties.refreshCookiePath())
                 .maxAge(Duration.ofSeconds(maxAgeSeconds))
                 .build();
     }

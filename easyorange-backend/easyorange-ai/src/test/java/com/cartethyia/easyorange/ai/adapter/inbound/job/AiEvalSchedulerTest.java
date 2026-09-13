@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.job;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -8,6 +7,7 @@ import com.cartethyia.easyorange.ai.adapter.outbound.AiCallLogRecorder;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.service.AiJudge;
 import com.cartethyia.easyorange.ai.service.AiModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,17 +34,18 @@ class AiEvalSchedulerTest {
     @Mock
     private ChatModel chatModel;
 
-    private AiProperties aiProperties;
-
     private AiEvalScheduler scheduler;
 
     @BeforeEach
     void setUp() {
-        aiProperties = new AiProperties();
-        scheduler = new AiEvalScheduler(
+        scheduler = scheduler(false);
+    }
+
+    private AiEvalScheduler scheduler(boolean evalEnabled) {
+        return new AiEvalScheduler(
                 jdbcTemplate,
                 new AiJudge(chatModel, new AiModelSupport(mock(AiCallLogRecorder.class)), new ObjectMapper()),
-                aiProperties);
+                PropertyBindings.bind(AiProperties.class, "eval.enabled", String.valueOf(evalEnabled)));
     }
 
     private static ChatResponse textResponse(String text) {
@@ -54,7 +55,7 @@ class AiEvalSchedulerTest {
     @Test
     @DisplayName("开关关闭 -> 不查询不评估")
     void eval_disabled_skips() {
-        aiProperties.getEval().setEnabled(false);
+        scheduler = scheduler(false);
 
         scheduler.evaluateUnjudgedCalls();
 
@@ -64,7 +65,7 @@ class AiEvalSchedulerTest {
     @Test
     @DisplayName("无待评估记录 -> 直接返回")
     void eval_noCandidates() {
-        aiProperties.getEval().setEnabled(true);
+        scheduler = scheduler(true);
         when(jdbcTemplate.queryForList(anyString(), any(Integer.class))).thenReturn(List.of());
 
         scheduler.evaluateUnjudgedCalls();
@@ -76,7 +77,7 @@ class AiEvalSchedulerTest {
     @Test
     @DisplayName("Judge 打分 -> 回写 score + comment")
     void eval_judgesAndUpdates() {
-        aiProperties.getEval().setEnabled(true);
+        scheduler = scheduler(true);
         when(jdbcTemplate.queryForList(anyString(), any(Integer.class)))
                 .thenReturn(List.of(Map.of("id", "log-1", "scope", "PRICING", "response_text", "{\"price\":100}")));
         when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"score\": 4, \"comment\": \"定价合理准确\"}"));
@@ -89,7 +90,7 @@ class AiEvalSchedulerTest {
     @Test
     @DisplayName("Judge 输出非法分数 -> 跳过该条不写脏数据")
     void eval_invalidScore_skips() {
-        aiProperties.getEval().setEnabled(true);
+        scheduler = scheduler(true);
         when(jdbcTemplate.queryForList(anyString(), any(Integer.class)))
                 .thenReturn(List.of(Map.of("id", "log-1", "scope", "QA", "response_text", "ok")));
         when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"score\": 99, \"comment\": \"bad\"}"));
@@ -102,7 +103,7 @@ class AiEvalSchedulerTest {
     @Test
     @DisplayName("Judge 输出非 JSON -> 跳过该条")
     void eval_unparseable_skips() {
-        aiProperties.getEval().setEnabled(true);
+        scheduler = scheduler(true);
         when(jdbcTemplate.queryForList(anyString(), any(Integer.class)))
                 .thenReturn(List.of(Map.of("id", "log-1", "scope", "QA", "response_text", "ok")));
         when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("我不知道怎么评价"));
@@ -115,12 +116,11 @@ class AiEvalSchedulerTest {
     @Test
     @DisplayName("查询失败 -> 告警返回不抛异常")
     void eval_queryFailure_swallowed() {
-        aiProperties.getEval().setEnabled(true);
+        scheduler = scheduler(true);
         when(jdbcTemplate.queryForList(anyString(), any(Integer.class))).thenThrow(new RuntimeException("db down"));
 
         scheduler.evaluateUnjudgedCalls();
 
-        assertThat(aiProperties.getEval().isEnabled()).isTrue();
         verifyNoInteractions(chatModel);
     }
 }

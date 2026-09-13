@@ -50,29 +50,29 @@ public class IdempotencyKeyFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        if (!properties.isEnabled()) {
+        if (!properties.enabled()) {
             return true;
         }
-        if (!properties.getMethods().contains(request.getMethod())) {
+        if (!properties.methods().contains(request.getMethod())) {
             return true;
         }
-        String key = request.getHeader(properties.getHeaderName());
+        String key = request.getHeader(properties.headerName());
         if (key == null || key.isBlank()) {
             return true;
         }
-        return properties.getPathPatterns().stream()
+        return properties.pathPatterns().stream()
                 .noneMatch(pattern -> PATH_MATCHER.match(pattern, request.getRequestURI()));
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String key = request.getHeader(properties.getHeaderName());
+        String key = request.getHeader(properties.headerName());
         ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
         try {
             CachedResponse cached = idempotencyService.execute(
                     key,
-                    properties.getDefaultTtlSeconds(),
+                    properties.defaultTtlSeconds(),
                     () -> executeAndCapture(request, response, wrappedResponse, filterChain));
             replay(response, cached);
         } catch (NonCacheableResponseException e) {

@@ -1,9 +1,12 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
-import java.util.ArrayList;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
-import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
+import org.springframework.validation.annotation.Validated;
 
 /**
  * Filter-based 限流配置属性
@@ -33,67 +36,77 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *     methods: [POST, PUT, DELETE, PATCH]
  * }</pre>
  */
-@Data
+@Validated
 @ConfigurationProperties(prefix = "rate-limit-filter")
-public class RateLimitFilterProperties {
+public record RateLimitFilterProperties(
+        @DefaultValue("true") boolean enabled,
 
-    private boolean enabled = true;
+        @Valid List<Rule> rules,
 
-    private List<Rule> rules = new ArrayList<>();
+        @Valid RepeatSubmitConfig repeatSubmit) {
 
-    private RepeatSubmitConfig repeatSubmit = new RepeatSubmitConfig();
-
-    @Data
-    public static class Rule {
-
-        /**
-         * Ant 风格路径模式，如 /api/products、/api/**
-         */
-        private String pathPattern;
-
-        /**
-         * HTTP 方法列表（不区分大小写），如 GET、POST。
-         * 为空表示匹配所有方法。
-         */
-        private List<String> methods = new ArrayList<>();
-
-        /**
-         * local（本地内存）或 redis（分布式）
-         */
-        private String strategy = "redis";
-
-        /**
-         * 窗口内最大请求数
-         */
-        private int maxRequests = 100;
-
-        /**
-         * 时间窗口（秒）
-         */
-        private int windowSeconds = 60;
-
-        /**
-         * 限流触发时的提示信息
-         */
-        private String message = "请求过于频繁，请稍后重试";
+    public RateLimitFilterProperties {
+        rules = rules == null ? List.of() : List.copyOf(rules);
+        if (repeatSubmit == null) {
+            repeatSubmit = new RepeatSubmitConfig(true, 3000L, "不允许重复提交", List.of());
+        }
     }
 
-    @Data
-    public static class RepeatSubmitConfig {
+    public record Rule(
+            /**
+             * Ant 风格路径模式，如 /api/products、/api/**
+             */
+            @NotBlank String pathPattern,
 
-        private boolean enabled = true;
+            /**
+             * HTTP 方法列表（不区分大小写），如 GET、POST。
+             * 为空表示匹配所有方法。
+             */
+            List<String> methods,
 
-        /**
-         * 防重间隔（毫秒）
-         */
-        private long intervalMs = 3000;
+            /**
+             * local（本地内存）或 redis（分布式）
+             */
+            @DefaultValue("redis") String strategy,
 
-        private String message = "不允许重复提交";
+            /**
+             * 窗口内最大请求数
+             */
+            @Min(1) @DefaultValue("100") int maxRequests,
 
-        /**
-         * 需要防重的 HTTP 方法（不区分大小写）。
-         * 为空表示所有写操作方法（POST/PUT/DELETE/PATCH）。
-         */
-        private List<String> methods = new ArrayList<>();
+            /**
+             * 时间窗口（秒）
+             */
+            @Min(1) @DefaultValue("60") int windowSeconds,
+
+            /**
+             * 限流触发时的提示信息
+             */
+            @DefaultValue("请求过于频繁，请稍后重试") String message) {
+
+        public Rule {
+            methods = methods == null ? List.of() : List.copyOf(methods);
+        }
+    }
+
+    public record RepeatSubmitConfig(
+            @DefaultValue("true") boolean enabled,
+
+            /**
+             * 防重间隔（毫秒）
+             */
+            @Min(1) @DefaultValue("3000") long intervalMs,
+
+            @DefaultValue("不允许重复提交") String message,
+
+            /**
+             * 需要防重的 HTTP 方法（不区分大小写）。
+             * 为空表示所有写操作方法（POST/PUT/DELETE/PATCH）。
+             */
+            List<String> methods) {
+
+        public RepeatSubmitConfig {
+            methods = methods == null ? List.of() : List.copyOf(methods);
+        }
     }
 }

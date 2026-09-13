@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.framework.config.properties.LockProperties;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,7 +45,7 @@ class DistributedLockAdapterTest {
 
     @BeforeEach
     void setUp() {
-        adapter = new DistributedRedissonLockAdapter(redissonClient, new LockProperties());
+        adapter = new DistributedRedissonLockAdapter(redissonClient, new LockProperties(Duration.ofSeconds(60)));
         when(lock1.isHeldByCurrentThread()).thenReturn(true);
         when(lock2.isHeldByCurrentThread()).thenReturn(true);
     }

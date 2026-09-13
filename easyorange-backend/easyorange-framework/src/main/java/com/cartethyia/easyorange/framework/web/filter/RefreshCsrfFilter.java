@@ -35,8 +35,7 @@ public class RefreshCsrfFilter extends OncePerRequestFilter {
         if (!"POST".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
-        return securityProperties.getCsrfProtectedPaths().stream()
-                .noneMatch(path -> path.equals(request.getRequestURI()));
+        return securityProperties.csrfProtectedPaths().stream().noneMatch(path -> path.equals(request.getRequestURI()));
     }
 
     @Override

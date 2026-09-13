@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.service.AiModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -54,13 +55,15 @@ class SemanticCacheServiceTest {
     @Mock
     private AiModelSupport aiModelSupport;
 
-    private AiProperties aiProperties;
     private SemanticCacheService cache;
 
     @BeforeEach
     void setUp() {
-        aiProperties = new AiProperties();
-        cache = new SemanticCacheService(
+        cache = cache(PropertyBindings.bind(AiProperties.class));
+    }
+
+    private SemanticCacheService cache(AiProperties aiProperties) {
+        return new SemanticCacheService(
                 redisProvider, embeddingModelProvider, aiModelSupport, aiProperties, new ObjectMapper());
     }
 
@@ -135,7 +138,7 @@ class SemanticCacheServiceTest {
     @Test
     @DisplayName("关闭缓存 -> 直接未命中")
     void disabled() {
-        aiProperties.getSemanticCache().setEnabled(false);
+        cache = cache(PropertyBindings.bind(AiProperties.class, "semantic-cache.enabled", "false"));
 
         assertThat(cache.get(AiCallScope.CHAT, "问题", ChatAnswer.class)).isEmpty();
 
@@ -147,7 +150,11 @@ class SemanticCacheServiceTest {
     @DisplayName("Redis 不可用 -> 未命中（fail-open）")
     void noRedis() {
         SemanticCacheService cacheNoRedis = new SemanticCacheService(
-                mock(ObjectProvider.class), embeddingModelProvider, aiModelSupport, aiProperties, new ObjectMapper());
+                mock(ObjectProvider.class),
+                embeddingModelProvider,
+                aiModelSupport,
+                PropertyBindings.bind(AiProperties.class),
+                new ObjectMapper());
 
         assertThat(cacheNoRedis.get(AiCallScope.CHAT, "问题", ChatAnswer.class)).isEmpty();
     }

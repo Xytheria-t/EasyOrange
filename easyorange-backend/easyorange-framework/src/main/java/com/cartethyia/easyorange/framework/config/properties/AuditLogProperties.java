@@ -6,8 +6,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 /**
@@ -24,86 +24,93 @@ import org.springframework.validation.annotation.Validated;
  *   retention-days: 180
  * }</pre>
  */
-@Data
 @Validated
 @ConfigurationProperties(prefix = "audit")
-public class AuditLogProperties {
+public record AuditLogProperties(
+        /**
+         * 是否启用审计日志记录
+         * <p>
+         * 默认为 true，设置为 false 时完全禁用日志记录功能
+         * </p>
+         */
+        @DefaultValue("true") boolean enabled,
 
-    /**
-     * 是否启用审计日志记录
-     * <p>
-     * 默认为 true，设置为 false 时完全禁用日志记录功能
-     * </p>
-     */
-    private boolean enabled = true;
+        /**
+         * 审计日志保留天数，超期由 AuditLogCleanupTask 每日清理。
+         */
+        @Min(1) @DefaultValue("180") int retentionDays,
 
-    /**
-     * 审计日志保留天数，超期由 AuditLogCleanupTask 每日清理。
-     */
-    @Min(1)
-    private int retentionDays = 180;
+        /**
+         * 是否保存请求数据
+         * <p>
+         * 默认为 true，保存请求参数到 oper_param 字段
+         * </p>
+         */
+        @DefaultValue("true") boolean saveRequestData,
 
-    /**
-     * 是否保存请求数据
-     * <p>
-     * 默认为 true，保存请求参数到 oper_param 字段
-     * </p>
-     */
-    private boolean saveRequestData = true;
+        /**
+         * 是否保存响应数据
+         * <p>
+         * 默认为 false，设置为 true 时会保存 JSON 响应到 json_result 字段
+         * 注意：开启此选项会增加数据库存储压力，生产环境建议保持关闭
+         * </p>
+         */
+        @DefaultValue("false") boolean saveResponseData,
 
-    /**
-     * 是否保存响应数据
-     * <p>
-     * 默认为 false，设置为 true 时会保存 JSON 响应到 json_result 字段
-     * 注意：开启此选项会增加数据库存储压力，生产环境建议保持关闭
-     * </p>
-     */
-    private boolean saveResponseData = false;
+        /**
+         * 不记录日志的读操作方法名前缀列表
+         * <p>
+         * 方法名以这些前缀开头时跳过日志记录。
+         * 默认覆盖常见地查询前缀。
+         * </p>
+         */
+        List<String> skipPrefixes,
 
-    /**
-     * 不记录日志的读操作方法名前缀列表
-     * <p>
-     * 方法名以这些前缀开头时跳过日志记录。
-     * 默认覆盖常见地查询前缀。
-     * </p>
-     */
-    private List<String> skipPrefixes =
-            List.of("get", "query", "find", "list", "detail", "search", "count", "check", "exists", "stats", "my");
+        /**
+         * 请求参数中需要掩码的敏感字段名列表
+         * <p>
+         * 记录请求数据时，这些字段的值会被替换为 ******。
+         * </p>
+         */
+        List<String> sensitiveFields,
 
-    /**
-     * 请求参数中需要掩码的敏感字段名列表
-     * <p>
-     * 记录请求数据时，这些字段的值会被替换为 ******。
-     * </p>
-     */
-    private List<String> sensitiveFields = List.of(
-            "password",
-            "confirmPassword",
-            "oldPassword",
-            "newPassword",
-            "token",
-            "secret",
-            "secretKey",
-            "accessToken",
-            "refreshToken");
+        /**
+         * Controller 类名 → 中文模块名称映射
+         * <p>
+         * 用于从 Controller 类名推导审计日志的模块字段。
+         * 按长优先匹配（如 "ProductReport" 优先于 "Product"）。
+         * </p>
+         */
+        Map<String, String> moduleNames,
 
-    /**
-     * Controller 类名 → 中文模块名称映射
-     * <p>
-     * 用于从 Controller 类名推导审计日志的模块字段。
-     * 按长优先匹配（如 "ProductReport" 优先于 "Product"）。
-     * </p>
-     */
-    private Map<String, String> moduleNames = defaultModuleNames();
+        /**
+         * 方法名前缀 → 操作映射（标题 + 业务类型）
+         * <p>
+         * 审计日志推导的单一事实来源：从方法名前缀同时推导操作标题与业务类型，
+         * 避免标题映射与类型映射两套表各自维护而漂移。按长优先匹配。
+         * </p>
+         */
+        Map<String, MethodMapping> methodMappings) {
 
-    /**
-     * 方法名前缀 → 操作映射（标题 + 业务类型）
-     * <p>
-     * 审计日志推导的单一事实来源：从方法名前缀同时推导操作标题与业务类型，
-     * 避免标题映射与类型映射两套表各自维护而漂移。按长优先匹配。
-     * </p>
-     */
-    private Map<String, MethodMapping> methodMappings = defaultMethodMappings();
+    public AuditLogProperties {
+        skipPrefixes = skipPrefixes == null
+                ? List.of("get", "query", "find", "list", "detail", "search", "count", "check", "exists", "stats", "my")
+                : List.copyOf(skipPrefixes);
+        sensitiveFields = sensitiveFields == null
+                ? List.of(
+                        "password",
+                        "confirmPassword",
+                        "oldPassword",
+                        "newPassword",
+                        "token",
+                        "secret",
+                        "secretKey",
+                        "accessToken",
+                        "refreshToken")
+                : List.copyOf(sensitiveFields);
+        moduleNames = Map.copyOf(moduleNames == null ? defaultModuleNames() : moduleNames);
+        methodMappings = Map.copyOf(methodMappings == null ? defaultMethodMappings() : methodMappings);
+    }
 
     private static Map<String, String> defaultModuleNames() {
         var map = new LinkedHashMap<String, String>();
@@ -191,14 +198,6 @@ public class AuditLogProperties {
         map.put("download", new MethodMapping("下载", BusinessType.OTHER));
 
         return map;
-    }
-
-    public Map<String, String> getModuleNames() {
-        return Map.copyOf(moduleNames);
-    }
-
-    public Map<String, MethodMapping> getMethodMappings() {
-        return Map.copyOf(methodMappings);
     }
 
     /**

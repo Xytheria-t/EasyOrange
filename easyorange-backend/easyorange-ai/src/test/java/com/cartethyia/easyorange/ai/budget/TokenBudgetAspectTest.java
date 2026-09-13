@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,7 +28,7 @@ class TokenBudgetAspectTest {
     @BeforeEach
     void setUp() {
         store = new InMemoryTokenBudgetStore();
-        aiProperties = new AiProperties();
+        aiProperties = PropertyBindings.bind(AiProperties.class);
         aspect = new TokenBudgetAspect(store, aiProperties);
     }
 
@@ -117,10 +118,13 @@ class TokenBudgetAspectTest {
     @DisplayName("配置覆盖注解默认值 — scenarios 中存在条目时用配置值")
     void aroundBudget_configOverridesAnnotation() throws Throwable {
         // 配置：pricing 场景日预算 200，单次上限 50
-        var scenarioBudget = new AiProperties.Budget.ScenarioBudget();
-        scenarioBudget.setMaxTokensPerCall(50);
-        scenarioBudget.setDailyTokenLimit(200);
-        aiProperties.getBudget().getScenarios().put("pricing", scenarioBudget);
+        aiProperties = PropertyBindings.bind(
+                AiProperties.class,
+                "budget.scenarios.pricing.max-tokens-per-call",
+                "50",
+                "budget.scenarios.pricing.daily-token-limit",
+                "200");
+        aspect = new TokenBudgetAspect(store, aiProperties);
 
         // 注解声明 1000/10000（应被配置覆盖，仅 scenario() 会被读取）
         var annotation = mock(TokenBudget.class);

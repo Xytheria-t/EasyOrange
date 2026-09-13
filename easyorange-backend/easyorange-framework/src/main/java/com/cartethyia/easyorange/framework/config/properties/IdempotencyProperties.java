@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.framework.config.properties;
 import jakarta.validation.constraints.Min;
 import java.util.List;
 import java.util.Set;
-import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 /**
@@ -27,35 +27,35 @@ import org.springframework.validation.annotation.Validated;
  *   lock-poll-interval-ms: 100
  * }</pre>
  */
-@Data
 @Validated
 @ConfigurationProperties(prefix = "idempotency")
-public class IdempotencyProperties {
+public record IdempotencyProperties(
+        /** 是否启用 Idempotency-Key 幂等保护。 */
+        @DefaultValue("true") boolean enabled,
 
-    /** 是否启用 Idempotency-Key 幂等保护。 */
-    private boolean enabled = true;
+        /** 幂等 key 所在请求头名称。 */
+        @DefaultValue("Idempotency-Key") String headerName,
 
-    /** 幂等 key 所在请求头名称。 */
-    private String headerName = "Idempotency-Key";
+        /** 启用幂等保护的路径模式（Ant 风格，如 {@code /api/orders}）。空列表视为不启用。 */
+        List<String> pathPatterns,
 
-    /** 启用幂等保护的路径模式（Ant 风格，如 {@code /api/orders}）。空列表视为不启用。 */
-    private List<String> pathPatterns = List.of();
+        /** 启用幂等保护的 HTTP 方法。 */
+        Set<String> methods,
 
-    /** 启用幂等保护的 HTTP 方法。 */
-    private Set<String> methods = Set.of("POST", "PUT", "PATCH");
+        /** Redis key 前缀。 */
+        @DefaultValue("eo:idempotency") String keyPrefix,
 
-    /** Redis key 前缀。 */
-    private String keyPrefix = "eo:idempotency";
+        /** 默认缓存 TTL（秒），24 小时。 */
+        @Min(1) @DefaultValue("86400") long defaultTtlSeconds,
 
-    /** 默认缓存 TTL（秒），24 小时。 */
-    @Min(1)
-    private long defaultTtlSeconds = 86400;
+        /** 处理锁 TTL（秒）。超过该时长仍未完成视为持有者崩溃，允许其它请求重新执行。 */
+        @Min(1) @DefaultValue("30") long lockTtlSeconds,
 
-    /** 处理锁 TTL（秒）。超过该时长仍未完成视为持有者崩溃，允许其它请求重新执行。 */
-    @Min(1)
-    private long lockTtlSeconds = 30;
+        /** 输家轮询等待赢家结果的时间间隔（毫秒）。 */
+        @Min(1) @DefaultValue("100") long lockPollIntervalMs) {
 
-    /** 输家轮询等待赢家结果的时间间隔（毫秒）。 */
-    @Min(1)
-    private long lockPollIntervalMs = 100;
+    public IdempotencyProperties {
+        pathPatterns = pathPatterns == null ? List.of() : List.copyOf(pathPatterns);
+        methods = methods == null ? Set.of("POST", "PUT", "PATCH") : Set.copyOf(methods);
+    }
 }

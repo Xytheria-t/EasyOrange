@@ -22,6 +22,7 @@ import com.cartethyia.easyorange.ai.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.knowledge.KnowledgeHit;
 import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
 import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
+import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -82,7 +83,7 @@ class AiChatServiceTest {
 
     @BeforeEach
     void setUp() {
-        aiProperties = new AiProperties();
+        aiProperties = PropertyBindings.bind(AiProperties.class);
         staleCache = Caffeine.newBuilder().build();
         chatService = new AiChatService(
                 chatModel,

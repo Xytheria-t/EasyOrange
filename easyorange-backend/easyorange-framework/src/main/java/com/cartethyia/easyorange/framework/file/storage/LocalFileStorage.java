@@ -29,7 +29,7 @@ public class LocalFileStorage implements FileStorage {
 
     @PostConstruct
     void init() {
-        this.basePath = Paths.get(fileUploadProperties.getPath()).normalize();
+        this.basePath = Paths.get(fileUploadProperties.path()).normalize();
     }
 
     @Override
@@ -60,7 +60,7 @@ public class LocalFileStorage implements FileStorage {
 
     @Override
     public String getUrl(String identifier) {
-        return fileUploadProperties.getUrlPrefix() + identifier.replace("\\", "/");
+        return fileUploadProperties.urlPrefix() + identifier.replace("\\", "/");
     }
 
     private Path securePath(String identifier) {

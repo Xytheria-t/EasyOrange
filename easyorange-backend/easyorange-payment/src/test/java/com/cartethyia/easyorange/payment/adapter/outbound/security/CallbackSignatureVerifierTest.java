@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,13 +17,11 @@ import org.junit.jupiter.api.Test;
 class CallbackSignatureVerifierTest {
 
     private static final String SECRET = "test-secret";
-    private final PaymentCallbackProperties properties = new PaymentCallbackProperties();
-    private final CallbackSignatureVerifier verifier = new CallbackSignatureVerifier(properties);
 
-    @BeforeEach
-    void setUp() {
-        properties.setSecret(SECRET);
-        properties.setVerifyEnabled(true);
+    private final CallbackSignatureVerifier verifier = verifier(true);
+
+    private static CallbackSignatureVerifier verifier(boolean verifyEnabled) {
+        return new CallbackSignatureVerifier(new PaymentCallbackProperties(SECRET, verifyEnabled));
     }
 
     private String hmac(String data) throws Exception {
@@ -62,9 +59,8 @@ class CallbackSignatureVerifierTest {
         @Test
         @DisplayName("校验开关关闭时直接放行")
         void verify_disabled_passesThrough() throws Exception {
-            properties.setVerifyEnabled(false);
-
-            assertThatCode(() -> verifier.verify("PAY123", "TXN_1", "anything")).doesNotThrowAnyException();
+            assertThatCode(() -> verifier(false).verify("PAY123", "TXN_1", "anything"))
+                    .doesNotThrowAnyException();
         }
     }
 }

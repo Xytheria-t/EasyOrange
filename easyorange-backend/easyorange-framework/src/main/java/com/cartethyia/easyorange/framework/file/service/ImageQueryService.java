@@ -177,7 +177,7 @@ public class ImageQueryService {
 
     private ProcessCacheEntry getCachedOrProcessForThumbnail(
             File originalFile, String fileId, int size, String ifNoneMatch) throws IOException {
-        var quality = imageProcessingProperties.getThumbnailQuality();
+        var quality = imageProcessingProperties.thumbnailQuality();
         var cacheKey = buildCacheKey(fileId, size, size, ImageFormat.WEBP, quality);
         var cached = getFromCache(cacheKey);
         if (cached != null) {

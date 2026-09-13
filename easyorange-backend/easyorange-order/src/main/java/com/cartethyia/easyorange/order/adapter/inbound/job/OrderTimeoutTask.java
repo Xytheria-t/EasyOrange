@@ -29,11 +29,11 @@ public class OrderTimeoutTask {
 
     @Scheduled(cron = "${order.timeout.cron:0 */5 * * * ?}")
     public void cancelExpiredOrders() {
-        if (!properties.isEnabled()) {
+        if (!properties.enabled()) {
             return;
         }
 
-        List<Order> expiredOrders = orderRepository.findExpiredOrders(properties.getTimeoutMinutes());
+        List<Order> expiredOrders = orderRepository.findExpiredOrders(properties.timeoutMinutes());
         migrationExecutor.execute("订单超时取消", CANCEL_LOCK_PREFIX, expiredOrders, this::cancelExpiredOrder);
     }
 

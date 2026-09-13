@@ -69,10 +69,10 @@ public class TokenServiceImpl implements TokenService {
     public String createAccessToken(String userId, String username, Collection<String> authorities) {
         var jti = UUID.randomUUID().toString().replace("-", "");
         var claims = JwtClaimsSet.builder()
-                .issuer(jwtProperties.getIssuer())
+                .issuer(jwtProperties.issuer())
                 .subject(userId)
                 .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plus(jwtProperties.getAccessTokenExpiration(), ChronoUnit.MINUTES))
+                .expiresAt(Instant.now().plus(jwtProperties.accessTokenExpiration(), ChronoUnit.MINUTES))
                 .claim("jti", jti)
                 .claim("type", ACCESS_TOKEN_TYPE)
                 .claim("username", username != null ? username : "")
@@ -178,7 +178,7 @@ public class TokenServiceImpl implements TokenService {
                 .set(
                         getForceLogoutKey(userId),
                         String.valueOf(System.currentTimeMillis()),
-                        jwtProperties.getAccessTokenExpiration(),
+                        jwtProperties.accessTokenExpiration(),
                         TimeUnit.MINUTES);
     }
 
@@ -201,7 +201,7 @@ public class TokenServiceImpl implements TokenService {
     }
 
     private long ttlSeconds() {
-        return Duration.ofDays(jwtProperties.getRefreshTokenExpiration()).getSeconds();
+        return Duration.ofDays(jwtProperties.refreshTokenExpiration()).getSeconds();
     }
 
     private static String generateToken() {

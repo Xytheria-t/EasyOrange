@@ -9,13 +9,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.framework.config.properties.IdempotencyProperties;
+import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.framework.web.idempotency.CachedResponse;
 import com.cartethyia.easyorange.framework.web.idempotency.IdempotencyService;
 import com.cartethyia.easyorange.framework.web.idempotency.IdempotentOperation;
 import jakarta.servlet.FilterChain;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,16 +45,15 @@ class IdempotencyKeyFilterTest {
     @Mock
     private IdempotencyService idempotencyService;
 
-    private IdempotencyProperties properties;
     private IdempotencyKeyFilter filter;
 
     @BeforeEach
     void setUp() {
-        properties = new IdempotencyProperties();
-        properties.setEnabled(true);
-        properties.setPathPatterns(List.of("/api/orders"));
-        properties.setMethods(Set.of("POST", "PUT", "PATCH"));
-        filter = new IdempotencyKeyFilter(idempotencyService, properties);
+        filter = newFilter(PropertyBindings.bind(IdempotencyProperties.class, "path-patterns[0]", "/api/orders"));
+    }
+
+    private IdempotencyKeyFilter newFilter(IdempotencyProperties properties) {
+        return new IdempotencyKeyFilter(idempotencyService, properties);
     }
 
     private MockHttpServletRequest keyedWriteRequest() {
@@ -69,7 +67,7 @@ class IdempotencyKeyFilterTest {
     @Test
     @DisplayName("禁用时透传，不调用幂等服务")
     void disabled_passesThrough() throws Exception {
-        properties.setEnabled(false);
+        filter = newFilter(PropertyBindings.bind(IdempotencyProperties.class, "enabled", "false"));
         var invoked = new AtomicBoolean(false);
 
         filter.doFilter(keyedWriteRequest(), new MockHttpServletResponse(), (r, s) -> invoked.set(true));

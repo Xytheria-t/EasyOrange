@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.framework.config.properties.IdempotencyProperties;
+import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -68,7 +69,7 @@ class IdempotencyServiceTest {
         when(redisTemplate.opsForValue()).thenReturn(vo);
         when(redisTemplate.delete(anyString())).thenAnswer(inv -> store.remove(inv.getArgument(0)) != null);
 
-        IdempotencyProperties properties = new IdempotencyProperties();
+        var properties = PropertyBindings.bind(IdempotencyProperties.class);
         service = new IdempotencyService(redisTemplate, properties);
     }
 

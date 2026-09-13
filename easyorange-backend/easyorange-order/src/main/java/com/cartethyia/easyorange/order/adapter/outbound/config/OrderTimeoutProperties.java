@@ -1,15 +1,16 @@
 package com.cartethyia.easyorange.order.adapter.outbound.config;
 
-import lombok.Data;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
+import org.springframework.validation.annotation.Validated;
 
-@Data
+@Validated
 @ConfigurationProperties(prefix = "order.timeout")
-public class OrderTimeoutProperties {
+public record OrderTimeoutProperties(
+        @DefaultValue("true") boolean enabled,
 
-    private boolean enabled = true;
+        @Min(1) @DefaultValue("30") int timeoutMinutes,
 
-    private int timeoutMinutes = 30;
-
-    private String cron = "0 */5 * * * ?";
-}
+        @NotBlank @DefaultValue("0 */5 * * * ?") String cron) {}

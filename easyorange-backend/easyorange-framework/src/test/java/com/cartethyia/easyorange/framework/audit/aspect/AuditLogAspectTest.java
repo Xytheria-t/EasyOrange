@@ -19,6 +19,7 @@ import com.cartethyia.easyorange.framework.audit.entity.AuditLog;
 import com.cartethyia.easyorange.framework.audit.event.AuditLogEvent;
 import com.cartethyia.easyorange.framework.audit.service.AuditLogService;
 import com.cartethyia.easyorange.framework.config.properties.AuditLogProperties;
+import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
@@ -63,9 +64,8 @@ class AuditLogAspectTest {
 
     @BeforeEach
     void setUp() {
-        properties = new AuditLogProperties();
-        aspect =
-                new AuditLogAspect(auditLogService, properties, objectMapper, domainEventPublisher, transactionManager);
+        properties = PropertyBindings.bind(AuditLogProperties.class);
+        aspect = newAspect(properties);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request, null));
         // lenient：读操作跳过等路径不会触达 request，避免未用桩报错
         lenient().when(request.getMethod()).thenReturn("POST");
@@ -79,6 +79,10 @@ class AuditLogAspectTest {
     void tearDown() {
         RequestContextHolder.resetRequestAttributes();
         SecurityContextHolder.clearContext();
+    }
+
+    private AuditLogAspect newAspect(AuditLogProperties properties) {
+        return new AuditLogAspect(auditLogService, properties, objectMapper, domainEventPublisher, transactionManager);
     }
 
     // ───────────────────────── Test fixtures ─────────────────────────
@@ -128,7 +132,7 @@ class AuditLogAspectTest {
         @Test
         @DisplayName("enabled=false 时放行且不发布事件、不落库")
         void aroundLog_whenDisabled_doesNothing() throws Throwable {
-            properties.setEnabled(false);
+            aspect = newAspect(PropertyBindings.bind(AuditLogProperties.class, "enabled", "false"));
             var joinPoint = joinPoint("create", new CreateRequest("手机", "p@ssw0rd"));
             when(joinPoint.proceed()).thenReturn("ok");
 
@@ -247,7 +251,7 @@ class AuditLogAspectTest {
         @Test
         @DisplayName("save-request-data=false 时不保存请求参数")
         void aroundLog_whenSaveRequestDataDisabled_paramsNull() throws Throwable {
-            properties.setSaveRequestData(false);
+            aspect = newAspect(PropertyBindings.bind(AuditLogProperties.class, "save-request-data", "false"));
             var joinPoint = joinPoint("create", new CreateRequest("手机", "p@ssw0rd"));
             when(joinPoint.proceed()).thenReturn("ok");
 
@@ -259,7 +263,7 @@ class AuditLogAspectTest {
         @Test
         @DisplayName("save-response-data=true 时响应数据被掩码")
         void aroundLog_whenSaveResponseData_responseMasked() throws Throwable {
-            properties.setSaveResponseData(true);
+            aspect = newAspect(PropertyBindings.bind(AuditLogProperties.class, "save-response-data", "true"));
             var joinPoint = joinPoint("create", new CreateRequest("手机", "p@ssw0rd"));
             when(joinPoint.proceed()).thenReturn(new LoginResult("A0000", "jwt-token-123"));
 

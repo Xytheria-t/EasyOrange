@@ -44,19 +44,14 @@ public class AiModelConfig {
     @Bean
     @Primary
     public ChatModel chatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
-        var deepseek = props.getDeepseek();
-        if (hasNoText(deepseek.getApiKey())) {
+        var deepseek = props.deepseek();
+        if (hasNoText(deepseek.apiKey())) {
             return new UnconfiguredChatModel("easyorange.ai.deepseek.api-key 为空，请配置 DEEPSEEK_API_KEY");
         }
         return OpenAiChatModel.builder()
                 .openAiClient(syncClient(
-                        deepseek.getBaseUrl(),
-                        deepseek.getApiKey(),
-                        deepseek.getModel(),
-                        deepseek.getTimeout(),
-                        obs,
-                        meters))
-                .options(OpenAiChatOptions.builder().model(deepseek.getModel()).build())
+                        deepseek.baseUrl(), deepseek.apiKey(), deepseek.model(), deepseek.timeout(), obs, meters))
+                .options(OpenAiChatOptions.builder().model(deepseek.model()).build())
                 .observationRegistry(obs)
                 .build();
     }
@@ -66,14 +61,14 @@ public class AiModelConfig {
      */
     @Bean
     public ChatModel visionChatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
-        var qwenVl = props.getQwenVl();
-        if (hasNoText(qwenVl.getApiKey())) {
+        var qwenVl = props.qwenVl();
+        if (hasNoText(qwenVl.apiKey())) {
             return new UnconfiguredChatModel("easyorange.ai.qwen-vl.api-key 为空，请配置 QWEN_VL_API_KEY");
         }
         return OpenAiChatModel.builder()
-                .openAiClient(syncClient(
-                        qwenVl.getBaseUrl(), qwenVl.getApiKey(), qwenVl.getModel(), qwenVl.getTimeout(), obs, meters))
-                .options(OpenAiChatOptions.builder().model(qwenVl.getModel()).build())
+                .openAiClient(
+                        syncClient(qwenVl.baseUrl(), qwenVl.apiKey(), qwenVl.model(), qwenVl.timeout(), obs, meters))
+                .options(OpenAiChatOptions.builder().model(qwenVl.model()).build())
                 .observationRegistry(obs)
                 .build();
     }
@@ -83,21 +78,16 @@ public class AiModelConfig {
      */
     @Bean
     public EmbeddingModel embeddingModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
-        var embedding = props.getEmbedding();
-        if (hasNoText(embedding.getApiKey())) {
+        var embedding = props.embedding();
+        if (hasNoText(embedding.apiKey())) {
             return new UnconfiguredEmbeddingModel("easyorange.ai.embedding.api-key 为空，请配置 EMBEDDING_API_KEY");
         }
         return OpenAiEmbeddingModel.builder()
                 .openAiClient(syncClient(
-                        embedding.getBaseUrl(),
-                        embedding.getApiKey(),
-                        embedding.getModel(),
-                        embedding.getTimeout(),
-                        obs,
-                        meters))
+                        embedding.baseUrl(), embedding.apiKey(), embedding.model(), embedding.timeout(), obs, meters))
                 .options(OpenAiEmbeddingOptions.builder()
-                        .model(embedding.getModel())
-                        .dimensions(embedding.getDimensions())
+                        .model(embedding.model())
+                        .dimensions(embedding.dimensions())
                         .build())
                 .observationRegistry(obs)
                 .build();

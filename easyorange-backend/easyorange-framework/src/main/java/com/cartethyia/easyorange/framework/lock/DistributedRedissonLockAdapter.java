@@ -29,7 +29,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * </ul>
  * ponytail: 持有期无硬性上限——watchdog 会持续续期，事务 hang 住时锁不会自动释放；
  * 唯一能设硬上限的做法是改回固定租约，但那会引入「租约早于事务结束过期」的并发窗口（四坑中
- * 完全相反的那一个），故保留 watchdog + 用 {@link LockProperties#getHoldWarnThreshold()} 监控长持有，
+ * 完全相反的那一个），故保留 watchdog + 用 {@link LockProperties#holdWarnThreshold()} 监控长持有，
  * 异常时由人 / 运维介入。同一时刻持有锁的线程必须把事务完整跑完，禁止在锁内另开异步线程执行事务部分。
  */
 @Slf4j
@@ -52,7 +52,7 @@ public class DistributedRedissonLockAdapter implements DistributedLockPort {
         } finally {
             releaseAfterCommit(acquiredLocks);
             long heldSeconds = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startNanos);
-            if (heldSeconds >= lockProperties.getHoldWarnThreshold().getSeconds()) {
+            if (heldSeconds >= lockProperties.holdWarnThreshold().getSeconds()) {
                 log.warn("分布式锁持有过久，疑似事务长时间卡住: keys={}, 持续={}s", lockKeys, heldSeconds);
             }
         }
@@ -96,7 +96,9 @@ public class DistributedRedissonLockAdapter implements DistributedLockPort {
     }
 
     /**
-     * 按获取逆序批量释放锁，确保资源依赖安全卸载。
+     * 按获取逆序批量释放锁（栈式回退）：任一时刻持有的锁集合都是排序前缀，部分获取失败时也只回退
+     * 已获取的那几把。此顺序不承担防死锁职责（独立同级锁先放哪把都不会成环），防死锁由调用方
+     * 排序加锁负责。
      * 仅释放当前线程持有的锁，单锁释放异常不中断后续释放。
      */
     private void releaseLocks(List<RLock> acquiredLocks) {

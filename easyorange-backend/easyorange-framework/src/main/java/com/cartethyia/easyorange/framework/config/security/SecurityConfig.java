@@ -99,7 +99,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
-                        .requestMatchers(securityProperties.getIgnorePaths().toArray(String[]::new))
+                        .requestMatchers(securityProperties.ignorePaths().toArray(String[]::new))
                         .permitAll()
                         // 精确匹配优先于 product-paths 前缀放行：/api/products/my 需登录（CLAUDE.md product-paths 陷阱）
                         .requestMatchers(HttpMethod.GET, "/api/products/my/**")
@@ -109,9 +109,9 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
                         .requestMatchers(
                                 HttpMethod.GET,
-                                securityProperties.getProductPaths().toArray(String[]::new))
+                                securityProperties.productPaths().toArray(String[]::new))
                         .permitAll()
-                        .requestMatchers(securityProperties.getStaticPaths().toArray(String[]::new))
+                        .requestMatchers(securityProperties.staticPaths().toArray(String[]::new))
                         .permitAll()
                         .anyRequest()
                         .authenticated())
@@ -133,8 +133,8 @@ public class SecurityConfig {
 
     @Bean
     public KeyPair rsaKeyPair(JwtProperties properties) {
-        var privateKeyLocation = properties.getPrivateKeyLocation();
-        var publicKeyLocation = properties.getPublicKeyLocation();
+        var privateKeyLocation = properties.privateKeyLocation();
+        var publicKeyLocation = properties.publicKeyLocation();
 
         if (!privateKeyLocation.isBlank() && !publicKeyLocation.isBlank()) {
             try {
@@ -168,7 +168,7 @@ public class SecurityConfig {
     public JwtDecoder jwtDecoder(KeyPair keyPair, JwtProperties properties) {
         var decoder = NimbusJwtDecoder.withPublicKey((RSAPublicKey) keyPair.getPublic())
                 .build();
-        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(properties.getIssuer()));
+        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(properties.issuer()));
         return decoder;
     }
 
@@ -184,7 +184,7 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        var origins = securityProperties.getAllowedOrigins();
+        var origins = securityProperties.allowedOrigins();
         var config = new CorsConfiguration();
         if (origins.contains("*")) {
             config.setAllowedOriginPatterns(List.of("*"));
@@ -205,7 +205,7 @@ public class SecurityConfig {
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(securityProperties.getPasswordEncoderStrength());
+        return new BCryptPasswordEncoder(securityProperties.passwordEncoderStrength());
     }
 
     // ========== Private Helpers ==========

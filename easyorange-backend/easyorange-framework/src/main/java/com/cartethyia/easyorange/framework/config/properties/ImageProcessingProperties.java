@@ -1,42 +1,58 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
-import lombok.Data;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
+import org.springframework.validation.annotation.Validated;
 
-@Data
+@Validated
 @ConfigurationProperties(prefix = "easyorange.file.image")
-public class ImageProcessingProperties {
+public record ImageProcessingProperties(
+        /** Default output quality (0.0 - 1.0) */
+        @DecimalMin("0.0") @DecimalMax("1.0") @DefaultValue("0.8")
+        float quality,
 
-    /** Default output quality (0.0 - 1.0) */
-    private float quality = 0.8f;
+        /** Thumbnail output quality */
+        @DecimalMin("0.0") @DecimalMax("1.0") @DefaultValue("0.75")
+        float thumbnailQuality,
 
-    /** Thumbnail output quality */
-    private float thumbnailQuality = 0.75f;
+        /** Responsive image output quality */
+        @DecimalMin("0.0") @DecimalMax("1.0") @DefaultValue("0.75")
+        float responsiveQuality,
 
-    /** Responsive image output quality */
-    private float responsiveQuality = 0.75f;
+        /** Progressive JPEG settings */
+        @Valid ProgressiveJpeg progressiveJpeg,
 
-    /** Progressive JPEG settings */
-    private ProgressiveJpeg progressiveJpeg = new ProgressiveJpeg();
+        /** Smart crop settings */
+        @Valid SmartCrop smartCrop) {
 
-    /** Smart crop settings */
-    private SmartCrop smartCrop = new SmartCrop();
-
-    @Data
-    public static class ProgressiveJpeg {
-        /** Enable progressive JPEG for large images */
-        private boolean enabled = true;
-        /** Minimum file size (bytes) to enable progressive encoding */
-        private long minSize = 102400; // 100KB
+    public ImageProcessingProperties {
+        if (progressiveJpeg == null) {
+            progressiveJpeg = new ProgressiveJpeg(true, 102400L);
+        }
+        if (smartCrop == null) {
+            smartCrop = new SmartCrop(true, "1:1", 0.5);
+        }
     }
 
-    @Data
-    public static class SmartCrop {
-        /** Enable smart cropping on upload */
-        private boolean enabled = true;
-        /** Default aspect ratio (e.g., "1:1", "4:3", "16:9") */
-        private String defaultAspectRatio = "1:1";
-        /** Minimum entropy threshold - fallback to center crop below this */
-        private double minEntropyThreshold = 0.5;
-    }
+    public record ProgressiveJpeg(
+            /** Enable progressive JPEG for large images */
+            @DefaultValue("true") boolean enabled,
+
+            /** Minimum file size (bytes) to enable progressive encoding */
+            @Min(0) @DefaultValue("102400") long minSize) {}
+
+    public record SmartCrop(
+            /** Enable smart cropping on upload */
+            @DefaultValue("true") boolean enabled,
+
+            /** Default aspect ratio (e.g., "1:1", "4:3", "16:9") */
+            @DefaultValue("1:1") String defaultAspectRatio,
+
+            /** Minimum entropy threshold - fallback to center crop below this */
+            @DecimalMin("0.0") @DecimalMax("1.0") @DefaultValue("0.5")
+            double minEntropyThreshold) {}
 }

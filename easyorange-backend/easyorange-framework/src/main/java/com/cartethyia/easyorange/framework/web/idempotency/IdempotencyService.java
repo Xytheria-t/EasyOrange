@@ -36,7 +36,7 @@ public class IdempotencyService {
 
     @SuppressWarnings("unchecked")
     public <T> T execute(String key, long ttlSeconds, IdempotentOperation<T> operation) throws Exception {
-        long resultTtl = ttlSeconds > 0 ? ttlSeconds : properties.getDefaultTtlSeconds();
+        long resultTtl = ttlSeconds > 0 ? ttlSeconds : properties.defaultTtlSeconds();
         String resultKey = redisKey(key);
         String lockKey = lockKey(key);
 
@@ -48,7 +48,7 @@ public class IdempotencyService {
             }
 
             // 2. 抢锁执行，或作为输家等待赢家结果
-            long deadline = System.currentTimeMillis() + properties.getLockTtlSeconds() * 1000L;
+            long deadline = System.currentTimeMillis() + properties.lockTtlSeconds() * 1000L;
             while (true) {
                 if (tryAcquireLock(lockKey, key)) {
                     try {
@@ -98,7 +98,7 @@ public class IdempotencyService {
         try {
             return Boolean.TRUE.equals(redisTemplate
                     .opsForValue()
-                    .setIfAbsent(lockKey, LOCK_MARKER, properties.getLockTtlSeconds(), TimeUnit.SECONDS));
+                    .setIfAbsent(lockKey, LOCK_MARKER, properties.lockTtlSeconds(), TimeUnit.SECONDS));
         } catch (Exception e) {
             throw new RedisUnavailableException(e);
         }
@@ -124,7 +124,7 @@ public class IdempotencyService {
 
     private void waitBeforePoll() throws InterruptedException {
         try {
-            Thread.sleep(properties.getLockPollIntervalMs());
+            Thread.sleep(properties.lockPollIntervalMs());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw e;
@@ -132,7 +132,7 @@ public class IdempotencyService {
     }
 
     private String redisKey(String key) {
-        return properties.getKeyPrefix() + ":" + key;
+        return properties.keyPrefix() + ":" + key;
     }
 
     private String lockKey(String key) {
