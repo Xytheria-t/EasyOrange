@@ -15,7 +15,7 @@
 
 ## 表总览
 
-共 32 张表：30 张 `eo_*` 业务/观测表（其中 3 张预留）+ 2 张 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。`eo_idempotency_key` 已在开发阶段迁移合并时删除（幂等统一由 framework 的 `IdempotencyKeyFilter` + Redis 承载，2026-08 双 Token 收口）；AI 观测/知识库/画像表（`eo_ai_call_log` / `eo_ai_feedback` / `eo_knowledge_doc` / `eo_user_preference` / `eo_retrieval_metric` 共 5 张）已并入合并后的 `V1__init_schema.sql`（V1~V9 收口为单文件）。
+共 33 张表：31 张 `eo_*` 业务/观测表（其中 3 张预留）+ 2 张 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。库存流水表 `eo_stock_ledger` 由 V4 新增（库存变更的单一事实来源，幂等键 + 余额快照，见文末）。`eo_idempotency_key` 已在开发阶段迁移合并时删除（幂等统一由 framework 的 `IdempotencyKeyFilter` + Redis 承载，2026-08 双 Token 收口）；AI 观测/知识库/画像表（`eo_ai_call_log` / `eo_ai_feedback` / `eo_knowledge_doc` / `eo_user_preference` / `eo_retrieval_metric` 共 5 张）已并入合并后的 `V1__init_schema.sql`（V1~V9 收口为单文件）。
 
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
@@ -26,6 +26,7 @@
 | 商品 | eo_product | 商品信息 | ProductDO |
 | 商品 | eo_product_detail | 商品详情（1:1） | ProductDetailDO |
 | 商品 | eo_product_image | 商品图片（1:N） | ProductImageDO |
+| 商品 | eo_stock_ledger | 库存流水（幂等落账 + 对账基准） | StockLedgerDO |
 | 商品 | eo_product_audit_log | 商品审核记录 | — |
 | 商品 | eo_audit_suggestion | AI 审核建议（预留） | — |
 | 商品 | eo_product_review | 商品评价 | ProductReviewDO |
@@ -843,3 +844,30 @@ eo_message ──1:1── eo_message_archive (id)
 | created_at | DATETIME | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 
 **索引**：idx_ai_call_log_scope (scope, created_at)、idx_ai_call_log_judge (judge_score, created_at)
+
+---
+
+### eo_stock_ledger — 库存流水表（V4 新增）
+
+> **定位**：库存变更的单一事实来源。每次库存变更（初始化 / 下单扣减 / 取消退款恢复 / 人工调整）都在同一事务内落一条流水，`eo_product.stock` 退化为可由流水复现的余额快照。
+> **幂等**：唯一索引 `uk_eo_stock_ledger_biz (change_type, biz_id, product_id)` 承载幂等——同一订单对同一资产的同类变更只允许落账一次，重复投递（MQ 重投 / DLQ 重放）插入 0 行即被跳过，库存不会被二次加减。MySQL 唯一索引不约束 NULL，因此 `biz_id` 留空的 INIT / ADJUST 天然不参与幂等约束（同一资产可多次人工调整）。
+> **对账**：`StockReconcileScheduler`（product `adapter/outbound/scheduler/`）每日比对 `eo_product.stock` 与每个资产最近一条流水的 `stock_after`，漂移即 ERROR 告警 + `easyorange.stock.reconcile.drift` 指标，**只告警不改写余额**（自动修复会把缺陷从可观测退回静默）。
+> **落账实现**：`StockLedgerRepositoryImpl` + `mapper/StockLedgerMapper.xml`；幂等插入用 `INSERT IGNORE`（不能用 `ON DUPLICATE KEY UPDATE`：Connector/J 默认 `useAffectedRows=false` 带 CLIENT_FOUND_ROWS，ODKU 命中已存在行时返回「匹配行数 1」，幂等判定会整体失效，详见 `StockLedgerIdempotencyIT`）。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| id | VARCHAR(36) | PK | 主键 UUID v7 |
+| product_id | VARCHAR(36) | NOT NULL | 资产 ID |
+| biz_id | VARCHAR(36) | | 业务单号（订单 ID）；INIT / ADJUST 留空以脱离幂等约束 |
+| change_type | VARCHAR(20) | NOT NULL | 变更类型（INIT 初始化 / DECREASE 下单扣减 / RESTORE 取消退款恢复 / ADJUST 人工调整） |
+| delta | INT | NOT NULL | 库存变化量（正数增加 / 负数减少） |
+| stock_after | INT | NOT NULL | 变更后库存余额，对账基准 |
+| + 公共字段 | | | 无 version（append-only，落账是插入，冲突由唯一索引裁决） |
+
+**索引**：
+
+| 名称 | 类型 | 列 |
+|------|------|----|
+| uk_eo_stock_ledger_biz | UNIQUE | change_type, biz_id, product_id |
+| idx_eo_stock_ledger_product_time | KEY | product_id, create_time |
+| idx_eo_stock_ledger_biz_id | KEY | biz_id |
