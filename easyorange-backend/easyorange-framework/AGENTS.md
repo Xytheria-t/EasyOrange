@@ -45,7 +45,7 @@ JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthe
 
 所有消费者使用 `EventConsumerHandler` 组合类，统一以下横切关注点：
 
-1. **幂等去重**：`EventIdempotencyChecker`（Redis SETNX + Redisson 锁），命名空间 `consumerId + ":" + eventType` 隔离多消费者，`idempotencyEnabled=false` 构造器关闭投影/广播/指标类消费者
+1. **幂等去重**：`EventIdempotencyChecker`（Redis `SET NX EX` 一条原子命令领取处理权 + 24h TTL；处理失败 `unmark` 撤销标记让重投可重新执行），命名空间 `consumerId + ":" + eventType` 隔离多消费者，`idempotencyEnabled=false` 构造器关闭投影/广播/指标类消费者
 2. **事件元数据**：`EventMetadataMessagePostProcessor` 发布前向 message headers 注入 eventId/timestamp/traceId；`EventMetadata.from(message, event)` 在消费端解码
 3. **指标埋点**：`EventMetricsService` 自动上报 `easyorange.events.received{type,outcome}` / `easyorange.events.duration{type,outcome}` / `easyorange.events.dlq{queue,reason}`
 4. **DLQ 异常监听**：`DlqAnomalyListener` 监听 10 个 DLQ 队列，提取 x-death header 记录指标
