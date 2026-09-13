@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.stock.StockLedgerMapper">
+
+    <!-- 幂等落账：唯一键冲突时 INSERT IGNORE 插入 0 行且不抛异常，调用方据影响行数判定「已落账」并跳过库存变更
+         （既不用异常做控制流，也不会把事务标记为 rollback-only）。
+         这里必须用 INSERT IGNORE 而非 ON DUPLICATE KEY UPDATE：Connector/J 默认 useAffectedRows=false 会带上
+         CLIENT_FOUND_ROWS，ODKU 命中已存在行时按「匹配行」返回 1（而非文档里的 0），幂等判定会整体失效——
+         已在 StockLedgerIdempotencyIT 里验证过这条差异。 -->
+    <insert id="insertIfAbsent">
+        INSERT IGNORE INTO eo_stock_ledger (id, product_id, biz_id, change_type, delta, stock_after)
+        VALUES (#{id}, #{productId}, #{bizId}, #{changeType}, #{delta}, #{stockAfter})
+    </insert>
+
+    <!-- 对账扫描：每个资产取最近一条流水的余额快照（create_time + id 双排序，UUID v7 单调）与当前库存比对 -->
+    <select id="selectDrifts" resultType="com.cartethyia.easyorange.product.domain.valueobject.StockDrift">
+        SELECT p.id AS product_id, p.stock AS actual_stock, l.stock_after AS ledger_stock
+        FROM eo_product p
+        JOIN eo_stock_ledger l ON l.id = (
+            SELECT l2.id
+            FROM eo_stock_ledger l2
+            WHERE l2.product_id = p.id AND l2.del_flag = 0
+            ORDER BY l2.create_time DESC, l2.id DESC
+            LIMIT 1
+        )
+        WHERE p.del_flag = 0 AND p.stock &lt;&gt; l.stock_after
+        LIMIT #{limit}
+    </select>
+</mapper>

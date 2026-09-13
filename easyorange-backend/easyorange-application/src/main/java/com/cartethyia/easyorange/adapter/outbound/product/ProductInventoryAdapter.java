@@ -37,13 +37,13 @@ public class ProductInventoryAdapter implements ProductInventoryPort {
     }
 
     @Override
-    public void decreaseStock(String productId, int quantity) {
-        productCommandHandler.decrementStock(productId, quantity);
+    public void decreaseStock(String orderId, String productId, int quantity) {
+        productCommandHandler.decrementStock(orderId, productId, quantity);
     }
 
     @Override
-    public void restoreStock(String productId, int quantity) {
-        productCommandHandler.restoreStock(productId, quantity);
+    public void restoreStock(String orderId, String productId, int quantity) {
+        productCommandHandler.restoreStock(orderId, productId, quantity);
     }
 
     @Override

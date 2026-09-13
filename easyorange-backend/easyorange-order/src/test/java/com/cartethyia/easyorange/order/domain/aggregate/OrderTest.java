@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.event.OrderItemRef;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Version;
 import java.math.BigDecimal;
@@ -145,7 +146,7 @@ class OrderTest {
             var result = aggregate.cancel("不想要了", NOW);
 
             assertThat(result.event().orderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.event().productIds()).containsExactly(PRODUCT_ID);
+            assertThat(result.event().items()).containsExactly(new OrderItemRef(PRODUCT_ID, 1));
             assertThat(result.event().reason()).isEqualTo("不想要了");
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(result.aggregate().cancelReason()).isEqualTo("不想要了");
@@ -223,7 +224,7 @@ class OrderTest {
             var result = aggregate.refund("商品有问题", NOW);
 
             assertThat(result.event().orderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.event().productIds()).containsExactly(PRODUCT_ID);
+            assertThat(result.event().items()).containsExactly(new OrderItemRef(PRODUCT_ID, 1));
             assertThat(result.event().reason()).isEqualTo("商品有问题");
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.REFUNDED);
             assertThat(result.aggregate().paymentStatus()).isEqualTo(PaymentStatus.REFUNDED);
@@ -272,7 +273,7 @@ class OrderTest {
             var result = aggregate.forceCancel("管理端操作", NOW);
 
             assertThat(result.event().orderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.event().productIds()).containsExactly(PRODUCT_ID);
+            assertThat(result.event().items()).containsExactly(new OrderItemRef(PRODUCT_ID, 1));
             assertThat(result.event().reason()).isEqualTo("管理端操作");
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(result.aggregate().cancelReason()).isEqualTo("管理端操作");

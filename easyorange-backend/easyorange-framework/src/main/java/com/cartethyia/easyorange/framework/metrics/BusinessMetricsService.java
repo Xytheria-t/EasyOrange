@@ -20,6 +20,8 @@ public class BusinessMetricsService {
     private final Counter orderCreatedCounter;
     private final Counter paymentCompletedCounter;
     private final Counter reportFiledCounter;
+    private final Counter stockChangeSkippedCounter;
+    private final Counter stockDriftCounter;
 
     public BusinessMetricsService(MeterRegistry meterRegistry) {
 
@@ -42,6 +44,16 @@ public class BusinessMetricsService {
 
         this.reportFiledCounter = Counter.builder("easyorange.reports.filed")
                 .description("Total number of reports filed")
+                .register(meterRegistry);
+
+        // 库存流水幂等键命中（重复投递被跳过）——持续增长说明 MQ 在重投，或幂等键在兜真实重复
+        this.stockChangeSkippedCounter = Counter.builder("easyorange.stock.changes.skipped")
+                .description("Total number of duplicate stock changes skipped by ledger idempotency key")
+                .register(meterRegistry);
+
+        // 对账发现的库存漂移——非 0 即意味着有库存变更绕过了流水，需人工核对
+        this.stockDriftCounter = Counter.builder("easyorange.stock.reconcile.drift")
+                .description("Total number of stock drift records found by reconciliation")
                 .register(meterRegistry);
     }
 
@@ -70,5 +82,15 @@ public class BusinessMetricsService {
     /** 举报提交 +1 */
     public void incrementReportFiled() {
         reportFiledCounter.increment();
+    }
+
+    /** 库存重复变更被流水幂等键跳过 +1 */
+    public void incrementStockChangeSkipped() {
+        stockChangeSkippedCounter.increment();
+    }
+
+    /** 对账发现库存漂移 +count */
+    public void recordStockDrift(int count) {
+        stockDriftCounter.increment(count);
     }
 }

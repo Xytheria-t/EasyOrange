@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
@@ -138,7 +139,7 @@ class OrderCommandHandlerCreateTest {
         verify(paymentGatewayPort).createPayment(any());
         verify(orderRepository).save(any(Order.class));
         verify(eventPublisher).publish(any());
-        verify(productInventoryPort).decreaseStock("100", 1);
+        verify(productInventoryPort).decreaseStock(anyString(), eq("100"), eq(1));
         verify(lockPort).executeWithLocks(anyList(), anyLong(), any());
         // 下单后买家与卖家列表缓存都要失效，否则买家 /my 列表 30 分钟内看不到新订单
         verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
@@ -158,7 +159,7 @@ class OrderCommandHandlerCreateTest {
                 .isInstanceOf(PaymentGatewayAdapterException.class)
                 .hasMessageContaining("支付失败");
         // 无事务内反向补偿：订单/库存/支付随事务整体回滚
-        verify(productInventoryPort, never()).restoreStock(anyString(), anyInt());
+        verify(productInventoryPort, never()).restoreStock(anyString(), anyString(), anyInt());
         verify(orderRepository, never()).update(any(Order.class));
     }
 

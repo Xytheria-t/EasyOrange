@@ -42,7 +42,8 @@ import org.springframework.util.StringUtils;
  * 任一步失败由数据库整体回滚兜底（订单 / 库存 / 支付 / Outbox 事件原子提交）。
  * <p>
  * 一致性语义：本地单事务保证原子性；并发下单由 {@link DistributedLockPort} 按 productId 排队串行，
- * 库存扣减由乐观锁版本检查最终兜底防超卖；事件副作用经 Outbox 与应用事务同原子持久化。
+ * 库存扣减由乐观锁版本检查最终兜底防超卖，并由 product 侧库存流水（幂等键 = 订单号 + 资产）保证
+ * 「同一订单只扣一次、恢复数量与扣减对称」；事件副作用经 Outbox 与应用事务同原子持久化。
  * 为何不使用 Saga 见 ADR-0007。
  * 异常不做二次包装，直接抛给 {@code GlobalExceptionHandler} 按错误码映射。
  * 状态转换命令经 {@link Order} 聚合根守卫执行。
@@ -120,9 +121,9 @@ public class OrderCommandHandler {
         orderRepository.save(result.aggregate());
         domainEventPublisher.publish(result.event());
 
-        // 同步扣减库存（同一事务，失败时随事务整体回滚）
+        // 同步扣减库存（同一事务，失败时随事务整体回滚）；订单号即库存流水的幂等键
         for (var item : command.items()) {
-            productInventoryPort.decreaseStock(item.productId(), item.quantity());
+            productInventoryPort.decreaseStock(result.event().orderId(), item.productId(), item.quantity());
         }
 
         // 创建支付（同一事务，失败时随事务整体回滚）

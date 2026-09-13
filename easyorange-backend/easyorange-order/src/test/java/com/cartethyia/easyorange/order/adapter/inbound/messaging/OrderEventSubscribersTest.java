@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.inbound.messaging;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -8,6 +10,7 @@ import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
+import com.cartethyia.easyorange.order.domain.event.OrderItemRef;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
@@ -77,19 +80,19 @@ class OrderEventSubscribersTest {
 
             consumer.onOrderCreated(event, buildMessage());
 
-            verify(productInventoryPort, never()).restoreStock(anyString());
+            verify(productInventoryPort, never()).restoreStock(anyString(), anyString(), anyInt());
             verify(productInventoryPort, never()).markAsSold(anyString());
         }
 
         @Test
-        @DisplayName("收到订单取消事件后恢复库存")
+        @DisplayName("收到订单取消事件后按事件携带的数量恢复库存")
         void onOrderCancelled_shouldRestoreStock() {
-            OrderCancelledEvent event =
-                    new OrderCancelledEvent("evt-2", ORDER_ID, BUYER_ID, List.of(PRODUCT_ID), "取消原因");
+            OrderCancelledEvent event = new OrderCancelledEvent(
+                    "evt-2", ORDER_ID, BUYER_ID, List.of(new OrderItemRef(PRODUCT_ID, 2)), "取消原因");
 
             consumer.onOrderCancelled(event, buildMessage());
 
-            verify(productInventoryPort).restoreStock(PRODUCT_ID);
+            verify(productInventoryPort).restoreStock(ORDER_ID, PRODUCT_ID, 2);
         }
 
         @Test
@@ -104,14 +107,25 @@ class OrderEventSubscribersTest {
         }
 
         @Test
-        @DisplayName("收到订单退款事件后恢复库存并触发支付退款")
+        @DisplayName("收到订单退款事件后按事件携带的数量恢复库存并触发支付退款")
         void onOrderRefunded_shouldRestoreStockAndRefund() {
-            OrderRefundedEvent event = new OrderRefundedEvent("evt-4", ORDER_ID, BUYER_ID, List.of(PRODUCT_ID), "退款原因");
+            OrderRefundedEvent event = new OrderRefundedEvent(
+                    "evt-4", ORDER_ID, BUYER_ID, List.of(new OrderItemRef(PRODUCT_ID, 3)), "退款原因");
 
             consumer.onOrderRefunded(event, buildMessage());
 
-            verify(productInventoryPort).restoreStock(PRODUCT_ID);
+            verify(productInventoryPort).restoreStock(ORDER_ID, PRODUCT_ID, 3);
             verify(paymentGatewayPort).refundPayment(ORDER_ID, "退款原因");
+        }
+
+        @Test
+        @DisplayName("资产明细缺失的事件应显性失败（进重试/DLQ），不静默跳过库存恢复")
+        void onOrderCancelled_whenItemsMissing_shouldFail() {
+            OrderCancelledEvent event = new OrderCancelledEvent("evt-5", ORDER_ID, BUYER_ID, List.of(), "取消原因");
+
+            assertThatThrownBy(() -> consumer.onOrderCancelled(event, buildMessage()))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(ORDER_ID);
         }
     }
 }
