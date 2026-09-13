@@ -35,6 +35,14 @@
 | 直接上架 | `PUT /api/products/{productId}/online` | ADMIN |
 | 下架 | `PUT /api/products/{productId}/offline` | Access Token（资产方） |
 | 上传图片 | `POST /api/uploads/image` | Access Token |
+| 评价列表 | `GET /api/products/{productId}/reviews` | 否 |
+| 评价统计 | `GET /api/products/{productId}/reviews/stats` | 否 |
+| 评价资格 | `GET /api/products/{productId}/reviews/eligibility` | Access Token |
+| 提交评价 | `POST /api/products/{productId}/reviews` | Access Token |
+| 删除评价 | `DELETE /api/products/reviews/{reviewId}` | Access Token（评价作者） |
+| 点赞评价 | `POST /api/products/reviews/{reviewId}/like` | Access Token |
+
+> 评价绑定真实成交：仅**已完成订单**的买家可评价该资产，服务端按「买家 + 资产」反查订单号（请求体只有 `rating` / `content`，不接受客户端传 `orderId`）；一笔订单只能评价一次（`eo_product_review` 唯一键 `(user_id, order_id)`，软删除不释放）。无成交订单或订单未完成返回 `B2016`，重复评价返回 `B2017`。评价进入 AI 信用画像的 `review_avg_rating` 口径，故不允许无成交来源的评价。前端用「评价资格」接口决定是否展示评价入口，无资格时不显示提交按钮（详情页提示「完成交易后可评价该资产」）。
 
 详见 [AI-资产管理.md](./AI-资产管理.md) 的 WebSocket 协议。
 
