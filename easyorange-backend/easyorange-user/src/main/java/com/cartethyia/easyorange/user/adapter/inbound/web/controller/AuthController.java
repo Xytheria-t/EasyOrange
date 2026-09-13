@@ -122,7 +122,7 @@ public class AuthController {
         if (cookies == null) {
             return null;
         }
-        var name = jwtProperties.getRefreshCookieName();
+        var name = jwtProperties.refreshCookieName();
         for (var c : cookies) {
             if (name.equals(c.getName())) {
                 return c.getValue();

@@ -83,7 +83,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        if (!properties.isEnabled()) {
+        if (!properties.enabled()) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -127,8 +127,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private @Nullable Rule findMatchingRule(String method, String uri) {
-        for (Rule rule : properties.getRules()) {
-            if (matchesMethod(rule, method) && PATH_MATCHER.match(rule.getPathPattern(), uri)) {
+        for (Rule rule : properties.rules()) {
+            if (matchesMethod(rule, method) && PATH_MATCHER.match(rule.pathPattern(), uri)) {
                 return rule;
             }
         }
@@ -136,16 +136,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private boolean matchesMethod(Rule rule, String method) {
-        if (rule.getMethods().isEmpty()) {
+        if (rule.methods().isEmpty()) {
             return true;
         }
-        return rule.getMethods().stream().anyMatch(m -> m.equalsIgnoreCase(method));
+        return rule.methods().stream().anyMatch(m -> m.equalsIgnoreCase(method));
     }
 
     // ==================== 限流 ====================
 
     private void checkRateLimit(HttpServletRequest request, String method, Rule rule) {
-        if ("local".equalsIgnoreCase(rule.getStrategy())) {
+        if ("local".equalsIgnoreCase(rule.strategy())) {
             checkLocalRateLimit(request, method, rule);
         } else {
             checkRedisRateLimit(request, method, rule);
@@ -153,20 +153,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private void checkLocalRateLimit(HttpServletRequest request, String method, Rule rule) {
-        long windowMs = TimeUnit.SECONDS.toMillis(rule.getWindowSeconds());
-        if (windowMs <= 0 || rule.getMaxRequests() <= 0) {
+        long windowMs = TimeUnit.SECONDS.toMillis(rule.windowSeconds());
+        if (windowMs <= 0 || rule.maxRequests() <= 0) {
             return;
         }
 
         String key = RequestUtil.getClientIp(request) + ":" + method + ":" + request.getRequestURI();
-        if (!localRateLimiter.tryAcquire(key, rule.getMaxRequests(), windowMs)) {
-            log.warn("action=local_rate_limit, key={}, limit={}", key, rule.getMaxRequests());
-            throw BusinessException.of(rule.getMessage());
+        if (!localRateLimiter.tryAcquire(key, rule.maxRequests(), windowMs)) {
+            log.warn("action=local_rate_limit, key={}, limit={}", key, rule.maxRequests());
+            throw BusinessException.of(rule.message());
         }
     }
 
     private void checkRedisRateLimit(HttpServletRequest request, String method, Rule rule) {
-        if (rule.getWindowSeconds() <= 0 || rule.getMaxRequests() <= 0) {
+        if (rule.windowSeconds() <= 0 || rule.maxRequests() <= 0) {
             return;
         }
 
@@ -174,10 +174,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String key = "eo:rate:" + identifier + ":" + method + ":" + request.getRequestURI();
         try {
             // Redisson RRateLimiter 令牌桶 — 原子化取桶/补桶/扣桶，解决 increment+expire 的原子性缺口
-            boolean allowed = distributedRateLimiter.tryAcquire(key, rule.getMaxRequests(), rule.getWindowSeconds());
+            boolean allowed = distributedRateLimiter.tryAcquire(key, rule.maxRequests(), rule.windowSeconds());
             if (!allowed) {
-                log.warn("action=redis_rate_limit, key={}, limit={}", key, rule.getMaxRequests());
-                throw BusinessException.of(rule.getMessage());
+                log.warn("action=redis_rate_limit, key={}, limit={}", key, rule.maxRequests());
+                throw BusinessException.of(rule.message());
             }
         } catch (BusinessException ex) {
             throw ex;
@@ -190,15 +190,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // ==================== 防重提交 ====================
 
     private void checkRepeatSubmit(HttpServletRequest request, String method, byte[] cachedBody) {
-        RepeatSubmitConfig config = properties.getRepeatSubmit();
-        if (!config.isEnabled()) {
+        RepeatSubmitConfig config = properties.repeatSubmit();
+        if (!config.enabled()) {
             return;
         }
-        if (!config.getMethods().isEmpty() && config.getMethods().stream().noneMatch(m -> m.equalsIgnoreCase(method))) {
+        if (!config.methods().isEmpty() && config.methods().stream().noneMatch(m -> m.equalsIgnoreCase(method))) {
             return;
         }
 
-        long intervalMs = config.getIntervalMs();
+        long intervalMs = config.intervalMs();
         if (intervalMs <= 0) {
             return;
         }
@@ -213,7 +213,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         try {
             if (Boolean.FALSE.equals(
                     redisTemplate.opsForValue().setIfAbsent(key, "1", intervalMs, TimeUnit.MILLISECONDS))) {
-                throw BusinessException.of(config.getMessage());
+                throw BusinessException.of(config.message());
             }
         } catch (BusinessException ex) {
             throw ex;

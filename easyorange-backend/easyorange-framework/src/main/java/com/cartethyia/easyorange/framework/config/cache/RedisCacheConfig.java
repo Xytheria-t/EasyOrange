@@ -57,11 +57,11 @@ public class RedisCacheConfig implements CachingConfigurer {
     public CacheManager cacheManager(
             RedisConnectionFactory connectionFactory, GenericJacksonJsonRedisSerializer jsonRedisSerializer) {
         var defaults = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(cacheProperties.getDefaultTtl())
+                .entryTtl(cacheProperties.defaultTtl())
                 .serializeKeysWith(SerializationPair.fromSerializer(StringRedisSerializer.UTF_8))
                 .serializeValuesWith(SerializationPair.fromSerializer(jsonRedisSerializer));
         var cacheWriter = new JitterTtlRedisCacheWriter(
-                RedisCacheWriter.nonLockingRedisCacheWriter(connectionFactory), cacheProperties.getTtlJitter());
+                RedisCacheWriter.nonLockingRedisCacheWriter(connectionFactory), cacheProperties.ttlJitter());
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaults)
                 .cacheWriter(cacheWriter)

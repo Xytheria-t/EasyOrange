@@ -13,8 +13,8 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
-import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.RepeatSubmitConfig;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Rule;
+import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
 import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
@@ -64,19 +64,25 @@ class RateLimitFilterTest {
     @Mock
     private HandlerMapping handlerMapping;
 
-    private RateLimitFilterProperties properties;
     private RateLimitFilter filter;
 
     @BeforeEach
     void setUp() {
-        properties = new RateLimitFilterProperties();
-        filter = new RateLimitFilter(
+        filter = newFilter(PropertyBindings.bind(RateLimitFilterProperties.class));
+    }
+
+    private RateLimitFilter newFilter(RateLimitFilterProperties properties) {
+        return new RateLimitFilter(
                 properties,
                 redisTemplate,
                 localRateLimiter,
                 distributedRateLimiter,
                 new ErrorResponseWriter(new ObjectMapper()),
                 handlerMappingsProvider);
+    }
+
+    private RateLimitFilter filterWithRules(Rule... rules) {
+        return newFilter(new RateLimitFilterProperties(true, List.of(rules), null));
     }
 
     // ==================== 测试用 Controller 与 handler 解析 ====================
@@ -103,12 +109,7 @@ class RateLimitFilterTest {
     }
 
     private Rule localRule(String pathPattern) {
-        Rule rule = new Rule();
-        rule.setPathPattern(pathPattern);
-        rule.setStrategy("local");
-        rule.setMaxRequests(5);
-        rule.setWindowSeconds(60);
-        return rule;
+        return new Rule(pathPattern, null, "local", 5, 60, "请求过于频繁，请稍后重试");
     }
 
     // ==================== 懒解析：GET 未命中规则不解析 handler ====================
@@ -132,7 +133,7 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("命中限流规则但方法带 @SkipRateLimit：放行，不触发限流")
     void matchedRule_withSkipRateLimit_passesThrough() throws Exception {
-        properties.setRules(List.of(localRule("/api/ai/**")));
+        filter = filterWithRules(localRule("/api/ai/**"));
         stubHandler(handlerFor("skipRateLimit"));
 
         var req = new MockHttpServletRequest("GET", "/api/ai/chat");
@@ -149,7 +150,7 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("命中限流规则且无跳过标注：本地限流拒绝返回 429")
     void matchedRule_withoutSkip_localRateLimitDenies() throws Exception {
-        properties.setRules(List.of(localRule("/api/products")));
+        filter = filterWithRules(localRule("/api/products"));
         stubHandler(handlerFor("noSkip"));
         when(localRateLimiter.tryAcquire(anyString(), anyInt(), anyLong())).thenReturn(false);
 
@@ -170,9 +171,6 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("写方法带 @SkipRepeatSubmit：跳过防重，链继续")
     void writeMethod_withSkipRepeatSubmit_passesThrough() throws Exception {
-        RepeatSubmitConfig rs = properties.getRepeatSubmit();
-        rs.setEnabled(true);
-        rs.setIntervalMs(3000);
         stubHandler(handlerFor("skipRepeatSubmit"));
 
         var req = new MockHttpServletRequest("POST", "/api/external/callback");
@@ -189,9 +187,6 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("写方法无跳过标注：防重命中返回 429")
     void writeMethod_withoutSkip_repeatSubmitDenies() throws Exception {
-        RepeatSubmitConfig rs = properties.getRepeatSubmit();
-        rs.setEnabled(true);
-        rs.setIntervalMs(3000);
         @SuppressWarnings("unchecked")
         ValueOperations<Object, Object> valueOps = mock(ValueOperations.class);
         when(redisTemplate.opsForValue()).thenReturn(valueOps);

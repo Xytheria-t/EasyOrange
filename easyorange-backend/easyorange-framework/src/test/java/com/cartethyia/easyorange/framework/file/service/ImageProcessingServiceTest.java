@@ -1,28 +1,20 @@
 package com.cartethyia.easyorange.framework.file.service;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.framework.config.properties.ImageProcessingProperties;
+import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.file.Path;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
-@ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class ImageProcessingServiceTest {
 
-    @Mock
-    private ImageProcessingProperties properties;
+    private final ImageProcessingProperties properties = PropertyBindings.bind(ImageProcessingProperties.class);
 
     private ImageProcessingService service;
 
@@ -31,9 +23,6 @@ class ImageProcessingServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(properties.getQuality()).thenReturn(0.80f);
-        when(properties.getThumbnailQuality()).thenReturn(0.75f);
-
         service = new ImageProcessingService(properties);
     }
 

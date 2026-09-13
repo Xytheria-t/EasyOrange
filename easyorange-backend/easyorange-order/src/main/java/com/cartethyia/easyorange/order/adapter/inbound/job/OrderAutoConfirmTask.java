@@ -29,11 +29,11 @@ public class OrderAutoConfirmTask {
 
     @Scheduled(cron = "${order.auto-confirm.cron:0 0 2 * * ?}")
     public void autoConfirmReceipt() {
-        if (!properties.isEnabled()) {
+        if (!properties.enabled()) {
             return;
         }
 
-        LocalDateTime threshold = LocalDateTime.now().minusDays(properties.getAutoConfirmDays());
+        LocalDateTime threshold = LocalDateTime.now().minusDays(properties.autoConfirmDays());
         List<Order> shippedOrders = orderRepository.findShippedOrdersBefore(threshold);
         migrationExecutor.execute("自动确认收货", CONFIRM_LOCK_PREFIX, shippedOrders, this::autoConfirmOrder);
     }

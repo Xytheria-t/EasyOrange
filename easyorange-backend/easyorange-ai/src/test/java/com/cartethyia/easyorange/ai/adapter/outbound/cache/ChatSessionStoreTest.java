@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.chat.ChatTurn;
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +39,7 @@ class ChatSessionStoreTest {
     void setUp() {
         when(redis.opsForList()).thenReturn(listOps);
         when(redisProvider.getIfAvailable()).thenReturn(redis);
-        store = new ChatSessionStore(redisProvider, new ObjectMapper(), new AiProperties());
+        store = new ChatSessionStore(redisProvider, new ObjectMapper(), PropertyBindings.bind(AiProperties.class));
     }
 
     @Test

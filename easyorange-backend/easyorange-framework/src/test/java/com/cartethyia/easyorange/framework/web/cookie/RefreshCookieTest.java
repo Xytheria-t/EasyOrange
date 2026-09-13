@@ -2,11 +2,10 @@ package com.cartethyia.easyorange.framework.web.cookie;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
+import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,8 +26,7 @@ import org.springframework.http.HttpHeaders;
 @DisplayName("Refresh HttpOnly Cookie 装配")
 class RefreshCookieTest {
 
-    @Mock
-    private JwtProperties jwtProperties;
+    private final JwtProperties jwtProperties = PropertyBindings.bind(JwtProperties.class);
 
     @Mock
     private HttpServletResponse response;
@@ -37,11 +35,6 @@ class RefreshCookieTest {
 
     @BeforeEach
     void setUp() {
-        when(jwtProperties.getRefreshCookieName()).thenReturn("eo_refresh_token");
-        when(jwtProperties.getRefreshCookiePath()).thenReturn("/api/auth");
-        when(jwtProperties.isRefreshCookieSecure()).thenReturn(true);
-        when(jwtProperties.getRefreshCookieSameSite()).thenReturn("Lax");
-        lenient().when(jwtProperties.getRefreshTokenExpiration()).thenReturn(7L);
         refreshCookie = new RefreshCookie(jwtProperties);
     }
 

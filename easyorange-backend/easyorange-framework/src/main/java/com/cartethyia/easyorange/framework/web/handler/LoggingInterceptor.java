@@ -28,7 +28,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     public LoggingInterceptor(MeterRegistry meterRegistry, WebMvcProperties webMvcProperties) {
         this.meterRegistry = meterRegistry;
-        this.skipLoggingPaths = webMvcProperties.getSkipLoggingPaths();
+        this.skipLoggingPaths = webMvcProperties.skipLoggingPaths();
     }
 
     @Override

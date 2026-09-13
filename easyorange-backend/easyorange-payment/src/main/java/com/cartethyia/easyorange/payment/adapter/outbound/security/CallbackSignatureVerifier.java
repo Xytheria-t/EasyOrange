@@ -28,7 +28,7 @@ public class CallbackSignatureVerifier implements CallbackSignatureVerifierPort 
 
     @Override
     public void verify(String paymentNo, String transactionId, String sign) {
-        if (!callbackProperties.isVerifyEnabled()) {
+        if (!callbackProperties.verifyEnabled()) {
             return;
         }
 
@@ -38,7 +38,7 @@ public class CallbackSignatureVerifier implements CallbackSignatureVerifierPort 
         }
 
         String data = paymentNo + "|" + transactionId;
-        String expectedSign = hmacSha256(data, callbackProperties.getSecret());
+        String expectedSign = hmacSha256(data, callbackProperties.secret());
 
         // 常量时间比较，避免逐字节短路泄露签名匹配进度
         boolean matched = MessageDigest.isEqual(

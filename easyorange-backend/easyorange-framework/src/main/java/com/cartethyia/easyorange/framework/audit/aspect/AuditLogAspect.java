@@ -110,7 +110,7 @@ public class AuditLogAspect {
     }
 
     private void handleLog(ProceedingJoinPoint joinPoint, Exception e, Object jsonResult, long costTime) {
-        if (!auditLogProperties.isEnabled()) {
+        if (!auditLogProperties.enabled()) {
             return;
         }
         try {
@@ -136,7 +136,7 @@ public class AuditLogAspect {
 
     private boolean isReadOperation(String methodName) {
         if (methodName == null || methodName.isEmpty()) return false;
-        for (String prefix : auditLogProperties.getSkipPrefixes()) {
+        for (String prefix : auditLogProperties.skipPrefixes()) {
             if (methodName.startsWith(prefix)) return true;
         }
         return false;
@@ -192,12 +192,12 @@ public class AuditLogAspect {
                 .createdAt(LocalDateTime.now())
                 .duration(Math.toIntExact(costTime));
 
-        if (auditLogProperties.isSaveRequestData()) {
+        if (auditLogProperties.saveRequestData()) {
             String params = argsArrayToString(joinPoint.getArgs());
             builder.requestParams(AuditLogUtil.truncate(params, 2000));
         }
 
-        if (auditLogProperties.isSaveResponseData() && jsonResult != null) {
+        if (auditLogProperties.saveResponseData() && jsonResult != null) {
             try {
                 // 与请求参数一致，响应数据同样做敏感字段掩码
                 String json = maskSensitiveFields(objectMapper.writeValueAsString(jsonResult));
@@ -218,7 +218,7 @@ public class AuditLogAspect {
         String lookup =
                 className.replace("Controller", "").replace("Command", "").replace("Query", "");
 
-        Map<String, String> mapping = auditLogProperties.getModuleNames();
+        Map<String, String> mapping = auditLogProperties.moduleNames();
         String bestMatch = null;
         int bestLen = 0;
         for (var entry : mapping.entrySet()) {
@@ -281,7 +281,7 @@ public class AuditLogAspect {
 
     private String maskSensitiveFields(String json) {
         if (json == null || json.isEmpty()) return json;
-        List<String> sensitiveFields = auditLogProperties.getSensitiveFields();
+        List<String> sensitiveFields = auditLogProperties.sensitiveFields();
         if (sensitiveFields == null || sensitiveFields.isEmpty()) return json;
         // 快速路径：原始 JSON 不含任何敏感字段名，无需解析掩码（避免整棵树反序列化）
         if (sensitiveFields.stream().noneMatch(json::contains)) return json;

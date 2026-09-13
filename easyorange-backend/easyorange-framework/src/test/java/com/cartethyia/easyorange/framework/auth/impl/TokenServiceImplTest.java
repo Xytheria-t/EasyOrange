@@ -16,6 +16,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.auth.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
+import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -68,19 +69,15 @@ class TokenServiceImplTest {
     @Mock
     private JwtDecoder jwtDecoder;
 
-    @Mock
-    private JwtProperties jwtProperties;
+    private final JwtProperties jwtProperties = PropertyBindings.bind(JwtProperties.class);
 
     private TokenService tokenService;
 
     @BeforeEach
     void setUp() {
-        // valueOps / setOps / jwtProperties 桩非全部用例使用，标记 lenient
+        // valueOps / setOps 桩非全部用例使用，标记 lenient
         lenient().when(stringRedisTemplate.opsForValue()).thenReturn(valueOps);
         lenient().when(stringRedisTemplate.opsForSet()).thenReturn(setOps);
-        lenient().when(jwtProperties.getIssuer()).thenReturn("easyorange");
-        lenient().when(jwtProperties.getAccessTokenExpiration()).thenReturn(30L);
-        lenient().when(jwtProperties.getRefreshTokenExpiration()).thenReturn(7L);
         tokenService = new TokenServiceImpl(stringRedisTemplate, jwtEncoder, jwtDecoder, jwtProperties);
     }
 

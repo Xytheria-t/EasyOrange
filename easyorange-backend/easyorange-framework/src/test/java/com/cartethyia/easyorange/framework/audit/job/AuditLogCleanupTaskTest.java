@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.framework.audit.mapper.AuditLogMapper;
 import com.cartethyia.easyorange.framework.config.properties.AuditLogProperties;
+import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,13 +27,11 @@ class AuditLogCleanupTaskTest {
     @Mock
     private AuditLogMapper auditLogMapper;
 
-    private AuditLogProperties properties;
     private AuditLogCleanupTask task;
 
     @BeforeEach
     void setUp() {
-        properties = new AuditLogProperties();
-        task = new AuditLogCleanupTask(auditLogMapper, properties);
+        task = new AuditLogCleanupTask(auditLogMapper, PropertyBindings.bind(AuditLogProperties.class));
     }
 
     @Nested
@@ -42,7 +41,8 @@ class AuditLogCleanupTaskTest {
         @Test
         @DisplayName("删除时间点为当前时间减去配置的保留天数")
         void cleanupExpiredLogs_expireDateIsNowMinusRetentionDays() {
-            properties.setRetentionDays(30);
+            task = new AuditLogCleanupTask(
+                    auditLogMapper, PropertyBindings.bind(AuditLogProperties.class, "retention-days", "30"));
             when(auditLogMapper.deleteExpiredLogs(any())).thenReturn(0);
 
             task.cleanupExpiredLogs();

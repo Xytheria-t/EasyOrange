@@ -1,7 +1,11 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
-import lombok.Data;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
+import org.springframework.validation.annotation.Validated;
 
 /**
  * MyBatis-Plus 拦截器（分页、乐观锁）配置，前缀 {@code mybatis-plus}。示例：
@@ -17,25 +21,26 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *     enabled: true
  * }</pre>
  */
-@Data
+@Validated
 @ConfigurationProperties(prefix = "mybatis-plus")
-public class MybatisPlusInterceptorProperties {
+public record MybatisPlusInterceptorProperties(
+        @Valid Pagination pagination, @Valid OptimisticLock optimisticLock) {
 
-    private Pagination pagination = new Pagination();
-
-    private OptimisticLock optimisticLock = new OptimisticLock();
-
-    @Data
-    public static class Pagination {
-        private boolean enabled = true;
-        private String dbType = "mysql";
-        private long maxLimit = 100L;
-        private boolean overflow = false;
-        private boolean optimizeJoin = true;
+    public MybatisPlusInterceptorProperties {
+        if (pagination == null) {
+            pagination = new Pagination(true, "mysql", 100L, false, true);
+        }
+        if (optimisticLock == null) {
+            optimisticLock = new OptimisticLock(true);
+        }
     }
 
-    @Data
-    public static class OptimisticLock {
-        private boolean enabled = true;
-    }
+    public record Pagination(
+            @DefaultValue("true") boolean enabled,
+            @NotBlank @DefaultValue("mysql") String dbType,
+            @Min(1) @DefaultValue("100") long maxLimit,
+            @DefaultValue("false") boolean overflow,
+            @DefaultValue("true") boolean optimizeJoin) {}
+
+    public record OptimisticLock(@DefaultValue("true") boolean enabled) {}
 }

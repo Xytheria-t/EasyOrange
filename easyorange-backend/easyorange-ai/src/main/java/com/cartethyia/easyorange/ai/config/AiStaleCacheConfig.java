@@ -17,14 +17,11 @@ public class AiStaleCacheConfig {
 
     @Bean("aiStaleCache")
     public Cache<String, Object> aiStaleCache() {
-        var props = aiProperties.getCache();
-        log.info(
-                "AI stale cache initialized: maxSize={}, expire={}h",
-                props.getStaleMaxSize(),
-                props.getStaleExpireHours());
+        var props = aiProperties.cache();
+        log.info("AI stale cache initialized: maxSize={}, expire={}h", props.staleMaxSize(), props.staleExpireHours());
         return Caffeine.newBuilder()
-                .maximumSize(props.getStaleMaxSize())
-                .expireAfterWrite(props.getStaleExpireHours(), TimeUnit.HOURS)
+                .maximumSize(props.staleMaxSize())
+                .expireAfterWrite(props.staleExpireHours(), TimeUnit.HOURS)
                 .build();
     }
 }

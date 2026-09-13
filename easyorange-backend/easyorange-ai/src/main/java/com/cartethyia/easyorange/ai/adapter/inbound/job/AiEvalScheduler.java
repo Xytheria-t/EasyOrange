@@ -41,10 +41,10 @@ public class AiEvalScheduler {
 
     @Scheduled(cron = "${easyorange.ai.eval.cron:0 0 3 * * ?}")
     public void evaluateUnjudgedCalls() {
-        if (!aiProperties.getEval().isEnabled()) {
+        if (!aiProperties.eval().enabled()) {
             return;
         }
-        int batchSize = aiProperties.getEval().getBatchSize();
+        int batchSize = aiProperties.eval().batchSize();
 
         List<Map<String, Object>> candidates;
         try {

@@ -43,9 +43,9 @@ public class ChatSessionStore {
         try {
             String key = KEY_PREFIX + sessionId;
             redis.opsForList().rightPush(key, objectMapper.writeValueAsString(new ChatTurn(role, content)));
-            int keepTurns = Math.max(aiProperties.getChat().getHistoryLimit(), 1);
+            int keepTurns = Math.max(aiProperties.chat().historyLimit(), 1);
             redis.opsForList().trim(key, -keepTurns * 2L, -1);
-            redis.expire(key, Duration.ofHours(aiProperties.getChat().getSessionTtlHours()));
+            redis.expire(key, Duration.ofHours(aiProperties.chat().sessionTtlHours()));
         } catch (Exception e) {
             log.warn("Save chat turn failed, memory lost for this turn", e);
         }

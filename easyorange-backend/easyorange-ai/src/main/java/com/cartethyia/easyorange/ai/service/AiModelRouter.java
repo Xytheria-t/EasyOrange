@@ -24,9 +24,9 @@ public class AiModelRouter {
 
     public ChatModel choose(String scenario) {
         String beanName = aiProperties
-                .getRouting()
-                .getScenarios()
-                .getOrDefault(scenario, aiProperties.getRouting().getDefaultModel());
+                .routing()
+                .scenarios()
+                .getOrDefault(scenario, aiProperties.routing().defaultModel());
         try {
             return applicationContext.getBean(beanName, ChatModel.class);
         } catch (BeansException e) {

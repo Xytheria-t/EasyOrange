@@ -42,7 +42,7 @@ public class SemanticCacheService {
      * 语义命中则返回缓存响应，否则 empty。
      */
     public <T> Optional<T> get(AiCallScope scope, String query, Class<T> type) {
-        if (!aiProperties.getSemanticCache().isEnabled() || query == null || query.isBlank()) {
+        if (!aiProperties.semanticCache().enabled() || query == null || query.isBlank()) {
             return Optional.empty();
         }
         var redis = redisProvider.getIfAvailable();
@@ -52,7 +52,7 @@ public class SemanticCacheService {
         }
         try {
             List<Float> queryEmbedding = aiModelSupport.embed(embeddingModel, query);
-            double threshold = aiProperties.getSemanticCache().getSimilarityThreshold();
+            double threshold = aiProperties.semanticCache().similarityThreshold();
             Map<Object, Object> entries = redis.opsForHash().entries(key(scope));
             String bestResponse = null;
             double bestSimilarity = threshold;
@@ -75,7 +75,7 @@ public class SemanticCacheService {
      * 写入缓存：embed 查询 → 存 (queryEmbedding, response)；超出 maxEntries 淘汰最旧条目。
      */
     public void put(AiCallScope scope, String query, Object response) {
-        if (!aiProperties.getSemanticCache().isEnabled() || query == null || query.isBlank()) {
+        if (!aiProperties.semanticCache().enabled() || query == null || query.isBlank()) {
             return;
         }
         var redis = redisProvider.getIfAvailable();
@@ -90,11 +90,11 @@ public class SemanticCacheService {
                     queryEmbedding, objectMapper.writeValueAsString(response), System.currentTimeMillis()));
             String key = key(scope);
             Long size = redis.opsForHash().size(key);
-            if (size != null && size >= aiProperties.getSemanticCache().getMaxEntries()) {
+            if (size != null && size >= aiProperties.semanticCache().maxEntries()) {
                 evictOldest(redis, key);
             }
             redis.opsForHash().put(key, field, value);
-            redis.expire(key, Duration.ofHours(aiProperties.getSemanticCache().getTtlHours()));
+            redis.expire(key, Duration.ofHours(aiProperties.semanticCache().ttlHours()));
         } catch (Exception e) {
             log.warn("Semantic cache write failed, skip", e);
         }

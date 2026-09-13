@@ -27,7 +27,7 @@ public class AuditLogCleanupTask {
     @Scheduled(cron = "0 0 3 * * ?")
     public void cleanupExpiredLogs() {
         try {
-            LocalDateTime expireDate = LocalDateTime.now().minusDays(auditLogProperties.getRetentionDays());
+            LocalDateTime expireDate = LocalDateTime.now().minusDays(auditLogProperties.retentionDays());
             int totalDeleted = 0;
             int deleted;
             do {
@@ -35,7 +35,7 @@ public class AuditLogCleanupTask {
                 totalDeleted += deleted;
             } while (deleted > 0);
 
-            log.info("审计日志清理完成: 删除 {} 条 (保留 {} 天)", totalDeleted, auditLogProperties.getRetentionDays());
+            log.info("审计日志清理完成: 删除 {} 条 (保留 {} 天)", totalDeleted, auditLogProperties.retentionDays());
         } catch (Exception e) {
             log.error("审计日志清理失败", e);
         }

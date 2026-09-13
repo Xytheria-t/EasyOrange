@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.framework.web.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
+import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,7 +26,8 @@ class RefreshCsrfFilterTest {
 
     @BeforeEach
     void setUp() {
-        filter = new RefreshCsrfFilter(new SecurityProperties(), new ErrorResponseWriter(new ObjectMapper()));
+        filter = new RefreshCsrfFilter(
+                PropertyBindings.bind(SecurityProperties.class), new ErrorResponseWriter(new ObjectMapper()));
     }
 
     @Test

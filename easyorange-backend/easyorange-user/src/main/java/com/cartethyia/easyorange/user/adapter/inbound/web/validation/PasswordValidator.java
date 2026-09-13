@@ -25,7 +25,7 @@ public class PasswordValidator implements ConstraintValidator<Password, String> 
             return false;
         }
 
-        if (validationProperties.getWeakList().contains(value)) {
+        if (validationProperties.weakList().contains(value)) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate("密码过于简单，请使用更强的密码").addConstraintViolation();
             return false;

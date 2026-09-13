@@ -23,7 +23,7 @@ public class RetrievalEvalScheduler {
 
     @Scheduled(cron = "${easyorange.ai.eval.retrieval-cron:0 15 3 * * ?}")
     public void evaluateRetrievalMetrics() {
-        if (!aiProperties.getEval().isRetrievalEnabled()) {
+        if (!aiProperties.eval().retrievalEnabled()) {
             return;
         }
         evaluator.evaluateRetrieval();

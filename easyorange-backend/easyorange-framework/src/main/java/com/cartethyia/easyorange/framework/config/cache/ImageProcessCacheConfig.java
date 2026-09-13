@@ -28,10 +28,10 @@ public class ImageProcessCacheConfig {
     @Bean("imageProcessCache")
     @ConditionalOnMissingBean(name = "imageProcessCache")
     public com.github.benmanes.caffeine.cache.Cache<String, Object> imageProcessCache() {
-        var imageProps = cacheProperties.getImage();
+        var imageProps = cacheProperties.image();
         return Caffeine.newBuilder()
-                .maximumSize(imageProps.getMaxSize())
-                .expireAfterAccess(imageProps.getExpireHours(), TimeUnit.HOURS)
+                .maximumSize(imageProps.maxSize())
+                .expireAfterAccess(imageProps.expireHours(), TimeUnit.HOURS)
                 .recordStats()
                 .build();
     }

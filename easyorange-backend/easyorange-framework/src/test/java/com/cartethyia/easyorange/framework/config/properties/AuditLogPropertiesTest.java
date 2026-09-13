@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.cartethyia.easyorange.common.enums.BusinessType;
+import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import java.util.Map;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,12 +13,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("AuditLogProperties Tests")
 class AuditLogPropertiesTest {
 
-    private AuditLogProperties properties;
-
-    @BeforeEach
-    void setUp() {
-        properties = new AuditLogProperties();
-    }
+    private final AuditLogProperties properties = PropertyBindings.bind(AuditLogProperties.class);
 
     @Nested
     @DisplayName("Default Method Mappings")
@@ -27,7 +22,7 @@ class AuditLogPropertiesTest {
         @Test
         @DisplayName("every default mapping should have a title and a business type")
         void methodMappings_default_shouldBeComplete() {
-            Map<String, AuditLogProperties.MethodMapping> mappings = properties.getMethodMappings();
+            Map<String, AuditLogProperties.MethodMapping> mappings = properties.methodMappings();
 
             assertThat(mappings).isNotEmpty();
             mappings.forEach((prefix, rule) -> {
@@ -86,7 +81,7 @@ class AuditLogPropertiesTest {
         @Test
         @DisplayName("getMethodMappings should return unmodifiable map")
         void getMethodMappings_shouldBeUnmodifiable() {
-            Map<String, AuditLogProperties.MethodMapping> mappings = properties.getMethodMappings();
+            Map<String, AuditLogProperties.MethodMapping> mappings = properties.methodMappings();
 
             assertThatThrownBy(() -> mappings.put("x", new AuditLogProperties.MethodMapping("X", BusinessType.OTHER)))
                     .isInstanceOf(UnsupportedOperationException.class);

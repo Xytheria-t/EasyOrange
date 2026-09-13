@@ -31,7 +31,7 @@ public class MessageArchiveTask {
     public void cleanupExpiredMessages() {
         try {
             LocalDateTime expireDate = LocalDateTime.now()
-                    .minusDays(retentionProperties.getRetentionDays() + retentionProperties.getCleanupGraceDays());
+                    .minusDays(retentionProperties.retentionDays() + retentionProperties.cleanupGraceDays());
             int totalDeleted = 0;
             int deleted;
             do {
@@ -42,7 +42,7 @@ public class MessageArchiveTask {
             log.info(
                     "Cleaned up {} expired messages (older than {} days)",
                     totalDeleted,
-                    retentionProperties.getRetentionDays() + retentionProperties.getCleanupGraceDays());
+                    retentionProperties.retentionDays() + retentionProperties.cleanupGraceDays());
         } catch (Exception e) {
             log.error("Failed to cleanup expired messages", e);
         }
@@ -52,7 +52,7 @@ public class MessageArchiveTask {
     @Scheduled(cron = "0 0 2 1 * ?")
     public void archiveOldMessages() {
         try {
-            LocalDateTime archiveDate = LocalDateTime.now().minusDays(retentionProperties.getRetentionDays());
+            LocalDateTime archiveDate = LocalDateTime.now().minusDays(retentionProperties.retentionDays());
             int totalArchived = 0;
             int batchCount = 0;
 

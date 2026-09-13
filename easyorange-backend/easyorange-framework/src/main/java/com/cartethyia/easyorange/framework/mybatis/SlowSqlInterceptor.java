@@ -68,7 +68,7 @@ public class SlowSqlInterceptor implements Interceptor {
 
     public SlowSqlInterceptor(SlowSqlProperties properties, @Nullable MeterRegistry meterRegistry) {
         this.properties = properties;
-        if (meterRegistry != null && properties.isMetricsEnabled()) {
+        if (meterRegistry != null && properties.metricsEnabled()) {
             this.sqlTimer = Timer.builder("easyorange.sql.execution")
                     .description("SQL execution time (all queries)")
                     .publishPercentiles(0.5, 0.95, 0.99)
@@ -98,7 +98,7 @@ public class SlowSqlInterceptor implements Interceptor {
             }
 
             // 慢查询检测
-            if (properties.isEnabled() && elapsedMs >= properties.getThresholdMs()) {
+            if (properties.enabled() && elapsedMs >= properties.thresholdMs()) {
                 reportSlowSql(invocation, elapsedMs, elapsedNanos);
             }
         }
@@ -122,9 +122,9 @@ public class SlowSqlInterceptor implements Interceptor {
         // 结构化日志
         String message = String.format(
                 "action=slow_sql namespace=%s command=%s cost=%dms threshold=%dms sql=[%s]",
-                namespace, commandName, elapsedMs, properties.getThresholdMs(), sql);
+                namespace, commandName, elapsedMs, properties.thresholdMs(), sql);
 
-        switch (properties.getLogLevel().toLowerCase(Locale.ROOT)) {
+        switch (properties.logLevel().toLowerCase(Locale.ROOT)) {
             case "trace" -> log.trace(message);
             case "debug" -> log.debug(message);
             case "info" -> log.info(message);
@@ -138,7 +138,7 @@ public class SlowSqlInterceptor implements Interceptor {
      */
     private String getSql(MappedStatement ms, @Nullable Object parameter) {
         BoundSql boundSql = ms.getBoundSql(parameter);
-        if (!properties.isLogParameters()) {
+        if (!properties.logParameters()) {
             return boundSql.getSql().replaceAll("\\s+", " ");
         }
         return buildSqlWithParams(ms.getConfiguration(), boundSql);

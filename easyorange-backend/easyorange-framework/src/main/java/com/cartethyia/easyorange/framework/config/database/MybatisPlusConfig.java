@@ -26,16 +26,16 @@ public class MybatisPlusConfig {
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         var interceptor = new MybatisPlusInterceptor();
 
-        if (properties.getOptimisticLock().isEnabled()) {
+        if (properties.optimisticLock().enabled()) {
             interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
         }
 
-        var pagination = properties.getPagination();
-        if (pagination.isEnabled()) {
-            var pageInterceptor = new PaginationInnerInterceptor(DbType.getDbType(pagination.getDbType()));
-            pageInterceptor.setMaxLimit(pagination.getMaxLimit());
-            pageInterceptor.setOverflow(pagination.isOverflow());
-            pageInterceptor.setOptimizeJoin(pagination.isOptimizeJoin());
+        var pagination = properties.pagination();
+        if (pagination.enabled()) {
+            var pageInterceptor = new PaginationInnerInterceptor(DbType.getDbType(pagination.dbType()));
+            pageInterceptor.setMaxLimit(pagination.maxLimit());
+            pageInterceptor.setOverflow(pagination.overflow());
+            pageInterceptor.setOptimizeJoin(pagination.optimizeJoin());
             interceptor.addInnerInterceptor(pageInterceptor);
         }
 

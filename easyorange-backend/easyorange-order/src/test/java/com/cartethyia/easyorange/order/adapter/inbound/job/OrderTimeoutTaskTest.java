@@ -39,9 +39,6 @@ class OrderTimeoutTaskTest {
     private DomainEventPublisher domainEventPublisher;
 
     @Mock
-    private OrderTimeoutProperties properties;
-
-    @Mock
     private DistributedLockPort lockPort;
 
     @Mock
@@ -63,8 +60,7 @@ class OrderTimeoutTaskTest {
     @BeforeEach
     void setUp() {
         migrationExecutor = new OrderStateMigrationExecutor(lockPort, transactionTemplate);
-        orderTimeoutTask = new OrderTimeoutTask(
-                orderRepository, domainEventPublisher, properties, orderCacheEvictor, migrationExecutor);
+        orderTimeoutTask = task(true);
         expiredOrder1 = orderWithStatus(ORDER_ID_1, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID);
         expiredOrder2 = orderWithStatus(ORDER_ID_2, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID);
         // 默认锁端口正常：直接执行锁内操作（获取锁成功），返回其 boolean 结果
@@ -75,6 +71,16 @@ class OrderTimeoutTaskTest {
                 .thenAnswer(inv -> ((TransactionCallback<?>) inv.getArgument(0)).doInTransaction(null));
     }
 
+    /** 用例只关心 enabled 开关，其余取配置默认值。 */
+    private OrderTimeoutTask task(boolean enabled) {
+        return new OrderTimeoutTask(
+                orderRepository,
+                domainEventPublisher,
+                new OrderTimeoutProperties(enabled, 30, "0 */5 * * * ?"),
+                orderCacheEvictor,
+                migrationExecutor);
+    }
+
     @Nested
     @DisplayName("cancelExpiredOrders()")
     class CancelExpiredOrdersTests {
@@ -82,7 +88,6 @@ class OrderTimeoutTaskTest {
         @Test
         @DisplayName("正常取消所有已过期订单")
         void cancelExpiredOrders_shouldCancelAllExpired() {
-            when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findExpiredOrders(anyInt())).thenReturn(List.of(expiredOrder1, expiredOrder2));
 
             orderTimeoutTask.cancelExpiredOrders();
@@ -95,7 +100,6 @@ class OrderTimeoutTaskTest {
         @Test
         @DisplayName("获取锁失败时跳过该订单，不影响其他订单")
         void cancelExpiredOrders_withLockFailure_shouldSkipOrder() {
-            when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findExpiredOrders(anyInt())).thenReturn(List.of(expiredOrder1, expiredOrder2));
             // First order fails to acquire lock, second succeeds（doThrow 风格：避免 when() 内先调用命中 setUp 的 thenAnswer 桩）
             doThrow(new LockAcquisitionException("busy"))
@@ -114,7 +118,6 @@ class OrderTimeoutTaskTest {
         @Test
         @DisplayName("没有过期订单时不执行任何操作")
         void cancelExpiredOrders_withNoExpiredOrders_shouldDoNothing() {
-            when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findExpiredOrders(anyInt())).thenReturn(List.of());
 
             orderTimeoutTask.cancelExpiredOrders();
@@ -127,7 +130,6 @@ class OrderTimeoutTaskTest {
         @Test
         @DisplayName("部分订单取消失败时继续处理剩余订单")
         void cancelExpiredOrders_withPartialFailure_shouldContinue() {
-            when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findExpiredOrders(anyInt())).thenReturn(List.of(expiredOrder1, expiredOrder2));
             // First order update throws exception
             doThrow(new RuntimeException("更新失败"))
@@ -147,7 +149,7 @@ class OrderTimeoutTaskTest {
         @Test
         @DisplayName("定时任务禁用时不执行任何操作")
         void cancelExpiredOrders_whenDisabled_shouldDoNothing() {
-            when(properties.isEnabled()).thenReturn(false);
+            orderTimeoutTask = task(false);
 
             orderTimeoutTask.cancelExpiredOrders();
 

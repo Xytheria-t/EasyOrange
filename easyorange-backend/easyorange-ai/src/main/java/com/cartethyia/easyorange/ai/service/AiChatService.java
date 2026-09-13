@@ -156,8 +156,8 @@ public class AiChatService {
 
     private ChatAnswer agenticAnswer(ChatRequest request, @Nullable ChatStreamHandler handler) {
         String userId = SecurityContextUtil.getCurrentUserId().orElse(ANONYMOUS_USER);
-        List<ChatTurn> history = sessionStore.loadRecent(
-                request.sessionId(), aiProperties.getChat().getHistoryLimit());
+        List<ChatTurn> history =
+                sessionStore.loadRecent(request.sessionId(), aiProperties.chat().historyLimit());
         List<UserPreference> prefs =
                 ANONYMOUS_USER.equals(userId) ? List.of() : preferenceRepository.findByUserId(userId);
 
@@ -222,13 +222,13 @@ public class AiChatService {
     }
 
     private int resolveMaxTokensPerCall() {
-        var cfg = aiProperties.getBudget().resolve(CHAT_SCENARIO);
-        return cfg != null ? cfg.getMaxTokensPerCall() : DEFAULT_MAX_TOKENS;
+        var cfg = aiProperties.budget().resolve(CHAT_SCENARIO);
+        return cfg != null ? cfg.maxTokensPerCall() : DEFAULT_MAX_TOKENS;
     }
 
     private int resolveDailyTokenLimit() {
-        var cfg = aiProperties.getBudget().resolve(CHAT_SCENARIO);
-        return cfg != null ? cfg.getDailyTokenLimit() : DEFAULT_DAILY_LIMIT;
+        var cfg = aiProperties.budget().resolve(CHAT_SCENARIO);
+        return cfg != null ? cfg.dailyTokenLimit() : DEFAULT_DAILY_LIMIT;
     }
 
     private String loadSystemPrompt(String name) {

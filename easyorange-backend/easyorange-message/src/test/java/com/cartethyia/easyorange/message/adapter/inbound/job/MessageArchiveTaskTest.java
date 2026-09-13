@@ -33,7 +33,8 @@ class MessageArchiveTaskTest {
 
     @org.junit.jupiter.api.BeforeEach
     void setUp() {
-        archiveTask = new MessageArchiveTask(messageMapper, archiveBatchHandler, new MessageRetentionProperties());
+        archiveTask =
+                new MessageArchiveTask(messageMapper, archiveBatchHandler, new MessageRetentionProperties(90, 35));
     }
 
     @Nested

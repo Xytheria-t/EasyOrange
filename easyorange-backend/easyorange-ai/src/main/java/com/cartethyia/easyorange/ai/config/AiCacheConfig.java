@@ -25,7 +25,7 @@ public class AiCacheConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(@NonNull InterceptorRegistry registry) {
-        if (aiProperties.getRateLimit().isEnabled()) {
+        if (aiProperties.rateLimit().enabled()) {
             registry.addInterceptor(aiRateLimitInterceptor)
                     .addPathPatterns("/api/ai/**")
                     .order(0);

@@ -31,10 +31,10 @@ public class AiHealthIndicator implements HealthIndicator {
         var builder = Health.up();
         int configured = 0;
 
-        configured += describeProvider(builder, "chat", properties.getDeepseek().getApiKey());
-        configured += describeProvider(builder, "vision", properties.getQwenVl().getApiKey());
+        configured += describeProvider(builder, "chat", properties.deepseek().apiKey());
+        configured += describeProvider(builder, "vision", properties.qwenVl().apiKey());
         configured +=
-                describeProvider(builder, "embedding", properties.getEmbedding().getApiKey());
+                describeProvider(builder, "embedding", properties.embedding().apiKey());
 
         builder.withDetail("configuredProviders", configured);
         if (configured == 0) {

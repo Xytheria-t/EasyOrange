@@ -72,9 +72,9 @@ public class TokenBudgetAspect {
      * 这让注解成为编译期契约，配置成为运行期调优旋钮。
      */
     private ResolvedBudget resolveBudget(String scenario, TokenBudget annotation) {
-        var scenarioConfig = aiProperties.getBudget().resolve(scenario);
+        var scenarioConfig = aiProperties.budget().resolve(scenario);
         if (scenarioConfig != null) {
-            return new ResolvedBudget(scenarioConfig.getMaxTokensPerCall(), scenarioConfig.getDailyTokenLimit());
+            return new ResolvedBudget(scenarioConfig.maxTokensPerCall(), scenarioConfig.dailyTokenLimit());
         }
         return new ResolvedBudget(annotation.maxTokensPerCall(), annotation.dailyTokenLimit());
     }

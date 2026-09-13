@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,23 +26,16 @@ class AiRateLimitInterceptorTest {
     private DistributedRateLimiter distributedRateLimiter;
 
     @Mock
-    private AiProperties aiProperties;
-
-    @Mock
-    private AiProperties.RateLimit rateLimitProps;
-
-    @Mock
     private HttpServletRequest request;
 
     private AiRateLimitInterceptor interceptor;
 
     @BeforeEach
     void setUp() {
-        lenient().when(aiProperties.getRateLimit()).thenReturn(rateLimitProps);
-        lenient().when(rateLimitProps.isFailOpen()).thenReturn(true);
-
         interceptor = new AiRateLimitInterceptor(
-                distributedRateLimiter, aiProperties, new ErrorResponseWriter(new ObjectMapper()));
+                distributedRateLimiter,
+                PropertyBindings.bind(AiProperties.class),
+                new ErrorResponseWriter(new ObjectMapper()));
     }
 
     @Test

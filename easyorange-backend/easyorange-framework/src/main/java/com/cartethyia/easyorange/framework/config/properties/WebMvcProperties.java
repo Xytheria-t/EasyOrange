@@ -1,25 +1,17 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
-import java.util.ArrayList;
 import java.util.List;
-import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 
-@Data
 @ConfigurationProperties(prefix = "webmvc")
-public class WebMvcProperties {
+public record WebMvcProperties(
+        List<String> excludePaths,
+        List<String> skipLoggingPaths,
+        @DefaultValue("0") int interceptorOrder) {
 
-    private List<String> excludePaths = new ArrayList<>();
-
-    private List<String> skipLoggingPaths = new ArrayList<>();
-
-    private int interceptorOrder = 0;
-
-    public List<String> getExcludePaths() {
-        return List.copyOf(excludePaths);
-    }
-
-    public List<String> getSkipLoggingPaths() {
-        return List.copyOf(skipLoggingPaths);
+    public WebMvcProperties {
+        excludePaths = excludePaths == null ? List.of() : List.copyOf(excludePaths);
+        skipLoggingPaths = skipLoggingPaths == null ? List.of() : List.copyOf(skipLoggingPaths);
     }
 }

@@ -62,7 +62,7 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
                 return false;
             }
         } catch (Exception e) {
-            if (aiProperties.getRateLimit().isFailOpen()) {
+            if (aiProperties.rateLimit().failOpen()) {
                 log.warn("Redis unavailable, fail-open for AI rate limit", e);
                 return true;
             }

@@ -20,13 +20,11 @@ class PasswordValidatorTest {
     @Mock
     private ConstraintValidatorContext.ConstraintViolationBuilder violationBuilder;
 
-    private final PasswordValidator validator = new PasswordValidator(new UserValidationProperties());
+    private final PasswordValidator validator = new PasswordValidator(new UserValidationProperties(Set.of()));
     private final PasswordValidator validatorWithWeakPasswords = weakPasswordsValidator("Password123!", "Qwerty123!");
 
     private static PasswordValidator weakPasswordsValidator(String... weak) {
-        UserValidationProperties props = new UserValidationProperties();
-        props.setWeakList(Set.of(weak));
-        return new PasswordValidator(props);
+        return new PasswordValidator(new UserValidationProperties(Set.of(weak)));
     }
 
     @Test

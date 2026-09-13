@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.framework.file.storage;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
+import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,9 +19,8 @@ class LocalFileStorageTest {
 
     @BeforeEach
     void setUp() {
-        var properties = new FileUploadProperties();
-        properties.setPath(tempDir.toString());
-        properties.setUrlPrefix("/api/file/");
+        var properties = PropertyBindings.bind(
+                FileUploadProperties.class, "path", tempDir.toString(), "url-prefix", "/api/file/");
         storage = new LocalFileStorage(properties);
         storage.init();
     }
