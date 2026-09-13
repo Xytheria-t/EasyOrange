@@ -26,32 +26,26 @@ import org.springframework.validation.annotation.Validated;
  *   lock-ttl-seconds: 30
  *   lock-poll-interval-ms: 100
  * }</pre>
+ *
+ * @param enabled 是否启用 Idempotency-Key 幂等保护
+ * @param headerName 幂等 key 所在请求头名称
+ * @param pathPatterns 启用幂等保护的路径模式（Ant 风格，如 {@code /api/orders}）；空列表视为不启用
+ * @param methods 启用幂等保护的 HTTP 方法
+ * @param keyPrefix Redis key 前缀
+ * @param defaultTtlSeconds 默认缓存 TTL（秒），24 小时
+ * @param lockTtlSeconds 处理锁 TTL（秒）；超过该时长仍未完成视为持有者崩溃，允许其它请求重新执行
+ * @param lockPollIntervalMs 输家轮询等待赢家结果的时间间隔（毫秒）
  */
 @Validated
 @ConfigurationProperties(prefix = "idempotency")
 public record IdempotencyProperties(
-        /** 是否启用 Idempotency-Key 幂等保护。 */
         @DefaultValue("true") boolean enabled,
-
-        /** 幂等 key 所在请求头名称。 */
         @DefaultValue("Idempotency-Key") String headerName,
-
-        /** 启用幂等保护的路径模式（Ant 风格，如 {@code /api/orders}）。空列表视为不启用。 */
         List<String> pathPatterns,
-
-        /** 启用幂等保护的 HTTP 方法。 */
         Set<String> methods,
-
-        /** Redis key 前缀。 */
         @DefaultValue("eo:idempotency") String keyPrefix,
-
-        /** 默认缓存 TTL（秒），24 小时。 */
         @Min(1) @DefaultValue("86400") long defaultTtlSeconds,
-
-        /** 处理锁 TTL（秒）。超过该时长仍未完成视为持有者崩溃，允许其它请求重新执行。 */
         @Min(1) @DefaultValue("30") long lockTtlSeconds,
-
-        /** 输家轮询等待赢家结果的时间间隔（毫秒）。 */
         @Min(1) @DefaultValue("100") long lockPollIntervalMs) {
 
     public IdempotencyProperties {

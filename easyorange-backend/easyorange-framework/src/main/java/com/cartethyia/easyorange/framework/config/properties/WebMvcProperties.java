@@ -4,6 +4,13 @@ import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
+/**
+ * WebMvc 日志拦截器注册配置。
+ *
+ * @param excludePaths 不注册日志拦截器的路径模式
+ * @param skipLoggingPaths 注册但跳过日志的路径模式
+ * @param interceptorOrder 拦截器顺序；0 表示沿用注册默认值，不显式指定
+ */
 @ConfigurationProperties(prefix = "webmvc")
 public record WebMvcProperties(
         List<String> excludePaths,
