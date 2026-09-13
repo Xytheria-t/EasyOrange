@@ -22,20 +22,20 @@ spring:
 
   data:
     redis:
-      # 与 compose.yaml redis 服务的命令 `--requirepass easyorange123` 一致
-      host: localhost
-      port: 6379
+      # 与 compose.yaml 的 REDIS_* 默认值同源（compose.yaml 已改为读根 .env 插值）
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:easyorange123}
     elasticsearch:
       repositories:
         enabled: false      # 集成测试不校验 ES（easyorange.search.elasticsearch.enabled 基文件已 false）
 
   rabbitmq:
-    # 与 compose.yaml rabbitmq 服务的 easyorange / easyorange123 一致
-    host: localhost
-    port: 5672
-    username: easyorange
-    password: easyorange123
+    # 与 compose.yaml 的 RABBITMQ_* 默认值同源（compose.yaml 已改为读根 .env 插值）
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:easyorange}
+    password: ${RABBITMQ_PASSWORD:easyorange123}
 
 management:
   tracing:

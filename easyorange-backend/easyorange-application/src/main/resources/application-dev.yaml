@@ -16,9 +16,9 @@ spring:
 
   # -------------------------------------------------------------------
   # 数据源配置 - 开发环境使用较小的连接池
+  # 连接信息（url/username/password）继承 application.yaml 的 EASYORANGE_DB_* 占位符
   # -------------------------------------------------------------------
   datasource:
-    password: ${EASYORANGE_DB_PASSWORD:easyorange_app_dev}  # 通过项目专用环境变量设置，开发环境默认本地应用账号密码
     hikari:
       maximum-pool-size: 10               # 开发环境最大连接数
       minimum-idle: 3                     # 开发环境最小空闲连接数
@@ -45,12 +45,11 @@ spring:
 
   # -------------------------------------------------------------------
   # Redis 配置 - 开发环境使用较小的连接池
+  # host/port 继承 application.yaml 的 ${REDIS_HOST}/${REDIS_PORT}，此处不重复定义
   # ⚠️ 警告: 默认密码仅用于本地开发，生产环境必须通过环境变量设置
   # -------------------------------------------------------------------
   data:
     redis:
-      host: localhost
-      port: 6379
       password: ${REDIS_PASSWORD:easyorange123}  # ⚠️ 仅限开发环境使用
       lettuce:
         pool:
@@ -63,8 +62,8 @@ spring:
   # ⚠️ 警告: 默认密码仅用于本地开发，生产环境必须通过环境变量设置
   # -------------------------------------------------------------------
   rabbitmq:
-    host: localhost
-    port: 5672
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:easyorange}  # ⚠️ 仅限开发环境使用
     password: ${RABBITMQ_PASSWORD:easyorange123}  # ⚠️ 仅限开发环境使用
     publisher-confirm-type: correlated
