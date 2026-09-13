@@ -43,6 +43,13 @@ public class ProductRatingController {
         return Result.success(reviewQueryHandler.getReviewStats(productId));
     }
 
+    /** 当前用户能否评价此资产（有已完成订单且未评价过）—— 前端据此决定是否展示评价入口。 */
+    @GetMapping("/{productId}/reviews/eligibility")
+    public Result<Boolean> getReviewEligibility(
+            @AuthenticationPrincipal AuthUser user, @PathVariable String productId) {
+        return Result.success(reviewQueryHandler.canReview(user.userId(), productId));
+    }
+
     @PostMapping("/{productId}/reviews")
     public Result<String> createReview(
             @AuthenticationPrincipal AuthUser user,

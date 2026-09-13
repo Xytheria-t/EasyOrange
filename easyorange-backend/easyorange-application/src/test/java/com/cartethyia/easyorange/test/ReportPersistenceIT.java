@@ -23,9 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * {@code eo_report_handle_history.id} 为 {@code IdType.INPUT}（数据库不回填），主键必须由应用层或出站适配器
  * 在持久化前生成，否则 insert 直接报「Column 'id' cannot be null」。
  * <p>
- * 评价（{@code eo_product_review}）写路径未纳入本测试：该表 {@code order_id} 为 NOT NULL 且有
- * {@code (user_id, order_id)} 唯一键，而 {@code CreateRatingRequest} / {@code CreateProductRatingCommand}
- * 不携带订单号，属 schema 与 API 契约不一致的另一处缺口，需产品决策后另行处理。
+ * 评价写路径见 {@link ReviewPersistenceIT}（其 {@code order_id} 为 NOT NULL，需先造一笔成交订单）。
  */
 @DisplayName("举报写路径落库集成测试（真实 MySQL）")
 class ReportPersistenceIT extends AbstractIntegrationTest {

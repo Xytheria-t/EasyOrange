@@ -45,6 +45,15 @@ public class ProductRatingQueryRepositoryImpl extends BaseRepository<ProductRati
     }
 
     @Override
+    public boolean existsByUserIdAndOrderId(String userId, String orderId) {
+        return lambdaQuery()
+                        .eq(ProductRatingDO::getUserId, userId)
+                        .eq(ProductRatingDO::getOrderId, orderId)
+                        .count()
+                > 0;
+    }
+
+    @Override
     public Map<Integer, Long> countByRatingGroup(String productId) {
         List<Map<String, Object>> results = mapper.countByRating(productId);
 
