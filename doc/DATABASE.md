@@ -11,7 +11,7 @@
 | 乐观锁 | version INT DEFAULT 0 |
 | 时间精度 | 业务表 DATETIME，基础设施表 DATETIME(3) |
 | 外键 | 无物理外键，通过应用层保证一致性 |
-| 全文索引 | ngram 分词器（docker-compose.yml 已配置 ngram_token_size=2） |
+| 全文索引 | MySQL 侧不建全文索引；商品检索由 Elasticsearch + IK 分词器承担（`infra/elasticsearch` 镜像内置 analysis-ik 9.2.8，经 `docker compose --profile search` 启用） |
 
 ## 表总览
 
