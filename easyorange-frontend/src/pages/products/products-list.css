@@ -2437,6 +2437,15 @@
     justify-content: center;
 }
 
+.pdp-reviews-hint {
+    margin: 1.25rem 0 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-light);
+    text-align: center;
+    font-size: 0.8125rem;
+    color: var(--text-tertiary);
+}
+
 .pdp-review-stars {
     display: flex;
     gap: 0.25rem;

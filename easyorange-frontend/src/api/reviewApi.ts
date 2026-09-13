@@ -19,4 +19,11 @@ export const reviewApi = {
             body: data,
         });
     },
+
+    /** 当前用户能否评价该资产（有已完成订单且未评价过）—— 决定是否展示评价入口 */
+    canReview(productId: string) {
+        return request<boolean>(`/products/${productId}/reviews/eligibility`, {
+            method: 'GET',
+        });
+    },
 };
