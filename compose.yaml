@@ -1,3 +1,12 @@
+# =============================================================================
+# EasyOrange 本地开发栈
+# 凭据/端口的唯一来源 = 仓库根 .env（Docker Compose 原生自动读取本文件做插值）。
+# 全部写成 ${VAR:-default}，因此没有 .env 也能零配置启动（走默认值）。
+# 容器内主机名（mysql/redis/rabbitmq/zipkin）仍显式覆盖 —— 那是 compose 服务 DNS，
+# 与 .env 里宿主机视角的 localhost 不是一回事。
+# 注意：本文件用 ${VAR:-default}（compose/shell 语法）；application*.yaml 必须用
+# ${VAR:default}（单冒号），写错会让 Spring 把 "-default" 当字面量。
+# =============================================================================
 services:
   mysql:
     image: mysql:8.4.11
@@ -5,10 +14,11 @@ services:
     hostname: easyorange-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root123456
-      MYSQL_DATABASE: easyorange
-      MYSQL_USER: easyorange_app
-      MYSQL_PASSWORD: easyorange_app_dev
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      MYSQL_DATABASE: ${EASYORANGE_DB_NAME:-easyorange}
+      # MYSQL_USER/MYSQL_PASSWORD 必须与应用连接的 EASYORANGE_DB_* 同源，否则应用连不上
+      MYSQL_USER: ${EASYORANGE_DB_USERNAME:-easyorange_app}
+      MYSQL_PASSWORD: ${EASYORANGE_DB_PASSWORD:-easyorange_app_dev}
       TZ: Asia/Shanghai
     ports:
       - "3306:3306"
@@ -19,7 +29,7 @@ services:
       - --collation-server=utf8mb4_0900_ai_ci
       - --mysql-native-password=ON
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -proot123456"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD:-root123456}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,13 +40,13 @@ services:
     container_name: easyorange-redis
     hostname: easyorange-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass easyorange123
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD:-easyorange123}
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "easyorange123", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-easyorange123}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -48,8 +58,8 @@ services:
     hostname: easyorange-rabbitmq
     restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: easyorange
-      RABBITMQ_DEFAULT_PASS: easyorange123
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-easyorange}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-easyorange123}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -102,9 +112,19 @@ services:
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: dev          # 覆盖 Dockerfile 的 prod（本地栈用 dev：自动生成 JWT 密钥 + 宽松限流）
+      # 主机名走容器内 DNS，覆盖 .env 里宿主机视角的 localhost
       EASYORANGE_DB_HOST: mysql
       REDIS_HOST: redis
-      SPRING_RABBITMQ_HOST: rabbitmq
+      RABBITMQ_HOST: rabbitmq
+      # 凭据与容器初始化同源于根 .env（不落此处字面量）
+      EASYORANGE_DB_PORT: ${EASYORANGE_DB_PORT:-3306}
+      EASYORANGE_DB_NAME: ${EASYORANGE_DB_NAME:-easyorange}
+      EASYORANGE_DB_USERNAME: ${EASYORANGE_DB_USERNAME:-easyorange_app}
+      EASYORANGE_DB_PASSWORD: ${EASYORANGE_DB_PASSWORD:-easyorange_app_dev}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-easyorange123}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${RABBITMQ_USER:-easyorange}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-easyorange123}
       # 压测透传开关：RATE_LIMIT_FILTER_ENABLED=false docker compose up -d --scale easyorange-app=2
       RATE_LIMIT_FILTER_ENABLED: ${RATE_LIMIT_FILTER_ENABLED:-true}
       # 链路追踪 span 上报 → compose 内 Zipkin（默认 localhost 在容器内不可达）
@@ -208,9 +228,9 @@ services:
     profiles: [fullstack]
     command:
       - --mysqld.address=mysql:3306
-      - --mysqld.username=easyorange_app
+      - --mysqld.username=${EASYORANGE_DB_USERNAME:-easyorange_app}
     environment:
-      MYSQLD_EXPORTER_PASSWORD: easyorange_app_dev
+      MYSQLD_EXPORTER_PASSWORD: ${EASYORANGE_DB_PASSWORD:-easyorange_app_dev}
     ports:
       - "9104:9104"
 
@@ -221,7 +241,7 @@ services:
     profiles: [fullstack]
     environment:
       REDIS_ADDR: redis://redis:6379
-      REDIS_PASSWORD: easyorange123
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-easyorange123}
     ports:
       - "9121:9121"
 
@@ -239,10 +259,10 @@ services:
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_SERVER_ROOT_URL: http://localhost:3000
       # AI 可观测性面板的 MySQL 数据源（datasources.yml 引用 GRAFANA_MYSQL_*）
-      GRAFANA_MYSQL_USER: easyorange_app
-      GRAFANA_MYSQL_PASSWORD: easyorange_app_dev
+      GRAFANA_MYSQL_USER: ${EASYORANGE_DB_USERNAME:-easyorange_app}
+      GRAFANA_MYSQL_PASSWORD: ${EASYORANGE_DB_PASSWORD:-easyorange_app_dev}
       GRAFANA_MYSQL_HOST: mysql
-      GRAFANA_MYSQL_DB: easyorange
+      GRAFANA_MYSQL_DB: ${EASYORANGE_DB_NAME:-easyorange}
     volumes:
       # provisioning 即代码：datasource + dashboard 随仓库版本化
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
