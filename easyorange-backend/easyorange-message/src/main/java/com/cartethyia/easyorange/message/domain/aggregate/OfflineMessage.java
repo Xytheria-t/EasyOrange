@@ -25,11 +25,13 @@ public record OfflineMessage(
     // ==================== Factory ====================
 
     /**
-     * 创建离线消息（默认 PENDING 状态）
+     * 创建离线消息（默认 PENDING 状态）。
+     *
+     * @param id 离线消息 ID，由应用层 {@code IdGenerator} 生成（{@code BaseDO.id} 为 {@code IdType.INPUT}，数据库不回填）
      */
-    public static OfflineMessage create(String userId, String messageId, String pushChannel) {
+    public static OfflineMessage create(String id, String userId, String messageId, String pushChannel) {
         return new OfflineMessage(
-                null,
+                id,
                 userId,
                 messageId,
                 pushChannel,

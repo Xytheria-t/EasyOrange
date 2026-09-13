@@ -19,11 +19,11 @@ class OfflineMessageTest {
     // ==================== Factory: create ====================
 
     @Test
-    @DisplayName("create 应设置默认状态：PENDING、retryCount=0、id=null")
+    @DisplayName("create 应设置默认状态：PENDING、retryCount=0，id 由调用方（应用层 IdGenerator）传入")
     void create_shouldSetDefaultState() {
-        var aggregate = OfflineMessage.create("u001", "m001", "email");
+        var aggregate = OfflineMessage.create("id-1", "u001", "m001", "email");
 
-        assertThat(aggregate.id()).isNull();
+        assertThat(aggregate.id()).isEqualTo("id-1");
         assertThat(aggregate.userId()).isEqualTo("u001");
         assertThat(aggregate.messageId()).isEqualTo("m001");
         assertThat(aggregate.pushChannel()).isEqualTo("email");
@@ -53,7 +53,7 @@ class OfflineMessageTest {
     @Test
     @DisplayName("isPending — PENDING 状态应返回 true")
     void isPending_whenStatusIsPending_shouldReturnTrue() {
-        var aggregate = OfflineMessage.create("u001", "m001", "email");
+        var aggregate = OfflineMessage.create("id-1", "u001", "m001", "email");
 
         assertThat(aggregate.isPending()).isTrue();
     }
@@ -61,7 +61,7 @@ class OfflineMessageTest {
     @Test
     @DisplayName("isPending — 非 PENDING 状态应返回 false")
     void isPending_whenStatusIsNotPending_shouldReturnFalse() {
-        var pending = OfflineMessage.create("u001", "m001", "email");
+        var pending = OfflineMessage.create("id-1", "u001", "m001", "email");
 
         var pushed = pending.markAsPushed();
         assertThat(pushed.isPending()).isFalse();
@@ -93,7 +93,7 @@ class OfflineMessageTest {
     @Test
     @DisplayName("markAsPushed 应将状态设为 PUSHED，retryCount 不变")
     void markAsPushed_shouldChangeStatus() {
-        var aggregate = OfflineMessage.create("u001", "m001", "email");
+        var aggregate = OfflineMessage.create("id-1", "u001", "m001", "email");
         var pushed = aggregate.markAsPushed();
 
         assertThat(pushed.pushStatus()).isEqualTo(PushStatus.PUSHED);
@@ -113,7 +113,7 @@ class OfflineMessageTest {
     @Test
     @DisplayName("markAsFailed 应将状态设为 FAILED，retryCount 不变")
     void markAsFailed_shouldChangeStatus() {
-        var aggregate = OfflineMessage.create("u001", "m001", "email");
+        var aggregate = OfflineMessage.create("id-1", "u001", "m001", "email");
         var failed = aggregate.markAsFailed();
 
         assertThat(failed.pushStatus()).isEqualTo(PushStatus.FAILED);
@@ -133,7 +133,7 @@ class OfflineMessageTest {
     @Test
     @DisplayName("incrementRetry 应增加 retryCount 且状态不变")
     void incrementRetry_shouldIncreaseCount() {
-        var aggregate = OfflineMessage.create("u001", "m001", "email");
+        var aggregate = OfflineMessage.create("id-1", "u001", "m001", "email");
         var retried = aggregate.incrementRetry();
 
         assertThat(retried.retryCount()).isEqualTo(aggregate.retryCount() + 1);

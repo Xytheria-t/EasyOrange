@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.message.application.service;
 
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.message.application.port.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
@@ -26,6 +27,7 @@ public class OfflineMessageStoreService {
     private final OfflineMessageRepository offlineMessageRepository;
     private final MessageQueryRepository messageQueryRepository;
     private final MessageNotifierPort messageNotifier;
+    private final IdGenerator idGenerator;
 
     /**
      * 接收方离线时，将该消息作为离线消息持久化，待其上线后重推。
@@ -37,7 +39,8 @@ public class OfflineMessageStoreService {
      */
     public void storeIfOffline(String userId, String messageId, String pushChannel, boolean isOnline) {
         if (!isOnline) {
-            OfflineMessage offlineMessage = OfflineMessage.create(userId, messageId, pushChannel);
+            OfflineMessage offlineMessage =
+                    OfflineMessage.create(idGenerator.generateId(), userId, messageId, pushChannel);
             offlineMessageRepository.save(offlineMessage);
         }
     }

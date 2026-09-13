@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.message.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.message.application.port.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
@@ -35,9 +36,13 @@ class OfflineMessageStoreServiceTest {
     @Mock
     private MessageNotifierPort messageNotifier;
 
+    @Mock
+    private IdGenerator idGenerator;
+
     @InjectMocks
     private OfflineMessageStoreService offlineMessageStoreService;
 
+    private static final String OFFLINE_ID = "offline-1";
     private static final String USER_ID = "1";
     private static final String MESSAGE_ID = "100";
     private static final String PUSH_CHANNEL = "WEBSOCKET";
@@ -49,12 +54,15 @@ class OfflineMessageStoreServiceTest {
         @Test
         @DisplayName("用户离线时存储离线消息")
         void storeIfOffline_userOffline_savesMessage() {
+            when(idGenerator.generateId()).thenReturn(OFFLINE_ID);
+
             offlineMessageStoreService.storeIfOffline(USER_ID, MESSAGE_ID, PUSH_CHANNEL, false);
 
             ArgumentCaptor<OfflineMessage> captor = ArgumentCaptor.forClass(OfflineMessage.class);
             verify(offlineMessageRepository).save(captor.capture());
 
             OfflineMessage saved = captor.getValue();
+            assertThat(saved.id()).as("离线消息主键由应用层生成").isEqualTo(OFFLINE_ID);
             assertThat(saved.userId()).isEqualTo(USER_ID);
             assertThat(saved.messageId()).isEqualTo(MESSAGE_ID);
             assertThat(saved.pushChannel()).isEqualTo(PUSH_CHANNEL);
@@ -115,8 +123,8 @@ class OfflineMessageStoreServiceTest {
         @Test
         @DisplayName("系统通知补推并标记 PUSHED")
         void replayPending_systemMessage_pushedAndMarked() {
-            OfflineMessage pending = OfflineMessage.create(USER_ID, MESSAGE_ID, PUSH_CHANNEL);
-            Message system = Message.createSystem(USER_ID, "收藏降价提醒", "价格已下降", "prod-1");
+            OfflineMessage pending = OfflineMessage.create(OFFLINE_ID, USER_ID, MESSAGE_ID, PUSH_CHANNEL);
+            Message system = Message.createSystem("msg-1", USER_ID, "收藏降价提醒", "价格已下降", "prod-1");
             when(offlineMessageRepository.findPendingByUserId(USER_ID)).thenReturn(List.of(pending));
             when(messageQueryRepository.findById(MESSAGE_ID)).thenReturn(system);
 
@@ -135,7 +143,7 @@ class OfflineMessageStoreServiceTest {
         @Test
         @DisplayName("原消息已不存在时跳过（不推送不标记）")
         void replayPending_missingMessage_skipped() {
-            OfflineMessage pending = OfflineMessage.create(USER_ID, MESSAGE_ID, PUSH_CHANNEL);
+            OfflineMessage pending = OfflineMessage.create(OFFLINE_ID, USER_ID, MESSAGE_ID, PUSH_CHANNEL);
             when(offlineMessageRepository.findPendingByUserId(USER_ID)).thenReturn(List.of(pending));
             when(messageQueryRepository.findById(MESSAGE_ID)).thenReturn(null);
 
@@ -148,8 +156,8 @@ class OfflineMessageStoreServiceTest {
         @Test
         @DisplayName("聊天消息不补推（会话数据由客户端拉取）")
         void replayPending_chatMessage_skipped() {
-            OfflineMessage pending = OfflineMessage.create(USER_ID, MESSAGE_ID, PUSH_CHANNEL);
-            Message chat = Message.create(USER_ID, "receiver-2", MessageType.CHAT, "在吗", "你好", null);
+            OfflineMessage pending = OfflineMessage.create(OFFLINE_ID, USER_ID, MESSAGE_ID, PUSH_CHANNEL);
+            Message chat = Message.create("msg-2", USER_ID, "receiver-2", MessageType.CHAT, "在吗", "你好", null);
             when(offlineMessageRepository.findPendingByUserId(USER_ID)).thenReturn(List.of(pending));
             when(messageQueryRepository.findById(MESSAGE_ID)).thenReturn(chat);
 

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
@@ -55,9 +56,13 @@ class MessageCommandHandlerTest {
     @Mock
     private MessageNotifierPort messageNotifier;
 
+    @Mock
+    private IdGenerator idGenerator;
+
     @InjectMocks
     private MessageCommandHandler commandHandler;
 
+    private static final String GENERATED_ID = "gen-msg-1";
     private static final String USER_ID = "1";
     private static final String RECEIVER_ID = "2";
     private static final String MESSAGE_ID = "100";
@@ -107,6 +112,7 @@ class MessageCommandHandlerTest {
                     .thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
+            when(idGenerator.generateId()).thenReturn(GENERATED_ID);
 
             Message savedAggregate = Message.fromRaw(
                     MESSAGE_ID,
@@ -125,7 +131,7 @@ class MessageCommandHandlerTest {
 
             commandHandler.handle(USER_ID, command);
 
-            verify(messageRepository).save(any(Message.class));
+            verify(messageRepository).save(argThat(msg -> GENERATED_ID.equals(msg.id())));
             verify(distributedRateLimiter).tryAcquire(eq("eo:rate:message:" + USER_ID), anyLong(), anyLong());
             verify(sensitiveWordFilterService).filter("hello");
         }
@@ -155,6 +161,7 @@ class MessageCommandHandlerTest {
             when(sensitiveWordFilterService.filter("包含敏感词示例")).thenReturn("包含***");
             when(sensitiveWordFilterService.filter("标题")).thenReturn("标题");
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
+            when(idGenerator.generateId()).thenReturn(GENERATED_ID);
 
             Message savedAggregate = Message.fromRaw(
                     MESSAGE_ID,
@@ -185,6 +192,7 @@ class MessageCommandHandlerTest {
                     .thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
+            when(idGenerator.generateId()).thenReturn(GENERATED_ID);
 
             when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -204,6 +212,7 @@ class MessageCommandHandlerTest {
             SendSystemMessageCommand command = new SendSystemMessageCommand(RECEIVER_ID, "系统通知", "您的商品已审核通过", null);
 
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
+            when(idGenerator.generateId()).thenReturn(GENERATED_ID);
 
             Message savedAggregate = Message.fromRaw(
                     MESSAGE_ID,
@@ -222,7 +231,7 @@ class MessageCommandHandlerTest {
 
             commandHandler.handle(command);
 
-            verify(messageRepository).save(any(Message.class));
+            verify(messageRepository).save(argThat(msg -> GENERATED_ID.equals(msg.id())));
             verify(offlineMessageStoreService).storeIfOffline(anyString(), any(), anyString(), eq(true));
             verify(messageNotifier).sendNotification(eq(RECEIVER_ID), any());
         }
