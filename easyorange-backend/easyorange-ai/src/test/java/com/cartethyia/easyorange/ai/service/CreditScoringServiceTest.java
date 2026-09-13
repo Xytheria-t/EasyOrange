@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -114,6 +115,14 @@ class CreditScoringServiceTest {
             assertThat(result.totalTrades()).isEqualTo(10);
             assertThat(result.completedTrades()).isEqualTo(8);
             assertThat(result.tradeCompletionRate()).isEqualTo(80);
+
+            ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+            verify(jdbcTemplate)
+                    .update(sqlCaptor.capture(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+            assertThat(sqlCaptor.getValue())
+                    .as("upsert 带 AS new 别名：version 必须限定表名，否则 MySQL 报「Column 'version' is ambiguous」")
+                    .contains("version = eo_user_credit.version + 1")
+                    .doesNotContain("version = version + 1");
         }
 
         @Test

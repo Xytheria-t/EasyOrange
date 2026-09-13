@@ -212,7 +212,7 @@ public class CreditScoringService {
                     review_avg_rating = new.review_avg_rating,
                     last_updated = new.last_updated,
                     update_time = new.update_time,
-                    version = version + 1
+                    version = eo_user_credit.version + 1
                 """;
 
         jdbcTemplate.update(
