@@ -217,6 +217,13 @@ slow-sql:
   metrics-enabled: true
 
 management:
+  # ES 健康指示器默认关闭：搜索功能默认关（easyorange.search.elasticsearch.enabled=false），
+  # 且 Elasticsearch 不在默认 compose（profile: search）与 k8s 部署内。否则 /actuator/health
+  # 会因连不上 :9200 长期为 DOWN（readiness 分组不含 elasticsearch，故 k8s 探针不受影响）。
+  # 启用 ES 搜索时（docker compose --profile search 或 application-it-es.yaml）须同步置回 true。
+  health:
+    elasticsearch:
+      enabled: false
   tracing:
     sampling:
       probability: 0.1
