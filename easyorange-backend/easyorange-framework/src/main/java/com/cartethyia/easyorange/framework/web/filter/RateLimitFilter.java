@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.RepeatSubmitConfig;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Rule;
+import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Strategy;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
@@ -145,7 +146,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // ==================== 限流 ====================
 
     private void checkRateLimit(HttpServletRequest request, String method, Rule rule) {
-        if ("local".equalsIgnoreCase(rule.strategy())) {
+        if (rule.strategy() == Strategy.LOCAL) {
             checkLocalRateLimit(request, method, rule);
         } else {
             checkRedisRateLimit(request, method, rule);

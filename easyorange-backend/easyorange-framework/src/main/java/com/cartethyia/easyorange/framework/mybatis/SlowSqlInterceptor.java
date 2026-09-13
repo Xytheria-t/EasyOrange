@@ -7,7 +7,6 @@ import java.text.DateFormat;
 import java.time.Duration;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.cache.CacheKey;
@@ -124,12 +123,12 @@ public class SlowSqlInterceptor implements Interceptor {
                 "action=slow_sql namespace=%s command=%s cost=%dms threshold=%dms sql=[%s]",
                 namespace, commandName, elapsedMs, properties.thresholdMs(), sql);
 
-        switch (properties.logLevel().toLowerCase(Locale.ROOT)) {
-            case "trace" -> log.trace(message);
-            case "debug" -> log.debug(message);
-            case "info" -> log.info(message);
-            case "error" -> log.error(message);
-            default -> log.warn(message);
+        switch (properties.logLevel()) {
+            case TRACE -> log.trace(message);
+            case DEBUG -> log.debug(message);
+            case INFO -> log.info(message);
+            case ERROR -> log.error(message);
+            case WARN -> log.warn(message);
         }
     }
 

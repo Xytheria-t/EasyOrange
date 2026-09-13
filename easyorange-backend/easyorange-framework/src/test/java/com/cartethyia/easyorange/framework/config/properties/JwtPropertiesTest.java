@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.web.server.Cookie;
 
 @DisplayName("JwtProperties Tests")
 class JwtPropertiesTest {
@@ -72,7 +73,8 @@ class JwtPropertiesTest {
         @DisplayName("should reject null issuer")
         void nullIssuer_shouldHaveViolation() {
             // 属性源表达不了 null（null 值等于缺省，会被 @DefaultValue 兜底），只能直接构造出 null 组件
-            var properties = new JwtProperties("", "", 30L, 7L, null, "eo_refresh_token", "/api/auth", true, "Lax");
+            var properties = new JwtProperties(
+                    "", "", 30L, 7L, null, "eo_refresh_token", "/api/auth", true, Cookie.SameSite.LAX);
 
             assertThat(violations(properties)).anyMatch(v -> v.getMessage().contains("发行者"));
         }
