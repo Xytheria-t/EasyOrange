@@ -54,6 +54,8 @@ class ConfigurationPropertiesBindingTest {
                             .defaultAspectRatio())
                     .isEqualTo("1:1");
             assertThat(context.getBean(SlowSqlProperties.class).logLevel()).isEqualTo(SlowSqlProperties.LogLevel.WARN);
+            assertThat(context.getBean(MybatisPlusInterceptorProperties.class).maxLimit())
+                    .isEqualTo(100L);
         });
     }
 
@@ -72,18 +74,6 @@ class ConfigurationPropertiesBindingTest {
                             .smartCrop()
                             .minEntropyThreshold())
                     .isEqualTo(0.5);
-
-            var pagination =
-                    context.getBean(MybatisPlusInterceptorProperties.class).pagination();
-            assertThat(pagination.enabled()).isTrue();
-            assertThat(pagination.dbType()).isEqualTo("mysql");
-            assertThat(pagination.maxLimit()).isEqualTo(100L);
-            assertThat(pagination.overflow()).isFalse();
-            assertThat(pagination.optimizeJoin()).isTrue();
-            assertThat(context.getBean(MybatisPlusInterceptorProperties.class)
-                            .optimisticLock()
-                            .enabled())
-                    .isTrue();
 
             var repeatSubmit = context.getBean(RateLimitFilterProperties.class).repeatSubmit();
             assertThat(repeatSubmit.enabled()).isTrue();
@@ -112,6 +102,15 @@ class ConfigurationPropertiesBindingTest {
                     assertThat(context.getBean(JwtProperties.class).refreshCookieSameSite())
                             .isEqualTo(Cookie.SameSite.STRICT);
                 });
+    }
+
+    @Test
+    @DisplayName("项目前缀生效：easyorange.mybatis-plus 与 MyBatis-Plus 自身的 mybatis-plus 前缀各绑各的")
+    void bindsProjectScopedPrefix() {
+        runner.withPropertyValues("easyorange.mybatis-plus.max-limit=50")
+                .run(context -> assertThat(context.getBean(MybatisPlusInterceptorProperties.class)
+                                .maxLimit())
+                        .isEqualTo(50L));
     }
 
     @Nested

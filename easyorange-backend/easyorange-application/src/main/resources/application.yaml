@@ -197,14 +197,7 @@ mybatis-plus:
       # 与 BaseDO 的 @TableLogic(value="0", delval="1") 保持一致；全局值仅对未注解字段生效
       logic-delete-value: 1
       logic-not-delete-value: 0
-  pagination:
-    enabled: true
-    db-type: mysql
-    max-limit: 100
-    overflow: false
-    optimize-join: true
-  optimistic-lock:
-    enabled: true
+# 分页与乐观锁拦截器由 framework 的 MybatisPlusConfig 装配，单页上限见 easyorange.mybatis-plus.max-limit
 
 # -------------------------------------------------------------------
 # 慢 SQL 检测（MyBatis 拦截器）
@@ -422,6 +415,10 @@ easyorange:
     chat:                  # 多轮对话记忆 — Redis 会话窗口（短期）
       session-ttl-hours: 24
       history-limit: 6
+
+  mybatis-plus:
+    # 单页条数上限，请求超出即被截断；与 API 层 PageRequest.MAX_PAGE_SIZE 口径一致
+    max-limit: 100
 
 ---
 # -------------------------------------------------------------------
