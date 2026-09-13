@@ -55,6 +55,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import type { ChatMessage } from '@/types/message';
 import { formatRelativeTime } from '@/utils';
+import { errorHandler } from '@/utils/errorHandler';
 import { normalizeChatMessages } from '@/utils/message';
 import { ProductGallery } from './components/ProductGallery';
 
@@ -113,6 +114,16 @@ function ProductDetailPage() {
         staleTime: 30 * 1000,
     });
 
+    const { data: canReview = false } = useQuery({
+        queryKey: ['review-eligibility', productId],
+        queryFn: async () => {
+            const response = await reviewApi.canReview(productId);
+            return response.data === true;
+        },
+        enabled: !!token && !!productId,
+        staleTime: 30 * 1000,
+    });
+
     const { data: reviewsData, isLoading: reviewsLoading } = useQuery({
         queryKey: ['reviews', productId],
         queryFn: async () => {
@@ -164,8 +175,9 @@ function ProductDetailPage() {
             reviewForm.reset();
             queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
         },
-        onError: () => {
-            addToast({ type: 'error', message: '评价提交失败' });
+        onError: error => {
+            // 透出服务端业务原因（如「仅可评价已完成订单中的资产」「该订单已评价」）
+            addToast({ type: 'error', message: errorHandler.handle(error, 'api') });
         },
     });
 
@@ -746,7 +758,7 @@ function ProductDetailPage() {
                         </div>
                     )}
 
-                    {token && !isOwner && (
+                    {token && !isOwner && canReview && (
                         <div className="pdp-reviews-action">
                             <Button
                                 variant="outline"
@@ -758,6 +770,8 @@ function ProductDetailPage() {
                             </Button>
                         </div>
                     )}
+
+                    {token && !isOwner && !canReview && <p className="pdp-reviews-hint">完成交易后可评价该资产</p>}
                 </div>
 
                 <div className="pdp-section-divider" />
