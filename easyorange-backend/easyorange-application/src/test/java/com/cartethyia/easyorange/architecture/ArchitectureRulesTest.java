@@ -23,7 +23,7 @@ import org.junit.jupiter.api.DisplayName;
 /**
  * 架构守卫测试 — 使用 ArchUnit 真实 API（@AnalyzeClasses + @ArchTest），覆盖 DDD/CQRS 分层。
  * <p>
- * 10 条 @ArchTest 规则：
+ * 11 条 @ArchTest 规则：
  * <ol>
  *   <li>domain 层白名单准入（onlyDependOnClassesThat，合并原「禁框架/web/DTO」3 项子检查为 1 条）</li>
  *   <li>command handler 禁止依赖 query handler（CQRS 写读分离）</li>
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.DisplayName;
  *   <li>controller 禁止直连 mapper（必须经由 application 服务）</li>
  *   <li>禁止 System.out / System.err（复用 ArchUnit GeneralCodingRules）</li>
  *   <li>禁止 e.printStackTrace()（统一 SLF4J）</li>
+ *   <li>domain/application 禁止依赖 {@code org.springframework.dao}（持久化技术异常须在适配器内翻译）</li>
  * </ol>
  * 除 FreezingArchRule 冻结的已知技术债外无任何白名单 — 新违规直接失败。
  */
@@ -224,4 +225,16 @@ class ArchitectureRulesTest {
             .should()
             .callMethod(Throwable.class, "printStackTrace")
             .because("禁止 e.printStackTrace() — 统一走 SLF4J(org.slf4j) 日志");
+
+    // ==================== Rule 10: 持久化技术异常不得越过端口 ====================
+
+    @ArchTest
+    static final ArchRule persistence_exceptions_stay_in_adapters = noClasses()
+            .that()
+            .resideInAnyPackage("..domain..", "..application..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("org.springframework.dao..")
+            .because("Spring DataAccessException 家族是持久化技术细节，必须在 adapter/outbound 内翻译成"
+                    + "端口返回值或领域异常（如 UniqueConstraint → 幂等返回空），禁止渗进 domain/application");
 }

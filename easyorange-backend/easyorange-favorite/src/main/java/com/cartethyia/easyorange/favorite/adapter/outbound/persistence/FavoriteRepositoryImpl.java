@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.context.annotation.Primary;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Repository;
 
 @Primary
@@ -70,29 +71,30 @@ public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, Favor
     }
 
     @Override
-    public Favorite save(Favorite favorite) {
-        FavoriteDO softDeleted = mapper.selectSoftDeletedByUserIdAndProductId(favorite.userId(), favorite.productId());
+    public Optional<Favorite> saveIfAbsent(Favorite favorite) {
+        try {
+            FavoriteDO softDeleted =
+                    mapper.selectSoftDeletedByUserIdAndProductId(favorite.userId(), favorite.productId());
 
-        if (softDeleted != null) {
-            mapper.reviveById(softDeleted.getId(), favorite.userId());
-            FavoriteDO revived = mapper.selectById(softDeleted.getId());
-            return Favorite.reconstitute(
-                    revived.getId(),
-                    revived.getUserId(),
-                    revived.getProductId(),
-                    revived.getPriceSnapshot(),
-                    revived.getCreateTime());
+            if (softDeleted != null) {
+                mapper.reviveById(softDeleted.getId(), favorite.userId());
+                FavoriteDO revived = mapper.selectById(softDeleted.getId());
+                return Optional.of(toDomain(revived));
+            }
+
+            FavoriteDO dataObject = toDataObject(favorite);
+            dataObject.setId(idGenerator.generateId());
+            mapper.insert(dataObject);
+            return Optional.of(Favorite.reconstitute(
+                    dataObject.getId(),
+                    dataObject.getUserId(),
+                    dataObject.getProductId(),
+                    dataObject.getPriceSnapshot(),
+                    dataObject.getCreateTime()));
+        } catch (DuplicateKeyException e) {
+            // 唯一键裁决并发重复收藏（复活路径同样可能撞上已存在的活跃行）：已存在即幂等，返回空
+            return Optional.empty();
         }
-
-        FavoriteDO dataObject = toDataObject(favorite);
-        dataObject.setId(idGenerator.generateId());
-        mapper.insert(dataObject);
-        return Favorite.reconstitute(
-                dataObject.getId(),
-                dataObject.getUserId(),
-                dataObject.getProductId(),
-                dataObject.getPriceSnapshot(),
-                dataObject.getCreateTime());
     }
 
     @Override
