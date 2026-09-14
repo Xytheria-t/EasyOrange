@@ -19,7 +19,13 @@ public interface FavoriteRepository {
 
     long countByUserId(String userId);
 
-    Favorite save(Favorite favorite);
+    /**
+     * 幂等建立收藏：软删行复活、无行则新增；已被并发请求抢先建立（唯一键
+     * {@code (user_id, product_id, del_flag)} 命中）时返回空，由调用方按幂等成功处理。
+     * <p>
+     * 唯一键冲突在适配器内翻译成"返回空"，不外抛持久层异常。
+     */
+    Optional<Favorite> saveIfAbsent(Favorite favorite);
 
     void removeById(String id);
 

@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,9 +44,7 @@ public class FavoriteService {
         }
 
         Favorite favorite = Favorite.create(userId, productId, price);
-        try {
-            favoriteRepository.save(favorite);
-        } catch (DuplicateKeyException e) {
+        if (favoriteRepository.saveIfAbsent(favorite).isEmpty()) {
             // 并发重复收藏：唯一键 (user_id, product_id, del_flag) 兜底，幂等视为成功
             log.warn("并发重复收藏被唯一键拦截, userId={}, productId={}", userId, productId);
         }

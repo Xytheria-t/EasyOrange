@@ -22,7 +22,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DuplicateKeyException;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("收藏服务测试")
@@ -55,12 +54,12 @@ class FavoriteServiceTest {
         when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
         when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
                 .thenReturn(false);
-        when(favoriteRepository.save(any(Favorite.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(favoriteRepository.saveIfAbsent(any(Favorite.class))).thenAnswer(inv -> Optional.of(inv.getArgument(0)));
 
         favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID);
 
         ArgumentCaptor<Favorite> captor = ArgumentCaptor.forClass(Favorite.class);
-        verify(favoriteRepository).save(captor.capture());
+        verify(favoriteRepository).saveIfAbsent(captor.capture());
         assertThat(captor.getValue().priceSnapshot()).isEqualTo(TEST_PRICE);
     }
 
@@ -73,7 +72,7 @@ class FavoriteServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("商品不存在");
 
-        verify(favoriteRepository, never()).save(any());
+        verify(favoriteRepository, never()).saveIfAbsent(any());
     }
 
     @Test
@@ -86,19 +85,21 @@ class FavoriteServiceTest {
 
         favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID);
 
-        verify(favoriteRepository, never()).save(any());
+        verify(favoriteRepository, never()).saveIfAbsent(any());
     }
 
     @Test
-    @DisplayName("添加收藏 - 并发重复收藏撞唯一键时幂等成功")
+    @DisplayName("添加收藏 - 并发重复收藏（端口返回空）时幂等成功")
     void addFavorite_duplicateKeyRace() {
         when(productInfoPort.findPriceByProductId(TEST_PRODUCT_ID)).thenReturn(Optional.of(TEST_PRICE));
         when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
         when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
                 .thenReturn(false);
-        when(favoriteRepository.save(any(Favorite.class))).thenThrow(new DuplicateKeyException("duplicate"));
+        when(favoriteRepository.saveIfAbsent(any(Favorite.class))).thenReturn(Optional.empty());
 
         favoriteService.addFavorite(TEST_USER_ID, TEST_PRODUCT_ID);
+
+        verify(favoriteRepository).saveIfAbsent(any(Favorite.class));
     }
 
     @Test
@@ -111,7 +112,7 @@ class FavoriteServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("不能收藏自己的商品");
 
-        verify(favoriteRepository, never()).save(any());
+        verify(favoriteRepository, never()).saveIfAbsent(any());
     }
 
     @Test

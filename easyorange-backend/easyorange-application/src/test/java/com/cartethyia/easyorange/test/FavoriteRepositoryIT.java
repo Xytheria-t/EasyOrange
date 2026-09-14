@@ -33,13 +33,17 @@ class FavoriteRepositoryIT {
         String userId = UUID.randomUUID().toString();
         String productId = UUID.randomUUID().toString();
 
-        Favorite first = favoriteRepository.save(Favorite.create(userId, productId, PRICE));
+        Favorite first = favoriteRepository
+                .saveIfAbsent(Favorite.create(userId, productId, PRICE))
+                .orElseThrow();
         assertThat(first.id()).as("首次收藏必须生成主键").isNotBlank();
 
         favoriteRepository.removeById(first.id());
         assertThat(favoriteRepository.countByUserId(userId)).isZero();
 
-        Favorite second = favoriteRepository.save(Favorite.create(userId, productId, PRICE));
+        Favorite second = favoriteRepository
+                .saveIfAbsent(Favorite.create(userId, productId, PRICE))
+                .orElseThrow();
         assertThat(second.id()).as("再次收藏应复活原行而非新增").isEqualTo(first.id());
 
         assertThatCode(() -> favoriteRepository.removeById(second.id()))
@@ -47,7 +51,9 @@ class FavoriteRepositoryIT {
                 .doesNotThrowAnyException();
         assertThat(favoriteRepository.countByUserId(userId)).isZero();
 
-        Favorite third = favoriteRepository.save(Favorite.create(userId, productId, PRICE));
+        Favorite third = favoriteRepository
+                .saveIfAbsent(Favorite.create(userId, productId, PRICE))
+                .orElseThrow();
         assertThat(third.id()).isEqualTo(first.id());
         favoriteRepository.removeById(third.id());
         assertThat(favoriteRepository.countByUserId(userId)).isZero();
@@ -59,11 +65,17 @@ class FavoriteRepositoryIT {
         String userId = UUID.randomUUID().toString();
         String productId = UUID.randomUUID().toString();
 
-        Favorite first = favoriteRepository.save(Favorite.create(userId, productId, PRICE));
+        Favorite first = favoriteRepository
+                .saveIfAbsent(Favorite.create(userId, productId, PRICE))
+                .orElseThrow();
         favoriteRepository.removeById(first.id());
-        favoriteRepository.save(Favorite.create(userId, productId, PRICE));
+        favoriteRepository
+                .saveIfAbsent(Favorite.create(userId, productId, PRICE))
+                .orElseThrow();
         favoriteRepository.removeById(first.id());
-        favoriteRepository.save(Favorite.create(userId, productId, PRICE));
+        favoriteRepository
+                .saveIfAbsent(Favorite.create(userId, productId, PRICE))
+                .orElseThrow();
 
         assertThat(favoriteRepository.findByUserIdAndProductId(userId, productId))
                 .as("复活路径下只应存在一条 del_flag=0 记录")
@@ -75,7 +87,9 @@ class FavoriteRepositoryIT {
     void updatePriceSnapshot_casSemantics() {
         String userId = UUID.randomUUID().toString();
         String productId = UUID.randomUUID().toString();
-        Favorite saved = favoriteRepository.save(Favorite.create(userId, productId, PRICE));
+        Favorite saved = favoriteRepository
+                .saveIfAbsent(Favorite.create(userId, productId, PRICE))
+                .orElseThrow();
 
         boolean miss =
                 favoriteRepository.updatePriceSnapshot(saved.id(), new BigDecimal("50.00"), new BigDecimal("40.00"));
@@ -101,5 +115,21 @@ class FavoriteRepositoryIT {
                         .orElseThrow()
                         .priceSnapshot())
                 .isEqualByComparingTo(new BigDecimal("70.00"));
+    }
+
+    @Test
+    @DisplayName("幂等建立：已存在活跃收藏时 saveIfAbsent 返回空（唯一键裁决，不外抛持久层异常）")
+    void saveIfAbsent_existingActiveRow_returnsEmpty() {
+        String userId = UUID.randomUUID().toString();
+        String productId = UUID.randomUUID().toString();
+
+        assertThat(favoriteRepository.saveIfAbsent(Favorite.create(userId, productId, PRICE)))
+                .as("首次收藏应落库")
+                .isPresent();
+
+        assertThat(favoriteRepository.saveIfAbsent(Favorite.create(userId, productId, PRICE)))
+                .as("已存在活跃收藏时幂等返回空")
+                .isEmpty();
+        assertThat(favoriteRepository.countByUserId(userId)).isEqualTo(1);
     }
 }
