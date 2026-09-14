@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.framework.config.cache;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.redis.cache.CacheStatistics;
 import org.springframework.data.redis.cache.CacheStatisticsCollector;
@@ -12,6 +13,7 @@ import org.springframework.data.redis.cache.RedisCacheWriter;
  * TTL 随机抖动装饰（防缓存雪崩）— put / store / putIfAbsent 写入时按比例给 TTL 加随机偏移，
  * 同批写入的 key 错峰过期；读与淘汰路径原样透传。
  */
+@NullMarked
 class JitterTtlRedisCacheWriter implements RedisCacheWriter {
 
     private final RedisCacheWriter delegate;
@@ -33,7 +35,7 @@ class JitterTtlRedisCacheWriter implements RedisCacheWriter {
     }
 
     @Override
-    public byte[] putIfAbsent(String name, byte[] key, byte[] value, @Nullable Duration ttl) {
+    public byte @Nullable [] putIfAbsent(String name, byte[] key, byte[] value, @Nullable Duration ttl) {
         return delegate.putIfAbsent(name, key, value, jitter(ttl));
     }
 
@@ -50,12 +52,12 @@ class JitterTtlRedisCacheWriter implements RedisCacheWriter {
     // —— 读写与统计路径透传 ——
 
     @Override
-    public byte[] get(String name, byte[] key) {
+    public byte @Nullable [] get(String name, byte[] key) {
         return delegate.get(name, key);
     }
 
     @Override
-    public CompletableFuture<byte[]> retrieve(String name, byte[] key, Duration ttl) {
+    public CompletableFuture<byte[]> retrieve(String name, byte[] key, @Nullable Duration ttl) {
         return delegate.retrieve(name, key, ttl);
     }
 
