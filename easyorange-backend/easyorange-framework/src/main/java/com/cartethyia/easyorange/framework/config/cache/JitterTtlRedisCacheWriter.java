@@ -3,10 +3,10 @@ package com.cartethyia.easyorange.framework.config.cache;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.redis.cache.CacheStatistics;
 import org.springframework.data.redis.cache.CacheStatisticsCollector;
 import org.springframework.data.redis.cache.RedisCacheWriter;
-import org.springframework.lang.Nullable;
 
 /**
  * TTL 随机抖动装饰（防缓存雪崩）— put / store / putIfAbsent 写入时按比例给 TTL 加随机偏移，
