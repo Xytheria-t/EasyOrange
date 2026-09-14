@@ -11,7 +11,7 @@ import lombok.Getter;
  * <p>
  * A 段编号布局：A + 4 位 HTTP 状态码 + 可选子码数字。A0000 成功；0401=401 未登录 /
  * 04011=401 子码·登录已过期（0402 为 HTTP 402 语义，故子码不再占用真实 4xx）/ 0403=403 禁止 /
- * 0404=404 不存在 / 0405=405 方法不允许 / 0429=429 限流。HTTP 状态由码内数字自动推导（单一来源
+ * 0404=404 不存在 / 0405=405 方法不允许 / 0413=413 上传超限 / 0429=429 限流。HTTP 状态由码内数字自动推导（单一来源
  * 见 {@link IResultCode#resolveStatus(String)}），新增 A04xx 家族码无需改映射。
  * B 段通用码：B0001=通用失败（{@code Result.error(String)} 兜底）、B0002=未指定码的业务异常兜底、
  * B0003=参数校验失败（@Valid/约束/参数缺失/解析错误）、B0004=请求形态错误（如 415 媒体类型）、
@@ -29,6 +29,7 @@ public enum ResultCode implements IResultCode {
     FORBIDDEN("A0403", "禁止访问"),
     NOT_FOUND("A0404", "资源不存在"),
     METHOD_NOT_ALLOWED("A0405", "请求方法不允许"),
+    CONTENT_TOO_LARGE("A0413", "上传文件过大"),
     TOO_MANY_REQUESTS("A0429", "请求过于频繁"),
 
     // B: 业务错误

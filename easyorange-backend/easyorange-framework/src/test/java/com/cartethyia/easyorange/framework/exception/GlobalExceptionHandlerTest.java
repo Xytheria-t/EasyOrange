@@ -10,12 +10,22 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.MessageSourceResolvable;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.core.MethodParameter;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.validation.method.MethodValidationResult;
+import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @DisplayName("GlobalExceptionHandler 单元测试")
@@ -142,6 +152,137 @@ class GlobalExceptionHandlerTest {
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
             assertThat(response.getBody().code()).isEqualTo(ResultCode.TOO_MANY_REQUESTS.getCode());
+        }
+    }
+
+    @Nested
+    @DisplayName("handle(持久化/上传异常)")
+    class PersistenceAndUploadExceptionTests {
+
+        @Test
+        @DisplayName("DuplicateKeyException 应返回 400（唯一键兜底）而非 500")
+        void handleDuplicateKey_returnsBadRequest() {
+            var ex = new DuplicateKeyException("Duplicate entry 'x' for key 'uk_eo_favorite_user_product_del'");
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().code()).isEqualTo(ResultCode.VALIDATE_FAILED.getCode());
+        }
+
+        @Test
+        @DisplayName("CannotAcquireLockException（MySQL 死锁/锁等待超时）应映射并发冲突 B0006 而非 500")
+        void handleCannotAcquireLock_mapsToConcurrentUpdate() {
+            var ex = new CannotAcquireLockException("Deadlock found when trying to get lock");
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().code()).isEqualTo(ResultCode.CONCURRENT_UPDATE.getCode());
+            assertThat(response.getBody().message()).contains("重试");
+        }
+
+        @Test
+        @DisplayName("MaxUploadSizeExceededException 应返回 413 + A0413 + 上限提示（不得落 500 被前端重试）")
+        void handleMaxUploadSize_returnsContentTooLarge() {
+            var ex = new MaxUploadSizeExceededException(10 * 1024 * 1024L);
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            // 断言数字 413 而非只比常量：413 在 RFC 9110 里由 Payload Too Large 更名为 Content Too Large，
+            // 常量名随 Spring 版本摇摆，状态码语义不能跟着漂
+            assertThat(response.getStatusCode().value()).isEqualTo(413);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONTENT_TOO_LARGE);
+            assertThat(response.getBody().code()).isEqualTo(ResultCode.CONTENT_TOO_LARGE.getCode());
+            assertThat(response.getBody().message()).contains("10MB");
+        }
+
+        @Test
+        @DisplayName("上限未知（maxUploadSize<=0）时不拼上限后缀，仍返回 413")
+        void handleMaxUploadSize_unknownLimit_omitsSuffix() {
+            var ex = new MaxUploadSizeExceededException(-1L);
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            assertThat(response.getStatusCode().value()).isEqualTo(413);
+            assertThat(response.getBody().message()).isEqualTo(ResultCode.CONTENT_TOO_LARGE.getMessage());
+        }
+
+        @Test
+        @DisplayName("上限不足 1MB 时按 KB 展示")
+        void handleMaxUploadSize_kbLimit_usesKbSuffix() {
+            var ex = new MaxUploadSizeExceededException(512 * 1024L);
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONTENT_TOO_LARGE);
+            assertThat(response.getBody().message()).contains("512KB");
+        }
+
+        @Test
+        @DisplayName("MultipartException（multipart 解析失败）应返回 400 而非 500")
+        void handleMultipart_returnsBadRequest() {
+            var ex = new MultipartException("Failed to parse multipart servlet request");
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().code()).isEqualTo(ResultCode.VALIDATE_FAILED.getCode());
+        }
+    }
+
+    @Nested
+    @DisplayName("handle(方法参数级校验)")
+    class MethodValidationExceptionTests {
+
+        @Test
+        @DisplayName("HandlerMethodValidationException 应返回 400 + B0003 并带出参数消息（不得落 500）")
+        void handleHandlerMethodValidation_returnsBadRequestWithParameterMessages() throws Exception {
+            var ex = handlerMethodValidationException("手机号格式不正确");
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().code()).isEqualTo(ResultCode.VALIDATE_FAILED.getCode());
+            assertThat(response.getBody().message()).contains("手机号格式不正确");
+        }
+
+        @Test
+        @DisplayName("只有跨参数约束结果（无参数级结果）时回退为通用参数校验失败提示")
+        void handleHandlerMethodValidation_noParameterResults_fallsBackToGenericMessage() throws Exception {
+            // Spring 保证每个 ParameterValidationResult 至少有一条 resolvableError，
+            // 故"无消息"只可能在 getParameterValidationResults() 为空（仅跨参数约束）时出现，用子类固定该形状
+            var ex = new HandlerMethodValidationException(handlerMethodValidationResult("手机号格式不正确")) {
+                @Override
+                public List<ParameterValidationResult> getParameterValidationResults() {
+                    return List.of();
+                }
+            };
+
+            ResponseEntity<Result<Void>> response = handler.handle(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().message()).isEqualTo(ResultCode.VALIDATE_FAILED.getMessage());
+        }
+
+        /** 用 Spring 公开 API 组装真实异常：MethodValidationResult.create + ParameterValidationResult。 */
+        private static HandlerMethodValidationException handlerMethodValidationException(String defaultMessage)
+                throws Exception {
+            return new HandlerMethodValidationException(handlerMethodValidationResult(defaultMessage));
+        }
+
+        private static MethodValidationResult handlerMethodValidationResult(String defaultMessage) throws Exception {
+            var method = Fixture.class.getDeclaredMethod("endpoint", String.class);
+            var parameter = new MethodParameter(method, 0);
+            var resolvables =
+                    List.<MessageSourceResolvable>of(new DefaultMessageSourceResolvable(null, null, defaultMessage));
+            var result = new ParameterValidationResult(parameter, "123", resolvables, null, null, null, null);
+            return MethodValidationResult.create(new Fixture(), method, List.of(result));
+        }
+
+        private static class Fixture {
+            @SuppressWarnings("unused")
+            void endpoint(String phone) {}
         }
     }
 

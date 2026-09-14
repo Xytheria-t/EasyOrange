@@ -22,7 +22,6 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,7 +34,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/products/search")
 @RequiredArgsConstructor
-@Validated
+// 故意不加 @Validated：控制器级 @Validated 会关掉 Spring MVC 内建方法校验（改为 AOP 代理 + ConstraintViolationException），
+// 参数上的 @Max/@Size 交给内建方法校验，抛 HandlerMethodValidationException 后由 GlobalExceptionHandler 统一映射 400
 public class ProductSearchController {
 
     private final ProductSearchQueryHandler searchQueryHandler;
