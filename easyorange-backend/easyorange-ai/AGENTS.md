@@ -13,7 +13,7 @@ ai/
 │   ├── AiCacheConfig.java          # AiRateLimitInterceptor 注册（/api/ai/**）
 │   └── AiStaleCacheConfig.java     # Stale 缓存 (Caffeine, 24h TTL, 限流降级用)
 ├── interceptor/
-│   └── AiRateLimitInterceptor.java # AI 限流拦截器，Redis 令牌桶 + stale 降级
+│   └── AiRateLimitInterceptor.java # AI 限流拦截器，Redis 令牌桶（超限 429）
 ├── prompt/                         # Prompt 版本管理 (YAML 加载，模板即 system prompt)
 │   ├── PromptTemplate.java         # record 值类型 (name/version/template/description)
 │   ├── PromptRegistry.java         # 接口 getLatest(name)

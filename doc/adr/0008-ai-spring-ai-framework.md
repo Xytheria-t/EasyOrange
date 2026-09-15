@@ -55,7 +55,7 @@ EasyOrange 的 6 个 AI 决策点（智能估值 / AI 营销文案 / AI 信用�
 ### 4. 保留清单
 
 - `@TokenBudget` AOP（预算治理与框架无关，保留；已移除 `AiMetricsService` 依赖）
-- `AiRateLimitInterceptor`（Redis 令牌桶 + stale 降级，保留；已移除 `AiMetricsService` 依赖）
+- `AiRateLimitInterceptor`（Redis 令牌桶，超限 429，保留；已移除 `AiMetricsService` 依赖）
 - `SemanticSearchService` / `AiSearchEnhancerAdapter` 的缓存与降级业务逻辑，仅把 LLM 调用点换成 `ChatModel`
 
 ### 5. Embedding 变真实现

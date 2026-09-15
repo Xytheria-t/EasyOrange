@@ -96,7 +96,7 @@ EasyOrange 中的**资产**是广义概念，**不局限于二手实物**：
 - **Spring AI 2.0 框架化**：`AiModelConfig` 定义 `chatModel`（@Primary DeepSeek）/ `visionChatModel`（Qwen-VL）/ `embeddingModel`（DashScope）三个 bean，统一 `OpenAiSetup.setupSyncClient` OpenAI 兼容线协议（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)）
 - **调用去重**：`AiModelSupport`（callText / callJson / embed / analyzeImages）
 - **令牌桶限流**：`AiRateLimitInterceptor` 按端点独立限流（5-30 次/分）
-- **stale 降级**：超限时返回 stale 缓存，Redis 不可用时 fail-open
+- **限流降级**：超限返回 429，Redis 不可用时 fail-open；供应商故障走 stale 旧回答兜底（服务层）
 - **Embedding 真实现**：查询侧 kNN + 索引侧 `nameEmbedding` 写入（dims=1024 与 ES `dense_vector` 对齐）
 - **Prompt 版本化（YAML）**：版本化管理 prompt 模板，支持 A/B 与回滚
 - **Token 预算治理（@TokenBudget AOP）**：日预算控制 + 超预算降级
