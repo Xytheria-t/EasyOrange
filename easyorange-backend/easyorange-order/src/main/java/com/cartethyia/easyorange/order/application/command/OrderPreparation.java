@@ -63,7 +63,7 @@ public class OrderPreparation {
         for (CreateOrderCommand.CreateOrderItem item : items) {
             ProductInventoryPort.ProductSnapshot snapshot = snapshotMap.get(item.productId());
             if (snapshot == null) {
-                throw new OrderDomainException("资产不存在: " + item.productId());
+                throw OrderDomainException.of("资产不存在: " + item.productId());
             }
             BizRequire.requireTrue(snapshot.isOnline(), "资产已下架: " + item.productId());
             BizRequire.requireTrue(snapshot.hasStock(), "资产库存不足: " + item.productId());
@@ -131,7 +131,7 @@ public class OrderPreparation {
         if (detail == null) {
             // 快照与详情来自不同读源（ProductInventoryPort / ProductQueryPort），详情缺失说明跨端口数据不一致。
             // 空值回退会把脏快照写进订单，这里抛错随事务整体回滚，交由客户端重试。
-            throw new OrderDomainException("资产详情缺失: " + productId);
+            throw OrderDomainException.of("资产详情缺失: " + productId);
         }
         return ProductSnapshot.builder()
                 .productId(productId)

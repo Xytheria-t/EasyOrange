@@ -25,8 +25,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -238,23 +236,18 @@ public class OrderCommandHandler {
     }
 
     private Order validateBuyer(String userId, String orderId) {
-        return validateOwner(userId, orderId, Order::buyerId);
+        var aggregate = findOrder(orderId);
+        BizRequire.requireTrue(aggregate.isBuyer(userId), OrderResultCode.ORDER_NOT_OWNER);
+        return aggregate;
     }
 
     private Order validateSeller(String userId, String orderId) {
-        return validateOwner(userId, orderId, Order::sellerId);
-    }
-
-    private Order validateOwner(String userId, String orderId, Function<Order, UserId> ownerExtractor) {
         var aggregate = findOrder(orderId);
-        BizRequire.requireTrue(
-                Objects.equals(ownerExtractor.apply(aggregate).value(), userId), OrderResultCode.ORDER_NOT_OWNER);
+        BizRequire.requireTrue(aggregate.isSeller(userId), OrderResultCode.ORDER_NOT_OWNER);
         return aggregate;
     }
 
     private Order findOrder(String orderId) {
-        return orderRepository
-                .findById(OrderId.of(orderId))
-                .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
+        return orderRepository.findById(OrderId.of(orderId)).orElseThrow(() -> OrderDomainException.notFound(orderId));
     }
 }

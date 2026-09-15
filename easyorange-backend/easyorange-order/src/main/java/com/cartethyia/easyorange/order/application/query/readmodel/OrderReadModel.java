@@ -27,4 +27,15 @@ public record OrderReadModel(
         String refundReason,
         LocalDateTime refundTime,
         LocalDateTime createTime,
-        LocalDateTime updateTime) {}
+        LocalDateTime updateTime) {
+
+    /**
+     * 是否为订单参与方（买家或卖家）— 查询侧的所有权规则收口于此。
+     * <p>
+     * 读模型是 CQRS 查询侧的独立数据载体（{@code buyerId}/{@code sellerId} 为 String，与 API 契约一致），
+     * 与命令侧聚合根的角色谓词（{@code Order.isBuyer/isSeller}）各自表达，但错误码同为 {@code ORDER_NOT_OWNER}。
+     */
+    public boolean isOwnedBy(String userId) {
+        return userId.equals(buyerId) || userId.equals(sellerId);
+    }
+}
