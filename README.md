@@ -18,7 +18,7 @@ EasyOrange 在两条技术主线上都有独立且完整的落地，可分别展
 | AI 应用工程化 | 架构落地 |
 |---|---|
 | **Spring AI 2.0 框架化** — 6 决策点直接注入 `ChatModel` / `EmbeddingModel` bean，切换供应商只改配置不改业务代码（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） | **DDD 六边形 + CQRS** — 35 Port 编译期隔离，domain 层零框架依赖；CQRS 仅 product / order / payment / message 4 模块（[ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)） |
-| **轻量级 Agent 编排** — `AiSearchEnhancer` 4 路并行 Tool Calling，单步骤 5s 超时降级，无 LangChain4j 黑盒 | **拒绝 Saga** — 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件副作用（[ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)） |
+| **轻量级 Agent 编排** — `AiSearchEnhancer` 4 路并行 Tool Calling，整体 5s 超时后保留已完成步骤，无 LangChain4j 黑盒 | **拒绝 Saga** — 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件副作用（[ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)） |
 | **限流 / 预算 / 降级** — Redisson 分布式令牌桶 + stale 降级 + `@TokenBudget` 日预算 AOP | **事件驱动可靠投递** — Spring Modulith Outbox → RabbitMQ → DLQ 三级重试 + traceId 全链路 |
 | **Prompt 工程化** — 6 个 YAML 模板版本化渲染 | **架构治理** — ArchUnit 11 条规则守卫分层 + 10 条 ADR 记录决策 |
 | **Embedding 真实现 + 多模态** — text-embedding-v3 kNN + BM25 混合检索 + Qwen-VL 拍照识别自动上架 | **质量门禁** — 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重验证），前端 Biome 0 errors |
@@ -103,7 +103,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 
 ### 轻量级 Agent 编排
 
-[`AiSearchEnhancerAdapter`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/AiSearchEnhancerAdapter.java) 基于 Spring AI 手写轻量 Agent Planner：4 路 Tool Calling（LLM 意图识别 / 商品标签生成 / 市场分析 / 建议问题生成），`CompletableFuture` 虚拟线程并行，单步骤 5s 超时降级不影响整体，无 LangChain4j 黑盒。
+[`AiSearchEnhancerAdapter`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/AiSearchEnhancerAdapter.java) 基于 Spring AI 手写轻量 Agent Planner：4 路 Tool Calling（LLM 意图识别 / 商品标签生成 / 市场分析 / 建议问题生成），`CompletableFuture` 虚拟线程并行，整体 5s 超时（`allOf().get(5s)`，无单步超时）后收集已完成步骤的部分结果，无 LangChain4j 黑盒。
 
 ### AI 对话 / RAG 完整链路 / 评估闭环（2026-08-14 扩展）
 

@@ -57,10 +57,10 @@ ai/
 - **供应商可换（options 切换）**：改 `AiModelConfig` 的 baseUrl/apiKey/model（或 `application.yaml` 的 `easyorange.ai.*`），无需改业务代码；`easyorange.ai.provider` 字段与 `easyorange-python/` 侧车已删除（2026-08-03）
 - **跨模块 Port**：`SemanticSearchService` / `AiSearchEnhancerAdapter` 通过 consumer 模块定义的 port 接口查询（`ProductSearchQueryPort` / `AiSearchEnhancerPort`），本模块作为实现方
 - **纯规则零 LLM**：`NaturalLanguageDetector` 和 `ProductTagger` 不调任何 LLM，通过规则引擎 + 数据库查询完成，确保亚毫秒级响应
-- **并行容错**：`AiSearchEnhancer` 内 4 个子步骤使用 `CompletableFuture` 并行执行，单步骤超时/失败不影响其他步骤。5s 总超时控制。`supplyAsync` 显式传 `SearchTool.VIRTUAL` 虚拟线程执行器（每任务一个虚拟线程；`spring.threads.virtual.enabled` 管不到 `ForkJoinPool.commonPool()`，秒级 LLM 阻塞不占平台线程），无需自定义线程池。取消操作使用 `cancel(false)` 避免中断 carrier 线程
+- **并行容错**：`AiSearchEnhancer` 内 4 个子步骤使用 `CompletableFuture` 并行执行，任一步骤失败不阻塞其余步骤。整体 5s 总超时（`allOf(...).get(5, SECONDS)`，无单步超时），超时后经 `getNow` 保留已完成步骤的部分结果（规则标签工具刻意不取消）。`supplyAsync` 显式传 `SearchTool.VIRTUAL` 虚拟线程执行器（每任务一个虚拟线程；`spring.threads.virtual.enabled` 管不到 `ForkJoinPool.commonPool()`，秒级 LLM 阻塞不占平台线程），无需自定义线程池。取消操作使用 `cancel(false)` 避免中断 carrier 线程
 - **Embedding 真实现**：查询侧 `SemanticSearchService` 用 `embeddingModel.embed(keyword)` 生成查询向量经 `ProductSearchQueryPort` 传入 ES kNN；索引侧 `ElasticsearchProductSearchIndexAdapter`（easyorange-application 模块）注入 `ObjectProvider<EmbeddingModel>` best-effort 写入 `nameEmbedding`（失败降级 null，不阻塞索引）
 - **LLM-as-Judge 离线评估**（2026-08-08 新增）：`AiCallLogRecorder` 记录每次 LLM/Embedding 调用到 `eo_ai_call_log`，`AiEvalScheduler` 定时对未评审成功调用打分（1-5 + 评语）；默认关闭（`easyorange.ai.eval.enabled=false`），把 AI 输出质量从「感觉还行」变成「可量化、可回归」
-- **限流拦截器**：`AiRateLimitInterceptor` 拦截 `/api/ai/**`，按端点独立令牌桶 (5-30次/分)，超限时优先返回 stale 缓存
+- **限流拦截器**：`AiRateLimitInterceptor` 拦截 `/api/ai/**`，按端点独立令牌桶 (5-30次/分)，超限返回 429（`ResultCode.TOO_MANY_REQUESTS`，Redis 故障 fail-open 放行）；stale 兜底属 LLM 供应商故障（`AiChatService` 服务层 stale-while-error），拦截器不承担缓存职责
 
 ## 限流与预算
 
