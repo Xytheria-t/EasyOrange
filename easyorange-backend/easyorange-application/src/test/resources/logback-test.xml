@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  测试期日志配置（logback 查找顺序中 logback-test.xml 优先于 main 的 logback-spring.xml，
+  仅作用于 src/test 的 classpath，不进产物 jar）。
+  目的：单元测试大量「故意触发降级路径」的用例会让被测代码 log.warn(msg, e) 打出几十行堆栈，
+  淹没真正的失败信息；这里保留全部日志行、只去掉 throwable 堆栈。
+  生产环境仍走 main/logback-spring.xml，堆栈照常输出。
+-->
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{39} : %m%nopex%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
