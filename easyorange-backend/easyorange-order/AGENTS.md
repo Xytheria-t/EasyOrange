@@ -98,7 +98,9 @@ order/
 │   │   ├── OrderAction.java                # 状态机唯一事实来源：动作（前置状态→目标状态+支付副作用）
 │   │   └── OrderResultCode.java
 │   └── exception/
-│       └── OrderDomainException.java
+│       ├── OrderDomainException.java        # 唯一领域异常：构造走 of(...)，具名语义走 notFound(orderId)
+│       ├── OrderCreationException.java      # 下单失败（默认码 B3009）
+│       └── PaymentGatewayAdapterException.java  # 支付网关不可用（D0502）
 ```
 
 > **跨模块适配器位置**：order 模块定义的 `ProductInventoryPort` / `ProductQueryPort` / `PaymentGatewayPort` / `UserInfoPort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/ProductInventoryAdapter`、`product/ProductQueryAdapter`、`payment/OrderPaymentGatewayAdapter`、`user/OrderUserInfoAdapter`。`OrderCachePort` 的实现 `RedisOrderCacheAdapter` 位于 order 模块自身 `adapter/outbound/cache/`，因其仅操作订单域缓存。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
