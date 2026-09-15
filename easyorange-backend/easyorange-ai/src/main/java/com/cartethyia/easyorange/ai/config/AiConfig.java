@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.config;
 
-import com.cartethyia.easyorange.ai.budget.InMemoryTokenBudgetStore;
-import com.cartethyia.easyorange.ai.budget.TokenBudgetStore;
+import com.cartethyia.easyorange.ai.adapter.outbound.budget.InMemoryTokenBudgetStore;
+import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

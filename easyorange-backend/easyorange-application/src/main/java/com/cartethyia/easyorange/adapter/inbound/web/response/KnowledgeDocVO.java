@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.inbound.web.response;
 
-import com.cartethyia.easyorange.ai.enums.KnowledgeDocStatus;
+import com.cartethyia.easyorange.ai.domain.constant.KnowledgeDocStatus;
 import java.time.LocalDateTime;
 
 /**

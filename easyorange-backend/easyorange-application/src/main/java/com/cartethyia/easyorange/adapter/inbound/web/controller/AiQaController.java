@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.dto.QaRequest;
-import com.cartethyia.easyorange.ai.dto.QaResponse;
-import com.cartethyia.easyorange.ai.dto.SemanticSearchResult;
-import com.cartethyia.easyorange.ai.service.AiQaService;
-import com.cartethyia.easyorange.ai.service.SemanticSearchService;
+import com.cartethyia.easyorange.ai.application.dto.QaRequest;
+import com.cartethyia.easyorange.ai.application.dto.QaResponse;
+import com.cartethyia.easyorange.ai.application.dto.SemanticSearchResult;
+import com.cartethyia.easyorange.ai.application.service.AiQaService;
+import com.cartethyia.easyorange.ai.application.service.SemanticSearchService;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;

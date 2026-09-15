@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.adapter.outbound.persistence.GoldenSetExportService;
+import com.cartethyia.easyorange.ai.domain.port.GoldenSetExportPort;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AdminFeedbackExportController {
 
-    private final GoldenSetExportService exportService;
+    private final GoldenSetExportPort exportService;
 
     @GetMapping("/export")
     public Result<String> export(@RequestParam(defaultValue = "50") int limit) {

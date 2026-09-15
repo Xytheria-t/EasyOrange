@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.event;
 
-import com.cartethyia.easyorange.ai.service.CreditScoringService;
+import com.cartethyia.easyorange.ai.application.service.CreditScoringService;
 import com.cartethyia.easyorange.framework.event.core.EventConsumerHandler;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;

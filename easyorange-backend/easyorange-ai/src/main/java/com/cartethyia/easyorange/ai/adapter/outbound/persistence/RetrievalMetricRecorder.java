@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.persistence;
 
+import com.cartethyia.easyorange.ai.domain.port.RetrievalMetricPort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class RetrievalMetricRecorder {
+public class RetrievalMetricRecorder implements RetrievalMetricPort {
 
     private static final String INSERT_SQL = """
             INSERT INTO eo_retrieval_metric (id, run_id, case_id, query_text, gold_doc_ids, hit_at_5, reciprocal_rank)
@@ -23,6 +24,7 @@ public class RetrievalMetricRecorder {
     private final JdbcTemplate jdbcTemplate;
     private final IdGenerator idGenerator;
 
+    @Override
     public void record(
             String runId, String caseId, String query, String goldDocIds, boolean hit, double reciprocalRank) {
         try {

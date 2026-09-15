@@ -5,8 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.ai.dto.CreditScoreResult;
-import com.cartethyia.easyorange.ai.service.CreditScoringService;
+import com.cartethyia.easyorange.ai.application.dto.CreditScoreResult;
+import com.cartethyia.easyorange.ai.application.service.CreditScoringService;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;

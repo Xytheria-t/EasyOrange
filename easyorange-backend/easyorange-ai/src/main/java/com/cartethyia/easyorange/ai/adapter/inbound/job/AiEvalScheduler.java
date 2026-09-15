@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.job;
 
+import com.cartethyia.easyorange.ai.application.service.AiJudge;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.service.AiJudge;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

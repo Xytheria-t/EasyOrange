@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort.AuditLogRecord;
-import com.cartethyia.easyorange.ai.service.AiReviewService;
+import com.cartethyia.easyorange.ai.application.service.AiReviewService;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;

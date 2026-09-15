@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeChunk;
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeIndexPort;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
+import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

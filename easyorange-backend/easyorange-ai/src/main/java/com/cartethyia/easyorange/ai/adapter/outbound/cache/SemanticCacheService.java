@@ -1,9 +1,10 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.cache;
 
+import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.enums.AiCallScope;
-import com.cartethyia.easyorange.ai.knowledge.VectorUtils;
-import com.cartethyia.easyorange.ai.service.AiModelSupport;
+import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.model.VectorUtils;
+import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -28,7 +29,7 @@ import tools.jackson.databind.ObjectMapper;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SemanticCacheService {
+public class SemanticCacheService implements SemanticCachePort {
 
     private static final String KEY_PREFIX = "eo:ai:semantic:";
 
@@ -41,6 +42,7 @@ public class SemanticCacheService {
     /**
      * 语义命中则返回缓存响应，否则 empty。
      */
+    @Override
     public <T> Optional<T> get(AiCallScope scope, String query, Class<T> type) {
         if (!aiProperties.semanticCache().enabled() || query == null || query.isBlank()) {
             return Optional.empty();
@@ -74,6 +76,7 @@ public class SemanticCacheService {
     /**
      * 写入缓存：embed 查询 → 存 (queryEmbedding, response)；超出 maxEntries 淘汰最旧条目。
      */
+    @Override
     public void put(AiCallScope scope, String query, Object response) {
         if (!aiProperties.semanticCache().enabled() || query == null || query.isBlank()) {
             return;

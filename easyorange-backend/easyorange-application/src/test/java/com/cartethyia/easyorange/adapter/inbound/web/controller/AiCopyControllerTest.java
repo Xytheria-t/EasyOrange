@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.ai.dto.CopyGenerationRequest;
-import com.cartethyia.easyorange.ai.dto.CopyGenerationResult;
-import com.cartethyia.easyorange.ai.service.AiCopyGenerationService;
+import com.cartethyia.easyorange.ai.application.dto.CopyGenerationRequest;
+import com.cartethyia.easyorange.ai.application.dto.CopyGenerationResult;
+import com.cartethyia.easyorange.ai.application.service.AiCopyGenerationService;
 import com.cartethyia.easyorange.common.result.Result;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

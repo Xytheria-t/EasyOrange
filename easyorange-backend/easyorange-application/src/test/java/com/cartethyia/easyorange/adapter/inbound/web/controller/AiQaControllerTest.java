@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.ai.dto.QaRequest;
-import com.cartethyia.easyorange.ai.dto.QaResponse;
-import com.cartethyia.easyorange.ai.dto.SemanticSearchResult;
-import com.cartethyia.easyorange.ai.service.AiQaService;
-import com.cartethyia.easyorange.ai.service.SemanticSearchService;
+import com.cartethyia.easyorange.ai.application.dto.QaRequest;
+import com.cartethyia.easyorange.ai.application.dto.QaResponse;
+import com.cartethyia.easyorange.ai.application.dto.SemanticSearchResult;
+import com.cartethyia.easyorange.ai.application.service.AiQaService;
+import com.cartethyia.easyorange.ai.application.service.SemanticSearchService;
 import com.cartethyia.easyorange.common.result.Result;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.chat.ChatStreamHandler;
-import com.cartethyia.easyorange.ai.dto.ChatAnswer;
-import com.cartethyia.easyorange.ai.dto.ChatRequest;
-import com.cartethyia.easyorange.ai.service.AiChatService;
+import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
+import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
+import com.cartethyia.easyorange.ai.application.service.AiChatService;
+import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;

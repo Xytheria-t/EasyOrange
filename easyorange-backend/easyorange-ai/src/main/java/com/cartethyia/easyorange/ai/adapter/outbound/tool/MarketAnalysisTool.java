@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.tool;
 
-import com.cartethyia.easyorange.ai.enums.AiCallScope;
-import com.cartethyia.easyorange.ai.service.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
+import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;

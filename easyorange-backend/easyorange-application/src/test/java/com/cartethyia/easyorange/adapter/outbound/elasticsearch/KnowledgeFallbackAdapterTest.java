@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeChunk;
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeDocEntity;
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeIndexPort;
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeRepository;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
+import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
+import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +40,7 @@ class KnowledgeFallbackAdapterTest {
                         "退款规则",
                         "7 天无理由退货…",
                         "平台规则",
-                        com.cartethyia.easyorange.ai.enums.KnowledgeDocStatus.INDEXED,
+                        com.cartethyia.easyorange.ai.domain.constant.KnowledgeDocStatus.INDEXED,
                         3,
                         LocalDateTime.now())));
         KnowledgeIndexPort adapter = new KnowledgeFallbackAdapter(repository);

@@ -6,7 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.service.CreditScoringService;
+import com.cartethyia.easyorange.ai.application.service.CreditScoringService;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;

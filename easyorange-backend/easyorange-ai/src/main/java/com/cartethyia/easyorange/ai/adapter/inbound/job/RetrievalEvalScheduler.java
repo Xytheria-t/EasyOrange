@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.job;
 
+import com.cartethyia.easyorange.ai.application.eval.GoldenSetEvaluator;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.eval.GoldenSetEvaluator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

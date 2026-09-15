@@ -1,7 +1,8 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.cache;
 
-import com.cartethyia.easyorange.ai.chat.ChatTurn;
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
+import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,14 +15,14 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * 多轮对话短期记忆 — Redis List 会话窗口（TTL 24h，最近 N 轮），
- * 与 {@link com.cartethyia.easyorange.ai.service.AiChatService} 的「最近 N 轮 + 工具结果」注入配合。
+ * 与 {@link com.cartethyia.easyorange.ai.application.service.AiChatService} 的「最近 N 轮 + 工具结果」注入配合。
  * <p>
  * Redis 不可用 / 会话为空时返回空列表（fail-open：丢记忆不阻塞回答）。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ChatSessionStore {
+public class ChatSessionStore implements ChatSessionPort {
 
     private static final String KEY_PREFIX = "eo:chat:session:";
 
@@ -32,6 +33,7 @@ public class ChatSessionStore {
     /**
      * 保存一轮对话，并裁剪到最近 N 轮 + 刷新 TTL。
      */
+    @Override
     public void saveTurn(String sessionId, String role, String content) {
         if (sessionId == null || sessionId.isBlank()) {
             return;
@@ -54,6 +56,7 @@ public class ChatSessionStore {
     /**
      * 读取最近 N 轮对话（不含当前问题）。
      */
+    @Override
     public List<ChatTurn> loadRecent(String sessionId, int limit) {
         if (sessionId == null || sessionId.isBlank()) {
             return List.of();

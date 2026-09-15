@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.tool;
 
-import com.cartethyia.easyorange.ai.service.ProductTagger;
+import com.cartethyia.easyorange.ai.application.service.ProductTagger;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.config;
 
-import com.cartethyia.easyorange.ai.interceptor.AiRateLimitInterceptor;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.AiRateLimitInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;

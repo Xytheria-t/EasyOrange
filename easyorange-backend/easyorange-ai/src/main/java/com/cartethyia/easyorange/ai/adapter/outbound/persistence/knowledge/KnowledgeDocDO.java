@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.persistence.knowledge;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.cartethyia.easyorange.ai.enums.KnowledgeDocStatus;
+import com.cartethyia.easyorange.ai.domain.constant.KnowledgeDocStatus;
 import com.cartethyia.easyorange.common.entity.BaseDO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
