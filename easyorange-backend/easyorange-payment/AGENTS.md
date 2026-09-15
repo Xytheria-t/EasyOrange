@@ -31,11 +31,13 @@ payment/
 │       └── security/
 │           └── CallbackSignatureVerifier.java    # HMAC-SHA256 回调验签（实现 CallbackSignatureVerifierPort）
 ├── application/
-│   ├── command/                                  # 命令（CQRS Write，sealed PaymentCommand 接口）
-│   │   ├── PaymentCommandHandler.java             # 命令分发器（create/pay/close/refund）
-│   │   ├── PaymentCommand.java                    # sealed interface，permits 4 个命令 record
+│   ├── command/                                  # 命令（CQRS Write）
+│   │   ├── PaymentCommandHandler.java             # 用例入口（create/pay/callback/refund/close）
+│   │   │                                          #   + 订单侧入口 payByOrderId / refundByOrderId（按 orderId 解析支付单）
+│   │   ├── PaymentPhaseExecutor.java              # 两阶段 phase 执行器（独立 Bean，保证 @Transactional 生效）
 │   │   ├── CreatePaymentCommand.java              # @NotBlank orderId / @NotNull @Positive amount / @NotBlank paymentMethod
 │   │   ├── PayCommand.java                        # @NotBlank paymentNo
+│   │   ├── PaymentCallbackCommand.java            # 回调确认：paymentNo + transactionId + 可选 amount
 │   │   ├── RefundPaymentCommand.java              # @NotBlank paymentId / @NotNull @Positive refundAmount / @NotBlank refundReason
 │   │   └── ClosePaymentCommand.java               # @NotBlank paymentId
 │   ├── query/                                    # 查询（CQRS Read）
@@ -80,7 +82,7 @@ payment/
 │   │   ├── PaymentMethod.java                     # code 为 String："WECHAT"/"ALIPAY"/"BALANCE"
 │   │   └── PaymentResultCode.java
 │   └── exception/
-│       └── PaymentDomainException.java             # 统一支付异常（含 of() 工厂方法）
+│       └── PaymentDomainException.java             # 统一支付异常（of() 通用工厂 + notFound() 具名工厂）
 └── constant/
     └── PaymentConstant.java
 ```
@@ -132,10 +134,10 @@ CLOSED    FAILED   REFUNDING → REFUNDED
 | `PaymentCreateSpec` | `Payment.create()` 工厂参数 | paymentId, orderId, userId, amount, paymentMethod, attach |
 | `PaymentReconstructSpec` | `Payment.from()` 重建参数 | id, paymentNo, orderId, userId, amount, refundedAmount, paymentMethod, status, transactionId, refundReason, refundTime, attach, createTime, updateTime, version |
 | `Transition<Payment, E>` | 状态转换结果（聚合根新实例 + 领域事件） | aggregate, event |
-| `PaymentCommand` | sealed 接口（permits 4 个命令 record） | — |
 | `CreatePaymentCommand` | 创建支付命令 | orderId, amount, paymentMethod, payPassword, attach |
 | `PayCommand` / `ClosePaymentCommand` | 单字段命令 | paymentNo / paymentId |
-| `RefundPaymentCommand` | 退款命令 | paymentId, refundAmount, refundReason |
+| `PaymentCallbackCommand` | 回调确认命令 | paymentNo, transactionId, amount |
+| `RefundPaymentCommand` | 退款命令 | paymentId, userId, refundAmount, refundReason |
 | `PaymentListQuery` | 列表查询参数收敛 | userId, status: PaymentStatus, pageNum, pageSize |
 
 ## 枚举字符串化
