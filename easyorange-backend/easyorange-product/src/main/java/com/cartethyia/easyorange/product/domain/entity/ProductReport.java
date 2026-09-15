@@ -1,8 +1,7 @@
 package com.cartethyia.easyorange.product.domain.entity;
 
-import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
-import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import java.time.LocalDateTime;
 import lombok.Getter;
 
@@ -48,13 +47,13 @@ public class ProductReport {
     public static ProductReport create(
             String id, String productId, String reporterId, String reason, String reasonType) {
         if (productId == null) {
-            throw new ReportDomainException("资产ID不能为空");
+            throw ProductDomainException.reportError("资产ID不能为空");
         }
         if (reporterId == null) {
-            throw new ReportDomainException("举报人ID不能为空");
+            throw ProductDomainException.reportError("举报人ID不能为空");
         }
         if (reason == null || reason.isBlank()) {
-            throw new ReportDomainException("举报原因不能为空");
+            throw ProductDomainException.reportError("举报原因不能为空");
         }
         LocalDateTime now = LocalDateTime.now();
         return new ProductReport(
@@ -76,7 +75,7 @@ public class ProductReport {
 
     public ProductReport approve(String remark) {
         if (!isPending()) {
-            throw new ReportDomainException("只有待处理的举报才能被批准");
+            throw ProductDomainException.reportError("只有待处理的举报才能被批准");
         }
         return new ProductReport(
                 id,
@@ -92,7 +91,7 @@ public class ProductReport {
 
     public ProductReport reject(String remark) {
         if (!isPending()) {
-            throw new ReportDomainException("只有待处理的举报才能被驳回");
+            throw ProductDomainException.reportError("只有待处理的举报才能被驳回");
         }
         return new ProductReport(
                 id,
@@ -112,16 +111,5 @@ public class ProductReport {
 
     public String statusCode() {
         return status != null ? status.getCode() : null;
-    }
-
-    public static class ReportDomainException extends BaseBusinessException {
-        public ReportDomainException(String message) {
-            super(message);
-        }
-
-        @Override
-        protected String defaultCode() {
-            return ProductResultCode.REPORT_ERROR.getCode();
-        }
     }
 }

@@ -118,7 +118,7 @@ public class ChatWebSocketHandler {
     /** 从握手认证建立的 Principal 取当前用户 ID（STOMP 线程上 SecurityContextHolder 不可用）。 */
     private static String requireUserId(Principal principal) {
         if (principal == null || principal.getName() == null) {
-            throw new MessageDomainException("未认证的用户");
+            throw MessageDomainException.of("未认证的用户");
         }
         return principal.getName();
     }

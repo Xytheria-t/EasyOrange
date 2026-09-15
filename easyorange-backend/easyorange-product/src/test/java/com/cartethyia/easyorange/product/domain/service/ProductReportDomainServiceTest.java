@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
@@ -94,7 +95,7 @@ class ProductReportDomainServiceTest {
         when(productReportRepository.findById("999")).thenReturn(null);
 
         assertThatThrownBy(() -> domainService.processReport("999", true))
-                .isInstanceOf(ProductReportDomainService.ReportNotFoundException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("举报记录不存在");
     }
 

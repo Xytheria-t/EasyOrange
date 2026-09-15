@@ -8,7 +8,6 @@ import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
-import com.cartethyia.easyorange.message.domain.exception.UnauthorizedOperationException;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -112,7 +111,7 @@ class MessageTest {
             Message aggregate = testMessage(LocalDateTime.now());
 
             assertThatThrownBy(() -> aggregate.recall(OTHER_USER_ID, "conv_1_2"))
-                    .isInstanceOf(UnauthorizedOperationException.class)
+                    .isInstanceOf(MessageDomainException.class)
                     .hasMessageContaining("不能撤回他人的消息");
         }
 
@@ -184,7 +183,7 @@ class MessageTest {
             Message aggregate = testMessage(LocalDateTime.now());
 
             assertThatThrownBy(() -> aggregate.read(OTHER_USER_ID))
-                    .isInstanceOf(UnauthorizedOperationException.class)
+                    .isInstanceOf(MessageDomainException.class)
                     .hasMessageContaining("Only receiver can read");
         }
 
@@ -229,7 +228,7 @@ class MessageTest {
             Message aggregate = testMessage(LocalDateTime.now());
 
             assertThatThrownBy(() -> aggregate.delete(SENDER_ID))
-                    .isInstanceOf(UnauthorizedOperationException.class)
+                    .isInstanceOf(MessageDomainException.class)
                     .hasMessageContaining("Not authorized to delete");
         }
     }

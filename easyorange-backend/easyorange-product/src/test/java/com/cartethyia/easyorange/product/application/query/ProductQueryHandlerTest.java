@@ -15,7 +15,7 @@ import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
 import java.math.BigDecimal;
@@ -120,7 +120,7 @@ class ProductQueryHandlerTest {
     void getProductById_notFound_shouldThrow() {
         when(productCachePort.getProductCache(eq("999"), any())).thenReturn(null);
 
-        assertThatThrownBy(() -> queryHandler.getProductById("999")).isInstanceOf(ProductNotFoundException.class);
+        assertThatThrownBy(() -> queryHandler.getProductById("999")).isInstanceOf(ProductDomainException.class);
     }
 
     @Test

@@ -6,7 +6,6 @@ import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
-import com.cartethyia.easyorange.message.domain.exception.UnauthorizedOperationException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -140,11 +139,11 @@ public record Message(
      * 标记消息为已读（幂等：已读返回自身）。
      *
      * @return 已读后的消息；若本就已读则返回当前实例
-     * @throws UnauthorizedOperationException 如果 userId 不是接收者
+     * @throws MessageDomainException 如果 userId 不是接收者
      */
     public Message read(String userId) {
         if (!isOwnedBy(userId)) {
-            throw new UnauthorizedOperationException("Only receiver can read this message");
+            throw MessageDomainException.notOwner("Only receiver can read this message");
         }
         if (ReadStatus.READ == this.isRead) {
             return this;
@@ -168,19 +167,19 @@ public record Message(
      * 撤回消息
      *
      * @return 包含更新后聚合根和领域事件的结果
-     * @throws UnauthorizedOperationException 如果 operatorId 不是发送者
+     * @throws MessageDomainException 如果 operatorId 不是发送者
      * @throws MessageDomainException         如果消息已撤回或超过 2 分钟
      */
     public MessageRecallResult recall(String operatorId, String conversationId) {
         if (!isSender(operatorId)) {
-            throw new UnauthorizedOperationException("不能撤回他人的消息");
+            throw MessageDomainException.notOwner("不能撤回他人的消息");
         }
         if (MessageStatus.RECALLED == this.msgStatus) {
-            throw new MessageDomainException("消息已被撤回");
+            throw MessageDomainException.of("消息已被撤回");
         }
         Duration elapsed = Duration.between(this.createTime, LocalDateTime.now());
         if (elapsed.toMinutes() >= 2) {
-            throw new MessageDomainException("消息已超过可撤回时间（2分钟）");
+            throw MessageDomainException.of("消息已超过可撤回时间（2分钟）");
         }
         LocalDateTime now = LocalDateTime.now();
         Message updated = new Message(
@@ -203,11 +202,11 @@ public record Message(
     /**
      * 删除消息（仅校验接收者权限；删除动作由应用层执行）。
      *
-     * @throws UnauthorizedOperationException 如果 userId 不是接收者
+     * @throws MessageDomainException 如果 userId 不是接收者
      */
     public void delete(String userId) {
         if (!isOwnedBy(userId)) {
-            throw new UnauthorizedOperationException("Not authorized to delete");
+            throw MessageDomainException.notOwner("Not authorized to delete");
         }
     }
 

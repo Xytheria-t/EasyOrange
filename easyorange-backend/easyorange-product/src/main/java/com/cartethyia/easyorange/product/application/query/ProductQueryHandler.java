@@ -12,7 +12,7 @@ import com.cartethyia.easyorange.product.application.query.assembler.ProductRead
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +43,7 @@ public class ProductQueryHandler {
     @Transactional(readOnly = true)
     public ProductVO getProductById(String id) {
         return Optional.ofNullable(productCachePort.getProductCache(id, () -> loadProductVO(id)))
-                .orElseThrow(() -> new ProductNotFoundException(ProductId.of(id)));
+                .orElseThrow(() -> ProductDomainException.notFound(ProductId.of(id)));
     }
 
     @Transactional(readOnly = true)

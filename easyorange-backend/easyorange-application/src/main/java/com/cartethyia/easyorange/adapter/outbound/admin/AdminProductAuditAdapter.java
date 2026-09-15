@@ -19,7 +19,7 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import java.util.List;
@@ -96,7 +96,7 @@ public class AdminProductAuditAdapter implements AdminProductAuditPort {
             String operatorName) {
         Product product = productRepository
                 .findById(ProductId.of(productId))
-                .orElseThrow(() -> new ProductNotFoundException(productId));
+                .orElseThrow(() -> ProductDomainException.notFound(productId));
         AuditAction action = parseAction(actionCode);
 
         String beforeStatus = product.getStatus().getCode();
@@ -146,7 +146,7 @@ public class AdminProductAuditAdapter implements AdminProductAuditPort {
     public AiReviewRecord getAiReview(String productId) {
         AiReviewData data = getAiReviewData(productId);
         if (data == null) {
-            throw new ProductNotFoundException(ProductId.of(productId));
+            throw ProductDomainException.notFound(ProductId.of(productId));
         }
         AiReviewResult result = aiReviewService.reviewProduct(
                 data.name(),

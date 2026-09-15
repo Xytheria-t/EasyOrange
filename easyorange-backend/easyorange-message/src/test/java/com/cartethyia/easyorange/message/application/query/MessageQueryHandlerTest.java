@@ -15,7 +15,7 @@ import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
-import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
+import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
@@ -95,7 +95,7 @@ class MessageQueryHandlerTest {
             when(queryRepository.findById(MESSAGE_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> queryHandler.getMessageDetail(USER_ID, MESSAGE_ID))
-                    .isInstanceOf(MessageNotFoundException.class);
+                    .isInstanceOf(MessageDomainException.class);
         }
 
         @Test

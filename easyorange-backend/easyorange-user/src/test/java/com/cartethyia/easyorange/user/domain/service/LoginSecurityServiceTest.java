@@ -6,7 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.constant.UserSecurityConstant;
-import com.cartethyia.easyorange.user.domain.exception.AccountLockedException;
+import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,16 +43,16 @@ class LoginSecurityServiceTest {
             when(loginAttemptPort.getRemainingLockSeconds(ACCOUNT)).thenReturn(0L);
 
             assertThatCode(() -> service.checkAndThrowIfLocked(ACCOUNT)).doesNotThrowAnyException();
-
-            verify(loginAttemptPort).getRemainingLockSeconds(ACCOUNT);
         }
 
         @Test
-        @DisplayName("账户锁定超过阈值时抛出 AccountLockedException")
+        @DisplayName("账户锁定超过阈值时抛出业务异常（B1003）")
         void locked() {
             when(loginAttemptPort.getRemainingLockSeconds(ACCOUNT)).thenReturn(600L);
 
-            assertThatThrownBy(() -> service.checkAndThrowIfLocked(ACCOUNT)).isInstanceOf(AccountLockedException.class);
+            assertThatThrownBy(() -> service.checkAndThrowIfLocked(ACCOUNT))
+                    .extracting("code")
+                    .isEqualTo(UserResultCode.USER_LOCKED.getCode());
 
             verify(loginAttemptPort).getRemainingLockSeconds(ACCOUNT);
         }
@@ -84,16 +84,16 @@ class LoginSecurityServiceTest {
         }
 
         @Test
-        @DisplayName("达到上限时抛出 AccountLockedException")
+        @DisplayName("达到上限时抛出业务异常（B1003）")
         void reachedMax() {
             when(loginAttemptPort.incrementAndGet(ACCOUNT, UserSecurityConstant.LOCK_DURATION))
                     .thenReturn((long) UserSecurityConstant.MAX_LOGIN_ATTEMPTS);
-            when(loginAttemptPort.getRemainingLockSeconds(ACCOUNT)).thenReturn(1800L);
 
-            assertThatThrownBy(() -> service.incrementAndCheck(ACCOUNT)).isInstanceOf(AccountLockedException.class);
+            assertThatThrownBy(() -> service.incrementAndCheck(ACCOUNT))
+                    .extracting("code")
+                    .isEqualTo(UserResultCode.USER_LOCKED.getCode());
 
             verify(loginAttemptPort).incrementAndGet(ACCOUNT, UserSecurityConstant.LOCK_DURATION);
-            verify(loginAttemptPort).getRemainingLockSeconds(ACCOUNT);
         }
 
         @Test
