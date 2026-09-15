@@ -1,6 +1,6 @@
 # EasyOrange Backend 编码指南
 
-Spring Boot 4.0.7 + Java 25 后端，采用 DDD + 六边形架构。
+Spring Boot 4 + Java 25 后端，采用 DDD + 六边形架构（精确版本以根 `pom.xml` 为准）。
 
 > **全局规范见根目录 [AGENTS.md](../AGENTS.md)**（技术栈、DDD 分层、领域事件/Outbox、跨模块通信、错误码、测试门禁、常用命令）。本文件只保留后端编码专属约定，全局已有内容不在此重复。
 
