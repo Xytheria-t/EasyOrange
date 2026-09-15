@@ -72,7 +72,7 @@
 | 功能 | 方法+路径 | 鉴权 |
 |------|----------|------|
 | 发起支付 | `POST /api/payments` | Access Token |
-| 支付详情 | `GET /api/payments/{id}` | Access Token（仅本人，他人单按 404 处理） |
+| 支付详情 | `GET /api/payments/{id}` | Access Token（仅本人，他人单按不存在处理） |
 | 按订单查支付 | `GET /api/payments/orders/{orderId}` | Access Token（仅本人） |
 | 支付状态 | `GET /api/payments/{id}/status` | Access Token（仅本人） |
 | 我的支付记录 | `GET /api/payments/my` | Access Token |

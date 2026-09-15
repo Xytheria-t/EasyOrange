@@ -197,7 +197,7 @@ public class PaymentCommandHandler {
     /**
      * 资源归属校验（越权防护）— 操作者必须与支付单所属用户一致。
      * <p>
-     * 不一致时按「记录不存在」处理（B4001→404），避免向调用方泄露支付单存在性。
+     * 不一致时按「记录不存在」处理（B4001，B 段前缀统一映射 400），避免向调用方泄露支付单存在性。
      */
     private Payment assertOwnership(String paymentId, String operatorId) {
         Payment aggregate = paymentRepository
