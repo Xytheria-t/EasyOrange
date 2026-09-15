@@ -160,11 +160,11 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 | **后端** | Java 25 · Spring Boot 4 · MyBatis-Plus 3.5 · MapStruct |
 | **安全** | Spring Security OAuth2 Resource Server · **双 Token**：RSA 签名 Access（30min 无状态）+ Opaque Refresh（Redis SHA-256，HttpOnly Cookie，轮换 + 复用检测）· BCrypt |
 | **前端** | React 19 · TypeScript · Vite · TanStack Query 5 · Zustand 5 · Tailwind 4 · shadcn/ui · Biome |
-| **数据 / 消息** | MySQL 8.4（Flyway）· Redis 7.4 · RabbitMQ 3.13 · Elasticsearch 8（可选） |
+| **数据 / 消息** | MySQL 8.4.11 · Redis 8.10 · RabbitMQ 4.3.4 · Elasticsearch 9.2.8（可选） |
 | **AI** | Spring AI 2.0 · DeepSeek · Qwen-VL · DashScope Embedding |
 | **可靠性** | Redisson（分布式锁 / 令牌桶）· Spring Modulith Outbox · CacheErrorHandler fail-open |
 | **可观测** | Micrometer + Prometheus · Brave（traceId）· Spring AI Observation · 结构化日志 |
-| **DevOps** | Docker / docker-compose · GitHub Actions · Flyway 11 |
+| **DevOps** | Docker / docker-compose · GitHub Actions · Flyway 13 |
 
 ## 快速开始
 

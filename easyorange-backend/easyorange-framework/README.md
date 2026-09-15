@@ -24,7 +24,7 @@
 - Spring Security
 - Spring Data Redis
 - JWT (Spring Security OAuth2 Resource Server + Nimbus JOSE)
-- MyBatis-Plus 3.5.16
+- MyBatis-Plus 3.5.17
 - Caffeine Cache 3.x
 - AspectJ
 
