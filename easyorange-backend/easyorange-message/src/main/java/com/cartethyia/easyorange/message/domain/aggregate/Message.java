@@ -143,7 +143,7 @@ public record Message(
      */
     public Message read(String userId) {
         if (!isOwnedBy(userId)) {
-            throw MessageDomainException.notOwner("Only receiver can read this message");
+            throw MessageDomainException.notOwner("只有接收者才能读取该消息");
         }
         if (ReadStatus.READ == this.isRead) {
             return this;
@@ -206,7 +206,7 @@ public record Message(
      */
     public void delete(String userId) {
         if (!isOwnedBy(userId)) {
-            throw MessageDomainException.notOwner("Not authorized to delete");
+            throw MessageDomainException.notOwner("不能删除他人的消息");
         }
     }
 

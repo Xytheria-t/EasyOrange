@@ -184,7 +184,7 @@ class MessageTest {
 
             assertThatThrownBy(() -> aggregate.read(OTHER_USER_ID))
                     .isInstanceOf(MessageDomainException.class)
-                    .hasMessageContaining("Only receiver can read");
+                    .hasMessageContaining("只有接收者才能读取");
         }
 
         @Test
@@ -229,7 +229,7 @@ class MessageTest {
 
             assertThatThrownBy(() -> aggregate.delete(SENDER_ID))
                     .isInstanceOf(MessageDomainException.class)
-                    .hasMessageContaining("Not authorized to delete");
+                    .hasMessageContaining("不能删除他人的消息");
         }
     }
 
