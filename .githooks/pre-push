@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # EasyOrange pre-push hook — 重门禁（构建 + 测试，推送前执行）
 #
-# 职责（按被推送 commit 的变更文件类型分发，不做全量）：
-#   1. 后端：含 *.java / *.kt / pom.xml 变更 → ./mvnw test（含编译）
-#   2. 前端：含 easyorange-frontend/src|tests 下 TS 变更 → npm test（vitest run）
+# 职责（按被推送 commit 的变更路径分发，不做全量）：
+#   1. 后端：easyorange-backend/ 下有非文档变更 → ./mvnw test（含编译）
+#   2. 前端：easyorange-frontend/ 下有非文档变更 → npm test（vitest run）
 #
 # 设计：
+#   - 变更判定用「只放行纯文档」而非枚举触发文件名：枚举（*.java|pom.xml）会漏掉
+#     src/test/resources/logback-test.xml、Flyway 迁移 SQL、.mvn/maven.config、
+#     vitest.config.ts 等同样能改变测试结果的变更，门禁会随文件类型增加而静默失效
 #   - 变更范围 = 远端基线 sha..本地 sha；新分支（远端 sha 全 0）无基线 → 全量跑
 #   - pre-commit 保持轻量，构建/测试只在推送时付一次
 #   - 失败统一 hook_fail 收口（含 SKIP 提示）
@@ -46,8 +49,11 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   fi
   while IFS= read -r f; do
     case "$f" in
-      *.java|*.kt|*/pom.xml)                          need_backend=1 ;;
-      easyorange-frontend/src/*|easyorange-frontend/tests/*) need_frontend=1 ;;
+      # 纯文档不改变测试结果 → 放行；其余一切后端/前端文件都视为可能影响测试
+      easyorange-backend/*.md)  ;;
+      easyorange-backend/*)     need_backend=1 ;;
+      easyorange-frontend/*.md) ;;
+      easyorange-frontend/*)    need_frontend=1 ;;
     esac
   done < <(git diff --name-only --diff-filter=ACMR "$remote_sha" "$local_sha")
 done

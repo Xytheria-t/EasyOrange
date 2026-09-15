@@ -44,12 +44,14 @@ SKIP=1        git commit -m "..."   # 任何非空值都视为跳过
 
 ## Pre-push 行为
 
-按 **被推送 commit** 的变更文件分发（非全量）：
+按 **被推送 commit** 的变更路径分发（非全量）：
 
 | 推送变更 | 触发检查 | 工具 |
 |----------|----------|------|
-| `*.java` / `*.kt` / `pom.xml` | `./mvnw test`（含编译，`-T` 无、`-fae` 聚合） | `mvnw` |
-| `easyorange-frontend/{src,tests}/**/*.{ts,tsx,js,jsx}` | `npm test`（`vitest run`） | npm |
+| `easyorange-backend/**`（除 `*.md`） | `./mvnw test`（含编译，`-fae` 聚合） | `mvnw` |
+| `easyorange-frontend/**`（除 `*.md`） | `npm test`（`vitest run`） | npm |
+
+判定用 **「只放行纯文档」** 而非枚举触发文件名：枚举（`*.java` / `pom.xml`）会漏掉 `src/test/resources/logback-test.xml`、Flyway 迁移 SQL、`.mvn/maven.config`、`vitest.config.ts` 等同样能改变测试结果的变更 —— 门禁会随文件类型增加而静默失效。
 
 新分支推送（远端无基线）→ 全量跑。
 
