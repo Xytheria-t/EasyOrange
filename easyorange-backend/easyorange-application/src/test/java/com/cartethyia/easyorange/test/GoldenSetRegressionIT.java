@@ -2,11 +2,11 @@ package com.cartethyia.easyorange.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cartethyia.easyorange.ai.eval.EvalGate;
-import com.cartethyia.easyorange.ai.eval.GenerationReport;
-import com.cartethyia.easyorange.ai.eval.GoldenSetEvaluator;
-import com.cartethyia.easyorange.ai.eval.GoldenSetLoader;
-import com.cartethyia.easyorange.ai.eval.RetrievalReport;
+import com.cartethyia.easyorange.ai.application.eval.EvalGate;
+import com.cartethyia.easyorange.ai.application.eval.GoldenSetEvaluator;
+import com.cartethyia.easyorange.ai.application.eval.GoldenSetLoader;
+import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
+import com.cartethyia.easyorange.ai.domain.model.RetrievalReport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;

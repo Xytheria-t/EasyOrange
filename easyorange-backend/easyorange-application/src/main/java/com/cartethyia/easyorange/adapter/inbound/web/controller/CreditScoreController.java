@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.dto.CreditScoreResult;
-import com.cartethyia.easyorange.ai.service.CreditScoringService;
+import com.cartethyia.easyorange.ai.application.dto.CreditScoreResult;
+import com.cartethyia.easyorange.ai.application.service.CreditScoringService;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import io.swagger.v3.oas.annotations.tags.Tag;

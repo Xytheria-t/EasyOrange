@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.chat.ChatTurn;
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import java.time.Duration;
 import java.util.List;

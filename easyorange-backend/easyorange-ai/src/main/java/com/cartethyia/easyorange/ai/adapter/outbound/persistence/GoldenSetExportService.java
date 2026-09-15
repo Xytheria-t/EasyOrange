@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.persistence;
 
+import com.cartethyia.easyorange.ai.domain.port.GoldenSetExportPort;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class GoldenSetExportService {
+public class GoldenSetExportService implements GoldenSetExportPort {
 
     private static final String SELECT_SQL =
             "SELECT id, scope, query_text, response_text FROM eo_ai_feedback WHERE exported = 0 ORDER BY created_at LIMIT ?";
@@ -23,6 +24,7 @@ public class GoldenSetExportService {
 
     private final JdbcTemplate jdbcTemplate;
 
+    @Override
     public String exportUnreviewed(int limit) {
         List<Map<String, Object>> rows;
         try {

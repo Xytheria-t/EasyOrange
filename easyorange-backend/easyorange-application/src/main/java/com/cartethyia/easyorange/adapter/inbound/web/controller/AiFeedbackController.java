@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.dto.ChatFeedbackRequest;
-import com.cartethyia.easyorange.ai.service.AiFeedbackService;
+import com.cartethyia.easyorange.ai.application.dto.ChatFeedbackRequest;
+import com.cartethyia.easyorange.ai.application.service.AiFeedbackService;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeChunk;
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeIndexPort;
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeRepository;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
+import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
+import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

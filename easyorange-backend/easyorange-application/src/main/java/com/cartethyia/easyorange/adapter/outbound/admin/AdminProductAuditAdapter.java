@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort;
-import com.cartethyia.easyorange.ai.dto.AiReviewResult;
-import com.cartethyia.easyorange.ai.service.AiReviewService;
+import com.cartethyia.easyorange.ai.application.dto.AiReviewResult;
+import com.cartethyia.easyorange.ai.application.service.AiReviewService;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;

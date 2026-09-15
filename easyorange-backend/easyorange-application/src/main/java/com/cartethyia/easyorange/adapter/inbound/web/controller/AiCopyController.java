@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.dto.CopyGenerationRequest;
-import com.cartethyia.easyorange.ai.dto.CopyGenerationResult;
-import com.cartethyia.easyorange.ai.service.AiCopyGenerationService;
+import com.cartethyia.easyorange.ai.application.dto.CopyGenerationRequest;
+import com.cartethyia.easyorange.ai.application.dto.CopyGenerationResult;
+import com.cartethyia.easyorange.ai.application.service.AiCopyGenerationService;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;

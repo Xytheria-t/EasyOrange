@@ -8,10 +8,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
+import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.dto.ChatAnswer;
-import com.cartethyia.easyorange.ai.enums.AiCallScope;
-import com.cartethyia.easyorange.ai.service.AiModelSupport;
+import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import java.time.Duration;
 import java.util.List;

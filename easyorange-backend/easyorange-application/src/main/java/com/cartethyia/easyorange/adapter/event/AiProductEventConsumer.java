@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.event;
 
-import com.cartethyia.easyorange.ai.service.AiCopyGenerationService;
-import com.cartethyia.easyorange.ai.service.AiPricingService;
+import com.cartethyia.easyorange.ai.application.service.AiCopyGenerationService;
+import com.cartethyia.easyorange.ai.application.service.AiPricingService;
 import com.cartethyia.easyorange.framework.event.core.EventConsumerHandler;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;

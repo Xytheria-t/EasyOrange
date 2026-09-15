@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.inbound.web.assembler;
 
 import com.cartethyia.easyorange.adapter.inbound.web.response.KnowledgeDocVO;
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeDocEntity;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
 import com.cartethyia.easyorange.common.result.PageResult;
 
 /**

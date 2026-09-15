@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.ai.adapter.outbound;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchToolContext;
 import com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchToolRegistry;
-import com.cartethyia.easyorange.ai.service.NaturalLanguageDetector;
+import com.cartethyia.easyorange.ai.application.service.NaturalLanguageDetector;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;

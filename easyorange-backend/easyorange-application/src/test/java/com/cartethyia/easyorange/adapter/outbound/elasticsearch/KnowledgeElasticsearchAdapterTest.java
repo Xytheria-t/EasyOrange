@@ -6,8 +6,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeChunk;
-import com.cartethyia.easyorange.ai.knowledge.KnowledgeIndexPort;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
+import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

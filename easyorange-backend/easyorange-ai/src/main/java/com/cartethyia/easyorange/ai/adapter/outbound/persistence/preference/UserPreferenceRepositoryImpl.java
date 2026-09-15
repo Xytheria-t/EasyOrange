@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.persistence.preference;
 
-import com.cartethyia.easyorange.ai.chat.UserPreference;
-import com.cartethyia.easyorange.ai.chat.UserPreferenceRepository;
+import com.cartethyia.easyorange.ai.domain.model.UserPreference;
+import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import java.util.List;

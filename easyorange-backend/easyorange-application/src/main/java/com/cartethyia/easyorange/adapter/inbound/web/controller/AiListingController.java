@@ -1,13 +1,13 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.dto.AiReviewRequest;
-import com.cartethyia.easyorange.ai.dto.AiReviewResult;
-import com.cartethyia.easyorange.ai.dto.AutoListingResult;
-import com.cartethyia.easyorange.ai.dto.PricingRequest;
-import com.cartethyia.easyorange.ai.dto.PricingSuggestion;
-import com.cartethyia.easyorange.ai.service.AiPricingService;
-import com.cartethyia.easyorange.ai.service.AiReviewService;
-import com.cartethyia.easyorange.ai.service.AutoListingService;
+import com.cartethyia.easyorange.ai.application.dto.AiReviewRequest;
+import com.cartethyia.easyorange.ai.application.dto.AiReviewResult;
+import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
+import com.cartethyia.easyorange.ai.application.dto.PricingRequest;
+import com.cartethyia.easyorange.ai.application.dto.PricingSuggestion;
+import com.cartethyia.easyorange.ai.application.service.AiPricingService;
+import com.cartethyia.easyorange.ai.application.service.AiReviewService;
+import com.cartethyia.easyorange.ai.application.service.AutoListingService;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
