@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.enums.AiResultCode;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,10 +67,25 @@ class TokenBudgetAspectTest {
 
         assertThatThrownBy(() -> aspect.aroundBudget(pjp, annotation))
                 .isInstanceOf(TokenBudgetExceededException.class)
-                .hasMessageContaining("pricing")
-                .hasMessageContaining("1000");
+                .hasMessageContaining("预算");
 
         verify(pjp, never()).proceed();
+    }
+
+    @Test
+    @DisplayName("预算超限异常携带模块业务码 B8001，映射 400 而非落入 500 兜底")
+    void aroundBudget_exceedsDailyLimit_carriesBusinessCode() throws Throwable {
+        var annotation = mockBudget("pricing", 600, 1000);
+        store.recordUsage("pricing", 500, 0);
+
+        // 回归守卫：非 BaseBusinessException 子类的 RuntimeException 会被 GlobalExceptionHandler
+        // 一律判为编程错误 → 500，前端 isRetryable(>=500) 会把它当可重试错误自动重试
+        assertThatThrownBy(() -> aspect.aroundBudget(pjp, annotation))
+                .isInstanceOfSatisfying(TokenBudgetExceededException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo(AiResultCode.TOKEN_BUDGET_EXCEEDED.getCode());
+                    assertThat(ex.getCode()).isEqualTo("B8001");
+                    assertThat(ex.getStatusCode().value()).isEqualTo(400);
+                });
     }
 
     @Test
@@ -133,9 +149,9 @@ class TokenBudgetAspectTest {
         // 累计 180 + 配置上限 50 = 230 > 配置日预算 200 → 超限
         store.recordUsage("pricing", 180, 0);
 
+        // 配置的日预算 200 生效（而非注解的 10000）：180 + 50 > 200 → 超限
         assertThatThrownBy(() -> aspect.aroundBudget(pjp, annotation))
-                .isInstanceOf(TokenBudgetExceededException.class)
-                .hasMessageContaining("200"); // 配置的日预算，不是注解的 10000
+                .isInstanceOf(TokenBudgetExceededException.class);
 
         verify(pjp, never()).proceed();
     }
@@ -150,8 +166,7 @@ class TokenBudgetAspectTest {
         store.recordUsage("qa", 4500, 0);
 
         assertThatThrownBy(() -> aspect.aroundBudget(pjp, annotation))
-                .isInstanceOf(TokenBudgetExceededException.class)
-                .hasMessageContaining("5000");
+                .isInstanceOf(TokenBudgetExceededException.class);
 
         verify(pjp, never()).proceed();
     }

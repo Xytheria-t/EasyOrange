@@ -53,7 +53,7 @@ public class TokenBudgetAspect {
                     used,
                     maxPerCall,
                     dailyLimit);
-            throw new TokenBudgetExceededException(scenario, used, dailyLimit);
+            throw new TokenBudgetExceededException();
         }
 
         // 执行目标方法

@@ -215,9 +215,17 @@ public class AiChatService {
                 .getTodayUsage(CHAT_SCENARIO)
                 .map(TokenBudgetStore.TokenUsage::total)
                 .orElse(0);
+        int maxPerCall = resolveMaxTokensPerCall();
         int dailyLimit = resolveDailyTokenLimit();
-        if (dailyLimit > 0 && used + resolveMaxTokensPerCall() > dailyLimit) {
-            throw new TokenBudgetExceededException(CHAT_SCENARIO, used, dailyLimit);
+        if (dailyLimit > 0 && used + maxPerCall > dailyLimit) {
+            // 流式链路绕过 @TokenBudget 切面，这里手动检查 —— 与 TokenBudgetAspect 同一套日志字段
+            log.warn(
+                    "action=token_budget_exceeded, scenario={}, used={}, maxPerCall={}, limit={}",
+                    CHAT_SCENARIO,
+                    used,
+                    maxPerCall,
+                    dailyLimit);
+            throw new TokenBudgetExceededException();
         }
     }
 
