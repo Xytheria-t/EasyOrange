@@ -41,7 +41,7 @@ AI 调用的并发隔离与预算治理分别采用以下方案：
 
 ### 2. Token 预算治理 — `@TokenBudget` 注解 + AOP 切面 + 配置覆盖
 
-6 个 AI service 的公开方法标注 `@TokenBudget(scenario="...", maxTokensPerCall=2000, dailyTokenLimit=500_000)`。[TokenBudgetAspect](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/budget/TokenBudgetAspect.java) 切点为 `@annotation(tokenBudget)`，逻辑：
+6 个 AI service 的公开方法标注 `@TokenBudget(scenario="...", maxTokensPerCall=2000, dailyTokenLimit=500_000)`。[TokenBudgetAspect](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/budget/TokenBudgetAspect.java) 切点为 `@annotation(tokenBudget)`，逻辑：
 
 - **调用前**：从 `AiProperties.budget.scenarios.<scenario>` 读取配置覆盖值（缺失则回退注解默认值），检查 `累计用量 + maxTokensPerCall > dailyTokenLimit` 时抛 `TokenBudgetExceededException`
 - **调用后**：以 `maxTokensPerCall` 作为预估用量记入 `TokenBudgetStore`（dev 用内存，prod 可换 Redis），上报 `easyorange.ai.token.budget.usage` / `easyorange.ai.token.budget.exceeded` 指标
@@ -81,5 +81,5 @@ AI 调用的并发隔离与预算治理分别采用以下方案：
 ## 备注（Notes）
 
 - 相关 ADR：[ADR 0003](./0003-ai-port-adapter-decorator.md)（AI Port/Adapter + 装饰器，本 ADR 的 Bulkhead 装饰在其装饰器内部；该 ADR 已被 ADR-0008 替代）、[ADR 0008](./0008-ai-spring-ai-framework.md)（部分替代：Bulkhead 删除，`@TokenBudget` 保留）
-- 相关代码：[Resilience4jConfig.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/config/resilience4j/Resilience4jConfig.java)、[TokenBudgetAspect.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/budget/TokenBudgetAspect.java)、[CachingLlmAdapter.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/CachingLlmAdapter.java)
+- 相关代码：[Resilience4jConfig.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/config/resilience4j/Resilience4jConfig.java)、[TokenBudgetAspect.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/budget/TokenBudgetAspect.java)、[CachingLlmAdapter.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/CachingLlmAdapter.java)
 - 后续演进触发：当供应商返回 `usage` 字段时，升级 TokenBudget 为精确计数；当 AI 场景 > 10 个时，考虑按 `AiCallScope` 自动派发 Bulkhead 而非硬编码具名实例。

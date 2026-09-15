@@ -827,7 +827,7 @@ eo_message ──1:1── eo_message_archive (id)
 
 ### eo_ai_call_log — AI 调用日志表
 
-> **现状**：`AiCallLogRecorder`（easyorange-ai/adapter/outbound/）在每次 LLM/Embedding 调用后 JDBC 直写一条（记录失败仅告警，不阻塞主链路）；`AiEvalScheduler`（adapter/inbound/job/）定时对 `judge_score IS NULL AND success = 1` 的记录用 ChatModel 打分（1-5 + 评语）。默认关闭（`easyorange.ai.eval.enabled=false`）。
+> **现状**：`AiCallLogRecorder`（easyorange-ai/adapter/outbound/persistence/）在每次 LLM/Embedding 调用后 JDBC 直写一条（记录失败仅告警，不阻塞主链路）；`AiEvalScheduler`（adapter/inbound/job/）定时对 `judge_score IS NULL AND success = 1` 的记录用 ChatModel 打分（1-5 + 评语）。默认关闭（`easyorange.ai.eval.enabled=false`）。
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
