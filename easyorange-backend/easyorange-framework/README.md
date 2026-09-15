@@ -20,13 +20,15 @@
 
 ## 技术栈
 
-- Spring Boot 4.0.7
+- Spring Boot 4
 - Spring Security
 - Spring Data Redis
 - JWT (Spring Security OAuth2 Resource Server + Nimbus JOSE)
-- MyBatis-Plus 3.5.17
-- Caffeine Cache 3.x
+- MyBatis-Plus
+- Caffeine Cache
 - AspectJ
+
+> 精确版本以根 `pom.xml` 为准（见 [doc/架构/架构-技术栈.md](../../doc/架构/架构-技术栈.md)）。
 
 ## 快速开始
 

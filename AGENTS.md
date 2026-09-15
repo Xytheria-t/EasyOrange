@@ -18,13 +18,17 @@ monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模
 
 | 层 | 技术 |
 |---|------|
-| **后端** | Java 25, Spring Boot 4.0.7, MyBatis-Plus 3.5.17 |
-| **前端** | TypeScript, React |
-| **数据库** | MySQL 8.4.11, Redis 8.10.0 |
-| **消息队列** | RabbitMQ 4.3.4 (Spring AMQP 4.0.x) |
+| **后端** | Java 25, Spring Boot 4, MyBatis-Plus |
+| **前端** | TypeScript, React 19 |
+| **数据库** | MySQL 8.4, Redis 8 |
+| **消息队列** | RabbitMQ 4.3 (Spring AMQP 4.0.x) |
 | **搜索引擎** | Elasticsearch 9.2.8 (IK 中文分词器) |
 | **认证** | JWT Access (RSA) + Opaque Refresh (Redis, HttpOnly Cookie) |
-| **迁移** | Flyway 13.2.0 |
+| **迁移** | Flyway 13 |
+
+> **版本口径**：本表只写大版本（大版本才承载技术取舍，如 Java 25 虚拟线程 / Boot 4 包路径变更）；
+> **精确版本以 `easyorange-backend/pom.xml` 与 `compose.yaml` 为单一来源**，二者不一致时以后者为准。
+> Elasticsearch 例外——9.2.8 是硬锁（Spring Data ES 6.0.6 按它编译 + IK 插件同版本，见 `infra/elasticsearch/Dockerfile` 注释），升级须整体等 Boot 带动客户端。
 | **部署** | Docker, docker-compose, compose.yaml（显式 env 直连，凭据统一经根 `.env` 插值）+ **K8s/kustomize** (k8s/, 无状态应用层) |
 
 ## 全局硬约束（任何改动都适用，违反即返工）
