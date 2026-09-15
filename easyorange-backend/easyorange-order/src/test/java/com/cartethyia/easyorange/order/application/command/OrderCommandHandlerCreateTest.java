@@ -18,9 +18,7 @@ import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.service.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
-import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
-import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
@@ -146,7 +144,7 @@ class OrderCommandHandlerCreateTest {
     }
 
     @Test
-    @DisplayName("支付失败时抛出 PaymentGatewayAdapterException（单事务回滚兜底，无需反向补偿）")
+    @DisplayName("支付失败时抛出订单域异常（单事务回滚兜底，无需反向补偿）")
     void createOrder_paymentFails_throws() {
         CreateOrderCommand command =
                 new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", null, null);
@@ -156,7 +154,7 @@ class OrderCommandHandlerCreateTest {
         when(paymentGatewayPort.createPayment(any())).thenThrow(new RuntimeException("支付失败"));
 
         assertThatThrownBy(() -> commandHandler.handle(BUYER_ID, command))
-                .isInstanceOf(PaymentGatewayAdapterException.class)
+                .isInstanceOf(OrderDomainException.class)
                 .hasMessageContaining("支付失败");
         // 无事务内反向补偿：订单/库存/支付随事务整体回滚
         verify(productInventoryPort, never()).restoreStock(anyString(), anyString(), anyInt());
@@ -177,7 +175,7 @@ class OrderCommandHandlerCreateTest {
     }
 
     @Test
-    @DisplayName("获取分布式锁失败时抛异常（基础设施异常在用例边界映射为 OrderCreationException）")
+    @DisplayName("获取分布式锁失败时抛异常（基础设施异常在用例边界映射为订单域异常）")
     void createOrder_lockFailed_throws() {
         // doThrow 风格：避免 when() 内先调用该方法命中 setUp 的 thenAnswer 桩（其 any() 参数此时为 null）
         doThrow(new LockAcquisitionException("busy")).when(lockPort).executeWithLocks(anyList(), anyLong(), any());
@@ -186,7 +184,7 @@ class OrderCommandHandlerCreateTest {
                 new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", null, null);
 
         assertThatThrownBy(() -> commandHandler.handle(BUYER_ID, command))
-                .isInstanceOf(OrderCreationException.class)
+                .isInstanceOf(OrderDomainException.class)
                 .hasMessageContaining("繁忙");
     }
 }

@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
-import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
+import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
@@ -34,7 +34,7 @@ public class MessageQueryHandler {
     public MessageVO getMessageDetail(String userId, String messageId) {
         Message aggregate = queryRepository.findById(messageId);
         if (aggregate == null) {
-            throw new MessageNotFoundException(messageId);
+            throw MessageDomainException.notFound(messageId);
         }
 
         BizRequire.requireTrue(Objects.equals(aggregate.receiverId(), userId), MessageResultCode.MESSAGE_NOT_OWNER);

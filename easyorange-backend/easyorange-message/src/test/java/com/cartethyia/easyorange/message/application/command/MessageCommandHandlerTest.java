@@ -18,7 +18,6 @@ import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
-import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
@@ -262,7 +261,7 @@ class MessageCommandHandlerTest {
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> commandHandler.handle(RECEIVER_ID, command))
-                    .isInstanceOf(MessageNotFoundException.class);
+                    .isInstanceOf(MessageDomainException.class);
         }
 
         @Test
@@ -365,7 +364,7 @@ class MessageCommandHandlerTest {
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> commandHandler.handle(USER_ID, command))
-                    .isInstanceOf(MessageNotFoundException.class);
+                    .isInstanceOf(MessageDomainException.class);
         }
 
         @Test

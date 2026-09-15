@@ -11,7 +11,6 @@ import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageRecallR
 import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
-import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
@@ -39,7 +38,7 @@ public class MessageCommandHandler {
     @Transactional(rollbackFor = Exception.class)
     public void handle(String senderId, SendMessageCommand command) {
         if (!allowSendMessage(senderId)) {
-            throw new MessageDomainException("发送过于频繁，请稍后再试");
+            throw MessageDomainException.of("发送过于频繁，请稍后再试");
         }
 
         String filteredContent = sensitiveWordFilterService.filter(command.content());
@@ -88,7 +87,7 @@ public class MessageCommandHandler {
     public void handle(String userId, MarkAsReadCommand command) {
         Message aggregate = messageRepository
                 .findById(command.messageId())
-                .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
+                .orElseThrow(() -> MessageDomainException.notFound(command.messageId()));
 
         BizRequire.requireTrue(aggregate.isOwnedBy(userId), MessageResultCode.MESSAGE_NOT_OWNER);
 
@@ -133,7 +132,7 @@ public class MessageCommandHandler {
     public void handle(String userId, RecallMessageCommand command) {
         Message aggregate = messageRepository
                 .findById(command.messageId())
-                .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
+                .orElseThrow(() -> MessageDomainException.notFound(command.messageId()));
 
         // 非发送者（含 senderId 为 null 的系统消息）在构造 conversationId 前快速失败，避免 "conv__"。
         BizRequire.requireTrue(aggregate.isSender(userId), MessageResultCode.MESSAGE_NOT_OWNER);
@@ -150,7 +149,7 @@ public class MessageCommandHandler {
     public void handle(String userId, DeleteMessageCommand command) {
         Message aggregate = messageRepository
                 .findById(command.messageId())
-                .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
+                .orElseThrow(() -> MessageDomainException.notFound(command.messageId()));
 
         BizRequire.requireTrue(aggregate.isOwnedBy(userId), MessageResultCode.MESSAGE_NOT_OWNER);
 

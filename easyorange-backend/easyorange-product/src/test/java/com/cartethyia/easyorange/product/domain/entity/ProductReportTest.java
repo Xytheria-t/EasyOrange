@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.product.domain.entity;
 import static org.assertj.core.api.Assertions.*;
 
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,7 @@ class ProductReportTest {
     @DisplayName("创建举报时 productId 为空应抛出异常")
     void create_withNullProductId_shouldThrow() {
         assertThatThrownBy(() -> ProductReport.create("100", null, "1", "假货", "1"))
-                .isInstanceOf(ProductReport.ReportDomainException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("资产ID不能为空");
     }
 
@@ -38,7 +39,7 @@ class ProductReportTest {
     @DisplayName("创建举报时 reporterId 为空应抛出异常")
     void create_withNullReporterId_shouldThrow() {
         assertThatThrownBy(() -> ProductReport.create("100", "1", null, "假货", "1"))
-                .isInstanceOf(ProductReport.ReportDomainException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("举报人ID不能为空");
     }
 
@@ -46,7 +47,7 @@ class ProductReportTest {
     @DisplayName("创建举报时 reason 为空应抛出异常")
     void create_withNullReason_shouldThrow() {
         assertThatThrownBy(() -> ProductReport.create("100", "1", "2", null, "1"))
-                .isInstanceOf(ProductReport.ReportDomainException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("举报原因不能为空");
     }
 
@@ -54,7 +55,7 @@ class ProductReportTest {
     @DisplayName("创建举报时 reason 为空白字符串应抛出异常")
     void create_withBlankReason_shouldThrow() {
         assertThatThrownBy(() -> ProductReport.create("100", "1", "2", "   ", "1"))
-                .isInstanceOf(ProductReport.ReportDomainException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("举报原因不能为空");
     }
 
@@ -77,7 +78,7 @@ class ProductReportTest {
         ProductReport approved = report.approve("已处理");
 
         assertThatThrownBy(() -> approved.approve("再次处理"))
-                .isInstanceOf(ProductReport.ReportDomainException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("只有待处理的举报才能被批准");
     }
 
@@ -100,7 +101,7 @@ class ProductReportTest {
         ProductReport rejected = report.reject("证据不足");
 
         assertThatThrownBy(() -> rejected.reject("再次驳回"))
-                .isInstanceOf(ProductReport.ReportDomainException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("只有待处理的举报才能被驳回");
     }
 

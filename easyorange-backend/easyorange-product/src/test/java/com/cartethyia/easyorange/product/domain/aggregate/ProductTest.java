@@ -14,9 +14,7 @@ import com.cartethyia.easyorange.product.domain.event.ProductSubmittedForReviewE
 import com.cartethyia.easyorange.product.domain.event.ProductTakeOfflineEvent;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
-import com.cartethyia.easyorange.product.domain.exception.InsufficientStockException;
-import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusException;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotOwnerException;
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
@@ -65,11 +63,11 @@ class ProductTest {
     }
 
     @Test
-    @DisplayName("库存不足时应抛出 InsufficientStockException")
+    @DisplayName("库存不足时应抛出资产域异常")
     void decrementStock_whenNoStock_shouldThrow() {
         var p = Product.create(ProductTestFixture.aProduct().stock(0).build()).aggregate();
 
-        assertThatThrownBy(p::decrementStock).isInstanceOf(InsufficientStockException.class);
+        assertThatThrownBy(p::decrementStock).isInstanceOf(ProductDomainException.class);
     }
 
     @Test
@@ -110,7 +108,7 @@ class ProductTest {
     void markAsSold_whenNotOnline_shouldThrow() {
         var p = ProductTestFixture.defaultProduct();
 
-        assertThatThrownBy(p::markAsSold).isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(p::markAsSold).isInstanceOf(ProductDomainException.class);
     }
 
     @Test
@@ -143,14 +141,14 @@ class ProductTest {
     }
 
     @Test
-    @DisplayName("非所有者更新商品应抛出 ProductNotOwnerException")
+    @DisplayName("非所有者更新商品应抛出资产域异常")
     void update_notOwner_shouldThrow() {
         var p = ProductTestFixture.defaultProduct();
 
         assertThatThrownBy(() -> p.update(
                         "999",
                         updateWith(CategoryId.of("99"), ProductTitle.of("新名称"), Money.of(new BigDecimal("200")))))
-                .isInstanceOf(ProductNotOwnerException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("只能修改自己的资产");
     }
 
@@ -173,7 +171,7 @@ class ProductTest {
         var p = ProductTestFixture.defaultProduct();
 
         assertThatThrownBy(() -> p.submitForReview("999"))
-                .isInstanceOf(ProductNotOwnerException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("只能提交自己的资产审核");
     }
 
@@ -182,7 +180,7 @@ class ProductTest {
     void submitForReview_whenOnline_shouldThrow() {
         var p = ProductTestFixture.onlineProduct();
 
-        assertThatThrownBy(() -> p.submitForReview("1")).isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> p.submitForReview("1")).isInstanceOf(ProductDomainException.class);
     }
 
     // ==================== approve ====================
@@ -204,7 +202,7 @@ class ProductTest {
     void approve_whenOnline_shouldThrow() {
         var p = ProductTestFixture.onlineProduct();
 
-        assertThatThrownBy(() -> p.approve("审核通过")).isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> p.approve("审核通过")).isInstanceOf(ProductDomainException.class);
     }
 
     @Test
@@ -214,7 +212,7 @@ class ProductTest {
         var submitted = p.submitForReview("1").aggregate();
         var rejected = submitted.reject("不合规").aggregate();
 
-        assertThatThrownBy(() -> rejected.approve("审核通过")).isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> rejected.approve("审核通过")).isInstanceOf(ProductDomainException.class);
     }
 
     @Test
@@ -294,7 +292,7 @@ class ProductTest {
     void putOnline_whenAlreadyOnline_shouldThrow() {
         var p = ProductTestFixture.onlineProduct();
 
-        assertThatThrownBy(p::putOnline).isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(p::putOnline).isInstanceOf(ProductDomainException.class);
     }
 
     // ==================== takeOffline ====================
@@ -315,7 +313,7 @@ class ProductTest {
     void takeOffline_whenDraft_shouldThrow() {
         var p = ProductTestFixture.defaultProduct();
 
-        assertThatThrownBy(p::takeOffline).isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(p::takeOffline).isInstanceOf(ProductDomainException.class);
     }
 
     @Test
@@ -324,7 +322,7 @@ class ProductTest {
         var p = ProductTestFixture.onlineProduct();
 
         assertThatThrownBy(() -> p.takeOffline("999"))
-                .isInstanceOf(ProductNotOwnerException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("只能下架自己的资产");
     }
 
@@ -346,7 +344,7 @@ class ProductTest {
         var p = ProductTestFixture.defaultProduct();
 
         assertThatThrownBy(() -> p.delete("999"))
-                .isInstanceOf(ProductNotOwnerException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("无权删除此资产");
     }
 
@@ -356,7 +354,7 @@ class ProductTest {
         var p = ProductTestFixture.onlineProduct();
         var sold = p.markAsSold().orElseThrow().aggregate();
 
-        assertThatThrownBy(() -> sold.delete("1")).isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(() -> sold.delete("1")).isInstanceOf(ProductDomainException.class);
     }
 
     // ==================== restoreStock edge cases ====================
@@ -367,7 +365,7 @@ class ProductTest {
         var p = ProductTestFixture.onlineProduct();
         var sold = p.markAsSold().orElseThrow().aggregate();
 
-        assertThatThrownBy(sold::restoreStock).isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(sold::restoreStock).isInstanceOf(ProductDomainException.class);
     }
 
     @Test
@@ -376,7 +374,7 @@ class ProductTest {
         var p = ProductTestFixture.onlineProduct();
         var offline = p.takeOffline().aggregate();
 
-        assertThatThrownBy(offline::restoreStock).isInstanceOf(InvalidProductStatusException.class);
+        assertThatThrownBy(offline::restoreStock).isInstanceOf(ProductDomainException.class);
     }
 
     // ==================== predicates ====================

@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.domain.exception;
 
 import com.cartethyia.easyorange.common.enums.IResultCode;
+import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 
@@ -54,5 +55,10 @@ public class OrderDomainException extends BaseBusinessException {
     /** 订单不存在（B3001）— 消息带订单号，命令侧与查询侧共用这一处定义。 */
     public static OrderDomainException notFound(String orderId) {
         return new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND, "订单不存在: id=" + orderId);
+    }
+
+    /** 上游（支付网关等）不可用（D0502 → 502）— 与业务失败区分：调用方重试可能成功。 */
+    public static OrderDomainException upstream(String message, Throwable cause) {
+        return new OrderDomainException(ResultCode.UPSTREAM_ERROR, message, cause);
     }
 }

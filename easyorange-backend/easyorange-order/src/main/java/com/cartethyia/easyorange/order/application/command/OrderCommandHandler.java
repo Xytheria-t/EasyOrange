@@ -13,9 +13,7 @@ import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
-import com.cartethyia.easyorange.order.domain.exception.OrderCreationException;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
-import com.cartethyia.easyorange.order.domain.exception.PaymentGatewayAdapterException;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
@@ -72,8 +70,8 @@ public class OrderCommandHandler {
      * <p>
      * 事务边界由 {@link TransactionTemplate} 显式控制：锁的 tryLock 等待（最长 10s）发生在事务开启之前，
      * 不占用数据库连接；锁内仅执行 {@link #createOrderFlow} 流程，事务提交后由锁适配器释放锁。
-     * 锁基础设施的 {@link LockAcquisitionException} 在用例边界映射为 {@link OrderCreationException}，
-     * 保留订单域的错误码（B0002→400）与提示文案。
+     * 锁基础设施的 {@link LockAcquisitionException} 在用例边界映射为 {@link OrderDomainException}，
+     * 保留订单域的错误码（B3009→400）与提示文案。
      */
     public CreateOrderResult handle(String userId, CreateOrderCommand command) {
         try {
@@ -82,7 +80,7 @@ public class OrderCommandHandler {
                     LOCK_TRY_TIMEOUT_SECONDS,
                     () -> transactionTemplate.execute(_ -> createOrderFlow(userId, command)));
         } catch (LockAcquisitionException e) {
-            throw new OrderCreationException(LOCK_BUSY_MESSAGE);
+            throw OrderDomainException.of(LOCK_BUSY_MESSAGE);
         }
     }
 
@@ -145,7 +143,7 @@ public class OrderCommandHandler {
      *
      * @param orderEvent 订单创建事件
      * @param command    创建订单命令
-     * @throws PaymentGatewayAdapterException 如果支付创建失败
+     * @throws OrderDomainException 如果支付创建失败（上游不可用，D0502→502）
      */
     private void createPayment(OrderCreatedEvent orderEvent, CreateOrderCommand command) {
         try {
@@ -159,8 +157,7 @@ public class OrderCommandHandler {
                     OrderConstant.PAYMENT_DESC,
                     orderEvent.buyerId()));
         } catch (Exception e) {
-            throw new PaymentGatewayAdapterException(
-                    "支付创建失败 orderId=" + orderEvent.orderId() + ": " + e.getMessage(), e);
+            throw OrderDomainException.upstream("支付创建失败 orderId=" + orderEvent.orderId() + ": " + e.getMessage(), e);
         }
     }
 

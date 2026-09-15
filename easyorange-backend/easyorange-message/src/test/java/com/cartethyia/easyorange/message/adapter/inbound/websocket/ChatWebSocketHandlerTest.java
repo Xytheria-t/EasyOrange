@@ -146,7 +146,7 @@ class ChatWebSocketHandlerTest {
         @DisplayName("命令异常（限流）映射为发送方错误帧")
         void handleDomainException_sendsErrorFrame() {
             when(principal.getName()).thenReturn(USER_ID);
-            MessageDomainException ex = new MessageDomainException("发送过于频繁，请稍后再试");
+            MessageDomainException ex = MessageDomainException.of("发送过于频繁，请稍后再试");
 
             handler.handleDomainException(ex, principal);
 

@@ -12,7 +12,7 @@ import com.cartethyia.easyorange.product.domain.aggregate.ProductUpdateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
 import com.cartethyia.easyorange.product.domain.enums.StockChangeType;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.repository.StockLedgerRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
@@ -211,6 +211,6 @@ public class ProductCommandHandler {
     }
 
     private Product findByIdOrThrow(ProductId id) {
-        return productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException(id));
+        return productRepository.findById(id).orElseThrow(() -> ProductDomainException.notFound(id));
     }
 }

@@ -33,7 +33,7 @@ public interface AdminProductAuditPort {
     List<AuditLogRecord> getAuditLogs(String productId);
 
     /**
-     * AI 预审（调用 AI 审核服务），产品不存在或已删除时抛出 ProductNotFoundException
+     * AI 预审（调用 AI 审核服务），产品不存在或已删除时抛出 ProductDomainException（B2001）
      */
     AiReviewRecord getAiReview(String productId);
 

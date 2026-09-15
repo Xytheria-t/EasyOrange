@@ -19,9 +19,7 @@ import com.cartethyia.easyorange.product.domain.event.ProductTakeOfflineEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductUpdatedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
-import com.cartethyia.easyorange.product.domain.exception.InsufficientStockException;
-import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusException;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotOwnerException;
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
@@ -102,7 +100,7 @@ public class Product {
 
     public Transition<Product, ProductSubmittedForReviewEvent> submitForReview(String userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw new ProductNotOwnerException(id, "只能提交自己的资产审核");
+            throw ProductDomainException.notOwner(id, "只能提交自己的资产审核");
         }
         return new Transition<>(
                 transitionTo(ProductStatus.PENDING_REVIEW),
@@ -157,7 +155,7 @@ public class Product {
 
     public Transition<Product, ProductTakeOfflineEvent> takeOffline(String userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw new ProductNotOwnerException(id, "只能下架自己的资产");
+            throw ProductDomainException.notOwner(id, "只能下架自己的资产");
         }
         return takeOffline();
     }
@@ -171,10 +169,10 @@ public class Product {
                 new ProductMarkedSoldEvent(UuidV7.generateId(), id.value(), sellerId.value())));
     }
 
-    /** 状态机守卫：目标状态非法时抛出 {@link InvalidProductStatusException}，否则返回新状态。 */
+    /** 状态机守卫：目标状态非法时抛出 {@link ProductDomainException#invalidStatus}，否则返回新状态。 */
     private Product transitionTo(ProductStatus target) {
         if (!status.canTransitionTo(target)) {
-            throw new InvalidProductStatusException(
+            throw ProductDomainException.invalidStatus(
                     "不允许从 " + status.getDesc() + " 转换到 " + target.getDesc(), id, status);
         }
         return toBuilder().status(target).updateTime(LocalDateTime.now()).build();
@@ -191,7 +189,7 @@ public class Product {
 
     public Transition<Product, ProductUpdatedEvent> update(String userId, ProductUpdateSpec spec) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw new ProductNotOwnerException(id, "只能修改自己的资产");
+            throw ProductDomainException.notOwner(id, "只能修改自己的资产");
         }
         var builder = toBuilder();
         if (spec.categoryId() != null) builder.categoryId(spec.categoryId());
@@ -214,10 +212,10 @@ public class Product {
 
     public Transition<Product, ProductDeletedEvent> delete(String userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw new ProductNotOwnerException(id, "无权删除此资产");
+            throw ProductDomainException.notOwner(id, "无权删除此资产");
         }
         if (!status.canDelete()) {
-            throw new InvalidProductStatusException("不允许删除", id, status);
+            throw ProductDomainException.invalidStatus("不允许删除", id, status);
         }
         return new Transition<>(
                 toBuilder().updateTime(LocalDateTime.now()).build(),
@@ -241,7 +239,7 @@ public class Product {
 
     public Transition<Product, StockDecreasedEvent> decrementStock(int quantity) {
         if (!hasStock()) {
-            throw new InsufficientStockException("资产库存不足", id, stock);
+            throw ProductDomainException.insufficientStock("资产库存不足", id, stock);
         }
         return new Transition<>(
                 toBuilder()
@@ -257,7 +255,7 @@ public class Product {
 
     public Transition<Product, StockRestoredEvent> restoreStock(int quantity) {
         if (!status.canRestoreStock()) {
-            throw new InvalidProductStatusException("不允许恢复库存", id, status);
+            throw ProductDomainException.invalidStatus("不允许恢复库存", id, status);
         }
         return new Transition<>(
                 toBuilder()

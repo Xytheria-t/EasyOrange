@@ -20,7 +20,7 @@ import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
@@ -139,7 +139,7 @@ class AdminProductAuditAdapterTest {
             when(productRepository.findById(ProductId.of(PRODUCT_ID))).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> adapter.auditProduct(PRODUCT_ID, 1, null, null, null, OPERATOR_ID, "管理员"))
-                    .isInstanceOf(ProductNotFoundException.class);
+                    .isInstanceOf(ProductDomainException.class);
         }
     }
 

@@ -7,8 +7,7 @@ import static org.mockito.Mockito.*;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
-import com.cartethyia.easyorange.product.domain.exception.RatingNotFoundException;
-import com.cartethyia.easyorange.product.domain.exception.RatingNotOwnerException;
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import com.cartethyia.easyorange.product.domain.port.CompletedOrderPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
 import java.util.Optional;
@@ -106,7 +105,7 @@ class ProductRatingCommandHandlerTest {
         when(productRatingRepository.findById("999")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> commandHandler.deleteReview("1", "999"))
-                .isInstanceOf(RatingNotFoundException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("评价不存在");
 
         verify(productRatingRepository, never()).update(any());
@@ -119,7 +118,7 @@ class ProductRatingCommandHandlerTest {
         when(productRatingRepository.findById("100")).thenReturn(Optional.of(rating));
 
         assertThatThrownBy(() -> commandHandler.deleteReview("2", "100"))
-                .isInstanceOf(RatingNotOwnerException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("只能删除自己的评价");
 
         verify(productRatingRepository, never()).update(any());

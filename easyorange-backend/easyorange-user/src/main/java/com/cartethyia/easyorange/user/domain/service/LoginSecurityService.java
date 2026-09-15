@@ -1,8 +1,9 @@
 package com.cartethyia.easyorange.user.domain.service;
 
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.user.domain.constant.UserSecurityConstant;
-import com.cartethyia.easyorange.user.domain.exception.AccountLockedException;
+import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
 import lombok.RequiredArgsConstructor;
 
@@ -13,9 +14,8 @@ public class LoginSecurityService {
 
     public void checkAndThrowIfLocked(String identifier) {
         BizRequire.notBlank(identifier, "登录标识不能为空");
-        long remaining = loginAttemptPort.getRemainingLockSeconds(identifier);
-        if (remaining > 0) {
-            throw AccountLockedException.of(identifier, remaining);
+        if (loginAttemptPort.getRemainingLockSeconds(identifier) > 0) {
+            throw BusinessException.of(UserResultCode.USER_LOCKED);
         }
     }
 
@@ -23,8 +23,7 @@ public class LoginSecurityService {
         BizRequire.notBlank(identifier, "登录标识不能为空");
         long count = loginAttemptPort.incrementAndGet(identifier, UserSecurityConstant.LOCK_DURATION);
         if (count >= UserSecurityConstant.MAX_LOGIN_ATTEMPTS) {
-            long remaining = loginAttemptPort.getRemainingLockSeconds(identifier);
-            throw AccountLockedException.of(identifier, remaining);
+            throw BusinessException.of(UserResultCode.USER_LOCKED);
         }
     }
 

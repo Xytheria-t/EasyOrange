@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.domain.entity;
 
 import static org.assertj.core.api.Assertions.*;
 
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class ReportHandleHistoryTest {
     @DisplayName("创建时 reportId 为空应抛出异常")
     void create_withNullReportId_shouldThrow() {
         assertThatThrownBy(() -> ReportHandleHistory.create("100", null, "1", "RESOLVE", "备注"))
-                .isInstanceOf(ReportHandleHistory.HistoryDomainException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("举报ID不能为空");
     }
 
@@ -35,7 +36,7 @@ class ReportHandleHistoryTest {
     @DisplayName("创建时 operatorId 为空应抛出异常")
     void create_withNullOperatorId_shouldThrow() {
         assertThatThrownBy(() -> ReportHandleHistory.create("100", "1", null, "RESOLVE", "备注"))
-                .isInstanceOf(ReportHandleHistory.HistoryDomainException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("操作人ID不能为空");
     }
 
@@ -43,7 +44,7 @@ class ReportHandleHistoryTest {
     @DisplayName("创建时 action 为空应抛出异常")
     void create_withNullAction_shouldThrow() {
         assertThatThrownBy(() -> ReportHandleHistory.create("100", "1", "2", null, "备注"))
-                .isInstanceOf(ReportHandleHistory.HistoryDomainException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("动作类型不能为空");
     }
 
@@ -51,7 +52,7 @@ class ReportHandleHistoryTest {
     @DisplayName("创建时 action 为空白字符串应抛出异常")
     void create_withBlankAction_shouldThrow() {
         assertThatThrownBy(() -> ReportHandleHistory.create("100", "1", "2", "  ", "备注"))
-                .isInstanceOf(ReportHandleHistory.HistoryDomainException.class)
+                .isInstanceOf(ProductDomainException.class)
                 .hasMessageContaining("动作类型不能为空");
     }
 

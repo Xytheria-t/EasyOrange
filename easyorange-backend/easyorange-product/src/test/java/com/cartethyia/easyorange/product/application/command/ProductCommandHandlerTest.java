@@ -13,7 +13,7 @@ import com.cartethyia.easyorange.product.domain.enums.StockChangeType;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
+import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.repository.StockLedgerRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.StockChange;
@@ -119,7 +119,7 @@ class ProductCommandHandlerTest {
                 new UpdateProductCommand("999", null, "新名称", null, null, null, null, null, null, null, null);
 
         assertThatThrownBy(() -> commandHandler.updateProduct(SELLER_ID, command))
-                .isInstanceOf(ProductNotFoundException.class);
+                .isInstanceOf(ProductDomainException.class);
     }
 
     @Test
