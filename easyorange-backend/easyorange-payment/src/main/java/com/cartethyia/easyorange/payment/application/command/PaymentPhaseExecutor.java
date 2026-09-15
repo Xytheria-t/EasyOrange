@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.payment.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
@@ -39,7 +38,7 @@ public class PaymentPhaseExecutor {
     public String preparePayPhase1(String paymentNo) {
         Payment aggregate = paymentRepository
                 .findByPaymentNo(paymentNo)
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
+                .orElseThrow(() -> PaymentDomainException.notFound("paymentNo=" + paymentNo));
 
         Payment updated = aggregate.preparePay();
         paymentRepository.update(updated);
@@ -116,6 +115,6 @@ public class PaymentPhaseExecutor {
     private Payment findRequired(String paymentId) {
         return paymentRepository
                 .findById(paymentId)
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
+                .orElseThrow(() -> PaymentDomainException.notFound("paymentId=" + paymentId));
     }
 }

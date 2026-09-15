@@ -1,25 +1,24 @@
 package com.cartethyia.easyorange.adapter.outbound.payment;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
-import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
-import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
-import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+/**
+ * 订单 → 支付 的 ACL 出口 — 把订单侧端口（以 orderId 为键）翻译成支付模块的应用用例。
+ * <p>
+ * 只做键翻译与委托：支付单解析与「不存在」的错误码（B4001）留在支付模块内，
+ * 本类不得直接依赖支付的领域仓储或领域模型。
+ */
 @Primary
 @Component
 @RequiredArgsConstructor
 public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
 
     private final PaymentCommandHandler paymentCommandHandler;
-    private final PaymentRepository paymentRepository;
 
     @Override
     public String createPayment(CreatePaymentRequest request) {
@@ -34,11 +33,7 @@ public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
 
     @Override
     public void pay(String orderId) {
-        Payment payment = paymentRepository
-                .findByOrderId(orderId)
-                .orElseThrow(() -> BusinessException.of(OrderResultCode.ORDER_NOT_FOUND, "支付单不存在"));
-
-        paymentCommandHandler.handle(new PayCommand(payment.paymentNo(), null, null));
+        paymentCommandHandler.payByOrderId(orderId);
     }
 
     /**
@@ -46,12 +41,6 @@ public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
      */
     @Override
     public void refundPayment(String orderId, String reason) {
-        Payment payment = paymentRepository
-                .findByOrderId(orderId)
-                .orElseThrow(() -> BusinessException.of(OrderResultCode.ORDER_NOT_FOUND, "支付单不存在"));
-
-        RefundPaymentCommand command =
-                new RefundPaymentCommand(payment.id(), payment.userId(), payment.amount(), reason);
-        paymentCommandHandler.handle(command);
+        paymentCommandHandler.refundByOrderId(orderId, reason);
     }
 }

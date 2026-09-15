@@ -146,6 +146,19 @@ class PaymentCommandHandlerTest {
         }
 
         @Test
+        @DisplayName("按订单号支付 - 解析出支付单号后走同一两阶段编排")
+        void payByOrderId_resolvesPaymentNoAndDelegates() {
+            when(paymentRepository.findByOrderId("2001")).thenReturn(Optional.of(testAggregate));
+            when(phaseExecutor.preparePayPhase1("PAY123")).thenReturn("1001");
+            when(phaseExecutor.invokePayGateway("1001")).thenReturn(PaymentResult.success("TXN_123"));
+
+            commandHandler.payByOrderId("2001");
+
+            verify(phaseExecutor).confirmPayPhase2(eq("1001"), any(PaymentResult.class));
+            verify(phaseExecutor, never()).rollbackPayStatus(anyString());
+        }
+
+        @Test
         @DisplayName("支付失败 - 网关失败回退 PENDING")
         void handle_pay_gatewayFailure_rollsBack() {
             when(phaseExecutor.preparePayPhase1("PAY123")).thenReturn("1001");
@@ -199,6 +212,22 @@ class PaymentCommandHandlerTest {
             verify(phaseExecutor).prepareRefundPhase1("1001", new BigDecimal("100.00"));
             verify(phaseExecutor).rollbackRefundStatus("1001");
             verify(phaseExecutor, never()).confirmRefundPhase2(anyString(), any(), any());
+        }
+
+        @Test
+        @DisplayName("按订单号退款 - 金额与操作者取自支付单，走同一退款编排")
+        void refundByOrderId_resolvesAmountAndOwner() {
+            when(paymentRepository.findByOrderId("2001")).thenReturn(Optional.of(testAggregate));
+            when(paymentRepository.findById("1001")).thenReturn(Optional.of(testAggregate));
+            when(phaseExecutor.invokeRefundGateway("1001", new BigDecimal("100.00")))
+                    .thenReturn(RefundResult.success("REF_123"));
+
+            commandHandler.refundByOrderId("2001", "订单取消");
+
+            // 操作者取自支付单所属用户（3001），故归属校验通过
+            verify(phaseExecutor).prepareRefundPhase1("1001", new BigDecimal("100.00"));
+            verify(phaseExecutor)
+                    .confirmRefundPhase2(eq("1001"), any(RefundResult.class), eq(new BigDecimal("100.00")));
         }
 
         @Test
@@ -312,6 +341,39 @@ class PaymentCommandHandlerTest {
 
             verify(paymentRepository, never()).update(any());
             verify(domainEventPublisher, never()).publish(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("订单侧入口 - 支付单缺失")
+    class OrderIdEntryPointNotFoundTests {
+
+        @Test
+        @DisplayName("按订单号支付 - 抛支付模块的 B4001，不借用订单侧错误码")
+        void payByOrderId_paymentNotFound_throwsB4001() {
+            when(paymentRepository.findByOrderId("2001")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> commandHandler.payByOrderId("2001"))
+                    .isInstanceOf(PaymentDomainException.class)
+                    .satisfies(e -> assertThat(((PaymentDomainException) e).getCode())
+                            .isEqualTo(PaymentResultCode.PAYMENT_NOT_FOUND.getCode()))
+                    .hasMessageContaining("orderId=2001");
+
+            verify(phaseExecutor, never()).preparePayPhase1(anyString());
+        }
+
+        @Test
+        @DisplayName("按订单号退款 - 抛 B4001 且不触达退款网关")
+        void refundByOrderId_paymentNotFound_throwsB4001() {
+            when(paymentRepository.findByOrderId("2001")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> commandHandler.refundByOrderId("2001", "订单取消"))
+                    .isInstanceOf(PaymentDomainException.class)
+                    .satisfies(e -> assertThat(((PaymentDomainException) e).getCode())
+                            .isEqualTo(PaymentResultCode.PAYMENT_NOT_FOUND.getCode()))
+                    .hasMessageContaining("orderId=2001");
+
+            verify(phaseExecutor, never()).prepareRefundPhase1(anyString(), any());
         }
     }
 
