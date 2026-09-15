@@ -98,9 +98,7 @@ order/
 │   │   ├── OrderAction.java                # 状态机唯一事实来源：动作（前置状态→目标状态+支付副作用）
 │   │   └── OrderResultCode.java
 │   └── exception/
-│       ├── OrderDomainException.java        # 唯一领域异常：构造走 of(...)，具名语义走 notFound(orderId)
-│       ├── OrderCreationException.java      # 下单失败（默认码 B3009）
-│       └── PaymentGatewayAdapterException.java  # 支付网关不可用（D0502）
+│       └── OrderDomainException.java        # 唯一领域异常：of(...) / notFound(id) / upstream(msg, cause)
 ```
 
 > **跨模块适配器位置**：order 模块定义的 `ProductInventoryPort` / `ProductQueryPort` / `PaymentGatewayPort` / `UserInfoPort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/ProductInventoryAdapter`、`product/ProductQueryAdapter`、`payment/OrderPaymentGatewayAdapter`、`user/OrderUserInfoAdapter`。`OrderCachePort` 的实现 `RedisOrderCacheAdapter` 位于 order 模块自身 `adapter/outbound/cache/`，因其仅操作订单域缓存。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
@@ -120,7 +118,7 @@ OrderCommandHandler.handle(CreateOrderCommand) ─ @Transactional(rollbackFor=Ex
   3. Order.createOrder 创建订单 + 发布事件（Outbox 同事务原子）
   4. ProductInventoryPort.decreaseStock() 同步扣库存（同事务）
   5. PaymentGatewayPort 创建支付记录（同事务）
-  6. 任一步失败 → 业务事务整体回滚，抛 OrderCreationException（库存/支付同事务回滚，无补偿路径）
+  6. 任一步失败 → 业务事务整体回滚，抛 OrderDomainException（B3009；库存/支付同事务回滚，无补偿路径）
 ```
 
 **库存恢复**：仅由 `OrderLifecycleEventConsumer` 消费订单取消/退款事件时调用 `ProductInventoryPort.restoreStock(orderId, productId, quantity)` 恢复，数量取自事件明细（`OrderItemRef`，与下单扣减对称）；完成事件触发 `markAsSold`。重复投递由 product 侧库存流水的唯一键兜底，消费者只负责把数量和订单号如实传下去。

@@ -176,9 +176,11 @@ RuntimeException
 │   ├── BusinessException (common, 通用业务异常，几乎所有模块通过 `of(ResultCode)` 使用)
 │   ├── ParamValidationException (common, 参数校验异常)
 │   ├── FileException (common, 文件异常, 构造器 protected, 使用 `FileException.of(...)`)
-│   ├── OrderDomainException (order 模块, 统一领域异常)
-│   ├── PaymentDomainException (payment 模块, 统一领域异常)
-│   └── ... 其他模块领域异常（推荐统一，而非多叶子类）
+│   ├── OrderDomainException (order, 统一领域异常)
+│   ├── PaymentDomainException (payment, 统一领域异常)
+│   ├── ProductDomainException (product, 统一领域异常)
+│   ├── MessageDomainException (message, 统一领域异常)
+│   └── TokenBudgetExceededException (ai, 调用方按类型降级，继承 BaseBusinessException)
 ```
 
 **划分原则：**
@@ -187,6 +189,10 @@ RuntimeException
 - 各模块异常 — 继承 `BaseBusinessException`，通过模块专属 `ResultCode` 区分具体业务场景（禁止回退到全局 `B0002`）
 - 领域层异常（如 `OrderDomainException`、`PaymentDomainException`）— 领域层专用，不含任何框架依赖
 - 无自定义异常类的模块（如 user、favorite）— 直接使用 `BusinessException.of(ModuleResultCode.XXX)`，无需定义子类
+- **每个模块一个领域异常类**：具体语义由 `ResultCode` + 类上的具名工厂承载（`notFound(id)`、`notOwner(id)`…），
+  禁止「一个错误码一个叶子类」。判据是**调用方是否需要按类型分支**——需要 catch 它来降级 / 重试 / 格式化展示时才值得独立类型，
+  且必须继承本模块统一异常，这样 `catch (XxxDomainException)` 仍能兜住全家族（`TokenBudgetExceededException` 是唯一在用的例子）。
+  机械门禁：`ArchitectureRulesTest#domain_exception_roots_are_unique_per_module`
 
 ### 异常传播路径
 
@@ -205,18 +211,24 @@ RuntimeException
 4. **RPC 异常映射** `[演进]`：跨模块 Feign 调用时，调用方需 catch FeignException 并转换为自己的业务异常，防止外部异常类型泄漏
 
 ```java
-// 领域层异常（继承 BaseBusinessException，含统一错误码）
+// 领域层异常：每模块一个，构造器非公开，语义经具名工厂表达（继承 BaseBusinessException，含统一错误码）
 public class OrderDomainException extends BaseBusinessException {
-    public static OrderDomainException of(IResultCode resultCode) {
-        return new OrderDomainException(resultCode.getCode(), resultCode.getMessage());
+    protected OrderDomainException(IResultCode resultCode, String message) {
+        super(resultCode, message);
     }
-    public static OrderDomainException of(IResultCode resultCode, String message) {
-        return new OrderDomainException(resultCode.getCode(), message);
+
+    public static OrderDomainException of(String message) {
+        return new OrderDomainException(OrderResultCode.ORDER_ERROR, message);
     }
-    private OrderDomainException(String code, String message) {
-        super(code, message);
+
+    /** 具名工厂：错误码 + 文案形状只此一处 */
+    public static OrderDomainException notFound(String orderId) {
+        return new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND, "订单不存在: id=" + orderId);
     }
 }
+
+// 需要调用方按类型分支的异常才独立成类，且继承模块统一异常（catch 根类仍兜得住）
+public class TokenBudgetExceededException extends BaseBusinessException { ... }
 
 // 应用层/适配层使用通用业务异常（无自定义异常类的模块）
 throw BusinessException.of(UserResultCode.USER_NOT_FOUND);

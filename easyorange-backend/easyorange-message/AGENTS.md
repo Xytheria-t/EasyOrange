@@ -94,9 +94,7 @@ message/
 │   │   ├── UnreadCount.java
 │   │   └── UserInfo.java
 │   └── exception/
-│       ├── MessageDomainException.java
-│       ├── MessageNotFoundException.java
-│       └── UnauthorizedOperationException.java
+│       └── MessageDomainException.java    # 模块唯一领域异常（notFound/notOwner 具名工厂）
 ```
 
 ## WebSocket 架构
