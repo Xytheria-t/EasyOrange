@@ -13,7 +13,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * <p>
  * 多级响应缓存（L1 Caffeine + L2 Redis + 跨节点失效）已随 {@code CachingLlmAdapter}/
  * {@code CachingVisionAdapter} 一并移除（2026-08 迁移至 Spring AI），
- * 仅保留 stale 缓存（AiStaleCacheConfig）供限流降级返回。
+ * 仅保留 stale 缓存（AiStaleCacheConfig）供 LLM 供应商故障兜底（stale-while-error，消费方在
+ * {@code AiChatService}）；限流超限由 {@link AiRateLimitInterceptor} 返回 429，不经缓存。
  */
 @Slf4j
 @Configuration
