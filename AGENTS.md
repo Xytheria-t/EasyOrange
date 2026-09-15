@@ -18,13 +18,13 @@ monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模
 
 | 层 | 技术 |
 |---|------|
-| **后端** | Java 25, Spring Boot 4.0.7, MyBatis-Plus 3.5.16 |
+| **后端** | Java 25, Spring Boot 4.0.7, MyBatis-Plus 3.5.17 |
 | **前端** | TypeScript, React |
 | **数据库** | MySQL 8.4.11, Redis 8.10.0 |
 | **消息队列** | RabbitMQ 4.3.4 (Spring AMQP 4.0.x) |
 | **搜索引擎** | Elasticsearch 9.2.8 (IK 中文分词器) |
 | **认证** | JWT Access (RSA) + Opaque Refresh (Redis, HttpOnly Cookie) |
-| **迁移** | Flyway 11.15.0 |
+| **迁移** | Flyway 13.2.0 |
 | **部署** | Docker, docker-compose, compose.yaml（显式 env 直连，凭据统一经根 `.env` 插值）+ **K8s/kustomize** (k8s/, 无状态应用层) |
 
 ## 全局硬约束（任何改动都适用，违反即返工）
