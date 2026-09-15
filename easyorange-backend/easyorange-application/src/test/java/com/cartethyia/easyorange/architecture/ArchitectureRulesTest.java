@@ -5,6 +5,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.GeneralCodingRules.NO_CLASSES_SHOULD_ACCESS_STANDARD_STREAMS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -17,13 +18,15 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 
 /**
  * 架构守卫测试 — 使用 ArchUnit 真实 API（@AnalyzeClasses + @ArchTest），覆盖 DDD/CQRS 分层。
  * <p>
- * 11 条 @ArchTest 规则：
+ * 12 条 @ArchTest 规则：
  * <ol>
  *   <li>domain 层白名单准入（onlyDependOnClassesThat，合并原「禁框架/web/DTO」3 项子检查为 1 条）</li>
  *   <li>command handler 禁止依赖 query handler（CQRS 写读分离）</li>
@@ -37,6 +40,7 @@ import org.junit.jupiter.api.DisplayName;
  *   <li>禁止 System.out / System.err（复用 ArchUnit GeneralCodingRules）</li>
  *   <li>禁止 e.printStackTrace()（统一 SLF4J）</li>
  *   <li>domain/application 禁止依赖 {@code org.springframework.dao}（持久化技术异常须在适配器内翻译）</li>
+ *   <li>每个模块一套领域异常层级（直接继承 {@code BaseBusinessException} 的根类唯一，其余语义走具名工厂）</li>
  * </ol>
  * 除 FreezingArchRule 冻结的已知技术债外无任何白名单 — 新违规直接失败。
  */
@@ -237,4 +241,41 @@ class ArchitectureRulesTest {
             .resideInAPackage("org.springframework.dao..")
             .because("Spring DataAccessException 家族是持久化技术细节，必须在 adapter/outbound 内翻译成"
                     + "端口返回值或领域异常（如 UniqueConstraint → 幂等返回空），禁止渗进 domain/application");
+
+    // ==================== Rule 11: 每个模块一套领域异常层级 ====================
+
+    @ArchTest
+    static void domain_exception_roots_are_unique_per_module(JavaClasses classes) {
+        var rootsByModule = new HashMap<String, List<String>>();
+        for (JavaClass javaClass : classes) {
+            if (javaClass.isInterface()
+                    || javaClass.isEnum()
+                    || !javaClass.getPackageName().contains(".domain.")) {
+                continue;
+            }
+            var extendsBusinessExceptionDirectly = javaClass.isAssignableTo(BaseBusinessException.class)
+                    && javaClass
+                            .getRawSuperclass()
+                            .map(superclass -> superclass.getName().equals(BaseBusinessException.class.getName()))
+                            .orElse(false);
+            if (extendsBusinessExceptionDirectly) {
+                rootsByModule
+                        .computeIfAbsent(moduleOf(javaClass.getPackageName()), _ -> new ArrayList<>())
+                        .add(javaClass.getName());
+            }
+        }
+        var duplicated = rootsByModule.entrySet().stream()
+                .filter(entry -> entry.getValue().size() > 1)
+                .map(entry -> entry.getKey() + " → " + entry.getValue())
+                .toList();
+        assertThat(duplicated)
+                .withFailMessage(() -> "除统一异常外还并行着第二套领域异常层级（catch 统一异常将漏掉它们）：\n" + String.join("\n", duplicated))
+                .isEmpty();
+    }
+
+    /** 取模块名（包名第二段，如 com.cartethyia.easyorange.product.domain.exception → product）。 */
+    private static String moduleOf(String packageName) {
+        var segments = packageName.split("\\.");
+        return segments.length > 3 ? segments[3] : packageName;
+    }
 }
