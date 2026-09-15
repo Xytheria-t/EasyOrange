@@ -8,7 +8,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-ED8B00)](https://openjdk.java.net/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.7-6DB33F)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-6DB33F)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
 
 ## 两条技术主线
@@ -19,7 +19,7 @@ EasyOrange 在两条技术主线上都有独立且完整的落地，可分别展
 |---|---|
 | **Spring AI 2.0 框架化** — 6 决策点直接注入 `ChatModel` / `EmbeddingModel` bean，切换供应商只改配置不改业务代码（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） | **DDD 六边形 + CQRS** — 35 Port 编译期隔离，domain 层零框架依赖；CQRS 仅 product / order / payment / message 4 模块（[ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)） |
 | **轻量级 Agent 编排** — `AiSearchEnhancer` 4 路并行 Tool Calling，整体 5s 超时后保留已完成步骤，无 LangChain4j 黑盒 | **拒绝 Saga** — 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件副作用（[ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)） |
-| **限流 / 预算 / 降级** — Redisson 分布式令牌桶 + stale 降级 + `@TokenBudget` 日预算 AOP | **事件驱动可靠投递** — Spring Modulith Outbox → RabbitMQ → DLQ 三级重试 + traceId 全链路 |
+| **限流 / 预算 / 降级** — Redisson 分布式令牌桶（超限 429）+ 供应商故障 stale 兜底 + `@TokenBudget` 日预算 AOP | **事件驱动可靠投递** — Spring Modulith Outbox → RabbitMQ → DLQ 三级重试 + traceId 全链路 |
 | **Prompt 工程化** — 8 个 YAML 模板版本化渲染（6 决策点 + 2 对话） | **架构治理** — ArchUnit 11 条规则守卫分层 + 10 条 ADR 记录决策 |
 | **Embedding 真实现 + 多模态** — text-embedding-v3 kNN + BM25 混合检索 + Qwen-VL 拍照识别自动上架 | **质量门禁** — 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重验证），前端 Biome 0 errors |
 
@@ -114,7 +114,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 
 ### AI 工程化 8 件套
 
-框架化 / Embedding 真实现 / 令牌桶限流 / stale 降级 / TokenBudget / Prompt YAML 版本化 / 多模态 Vision / 4 路并行 Tool Calling。完整机制见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md)。
+框架化 / Embedding 真实现 / 令牌桶限流（超限 429）/ 供应商故障 stale 兜底 / TokenBudget / Prompt YAML 版本化 / 多模态 Vision / 4 路并行 Tool Calling。完整机制见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md)。
 
 ## 架构治理
 
@@ -157,10 +157,10 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 
 | 层 | 技术 |
 |---|---|
-| **后端** | Java 25 · Spring Boot 4 · MyBatis-Plus 3.5 · MapStruct |
+| **后端** | Java 25 · Spring Boot 4 · MyBatis-Plus · MapStruct |
 | **安全** | Spring Security OAuth2 Resource Server · **双 Token**：RSA 签名 Access（30min 无状态）+ Opaque Refresh（Redis SHA-256，HttpOnly Cookie，轮换 + 复用检测）· BCrypt |
 | **前端** | React 19 · TypeScript · Vite · TanStack Query 5 · Zustand 5 · Tailwind 4 · shadcn/ui · Biome |
-| **数据 / 消息** | MySQL 8.4.11 · Redis 8.10 · RabbitMQ 4.3.4 · Elasticsearch 9.2.8（可选） |
+| **数据 / 消息** | MySQL 8.4 · Redis 8 · RabbitMQ 4.3 · Elasticsearch 9.2（可选） |
 | **AI** | Spring AI 2.0 · DeepSeek · Qwen-VL · DashScope Embedding |
 | **可靠性** | Redisson（分布式锁 / 令牌桶）· Spring Modulith Outbox · CacheErrorHandler fail-open |
 | **可观测** | Micrometer + Prometheus · Brave（traceId）· Spring AI Observation · 结构化日志 |
