@@ -29,7 +29,7 @@ public class PaymentQueryHandler {
 
     /**
      * 资源归属校验（越权防护）— 查询者必须与支付单所属用户一致，
-     * 不一致时按「记录不存在」处理（B4001→404），避免泄露支付单存在性。
+     * 不一致时按「记录不存在」处理（B4001，B 段前缀统一映射 400），避免泄露支付单存在性。
      */
     private Payment assertOwnership(Optional<Payment> found, String operatorId) {
         Payment payment = found.orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
