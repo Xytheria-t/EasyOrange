@@ -23,8 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 故以反射校验结构不变量：
  * <ol>
  *   <li>全部 phase 方法声明在独立 Bean {@link PaymentPhaseExecutor} 且标注 {@link Transactional}；</li>
- *   <li>编排方法 {@code handle(PayCommand)} / {@code handle(RefundPaymentCommand)} 不得持有事务
- *       （事务不得跨网关调用，见 ADR-0007）。</li>
+ *   <li>编排方法 {@code handle(PayCommand)} / {@code handle(RefundPaymentCommand)} 与订单侧入口
+ *       {@code payByOrderId} / {@code refundByOrderId} 不得持有事务（事务不得跨网关调用，见 ADR-0007）。</li>
  * </ol>
  */
 @DisplayName("支付事务边界守卫")
@@ -40,6 +40,9 @@ class PaymentTransactionBoundaryTest {
 
     private static final Set<String> ORCHESTRATION_COMMANDS = Set.of(
             PayCommand.class.getName(), RefundPaymentCommand.class.getName(), PaymentCallbackCommand.class.getName());
+
+    /** 订单侧入口（以 orderId 为键）— 同样编排两阶段，不得持有事务。 */
+    private static final Set<String> ORDER_ID_ENTRY_POINTS = Set.of("payByOrderId", "refundByOrderId");
 
     @Test
     void phaseMethodsAreDeclaredOnExecutorAndTransactional() {
@@ -61,13 +64,27 @@ class PaymentTransactionBoundaryTest {
     @Test
     void orchestrationMethodsDoNotHoldTransactions() {
         for (Method method : PaymentCommandHandler.class.getDeclaredMethods()) {
-            if (method.getName().equals("handle")
-                    && method.getParameterCount() == 1
-                    && ORCHESTRATION_COMMANDS.contains(method.getParameterTypes()[0].getName())) {
+            boolean isOrchestration = (method.getName().equals("handle")
+                            && method.getParameterCount() == 1
+                            && ORCHESTRATION_COMMANDS.contains(method.getParameterTypes()[0].getName()))
+                    || ORDER_ID_ENTRY_POINTS.contains(method.getName());
+            if (isOrchestration) {
                 assertThat(method.isAnnotationPresent(Transactional.class))
                         .as("编排方法 %s 不得持有事务（事务不得跨网关调用）", method)
                         .isFalse();
             }
+        }
+    }
+
+    /**
+     * 订单侧入口必须存在 — 否则上面的扫描会因改名而静默失效，门禁形同虚设。
+     */
+    @Test
+    void orderIdEntryPointsArePresent() {
+        for (String name : ORDER_ID_ENTRY_POINTS) {
+            assertThat(handlerMethod(name))
+                    .as("订单侧入口 %s 必须声明在 PaymentCommandHandler", name)
+                    .isNotNull();
         }
     }
 

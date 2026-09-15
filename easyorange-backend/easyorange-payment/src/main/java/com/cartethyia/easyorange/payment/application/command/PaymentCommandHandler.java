@@ -142,6 +142,40 @@ public class PaymentCommandHandler {
         domainEventPublisher.publish(result.event());
     }
 
+    // ==================== 订单侧入口（以 orderId 为键） ====================
+
+    /**
+     * 按订单号发起支付 — 订单模块的 {@code PaymentGatewayPort.pay(orderId)} 以订单号为键，
+     * 而 {@link PayCommand} 以支付单号为键，解析步骤收口在此，调用方不必接触支付仓储。
+     * <p>
+     * 不持有事务：委托 {@link #handle(PayCommand)} 走两阶段，事务边界在 {@link PaymentPhaseExecutor}。
+     *
+     * @throws PaymentDomainException 支付单不存在（B4001）
+     */
+    public void payByOrderId(String orderId) {
+        handle(new PayCommand(resolveByOrderId(orderId).paymentNo(), null, null));
+    }
+
+    /**
+     * 按订单号退款 — 操作者记为支付单所属用户（通过归属校验），供订单取消等系统内部路径使用。
+     *
+     * @throws PaymentDomainException 支付单不存在（B4001）
+     */
+    public void refundByOrderId(String orderId, String reason) {
+        Payment payment = resolveByOrderId(orderId);
+        handle(new RefundPaymentCommand(payment.id(), payment.userId(), payment.amount(), reason));
+    }
+
+    /**
+     * 按订单号解析支付单 — 订单与支付单在同一下单事务内落库，正常路径下必然存在；
+     * 缺失属数据不一致，按 B4001 显性失败而非静默跳过（静默会让用户点了支付却毫无反馈）。
+     */
+    private Payment resolveByOrderId(String orderId) {
+        return paymentRepository
+                .findByOrderId(orderId)
+                .orElseThrow(() -> PaymentDomainException.notFound("orderId=" + orderId));
+    }
+
     /**
      * 回调金额校验 — 回调未携带金额时跳过（签名已覆盖 paymentNo|transactionId）。
      * <p>
@@ -153,7 +187,7 @@ public class PaymentCommandHandler {
         }
         Payment aggregate = paymentRepository
                 .findByPaymentNo(command.paymentNo())
-                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
+                .orElseThrow(() -> PaymentDomainException.notFound("paymentNo=" + command.paymentNo()));
         if (aggregate.amount().compareTo(command.amount()) != 0) {
             throw PaymentDomainException.of(
                     PaymentResultCode.CALLBACK_AMOUNT_MISMATCH, "回调金额与支付单金额不一致: paymentNo=" + command.paymentNo());
