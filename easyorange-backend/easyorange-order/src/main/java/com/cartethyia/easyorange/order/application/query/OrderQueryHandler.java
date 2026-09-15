@@ -38,10 +38,10 @@ public class OrderQueryHandler {
     public OrderVO getOrderDetailForOwner(String userId, String orderId) {
         OrderReadModel order = orderReadRepository
                 .findById(OrderId.of(orderId))
-                .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
+                .orElseThrow(() -> OrderDomainException.notFound(orderId));
 
-        if (!order.buyerId().equals(userId) && !order.sellerId().equals(userId)) {
-            throw new OrderDomainException(OrderResultCode.ORDER_NOT_OWNER);
+        if (!order.isOwnedBy(userId)) {
+            throw OrderDomainException.of(OrderResultCode.ORDER_NOT_OWNER);
         }
 
         Map<String, ProductDetail> productMap = loadProductMap(order);

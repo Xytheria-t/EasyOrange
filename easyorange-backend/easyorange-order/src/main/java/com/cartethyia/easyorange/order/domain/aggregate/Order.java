@@ -195,6 +195,18 @@ public class Order {
                 spec.version());
     }
 
+    // ==================== Identity Queries ====================
+
+    /** 是否为本订单的认领方（买家） */
+    public boolean isBuyer(String userId) {
+        return Objects.equals(buyerId.value(), userId);
+    }
+
+    /** 是否为本订单的资产方（卖家） */
+    public boolean isSeller(String userId) {
+        return Objects.equals(sellerId.value(), userId);
+    }
+
     // ==================== Status Queries ====================
     // 仅保留有生产调用方的谓词；其余能力查询（canPay/canShip/...）在需要时由
     // OrderAction.X.canApply(status, paymentStatus) 直接裁决，无需在聚合根上重复暴露。

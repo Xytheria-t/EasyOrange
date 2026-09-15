@@ -115,6 +115,7 @@ class OrderQueryHandlerTest {
 
             assertThatThrownBy(() -> handler.getOrderDetailForOwner(BUYER_ID, "999"))
                     .isInstanceOf(OrderDomainException.class)
+                    .hasMessageContaining("999")
                     .extracting("code")
                     .isEqualTo("B3001");
         }
