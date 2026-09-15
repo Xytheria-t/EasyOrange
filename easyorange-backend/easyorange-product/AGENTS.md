@@ -119,9 +119,7 @@ product/
 │   ├── constant/
 │   │   └── ProductConstant.java
 │   └── exception/
-│       ├── InsufficientStockException.java
-│       ├── InvalidProductStatusException.java
-│       └── ProductNotFoundException.java
+│       └── ProductDomainException.java    # 模块唯一领域异常（notFound/notOwner/invalidStatus/rating*/report* 具名工厂）
 └── config/
     └── ProductDomainConfig.java
 ```

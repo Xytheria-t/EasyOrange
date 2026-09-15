@@ -55,8 +55,6 @@ user/
 ├── domain/
 │   ├── aggregate/
 │   │   └── User.java                    # 用户聚合根
-│   ├── exception/
-│   │   └── AccountLockedException.java  # 登录锁定异常（含 remainingSeconds，不含 UI 文案）
 │   ├── event/                           # 领域事件
 │   │   ├── UserEvent.java               # 密封接口（extends DomainEvent）
 │   │   ├── UserRegisteredEvent.java     # 注册事件
@@ -214,7 +212,7 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 
 - 密码: BCrypt 加密，禁止明文存储和日志输出
 - 登录限流/防重: 由全局 `RateLimitFilter` 约定式拦截（写操作 Redis 分布式限流 + 3 秒防重，Redis 不可用 fail-open），无需模块内注解
-- 登录失败锁定: `LoginSecurityService`（domain）按 `LoginAttemptPort` 计数判定，超限抛 `AccountLockedException`（携带剩余锁定秒数）；计数存储走 `RedisLoginAttemptAdapter`
+- 登录失败锁定: `LoginSecurityService`（domain）按 `LoginAttemptPort` 计数判定，超限抛 `BusinessException.of(UserResultCode.USER_LOCKED)`（B1003，文案取错误码目录）；计数存储走 `RedisLoginAttemptAdapter`
 - Token: Access Token 短期 + Refresh Token 长期，登出加入黑名单
 
 ## 常见开发任务
