@@ -7,6 +7,7 @@
 #   3. merge 冲突标记残留
 #   4. 大文件（默认 >2MB 阻断）
 #   5. 前端：仅当 src/tests 下 ts/tsx 变更时跑 biome check
+#   6. 版本漂移：仅当技术栈表 / pom / compose / ES 镜像变更时校验文档版本与权威来源一致
 #
 # 重门禁（构建 + 测试）在 pre-push，提交时不挡路。
 #
@@ -84,6 +85,26 @@ if [[ -n "$fe_files" ]]; then
   fi
 else
   hook_log "No frontend TS changes, skipping biome check"
+fi
+
+# 4. 版本漂移：文档版本表（唯一权威落点）与 pom / compose / 镜像 tag 必须一致
+drift_files=$(echo "$files" \
+  | grep -E '^(doc/架构/架构-技术栈\.md|compose\.yaml|easyorange-backend/pom\.xml|infra/elasticsearch/Dockerfile)$' \
+  || true)
+
+if [[ -n "$drift_files" ]]; then
+  if command -v python3 >/dev/null 2>&1; then
+    hook_log "版本相关文件 staged → 校验文档版本与 pom/compose 一致性..."
+    if python3 "$SCRIPT_DIR/check-version-drift.py"; then
+      hook_ok "version drift check"
+    else
+      hook_fail "文档版本与 pom/compose 不一致（见上方输出；SKIP=git-hooks 可跳过）"
+    fi
+  else
+    hook_warn "python3 not found, skipping version drift check"
+  fi
+else
+  hook_log "No version-source changes, skipping version drift check"
 fi
 
 hook_ok "pre-commit passed"
