@@ -12,7 +12,7 @@
 
 ## 项目结构
 
-monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模块规范见模块内 `AGENTS.md`）· `easyorange-frontend/`（React + Vite + TypeScript + TanStack Query）· `doc/`（架构 / 集成 / ADR / agents 参考 / DATABASE / PRODUCT_DIRECTION）· `infra/`（IaC：Prometheus / Grafana / ES IK 镜像）· `k8s/`（K8s kustomize，无状态应用层）· `load-tests/`（k6 压测）· `.claude/rules/ecc/`（AI 编码规则 ECC：common/java/typescript/react/web）
+monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模块规范见模块内 `AGENTS.md`）· `easyorange-frontend/`（React + Vite + TypeScript + TanStack Query）· `doc/`（架构 / 集成 / ADR / agents 参考 / DATABASE）· `infra/`（IaC：Prometheus / Grafana / ES IK 镜像）· `k8s/`（K8s kustomize，无状态应用层）· `load-tests/`（k6 压测）· `.claude/rules/ecc/`（AI 编码规则 ECC：common/java/typescript/react/web）
 
 ## 技术栈
 
