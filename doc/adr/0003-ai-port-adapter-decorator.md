@@ -23,7 +23,7 @@ EasyOrange 在「资产方 / 认领方双端」共 6 个 AI 决策点（智能�
 - **可观测性是核心叙事**：项目对外宣传语明确提到「AiMetrics 可观测」，缓存命中率 / LLM 延迟 / 限流计数必须独立采集
 - **领域层零框架依赖**（DDD 铁律，见 `easyorange-backend/AGENTS.md`）：AI 调用入口不能污染 domain 层
 
-业务侧的边界（来自 `doc/PRODUCT_DIRECTION.md` 与 `AGENTS.md`）：平台不议价、不自动调价，AI 走生产级工程实践（Port/Adapter + 多级缓存 + 限流降级 + AiMetrics + Prompt 版本化 + Token 预算）。所以 AI 调用结果**可缓存、可降级、可观测**比「实时精准」更重要。
+业务侧的边界（来自 [README.md](../../README.md)「业务边界」与 `AGENTS.md`）：平台不议价、不自动调价，AI 走生产级工程实践（Port/Adapter + 多级缓存 + 限流降级 + AiMetrics + Prompt 版本化 + Token 预算）。所以 AI 调用结果**可缓存、可降级、可观测**比「实时精准」更重要。
 
 6 个 AI 决策点对应不同的 `AiCallScope`（缓存分桶）：
 
