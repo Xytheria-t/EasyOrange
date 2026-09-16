@@ -38,6 +38,9 @@ import org.springframework.amqp.core.MessageProperties;
 class OrderNotificationEventConsumerTest {
 
     private static final String ORDER_ID = "100";
+    /** 订单号 = ORD + 订单 ID（派生自事件，见 {@code OrderEvent.orderNo()}）。 */
+    private static final String ORDER_NO = "ORD" + ORDER_ID;
+
     private static final String PRODUCT_ID = "200";
     private static final String BUYER_ID = "1";
     private static final String SELLER_ID = "2";
@@ -100,7 +103,7 @@ class OrderNotificationEventConsumerTest {
 
             consumer.onOrderEvent(event, buildMessage());
 
-            verifyNotificationSent("OrderCreated", "订单已创建", "您的订单已创建，订单号: " + ORDER_ID);
+            verifyNotificationSent("OrderCreated", "订单已创建", "您的订单已创建，订单号: " + ORDER_NO);
         }
 
         @Test
@@ -110,7 +113,7 @@ class OrderNotificationEventConsumerTest {
 
             consumer.onOrderEvent(new OrderPaidEvent("evt-2", ORDER_ID, BUYER_ID, "1"), buildMessage());
 
-            verifyNotificationSent("OrderPaid", "订单已支付", "您的订单已支付成功，订单号: " + ORDER_ID);
+            verifyNotificationSent("OrderPaid", "订单已支付", "您的订单已支付成功，订单号: " + ORDER_NO);
         }
 
         @Test
@@ -120,7 +123,7 @@ class OrderNotificationEventConsumerTest {
 
             consumer.onOrderEvent(new OrderShippedEvent("evt-3", ORDER_ID, BUYER_ID), buildMessage());
 
-            verifyNotificationSent("OrderShipped", "订单已发货", "您的订单已发货，订单号: " + ORDER_ID);
+            verifyNotificationSent("OrderShipped", "订单已发货", "您的订单已发货，订单号: " + ORDER_NO);
         }
 
         @Test
@@ -132,7 +135,7 @@ class OrderNotificationEventConsumerTest {
                     new OrderCompletedEvent("evt-4", ORDER_ID, BUYER_ID, SELLER_ID, List.of(PRODUCT_ID)),
                     buildMessage());
 
-            verifyNotificationSent("OrderCompleted", "订单已完成", "您的订单已完成，订单号: " + ORDER_ID);
+            verifyNotificationSent("OrderCompleted", "订单已完成", "您的订单已完成，订单号: " + ORDER_NO);
         }
 
         @Test
@@ -145,7 +148,7 @@ class OrderNotificationEventConsumerTest {
                             "evt-5", ORDER_ID, BUYER_ID, List.of(new OrderItemRef(PRODUCT_ID, 1)), "取消原因"),
                     buildMessage());
 
-            verifyNotificationSent("OrderCancelled", "订单已取消", "您的订单已取消，订单号: " + ORDER_ID);
+            verifyNotificationSent("OrderCancelled", "订单已取消", "您的订单已取消，订单号: " + ORDER_NO);
         }
 
         @Test
@@ -158,7 +161,7 @@ class OrderNotificationEventConsumerTest {
                             "evt-6", ORDER_ID, BUYER_ID, List.of(new OrderItemRef(PRODUCT_ID, 1)), "退款原因"),
                     buildMessage());
 
-            verifyNotificationSent("OrderRefunded", "订单已退款", "您的订单已退款，订单号: " + ORDER_ID);
+            verifyNotificationSent("OrderRefunded", "订单已退款", "您的订单已退款，订单号: " + ORDER_NO);
         }
     }
 
