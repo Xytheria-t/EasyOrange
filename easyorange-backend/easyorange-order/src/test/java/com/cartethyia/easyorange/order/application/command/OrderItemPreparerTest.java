@@ -26,8 +26,8 @@ import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("OrderPreparation 订单项准备测试")
-class OrderPreparationTest {
+@DisplayName("OrderItemPreparer 订单项准备测试")
+class OrderItemPreparerTest {
 
     @Mock
     private ProductInventoryPort productInventoryPort;
@@ -38,14 +38,14 @@ class OrderPreparationTest {
     @Mock
     private IdGenerator idGenerator;
 
-    private OrderPreparation preparation;
+    private OrderItemPreparer preparer;
 
     private static final String SELLER_ID = "2";
     private static final String ITEM_ID = "018f7c1d-0000-7000-8000-000000000001";
 
     @BeforeEach
     void setUp() {
-        preparation = new OrderPreparation(productInventoryPort, productQueryPort, idGenerator);
+        preparer = new OrderItemPreparer(productInventoryPort, productQueryPort, idGenerator);
         when(idGenerator.generateId()).thenReturn(ITEM_ID);
     }
 
@@ -69,7 +69,7 @@ class OrderPreparationTest {
                 .thenReturn(List.of(snapshot("100", SELLER_ID, true, 10), snapshot("101", SELLER_ID, true, 3)));
         when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(detail("100"), detail("101")));
 
-        var result = preparation.prepareOrderItems(List.of(item("100", 2), item("101", 1)));
+        var result = preparer.prepareOrderItems(List.of(item("100", 2), item("101", 1)));
 
         assertThat(result.sellerId().value()).isEqualTo(SELLER_ID);
         assertThat(result.orderItems()).hasSize(2);
@@ -89,7 +89,7 @@ class OrderPreparationTest {
     void prepare_missingProduct_throws() {
         when(productInventoryPort.getSnapshots(any())).thenReturn(List.of());
 
-        assertThatThrownBy(() -> preparation.prepareOrderItems(List.of(item("999", 1))))
+        assertThatThrownBy(() -> preparer.prepareOrderItems(List.of(item("999", 1))))
                 .isInstanceOf(OrderDomainException.class)
                 .hasMessageContaining("资产不存在: 999");
     }
@@ -99,7 +99,7 @@ class OrderPreparationTest {
     void prepare_offlineProduct_throws() {
         when(productInventoryPort.getSnapshots(any())).thenReturn(List.of(snapshot("100", SELLER_ID, false, 10)));
 
-        assertThatThrownBy(() -> preparation.prepareOrderItems(List.of(item("100", 1))))
+        assertThatThrownBy(() -> preparer.prepareOrderItems(List.of(item("100", 1))))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("资产已下架");
     }
@@ -109,7 +109,7 @@ class OrderPreparationTest {
     void prepare_noStock_throws() {
         when(productInventoryPort.getSnapshots(any())).thenReturn(List.of(snapshot("100", SELLER_ID, true, 0)));
 
-        assertThatThrownBy(() -> preparation.prepareOrderItems(List.of(item("100", 1))))
+        assertThatThrownBy(() -> preparer.prepareOrderItems(List.of(item("100", 1))))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("资产库存不足");
     }
@@ -120,7 +120,7 @@ class OrderPreparationTest {
         when(productInventoryPort.getSnapshots(any()))
                 .thenReturn(List.of(snapshot("100", SELLER_ID, true, 10), snapshot("101", "3", true, 10)));
 
-        assertThatThrownBy(() -> preparation.prepareOrderItems(List.of(item("100", 1), item("101", 1))))
+        assertThatThrownBy(() -> preparer.prepareOrderItems(List.of(item("100", 1), item("101", 1))))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("必须来自同一资产方");
     }
@@ -131,7 +131,7 @@ class OrderPreparationTest {
         when(productInventoryPort.getSnapshots(any())).thenReturn(List.of(snapshot("100", SELLER_ID, true, 10)));
         // getProductsByIds 未打桩 → 返回空列表，模拟详情读源缺数据
 
-        assertThatThrownBy(() -> preparation.prepareOrderItems(List.of(item("100", 1))))
+        assertThatThrownBy(() -> preparer.prepareOrderItems(List.of(item("100", 1))))
                 .isInstanceOf(OrderDomainException.class)
                 .hasMessageContaining("资产详情缺失: 100");
     }

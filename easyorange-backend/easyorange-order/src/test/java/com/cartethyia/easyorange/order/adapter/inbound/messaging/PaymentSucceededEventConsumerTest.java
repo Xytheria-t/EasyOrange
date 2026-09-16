@@ -55,7 +55,7 @@ class PaymentSucceededEventConsumerTest {
 
         consumer.onPaymentSucceeded(event, buildMessage());
 
-        verify(orderCommandHandler).handlePaymentSucceeded(ORDER_ID);
+        verify(orderCommandHandler).onPaymentSucceeded(ORDER_ID);
     }
 
     @Test
@@ -65,6 +65,6 @@ class PaymentSucceededEventConsumerTest {
 
         consumer.onPaymentSucceeded(event, buildMessage());
 
-        verify(orderCommandHandler, never()).handlePaymentSucceeded(anyString());
+        verify(orderCommandHandler, never()).onPaymentSucceeded(anyString());
     }
 }

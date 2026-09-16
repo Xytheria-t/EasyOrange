@@ -82,7 +82,7 @@ class OrderCreationIT {
     void createOrder_happyPath_atomicWriteAcrossTables() {
         seedFixture(new BigDecimal("199.00"), 5);
 
-        CreateOrderResult result = orderCommandHandler.handle(
+        CreateOrderResult result = orderCommandHandler.createOrder(
                 buyerId,
                 new CreateOrderCommand(
                         List.of(new CreateOrderItem(productId, 2)), "北京市海淀区", "13800138000", "IT", "WECHAT"));
@@ -115,7 +115,7 @@ class OrderCreationIT {
     void createOrder_insufficientStock_rollsBackEverything() {
         seedFixture(new BigDecimal("99.00"), 1);
 
-        assertThatThrownBy(() -> orderCommandHandler.handle(
+        assertThatThrownBy(() -> orderCommandHandler.createOrder(
                         buyerId,
                         new CreateOrderCommand(
                                 List.of(new CreateOrderItem(productId, 2)), "北京市海淀区", "13800138000", null, null)))
@@ -158,7 +158,7 @@ class OrderCreationIT {
                     ready.countDown();
                     try {
                         start.await();
-                        orderCommandHandler.handle(
+                        orderCommandHandler.createOrder(
                                 bid,
                                 new CreateOrderCommand(
                                         List.of(new CreateOrderItem(productId, 1)),
@@ -212,7 +212,7 @@ class OrderCreationIT {
     void createOrder_buyerEqualsSeller_rejected() {
         seedFixture(new BigDecimal("59.00"), 3);
 
-        assertThatThrownBy(() -> orderCommandHandler.handle(
+        assertThatThrownBy(() -> orderCommandHandler.createOrder(
                         sellerId,
                         new CreateOrderCommand(
                                 List.of(new CreateOrderItem(productId, 1)), "北京市海淀区", "13800138000", null, null)))

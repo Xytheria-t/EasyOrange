@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class OrderPreparation {
+public class OrderItemPreparer {
 
     private final ProductInventoryPort productInventoryPort;
     private final ProductQueryPort productQueryPort;
