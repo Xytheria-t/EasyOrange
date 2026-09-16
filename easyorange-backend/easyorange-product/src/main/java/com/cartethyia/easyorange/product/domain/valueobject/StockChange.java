@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.product.domain.enums.StockChangeType;
 /**
  * 一次库存变更的落账信息 — 库存流水（{@code eo_stock_ledger}）的一条记录。
  * <p>
- * 幂等键为 {@code (changeType, bizId, productId)}：携带业务单号（订单号）的变更只允许落账一次，
+ * 幂等键为 {@code (changeType, bizId, productId)}：携带业务单号（订单 ID）的变更只允许落账一次，
  * 重复投递撞唯一键即跳过；{@link StockChangeType#INIT} / {@link StockChangeType#ADJUST} 的 {@code bizId} 为
  * {@code null}（MySQL 唯一索引不约束 NULL），因此同一资产可多次人工调整。
  *
