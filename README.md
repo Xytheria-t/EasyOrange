@@ -188,7 +188,7 @@ k6 run --vus 50 --duration 30s load-tests/product-list.js                  # k6 
 |---|---|
 | [AGENTS.md](./AGENTS.md) | 唯一规范来源：定位 / 项目结构 / 技术栈 / 硬约束 / 参考索引（细分内容见 [doc/agents/](doc/agents/)） |
 | [PRODUCT_DIRECTION.md](doc/PRODUCT_DIRECTION.md) | 业务场景（C2C 资产流转：固定价格 + 直发 + 平台不碰货） |
-| [DATABASE.md](doc/DATABASE.md) | 数据库表结构与设计 |
+| [DATABASE.md](doc/DATABASE.md) | 数据库全局约定、表清单与迁移脚本索引（字段级结构以迁移脚本为准） |
 | [doc/工程指标.md](doc/工程指标.md) | 测试数 / 覆盖率单一事实来源（2,400+ 为取整下限） |
 | [doc/架构/](doc/架构/) | 架构规范（系统架构 / DDD / 安全认证 / 数据库迁移 / 部署） |
 | [doc/集成/](doc/集成/) | 业务专题（AI 资产管理 / API 速查） |
