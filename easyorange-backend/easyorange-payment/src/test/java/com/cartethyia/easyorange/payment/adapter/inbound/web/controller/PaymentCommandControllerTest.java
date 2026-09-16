@@ -59,7 +59,7 @@ class PaymentCommandControllerTest {
         @DisplayName("创建支付成功返回支付 ID")
         void createPayment_success() {
             CreatePaymentRequest request = new CreatePaymentRequest("2001", new BigDecimal("100.00"), "WECHAT");
-            when(commandHandler.handle(eq(USER_ID), any(CreatePaymentCommand.class)))
+            when(commandHandler.createPayment(eq(USER_ID), any(CreatePaymentCommand.class)))
                     .thenReturn("1001");
 
             Result<PaymentResponse> result = controller.createPayment(currentUser(), request);
@@ -85,7 +85,7 @@ class PaymentCommandControllerTest {
             Result<Void> result = controller.paymentCallback(callback);
 
             verify(signatureVerifier).verify("PAY123", "TXN_1", "sign");
-            verify(commandHandler).handle(any(PaymentCallbackCommand.class));
+            verify(commandHandler).processCallback(any(PaymentCallbackCommand.class));
             assertThat(result.isSuccess()).isTrue();
         }
     }
@@ -102,7 +102,7 @@ class PaymentCommandControllerTest {
             Result<Void> result = controller.refund(currentUser(), "1001", request);
 
             verify(commandHandler)
-                    .handle(argThat((RefundPaymentCommand cmd) ->
+                    .refundPayment(argThat((RefundPaymentCommand cmd) ->
                             cmd.paymentId().equals("1001") && cmd.userId().equals(USER_ID)));
             assertThat(result.isSuccess()).isTrue();
         }
@@ -113,7 +113,7 @@ class PaymentCommandControllerTest {
             Result<Void> result = controller.close(currentUser(), "1001");
 
             verify(commandHandler)
-                    .handle(argThat((ClosePaymentCommand cmd) ->
+                    .closePayment(argThat((ClosePaymentCommand cmd) ->
                             cmd.paymentId().equals("1001") && cmd.userId().equals(USER_ID)));
             assertThat(result.isSuccess()).isTrue();
         }

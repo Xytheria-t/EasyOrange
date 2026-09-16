@@ -36,7 +36,7 @@ public class MessageCommandHandler {
     private final IdGenerator idGenerator;
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(String senderId, SendMessageCommand command) {
+    public void sendMessage(String senderId, SendMessageCommand command) {
         if (!allowSendMessage(senderId)) {
             throw MessageDomainException.of("发送过于频繁，请稍后再试");
         }
@@ -65,7 +65,7 @@ public class MessageCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(SendSystemMessageCommand command) {
+    public void sendSystemMessage(SendSystemMessageCommand command) {
         Message saved = messageRepository.save(Message.createSystem(
                 idGenerator.generateId(),
                 command.receiverId(),
@@ -84,7 +84,7 @@ public class MessageCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(String userId, MarkAsReadCommand command) {
+    public void markAsRead(String userId, MarkAsReadCommand command) {
         Message aggregate = messageRepository
                 .findById(command.messageId())
                 .orElseThrow(() -> MessageDomainException.notFound(command.messageId()));
@@ -97,7 +97,7 @@ public class MessageCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(String userId, MarkAsReadBatchCommand command) {
+    public void markAsReadBatch(String userId, MarkAsReadBatchCommand command) {
         var messageIds = command.messageIds();
         BizRequire.notEmpty(messageIds, "消息ID列表不能为空");
         BizRequire.requireTrue(!messageIds.contains(null), "消息ID不能为null");
@@ -117,19 +117,19 @@ public class MessageCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handleMarkAllAsRead(String userId) {
+    public void markAllAsRead(String userId) {
         messageRepository.markAllAsRead(userId);
         log.info("action=mark_all_read userId={}", userId);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handleMarkAsReadByType(String userId, Integer type) {
+    public void markAsReadByType(String userId, Integer type) {
         messageRepository.markAsReadByType(userId, type);
         log.info("action=mark_type_read userId={} type={}", userId, type);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(String userId, RecallMessageCommand command) {
+    public void recallMessage(String userId, RecallMessageCommand command) {
         Message aggregate = messageRepository
                 .findById(command.messageId())
                 .orElseThrow(() -> MessageDomainException.notFound(command.messageId()));
@@ -146,7 +146,7 @@ public class MessageCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(String userId, DeleteMessageCommand command) {
+    public void deleteMessage(String userId, DeleteMessageCommand command) {
         Message aggregate = messageRepository
                 .findById(command.messageId())
                 .orElseThrow(() -> MessageDomainException.notFound(command.messageId()));

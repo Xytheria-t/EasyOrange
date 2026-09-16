@@ -86,7 +86,7 @@ class PaymentCommandHandlerTest {
                 .when(lockPort)
                 .executeWithLock(anyString(), anyLong(), any(Runnable.class));
 
-        assertThatThrownBy(() -> commandHandler.handle(new PayCommand("PAY123", null, null)))
+        assertThatThrownBy(() -> commandHandler.pay(new PayCommand("PAY123", null, null)))
                 .isInstanceOf(PaymentDomainException.class)
                 .satisfies(e -> assertThat(((PaymentDomainException) e).getCode())
                         .isEqualTo(PaymentResultCode.PAYMENT_BUSY.getCode()));
@@ -98,18 +98,18 @@ class PaymentCommandHandlerTest {
     }
 
     @Nested
-    @DisplayName("handle(CreatePaymentCommand)")
+    @DisplayName("createPayment(CreatePaymentCommand)")
     class CreatePaymentTests {
 
         @Test
         @DisplayName("创建支付成功")
-        void handle_createPayment_success() {
+        void createPayment_success() {
             CreatePaymentCommand command =
                     new CreatePaymentCommand("2001", new BigDecimal("100.00"), "WECHAT", null, "test");
 
             when(idGenerator.generateId()).thenReturn("1001");
 
-            String paymentId = commandHandler.handle("3001", command);
+            String paymentId = commandHandler.createPayment("3001", command);
 
             assertThat(paymentId).isNotNull();
             verify(paymentRepository).save(aggregateCaptor.capture());
@@ -120,7 +120,7 @@ class PaymentCommandHandlerTest {
     }
 
     @Nested
-    @DisplayName("handle(PayCommand) - 两阶段编排")
+    @DisplayName("pay(PayCommand) - 两阶段编排")
     class PayFlowTests {
 
         @BeforeEach
@@ -135,11 +135,11 @@ class PaymentCommandHandlerTest {
 
         @Test
         @DisplayName("支付成功 - 网关成功走完整两阶段")
-        void handle_pay_success() {
+        void pay_success() {
             when(phaseExecutor.preparePayPhase1("PAY123")).thenReturn("1001");
             when(phaseExecutor.invokePayGateway("1001")).thenReturn(PaymentResult.success("TXN_123"));
 
-            commandHandler.handle(new PayCommand("PAY123", null, null));
+            commandHandler.pay(new PayCommand("PAY123", null, null));
 
             verify(phaseExecutor).confirmPayPhase2(eq("1001"), any(PaymentResult.class));
             verify(phaseExecutor, never()).rollbackPayStatus(anyString());
@@ -160,11 +160,11 @@ class PaymentCommandHandlerTest {
 
         @Test
         @DisplayName("支付失败 - 网关失败回退 PENDING")
-        void handle_pay_gatewayFailure_rollsBack() {
+        void pay_gatewayFailure_rollsBack() {
             when(phaseExecutor.preparePayPhase1("PAY123")).thenReturn("1001");
             when(phaseExecutor.invokePayGateway("1001")).thenReturn(PaymentResult.failure("网关拒绝"));
 
-            commandHandler.handle(new PayCommand("PAY123", null, null));
+            commandHandler.pay(new PayCommand("PAY123", null, null));
 
             verify(phaseExecutor).rollbackPayStatus("1001");
             verify(phaseExecutor, never()).confirmPayPhase2(anyString(), any());
@@ -172,7 +172,7 @@ class PaymentCommandHandlerTest {
     }
 
     @Nested
-    @DisplayName("handle(RefundPaymentCommand) - 两阶段编排")
+    @DisplayName("refundPayment(RefundPaymentCommand) - 两阶段编排")
     class RefundFlowTests {
 
         @BeforeEach
@@ -187,12 +187,12 @@ class PaymentCommandHandlerTest {
 
         @Test
         @DisplayName("退款成功 - 网关成功走完整两阶段")
-        void handle_refund_success() {
+        void refundPayment_success() {
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(testAggregate));
             when(phaseExecutor.invokeRefundGateway("1001", new BigDecimal("100.00")))
                     .thenReturn(RefundResult.success("REF_123"));
 
-            commandHandler.handle(new RefundPaymentCommand("1001", "3001", new BigDecimal("100.00"), "用户申请"));
+            commandHandler.refundPayment(new RefundPaymentCommand("1001", "3001", new BigDecimal("100.00"), "用户申请"));
 
             verify(phaseExecutor).prepareRefundPhase1("1001", new BigDecimal("100.00"));
             verify(phaseExecutor)
@@ -202,12 +202,12 @@ class PaymentCommandHandlerTest {
 
         @Test
         @DisplayName("退款网关失败 - 回退 SUCCESS")
-        void handle_refund_gatewayFailure_rollsBack() {
+        void refundPayment_gatewayFailure_rollsBack() {
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(testAggregate));
             when(phaseExecutor.invokeRefundGateway("1001", new BigDecimal("100.00")))
                     .thenReturn(RefundResult.failure("网关拒绝"));
 
-            commandHandler.handle(new RefundPaymentCommand("1001", "3001", new BigDecimal("100.00"), "用户申请"));
+            commandHandler.refundPayment(new RefundPaymentCommand("1001", "3001", new BigDecimal("100.00"), "用户申请"));
 
             verify(phaseExecutor).prepareRefundPhase1("1001", new BigDecimal("100.00"));
             verify(phaseExecutor).rollbackRefundStatus("1001");
@@ -232,10 +232,10 @@ class PaymentCommandHandlerTest {
 
         @Test
         @DisplayName("退款越权 - 操作者非支付单所属用户，抛记录不存在且不触达网关")
-        void handle_refund_ownershipMismatch_rejected() {
+        void refundPayment_ownershipMismatch_rejected() {
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(testAggregate));
 
-            assertThatThrownBy(() -> commandHandler.handle(
+            assertThatThrownBy(() -> commandHandler.refundPayment(
                             new RefundPaymentCommand("1001", "9999", new BigDecimal("100.00"), "用户申请")))
                     .isInstanceOf(PaymentDomainException.class)
                     .satisfies(e -> assertThat(((PaymentDomainException) e).getCode())
@@ -247,7 +247,7 @@ class PaymentCommandHandlerTest {
     }
 
     @Nested
-    @DisplayName("handle(PaymentCallbackCommand) - 回调直接确认")
+    @DisplayName("processCallback(PaymentCallbackCommand) - 回调直接确认")
     class CallbackFlowTests {
 
         @BeforeEach
@@ -262,10 +262,10 @@ class PaymentCommandHandlerTest {
 
         @Test
         @DisplayName("回调成功 - 不调用网关，直接以回调 transactionId 确认")
-        void handle_callback_success_confirmsDirectly() {
+        void processCallback_success_confirmsDirectly() {
             when(phaseExecutor.preparePayPhase1("PAY123")).thenReturn("1001");
 
-            commandHandler.handle(new PaymentCallbackCommand("PAY123", "TXN_CB", null));
+            commandHandler.processCallback(new PaymentCallbackCommand("PAY123", "TXN_CB", null));
 
             verify(phaseExecutor, never()).invokePayGateway(anyString());
             verify(phaseExecutor)
@@ -274,21 +274,21 @@ class PaymentCommandHandlerTest {
 
         @Test
         @DisplayName("回调金额与支付单一致时确认成功")
-        void handle_callback_amountMatches_confirms() {
+        void processCallback_amountMatches_confirms() {
             when(paymentRepository.findByPaymentNo("PAY123")).thenReturn(Optional.of(testAggregate));
             when(phaseExecutor.preparePayPhase1("PAY123")).thenReturn("1001");
 
-            commandHandler.handle(new PaymentCallbackCommand("PAY123", "TXN_CB", new BigDecimal("100.00")));
+            commandHandler.processCallback(new PaymentCallbackCommand("PAY123", "TXN_CB", new BigDecimal("100.00")));
 
             verify(phaseExecutor).confirmPayPhase2(eq("1001"), any(PaymentResult.class));
         }
 
         @Test
         @DisplayName("回调金额与支付单不一致 - 拒绝且不进入状态机")
-        void handle_callback_amountMismatch_rejected() {
+        void processCallback_amountMismatch_rejected() {
             when(paymentRepository.findByPaymentNo("PAY123")).thenReturn(Optional.of(testAggregate));
 
-            assertThatThrownBy(() -> commandHandler.handle(
+            assertThatThrownBy(() -> commandHandler.processCallback(
                             new PaymentCallbackCommand("PAY123", "TXN_CB", new BigDecimal("99.00"))))
                     .isInstanceOf(PaymentDomainException.class)
                     .satisfies(e -> assertThat(((PaymentDomainException) e).getCode())
@@ -300,17 +300,17 @@ class PaymentCommandHandlerTest {
     }
 
     @Nested
-    @DisplayName("handle(ClosePaymentCommand)")
+    @DisplayName("closePayment(ClosePaymentCommand)")
     class CloseCommandTests {
 
         @Test
         @DisplayName("关闭支付成功并发布事件")
-        void handle_close_success() {
+        void closePayment_success() {
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(testAggregate));
 
             ClosePaymentCommand command = new ClosePaymentCommand("1001", "3001");
 
-            commandHandler.handle(command);
+            commandHandler.closePayment(command);
 
             verify(paymentRepository).update(aggregateCaptor.capture());
             assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.CLOSED);
@@ -319,22 +319,22 @@ class PaymentCommandHandlerTest {
 
         @Test
         @DisplayName("支付记录不存在抛出异常")
-        void handle_close_notFound() {
+        void closePayment_notFound() {
             when(paymentRepository.findById("9999")).thenReturn(Optional.empty());
 
             ClosePaymentCommand command = new ClosePaymentCommand("9999", "3001");
 
-            assertThatThrownBy(() -> commandHandler.handle(command)).isInstanceOf(PaymentDomainException.class);
+            assertThatThrownBy(() -> commandHandler.closePayment(command)).isInstanceOf(PaymentDomainException.class);
         }
 
         @Test
         @DisplayName("关闭越权 - 操作者非支付单所属用户，按记录不存在拒绝")
-        void handle_close_ownershipMismatch_rejected() {
+        void closePayment_ownershipMismatch_rejected() {
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(testAggregate));
 
             ClosePaymentCommand command = new ClosePaymentCommand("1001", "9999");
 
-            assertThatThrownBy(() -> commandHandler.handle(command))
+            assertThatThrownBy(() -> commandHandler.closePayment(command))
                     .isInstanceOf(PaymentDomainException.class)
                     .satisfies(e -> assertThat(((PaymentDomainException) e).getCode())
                             .isEqualTo(PaymentResultCode.PAYMENT_NOT_FOUND.getCode()));

@@ -21,7 +21,7 @@ public class ProductNotificationAdapter implements ProductNotificationPort {
         try {
             SendSystemMessageCommand command = new SendSystemMessageCommand(
                     userId, "商品发布成功", "您的商品（ID: " + productId + "）已成功发布，等待管理员审核。审核通过后将自动上架。", productId);
-            messageCommandHandler.handle(command);
+            messageCommandHandler.sendSystemMessage(command);
             log.info("action=notify_product_created productId={} userId={}", productId, userId);
         } catch (Exception e) {
             log.error("action=notify_product_created_failed productId={} userId={}", productId, userId, e);
@@ -33,7 +33,7 @@ public class ProductNotificationAdapter implements ProductNotificationPort {
         try {
             SendSystemMessageCommand command =
                     new SendSystemMessageCommand(userId, "商品已售出", "您的商品（ID: " + productId + "）已被标记为已售出。", productId);
-            messageCommandHandler.handle(command);
+            messageCommandHandler.sendSystemMessage(command);
             log.info("action=notify_product_sold productId={} userId={}", productId, userId);
         } catch (Exception e) {
             log.error("action=notify_product_sold_failed productId={} userId={}", productId, userId, e);
@@ -48,7 +48,7 @@ public class ProductNotificationAdapter implements ProductNotificationPort {
                     "库存不足预警",
                     "您的商品（ID: " + productId + "）当前库存仅剩 " + currentStock + " 件，低于安全库存阈值，请及时补货。",
                     productId);
-            messageCommandHandler.handle(command);
+            messageCommandHandler.sendSystemMessage(command);
             log.info(
                     "action=notify_low_stock productId={} sellerId={} currentStock={}",
                     productId,
