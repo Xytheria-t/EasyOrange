@@ -1,10 +1,14 @@
 name: AI eval gate (nightly)
 
-# 金标准评测门禁（GoldenSetRegressionIT）—— 需要真实 DeepSeek key（产生 API 费用且慢），
+# 金标准评测门禁（GoldenSetRegressionIT）—— 需要真实 AI key（产生 API 费用且慢），
 # nightly + 手动触发，不进 PR 路径（同 security-scan / pit-mutation 分工）。
 # Judge 平均分低于「基线 4.0 - 容忍 0.3」→ job 失败 = AI 质量回归，发布前必须处理。
-# Secret：EASYORANGE_AI_API_KEY（DeepSeek key）；DEEPSEEK_API_KEY 同值注入，
-# 供 application.yaml `easyorange.ai.deepseek.api-key` 装配真实 ChatModel。
+#
+# Secret：EASYORANGE_AI_API_KEY —— 同时注入 ChatModel 与 EmbeddingModel：
+#   同一个 key 兼作两者仅在「同一平台同时提供 chat 与 embedding」时成立（如百炼 compatible-mode：
+#   DeepSeek 系列 chat + text-embedding-v3）。若只配了纯 chat 供应商的 key，
+#   embedding bean 会退化为 UnconfiguredEmbeddingModel，检索指标走 MySQL LIKE 降级路径。
+# 供应商可换：DEEPSEEK_BASE_URL / DEEPSEEK_MODEL 由仓库变量提供，缺省仍是 DeepSeek 官方端点。
 on:
   schedule:
     - cron: '30 3 * * *' # PIT（02:30）后错峰
@@ -16,6 +20,10 @@ permissions:
 env:
   EASYORANGE_AI_API_KEY: ${{ secrets.EASYORANGE_AI_API_KEY }}
   DEEPSEEK_API_KEY: ${{ secrets.EASYORANGE_AI_API_KEY }}
+  EMBEDDING_API_KEY: ${{ secrets.EASYORANGE_AI_API_KEY }}
+  # 云厂商托管的 DeepSeek 模型与官方端点线协议一致，换供应商只改这两个仓库变量
+  DEEPSEEK_BASE_URL: ${{ vars.EASYORANGE_AI_BASE_URL || 'https://api.deepseek.com' }}
+  DEEPSEEK_MODEL: ${{ vars.EASYORANGE_AI_MODEL || 'deepseek-chat' }}
 
 jobs:
   eval:
@@ -47,8 +55,18 @@ jobs:
         working-directory: easyorange-backend
 
       # 基础设施由 spring-boot-docker-compose 按仓库根 compose.yaml（start-only）拉起
-      # mysql/redis/rabbitmq（runner 自带 Docker）；ES 不起，检索指标走 MySQL LIKE 降级路径。
-      # 仅跑 GoldenSetRegressionIT：30 金标准用例 × 真实 DeepSeek（生成 + Judge）+ hit@5/MRR。
+      # mysql/redis/rabbitmq（runner 自带 Docker）。测试内 Boot 默认跳过 compose
+      # （spring.docker.compose.skip.in-tests 默认 true），必须显式关闭，否则容器不启动、
+      # IT 连接 localhost 失败——见 application-it.yaml。
+      # ES 不起：easyorange.search.elasticsearch.enabled 基线为 false，检索走 MySQL LIKE 降级路径
+      # （KnowledgeRetrievalService：索引不可用降级，仅保证可用不保证召回质量）。
+      #
+      # 必须走 verify 生命周期而非直接调 failsafe 目标：surefire/failsafe 的 argLine 里含
+      # {@code @{argLine}} 晚绑定占位符，由 jacoco:prepare-agent（绑定 initialize）赋值；
+      # 直接调 failsafe:integration-test 时该占位符不解析，JVM 以「could not open '{argLine}'」启动失败。
+      # 本模块单测规模小，跑完整 verify 的代价可接受。
       - name: Golden set regression gate
-        run: ./mvnw -pl easyorange-application failsafe:integration-test failsafe:verify -Dit.test=GoldenSetRegressionIT -B
+        env:
+          SPRING_DOCKER_COMPOSE_SKIP_IN_TESTS: "false"
+        run: ./mvnw -pl easyorange-application verify -Dit.test=GoldenSetRegressionIT -B
         working-directory: easyorange-backend
