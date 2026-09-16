@@ -11,12 +11,12 @@ import java.util.Optional;
 public interface CompletedOrderPort {
 
     /**
-     * 查询买家针对该资产已完成交易的订单号。评价必须落到真实成交订单上，
+     * 查询买家针对该资产已完成交易的订单 ID。评价必须落到真实成交订单上，
      * 否则 AI 信用画像的评分口径可被无成交记录的评价污染。
      *
      * @param buyerId   买家 ID
      * @param productId 资产 ID
-     * @return 订单号；该买家没有该资产的已完成订单时返回 {@link Optional#empty()}
+     * @return 订单 ID；该买家没有该资产的已完成订单时返回 {@link Optional#empty()}
      */
     Optional<String> findCompletedOrderId(String buyerId, String productId);
 }

@@ -183,7 +183,7 @@ public interface ProductCachePort {
 
 - **分布式锁（order 侧）**：按 `productId` 串行化下单，压掉热点行并发——这一层只管「同时写」。
 - **`@Version` 乐观锁**：整行写回的乐观并发控制，兜住不同锁键路径（如取消/退款恢复走 MQ 消费者、无商品锁）之间的丢失更新，冲突抛 `ConcurrentUpdateException`（B0006）。
-- **库存流水 `eo_stock_ledger`**：管「写了几次、写了多少」——锁和版本号都管不了重复执行与数量错误。任何库存变更必须同事务落一条流水（`StockChange`），唯一索引 `(change_type, biz_id, product_id)` 承载幂等，重复投递落账失败即跳过本次变更（`ProductCommandHandler.claimStockChange`）。`ProductInventoryPort.decreaseStock/restoreStock` 必须带订单号，恢复数量必须取自订单事件明细。
+- **库存流水 `eo_stock_ledger`**：管「写了几次、写了多少」——锁和版本号都管不了重复执行与数量错误。任何库存变更必须同事务落一条流水（`StockChange`），唯一索引 `(change_type, biz_id, product_id)` 承载幂等，重复投递落账失败即跳过本次变更（`ProductCommandHandler.claimStockChange`）。`ProductInventoryPort.decreaseStock/restoreStock` 必须带订单 ID，恢复数量必须取自订单事件明细。
 - **对账**：`StockReconcileScheduler` 每日比对余额与最近一条流水的 `stock_after`，漂移告警打点，不自动改余额。
 - `StockQuantity` 值对象封装库存操作（扣减为负即抛，是超卖的最后一道）
 - `StockDecreasedEvent` / `StockRestoredEvent` 通知下游模块

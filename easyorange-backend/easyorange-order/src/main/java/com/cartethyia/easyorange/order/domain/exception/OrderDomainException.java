@@ -52,7 +52,7 @@ public class OrderDomainException extends BaseBusinessException {
         return new OrderDomainException(message, cause);
     }
 
-    /** 订单不存在（B3001）— 消息带订单号，命令侧与查询侧共用这一处定义。 */
+    /** 订单不存在（B3001）— 消息带订单 ID，命令侧与查询侧共用这一处定义。 */
     public static OrderDomainException notFound(String orderId) {
         return new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND, "订单不存在: id=" + orderId);
     }
