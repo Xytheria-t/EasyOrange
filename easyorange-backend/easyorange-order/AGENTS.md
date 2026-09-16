@@ -72,8 +72,8 @@ order/
 │   │   ├── OrderId.java, OrderNo.java
 │   │   ├── Address.java, Phone.java
 │   │   ├── UserId.java
-│   │   ├── OrderItem.java                 # 行项值对象（含 ProductSnapshot）
-│   │   ├── ProductSnapshot.java           # 下单时商品快照
+│   │   ├── OrderItem.java                 # 行项值对象（含 OrderItemSnapshot）
+│   │   ├── OrderItemSnapshot.java         # 订单项留痕快照（下单时冻结的价格与展示信息，区别于端口实时快照）
 │   │   └── PaymentStatus.java             # 支付状态枚举（UNPAID/PAID/REFUNDED）
 │   ├── event/
 │   │   ├── OrderEvent.java                   # sealed 接口（含 default aggregateId），所有事件实现此接口
@@ -114,7 +114,7 @@ order/
 ```
 OrderCommandHandler.createOrder(CreateOrderCommand) ─ @Transactional(rollbackFor=Exception.class) ─
   1. DistributedLockPort 获取商品锁（key=eo:order:lock:product:{productId}，按 productId 排序避免死锁）
-  2. OrderItemPreparer 准备商品数据（校验在线、库存、非自购）
+  2. OrderItemPreparer 准备订单项（一次批量读齐资产快照，校验存在/在线/库存/同一资产方；非自购由 Order.createOrder 领域不变量把关）
   3. Order.createOrder 创建订单 + 发布事件（Outbox 同事务原子）
   4. ProductInventoryPort.decreaseStock() 同步扣库存（同事务）
   5. PaymentGatewayPort 创建支付记录（同事务）
