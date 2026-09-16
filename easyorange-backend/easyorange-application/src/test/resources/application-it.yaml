@@ -1,5 +1,7 @@
 # 集成测试 profile（AbstractIntegrationTest 激活）— 复用项目 docker compose 的 dev 基础设施。
-# 基础设施由 spring-boot-docker-compose 按仓库根 compose.yaml（start-only）保证运行；
+# 前置：dev 三件套需已运行（`docker compose up -d`）——测试内 Boot 默认跳过 compose
+# （spring.docker.compose.skip.in-tests 默认 true），下方配置在本地不生效；
+# CI 的 nightly ai-eval.yml 显式置 SPRING_DOCKER_COMPOSE_SKIP_IN_TESTS=false 才由 Boot 拉起。
 # 应用连接使用下方显式 localhost 直连（compose 把容器端口发布到宿主机，凭据与 compose.yaml 一致）。
 # 相比 Testcontainers：不依赖 ryuk sidecar 镜像（无代理 Docker 拉取失败会让用例静默跳过，掩盖真实装配错误）。
 spring:
