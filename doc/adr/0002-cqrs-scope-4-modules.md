@@ -19,7 +19,7 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 
 约束：
 
-- 项目是「LLM × DDD 工程化实战项目」，需要展示 CQRS 的真实落地，但**业务聚焦核心流程**（固定价格 + C2C 直发，见 `doc/PRODUCT_DIRECTION.md`），不需要为展示而过度铺开
+- 项目是「LLM × DDD 工程化实战项目」，需要展示 CQRS 的真实落地，但**业务聚焦核心流程**（固定价格 + C2C 直发，见 [README.md](../../README.md)「业务边界」），不需要为展示而过度铺开
 - 已有 ArchUnit 架构守卫（`ArchitectureRulesTest.java`），可强制 CQRS 边界
 - 各模块的读写比差异极大：product 读多写少（搜索 / 详情 / 列表），user 几乎是对称的 CRUD
 
