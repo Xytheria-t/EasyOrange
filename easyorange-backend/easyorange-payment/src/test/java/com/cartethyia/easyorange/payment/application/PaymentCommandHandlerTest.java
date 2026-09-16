@@ -146,7 +146,7 @@ class PaymentCommandHandlerTest {
         }
 
         @Test
-        @DisplayName("按订单号支付 - 解析出支付单号后走同一两阶段编排")
+        @DisplayName("按订单 ID 支付 - 解析出支付单号后走同一两阶段编排")
         void payByOrderId_resolvesPaymentNoAndDelegates() {
             when(paymentRepository.findByOrderId("2001")).thenReturn(Optional.of(testAggregate));
             when(phaseExecutor.preparePayPhase1("PAY123")).thenReturn("1001");
@@ -215,7 +215,7 @@ class PaymentCommandHandlerTest {
         }
 
         @Test
-        @DisplayName("按订单号退款 - 金额与操作者取自支付单，走同一退款编排")
+        @DisplayName("按订单 ID 退款 - 金额与操作者取自支付单，走同一退款编排")
         void refundByOrderId_resolvesAmountAndOwner() {
             when(paymentRepository.findByOrderId("2001")).thenReturn(Optional.of(testAggregate));
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(testAggregate));
@@ -349,7 +349,7 @@ class PaymentCommandHandlerTest {
     class OrderIdEntryPointNotFoundTests {
 
         @Test
-        @DisplayName("按订单号支付 - 抛支付模块的 B4001，不借用订单侧错误码")
+        @DisplayName("按订单 ID 支付 - 抛支付模块的 B4001，不借用订单侧错误码")
         void payByOrderId_paymentNotFound_throwsB4001() {
             when(paymentRepository.findByOrderId("2001")).thenReturn(Optional.empty());
 
@@ -363,7 +363,7 @@ class PaymentCommandHandlerTest {
         }
 
         @Test
-        @DisplayName("按订单号退款 - 抛 B4001 且不触达退款网关")
+        @DisplayName("按订单 ID 退款 - 抛 B4001 且不触达退款网关")
         void refundByOrderId_paymentNotFound_throwsB4001() {
             when(paymentRepository.findByOrderId("2001")).thenReturn(Optional.empty());
 
