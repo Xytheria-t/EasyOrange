@@ -125,7 +125,8 @@ class ReviewPersistenceIT extends AbstractIntegrationTest {
                 UUID.randomUUID().toString(),
                 orderId,
                 productId,
-                "{}",
+                // 与下单写路径同形：订单列表按留痕快照展示名称与图片
+                "{\"productId\":\"" + productId + "\",\"name\":\"IT 商品\",\"image\":\"\",\"price\":9.90}",
                 price,
                 price);
         return new OrderFixture(orderId, productId, buyerId);

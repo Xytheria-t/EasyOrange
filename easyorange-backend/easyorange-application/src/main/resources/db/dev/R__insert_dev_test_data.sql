@@ -692,6 +692,31 @@ ON DUPLICATE KEY UPDATE
     `subtotal` = new.`subtotal`,
     `update_time` = new.`update_time`;
 
+-- 7.1 留痕快照补全：订单列表按下单时的快照展示商品名与图片（资产改名/删除不影响已下订单），
+-- 种子里因此不能留 '{}'。按商品行生成与写路径同形的 JSON；只填空值，不覆盖真实下单写入的快照。
+-- 注意两点 MySQL 限制：SET 里用相关子查询写 JSON 列会报「Data truncated」，
+-- 故用 JOIN + 标量子查询；且 JSON 列不能用 `= '{}'` 判空，须用 JSON_TYPE + JSON_LENGTH。
+UPDATE `eo_order_item` oi
+JOIN `eo_product` p ON p.`id` = oi.`product_id`
+SET oi.`product_snapshot` = JSON_OBJECT(
+        'productId',      p.`id`,
+        'name',           COALESCE(p.`name`, ''),
+        'image',          COALESCE((SELECT i.`image_url` FROM `eo_product_image` i
+                                    WHERE i.`product_id` = p.`id`
+                                    ORDER BY i.`is_main` DESC, i.`sort_order` ASC LIMIT 1), ''),
+        'description',    COALESCE((SELECT d.`description` FROM `eo_product_detail` d
+                                    WHERE d.`product_id` = p.`id` LIMIT 1), ''),
+        'price',          oi.`unit_price`,
+        'conditionLevel', CASE p.`condition_level`
+                              WHEN '1' THEN '全新'
+                              WHEN '2' THEN '几乎全新'
+                              WHEN '3' THEN '轻微使用痕迹'
+                              WHEN '4' THEN '明显使用痕迹'
+                              ELSE '' END
+    )
+WHERE JSON_TYPE(oi.`product_snapshot`) = 'OBJECT'
+  AND JSON_LENGTH(oi.`product_snapshot`) = 0;
+
 -- ===================================================================
 -- 8. 支付记录数据（与已支付/已退款订单对应）
 -- ===================================================================

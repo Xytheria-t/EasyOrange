@@ -95,7 +95,7 @@ public class OrderDataMapper {
         return new OrderItemReadModel(
                 itemDO.getId(),
                 itemDO.getProductId(),
-                itemDO.getProductSnapshot(),
+                fromJson(itemDO.getProductSnapshot()),
                 itemDO.getUnitPrice(),
                 itemDO.getQuantity(),
                 itemDO.getSubtotal());
