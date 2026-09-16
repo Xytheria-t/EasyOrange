@@ -350,8 +350,10 @@ easyorange:
   ai:
     deepseek:
       api-key: ${DEEPSEEK_API_KEY:}
-      base-url: https://api.deepseek.com
-      model: deepseek-chat
+      # base-url / model 可经环境变量覆盖：各云厂商托管的 DeepSeek 模型走同一 OpenAI 兼容线协议
+      # （如百炼 compatible-mode），换供应商只改这两个变量，不动代码
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      model: ${DEEPSEEK_MODEL:deepseek-chat}
       timeout: 30000
     qwen-vl:
       api-key: ${QWEN_VL_API_KEY:}
