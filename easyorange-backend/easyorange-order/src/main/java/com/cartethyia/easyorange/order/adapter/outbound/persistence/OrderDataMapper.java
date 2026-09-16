@@ -11,9 +11,9 @@ import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderItemSnapshot;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
-import com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.valueobject.Version;
 import java.util.List;
@@ -159,19 +159,19 @@ public class OrderDataMapper {
                 Version.of(orderDO.getVersion()));
     }
 
-    private String toJson(ProductSnapshot snapshot) {
+    private String toJson(OrderItemSnapshot snapshot) {
         try {
             return objectMapper.writeValueAsString(snapshot);
         } catch (JacksonException e) {
-            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "Failed to serialize ProductSnapshot", e);
+            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "Failed to serialize OrderItemSnapshot", e);
         }
     }
 
-    private ProductSnapshot fromJson(String json) {
+    private OrderItemSnapshot fromJson(String json) {
         try {
-            return objectMapper.readValue(json, ProductSnapshot.class);
+            return objectMapper.readValue(json, OrderItemSnapshot.class);
         } catch (JacksonException e) {
-            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "Failed to deserialize ProductSnapshot", e);
+            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "Failed to deserialize OrderItemSnapshot", e);
         }
     }
 }

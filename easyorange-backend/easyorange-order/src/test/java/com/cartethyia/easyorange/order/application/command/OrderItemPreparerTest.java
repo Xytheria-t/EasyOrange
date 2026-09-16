@@ -11,8 +11,6 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort.ProductSnapshot;
-import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
-import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,9 +31,6 @@ class OrderItemPreparerTest {
     private ProductInventoryPort productInventoryPort;
 
     @Mock
-    private ProductQueryPort productQueryPort;
-
-    @Mock
     private IdGenerator idGenerator;
 
     private OrderItemPreparer preparer;
@@ -45,7 +40,7 @@ class OrderItemPreparerTest {
 
     @BeforeEach
     void setUp() {
-        preparer = new OrderItemPreparer(productInventoryPort, productQueryPort, idGenerator);
+        preparer = new OrderItemPreparer(productInventoryPort, idGenerator);
         when(idGenerator.generateId()).thenReturn(ITEM_ID);
     }
 
@@ -54,20 +49,15 @@ class OrderItemPreparerTest {
     }
 
     private static ProductSnapshot snapshot(String productId, String sellerId, boolean online, int stock) {
-        return new ProductSnapshot(productId, sellerId, new BigDecimal("99.99"), online, stock);
-    }
-
-    private static ProductDetail detail(String productId) {
-        return new ProductDetail(
-                productId, "资产-" + productId, new BigDecimal("99.99"), "ONLINE", List.of("img1"), "描述", "A");
+        return new ProductSnapshot(
+                productId, sellerId, new BigDecimal("99.99"), online, stock, "资产-" + productId, "img1", "描述", "A");
     }
 
     @Test
-    @DisplayName("成功准备：返回资产方 ID 与回填详情的订单项")
+    @DisplayName("成功准备：一次读齐快照，返回资产方 ID 与含展示信息的订单项")
     void prepare_validItems_returnsSellerAndEnrichedOrderItems() {
         when(productInventoryPort.getSnapshots(any()))
                 .thenReturn(List.of(snapshot("100", SELLER_ID, true, 10), snapshot("101", SELLER_ID, true, 3)));
-        when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(detail("100"), detail("101")));
 
         var result = preparer.prepareOrderItems(List.of(item("100", 2), item("101", 1)));
 
@@ -82,6 +72,24 @@ class OrderItemPreparerTest {
         assertThat(first.snapshot().conditionLevel()).isEqualTo("A");
         assertThat(first.quantity()).isEqualTo(2);
         assertThat(first.subtotal().value()).isEqualByComparingTo(new BigDecimal("199.98"));
+    }
+
+    @Test
+    @DisplayName("资产缺展示信息时，订单留痕的展示字段回退为空串")
+    void prepare_blankDisplayFields_fallsBackToEmptyStrings() {
+        when(productInventoryPort.getSnapshots(any()))
+                .thenReturn(List.of(new ProductSnapshot(
+                        "100", SELLER_ID, new BigDecimal("99.99"), true, 10, null, null, null, null)));
+
+        var snapshot = preparer.prepareOrderItems(List.of(item("100", 1)))
+                .orderItems()
+                .getFirst()
+                .snapshot();
+
+        assertThat(snapshot.name()).isEmpty();
+        assertThat(snapshot.image()).isEmpty();
+        assertThat(snapshot.description()).isEmpty();
+        assertThat(snapshot.conditionLevel()).isEmpty();
     }
 
     @Test
@@ -123,16 +131,5 @@ class OrderItemPreparerTest {
         assertThatThrownBy(() -> preparer.prepareOrderItems(List.of(item("100", 1), item("101", 1))))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("必须来自同一资产方");
-    }
-
-    @Test
-    @DisplayName("快照存在但详情缺失时抛异常（跨读源不一致，回滚而非写入脏快照）")
-    void prepare_missingDetail_throws() {
-        when(productInventoryPort.getSnapshots(any())).thenReturn(List.of(snapshot("100", SELLER_ID, true, 10)));
-        // getProductsByIds 未打桩 → 返回空列表，模拟详情读源缺数据
-
-        assertThatThrownBy(() -> preparer.prepareOrderItems(List.of(item("100", 1))))
-                .isInstanceOf(OrderDomainException.class)
-                .hasMessageContaining("资产详情缺失: 100");
     }
 }
