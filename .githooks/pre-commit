@@ -8,6 +8,7 @@
 #   4. 大文件（默认 >2MB 阻断）
 #   5. 前端：仅当 src/tests 下 ts/tsx 变更时跑 biome check
 #   6. 版本漂移：仅当技术栈表 / pom / compose / ES 镜像变更时校验文档版本与权威来源一致
+#   7. 测试口径漂移：文档/pom 变更时校验「集成测试是否存在」的声明与代码事实（*IT + failsafe 绑定）一致
 #
 # 重门禁（构建 + 测试）在 pre-push，提交时不挡路。
 #
@@ -105,6 +106,26 @@ if [[ -n "$drift_files" ]]; then
   fi
 else
   hook_log "No version-source changes, skipping version drift check"
+fi
+
+# 5. 测试口径漂移：文档对「集成测试是否存在」的声明 vs 代码事实（*IT 文件 + pom 的 failsafe 绑定）
+tier_files=$(echo "$files" \
+  | grep -E '\.md$|^easyorange-backend/pom\.xml$' \
+  || true)
+
+if [[ -n "$tier_files" ]]; then
+  if command -v python3 >/dev/null 2>&1; then
+    hook_log "文档 / pom 变更 → 校验测试口径与代码事实一致..."
+    if python3 "$SCRIPT_DIR/check-test-tier-drift.py"; then
+      hook_ok "test tier drift check"
+    else
+      hook_fail "文档测试口径与代码不符（见上方输出；SKIP=git-hooks 可跳过）"
+    fi
+  else
+    hook_warn "python3 not found, skipping test tier drift check"
+  fi
+else
+  hook_log "No doc/pom changes, skipping test tier drift check"
 fi
 
 hook_ok "pre-commit passed"
