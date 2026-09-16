@@ -12,12 +12,17 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * 金标准集回归门禁（评估进 CI）— 跑真实 LLM（DeepSeek）对 golden-set.yaml 全部用例
+ * 金标准集回归门禁（评估进 CI）— 跑真实 LLM 对 golden-set.yaml 全部用例
  * Judge 打分 + 检索指标，分数低于「基线 - 容忍度」即失败（卡 build）。
  * <p>
  * 需要真实 AI key：CI 的 nightly job 注入 EASYORANGE_AI_API_KEY 后经 failsafe 在 verify
- * 阶段执行；本地/无 key 时自动跳过（@EnabledIfEnvironmentVariable）。检索指标用例依赖
- * 知识库种子文档已摄入 ES（启动补索引自动完成）。
+ * 阶段执行；本地/无 key 时自动跳过（@EnabledIfEnvironmentVariable）。
+ * <p>
+ * <b>需要 ES</b>：检索用例的 gold_doc_ids 按 ES 索引设计（dense_vector kNN + BM25 混合召回），
+ * 种子文档以 status=PENDING 入库、由启动补索引（{@code KnowledgeBootstrapIndexer}）同步写入 ES。
+ * 环境无 ES 时检索降级为 MySQL LIKE，hit@5 实测仅 10%，{@code retrievalMetricsCollected} 必然失败——
+ * 这是「测的是降级路径而非产品检索」的显式失败，不是抖动。CI 由 ai-eval.yml 起 ES 并传
+ * {@code -Deasyorange.search.elasticsearch.enabled=true}。
  */
 @EnabledIfEnvironmentVariable(named = "EASYORANGE_AI_API_KEY", matches = ".+")
 class GoldenSetRegressionIT extends AbstractIntegrationTest {
