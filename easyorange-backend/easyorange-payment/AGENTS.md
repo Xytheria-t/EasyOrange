@@ -32,7 +32,7 @@ payment/
 │           └── CallbackSignatureVerifier.java    # HMAC-SHA256 回调验签（实现 CallbackSignatureVerifierPort）
 ├── application/
 │   ├── command/                                  # 命令（CQRS Write）
-│   │   ├── PaymentCommandHandler.java             # 用例入口（create/pay/callback/refund/close）
+│   │   ├── PaymentCommandHandler.java             # 用例入口（createPayment / pay / processCallback / refundPayment / closePayment）
 │   │   │                                          #   + 订单侧入口 payByOrderId / refundByOrderId（按 orderId 解析支付单）
 │   │   ├── PaymentPhaseExecutor.java              # 两阶段 phase 执行器（独立 Bean，保证 @Transactional 生效）
 │   │   ├── CreatePaymentCommand.java              # @NotBlank orderId / @NotNull @Positive amount / @NotBlank paymentMethod
