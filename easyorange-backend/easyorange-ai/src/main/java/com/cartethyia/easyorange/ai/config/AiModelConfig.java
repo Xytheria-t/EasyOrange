@@ -40,6 +40,11 @@ public class AiModelConfig {
 
     /**
      * 文本模型 — DeepSeek，业务服务默认注入的 {@code ChatModel}。
+     * <p>
+     * options 必须同时带上 baseUrl / apiKey：{@code OpenAiChatModel.Builder.build()} 需要同步与异步两个
+     * 客户端，项目只注入同步的 {@code openAiClient}，异步的由 Builder 用 options 里的连接参数自行装配。
+     * options 缺 baseUrl/apiKey 时异步客户端装配会因「无凭据」抛 IllegalStateException，
+     * 导致 key 非空即上下文启动失败（key 为空走 {@link UnconfiguredChatModel} 分支，恰好掩盖该问题）。
      */
     @Bean
     @Primary
@@ -51,13 +56,19 @@ public class AiModelConfig {
         return OpenAiChatModel.builder()
                 .openAiClient(syncClient(
                         deepseek.baseUrl(), deepseek.apiKey(), deepseek.model(), deepseek.timeout(), obs, meters))
-                .options(OpenAiChatOptions.builder().model(deepseek.model()).build())
+                .options(OpenAiChatOptions.builder()
+                        .baseUrl(deepseek.baseUrl())
+                        .apiKey(deepseek.apiKey())
+                        .model(deepseek.model())
+                        .build())
                 .observationRegistry(obs)
                 .build();
     }
 
     /**
      * 视觉模型 — Qwen-VL（DashScope OpenAI 兼容端点），拍照上架图片识别专用。
+     * <p>
+     * options 带 baseUrl / apiKey 的理由同 {@link #chatModel}。
      */
     @Bean
     public ChatModel visionChatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
@@ -68,7 +79,11 @@ public class AiModelConfig {
         return OpenAiChatModel.builder()
                 .openAiClient(
                         syncClient(qwenVl.baseUrl(), qwenVl.apiKey(), qwenVl.model(), qwenVl.timeout(), obs, meters))
-                .options(OpenAiChatOptions.builder().model(qwenVl.model()).build())
+                .options(OpenAiChatOptions.builder()
+                        .baseUrl(qwenVl.baseUrl())
+                        .apiKey(qwenVl.apiKey())
+                        .model(qwenVl.model())
+                        .build())
                 .observationRegistry(obs)
                 .build();
     }
