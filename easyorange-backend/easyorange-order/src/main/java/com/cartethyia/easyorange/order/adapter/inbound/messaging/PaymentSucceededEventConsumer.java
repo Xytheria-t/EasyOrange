@@ -19,7 +19,7 @@ import org.springframework.util.StringUtils;
  * <p>
  * 订单的 PAID 状态唯一由 {@code PaymentSucceededEvent} 驱动：payment 模块确认支付成功后
  * 经 Outbox 发布事件（routing key {@code payment.succeeded}），本消费者在订单侧走
- * {@code OrderCommandHandler.handlePaymentSucceeded} 应用状态机守卫置 PAID。
+ * {@code OrderCommandHandler.onPaymentSucceeded} 应用状态机守卫置 PAID。
  * 事件经 {@link EventConsumerHandler} 基于 eventId 去重（重复投递 / DLQ 重投无副作用），
  * 处理失败由容器重试并最终进 DLQ/terminal 人工介入。
  */
@@ -48,7 +48,7 @@ public class PaymentSucceededEventConsumer {
                 log.warn("action=skip_payment_bridge reason=missing_order_id paymentId={}", event.paymentId());
                 return;
             }
-            orderCommandHandler.handlePaymentSucceeded(event.orderId());
+            orderCommandHandler.onPaymentSucceeded(event.orderId());
         });
     }
 }

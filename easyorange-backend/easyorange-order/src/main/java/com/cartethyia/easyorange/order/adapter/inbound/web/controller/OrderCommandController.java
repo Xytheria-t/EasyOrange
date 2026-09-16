@@ -29,7 +29,7 @@ public class OrderCommandController {
     public Result<String> createOrder(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody CreateOrderRequest request) {
         return Result.success(commandHandler
-                .handle(user.userId(), assembler.toCreateCommand(request))
+                .createOrder(user.userId(), assembler.toCreateCommand(request))
                 .orderId());
     }
 
@@ -38,25 +38,25 @@ public class OrderCommandController {
             @AuthenticationPrincipal AuthUser user,
             @PathVariable String id,
             @Valid @RequestBody CancelOrderRequest request) {
-        commandHandler.handle(user.userId(), assembler.toCancelCommand(id, request));
+        commandHandler.cancelOrder(user.userId(), assembler.toCancelCommand(id, request));
         return Result.success();
     }
 
     @PutMapping("/{id}/pay")
     public Result<Void> payOrder(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
-        commandHandler.handle(user.userId(), new PayOrderCommand(id));
+        commandHandler.payOrder(user.userId(), new PayOrderCommand(id));
         return Result.success();
     }
 
     @PutMapping("/{id}/ship")
     public Result<Void> shipOrder(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
-        commandHandler.handle(user.userId(), new ShipOrderCommand(id));
+        commandHandler.shipOrder(user.userId(), new ShipOrderCommand(id));
         return Result.success();
     }
 
     @PutMapping("/{id}/receive")
     public Result<Void> confirmReceipt(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
-        commandHandler.handle(user.userId(), new ConfirmReceiptCommand(id));
+        commandHandler.confirmReceipt(user.userId(), new ConfirmReceiptCommand(id));
         return Result.success();
     }
 
@@ -65,7 +65,7 @@ public class OrderCommandController {
             @AuthenticationPrincipal AuthUser user,
             @PathVariable String id,
             @Valid @RequestBody RefundOrderRequest request) {
-        commandHandler.handle(user.userId(), assembler.toRefundCommand(id, request));
+        commandHandler.refundOrder(user.userId(), assembler.toRefundCommand(id, request));
         return Result.success();
     }
 }

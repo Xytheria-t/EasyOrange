@@ -98,14 +98,14 @@ class OrderCommandHandlerCreateTest {
 
     @BeforeEach
     void setUp() {
-        var preparationService = new OrderPreparation(productInventoryPort, productQueryPort, idGenerator);
+        var itemPreparer = new OrderItemPreparer(productInventoryPort, productQueryPort, idGenerator);
         commandHandler = new OrderCommandHandler(
                 orderRepository,
                 eventPublisher,
                 new OrderCacheEvictor(orderCachePort),
                 lockPort,
                 paymentGatewayPort,
-                preparationService,
+                itemPreparer,
                 productInventoryPort,
                 idGenerator,
                 new TransactionTemplate(new NoOpTransactionManager()));
@@ -113,7 +113,7 @@ class OrderCommandHandlerCreateTest {
         // 默认锁端口正常：直接执行锁内操作（真实行为由 DistributedLockAdapterTest 覆盖）
         when(lockPort.executeWithLocks(anyList(), anyLong(), any()))
                 .thenAnswer(inv -> ((DistributedLockPort.LockOperation<?>) inv.getArgument(2)).execute());
-        // 详情读源默认返回商品 100 的详情（OrderPreparation 对缺失详情抛错回滚，成功路径必须给出详情）
+        // 详情读源默认返回商品 100 的详情（OrderItemPreparer 对缺失详情抛错回滚，成功路径必须给出详情）
         when(productQueryPort.getProductsByIds(any()))
                 .thenReturn(List.of(new ProductDetail(
                         "100", "iPhone 15", new BigDecimal("99.99"), "ONLINE", List.of("img1"), "描述", "A")));
@@ -130,7 +130,7 @@ class OrderCommandHandlerCreateTest {
         when(productInventoryPort.getSnapshots(any())).thenReturn(List.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenReturn("1");
 
-        CreateOrderResult result = commandHandler.handle(BUYER_ID, command);
+        CreateOrderResult result = commandHandler.createOrder(BUYER_ID, command);
 
         assertThat(result).isNotNull();
         assertThat(result.orderNo()).isEqualTo("ORD" + "018f7c1d-0000-7000-8000-000000000001");
@@ -153,7 +153,7 @@ class OrderCommandHandlerCreateTest {
         when(productInventoryPort.getSnapshots(any())).thenReturn(List.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenThrow(new RuntimeException("支付失败"));
 
-        assertThatThrownBy(() -> commandHandler.handle(BUYER_ID, command))
+        assertThatThrownBy(() -> commandHandler.createOrder(BUYER_ID, command))
                 .isInstanceOf(OrderDomainException.class)
                 .hasMessageContaining("支付失败");
         // 无事务内反向补偿：订单/库存/支付随事务整体回滚
@@ -169,7 +169,7 @@ class OrderCommandHandlerCreateTest {
 
         when(productInventoryPort.getSnapshots(any())).thenReturn(List.of());
 
-        assertThatThrownBy(() -> commandHandler.handle(BUYER_ID, command))
+        assertThatThrownBy(() -> commandHandler.createOrder(BUYER_ID, command))
                 .isInstanceOf(OrderDomainException.class)
                 .hasMessageContaining("资产不存在");
     }
@@ -183,7 +183,7 @@ class OrderCommandHandlerCreateTest {
         CreateOrderCommand command =
                 new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", null, null);
 
-        assertThatThrownBy(() -> commandHandler.handle(BUYER_ID, command))
+        assertThatThrownBy(() -> commandHandler.createOrder(BUYER_ID, command))
                 .isInstanceOf(OrderDomainException.class)
                 .hasMessageContaining("繁忙");
     }

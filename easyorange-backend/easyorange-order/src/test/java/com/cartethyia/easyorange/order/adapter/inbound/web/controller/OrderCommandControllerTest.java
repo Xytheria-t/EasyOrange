@@ -80,7 +80,7 @@ class OrderCommandControllerTest {
             var items = List.of(new CreateOrderCommand.CreateOrderItem("200", 1));
             var command = new CreateOrderCommand(items, "北京市朝阳区", "13800138000", "尽快发货", null);
             when(assembler.toCreateCommand(any())).thenReturn(command);
-            when(commandHandler.handle(USER_ID, command)).thenReturn(createResult);
+            when(commandHandler.createOrder(USER_ID, command)).thenReturn(createResult);
 
             String requestBody = """
                     {
@@ -98,7 +98,7 @@ class OrderCommandControllerTest {
                     .andExpect(jsonPath("$.code").value("A0000"))
                     .andExpect(jsonPath("$.data").value(ORDER_ID));
 
-            verify(commandHandler).handle(eq(USER_ID), any(CreateOrderCommand.class));
+            verify(commandHandler).createOrder(eq(USER_ID), any(CreateOrderCommand.class));
         }
 
         @Test
@@ -159,7 +159,7 @@ class OrderCommandControllerTest {
                             .content("{\"reason\":\"不想要了\"}"))
                     .andExpect(status().isOk());
 
-            verify(commandHandler).handle(eq(USER_ID), any(CancelOrderCommand.class));
+            verify(commandHandler).cancelOrder(eq(USER_ID), any(CancelOrderCommand.class));
         }
     }
 
@@ -174,7 +174,7 @@ class OrderCommandControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("A0000"));
 
-            verify(commandHandler).handle(eq(USER_ID), any(PayOrderCommand.class));
+            verify(commandHandler).payOrder(eq(USER_ID), any(PayOrderCommand.class));
         }
     }
 
@@ -189,7 +189,7 @@ class OrderCommandControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("A0000"));
 
-            verify(commandHandler).handle(eq(USER_ID), any(ShipOrderCommand.class));
+            verify(commandHandler).shipOrder(eq(USER_ID), any(ShipOrderCommand.class));
         }
     }
 
@@ -204,7 +204,7 @@ class OrderCommandControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("A0000"));
 
-            verify(commandHandler).handle(eq(USER_ID), any(ConfirmReceiptCommand.class));
+            verify(commandHandler).confirmReceipt(eq(USER_ID), any(ConfirmReceiptCommand.class));
         }
     }
 
@@ -231,7 +231,7 @@ class OrderCommandControllerTest {
                             .content("{\"reason\":\"商品有问题\"}"))
                     .andExpect(status().isOk());
 
-            verify(commandHandler).handle(eq(USER_ID), any(RefundOrderCommand.class));
+            verify(commandHandler).refundOrder(eq(USER_ID), any(RefundOrderCommand.class));
         }
     }
 }

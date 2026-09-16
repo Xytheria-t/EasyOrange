@@ -32,6 +32,8 @@ import org.springframework.util.StringUtils;
 
 /**
  * 订单命令处理器 — CQRS Write 侧唯一应用服务，收口全部订单命令（创建/支付/取消/发货/确认收货/退款）。
+ * 每个命令一个以用例命名的公开方法（命令类型与方法一一对应，不用重载区分命令）；
+ * 事件驱动入口 {@link #onPaymentSucceeded} 单列，不混入命令入口。
  * <p>
  * 下单链路：分布式锁排队串行 → 准备商品数据 → 创建订单 → 同步扣减库存 → 创建支付，
  * 全部步骤运行在同一本地事务内（事务边界由 {@link TransactionTemplate} 显式控制，锁等待在事务外），
@@ -58,7 +60,7 @@ public class OrderCommandHandler {
     private final OrderCacheEvictor orderCacheEvictor;
     private final DistributedLockPort lockPort;
     private final PaymentGatewayPort paymentGatewayPort;
-    private final OrderPreparation preparationService;
+    private final OrderItemPreparer itemPreparer;
     private final ProductInventoryPort productInventoryPort;
     private final IdGenerator idGenerator;
     private final TransactionTemplate transactionTemplate;
@@ -73,7 +75,7 @@ public class OrderCommandHandler {
      * 锁基础设施的 {@link LockAcquisitionException} 在用例边界映射为 {@link OrderDomainException}，
      * 保留订单域的错误码（B3009→400）与提示文案。
      */
-    public CreateOrderResult handle(String userId, CreateOrderCommand command) {
+    public CreateOrderResult createOrder(String userId, CreateOrderCommand command) {
         try {
             return lockPort.executeWithLocks(
                     buildLockKeys(command),
@@ -101,7 +103,7 @@ public class OrderCommandHandler {
      */
     private CreateOrderResult createOrderFlow(String buyerId, CreateOrderCommand command) {
         // 准备订单项数据（含资产存在/在线/库存/同资产方校验）
-        OrderPreparation.PreparationResult preparation = preparationService.prepareOrderItems(command.items());
+        OrderItemPreparer.PreparationResult preparation = itemPreparer.prepareOrderItems(command.items());
 
         // 创建订单聚合根（通过 spec record 收敛 7 个参数）
         Transition<Order, OrderCreatedEvent> result = Order.createOrder(new OrderCreateSpec(
@@ -165,10 +167,10 @@ public class OrderCommandHandler {
 
     /**
      * 发起支付 — 校验买家身份与订单可支付状态后，委托支付模块执行「准备 → 网关 → 确认」两阶段；
-     * 订单置 PAID 不再在此直接发生，而是由「支付成功」事件桥接驱动（见 {@link #handlePaymentSucceeded}），
+     * 订单置 PAID 不再在此直接发生，而是由「支付成功」事件桥接驱动（见 {@link #onPaymentSucceeded}），
      * 保证订单状态与支付单状态联动一致。本方法无本地写，不开事务，避免事务跨支付流程。
      */
-    public void handle(String userId, PayOrderCommand command) {
+    public void payOrder(String userId, PayOrderCommand command) {
         var aggregate = validateBuyer(userId, command.orderId());
         BizRequire.requireTrue(aggregate.canPay(), OrderResultCode.ORDER_STATUS_ERROR);
         paymentGatewayPort.pay(command.orderId());
@@ -182,7 +184,7 @@ public class OrderCommandHandler {
      * 消费失败进 DLQ/terminal 人工介入。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void handlePaymentSucceeded(String orderId) {
+    public void onPaymentSucceeded(String orderId) {
         var aggregate = findOrder(orderId);
         if (aggregate.status() == OrderStatus.PAID) {
             log.info("支付成功事件跳过（订单已支付）: orderId={}", orderId);
@@ -199,28 +201,28 @@ public class OrderCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(String userId, CancelOrderCommand command) {
+    public void cancelOrder(String userId, CancelOrderCommand command) {
         var aggregate = validateBuyer(userId, command.orderId());
         var result = aggregate.cancel(command.reason(), LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(String userId, ShipOrderCommand command) {
+    public void shipOrder(String userId, ShipOrderCommand command) {
         var aggregate = validateSeller(userId, command.orderId());
         var result = aggregate.ship(LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(String userId, ConfirmReceiptCommand command) {
+    public void confirmReceipt(String userId, ConfirmReceiptCommand command) {
         var aggregate = validateBuyer(userId, command.orderId());
         var result = aggregate.confirmReceipt(LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handle(String userId, RefundOrderCommand command) {
+    public void refundOrder(String userId, RefundOrderCommand command) {
         var aggregate = validateBuyer(userId, command.orderId());
         var result = aggregate.refund(command.reason(), LocalDateTime.now());
         persistAndPublish(aggregate, result);
