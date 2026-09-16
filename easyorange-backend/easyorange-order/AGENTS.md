@@ -120,7 +120,7 @@ OrderCommandHandler.createOrder(CreateOrderCommand) ─ @Transactional(rollbackF
   6. 任一步失败 → 业务事务整体回滚，抛 OrderDomainException（B3009；库存/支付同事务回滚，无补偿路径）
 ```
 
-**库存恢复**：仅由 `OrderLifecycleEventConsumer` 消费订单取消/退款事件时调用 `ProductInventoryPort.restoreStock(orderId, productId, quantity)` 恢复，数量取自事件明细（`OrderItemRef`，与下单扣减对称）；完成事件触发 `markAsSold`。重复投递由 product 侧库存流水的唯一键兜底，消费者只负责把数量和订单号如实传下去。
+**库存恢复**：仅由 `OrderLifecycleEventConsumer` 消费订单取消/退款事件时调用 `ProductInventoryPort.restoreStock(orderId, productId, quantity)` 恢复，数量取自事件明细（`OrderItemRef`，与下单扣减对称）；完成事件触发 `markAsSold`。重复投递由 product 侧库存流水的唯一键兜底，消费者只负责把数量和订单 ID 如实传下去。
 
 **支付桥接（订单 PAID 唯一来源）**：`PUT /api/orders/{id}/pay` 校验买家身份与 `canPay()` 后经 `PaymentGatewayPort.pay` 委托支付模块发起两阶段支付，**不再直接置 PAID**。支付成功由 payment 模块发布 `PaymentSucceededEvent`（routing key `payment.succeeded`，队列 `eo.order.payment`，事件含 orderId），`PaymentSucceededEventConsumer` 消费后调 `OrderCommandHandler.onPaymentSucceeded` 经 `PAY` 守卫置 `PAID` 并发布 `OrderPaidEvent`。消费按 eventId 幂等（`EventConsumerHandler`）；订单已支付时跳过；订单已取消时触发自动退款（`refundPayment`，订单保持取消态不流转）；其余非法状态抛错经重试进 DLQ/terminal 人工介入。
 

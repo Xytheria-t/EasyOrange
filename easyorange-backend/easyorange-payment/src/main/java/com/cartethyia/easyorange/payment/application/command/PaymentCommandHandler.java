@@ -145,7 +145,7 @@ public class PaymentCommandHandler {
     // ==================== 订单侧入口（以 orderId 为键） ====================
 
     /**
-     * 按订单号发起支付 — 订单模块的 {@code PaymentGatewayPort.pay(orderId)} 以订单号为键，
+     * 按订单 ID 发起支付 — 订单模块的 {@code PaymentGatewayPort.pay(orderId)} 以订单 ID 为键，
      * 而 {@link PayCommand} 以支付单号为键，解析步骤收口在此，调用方不必接触支付仓储。
      * <p>
      * 不持有事务：委托 {@link #pay(PayCommand)} 走两阶段，事务边界在 {@link PaymentPhaseExecutor}。
@@ -157,7 +157,7 @@ public class PaymentCommandHandler {
     }
 
     /**
-     * 按订单号退款 — 操作者记为支付单所属用户（通过归属校验），供订单取消等系统内部路径使用。
+     * 按订单 ID 退款 — 操作者记为支付单所属用户（通过归属校验），供订单取消等系统内部路径使用。
      *
      * @throws PaymentDomainException 支付单不存在（B4001）
      */
@@ -167,7 +167,7 @@ public class PaymentCommandHandler {
     }
 
     /**
-     * 按订单号解析支付单 — 订单与支付单在同一下单事务内落库，正常路径下必然存在；
+     * 按订单 ID 解析支付单 — 订单与支付单在同一下单事务内落库，正常路径下必然存在；
      * 缺失属数据不一致，按 B4001 显性失败而非静默跳过（静默会让用户点了支付却毫无反馈）。
      */
     private Payment resolveByOrderId(String orderId) {

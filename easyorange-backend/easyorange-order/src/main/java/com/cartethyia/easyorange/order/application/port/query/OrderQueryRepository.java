@@ -31,11 +31,11 @@ public interface OrderQueryRepository {
     List<OrderItemReadModel> findItemsByOrderId(String orderId);
 
     /**
-     * 查询买家针对该商品已完成交易的订单号 —— 供评价资格校验（product 模块经 ACL 端口调用）。
+     * 查询买家针对该商品已完成交易的订单 ID —— 供评价资格校验（product 模块经 ACL 端口调用）。
      *
      * @param buyerId   买家 ID
      * @param productId 商品 ID
-     * @return 订单号；该买家没有该商品的已完成订单时返回 {@link Optional#empty()}
+     * @return 订单 ID；该买家没有该商品的已完成订单时返回 {@link Optional#empty()}
      */
     Optional<String> findCompletedOrderId(String buyerId, String productId);
 }
