@@ -54,15 +54,25 @@ public class AiModelSupport {
     /**
      * JSON 结构化输出：在 system + user 双消息之上追加 {@code response_format=json_object}，
      * 提示模型返回合法 JSON（解析与降级仍由调用方 ObjectMapper + try/catch 承担）。
+     * <p>
+     * per-request options 必须继承模型的连接与模型名：只设 {@code responseFormat} 时 {@code model} 为 null，
+     * openai-java 客户端会回退到 SDK 默认模型名（{@code gpt-5-mini}），对非 OpenAI 供应商直接 404 ——
+     * 走本方法的所有 AI 决策点与 LLM-as-Judge 会整体静默降级。
      */
     public String callJson(ChatModel chatModel, String systemPrompt, String userMessage) {
         var jsonOptions = OpenAiChatOptions.builder()
                 .responseFormat(OpenAiChatModel.ResponseFormat.builder()
                         .type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
-                        .build())
-                .build();
+                        .build());
+        if (chatModel instanceof OpenAiChatModel openAiModel
+                && openAiModel.getDefaultOptions() instanceof OpenAiChatOptions defaults) {
+            jsonOptions
+                    .baseUrl(defaults.getBaseUrl())
+                    .apiKey(defaults.getApiKey())
+                    .model(defaults.getModel());
+        }
         return outputText(chatModel.call(
-                new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)), jsonOptions)));
+                new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)), jsonOptions.build())));
     }
 
     /**
