@@ -159,7 +159,8 @@ class OrderRepositoryImplTest {
                 .id("1")
                 .orderId("1")
                 .productId(PRODUCT_ID)
-                .productSnapshot("null")
+                // 与下单写路径同形：OrderItem 要求携带留痕快照，落库 JSON 不能为空
+                .productSnapshot("{\"productId\":\"" + PRODUCT_ID + "\",\"name\":\"测试商品\",\"price\":99.99}")
                 .unitPrice(AMOUNT)
                 .quantity(1)
                 .subtotal(AMOUNT)

@@ -37,6 +37,20 @@ class OrderItemTest {
     }
 
     @Test
+    @DisplayName("缺少留痕快照时抛异常（订单项必须固化下单时的价格与展示信息）")
+    void create_missingSnapshot_throws() {
+        assertThatThrownBy(() -> OrderItem.builder()
+                        .id("1")
+                        .productId(ProductId.of("100"))
+                        .unitPrice(Money.of(new BigDecimal("3999.00")))
+                        .quantity(1)
+                        .subtotal(Money.of(new BigDecimal("3999.00")))
+                        .build())
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("必须携带下单时的留痕快照");
+    }
+
+    @Test
     @DisplayName("quantity 必须大于 0")
     void create_zeroQuantity_throws() {
         var snap = snapshot("iPhone", "3999.00");
