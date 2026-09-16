@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderItemSnapshot;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
@@ -225,10 +226,22 @@ public final class OrderTestFixture {
 
     // ==================== Item helpers ====================
 
+    private static OrderItemSnapshot itemSnapshot(String productId, BigDecimal price) {
+        return OrderItemSnapshot.builder()
+                .productId(productId)
+                .name("测试商品")
+                .image("img.jpg")
+                .description("描述")
+                .price(Money.of(price))
+                .conditionLevel("9成新")
+                .build();
+    }
+
     public static List<OrderItem> singleItemList() {
         return List.of(OrderItem.builder()
                 .id("1")
                 .productId(ProductId.of(PRODUCT_ID))
+                .snapshot(itemSnapshot(PRODUCT_ID, AMOUNT))
                 .unitPrice(Money.of(AMOUNT))
                 .quantity(1)
                 .subtotal(Money.of(AMOUNT))
@@ -240,6 +253,7 @@ public final class OrderTestFixture {
                 OrderItem.builder()
                         .id("1")
                         .productId(ProductId.of(PRODUCT_ID))
+                        .snapshot(itemSnapshot(PRODUCT_ID, AMOUNT))
                         .unitPrice(Money.of(AMOUNT))
                         .quantity(1)
                         .subtotal(Money.of(AMOUNT))
@@ -247,6 +261,7 @@ public final class OrderTestFixture {
                 OrderItem.builder()
                         .id("2")
                         .productId(ProductId.of("200"))
+                        .snapshot(itemSnapshot("200", new BigDecimal("49.99")))
                         .unitPrice(Money.of(new BigDecimal("49.99")))
                         .quantity(2)
                         .subtotal(Money.of(new BigDecimal("99.98")))
