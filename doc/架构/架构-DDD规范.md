@@ -491,7 +491,8 @@ public class RegistrationService {
 ### 8. CQRS 渐进式引入
 
 - **早期/简单场景**：使用传统应用服务（如 `AuthAppService`、`ProfileAppService`），同时处理读写
-- **读写模型差异大时**：拆分为 `command/` 和 `query/`。Command 使用顶层 record（每个命令一个文件），3+ 命令时引入 sealed interface 统一管理。禁止使用 inner records 或 Lombok @Data @Builder。详见 [架构改进记录](#)
+- **读写模型差异大时**：拆分为 `command/` 和 `query/`。Command 使用顶层 record（每个命令一个文件）；命令入口是 handler 上以用例命名的具名方法（`createOrder` / `payOrder` / `cancelOrder`…），一命令一方法，不用重载或统一 `handle` 分发区分命令类型。禁止把命令内联为 service 的 inner records，禁止 Lombok @Data @Builder
+- **sealed interface 只在有穷尽分发消费者时引入**：没有 pattern matching 分发的 sealed 标记接口只是死代码（order / payment 曾各留一个，因无消费者已删除）；真要做命令分发时再加
 - **复杂查询场景**：Query 侧可使用物化视图、读库副本、ES 等
 - **不推荐一刀切**：简单 CRUD 场景强制 CQRS 会增加大量样板代码
 
