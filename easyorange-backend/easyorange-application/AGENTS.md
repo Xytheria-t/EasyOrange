@@ -78,7 +78,9 @@ easyorange-application
 | `application.yaml` | 基础配置 | 数据源、Redis、MyBatis-Plus、虚拟线程 |
 | `application-dev.yaml` | 开发环境 | 小连接池、详细日志、JWT 开发密钥 |
 | `application-prod.yaml` | 生产环境 | 大连接池、SSL、Swagger 关闭、优雅停机 |
-| `application-test.yaml` | 测试环境 | 测试环境配置（Testcontainers 已移除） |
+| `src/test/resources/application-it.yaml` | 集成测试（`it` profile） | 复用 dev 栈：Boot docker-compose 按根 `compose.yaml`（start-only）起 mysql/redis/rabbitmq，显式 localhost 直连；关 Flyway 校验（开发者库历史可能 diverged） |
+
+> 集成测试运行方式（`*IT` / failsafe / `mvn verify`）见 [doc/agents/常用命令.md](../../doc/agents/常用命令.md)；「不用 Testcontainers」等测试约定见 [doc/agents/开发规范.md](../../doc/agents/开发规范.md) 后端约定。
 
 ### 关键配置项
 
