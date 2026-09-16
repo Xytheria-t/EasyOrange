@@ -68,7 +68,7 @@ monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模
 | AI 资产管理（6 决策点 / 营销文案 / WebSocket 协议） | [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md) | 动 AI 决策点或沟通链路时 |
 | 后端所有 REST + WebSocket 端点 | [doc/集成/API-速查.md](doc/集成/API-速查.md) | 找端点、写接口时 |
 | 测试数 / 覆盖率单一来源 | [doc/工程指标.md](doc/工程指标.md) | 收口统计时 |
-| ADR 决策记录（10 个，如 ADR-0007 拒绝 Saga） | `doc/adr/` | 做架构决策、改下单链路时 |
+| ADR 决策记录（11 个，如 ADR-0007 拒绝 Saga、ADR-0011 UUID v7 主键） | `doc/adr/` | 做架构决策、改下单链路、动主键/ID 策略时 |
 
 ## Repository Map
 
