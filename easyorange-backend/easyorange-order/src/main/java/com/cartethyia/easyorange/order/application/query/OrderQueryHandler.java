@@ -4,14 +4,11 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.port.query.OrderQueryRepository;
 import com.cartethyia.easyorange.order.application.query.assembler.OrderReadModelAssembler;
-import com.cartethyia.easyorange.order.application.query.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
-import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
-import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import java.util.List;
@@ -20,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,7 +28,6 @@ import org.springframework.stereotype.Service;
 public class OrderQueryHandler {
 
     private final OrderQueryRepository orderReadRepository;
-    private final ProductQueryPort productQueryPort;
     private final OrderCachePort<OrderVO> orderCachePort;
     private final OrderReadModelAssembler readModelAssembler;
     private final UserInfoPort userInfoPort;
@@ -44,9 +41,8 @@ public class OrderQueryHandler {
             throw OrderDomainException.of(OrderResultCode.ORDER_NOT_OWNER);
         }
 
-        Map<String, ProductDetail> productMap = loadProductMap(order);
         Map<String, String> usernames = userInfoPort.findUsernames(Set.of(order.buyerId(), order.sellerId()));
-        return readModelAssembler.toOrderVO(order, productMap, usernames, false);
+        return readModelAssembler.toOrderVO(order, usernames, false);
     }
 
     /**
@@ -101,34 +97,12 @@ public class OrderQueryHandler {
             return List.of();
         }
 
-        Set<String> productIds = orders.stream()
-                .flatMap(o -> o.items().stream())
-                .map(OrderItemReadModel::productId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
         Set<String> userIds = orders.stream()
-                .flatMap(o -> java.util.stream.Stream.of(o.buyerId(), o.sellerId()))
+                .flatMap(o -> Stream.of(o.buyerId(), o.sellerId()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<String, ProductDetail> productMap = loadProducts(productIds);
         Map<String, String> usernames = userInfoPort.findUsernames(userIds);
-        return readModelAssembler.toOrderVOs(orders, productMap, usernames);
-    }
-
-    private Map<String, ProductDetail> loadProducts(Set<String> productIds) {
-        if (productIds == null || productIds.isEmpty()) {
-            return Map.of();
-        }
-        List<ProductDetail> products = productQueryPort.getProductsByIds(List.copyOf(productIds));
-        return readModelAssembler.buildProductMap(products);
-    }
-
-    private Map<String, ProductDetail> loadProductMap(OrderReadModel order) {
-        Set<String> productIds = order.items().stream()
-                .map(OrderItemReadModel::productId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        return loadProducts(productIds);
+        return readModelAssembler.toOrderVOs(orders, usernames);
     }
 }

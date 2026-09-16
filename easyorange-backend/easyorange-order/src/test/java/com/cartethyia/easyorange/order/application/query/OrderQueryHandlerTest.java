@@ -18,8 +18,6 @@ import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadMode
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
-import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
-import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.port.UserInfoPort;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -49,9 +47,6 @@ class OrderQueryHandlerTest {
     private OrderQueryRepository orderReadRepository;
 
     @Mock
-    private ProductQueryPort productQueryPort;
-
-    @Mock
     private OrderCachePort orderCachePort;
 
     @Mock
@@ -67,8 +62,7 @@ class OrderQueryHandlerTest {
 
     @BeforeEach
     void setUp() {
-        handler = new OrderQueryHandler(
-                orderReadRepository, productQueryPort, orderCachePort, readModelAssembler, userInfoPort);
+        handler = new OrderQueryHandler(orderReadRepository, orderCachePort, readModelAssembler, userInfoPort);
 
         testOrderReadModel = new OrderReadModel(
                 "1",
@@ -96,9 +90,9 @@ class OrderQueryHandlerTest {
                 .totalAmount(new BigDecimal("99.99"))
                 .build();
 
-        when(readModelAssembler.toOrderVO(any(OrderReadModel.class), anyMap(), anyMap(), anyBoolean()))
+        when(readModelAssembler.toOrderVO(any(OrderReadModel.class), anyMap(), anyBoolean()))
                 .thenReturn(mockOrderVO);
-        when(readModelAssembler.toOrderVOs(any(), anyMap(), anyMap())).thenReturn(List.of(mockOrderVO));
+        when(readModelAssembler.toOrderVOs(any(), anyMap())).thenReturn(List.of(mockOrderVO));
         when(userInfoPort.findUsernames(any())).thenReturn(Map.of());
         when(orderCachePort.buildOrderListKey(any(), any(), any(), any())).thenReturn("eo:order:list:key");
         when(orderCachePort.getOrderList(any())).thenReturn(Optional.empty());
@@ -135,7 +129,6 @@ class OrderQueryHandlerTest {
         @DisplayName("买方访问自己的订单返回详情且不脱敏")
         void buyerOwner_returnsVOWithoutMask() {
             when(orderReadRepository.findById(any())).thenReturn(Optional.of(testOrderReadModel));
-            when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(testProductDetail()));
 
             OrderVO result = handler.getOrderDetailForOwner(BUYER_ID, "1");
 
@@ -143,19 +136,18 @@ class OrderQueryHandlerTest {
             assertThat(result.getId()).isEqualTo("1");
             assertThat(result.getOrderNo()).isEqualTo("ORD001");
             assertThat(result.getTotalAmount()).isEqualByComparingTo(new BigDecimal("99.99"));
-            verify(readModelAssembler).toOrderVO(eq(testOrderReadModel), anyMap(), anyMap(), eq(false));
+            verify(readModelAssembler).toOrderVO(eq(testOrderReadModel), anyMap(), eq(false));
         }
 
         @Test
         @DisplayName("卖方访问自己的订单返回详情")
         void sellerOwner_returnsVO() {
             when(orderReadRepository.findById(any())).thenReturn(Optional.of(testOrderReadModel));
-            when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(testProductDetail()));
 
             OrderVO result = handler.getOrderDetailForOwner(SELLER_ID, "1");
 
             assertThat(result).isNotNull();
-            verify(readModelAssembler).toOrderVO(eq(testOrderReadModel), anyMap(), anyMap(), eq(false));
+            verify(readModelAssembler).toOrderVO(eq(testOrderReadModel), anyMap(), eq(false));
         }
     }
 
@@ -181,7 +173,6 @@ class OrderQueryHandlerTest {
         void myOrders_cacheMiss_queriesAndPuts() {
             PageResult<OrderReadModel> pageResult = PageResult.of(List.of(testOrderReadModel), 1L, 1, 10);
             when(orderReadRepository.findPage(any(OrderQueryCondition.class))).thenReturn(pageResult);
-            when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(testProductDetail()));
 
             handler.getMyOrders(BUYER_ID, new OrderListQuery(null, null, null, null, 1, 10));
 
@@ -205,7 +196,6 @@ class OrderQueryHandlerTest {
         void soldOrders_withOrderNoFilter_skipsCache() {
             when(orderReadRepository.findPage(any(OrderQueryCondition.class)))
                     .thenReturn(PageResult.of(List.of(testOrderReadModel), 1L, 1, 10));
-            when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(testProductDetail()));
 
             handler.getSoldOrders(SELLER_ID, new OrderListQuery("ORD001", null, null, null, 1, 10));
 
@@ -213,9 +203,5 @@ class OrderQueryHandlerTest {
             verify(orderCachePort, never()).putOrderList(any(), any());
             verify(orderReadRepository).findPage(any(OrderQueryCondition.class));
         }
-    }
-
-    private static ProductDetail testProductDetail() {
-        return new ProductDetail("300", "测试商品", List.of("http://img.jpg"));
     }
 }

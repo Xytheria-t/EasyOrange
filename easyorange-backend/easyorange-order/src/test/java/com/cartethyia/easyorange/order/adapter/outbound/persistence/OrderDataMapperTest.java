@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderItemSnapshot;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
@@ -43,7 +44,9 @@ class OrderDataMapperTest {
     private static final String REMARK = "尽快发货";
     private static final LocalDateTime CREATE_TIME = LocalDateTime.of(2026, 5, 1, 10, 0);
     private static final LocalDateTime UPDATE_TIME = LocalDateTime.of(2026, 5, 1, 12, 0);
-    private static final String PRODUCT_SNAPSHOT = "{\"productId\":\"200\",\"name\":\"测试商品\",\"price\":99.99}";
+    private static final String PRODUCT_SNAPSHOT =
+            "{\"productId\":\"200\",\"name\":\"测试商品\",\"image\":\"http://img/1.jpg\","
+                    + "\"description\":\"描述\",\"price\":99.99,\"conditionLevel\":\"9成新\"}";
 
     private OrderDO createOrderDO() {
         OrderDO orderDO = OrderDO.builder()
@@ -64,10 +67,22 @@ class OrderDataMapperTest {
         return orderDO;
     }
 
+    private static OrderItemSnapshot itemSnapshot() {
+        return OrderItemSnapshot.builder()
+                .productId(PRODUCT_ID)
+                .name("测试商品")
+                .image("http://img/1.jpg")
+                .description("描述")
+                .price(Money.of(AMOUNT))
+                .conditionLevel("9成新")
+                .build();
+    }
+
     private static List<OrderItem> itemForTest() {
         return List.of(OrderItem.builder()
                 .id("1")
                 .productId(ProductId.of(PRODUCT_ID))
+                .snapshot(itemSnapshot())
                 .unitPrice(Money.of(AMOUNT))
                 .quantity(1)
                 .subtotal(Money.of(AMOUNT))
@@ -193,12 +208,13 @@ class OrderDataMapperTest {
         @DisplayName("携带行项的读模型重建应包含行项")
         void toReadModel_withItems_shouldIncludeItems() {
             OrderDO orderDO = createOrderDO();
-            var items = List.of(new OrderItemReadModel("1", PRODUCT_ID, PRODUCT_SNAPSHOT, AMOUNT, 1, AMOUNT));
+            var items = List.of(new OrderItemReadModel("1", PRODUCT_ID, itemSnapshot(), AMOUNT, 1, AMOUNT));
 
             OrderReadModel readModel = mapper.toReadModel(orderDO, items);
 
             assertThat(readModel.items()).hasSize(1);
             assertThat(readModel.items().getFirst().productId()).isEqualTo(PRODUCT_ID);
+            assertThat(readModel.items().getFirst().snapshot().name()).isEqualTo("测试商品");
         }
 
         @Test
@@ -232,7 +248,8 @@ class OrderDataMapperTest {
             assertThat(itemDO.getQuantity()).isEqualTo(item.quantity());
             assertThat(itemDO.getSubtotal())
                     .isEqualByComparingTo(item.subtotal().value());
-            assertThat(itemDO.getProductSnapshot()).isNotNull();
+            // 留痕快照必须以 JSON 落库且带展示字段，否则订单列表读不出名称与图片
+            assertThat(itemDO.getProductSnapshot()).contains("测试商品").contains("http://img/1.jpg");
         }
 
         @Test
@@ -242,7 +259,7 @@ class OrderDataMapperTest {
                     .id("1")
                     .orderId(ID)
                     .productId(PRODUCT_ID)
-                    .productSnapshot("{}")
+                    .productSnapshot(PRODUCT_SNAPSHOT)
                     .unitPrice(AMOUNT)
                     .quantity(1)
                     .subtotal(AMOUNT)
@@ -253,6 +270,9 @@ class OrderDataMapperTest {
             assertThat(readModel).isNotNull();
             assertThat(readModel.itemId()).isEqualTo("1");
             assertThat(readModel.productId()).isEqualTo(PRODUCT_ID);
+            assertThat(readModel.snapshot().name()).isEqualTo("测试商品");
+            assertThat(readModel.snapshot().image()).isEqualTo("http://img/1.jpg");
+            assertThat(readModel.snapshot().conditionLevel()).isEqualTo("9成新");
             assertThat(readModel.unitPrice()).isEqualByComparingTo(AMOUNT);
             assertThat(readModel.quantity()).isEqualTo(1);
             assertThat(readModel.subtotal()).isEqualByComparingTo(AMOUNT);
@@ -265,7 +285,7 @@ class OrderDataMapperTest {
                     .id("1")
                     .orderId(ID)
                     .productId(PRODUCT_ID)
-                    .productSnapshot("{}")
+                    .productSnapshot(PRODUCT_SNAPSHOT)
                     .unitPrice(AMOUNT)
                     .quantity(1)
                     .subtotal(AMOUNT)
@@ -276,6 +296,7 @@ class OrderDataMapperTest {
             assertThat(item).isNotNull();
             assertThat(item.id()).isEqualTo("1");
             assertThat(item.productId().value()).isEqualTo(PRODUCT_ID);
+            assertThat(item.snapshot().name()).isEqualTo("测试商品");
             assertThat(item.unitPrice().value()).isEqualByComparingTo(AMOUNT);
             assertThat(item.quantity()).isEqualTo(1);
             assertThat(item.subtotal().value()).isEqualByComparingTo(AMOUNT);
