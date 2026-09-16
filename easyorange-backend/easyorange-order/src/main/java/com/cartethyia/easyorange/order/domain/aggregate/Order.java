@@ -135,7 +135,7 @@ public class Order {
         OrderId orderId = spec.orderId();
         Order aggregate = new Order(
                 orderId,
-                OrderNo.of("ORD" + orderId.value()),
+                OrderNo.forOrderId(orderId.value()),
                 spec.buyerId(),
                 spec.sellerId(),
                 spec.items(),

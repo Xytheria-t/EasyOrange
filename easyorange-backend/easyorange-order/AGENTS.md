@@ -76,7 +76,7 @@ order/
 │   │   ├── OrderItemSnapshot.java         # 订单项留痕快照（下单时冻结的价格与展示信息，区别于端口实时快照）
 │   │   └── PaymentStatus.java             # 支付状态枚举（UNPAID/PAID/REFUNDED）
 │   ├── event/
-│   │   ├── OrderEvent.java                   # sealed 接口（含 default aggregateId），所有事件实现此接口
+│   │   ├── OrderEvent.java                   # sealed 接口（含 default aggregateId / orderNo，均由 orderId 派生）
 │   │   ├── OrderCreatedEvent.java
 │   │   ├── OrderPaidEvent.java
 │   │   ├── OrderShippedEvent.java

@@ -60,11 +60,11 @@ public class OrderNotificationEventConsumer {
                 return;
             }
             messageCommandHandler.sendSystemMessage(new SendSystemMessageCommand(
-                    buyerId, template.title(), template.content(event.orderId()), event.orderId()));
+                    buyerId, template.title(), template.content(event.orderNo().value()), event.orderId()));
         });
     }
 
-    /** 订单事件类型 → 站内消息模板；内容为含订单号占位的格式串。 */
+    /** 订单事件类型 → 站内消息模板；内容为含订单号占位的格式串（订单号 = `ORD` + 订单 ID，由事件派生）。 */
     private enum NotificationTemplate {
         CREATED(OrderCreatedEvent.class, "订单已创建", "您的订单已创建，订单号: %s"),
         PAID(OrderPaidEvent.class, "订单已支付", "您的订单已支付成功，订单号: %s"),
@@ -98,8 +98,8 @@ public class OrderNotificationEventConsumer {
             return title;
         }
 
-        String content(String orderId) {
-            return contentTemplate.formatted(orderId);
+        String content(String orderNo) {
+            return contentTemplate.formatted(orderNo);
         }
     }
 }
