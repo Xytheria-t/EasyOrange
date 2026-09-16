@@ -150,6 +150,18 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 | Milvus / PGVector | SKU < 10 万，向量库 ROI 低 | ES BM25 召回 + LLM semantic rerank（RAG 轻量版） | 隐含决策 |
 | Kafka / Pulsar 默认 MQ | Kafka 无原生 DLQ；1 事件 → 12 消费者模型不匹配；Pulsar 本地太重 | RabbitMQ Topic Exchange + 队列级 DLQ | [ADR-0005](doc/adr/0005-messaging-rabbitmq.md) |
 
+### 数据与安全约束（代码层已落地）
+
+| 约束 | 实现位置 |
+|---|---|
+| 密码仅存 BCrypt 哈希（强度可配） | `SecurityConfig#passwordEncoder` |
+| Refresh Token 仅存 SHA-256 哈希，不落明文 | `TokenServiceImpl`（Redis 泄露不直接暴露可用明文） |
+| Access Token 不入日志、不入本地存储 | 前端内存持有 + Refresh 走 HttpOnly Cookie |
+| PII 视图层脱敏（手机号 / 地址） | `MaskUtils` + 各模块 assembler（User / OrderReadModel / ProductReadModel） |
+| 审计日志脱敏：不写密码 / 令牌 / 完整手机号 | `AuditLogAspect#maskSensitiveFields` |
+| 生产密钥经环境变量注入且 fail-fast | `ProdSecrets`（`@ConfigurationProperties` + `@Validated` + `@NotBlank`，缺失或为空即中止启动） |
+| 管理端接口仅 ADMIN 可访问 | `SecurityConfig` 路径规则 `/api/admin/**` → `hasRole("ADMIN")`；product / payment 的敏感端点另有 `@PreAuthorize` |
+
 ## 模块结构
 
 | 模块 | DDD 角色 | 核心定位 |
