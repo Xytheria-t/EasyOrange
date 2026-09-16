@@ -270,7 +270,7 @@ public class MessageUserInfoAdapter implements UserInfoPort {
 |------|-----------|---------|------|
 | message → user | 批量查用户名/头像 | `MessageUserInfoAdapter`（`UserInfoPort` 唯一实现；2026-08-12 起 order 侧单查已下线） | ✅ 已隔离 |
 | product → user | 查资产方信息 | `SellerInfoAdapter`（实现 `SellerInfoPort`） | ✅ 已隔离 |
-| order → product | 查商品 / 扣减恢复库存 | `ProductQueryAdapter` / `ProductInventoryAdapter` | ✅ 已隔离 |
+| order → product | 扣减 / 恢复库存 / 标记售出 | `ProductInventoryAdapter`（`ProductInventoryPort`，订单展示读自持留痕快照不回查商品） | ✅ 已隔离 |
 | order → payment | 发起支付 | `OrderPaymentGatewayAdapter`（实现 `PaymentGatewayPort`） | ✅ 已隔离 |
 | favorite → product | 查询商品信息 | `FavoriteProductInfoAdapter`（实现 `ProductInfoPort`） | ✅ 已隔离（`<optional>true</optional>`） |
 | admin → product/order/user | 聚合查询 | `AdminProductAdapter` 等（`AdminProductPort` 等 8 个 ACL 端口） | ✅ 已隔离 |

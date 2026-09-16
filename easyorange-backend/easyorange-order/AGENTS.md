@@ -85,8 +85,7 @@ order/
 │   │   └── OrderRefundedEvent.java
 │   ├── port/                              # 出站端口
 │   │   ├── OrderCachePort.java             # 缓存端口
-│   │   ├── ProductInventoryPort.java       # 订单生命周期产品操作端口
-│   │   ├── ProductQueryPort.java           # 商品查询端口
+│   │   ├── ProductInventoryPort.java       # 订单生命周期产品操作端口（下单校验/扣减/恢复）
 │   │   ├── PaymentGatewayPort.java         # 支付网关端口
 │   │   ├── UserInfoPort.java              # 用户信息端口
 │   │   └── OrderQueryCondition.java        # record 查询条件（status 为 OrderStatus 枚举）
@@ -101,7 +100,7 @@ order/
 │       └── OrderDomainException.java        # 唯一领域异常：of(...) / notFound(id) / upstream(msg, cause)
 ```
 
-> **跨模块适配器位置**：order 模块定义的 `ProductInventoryPort` / `ProductQueryPort` / `PaymentGatewayPort` / `UserInfoPort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/ProductInventoryAdapter`、`product/ProductQueryAdapter`、`payment/OrderPaymentGatewayAdapter`、`user/OrderUserInfoAdapter`。`OrderCachePort` 的实现 `RedisOrderCacheAdapter` 位于 order 模块自身 `adapter/outbound/cache/`，因其仅操作订单域缓存。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
+> **跨模块适配器位置**：order 模块定义的 `ProductInventoryPort` / `PaymentGatewayPort` / `UserInfoPort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/ProductInventoryAdapter`、`payment/OrderPaymentGatewayAdapter`、`user/OrderUserInfoAdapter`。`OrderCachePort` 的实现 `RedisOrderCacheAdapter` 位于 order 模块自身 `adapter/outbound/cache/`，因其仅操作订单域缓存。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
 
 > **Money 值对象**：`Money` 不在 order 模块，位于 `easyorange-common`。order 模块通过 `Money` 使用金额，但不重复定义。
 > **ProductId 值对象**：`ProductId` 同样位于 `easyorange-common`（`common/domain/ProductId.java`，与 `Money` 同模式，带 `@JsonValue`/`@JsonCreator`），order 与 product 模块共享同一实现，不各自重复定义（2026-08-08 收敛）。
@@ -131,6 +130,8 @@ OrderCommandHandler.createOrder(CreateOrderCommand) ─ @Transactional(rollbackF
 
 **Query 侧**: `OrderQueryController` → `OrderQueryHandler` → `OrderQueryRepository` → `OrderReadModel`
 
+> 订单项展示走**自持留痕快照**：`eo_order_item.product_snapshot` 由 `OrderDataMapper` 解析成 `OrderItemSnapshot`，读侧不再跨模块查商品——资产改名、改价或删除都不改变已下订单的展示。
+
 ## 对象映射策略
 
 模块内有两层映射（与 User 模块一致），职责分离：
@@ -149,7 +150,6 @@ OrderCommandHandler.createOrder(CreateOrderCommand) ─ @Transactional(rollbackF
 | 端口 | 适配器 | 目标模块 |
 |------|--------|---------|
 | `ProductInventoryPort` | `ProductInventoryAdapter` | product |
-| `ProductQueryPort` | `ProductQueryAdapter` | product |
 | `PaymentGatewayPort` | `OrderPaymentGatewayAdapter` | payment |
 | `OrderCachePort` | `RedisOrderCacheAdapter` | Redis |
 
