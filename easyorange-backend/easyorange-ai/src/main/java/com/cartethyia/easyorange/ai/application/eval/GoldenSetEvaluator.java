@@ -65,7 +65,10 @@ public class GoldenSetEvaluator {
                 ? 0
                 : scores.stream().mapToInt(CaseScore::score).average().orElse(0);
         log.info(
-                "Golden set generation eval: judged {}/{} cases, avg score = {:.2f}", scores.size(), cases.size(), avg);
+                "Golden set generation eval: judged {}/{} cases, avg score = {}",
+                scores.size(),
+                cases.size(),
+                "%.2f".formatted(avg));
         return new GenerationReport(cases.size(), scores.size(), avg);
     }
 
@@ -92,8 +95,11 @@ public class GoldenSetEvaluator {
         double hitRate = cases.isEmpty() ? 0 : hits * 1.0 / cases.size();
         double mrr = cases.isEmpty() ? 0 : mrrSum / cases.size();
         log.info(
-                "Golden set retrieval eval: hit {}/{} cases, hit@5 = {:.2%}, MRR = {:.4f}",
-                hits, cases.size(), hitRate, mrr);
+                "Golden set retrieval eval: hit {}/{} cases, hit@5 = {}, MRR = {}",
+                hits,
+                cases.size(),
+                "%.2f%%".formatted(hitRate * 100),
+                "%.4f".formatted(mrr));
         return new RetrievalReport(cases.size(), hits, hitRate, mrr);
     }
 
