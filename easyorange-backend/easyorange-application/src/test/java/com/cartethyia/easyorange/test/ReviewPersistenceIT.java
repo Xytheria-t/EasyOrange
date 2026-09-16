@@ -24,7 +24,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 /**
  * 评价写路径落库集成测试 —— 兜住全 Mockito 单测覆盖不到的链路：
  * {@code eo_product_review.order_id} 为 NOT NULL 且有 {@code (user_id, order_id)} 唯一键，
- * 因此评价必须绑定真实成交订单（应用层经 ACL 端口按「买家 + 资产」反查订单号），
+ * 因此评价必须绑定真实成交订单（应用层经 ACL 端口按「买家 + 资产」反查订单 ID），
  * 且主键由应用层在持久化前生成（{@code IdType.INPUT} 不回填）。
  */
 @DisplayName("评价写路径落库集成测试（真实 MySQL）")
