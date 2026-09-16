@@ -10,8 +10,11 @@ import com.cartethyia.easyorange.product.application.query.ProductRatingQueryHan
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
 import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import javax.sql.DataSource;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,9 +44,22 @@ class ReviewPersistenceIT extends AbstractIntegrationTest {
 
     private JdbcTemplate jdbc;
 
+    private final List<OrderFixture> createdFixtures = new ArrayList<>();
+
     @BeforeEach
     void setUpJdbc() {
         jdbc = new JdbcTemplate(dataSource);
+    }
+
+    /** 本 IT 直连 JDBC 造单，必须自行清理：否则测试数据会常驻 dev 库（评价 + 订单项 + 订单）。 */
+    @AfterEach
+    void cleanup() {
+        for (OrderFixture fixture : createdFixtures) {
+            jdbc.update("DELETE FROM eo_product_review WHERE order_id = ?", fixture.orderId());
+            jdbc.update("DELETE FROM eo_order_item WHERE order_id = ?", fixture.orderId());
+            jdbc.update("DELETE FROM eo_order WHERE id = ?", fixture.orderId());
+        }
+        createdFixtures.clear();
     }
 
     @Test
@@ -129,7 +145,9 @@ class ReviewPersistenceIT extends AbstractIntegrationTest {
                 "{\"productId\":\"" + productId + "\",\"name\":\"IT 商品\",\"image\":\"\",\"price\":9.90}",
                 price,
                 price);
-        return new OrderFixture(orderId, productId, buyerId);
+        OrderFixture fixture = new OrderFixture(orderId, productId, buyerId);
+        createdFixtures.add(fixture);
+        return fixture;
     }
 
     private record OrderFixture(String orderId, String productId, String buyerId) {}
