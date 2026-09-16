@@ -39,8 +39,6 @@ class OrderReadModelAssemblerTest {
     private static final LocalDateTime UPDATE_TIME = LocalDateTime.of(2026, 5, 1, 12, 0);
 
     private static final String PRODUCT_TITLE = "测试商品";
-    private static final BigDecimal PRODUCT_PRICE = new BigDecimal("99.99");
-    private static final String PRODUCT_STATUS = "1";
     private static final List<String> PRODUCT_IMAGES = List.of("http://example.com/img1.jpg");
 
     private static List<OrderItemReadModel> testItems() {
@@ -70,7 +68,7 @@ class OrderReadModelAssemblerTest {
     }
 
     private ProductDetail createProductDetail() {
-        return new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, PRODUCT_IMAGES, null, null);
+        return new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_IMAGES);
     }
 
     private static Map<String, String> usernames() {
@@ -149,8 +147,7 @@ class OrderReadModelAssemblerTest {
         @DisplayName("商品无图片时应仅设置标题不设图片")
         void toOrderVO_withProductNoImages_shouldSetTitleOnly() {
             OrderReadModel order = createOrder();
-            ProductDetail product =
-                    new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, List.of(), null, null);
+            ProductDetail product = new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, List.of());
             Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, product);
 
             OrderVO vo = assembler.toOrderVO(order, productMap, usernames(), true);
@@ -223,8 +220,7 @@ class OrderReadModelAssemblerTest {
                     LocalDateTime.now());
 
             ProductDetail product1 = createProductDetail();
-            ProductDetail product2 =
-                    new ProductDetail("201", "商品2", new BigDecimal("49.99"), "1", List.of("img2.jpg"), null, null);
+            ProductDetail product2 = new ProductDetail("201", "商品2", List.of("img2.jpg"));
             Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, product1, "201", product2);
 
             List<OrderVO> vos = assembler.toOrderVOs(List.of(order1, order2), productMap, usernames());
@@ -255,8 +251,8 @@ class OrderReadModelAssemblerTest {
         @Test
         @DisplayName("应正确构建商品映射")
         void buildProductMap_shouldMapById() {
-            ProductDetail p1 = new ProductDetail("1", "商品1", BigDecimal.TEN, "1", List.of(), null, null);
-            ProductDetail p2 = new ProductDetail("2", "商品2", BigDecimal.valueOf(20), "1", List.of(), null, null);
+            ProductDetail p1 = new ProductDetail("1", "商品1", List.of());
+            ProductDetail p2 = new ProductDetail("2", "商品2", List.of());
 
             Map<String, ProductDetail> map = assembler.buildProductMap(List.of(p1, p2));
 

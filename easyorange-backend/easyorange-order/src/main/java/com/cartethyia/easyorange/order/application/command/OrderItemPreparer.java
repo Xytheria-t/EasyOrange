@@ -6,10 +6,8 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
-import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
-import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
-import com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderItemSnapshot;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +27,6 @@ import org.springframework.stereotype.Component;
 public class OrderItemPreparer {
 
     private final ProductInventoryPort productInventoryPort;
-    private final ProductQueryPort productQueryPort;
     private final IdGenerator idGenerator;
 
     /**
@@ -37,18 +34,13 @@ public class OrderItemPreparer {
      *
      * @param items 订单项请求列表
      * @return 准备结果
-     * @throws OrderDomainException 如果资产不存在、已下架、库存不足或详情缺失
+     * @throws OrderDomainException 如果资产不存在、已下架或库存不足
      */
     public PreparationResult prepareOrderItems(List<CreateOrderCommand.CreateOrderItem> items) {
-        // 批量获取快照并校验，返回已确认存在的快照集与资产方 ID
+        // 一次批量读齐资产快照（实时状态 + 展示信息）并校验，构建只消费校验后的快照
         ValidatedSnapshots validated = loadAndValidateSnapshots(items);
 
-        // 批量获取资产详情并构建订单项（构建只消费校验后的快照，消除隐式非空契约）
-        Map<String, ProductDetail> productDetailMap =
-                fetchByIds(items, productQueryPort::getProductsByIds, ProductDetail::id);
-        List<OrderItem> orderItems = buildOrderItems(items, validated.snapshots(), productDetailMap);
-
-        return new PreparationResult(validated.sellerId(), orderItems);
+        return new PreparationResult(validated.sellerId(), buildOrderItems(items, validated.snapshots()));
     }
 
     /**
@@ -56,8 +48,15 @@ public class OrderItemPreparer {
      * 买家不可认领自己的资产由 {@code Order.createOrder} 的领域不变量统一把关。
      */
     private ValidatedSnapshots loadAndValidateSnapshots(List<CreateOrderCommand.CreateOrderItem> items) {
+        // 按 id 去重后一次批量读齐（去重避免同一资产出现两次时 toMap 重复键冲突）
+        List<String> productIds = items.stream()
+                .map(CreateOrderCommand.CreateOrderItem::productId)
+                .distinct()
+                .toList();
         Map<String, ProductInventoryPort.ProductSnapshot> snapshotMap =
-                fetchByIds(items, productInventoryPort::getSnapshots, ProductInventoryPort.ProductSnapshot::productId);
+                productInventoryPort.getSnapshots(productIds).stream()
+                        .collect(
+                                Collectors.toMap(ProductInventoryPort.ProductSnapshot::productId, Function.identity()));
 
         String sellerId = null;
         for (CreateOrderCommand.CreateOrderItem item : items) {
@@ -78,77 +77,49 @@ public class OrderItemPreparer {
     }
 
     /**
-     * 批量按 id 去重拉取并组装为 map（去重避免 toMap 重复键冲突）
-     */
-    private <T> Map<String, T> fetchByIds(
-            List<CreateOrderCommand.CreateOrderItem> items,
-            Function<List<String>, List<T>> fetcher,
-            Function<T, String> idExtractor) {
-        List<String> productIds = items.stream()
-                .map(CreateOrderCommand.CreateOrderItem::productId)
-                .distinct()
-                .toList();
-        return fetcher.apply(productIds).stream().collect(Collectors.toMap(idExtractor, Function.identity()));
-    }
-
-    /**
      * 构建订单项
      */
     private List<OrderItem> buildOrderItems(
             List<CreateOrderCommand.CreateOrderItem> items,
-            Map<String, ProductInventoryPort.ProductSnapshot> snapshotMap,
-            Map<String, ProductDetail> productDetailMap) {
+            Map<String, ProductInventoryPort.ProductSnapshot> snapshotMap) {
         return items.stream()
-                .map(item -> buildOrderItem(item, snapshotMap.get(item.productId()), productDetailMap))
+                .map(item -> buildOrderItem(item, snapshotMap.get(item.productId())))
                 .toList();
     }
 
     /**
-     * 构建单个订单项
+     * 构建单个订单项 — 下单价格以库存快照为准（锁内读到的那次），并把展示信息固化为订单留痕。
      */
     private OrderItem buildOrderItem(
-            CreateOrderCommand.CreateOrderItem item,
-            ProductInventoryPort.ProductSnapshot snapshot,
-            Map<String, ProductDetail> productDetailMap) {
+            CreateOrderCommand.CreateOrderItem item, ProductInventoryPort.ProductSnapshot snapshot) {
         Money unitPrice = Money.of(snapshot.price());
-        Money subtotal = unitPrice.multiply(item.quantity());
-        String productId = snapshot.productId();
 
         return OrderItem.builder()
                 .id(idGenerator.generateId())
-                .productId(ProductId.of(productId))
-                .snapshot(buildProductSnapshot(productId, productDetailMap.get(productId), unitPrice))
+                .productId(ProductId.of(snapshot.productId()))
+                .snapshot(toOrderItemSnapshot(snapshot, unitPrice))
                 .unitPrice(unitPrice)
                 .quantity(item.quantity())
-                .subtotal(subtotal)
+                .subtotal(unitPrice.multiply(item.quantity()))
                 .build();
     }
 
     /**
-     * 构建商品快照（含从商品详情回填的标题/图片/描述/成色）
+     * 构建商品快照（订单留痕：下单时的价格与展示信息，之后资产改名改价也不影响已下的订单）
      */
-    private static ProductSnapshot buildProductSnapshot(String productId, ProductDetail detail, Money price) {
-        if (detail == null) {
-            // 快照与详情来自不同读源（ProductInventoryPort / ProductQueryPort），详情缺失说明跨端口数据不一致。
-            // 空值回退会把脏快照写进订单，这里抛错随事务整体回滚，交由客户端重试。
-            throw OrderDomainException.of("资产详情缺失: " + productId);
-        }
-        return ProductSnapshot.builder()
-                .productId(productId)
-                .name(nullToEmpty(detail.title()))
-                .image(firstImage(detail.images()))
-                .description(nullToEmpty(detail.description()))
+    private static OrderItemSnapshot toOrderItemSnapshot(ProductInventoryPort.ProductSnapshot source, Money price) {
+        return OrderItemSnapshot.builder()
+                .productId(source.productId())
+                .name(nullToEmpty(source.title()))
+                .image(nullToEmpty(source.image()))
+                .description(nullToEmpty(source.description()))
                 .price(price)
-                .conditionLevel(nullToEmpty(detail.conditionLevel()))
+                .conditionLevel(nullToEmpty(source.conditionLevel()))
                 .build();
     }
 
     private static String nullToEmpty(String value) {
         return value == null ? "" : value;
-    }
-
-    private static String firstImage(List<String> images) {
-        return images == null || images.isEmpty() ? "" : images.getFirst();
     }
 
     /**

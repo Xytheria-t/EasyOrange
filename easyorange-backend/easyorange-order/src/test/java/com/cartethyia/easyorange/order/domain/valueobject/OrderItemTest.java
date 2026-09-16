@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 @DisplayName("OrderItem 值对象测试")
 class OrderItemTest {
 
-    private static ProductSnapshot snapshot(String name, String price) {
-        return new ProductSnapshot("100", name, "img.jpg", "手机", Money.of(new BigDecimal(price)), "9成新");
+    private static OrderItemSnapshot snapshot(String name, String price) {
+        return new OrderItemSnapshot("100", name, "img.jpg", "手机", Money.of(new BigDecimal(price)), "9成新");
     }
 
     @Test

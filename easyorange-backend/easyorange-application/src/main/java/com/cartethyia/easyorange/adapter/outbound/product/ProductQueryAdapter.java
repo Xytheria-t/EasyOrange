@@ -25,13 +25,6 @@ public class ProductQueryAdapter implements ProductQueryPort {
     }
 
     private ProductDetail toDetail(ProductVO p) {
-        return new ProductDetail(
-                p.getId(),
-                p.getTitle(),
-                p.getPrice(),
-                p.getStatus(),
-                p.getImages(),
-                p.getDescription(),
-                p.getConditionDesc());
+        return new ProductDetail(p.getId(), p.getTitle(), p.getImages());
     }
 }

@@ -20,7 +20,20 @@ public interface ProductInventoryPort {
 
     void markAsSold(String productId);
 
-    record ProductSnapshot(String productId, String sellerId, BigDecimal price, boolean isOnline, int stockQuantity) {
+    /**
+     * 资产快照 — 实时状态（价格/在架/库存，下单校验与定价以此为准）+ 展示信息（标题/主图/描述/成色）。
+     * 展示信息随同一次读返回，调用方无需再查第二个端口。
+     */
+    record ProductSnapshot(
+            String productId,
+            String sellerId,
+            BigDecimal price,
+            boolean isOnline,
+            int stockQuantity,
+            String title,
+            String image,
+            String description,
+            String conditionLevel) {
         public boolean hasStock() {
             return stockQuantity > 0;
         }

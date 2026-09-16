@@ -216,6 +216,6 @@ class OrderQueryHandlerTest {
     }
 
     private static ProductDetail testProductDetail() {
-        return new ProductDetail("300", "测试商品", new BigDecimal("99.99"), "1", List.of("http://img.jpg"), null, null);
+        return new ProductDetail("300", "测试商品", List.of("http://img.jpg"));
     }
 }

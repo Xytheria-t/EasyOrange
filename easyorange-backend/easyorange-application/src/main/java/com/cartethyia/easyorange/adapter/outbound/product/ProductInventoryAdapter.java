@@ -33,7 +33,11 @@ public class ProductInventoryAdapter implements ProductInventoryPort {
                 snapshot.sellerId().value(),
                 snapshot.price().value(),
                 snapshot.status() == ProductStatus.ONLINE,
-                snapshot.stock().value());
+                snapshot.stock().value(),
+                snapshot.title(),
+                snapshot.image(),
+                snapshot.description(),
+                snapshot.conditionLevel());
     }
 
     @Override
