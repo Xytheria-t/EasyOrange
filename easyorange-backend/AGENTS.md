@@ -27,10 +27,12 @@ Spring Boot 4 + Java 25 后端，采用 DDD + 六边形架构（精确版本以�
 | 应用服务（非 CQRS） | `*AppService` | `AuthAppService`, `ProfileAppService` |
 | CQRS 命令处理器 | `*CommandHandler` | `OrderCommandHandler`, `ProductCommandHandler` |
 | CQRS 查询处理器 | `*QueryHandler` | `OrderQueryHandler`, `ProductQueryHandler` |
+| 命令入口方法 | 用例动词短语（一命令一方法，不用重载/统一 `handle` 区分） | `createOrder`, `payOrder`, `refundOrder` |
 | 写仓储接口 | `*Repository`（`domain/repository/`） | `UserRepository` |
 | 读仓储接口 | `*QueryRepository`（`application/port/query/`，读模型是 application 层概念） | `ProductQueryRepository` |
 | 仓储实现 | `*RepositoryImpl` (继承 `BaseRepository`) | `UserRepositoryImpl extends BaseRepository<UserMapper, UserDO>` |
 | 出站端口 | `*Port`（`domain/port/`，跨模块/技术端口） | `PaymentGatewayPort` |
+| 无状态协作者组件 | 施事名词（`*er` / `*or`），不用「过程名词」 | `OrderItemPreparer`, `OrderCacheEvictor` |
 | 控制器 | `*Controller` | `AuthController` |
 | 请求 DTO | `*Request` | `PasswordLoginRequest`, `RegisterRequest` |
 | 响应 DTO | `*Response` / `*VO` | `UserResponse`, `OrderVO` |

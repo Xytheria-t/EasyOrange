@@ -39,7 +39,7 @@ order/
 ├── application/
 │   ├── command/                             # 命令（CQRS Write，全部命令由 Handler 收口）
 │   │   ├── OrderCommandHandler.java         # 订单命令唯一执行器（创建/支付/取消/发货/确认收货/退款）
-│   │   ├── OrderPreparation.java            # 创建流水线的订单项准备组件（校验/构建）
+│   │   ├── OrderItemPreparer.java            # 创建流水线的订单项准备组件（校验/构建）
 │   │   ├── CreateOrderCommand.java / CreateOrderResult.java
 │   │   ├── PayOrderCommand.java
 │   │   ├── CancelOrderCommand.java
@@ -112,9 +112,9 @@ order/
 
 **执行流程**：
 ```
-OrderCommandHandler.handle(CreateOrderCommand) ─ @Transactional(rollbackFor=Exception.class) ─
+OrderCommandHandler.createOrder(CreateOrderCommand) ─ @Transactional(rollbackFor=Exception.class) ─
   1. DistributedLockPort 获取商品锁（key=eo:order:lock:product:{productId}，按 productId 排序避免死锁）
-  2. OrderPreparation 准备商品数据（校验在线、库存、非自购）
+  2. OrderItemPreparer 准备商品数据（校验在线、库存、非自购）
   3. Order.createOrder 创建订单 + 发布事件（Outbox 同事务原子）
   4. ProductInventoryPort.decreaseStock() 同步扣库存（同事务）
   5. PaymentGatewayPort 创建支付记录（同事务）
@@ -123,7 +123,7 @@ OrderCommandHandler.handle(CreateOrderCommand) ─ @Transactional(rollbackFor=Ex
 
 **库存恢复**：仅由 `OrderLifecycleEventConsumer` 消费订单取消/退款事件时调用 `ProductInventoryPort.restoreStock(orderId, productId, quantity)` 恢复，数量取自事件明细（`OrderItemRef`，与下单扣减对称）；完成事件触发 `markAsSold`。重复投递由 product 侧库存流水的唯一键兜底，消费者只负责把数量和订单号如实传下去。
 
-**支付桥接（订单 PAID 唯一来源）**：`PUT /api/orders/{id}/pay` 校验买家身份与 `canPay()` 后经 `PaymentGatewayPort.pay` 委托支付模块发起两阶段支付，**不再直接置 PAID**。支付成功由 payment 模块发布 `PaymentSucceededEvent`（routing key `payment.succeeded`，队列 `eo.order.payment`，事件含 orderId），`PaymentSucceededEventConsumer` 消费后调 `OrderCommandHandler.handlePaymentSucceeded` 经 `PAY` 守卫置 `PAID` 并发布 `OrderPaidEvent`。消费按 eventId 幂等（`EventConsumerHandler`）；订单已支付时跳过；订单已取消时触发自动退款（`refundPayment`，订单保持取消态不流转）；其余非法状态抛错经重试进 DLQ/terminal 人工介入。
+**支付桥接（订单 PAID 唯一来源）**：`PUT /api/orders/{id}/pay` 校验买家身份与 `canPay()` 后经 `PaymentGatewayPort.pay` 委托支付模块发起两阶段支付，**不再直接置 PAID**。支付成功由 payment 模块发布 `PaymentSucceededEvent`（routing key `payment.succeeded`，队列 `eo.order.payment`，事件含 orderId），`PaymentSucceededEventConsumer` 消费后调 `OrderCommandHandler.onPaymentSucceeded` 经 `PAY` 守卫置 `PAID` 并发布 `OrderPaidEvent`。消费按 eventId 幂等（`EventConsumerHandler`）；订单已支付时跳过；订单已取消时触发自动退款（`refundPayment`，订单保持取消态不流转）；其余非法状态抛错经重试进 DLQ/terminal 人工介入。
 
 ## CQRS 架构
 
@@ -188,7 +188,7 @@ PENDING_PAYMENT ──PAY──→ PAID ──SHIP──→ SHIPPED ──CONFIR
 2. `Order` 添加转换方法，内部委托 `transitionTo(新动作, reason)` 并构造对应领域事件（返回 `Transition<Order, XxxEvent>`）
 3. 添加对应领域事件
 4. `OrderCommandHandler` 添加命令处理（命令为 record）
-5. 如涉及下单链路，检查 `OrderCommandHandler.handle(CreateOrderCommand)` 执行顺序与事务回滚语义（单事务内，无需补偿）
+5. 如涉及下单链路，检查 `OrderCommandHandler.createOrder(CreateOrderCommand)` 执行顺序与事务回滚语义（单事务内，无需补偿）
 6. Flyway 迁移：`status` 列 CHECK 约束追加新 code
 7. 在 `OrderActionTest` 中补充前置状态/目标状态断言，`OrderTest` 补充转换用例
 
