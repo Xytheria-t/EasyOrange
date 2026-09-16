@@ -8,7 +8,7 @@ import java.math.BigDecimal;
  * <p>
  * 与 {@link PayCommand}（「准备 → 网关 → 确认」两阶段，由我方调用网关扣款）不同，
  * 回调到来时扣款已在渠道侧完成，系统直接以回调携带的 transactionId 确认支付成功，
- * 不再二次调用网关（见 {@code PaymentCommandHandler#handle(PaymentCallbackCommand)}）。
+ * 不再二次调用网关（见 {@code PaymentCommandHandler#processCallback(PaymentCallbackCommand)}）。
  *
  * @param paymentNo     支付单号
  * @param transactionId 渠道交易流水号

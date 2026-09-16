@@ -52,7 +52,7 @@ public class PaymentCommandHandler {
     private final PaymentPhaseExecutor phaseExecutor;
 
     @Transactional(rollbackFor = Exception.class)
-    public String handle(String userId, CreatePaymentCommand command) {
+    public String createPayment(String userId, CreatePaymentCommand command) {
         String paymentId = idGenerator.generateId();
         var spec = new PaymentCreateSpec(
                 paymentId,
@@ -76,7 +76,7 @@ public class PaymentCommandHandler {
      * 外部网关调用无法纳入同一事务，因此用「准备 → 网关 → 确认」顺序两阶段，
      * 网关失败时回退状态，无需跨服务编排。
      */
-    public void handle(PayCommand command) {
+    public void pay(PayCommand command) {
         String lockKey = PAY_LOCK_PREFIX + command.paymentNo();
 
         executeWithLock(lockKey, () -> {
@@ -93,11 +93,11 @@ public class PaymentCommandHandler {
     /**
      * 支付回调确认：扣款已在渠道侧完成，直接以回调携带的 transactionId 确认成功。
      * <p>
-     * 与 {@link #handle(PayCommand)} 不同——不调用支付网关（回调本身就是网关的结果通知），
+     * 与 {@link #pay(PayCommand)} 不同——不调用支付网关（回调本身就是网关的结果通知），
      * 仅「准备 → 确认」两步；回调金额非空时先校验与支付单一致（防止金额被篡改，
      * HMAC 签名只覆盖 paymentNo|transactionId）。
      */
-    public void handle(PaymentCallbackCommand command) {
+    public void processCallback(PaymentCallbackCommand command) {
         String lockKey = PAY_LOCK_PREFIX + command.paymentNo();
 
         executeWithLock(lockKey, () -> {
@@ -112,7 +112,7 @@ public class PaymentCommandHandler {
      * <p>
      * 操作者必须与支付单所属用户一致（越权防护，见 {@link #assertOwnership}）。
      */
-    public void handle(RefundPaymentCommand command) {
+    public void refundPayment(RefundPaymentCommand command) {
         String lockKey = REFUND_LOCK_PREFIX + command.paymentId();
 
         executeWithLock(lockKey, () -> {
@@ -134,7 +134,7 @@ public class PaymentCommandHandler {
      * 关闭支付。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void handle(ClosePaymentCommand command) {
+    public void closePayment(ClosePaymentCommand command) {
         Payment aggregate = assertOwnership(command.paymentId(), command.userId());
 
         var result = aggregate.close();
@@ -148,12 +148,12 @@ public class PaymentCommandHandler {
      * 按订单号发起支付 — 订单模块的 {@code PaymentGatewayPort.pay(orderId)} 以订单号为键，
      * 而 {@link PayCommand} 以支付单号为键，解析步骤收口在此，调用方不必接触支付仓储。
      * <p>
-     * 不持有事务：委托 {@link #handle(PayCommand)} 走两阶段，事务边界在 {@link PaymentPhaseExecutor}。
+     * 不持有事务：委托 {@link #pay(PayCommand)} 走两阶段，事务边界在 {@link PaymentPhaseExecutor}。
      *
      * @throws PaymentDomainException 支付单不存在（B4001）
      */
     public void payByOrderId(String orderId) {
-        handle(new PayCommand(resolveByOrderId(orderId).paymentNo(), null, null));
+        pay(new PayCommand(resolveByOrderId(orderId).paymentNo(), null, null));
     }
 
     /**
@@ -163,7 +163,7 @@ public class PaymentCommandHandler {
      */
     public void refundByOrderId(String orderId, String reason) {
         Payment payment = resolveByOrderId(orderId);
-        handle(new RefundPaymentCommand(payment.id(), payment.userId(), payment.amount(), reason));
+        refundPayment(new RefundPaymentCommand(payment.id(), payment.userId(), payment.amount(), reason));
     }
 
     /**

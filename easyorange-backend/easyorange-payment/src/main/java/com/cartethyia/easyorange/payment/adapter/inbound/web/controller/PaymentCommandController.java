@@ -27,7 +27,8 @@ public class PaymentCommandController {
     @PostMapping
     public Result<PaymentResponse> createPayment(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody CreatePaymentRequest request) {
-        String paymentId = commandHandler.handle(user.userId(), PaymentCommandMapper.toCreateCommand(request, null));
+        String paymentId =
+                commandHandler.createPayment(user.userId(), PaymentCommandMapper.toCreateCommand(request, null));
         PaymentResponse response = PaymentResponse.builder().id(paymentId).build();
         return Result.success(response);
     }
@@ -35,7 +36,7 @@ public class PaymentCommandController {
     @PostMapping("/callback")
     public Result<Void> paymentCallback(@Valid @RequestBody PaymentCallback callback) {
         signatureVerifier.verify(callback.getPaymentNo(), callback.getTransactionId(), callback.getSign());
-        commandHandler.handle(PaymentCommandMapper.toCallbackCommand(callback));
+        commandHandler.processCallback(PaymentCommandMapper.toCallbackCommand(callback));
         return Result.success();
     }
 
@@ -44,13 +45,13 @@ public class PaymentCommandController {
             @AuthenticationPrincipal AuthUser user,
             @PathVariable String id,
             @Valid @RequestBody RefundRequest request) {
-        commandHandler.handle(PaymentCommandMapper.toRefundCommand(id, user.userId(), request));
+        commandHandler.refundPayment(PaymentCommandMapper.toRefundCommand(id, user.userId(), request));
         return Result.success();
     }
 
     @PostMapping("/{id}/close")
     public Result<Void> close(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
-        commandHandler.handle(PaymentCommandMapper.toCloseCommand(id, user.userId()));
+        commandHandler.closePayment(PaymentCommandMapper.toCloseCommand(id, user.userId()));
         return Result.success();
     }
 }

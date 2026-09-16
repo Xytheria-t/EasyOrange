@@ -43,7 +43,7 @@ class OrderPaymentGatewayAdapterTest {
     @Test
     @DisplayName("创建支付 - 订单侧请求翻译为支付命令并按买家身份提交")
     void createPayment_translatesRequestToCommand() {
-        when(paymentCommandHandler.handle(eq("3001"), any(CreatePaymentCommand.class)))
+        when(paymentCommandHandler.createPayment(eq("3001"), any(CreatePaymentCommand.class)))
                 .thenReturn("1001");
 
         String paymentId = adapter.createPayment(
@@ -51,7 +51,7 @@ class OrderPaymentGatewayAdapterTest {
 
         assertThat(paymentId).isEqualTo("1001");
         verify(paymentCommandHandler)
-                .handle(
+                .createPayment(
                         eq("3001"),
                         argThat((CreatePaymentCommand cmd) -> cmd.orderId().equals("2001")
                                 && cmd.amount().compareTo(new BigDecimal("100.00")) == 0

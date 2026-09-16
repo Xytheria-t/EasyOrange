@@ -23,7 +23,7 @@ public class FavoritePriceDropNotificationAdapter implements PriceDropNotificati
             String userId, String productId, String productName, BigDecimal oldPrice, BigDecimal newPrice) {
         String content = "你收藏的《%s》降价了：¥%s → ¥%s（省 ¥%s）"
                 .formatted(productName, plain(oldPrice), plain(newPrice), plain(oldPrice.subtract(newPrice)));
-        messageCommandHandler.handle(new SendSystemMessageCommand(userId, "收藏降价提醒", content, productId));
+        messageCommandHandler.sendSystemMessage(new SendSystemMessageCommand(userId, "收藏降价提醒", content, productId));
     }
 
     private static String plain(BigDecimal value) {

@@ -37,7 +37,7 @@ public class ReportProcessedEventConsumer {
         handler.handle(event, message, () -> {
             var title = event.approved() ? "举报处理结果：已受理" : "举报处理结果：已驳回";
             var content = buildContent(event);
-            messageCommandHandler.handle(
+            messageCommandHandler.sendSystemMessage(
                     new SendSystemMessageCommand(event.reporterId(), title, content, event.productId()));
         });
     }

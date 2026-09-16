@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.payment.application.command.PaymentPhaseExecuto
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 故以反射校验结构不变量：
  * <ol>
  *   <li>全部 phase 方法声明在独立 Bean {@link PaymentPhaseExecutor} 且标注 {@link Transactional}；</li>
- *   <li>编排方法 {@code handle(PayCommand)} / {@code handle(RefundPaymentCommand)} 与订单侧入口
+ *   <li>编排方法 {@code pay(PayCommand)} / {@code refundPayment(RefundPaymentCommand)} /
+ *       {@code processCallback(PaymentCallbackCommand)} 与订单侧入口
  *       {@code payByOrderId} / {@code refundByOrderId} 不得持有事务（事务不得跨网关调用，见 ADR-0007）。</li>
  * </ol>
  */
@@ -38,8 +40,11 @@ class PaymentTransactionBoundaryTest {
             "confirmRefundPhase2",
             "rollbackRefundStatus");
 
-    private static final Set<String> ORCHESTRATION_COMMANDS = Set.of(
-            PayCommand.class.getName(), RefundPaymentCommand.class.getName(), PaymentCallbackCommand.class.getName());
+    /** 编排方法名 → 首参命令类型；改名或改签名都会让下方事务扫描漏检，故由存在性断言兜住。 */
+    private static final Map<String, String> ORCHESTRATION_METHODS = Map.of(
+            "pay", PayCommand.class.getName(),
+            "refundPayment", RefundPaymentCommand.class.getName(),
+            "processCallback", PaymentCallbackCommand.class.getName());
 
     /** 订单侧入口（以 orderId 为键）— 同样编排两阶段，不得持有事务。 */
     private static final Set<String> ORDER_ID_ENTRY_POINTS = Set.of("payByOrderId", "refundByOrderId");
@@ -64,9 +69,10 @@ class PaymentTransactionBoundaryTest {
     @Test
     void orchestrationMethodsDoNotHoldTransactions() {
         for (Method method : PaymentCommandHandler.class.getDeclaredMethods()) {
-            boolean isOrchestration = (method.getName().equals("handle")
+            String expectedCommand = ORCHESTRATION_METHODS.get(method.getName());
+            boolean isOrchestration = (expectedCommand != null
                             && method.getParameterCount() == 1
-                            && ORCHESTRATION_COMMANDS.contains(method.getParameterTypes()[0].getName()))
+                            && method.getParameterTypes()[0].getName().equals(expectedCommand))
                     || ORDER_ID_ENTRY_POINTS.contains(method.getName());
             if (isOrchestration) {
                 assertThat(method.isAnnotationPresent(Transactional.class))
@@ -74,6 +80,20 @@ class PaymentTransactionBoundaryTest {
                         .isFalse();
             }
         }
+    }
+
+    /**
+     * 编排方法必须存在且首参命令类型未变 — 否则上面的扫描会因改名/改签名而静默失效，门禁形同虚设。
+     */
+    @Test
+    void orchestrationMethodsArePresentWithExpectedCommand() {
+        ORCHESTRATION_METHODS.forEach((name, commandType) -> {
+            Method method = handlerMethod(name);
+            assertThat(method).as("编排方法 %s 必须声明在 PaymentCommandHandler", name).isNotNull();
+            assertThat(method.getParameterTypes()[0].getName())
+                    .as("编排方法 %s 的首参必须是 %s", name, commandType)
+                    .isEqualTo(commandType);
+        });
     }
 
     /**

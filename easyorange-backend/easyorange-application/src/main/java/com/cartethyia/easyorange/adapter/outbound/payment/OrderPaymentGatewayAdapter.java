@@ -28,7 +28,7 @@ public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
                 request.paymentMethod(),
                 null, // payPassword
                 request.attach());
-        return paymentCommandHandler.handle(request.buyerId(), command);
+        return paymentCommandHandler.createPayment(request.buyerId(), command);
     }
 
     @Override

@@ -59,7 +59,7 @@ public class OrderNotificationEventConsumer {
                         template.title());
                 return;
             }
-            messageCommandHandler.handle(new SendSystemMessageCommand(
+            messageCommandHandler.sendSystemMessage(new SendSystemMessageCommand(
                     buyerId, template.title(), template.content(event.orderId()), event.orderId()));
         });
     }

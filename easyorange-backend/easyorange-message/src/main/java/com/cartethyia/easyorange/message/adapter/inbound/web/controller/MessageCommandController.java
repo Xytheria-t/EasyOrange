@@ -30,31 +30,31 @@ public class MessageCommandController {
     @PostMapping
     public Result<Void> sendMessage(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody SendMessageCommand command) {
-        commandHandler.handle(user.userId(), command);
+        commandHandler.sendMessage(user.userId(), command);
         return Result.success();
     }
 
     @PostMapping("/system")
     public Result<Void> sendSystemMessage(@RequestBody SendSystemMessageCommand command) {
-        commandHandler.handle(command);
+        commandHandler.sendSystemMessage(command);
         return Result.success();
     }
 
     @PutMapping("/{id}/read")
     public Result<Void> markAsRead(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
-        commandHandler.handle(user.userId(), new MarkAsReadCommand(id));
+        commandHandler.markAsRead(user.userId(), new MarkAsReadCommand(id));
         return Result.success();
     }
 
     @PutMapping("/read-all")
     public Result<Void> markAllAsRead(@AuthenticationPrincipal AuthUser user) {
-        commandHandler.handleMarkAllAsRead(user.userId());
+        commandHandler.markAllAsRead(user.userId());
         return Result.success();
     }
 
     @PutMapping("/read")
     public Result<Void> markAsReadBatch(@AuthenticationPrincipal AuthUser user, @RequestBody List<String> ids) {
-        commandHandler.handle(user.userId(), new MarkAsReadBatchCommand(ids));
+        commandHandler.markAsReadBatch(user.userId(), new MarkAsReadBatchCommand(ids));
         return Result.success();
     }
 
@@ -62,19 +62,19 @@ public class MessageCommandController {
     public Result<Void> markAsReadByType(@AuthenticationPrincipal AuthUser user, @PathVariable Integer type) {
         // 非法类型由 fromCode 抛 IllegalArgumentException → 全局异常处理器映射为 400
         MessageType.fromCode(String.valueOf(type));
-        commandHandler.handleMarkAsReadByType(user.userId(), type);
+        commandHandler.markAsReadByType(user.userId(), type);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
     public Result<Void> deleteMessage(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
-        commandHandler.handle(user.userId(), new DeleteMessageCommand(id));
+        commandHandler.deleteMessage(user.userId(), new DeleteMessageCommand(id));
         return Result.success();
     }
 
     @PutMapping("/{id}/recall")
     public Result<Void> recallMessage(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
-        commandHandler.handle(user.userId(), new RecallMessageCommand(id));
+        commandHandler.recallMessage(user.userId(), new RecallMessageCommand(id));
         return Result.success();
     }
 

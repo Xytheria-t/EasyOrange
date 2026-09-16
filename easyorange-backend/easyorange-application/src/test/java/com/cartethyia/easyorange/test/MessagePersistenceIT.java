@@ -41,7 +41,7 @@ class MessagePersistenceIT extends AbstractIntegrationTest {
     void systemMessage_persistedWithGeneratedId() {
         String receiverId = UUID.randomUUID().toString();
 
-        messageCommandHandler.handle(new SendSystemMessageCommand(receiverId, TITLE, "集成测试内容", null));
+        messageCommandHandler.sendSystemMessage(new SendSystemMessageCommand(receiverId, TITLE, "集成测试内容", null));
 
         var page = messageQueryRepository.findByReceiverId(new MessageQuery(1, 10, null, null), receiverId);
         assertThat(page.records()).as("系统消息必须落库").hasSize(1);

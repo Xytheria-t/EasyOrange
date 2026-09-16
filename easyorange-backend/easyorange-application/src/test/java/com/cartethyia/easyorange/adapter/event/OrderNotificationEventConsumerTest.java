@@ -72,7 +72,7 @@ class OrderNotificationEventConsumerTest {
         verify(idempotencyChecker).tryMark(eq(CONSUMER_ID + ":" + eventType), anyString());
 
         var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
-        verify(messageCommandHandler).handle(captor.capture());
+        verify(messageCommandHandler).sendSystemMessage(captor.capture());
         var command = captor.getValue();
         assertThat(command.receiverId()).isEqualTo(BUYER_ID);
         assertThat(command.title()).isEqualTo(title);
@@ -173,7 +173,7 @@ class OrderNotificationEventConsumerTest {
 
             consumer.onOrderEvent(new OrderPaidEvent("evt-8", ORDER_ID, null, "1"), buildMessage());
 
-            verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
+            verify(messageCommandHandler, never()).sendSystemMessage(any(SendSystemMessageCommand.class));
         }
 
         @Test
@@ -192,7 +192,7 @@ class OrderNotificationEventConsumerTest {
                             BigDecimal.valueOf(99.99)),
                     buildMessage());
 
-            verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
+            verify(messageCommandHandler, never()).sendSystemMessage(any(SendSystemMessageCommand.class));
         }
     }
 
@@ -208,7 +208,7 @@ class OrderNotificationEventConsumerTest {
             consumer.onOrderEvent(new OrderPaidEvent("evt-7", ORDER_ID, BUYER_ID, "1"), buildMessage());
 
             verify(idempotencyChecker).tryMark(anyString(), anyString());
-            verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
+            verify(messageCommandHandler, never()).sendSystemMessage(any(SendSystemMessageCommand.class));
         }
     }
 }

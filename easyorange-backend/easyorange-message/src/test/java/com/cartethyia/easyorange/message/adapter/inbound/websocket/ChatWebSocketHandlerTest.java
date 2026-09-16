@@ -75,7 +75,7 @@ class ChatWebSocketHandlerTest {
         void handleChatMessage_normal_sendsMessage() {
             handler.handleChatMessage(wsMessage, principal);
 
-            verify(messageCommandHandler).handle(eq(USER_ID), commandCaptor.capture());
+            verify(messageCommandHandler).sendMessage(eq(USER_ID), commandCaptor.capture());
 
             SendMessageCommand cmd = commandCaptor.getValue();
             assertThat(cmd.receiverId()).isEqualTo(RECEIVER_ID);
@@ -96,7 +96,7 @@ class ChatWebSocketHandlerTest {
 
             handler.handleChatMessage(wsMessage, principal);
 
-            verify(messageCommandHandler).handle(eq(USER_ID), commandCaptor.capture());
+            verify(messageCommandHandler).sendMessage(eq(USER_ID), commandCaptor.capture());
             assertThat(commandCaptor.getValue().title()).isEmpty();
         }
 
@@ -107,7 +107,7 @@ class ChatWebSocketHandlerTest {
 
             handler.handleChatMessage(wsMessage, principal);
 
-            verify(messageCommandHandler).handle(eq(USER_ID), commandCaptor.capture());
+            verify(messageCommandHandler).sendMessage(eq(USER_ID), commandCaptor.capture());
             assertThat(commandCaptor.getValue().type()).isNull();
         }
 
@@ -118,7 +118,7 @@ class ChatWebSocketHandlerTest {
 
             handler.handleChatMessage(wsMessage, principal);
 
-            verify(messageCommandHandler).handle(eq(USER_ID), commandCaptor.capture());
+            verify(messageCommandHandler).sendMessage(eq(USER_ID), commandCaptor.capture());
             assertThat(commandCaptor.getValue().businessId()).isEqualTo("999");
         }
 
