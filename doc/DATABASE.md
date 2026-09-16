@@ -6,7 +6,7 @@
 |------|------|
 | 数据库 | MySQL 8.4 (LTS) |
 | 字符集 | utf8mb4 / utf8mb4_0900_ai_ci |
-| 主键策略 | UUID v7（VARCHAR(36)），全库所有 ID 字段统一使用 UUID v7（RFC 9562） |
+| 主键策略 | UUID v7（VARCHAR(36)），全库所有 ID 字段统一使用 UUID v7（RFC 9562，决策与取舍见 [ADR-0011](adr/0011-uuid-v7-primary-key.md)） |
 | 逻辑删除 | del_flag TINYINT（0 正常 / 1 删除） |
 | 乐观锁 | version INT DEFAULT 0 |
 | 时间精度 | 业务表 DATETIME，基础设施表 DATETIME(3) |
