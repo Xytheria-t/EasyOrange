@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 在 DDD 六边形架构里集成 LLM：AI 链路**可换供应商、可降级、可观测**的工程化实战项目。
 >
-> **11 模块解耦 · 45 Port 编译期隔离 · 12 事件消费者 · 10 条 ADR · 2,400+ 测试守卫 · AI 6 决策点 × 8 项工程化**
+> **11 模块解耦 · 44 Port 编译期隔离 · 12 事件消费者 · 10 条 ADR · 2,400+ 测试守卫 · AI 6 决策点 × 8 项工程化**
 >
 > 业务载体：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。
 
@@ -17,7 +17,7 @@ EasyOrange 在两条技术主线上都有独立且完整的落地，可分别展
 
 | AI 应用工程化 | 架构落地 |
 |---|---|
-| **Spring AI 2.0 框架化** — 6 决策点直接注入 `ChatModel` / `EmbeddingModel` bean，切换供应商只改配置不改业务代码（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） | **DDD 六边形 + CQRS** — 45 Port 编译期隔离，domain 层零框架依赖；CQRS 仅 product / order / payment / message 4 模块（[ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)） |
+| **Spring AI 2.0 框架化** — 6 决策点直接注入 `ChatModel` / `EmbeddingModel` bean，切换供应商只改配置不改业务代码（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） | **DDD 六边形 + CQRS** — 44 Port 编译期隔离，domain 层零框架依赖；CQRS 仅 product / order / payment / message 4 模块（[ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)） |
 | **轻量级 Agent 编排** — `AiSearchEnhancer` 4 路并行 Tool Calling，整体 5s 超时后保留已完成步骤，无 LangChain4j 黑盒 | **拒绝 Saga** — 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件副作用（[ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)） |
 | **限流 / 预算 / 降级** — Redisson 分布式令牌桶（超限 429）+ 供应商故障 stale 兜底 + `@TokenBudget` 日预算 AOP | **事件驱动可靠投递** — Spring Modulith Outbox → RabbitMQ → DLQ 三级重试 + traceId 全链路 |
 | **Prompt 工程化** — 8 个 YAML 模板版本化渲染（6 决策点 + 2 对话） | **架构治理** — ArchUnit 12 条规则守卫分层 + 10 条 ADR 记录决策 |

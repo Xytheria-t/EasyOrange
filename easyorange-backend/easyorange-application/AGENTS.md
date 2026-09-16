@@ -26,7 +26,7 @@ application/
 │       │       ├── admin/                 # 8 个 Admin*Adapter（分类/仪表板/订单/商品/审核/评价/举报/用户）
 │       │       ├── elasticsearch/         # ES 搜索索引适配器（ElasticsearchIndexManager / ProductDocument / ReindexService / 索引读写适配器）
 │       │       ├── payment/               # OrderPaymentGatewayAdapter
-│       │       ├── product/               # ProductInventoryAdapter / ProductQueryAdapter / ProductNotificationAdapter / ProductSearchIndexAdapter / FavoriteProductInfoAdapter
+│       │       ├── product/               # ProductInventoryAdapter / ProductNotificationAdapter / ProductSearchIndexAdapter / FavoriteProductInfoAdapter
 │       │       └── user/                  # MessageUserInfoAdapter / SellerInfoAdapter
 ├── src/main/resources/
 │   ├── application.yaml                   # 基础配置
@@ -131,7 +131,6 @@ easyorange-application
 |--------|---------|------|------|
 | `OrderPaymentGatewayAdapter` | `PaymentGatewayPort` | order | 支付网关调用 |
 | `ProductInventoryAdapter` | `ProductInventoryPort` | order | 订单生命周期产品操作 |
-| `ProductQueryAdapter` | `ProductQueryPort` | order | 商品查询 |
 | `SellerInfoAdapter` | `SellerInfoPort` | product | 资产方信息查询 |
 | `MessageUserInfoAdapter` | `UserInfoPort` | message | 用户信息查询 |
 | `FavoriteProductInfoAdapter` | `ProductInfoPort` | favorite | 商品信息查询 |
