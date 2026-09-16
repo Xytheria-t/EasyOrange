@@ -54,19 +54,25 @@ jobs:
         run: ./mvnw -pl easyorange-application -am install -DskipTests -B
         working-directory: easyorange-backend
 
+      # 检索指标必须有 ES：金标准集的 gold_doc_ids 按 ES 索引设计（dense_vector kNN + BM25 混合召回）。
+      # 无 ES 时 KnowledgeRetrievalService 降级为 MySQL LIKE（其注释自陈「仅保证可用不保证召回质量」），
+      # 实测 hit@5 仅 10%，断言必然失败且数字无意义——所以本 job 必须起 ES。
+      # 时序无抖动：种子文档 R__seed_knowledge_docs 以 status=PENDING 入库，
+      # KnowledgeBootstrapIndexer（ApplicationRunner，同步执行）在上下文启动阶段完成补索引。
+      - name: Start Elasticsearch (IK)
+        run: docker compose --profile search up -d --wait elasticsearch
+
       # 基础设施由 spring-boot-docker-compose 按仓库根 compose.yaml（start-only）拉起
       # mysql/redis/rabbitmq（runner 自带 Docker）。测试内 Boot 默认跳过 compose
       # （spring.docker.compose.skip.in-tests 默认 true），必须显式关闭，否则容器不启动、
       # IT 连接 localhost 失败——见 application-it.yaml。
-      # ES 不起：easyorange.search.elasticsearch.enabled 基线为 false，检索走 MySQL LIKE 降级路径
-      # （KnowledgeRetrievalService：索引不可用降级，仅保证可用不保证召回质量）。
       #
       # 必须走 verify 生命周期而非直接调 failsafe 目标：surefire/failsafe 的 argLine 里含
-      # {@code @{argLine}} 晚绑定占位符，由 jacoco:prepare-agent（绑定 initialize）赋值；
+      # @{argLine} 晚绑定占位符，由 jacoco:prepare-agent（绑定 initialize）赋值；
       # 直接调 failsafe:integration-test 时该占位符不解析，JVM 以「could not open '{argLine}'」启动失败。
       # 本模块单测规模小，跑完整 verify 的代价可接受。
       - name: Golden set regression gate
         env:
           SPRING_DOCKER_COMPOSE_SKIP_IN_TESTS: "false"
-        run: ./mvnw -pl easyorange-application verify -Dit.test=GoldenSetRegressionIT -B
+        run: ./mvnw -pl easyorange-application verify -Dit.test=GoldenSetRegressionIT -Deasyorange.search.elasticsearch.enabled=true -B
         working-directory: easyorange-backend
