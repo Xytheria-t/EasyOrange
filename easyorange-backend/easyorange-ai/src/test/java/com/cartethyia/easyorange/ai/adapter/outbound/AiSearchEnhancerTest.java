@@ -1,14 +1,14 @@
 package com.cartethyia.easyorange.ai.adapter.outbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.tool.*;
-import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.application.service.NaturalLanguageDetector;
 import com.cartethyia.easyorange.ai.application.service.ProductTagger;
-import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
+import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import java.math.BigDecimal;
@@ -65,10 +65,10 @@ class AiSearchEnhancerTest {
 
     private SearchToolRegistry buildRegistry() {
         return new SearchToolRegistry(List.of(
-                new IntentDetectionTool(chatModel, new AiModelSupport(mock(AiCallLogPort.class))),
+                new IntentDetectionTool(chatModel, TestAiModelSupport.create()),
                 new ProductTaggingTool(productTagger),
-                new MarketAnalysisTool(chatModel, new AiModelSupport(mock(AiCallLogPort.class))),
-                new QuestionSuggestionTool(chatModel, new AiModelSupport(mock(AiCallLogPort.class)))));
+                new MarketAnalysisTool(chatModel, TestAiModelSupport.create()),
+                new QuestionSuggestionTool(chatModel, TestAiModelSupport.create())));
     }
 
     private ProductReadModel product(String id, String title, BigDecimal price) {
@@ -267,6 +267,30 @@ class AiSearchEnhancerTest {
             assertThat(result).isPresent();
             assertThat(result.get().productTags()).containsKey("1");
             assertThat(result.get().intentExplanation()).isNull();
+        }
+
+        @Test
+        @DisplayName("降级结果不写缓存（抖动不被固化成 5 分钟正常结果）")
+        void tryEnhance_degraded_doesNotCache() {
+            when(nlDetector.isNaturalLanguage("找东西")).thenReturn(true);
+            when(valueOps.get(anyString())).thenReturn(null);
+            when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("API timeout"));
+            when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of("⭐信用优")));
+
+            enhancer.tryEnhance("找东西", List.of(product("1", "商品X", BigDecimal.valueOf(999))));
+
+            verify(valueOps, never()).set(anyString(), any(), anyLong(), any());
+        }
+
+        @Test
+        @DisplayName("意外异常不越过 Port 边界（调用方无兜底，逃逸即检索接口失败）")
+        void tryEnhance_unexpectedFailure_neverThrows() {
+            when(nlDetector.isNaturalLanguage("找东西")).thenThrow(new IllegalStateException("detector broken"));
+
+            Optional<AiEnhancement> result = assertDoesNotThrow(
+                    () -> enhancer.tryEnhance("找东西", List.of(product("1", "商品X", BigDecimal.valueOf(999)))));
+
+            assertThat(result).isEmpty();
         }
     }
 }
