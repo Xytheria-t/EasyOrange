@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -48,6 +49,9 @@ import tools.jackson.databind.ObjectMapper;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiChatService (Agent 编排) -> 测试")
 class AiChatServiceTest {
+
+    /** 语义缓存的查询向量桩值 — 非空即表示「缓存可用」。 */
+    private static final List<Float> QUERY_EMBEDDING = List.of(0.1f, 0.2f);
 
     @Mock
     private ChatModel chatModel;
@@ -104,7 +108,8 @@ class AiChatServiceTest {
     @Test
     @DisplayName("知识类问题 -> 工具决策命中知识库检索 -> 回答带引用来源")
     void answer_withKnowledgeRetrieval() {
-        when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"knowledge_search\",\"query\":\"退款\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("签收后 7 天内支持无理由退货 [来源:退款规则]");
@@ -118,13 +123,14 @@ class AiChatServiceTest {
         verify(retrievalService).search("退款", 5);
         verify(sessionStore).saveTurn("sess-1", "user", "怎么退款？");
         verify(sessionStore).saveTurn("sess-1", "assistant", answer.answer());
-        verify(semanticCache).put(any(), anyString(), any());
+        verify(semanticCache).store(any(), anyString(), anyList(), any());
     }
 
     @Test
     @DisplayName("闲聊 -> 不触发检索，直接回答")
     void answer_noTool() {
-        when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("在的，有什么可以帮你？");
@@ -143,7 +149,8 @@ class AiChatServiceTest {
                 .setAuthentication(
                         new UsernamePasswordAuthenticationToken(new AuthUser("user-1", "tester"), null, List.of()));
         assertThat(SecurityContextUtil.getCurrentUserId()).contains("user-1");
-        when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":{\"key\":\"style\",\"value\":\"复古\"}}");
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("好的，记住你喜欢复古风格。");
@@ -155,19 +162,36 @@ class AiChatServiceTest {
     }
 
     @Test
-    @DisplayName("语义缓存命中 -> 不调模型直接返回")
+    @DisplayName("语义缓存命中 -> 不调模型直接返回，且不再写回")
     void answer_cacheHit() {
         ChatAnswer cached = new ChatAnswer("缓存回答", List.of(), "sess-1");
-        when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.of(cached));
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.of(cached));
 
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
 
         assertThat(answer).isEqualTo(cached);
         verify(aiModelSupport, never()).callText(any(), any(), anyList());
+        verify(semanticCache, never()).store(any(), anyString(), anyList(), any());
     }
 
     @Test
-    @DisplayName("forceFresh -> 跳过语义缓存（评估回归用）")
+    @DisplayName("未命中 -> 命中查找与写入共用同一次向量化（不重复 embedding）")
+    void answer_cacheMiss_embedsOnce() {
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
+                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
+
+        chatService.answer(new ChatRequest("问题", "sess-1", false));
+
+        verify(semanticCache, times(1)).embedQuery(anyString());
+        verify(semanticCache).store(any(), anyString(), eq(QUERY_EMBEDDING), any());
+    }
+
+    @Test
+    @DisplayName("forceFresh -> 跳过语义缓存（评估回归用），连查询向量化都不做")
     void answer_forceFreshSkipsCache() {
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
@@ -175,8 +199,9 @@ class AiChatServiceTest {
 
         chatService.answer(new ChatRequest("问题", "sess-1", true));
 
-        verify(semanticCache, never()).get(any(), anyString(), any());
-        verify(semanticCache, never()).put(any(), anyString(), any());
+        verify(semanticCache, never()).embedQuery(anyString());
+        verify(semanticCache, never()).lookUp(any(), anyString(), anyList(), any());
+        verify(semanticCache, never()).store(any(), anyString(), anyList(), any());
     }
 
     @Test
@@ -282,7 +307,8 @@ class AiChatServiceTest {
     @Test
     @DisplayName("LLM 故障且有缓存旧回答 -> 降级返回旧结果")
     void answer_llmFailureFallsBackToStale() {
-        when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList()))
@@ -300,7 +326,8 @@ class AiChatServiceTest {
     @Test
     @DisplayName("LLM 故障且无缓存 -> 异常上抛（不做降级）")
     void answer_llmFailureWithoutStaleRethrows() {
-        when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(new RuntimeException("DeepSeek 超时"));
@@ -329,7 +356,8 @@ class AiChatServiceTest {
     @Test
     @DisplayName("历史记忆注入 -> 按角色分发为历史消息，不压平进当前 user 消息")
     void answer_injectsHistory() {
-        when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(sessionStore.loadRecent("sess-1", 6))
                 .thenReturn(List.of(new ChatTurn("user", "上一轮问题"), new ChatTurn("assistant", "上一轮回答")));
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
@@ -356,7 +384,8 @@ class AiChatServiceTest {
     @Test
     @DisplayName("工具决策失败 -> 降级为按原始问题检索（不把决策故障伪装成「无需检索」）")
     void answer_toolDecisionFailure_fallsBackToRetrieval() {
-        when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("决策模型不可用"));
         when(retrievalService.search("怎么退款？", 5))

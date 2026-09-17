@@ -36,6 +36,10 @@ import tools.jackson.databind.ObjectMapper;
  * <p>
  * <b>单条脏数据不影响整次查询</b>：格式不符（例如旧字段结构的残留条目）或向量解码失败的条目
  * 直接跳过，不让一条坏数据把「本可以命中」的查询变成未命中。旧格式条目自然过期淘汰，不做迁移。
+ * <p>
+ * <b>一次查询只算一次向量</b>：调用方先取 {@link #embedQuery}，把结果同时传给 {@link #lookUp}
+ * 与 {@link #store}。未命中的路径原本要向量化两遍（查一遍、写一遍），而向量化是供应商调用，
+ * 按次计费且有秒级延迟。
  */
 @Slf4j
 @Component
@@ -51,20 +55,43 @@ public class SemanticCacheService implements SemanticCachePort {
     private final ObjectMapper objectMapper;
 
     /**
+     * 查询向量化 — 命中查找与写入共用这一次调用的结果。
+     * <p>
+     * 不传 {@link AiCallScope} 是刻意的：本方法走 {@code AiModelSupport} 不带 scope 的 embed 重载，
+     * 因此<b>不落调用日志、不计入 token 日预算</b>。原因是 embedding 接口不回报 usage，
+     * 纳入预算只能按场景的单次上限估算，而 chat / qa 的上限是 1500 / 1000 token ——
+     * 给一次 1024 维 embedding 记上千 token，会让日预算被虚高用量提前打满（见 TD-015）。
+     */
+    @Override
+    public List<Float> embedQuery(String query) {
+        if (!aiProperties.semanticCache().enabled() || query == null || query.isBlank()) {
+            return List.of();
+        }
+        var embeddingModel = embeddingModelProvider.getIfAvailable();
+        if (embeddingModel == null) {
+            return List.of();
+        }
+        try {
+            return aiModelSupport.embed(embeddingModel, query);
+        } catch (Exception e) {
+            log.warn("Semantic cache query embedding failed, skip cache for this call", e);
+            return List.of();
+        }
+    }
+
+    /**
      * 语义命中则返回缓存响应，否则 empty。
      */
     @Override
-    public <T> Optional<T> get(AiCallScope scope, String query, Class<T> type) {
-        if (!aiProperties.semanticCache().enabled() || query == null || query.isBlank()) {
+    public <T> Optional<T> lookUp(AiCallScope scope, String query, List<Float> queryEmbedding, Class<T> type) {
+        if (queryEmbedding == null || queryEmbedding.isEmpty()) {
             return Optional.empty();
         }
         var redis = redisProvider.getIfAvailable();
-        var embeddingModel = embeddingModelProvider.getIfAvailable();
-        if (redis == null || embeddingModel == null) {
+        if (redis == null) {
             return Optional.empty();
         }
         try {
-            List<Float> queryEmbedding = aiModelSupport.embed(embeddingModel, query);
             double threshold = aiProperties.semanticCache().similarityThreshold();
             Map<Object, Object> entries = redis.opsForHash().entries(key(scope));
             String bestResponse = null;
@@ -90,20 +117,18 @@ public class SemanticCacheService implements SemanticCachePort {
     }
 
     /**
-     * 写入缓存：embed 查询 → 存 (queryEmbedding, response)；超出 maxEntries 淘汰最旧条目。
+     * 写入缓存：存 (queryEmbedding, response)；超出 maxEntries 淘汰最旧条目。
      */
     @Override
-    public void put(AiCallScope scope, String query, Object response) {
-        if (!aiProperties.semanticCache().enabled() || query == null || query.isBlank()) {
+    public void store(AiCallScope scope, String query, List<Float> queryEmbedding, Object response) {
+        if (queryEmbedding == null || queryEmbedding.isEmpty()) {
             return;
         }
         var redis = redisProvider.getIfAvailable();
-        var embeddingModel = embeddingModelProvider.getIfAvailable();
-        if (redis == null || embeddingModel == null) {
+        if (redis == null) {
             return;
         }
         try {
-            List<Float> queryEmbedding = aiModelSupport.embed(embeddingModel, query);
             String field = md5(query);
             String value = objectMapper.writeValueAsString(new CachedEntry(
                     encodeVector(queryEmbedding),

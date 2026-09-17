@@ -102,8 +102,9 @@ public class AiChatService {
     /**
      * 非流式回答（语义缓存 + 预算 AOP + 故障降级）。
      * <p>
-     * 降级语义：LLM 调用失败（供应商超时/异常）时返回 24h 窗口内的缓存旧回答，
-     * 保证问答可用性；缓存随每次成功回答无条件刷新（forceFresh 场景同样可兜底）。
+     * 两个缓存职责不同：**语义缓存**（Redis，近似问题跨请求复用）在 {@code forceFresh} 下读写都跳过，
+     * 且一次请求只向量化一次；**stale 缓存**（本地 Caffeine，供应商故障时兜底）随每次成功回答
+     * 无条件刷新 —— {@code forceFresh} 只是绕过语义缓存，故障时仍能拿到旧回答。
      */
     @TokenBudget(scenario = "chat", maxTokensPerCall = 1500, dailyTokenLimit = 300_000)
     public ChatAnswer answer(ChatRequest request) {
@@ -111,15 +112,19 @@ public class AiChatService {
             return new ChatAnswer("请描述你的问题", List.of(), request.sessionId());
         }
         try {
-            if (!request.forceFresh()) {
-                var cached = semanticCache.get(AiCallScope.CHAT, request.question(), ChatAnswer.class);
+            // 查询向量只算一次：命中查找与未命中后的写入共用（空列表 = 缓存开关关闭 / embedding 不可用）
+            List<Float> queryEmbedding =
+                    request.forceFresh() ? List.of() : semanticCache.embedQuery(request.question());
+            if (!queryEmbedding.isEmpty()) {
+                var cached =
+                        semanticCache.lookUp(AiCallScope.CHAT, request.question(), queryEmbedding, ChatAnswer.class);
                 if (cached.isPresent()) {
                     return cached.get();
                 }
             }
             ChatAnswer answer = agenticAnswer(request, null);
-            if (!request.forceFresh()) {
-                semanticCache.put(AiCallScope.CHAT, request.question(), answer);
+            if (!queryEmbedding.isEmpty()) {
+                semanticCache.store(AiCallScope.CHAT, request.question(), queryEmbedding, answer);
             }
             staleCache.put(staleKey(request.question()), answer);
             return answer;
