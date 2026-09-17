@@ -9,15 +9,30 @@ import org.junit.jupiter.api.Test;
 /**
  * {@link PageRequest} 单元测试
  * <p>
- * 规范化在 setter 和全参构造器中自动完成：
+ * 三条构造路径都必须给出合法分页：
  * <ul>
+ *   <li>no-args 构造 → 字段初始值 ✓（query-param 绑定一个参数都没传时走这条，曾因 null 拆箱 500）</li>
  *   <li>Jackson 反序列化 → no-args + setters → 自动规整 ✓</li>
  *   <li>子类 {@code super(...)} → 全参构造器 → 自动规整 ✓</li>
- *   <li>Builder 显式设值 → 原样保留（同旧行为）</li>
+ *   <li>Builder → {@code @Builder.Default} → 不设值时取默认值 ✓</li>
  * </ul>
  */
 @DisplayName("PageRequest Tests")
 class PageRequestTest {
+
+    @Nested
+    @DisplayName("No-Args Construction (query-param 绑定路径)")
+    class NoArgsConstruction {
+
+        @Test
+        @DisplayName("不带任何参数构造 → pageNum=1, pageSize=10，绝不产生 null")
+        void noArgs_usesFieldDefaults() {
+            var req = new PageRequest();
+
+            assertThat(req.getPageNum()).isEqualTo(1);
+            assertThat(req.getPageSize()).isEqualTo(10);
+        }
+    }
 
     @Nested
     @DisplayName("Setter Normalization")
@@ -97,16 +112,16 @@ class PageRequestTest {
     }
 
     @Nested
-    @DisplayName("Builder (unchanged behavior)")
+    @DisplayName("Builder (默认值兜底)")
     class BuilderBehavior {
 
         @Test
-        @DisplayName("不设值时 pageNum/pageSize 为 null（同旧行为）")
-        void builder_withoutExplicitValues_nullByDefault() {
+        @DisplayName("不设值时取字段默认值（1 / 10），不再是 null")
+        void builder_withoutExplicitValues_usesDefaults() {
             var req = PageRequest.builder().build();
 
-            assertThat(req.getPageNum()).isNull();
-            assertThat(req.getPageSize()).isNull();
+            assertThat(req.getPageNum()).isEqualTo(1);
+            assertThat(req.getPageSize()).isEqualTo(10);
             assertThat(req.getSortField()).isNull();
             assertThat(req.getSortDirection()).isNull();
         }
