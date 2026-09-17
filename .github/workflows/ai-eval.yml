@@ -1,9 +1,14 @@
-name: AI eval gate (weekly)
+name: AI eval gate (on-demand)
 
 # 金标准评测门禁（GoldenSetRegressionIT）—— 需要真实 AI key（产生 API 费用且慢），
-# 每周一 + 手动触发，不进 PR 路径（同 security-scan / pit-mutation 分工）。
+# **按需手动触发**，不进 PR 路径（同 security-scan / pit-mutation 分工）。
+# 为什么不定时：单次评测约 60 次真实模型调用（5–8 万 token），而代码不变时重复评测同一份代码
+# 是纯开销 —— 从 nightly 收到 weekly 之后仍是一笔固定支出，改为「要出数字时才跑」。
+# 什么时候跑：改 prompt / 换模型 / 调检索参数（分块、topK、RRF 的 k）/ 更新语料后跑一次，
+# 结果是质量回归的直接证据；需要重新变成定期回归时把下面注释掉的 schedule 加回来即可。
 # 判定两条：Judge 均分不得低于「基线 4.0 - 容忍 0.3」，且评审覆盖率必须 ≥ 80%
 # （覆盖率不达标说明多数用例没跑成功，均分是「幸存者平均」，不构成质量结论）。
+# 阈值单一来源是 eval/baselines.yaml，本文件的数字只是复述。
 #
 # Secret：EASYORANGE_AI_API_KEY —— 同时注入 ChatModel 与 EmbeddingModel：
 #   同一个 key 兼作两者仅在「同一平台同时提供 chat 与 embedding」时成立（如百炼 compatible-mode：
@@ -11,11 +16,9 @@ name: AI eval gate (weekly)
 #   embedding bean 会退化为 UnconfiguredEmbeddingModel，检索指标走 MySQL LIKE 降级路径。
 # 供应商可换：DEEPSEEK_BASE_URL / DEEPSEEK_MODEL 由仓库变量提供，缺省仍是 DeepSeek 官方端点。
 on:
-  schedule:
-    # 每周一 03:30（PIT 02:30 后错峰）。刻意不用 nightly：评测每晚产生约 60 次真实模型调用
-    # （5-8 万 token），而代码不会每天变——重复评测同一份代码是纯开销。回归窗口按周足够，
-    # 需要即时验证走 workflow_dispatch。
-    - cron: '30 3 * * 1'
+  # 需要定期回归时加回（原为每周一 03:30，与 PIT 02:30 错峰）：
+  #   schedule:
+  #     - cron: '30 3 * * 1'
   workflow_dispatch:
 
 permissions:

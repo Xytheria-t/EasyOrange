@@ -318,7 +318,7 @@ public class MessageUserInfoAdapter implements UserInfoPort {
 | 单元测试 | 领域层（聚合根、值对象、领域服务） | JUnit 5 + AssertJ | 90%+ |
 | 单元测试 | 应用层（应用服务，Mock 端口） | JUnit 5 + Mockito | 80%+ |
 | 切片测试 | Controller（`@WebMvcTest` + MockMvc） | Spring Boot Test + MockMvc | 关键路径 100% |
-| 集成测试 | 跨层真实链路（`*IT`：下单 / 消息往返 / 检索 / 持久化） | Spring Boot Test + failsafe（`mvn verify`），Boot docker-compose 复用根 `compose.yaml`，真实 MySQL/Redis/RabbitMQ | 关键链路覆盖；CI 门禁跳过 IT（`-DskipITs=true`），nightly `ai-eval.yml` 跑金标准回归 |
+| 集成测试 | 跨层真实链路（`*IT`：下单 / 消息往返 / 检索 / 持久化） | Spring Boot Test + failsafe（`mvn verify`），Boot docker-compose 复用根 `compose.yaml`，真实 MySQL/Redis/RabbitMQ | 关键链路覆盖；CI 门禁跳过 IT（`-DskipITs=true`），`ai-eval.yml`（按需 dispatch）跑金标准回归 |
 | 架构测试 | DDD 分层规则、包依赖关系 | ArchUnit ArchitectureRulesTest | 核心规则 100% |
 
 > **不用 Testcontainers**：其 ryuk sidecar 镜像在无代理 Docker 下拉取失败，`@Testcontainers(disabledWithoutDocker=true)` 会静默跳过用例、掩盖装配缺陷；`*IT` 改由 Boot docker-compose 复用 dev 栈（决策与遗留代价见 [技术债务清单 TD-001](../技术债务清单.md)）。`mvn test` 只跑 `*Test`（快速单测），`mvn verify` 才跑 `*IT`。

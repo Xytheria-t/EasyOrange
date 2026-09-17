@@ -122,7 +122,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 
 - **多轮 Agent 对话**（[`AiChatService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/AiChatService.java)）：Redis 会话短期记忆 + `eo_user_preference` 画像长期记忆 + 单步 ReAct 工具决策；**SSE 流式**（`/api/ai/chat/stream`，事件协议 token/sources/done/error），前端 Playground 打字机效果
 - **RAG 完整链路**（[`KnowledgeIngestionService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/KnowledgeIngestionService.java)）：文档摄入管线（分块 500+overlap50 → embed → ES `knowledge_docs` 索引，启动补索引）+ 两路独立召回（kNN + BM25）→ RRF 排名融合（`RrfFusion`）→ [来源:标题] 引用溯源
-- **评估进 CI**：35 条金标准集（20 生成 + 15 检索，`eval/golden-set.yaml`）+ LLM-as-Judge 对照参考打分 + `EvalGate` 门禁（分数低于基线 4.0-0.3 或评审覆盖率低于 80% 卡 build，每周 `ai-eval.yml` 注入真实 key 定时执行）+ hit@5/MRR 检索指标（语料含同域干扰文档）+ 👍/👎 反馈飞轮自动扩充评测集
+- **评估进 CI**：35 条金标准集（20 生成 + 15 检索，`eval/golden-set.yaml`）+ LLM-as-Judge 对照参考打分 + `EvalGate` 门禁（阈值全在 `eval/baselines.yaml`，分数低于基线-容忍度或评审覆盖率不达标即卡 build；`ai-eval.yml` 注入真实 key + 起 ES，**按需 dispatch**——单次评测约 60 次真实模型调用，代码不变时不重复跑）+ hit@5/MRR 检索指标（语料含同域干扰文档）+ 👍 反馈飞轮自动扩充评测集（👎 需人工补正样本）
 - **成本治理**：语义缓存（余弦相似度命中复用，阈值 0.92）+ 模型路由（场景 → bean 配置）
 
 ### AI 工程化 8 件套

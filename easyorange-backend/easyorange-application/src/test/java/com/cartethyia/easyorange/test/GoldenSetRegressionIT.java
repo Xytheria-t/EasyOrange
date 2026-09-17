@@ -15,9 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 /**
  * 金标准集回归门禁（评估进 CI）— 跑真实 LLM 对 golden-set.yaml 全部用例
  * Judge 打分 + 检索指标，分数低于「基线 - 容忍度」或评审覆盖率不达标即失败（卡 build）。
+ * 阈值单一来源：{@code eval/baselines.yaml}（改阈值不用改本类）。
  * <p>
- * 需要真实 AI key：CI 的 ai-eval job 注入 EASYORANGE_AI_API_KEY 后经 failsafe 在 verify
- * 阶段执行；本地/无 key 时自动跳过（@EnabledIfEnvironmentVariable）。
+ * 需要真实 AI key：CI 的 ai-eval job（**按需 dispatch**，不做定时空跑——单次约 60 次真实模型调用）
+ * 注入 EASYORANGE_AI_API_KEY 后经 failsafe 在 verify 阶段执行；本地/无 key 时自动跳过
+ * （@EnabledIfEnvironmentVariable）。
  * <p>
  * <b>需要 ES</b>：retrieval 用例的 gold_doc_ids 按 ES 索引设计（dense_vector kNN + BM25 排名融合），
  * 种子文档以 status=PENDING 入库、由启动补索引（{@code KnowledgeBootstrapIndexer}）同步写入 ES。
