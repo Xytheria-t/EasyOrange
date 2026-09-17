@@ -413,7 +413,8 @@ easyorange:
     semantic-cache:        # 语义缓存 — 相似问题复用历史回答（成本优化）
       enabled: true
       similarity-threshold: 0.92
-      max-entries: 500
+      # 命中判定要全量拉取并逐条比对，条目数直接决定未命中时的开销（见 AiProperties.SemanticCache 注释）
+      max-entries: 200
       ttl-hours: 24
     chat:                  # 多轮对话记忆 — Redis 会话窗口（短期）
       session-ttl-hours: 24

@@ -24,6 +24,8 @@ public record AiProperties(
         Chat chat) {
 
     public AiProperties {
+        // 嵌套 record 在属性源里完全没有对应键时可能绑成 null，这里补上等价默认值 ——
+        // 数值必须与各 record 上的 @DefaultValue 保持一致（改一处要改两处）
         if (deepseek == null) {
             deepseek = new DeepSeek(null, "https://api.deepseek.com", "deepseek-chat", 30000);
         }
@@ -50,7 +52,7 @@ public record AiProperties(
             routing = new Routing("chatModel", Map.of());
         }
         if (semanticCache == null) {
-            semanticCache = new SemanticCache(true, 0.92, 500, 24);
+            semanticCache = new SemanticCache(true, 0.92, 200, 24);
         }
         if (chat == null) {
             chat = new Chat(24, 6);
@@ -164,7 +166,10 @@ public record AiProperties(
      *
      * @param enabled 是否启用语义缓存
      * @param similarityThreshold 余弦相似度命中阈值（0.92 表示高度近义问题命中）
-     * @param maxEntries 每个 scope 最多缓存的条目数，超出淘汰最旧条目
+     * @param maxEntries 每个 scope 最多缓存的条目数，超出淘汰最旧条目。
+     *     命中判定要遍历全部条目（Redis Hash 全量拉取 + 逐条算余弦），所以这个数直接决定
+     *     未命中时的查询开销：500 条 ≈ 每次拉回 2MB 数据。200 是「够用又不拖慢未命中」的折中；
+     *     若确实需要更大容量，应换成向量索引（ES kNN）而不是继续加大 Hash。
      * @param ttlHours 缓存条目 TTL（小时）
      */
     public record SemanticCache(
@@ -173,7 +178,7 @@ public record AiProperties(
             @DecimalMin("0.0") @DecimalMax("1.0") @DefaultValue("0.92")
             double similarityThreshold,
 
-            @DefaultValue("500") int maxEntries,
+            @DefaultValue("200") int maxEntries,
             @DefaultValue("24") int ttlHours) {}
 
     /**
