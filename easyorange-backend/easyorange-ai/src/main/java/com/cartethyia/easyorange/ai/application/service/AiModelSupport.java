@@ -71,8 +71,8 @@ public class AiModelSupport {
                     .apiKey(defaults.getApiKey())
                     .model(defaults.getModel());
         }
-        return outputText(chatModel.call(
-                new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)), jsonOptions.build())));
+        return outputText(chatModel.call(new Prompt(
+                List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)), jsonOptions.build())));
     }
 
     /**
