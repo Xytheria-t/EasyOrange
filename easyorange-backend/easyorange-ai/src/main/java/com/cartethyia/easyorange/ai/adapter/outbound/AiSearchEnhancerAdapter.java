@@ -1,5 +1,9 @@
 package com.cartethyia.easyorange.ai.adapter.outbound;
 
+import com.cartethyia.easyorange.ai.adapter.outbound.tool.IntentDetectionTool;
+import com.cartethyia.easyorange.ai.adapter.outbound.tool.MarketAnalysisTool;
+import com.cartethyia.easyorange.ai.adapter.outbound.tool.ProductTaggingTool;
+import com.cartethyia.easyorange.ai.adapter.outbound.tool.QuestionSuggestionTool;
 import com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchToolContext;
 import com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchToolRegistry;
 import com.cartethyia.easyorange.ai.application.service.NaturalLanguageDetector;
@@ -50,11 +54,6 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     private static final String CACHE_KEY_PREFIX = "ai:search:enhance:";
     private static final int TOP_PRODUCTS_LIMIT = 5;
 
-    private static final String TOOL_INTENT = "intent_detection";
-    private static final String TOOL_TAGS = "product_tagging";
-    private static final String TOOL_MARKET = "market_analysis";
-    private static final String TOOL_QUESTIONS = "question_suggestion";
-
     public AiSearchEnhancerAdapter(
             NaturalLanguageDetector nlDetector,
             SearchToolRegistry toolRegistry,
@@ -102,10 +101,12 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         List<ProductReadModel> top5 = topProducts.subList(0, Math.min(TOP_PRODUCTS_LIMIT, topProducts.size()));
         var context = new SearchToolContext(keyword, top5, buildMarketContext(top5));
 
-        CompletableFuture<String> intentFuture = runTool(TOOL_INTENT, context);
-        CompletableFuture<Map<String, List<String>>> tagsFuture = runTool(TOOL_TAGS, context);
-        CompletableFuture<String> marketFuture = runTool(TOOL_MARKET, context);
-        CompletableFuture<List<String>> questionsFuture = runTool(TOOL_QUESTIONS, context);
+        // 工具名取各工具自己的常量，不在编排器里再写一遍字面量：
+        // 名字只在工具类里定义一次，改名不会有「注册表里查不到 → 静默降级」的窗口
+        CompletableFuture<String> intentFuture = runTool(IntentDetectionTool.NAME, context);
+        CompletableFuture<Map<String, List<String>>> tagsFuture = runTool(ProductTaggingTool.NAME, context);
+        CompletableFuture<String> marketFuture = runTool(MarketAnalysisTool.NAME, context);
+        CompletableFuture<List<String>> questionsFuture = runTool(QuestionSuggestionTool.NAME, context);
 
         try {
             CompletableFuture.allOf(intentFuture, tagsFuture, marketFuture, questionsFuture)
