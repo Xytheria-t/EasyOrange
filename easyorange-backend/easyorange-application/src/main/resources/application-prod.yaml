@@ -23,6 +23,16 @@ easyorange:
     jwt-rsa-private-key: ${JWT_RSA_PRIVATE_KEY}
     jwt-rsa-public-key: ${JWT_RSA_PUBLIC_KEY}
 
+  # -------------------------------------------------------------------
+  # 检索：生产环境 ES 是必需依赖（RAG 的混合召回后端）
+  # 无 ES 时 KnowledgeFallbackAdapter 会静默降级为 MySQL LIKE（实测 hit@5 仅 10%），
+  # 生产不接受静默降级 —— 故显式启用，并由 ProdSearchGuard 校验（被环境变量覆盖回 false 时启动中止）。
+  # ES 启用但不可达时，ElasticsearchIndexManager 的 @PostConstruct 建索引失败同样中止启动。
+  # -------------------------------------------------------------------
+  search:
+    elasticsearch:
+      enabled: true
+
 spring:
   # -------------------------------------------------------------------
   # 启动期优化: 关 JMX + 关 banner
