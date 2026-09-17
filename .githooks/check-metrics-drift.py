@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""结构计数漂移校验 — 文档声称的「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则」vs 代码事实。
+"""结构计数漂移校验 — 文档声称的「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」vs 代码事实。
 
 背景：这几类计数无单一来源、靠人肉同步，已经漂移过一整轮 —— README 写 11 条 ADR（实际 12）、
 根 AGENTS.md 写 11 个（实际 12）、面试文档写 10 个消费者（实际 12）、mermaid 写 32 表（实际 33）、
@@ -53,6 +53,13 @@ CLAIM_PATTERNS: dict[str, tuple[re.Pattern[str], str]] = {
         re.compile(r"(\d+)\s*条\s*(?:@ArchTest|ArchUnit)\b|(\d+)\s*条\s*规则\b"),
         "ArchitectureRulesTest 的 @ArchTest 数",
     ),
+    # Prompt 模板数漂移过一轮（同一文件一处写 6、另一处写 8），改 prompt 时最容易忘同步。
+    # 模式只认「N 个（YAML）模板」与「Prompt N 个 YAML」两种既有写法；「10 个 YAML 配置属性」
+    # 这类同形异义被 `模板` 挡住。刻意漏检：`YAML 模板（**11 个**：…）` 数字在词后。
+    "prompt_templates": (
+        re.compile(r"(\d+)\s*个\s*(?:YAML\s*)?模板|Prompt\s*(\d+)\s*个\s*YAML"),
+        "easyorange-ai/src/main/resources/prompts/*.yml 数",
+    ),
     # 用例数无法静态算（it.each 会展开、Playwright 与 Vitest 分流），只校验文件数：
     # Vitest 报的 "Test Files N passed" == src 下 *.test.ts(x) 的数量（tests/e2e/*.spec.ts 属 Playwright）。
     # 模式只认「N 文件 / M 用例」与「…，N 文件）」两种既有写法，避免误伤无关的「N 文件」。
@@ -102,6 +109,9 @@ def code_facts() -> dict[str, int]:
 
     arch_re = re.compile(r"^\s*@ArchTest\s*$", re.MULTILINE)
     facts["archunit_rules"] = len(arch_re.findall(ARCH_TEST.read_text(encoding="utf-8")))
+
+    prompts_dir = BACKEND / "easyorange-ai/src/main/resources/prompts"
+    facts["prompt_templates"] = len(list(prompts_dir.glob("*.yml")))
 
     frontend_src = ROOT / "easyorange-frontend/src"
     facts["frontend_test_files"] = (
