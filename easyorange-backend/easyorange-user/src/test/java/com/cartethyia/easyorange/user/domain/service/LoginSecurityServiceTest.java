@@ -40,7 +40,15 @@ class LoginSecurityServiceTest {
         @Test
         @DisplayName("账户未锁定时不抛出异常")
         void notLocked() {
-            when(loginAttemptPort.getRemainingLockSeconds(ACCOUNT)).thenReturn(0L);
+            when(loginAttemptPort.getAttempts(ACCOUNT)).thenReturn(0L);
+
+            assertThatCode(() -> service.checkAndThrowIfLocked(ACCOUNT)).doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("存在未达上限的失败记录时仍可登录")
+        void failedButBelowMax() {
+            when(loginAttemptPort.getAttempts(ACCOUNT)).thenReturn(1L);
 
             assertThatCode(() -> service.checkAndThrowIfLocked(ACCOUNT)).doesNotThrowAnyException();
         }
@@ -48,13 +56,13 @@ class LoginSecurityServiceTest {
         @Test
         @DisplayName("账户锁定超过阈值时抛出业务异常（B1003）")
         void locked() {
-            when(loginAttemptPort.getRemainingLockSeconds(ACCOUNT)).thenReturn(600L);
+            when(loginAttemptPort.getAttempts(ACCOUNT)).thenReturn((long) UserSecurityConstant.MAX_LOGIN_ATTEMPTS);
 
             assertThatThrownBy(() -> service.checkAndThrowIfLocked(ACCOUNT))
                     .extracting("code")
                     .isEqualTo(UserResultCode.USER_LOCKED.getCode());
 
-            verify(loginAttemptPort).getRemainingLockSeconds(ACCOUNT);
+            verify(loginAttemptPort).getAttempts(ACCOUNT);
         }
 
         @Test
@@ -64,7 +72,7 @@ class LoginSecurityServiceTest {
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("登录标识不能为空");
 
-            verify(loginAttemptPort, never()).getRemainingLockSeconds(any());
+            verify(loginAttemptPort, never()).getAttempts(any());
         }
     }
 

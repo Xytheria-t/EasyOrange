@@ -14,7 +14,7 @@ public class LoginSecurityService {
 
     public void checkAndThrowIfLocked(String identifier) {
         BizRequire.notBlank(identifier, "登录标识不能为空");
-        if (loginAttemptPort.getRemainingLockSeconds(identifier) > 0) {
+        if (loginAttemptPort.getAttempts(identifier) >= UserSecurityConstant.MAX_LOGIN_ATTEMPTS) {
             throw BusinessException.of(UserResultCode.USER_LOCKED);
         }
     }

@@ -33,8 +33,13 @@ public class RedisLoginAttemptAdapter implements LoginAttemptPort {
     }
 
     @Override
-    public long getRemainingLockSeconds(String identifier) {
+    public long getAttempts(String identifier) {
         String key = LoginCacheConstants.buildAttemptsKey(identifier);
-        return Math.max(0, redisTemplate.getExpire(key, TimeUnit.SECONDS));
+        // 计数键值由 INCR 写入，非 JSON 格式，故用 INCRBY 0 读（同 incrementAndGet 路径，不经值序列化）
+        if (!Boolean.TRUE.equals(redisTemplate.hasKey(key))) {
+            return 0;
+        }
+        Long count = redisTemplate.opsForValue().increment(key, 0);
+        return count != null ? count : 0;
     }
 }
