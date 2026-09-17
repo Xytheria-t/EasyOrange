@@ -46,6 +46,9 @@ management:
 
 easyorange:
   ai:
-    # key 未配置 → 装配 placeholder bean，应用照常启动（与生产无 key 降级契约一致）
+    # 默认空 → 装配 placeholder bean，无 key 也能启动（与生产降级契约一致）；
+    # 但必须写成 ${EMBEDDING_API_KEY:} 而非字面 ""：字面空串会压过环境变量，
+    # 使 IT 永远拿不到 embedding key —— 知识库分块会退化成 text-only 入库（无 dense_vector），
+    # kNN 检索 0 命中，GoldenSetRegressionIT 的 hit@5 恒为 0。
     embedding:
-      api-key: ""
+      api-key: ${EMBEDDING_API_KEY:}
