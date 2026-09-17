@@ -9,7 +9,7 @@
 #   5. 前端：仅当 src/tests 下 ts/tsx 变更时跑 biome check
 #   4. 版本漂移：仅当技术栈表 / pom / compose / ES 镜像变更时校验文档版本与权威来源一致
 #   5. 测试口径漂移：文档/pom 变更时校验「集成测试是否存在」的声明与代码事实（*IT + failsafe 绑定）一致
-#   6. 结构计数漂移：文档/pom/迁移/源码变更时校验「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则」与代码事实一致
+#   6. 结构计数漂移：文档/pom/迁移/源码变更时校验「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」与代码事实一致
 #
 # 重门禁（构建 + 测试）在 pre-push，提交时不挡路。
 #
@@ -130,7 +130,7 @@ else
 fi
 
 # 6. 结构计数漂移：文档 / pom / 迁移脚本 / 源码变更时校验「N 模块 / N Port / N ADR /
-#    N 消费者 / N 表 / N 条 ArchUnit 规则」与代码事实一致（这几类数字无单一来源，靠人肉同步漂移过一整轮）
+#    N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」与代码事实一致（这几类数字无单一来源，靠人肉同步漂移过一整轮）
 if [[ -n "$tier_files" ]] || echo "$files" | grep -qE '^easyorange-backend/.*(pom\.xml|\.sql|\.java)$'; then
   if command -v python3 >/dev/null 2>&1; then
     hook_log "文档 / pom / 迁移 / 源码变更 → 校验结构计数与代码事实一致..."
