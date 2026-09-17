@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.favorite.adapter.inbound.web.controller;
 
+import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
@@ -65,6 +66,13 @@ public class FavoriteController {
         return Result.success(favoriteService.getFavoriteCount(user.userId()));
     }
 
+    /**
+     * 批量查询收藏状态 — 列表页/首页每次渲染都会调用，属只读语义（用 POST 仅为承载 id 列表）。
+     * <p>
+     * 必须跳过防重提交：防重 key 只含 IP + URI + body hash（不含方法），同一批 id 在 3s 窗口内
+     * 重复查询（导航往返、筛选切换）会被判为重复提交返回 429，前端收藏状态随之整体丢失。
+     */
+    @SkipRepeatSubmit
     @PostMapping("/batch-check")
     public Result<Map<String, Boolean>> batchCheckFavorited(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody BatchCheckRequest request) {
