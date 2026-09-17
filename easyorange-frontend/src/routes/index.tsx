@@ -1,9 +1,9 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, createRoutesFromElements, Navigate, Route, useLocation } from 'react-router-dom';
+import { createBrowserRouter, createRoutesFromElements, Route } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { MinimalLayout } from '@/components/layout/MinimalLayout';
 import { PageMeta } from '@/components/seo/PageMeta';
-import { getStoredToken } from '@/features/auth/session';
+import { ProtectedRoute } from './ProtectedRoute';
 
 const LoadingFallback = () => (
     <div className="flex items-center justify-center min-h-screen">
@@ -33,12 +33,6 @@ const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
 const NotFoundPage = lazy(() => import('@/pages/errors/NotFoundPage'));
 const AdminRoutes = lazy(() => import('@/admin/AdminRoutes').then(m => ({ default: m.AdminRoutes })));
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    const location = useLocation();
-    const token = getStoredToken();
-    return token ? children : <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
-};
 
 interface RouteMeta {
     title: string;
