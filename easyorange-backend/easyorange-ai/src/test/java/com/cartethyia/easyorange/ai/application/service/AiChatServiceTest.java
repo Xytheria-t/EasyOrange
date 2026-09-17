@@ -181,6 +181,20 @@ class AiChatServiceTest {
     }
 
     @Test
+    @DisplayName("语义缓存命中 -> sessionId 换成本次请求的（缓存的是回答内容，不是会话身份）")
+    void answer_cacheHit_usesCurrentSessionId() {
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any()))
+                .thenReturn(Optional.of(new ChatAnswer("缓存回答", List.of("来源A"), "sess-旧", false)));
+
+        ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-新", false));
+
+        assertThat(answer.answer()).isEqualTo("缓存回答");
+        assertThat(answer.sources()).containsExactly("来源A");
+        assertThat(answer.sessionId()).isEqualTo("sess-新");
+    }
+
+    @Test
     @DisplayName("未命中 -> 命中查找与写入共用同一次向量化（不重复 embedding）")
     void answer_cacheMiss_embedsOnce() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
@@ -328,6 +342,25 @@ class AiChatServiceTest {
         assertThat(degraded.answer()).isEqualTo("正常回答");
         assertThat(degraded.degraded()).isTrue();
         verify(aiModelSupport, times(2)).callText(any(), any(), anyList());
+    }
+
+    @Test
+    @DisplayName("stale 降级 -> sessionId 换成本次请求的，不带出旧会话的 id")
+    void answer_staleFallbackUsesCurrentSessionId() {
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
+                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
+        when(aiModelSupport.callText(any(), any(), anyList()))
+                .thenReturn("正常回答")
+                .thenThrow(new RuntimeException("DeepSeek 超时"));
+
+        chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
+        ChatAnswer degraded = chatService.answer(new ChatRequest("怎么退款？", "sess-2", false));
+
+        assertThat(degraded.answer()).isEqualTo("正常回答");
+        assertThat(degraded.degraded()).isTrue();
+        assertThat(degraded.sessionId()).isEqualTo("sess-2");
     }
 
     @Test
