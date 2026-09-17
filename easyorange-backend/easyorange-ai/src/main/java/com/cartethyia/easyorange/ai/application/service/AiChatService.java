@@ -16,8 +16,11 @@ import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
+import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -70,6 +73,7 @@ public class AiChatService {
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
     private final Cache<String, Object> staleCache;
+    private final MeterRegistry meterRegistry;
 
     // Lombok 构造器不会把 @Qualifier 复制到参数上，故手写显式构造器以保留 "aiStaleCache" 限定
     public AiChatService(
@@ -84,7 +88,8 @@ public class AiChatService {
             TokenBudgetStore budgetStore,
             AiProperties aiProperties,
             ObjectMapper objectMapper,
-            @Qualifier("aiStaleCache") Cache<String, Object> staleCache) {
+            @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
+            MeterRegistry meterRegistry) {
         this.chatModel = chatModel;
         this.promptRegistry = promptRegistry;
         this.aiModelSupport = aiModelSupport;
@@ -97,6 +102,7 @@ public class AiChatService {
         this.aiProperties = aiProperties;
         this.objectMapper = objectMapper;
         this.staleCache = staleCache;
+        this.meterRegistry = meterRegistry;
     }
 
     /**
@@ -105,11 +111,17 @@ public class AiChatService {
      * 两个缓存职责不同：**语义缓存**（Redis，近似问题跨请求复用）在 {@code forceFresh} 下读写都跳过，
      * 且一次请求只向量化一次；**stale 缓存**（本地 Caffeine，供应商故障时兜底）随每次成功回答
      * 无条件刷新 —— {@code forceFresh} 只是绕过语义缓存，故障时仍能拿到旧回答。
+     * <p>
+     * 供应商故障不抛异常：有 stale 旧回答就复用它，没有就返回降级文案，两者都把
+     * {@link ChatAnswer#degraded} 置真并计入 {@code easyorange.ai.chat.degraded} ——
+     * 抛出去只会变成 500 + 通用错误码（调用方读不到「AI 不可用」这个语义，错误率大盘也分不清
+     * 供应商故障与代码缺陷），与流式路径的 error 事件口径不一致。预算超限等业务异常照旧上抛，
+     * 那是客户端可控的 4xx，不该伪装成降级回答。
      */
     @TokenBudget(scenario = "chat", maxTokensPerCall = 1500, dailyTokenLimit = 300_000)
     public ChatAnswer answer(ChatRequest request) {
         if (request.question() == null || request.question().isBlank()) {
-            return new ChatAnswer("请描述你的问题", List.of(), request.sessionId());
+            return new ChatAnswer("请描述你的问题", List.of(), request.sessionId(), false);
         }
         try {
             // 查询向量只算一次：命中查找与未命中后的写入共用（空列表 = 缓存开关关闭 / embedding 不可用）
@@ -128,14 +140,26 @@ public class AiChatService {
             }
             staleCache.put(staleKey(request.question()), answer);
             return answer;
+        } catch (BaseBusinessException e) {
+            throw e;
         } catch (Exception e) {
             Object stale = staleCache.getIfPresent(staleKey(request.question()));
-            if (stale instanceof ChatAnswer degraded) {
-                log.warn("LLM 调用失败，降级返回缓存旧回答: {}", e.getMessage());
-                return degraded;
+            if (stale instanceof ChatAnswer cached) {
+                log.warn(
+                        "action=chat_degraded, reason=stale, question={}, cause={}",
+                        request.question(),
+                        e.getMessage());
+                degradedCounter("stale").increment();
+                return cached.asDegraded();
             }
-            throw e;
+            log.error("action=chat_degraded, reason=unavailable, question={}", request.question(), e);
+            degradedCounter("unavailable").increment();
+            return ChatAnswer.unavailable(request.sessionId());
         }
+    }
+
+    private Counter degradedCounter(String reason) {
+        return meterRegistry.counter("easyorange.ai.chat.degraded", "reason", reason);
     }
 
     private static String staleKey(String question) {
@@ -161,8 +185,9 @@ public class AiChatService {
         } catch (TokenBudgetExceededException e) {
             handler.onError("今日 AI 调用预算已用尽，请明天再试");
         } catch (Exception e) {
-            log.error("chat stream failed, question={}", request.question(), e);
-            handler.onError("AI 服务暂时不可用，请稍后重试");
+            log.error("action=chat_degraded, reason=unavailable, question={}", request.question(), e);
+            degradedCounter("unavailable").increment();
+            handler.onError(ChatAnswer.UNAVAILABLE_TEXT);
         }
     }
 
@@ -203,7 +228,7 @@ public class AiChatService {
 
         sessionStore.saveTurn(request.sessionId(), "user", request.question());
         sessionStore.saveTurn(request.sessionId(), "assistant", answer);
-        return new ChatAnswer(answer, sources, request.sessionId());
+        return new ChatAnswer(answer, sources, request.sessionId(), false);
     }
 
     /**
