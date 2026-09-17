@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 在 DDD 六边形架构里集成 LLM：AI 链路**可换供应商、可降级、可观测**的工程化实战项目。
 >
-> **11 模块解耦 · 44 Port 编译期隔离 · 12 事件消费者 · 11 条 ADR · 2,400+ 测试守卫 · AI 6 决策点 × 8 项工程化**
+> **11 模块解耦 · 44 Port 编译期隔离 · 12 事件消费者 · 12 条 ADR · 2,400+ 测试守卫 · AI 6 决策点 × 8 项工程化**
 >
 > 业务载体：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。
 
@@ -20,7 +20,7 @@ EasyOrange 在两条技术主线上都有独立且完整的落地，可分别展
 | **Spring AI 2.0 框架化** — 6 决策点直接注入 `ChatModel` / `EmbeddingModel` bean，切换供应商只改配置不改业务代码（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） | **DDD 六边形 + CQRS** — 44 Port 编译期隔离，domain 层零框架依赖；CQRS 仅 product / order / payment / message 4 模块（[ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)） |
 | **轻量级 Agent 编排** — `AiSearchEnhancer` 4 路并行 Tool Calling，整体 5s 超时后保留已完成步骤，无 LangChain4j 黑盒 | **拒绝 Saga** — 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件副作用（[ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)） |
 | **限流 / 预算 / 降级** — Redisson 分布式令牌桶（超限 429）+ 供应商故障 stale 兜底 + `@TokenBudget` 日预算 AOP | **事件驱动可靠投递** — Spring Modulith Outbox → RabbitMQ → DLQ 三级重试 + traceId 全链路 |
-| **Prompt 工程化** — 8 个 YAML 模板版本化渲染（6 决策点 + 2 对话） | **架构治理** — ArchUnit 12 条规则守卫分层 + 11 条 ADR 记录决策 |
+| **Prompt 工程化** — 8 个 YAML 模板版本化渲染（6 决策点 + 2 对话） | **架构治理** — ArchUnit 12 条规则守卫分层 + 12 条 ADR 记录决策 |
 | **Embedding 真实现 + 多模态** — text-embedding-v3 两路召回（kNN + BM25）+ RRF 排名融合 + Qwen-VL 拍照识别自动上架 | **质量门禁** — 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重验证），前端 Biome 0 errors |
 
 ## 业务边界（刻意聚焦）
@@ -51,7 +51,7 @@ flowchart TB
     ADMIN["admin · 管理端"]
     AI["ai · Spring AI + Agent"]
     MQ[("RabbitMQ · 12 消费者 + DLQ")]
-    DB[("MySQL · 32 表")]
+    DB[("MySQL · 29 表")]
     REDIS[("Redis · 缓存 / 令牌桶 / 锁")]
     ES[("Elasticsearch · 可选")]
     LLM["DeepSeek / Qwen-VL / DashScope"]
@@ -135,7 +135,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 
 | 层 | 机制 | 解决的问题 |
 |---|---|---|
-| **决策层** | 11 条 ADR（[doc/adr/](doc/adr/)） | 记录「为什么 + 拒绝项」，不让选型沦为偏好 |
+| **决策层** | 12 条 ADR（[doc/adr/](doc/adr/)） | 记录「为什么 + 拒绝项」，不让选型沦为偏好 |
 | **守卫层** | ArchUnit 12 条规则（[`ArchitectureRulesTest`](./easyorange-backend/easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java)） | CI 阻断违规：domain 零框架 / CQRS 读写分离 / 模块间端口隔离 / 端口必有适配器 / 禁止 infrastructure 包 |
 | **验证层** | JaCoCo + PIT 变异测试 | JaCoCo 看「代码跑过」，PIT 注入变异看「测试能否发现缺陷」 |
 
@@ -147,7 +147,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 | Saga 编排（跨模块补偿） | 单库下补偿与回滚重复、失败状态随事务回滚丢失 | 本地单事务 + 分布式锁 + Outbox | [ADR-0007](doc/adr/0007-order-local-tx-over-saga.md) |
 | 全模块 CQRS | user / favorite / ai 等读写比均衡或调用外部 API，收益 < 维护成本 | 仅 product / order / payment / message 4 模块 | [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md) |
 | LangChain4j | Tool 调用反射黑盒 + 升级兼容差 | 手写 AiSearchEnhancer 4 路 Tool 编排 | [ADR-0008](doc/adr/0008-ai-spring-ai-framework.md) |
-| Milvus / PGVector | SKU < 10 万，向量库 ROI 低 | ES BM25 召回 + LLM semantic rerank（RAG 轻量版） | 隐含决策 |
+| Milvus / PGVector | SKU < 10 万，向量库 ROI 低（ANN 建索引 / 调参 / 运维一整套换不来可感知收益） | ES 原生 kNN + BM25 两路独立召回，索引侧 RRF 排名融合（**不做余弦重排**） | [ADR-0012](doc/adr/0012-rag-hybrid-retrieval-rrf.md) |
 | Kafka / Pulsar 默认 MQ | Kafka 无原生 DLQ；1 事件 → 12 消费者模型不匹配；Pulsar 本地太重 | RabbitMQ Topic Exchange + 队列级 DLQ | [ADR-0005](doc/adr/0005-messaging-rabbitmq.md) |
 
 ### 数据与安全约束（代码层已落地）
@@ -216,7 +216,7 @@ k6 run --vus 50 --duration 30s load-tests/product-list.js                  # k6 
 | [doc/工程指标.md](doc/工程指标.md) | 测试数 / 覆盖率单一事实来源（2,400+ 为取整下限） |
 | [doc/架构/](doc/架构/) | 架构规范（系统架构 / DDD / 安全认证 / 数据库迁移 / 部署） |
 | [doc/集成/](doc/集成/) | 业务专题（AI 资产管理 / API 速查） |
-| [doc/adr/](doc/adr/) | 11 条架构决策记录 |
+| [doc/adr/](doc/adr/) | 12 条架构决策记录 |
 
 ## 项目结构
 

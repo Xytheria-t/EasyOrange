@@ -48,7 +48,7 @@ JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthe
 1. **幂等去重**：`EventIdempotencyChecker`（Redis `SET NX EX` 一条原子命令领取处理权 + 24h TTL；处理失败 `unmark` 撤销标记让重投可重新执行），命名空间 `consumerId + ":" + eventType` 隔离多消费者，`idempotencyEnabled=false` 构造器关闭投影/广播/指标类消费者
 2. **事件元数据**：`EventMetadataMessagePostProcessor` 发布前向 message headers 注入 eventId/timestamp/traceId；`EventMetadata.from(message, event)` 在消费端解码
 3. **指标埋点**：`EventMetricsService` 自动上报 `easyorange.events.received{type,outcome}` / `easyorange.events.duration{type,outcome}` / `easyorange.events.dlq{queue,reason}`
-4. **DLQ 异常监听**：`DlqAnomalyListener` 监听 10 个 DLQ 队列，提取 x-death header 记录指标
+4. **DLQ 异常监听**：`DlqAnomalyListener` 单个 `@RabbitListener` 同时监听 12 个 DLQ 队列（对应 12 个业务消费者队列，见 `RabbitMQConfig`），提取 x-death header 记录指标
 5. **组合**：`EventConsumerHandler.handle(event, message, metadata -> ...)` 封装统一预处理（幂等 → metrics → 日志 → 业务 → 异常兜底），业务逻辑写在 lambda 中
 
 ### Redis 缓存操作
@@ -146,21 +146,23 @@ public class MdcTaskDecorator implements TaskDecorator {
 
 ### 布隆过滤器 (bloom/)
 
-布隆过滤器已移除（2026-07-31）：`BloomFilter` / `RedisBitmapBloomFilter` / `BloomFilterConfig` 随 product 模块缓存穿透方案简化一并删除；手写多级缓存亦已移除（2026-08-13），缓存统一走 Spring Cache 注解式 + Redis 单层（见 `RedisCacheConfig`），不做负缓存（TTL 兜底 + 写路径显式 evict）。
+布隆过滤器已移除（2026-07-31）：`BloomFilter` / `RedisBitmapBloomFilter` / `BloomFilterConfig` 随 product 模块缓存穿透方案简化一并删除；手写多级缓存亦已移除（2026-08-13），缓存统一走 Spring Cache 注解式 + Redis 单层（见 `RedisCacheConfig`），防穿透靠「null 结果一并缓存 + 写路径显式 evict」，不再需要独立布隆过滤器。
 
 ### Spring Cache 注解式缓存 (cache/)
 
 手写多级缓存（`MultiLevelCache` + Pub/Sub 广播）已移除（2026-08-13），统一为 **Spring Cache 注解 + 纯 Redis 单层**：
 
 ```java
-// 读：缓存未命中自动执行方法体回源（null 返回值不落缓存）
-@Cacheable(cacheNames = ProductCacheConstant.PRODUCT_INFO_CACHE, key = "#productId", condition = "#productId != null", unless = "#result == null")
+// 读：缓存未命中自动执行方法体回源。刻意不写 unless —— null 结果一并缓存用于防穿透
+@Cacheable(cacheNames = ProductCacheConstant.PRODUCT_INFO_CACHE, key = "#productId", condition = "#productId != null", sync = true)
 public ProductVO getProductCache(String productId, Supplier<ProductVO> loader) { ... }
 
 // 失效：写路径事件显式触发
 @CacheEvict(cacheNames = ProductCacheConstant.PRODUCT_INFO_CACHE, key = "#productId", condition = "#productId != null")
 public void evictProductCache(String productId) { }
 ```
+
+> **别给这里加 `unless = "#result == null"`**：本项目的防穿透正是靠缓存 null 实现的（「ID 之后被创建」的一致性由写路径事件 evict 保证）。列表类缓存不缓存 null 的做法是 `orEmpty` 兜成可变空列表（见 `CategoryCacheAdapter`），不是加 `unless`。
 
 **行为约定**：
 - 配置在 `config/cache/RedisCacheConfig`：`@EnableCaching` + `RedisCacheManager`（String key + `GenericJacksonJsonRedisSerializer` value，与 `RedisConfig` 一致）+ 统一 TTL（`easyorange.cache.default-ttl`，默认 30m）+ `CacheErrorHandler` fail-open（Redis 故障降级直查 DB，替代旧逐点 try-catch）

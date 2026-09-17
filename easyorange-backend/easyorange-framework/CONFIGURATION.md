@@ -150,15 +150,17 @@ easyorange:
 - **序列化注意**：`java.*` 包 final 类型（`Optional`、`List.of()` 的不可变列表）不带类型信息、无法反序列化 —— 缓存值必须用 POJO/record（`com.cartethyia.*`）或可变 `ArrayList`
 
 ```java
-// 读：未命中自动执行方法体回源（null 返回值不落缓存）
+// 读：未命中自动执行方法体回源。刻意不写 unless —— null 结果一并缓存用于防穿透
 @Cacheable(cacheNames = "productInfoCache", key = "#productId",
-           condition = "#productId != null", unless = "#result == null")
+           condition = "#productId != null", sync = true)
 public ProductVO getProductCache(String productId, Supplier<ProductVO> loader) { ... }
 
 // 失效：写路径显式触发
 @CacheEvict(cacheNames = "productInfoCache", key = "#productId", condition = "#productId != null")
 public void evictProductCache(String productId) { }
 ```
+
+**防穿透靠缓存 null，不要给 `@Cacheable` 加 `unless = "#result == null"`**——那会把这套设计关掉。列表类缓存不缓存 null 的做法是 `orEmpty` 兜成可变空列表（见 `CategoryCacheAdapter`）；"ID 之后被创建"的一致性由写路径事件 evict 保证。
 
 ---
 
