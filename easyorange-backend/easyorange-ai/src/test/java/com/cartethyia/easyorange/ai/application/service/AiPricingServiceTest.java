@@ -21,8 +21,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiPricingService 测试")
@@ -32,14 +30,11 @@ class AiPricingServiceTest {
     @Mock
     private ChatModel chatModel;
 
-    @Mock
-    private ObjectMapper objectMapper;
-
     private AiPricingService service;
 
     @BeforeEach
     void setUp() {
-        service = new AiPricingService(chatModel, objectMapper, new TestPromptRegistry(), TestAiModelSupport.create());
+        service = new AiPricingService(chatModel, new TestPromptRegistry(), TestAiModelSupport.create());
     }
 
     private static ChatResponse textResponse(String text) {
@@ -67,7 +62,6 @@ class AiPricingServiceTest {
                     new BigDecimal("4500"), new BigDecimal("4200"), new BigDecimal("4800"), "成色较新，折价合理", "同款均价4500左右");
 
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(jsonResponse));
-            when(objectMapper.readValue(jsonResponse, PricingSuggestion.class)).thenReturn(expected);
 
             PricingSuggestion result =
                     service.suggestPrice(productName, description, categoryName, conditionLevel, originalPrice);
@@ -79,7 +73,6 @@ class AiPricingServiceTest {
             assertThat(result.reasoning()).isEqualTo("成色较新，折价合理");
             assertThat(result.marketContext()).isEqualTo("同款均价4500左右");
             verify(chatModel).call(any(Prompt.class));
-            verify(objectMapper).readValue(jsonResponse, PricingSuggestion.class);
         }
 
         @Test
@@ -91,7 +84,6 @@ class AiPricingServiceTest {
 
             assertThat(result).isNull();
             verify(chatModel).call(any(Prompt.class));
-            verify(objectMapper, never()).readValue(anyString(), any(Class.class));
         }
 
         @Test
@@ -100,7 +92,6 @@ class AiPricingServiceTest {
             String invalidJson = "{not valid json}";
 
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(invalidJson));
-            when(objectMapper.readValue(invalidJson, PricingSuggestion.class)).thenThrow(JacksonException.class);
 
             PricingSuggestion result = service.suggestPrice("测试商品", "描述", "分类", "1", new BigDecimal("100"));
 

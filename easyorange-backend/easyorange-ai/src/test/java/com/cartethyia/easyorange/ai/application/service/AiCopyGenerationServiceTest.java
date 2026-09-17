@@ -21,7 +21,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiCopyGenerationService 测试")
@@ -30,14 +29,11 @@ class AiCopyGenerationServiceTest {
     @Mock
     private ChatModel chatModel;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     private AiCopyGenerationService service;
 
     @BeforeEach
     void setUp() {
-        service = new AiCopyGenerationService(
-                chatModel, objectMapper, new TestPromptRegistry(), TestAiModelSupport.create());
+        service = new AiCopyGenerationService(chatModel, new TestPromptRegistry(), TestAiModelSupport.create());
     }
 
     private static ChatResponse textResponse(String text) {
@@ -118,7 +114,7 @@ class AiCopyGenerationServiceTest {
         @Test
         @DisplayName("Prompt 模板缺失时抛 IllegalStateException")
         void generateCopy_missingPrompt() {
-            service = new AiCopyGenerationService(chatModel, objectMapper, EMPTY_REGISTRY, TestAiModelSupport.create());
+            service = new AiCopyGenerationService(chatModel, EMPTY_REGISTRY, TestAiModelSupport.create());
 
             assertThatThrownBy(() -> service.generateCopy("A", "B", "1", "100", null))
                     .isInstanceOf(IllegalStateException.class);

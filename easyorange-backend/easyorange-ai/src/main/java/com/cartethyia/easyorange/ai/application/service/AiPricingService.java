@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -20,7 +19,6 @@ public class AiPricingService {
     private static final String PROMPT_NAME = "ai_pricing_system";
 
     private final ChatModel chatModel;
-    private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
     private final AiModelSupport aiModelSupport;
 
@@ -49,16 +47,12 @@ public class AiPricingService {
                 AiModelSupport.formatCondition(conditionLevel),
                 originalPrice != null ? "¥" + originalPrice : "未知");
 
-        try {
-            String jsonResponse = aiModelSupport.callJson(chatModel, AiCallScope.PRICING, systemPrompt, userMessage);
-            if (jsonResponse == null) {
-                return null;
-            }
-            return objectMapper.readValue(jsonResponse, PricingSuggestion.class);
-        } catch (Exception e) {
-            log.error("AI pricing failed for product: {}", productName, e);
-            return null;
+        var suggestion = aiModelSupport.callJsonAs(
+                chatModel, AiCallScope.PRICING, systemPrompt, userMessage, PricingSuggestion.class);
+        if (suggestion.isEmpty()) {
+            log.warn("AI pricing unavailable for product: {}", productName);
         }
+        return suggestion.orElse(null);
     }
 
     /**

@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -22,7 +21,6 @@ public class AutoListingService {
 
     private final ChatModel chatModel;
     private final AiModelRouter modelRouter;
-    private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
     private final AiModelSupport aiModelSupport;
 
@@ -36,19 +34,17 @@ public class AutoListingService {
             // 带 scope 以便视觉模型的 token 用量计入 auto_listing 场景预算
             String visualResult = aiModelSupport.analyzeImages(
                     modelRouter.choose("vision"), AiCallScope.AUTO_LISTING, imageUrls, visualPrompt);
-            if (visualResult == null) {
-                log.warn("Vision analysis returned null for {} images", imageUrls.size());
+            if (visualResult == null || visualResult.isBlank()) {
+                log.warn("Vision analysis returned nothing for {} images", imageUrls.size());
                 return null;
             }
 
-            String jsonResponse =
-                    aiModelSupport.callJson(chatModel, AiCallScope.AUTO_LISTING, systemPrompt, visualResult);
-            if (jsonResponse == null) {
-                log.warn("LLM returned null for auto listing generation");
-                return null;
+            var listing = aiModelSupport.callJsonAs(
+                    chatModel, AiCallScope.AUTO_LISTING, systemPrompt, visualResult, AutoListingResult.class);
+            if (listing.isEmpty()) {
+                log.warn("AI auto listing unavailable for {} images", imageUrls.size());
             }
-
-            return objectMapper.readValue(jsonResponse, AutoListingResult.class);
+            return listing.orElse(null);
         } catch (Exception e) {
             log.error("Auto listing analysis failed for {} images", imageUrls.size(), e);
             return null;

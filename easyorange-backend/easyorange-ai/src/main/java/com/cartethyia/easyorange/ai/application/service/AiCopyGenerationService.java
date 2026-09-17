@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -19,7 +18,6 @@ public class AiCopyGenerationService {
     private static final String PROMPT_NAME = "ai_copy_generation_system";
 
     private final ChatModel chatModel;
-    private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
     private final AiModelSupport aiModelSupport;
 
@@ -52,17 +50,12 @@ public class AiCopyGenerationService {
                 originalPrice != null && !originalPrice.isEmpty() ? "¥" + originalPrice : "未知",
                 styleDesc);
 
-        try {
-            String jsonResponse = aiModelSupport.callJson(chatModel, AiCallScope.COPY, systemPrompt, userMessage);
-            if (jsonResponse == null) {
-                log.warn("LLM returned null for copy generation");
-                return null;
-            }
-            return objectMapper.readValue(jsonResponse, CopyGenerationResult.class);
-        } catch (Exception e) {
-            log.error("AI copy generation failed for product: {}", productName, e);
-            return null;
+        var generated = aiModelSupport.callJsonAs(
+                chatModel, AiCallScope.COPY, systemPrompt, userMessage, CopyGenerationResult.class);
+        if (generated.isEmpty()) {
+            log.warn("AI copy generation unavailable for product: {}", productName);
         }
+        return generated.orElse(null);
     }
 
     private String loadSystemPrompt() {
