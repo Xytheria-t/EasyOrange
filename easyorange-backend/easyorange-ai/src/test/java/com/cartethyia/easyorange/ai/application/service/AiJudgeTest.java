@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
@@ -27,11 +28,15 @@ class AiJudgeTest {
     @Mock
     private ChatModel chatModel;
 
+    @Mock
+    private AiModelRouter modelRouter;
+
     private AiJudge aiJudge;
 
     @BeforeEach
     void setUp() {
-        aiJudge = new AiJudge(chatModel, TestAiModelSupport.create(), new ObjectMapper());
+        lenient().when(modelRouter.choose(AiJudge.JUDGE_SCENARIO)).thenReturn(chatModel);
+        aiJudge = new AiJudge(modelRouter, TestAiModelSupport.create(), new ObjectMapper());
     }
 
     private static ChatResponse textResponse(String text) {

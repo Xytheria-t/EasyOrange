@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.ai.application.service;
 
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
@@ -12,10 +11,17 @@ import tools.jackson.databind.ObjectMapper;
  * 供两处复用：{@link com.cartethyia.easyorange.ai.adapter.inbound.job.AiEvalScheduler}
  * 对 eo_ai_call_log 未评审记录打分；金标准集回归（GoldenSetEvaluator）对测试用例打分。
  * Judge 调用不落调用日志（避免「谁来评估评估者」的套娃）。
+ * <p>
+ * <b>评审模型走场景路由</b>（{@code judge} → 默认 chatModel）：自评有偏差（同一模型倾向给自己
+ * 风格的输出高分），把评审模型换成另一个更强的模型只需改 {@code easyorange.ai.routing.scenarios.judge}
+ * 的 bean 名，代码零改动。当前只有一文本模型可用，所以默认仍是它 —— 这是可演进的位，不是遗漏。
  */
 @Component
 @RequiredArgsConstructor
 public class AiJudge {
+
+    /** 评审场景名（{@code easyorange.ai.routing.scenarios} 的键）。 */
+    public static final String JUDGE_SCENARIO = "judge";
 
     private static final String JUDGE_SYSTEM_PROMPT = """
             你是 AI 输出质量评审员（Judge）。请对下面的 AI 助手回答打分。
@@ -39,7 +45,7 @@ public class AiJudge {
             严格按 JSON 输出（不要多余文字）：{"score": 分数, "comment": "一句话评语，不超过40字"}
             """;
 
-    private final ChatModel chatModel;
+    private final AiModelRouter modelRouter;
     private final AiModelSupport aiModelSupport;
     private final ObjectMapper objectMapper;
 
@@ -62,7 +68,7 @@ public class AiJudge {
 
     private Optional<Judgement> judgeWith(String systemPrompt, String caseText) {
         try {
-            String json = aiModelSupport.callJson(chatModel, systemPrompt, caseText);
+            String json = aiModelSupport.callJson(modelRouter.choose(JUDGE_SCENARIO), systemPrompt, caseText);
             return parse(json);
         } catch (Exception e) {
             return Optional.empty();

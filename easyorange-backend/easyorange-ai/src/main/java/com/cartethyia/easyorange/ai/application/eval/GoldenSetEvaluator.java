@@ -18,14 +18,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 金标准集回归评估器 — 两条评估线：
+ * 金标准集回归评估器 — 两条评估线，按用例 scope 分流（{@code chat} / {@code retrieval}）：
  * <ul>
  *   <li><b>生成质量</b>（LLM-as-Judge）：对每个 chat 用例调 {@link AiChatService#answer}（forceFresh 跳过缓存），
- *       有参考回答的对照参考打分，无参考的走四维通用打分，聚合 avg score。</li>
- *   <li><b>检索质量</b>（hit@5 / MRR）：对带 gold_doc_ids 的用例跑知识库检索，算命中率与平均倒数排名，
+ *       对照参考回答打分，聚合 avg score。</li>
+ *   <li><b>检索质量</b>（hit@5 / MRR）：对每个 retrieval 用例跑知识库检索，算命中率与平均倒数排名，
  *       逐条采样落 eo_retrieval_metric（回答「RAG 检索层好不好」的量化数据）。</li>
  * </ul>
  * 供定时任务（RetrievalEvalScheduler / 每日回归）与 CI 门禁（GoldenSetRegressionIT）复用。
+ * <p>
+ * 分流依据是 scope 字段本身（{@link GoldenSetLoader} 加载时已校验），不再用「有没有 gold_doc_ids」
+ * 这类派生特征判断 —— 那会让带 gold_doc_ids 的生成用例同时被算进检索分母。
  */
 @Slf4j
 @Component
@@ -46,7 +49,7 @@ public class GoldenSetEvaluator {
      */
     public GenerationReport evaluateGeneration() {
         var cases = loader.load().cases().stream()
-                .filter(c -> "chat".equals(c.scope()))
+                .filter(c -> GoldenSetLoader.SCOPE_CHAT.equals(c.scope()))
                 .toList();
         var scores = new ArrayList<CaseScore>();
         for (var c : cases) {
@@ -73,11 +76,11 @@ public class GoldenSetEvaluator {
     }
 
     /**
-     * 检索质量回归：带 gold_doc_ids 的用例跑检索，计算 hit@5 / MRR 并逐条落库。
+     * 检索质量回归：对全部 retrieval 用例跑检索，计算 hit@5 / MRR 并逐条落库。
      */
     public RetrievalReport evaluateRetrieval() {
         var cases = loader.load().cases().stream()
-                .filter(c -> !c.goldDocIds().isEmpty())
+                .filter(c -> GoldenSetLoader.SCOPE_RETRIEVAL.equals(c.scope()))
                 .toList();
         String runId = idGenerator.generateId();
         int hits = 0;

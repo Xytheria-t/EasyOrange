@@ -3,11 +3,13 @@
 # 用途：评估进 CI — Judge 回归打分 + 检索指标（hit@5 / MRR）采样
 # 结构：
 #   id              用例 ID（chat-* 生成质量 / retr-* 检索质量）
-#   scope           场景（chat）
+#   scope           场景，取值必须是 chat 或 retrieval（GoldenSetLoader 强校验，写错直接启动失败）
 #   question        用户问题
-#   reference_answer Judge 对照参考（chat 类必须有）
-#   gold_doc_ids    期望命中的知识库文档 ID（retr 类必须有，引用 R__seed_knowledge_docs.sql）
+#   reference_answer Judge 对照参考（scope: chat 必须有）
+#   gold_doc_ids    期望命中的知识库文档 ID（scope: retrieval 必须有，引用 R__seed_knowledge_docs.sql）
 # 维护：新增/修改用例走 PR，分数回归对比见 eval/baselines.yaml
+# 注意：检索用例的 gold 文档必须与同域干扰文档（kb-0006~kb-0025）可区分 ——
+#      语料与 topK 同量级时 hit@5 恒为 100%，指标就成了装饰。
 # ===================================================================
 cases:
   # ---- 生成质量（chat + 知识库引用溯源）----
@@ -104,42 +106,62 @@ cases:
     reference_answer: 再见，有需要随时回来找我。
   # ---- 检索质量（hit@5 / MRR，无生成）----
   - id: retr-001
-    scope: chat
+    scope: retrieval
     question: 交易流程
     gold_doc_ids: [kb-0001]
   - id: retr-002
-    scope: chat
+    scope: retrieval
     question: 怎么退款
     gold_doc_ids: [kb-0002]
   - id: retr-003
-    scope: chat
+    scope: retrieval
     question: 运费谁出
     gold_doc_ids: [kb-0003]
   - id: retr-004
-    scope: chat
+    scope: retrieval
     question: 信用分规则
     gold_doc_ids: [kb-0004]
   - id: retr-005
-    scope: chat
+    scope: retrieval
     question: 禁售商品
     gold_doc_ids: [kb-0005]
   - id: retr-006
-    scope: chat
+    scope: retrieval
     question: 确认收货后钱怎么到卖家
     gold_doc_ids: [kb-0001]
   - id: retr-007
-    scope: chat
+    scope: retrieval
     question: 七天无理由退货
     gold_doc_ids: [kb-0002]
   - id: retr-008
-    scope: chat
+    scope: retrieval
     question: 满多少包邮
     gold_doc_ids: [kb-0003]
   - id: retr-009
-    scope: chat
+    scope: retrieval
     question: 信用分扣分
     gold_doc_ids: [kb-0004]
   - id: retr-010
-    scope: chat
+    scope: retrieval
     question: 可以卖处方药吗
     gold_doc_ids: [kb-0005]
+  - id: retr-011
+    scope: retrieval
+    question: 发票怎么开
+    gold_doc_ids: [kb-0007]
+  - id: retr-012
+    scope: retrieval
+    question: 举报卖家流程
+    gold_doc_ids: [kb-0008]
+  - id: retr-013
+    scope: retrieval
+    question: 账号被盗了怎么办
+    gold_doc_ids: [kb-0010]
+  - id: retr-014
+    scope: retrieval
+    question: 优惠券怎么用
+    gold_doc_ids: [kb-0011]
+  - id: retr-015
+    scope: retrieval
+    question: 评价可以修改吗
+    gold_doc_ids: [kb-0014]
