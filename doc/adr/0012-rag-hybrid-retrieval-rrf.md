@@ -5,6 +5,8 @@
 - **决策者**：后端架构
 - **标签**：`ai` `rag` `retrieval` `elasticsearch` `evaluation`
 
+> **现状更新（2026-09-17）**：`ai-eval.yml` 已取消定时回归，改为**按需 `workflow_dispatch` 触发**（单次评测约 60 次真实模型调用 / 5–8 万 token，消耗真实额度，而代码不变时重复评测同一份代码是纯开销）；定时版 schedule 以注释形式留在 workflow 里，需要定期回归时一行恢复。正文「由每周 `ai-eval.yml` 回归给出首个可信数字」「每周一 03:30 自动执行」按决策时点口径保留，结论不变——首个可信数字仍来自 `ai-eval.yml` 的回归，只是改为人工择时触发。现役触发方式与理由见 [.github/workflows/ai-eval.yml](../../.github/workflows/ai-eval.yml) 头部注释。
+
 ---
 
 ## 上下文（Context）
