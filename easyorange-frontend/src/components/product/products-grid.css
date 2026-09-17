@@ -1,0 +1,31 @@
+/* ============================================================
+   商品网格布局 — 首页「热门资产」区块与商品列表页共用
+   原先只写在 products-list.css 里，而那份样式仅由商品页（懒加载路由）引入：
+   直接打开首页时列定义不存在，卡片按块级元素各占满一行。抽成独立文件，两端各自引入。
+   ============================================================ */
+.products-grid-premium {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.75rem;
+}
+
+@media (max-width: 1200px) {
+    .products-grid-premium {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.4rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .products-grid-premium {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .products-grid-premium {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.9rem;
+    }
+}

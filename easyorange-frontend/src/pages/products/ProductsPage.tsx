@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { SemanticSearchToggle } from '@/components/ai/SemanticSearchToggle';
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
 import { ProductCard } from '@/components/product/ProductCard';
+import '@/components/product/products-grid.css';
 import { ToolsPlaza, type ToolsPlazaFilter } from '@/components/product/ToolsPlaza';
 
 import SortDropdown, { type SortOption } from '@/components/search/SortDropdown';
