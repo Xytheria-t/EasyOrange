@@ -350,33 +350,7 @@
     animation: pdpGentleFloat 2s ease-in-out infinite;
 }
 
-/* ============ PRODUCTS GRID ENHANCEMENTS v2 ============ */
-.products-grid-premium {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.75rem;
-}
-
-@media (max-width: 1200px) {
-    .products-grid-premium {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.4rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .products-grid-premium {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1.1rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .products-grid-premium {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.9rem;
-    }
-}
+/* 网格列定义见 components/product/products-grid.css（首页区块与商品页共用） */
 
 /* ============ LOADING STATES - PREMIUM v2 ============ */
 .product-card-loading-premium {

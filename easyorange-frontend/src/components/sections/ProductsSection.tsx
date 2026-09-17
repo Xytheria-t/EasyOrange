@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProductCard } from '@/components/product/ProductCard';
+import '@/components/product/products-grid.css';
 import { Button } from '@/components/ui/button';
 import { useFavoriteCheck, useProducts } from '@/hooks';
 import { useAuthStore } from '@/store/authStore';
