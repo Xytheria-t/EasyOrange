@@ -112,6 +112,8 @@
 | 布尔 | TINYINT | is_main TINYINT DEFAULT 0 |
 | 文件大小 | BIGINT | file_size BIGINT |
 
+**枚举码列的默认值必须是该列的合法码**：布尔/0 起点标志用 `DEFAULT 0`；**1 起点的枚举码列不许给 `DEFAULT 0`**——要么不给默认值（`NOT NULL` 无默认，漏传即报错），要么给一个合法码，并用 `chk_eo_{table}_{column}` 把合法码钉死。历史事故：`eo_message.type DEFAULT 0` 不是合法 `MessageType` 码，未显式赋值即落成非法码，读侧枚举转换抛异常让整个消息列表 500（根治见 V5 迁移）。
+
 ## 表关系图
 
 ```
