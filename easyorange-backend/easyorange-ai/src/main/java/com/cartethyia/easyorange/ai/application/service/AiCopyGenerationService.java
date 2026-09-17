@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.ai.application.service;
 import com.cartethyia.easyorange.ai.application.dto.CopyGenerationResult;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.model.PromptTemplate;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +31,7 @@ public class AiCopyGenerationService {
                     default -> "标准推荐型：平衡描述商品的基本信息和卖点，适合大多数商品";
                 };
 
-        String systemPrompt = loadSystemPrompt();
+        String systemPrompt = promptRegistry.require(PROMPT_NAME);
 
         String userMessage = String.format(
                 """
@@ -46,7 +45,7 @@ public class AiCopyGenerationService {
                 """,
                 productName != null ? productName : "",
                 categoryName != null ? categoryName : "未知",
-                formatCondition(conditionLevel),
+                AiModelSupport.formatCondition(conditionLevel),
                 originalPrice != null && !originalPrice.isEmpty() ? "¥" + originalPrice : "未知",
                 styleDesc);
 
@@ -56,23 +55,5 @@ public class AiCopyGenerationService {
             log.warn("AI copy generation unavailable for product: {}", productName);
         }
         return generated.orElse(null);
-    }
-
-    private String loadSystemPrompt() {
-        return promptRegistry
-                .getLatest(PROMPT_NAME)
-                .map(PromptTemplate::template)
-                .orElseThrow(() -> new IllegalStateException("Prompt template not found: " + PROMPT_NAME));
-    }
-
-    private String formatCondition(String conditionLevel) {
-        if (conditionLevel == null) return "未知";
-        return switch (conditionLevel) {
-            case "1" -> "全新（未拆封）";
-            case "2" -> "九五新（几乎无使用痕迹）";
-            case "3" -> "八五新（正常使用痕迹）";
-            case "4" -> "七成新（明显使用痕迹）";
-            default -> "未知";
-        };
     }
 }

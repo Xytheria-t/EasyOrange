@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.ai.application.service;
 import com.cartethyia.easyorange.ai.application.dto.PricingSuggestion;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.model.PromptTemplate;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +28,7 @@ public class AiPricingService {
             String categoryName,
             String conditionLevel,
             BigDecimal originalPrice) {
-        String systemPrompt = loadSystemPrompt();
+        String systemPrompt = promptRegistry.require(PROMPT_NAME);
 
         String userMessage = String.format(
                 """
@@ -53,16 +52,5 @@ public class AiPricingService {
             log.warn("AI pricing unavailable for product: {}", productName);
         }
         return suggestion.orElse(null);
-    }
-
-    /**
-     * 从 PromptRegistry 加载系统提示词（版本化、可热更新）。
-     * YAML 缺失时 fail-fast，避免静默使用错误 prompt。
-     */
-    private String loadSystemPrompt() {
-        return promptRegistry
-                .getLatest(PROMPT_NAME)
-                .map(PromptTemplate::template)
-                .orElseThrow(() -> new IllegalStateException("Prompt template not found: " + PROMPT_NAME));
     }
 }
