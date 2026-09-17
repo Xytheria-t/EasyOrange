@@ -64,6 +64,9 @@ class RefreshCoordinator {
 
 const refreshCoordinator = new RefreshCoordinator();
 
+/** 会话恢复单飞句柄 — 见 restoreSession 注释。 */
+let sessionRestoreInFlight: Promise<void> | null = null;
+
 // ==================== 事件 ====================
 
 function emitSessionChange(reason?: AuthSessionClearReason): void {
@@ -178,8 +181,19 @@ function isTokenExpired(token: string): boolean {
 /**
  * 启动时恢复会话：access token 仅存内存，页面刷新后 token 缺失。
  * 若 HttpOnly refresh cookie 有效则刷新 access 并拉取用户，恢复登录态；否则清空会话。
+ * <p>
+ * 单飞：main.tsx 与 ProtectedRoute 会同时触发，并发进入时第二次的 /users/me 会撞上
+ * requestManager 去重窗口被判为重复请求而抛错，错误分支会把刚恢复的会话又清掉
+ * （表现为整页刷新后被踢回登录页），因此复用同一次恢复过程。
  */
-export async function restoreSession(): Promise<void> {
+export function restoreSession(): Promise<void> {
+    sessionRestoreInFlight ??= doRestoreSession().finally(() => {
+        sessionRestoreInFlight = null;
+    });
+    return sessionRestoreInFlight;
+}
+
+async function doRestoreSession(): Promise<void> {
     const store = useAuthStore.getState();
     if (store.token && !isTokenExpired(store.token)) {
         return;
