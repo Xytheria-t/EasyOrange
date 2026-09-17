@@ -98,7 +98,8 @@ function ProductRecommendCard({ product, index }: { product: RecommendedProduct;
                     setTimeout(() => setIsVisible(true), index * 80);
                 }
             },
-            { threshold: 0.1 }
+            // 命中即显现：比例阈值在长元素停在页面底部时永远达不到，卡片会一直不显示
+            { threshold: 0 }
         );
 
         if (cardRef.current) {

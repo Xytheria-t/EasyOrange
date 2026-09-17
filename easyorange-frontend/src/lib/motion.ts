@@ -83,7 +83,8 @@ export class MotionController {
             },
             {
                 rootMargin: '0px 0px -8% 0px',
-                threshold: 0.12,
+                // 命中即显现：比例阈值对高元素在页面底部永远达不到，元素会停在 opacity:0
+                threshold: 0,
             }
         );
 

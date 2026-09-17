@@ -70,7 +70,10 @@ export default function ProductsSection() {
                     observer.unobserve(section);
                 }
             },
-            { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+            // 必须用 threshold:0（命中即显现）。本区块高度远大于视口，页面停在最底部时
+            // 页脚占满视口、区块只剩顶部一条边，比例阈值（0.1）永远达不到，
+            // 区块会永久停在 .reveal 的 opacity:0——这正是刷新后商品不显示的原因
+            { threshold: 0 }
         );
 
         observer.observe(section);
