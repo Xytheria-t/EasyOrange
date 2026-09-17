@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
@@ -204,5 +206,26 @@ class RateLimitFilterTest {
         assertThat(res.getContentAsString()).contains("A0429");
         assertThat(invoked).isFalse();
         verify(valueOps).setIfAbsent(anyString(), any(), anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("防重 key 区分方法：同一 URI 的收藏与取消收藏不互相拦截")
+    void repeatSubmit_keyDistinguishesMethod() throws Exception {
+        @SuppressWarnings("unchecked")
+        ValueOperations<Object, Object> valueOps = mock(ValueOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(valueOps.setIfAbsent(anyString(), any(), anyLong(), any())).thenReturn(true);
+        stubHandler(handlerFor("noSkip"));
+
+        filter.doFilter(new MockHttpServletRequest("POST", "/api/favorites/2001"), new MockHttpServletResponse(), (r, s) -> {});
+        filter.doFilter(
+                new MockHttpServletRequest("DELETE", "/api/favorites/2001"), new MockHttpServletResponse(), (r, s) -> {});
+
+        var keyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(valueOps, times(2)).setIfAbsent(keyCaptor.capture(), any(), anyLong(), any());
+
+        assertThat(keyCaptor.getAllValues()).doesNotHaveDuplicates();
+        assertThat(keyCaptor.getAllValues().get(0)).contains(":POST:/api/favorites/2001:");
+        assertThat(keyCaptor.getAllValues().get(1)).contains(":DELETE:/api/favorites/2001:");
     }
 }
