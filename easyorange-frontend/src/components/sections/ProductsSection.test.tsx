@@ -1,11 +1,17 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ProductsSection from './ProductsSection';
 
 // Mock IntersectionObserver
 const mockObserve = vi.fn();
 const mockDisconnect = vi.fn();
+let observerCallback: IntersectionObserverCallback | null = null;
+let observerOptions: IntersectionObserverInit | undefined;
 class MockIntersectionObserver {
+    constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+        observerCallback = callback;
+        observerOptions = options;
+    }
     observe = mockObserve;
     disconnect = mockDisconnect;
     unobserve = vi.fn();
@@ -165,6 +171,20 @@ describe('ProductsSection', () => {
     it('creates IntersectionObserver for scroll reveal', () => {
         render(<ProductsSection />);
         expect(mockObserve).toHaveBeenCalled();
+    });
+
+    // 回归防线：区块比视口高得多，页面停在最底部时只剩一条边可见；
+    // 若改回比例阈值（0.1 等），刷新后商品网格永远等不到 revealed，会一直停在 opacity:0
+    it('reveals on any intersection instead of a ratio threshold', () => {
+        render(<ProductsSection />);
+
+        expect(observerOptions?.threshold).toBe(0);
+
+        act(() => {
+            observerCallback?.([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+        });
+
+        expect(document.getElementById('productsGrid')).toHaveClass('revealed');
     });
 
     it('disconnects IntersectionObserver on unmount', () => {
