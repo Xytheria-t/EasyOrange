@@ -24,7 +24,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AutoListingService 测试")
@@ -39,15 +38,12 @@ class AutoListingServiceTest {
     @Mock
     private AiModelRouter modelRouter;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     private AutoListingService service;
 
     @BeforeEach
     void setUp() {
         lenient().when(modelRouter.choose("vision")).thenReturn(visionChatModel);
-        service = new AutoListingService(
-                chatModel, modelRouter, objectMapper, new TestPromptRegistry(), TestAiModelSupport.create());
+        service = new AutoListingService(chatModel, modelRouter, new TestPromptRegistry(), TestAiModelSupport.create());
     }
 
     private static ChatResponse textResponse(String text) {
@@ -127,8 +123,7 @@ class AutoListingServiceTest {
         @Test
         @DisplayName("Prompt 模板缺失时返回 null（被 catch 兜底）")
         void analyzeImages_missingPrompt() {
-            service = new AutoListingService(
-                    chatModel, modelRouter, objectMapper, EMPTY_REGISTRY, TestAiModelSupport.create());
+            service = new AutoListingService(chatModel, modelRouter, EMPTY_REGISTRY, TestAiModelSupport.create());
 
             AutoListingResult result = service.analyzeImages(List.of("http://example.com/a.jpg"));
 

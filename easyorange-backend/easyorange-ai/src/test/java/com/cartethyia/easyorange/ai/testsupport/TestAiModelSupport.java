@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * AiModelSupport 测试夹具 — 三个依赖（调用日志 / 预算存储 / 配置）的装配收在一处。
@@ -29,6 +30,6 @@ public final class TestAiModelSupport {
 
     public static AiModelSupport create(
             AiCallLogPort callLogPort, TokenBudgetStore budgetStore, AiProperties aiProperties) {
-        return new AiModelSupport(callLogPort, budgetStore, aiProperties);
+        return new AiModelSupport(callLogPort, budgetStore, aiProperties, new ObjectMapper());
     }
 }

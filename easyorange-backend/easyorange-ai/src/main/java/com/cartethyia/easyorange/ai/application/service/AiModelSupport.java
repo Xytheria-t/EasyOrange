@@ -8,6 +8,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -27,6 +28,7 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Spring AI 调用小工具 — 收敛 system+user 双消息、JSON 结构化输出、Embedding、
@@ -53,6 +55,7 @@ public class AiModelSupport {
     private final AiCallLogPort callLogRecorder;
     private final TokenBudgetStore budgetStore;
     private final AiProperties aiProperties;
+    private final ObjectMapper objectMapper;
 
     /**
      * 普通文本生成：system + user 双消息。
@@ -192,6 +195,31 @@ public class AiModelSupport {
         Message userMessage = UserMessage.builder().text(prompt).media(media).build();
         return recordCall(
                 scope, visionChatModel, prompt, () -> chatOutcome(visionChatModel.call(new Prompt(userMessage))));
+    }
+
+    /**
+     * 结构化输出一步到位：{@link #callJson} + 反序列化 + 失败降级。
+     * <p>
+     * 各 AI 决策点此前各自复制一份「调 JSON → readValue → catch 返回 null」的样板，
+     * 唯一的差别只是兜底值；统一到这里后，解析失败的语义只有一种：调用方拿到
+     * {@link Optional#empty()}，自行决定返回空对象还是降级结果。
+     * <p>
+     * 模型输出不合 schema（字段缺失、数字带单位）时不会抛出去打断业务链路 —— 但要留意
+     * 它和「模型不可用」在这里是同一个结果，需要区分的场景应直接用 {@link #callJson}。
+     */
+    public <T> Optional<T> callJsonAs(
+            ChatModel chatModel, AiCallScope scope, String systemPrompt, String userMessage, Class<T> responseType) {
+        try {
+            String json = callJson(chatModel, scope, systemPrompt, userMessage);
+            if (json == null || json.isBlank()) {
+                log.warn("action=ai_json_empty, scope={}, message=模型返回空内容", scope);
+                return Optional.empty();
+            }
+            return Optional.ofNullable(objectMapper.readValue(json, responseType));
+        } catch (Exception e) {
+            log.warn("action=ai_json_unparsable, scope={}, reason={}", scope, e.getMessage());
+            return Optional.empty();
+        }
     }
 
     /**
