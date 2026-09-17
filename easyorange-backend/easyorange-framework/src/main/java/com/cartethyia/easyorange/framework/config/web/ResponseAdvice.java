@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.common.result.Result;
 import jakarta.annotation.Nullable;
 import java.util.Objects;
 import org.springframework.core.MethodParameter;
+import org.springframework.core.ResolvableType;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
@@ -24,7 +25,25 @@ public class ResponseAdvice implements ResponseBodyAdvice<Object> {
     @Override
     public boolean supports(
             MethodParameter returnType, @Nullable Class<? extends HttpMessageConverter<?>> converterType) {
-        return !Result.class.isAssignableFrom(returnType.getParameterType());
+        return !alreadyEnveloped(returnType);
+    }
+
+    /**
+     * 响应体是否已经是 {@link Result} 封套（是则跳过包装）。
+     * <p>
+     * 只看 {@code returnType.getParameterType()} 不够：{@code @ExceptionHandler} 的返回类型是
+     * {@code ResponseEntity<Result<Void>>}，外层类型是 ResponseEntity，会被误判成「非 Result」，
+     * 于是错误封套被再包一层 {@code Result.success(...)} —— 外层 code 变成 A0000/成功，真实错误码
+     * 缩进 data（前端取外层 message 会把失败提示显示成「成功」）。因此还要看泛型参数，
+     * {@code ResponseEntity<Result<T>>} / {@code HttpEntity<Result<T>>} 等包装类型一并覆盖。
+     */
+    private static boolean alreadyEnveloped(MethodParameter returnType) {
+        ResolvableType type = ResolvableType.forMethodParameter(returnType);
+        if (Result.class.isAssignableFrom(type.toClass())) {
+            return true;
+        }
+        ResolvableType body = type.getGeneric(0);
+        return body.resolve() != null && Result.class.isAssignableFrom(body.toClass());
     }
 
     @Override
