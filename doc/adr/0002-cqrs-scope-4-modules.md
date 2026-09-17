@@ -31,7 +31,7 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 
 - **product**：读多写少 + ES 全文搜索聚合，命令/查询分离收益明显
 - **order**：写链路为本地单事务 + 分布式锁 + Outbox（拒绝 Saga，见 [ADR 0007](0007-order-local-tx-over-saga.md)），查询侧需独立 ReadModel 支撑「我的订单 / 卖出订单」分页
-- **payment**：写操作幂等性强（`IdempotencyKeyFilter`），查询侧需独立支付流水视图
+- **payment**：写操作幂等性强（`IdempotencyKeyFilter`），查询侧需要与写侧解耦的支付流水读取路径（**Handler 级分离，未造独立 ReadModel**——见下方「两种深度」）
 - **message**：站内信 + WebSocket 实时消息，读多写多但查询维度独立（会话列表 / 未读数 / 历史消息），与命令（发送 / 撤回 / 已读）天然分离
 
 代码位置（以 message 为例验证边界）：
@@ -47,7 +47,7 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 |---------|---------|------|
 | product | 是 | ES 全文搜索 + facets 聚合，读模型独立价值最高 |
 | order | 是 | 写链路与查询分离，避免长事务拖累分页查询 |
-| payment | 是 | 写操作幂等 + 流水查询独立，CQRS 收益清晰 |
+| payment | 是 | 写操作幂等 + 流水查询解耦，收益在 Handler 级分离已足够 |
 | message | 是 | 会话列表 / 未读数 / 历史消息查询维度独立，与命令天然分离 |
 | user | 否 | 读写比均衡，CRUD 即可，强套 CQRS 是空壳 |
 | favorite | 否 | 六边形架构已足够，无独立查询维度 |
@@ -58,9 +58,11 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 ### 正向后果
 
 - 复杂度可控：4 个模块承担 CQRS 成本，其余模块保持简单的 `*AppService` 单服务模式
-- 重点模块收益明显：product 全文搜索、order 订单列表分页、payment 流水查询、message 会话列表都获得了独立 ReadModel
+- 重点模块收益明显：product 全文搜索、order 订单列表分页获得独立 ReadModel；payment 流水查询、message 会话列表获得读写路径解耦
 - 边界由 ArchUnit 守卫，新人加代码时「该往 command 还是 query」一目了然
 - order 写链路在 command 侧，查询不影响写事务
+
+> **两种深度（别把 4 个模块说成同一深度）**：product / order 是完整 CQRS——`ReadModel` + 独立查询仓储；payment / message 只到 **Command/Query Handler 级分离**（`*CommandHandler` / `*QueryHandler` 分文件 + 独立查询仓储），查询侧与写侧差异不大就不再造 ReadModel。核验方式：全仓 `*ReadModel.java` 只存在于 product(5) / order(2)。
 
 ### 负向后果
 

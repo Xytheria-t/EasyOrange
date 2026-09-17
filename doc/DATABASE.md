@@ -21,41 +21,39 @@
 
 | 脚本 | 内容 |
 |------|------|
-| `V1__init_schema.sql` | 32 张表初始化（开发阶段 V1~V9 收口为单文件） |
+| `V1__init_schema.sql` | 28 张表初始化（开发阶段 V1~V9 收口为单文件） |
 | `V2__favorite_price_snapshot.sql` | 收藏价格快照（收藏降价功能首个增量） |
 | `V3__task_scan_and_message_cleanup_indexes.sql` | 消息清理 / 订单定时扫描索引 |
 | `V4__stock_ledger.sql` | 库存流水表 `eo_stock_ledger` 与存量资产基线 |
-| `R__seed_*.sql` | 可重复执行种子：分类、支付渠道配置、RAG 知识库文档 |
+| `R__seed_*.sql` | 可重复执行种子：分类、RAG 知识库文档 |
 
 迁移规范与演进策略见 [架构-数据库迁移.md](架构/架构-数据库迁移.md)。
 
 ## 表总览
 
-共 33 张表：31 张 `eo_*` 业务/观测表（其中 3 张预留）+ 2 张 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。
+共 29 张表：27 张 `eo_*` 业务/观测表 + 2 张 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。
+
+> 早期建表时预留过 4 张从未被代码引用的表（eo_payment_config / eo_product_question / eo_audit_suggestion / eo_credit_change_log），已随 V1 收口删除——库里的表应当都有消费者。
 
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
 | 用户 | eo_user | 用户信息 | UserDO |
 | 用户 | eo_user_credit | 用户信用评分 | UserCreditDO |
-| 用户 | eo_credit_change_log | 信用分变更流水（预留） | — |
 | 商品 | eo_category | 商品分类（两级树） | CategoryDO |
 | 商品 | eo_product | 商品信息 | ProductDO |
 | 商品 | eo_product_detail | 商品详情（1:1） | ProductDetailDO |
 | 商品 | eo_product_image | 商品图片（1:N） | ProductImageDO |
 | 商品 | eo_stock_ledger | 库存流水（幂等落账 + 对账基准，见文末） | StockLedgerDO |
 | 商品 | eo_product_audit_log | 商品审核记录 | — |
-| 商品 | eo_audit_suggestion | AI 审核建议（预留） | — |
 | 商品 | eo_product_review | 商品评价 | ProductReviewDO |
 | 商品 | eo_product_report | 商品举报 | ProductReportDO |
 | 商品 | eo_report_handle_history | 举报处理历史 | ReportHandleHistoryDO |
-| 商品 | eo_product_question | 商品问答（预留） | — |
 | 商品 | eo_favorite | 用户收藏 | FavoriteDO |
 | 搜索 | eo_search_history | 搜索历史 | SearchHistoryDO |
 | 搜索 | eo_hot_keyword | 热门关键词 | HotKeywordDO |
 | 订单 | eo_order | 订单 | OrderDO |
 | 订单 | eo_order_item | 订单行项 | OrderItemDO |
 | 支付 | eo_payment | 支付记录 | PaymentDO |
-| 支付 | eo_payment_config | 支付渠道配置 | PaymentConfigDO |
 | 消息 | eo_message | 消息 | MessageDO |
 | 消息 | eo_message_archive | 消息归档 | — |
 | 消息 | eo_offline_message | 离线消息 | OfflineMessageDO |

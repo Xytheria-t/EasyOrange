@@ -5,7 +5,7 @@
 - **决策者**：后端架构
 - **标签**：`messaging` `event-driven` `rabbitmq` `kafka` `nats` `pulsar` `outbox` `dlq`
 
-> **现状更新（2026-08-07）**：事件消费者从决策时点的 11 收敛为 **10**（2026-08-04 支付 Saga 移除收口时，现役 DLQ 队列 10 个）；DLQ 重试实现收敛为 `DlqRetryScheduler` 内 `x-retry-count` 头驱动（固定 5 分钟扫描周期，退避由主队列 RetryTemplate 承担），`ExponentialBackoffRetryStrategy` 已删除并入该类，消费者统一处理基类 `AbstractDomainEventConsumer` 重构为 `EventConsumerHandler`。本记录保留 2026-07-30 决策时点的 11 消费者口径。
+> **现状更新（2026-09-17，覆盖 2026-08-07 版）**：现役**事件消费者 12 个**（12 个业务队列 + 对应 12 个 DLQ 队列，由 `DlqAnomalyListener` 单个监听器统一监听；全仓 `@RabbitListener` 计数为准）。数量轨迹：决策时点 11 → 2026-08-04 支付 Saga 移除收敛为 10 → 2026-08 后新增信用分 / 审核通知 / 举报通知 / 收藏降价等消费者回升至 12。DLQ 重试实现为 `DlqRetryScheduler` 内 `x-retry-count` 头驱动（固定 5 分钟扫描周期，退避由主队列 RetryTemplate 承担），`ExponentialBackoffRetryStrategy` 已删除并入该类，消费者统一处理基类 `AbstractDomainEventConsumer` 重构为 `EventConsumerHandler`。**正文保留 2026-07-30 决策时点的 11 消费者口径**（决策内容不改）。
 
 ---
 

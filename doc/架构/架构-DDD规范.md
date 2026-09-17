@@ -292,17 +292,24 @@ public class MessageUserInfoAdapter implements UserInfoPort {
 
 ### 当前架构测试 `[现状]`
 
-项目使用 ArchUnit 1.4.x（`@AnalyzeClasses` + `@ArchTest`）守卫 DDD 分层规则：
+项目使用 ArchUnit 1.4.x（`@AnalyzeClasses` + `@ArchTest`）守卫 DDD 分层规则，**共 12 条**（清单以 [`ArchitectureRulesTest`](../../easyorange-backend/easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java) 类注释为单一来源）：
 
-| 规则 | 说明 | 执行方式 |
-|------|------|---------|
-| 领域层零框架依赖 | `domain/` 包不得依赖 Spring/MyBatis/Servlet，不得依赖 controller/mapper/service.impl/DTO | ArchUnit `noClasses().dependOn()` |
-| CQRS 命令/查询分离 | CommandHandler 不得依赖 QueryHandler，反之亦然 | ArchUnit `noClasses().dependOn()` |
-| 业务模块间端口通信 | 业务模块间仅通过 `domain.port` / `domain.valueobject` 通信 | ArchUnit 自定义 `ArchCondition` |
-| 端口接口有适配器实现 | `domain.port.*Port` 接口必须在 `adapter.outbound` 有实现 | ArchUnit `JavaClasses` 方法测试 |
-| 禁止 infrastructure/ 包 | 已废弃，用 `adapter/outbound/` | ArchUnit `noClasses().resideInAPackage()` |
+| # | 规则 | 说明 |
+|---|------|------|
+| 1 | 领域层白名单准入 | `domain/` 只准依赖 JDK / jakarta.annotation / Lombok / SLF4J / MyBatis-Plus 注解 / Jackson 注解 / `common` |
+| 2 | command handler 禁依赖 query handler | CQRS 写读分离 |
+| 3 | query handler 禁依赖 command handler | CQRS 读写分离 |
+| 4 | 业务模块间端口通信 | 4 个 CQRS 业务模块之间仅通过 `domain.port` / `domain.valueobject` 通信 |
+| 5 | 端口必须有适配器实现 | `domain.port` / `application.port` 下的 `*Port` 必须在 `adapter.outbound` 有实现（按 `isAssignableFrom` 判定，不靠命名猜测） |
+| 6 | 禁止 `infrastructure/` 包 | 已废弃，统一用 `adapter/outbound/` |
+| 7 | domain/application 禁止反向依赖 adapter | 已知技术债由 `FreezingArchRule` 冻结，重构后自动解除 |
+| 8 | controller 禁止直连 mapper | 必须经由 application 服务 |
+| 9 | 禁止 `System.out` / `System.err` | 复用 ArchUnit `GeneralCodingRules` |
+| 10 | 禁止 `printStackTrace()` | 统一 SLF4J |
+| 11 | 禁止依赖 `org.springframework.dao` | domain/application 不得出现持久化技术异常，须在适配器内翻译 |
+| 12 | 每模块唯一领域异常根 | 直接继承 `BaseBusinessException` 的根类按模块唯一，其余语义走具名工厂 |
 
-~~**已知白名单**~~ ✅ 已全部消除（2026-07-04）：`MessageQueryRepository` 改用 domain record、`PaymentQueryRepository` 移至 `application/port/query/`、`CallbackSignatureVerifierPort` 确认结构正确后移除。`PORT_ALLOWLIST` 现为空集。
+> 除 `FreezingArchRule` 冻结的已知技术债（快照在 `src/test/resources/archunit_store/`）外无任何白名单——新违规直接失败。
 
 ### 测试分层策略
 
