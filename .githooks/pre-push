@@ -2,7 +2,7 @@
 # EasyOrange pre-push hook — 重门禁（构建 + 测试，推送前执行）
 #
 # 职责（按被推送 commit 的变更路径分发，不做全量）：
-#   1. 后端：easyorange-backend/ 下有非文档变更 → ./mvnw test（含编译）
+#   1. 后端：easyorange-backend/ 下有非文档变更 → ./mvnw -Pci spotless:check（格式）+ ./mvnw test（含编译）
 #   2. 前端：easyorange-frontend/ 下有非文档变更 → npm test（vitest run）
 #
 # 设计：
@@ -58,11 +58,20 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   done < <(git diff --name-only --diff-filter=ACMR "$remote_sha" "$local_sha")
 done
 
-# 1. 后端：mvn test
+# 1. 后端：先格式（秒级，失败即止），再 mvn test
 if (( need_backend )); then
   if [[ ! -x "$BACKEND_DIR/mvnw" ]]; then
-    hook_warn "mvnw not found in $BACKEND_DIR, skipping backend tests"
+    hook_warn "mvnw not found in $BACKEND_DIR, skipping backend gates"
   else
+    # spotless 只在 -Pci profile 声明，与 CI（./mvnw verify -Pci）同源；
+    # 排在 test 前：格式问题秒级失败，不必等完整测试跑完
+    hook_log "Backend changes pushed → spotless:check (format gate)..."
+    if (cd "$BACKEND_DIR" && ./mvnw -Pci spotless:check -q -B -ntp); then
+      hook_ok "spotless:check"
+    else
+      hook_fail "spotless:check failed — 运行 'cd easyorange-backend && ./mvnw -Pci spotless:apply' 规范化格式"
+    fi
+
     hook_log "Backend changes pushed → mvn test (compile + tests)..."
     # -fae 失败聚合到末尾；-nsu 不查 snapshot 远端；-B -ntp 静默
     if (cd "$BACKEND_DIR" && ./mvnw test -q -B -ntp -fae -nsu); then
@@ -72,7 +81,7 @@ if (( need_backend )); then
     fi
   fi
 else
-  hook_log "No backend changes, skipping mvn test"
+  hook_log "No backend changes, skipping spotless:check + mvn test"
 fi
 
 # 2. 前端：npm test（vitest run，非 watch）
