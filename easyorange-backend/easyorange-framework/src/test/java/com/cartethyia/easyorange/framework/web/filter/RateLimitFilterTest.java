@@ -217,9 +217,12 @@ class RateLimitFilterTest {
         when(valueOps.setIfAbsent(anyString(), any(), anyLong(), any())).thenReturn(true);
         stubHandler(handlerFor("noSkip"));
 
-        filter.doFilter(new MockHttpServletRequest("POST", "/api/favorites/2001"), new MockHttpServletResponse(), (r, s) -> {});
         filter.doFilter(
-                new MockHttpServletRequest("DELETE", "/api/favorites/2001"), new MockHttpServletResponse(), (r, s) -> {});
+                new MockHttpServletRequest("POST", "/api/favorites/2001"), new MockHttpServletResponse(), (r, s) -> {});
+        filter.doFilter(
+                new MockHttpServletRequest("DELETE", "/api/favorites/2001"),
+                new MockHttpServletResponse(),
+                (r, s) -> {});
 
         var keyCaptor = ArgumentCaptor.forClass(String.class);
         verify(valueOps, times(2)).setIfAbsent(keyCaptor.capture(), any(), anyLong(), any());
