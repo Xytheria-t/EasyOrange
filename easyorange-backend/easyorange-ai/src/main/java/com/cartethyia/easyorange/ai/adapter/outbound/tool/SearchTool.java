@@ -24,6 +24,13 @@ public interface SearchTool<T> {
     /** 工具名（唯一，对应 function name）。 */
     String name();
 
-    /** 并行执行本工具，返回异步结果。 */
+    /**
+     * 并行执行本工具，返回异步结果。
+     * <p>
+     * <b>失败约定：工具不要吞异常。</b>吞掉 LLM 异常返回 null/空值，会让管道分不清
+     * 「正常空结果」与「本次降级」，降级结果会被当成正常结果写进 5 分钟缓存
+     * （一次供应商抖动 → 缓存有效期内持续只返回残缺增强）。异常让 future 异常完成，
+     * 由 {@code AiSearchEnhancerAdapter} 统一判定降级并放弃缓存。
+     */
     CompletableFuture<T> run(SearchToolContext context);
 }

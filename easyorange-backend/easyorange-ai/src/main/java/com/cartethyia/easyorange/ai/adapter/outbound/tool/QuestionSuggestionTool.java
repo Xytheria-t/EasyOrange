@@ -5,12 +5,10 @@ import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
-/** 建议问题工具 — LLM 基于用户需求生成 2-3 个追问，失败降级空列表。 */
-@Slf4j
+/** 建议问题工具 — LLM 基于用户需求生成 2-3 个追问；失败抛给管道判定降级。 */
 @Component
 public class QuestionSuggestionTool implements SearchTool<List<String>> {
 
@@ -37,14 +35,9 @@ public class QuestionSuggestionTool implements SearchTool<List<String>> {
     public CompletableFuture<List<String>> run(SearchToolContext context) {
         return CompletableFuture.supplyAsync(
                 () -> {
-                    try {
-                        String result = aiModelSupport.callText(
-                                chatModel, AiCallScope.SEARCH_ENHANCE, SYSTEM_PROMPT, context.keyword());
-                        return result != null ? Arrays.asList(result.split("[,，]")) : List.of();
-                    } catch (Exception e) {
-                        log.warn("Question suggestion tool failed", e);
-                        return List.of();
-                    }
+                    String result = aiModelSupport.callText(
+                            chatModel, AiCallScope.SEARCH_ENHANCE, SYSTEM_PROMPT, context.keyword());
+                    return result != null ? Arrays.asList(result.split("[,，]")) : List.of();
                 },
                 VIRTUAL);
     }

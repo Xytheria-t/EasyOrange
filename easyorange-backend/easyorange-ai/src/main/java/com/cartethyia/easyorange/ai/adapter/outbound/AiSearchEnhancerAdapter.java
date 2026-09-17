@@ -28,6 +28,13 @@ import org.springframework.util.DigestUtils;
  * intent_detection（LLM 意图识别）/ product_tagging（规则标签）/ market_analysis（LLM 市场分析）/
  * question_suggestion（LLM 建议问题）。单步骤失败降级不影响整体，5s 总超时，
  * 结果经 Redis 5min TTL 缓存。
+ * <p>
+ * <b>对上游的契约是「永不抛异常」</b>：本类挂在商品检索主链路上（{@code ProductSearchQueryHandler}
+ * 不做异常兜底），任何意外失败都返回 {@link Optional#empty()}，让检索退化为「无 AI 增强」而不是整个接口 500。
+ * <p>
+ * <b>降级结果不进缓存</b>：超时/异常分支只把残缺结果返回给本次请求，不写 Redis ——
+ * 供应商抖动一次若被缓存 5 分钟，会让「降级」在缓存 TTL 内固化成「正常结果」。
+ * 代价是抖动期间每次请求都重试 LLM，这是刻意选择：宁可多花几次调用，也不伪装成正常。
  */
 @Slf4j
 @Primary
@@ -59,6 +66,16 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
     @Override
     public Optional<AiEnhancement> tryEnhance(String keyword, List<ProductReadModel> topProducts) {
+        try {
+            return doEnhance(keyword, topProducts);
+        } catch (Exception e) {
+            // 契约：异常不越过 Port 边界（调用方无兜底，逃逸即整个检索接口失败）
+            log.warn("AI search enhancement failed, search proceeds without enhancement, keyword={}", keyword, e);
+            return Optional.empty();
+        }
+    }
+
+    private Optional<AiEnhancement> doEnhance(String keyword, List<ProductReadModel> topProducts) {
         if (!nlDetector.isNaturalLanguage(keyword)) {
             return Optional.empty();
         }
@@ -95,23 +112,19 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
                     .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             log.warn("AI search enhancement timed out for keyword: {}", keyword);
+            // cancel(false) 不中断已开始的 LLM 调用（CompletableFuture 不支持中断），在飞调用会跑到
+            // 客户端超时才结束；这里只是避免未开始的任务继续调度，并回收本次请求要用的部分结果。
             intentFuture.cancel(false);
             marketFuture.cancel(false);
             questionsFuture.cancel(false);
-            return collectAndCache(
-                    cacheKey,
-                    collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture)
-                            .orElse(null));
+            return collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("AI search enhancement interrupted for keyword: {}", keyword);
             return Optional.empty();
         } catch (ExecutionException e) {
             log.warn("AI search enhancement failed for keyword: {}", keyword, e.getCause());
-            return collectAndCache(
-                    cacheKey,
-                    collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture)
-                            .orElse(null));
+            return collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture);
         }
 
         String intentExplanation = intentFuture.getNow(null);
@@ -124,24 +137,19 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
             return Optional.empty();
         }
 
+        // 只有四路全成功的路径才写缓存（降级结果已在上面直接返回）
         AiEnhancement result = new AiEnhancement(intentExplanation, productTags, marketAnalysis, suggestedQuestions);
         writeToCache(cacheKey, result);
         return Optional.of(result);
     }
 
     /**
-     * 从注册表取工具并提交并行执行；工具内部已处理各自降级（LLM 工具捕获异常返回降级值）。
+     * 从注册表取工具并提交并行执行；工具自身吞掉 LLM 异常返回降级值时结果照常参与合并，
+     * 未吞掉的异常会让 future 异常完成，由 {@code allOf(...).get()} 以 ExecutionException 统一抛出。
      */
     @SuppressWarnings("unchecked")
     private <T> CompletableFuture<T> runTool(String name, SearchToolContext context) {
         return (CompletableFuture<T>) toolRegistry.get(name).run(context);
-    }
-
-    private Optional<AiEnhancement> collectAndCache(String cacheKey, AiEnhancement result) {
-        if (result != null) {
-            writeToCache(cacheKey, result);
-        }
-        return Optional.ofNullable(result);
     }
 
     private void writeToCache(String cacheKey, AiEnhancement enhancement) {

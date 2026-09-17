@@ -3,17 +3,15 @@ package com.cartethyia.easyorange.ai.adapter.outbound.tool;
 import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import java.util.concurrent.CompletableFuture;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
-/** 市场分析工具 — LLM 基于搜索结果价格总结市场行情（均价/性价比），失败降级 null。 */
-@Slf4j
+/** 市场分析工具 — LLM 基于搜索结果价格总结市场行情（均价/性价比）；失败抛给管道判定降级。 */
 @Component
 public class MarketAnalysisTool implements SearchTool<String> {
 
     private static final String SYSTEM_PROMPT = """
-            你是 EasyOrange — AI 工程化 的市场分析助手。根据搜索到的资产价格信息，
+            你是 EasyOrange 平台的市场分析助手。根据搜索到的资产价格信息，
             用一句话概括当前市场价格情况（如均价、性价比等），不超过40个字。
             直接输出分析结果，不要前缀。
             """;
@@ -34,15 +32,8 @@ public class MarketAnalysisTool implements SearchTool<String> {
     @Override
     public CompletableFuture<String> run(SearchToolContext context) {
         return CompletableFuture.supplyAsync(
-                () -> {
-                    try {
-                        return aiModelSupport.callText(
-                                chatModel, AiCallScope.SEARCH_ENHANCE, SYSTEM_PROMPT, context.marketContext());
-                    } catch (Exception e) {
-                        log.warn("Market analysis tool failed", e);
-                        return null;
-                    }
-                },
+                () -> aiModelSupport.callText(
+                        chatModel, AiCallScope.SEARCH_ENHANCE, SYSTEM_PROMPT, context.marketContext()),
                 VIRTUAL);
     }
 }
