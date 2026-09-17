@@ -1,7 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { UIState } from '@/store/uiStore';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import type { Order, PageResult } from '@/types';
 import OrdersPage from './OrdersPage';
@@ -11,20 +10,7 @@ const mockUseCancelOrder = vi.hoisted(() => vi.fn());
 const mockUsePayOrder = vi.hoisted(() => vi.fn());
 const mockUseReceiveOrder = vi.hoisted(() => vi.fn());
 const mockNavigate = vi.hoisted(() => vi.fn());
-const mockUseUIStore = vi.hoisted(() =>
-    vi.fn((selector?: (s: UIState) => unknown) => {
-        const state: UIState = {
-            toasts: [],
-            isLoading: false,
-            loadingMessage: '',
-            addToast: vi.fn(),
-            removeToast: vi.fn(),
-            showLoading: vi.fn(),
-            hideLoading: vi.fn(),
-        };
-        return selector ? selector(state) : state;
-    })
-);
+const mockAddToast = vi.hoisted(() => vi.fn());
 
 vi.mock('@/hooks', async () => {
     const actual = await vi.importActual<typeof import('@/hooks')>('@/hooks');
@@ -38,7 +24,10 @@ vi.mock('@/hooks', async () => {
 });
 
 vi.mock('@/store', () => ({
-    useUIStore: mockUseUIStore,
+    useUIStore: vi.fn(sel => {
+        const s = { addToast: mockAddToast };
+        return sel ? sel(s) : s;
+    }),
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -92,18 +81,6 @@ beforeEach(() => {
     mockUseCancelOrder.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false });
     mockUsePayOrder.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false });
     mockUseReceiveOrder.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false });
-    mockUseUIStore.mockImplementation((selector?: (s: UIState) => unknown) => {
-        const state: UIState = {
-            toasts: [],
-            isLoading: false,
-            loadingMessage: '',
-            addToast: vi.fn(),
-            removeToast: vi.fn(),
-            showLoading: vi.fn(),
-            hideLoading: vi.fn(),
-        };
-        return selector ? selector(state) : state;
-    });
 });
 
 describe('OrdersPage', () => {
@@ -215,20 +192,7 @@ describe('OrdersPage', () => {
 
     it('calls cancelOrder when cancel button is clicked', async () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
-        const addToast = vi.fn();
         mockUseCancelOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        mockUseUIStore.mockImplementation((selector?: (s: UIState) => unknown) => {
-            const state: UIState = {
-                toasts: [],
-                isLoading: false,
-                loadingMessage: '',
-                addToast,
-                removeToast: vi.fn(),
-                showLoading: vi.fn(),
-                hideLoading: vi.fn(),
-            };
-            return selector ? selector(state) : state;
-        });
         const order = createMockOrder({ id: 'order1', status: 0 });
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
@@ -236,26 +200,13 @@ describe('OrdersPage', () => {
         await user.click(screen.getByText('取消订单'));
         expect(mockMutateAsync).toHaveBeenCalledWith({ id: 'order1' });
         await waitFor(() => {
-            expect(addToast).toHaveBeenCalledWith({ type: 'success', message: '订单已取消' });
+            expect(mockAddToast).toHaveBeenCalledWith({ type: 'success', message: '订单已取消' });
         });
     });
 
     it('calls payOrder when pay button is clicked', async () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
-        const addToast = vi.fn();
         mockUsePayOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        mockUseUIStore.mockImplementation((selector?: (s: UIState) => unknown) => {
-            const state: UIState = {
-                toasts: [],
-                isLoading: false,
-                loadingMessage: '',
-                addToast,
-                removeToast: vi.fn(),
-                showLoading: vi.fn(),
-                hideLoading: vi.fn(),
-            };
-            return selector ? selector(state) : state;
-        });
         const order = createMockOrder({ id: 'order1', status: 0 });
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
@@ -263,26 +214,13 @@ describe('OrdersPage', () => {
         await user.click(screen.getByText('立即支付'));
         expect(mockMutateAsync).toHaveBeenCalledWith('order1');
         await waitFor(() => {
-            expect(addToast).toHaveBeenCalledWith({ type: 'success', message: '支付请求已提交' });
+            expect(mockAddToast).toHaveBeenCalledWith({ type: 'success', message: '支付请求已提交' });
         });
     });
 
     it('calls receiveOrder when confirm receive button is clicked', async () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
-        const addToast = vi.fn();
         mockUseReceiveOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        mockUseUIStore.mockImplementation((selector?: (s: UIState) => unknown) => {
-            const state: UIState = {
-                toasts: [],
-                isLoading: false,
-                loadingMessage: '',
-                addToast,
-                removeToast: vi.fn(),
-                showLoading: vi.fn(),
-                hideLoading: vi.fn(),
-            };
-            return selector ? selector(state) : state;
-        });
         const order = createMockOrder({ id: 'order1', status: 2 });
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
@@ -290,7 +228,7 @@ describe('OrdersPage', () => {
         await user.click(screen.getByText('确认收货'));
         expect(mockMutateAsync).toHaveBeenCalledWith('order1');
         await waitFor(() => {
-            expect(addToast).toHaveBeenCalledWith({ type: 'success', message: '已确认收货' });
+            expect(mockAddToast).toHaveBeenCalledWith({ type: 'success', message: '已确认收货' });
         });
     });
 

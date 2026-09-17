@@ -94,7 +94,7 @@ describe('useUpdateUserStatus', () => {
             wrapper: Wrapper,
         });
 
-        result.current.mutate({ id: '1', data: { status: 1 } });
+        result.current.mutate({ id: '1', data: { status: 'DISABLED' } });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
     });

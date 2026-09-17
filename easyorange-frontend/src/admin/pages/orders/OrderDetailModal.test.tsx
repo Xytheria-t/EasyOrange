@@ -43,6 +43,8 @@ const sampleOrderDetail: AdminOrderDetail = {
     payTime: null,
     updateTime: '2026-05-16T10:00:00',
     cancelTime: null,
+    refundReason: null,
+    refundTime: null,
 };
 
 function setupMocks(overrides: Partial<{ data: AdminOrderDetail | undefined; isLoading: boolean }> = {}) {
