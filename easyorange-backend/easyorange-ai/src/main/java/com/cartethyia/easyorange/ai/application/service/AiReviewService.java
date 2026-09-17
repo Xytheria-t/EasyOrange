@@ -37,6 +37,7 @@ public class AiReviewService {
 
         String userMessage = String.format(
                 """
+                <asset_info>
                 商品名称：%s
                 描述：%s
                 分类：%s
@@ -44,6 +45,7 @@ public class AiReviewService {
                 价格：%s
                 资产方：%s
                 图片数量：%d张
+                </asset_info>
                 """,
                 productName,
                 description != null ? description : "无",

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 public class IntentDetectionTool implements SearchTool<String> {
 
     private static final String SYSTEM_PROMPT = """
-            你是 EasyOrange — AI 工程化 的 AI 导购助手。
+            你是 EasyOrange 平台的 AI 导购助手。
             用户输入了一段自然语言商品搜索需求。
             请用一句简洁的话总结用户想找什么，不超过30个字。
             直接输出总结，不要前缀。

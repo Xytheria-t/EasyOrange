@@ -53,6 +53,7 @@ public class AiQaService {
     private String buildUserMessage(QaRequest request) {
         return String.format(
                 """
+                <asset_info>
                 商品信息：
                 - 名称：%s
                 - 描述：%s
@@ -61,8 +62,11 @@ public class AiQaService {
                 - 成色：%s
                 - 资产方：%s
                 - 资产方信誉等级：%s
+                </asset_info>
 
-                用户提问：%s
+                <user_question>
+                %s
+                </user_question>
                 """,
                 request.productName(),
                 request.productDescription(),

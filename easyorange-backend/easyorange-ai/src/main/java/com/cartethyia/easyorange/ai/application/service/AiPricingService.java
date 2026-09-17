@@ -35,11 +35,13 @@ public class AiPricingService {
 
         String userMessage = String.format(
                 """
+                <asset_info>
                 商品名称：%s
                 描述：%s
                 分类：%s
                 成色：%s
                 原价：%s
+                </asset_info>
                 """,
                 productName,
                 description != null ? description : "无",
