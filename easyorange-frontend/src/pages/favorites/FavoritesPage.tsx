@@ -345,13 +345,17 @@ export default function FavoritesPage() {
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                         />
 
-                                        {/* biome-ignore lint/a11y/useSemanticElements: wrapper div for custom checkbox overlay */}
+                                        {/* 卡片整体是 <Link>：勾选区必须同时阻断冒泡与默认行为。
+                                            stopPropagation 只挡下 Link 的 onClick，不 preventDefault
+                                            则浏览器仍会跟随 href 整页跳到商品详情，勾选永远点不中。
+                                            键盘只阻断冒泡（不 preventDefault，否则空格激活勾选框会被打断）。
+                                            biome-ignore lint/a11y/noStaticElementInteractions: 交互控件是内层 Checkbox（自带 role/键盘支持），外层 div 只拦截冒泡与默认跳转，自身不可聚焦、无角色 */}
                                         <div
                                             className="fav-card-checkbox"
-                                            role="checkbox"
-                                            aria-checked={selectedIds.has(fav.id)}
-                                            tabIndex={0}
-                                            onClick={e => e.stopPropagation()}
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                            }}
                                             onKeyDown={e => e.stopPropagation()}
                                         >
                                             <Checkbox
