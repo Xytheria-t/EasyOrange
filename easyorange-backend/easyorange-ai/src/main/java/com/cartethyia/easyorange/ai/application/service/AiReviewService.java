@@ -3,14 +3,12 @@ package com.cartethyia.easyorange.ai.application.service;
 import com.cartethyia.easyorange.ai.application.dto.AiReviewResult;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.model.PromptTemplate;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -27,7 +25,6 @@ public class AiReviewService {
     public static final String FLAG_UNAVAILABLE = "AI_UNAVAILABLE";
 
     private final ChatModel chatModel;
-    private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
     private final AiModelSupport aiModelSupport;
 
@@ -40,7 +37,8 @@ public class AiReviewService {
             String price,
             String sellerName,
             List<String> imageUrls) {
-        String systemPrompt = loadSystemPrompt();
+        // 模板缺失是部署期配置错误，不进降级：静默降级会把「配置错」伪装成「AI 看不了」
+        String systemPrompt = promptRegistry.require(PROMPT_NAME);
 
         String userMessage = String.format(
                 """
@@ -62,35 +60,28 @@ public class AiReviewService {
                 sellerName,
                 imageUrls != null ? imageUrls.size() : 0);
 
-        try {
-            String jsonResponse = aiModelSupport.callJson(chatModel, AiCallScope.REVIEW, systemPrompt, userMessage);
-            if (jsonResponse == null) {
-                return unavailable("AI 无法分析，请人工审核");
-            }
-            return objectMapper.readValue(jsonResponse, AiReviewResult.class);
-        } catch (Exception e) {
-            log.error("AI review failed for product: {}", productName, e);
-            return unavailable("AI 分析异常，请人工审核");
-        }
+        // 模型故障 / 返回空 / JSON 不合 schema 三种情况在 callJsonAs 里统一成 empty，
+        // 对审核建议而言降级方向也只有一种：交人工（原因差异只影响排查，见 AiModelSupport 的 warn 日志）
+        return aiModelSupport
+                .callJsonAs(chatModel, AiCallScope.REVIEW, systemPrompt, userMessage, AiReviewResult.class)
+                .orElseGet(() -> {
+                    log.warn("AI review unavailable for product: {}", productName);
+                    return unavailable("AI 无法分析，请人工审核");
+                });
     }
 
     /**
      * AI 不可用时的降级结果。
      * <p>
-     * <b>降级方向必须是「不确定」而不是「通过」</b>：{@code isApproved} 直接驱动管理端的
+     * <b>降级方向必须是「不确定」而不是「通过」</b>：{@code suggestedAction} 直接驱动管理端的
      * 「采纳 AI 建议」按钮（true → 一键通过）。AI 挂掉时给「通过」，等于把「AI 没看成」
      * 变成「平台放行」；而给「拒绝」又会误导成误杀。这里返回 0 置信度 + {@link #FLAG_UNAVAILABLE}，
      * 语义是「本次 AI 建议无效」，由人工接管 —— 与限流 fail-open（不影响用户）不同，
      * 审核建议的降级方向要 fail-safe。
+     * <p>
+     * 调用方（{@code AdminProductAuditAdapter}）兜底时复用本工厂，避免降级口径写成两份。
      */
-    private static AiReviewResult unavailable(String reasoning) {
+    public static AiReviewResult unavailable(String reasoning) {
         return new AiReviewResult(false, "无法判定", 0, List.of(FLAG_UNAVAILABLE), reasoning);
-    }
-
-    private String loadSystemPrompt() {
-        return promptRegistry
-                .getLatest(PROMPT_NAME)
-                .map(PromptTemplate::template)
-                .orElseThrow(() -> new IllegalStateException("Prompt template not found: " + PROMPT_NAME));
     }
 }

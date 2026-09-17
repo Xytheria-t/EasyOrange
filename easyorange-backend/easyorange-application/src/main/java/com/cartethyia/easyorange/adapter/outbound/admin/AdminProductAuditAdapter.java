@@ -149,27 +149,29 @@ public class AdminProductAuditAdapter implements AdminProductAuditPort {
             throw ProductDomainException.notFound(ProductId.of(productId));
         }
         try {
-            AiReviewResult result = aiReviewService.reviewProduct(
+            return toReviewRecord(aiReviewService.reviewProduct(
                     data.name(),
                     data.description(),
                     data.categoryName(),
                     data.conditionLevel(),
                     data.price().toString(),
                     data.sellerName(),
-                    data.imageUrls());
-            return new AiReviewRecord(
-                    result.suggestedAction(),
-                    result.suggestedActionDesc(),
-                    result.confidenceScore(),
-                    result.riskFlags(),
-                    result.reasoning());
+                    data.imageUrls()));
         } catch (Exception e) {
-            // AI 建议拿不到不该让审核页打不开（此处是全链路唯一没有兜底的 AI 调用点）：
-            // 降级为「无法判定」，与 AiReviewService 内部的降级语义一致 —— 不给「通过」，
-            // 因为 isApproved 会渲染成管理端的一键通过按钮
+            // AI 建议拿不到不该让审核页打不开，降级为「无法判定」。复用服务内的同一降级工厂，
+            // 避免降级口径（false + AI_UNAVAILABLE）在这里写成第二份实现而漂移
             log.warn("AI review suggestion unavailable for product {}, fallback to manual review", productId, e);
-            return new AiReviewRecord(false, "无法判定", 0, List.of(AiReviewService.FLAG_UNAVAILABLE), "AI 审核不可用，请人工审核");
+            return toReviewRecord(AiReviewService.unavailable("AI 审核不可用，请人工审核"));
         }
+    }
+
+    private static AiReviewRecord toReviewRecord(AiReviewResult result) {
+        return new AiReviewRecord(
+                result.suggestedAction(),
+                result.suggestedActionDesc(),
+                result.confidenceScore(),
+                result.riskFlags(),
+                result.reasoning());
     }
 
     private static AuditAction parseAction(Integer actionCode) {
