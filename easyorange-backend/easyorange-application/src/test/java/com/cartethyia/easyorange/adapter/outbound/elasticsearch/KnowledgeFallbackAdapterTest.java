@@ -8,6 +8,8 @@ import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -23,10 +25,12 @@ class KnowledgeFallbackAdapterTest {
     @Mock
     private KnowledgeRepository repository;
 
+    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
     @Test
     @DisplayName("isAvailable=false -> 摄入侧保持 PENDING（启动补索引重试）")
     void unavailable() {
-        KnowledgeIndexPort adapter = new KnowledgeFallbackAdapter(repository);
+        KnowledgeIndexPort adapter = new KnowledgeFallbackAdapter(repository, meterRegistry);
 
         assertThat(adapter.isAvailable()).isFalse();
     }
@@ -43,7 +47,7 @@ class KnowledgeFallbackAdapterTest {
                         com.cartethyia.easyorange.ai.domain.constant.KnowledgeDocStatus.INDEXED,
                         3,
                         LocalDateTime.now())));
-        KnowledgeIndexPort adapter = new KnowledgeFallbackAdapter(repository);
+        KnowledgeIndexPort adapter = new KnowledgeFallbackAdapter(repository, meterRegistry);
 
         List<KnowledgeChunk> chunks = adapter.search("退款", null, 5);
 
@@ -52,12 +56,17 @@ class KnowledgeFallbackAdapterTest {
         assertThat(chunks.getFirst().title()).isEqualTo("退款规则");
         assertThat(chunks.getFirst().embedding()).isNull();
         verify(repository).searchByContent("退款", 5);
+        assertThat(meterRegistry
+                        .counter("easyorange.ai.rag.degraded", "op", "search")
+                        .count())
+                .as("降级调用必须计数——否则运维无法区分「真实索引召回」与「LIKE 兜底」")
+                .isEqualTo(1.0);
     }
 
     @Test
     @DisplayName("摄入/删除 -> 无索引可写，静默跳过")
     void ingestAndRemoveNoop() {
-        KnowledgeIndexPort adapter = new KnowledgeFallbackAdapter(repository);
+        KnowledgeIndexPort adapter = new KnowledgeFallbackAdapter(repository, meterRegistry);
 
         adapter.ingestChunks(List.of());
         adapter.removeDoc("kb-0001");
