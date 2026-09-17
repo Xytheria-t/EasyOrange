@@ -8,7 +8,6 @@ import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.exception.TokenBudgetExceededException;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
-import com.cartethyia.easyorange.ai.domain.model.PromptTemplate;
 import com.cartethyia.easyorange.ai.domain.model.ToolDecision;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
 import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
@@ -40,7 +39,7 @@ import tools.jackson.databind.ObjectMapper;
  * <pre>
  * 1. 记忆装配：Redis 会话窗口（短期）+ 用户画像表（长期）
  * 2. 工具决策：模型输出 JSON 决定是否检索知识库（knowledge_search），顺带提取用户偏好
- * 3. 执行工具：KnowledgeRetrievalService 混合召回 + Cosine 重排，返回带来源的命中
+ * 3. 执行工具：KnowledgeRetrievalService 两路召回 + RRF 排名融合（排序在 ES 适配器内完成），返回带来源的命中
  * 4. 生成回答：system prompt 注入画像/历史/检索结果，回答末尾 [来源:标题] 引用溯源
  * </pre>
  * 流式路径（SSE）在方法返回前完成不了 AOP 预算记账，由 {@link #streamAnswer}
@@ -188,7 +187,8 @@ public class AiChatService {
         }
 
         // 4. 生成回答（按角色传消息：system / 历史 user+assistant / 当前 user，流式时逐 token 回调）
-        List<Message> messages = buildMessages(loadSystemPrompt(CHAT_PROMPT), request.question(), history, prefs, hits);
+        List<Message> messages =
+                buildMessages(promptRegistry.require(CHAT_PROMPT), request.question(), history, prefs, hits);
         String answer = handler != null
                 ? aiModelSupport.callTextStream(chatModel, AiCallScope.CHAT, messages, handler::onToken)
                 : aiModelSupport.callText(chatModel, AiCallScope.CHAT, messages);
@@ -214,7 +214,7 @@ public class AiChatService {
             String json = aiModelSupport.callJson(
                     modelRouter.choose("chat_tool"),
                     AiCallScope.CHAT,
-                    loadSystemPrompt(TOOL_PROMPT),
+                    promptRegistry.require(TOOL_PROMPT),
                     buildToolUserMessage(question, history, prefs));
             ToolDecision decision = objectMapper.readValue(json, ToolDecision.class);
             return decision != null ? decision : new ToolDecision("none", question, null);
@@ -254,13 +254,6 @@ public class AiChatService {
     private int resolveDailyTokenLimit() {
         var cfg = aiProperties.budget().resolve(CHAT_SCENARIO);
         return cfg != null ? cfg.dailyTokenLimit() : DEFAULT_DAILY_LIMIT;
-    }
-
-    private String loadSystemPrompt(String name) {
-        return promptRegistry
-                .getLatest(name)
-                .map(PromptTemplate::template)
-                .orElseThrow(() -> new IllegalStateException("Prompt template not found: " + name));
     }
 
     private static String buildToolUserMessage(String question, List<ChatTurn> history, List<UserPreference> prefs) {

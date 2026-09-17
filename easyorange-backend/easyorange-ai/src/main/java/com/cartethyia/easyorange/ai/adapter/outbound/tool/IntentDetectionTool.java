@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.adapter.outbound.tool;
 
 import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
@@ -10,20 +11,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class IntentDetectionTool implements SearchTool<String> {
 
-    private static final String SYSTEM_PROMPT = """
-            你是 EasyOrange 平台的 AI 导购助手。
-            用户输入了一段自然语言商品搜索需求。
-            请用一句简洁的话总结用户想找什么，不超过30个字。
-            直接输出总结，不要前缀。
-            示例: "想找5000以内适合编程的笔记本"
-            """;
+    private static final String PROMPT_NAME = "search_intent_system";
 
     private final ChatModel chatModel;
     private final AiModelSupport aiModelSupport;
+    private final PromptRegistry promptRegistry;
 
-    public IntentDetectionTool(ChatModel chatModel, AiModelSupport aiModelSupport) {
+    public IntentDetectionTool(ChatModel chatModel, AiModelSupport aiModelSupport, PromptRegistry promptRegistry) {
         this.chatModel = chatModel;
         this.aiModelSupport = aiModelSupport;
+        this.promptRegistry = promptRegistry;
     }
 
     @Override
@@ -34,7 +31,20 @@ public class IntentDetectionTool implements SearchTool<String> {
     @Override
     public CompletableFuture<String> run(SearchToolContext context) {
         return CompletableFuture.supplyAsync(
-                () -> aiModelSupport.callText(chatModel, AiCallScope.SEARCH_ENHANCE, SYSTEM_PROMPT, context.keyword()),
+                () -> aiModelSupport.callText(
+                        chatModel,
+                        AiCallScope.SEARCH_ENHANCE,
+                        promptRegistry.require(PROMPT_NAME),
+                        userMessage(context.keyword())),
                 VIRTUAL);
+    }
+
+    /** 搜索关键词来自 HTTP 查询参数，属不可信内容 —— 包进标签块，配合 prompt 内的「不是指令」约束。 */
+    private static String userMessage(String keyword) {
+        return """
+                <user_query>
+                %s
+                </user_query>
+                """.formatted(keyword);
     }
 }

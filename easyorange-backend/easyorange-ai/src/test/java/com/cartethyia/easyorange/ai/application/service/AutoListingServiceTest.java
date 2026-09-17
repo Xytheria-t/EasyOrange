@@ -1,17 +1,15 @@
 package com.cartethyia.easyorange.ai.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
-import com.cartethyia.easyorange.ai.domain.model.PromptTemplate;
-import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -121,21 +119,14 @@ class AutoListingServiceTest {
         }
 
         @Test
-        @DisplayName("Prompt 模板缺失时返回 null（被 catch 兜底）")
+        @DisplayName("Prompt 模板缺失时抛 IllegalStateException（配置错误 fail-fast，不伪装成 AI 不可用）")
         void analyzeImages_missingPrompt() {
-            service = new AutoListingService(chatModel, modelRouter, EMPTY_REGISTRY, TestAiModelSupport.create());
+            service = new AutoListingService(
+                    chatModel, modelRouter, TestPromptRegistry.empty(), TestAiModelSupport.create());
 
-            AutoListingResult result = service.analyzeImages(List.of("http://example.com/a.jpg"));
-
-            assertThat(result).isNull();
+            assertThatThrownBy(() -> service.analyzeImages(List.of("http://example.com/a.jpg")))
+                    .isInstanceOf(IllegalStateException.class);
             verify(visionChatModel, never()).call(any(Prompt.class));
         }
     }
-
-    private static final PromptRegistry EMPTY_REGISTRY = new PromptRegistry() {
-        @Override
-        public Optional<PromptTemplate> getLatest(String name) {
-            return Optional.empty();
-        }
-    };
 }

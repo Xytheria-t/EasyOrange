@@ -15,7 +15,6 @@ import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
-import com.cartethyia.easyorange.ai.domain.model.PromptTemplate;
 import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
@@ -23,6 +22,7 @@ import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
+import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -49,14 +49,11 @@ import tools.jackson.databind.ObjectMapper;
 @DisplayName("AiChatService (Agent 编排) -> 测试")
 class AiChatServiceTest {
 
-    private static final String TOOL_TEMPLATE = "你是工具决策器";
-    private static final String CHAT_TEMPLATE = "你是 EasyOrange AI 助手";
-
     @Mock
     private ChatModel chatModel;
 
-    @Mock
-    private PromptRegistry promptRegistry;
+    /** 用真实桩而非 mock：{@code PromptRegistry.require} 是接口 default 方法，mock 会把它拦成 null。 */
+    private final PromptRegistry promptRegistry = new TestPromptRegistry();
 
     @Mock
     private AiModelSupport aiModelSupport;
@@ -100,13 +97,7 @@ class AiChatServiceTest {
                 aiProperties,
                 new ObjectMapper(),
                 staleCache);
-        // 部分用例（空问题/预算超限/缓存命中）不会走到工具决策，prompt/router stub 允许不被消费
-        lenient()
-                .when(promptRegistry.getLatest("ai_chat_tool_system"))
-                .thenReturn(Optional.of(new PromptTemplate("ai_chat_tool_system", "v1", TOOL_TEMPLATE, "tool")));
-        lenient()
-                .when(promptRegistry.getLatest("ai_chat_system"))
-                .thenReturn(Optional.of(new PromptTemplate("ai_chat_system", "v1", CHAT_TEMPLATE, "chat")));
+        // 部分用例（空问题/预算超限/缓存命中）不会走到工具决策，router stub 允许不被消费
         lenient().when(modelRouter.choose("chat_tool")).thenReturn(chatModel);
     }
 

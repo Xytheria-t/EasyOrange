@@ -114,19 +114,10 @@ class AiCopyGenerationServiceTest {
         @Test
         @DisplayName("Prompt 模板缺失时抛 IllegalStateException")
         void generateCopy_missingPrompt() {
-            service = new AiCopyGenerationService(chatModel, EMPTY_REGISTRY, TestAiModelSupport.create());
+            service = new AiCopyGenerationService(chatModel, TestPromptRegistry.empty(), TestAiModelSupport.create());
 
             assertThatThrownBy(() -> service.generateCopy("A", "B", "1", "100", null))
                     .isInstanceOf(IllegalStateException.class);
         }
     }
-
-    private static final com.cartethyia.easyorange.ai.domain.port.PromptRegistry EMPTY_REGISTRY =
-            new com.cartethyia.easyorange.ai.domain.port.PromptRegistry() {
-                @Override
-                public java.util.Optional<com.cartethyia.easyorange.ai.domain.model.PromptTemplate> getLatest(
-                        String name) {
-                    return java.util.Optional.empty();
-                }
-            };
 }

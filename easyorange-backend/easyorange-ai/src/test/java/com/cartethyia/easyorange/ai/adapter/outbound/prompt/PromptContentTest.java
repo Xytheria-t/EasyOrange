@@ -9,10 +9,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /**
- * Prompt YAML 内容回归测试 — 守卫 6 个 AI 服务 prompt 模板已加载且内容完整。
+ * Prompt YAML 内容回归测试 — 守卫全部 AI prompt 模板已加载且内容完整。
  * <p>
  * 该测试与 {@link YamlPromptRegistry} 同包，可调用 package-private {@code init()}
  * 触发 classpath 加载，验证生产环境真实的 YAML 文件可被解析。
+ * <p>
+ * {@link #ALL_PROMPTS} 是「prompt 全部走 YAML 版本化」这条铁律的断言载体：
+ * 任何服务把 prompt 退回硬编码 Java 常量，这里的条数就对不上。
  */
 @DisplayName("Prompt YAML 内容回归测试")
 class PromptContentTest {
@@ -33,11 +36,14 @@ class PromptContentTest {
         "ai_review_system",
         "ai_qa_system",
         "auto_listing_visual",
-        "auto_listing_system"
+        "auto_listing_system",
+        "search_intent_system",
+        "search_market_system",
+        "search_question_suggestion_system"
     };
 
     @Test
-    @DisplayName("8 个 prompt 模板全部加载成功（6 业务服务 + 对话 + 工具决策）")
+    @DisplayName("11 个 prompt 模板全部加载成功（6 业务服务 + 对话 + 工具决策 + 搜索增强 3 工具）")
     void allPromptsLoaded() {
         for (String name : ALL_PROMPTS) {
             assertThat(registry.getLatest(name)).as("prompt '%s' 应加载成功", name).isPresent();
@@ -51,7 +57,10 @@ class PromptContentTest {
         "ai_review_system, 资产审核助手",
         "ai_qa_system, 智能客服助手",
         "auto_listing_visual, 商品类型和名称",
-        "auto_listing_system, 智能上架助手"
+        "auto_listing_system, 智能上架助手",
+        "search_intent_system, AI 导购助手",
+        "search_market_system, 市场分析助手",
+        "search_question_suggestion_system, 想追问的问题"
     })
     @DisplayName("每个 prompt 模板包含服务特定的关键短语（防内容漂移）")
     void promptContainsKeyPhrase(String promptName, String keyPhrase) {

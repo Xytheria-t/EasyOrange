@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.ai.application.dto.QaRequest;
 import com.cartethyia.easyorange.ai.application.dto.QaResponse;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.model.PromptTemplate;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +23,7 @@ public class AiQaService {
 
     @TokenBudget(scenario = "qa", maxTokensPerCall = 1000, dailyTokenLimit = 200_000)
     public QaResponse answerQuestion(QaRequest request) {
-        String systemPrompt = loadSystemPrompt();
+        String systemPrompt = promptRegistry.require(PROMPT_NAME);
         String userMessage = buildUserMessage(request);
         log.debug("Answering question for productId={}, question={}", request.productId(), request.question());
 
@@ -41,13 +40,6 @@ public class AiQaService {
             log.error("Failed to generate answer for productId={}", request.productId(), e);
             return new QaResponse("AI服务暂时不可用", false);
         }
-    }
-
-    private String loadSystemPrompt() {
-        return promptRegistry
-                .getLatest(PROMPT_NAME)
-                .map(PromptTemplate::template)
-                .orElseThrow(() -> new IllegalStateException("Prompt template not found: " + PROMPT_NAME));
     }
 
     private String buildUserMessage(QaRequest request) {

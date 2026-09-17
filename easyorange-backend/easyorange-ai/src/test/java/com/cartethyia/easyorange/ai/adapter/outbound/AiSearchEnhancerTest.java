@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.ai.adapter.outbound.tool.*;
 import com.cartethyia.easyorange.ai.application.service.NaturalLanguageDetector;
 import com.cartethyia.easyorange.ai.application.service.ProductTagger;
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import java.math.BigDecimal;
@@ -65,10 +66,10 @@ class AiSearchEnhancerTest {
 
     private SearchToolRegistry buildRegistry() {
         return new SearchToolRegistry(List.of(
-                new IntentDetectionTool(chatModel, TestAiModelSupport.create()),
+                new IntentDetectionTool(chatModel, TestAiModelSupport.create(), new TestPromptRegistry()),
                 new ProductTaggingTool(productTagger),
-                new MarketAnalysisTool(chatModel, TestAiModelSupport.create()),
-                new QuestionSuggestionTool(chatModel, TestAiModelSupport.create())));
+                new MarketAnalysisTool(chatModel, TestAiModelSupport.create(), new TestPromptRegistry()),
+                new QuestionSuggestionTool(chatModel, TestAiModelSupport.create(), new TestPromptRegistry())));
     }
 
     private ProductReadModel product(String id, String title, BigDecimal price) {
@@ -103,6 +104,9 @@ class AiSearchEnhancerTest {
 
     /**
      * Prompt 首条消息（system）包含指定片段的匹配器 — 区分同一 mock 上的多个 LLM 调用。
+     * <p>
+     * 匹配片段用模板名（{@link TestPromptRegistry} 的 stub 正文里带着名字），
+     * 断言的是「哪路工具挑了哪个 prompt」，不是 prompt 正文本身。
      */
     private static Prompt withSystemContaining(String fragment) {
         return argThat(p -> {
@@ -200,10 +204,13 @@ class AiSearchEnhancerTest {
         void tryEnhance_allSuccess() {
             when(nlDetector.isNaturalLanguage("推荐个5000的笔记本")).thenReturn(true);
             when(valueOps.get(anyString())).thenReturn(null);
-            when(chatModel.call(withSystemContaining("导购助手"))).thenReturn(textResponse("想找5000元左右的笔记本电脑"));
+            when(chatModel.call(withSystemContaining("search_intent_system")))
+                    .thenReturn(textResponse("想找5000元左右的笔记本电脑"));
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of("💰超值")));
-            when(chatModel.call(withSystemContaining("市场分析"))).thenReturn(textResponse("当前在管笔记本均价约4800元，性价比不错"));
-            when(chatModel.call(withSystemContaining("追问"))).thenReturn(textResponse("有游戏需求吗,需要轻薄吗"));
+            when(chatModel.call(withSystemContaining("search_market_system")))
+                    .thenReturn(textResponse("当前在管笔记本均价约4800元，性价比不错"));
+            when(chatModel.call(withSystemContaining("search_question_suggestion_system")))
+                    .thenReturn(textResponse("有游戏需求吗,需要轻薄吗"));
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
                     "推荐个5000的笔记本", List.of(product("1", "MacBook Air M1", BigDecimal.valueOf(4200))));
