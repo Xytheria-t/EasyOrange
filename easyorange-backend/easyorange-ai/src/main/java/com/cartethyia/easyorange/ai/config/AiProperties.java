@@ -146,8 +146,9 @@ public record AiProperties(
     /**
      * 模型路由配置 — 按场景把调用分给不同模型 bean（对话走文本模型 / 图片分析走视觉模型）。
      * <p>
-     * 键为场景名（如 chat_tool / vision），值为 Spring bean 名；未配置的场景回退 {@code defaultModel}。
-     * 已接入：chat_tool → chatModel（工具决策）、vision → visionChatModel（图片分析）。
+     * 键为场景名（如 chat_tool / vision / judge），值为 Spring bean 名；未配置的场景回退 {@code defaultModel}。
+     * 已接入：chat_tool → chatModel（工具决策）、vision → visionChatModel（图片分析）、
+     * judge → chatModel（LLM-as-Judge 评审，指向独立评审模型即可消除自评偏差）。
      * 接入新模型仅需在 {@code easyorange.ai.routing.scenarios} 里把场景指向新 bean 名，代码零改动。
      */
     public record Routing(@DefaultValue("chatModel") String defaultModel, Map<String, String> scenarios) {
