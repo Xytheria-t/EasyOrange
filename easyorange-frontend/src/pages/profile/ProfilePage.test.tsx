@@ -77,7 +77,8 @@ beforeEach(() => {
     mockUserApiUpdateProfile.mockResolvedValue({ data: mockUser });
     mockUserApiChangePassword.mockResolvedValue(undefined);
     mockUserApiUploadAvatar.mockResolvedValue({ data: mockUser });
-    mockFavoriteApiGetCount.mockResolvedValue({ data: 42 });
+    // favoriteApi.getCount() 已在 API 层把后端的字符串计数收敛成 number，这里直接给数字
+    mockFavoriteApiGetCount.mockResolvedValue(42);
     mockErrorHandlerHandle.mockReturnValue('模拟错误');
     mockAddToast.mockClear();
 });

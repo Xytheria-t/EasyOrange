@@ -53,7 +53,7 @@ function ProfilePage() {
     useEffect(() => {
         favoriteApi
             .getCount()
-            .then(res => setFavoriteCount(res.data ?? 0))
+            .then(setFavoriteCount)
             .catch(() => {});
     }, []);
 
