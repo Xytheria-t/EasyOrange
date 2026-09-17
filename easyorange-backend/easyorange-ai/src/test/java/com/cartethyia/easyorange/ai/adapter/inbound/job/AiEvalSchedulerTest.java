@@ -4,10 +4,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.application.service.AiJudge;
-import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
+import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +43,7 @@ class AiEvalSchedulerTest {
     private AiEvalScheduler scheduler(boolean evalEnabled) {
         return new AiEvalScheduler(
                 jdbcTemplate,
-                new AiJudge(chatModel, new AiModelSupport(mock(AiCallLogPort.class)), new ObjectMapper()),
+                new AiJudge(chatModel, TestAiModelSupport.create(), new ObjectMapper()),
                 PropertyBindings.bind(AiProperties.class, "eval.enabled", String.valueOf(evalEnabled)));
     }
 

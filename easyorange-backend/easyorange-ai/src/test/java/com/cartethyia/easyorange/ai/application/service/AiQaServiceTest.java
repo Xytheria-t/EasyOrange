@@ -6,7 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.application.dto.QaRequest;
 import com.cartethyia.easyorange.ai.application.dto.QaResponse;
-import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
+import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +33,7 @@ class AiQaServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AiQaService(chatModel, new TestPromptRegistry(), new AiModelSupport(mock(AiCallLogPort.class)));
+        service = new AiQaService(chatModel, new TestPromptRegistry(), TestAiModelSupport.create());
     }
 
     private QaRequest createRequest(String question) {

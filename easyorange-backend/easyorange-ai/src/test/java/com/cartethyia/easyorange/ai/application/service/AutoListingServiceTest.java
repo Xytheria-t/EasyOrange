@@ -6,8 +6,8 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.domain.model.PromptTemplate;
-import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
+import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import java.math.BigDecimal;
 import java.util.List;
@@ -47,11 +47,7 @@ class AutoListingServiceTest {
     void setUp() {
         lenient().when(modelRouter.choose("vision")).thenReturn(visionChatModel);
         service = new AutoListingService(
-                chatModel,
-                modelRouter,
-                objectMapper,
-                new TestPromptRegistry(),
-                new AiModelSupport(mock(AiCallLogPort.class)));
+                chatModel, modelRouter, objectMapper, new TestPromptRegistry(), TestAiModelSupport.create());
     }
 
     private static ChatResponse textResponse(String text) {
@@ -132,11 +128,7 @@ class AutoListingServiceTest {
         @DisplayName("Prompt 模板缺失时返回 null（被 catch 兜底）")
         void analyzeImages_missingPrompt() {
             service = new AutoListingService(
-                    chatModel,
-                    modelRouter,
-                    objectMapper,
-                    EMPTY_REGISTRY,
-                    new AiModelSupport(mock(AiCallLogPort.class)));
+                    chatModel, modelRouter, objectMapper, EMPTY_REGISTRY, TestAiModelSupport.create());
 
             AutoListingResult result = service.analyzeImages(List.of("http://example.com/a.jpg"));
 

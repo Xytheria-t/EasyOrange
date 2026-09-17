@@ -2,10 +2,9 @@ package com.cartethyia.easyorange.ai.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
+import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +31,7 @@ class AiJudgeTest {
 
     @BeforeEach
     void setUp() {
-        aiJudge = new AiJudge(chatModel, new AiModelSupport(mock(AiCallLogPort.class)), new ObjectMapper());
+        aiJudge = new AiJudge(chatModel, TestAiModelSupport.create(), new ObjectMapper());
     }
 
     private static ChatResponse textResponse(String text) {
