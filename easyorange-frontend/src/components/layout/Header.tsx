@@ -2,6 +2,7 @@ import { MessageCircle, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminGuard } from '@/admin/hooks/useAdminGuard';
+import { NotificationBell } from '@/components/notification/NotificationBell';
 import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks';
 import { useAuthStore } from '@/store/authStore';
@@ -138,6 +139,9 @@ export function Header() {
                     >
                         <Search size={19} />
                     </Button>
+
+                    {/* 通知铃铛（仅登录可见）— 未读数走 /messages/unread-count，实时推送走 WebSocket */}
+                    {isLoggedIn && <NotificationBell />}
 
                     {/* 消息入口（仅登录可见） */}
                     {isLoggedIn && (

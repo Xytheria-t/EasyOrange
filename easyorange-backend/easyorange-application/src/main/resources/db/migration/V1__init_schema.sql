@@ -368,26 +368,6 @@ CREATE TABLE `eo_payment` (
     CONSTRAINT `chk_eo_payment_method` CHECK (`payment_method` IS NULL OR `payment_method` IN ('WECHAT', 'ALIPAY', 'BALANCE'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='支付记录表';
 
-CREATE TABLE `eo_payment_config` (
-    `id`           VARCHAR(36) NOT NULL COMMENT '主键 ID',
-    `channel_code` VARCHAR(50) NOT NULL COMMENT '渠道编码',
-    `channel_name` VARCHAR(100) NOT NULL COMMENT '渠道名称',
-    `app_id`       VARCHAR(100) DEFAULT NULL COMMENT '应用 ID',
-    `private_key`  TEXT         DEFAULT NULL COMMENT '商户私钥',
-    `public_key`   TEXT         DEFAULT NULL COMMENT '商户公钥',
-    `sandbox`      TINYINT     NOT NULL DEFAULT 0 COMMENT '是否沙箱环境',
-    `status`       TINYINT     NOT NULL DEFAULT 1 COMMENT '状态（0 禁用 1 启用）',
-    `remark`       VARCHAR(500) DEFAULT NULL COMMENT '备注',
-    `create_time`  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time`  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `create_by`    VARCHAR(36) DEFAULT NULL COMMENT '创建者',
-    `update_by`    VARCHAR(36) DEFAULT NULL COMMENT '更新者',
-    `del_flag`     TINYINT     NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 1 删除）',
-    `version`      INT         NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_eo_payment_config_channel` (`channel_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='支付渠道配置表';
-
 -- ===================================================================
 -- 6. 消息模块
 -- ===================================================================
@@ -526,46 +506,6 @@ CREATE TABLE `eo_audit_log` (
 -- 9. AI 功能模块
 -- ===================================================================
 
-CREATE TABLE `eo_product_question` (
-    `id`         VARCHAR(36) NOT NULL COMMENT '主键 ID',
-    `product_id` VARCHAR(36) NOT NULL COMMENT '商品 ID',
-    `user_id`    VARCHAR(36) NOT NULL COMMENT '用户 ID',
-    `question`   TEXT        NOT NULL COMMENT '问题内容',
-    `answer`     TEXT        DEFAULT NULL COMMENT 'AI 回答内容',
-    `status`     TINYINT     NOT NULL DEFAULT 0 COMMENT '状态（0 待回答 1 已回答 2 已驳回）',
-    `create_time` DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time` DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `create_by`  VARCHAR(36) DEFAULT NULL COMMENT '创建者',
-    `update_by`  VARCHAR(36) DEFAULT NULL COMMENT '更新者',
-    `del_flag`   TINYINT     NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 1 删除）',
-    `version`    INT         NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    KEY `idx_eo_product_question_product_id` (`product_id`),
-    KEY `idx_eo_product_question_user_id` (`user_id`),
-    KEY `idx_eo_product_question_status_time` (`status`, `create_time` DESC),
-    CONSTRAINT `chk_eo_product_question_status` CHECK (`status` IN (0, 1, 2))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品问答表';
-
-CREATE TABLE `eo_audit_suggestion` (
-    `id`                VARCHAR(36)   NOT NULL COMMENT '主键 ID',
-    `product_id`        VARCHAR(36)   NOT NULL COMMENT '商品 ID',
-    `suggestion_type`   VARCHAR(50)   NOT NULL COMMENT '建议类型（PRICE_AUDIT/DESCRIPTION_AUDIT/CATEGORY_AUDIT/IMAGE_AUDIT）',
-    `suggestion_content` JSON          DEFAULT NULL COMMENT '建议内容（JSON）',
-    `confidence`        DECIMAL(5,2)  NOT NULL DEFAULT 0.00 COMMENT '置信度（0.00-1.00）',
-    `status`            TINYINT       NOT NULL DEFAULT 0 COMMENT '状态（0 待处理 1 已采纳 2 已忽略）',
-    `create_time`       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time`       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '处理时间',
-    `create_by`         VARCHAR(36)   DEFAULT NULL COMMENT '创建者',
-    `update_by`         VARCHAR(36)   DEFAULT NULL COMMENT '处理者',
-    `del_flag`          TINYINT       NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 1 删除）',
-    `version`           INT           NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    KEY `idx_eo_audit_suggestion_product_id` (`product_id`),
-    KEY `idx_eo_audit_suggestion_type_status` (`suggestion_type`, `status`, `create_time` DESC),
-    CONSTRAINT `chk_eo_audit_suggestion_status` CHECK (`status` IN (0, 1, 2)),
-    CONSTRAINT `chk_eo_audit_suggestion_confidence` CHECK (`confidence` >= 0 AND `confidence` <= 1)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='AI 审核建议表';
-
 -- AI 调用日志（LLM-as-Judge 离线评估数据源：AiCallLogRecorder 记录 → AiEvalScheduler 打分 1-5）
 CREATE TABLE `eo_ai_call_log` (
     `id`            VARCHAR(36)  NOT NULL COMMENT '主键 UUID v7',
@@ -682,24 +622,6 @@ CREATE TABLE `eo_user_credit` (
     CONSTRAINT `chk_eo_user_credit_total_reports` CHECK (`total_reports` >= 0),
     CONSTRAINT `chk_eo_user_credit_confirmed_reports` CHECK (`confirmed_reports` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信用评分表';
-
-CREATE TABLE `eo_credit_change_log` (
-    `id`            VARCHAR(36) NOT NULL COMMENT '主键 ID',
-    `user_id`       VARCHAR(36) NOT NULL COMMENT '用户 ID',
-    `change_amount` INT         NOT NULL COMMENT '变更分值',
-    `before_score`  INT         NOT NULL COMMENT '变更前评分',
-    `after_score`   INT         NOT NULL COMMENT '变更后评分',
-    `change_type`   VARCHAR(30) NOT NULL COMMENT '变更类型（TRADE_COMPLETE/TRADE_CANCEL/REPORT_CONFIRMED/REVIEW_RATING/RECALCULATE/ADMIN_ADJUST）',
-    `reason`        VARCHAR(500) DEFAULT NULL COMMENT '变更原因',
-    `reference_id`  VARCHAR(36) DEFAULT NULL COMMENT '关联业务 ID（订单ID/举报ID等）',
-    `create_by`     VARCHAR(36) DEFAULT NULL COMMENT '操作人/系统 ID',
-    `create_time`   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_eo_credit_change_log_user_id` (`user_id`),
-    KEY `idx_eo_credit_change_log_type_time` (`change_type`, `create_time` DESC),
-    KEY `idx_eo_credit_change_log_create_time` (`create_time` DESC),
-    CONSTRAINT `chk_eo_credit_change_log_change_amount` CHECK (`change_amount` <> 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='信用变更日志表';
 
 -- ===================================================================
 -- 11. Spring Modulith 事件发布注册表（替代 Outbox 模式）

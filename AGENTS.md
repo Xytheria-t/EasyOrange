@@ -8,7 +8,7 @@
 
 - **Issue tracker**：Issues 与 PRDs 存放在 GitHub issues，用 `gh` CLI 读写（命令模板见 [doc/agents/常用命令.md](doc/agents/常用命令.md)「GitHub Issues / PR」）；默认 triage label：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`
 - **Domain docs**：single-context 布局，领域术语与 ADR 消费约定见 [doc/agents/领域参考.md](doc/agents/领域参考.md)「Agent 领域文档消费约定」
-- **面试准备 / 项目学习**：资料索引 [doc/interview/README.md](doc/interview/README.md)；学习队列与自测协议（会话接口 / 拷打规则 / 破防清单）见 [doc/interview/00-学习队列.md](doc/interview/00-学习队列.md)
+- **面试准备 / 项目学习**：[doc/interview/00-怎么说.md](doc/interview/00-怎么说.md)（简历 / 自我介绍 / 追问应答 / 盲区标注，含学习队列与自测协议）；[doc/interview/01-怎么答.md](doc/interview/01-怎么答.md)（八股 59 题 / 13 类代码走读 / 设计题 / 手撕题）
 
 ## 项目结构
 
@@ -41,6 +41,7 @@ monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模
 - **异常**：领域异常必须继承 `BaseBusinessException`，禁止直接抛非其子类的 RuntimeException（否则落 500 兜底）；抛异常用 `BusinessException.of(...)` / `FileException.of(...)`；用模块专属 `ResultCode`（如 `ProductResultCode`），禁止回退全局 `B0002`；**每个业务模块只保留一个统一领域异常**，具体语义走类上的具名工厂（`notFound(id)` / `notOwner(id)`…）、构造器非公开，不新增「一码一类」的叶子异常；确需调用方按类型 catch 的才独立成类，且必须继承该模块统一异常（判据见 [架构-DDD规范](doc/架构/架构-DDD规范.md) 异常一节，门禁见 `ArchitectureRulesTest` Rule 11）
 - **ID 统一 UUID v7 String**（36 位，`IdGenerator` / `UuidV7IdGenerator`）；前端实体 ID 保持 string
 - **多模块构建**：修改子模块后启动前必须 `./mvnw install -DskipTests`（或 `clean package -pl <module> -am`），否则 ClassNotFoundException
+- **删过资源文件就必须 `clean`**：`install` 只增量复制 `src/main/resources`，**不会删除 `target/classes` 里已移除的文件**。删迁移脚本/配置/模板后若只跑 `install`，老副本仍留在 classpath 上被读取（2026-09-17 实测：删掉 `R__seed_payment_config.sql` 后 `install` 未清 `target/classes`，Flyway 读到陈旧副本、对新 schema 执行而启动失败）。判据：`diff <(ls src/main/resources/**) <(ls target/classes/**)` 有差集就 `clean`
 - **开发中增量验证**：改动只跑涉及模块的单测/集成测试，不核查 JaCoCo/PIT 覆盖率、不刷新 `doc/工程指标.md`（整体收口时统一跑一次）
 - **STP 标准 API 优先**：优先框架/标准库内置功能，零新增自定义代码是最优方案（例：JWT 走 `oauth2ResourceServer()`，不手写 Filter/工具类）
 - **后端补充规范**（事务/命名/返回值/安全要点/踩坑警示/端口隔离）见 [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md)；**编码细则**按路径激活的 ECC 规则见 `.claude/rules/ecc/`
@@ -68,7 +69,7 @@ monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模
 | AI 资产管理（6 决策点 / 营销文案 / WebSocket 协议） | [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md) | 动 AI 决策点或沟通链路时 |
 | 后端所有 REST + WebSocket 端点 | [doc/集成/API-速查.md](doc/集成/API-速查.md) | 找端点、写接口时 |
 | 测试数 / 覆盖率单一来源 | [doc/工程指标.md](doc/工程指标.md) | 收口统计时 |
-| ADR 决策记录（11 个，如 ADR-0007 拒绝 Saga、ADR-0011 UUID v7 主键） | `doc/adr/` | 做架构决策、改下单链路、动主键/ID 策略时 |
+| ADR 决策记录（12 个，如 ADR-0007 拒绝 Saga、ADR-0011 UUID v7 主键、ADR-0012 RAG 改 RRF） | `doc/adr/` | 做架构决策、改下单链路、动主键/ID 策略时 |
 
 ## Repository Map
 

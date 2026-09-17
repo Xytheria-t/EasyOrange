@@ -9,6 +9,11 @@ import lombok.Getter;
  * <p>
  * 错误码范围：B2001-B2999。HTTP 状态映射见 {@link IResultCode#resolveStatus(String)}。
  * </p>
+ * <p>
+ * 码值空洞（B2002 / B2004 / B2006）是刻意的：那些曾是「已下架 / 已售出 / 已审核」的按状态分列的码，
+ * 但状态拒绝统一走 {@link #PRODUCT_STATUS_INVALID}（携带当前状态辅助定位状态机误用），
+ * 旧码从未被引用，已删除。已删除的码值不再复用。
+ * </p>
  *
  * @see IResultCode
  */
@@ -16,11 +21,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ProductResultCode implements IResultCode {
     PRODUCT_NOT_FOUND("B2001", "资产不存在"),
-    PRODUCT_OFF_SHELF("B2002", "资产已下架"),
     PRODUCT_OUT_OF_STOCK("B2003", "资产库存不足"),
-    PRODUCT_ALREADY_SOLD("B2004", "资产已售出"),
     PRODUCT_NOT_OWNER("B2005", "非资产所有者"),
-    PRODUCT_REVIEWED("B2006", "资产已审核"),
     REPORT_NOT_FOUND("B2007", "举报记录不存在"),
     REPORT_ERROR("B2008", "举报业务异常"),
     PRODUCT_STATUS_INVALID("B2009", "资产状态不合法"),
