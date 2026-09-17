@@ -162,8 +162,7 @@ class FavoriteControllerTest {
     void batchCheckFavorited_shouldSkipRepeatSubmit() throws NoSuchMethodException {
         // 防重 key 只含 IP + URI + body hash，不含方法：同一批 id 在 3s 内重复查询会被 429 拦截，
         // 前端收藏状态随之整体丢失（列表页导航往返即可触发）
-        var method = FavoriteController.class.getMethod(
-                "batchCheckFavorited", AuthUser.class, BatchCheckRequest.class);
+        var method = FavoriteController.class.getMethod("batchCheckFavorited", AuthUser.class, BatchCheckRequest.class);
 
         assertThat(method.isAnnotationPresent(SkipRepeatSubmit.class)).isTrue();
     }
