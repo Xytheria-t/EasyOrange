@@ -19,6 +19,13 @@ public class AiReviewService {
 
     private static final String PROMPT_NAME = "ai_review_system";
 
+    /**
+     * AI 不可用时的风险标记 —— 管理端据此识别「这条建议无效，需人工审核」。
+     * <p>
+     * 与前端 {@code AiReviewSuggestion} 的约定：带此标记时不渲染「采纳 AI 建议」按钮。
+     */
+    public static final String FLAG_UNAVAILABLE = "AI_UNAVAILABLE";
+
     private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
     private final PromptRegistry promptRegistry;
@@ -58,13 +65,26 @@ public class AiReviewService {
         try {
             String jsonResponse = aiModelSupport.callJson(chatModel, AiCallScope.REVIEW, systemPrompt, userMessage);
             if (jsonResponse == null) {
-                return new AiReviewResult(true, "通过", 50, List.of(), "AI 无法分析，默认通过");
+                return unavailable("AI 无法分析，请人工审核");
             }
             return objectMapper.readValue(jsonResponse, AiReviewResult.class);
         } catch (Exception e) {
             log.error("AI review failed for product: {}", productName, e);
-            return new AiReviewResult(true, "通过", 50, List.of(), "AI 分析异常，默认通过");
+            return unavailable("AI 分析异常，请人工审核");
         }
+    }
+
+    /**
+     * AI 不可用时的降级结果。
+     * <p>
+     * <b>降级方向必须是「不确定」而不是「通过」</b>：{@code isApproved} 直接驱动管理端的
+     * 「采纳 AI 建议」按钮（true → 一键通过）。AI 挂掉时给「通过」，等于把「AI 没看成」
+     * 变成「平台放行」；而给「拒绝」又会误导成误杀。这里返回 0 置信度 + {@link #FLAG_UNAVAILABLE}，
+     * 语义是「本次 AI 建议无效」，由人工接管 —— 与限流 fail-open（不影响用户）不同，
+     * 审核建议的降级方向要 fail-safe。
+     */
+    private static AiReviewResult unavailable(String reasoning) {
+        return new AiReviewResult(false, "无法判定", 0, List.of(FLAG_UNAVAILABLE), reasoning);
     }
 
     private String loadSystemPrompt() {

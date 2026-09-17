@@ -92,33 +92,27 @@ class AiReviewServiceTest {
         }
 
         @Test
-        @DisplayName("LLM 返回空时默认通过")
+        @DisplayName("LLM 返回空 -> 降级为「无法判定」，不给「通过」（isApproved 驱动一键通过按钮）")
         void reviewProduct_llmReturnsNull() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(null));
 
             AiReviewResult result = service.reviewProduct("测试商品", "描述", "分类", "1", "¥100", "资产方", List.of());
 
-            assertThat(result.suggestedAction()).isTrue();
-            assertThat(result.suggestedActionDesc()).isEqualTo("通过");
-            assertThat(result.confidenceScore()).isEqualTo(50);
-            assertThat(result.reasoning()).isEqualTo("AI 无法分析，默认通过");
+            assertUnavailable(result, "AI 无法分析，请人工审核");
         }
 
         @Test
-        @DisplayName("LLM 调用异常时返回默认通过")
+        @DisplayName("LLM 调用异常 -> 降级为「无法判定」（AI 挂掉不能被读成平台放行）")
         void reviewProduct_llmException() {
             when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("API error"));
 
             AiReviewResult result = service.reviewProduct("测试商品", "描述", "分类", "1", "¥100", "资产方", null);
 
-            assertThat(result.suggestedAction()).isTrue();
-            assertThat(result.suggestedActionDesc()).isEqualTo("通过");
-            assertThat(result.confidenceScore()).isEqualTo(50);
-            assertThat(result.reasoning()).isEqualTo("AI 分析异常，默认通过");
+            assertUnavailable(result, "AI 分析异常，请人工审核");
         }
 
         @Test
-        @DisplayName("JSON 解析异常时返回默认通过")
+        @DisplayName("JSON 解析异常 -> 降级为「无法判定」")
         void reviewProduct_jsonParseException() throws Exception {
             String invalidJson = "{invalid}";
 
@@ -127,9 +121,17 @@ class AiReviewServiceTest {
 
             AiReviewResult result = service.reviewProduct("测试商品", "描述", "分类", "1", "¥100", "资产方", List.of("url"));
 
-            assertThat(result.suggestedAction()).isTrue();
-            assertThat(result.suggestedActionDesc()).isEqualTo("通过");
-            assertThat(result.confidenceScore()).isEqualTo(50);
+            assertUnavailable(result, "AI 分析异常，请人工审核");
+        }
+
+        private static void assertUnavailable(AiReviewResult result, String expectedReasoning) {
+            assertThat(result.suggestedAction())
+                    .as("降级方向必须是「不通过」：true 会让管理端渲染出「采纳 AI 建议=通过」的按钮")
+                    .isFalse();
+            assertThat(result.suggestedActionDesc()).isEqualTo("无法判定");
+            assertThat(result.confidenceScore()).isZero();
+            assertThat(result.riskFlags()).containsExactly(AiReviewService.FLAG_UNAVAILABLE);
+            assertThat(result.reasoning()).isEqualTo(expectedReasoning);
         }
     }
 }
