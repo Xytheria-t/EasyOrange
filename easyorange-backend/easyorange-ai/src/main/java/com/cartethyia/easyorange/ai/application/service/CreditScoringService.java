@@ -112,10 +112,18 @@ public class CreditScoringService {
     }
 
     private String determineLevel(int score) {
-        if (score >= 160) return "EXCELLENT";
-        if (score >= 120) return "GOOD";
-        if (score >= 80) return "NORMAL";
-        if (score >= 40) return "LOW";
+        if (score >= 160) {
+            return "EXCELLENT";
+        }
+        if (score >= 120) {
+            return "GOOD";
+        }
+        if (score >= 80) {
+            return "NORMAL";
+        }
+        if (score >= 40) {
+            return "LOW";
+        }
         return "BLACKLIST";
     }
 

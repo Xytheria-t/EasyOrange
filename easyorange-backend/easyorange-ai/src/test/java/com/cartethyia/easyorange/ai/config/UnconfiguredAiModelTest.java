@@ -29,11 +29,11 @@ class UnconfiguredAiModelTest {
     }
 
     @Test
-    @DisplayName("chatModel.stream 抛出含配置原因的异常")
-    void chatModel_stream_throwsWithReason() {
+    @DisplayName("chatModel.stream 返回错误流（不破坏调用方的 onErrorResume 链）")
+    void chatModel_stream_errorsWithReason() {
         var model = new UnconfiguredChatModel(REASON);
 
-        assertThatThrownBy(() -> model.stream(new Prompt("hello")))
+        assertThatThrownBy(() -> model.stream(new Prompt("hello")).blockLast())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining(REASON);
     }
