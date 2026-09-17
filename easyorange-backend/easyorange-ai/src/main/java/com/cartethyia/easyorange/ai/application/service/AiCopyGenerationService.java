@@ -38,11 +38,13 @@ public class AiCopyGenerationService {
 
         String userMessage = String.format(
                 """
+                <asset_info>
                 商品名称：%s
                 分类：%s
                 成色：%s
                 原价：%s
                 风格要求：%s
+                </asset_info>
                 """,
                 productName != null ? productName : "",
                 categoryName != null ? categoryName : "未知",
