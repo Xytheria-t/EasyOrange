@@ -161,14 +161,6 @@ function ProductRecommendCard({ product, index }: { product: RecommendedProduct;
 
 function AIRecommendSection() {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'all' | 'electronics' | 'books' | 'life'>('all');
-
-    const tabs = [
-        { id: 'all', label: '全部推荐' },
-        { id: 'electronics', label: '数码产品' },
-        { id: 'books', label: '图书教材' },
-        { id: 'life', label: '生活用品' },
-    ];
 
     return (
         <section className="ai-recommend-section">
@@ -195,19 +187,6 @@ function AIRecommendSection() {
                             为你<span className="gradient-text">精选</span>资产
                         </h2>
                         <p className="ai-recommend-subtitle">AI根据你的浏览习惯和偏好，智能推荐最适合你的商品</p>
-                    </div>
-
-                    <div className="ai-recommend-tabs">
-                        {tabs.map(tab => (
-                            <Button
-                                key={tab.id}
-                                variant="ghost"
-                                className={`recommend-tab ${activeTab === tab.id ? 'active' : ''}`}
-                                onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                            >
-                                {tab.label}
-                            </Button>
-                        ))}
                     </div>
                 </div>
 
