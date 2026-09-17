@@ -61,7 +61,7 @@ class GoldenSetEvaluatorTest {
                 .thenReturn(new GoldenSet(List.of(
                         new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of()),
                         new GoldenSetCase("chat-002", "chat", "问题B", null, List.of()))));
-        when(chatService.answer(any(ChatRequest.class))).thenReturn(new ChatAnswer("回答", List.of(), "eval-x"));
+        when(chatService.answer(any(ChatRequest.class))).thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
         when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(4, "ok")));
         when(aiJudge.judge("chat", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(3, "ok")));
 
@@ -116,7 +116,7 @@ class GoldenSetEvaluatorTest {
                 .thenReturn(new GoldenSet(List.of(
                         new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of("kb-0001")),
                         new GoldenSetCase("retr-001", "retrieval", "退款", null, List.of("kb-0002")))));
-        when(chatService.answer(any(ChatRequest.class))).thenReturn(new ChatAnswer("回答", List.of(), "eval-x"));
+        when(chatService.answer(any(ChatRequest.class))).thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
         when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(5, "ok")));
         when(retrievalService.search("退款", 5)).thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "内容", 1.0)));
         when(idGenerator.generateId()).thenReturn("run-1");

@@ -196,7 +196,7 @@ class SemanticCacheServiceTest {
             when(redis.opsForHash()).thenReturn(hashOps);
             when(hashOps.size("eo:ai:semantic:chat")).thenReturn(0L);
 
-            cache.store(AiCallScope.CHAT, "怎么退款？", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s"));
+            cache.store(AiCallScope.CHAT, "怎么退款？", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
 
             verify(hashOps).put(eq("eo:ai:semantic:chat"), anyString(), anyString());
             verify(redis).expire("eo:ai:semantic:chat", Duration.ofHours(24));
@@ -212,7 +212,7 @@ class SemanticCacheServiceTest {
             String newEntry = cachedEntry(QUERY_VECTOR, "新", 200);
             when(hashOps.entries("eo:ai:semantic:chat")).thenReturn(Map.of("old", oldEntry, "new", newEntry));
 
-            cache.store(AiCallScope.CHAT, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s"));
+            cache.store(AiCallScope.CHAT, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
 
             verify(hashOps).delete("eo:ai:semantic:chat", "old");
         }
@@ -220,7 +220,7 @@ class SemanticCacheServiceTest {
         @Test
         @DisplayName("空查询向量（缓存不可用）-> 跳过写入，不访问 Redis")
         void store_emptyEmbedding() {
-            cache.store(AiCallScope.CHAT, "问题", List.of(), new ChatAnswer("回答", List.of(), "s"));
+            cache.store(AiCallScope.CHAT, "问题", List.of(), new ChatAnswer("回答", List.of(), "s", false));
 
             verify(redisProvider, never()).getIfAvailable();
         }
@@ -238,13 +238,13 @@ class SemanticCacheServiceTest {
 
         assertThat(cacheNoRedis.lookUp(AiCallScope.CHAT, "问题", QUERY_VECTOR, ChatAnswer.class))
                 .isEmpty();
-        cacheNoRedis.store(AiCallScope.CHAT, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s"));
+        cacheNoRedis.store(AiCallScope.CHAT, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
     }
 
     /** 构造一条缓存条目 JSON：向量按 base64 float32 存（与生产写入格式一致）。 */
     private static String cachedEntry(List<Float> vector, String answer, long timestamp) {
         try {
-            String response = JSON.writeValueAsString(new ChatAnswer(answer, List.of(), "s"));
+            String response = JSON.writeValueAsString(new ChatAnswer(answer, List.of(), "s", false));
             return JSON.writeValueAsString(Map.of(
                     "vector", SemanticCacheService.encodeVector(vector), "response", response, "timestamp", timestamp));
         } catch (Exception e) {

@@ -24,10 +24,12 @@ import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -82,12 +84,14 @@ class AiChatServiceTest {
 
     private AiProperties aiProperties;
     private Cache<String, Object> staleCache;
+    private SimpleMeterRegistry meterRegistry;
     private AiChatService chatService;
 
     @BeforeEach
     void setUp() {
         aiProperties = PropertyBindings.bind(AiProperties.class);
         staleCache = Caffeine.newBuilder().build();
+        meterRegistry = new SimpleMeterRegistry();
         chatService = new AiChatService(
                 chatModel,
                 promptRegistry,
@@ -100,7 +104,8 @@ class AiChatServiceTest {
                 budgetStore,
                 aiProperties,
                 new ObjectMapper(),
-                staleCache);
+                staleCache,
+                meterRegistry);
         // 部分用例（空问题/预算超限/缓存命中）不会走到工具决策，router stub 允许不被消费
         lenient().when(modelRouter.choose("chat_tool")).thenReturn(chatModel);
     }
@@ -164,7 +169,7 @@ class AiChatServiceTest {
     @Test
     @DisplayName("语义缓存命中 -> 不调模型直接返回，且不再写回")
     void answer_cacheHit() {
-        ChatAnswer cached = new ChatAnswer("缓存回答", List.of(), "sess-1");
+        ChatAnswer cached = new ChatAnswer("缓存回答", List.of(), "sess-1", false);
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.of(cached));
 
@@ -305,7 +310,7 @@ class AiChatServiceTest {
     }
 
     @Test
-    @DisplayName("LLM 故障且有缓存旧回答 -> 降级返回旧结果")
+    @DisplayName("LLM 故障且有缓存旧回答 -> 降级返回旧结果并标记 degraded")
     void answer_llmFailureFallsBackToStale() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
@@ -319,22 +324,41 @@ class AiChatServiceTest {
         ChatAnswer degraded = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
 
         assertThat(first.answer()).isEqualTo("正常回答");
+        assertThat(first.degraded()).isFalse();
         assertThat(degraded.answer()).isEqualTo("正常回答");
+        assertThat(degraded.degraded()).isTrue();
         verify(aiModelSupport, times(2)).callText(any(), any(), anyList());
     }
 
     @Test
-    @DisplayName("LLM 故障且无缓存 -> 异常上抛（不做降级）")
-    void answer_llmFailureWithoutStaleRethrows() {
+    @DisplayName("LLM 故障且无缓存 -> 返回降级文案 + degraded 标记（不抛异常，避免落 500）")
+    void answer_llmFailureWithoutStaleDegrades() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(new RuntimeException("DeepSeek 超时"));
 
+        ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
+
+        assertThat(answer.answer()).isEqualTo(ChatAnswer.UNAVAILABLE_TEXT);
+        assertThat(answer.sources()).isEmpty();
+        assertThat(answer.sessionId()).isEqualTo("sess-1");
+        assertThat(answer.degraded()).isTrue();
+    }
+
+    @Test
+    @DisplayName("业务异常（如预算超限）-> 照常上抛，不伪装成降级回答")
+    void answer_businessExceptionPropagates() {
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
+                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
+        when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(BusinessException.of("AI 调用预算已用尽"));
+
         Assertions.assertThatThrownBy(() -> chatService.answer(new ChatRequest("怎么退款？", "sess-1", false)))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("DeepSeek 超时");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("AI 调用预算已用尽");
     }
 
     @Test
@@ -351,6 +375,7 @@ class AiChatServiceTest {
 
         assertThat(first.answer()).isEqualTo("新鲜回答");
         assertThat(degraded.answer()).isEqualTo("新鲜回答");
+        assertThat(degraded.degraded()).isTrue();
     }
 
     @Test

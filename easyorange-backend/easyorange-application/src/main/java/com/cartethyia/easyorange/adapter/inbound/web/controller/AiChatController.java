@@ -93,7 +93,7 @@ public class AiChatController {
 
     private static void sendError(SseEmitter emitter) {
         try {
-            emitter.send(SseEmitter.event().name("error").data("AI 服务暂时不可用，请稍后重试"));
+            emitter.send(SseEmitter.event().name("error").data(ChatAnswer.UNAVAILABLE_TEXT));
         } catch (IOException ignored) {
             // 客户端已断开
         }

@@ -9,6 +9,8 @@ export interface ChatAnswer {
     answer: string;
     sources: string[];
     sessionId: string;
+    /** 本次回答不是模型实时生成（供应商故障时复用 stale 旧回答或降级文案），UI 不应把它当作正常回答展示证据链 */
+    degraded: boolean;
 }
 
 /** AI 输出反馈（👍/👎 反馈飞轮） */
