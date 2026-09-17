@@ -23,4 +23,15 @@ public record ChatAnswer(String answer, List<String> sources, String sessionId, 
     public ChatAnswer asDegraded() {
         return degraded ? this : new ChatAnswer(answer, sources, sessionId, true);
     }
+
+    /**
+     * 换成当前请求的会话 id。
+     * <p>
+     * {@code sessionId} 是请求上下文而不是回答内容，但两个缓存存的是整个 {@code ChatAnswer}，
+     * 复用旧回答时会把第一次那个请求的 id 一起带出来（同一问题换个会话再问，响应里的 id 仍是旧会话的）。
+     * 缓存命中处一律用它改成当前请求的 id，响应语义才是「这次请求的回答」。
+     */
+    public ChatAnswer withSessionId(String sessionId) {
+        return sessionId.equals(this.sessionId) ? this : new ChatAnswer(answer, sources, sessionId, degraded);
+    }
 }

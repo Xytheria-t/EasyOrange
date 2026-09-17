@@ -131,7 +131,7 @@ public class AiChatService {
                 var cached =
                         semanticCache.lookUp(AiCallScope.CHAT, request.question(), queryEmbedding, ChatAnswer.class);
                 if (cached.isPresent()) {
-                    return cached.get();
+                    return cached.get().withSessionId(request.sessionId());
                 }
             }
             ChatAnswer answer = agenticAnswer(request, null);
@@ -150,7 +150,7 @@ public class AiChatService {
                         request.question(),
                         e.getMessage());
                 degradedCounter("stale").increment();
-                return cached.asDegraded();
+                return cached.asDegraded().withSessionId(request.sessionId());
             }
             log.error("action=chat_degraded, reason=unavailable, question={}", request.question(), e);
             degradedCounter("unavailable").increment();
