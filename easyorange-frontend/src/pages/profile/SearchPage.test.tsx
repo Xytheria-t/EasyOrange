@@ -46,6 +46,12 @@ vi.mock('@/hooks', () => ({
     useSearchSuggestions: mockUseSearchSuggestions,
     useHotKeywords: mockUseHotKeywords,
     useCategories: mockUseCategories,
+    useFavoriteCheck: () => ({
+        favoriteMap: {},
+        checkFavorites: vi.fn(),
+        isFavorited: () => false,
+        toggleFavorite: vi.fn(),
+    }),
 }));
 
 vi.mock('react-router-dom', async () => {
