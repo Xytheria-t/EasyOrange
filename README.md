@@ -21,7 +21,7 @@ EasyOrange 在两条技术主线上都有独立且完整的落地，可分别展
 | **轻量级 Agent 编排** — `AiSearchEnhancer` 4 路并行 Tool Calling，整体 5s 超时后保留已完成步骤，无 LangChain4j 黑盒 | **拒绝 Saga** — 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件副作用（[ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)） |
 | **限流 / 预算 / 降级** — Redisson 分布式令牌桶（超限 429）+ 供应商故障 stale 兜底 + `@TokenBudget` 日预算 AOP | **事件驱动可靠投递** — Spring Modulith Outbox → RabbitMQ → DLQ 三级重试 + traceId 全链路 |
 | **Prompt 工程化** — 8 个 YAML 模板版本化渲染（6 决策点 + 2 对话） | **架构治理** — ArchUnit 12 条规则守卫分层 + 11 条 ADR 记录决策 |
-| **Embedding 真实现 + 多模态** — text-embedding-v3 kNN + BM25 混合检索 + Qwen-VL 拍照识别自动上架 | **质量门禁** — 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重验证），前端 Biome 0 errors |
+| **Embedding 真实现 + 多模态** — text-embedding-v3 两路召回（kNN + BM25）+ RRF 排名融合 + Qwen-VL 拍照识别自动上架 | **质量门禁** — 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重验证），前端 Biome 0 errors |
 
 ## 业务边界（刻意聚焦）
 
@@ -107,7 +107,7 @@ flowchart TB
 
 DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。解法：**AI 基础设施全面框架化为 Spring AI 2.0**（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)）——6 个业务服务直接注入 `ChatModel` / `EmbeddingModel` bean（DeepSeek + Qwen-VL + DashScope，统一 OpenAI 兼容协议），供应商可换只改配置；业务级治理保留：令牌桶限流、`@TokenBudget` 日预算、Prompt YAML 版本化。
 
-### 6 个 AI 决策点
+### 6 个决策点（4 个 LLM 驱动 + 2 个规则引擎）
 
 | 侧 | 决策点 |
 |---|---|
@@ -121,8 +121,8 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 ### AI 对话 / RAG 完整链路 / 评估闭环（2026-08-14 扩展）
 
 - **多轮 Agent 对话**（[`AiChatService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/AiChatService.java)）：Redis 会话短期记忆 + `eo_user_preference` 画像长期记忆 + 单步 ReAct 工具决策；**SSE 流式**（`/api/ai/chat/stream`，事件协议 token/sources/done/error），前端 Playground 打字机效果
-- **RAG 完整链路**（[`KnowledgeIngestionService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/KnowledgeIngestionService.java)）：文档摄入管线（分块 500+overlap50 → embed → ES `knowledge_docs` 索引，启动补索引）+ kNN+BM25 混合召回 → Java Cosine 重排 → [来源:标题] 引用溯源
-- **评估进 CI**：30 条金标准集（`eval/golden-set.yaml`）+ LLM-as-Judge 对照参考打分 + `EvalGate` 门禁（低于基线 4.0-0.3 卡 build，nightly `ai-eval.yml` 注入真实 key 定时执行）+ hit@5/MRR 检索指标 + 👍/👎 反馈飞轮自动扩充评测集
+- **RAG 完整链路**（[`KnowledgeIngestionService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/KnowledgeIngestionService.java)）：文档摄入管线（分块 500+overlap50 → embed → ES `knowledge_docs` 索引，启动补索引）+ 两路独立召回（kNN + BM25）→ RRF 排名融合（`RrfFusion`）→ [来源:标题] 引用溯源
+- **评估进 CI**：35 条金标准集（20 生成 + 15 检索，`eval/golden-set.yaml`）+ LLM-as-Judge 对照参考打分 + `EvalGate` 门禁（分数低于基线 4.0-0.3 或评审覆盖率低于 80% 卡 build，每周 `ai-eval.yml` 注入真实 key 定时执行）+ hit@5/MRR 检索指标（语料含同域干扰文档）+ 👍/👎 反馈飞轮自动扩充评测集
 - **成本治理**：语义缓存（余弦相似度命中复用，阈值 0.92）+ 模型路由（场景 → bean 配置）
 
 ### AI 工程化 8 件套

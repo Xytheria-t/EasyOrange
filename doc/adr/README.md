@@ -1,6 +1,6 @@
 # ADR 索引 — 架构决策记录
 
-> 共 12 个文件：决策 11 篇（0001–0011）+ 模板 1 篇（0000）。**推荐阅读顺序**：先读「现役决策」（按主题：ID 与数据建模 → 事务一致性 → 模块边界 → 消息选型 → CQRS → AI → DDD 治理），再读「演进方案」（不实施，触发条件未到），最后按需翻阅「已替代历史」（决策反转链）。
+> 共 13 个文件：决策 12 篇（0001–0012）+ 模板 1 篇（0000）。**推荐阅读顺序**：先读「现役决策」（按主题：ID 与数据建模 → 事务一致性 → 模块边界 → 消息选型 → CQRS → AI → DDD 治理），再读「演进方案」（不实施，触发条件未到），最后按需翻阅「已替代历史」（决策反转链）。
 
 ## 现役决策（按主题阅读顺序）
 
@@ -12,6 +12,7 @@
 | [0005](0005-messaging-rabbitmq.md) | 消息选型 | 接受 | RabbitMQ（Topic + DLQ）作默认总线，拒绝 Kafka/Pulsar/NATS/Redis Streams | 2026-07-30 |
 | [0002](0002-cqrs-scope-4-modules.md) | CQRS 范围 | 接受 | 仅 product/order/payment/message 四模块上 CQRS，ArchUnit 守卫边界 | 2026-07-14 |
 | [0008](0008-ai-spring-ai-framework.md) | AI 框架化 | 接受 | 全面框架化 Spring AI 2.0，删除自研 Port/Adapter/指标（**Supersedes ADR-0003**） | 2026-08-03 |
+| [0012](0012-rag-hybrid-retrieval-rrf.md) | AI 检索 | 接受 | RAG 改两路独立召回 + RRF 排名融合，删除无效余弦重排与向量回传；语料扩到 25 篇恢复 hit@5 判别力 | 2026-09-17 |
 | [0004](0004-ai-bulkhead-token-budget.md) | AI 治理 | 部分已替代 | `@TokenBudget` AOP 日预算仍现役；Bulkhead 已删（**部分替代**，见 0008） | 2026-07-26 |
 | [0009](0009-domain-service-placement.md) | DDD 治理 | 接受 | 领域服务数量是领域性质产物，禁止按数量对齐模块 | 2026-08-06 |
 
