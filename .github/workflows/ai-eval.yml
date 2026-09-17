@@ -11,11 +11,19 @@ name: AI eval gate (nightly)
 # 供应商可换：DEEPSEEK_BASE_URL / DEEPSEEK_MODEL 由仓库变量提供，缺省仍是 DeepSeek 官方端点。
 on:
   schedule:
-    - cron: '30 3 * * *' # PIT（02:30）后错峰
+    # 每周一 03:30（PIT 02:30 后错峰）。刻意不用 nightly：评测每晚产生约 60 次真实模型调用
+    # （5-8 万 token），而代码不会每天变——重复评测同一份代码是纯开销。回归窗口按周足够，
+    # 需要即时验证走 workflow_dispatch。
+    - cron: '30 3 * * 1'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+# 评测会产生真实 API 费用，禁止并发实例叠加；不 cancel-in-progress（不打断已计费的运行）
+concurrency:
+  group: ai-eval-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   EASYORANGE_AI_API_KEY: ${{ secrets.EASYORANGE_AI_API_KEY }}
@@ -76,3 +84,16 @@ jobs:
           SPRING_DOCKER_COMPOSE_SKIP_IN_TESTS: "false"
         run: ./mvnw -pl easyorange-application verify -Dit.test=GoldenSetRegressionIT -Deasyorange.search.elasticsearch.enabled=true -B
         working-directory: easyorange-backend
+
+      # 门禁红时把判定依据捞出来：Judge 分、hit@5/MRR、逐用例结果都在 failsafe 报告里，
+      # 靠控制台日志翻页找数字是这次门禁红了数周都没人看清的直接原因。
+      - name: Upload failsafe reports
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: failsafe-reports
+          path: |
+            easyorange-backend/easyorange-application/target/failsafe-reports/
+            easyorange-backend/easyorange-application/target/surefire-reports/
+          if-no-files-found: ignore
+          retention-days: 14
