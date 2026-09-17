@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -20,8 +21,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiReviewService 测试")
@@ -30,14 +29,11 @@ class AiReviewServiceTest {
     @Mock
     private ChatModel chatModel;
 
-    @Mock
-    private ObjectMapper objectMapper;
-
     private AiReviewService service;
 
     @BeforeEach
     void setUp() {
-        service = new AiReviewService(chatModel, objectMapper, new TestPromptRegistry(), TestAiModelSupport.create());
+        service = new AiReviewService(chatModel, new TestPromptRegistry(), TestAiModelSupport.create());
     }
 
     private static ChatResponse textResponse(String text) {
@@ -50,15 +46,13 @@ class AiReviewServiceTest {
 
         @Test
         @DisplayName("审核通过 — 信息完整合规")
-        void reviewProduct_approved() throws Exception {
+        void reviewProduct_approved() {
             String jsonResponse = """
                     {"suggestedAction":true,"suggestedActionDesc":"通过",
                     "confidenceScore":90,"riskFlags":[],"reasoning":"信息完整合规"}
                     """;
-            AiReviewResult expected = new AiReviewResult(true, "通过", 90, List.of(), "信息完整合规");
 
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(jsonResponse));
-            when(objectMapper.readValue(jsonResponse, AiReviewResult.class)).thenReturn(expected);
 
             AiReviewResult result = service.reviewProduct(
                     "iPhone 14", "99新手机", "手机数码", "2", "¥4500", "张三", List.of("https://example.com/phone.jpg"));
@@ -72,16 +66,14 @@ class AiReviewServiceTest {
 
         @Test
         @DisplayName("审核拒绝 — 价格异常")
-        void reviewProduct_rejected() throws Exception {
+        void reviewProduct_rejected() {
             String jsonResponse = """
                     {"suggestedAction":false,"suggestedActionDesc":"拒绝",
                     "confidenceScore":85,"riskFlags":["价格异常","描述不符"],
                     "reasoning":"价格明显异常"}
                     """;
-            AiReviewResult expected = new AiReviewResult(false, "拒绝", 85, List.of("价格异常", "描述不符"), "价格明显异常");
 
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(jsonResponse));
-            when(objectMapper.readValue(jsonResponse, AiReviewResult.class)).thenReturn(expected);
 
             AiReviewResult result =
                     service.reviewProduct("Gucci 包", "正品", "奢侈品", "1", "¥999999", "资产方", List.of("url1", "url2"));
@@ -98,7 +90,7 @@ class AiReviewServiceTest {
 
             AiReviewResult result = service.reviewProduct("测试商品", "描述", "分类", "1", "¥100", "资产方", List.of());
 
-            assertUnavailable(result, "AI 无法分析，请人工审核");
+            assertUnavailable(result);
         }
 
         @Test
@@ -108,30 +100,41 @@ class AiReviewServiceTest {
 
             AiReviewResult result = service.reviewProduct("测试商品", "描述", "分类", "1", "¥100", "资产方", null);
 
-            assertUnavailable(result, "AI 分析异常，请人工审核");
+            assertUnavailable(result);
         }
 
         @Test
         @DisplayName("JSON 解析异常 -> 降级为「无法判定」")
-        void reviewProduct_jsonParseException() throws Exception {
-            String invalidJson = "{invalid}";
-
-            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(invalidJson));
-            when(objectMapper.readValue(invalidJson, AiReviewResult.class)).thenThrow(JacksonException.class);
+        void reviewProduct_jsonParseException() {
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{invalid}"));
 
             AiReviewResult result = service.reviewProduct("测试商品", "描述", "分类", "1", "¥100", "资产方", List.of("url"));
 
-            assertUnavailable(result, "AI 分析异常，请人工审核");
+            assertUnavailable(result);
         }
 
-        private static void assertUnavailable(AiReviewResult result, String expectedReasoning) {
+        @Test
+        @DisplayName("prompt 模板缺失 -> 抛 IllegalStateException（配置错误 fail-fast，不伪装成 AI 不可用）")
+        void reviewProduct_missingPrompt() {
+            service = new AiReviewService(chatModel, TestPromptRegistry.empty(), TestAiModelSupport.create());
+
+            assertThatThrownBy(() -> service.reviewProduct("商品", "描述", "分类", "1", "¥100", "资产方", List.of()))
+                    .isInstanceOf(IllegalStateException.class);
+            verify(chatModel, never()).call(any(Prompt.class));
+        }
+
+        /**
+         * 模型故障 / 返回空 / JSON 不合 schema 三种情况都收敛到同一降级结果：
+         * 差异只在 {@code AiModelSupport} 的 warn 日志里，对管理端而言都是「这条建议无效」。
+         */
+        private static void assertUnavailable(AiReviewResult result) {
             assertThat(result.suggestedAction())
                     .as("降级方向必须是「不通过」：true 会让管理端渲染出「采纳 AI 建议=通过」的按钮")
                     .isFalse();
             assertThat(result.suggestedActionDesc()).isEqualTo("无法判定");
             assertThat(result.confidenceScore()).isZero();
             assertThat(result.riskFlags()).containsExactly(AiReviewService.FLAG_UNAVAILABLE);
-            assertThat(result.reasoning()).isEqualTo(expectedReasoning);
+            assertThat(result.reasoning()).isEqualTo("AI 无法分析，请人工审核");
         }
     }
 }
