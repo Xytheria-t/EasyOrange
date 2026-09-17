@@ -32,7 +32,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
  * 成功响应经响应包装（ContentCachingResponseWrapper）抓取后回放；非 2xx 不缓存直接提交。
  * </p>
  * <p>
- * 并发抢锁/缓存语义由 {@code RedisIdempotencyServiceTest} 覆盖，这里只测过滤器行为。
+ * 并发抢锁/缓存语义由 {@code IdempotencyServiceTest} 覆盖，这里只测过滤器行为。
  * </p>
  */
 @ExtendWith(MockitoExtension.class)
