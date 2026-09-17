@@ -59,7 +59,7 @@ class AiCallScopeTest {
     @Test
     @DisplayName("cacheKeyPrefix 格式正确")
     void cacheKeyPrefix() {
-        assertThat(AiCallScope.REVIEW.cacheKeyPrefix()).isEqualTo("ai:llm:v1:review:");
+        assertThat(AiCallScope.REVIEW.cacheKeyPrefix()).isEqualTo("ai:stale:review:");
     }
 
     @Test
@@ -69,10 +69,11 @@ class AiCallScopeTest {
     }
 
     @Test
-    @DisplayName("TTL 配置正确")
-    void ttlConfig() {
-        assertThat(AiCallScope.REVIEW.getTtlSeconds()).isEqualTo(3600);
-        assertThat(AiCallScope.QA.getTtlSeconds()).isEqualTo(900);
+    @DisplayName("budgetScenario 与限流前缀同源（场景名必须一致，否则预算记账与检查读两处）")
+    void budgetScenarioMatchesRateLimitPrefix() {
+        for (AiCallScope scope : AiCallScope.values()) {
+            assertThat(scope.rateLimitKeyPrefix()).isEqualTo("ai:rl:" + scope.budgetScenario() + ":");
+        }
     }
 
     @Test

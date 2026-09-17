@@ -144,8 +144,12 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     }
 
     /**
-     * 从注册表取工具并提交并行执行；工具自身吞掉 LLM 异常返回降级值时结果照常参与合并，
-     * 未吞掉的异常会让 future 异常完成，由 {@code allOf(...).get()} 以 ExecutionException 统一抛出。
+     * 从注册表取工具并提交并行执行。
+     * <p>
+     * 按 {@link com.cartethyia.easyorange.ai.adapter.outbound.tool.SearchTool} 的失败约定，
+     * 工具**不吞异常**：LLM 故障会让对应 future 异常完成，由 {@code allOf(...).get()}
+     * 抛 {@link ExecutionException}，本类据此判定「本次降级」并放弃写缓存
+     * （若工具把异常吞成空值，管道就分不清「正常空结果」与「本次降级」，抖动会被缓存固化 5 分钟）。
      */
     @SuppressWarnings("unchecked")
     private <T> CompletableFuture<T> runTool(String name, SearchToolContext context) {

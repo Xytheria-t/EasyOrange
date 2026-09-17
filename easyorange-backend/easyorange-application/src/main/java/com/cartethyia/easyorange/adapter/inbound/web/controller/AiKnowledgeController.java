@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 知识库检索端点（RAG 检索侧演示）— 与聊天引用溯源共用 KnowledgeRetrievalService。
  */
 @SkipRateLimit
-@Tag(name = "AI 知识库", description = "RAG 知识库混合召回（kNN + BM25 + Cosine 重排）")
+@Tag(name = "AI 知识库", description = "RAG 知识库两路召回（kNN + BM25）+ RRF 排名融合；ES 关闭时降级 MySQL LIKE")
 @RestController
 @RequestMapping("/api/ai/knowledge")
 @RequiredArgsConstructor
