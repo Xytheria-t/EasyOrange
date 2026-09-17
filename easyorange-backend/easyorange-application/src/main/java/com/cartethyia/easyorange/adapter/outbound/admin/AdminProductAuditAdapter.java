@@ -148,20 +148,28 @@ public class AdminProductAuditAdapter implements AdminProductAuditPort {
         if (data == null) {
             throw ProductDomainException.notFound(ProductId.of(productId));
         }
-        AiReviewResult result = aiReviewService.reviewProduct(
-                data.name(),
-                data.description(),
-                data.categoryName(),
-                data.conditionLevel(),
-                data.price().toString(),
-                data.sellerName(),
-                data.imageUrls());
-        return new AiReviewRecord(
-                result.suggestedAction(),
-                result.suggestedActionDesc(),
-                result.confidenceScore(),
-                result.riskFlags(),
-                result.reasoning());
+        try {
+            AiReviewResult result = aiReviewService.reviewProduct(
+                    data.name(),
+                    data.description(),
+                    data.categoryName(),
+                    data.conditionLevel(),
+                    data.price().toString(),
+                    data.sellerName(),
+                    data.imageUrls());
+            return new AiReviewRecord(
+                    result.suggestedAction(),
+                    result.suggestedActionDesc(),
+                    result.confidenceScore(),
+                    result.riskFlags(),
+                    result.reasoning());
+        } catch (Exception e) {
+            // AI 建议拿不到不该让审核页打不开（此处是全链路唯一没有兜底的 AI 调用点）：
+            // 降级为「无法判定」，与 AiReviewService 内部的降级语义一致 —— 不给「通过」，
+            // 因为 isApproved 会渲染成管理端的一键通过按钮
+            log.warn("AI review suggestion unavailable for product {}, fallback to manual review", productId, e);
+            return new AiReviewRecord(false, "无法判定", 0, List.of(AiReviewService.FLAG_UNAVAILABLE), "AI 审核不可用，请人工审核");
+        }
     }
 
     private static AuditAction parseAction(Integer actionCode) {

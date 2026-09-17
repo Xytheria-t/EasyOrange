@@ -27,6 +27,9 @@ export function AiReviewSuggestion({ result, isLoading, onGetSuggestion, onApply
     }
 
     if (result) {
+        // 后端在 AI 不可用时返回 isApproved=false + AI_UNAVAILABLE：语义是「建议无效」而非「建议拒绝」，
+        // 不能渲染成拒绝态、更不能给「采纳 AI 建议」按钮（那会变成一键误杀）
+        const unavailable = result.riskFlags.includes('AI_UNAVAILABLE');
         return (
             <div className="ai-review-suggestion" style={{ marginTop: 12 }}>
                 <div className="ai-review-header">
@@ -34,21 +37,28 @@ export function AiReviewSuggestion({ result, isLoading, onGetSuggestion, onApply
                     <span>AI 审核建议</span>
                 </div>
                 <div className="ai-review-result">
-                    <div className={`ai-review-action ${result.isApproved ? 'pass' : 'reject'}`}>
-                        {result.isApproved ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                        <span>
-                            {result.isApproved ? '建议通过' : '建议拒绝'}
-                            <span style={{ marginLeft: 8, fontWeight: 400, opacity: 0.8 }}>
-                                置信度 {result.confidenceScore}%
+                    {unavailable ? (
+                        <div className="ai-review-action pending">
+                            <AlertTriangle size={16} />
+                            <span>无法判定，请人工审核</span>
+                        </div>
+                    ) : (
+                        <div className={`ai-review-action ${result.isApproved ? 'pass' : 'reject'}`}>
+                            {result.isApproved ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                            <span>
+                                {result.isApproved ? '建议通过' : '建议拒绝'}
+                                <span style={{ marginLeft: 8, fontWeight: 400, opacity: 0.8 }}>
+                                    置信度 {result.confidenceScore}%
+                                </span>
                             </span>
-                        </span>
-                    </div>
+                        </div>
+                    )}
                     {result.riskFlags.length > 0 && (
                         <div className="ai-risk-flags">
                             {result.riskFlags.map(flag => (
                                 <span key={flag} className="risk-flag">
                                     {getRiskIcon()}
-                                    {flag}
+                                    {flag === 'AI_UNAVAILABLE' ? 'AI 不可用' : flag}
                                 </span>
                             ))}
                         </div>
@@ -56,10 +66,15 @@ export function AiReviewSuggestion({ result, isLoading, onGetSuggestion, onApply
                     <div className="ai-reasoning" style={{ margin: '8px 0', lineHeight: 1.6 }}>
                         {result.reasoning}
                     </div>
-                    <Button className="ai-apply-btn" onClick={() => onApply(result.isApproved ? 'approve' : 'reject')}>
-                        <Sparkles size={14} />
-                        采纳 AI 建议
-                    </Button>
+                    {!unavailable && (
+                        <Button
+                            className="ai-apply-btn"
+                            onClick={() => onApply(result.isApproved ? 'approve' : 'reject')}
+                        >
+                            <Sparkles size={14} />
+                            采纳 AI 建议
+                        </Button>
+                    )}
                 </div>
             </div>
         );

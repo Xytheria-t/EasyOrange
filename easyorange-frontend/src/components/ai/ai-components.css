@@ -229,6 +229,11 @@
     background: #fef2f2;
     color: #dc2626;
 }
+/* AI 不可用：既不是通过也不是拒绝，用中性色避免误导人工审核 */
+.ai-review-action.pending {
+    background: #fefce8;
+    color: #a16207;
+}
 
 .ai-risk-flags {
     display: flex;
