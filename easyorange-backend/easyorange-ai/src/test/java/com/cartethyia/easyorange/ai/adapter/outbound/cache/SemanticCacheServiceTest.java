@@ -33,9 +33,10 @@ import tools.jackson.databind.ObjectMapper;
 @DisplayName("SemanticCacheService (语义缓存) -> 测试")
 class SemanticCacheServiceTest {
 
-    private static final String CACHED_JSON = """
-            {"embedding":[0.99,0.1,0.0],"response":"{\\"answer\\":\\"缓存回答\\",\\"sources\\":[],\\"sessionId\\":\\"s\\"}","timestamp":1}
-            """;
+    // 必须在 CACHED_JSON 之前声明：静态字段按文本顺序初始化，helper 依赖它
+    private static final ObjectMapper JSON = new ObjectMapper();
+
+    private static final String CACHED_JSON = cachedEntry(List.of(0.99f, 0.1f, 0f), "缓存回答", 1);
 
     @Mock
     private ObjectProvider<StringRedisTemplate> redisProvider;
@@ -89,9 +90,7 @@ class SemanticCacheServiceTest {
         when(redis.opsForHash()).thenReturn(hashOps);
         when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
         when(aiModelSupport.embed(any(), anyString())).thenReturn(List.of(1f, 0f, 0f));
-        String dissimilar = """
-                {"embedding":[0.0,1.0,0.0],"response":"{\\"answer\\":\\"缓存回答\\",\\"sources\\":[],\\"sessionId\\":\\"s\\"}","timestamp":1}
-                """;
+        String dissimilar = cachedEntry(List.of(0f, 1f, 0f), "缓存回答", 1);
         when(hashOps.entries("eo:ai:semantic:chat")).thenReturn(Map.of("f1", dissimilar));
 
         Optional<ChatAnswer> result = cache.get(AiCallScope.CHAT, "怎么退款？", ChatAnswer.class);
@@ -121,18 +120,35 @@ class SemanticCacheServiceTest {
         when(redis.opsForHash()).thenReturn(hashOps);
         when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
         when(aiModelSupport.embed(any(), anyString())).thenReturn(List.of(1f, 0f, 0f));
-        when(hashOps.size("eo:ai:semantic:chat")).thenReturn(500L);
-        String oldEntry = """
-                {"embedding":[1.0,0.0,0.0],"response":"{\\"answer\\":\\"旧\\",\\"sources\\":[],\\"sessionId\\":\\"s\\"}","timestamp":100}
-                """;
-        String newEntry = """
-                {"embedding":[1.0,0.0,0.0],"response":"{\\"answer\\":\\"新\\",\\"sources\\":[],\\"sessionId\\":\\"s\\"}","timestamp":200}
-                """;
+        when(hashOps.size("eo:ai:semantic:chat")).thenReturn(200L);
+        String oldEntry = cachedEntry(List.of(1f, 0f, 0f), "旧", 100);
+        String newEntry = cachedEntry(List.of(1f, 0f, 0f), "新", 200);
         when(hashOps.entries("eo:ai:semantic:chat")).thenReturn(Map.of("old", oldEntry, "new", newEntry));
 
         cache.put(AiCallScope.CHAT, "问题", new ChatAnswer("回答", List.of(), "s"));
 
         verify(hashOps).delete("eo:ai:semantic:chat", "old");
+    }
+
+    @Test
+    @DisplayName("脏条目（旧格式/缺字段）被跳过，不影响同一批里的正常条目命中")
+    void get_skipsCorruptedEntries() {
+        when(redisProvider.getIfAvailable()).thenReturn(redis);
+        when(redis.opsForHash()).thenReturn(hashOps);
+        when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
+        when(aiModelSupport.embed(any(), anyString())).thenReturn(List.of(1f, 0f, 0f));
+        // 旧格式（embedding 字段 + JSON 数组）与坏 base64 各一条，正常条目一条
+        String legacy = """
+                {"embedding":[1.0,0.0,0.0],"response":"{}","timestamp":1}
+                """;
+        String brokenVector = "{\"vector\":\"!!!not-base64!!!\",\"response\":\"{}\",\"timestamp\":2}";
+        when(hashOps.entries("eo:ai:semantic:chat"))
+                .thenReturn(Map.of("legacy", legacy, "broken", brokenVector, "good", CACHED_JSON));
+
+        Optional<ChatAnswer> result = cache.get(AiCallScope.CHAT, "怎么退款？", ChatAnswer.class);
+
+        assertThat(result).as("一条脏数据不应把整次查询变成未命中").isPresent();
+        assertThat(result.get().answer()).isEqualTo("缓存回答");
     }
 
     @Test
@@ -144,6 +160,17 @@ class SemanticCacheServiceTest {
 
         cache.put(AiCallScope.CHAT, "问题", new ChatAnswer("回答", List.of(), "s"));
         verify(redisProvider, org.mockito.Mockito.never()).getIfAvailable();
+    }
+
+    /** 构造一条缓存条目 JSON：向量按 base64 float32 存（与生产写入格式一致）。 */
+    private static String cachedEntry(List<Float> vector, String answer, long timestamp) {
+        try {
+            String response = JSON.writeValueAsString(new ChatAnswer(answer, List.of(), "s"));
+            return JSON.writeValueAsString(Map.of(
+                    "vector", SemanticCacheService.encodeVector(vector), "response", response, "timestamp", timestamp));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Test
