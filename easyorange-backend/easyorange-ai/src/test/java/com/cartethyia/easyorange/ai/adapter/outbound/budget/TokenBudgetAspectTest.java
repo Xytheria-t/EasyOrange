@@ -48,17 +48,15 @@ class TokenBudgetAspectTest {
     }
 
     @Test
-    @DisplayName("预算未超限时调用后记录预估用量")
-    void aroundBudget_withinLimit_recordsUsage() throws Throwable {
+    @DisplayName("切面只做前置检查不记账（真实用量由 AiModelSupport 从 ChatResponse 记账）")
+    void aroundBudget_doesNotRecordUsage() throws Throwable {
         var annotation = mockBudget("pricing", 100, 1000);
         when(pjp.proceed()).thenReturn("AI response");
 
         aspect.aroundBudget(pjp, annotation);
 
-        // 存储记录预估用量（maxTokensPerCall 估算值）
-        var usage = store.getTodayUsage("pricing");
-        assertThat(usage).isPresent();
-        assertThat(usage.get().total()).isEqualTo(100);
+        // 记账职责已移出切面：切面拿不到真实 token 数，若在这里按上限累加会与真实用量重复计数
+        assertThat(store.getTodayUsage("pricing")).isEmpty();
     }
 
     @Test

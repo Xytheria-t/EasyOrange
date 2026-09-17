@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.ai.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,9 +11,9 @@ import com.cartethyia.easyorange.ai.domain.constant.KnowledgeDocStatus;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
-import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
+import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -50,12 +49,12 @@ class KnowledgeServiceTest {
 
     private void setUpIngestion() {
         ingestionService = new KnowledgeIngestionService(
-                repository, indexPortProvider, embeddingModelProvider, new AiModelSupport(mock(AiCallLogPort.class)));
+                repository, indexPortProvider, embeddingModelProvider, TestAiModelSupport.create());
     }
 
     private void setUpRetrieval() {
-        retrievalService = new KnowledgeRetrievalService(
-                indexPortProvider, embeddingModelProvider, new AiModelSupport(mock(AiCallLogPort.class)));
+        retrievalService =
+                new KnowledgeRetrievalService(indexPortProvider, embeddingModelProvider, TestAiModelSupport.create());
     }
 
     // ---------- 分块算法 ----------

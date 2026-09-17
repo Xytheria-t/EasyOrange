@@ -19,12 +19,13 @@ import org.springframework.stereotype.Component;
  * 缺失时回退到注解声明的 {@code maxTokensPerCall} / {@code dailyTokenLimit}。
  * 这样注解提供编译期可见的兜底契约，运维可通过配置热更新限额而无需发版。
  * <p>
+ * <b>只做前置检查，不做记账</b>：真实用量在 {@code AiModelSupport} 拿到 {@code ChatResponse}
+ * 的地方记（供应商回报的 prompt/completion tokens），本切面只看累计值是否已顶到日预算。
+ * 记账曾放在这里，但服务方法返回业务 DTO，只能把 {@code maxTokensPerCall} 当用量累加 ——
+ * 数字与真实消耗差一个量级，大盘和限流都不准。
+ * <p>
  * <b>调用前</b>：若 {@code dailyTokenLimit > 0} 且 累计用量 + 本次预估 &gt; dailyTokenLimit，
  * 抛 {@link TokenBudgetExceededException}，目标方法不执行。
- * <p>
- * <b>调用后</b>：将 {@code maxTokensPerCall} 作为预估用量记入存储。
- * 服务方法返回业务 DTO 而非 {@code ChatResponse}，无法直接取真实 token 数，
- * 这里沿用注解声明的 {@code maxTokensPerCall} 作为估算值（YAGNI：不引入 token 计数器）。
  */
 @Slf4j
 @Aspect
@@ -59,13 +60,7 @@ public class TokenBudgetAspect {
             throw new TokenBudgetExceededException();
         }
 
-        // 执行目标方法
-        var result = pjp.proceed();
-
-        // 记录预估用量（服务返回业务 DTO，无法获取真实 token 数，用 maxTokensPerCall 估算）
-        budgetStore.recordUsage(scenario, maxPerCall, 0);
-
-        return result;
+        return pjp.proceed();
     }
 
     /**

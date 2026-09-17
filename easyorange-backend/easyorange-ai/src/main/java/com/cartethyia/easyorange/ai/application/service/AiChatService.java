@@ -135,6 +135,10 @@ public class AiChatService {
 
     /**
      * 流式回答（SSE）：token 逐段回调；错误统一走 {@link ChatStreamHandler#onError}。
+     * <p>
+     * 预算记账不在这里做：{@link AiModelSupport} 拿到流末帧的用量分片后按场景记账，
+     * {@link #checkBudget()} 只负责前置检查（本方法不带 {@link TokenBudget} 注解，AOP 拦不住，
+     * 若两边都记会重复计数）。
      */
     public void streamAnswer(ChatRequest request, ChatStreamHandler handler) {
         if (request.question() == null || request.question().isBlank()) {
@@ -144,7 +148,6 @@ public class AiChatService {
         try {
             checkBudget();
             ChatAnswer answer = agenticAnswer(request, handler);
-            budgetStore.recordUsage(CHAT_SCENARIO, resolveMaxTokensPerCall(), 0);
             handler.onDone(answer.answer());
         } catch (TokenBudgetExceededException e) {
             handler.onError("今日 AI 调用预算已用尽，请明天再试");

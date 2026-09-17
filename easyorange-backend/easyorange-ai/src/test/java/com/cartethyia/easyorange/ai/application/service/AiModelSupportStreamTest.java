@@ -2,13 +2,12 @@ package com.cartethyia.easyorange.ai.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
+import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +34,7 @@ class AiModelSupportStreamTest {
 
     @BeforeEach
     void setUp() {
-        aiModelSupport = new AiModelSupport(mock(AiCallLogPort.class));
+        aiModelSupport = TestAiModelSupport.create();
     }
 
     private static ChatResponse textResponse(String text) {

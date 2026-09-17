@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.application.dto.AiReviewResult;
-import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
+import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,8 +37,7 @@ class AiReviewServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AiReviewService(
-                chatModel, objectMapper, new TestPromptRegistry(), new AiModelSupport(mock(AiCallLogPort.class)));
+        service = new AiReviewService(chatModel, objectMapper, new TestPromptRegistry(), TestAiModelSupport.create());
     }
 
     private static ChatResponse textResponse(String text) {

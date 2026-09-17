@@ -60,6 +60,8 @@ public class AiModelConfig {
                         .baseUrl(deepseek.baseUrl())
                         .apiKey(deepseek.apiKey())
                         .model(deepseek.model())
+                        // 流式默认不带用量分片，打开后末帧回报 token 用量 —— 流式对话的预算记账依赖它
+                        .streamUsage(true)
                         .build())
                 .observationRegistry(obs)
                 .build();

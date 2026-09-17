@@ -36,4 +36,12 @@ public enum AiCallScope {
     public String rateLimitKeyPrefix() {
         return "ai:rl:" + name().toLowerCase() + ":";
     }
+
+    /**
+     * Token 预算场景键 —— 必须与 {@code easyorange.ai.budget.scenarios} 的键、{@code @TokenBudget(scenario=...)}
+     * 的字面值一致，否则记账落在一个场景、限流检查读另一个场景，预算静默失效。
+     */
+    public String budgetScenario() {
+        return name().toLowerCase();
+    }
 }
