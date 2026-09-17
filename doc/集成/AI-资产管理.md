@@ -125,6 +125,7 @@ EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 - 记忆：短期 = Redis List（`eo:chat:session:{sessionId}`，TTL 24h，最近 N 轮）；长期 = `eo_user_preference` 用户画像表（跨会话持久，聊天时注入 prompt）
 - 流式：`POST /api/ai/chat/stream` → SseEmitter，事件协议 token / sources / done / error；前端 fetch + ReadableStream 消费（可带 Authorization 头）
 - 供应商故障（生成阶段）：非流式与流式**同口径** —— 有 stale 旧回答就复用、没有就返回降级文案「AI 服务暂时不可用，请稍后重试」，两者都不抛异常；非流式回 200 + `degraded: true`，流式发 `error` 事件，并计入 `easyorange.ai.chat.degraded{reason=stale|unavailable}`。抛出去只会变成 500 + 通用错误码：调用方读不到「AI 不可用」这个语义，错误率大盘也分不清供应商故障与代码缺陷（2026-09-17 修正，此前非流式冷缓存下直接 500）。**预算超限不属降级**——那是客户端可控的 4xx（B8001），照常上抛
+- **响应里的 `sessionId` 恒为本次请求的**：两个缓存存的都是整个 `ChatAnswer`，复用旧回答时会把第一次那个请求的会话 id 一起带出来（同一问题换个会话再问，响应里的 id 仍是旧会话的）。缓存命中处一律经 `ChatAnswer.withSessionId` 改写成当前请求的 id —— `sessionId` 是请求上下文不是回答内容（2026-09-17 修正）
 - 预算：流式方法在流结束前返回，`@TokenBudget` AOP 拦不住 → `AiChatService` 手动执行同一套预算检查（超限 onError 降级）
 
 ### 7.4 评估进 CI（金标准集 + Judge 回归 + 门禁）

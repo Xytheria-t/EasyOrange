@@ -106,7 +106,7 @@
 | 智能问答 | `POST /api/ai/qa` | question（必填）+ 商品上下文 productId / productName / productDescription / categoryName / price / conditionLevel / sellerName / sellerCreditLevel |
 | 智能文案 | `POST /api/ai/generate-copy` | productName（必填）, categoryName, conditionLevel, originalPrice, style (standard/detailed/concise/emotional) |
 | 语义搜索 | `GET /api/ai/semantic-search` | keyword, pageNum, pageSize |
-| AI 对话（多轮 Agent） | `POST /api/ai/chat` | question, sessionId, forceFresh；响应含 `degraded` 标记 |
+| AI 对话（多轮 Agent） | `POST /api/ai/chat` | question, sessionId, forceFresh；响应含 `degraded` 标记，`sessionId` 恒为本次请求值（缓存命中 / 降级亦然） |
 | AI 对话（SSE 流式） | `POST /api/ai/chat/stream` | question, sessionId；事件：token / sources / done / error |
 | AI 输出反馈 | `POST /api/ai/feedback` | scope, question, answer, helpful, comment, callLogId |
 | 知识库检索（RAG） | `GET /api/ai/knowledge/search` | keyword, topK |
