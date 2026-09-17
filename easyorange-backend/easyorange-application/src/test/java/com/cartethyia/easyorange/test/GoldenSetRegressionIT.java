@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.cartethyia.easyorange.ai.application.eval.EvalBaselines;
 import com.cartethyia.easyorange.ai.application.eval.EvalGate;
 import com.cartethyia.easyorange.ai.application.eval.GoldenSetEvaluator;
 import com.cartethyia.easyorange.ai.application.eval.GoldenSetLoader;
@@ -36,27 +37,34 @@ class GoldenSetRegressionIT extends AbstractIntegrationTest {
     @Test
     void generationScoreAboveBaseline() {
         GenerationReport report = evaluator.evaluateGeneration();
+        EvalBaselines.Generation thresholds = loader.loadBaselines().generation();
 
         // 覆盖率先行：评审大面积失败时均分是「幸存者平均」，不能拿它当质量结论
         EvalGate.GateResult coverage = EvalGate.checkCoverage(
-                GoldenSetLoader.SCOPE_CHAT, report.judgedCases(), report.totalCases(), EvalGate.DEFAULT_MIN_COVERAGE);
+                GoldenSetLoader.SCOPE_CHAT, report.judgedCases(), report.totalCases(), thresholds.minCoverage());
         assertThat(coverage.passed())
                 .as(
                         "chat 用例评审覆盖率 %.0f%%（%d/%d）低于下限 %.0f%%，均分不可信",
                         coverage.actual() * 100, report.judgedCases(), report.totalCases(), coverage.baseline() * 100)
                 .isTrue();
 
-        double baseline = loader.loadBaselines().getOrDefault(GoldenSetLoader.SCOPE_CHAT, 4.0);
-        EvalGate.GateResult gate = EvalGate.check(report.avgScore(), baseline, 0.3);
+        EvalGate.GateResult gate = EvalGate.check(
+                GoldenSetLoader.SCOPE_CHAT, report.avgScore(), thresholds.scoreBaseline(), thresholds.scoreTolerance());
         assertThat(gate.passed())
-                .as("chat 平均分 %.2f 低于基线 %.2f - 0.3，AI 质量发生回归", report.avgScore(), baseline)
+                .as(
+                        "chat 平均分 %.2f 低于基线 %.2f - %.2f（阈值见 eval/baselines.yaml），AI 质量发生回归",
+                        report.avgScore(), thresholds.scoreBaseline(), thresholds.scoreTolerance())
                 .isTrue();
     }
 
     @Test
     void retrievalMetricsCollected() {
+        double minHitAt5 = loader.loadBaselines().retrieval().minHitAt5();
         RetrievalReport report = evaluator.evaluateRetrieval();
+
         assertThat(report.totalCases()).as("金标准集检索用例应非空").isGreaterThan(0);
-        assertThat(report.hitRateAt5()).as("hit@5 至少命中一半（语料含同域干扰文档，命中不再是必然）").isGreaterThanOrEqualTo(0.5);
+        assertThat(report.hitRateAt5())
+                .as("hit@5 低于下限 %.2f（阈值见 eval/baselines.yaml）：语料含同域干扰文档，命中不再是必然", minHitAt5)
+                .isGreaterThanOrEqualTo(minHitAt5);
     }
 }
