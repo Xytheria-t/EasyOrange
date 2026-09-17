@@ -23,9 +23,12 @@ public class MarketAnalysisTool implements SearchTool<String> {
         this.promptRegistry = promptRegistry;
     }
 
+    /** 工具名 —— 编排器按它取用，故此处是唯一定义处（见 SearchToolRegistry）。 */
+    public static final String NAME = "market_analysis";
+
     @Override
     public String name() {
-        return "market_analysis";
+        return NAME;
     }
 
     @Override

@@ -16,9 +16,12 @@ public class ProductTaggingTool implements SearchTool<Map<String, List<String>>>
         this.productTagger = productTagger;
     }
 
+    /** 工具名 —— 编排器按它取用，故此处是唯一定义处（见 SearchToolRegistry）。 */
+    public static final String NAME = "product_tagging";
+
     @Override
     public String name() {
-        return "product_tagging";
+        return NAME;
     }
 
     @Override

@@ -23,9 +23,12 @@ public class IntentDetectionTool implements SearchTool<String> {
         this.promptRegistry = promptRegistry;
     }
 
+    /** 工具名 —— 编排器按它取用，故此处是唯一定义处（见 SearchToolRegistry）。 */
+    public static final String NAME = "intent_detection";
+
     @Override
     public String name() {
-        return "intent_detection";
+        return NAME;
     }
 
     @Override

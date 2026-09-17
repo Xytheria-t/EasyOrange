@@ -25,9 +25,12 @@ public class QuestionSuggestionTool implements SearchTool<List<String>> {
         this.promptRegistry = promptRegistry;
     }
 
+    /** 工具名 —— 编排器按它取用，故此处是唯一定义处（见 SearchToolRegistry）。 */
+    public static final String NAME = "question_suggestion";
+
     @Override
     public String name() {
-        return "question_suggestion";
+        return NAME;
     }
 
     @Override
