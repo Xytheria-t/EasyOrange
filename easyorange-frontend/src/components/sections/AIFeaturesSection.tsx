@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import './ai-features.css';
 
 type StepStatus = 'pending' | 'running' | 'done';
@@ -116,52 +115,6 @@ function PipelineStepRow({ step, isActive, isDone }: { step: PipelineStep; isAct
     );
 }
 
-function StewardDailyReport() {
-    return (
-        <div className="steward-daily-card glass-card" data-testid="steward-daily-card">
-            <div className="daily-card-header">
-                <div className="daily-card-avatar">
-                    <span className="daily-avatar-emoji">🤖</span>
-                    <div className="daily-avatar-pulse" />
-                </div>
-                <div className="daily-card-title">
-                    <h3>AI 工程化 · 今日工作日报</h3>
-                    <p>2026-06-25 · 你不在的时候,AI 已经帮你做了这些事</p>
-                </div>
-            </div>
-
-            <div className="daily-card-grid">
-                <div className="daily-item">
-                    <span className="daily-item-num">3</span>
-                    <span className="daily-item-label">件资产已智能估值</span>
-                </div>
-                <div className="daily-item-sep" />
-                <div className="daily-item">
-                    <span className="daily-item-num">2</span>
-                    <span className="daily-item-label">份新文案待你确认</span>
-                </div>
-                <div className="daily-item-sep" />
-                <div className="daily-item">
-                    <span className="daily-item-num">1</span>
-                    <span className="daily-item-label">件资产已发布上线</span>
-                </div>
-                <div className="daily-item-sep" />
-                <div className="daily-item daily-item-highlight">
-                    <span className="daily-item-num">¥2,840</span>
-                    <span className="daily-item-label">本月预计多回款</span>
-                </div>
-            </div>
-
-            <div className="daily-card-footer">
-                <span className="daily-footer-tip">📌 你只负责决策,过程 AI 全包</span>
-                <Button variant="outline" className="daily-footer-btn">
-                    查看完整工作日志 →
-                </Button>
-            </div>
-        </div>
-    );
-}
-
 function AIFeaturesSection() {
     const [activeIndex, setActiveIndex] = useState(0);
     const [completedCount, setCompletedCount] = useState(0);
@@ -228,15 +181,13 @@ function AIFeaturesSection() {
                         <span>AI 工程化</span>
                     </div>
                     <div className="ai-features-title-group">
-                        <span className="ai-features-label">4 步闭环 · 双端对称</span>
+                        <span className="ai-features-label">六步闭环</span>
                         <h2 className="ai-features-title">资产方省心 · 认领方放心</h2>
                     </div>
                     <p className="ai-features-subtitle">
                         资产方侧,AI 替你估值、写描述、智能发布 · 认领方侧,AI 帮你找货、评估、看清信用
                     </p>
                 </div>
-
-                <StewardDailyReport />
 
                 <div className="pipeline-board">
                     <div className="pipeline-column">
