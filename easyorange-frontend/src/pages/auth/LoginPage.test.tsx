@@ -39,11 +39,6 @@ vi.mock('@/utils/errorHandler', () => ({
     errorHandler: { handle: mockErrorHandlerHandle },
 }));
 
-vi.mock('@/store/overlayStore', () => ({
-    openOverlayLayer: vi.fn(),
-    closeOverlayLayer: vi.fn(),
-}));
-
 const validLoginResponse = {
     token: 'mock-token',
     user: {

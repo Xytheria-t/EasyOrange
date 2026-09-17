@@ -97,6 +97,20 @@ describe('Header', () => {
         expect(screen.getByText('Test User')).toBeInTheDocument();
     });
 
+    it('mounts NotificationBell when logged in', () => {
+        setupLoggedIn();
+        renderWithProviders(<Header />);
+
+        expect(screen.getByTestId('notification-bell')).toBeInTheDocument();
+    });
+
+    it('hides NotificationBell when logged out', () => {
+        setupLoggedOut();
+        renderWithProviders(<Header />);
+
+        expect(screen.queryByTestId('notification-bell')).not.toBeInTheDocument();
+    });
+
     it('shows admin link when user is admin', async () => {
         setupLoggedIn({ isAdmin: true });
         renderWithProviders(<Header />);

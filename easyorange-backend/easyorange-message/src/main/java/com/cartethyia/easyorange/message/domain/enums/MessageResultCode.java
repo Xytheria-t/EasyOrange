@@ -9,6 +9,10 @@ import lombok.Getter;
  * <p>
  * 错误码范围：B7001-B7999
  * </p>
+ * <p>
+ * 码值空洞（B7003-B7007）是刻意的：那是「消息模板不存在 / 编码重复 / 已禁用 / 渲染失败 / 变量缺失」
+ * 五个模板类错误的码，但 message 模块从未实现模板功能，从未被引用，已删除。已删除的码值不再复用。
+ * </p>
  *
  * @author cartethyia
  * @see IResultCode
@@ -18,11 +22,6 @@ import lombok.Getter;
 public enum MessageResultCode implements IResultCode {
     MESSAGE_NOT_FOUND("B7001", "消息不存在"),
     MESSAGE_NOT_OWNER("B7002", "非消息接收者"),
-    TEMPLATE_NOT_FOUND("B7003", "消息模板不存在"),
-    TEMPLATE_CODE_DUPLICATE("B7004", "模板编码已存在"),
-    TEMPLATE_DISABLED("B7005", "消息模板已禁用"),
-    TEMPLATE_RENDER_ERROR("B7006", "模板渲染失败"),
-    TEMPLATE_VARIABLE_MISSING("B7007", "模板变量缺失"),
     MESSAGE_DOMAIN_ERROR("B7008", "消息业务异常");
 
     private final String code;
