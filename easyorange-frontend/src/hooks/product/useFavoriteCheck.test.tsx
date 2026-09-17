@@ -24,7 +24,7 @@ afterEach(() => {
         user: null,
         token: null,
     });
-    useUIStore.setState({ toasts: [], isLoading: false, loadingMessage: '' });
+    useUIStore.setState({ toasts: [] });
 });
 
 describe('useFavoriteCheck', () => {

@@ -1,7 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { UIState } from '@/store/uiStore';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import type { OrderDetail } from '@/types';
 import PaymentPage from './PaymentPage';
@@ -10,20 +9,7 @@ const mockUseOrderDetail = vi.hoisted(() => vi.fn());
 const mockUsePaymentStatus = vi.hoisted(() => vi.fn());
 const mockUseCreatePayment = vi.hoisted(() => vi.fn());
 const mockNavigate = vi.hoisted(() => vi.fn());
-const mockUseUIStore = vi.hoisted(() =>
-    vi.fn((selector?: (s: UIState) => unknown) => {
-        const state: UIState = {
-            toasts: [],
-            isLoading: false,
-            loadingMessage: '',
-            addToast: vi.fn(),
-            removeToast: vi.fn(),
-            showLoading: vi.fn(),
-            hideLoading: vi.fn(),
-        };
-        return selector ? selector(state) : state;
-    })
-);
+const mockAddToast = vi.hoisted(() => vi.fn());
 
 vi.mock('@/hooks', () => ({
     useOrderDetail: mockUseOrderDetail,
@@ -32,7 +18,10 @@ vi.mock('@/hooks', () => ({
 }));
 
 vi.mock('@/store/uiStore', () => ({
-    useUIStore: mockUseUIStore,
+    useUIStore: vi.fn(sel => {
+        const s = { addToast: mockAddToast };
+        return sel ? sel(s) : s;
+    }),
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -83,18 +72,6 @@ beforeEach(() => {
     mockUseCreatePayment.mockReturnValue({
         mutateAsync: vi.fn().mockResolvedValue({ paymentId: 'payment-1' }),
         isPending: false,
-    });
-    mockUseUIStore.mockImplementation((selector?: (s: UIState) => unknown) => {
-        const state: UIState = {
-            toasts: [],
-            isLoading: false,
-            loadingMessage: '',
-            addToast: vi.fn(),
-            removeToast: vi.fn(),
-            showLoading: vi.fn(),
-            hideLoading: vi.fn(),
-        };
-        return selector ? selector(state) : state;
     });
 });
 
@@ -184,20 +161,7 @@ describe('PaymentPage', () => {
 
     it('calls createPayment and shows paying state after submit', async () => {
         const mockMutateAsync = vi.fn().mockResolvedValue({ paymentId: 'payment-1' });
-        const addToast = vi.fn();
         mockUseCreatePayment.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        mockUseUIStore.mockImplementation((selector?: (s: UIState) => unknown) => {
-            const state: UIState = {
-                toasts: [],
-                isLoading: false,
-                loadingMessage: '',
-                addToast,
-                removeToast: vi.fn(),
-                showLoading: vi.fn(),
-                hideLoading: vi.fn(),
-            };
-            return selector ? selector(state) : state;
-        });
         mockUsePaymentStatus.mockReturnValue({ data: { status: 'PROCESSING' }, isLoading: false });
         const order = createMockOrder();
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false });
@@ -206,7 +170,7 @@ describe('PaymentPage', () => {
         await user.click(screen.getByText('立即支付'));
         expect(mockMutateAsync).toHaveBeenCalledWith({ orderId: 'order-123', paymentMethod: 'WECHAT' });
         await waitFor(() => {
-            expect(addToast).toHaveBeenCalledWith({ type: 'info', message: '支付处理中，请等待...' });
+            expect(mockAddToast).toHaveBeenCalledWith({ type: 'info', message: '支付处理中，请等待...' });
         });
         await waitFor(() => {
             expect(screen.getByText('支付处理中...')).toBeInTheDocument();
@@ -233,27 +197,14 @@ describe('PaymentPage', () => {
 
     it('shows error toast when createPayment fails', async () => {
         const mockMutateAsync = vi.fn().mockRejectedValue(new Error('Payment error'));
-        const addToast = vi.fn();
         mockUseCreatePayment.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        mockUseUIStore.mockImplementation((selector?: (s: UIState) => unknown) => {
-            const state: UIState = {
-                toasts: [],
-                isLoading: false,
-                loadingMessage: '',
-                addToast,
-                removeToast: vi.fn(),
-                showLoading: vi.fn(),
-                hideLoading: vi.fn(),
-            };
-            return selector ? selector(state) : state;
-        });
         const order = createMockOrder();
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false });
         renderPage();
         const user = userEvent.setup();
         await user.click(screen.getByText('立即支付'));
         await waitFor(() => {
-            expect(addToast).toHaveBeenCalledWith({ type: 'error', message: '创建支付失败，请重试' });
+            expect(mockAddToast).toHaveBeenCalledWith({ type: 'error', message: '创建支付失败，请重试' });
         });
     });
 

@@ -2,11 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useUIStore } from './uiStore';
 
 beforeEach(() => {
-    useUIStore.setState({
-        toasts: [],
-        isLoading: false,
-        loadingMessage: '',
-    });
+    useUIStore.setState({ toasts: [] });
 });
 
 afterEach(() => {
@@ -15,11 +11,9 @@ afterEach(() => {
 
 describe('uiStore', () => {
     describe('initial state', () => {
-        it('starts with empty toasts and not loading', () => {
+        it('starts with empty toasts', () => {
             const state = useUIStore.getState();
             expect(state.toasts).toEqual([]);
-            expect(state.isLoading).toBe(false);
-            expect(state.loadingMessage).toBe('');
         });
     });
 

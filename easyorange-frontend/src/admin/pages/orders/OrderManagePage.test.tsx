@@ -287,7 +287,7 @@ describe('OrderManagePage', () => {
                 ],
                 totalAmount: (i + 1) * 100,
                 singleItem: true,
-                status: ['PENDING_PAYMENT', 'PAID', 'SHIPPED'][i % 3],
+                status: (['PENDING_PAYMENT', 'PAID', 'SHIPPED'] as const)[i % 3],
                 statusDesc: ['待付款', '待发货', '已发货'][i % 3],
                 paymentStatus: ['UNPAID', 'PAID'][i % 2],
                 paymentStatusDesc: i % 2 === 0 ? '未支付' : '已支付',

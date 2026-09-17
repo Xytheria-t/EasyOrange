@@ -6,7 +6,7 @@ import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import { ToastContainer } from './Toast';
 
 beforeEach(() => {
-    useUIStore.setState({ toasts: [], isLoading: false, loadingMessage: '' });
+    useUIStore.setState({ toasts: [] });
 });
 
 describe('ToastContainer', () => {
