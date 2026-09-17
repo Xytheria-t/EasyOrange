@@ -445,25 +445,8 @@ export default function HeroSection() {
                         >
                             <div className="float-card-glow"></div>
                             <div className="float-card-inner">
-                                <span className="float-icon">
-                                    <svg
-                                        width="22"
-                                        height="22"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="1.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        aria-hidden="true"
-                                    >
-                                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                                        <path d="M8 7h8" />
-                                        <path d="M8 11h6" />
-                                        <path d="M8 15h4" />
-                                        <circle cx="19" cy="6" r="1.5" fill="currentColor" stroke="none" />
-                                    </svg>
+                                <span className="float-icon" aria-hidden="true">
+                                    📚
                                 </span>
                                 <span className="float-text">教材资料</span>
                                 <span className="float-particles"></span>
@@ -477,29 +460,8 @@ export default function HeroSection() {
                         >
                             <div className="float-card-glow"></div>
                             <div className="float-card-inner">
-                                <span className="float-icon">
-                                    <svg
-                                        width="22"
-                                        height="22"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="1.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        aria-hidden="true"
-                                    >
-                                        <rect x="4" y="4" width="16" height="16" rx="2" />
-                                        <rect x="9" y="9" width="6" height="6" rx="1" />
-                                        <path d="M9 1v3" />
-                                        <path d="M15 1v3" />
-                                        <path d="M9 20v3" />
-                                        <path d="M15 20v3" />
-                                        <path d="M1 9h3" />
-                                        <path d="M20 9h3" />
-                                        <path d="M1 15h3" />
-                                        <path d="M20 15h3" />
-                                    </svg>
+                                <span className="float-icon" aria-hidden="true">
+                                    💻
                                 </span>
                                 <span className="float-text">电子产品</span>
                                 <span className="float-particles"></span>
@@ -513,26 +475,8 @@ export default function HeroSection() {
                         >
                             <div className="float-card-glow"></div>
                             <div className="float-card-inner">
-                                <span className="float-icon">
-                                    <svg
-                                        width="22"
-                                        height="22"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="1.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        aria-hidden="true"
-                                    >
-                                        <circle cx="6" cy="18" r="3" />
-                                        <circle cx="18" cy="18" r="3" />
-                                        <path d="M18 6l-3 6h-4" />
-                                        <path d="M8 18l3-6 3-6" />
-                                        <path d="M3 18h3" />
-                                        <path d="M18 18h3" />
-                                        <path d="M12 12h4" />
-                                    </svg>
+                                <span className="float-icon" aria-hidden="true">
+                                    🚲
                                 </span>
                                 <span className="float-text">交通工具</span>
                                 <span className="float-particles"></span>
