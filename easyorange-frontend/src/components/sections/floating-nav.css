@@ -472,34 +472,20 @@
     transform: scale(1.15) rotate(5deg);
 }
 
-.notification-dot {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 8px;
-    height: 8px;
-    background: linear-gradient(135deg, #ef4444 0%, #f87171 50%, #fca5a5 100%);
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.95);
-    box-shadow:
-        0 0 0 2px rgba(239, 68, 68, 0.2),
-        0 0 12px rgba(239, 68, 68, 0.5);
-    display: none;
-    animation: dotPulse 2.5s ease-in-out infinite;
+/* 通知铃铛：按钮本体与相邻图标按钮同款，未读徽标挂在按钮外侧的容器上 */
+.floating-nav__bell {
+    position: relative;
+    display: flex;
 }
 
-@keyframes dotPulse {
-    0%,
-    100% {
-        box-shadow:
-            0 0 0 2px rgba(239, 68, 68, 0.2),
-            0 0 8px rgba(239, 68, 68, 0.4);
-    }
-    50% {
-        box-shadow:
-            0 0 0 4px rgba(239, 68, 68, 0.15),
-            0 0 16px rgba(239, 68, 68, 0.6);
-    }
+.floating-nav__bell-badge {
+    pointer-events: none;
+    transition: transform 0.35s var(--ease-out-expo);
+}
+
+/* 徽标随按钮一起上浮（浏览器不支持 :has 时退化为不上浮，不影响布局） */
+.floating-nav__bell:has(.floating-nav__icon-btn:hover) .floating-nav__bell-badge {
+    transform: translateY(-3px) scale(1.05);
 }
 
 .floating-nav__user {
@@ -1070,8 +1056,7 @@
     .floating-nav__brand-name,
     .floating-nav__user-avatar,
     .floating-nav__login-btn,
-    .floating-nav__publish-btn,
-    .notification-dot {
+    .floating-nav__publish-btn {
         animation: none;
     }
 
