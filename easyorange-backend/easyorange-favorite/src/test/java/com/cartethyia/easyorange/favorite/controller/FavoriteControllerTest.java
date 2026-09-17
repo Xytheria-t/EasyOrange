@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.favorite.adapter.inbound.web.assembler.FavoriteAssembler;
@@ -154,5 +155,16 @@ class FavoriteControllerTest {
         assertThat(result.data()).hasSize(2);
         assertThat(result.data().get("2001")).isTrue();
         assertThat(result.data().get("2002")).isFalse();
+    }
+
+    @Test
+    @DisplayName("批量检查收藏状态：只读接口须跳过防重提交")
+    void batchCheckFavorited_shouldSkipRepeatSubmit() throws NoSuchMethodException {
+        // 防重 key 只含 IP + URI + body hash，不含方法：同一批 id 在 3s 内重复查询会被 429 拦截，
+        // 前端收藏状态随之整体丢失（列表页导航往返即可触发）
+        var method = FavoriteController.class.getMethod(
+                "batchCheckFavorited", AuthUser.class, BatchCheckRequest.class);
+
+        assertThat(method.isAnnotationPresent(SkipRepeatSubmit.class)).isTrue();
     }
 }
