@@ -121,6 +121,7 @@ EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 - 编排（单步 ReAct，`AiChatService`）：记忆装配（Redis 会话窗口 + 用户画像表）→ 工具决策（LLM 输出 JSON 决定是否检索知识库，顺带提取用户偏好）→ 执行工具 → 生成回答
 - 生成按**角色传多消息**（`[system, 历史 user/assistant …, 当前 user]`，`AiModelSupport.callText(…, List<Message>)`）：历史不压进当前 user 消息，跨轮次前缀稳定才能命中供应商上下文缓存（重复前缀按折扣计价）
 - 工具决策失败（模型故障 / JSON 解析失败）**降级为「按原始问题检索」**而不是不检索，并打 `action=chat_tool_decision_failed` 日志：不把决策链路失效伪装成「这题本来就不需要检索」
+- **编排为什么手写而不是用框架 tool calling**（被追问时的口径）：单步 ReAct 只需要「一次决策 + 一次生成」，Spring AI 的 `@Tool` / `ChatClient` 工具循环在这里没有增量收益；而手写单次 JSON 决策还有一个框架给不了的好处 —— **同一次调用顺带提取用户偏好**，换成工具调用会多出一次模型往返。代价是 JSON 解析失败要自己兜底（已降级为「按原问题检索」并打日志）。触发切换的条件：需要多步工具编排（连续检索/计算/再检索）时，手写状态机会迅速变复杂，那时换 `ChatClient` + `@Tool` 更划算
 - 记忆：短期 = Redis List（`eo:chat:session:{sessionId}`，TTL 24h，最近 N 轮）；长期 = `eo_user_preference` 用户画像表（跨会话持久，聊天时注入 prompt）
 - 流式：`POST /api/ai/chat/stream` → SseEmitter，事件协议 token / sources / done / error；前端 fetch + ReadableStream 消费（可带 Authorization 头）
 - 预算：流式方法在流结束前返回，`@TokenBudget` AOP 拦不住 → `AiChatService` 手动执行同一套预算检查（超限 onError 降级）
