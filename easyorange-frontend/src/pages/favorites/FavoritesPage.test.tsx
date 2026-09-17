@@ -27,7 +27,9 @@ vi.mock('react-router-dom', async () => {
 });
 
 vi.mock('@/components/ui/Image', () => ({
-    Image: ({ alt, ...props }: { alt?: string } & Record<string, unknown>) => <img alt={alt || ''} {...props} />,
+    Image: ({ alt, containerClassName: _containerClassName, ...props }: { alt?: string } & Record<string, unknown>) => (
+        <img alt={alt || ''} {...props} />
+    ),
 }));
 
 function createMockPage(recordsCount = 1, totalOverride?: number) {
@@ -135,6 +137,26 @@ describe('FavoritesPage', () => {
         const heartBtn = document.querySelector('.fav-card-heart') as HTMLElement;
         await user.click(heartBtn);
         expect(mockRemove).toHaveBeenCalledWith('prod0');
+    });
+
+    // 卡片整体是 <Link>：勾选区只 stopPropagation 会挡下 Link 的 onClick、却挡不住浏览器
+    // 跟随 href 的默认跳转，点击勾选框会整页跳到商品详情，批量删除于是永远点不中
+    it('does not follow the card link when toggling the checkbox', async () => {
+        mockGetList.mockResolvedValue({ data: createMockPage(1) });
+        renderPage();
+        await screen.findByText('测试商品0');
+
+        const user = userEvent.setup();
+        let clickEvent: MouseEvent | undefined;
+        const capture = (e: MouseEvent) => {
+            clickEvent ??= e;
+        };
+        document.addEventListener('click', capture, true);
+        await user.click(screen.getByLabelText('选择此收藏项'));
+        document.removeEventListener('click', capture, true);
+
+        expect(clickEvent?.defaultPrevented).toBe(true);
+        expect(screen.getByText('删除选中 (1)')).toBeInTheDocument();
     });
 
     it('shows pagination for multi-page results', async () => {
