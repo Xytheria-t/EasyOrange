@@ -181,12 +181,32 @@ function AIFeaturesSection() {
                         <span>AI 工程化</span>
                     </div>
                     <div className="ai-features-title-group">
-                        <span className="ai-features-label">六步闭环</span>
-                        <h2 className="ai-features-title">资产方省心 · 认领方放心</h2>
+                        <span className="ai-features-label">
+                            <span className="label-rule" aria-hidden="true" />
+                            六步闭环
+                            <span className="label-rule" aria-hidden="true" />
+                        </span>
+                        <h2 className="ai-features-title">
+                            <span className="title-side title-side-seller">资产方省心</span>
+                            <span className="title-dot">·</span>
+                            <span className="title-side title-side-buyer">认领方放心</span>
+                        </h2>
                     </div>
-                    <p className="ai-features-subtitle">
-                        资产方侧,AI 替你估值、写描述、智能发布 · 认领方侧,AI 帮你找货、评估、看清信用
-                    </p>
+                    <div className="ai-features-subtitle">
+                        <span className="subtitle-side">
+                            <span className="subtitle-dot subtitle-dot-seller" aria-hidden="true" />
+                            <span>
+                                <strong>资产方侧</strong>,AI 替你估值、写描述、智能发布
+                            </span>
+                        </span>
+                        <span className="subtitle-divider" aria-hidden="true" />
+                        <span className="subtitle-side">
+                            <span className="subtitle-dot subtitle-dot-buyer" aria-hidden="true" />
+                            <span>
+                                <strong>认领方侧</strong>,AI 帮你找货、评估、看清信用
+                            </span>
+                        </span>
+                    </div>
                 </div>
 
                 <div className="pipeline-board">
