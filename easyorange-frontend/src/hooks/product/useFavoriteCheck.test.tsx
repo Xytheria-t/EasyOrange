@@ -65,6 +65,78 @@ describe('useFavoriteCheck', () => {
 
             expect(result.current.isFavorited('1')).toBe(false);
         });
+
+        it('splits oversized id lists into batches of 100', async () => {
+            useAuthStore.setState({
+                token: 'test-token',
+                user: null,
+            });
+
+            const batchSizes: number[] = [];
+            server.use(
+                http.post('/api/favorites/batch-check', async ({ request }) => {
+                    const body = (await request.json()) as { productIds: string[] };
+                    batchSizes.push(body.productIds.length);
+                    return HttpResponse.json({
+                        code: 'A0000',
+                        message: 'success',
+                        data: Object.fromEntries(body.productIds.map(id => [id, true])),
+                        timestamp: Date.now(),
+                    });
+                })
+            );
+
+            const { result } = renderHook(() => useFavoriteCheck(), { wrapper: Wrapper });
+
+            const ids = Array.from({ length: 150 }, (_, i) => `p${i}`);
+            await act(async () => {
+                await result.current.checkFavorites(ids);
+            });
+
+            expect(batchSizes).toEqual([100, 50]);
+            expect(result.current.isFavorited('p0')).toBe(true);
+            expect(result.current.isFavorited('p149')).toBe(true);
+        });
+
+        it('keeps previous favorites when a check fails', async () => {
+            useAuthStore.setState({
+                token: 'test-token',
+                user: null,
+            });
+
+            server.use(
+                http.post('/api/favorites/batch-check', () =>
+                    HttpResponse.json({
+                        code: 'A0000',
+                        message: 'success',
+                        data: { '1': true },
+                        timestamp: Date.now(),
+                    })
+                )
+            );
+
+            const { result } = renderHook(() => useFavoriteCheck(), { wrapper: Wrapper });
+
+            await act(async () => {
+                await result.current.checkFavorites(['1']);
+            });
+            expect(result.current.isFavorited('1')).toBe(true);
+
+            server.use(
+                http.post('/api/favorites/batch-check', () =>
+                    HttpResponse.json(
+                        { code: 'A0429', message: '不允许重复提交', data: null, timestamp: Date.now() },
+                        { status: 429 }
+                    )
+                )
+            );
+
+            await act(async () => {
+                await result.current.checkFavorites(['2']);
+            });
+
+            expect(result.current.isFavorited('1')).toBe(true);
+        });
     });
 
     describe('toggleFavorite', () => {
