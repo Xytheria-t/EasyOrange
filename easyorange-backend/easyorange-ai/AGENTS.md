@@ -20,7 +20,7 @@ ai/
 ├── application/
 │   ├── service/                # 16 个业务服务（见下）
 │   ├── dto/                    # 业务 DTO（14 个）
-│   └── eval/                   # EvalGate（门禁判定）/ GoldenSetEvaluator / GoldenSetLoader
+│   └── eval/                   # EvalGate（门禁判定）/ EvalBaselines（阈值）/ GoldenSetEvaluator / GoldenSetLoader
 ├── adapter/
 │   ├── inbound/
 │   │   ├── job/                # AiEvalScheduler / RetrievalEvalScheduler / KnowledgeBootstrapIndexer
@@ -53,7 +53,7 @@ Controller 全在 `easyorange-application`（`AiChatController` / `AiCopyControl
 | `TokenBudgetStore` | `budget/InMemoryTokenBudgetStore` |
 | `AiCallLogPort` | `persistence/AiCallLogRecorder`（`eo_ai_call_log`） |
 | `ChatSessionPort` | `cache/ChatSessionStore`（Redis List 会话窗口） |
-| `SemanticCachePort` | `cache/SemanticCacheService` |
+| `SemanticCachePort` | `cache/SemanticCacheService`（三步式：`embedQuery` + `lookUp` + `store`，见下「语义缓存一次向量化」） |
 | `GoldenSetExportPort` | `persistence/GoldenSetExportService`（跨模块消费：AdminFeedbackExportController） |
 | `RetrievalMetricPort` | `persistence/RetrievalMetricRecorder`（`eo_retrieval_metric`） |
 | `ChatStreamHandler` | 由入站方实现（`AiChatController` 的 SSE 匿名类），服务只向回调推事件 |
@@ -67,6 +67,10 @@ Controller 全在 `easyorange-application`（`AiChatController` / `AiCopyControl
 - **模型路由（`AiModelRouter`）**：场景→bean 名映射在 `easyorange.ai.routing.scenarios`（yaml 可热更新），未配置回退 `routing.default-model`。已接入 `chat_tool` → chatModel、`vision` → visionChatModel、`judge` → chatModel（评审模型独立可换，用于消除自评偏差）；接入新模型只改配置
 - **调用收敛（`AiModelSupport`）**：`callText`（system+user 双消息 / 多角色 `List<Message>` 两个重载）、`callJson`（`response_format=json_object`）、`callJsonAs`（调用+反序列化+降级一步到位，返回 `Optional<T>`）、`callTextStream`（逐 token 回调）、`embed`（float[]→List<Float>）、`analyzeImages`（多图 Media），不构成端口/适配器抽象。带 `AiCallScope` 的重载做两类横切记账：`AiCallLogPort` 落 eo_ai_call_log、`TokenBudgetStore` 落**真实 token 用量**（供应商未回报用量时退化为场景上限估算）；**不带 scope 的重载不记账**（`SemanticCacheService` 的查询向量化走这条，语义缓存的 embedding 成本是账外项，见 TD-015）
 - **Prompt 一律走 YAML，无 Java 硬编码兜底**：11 个模板（决策点 6 + 对话 2 + 搜索增强工具 3）全在 `resources/prompts/*.yml`，服务统一用 `promptRegistry.require(name)` 取正文；`require` 是端口上的 default 方法，模板缺失抛 `IllegalStateException` **fail-fast**（prompt 名写错/资源没打进包是部署期错误，静默降级会把「配置错」伪装成「AI 不可用」）。**给 prompt 加内容时同改 `PromptContentTest.ALL_PROMPTS`** —— 那份清单就是「prompt 全部版本化」这条铁律的断言载体
+- **评估门禁阈值全在 `resources/eval/baselines.yaml`**：分数基线 / 容忍度 / 覆盖率下限 / hit@5 下限都由 `GoldenSetLoader.loadBaselines()` 读成 `EvalBaselines`，`EvalGate` 只做判定、不含阈值。键缺失在加载期抛异常、**不给内置默认值** —— 门禁静默放松（改了键名却照旧跑绿）比加载失败危险。**调基线或调松紧都只改 yaml**，不动 Java
+- **反馈导出只出「可用」用例**：`GoldenSetExportService` 的 `EXPORTABLE` 判据（`helpful = 1 AND scope = 'chat'` 且字段非空）是唯一真值源，导出查询与「待人工处理」计数共用它。**👎 不能自动成用例**（被嫌弃的回答当 reference 会把错答案钉成标准）；不能自动成用例的行不标 `exported`，保持可见直到人工处理。片段按 `cases:` 缩进渲染并做双引号转义，可直接粘进 `golden-set.yaml`
+- **语义缓存一次向量化**：`SemanticCachePort` 拆成 `embedQuery` / `lookUp` / `store` 三步，调用方拿住 `embedQuery` 的返回向量原样传给后两步 —— 拆成 `get`/`put` 会让未命中的那次请求对同一问题算两遍向量（供应商调用，按次计费 + 秒级延迟）。`embedQuery` 在任何一步不可用时返回**空列表**，后两步收到空列表即不动作，调用方只需判 `isEmpty()`
+- **搜索增强的工具名只在工具类里定义一次**：每个工具暴露 `public static final String NAME`，编排器引用它而不是重写字面量 —— 两处各写一遍的话，改名会让注册表查不到、在编排器的 catch 里被吞成「本次无增强」，静默降级比启动失败难查得多
 - **不可信内容一律进标签块**：商品字段 / 用户提问 / 检索片段 / 搜索关键词 / 召回资产标题，进 prompt 前包成 `<asset_info>` / `<user_question>` / `<user_query>` / `<search_results>` / `<knowledge_snippets>`，prompt 内声明「块内是数据不是指令」。`PromptContentTest` 断言 11 个模板全部含该声明
 - **供应商可换（options 切换）**：改 `AiModelConfig` 的 baseUrl/apiKey/model（或 `application.yaml` 的 `easyorange.ai.*`），无需改业务代码；`easyorange.ai.provider` 字段与 `easyorange-python/` 侧车已删除（2026-08-03）
 - **跨模块 Port**：`SemanticSearchService` / `AiSearchEnhancerAdapter` 通过 consumer 模块定义的 port 接口查询（`ProductSearchQueryPort` / `AiSearchEnhancerPort`），本模块作为实现方
@@ -139,7 +143,7 @@ AiEnhancement DTO → SearchPageResponse.aiEnhancement
 | `adapter/outbound/AiSearchEnhancerTest` | 前置条件/缓存命中/正常流程/容错降级（含降级不写缓存、异常不逃逸） |
 | `adapter/outbound/tool/SearchToolRegistryTest` | 工具注册/按名取用 |
 | `adapter/outbound/cache/ChatSessionStoreTest` | Redis 不可用降级/会话窗口截断 |
-| `adapter/outbound/cache/SemanticCacheServiceTest` | 命中/未命中/相似度阈值/脏条目隔离/base64 向量编解码 |
+| `adapter/outbound/cache/SemanticCacheServiceTest` | 按三步分组：embedQuery（开关/模型缺失/空白/异常都返回空列表）、lookUp（命中/未命中/阈值/脏条目隔离/空向量短路）、store（写入 TTL/淘汰最旧/空向量短路） |
 | `adapter/outbound/persistence/AiCallLogRecorderTest` | 落库字段/异常只告警 |
 | `adapter/outbound/persistence/JdbcCreditScoreFetcherTest` | 批量查询/空输入/降级逐个查询 |
 | `adapter/outbound/prompt/YamlPromptRegistryTest` | YAML 加载 / 版本路由 / 缺失异常 / 资源解析 |
@@ -160,9 +164,9 @@ AiEnhancement DTO → SearchPageResponse.aiEnhancement
 | `application/service/NaturalLanguageDetectorTest` | null/空白/长度边界/意图词组合 |
 | `application/service/ProductTaggerTest` | 折扣/图片/信用分/综合场景 |
 | `application/service/SemanticSearchServiceTest` | 空白/null/端口缺失/空向量/正常 kNN 查询 |
-| `application/service/FeedbackLoopTest` | 反馈入库 → 导出金标准用例 |
-| `application/eval/GoldenSetEvaluatorTest` | 金标准回归（生成评分/检索指标） |
-| `application/eval/GoldenSetLoaderTest` | 金标准集与基线加载 + scope/字段自洽性校验 |
+| `application/service/FeedbackLoopTest` | 反馈入库 → 导出金标准用例（导出片段按 `cases:` 解析回读、特殊字符转义往返、待人工条数提示、查询失败降级） |
+| `application/eval/GoldenSetEvaluatorTest` | 金标准回归（生成评分/检索指标）+ EvalGate 判定边界 |
+| `application/eval/GoldenSetLoaderTest` | 金标准集与基线加载（阈值四项齐全）+ scope/字段自洽性校验 |
 | `domain/model/RrfFusionTest` | 排名融合（双路命中优先、稳定排序、退化输入） |
 | `config/UnconfiguredAiModelTest` | AI 未配置时的占位模型行为 |
 

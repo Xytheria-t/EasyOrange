@@ -128,21 +128,23 @@ EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 
 ### 7.4 评估进 CI（金标准集 + Judge 回归 + 门禁）
 
-- 金标准集：`eval/golden-set.yaml` 35 条用例（20 `scope: chat` 生成质量 + 15 `scope: retrieval` 检索质量），`eval/baselines.yaml` 基线（chat: 4.0）。`GoldenSetLoader` 加载即校验：scope 只认 chat/retrieval，chat 必须有参考回答、retrieval 必须有 gold_doc_ids
+- 金标准集：`eval/golden-set.yaml` 35 条用例（20 `scope: chat` 生成质量 + 15 `scope: retrieval` 检索质量）。`GoldenSetLoader` 加载即校验：scope 只认 chat/retrieval，chat 必须有参考回答、retrieval 必须有 gold_doc_ids
 - 生成质量：`GoldenSetEvaluator.evaluateGeneration` — 对每条用例调真实对话 → `AiJudge` 对照参考打分（`judgeAgainstReference`）→ 聚合平均分。评审模型走场景路由 `judge`（默认 chatModel；指向另一个更强模型即可消除自评偏差，改配置不用改代码）
 - 检索质量：`evaluateRetrieval` — hit@5 / MRR，逐条落 `eo_retrieval_metric`（按 run_id 聚合）
-- 门禁：`EvalGate` 判两条 —— 均分低于「基线 - 0.3」失败，**评审覆盖率低于 80% 同样失败**（评审大面积失败时均分只是「幸存者平均」，1 条打 5 分就能蒙过分数门禁）；`GoldenSetRegressionIT`（failsafe，`EASYORANGE_AI_API_KEY` 存在时执行）卡 CI
+- 门禁阈值全在 `eval/baselines.yaml`（`generation.score-baseline` 4.0 / `score-tolerance` 0.3 / `min-coverage` 0.8、`retrieval.min-hit-at-5` 0.5），键缺失加载期直接报错、不落回内置默认值——门禁静默放松比加载失败危险。调基线是改 yaml + 评审，不动 Java
+- 门禁：`EvalGate` 判两条 —— 均分低于「基线 - 容忍度」失败，**评审覆盖率低于下限同样失败**（评审大面积失败时均分只是「幸存者平均」，1 条打 5 分就能蒙过分数门禁）；`GoldenSetRegressionIT`（failsafe，`EASYORANGE_AI_API_KEY` 存在时执行）卡 CI
 - 分流按 `scope` 字段（不再按「有没有 gold_doc_ids」这类派生特征判断，否则带 gold 的生成用例会同时被算进检索分母）
 - 定时：`AiEvalScheduler`（生成 Judge，3 点）+ `RetrievalEvalScheduler`（检索指标，3:15，默认关闭）
 
-### 7.5 反馈飞轮（👍/👎 → 自动扩充评测集）
+### 7.5 反馈飞轮（👍 → 自动扩充评测集，👎 → 待人工构造）
 
+- **👎 不能自动成用例**：反馈里存的 `response_text` 正是被嫌弃的那条回答，拿它当 `reference_answer` 等于把错答案钉成标准，下一轮评测会把「答得对」判成回归；负样本必须人工补一条正确回答。代码里 `helpful = 0` 与非 chat 场景的反馈只统计不导出，且**不标记 exported**（宁可反复提示，不可漏处理）
 - 入库：`POST /api/ai/feedback` → `eo_ai_feedback`（scope/问题/回答/helpful/评语/关联调用日志）
-- 导出：`GET /api/admin/ai/feedback/export` → 未导出反馈渲染为 golden-set.yaml 用例片段（导出即标记 exported=1），人工审核后合入评测集
+- 导出：`GET /api/admin/ai/feedback/export` → 只取 `helpful = 1 AND scope = 'chat'` 且字段非空的行，渲染成 golden-set.yaml 用例片段（按 `cases:` 的缩进渲染，可直接粘贴；字段一律双引号转义，含 `": "` / 换行 / 反斜杠也不会破坏 YAML），导出即标记 `exported=1`，人工审核后合入评测集
 
 ### 7.6 成本优化（语义缓存 + 模型路由）
 
-- 语义缓存：`SemanticCacheService` — 查询向量化 → Redis Hash 内 Cosine 相似度匹配（阈值 0.92）→ 相似问题复用历史回答；条目超上限淘汰最旧；Redis/embedding 不可用 fail-open
+- 语义缓存：`SemanticCacheService` — 查询向量化 → Redis Hash 内 Cosine 相似度匹配（阈值 0.92）→ 相似问题复用历史回答；条目超上限淘汰最旧；Redis/embedding 不可用 fail-open。**一次请求只向量化一次**：端口拆成 `embedQuery` + `lookUp` + `store`，命中原样复用同一向量，未命中写入时不再重算（向量化是供应商调用，按次计费且有延迟）
 - 模型路由：`AiModelRouter` — 场景 → 模型 bean 名（`easyorange.ai.routing.scenarios`），接入第二个模型只需改配置
 
 ### 7.7 可观测（AI dashboard）
