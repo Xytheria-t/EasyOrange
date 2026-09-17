@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeMatch;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -49,12 +49,13 @@ class KnowledgeFallbackAdapterTest {
                         LocalDateTime.now())));
         KnowledgeIndexPort adapter = new KnowledgeFallbackAdapter(repository, meterRegistry);
 
-        List<KnowledgeChunk> chunks = adapter.search("退款", null, 5);
+        List<KnowledgeMatch> matches = adapter.search("退款", null, 5);
 
-        assertThat(chunks).hasSize(1);
-        assertThat(chunks.getFirst().docId()).isEqualTo("kb-0002");
-        assertThat(chunks.getFirst().title()).isEqualTo("退款规则");
-        assertThat(chunks.getFirst().embedding()).isNull();
+        assertThat(matches).hasSize(1);
+        assertThat(matches.getFirst().docId()).isEqualTo("kb-0002");
+        assertThat(matches.getFirst().title()).isEqualTo("退款规则");
+        // 降级路径没有多路召回可融合，分数恒为 0（不伪装成语义相似度）
+        assertThat(matches.getFirst().score()).isZero();
         verify(repository).searchByContent("退款", 5);
         assertThat(meterRegistry
                         .counter("easyorange.ai.rag.degraded", "op", "search")

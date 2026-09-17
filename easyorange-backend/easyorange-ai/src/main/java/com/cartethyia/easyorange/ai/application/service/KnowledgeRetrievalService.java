@@ -1,11 +1,9 @@
 package com.cartethyia.easyorange.ai.application.service;
 
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
-import com.cartethyia.easyorange.ai.domain.model.VectorUtils;
+import com.cartethyia.easyorange.ai.domain.model.KnowledgeMatch;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
-import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,9 +12,11 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 /**
- * 知识库检索服务 — 查询向量化 → 索引侧混合召回（kNN + BM25）→ Java 原生 Cosine 重排收口。
+ * 知识库检索服务 — 查询向量化 → 索引侧两路召回（kNN + BM25）+ RRF 排名融合 → 引用溯源。
  * <p>
- * 引用溯源：返回的 {@link KnowledgeHit} 带 docId/title，回答端据此标注 [来源:标题]。
+ * 排序不在这一层做：融合需要两路的完整排名，只有索引侧拿得到（见 {@link KnowledgeIndexPort}）。
+ * 此前这里按余弦相似度对候选重排，用的是与稠密召回同一个 embedding 的同一个余弦 ——
+ * 对稠密那一路是单调变换（等于没排），却会把 BM25 的排序信号整体丢掉，是「看起来有重排」的假动作。
  * <p>
  * 索引不可用（ES 关闭）时降级到 MySQL 标题/正文 LIKE 检索（仅保证可用，
  * 不保证召回质量 — 面试口径：量级不到不上独立向量库，ES kNN 已够用）。
@@ -31,7 +31,7 @@ public class KnowledgeRetrievalService {
     private final AiModelSupport aiModelSupport;
 
     /**
-     * 混合召回 + Cosine 重排，返回 topK 命中。
+     * 两路召回 + RRF 融合，返回 topK 命中（顺序即最终顺序）。
      */
     public List<KnowledgeHit> search(String query, int topK) {
         if (query == null || query.isBlank() || topK <= 0) {
@@ -43,9 +43,7 @@ public class KnowledgeRetrievalService {
         }
         if (!port.isAvailable()) {
             // 索引不可用（ES 关闭）— 降级适配器按标题/正文 LIKE 检索，仅保证可用不保证召回质量
-            return port.search(query, null, topK).stream()
-                    .map(c -> new KnowledgeHit(c.docId(), c.title(), c.content(), 0))
-                    .toList();
+            return toHits(port.search(query, null, topK));
         }
         var embeddingModel = embeddingModelProvider.getIfAvailable();
         if (embeddingModel == null) {
@@ -60,14 +58,12 @@ public class KnowledgeRetrievalService {
             return List.of();
         }
 
-        List<KnowledgeChunk> candidates = port.search(query, queryEmbedding, topK * 2);
-        return candidates.stream()
-                .sorted(Comparator.comparingDouble(
-                                (KnowledgeChunk c) -> VectorUtils.cosine(queryEmbedding, c.embedding()))
-                        .reversed())
-                .limit(topK)
-                .map(c -> new KnowledgeHit(
-                        c.docId(), c.title(), c.content(), VectorUtils.cosine(queryEmbedding, c.embedding())))
+        return toHits(port.search(query, queryEmbedding, topK));
+    }
+
+    private static List<KnowledgeHit> toHits(List<KnowledgeMatch> matches) {
+        return matches.stream()
+                .map(m -> new KnowledgeHit(m.docId(), m.title(), m.content(), m.score()))
                 .toList();
     }
 }
