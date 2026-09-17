@@ -144,26 +144,24 @@ class GoldenSetEvaluatorTest {
     }
 
     @Test
-    @DisplayName("EvalGate：分数低于基线 - 容忍度 -> 失败（卡 build）")
+    @DisplayName("EvalGate：分数低于基线 - 容忍度 -> 失败（卡 build），scope 由调用方传入")
     void evalGate() {
-        assertThat(EvalGate.check(4.1, 4.0, 0.3).passed()).isTrue();
-        assertThat(EvalGate.check(3.8, 4.0, 0.3).passed()).isTrue();
-        assertThat(EvalGate.check(3.6, 4.0, 0.3).passed()).isFalse();
-        assertThat(EvalGate.check(3.6, 4.0, 0.3).delta()).isCloseTo(-0.4, org.assertj.core.data.Offset.offset(1e-9));
+        assertThat(EvalGate.check("chat", 4.1, 4.0, 0.3).passed()).isTrue();
+        assertThat(EvalGate.check("chat", 3.8, 4.0, 0.3).passed()).isTrue();
+        assertThat(EvalGate.check("chat", 3.6, 4.0, 0.3).passed()).isFalse();
+        assertThat(EvalGate.check("chat", 3.6, 4.0, 0.3).delta())
+                .isCloseTo(-0.4, org.assertj.core.data.Offset.offset(1e-9));
+        assertThat(EvalGate.check("retrieval", 4.0, 4.0, 0.3).scope()).isEqualTo("retrieval");
     }
 
     @Test
     @DisplayName("EvalGate 覆盖率：评审大面积失败判失败（防「幸存者平均」蒙过分数门禁）")
     void evalGate_coverage() {
+        // 阈值与生产同源（baselines.yaml 的 generation.min-coverage），此处按值传入以便覆盖边界
+        double minCoverage = 0.8;
         // 30 条只评出 1 条、那 1 条拿了 5 分：均分漂亮但样本已不代表质量
-        assertThat(EvalGate.checkCoverage("chat", 1, 30, EvalGate.DEFAULT_MIN_COVERAGE)
-                        .passed())
-                .isFalse();
-        assertThat(EvalGate.checkCoverage("chat", 24, 30, EvalGate.DEFAULT_MIN_COVERAGE)
-                        .passed())
-                .isTrue();
-        assertThat(EvalGate.checkCoverage("chat", 0, 0, EvalGate.DEFAULT_MIN_COVERAGE)
-                        .passed())
-                .isFalse();
+        assertThat(EvalGate.checkCoverage("chat", 1, 30, minCoverage).passed()).isFalse();
+        assertThat(EvalGate.checkCoverage("chat", 24, 30, minCoverage).passed()).isTrue();
+        assertThat(EvalGate.checkCoverage("chat", 0, 0, minCoverage).passed()).isFalse();
     }
 }

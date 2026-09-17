@@ -96,9 +96,14 @@ class GoldenSetLoaderTest {
     }
 
     @Test
-    @DisplayName("加载 baselines.yaml -> chat 基线 4.0")
+    @DisplayName("加载 baselines.yaml -> 分数基线 / 容忍度 / 覆盖率下限 / hit@5 下限齐全")
     void loadBaselines() {
-        assertThat(loader.loadBaselines()).containsEntry("chat", 4.0);
+        EvalBaselines baselines = loader.loadBaselines();
+
+        assertThat(baselines.generation().scoreBaseline()).isEqualTo(4.0);
+        assertThat(baselines.generation().scoreTolerance()).isEqualTo(0.3);
+        assertThat(baselines.generation().minCoverage()).isEqualTo(0.8);
+        assertThat(baselines.retrieval().minHitAt5()).isEqualTo(0.5);
     }
 
     private static List<GoldenSetCase> scoped(GoldenSet goldenSet, String scope) {

@@ -69,20 +69,34 @@ public class GoldenSetLoader {
     }
 
     /**
-     * 每场景质量基线（baselines.yaml）— 分数门禁的对比基准。
+     * 评估门禁阈值（baselines.yaml）— 分数基线、容忍度、覆盖率下限、hit@5 下限。
+     * <p>
+     * 键缺失即抛异常：门禁阈值静默回落成内置默认值，等于门禁悄悄放松（改了 yaml 的键名却照旧跑绿），
+     * 与其那样不如加载期炸掉。
      */
-    public Map<String, Double> loadBaselines() {
+    public EvalBaselines loadBaselines() {
         try (var in = new ClassPathResource(BASELINES_PATH).getInputStream()) {
             Map<String, Object> raw = new Yaml().load(in);
-            if (raw == null) {
-                return Map.of();
-            }
-            return raw.entrySet().stream()
-                    .collect(java.util.stream.Collectors.toMap(
-                            Map.Entry::getKey, e -> ((Number) e.getValue()).doubleValue()));
+            return new EvalBaselines(
+                    new EvalBaselines.Generation(
+                            required(raw, "generation", "score-baseline"),
+                            required(raw, "generation", "score-tolerance"),
+                            required(raw, "generation", "min-coverage")),
+                    new EvalBaselines.Retrieval(required(raw, "retrieval", "min-hit-at-5")));
+        } catch (IllegalStateException e) {
+            throw e;
         } catch (Exception e) {
             throw new IllegalStateException("Failed to load baselines: " + BASELINES_PATH, e);
         }
+    }
+
+    private static double required(Map<String, Object> root, String scope, String key) {
+        Object section = root == null ? null : root.get(scope);
+        Object value = section instanceof Map<?, ?> map ? map.get(key) : null;
+        if (!(value instanceof Number number)) {
+            throw new IllegalStateException("baselines.yaml 缺少 " + scope + "." + key);
+        }
+        return number.doubleValue();
     }
 
     private GoldenSetCase toCase(Map<String, Object> raw) {
