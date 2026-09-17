@@ -19,10 +19,15 @@ import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -182,13 +187,11 @@ public class AiChatService {
             handler.onSources(sources);
         }
 
-        // 4. 生成回答（流式时逐 token 回调）
-        String systemPrompt = loadSystemPrompt(CHAT_PROMPT);
-        String userMessage = buildUserMessage(request.question(), history, prefs, hits);
+        // 4. 生成回答（按角色传消息：system / 历史 user+assistant / 当前 user，流式时逐 token 回调）
+        List<Message> messages = buildMessages(loadSystemPrompt(CHAT_PROMPT), request.question(), history, prefs, hits);
         String answer = handler != null
-                ? aiModelSupport.callTextStream(
-                        chatModel, AiCallScope.CHAT, systemPrompt, userMessage, handler::onToken)
-                : aiModelSupport.callText(chatModel, AiCallScope.CHAT, systemPrompt, userMessage);
+                ? aiModelSupport.callTextStream(chatModel, AiCallScope.CHAT, messages, handler::onToken)
+                : aiModelSupport.callText(chatModel, AiCallScope.CHAT, messages);
         if (answer == null || answer.isBlank()) {
             throw new IllegalStateException("AI returned empty answer");
         }
@@ -198,6 +201,14 @@ public class AiChatService {
         return new ChatAnswer(answer, sources, request.sessionId());
     }
 
+    /**
+     * 工具决策：模型输出 JSON 决定是否检索知识库，顺带提取用户偏好。
+     * <p>
+     * 决策失败（模型故障 / JSON 解析失败）时<b>降级为「直接检索原始问题」</b>而不是不检索：
+     * 规则类问题走检索是常态，识别不出来的问题拿原始问句去查一次，最坏是多几条不相关片段进 prompt，
+     * 好过把「检索链路失效」伪装成「这题本来就不需要检索」。降级打结构化日志并落 eo_ai_call_log
+     * （决策调用本身失败会被记 success=0），不静默。
+     */
     private ToolDecision decideTool(String question, List<ChatTurn> history, List<UserPreference> prefs) {
         try {
             String json = aiModelSupport.callJson(
@@ -208,8 +219,11 @@ public class AiChatService {
             ToolDecision decision = objectMapper.readValue(json, ToolDecision.class);
             return decision != null ? decision : new ToolDecision("none", question, null);
         } catch (Exception e) {
-            log.warn("tool decision failed, fallback to direct answer: {}", e.getMessage());
-            return new ToolDecision("none", question, null);
+            log.warn(
+                    "action=chat_tool_decision_failed, fallback=knowledge_search, question={}, reason={}",
+                    question,
+                    e.getMessage());
+            return new ToolDecision(TOOL_KNOWLEDGE_SEARCH, question, null);
         }
     }
 
@@ -251,7 +265,10 @@ public class AiChatService {
 
     private static String buildToolUserMessage(String question, List<ChatTurn> history, List<UserPreference> prefs) {
         return """
-                用户问题：%s
+                用户问题：
+                <user_question>
+                %s
+                </user_question>
 
                 历史对话：
                 %s
@@ -261,20 +278,48 @@ public class AiChatService {
                 """.formatted(question, formatHistory(history), formatPrefs(prefs));
     }
 
-    private static String buildUserMessage(
-            String question, List<ChatTurn> history, List<UserPreference> prefs, List<KnowledgeHit> hits) {
+    /**
+     * 组装生成回答的消息序列：system + 历史 user/assistant 轮次 + 当前 user（画像 / 知识片段 / 问题）。
+     * <p>
+     * 历史不进当前 user 消息 —— 跨轮次的前缀保持稳定，供应商上下文缓存（按前缀命中折扣计价）才有效，
+     * 历史也按原始角色呈现（而不是压平成一段文本），模型对轮次的区分更准。
+     * <p>
+     * 用户问题与检索片段一律放进带标签的块：它们是数据不是指令，配合 system prompt 的约束，
+     * 降低「商品描述/提问里写指令操纵模型」的成功率。
+     */
+    private static List<Message> buildMessages(
+            String systemPrompt,
+            String question,
+            List<ChatTurn> history,
+            List<UserPreference> prefs,
+            List<KnowledgeHit> hits) {
+        List<Message> messages = new ArrayList<>(history.size() + 2);
+        messages.add(new SystemMessage(systemPrompt));
+        for (ChatTurn turn : history) {
+            messages.add(
+                    "user".equals(turn.role())
+                            ? new UserMessage(turn.content())
+                            : new AssistantMessage(turn.content()));
+        }
+        messages.add(new UserMessage(buildCurrentUserMessage(question, prefs, hits)));
+        return messages;
+    }
+
+    private static String buildCurrentUserMessage(
+            String question, List<UserPreference> prefs, List<KnowledgeHit> hits) {
         return """
-                用户问题：%s
-
-                历史对话：
+                <user_question>
                 %s
+                </user_question>
 
-                用户画像：
+                <user_profile>
                 %s
+                </user_profile>
 
-                知识库检索结果：
+                <knowledge_snippets>
                 %s
-                """.formatted(question, formatHistory(history), formatPrefs(prefs), formatHits(hits));
+                </knowledge_snippets>
+                """.formatted(question, formatPrefs(prefs), formatHits(hits));
     }
 
     private static String formatHistory(List<ChatTurn> history) {

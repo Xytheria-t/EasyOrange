@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.ai.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -38,6 +38,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -114,7 +116,7 @@ class AiChatServiceTest {
         when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"knowledge_search\",\"query\":\"退款\",\"preference\":null}");
-        when(aiModelSupport.callText(any(), any(), anyString(), anyString())).thenReturn("签收后 7 天内支持无理由退货 [来源:退款规则]");
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("签收后 7 天内支持无理由退货 [来源:退款规则]");
         when(retrievalService.search("退款", 5))
                 .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)));
 
@@ -134,7 +136,7 @@ class AiChatServiceTest {
         when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
-        when(aiModelSupport.callText(any(), any(), anyString(), anyString())).thenReturn("在的，有什么可以帮你？");
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("在的，有什么可以帮你？");
 
         ChatAnswer answer = chatService.answer(new ChatRequest("在吗？", "sess-1", false));
 
@@ -153,7 +155,7 @@ class AiChatServiceTest {
         when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":{\"key\":\"style\",\"value\":\"复古\"}}");
-        when(aiModelSupport.callText(any(), any(), anyString(), anyString())).thenReturn("好的，记住你喜欢复古风格。");
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("好的，记住你喜欢复古风格。");
 
         chatService.answer(new ChatRequest("我喜欢复古风格的东西", "sess-1", false));
 
@@ -170,7 +172,7 @@ class AiChatServiceTest {
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
 
         assertThat(answer).isEqualTo(cached);
-        verify(aiModelSupport, never()).callText(any(), any(), anyString(), anyString());
+        verify(aiModelSupport, never()).callText(any(), any(), anyList());
     }
 
     @Test
@@ -178,7 +180,7 @@ class AiChatServiceTest {
     void answer_forceFreshSkipsCache() {
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
-        when(aiModelSupport.callText(any(), any(), anyString(), anyString())).thenReturn("回答");
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
 
         chatService.answer(new ChatRequest("问题", "sess-1", true));
 
@@ -193,10 +195,10 @@ class AiChatServiceTest {
                 .thenReturn("{\"tool\":\"knowledge_search\",\"query\":\"退款\",\"preference\":null}");
         when(retrievalService.search("退款", 5))
                 .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)));
-        when(aiModelSupport.callTextStream(any(), any(), anyString(), anyString(), any(Consumer.class)))
+        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenAnswer(invocation -> {
                     @SuppressWarnings("unchecked")
-                    Consumer<String> consumer = invocation.getArgument(4);
+                    Consumer<String> consumer = invocation.getArgument(3);
                     consumer.accept("可以");
                     consumer.accept("退款");
                     return "可以退款";
@@ -233,7 +235,8 @@ class AiChatServiceTest {
         assertThat(sources.get()).containsExactly("退款规则");
         assertThat(done.get()).isEqualTo("可以退款");
         assertThat(error.get()).isNull();
-        verify(budgetStore).recordUsage(eq("chat"), any(Integer.class), eq(0));
+        // 记账由 AiModelSupport 按真实用量做，服务层再记一次会重复计数
+        verify(budgetStore, never()).recordUsage(anyString(), any(Integer.class), any(Integer.class));
     }
 
     @Test
@@ -259,7 +262,7 @@ class AiChatServiceTest {
         });
 
         assertThat(error.get()).contains("预算");
-        verify(aiModelSupport, never()).callTextStream(any(), any(), anyString(), anyString(), any());
+        verify(aiModelSupport, never()).callTextStream(any(), any(), anyList(), any());
     }
 
     @Test
@@ -291,7 +294,7 @@ class AiChatServiceTest {
         when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
-        when(aiModelSupport.callText(any(), any(), anyString(), anyString()))
+        when(aiModelSupport.callText(any(), any(), anyList()))
                 .thenReturn("正常回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
 
@@ -300,7 +303,7 @@ class AiChatServiceTest {
 
         assertThat(first.answer()).isEqualTo("正常回答");
         assertThat(degraded.answer()).isEqualTo("正常回答");
-        verify(aiModelSupport, times(2)).callText(any(), any(), anyString(), anyString());
+        verify(aiModelSupport, times(2)).callText(any(), any(), anyList());
     }
 
     @Test
@@ -309,8 +312,7 @@ class AiChatServiceTest {
         when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
-        when(aiModelSupport.callText(any(), any(), anyString(), anyString()))
-                .thenThrow(new RuntimeException("DeepSeek 超时"));
+        when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(new RuntimeException("DeepSeek 超时"));
 
         Assertions.assertThatThrownBy(() -> chatService.answer(new ChatRequest("怎么退款？", "sess-1", false)))
                 .isInstanceOf(RuntimeException.class)
@@ -322,7 +324,7 @@ class AiChatServiceTest {
     void answer_forceFreshWritesStaleCache() {
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
-        when(aiModelSupport.callText(any(), any(), anyString(), anyString()))
+        when(aiModelSupport.callText(any(), any(), anyList()))
                 .thenReturn("新鲜回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
 
@@ -334,21 +336,45 @@ class AiChatServiceTest {
     }
 
     @Test
-    @DisplayName("历史记忆注入 -> 组装 user 消息时携带最近轮次")
+    @DisplayName("历史记忆注入 -> 按角色分发为历史消息，不压平进当前 user 消息")
     void answer_injectsHistory() {
         when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
         when(sessionStore.loadRecent("sess-1", 6))
                 .thenReturn(List.of(new ChatTurn("user", "上一轮问题"), new ChatTurn("assistant", "上一轮回答")));
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
-        when(aiModelSupport.callText(any(), any(), anyString(), anyString())).thenAnswer(invocation -> {
-            String userMessage = invocation.getArgument(3);
-            assertThat(userMessage).contains("上一轮问题").contains("上一轮回答");
+        when(aiModelSupport.callText(any(), any(), anyList())).thenAnswer(invocation -> {
+            List<Message> messages = invocation.getArgument(2);
+            assertThat(messages).hasSize(4);
+            assertThat(messages.getFirst().getMessageType()).isEqualTo(MessageType.SYSTEM);
+            assertThat(messages.get(1).getMessageType()).isEqualTo(MessageType.USER);
+            assertThat(messages.get(1).getText()).isEqualTo("上一轮问题");
+            assertThat(messages.get(2).getMessageType()).isEqualTo(MessageType.ASSISTANT);
+            assertThat(messages.get(2).getText()).isEqualTo("上一轮回答");
+            // 历史不进当前 user 消息：前缀稳定才命中供应商上下文缓存（重复前缀按折扣计价）
+            assertThat(messages.get(3).getText()).contains("<user_question>").contains("继续");
+            assertThat(messages.get(3).getText()).doesNotContain("上一轮问题");
             return "记住了";
         });
 
         ChatAnswer answer = chatService.answer(new ChatRequest("继续", "sess-1", false));
 
         assertThat(answer.answer()).isEqualTo("记住了");
+    }
+
+    @Test
+    @DisplayName("工具决策失败 -> 降级为按原始问题检索（不把决策故障伪装成「无需检索」）")
+    void answer_toolDecisionFailure_fallsBackToRetrieval() {
+        when(semanticCache.get(any(), anyString(), any())).thenReturn(Optional.empty());
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
+                .thenThrow(new RuntimeException("决策模型不可用"));
+        when(retrievalService.search("怎么退款？", 5))
+                .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.9)));
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("签收后 7 天内可退 [来源:退款规则]");
+
+        ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
+
+        verify(retrievalService).search("怎么退款？", 5);
+        assertThat(answer.sources()).containsExactly("退款规则");
     }
 }
