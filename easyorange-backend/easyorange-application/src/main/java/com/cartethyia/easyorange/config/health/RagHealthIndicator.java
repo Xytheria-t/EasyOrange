@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * 与 {@link AiHealthIndicator} 同一取舍：做<b>配置状态</b>探测而非实时连通性探测——
  * 运维关心的是「召回走哪条路」，而不是每次健康检查都发起一次真实检索。
  * <ul>
- *   <li>ES 启用 → {@code UP}（混合召回：BM25 + dense_vector kNN）</li>
+ *   <li>ES 启用 → {@code UP}（两路召回：BM25 + dense_vector kNN，RRF 融合）</li>
  *   <li>ES 关闭 → {@code UNKNOWN}，detail 标注降级后果</li>
  * </ul>
  * 之所以不报 {@code DOWN}：降级是「功能变差」而非「功能不可用」，不应拉低整体健康；
@@ -33,12 +33,12 @@ public class RagHealthIndicator implements HealthIndicator {
             return Health.unknown()
                     .withDetail("retrieval", "mysql-like-fallback")
                     .withDetail("reason", "ES disabled — recall degrades to title/content LIKE")
-                    .withDetail("measuredHitRateAt5", "10% (ES path 100%, same golden set)")
+                    .withDetail("impact", "只命中关键词字面重叠，召回质量远低于 ES 路径（量化对比见 doc/工程指标.md 与 ai-eval 回归）")
                     .build();
         }
         return Health.up()
                 .withDetail("retrieval", "elasticsearch")
-                .withDetail("mode", "BM25 + dense_vector kNN hybrid recall")
+                .withDetail("mode", "BM25 + dense_vector kNN two-leg recall with RRF fusion")
                 .build();
     }
 }
