@@ -85,5 +85,5 @@ CreateOrderCommand
 ## 备注（Notes）
 
 - 相关 ADR：[ADR-0007](0007-order-local-tx-over-saga.md)（现状：单库拒绝 Saga，本方案是其演进预案）、[ADR-0001](0001-order-saga-vs-2pc.md)（已替代历史：Saga vs 2PC 的完整对比）、[ADR-0005](0005-messaging-rabbitmq.md)（MQ 选型，`SagaScheduler` 与 `DlqRetryScheduler` 同构）
-- 相关文档：[doc/interview/01-话术与总纲.md](../interview/01-话术与总纲.md)（面试叙事「演进触发条件」应答）
+- 相关文档：[doc/interview/00-怎么说.md](../interview/00-怎么说.md)（面试叙事「演进触发条件」应答）
 - 实施触发条件：正文「拆分判据」任一阈值满足（订单写入 QPS > 5k/s 且持续、支付模块需独立发布窗口、库存引入独立 Redis、故障爆炸半径扩大）时，按本方案重新评估
