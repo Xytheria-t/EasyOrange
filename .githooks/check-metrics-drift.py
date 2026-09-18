@@ -8,9 +8,10 @@
 
 约定：
   1. 计数**以代码为准**（下表每项都给出推导方式），文档必须与之一致；
-  2. **ADR 正文豁免**：ADR 模板规则 9 要求「已接受的 ADR 实现细节漂移时不改正文，在文件顶部加
-     `> **现状更新（日期）**` 横幅说明」——所以 `doc/adr/NNNN-*.md` 的非横幅行按历史口径豁免，
-     横幅行（含「现状更新」的引用块）仍参与校验；
+  2. **ADR 正文参与校验**：ADR 模板规则 4「正文即现状」要求实现细节随代码演进直接改正文
+     （不写「现状更新」横幅），所以 `doc/adr/NNNN-*.md` 与其它文档同标准校验；
+     唯二豁免：`0000-template.md`（模板，不是决策记录）与状态为「已替代 / 部分已替代」的 ADR
+     （正文描述的是当时的决策，本身即历史记录）；
   3. 其余文档（README / AGENTS.md / doc/**）一律参与校验。
 
 用法：
@@ -123,20 +124,18 @@ def code_facts() -> dict[str, int]:
     return facts
 
 
-# ADR 里标注「这是历史口径」的措辞：ADR 的职责之一就是记录数字的口径演变
-# （模板规则 9：「已接受的 ADR 若实现细节漂移，不改正文，在顶部加现状更新横幅」），
-# 所以横幅里出现「决策时点 11 → 回升至 12」这类轨迹是**正确写法**，不该判漂移。
-HISTORICAL_MARKERS = ("决策时点", "历史", "轨迹", "正文保留", "收敛为", "回升至")
+def is_exempt_file(path: Path) -> bool:
+    """模板文件与「已替代 / 部分已替代」的 ADR 不参与校验。
 
-
-def is_adr_historical_line(path: Path, line: str) -> bool:
-    """ADR 正文、以及带历史标记的横幅行（记录口径演变）豁免数值校验。"""
-    rel = path.relative_to(ROOT)
-    if not (rel.parts[:2] == ("doc", "adr") and re.match(r"\d{4}-", path.name)):
-        return False
-    if "现状更新" not in line:
+    已替代篇记的是当时的决策与代码形态，正文本就与现状不符；现役 ADR 按规则 4 改正文，故全量校验。
+    """
+    if path.name.endswith("-template.md"):
         return True
-    return any(marker in line for marker in HISTORICAL_MARKERS)
+    if not path.name[:4].isdigit():
+        return False
+    head = path.read_text(encoding="utf-8")[:600]
+    match = re.search(r"^- \*\*状态\*\*：(.+)$", head, re.MULTILINE)
+    return bool(match and "替代" in match.group(1))
 
 
 def main() -> int:
@@ -148,9 +147,9 @@ def main() -> int:
         rel = path.relative_to(ROOT)
         if SKIP_DIRS.intersection(rel.parts[:-1]):
             continue
+        if is_exempt_file(path):
+            continue
         for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            if is_adr_historical_line(path, line):
-                continue
             for key, (pattern, source) in CLAIM_PATTERNS.items():
                 for match in pattern.finditer(line):
                     raw = next((g for g in match.groups() if g), None)
@@ -169,8 +168,8 @@ def main() -> int:
             print(item, file=sys.stderr)
         print(
             "\n代码事实：" + " / ".join(f"{k}={v}" for k, v in facts.items()) + "\n"
-            "修法：改文档为实际值（数字单一来源见 doc/工程指标.md；ADR 正文豁免、只在『现状更新』"
-            "横幅改口径）。跳过本次校验：SKIP=git-hooks。",
+            "修法：改文档为实际值（数字单一来源见 doc/工程指标.md；ADR 正文按规则 4 直接改）。"
+            "跳过本次校验：SKIP=git-hooks。",
             file=sys.stderr,
         )
         return 1
