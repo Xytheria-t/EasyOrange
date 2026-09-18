@@ -10,11 +10,10 @@ application/
 │   └── com/cartethyia/easyorange/
 │       ├── EasyOrangeApplication.java     # Spring Boot 主类
 │       ├── adapter/
-│       │   ├── event/                     # 跨模块事件监听器（5 个；其余消费者在各业务模块内）
+│       │   ├── event/                     # 跨模块事件监听器（4 个；其余消费者在各业务模块内）
 │       │   │   ├── OrderNotificationEventConsumer.java
 │       │   │   ├── ProductAuditEventConsumer.java
 │       │   │   ├── ReportProcessedEventConsumer.java
-│       │   │   ├── AiProductEventConsumer.java
 │       │   │   └── AiCreditEventConsumer.java
 │       │   ├── inbound/web/controller/  # Web 控制器
 │       │   │   ├── AiController.java                  # AI 服务端点
@@ -166,8 +165,9 @@ easyorange-application
 | `OrderNotificationEventConsumer` | `OrderCreatedEvent` 等 6 个订单事件 | 订单状态变更→站内消息通知 |
 | `ProductAuditEventConsumer` | `ProductAuditedEvent` | 审核结果→站内消息通知 |
 | `ReportProcessedEventConsumer` | `ReportProcessedEvent` | 举报处理结果→站内消息通知 |
-| `AiProductEventConsumer` | `ProductCreatedEvent` / `ProductUpdatedEvent` / `ProductMarkedSoldEvent` | 商品→AI 智能估值 + 营销文案生成 |
 | `AiCreditEventConsumer` | `OrderCompletedEvent` / `ReportProcessedEvent` | 交易/举报→信用分重算 |
+
+> 2026-09-18 删除 `AiProductEventConsumer`（AI 估值/文案）及其 `eo.ai.product` 队列：它的产出写进无读取方的 Redis key，且每次商品创建/编辑都触发一次 LLM 调用，属纯浪费。
 
 所有事件消费者使用 `@RabbitListener` + `EventIdempotencyChecker` 模式，通过 Modulith at-least-once 语义 + 幂等去重实现精确一次处理。
 

@@ -102,7 +102,6 @@
 |------|----------|------|
 | 智能估值 | `POST /api/ai/pricing` | productName（必填）, description, categoryName, conditionLevel, originalPrice |
 | 拍照上架 | `POST /api/ai/auto-listing` | imageUrls（JSON 字符串数组，非 multipart） |
-| AI 审核 | `POST /api/ai/review` | productName（必填）, description, categoryName, conditionLevel, price, sellerName, imageUrls |
 | 智能问答 | `POST /api/ai/qa` | question（必填）+ 商品上下文 productId / productName / productDescription / categoryName / price / conditionLevel / sellerName / sellerCreditLevel |
 | 智能文案 | `POST /api/ai/generate-copy` | productName（必填）, categoryName, conditionLevel, originalPrice, style (standard/detailed/concise/emotional) |
 | 语义搜索 | `GET /api/ai/semantic-search` | keyword, pageNum, pageSize |
@@ -111,7 +110,7 @@
 | AI 输出反馈 | `POST /api/ai/feedback` | scope, question, answer, helpful, comment, callLogId |
 | 知识库检索（RAG） | `GET /api/ai/knowledge/search` | keyword, topK |
 | AI 议价 | ~~已下线~~ | — |
-| 智能导购搜索增强 | `GET /api/products/search` | keyword + `aiEnhanced=true`；命中商品非空且 query 被判定为自然语言时返回 `data.aiEnhancement`（意图解释 / 商品标签 / 市场分析 / 建议问题） |
+| 智能导购搜索增强 | `GET /api/products/search` | keyword + `aiEnhanced=true`；命中商品非空且 query 被判定为自然语言时返回 `data.aiEnhancement`（意图解释 / 商品标签 / 市场分析 / 建议问题）。4 路工具里只有意图解释打模型，另三路是本地规则计算 |
 
 **AI 降级契约**（供应商不可用或未配置密钥时，各端点一律不落 5xx，调用方可按下列标记区分降级）：
 
@@ -119,13 +118,13 @@
 |------|---------|
 | `/api/ai/chat` | 200 + `degraded: true`（复用 stale 旧回答，或返回「AI 服务暂时不可用，请稍后重试」） |
 | `/api/ai/chat/stream` | `error` 事件，文案同上 |
-| `/api/ai/review` | `suggestedAction=false` + `riskFlags: ["AI_UNAVAILABLE"]` + `confidenceScore=0`（「无法判定」而非「审核通过」） |
+| `/api/admin/products/{id}/ai-review` | `suggestedAction=false` + `riskFlags: ["AI_UNAVAILABLE"]` + `confidenceScore=0`（「无法判定」而非「审核通过」）。管理端点，卖家侧无入口 —— `POST /api/ai/review` 已于 2026-09-18 删除（无调用方的重复入口） |
 | `/api/ai/qa` | 「AI服务暂时不可用」+ `confidence=false` |
 | `/api/ai/pricing`、`/generate-copy`、`/auto-listing` | 200 + `data: null` |
 | `/api/ai/knowledge/search` | ES 关闭时降级 MySQL LIKE，仍可返回字面命中（分数为 0） |
 | `/api/products/search`（增强） | 无 `aiEnhancement` 字段，检索结果本身不受影响 |
 
-### 平台运维（RAG 知识库 / 评估）
+### 平台运维（RAG 知识库 / 评估 / 成本报表）
 
 | 功能 | 方法+路径 | 参数 |
 |------|----------|------|
@@ -134,6 +133,7 @@
 | 删除知识库文档 | `DELETE /api/admin/knowledge/{id}` | — |
 | 补索引（重试 PENDING） | `POST /api/admin/knowledge/reindex` | — |
 | 反馈导出为金标准用例 | `GET /api/admin/ai/feedback/export` | limit |
+| AI 成本报表（按场景聚合） | `GET /api/admin/ai/cost-report` | hours（默认 24，上限 720 = 30 天）；返回各场景的调用数 / token 入出 / 平均耗时 / 失败数（token 只记供应商回报值，未回报记 0） |
 
 ## 八、信用
 
