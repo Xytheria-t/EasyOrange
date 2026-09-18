@@ -15,7 +15,6 @@ interface AiQaPanelProps {
         price: number | string;
         conditionLevel: number | string;
         sellerName: string;
-        sellerCreditLevel?: string;
     };
     onAsk: (request: QaRequest) => void;
     qaHistory: QaHistoryItem[];
@@ -58,7 +57,6 @@ function AiQaPanel({ product, onAsk, qaHistory, isLoading }: AiQaPanelProps) {
             price: String(product.price),
             conditionLevel: String(product.conditionLevel),
             sellerName: product.sellerName,
-            sellerCreditLevel: product.sellerCreditLevel ?? '',
         };
 
         onAsk(request);

@@ -44,8 +44,6 @@ class AuditLogPropertiesTest {
                     .isEqualTo(BusinessType.DELETE);
             assertThat(properties.findMapping("login").orElseThrow().businessType())
                     .isEqualTo(BusinessType.LOGIN);
-            assertThat(properties.findMapping("reportProduct").orElseThrow().businessType())
-                    .isEqualTo(BusinessType.UPDATE);
         }
 
         @Test

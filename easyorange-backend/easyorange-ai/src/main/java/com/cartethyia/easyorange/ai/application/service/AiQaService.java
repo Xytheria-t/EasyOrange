@@ -54,7 +54,6 @@ public class AiQaService {
                 - 价格：%s
                 - 成色：%s
                 - 资产方：%s
-                - 资产方信誉等级：%s
                 </asset_info>
 
                 <user_question>
@@ -67,7 +66,6 @@ public class AiQaService {
                 request.price(),
                 request.conditionLevel(),
                 request.sellerName(),
-                request.sellerCreditLevel(),
                 request.question());
     }
 }

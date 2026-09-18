@@ -2,7 +2,6 @@ import { PendingItemRow } from './PendingItemRow';
 
 interface PendingItems {
     pendingProducts: number;
-    pendingReports: number;
     pendingOrders: number;
 }
 
@@ -12,12 +11,9 @@ interface PendingItemsAlertProps {
 }
 
 export function PendingItemsAlert({ pendingItems, isLoading }: PendingItemsAlertProps) {
-    const hasPendingItems =
-        pendingItems &&
-        (pendingItems.pendingProducts > 0 || pendingItems.pendingReports > 0 || pendingItems.pendingOrders > 0);
+    const hasPendingItems = pendingItems && (pendingItems.pendingProducts > 0 || pendingItems.pendingOrders > 0);
 
-    const totalPending =
-        (pendingItems?.pendingProducts ?? 0) + (pendingItems?.pendingReports ?? 0) + (pendingItems?.pendingOrders ?? 0);
+    const totalPending = (pendingItems?.pendingProducts ?? 0) + (pendingItems?.pendingOrders ?? 0);
 
     if (!hasPendingItems) {
         return null;
@@ -185,15 +181,6 @@ export function PendingItemsAlert({ pendingItems, isLoading }: PendingItemsAlert
                                 label="个商品待审核"
                                 theme="orange"
                                 actionLink="/admin/products?status=0"
-                                actionText="立即处理"
-                            />
-                        )}
-                        {pendingItems?.pendingReports > 0 && (
-                            <PendingItemRow
-                                count={pendingItems.pendingReports}
-                                label="条举报待处理"
-                                theme="rose"
-                                actionLink="/admin/reports"
                                 actionText="立即处理"
                             />
                         )}

@@ -8,6 +8,7 @@
 #   reference_answer Judge 对照参考（scope: chat 必须有）
 #   gold_doc_ids    期望命中的知识库文档 ID（scope: retrieval 必须有，引用 R__seed_knowledge_docs.sql）
 # 维护：新增/修改用例走 PR，分数回归对比见 eval/baselines.yaml
+# 注意：id 是稳定标识，删除用例后不重编号（重编号会让历史评测结果对不上），因此 id 允许有洞
 # 注意：检索用例的 gold 文档必须与同域干扰文档（kb-0006~kb-0025）可区分 ——
 #      语料与 topK 同量级时 hit@5 恒为 100%，指标就成了装饰。
 # ===================================================================
@@ -28,11 +29,6 @@ cases:
     question: 运费由谁承担？
     reference_answer: 默认买家承担；卖家可设满额包邮；无理由退货退货运费买家承担，质量问题退货卖家承担。
     gold_doc_ids: [kb-0003]
-  - id: chat-004
-    scope: chat
-    question: 信用分怎么提升？
-    reference_answer: 按时发货、描述相符、及时确认收货、纠纷无责可加分；超时发货、虚假描述、恶意退款会扣分，每日更新一次。
-    gold_doc_ids: [kb-0004]
   - id: chat-005
     scope: chat
     question: 平台能卖烟酒吗？
@@ -48,11 +44,6 @@ cases:
     question: 签收后还能退吗？
     reference_answer: 签收后 7 天内支持无理由退货，退回商品需保持完好、不影响二次销售；质量问题可申诉，平台介入仲裁。
     gold_doc_ids: [kb-0002]
-  - id: chat-008
-    scope: chat
-    question: 信用分等级怎么划分？
-    reference_answer: 90 分以上优质用户（优先展示、更快放款），70-89 良好，60-69 一般，60 分以下限制部分交易功能。
-    gold_doc_ids: [kb-0004]
   - id: chat-009
     scope: chat
     question: 商品有质量问题退货谁出运费？
@@ -67,11 +58,11 @@ cases:
   - id: chat-011
     scope: chat
     question: 你好，你是谁？
-    reference_answer: 我是 EasyOrange 平台 AI 助手，可以回答平台交易、退款、运费、信用分等规则问题。
+    reference_answer: 我是 EasyOrange 平台 AI 助手，可以回答平台交易、退款、运费等规则问题。
   - id: chat-012
     scope: chat
     question: 你能做什么？
-    reference_answer: 我可以解答平台规则问题（交易流程、退款、运费、信用分、禁售品类），也能陪你闲聊。
+    reference_answer: 我可以解答平台规则问题（交易流程、退款、运费、禁售品类），也能陪你闲聊。
   - id: chat-013
     scope: chat
     question: 谢谢你的帮助
@@ -104,6 +95,16 @@ cases:
     scope: chat
     question: 再见
     reference_answer: 再见，有需要随时回来找我。
+  - id: chat-021
+    scope: chat
+    question: 支付失败了怎么办？
+    reference_answer: 支付失败常见原因是余额不足、超出限额或风控拦截，可稍后重试或改用其他渠道；平台支持微信支付、支付宝与银行卡三种渠道。
+    gold_doc_ids: [kb-0006]
+  - id: chat-022
+    scope: chat
+    question: 一件商品最多能传几张图片？
+    reference_answer: 单件商品最多上传 9 张图片，首图须为商品主体实拍，图片不得含水印、二维码或联系方式；另可上传 1 段不超过 60 秒的展示视频。
+    gold_doc_ids: [kb-0020]
   # ---- 检索质量（hit@5 / MRR，无生成）----
   - id: retr-001
     scope: retrieval
@@ -117,10 +118,6 @@ cases:
     scope: retrieval
     question: 运费谁出
     gold_doc_ids: [kb-0003]
-  - id: retr-004
-    scope: retrieval
-    question: 信用分规则
-    gold_doc_ids: [kb-0004]
   - id: retr-005
     scope: retrieval
     question: 禁售商品
@@ -137,10 +134,6 @@ cases:
     scope: retrieval
     question: 满多少包邮
     gold_doc_ids: [kb-0003]
-  - id: retr-009
-    scope: retrieval
-    question: 信用分扣分
-    gold_doc_ids: [kb-0004]
   - id: retr-010
     scope: retrieval
     question: 可以卖处方药吗
@@ -149,10 +142,6 @@ cases:
     scope: retrieval
     question: 发票怎么开
     gold_doc_ids: [kb-0007]
-  - id: retr-012
-    scope: retrieval
-    question: 举报卖家流程
-    gold_doc_ids: [kb-0008]
   - id: retr-013
     scope: retrieval
     question: 账号被盗了怎么办
@@ -165,3 +154,15 @@ cases:
     scope: retrieval
     question: 评价可以修改吗
     gold_doc_ids: [kb-0014]
+  - id: retr-016
+    scope: retrieval
+    question: 保证金什么时候退
+    gold_doc_ids: [kb-0019]
+  - id: retr-017
+    scope: retrieval
+    question: 违规处罚有哪些措施
+    gold_doc_ids: [kb-0016]
+  - id: retr-018
+    scope: retrieval
+    question: 下单后多久不付款会取消
+    gold_doc_ids: [kb-0018]

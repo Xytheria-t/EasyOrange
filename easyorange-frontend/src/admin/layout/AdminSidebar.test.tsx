@@ -44,7 +44,6 @@ describe('AdminSidebar', () => {
         expect(screen.getByText('用户管理')).toBeInTheDocument();
         expect(screen.getByText('商品审核')).toBeInTheDocument();
         expect(screen.getByText('订单管理')).toBeInTheDocument();
-        expect(screen.getByText('举报处理')).toBeInTheDocument();
         expect(screen.getByText('数据统计')).toBeInTheDocument();
     });
 

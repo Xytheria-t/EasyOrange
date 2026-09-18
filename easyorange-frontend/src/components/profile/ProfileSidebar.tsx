@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Activity, Award, Camera, List, LogOut, Package, Settings, Shield, ShoppingBag, Sparkles } from 'lucide-react';
+import { Activity, Camera, List, LogOut, Package, Settings, Shield, ShoppingBag, Sparkles } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { userApi } from '@/api/userApi';
@@ -133,15 +133,6 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
                 <div className="ps-stats">
                     <div className="ps-stat">
                         <div className="ps-stat-header">
-                            <span className="ps-stat-label">信用分</span>
-                            <span className="ps-stat-value">98</span>
-                        </div>
-                        <div className="ps-stat-bar">
-                            <div className="ps-stat-fill" style={{ width: '82%' }} />
-                        </div>
-                    </div>
-                    <div className="ps-stat">
-                        <div className="ps-stat-header">
                             <span className="ps-stat-label">交易数</span>
                             <span className="ps-stat-value">42</span>
                         </div>
@@ -179,16 +170,6 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
                             <span className="ps-btn-secondary-text">我的订单</span>
                         </Button>
                     </div>
-
-                    <Button
-                        variant="outline"
-                        className="ps-btn-secondary"
-                        onClick={() => navigate('/credit')}
-                        style={{ width: '100%' }}
-                    >
-                        <Award size={18} />
-                        <span className="ps-btn-secondary-text">我的信用</span>
-                    </Button>
 
                     <Button
                         variant="ghost"

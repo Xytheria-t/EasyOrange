@@ -31,7 +31,6 @@ export interface QaRequest {
     price: string;
     conditionLevel: string;
     sellerName: string;
-    sellerCreditLevel: string;
 }
 
 export interface QaResponse {

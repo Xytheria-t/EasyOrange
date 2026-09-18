@@ -184,44 +184,6 @@ CREATE TABLE `eo_product_review` (
     CONSTRAINT `chk_eo_product_review_likes` CHECK (`likes` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品评价表';
 
-CREATE TABLE `eo_product_report` (
-    `id`          VARCHAR(36) NOT NULL COMMENT '主键 ID',
-    `product_id`  VARCHAR(36) NOT NULL COMMENT '被举报商品 ID',
-    `reporter_id` VARCHAR(36) NOT NULL COMMENT '举报人 ID',
-    `reason`      VARCHAR(500) NOT NULL COMMENT '举报原因',
-    `reason_type` TINYINT     DEFAULT NULL COMMENT '举报类型（1 虚假信息 2 侵权投诉 3 违规内容 4 其他）',
-    `status`      TINYINT     NOT NULL DEFAULT 0 COMMENT '处理状态（0 待处理 1 处理中 2 已解决 3 已驳回）',
-    `handle_result` VARCHAR(500) DEFAULT NULL COMMENT '处理结果',
-    `create_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `create_by`   VARCHAR(36) DEFAULT NULL COMMENT '创建者',
-    `update_by`   VARCHAR(36) DEFAULT NULL COMMENT '更新者',
-    `del_flag`    TINYINT     NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 1 删除）',
-    `version`     INT         NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    KEY `idx_eo_product_report_product_id` (`product_id`),
-    KEY `idx_eo_product_report_reporter_id` (`reporter_id`),
-    KEY `idx_eo_product_report_status_time` (`status`, `create_time` DESC),
-    CONSTRAINT `chk_eo_product_report_status` CHECK (`status` IN (0, 1, 2, 3))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品举报表';
-
-CREATE TABLE `eo_report_handle_history` (
-    `id`          VARCHAR(36) NOT NULL COMMENT '主键 ID',
-    `report_id`   VARCHAR(36) NOT NULL COMMENT '举报ID',
-    `operator_id` VARCHAR(36) NOT NULL COMMENT '操作人ID',
-    `action`      VARCHAR(30) NOT NULL COMMENT '动作类型（IGNORE/PRODUCT_OFFLINE/WARN_SENDER/BAN_PRODUCT）',
-    `remark`      VARCHAR(500) DEFAULT NULL COMMENT '备注',
-    `create_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `create_by`   VARCHAR(36) DEFAULT NULL COMMENT '创建者',
-    `update_by`   VARCHAR(36) DEFAULT NULL COMMENT '更新者',
-    `del_flag`    TINYINT     NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 1 删除）',
-    `version`     INT         NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    KEY `idx_eo_report_handle_history_report_id` (`report_id`),
-    KEY `idx_eo_report_handle_history_operator_id` (`operator_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='举报处理历史表';
-
 CREATE TABLE `eo_favorite` (
     `id`         VARCHAR(36) NOT NULL COMMENT '主键 ID',
     `user_id`    VARCHAR(36) NOT NULL COMMENT '用户 ID',
@@ -589,42 +551,7 @@ CREATE TABLE `eo_retrieval_metric` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='RAG 检索指标采样（hit@5 / MRR，金标准集回归数据源）';
 
 -- ===================================================================
--- 10. 信用评分模块
--- ===================================================================
-
-CREATE TABLE `eo_user_credit` (
-    `id`                VARCHAR(36)   NOT NULL COMMENT '主键 ID',
-    `user_id`           VARCHAR(36)   NOT NULL COMMENT '用户 ID',
-    `credit_score`      INT           NOT NULL DEFAULT 100 COMMENT '信用评分（0-200）',
-    `level`             VARCHAR(20)   NOT NULL DEFAULT 'NORMAL' COMMENT '信用等级（EXCELLENT/GOOD/NORMAL/LOW/BLACKLIST）',
-    `total_trades`      INT           NOT NULL DEFAULT 0 COMMENT '总交易数',
-    `completed_trades`  INT           NOT NULL DEFAULT 0 COMMENT '已完成交易数',
-    `cancelled_trades`  INT           NOT NULL DEFAULT 0 COMMENT '已取消交易数',
-    `total_reports`     INT           NOT NULL DEFAULT 0 COMMENT '总举报数',
-    `confirmed_reports` INT           NOT NULL DEFAULT 0 COMMENT '已确认举报数',
-    `review_avg_rating` DECIMAL(3,2)  DEFAULT NULL COMMENT '评价平均分',
-    `last_updated`      DATETIME      DEFAULT NULL COMMENT '最后评分更新时间',
-    `create_time`       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time`       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `create_by`         VARCHAR(36)   DEFAULT NULL COMMENT '创建者',
-    `update_by`         VARCHAR(36)   DEFAULT NULL COMMENT '更新者',
-    `del_flag`          TINYINT       NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 1 删除）',
-    `version`           INT           NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_eo_user_credit_user_id` (`user_id`),
-    KEY `idx_eo_user_credit_score` (`credit_score`),
-    KEY `idx_eo_user_credit_level` (`level`),
-    KEY `idx_eo_user_credit_last_updated` (`last_updated`),
-    CONSTRAINT `chk_eo_user_credit_score` CHECK (`credit_score` >= 0 AND `credit_score` <= 200),
-    CONSTRAINT `chk_eo_user_credit_total_trades` CHECK (`total_trades` >= 0),
-    CONSTRAINT `chk_eo_user_credit_completed_trades` CHECK (`completed_trades` >= 0),
-    CONSTRAINT `chk_eo_user_credit_cancelled_trades` CHECK (`cancelled_trades` >= 0),
-    CONSTRAINT `chk_eo_user_credit_total_reports` CHECK (`total_reports` >= 0),
-    CONSTRAINT `chk_eo_user_credit_confirmed_reports` CHECK (`confirmed_reports` >= 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信用评分表';
-
--- ===================================================================
--- 11. Spring Modulith 事件发布注册表（替代 Outbox 模式）
+-- 10. Spring Modulith 事件发布注册表（替代 Outbox 模式）
 -- ===================================================================
 
 CREATE TABLE IF NOT EXISTS EVENT_PUBLICATION (

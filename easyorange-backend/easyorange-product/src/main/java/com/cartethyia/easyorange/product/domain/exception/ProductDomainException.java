@@ -104,16 +104,4 @@ public class ProductDomainException extends BaseBusinessException {
     public static ProductDomainException ratingNotOwner(String reviewId) {
         return new ProductDomainException(ProductResultCode.RATING_NOT_OWNER, "只能删除自己的评价 (reviewId=" + reviewId + ")");
     }
-
-    // ==================== 举报 ====================
-
-    /** 举报业务异常（B2008）— 举报状态机与处理记录的不变量校验。 */
-    public static ProductDomainException reportError(String message) {
-        return new ProductDomainException(ProductResultCode.REPORT_ERROR, message);
-    }
-
-    /** 举报记录不存在（B2007）。 */
-    public static ProductDomainException reportNotFound(String message) {
-        return new ProductDomainException(ProductResultCode.REPORT_NOT_FOUND, message);
-    }
 }

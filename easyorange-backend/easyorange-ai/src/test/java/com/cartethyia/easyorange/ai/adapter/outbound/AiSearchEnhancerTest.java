@@ -268,7 +268,7 @@ class AiSearchEnhancerTest {
             when(nlDetector.isNaturalLanguage("找东西")).thenReturn(true);
             when(valueOps.get(anyString())).thenReturn(null);
             when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("API timeout"));
-            when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of("⭐信用优")));
+            when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of("💰超值")));
 
             Optional<AiEnhancement> result =
                     enhancer.tryEnhance("找东西", List.of(product("1", "商品X", BigDecimal.valueOf(999))));
@@ -284,7 +284,7 @@ class AiSearchEnhancerTest {
             when(nlDetector.isNaturalLanguage("找东西")).thenReturn(true);
             when(valueOps.get(anyString())).thenReturn(null);
             when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("API timeout"));
-            when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of("⭐信用优")));
+            when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of("💰超值")));
 
             enhancer.tryEnhance("找东西", List.of(product("1", "商品X", BigDecimal.valueOf(999))));
 

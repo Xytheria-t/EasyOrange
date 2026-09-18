@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 export interface StatusBadgeProps {
     status: number | string;
-    type: 'user' | 'product' | 'order' | 'report';
+    type: 'user' | 'product' | 'order';
     className?: string;
 }
 
@@ -31,13 +31,6 @@ const orderStatusConfig: Record<string, StatusConfig> = {
     COMPLETED: { label: '已完成', variant: 'success' },
     CANCELLED: { label: '已取消', variant: 'default' },
     REFUNDED: { label: '退款中', variant: 'error' },
-};
-
-const reportStatusConfig: Record<string, StatusConfig> = {
-    0: { label: '待处理', variant: 'error' },
-    1: { label: '处理中', variant: 'warning' },
-    2: { label: '已处理', variant: 'success' },
-    3: { label: '已驳回', variant: 'default' },
 };
 
 type StatusVariant = 'success' | 'warning' | 'error' | 'info' | 'default';
@@ -74,7 +67,6 @@ const configMap: Record<StatusBadgeProps['type'], Record<string, StatusConfig>> 
     user: userStatusConfig,
     product: productStatusConfig,
     order: orderStatusConfig,
-    report: reportStatusConfig,
 };
 
 export function StatusBadge({ status, type, className }: StatusBadgeProps) {

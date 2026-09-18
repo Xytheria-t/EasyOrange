@@ -139,18 +139,16 @@ describe('ProfileSidebar', () => {
         expect(onTabChange).toHaveBeenCalledWith('activity');
     });
 
-    it('shows credit score (98) and transaction count (42)', () => {
+    it('shows transaction count (42)', () => {
         render(<ProfileSidebar {...defaultProps} />);
-        expect(screen.getByText('98')).toBeInTheDocument();
         expect(screen.getByText('42')).toBeInTheDocument();
     });
 
-    it('renders action buttons (提交资产, 我的发布, 我的订单, 我的信用, 退出登录)', () => {
+    it('renders action buttons (提交资产, 我的发布, 我的订单, 退出登录)', () => {
         render(<ProfileSidebar {...defaultProps} />);
         expect(screen.getByText('提交资产')).toBeInTheDocument();
         expect(screen.getByText('我的发布')).toBeInTheDocument();
         expect(screen.getByText('我的订单')).toBeInTheDocument();
-        expect(screen.getByText('我的信用')).toBeInTheDocument();
         expect(screen.getByText('退出登录')).toBeInTheDocument();
     });
 

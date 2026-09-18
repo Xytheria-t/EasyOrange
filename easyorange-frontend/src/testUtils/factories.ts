@@ -1,10 +1,4 @@
-import type {
-    AdminProduct,
-    AdminProductQuery,
-    AdminReport,
-    AdminReportQuery,
-    ReportStatsResponse,
-} from '@/admin/types/admin';
+import type { AdminProduct, AdminProductQuery } from '@/admin/types/admin';
 import type { PageResult, Product } from '@/types';
 
 export function createMockProduct(overrides: Partial<Product> = {}): Product {
@@ -71,47 +65,10 @@ export function createMockAdminProduct(overrides: Partial<AdminProduct> = {}): A
     };
 }
 
-export function createMockAdminReport(overrides: Partial<AdminReport> = {}): AdminReport {
-    return {
-        reportId: '1',
-        productId: '100',
-        productName: '被举报商品',
-        productImage: null,
-        reporterId: '10',
-        reporterName: '举报人',
-        reason: '虚假信息',
-        status: 0,
-        statusDesc: '待处理',
-        handleResult: null,
-        handleRemark: null,
-        createTime: '2026-05-16 10:00:00',
-        handleTime: null,
-        ...overrides,
-    };
-}
-
 export function createMockAdminProductQuery(overrides: Partial<AdminProductQuery> = {}): AdminProductQuery {
     return {
         pageNum: 1,
         pageSize: 20,
-        ...overrides,
-    };
-}
-
-export function createMockAdminReportQuery(overrides: Partial<AdminReportQuery> = {}): AdminReportQuery {
-    return {
-        pageNum: 1,
-        pageSize: 20,
-        ...overrides,
-    };
-}
-
-export function createMockReportStats(overrides: Partial<ReportStatsResponse> = {}): ReportStatsResponse {
-    return {
-        totalReports: 10,
-        pendingReports: 3,
-        resolvedReports: 5,
-        dismissedReports: 2,
         ...overrides,
     };
 }

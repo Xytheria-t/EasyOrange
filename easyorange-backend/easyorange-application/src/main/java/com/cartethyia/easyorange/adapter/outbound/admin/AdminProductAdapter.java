@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
  * Admin 商品查询/操作适配器
  * <p>
  * 实现 {@link AdminProductPort}，通过 Product Mapper / Repository 访问商品数据并转换为 Admin 模块需要的格式。
- * 审核/举报/分类/仪表板功能域见同包下各自的 Adapter。
+ * 审核/分类/仪表板功能域见同包下各自的 Adapter。
  */
 @Primary
 @Component

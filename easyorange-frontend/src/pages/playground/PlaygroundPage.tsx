@@ -19,7 +19,7 @@ const SUGGESTED_QUESTIONS = [
     '平台交易流程是什么？',
     '怎么申请退款？',
     '运费由谁承担？',
-    '信用分怎么提升？',
+    '签收后还能退吗？',
     '平台能卖烟酒吗？',
 ];
 
@@ -27,7 +27,7 @@ const WELCOME_MESSAGE: ChatMessage = {
     id: 'welcome',
     role: 'assistant',
     content:
-        '你好，我是 EasyOrange AI 助手 🤖 可以回答平台交易、退款、运费、信用分、禁售品类等规则问题，也能陪你闲聊。每次回答会标注知识库来源。',
+        '你好，我是 EasyOrange AI 助手 🤖 可以回答平台交易、退款、运费、禁售品类等规则问题，也能帮你在在售资产里找货。每次回答会标注知识库来源。',
     sources: [],
     status: 'done',
     feedback: null,

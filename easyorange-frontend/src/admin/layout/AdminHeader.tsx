@@ -8,7 +8,6 @@ const PAGE_TITLES: Record<string, string> = {
     '/admin/users': '用户管理',
     '/admin/products': '商品审核',
     '/admin/orders': '订单管理',
-    '/admin/reports': '举报处理',
     '/admin/stats': '数据统计',
 };
 

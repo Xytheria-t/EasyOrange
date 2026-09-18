@@ -1,8 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.inbound.messaging;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
@@ -12,7 +10,6 @@ import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductEvent;
-import com.cartethyia.easyorange.product.domain.event.ReportProcessedEvent;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.port.ProductNotificationPort;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
@@ -78,17 +75,6 @@ class ProductEventConsumerTest {
 
         verify(notificationPort).notifyProductCreated("p-1", "u-1");
         verify(searchIndexPort).indexProduct("p-1");
-    }
-
-    @Test
-    @DisplayName("举报处理事件路由到 report.# 队列，本队列应无副作用")
-    void reportProcessedEvent_shouldBeIgnored() {
-        var event = new ReportProcessedEvent("e-3", "r-1", "reporter-1", "p-1", true, "违规", LocalDateTime.now());
-
-        consumer.handle(event, new Message(new byte[0], new MessageProperties()));
-
-        verify(cacheEvictionPort, never()).evictProductCache(anyString());
-        verify(searchIndexPort, never()).updateProductIndex(anyString());
     }
 
     private static ProductEvent.Data productData() {

@@ -27,23 +27,11 @@ export interface DashboardStats {
     totalOrders: number;
     todayOrders: number;
     totalRevenue: number;
-    pendingReports: number;
-}
-
-export interface PendingReportItem {
-    id: string;
-    productId: string;
-    productName: string | null;
-    reason: string | null;
-    reporterName: string | null;
-    createTime: string | null;
 }
 
 export interface PendingItems {
-    pendingReports: number;
     pendingOrders: number;
     pendingProducts: number;
-    recentReports: PendingReportItem[];
 }
 
 export interface RecentUser {
@@ -246,46 +234,6 @@ export interface OrderStatsResponse {
     todayRevenue: number;
 }
 
-// ==================== Report Types ====================
-
-export interface AdminReport {
-    reportId: string;
-    productId: string;
-    productName: string | null;
-    productImage: string | null;
-    reporterId: string;
-    reporterName: string;
-    reason: string;
-    status: number;
-    statusDesc: string;
-    handleResult: string | null;
-    handleRemark: string | null;
-    createTime: string | null;
-    handleTime: string | null;
-}
-
-export interface AdminReportQuery {
-    pageNum: number;
-    pageSize: number;
-    status?: number;
-    type?: number;
-    keyword?: string;
-    startTime?: string;
-    endTime?: string;
-}
-
-export interface ReportHandleRequest {
-    action: 'resolve' | 'dismiss';
-    remark?: string;
-}
-
-export interface ReportStatsResponse {
-    totalReports: number;
-    pendingReports: number;
-    resolvedReports: number;
-    dismissedReports: number;
-}
-
 // ==================== Category Types ====================
 
 export interface CategoryResponse {
@@ -354,7 +302,7 @@ export interface TrendItem {
 export interface ActivityItem {
     time: string;
     text: string;
-    type: 'user' | 'product' | 'order' | 'report';
+    type: 'user' | 'product' | 'order';
 }
 
 export interface AuditLogResponse {

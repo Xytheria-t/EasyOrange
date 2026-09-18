@@ -16,10 +16,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort.TopProductRecord;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportQueryResult;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportRecord;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.RecentUser;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserStats;
@@ -50,9 +46,6 @@ class AdminDashboardServiceTest {
     private AdminDashboardPort adminDashboardPort;
 
     @Mock
-    private AdminReportPort adminReportPort;
-
-    @Mock
     private AdminOrderPort adminOrderPort;
 
     @Mock
@@ -78,7 +71,6 @@ class AdminDashboardServiceTest {
             when(adminOrderPort.getOrderStats())
                     .thenReturn(new OrderStats(
                             300, 5, 0, 0, 0, 0, 0, 0, new BigDecimal("12345.60"), new BigDecimal("88.00")));
-            when(adminReportPort.getReportStats()).thenReturn(new ReportStats(20, 8, 0, 0, 0));
 
             DashboardStatsResponse stats = dashboardService.getDashboardStats();
 
@@ -89,7 +81,6 @@ class AdminDashboardServiceTest {
             assertThat(stats.getTotalOrders()).isEqualTo(300);
             assertThat(stats.getTodayOrders()).isEqualTo(5);
             assertThat(stats.getTotalRevenue()).isEqualByComparingTo("12345.60");
-            assertThat(stats.getPendingReports()).isEqualTo(8);
         }
     }
 
@@ -100,36 +91,14 @@ class AdminDashboardServiceTest {
         @Test
         @DisplayName("获取待处理事项")
         void getPendingItems_returnsItems() {
-            when(adminReportPort.getReportStats()).thenReturn(new ReportStats(5, 3, 0, 0, 0));
             when(adminOrderPort.getOrderStats())
                     .thenReturn(new OrderStats(10, 0, 5, 0, 0, 0, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO));
             when(adminDashboardPort.getProductStats()).thenReturn(new AdminDashboardPort.ProductStats(100, 7));
-            when(adminReportPort.queryReports(0, 1, 5))
-                    .thenReturn(new ReportQueryResult(
-                            List.of(new ReportRecord(
-                                    "1",
-                                    "100",
-                                    "1",
-                                    "1",
-                                    "虚假信息",
-                                    "虚假信息",
-                                    "0",
-                                    "待处理",
-                                    null,
-                                    LocalDateTime.now(),
-                                    LocalDateTime.now(),
-                                    true)),
-                            1,
-                            1,
-                            5));
 
             PendingItemsResponse items = dashboardService.getPendingItems();
 
-            assertThat(items.getPendingReports()).isEqualTo(3);
             assertThat(items.getPendingOrders()).isEqualTo(5);
             assertThat(items.getPendingProducts()).isEqualTo(7);
-            assertThat(items.getRecentReports()).hasSize(1);
-            assertThat(items.getRecentReports().get(0).getProductId()).isEqualTo("100");
         }
     }
 
@@ -202,7 +171,6 @@ class AdminDashboardServiceTest {
             when(jdbcTemplate.queryForList(anyString()))
                     .thenReturn(List.of(userRow))
                     .thenReturn(List.of(productRow))
-                    .thenReturn(List.of())
                     .thenReturn(List.of());
 
             List<ActivityResponse> activities = dashboardService.getRecentActivity();

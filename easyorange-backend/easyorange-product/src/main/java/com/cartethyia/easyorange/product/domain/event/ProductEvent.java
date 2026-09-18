@@ -20,8 +20,7 @@ public sealed interface ProductEvent extends DomainEvent
                 ProductMarkedSoldEvent,
                 ProductAuditedEvent,
                 StockDecreasedEvent,
-                StockRestoredEvent,
-                ReportProcessedEvent {
+                StockRestoredEvent {
 
     /**
      * 聚合根标识 — 所有产品事件共享 productId 作为聚合根主键。

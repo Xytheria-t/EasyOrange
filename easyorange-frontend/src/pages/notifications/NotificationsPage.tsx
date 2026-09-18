@@ -1,16 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-    ArrowLeft,
-    ArrowRight,
-    Bell,
-    CheckCheck,
-    CheckCircle2,
-    Flag,
-    Info,
-    Loader2,
-    Megaphone,
-    XCircle,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bell, CheckCheck, CheckCircle2, Info, Loader2, Megaphone, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { notificationApi } from '@/api/notificationApi';
 import { PaginationBar } from '@/components/PaginationBar';
@@ -27,9 +16,6 @@ function getNotificationIcon(title: string) {
     }
     if (title.includes('审核未通过')) {
         return { icon: XCircle, color: '#EF4444' };
-    }
-    if (title.includes('举报')) {
-        return { icon: Flag, color: '#F59E0B' };
     }
     if (title.includes('系统') || title.includes('通知')) {
         return { icon: Megaphone, color: '#8B5CF6' };
@@ -134,7 +120,7 @@ export default function NotificationsPage() {
                                     <span className="kicker-dot" />
                                     通知中心
                                 </span>
-                                <span className="notifications-subtitle">审核结果、举报处理等系统消息</span>
+                                <span className="notifications-subtitle">审核结果等系统消息</span>
                             </div>
                         </div>
                     </div>
@@ -184,7 +170,7 @@ export default function NotificationsPage() {
                             </div>
                         </div>
                         <h3>暂无系统通知</h3>
-                        <p>当您的商品审核结果或举报处理完成时，会在这里显示</p>
+                        <p>当您的商品审核结果产生时，会在这里显示</p>
                     </div>
                 ) : (
                     <>

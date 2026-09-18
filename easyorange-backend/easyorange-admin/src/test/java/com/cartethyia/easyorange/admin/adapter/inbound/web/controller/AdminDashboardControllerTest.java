@@ -43,7 +43,6 @@ class AdminDashboardControllerTest {
                 .totalOrders(300L)
                 .todayOrders(15L)
                 .totalRevenue(new BigDecimal("12345.60"))
-                .pendingReports(3L)
                 .build();
         when(adminDashboardService.getDashboardStats()).thenReturn(stats);
 
@@ -56,27 +55,22 @@ class AdminDashboardControllerTest {
                 .andExpect(jsonPath("$.data.pendingProducts").value(10))
                 .andExpect(jsonPath("$.data.totalOrders").value(300))
                 .andExpect(jsonPath("$.data.todayOrders").value(15))
-                .andExpect(jsonPath("$.data.totalRevenue").value(12345.60))
-                .andExpect(jsonPath("$.data.pendingReports").value(3));
+                .andExpect(jsonPath("$.data.totalRevenue").value(12345.60));
     }
 
     @Test
     void getPendingItems_shouldReturnPendingItems() throws Exception {
         var pending = PendingItemsResponse.builder()
-                .pendingReports(3L)
                 .pendingOrders(5L)
                 .pendingProducts(10L)
-                .recentReports(List.of())
                 .build();
         when(adminDashboardService.getPendingItems()).thenReturn(pending);
 
         mockMvc.perform(get("/api/admin/dashboard/pending"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("A0000"))
-                .andExpect(jsonPath("$.data.pendingReports").value(3))
                 .andExpect(jsonPath("$.data.pendingOrders").value(5))
-                .andExpect(jsonPath("$.data.pendingProducts").value(10))
-                .andExpect(jsonPath("$.data.recentReports").isArray());
+                .andExpect(jsonPath("$.data.pendingProducts").value(10));
     }
 
     @Test

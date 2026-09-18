@@ -11,7 +11,7 @@
 
     <artifactId>easyorange-admin</artifactId>
 
-    <description>Admin 管理端模块 - 用户/商品/订单/分类/举报管理后台 API</description>
+    <description>Admin 管理端模块 - 用户/商品/订单/分类管理后台 API</description>
 
     <dependencies>
         <dependency>
