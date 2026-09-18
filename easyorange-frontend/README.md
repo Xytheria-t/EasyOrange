@@ -16,7 +16,7 @@
 | **表单校验** | react-hook-form + Zod 4 | 类型安全表单验证 |
 | **图标** | Lucide React | 图标库 |
 | **SEO** | react-helmet-async | 路由级 meta 管理（title/description/og:title） |
-| **测试** | Vitest + Testing Library | 单元/组件测试（112 文件 / 1,003 用例，2026-09-17 实测；单一来源见 [../doc/工程指标.md](../doc/工程指标.md)） |
+| **测试** | Vitest + Testing Library | 单元/组件测试（111 文件 / 998 用例，2026-09-19 实测全绿；单一来源见 [../doc/工程指标.md](../doc/工程指标.md)） |
 | | Playwright | E2E 测试 |
 | **质量** | Biome + jsx-a11y | 统一 lint + format（替代 ESLint + Prettier） |
 
@@ -34,7 +34,7 @@ easyorange-frontend/
 │   │   │   └── index.ts      # 统一导出
 │   │   ├── productApi.ts     # 资产 API
 │   │   ├── orderApi.ts       # 订单 API
-│   │   ├── aiApi.ts          # AI 功能 API（定价/审核/语义搜索/问答/拍照上架）
+│   │   ├── aiApi.ts          # AI 功能 API（审核/语义搜索/问答/拍照识别）
 │   │   ├── creditApi.ts      # 信用评分 API
 │   │   └── ...
 │   ├── admin/                # 管理端模块（暖橙指挥中心设计系统）
@@ -45,7 +45,7 @@ easyorange-frontend/
 │   ├── components/           # 可复用组件
 │   │   ├── layout/           # 布局组件
 │   │   ├── seo/              # SEO 组件（PageMeta — 路由级 title/description/og 标签）
-│   │   ├── ai/               # AI 组件（AiPricingBadge, AiPhotoCapture, AiReviewSuggestion, SemanticSearchToggle, AiQaPanel, AiCopyGeneration, CreditScoreCard）
+│   │   ├── ai/               # AI 组件（AiPhotoCapture, AiReviewSuggestion, SemanticSearchToggle, AiQaPanel, CreditScoreCard）
 │   │   ├── sections/         # 页面区块组件
 │   │   ├── profile/          # 个人中心组件
 │   │   ├── products/         # 资产相关组件
@@ -54,11 +54,9 @@ easyorange-frontend/
 │   │   └── auth/             # 认证模块
 │   │       └── session.ts    # TokenRefreshManager
 │   ├── hooks/                # 自定义 Hooks
-│   │   ├── useAiPricing.ts   # AI 定价 Hook
-│   │   ├── useAutoListing.ts # 拍照上架 Hook
+│   │   ├── useAutoListing.ts # 拍照识别（发布助手单入口）Hook
 │   │   ├── useSemanticSearch.ts # 语义搜索 Hook
 │   │   ├── useAiQa.ts        # AI 问答 Hook
-│   │   ├── useAiCopyGeneration.ts # AI 文案生成 Hook
 │   │   ├── auth/             # 认证相关 Hooks
 │   │   ├── order/            # 订单相关 Hooks
 │   │   ├── product/          # 资产相关 Hooks（含 useSearchUrlState：组合 useListUrlState + ai 开关）
@@ -179,12 +177,10 @@ npm run preview
 - 系统通知
 
 ### AI 系统
-- **智能估值** - AI 分析市场行情给出估值建议（AiPricingBadge + useAiPricing）
-- **拍照上架** - 上传图片自动生成资产信息（AiPhotoCapture + useAutoListing）
+- **拍照识别（发布助手单入口）** - 上传图片自动生成资产信息（属性 + 建议价 + 标题/描述）（AiPhotoCapture + useAutoListing）
 - **AI 审核** - AI 分析资产信息给出审核建议（AiReviewSuggestion + useAdminProductAudit）
 - **语义搜索** - 基于语义向量搜索相似资产（SemanticSearchToggle + useSemanticSearch）
 - **智能问答** - 基于资产上下文回答认领方问题（AiQaPanel + useAiQa）
-- **智能文案** - 基于资产信息自动生成资产描述和标题（AiCopyGeneration + useAiCopyGeneration）
 - **信用评分** - 基于交易数据的信用评分体系（CreditScoreCard + creditApi）
 
 ## 环境变量

@@ -77,7 +77,7 @@ monorepo：`easyorange-backend/`（Spring Boot 后端，11 Maven 模块，各模
 | 环境变量 / ECC 激活表 / 后端约定 / 前端约定 | [开发规范.md](doc/agents/开发规范.md) | 写后端/前端代码前 |
 | 常用命令（构建/测试/gh CLI）/ CI/CD | [常用命令.md](doc/agents/常用命令.md) | 构建、测试、启动、部署、GitHub issues 时 |
 | 架构文档（技术栈/系统架构/模块结构/DDD规范/DDD选型取舍/安全认证/数据库迁移/部署演进） | [doc/架构/架构.md](doc/架构/架构.md) | 深入架构规范时 |
-| AI 资产管理（AI 主线链路 / 营销文案 / WebSocket 协议） | [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md) | 动 AI 链路或沟通链路时 |
+| AI 资产管理（AI 主线链路 / 对话与 RAG / 成本与建议价采纳率 / WebSocket 协议） | [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md) | 动 AI 链路或沟通链路时 |
 | 后端所有 REST + WebSocket 端点 | [doc/集成/API-速查.md](doc/集成/API-速查.md) | 找端点、写接口时 |
 | 测试数 / 覆盖率单一来源 | [doc/工程指标.md](doc/工程指标.md) | 收口统计时 |
 | ADR 决策记录（12 个，如 ADR-0007 拒绝 Saga、ADR-0011 UUID v7 主键、ADR-0012 RAG 改 RRF） | `doc/adr/` | 做架构决策、改下单链路、动主键/ID 策略时 |

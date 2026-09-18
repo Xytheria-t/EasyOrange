@@ -15,11 +15,17 @@ application/
 │       │   │   ├── ProductAuditEventConsumer.java
 │       │   │   ├── ReportProcessedEventConsumer.java
 │       │   │   └── AiCreditEventConsumer.java
-│       │   ├── inbound/web/controller/  # Web 控制器
-│       │   │   ├── AiController.java                  # AI 服务端点
-│       │   │   ├── CreditScoreController.java         # 信用分数端点
+│       │   ├── inbound/web/controller/  # Web 控制器（11 个）
+│       │   │   ├── AiChatController.java              # AI 对话（含 SSE 流式）
+│       │   │   ├── AiCostReportController.java        # AI 成本报表 + 建议价采纳率
+│       │   │   ├── AiFeedbackController.java          # AI 输出反馈
+│       │   │   ├── AiKnowledgeController.java         # RAG 知识库检索
+│       │   │   ├── AiListingController.java           # 拍照识别（发布助手单入口）
+│       │   │   ├── AiQaController.java                # 智能问答
+│       │   │   ├── AdminFeedbackExportController.java # 反馈导出金标准用例
+│       │   │   ├── AdminKnowledgeController.java      # 知识库管理
 │       │   │   ├── AdminSearchReindexController.java  # ES 重索引管理
-│       │   │   ├── HealthController.java              # 健康检查
+│       │   │   ├── CreditScoreController.java         # 信用分数端点
 │       │   │   └── PlatformStatsController.java       # 平台统计
 │       │   └── outbound/                  # 跨模块适配器实现（完整清单见下方「跨模块适配器」表）
 │       │       ├── admin/                 # 8 个 Admin*Adapter（分类/仪表板/订单/商品/审核/评价/举报/用户）
@@ -46,8 +52,8 @@ application/
         ├── architecture/
         │   └── ArchitectureRulesTest.java # ArchUnit 架构守卫
         └── adapter/inbound/web/controller/
-            ├── HealthControllerTest.java
-            └── AiControllerTest.java
+            ├── AiListingControllerTest.java
+            └── AiQaControllerTest.java
 ```
 
 ## 模块依赖
@@ -56,7 +62,7 @@ application/
 easyorange-application
 ├── easyorange-framework
 ├── easyorange-admin                    # 管理端 API（需管理员权限）
-├── easyorange-ai                       # AI 端点（AiController / CreditScoreController / 搜索增强）
+├── easyorange-ai                       # AI 端点（对话 / 拍照识别 / 问答 / 知识库 / 反馈 / 成本报表 / 建议价采纳率）
 ├── easyorange-user
 ├── easyorange-product
 ├── easyorange-favorite

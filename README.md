@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 在 DDD 六边形架构里集成 LLM：AI 链路**可换供应商、可降级、可观测**的工程化实战项目。
 >
-> **11 模块解耦 · 45 个 Port 接口编译期隔离 · 11 事件消费者 · 12 条 ADR · 2,400+ 测试守卫 · AI 两条主线链路 × 8 项工程化**
+> **11 模块解耦 · 46 个 Port 接口编译期隔离 · 11 事件消费者 · 12 条 ADR · 2,400+ 测试守卫 · AI 两条主线链路 × 8 项工程化**
 >
 > 业务载体：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。
 
@@ -17,10 +17,10 @@ EasyOrange 在两条技术主线上都有独立且完整的落地，可分别展
 
 | AI 应用工程化 | 架构落地 |
 |---|---|
-| **Spring AI 2.0 框架化** — 两条 AI 主线链路（卖家「发布助手」/ 买家「对话式找货」）直接注入 `ChatModel` / `EmbeddingModel` bean，切换供应商只改配置不改业务代码（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） | **DDD 六边形 + CQRS** — 45 个 Port 接口编译期隔离，domain 层零框架依赖；CQRS 仅 product / order / payment / message 4 模块（[ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)） |
+| **Spring AI 2.0 框架化** — 两条 AI 主线链路（卖家「发布助手」/ 买家「对话式找货」）直接注入 `ChatModel` / `EmbeddingModel` bean，切换供应商只改配置不改业务代码（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） | **DDD 六边形 + CQRS** — 46 个 Port 接口编译期隔离，domain 层零框架依赖；CQRS 仅 product / order / payment / message 4 模块（[ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)） |
 | **轻量级 Agent 编排** — `AiSearchEnhancer` 4 路并行 Tool Calling（1 路 LLM 意图识别 + 3 路规则计算：标签 / 市场分析 / 建议问题），整体 5s 超时后保留已完成步骤，无 LangChain4j 黑盒 | **拒绝 Saga** — 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件副作用（[ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)） |
 | **限流 / 预算 / 降级** — Redisson 分布式令牌桶（超限 429）+ 供应商故障 stale 兜底 + `@TokenBudget` 日预算 AOP | **事件驱动可靠投递** — Spring Modulith Outbox → RabbitMQ → DLQ 三级重试 + traceId 全链路 |
-| **Prompt 工程化** — 9 个 YAML 模板版本化（6 业务决策点 + 2 对话 + 1 搜索意图识别），全部带注入防护声明 | **架构治理** — ArchUnit 12 条规则守卫分层 + 12 条 ADR 记录决策 |
+| **Prompt 工程化** — 7 个 YAML 模板版本化（4 业务决策点 + 2 对话 + 1 搜索意图识别），全部带注入防护声明 | **架构治理** — ArchUnit 12 条规则守卫分层 + 12 条 ADR 记录决策 |
 | **Embedding 真实现 + 多模态** — text-embedding-v3 两路召回（kNN + BM25）+ RRF 排名融合 + Qwen-VL 拍照识别自动上架 | **质量门禁** — 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重验证），前端 Biome 0 errors |
 
 ## 业务边界（刻意聚焦）
@@ -105,16 +105,16 @@ flowchart TB
 
 ### 核心矛盾与解法
 
-DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。解法：**AI 基础设施全面框架化为 Spring AI 2.0**（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)）——6 个业务服务直接注入 `ChatModel` / `EmbeddingModel` bean（DeepSeek + Qwen-VL + DashScope，统一 OpenAI 兼容协议），供应商可换只改配置；业务级治理保留：令牌桶限流、`@TokenBudget` 日预算、Prompt YAML 版本化。
+DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。解法：**AI 基础设施全面框架化为 Spring AI 2.0**（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)）——LLM / Embedding 调用点直接注入 `ChatModel` / `EmbeddingModel` bean（DeepSeek + Qwen-VL + DashScope，统一 OpenAI 兼容协议），供应商可换只改配置；业务级治理保留：令牌桶限流、`@TokenBudget` 日预算、Prompt YAML 版本化。
 
 ### 两条 AI 主线链路（当前口径）
 
 | 链路 | 端到端流程 |
 |---|---|
-| 卖家「发布助手」 | 拍照识别（Vision）→ 智能估值 → AI 营销文案（规划合并为单次 Vision 多任务调用） |
+| 卖家「发布助手」 | 拍照识别单入口（Vision 一次产出属性 + 建议价 + 标题 / 描述），建议价随创建请求落库供采纳率统计 |
 | 买家「对话式找货」 | 搜索增强 → 对话式检索：同一套 RAG 链路换语料（知识库规则 + 在售资产） |
 
-> **口径演进（2026-09-18）**：原口径「6 个决策点（4 个 LLM 驱动 + 2 个规则引擎）」——资产方：智能估值 / AI 营销文案 / AI 信用画像；认领方：AI 智能找货 / AI 物品评估 / AI 信用画像。其中信用画像买卖双端是**零 LLM 规则引擎**（SQL 聚合 + 计分规则），已移出 AI 叙事；「4 LLM + 2 规则」保留作演进痕迹，对外主线只讲上表两条链路。
+> **口径演进（2026-09-18 / 2026-09-19）**：原口径「6 个决策点（4 个 LLM 驱动 + 2 个规则引擎）」——资产方：智能估值 / AI 营销文案 / AI 信用画像；认领方：AI 智能找货 / AI 物品评估 / AI 信用画像。其中信用画像买卖双端是**零 LLM 规则引擎**（SQL 聚合 + 计分规则），已移出 AI 叙事；2026-09-19 独立的智能估值与文案生成入口删除（产出与拍照识别重复、各自多付一次模型调用），发布路径的模型调用从最多 5 次降到 1 次，「4 LLM + 2 规则」保留作演进痕迹，对外主线只讲上表两条链路。
 
 ### 轻量级 Agent 编排
 
