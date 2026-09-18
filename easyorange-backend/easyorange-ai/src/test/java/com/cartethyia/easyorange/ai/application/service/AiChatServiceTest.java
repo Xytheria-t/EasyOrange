@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
@@ -30,6 +31,7 @@ import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,6 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.messages.Message;
@@ -77,6 +80,9 @@ class AiChatServiceTest {
     private KnowledgeRetrievalService retrievalService;
 
     @Mock
+    private AssetSourcingService assetSourcingService;
+
+    @Mock
     private AiModelRouter modelRouter;
 
     @Mock
@@ -100,6 +106,7 @@ class AiChatServiceTest {
                 sessionStore,
                 preferenceRepository,
                 retrievalService,
+                assetSourcingService,
                 modelRouter,
                 budgetStore,
                 aiProperties,
@@ -129,6 +136,53 @@ class AiChatServiceTest {
         verify(sessionStore).saveTurn("sess-1", "user", "怎么退款？");
         verify(sessionStore).saveTurn("sess-1", "assistant", answer.answer());
         verify(semanticCache).store(any(), anyString(), anyList(), any());
+    }
+
+    @Test
+    @DisplayName("找货类问题 -> 工具决策命中在售资产召回 -> 引用来源为资产、不查知识库")
+    @SuppressWarnings("unchecked")
+    void answer_withAssetSourcing() {
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
+                .thenReturn("{\"tool\":\"product_search\",\"query\":\"5000 以内笔记本\",\"preference\":null}");
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("这几件在预算内：MacBook Air M1 [来源:MacBook Air M1]");
+        when(assetSourcingService.search("5000 以内笔记本", 5))
+                .thenReturn(
+                        List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)));
+
+        ChatAnswer answer = chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false));
+
+        assertThat(answer.sources()).containsExactly("MacBook Air M1");
+        verify(assetSourcingService).search("5000 以内笔记本", 5);
+        verify(retrievalService, never()).search(anyString(), any(Integer.class));
+
+        // 资产块必须真的进了 prompt：带 id 与价格，模型的推荐理由才有据可依、也才能核对是否编造
+        ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
+        verify(aiModelSupport).callText(any(), any(), captor.capture());
+        String currentUserMessage = captor.getValue().getLast().getText();
+        assertThat(currentUserMessage).contains("<candidate_assets>", "[p-1]", "MacBook Air M1", "¥4200", "九五新");
+    }
+
+    @Test
+    @DisplayName("规则 + 找货兼有 -> 两条召回都执行，来源合并")
+    void answer_withBothTools() {
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
+                .thenReturn("{\"tool\":\"both\",\"query\":\"笔记本\",\"preference\":null}");
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("担保交易保障双方 [来源:交易规则]");
+        when(retrievalService.search("笔记本", 5))
+                .thenReturn(List.of(new KnowledgeHit("kb-0007", "交易规则", "平台担保交易…", 0.9)));
+        when(assetSourcingService.search("笔记本", 5))
+                .thenReturn(
+                        List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)));
+
+        ChatAnswer answer = chatService.answer(new ChatRequest("5000 的笔记本有吗？平台怎么保障交易？", "sess-1", false));
+
+        assertThat(answer.sources()).containsExactly("交易规则", "MacBook Air M1");
+        verify(retrievalService).search("笔记本", 5);
+        verify(assetSourcingService).search("笔记本", 5);
     }
 
     @Test
