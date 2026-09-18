@@ -60,9 +60,6 @@ public class ProductEventConsumer {
                 case ProductAuditedEvent e -> handleAudited(e);
                 case ProductPutOnlineEvent e -> handlePutOnline(e);
                 case ProductTakeOfflineEvent e -> handleTakeOffline(e);
-                // 路由键 report.processed 绑定在 eo.report.notification 队列，不会到达本队列；
-                // 举报通过触发的商品下架副作用（缓存失效/索引移除）已由 ProductTakeOfflineEvent 覆盖。
-                case ReportProcessedEvent e -> log.debug("事件由 report.# 队列消费，本队列忽略: reportId={}", e.reportId());
             }
         });
     }

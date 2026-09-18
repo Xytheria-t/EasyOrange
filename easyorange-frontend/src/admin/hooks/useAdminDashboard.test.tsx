@@ -55,7 +55,7 @@ describe('usePendingItems', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { pendingProducts: 5, pendingReports: 3 },
+                    data: { pendingProducts: 5, pendingOrders: 3 },
                     timestamp: Date.now(),
                 });
             })
@@ -65,7 +65,7 @@ describe('usePendingItems', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.data?.pendingProducts).toBe(5);
-        expect(result.current.data?.pendingReports).toBe(3);
+        expect(result.current.data?.pendingOrders).toBe(3);
     });
 });
 

@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>easyorange-ai</artifactId>
-    <description>AI 能力模块 - 大语言模型 + 视觉识别 + 信用评分</description>
+    <description>AI 能力模块 - 大语言模型 + 视觉识别 + 向量检索</description>
 
     <dependencies>
         <dependency>

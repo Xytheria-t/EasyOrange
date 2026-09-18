@@ -10,5 +10,4 @@ public record QaRequest(
         String categoryName,
         String price,
         String conditionLevel,
-        String sellerName,
-        String sellerCreditLevel) {}
+        String sellerName) {}

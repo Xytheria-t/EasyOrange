@@ -48,12 +48,6 @@ export {
     useDeleteRating,
 } from './useAdminRatings';
 export {
-    useAdminReportDetail,
-    useAdminReportStats,
-    useAdminReports,
-    useHandleReport,
-} from './useAdminReports';
-export {
     useAdminUserDetail,
     useAdminUsers,
     useUpdateUserStatus,

@@ -59,7 +59,6 @@ function setupDefaultMocks() {
             totalOrders: 300,
             todayOrders: 15,
             totalRevenue: 50000,
-            pendingReports: 3,
         },
         isLoading: false,
         isError: false,
@@ -69,9 +68,7 @@ function setupDefaultMocks() {
     mockUsePendingItems.mockReturnValue({
         data: {
             pendingProducts: 10,
-            pendingReports: 3,
             pendingOrders: 5,
-            recentReports: [],
         },
         isLoading: false,
         isError: false,
@@ -202,7 +199,6 @@ describe('DashboardPage', () => {
 
         // All six action labels
         expect(screen.getByText('商品审核')).toBeInTheDocument();
-        expect(screen.getByText('处理举报')).toBeInTheDocument();
         expect(screen.getByText('订单管理')).toBeInTheDocument();
         expect(screen.getByText('用户管理')).toBeInTheDocument();
         expect(screen.getByText('分类管理')).toBeInTheDocument();
@@ -210,7 +206,6 @@ describe('DashboardPage', () => {
 
         // Each action links to the correct route
         expect(screen.getByText('商品审核').closest('a')).toHaveAttribute('href', '/admin/products?status=0');
-        expect(screen.getByText('处理举报').closest('a')).toHaveAttribute('href', '/admin/reports');
         expect(screen.getByText('订单管理').closest('a')).toHaveAttribute('href', '/admin/orders');
         expect(screen.getByText('用户管理').closest('a')).toHaveAttribute('href', '/admin/users');
         expect(screen.getByText('分类管理').closest('a')).toHaveAttribute('href', '/admin/categories');
@@ -224,16 +219,15 @@ describe('DashboardPage', () => {
         // Section header
         expect(screen.getByText('待处理事项')).toBeInTheDocument();
 
-        // Total pending badge (10 + 3 + 5 = 18)
-        expect(screen.getByText('18')).toBeInTheDocument();
+        // Total pending badge (10 + 5 = 15)
+        expect(screen.getByText('15')).toBeInTheDocument();
 
         // Each pending item section
         expect(screen.getByText(content => content.includes('商品待审核'))).toBeInTheDocument();
-        expect(screen.getByText(content => content.includes('举报待处理'))).toBeInTheDocument();
         expect(screen.getByText(content => content.includes('待处理订单'))).toBeInTheDocument();
 
-        // "立即处理" links exist (one per pending type = 3)
-        expect(screen.getAllByText('立即处理')).toHaveLength(3);
+        // "立即处理" links exist (one per pending type = 2)
+        expect(screen.getAllByText('立即处理')).toHaveLength(2);
     });
 
     // ── Test 6: Recent users section ──
@@ -345,9 +339,7 @@ describe('DashboardPage', () => {
         mockUsePendingItems.mockReturnValue({
             data: {
                 pendingProducts: 0,
-                pendingReports: 0,
                 pendingOrders: 0,
-                recentReports: [],
             },
             isLoading: false,
             isError: false,

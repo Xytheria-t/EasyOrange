@@ -9,8 +9,8 @@ import java.util.Map;
  * Admin 模块的商品查询/操作端口
  * 用于跨模块查询与操作商品信息，遵循防腐层原则
  * <p>
- * 审核/举报/分类/仪表板功能域见 {@link AdminProductAuditPort}、{@link AdminReportPort}、
- * {@link AdminCategoryPort}、{@link AdminDashboardPort}
+ * 审核/分类/仪表板功能域见 {@link AdminProductAuditPort}、{@link AdminCategoryPort}、
+ * {@link AdminDashboardPort}
  */
 public interface AdminProductPort {
 

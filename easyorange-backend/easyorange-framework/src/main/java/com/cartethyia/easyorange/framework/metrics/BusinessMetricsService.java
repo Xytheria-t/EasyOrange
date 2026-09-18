@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
  * 业务指标服务 — 记录核心业务流程的 Metrics 数据，
  * 暴露给 Prometheus 抓取（/actuator/prometheus）。
  * <p>
- * 计数器由 {@code BusinessMetricsEventListener}（基于领域事件）和
- * 命令边界（举报提交）驱动，随业务动作递增。
+ * 计数器由 {@code BusinessMetricsEventListener}（基于领域事件）驱动，
+ * 随业务动作递增。
  */
 @Component
 public class BusinessMetricsService {
@@ -19,7 +19,6 @@ public class BusinessMetricsService {
     private final Counter productPublishedCounter;
     private final Counter orderCreatedCounter;
     private final Counter paymentCompletedCounter;
-    private final Counter reportFiledCounter;
     private final Counter stockChangeSkippedCounter;
     private final Counter stockDriftCounter;
 
@@ -40,10 +39,6 @@ public class BusinessMetricsService {
 
         this.paymentCompletedCounter = Counter.builder("easyorange.payments.completed")
                 .description("Total number of payments completed")
-                .register(meterRegistry);
-
-        this.reportFiledCounter = Counter.builder("easyorange.reports.filed")
-                .description("Total number of reports filed")
                 .register(meterRegistry);
 
         // 库存流水幂等键命中（重复投递被跳过）——持续增长说明 MQ 在重投，或幂等键在兜真实重复
@@ -77,11 +72,6 @@ public class BusinessMetricsService {
     /** 支付完成 +1 */
     public void incrementPaymentCompleted() {
         paymentCompletedCounter.increment();
-    }
-
-    /** 举报提交 +1 */
-    public void incrementReportFiled() {
-        reportFiledCounter.increment();
     }
 
     /** 库存重复变更被流水幂等键跳过 +1 */

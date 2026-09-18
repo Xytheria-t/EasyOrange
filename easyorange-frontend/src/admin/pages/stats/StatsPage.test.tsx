@@ -35,7 +35,6 @@ const sampleStats: DashboardStats = {
     totalOrders: 300,
     todayOrders: 15,
     totalRevenue: 50000,
-    pendingReports: 3,
 };
 
 const sampleOrderStats: OrderStatsResponse = {

@@ -5,7 +5,6 @@ interface AiTagProps {
 const TAG_COLORS: Record<string, string> = {
     '💰超值': '#10b981',
     '✅AI审核': '#3b82f6',
-    '⭐信用优': '#f59e0b',
     '📸实拍': '#8b5cf6',
 };
 

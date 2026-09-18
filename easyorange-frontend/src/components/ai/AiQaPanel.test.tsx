@@ -16,7 +16,6 @@ const mockProduct = {
     price: 4500,
     conditionLevel: 1,
     sellerName: '小明',
-    sellerCreditLevel: 'GOOD',
 };
 
 function createHistoryItem(overrides: Partial<QaHistoryItem> = {}): QaHistoryItem {

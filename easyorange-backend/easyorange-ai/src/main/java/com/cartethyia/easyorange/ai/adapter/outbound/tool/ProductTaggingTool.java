@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.stereotype.Component;
 
-/** 商品标签工具 — 本地规则引擎（折扣/图片/信用分），零 LLM 调用，亚毫秒响应。 */
+/** 商品标签工具 — 本地规则引擎（折扣/图片），零 LLM 调用，亚毫秒响应。 */
 @Component
 public class ProductTaggingTool implements SearchTool<Map<String, List<String>>> {
 

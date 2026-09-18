@@ -8,7 +8,6 @@ const ACTIVITY_COLORS: Record<string, string> = {
     user: '#F97316',
     product: '#C39BD3',
     order: '#10B981',
-    report: '#F43F5E',
 };
 
 export default function StatsPage() {

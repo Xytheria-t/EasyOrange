@@ -6,11 +6,8 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.application.dto.QaRequest;
 import com.cartethyia.easyorange.ai.application.dto.QaResponse;
-import com.cartethyia.easyorange.ai.application.dto.SemanticSearchResult;
 import com.cartethyia.easyorange.ai.application.service.AiQaService;
-import com.cartethyia.easyorange.ai.application.service.SemanticSearchService;
 import com.cartethyia.easyorange.common.result.Result;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,48 +21,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AiQaControllerTest {
 
     @Mock
-    private SemanticSearchService semanticSearchService;
-
-    @Mock
     private AiQaService qaService;
 
     private AiQaController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new AiQaController(semanticSearchService, qaService);
-    }
-
-    @Nested
-    @DisplayName("GET /api/ai/semantic-search")
-    class SemanticSearchTests {
-
-        @Test
-        @DisplayName("语义搜索 — 返回搜索结果")
-        void semanticSearch_success() {
-            var expected = new SemanticSearchResult(List.of(), 0L, 1, 20);
-            when(semanticSearchService.search(anyString(), anyInt(), anyInt())).thenReturn(expected);
-
-            Result<SemanticSearchResult> result = controller.semanticSearch("iPhone", 1, 20);
-
-            assertThat(result.isSuccess()).isTrue();
-            assertThat(result.data().total()).isZero();
-            assertThat(result.data().current()).isEqualTo(1);
-            assertThat(result.data().size()).isEqualTo(20);
-            verify(semanticSearchService).search("iPhone", 1, 20);
-        }
-
-        @Test
-        @DisplayName("使用默认分页参数")
-        void semanticSearch_defaultPagination() {
-            var expected = new SemanticSearchResult(List.of(), 0L, 1, 20);
-            when(semanticSearchService.search(anyString(), anyInt(), anyInt())).thenReturn(expected);
-
-            Result<SemanticSearchResult> result = controller.semanticSearch("手机", 1, 20);
-
-            assertThat(result.isSuccess()).isTrue();
-            verify(semanticSearchService).search("手机", 1, 20);
-        }
+        controller = new AiQaController(qaService);
     }
 
     @Nested
@@ -75,7 +37,7 @@ class AiQaControllerTest {
         @Test
         @DisplayName("问答 — 返回有效回答")
         void answerQuestion_success() {
-            var request = new QaRequest("1", "是正品吗？", "iPhone 14", "99新", "手机数码", "¥4500", "九五新", "张三", "高");
+            var request = new QaRequest("1", "是正品吗？", "iPhone 14", "99新", "手机数码", "¥4500", "九五新", "张三");
             var expected = new QaResponse("是正品，有官方购买凭证", true);
             when(qaService.answerQuestion(any())).thenReturn(expected);
 

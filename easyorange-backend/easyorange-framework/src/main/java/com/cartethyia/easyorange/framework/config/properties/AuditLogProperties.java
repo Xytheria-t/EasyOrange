@@ -31,7 +31,7 @@ import org.springframework.validation.annotation.Validated;
  * @param skipPrefixes 不记录日志的读操作方法名前缀列表，方法名以这些前缀开头时跳过，默认覆盖常见查询前缀
  * @param sensitiveFields 请求参数中需要掩码的敏感字段名列表，记录时值被替换为 ******
  * @param moduleNames Controller 类名 → 中文模块名称映射，用于推导审计日志的模块字段，按长优先匹配
- *     （如 "ProductReport" 优先于 "Product"）
+ *     （如 "ProductAudit" 优先于 "Product"）
  * @param methodMappings 方法名前缀 → 操作映射（标题 + 业务类型）；审计日志推导的单一事实来源，从方法名前缀
  *     同时推导操作标题与业务类型，避免标题映射与类型映射两套表各自维护而漂移，按长优先匹配
  */
@@ -69,7 +69,6 @@ public record AuditLogProperties(
 
     private static Map<String, String> defaultModuleNames() {
         var map = new LinkedHashMap<String, String>();
-        map.put("ProductReport", "商品举报");
         map.put("Product", "商品管理");
         map.put("User", "用户管理");
         map.put("Auth", "认证管理");
@@ -127,7 +126,6 @@ public record AuditLogProperties(
         map.put("typing", new MethodMapping("输入中", BusinessType.UPDATE));
         map.put("reply", new MethodMapping("回复", BusinessType.UPDATE));
         map.put("like", new MethodMapping("点赞", BusinessType.UPDATE));
-        map.put("report", new MethodMapping("举报", BusinessType.UPDATE));
         map.put("confirm", new MethodMapping("确认", BusinessType.UPDATE));
         map.put("submit", new MethodMapping("提交", BusinessType.UPDATE));
         map.put("assign", new MethodMapping("分配", BusinessType.UPDATE));

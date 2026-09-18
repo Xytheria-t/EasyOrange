@@ -21,6 +21,4 @@ public class DashboardStatsResponse {
     private Long todayOrders;
 
     private BigDecimal totalRevenue;
-
-    private Long pendingReports;
 }

@@ -197,7 +197,6 @@ class ArchitectureRulesTest {
     // 无需删本文件的豁免名单；快照为 archunit 实际报送的违规行，与此处描述互为印证）：
     //   • SearchHistoryBufferAppService  — application 直构 SearchHistoryDO + 注入 SearchHistoryMapper
     //   • ViewCountBatchProcessor        — application 直注 ProductMapper（batchAddViewCounts）
-    //   • ProductReportQueryHandler      — application 方法直接返回 adapter.inbound web DTO
     // 规则继续拦截 domain/application 对 adapter 的新增依赖。
     @ArchTest
     static final ArchRule domain_and_application_should_not_depend_on_adapter = FreezingArchRule.freeze(noClasses()

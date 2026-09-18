@@ -116,7 +116,6 @@ idempotency:
   path-patterns:
     - /api/orders
     - /api/products
-    - /api/reports/product/*
     - /api/payments
   methods: [POST, PUT, PATCH]
 

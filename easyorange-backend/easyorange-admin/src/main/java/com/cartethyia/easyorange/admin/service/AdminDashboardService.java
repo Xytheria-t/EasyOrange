@@ -12,8 +12,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort.RecentProductRecord;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminReportPort.ReportStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.RecentUser;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserStats;
@@ -37,7 +35,6 @@ public class AdminDashboardService {
 
     private final AdminUserPort adminUserPort;
     private final AdminDashboardPort adminDashboardPort;
-    private final AdminReportPort adminReportPort;
     private final AdminOrderPort adminOrderPort;
     private final JdbcTemplate jdbcTemplate;
 
@@ -49,7 +46,6 @@ public class AdminDashboardService {
         UserStats userStats = adminUserPort.getUserStats();
         AdminDashboardPort.ProductStats productStats = adminDashboardPort.getProductStats();
         OrderStats orderStats = adminOrderPort.getOrderStats();
-        ReportStats reportStats = adminReportPort.getReportStats();
 
         return DashboardStatsResponse.builder()
                 .totalUsers(userStats.totalUsers())
@@ -59,33 +55,16 @@ public class AdminDashboardService {
                 .totalOrders(orderStats.totalOrders())
                 .todayOrders(orderStats.todayOrders())
                 .totalRevenue(orderStats.totalRevenue())
-                .pendingReports(reportStats.pending())
                 .build();
     }
 
     public PendingItemsResponse getPendingItems() {
-        ReportStats reportStats = adminReportPort.getReportStats();
         long pendingOrders = adminOrderPort.getOrderStats().pendingPayment();
         long pendingProducts = adminDashboardPort.getProductStats().pending();
 
-        List<PendingItemsResponse.PendingReportItem> recentReports =
-                adminReportPort.queryReports(0, 1, 5).records().stream()
-                        .map(report -> PendingItemsResponse.PendingReportItem.builder()
-                                .id(report.id())
-                                .productId(report.productId())
-                                .reason(report.reason())
-                                .createTime(
-                                        report.createTime() != null
-                                                ? report.createTime().toString()
-                                                : null)
-                                .build())
-                        .toList();
-
         return PendingItemsResponse.builder()
-                .pendingReports(reportStats.pending())
                 .pendingOrders(pendingOrders)
                 .pendingProducts(pendingProducts)
-                .recentReports(recentReports)
                 .build();
     }
 
@@ -140,7 +119,7 @@ public class AdminDashboardService {
     public List<ActivityResponse> getRecentActivity() {
         return Stream.concat(
                         Stream.concat(getRecentUserActivities(), getRecentProductActivities()),
-                        Stream.concat(getRecentOrderActivities(), getRecentReportActivities()))
+                        getRecentOrderActivities())
                 .sorted(Comparator.comparing(ActivityResponse::getTime).reversed())
                 .limit(10)
                 .toList();
@@ -183,18 +162,6 @@ public class AdminDashboardService {
                         .time(toLocalDateTime(row.get("create_time")).format(DATETIME_FORMAT))
                         .text("订单 " + row.get("order_no") + " 创建成功")
                         .type("order")
-                        .build());
-    }
-
-    private Stream<ActivityResponse> getRecentReportActivities() {
-        return jdbcTemplate
-                .queryForList(
-                        "SELECT id, reason, create_time FROM eo_product_report WHERE del_flag = 0 ORDER BY create_time DESC LIMIT 5")
-                .stream()
-                .map(row -> ActivityResponse.builder()
-                        .time(toLocalDateTime(row.get("create_time")).format(DATETIME_FORMAT))
-                        .text("收到1条新的举报: " + row.get("reason"))
-                        .type("report")
                         .build());
     }
 

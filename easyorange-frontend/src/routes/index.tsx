@@ -27,7 +27,6 @@ const MyProductsPage = lazy(() => import('@/pages/products/MyProductsPage'));
 const SearchPage = lazy(() => import('@/pages/profile/SearchPage'));
 const EditProductPage = lazy(() => import('@/pages/products/EditProductPage'));
 const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
-const CreditPage = lazy(() => import('@/pages/profile/CreditPage'));
 const PlaygroundPage = lazy(() => import('@/pages/playground/PlaygroundPage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
@@ -66,7 +65,6 @@ const R = {
     myProducts: { title: '我的发布' },
     editProduct: { title: '编辑商品' },
     notifications: { title: '通知中心' },
-    credit: { title: '我的信用' },
     playground: { title: 'AI 智能助手', description: '多轮 Agent 对话 · SSE 流式 · 知识库引用溯源' },
     notFound: { title: '404' },
     admin: { title: '管理后台', description: 'EasyOrange 管理控制台' },
@@ -129,7 +127,6 @@ export const router = createBrowserRouter(
                     path="notifications"
                     element={<ProtectedRoute>{withSuspense(NotificationsPage, R.notifications)}</ProtectedRoute>}
                 />
-                <Route path="credit" element={<ProtectedRoute>{withSuspense(CreditPage, R.credit)}</ProtectedRoute>} />
                 <Route path="playground" element={withSuspense(PlaygroundPage, R.playground)} />
                 <Route path="*" element={withSuspense(NotFoundPage, R.notFound)} />
             </Route>

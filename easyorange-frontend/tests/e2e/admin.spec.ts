@@ -22,7 +22,7 @@ test.describe('管理后台', () => {
     });
 
     test('未登录访问后台各页面均跳转登录', async ({ page }) => {
-        const adminPaths = ['/admin/users', '/admin/products', '/admin/orders', '/admin/reports', '/admin/stats'];
+        const adminPaths = ['/admin/users', '/admin/products', '/admin/orders', '/admin/stats'];
         for (const path of adminPaths) {
             await page.goto(path);
             // 深链先加载 lazy admin chunk（含 recharts 等重块）再执行守卫跳转，给足时间
@@ -84,13 +84,6 @@ test.describe('管理后台', () => {
             await spaNavigate(page, '/admin/products');
             await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
             await expect(page.locator('text=商品审核').first()).toBeVisible({ timeout: 15000 });
-        });
-
-        test('可导航到举报处理页面', async ({ page }) => {
-            await spaNavigate(page, '/admin/reports');
-            await expect(page.locator('.admin-layout')).toBeVisible({ timeout: 15000 });
-            // 举报页无稳定标题，以布局 + 侧边栏导航可达为准
-            await expect(page.locator('.sidebar-nav a').filter({ hasText: '举报处理' })).toBeVisible();
         });
 
         test('可导航到用户管理页面', async ({ page }) => {

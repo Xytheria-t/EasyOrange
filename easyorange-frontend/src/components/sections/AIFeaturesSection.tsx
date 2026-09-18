@@ -23,7 +23,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
         icon: '💎',
         title: 'AI 资产估值',
         subtitle: '上传图片 · 3 秒定价',
-        detail: '基于同款成交均价 + 视觉评估 + 信用加权,生成建议售价',
+        detail: '基于同款成交均价 + 视觉评估,生成建议售价',
         durationMs: 800,
         status: 'pending',
     },
@@ -72,13 +72,13 @@ const PIPELINE_STEPS: PipelineStep[] = [
         status: 'pending',
     },
     {
-        id: 'credit',
+        id: 'qa',
         index: 6,
         side: 'buyer',
-        icon: '📊',
-        title: 'AI 信用画像',
-        subtitle: '5 维雷达图 · 可解释',
-        detail: '描述准确度 / 沟通及时度 / 发货速度 / 售后口碑 / 历史评价',
+        icon: '💬',
+        title: 'AI 商品问答',
+        subtitle: '就着商品问到底',
+        detail: '基于商品信息回答成色、配件、交割方式等问题,答不上来时不硬编',
         durationMs: 700,
         status: 'pending',
     },
@@ -203,7 +203,7 @@ function AIFeaturesSection() {
                         <span className="subtitle-side">
                             <span className="subtitle-dot subtitle-dot-buyer" aria-hidden="true" />
                             <span>
-                                <strong>认领方侧</strong>,AI 帮你找货、评估、看清信用
+                                <strong>认领方侧</strong>,AI 帮你找货、评估、答疑
                             </span>
                         </span>
                     </div>

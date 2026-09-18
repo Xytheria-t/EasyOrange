@@ -70,18 +70,6 @@ describe('StatusBadge', () => {
         });
     });
 
-    describe('report status', () => {
-        it('renders 待处理 for status 0', () => {
-            renderWithProviders(<StatusBadge status={0} type="report" />);
-            expect(screen.getByText('待处理')).toBeInTheDocument();
-        });
-
-        it('renders 已处理 for status 2', () => {
-            renderWithProviders(<StatusBadge status={2} type="report" />);
-            expect(screen.getByText('已处理')).toBeInTheDocument();
-        });
-    });
-
     describe('fallback', () => {
         it('renders 未知 for unknown numeric status', () => {
             renderWithProviders(<StatusBadge status={999} type="user" />);

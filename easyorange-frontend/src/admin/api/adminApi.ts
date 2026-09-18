@@ -11,8 +11,6 @@ import type {
     AdminRating,
     AdminRatingDeleteRequest,
     AdminRatingQuery,
-    AdminReport,
-    AdminReportQuery,
     AdminUser,
     AdminUserQuery,
     AuditLogResponse,
@@ -30,8 +28,6 @@ import type {
     ProductAuditRequest,
     RecentProduct,
     RecentUser,
-    ReportHandleRequest,
-    ReportStatsResponse,
     ResetPasswordRequest,
     TopProductItem,
     TrendItem,
@@ -227,27 +223,6 @@ export const adminApi = {
     deleteCategory(id: string) {
         return request<void>(`${ADMIN_API_PREFIX}/categories/${id}`, {
             method: 'DELETE',
-        });
-    },
-
-    getReports(params: AdminReportQuery) {
-        return request<PageResult<AdminReport>>(`${ADMIN_API_PREFIX}/reports`, {
-            params: { ...params },
-        });
-    },
-
-    getReportById(id: string) {
-        return request<AdminReport>(`${ADMIN_API_PREFIX}/reports/${id}`);
-    },
-
-    getReportStats() {
-        return request<ReportStatsResponse>(`${ADMIN_API_PREFIX}/reports/stats`);
-    },
-
-    handleReport(id: string, data: ReportHandleRequest) {
-        return request<void>(`${ADMIN_API_PREFIX}/reports/${id}/handle`, {
-            method: 'PUT',
-            body: data,
         });
     },
 
