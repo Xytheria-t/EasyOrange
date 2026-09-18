@@ -5,7 +5,7 @@
 - **决策者**：后端架构
 - **标签**：`messaging` `event-driven` `rabbitmq` `kafka` `nats` `pulsar` `outbox` `dlq`
 
-> **现状更新（2026-09-17，覆盖 2026-08-07 版）**：现役**事件消费者 12 个**（12 个业务队列 + 对应 12 个 DLQ 队列，由 `DlqAnomalyListener` 单个监听器统一监听；全仓 `@RabbitListener` 计数为准）。数量轨迹：决策时点 11 → 2026-08-04 支付 Saga 移除收敛为 10 → 2026-08 后新增信用分 / 审核通知 / 举报通知 / 收藏降价等消费者回升至 12。DLQ 重试实现为 `DlqRetryScheduler` 内 `x-retry-count` 头驱动（固定 5 分钟扫描周期，退避由主队列 RetryTemplate 承担），`ExponentialBackoffRetryStrategy` 已删除并入该类，消费者统一处理基类 `AbstractDomainEventConsumer` 重构为 `EventConsumerHandler`。**正文保留 2026-07-30 决策时点的 11 消费者口径**（决策内容不改）。
+> **现状更新（2026-09-18，覆盖 2026-09-17 版）**：现役**事件消费者 11 个**（11 个业务队列 + 对应 11 个 DLQ 队列，由 `DlqAnomalyListener` 单个监听器统一监听；全仓 `@RabbitListener` 计数为准）。2026-09-18 删除 `AiProductEventConsumer` 及其 `eo.ai.product` 队列——它的产出写进无读取方的 Redis key，且每次商品创建/编辑都触发一次 LLM 调用，属纯浪费。数量轨迹：决策时点 11 → 2026-08-04 支付 Saga 移除收敛为 10 → 2026-08 后新增信用分 / 审核通知 / 举报通知 / 收藏降价等消费者回升至 12 → 2026-09-18 删除 `AiProductEventConsumer` 后为 11。DLQ 重试实现为 `DlqRetryScheduler` 内 `x-retry-count` 头驱动（固定 5 分钟扫描周期，退避由主队列 RetryTemplate 承担），`ExponentialBackoffRetryStrategy` 已删除并入该类，消费者统一处理基类 `AbstractDomainEventConsumer` 重构为 `EventConsumerHandler`。**正文保留 2026-07-30 决策时点的 11 消费者口径**（决策内容不改；正文的 11 含 `AiProductEventConsumer`，与删除后现役的 11 数字相同、组成不同）。
 
 ---
 
@@ -13,7 +13,7 @@
 
 EasyOrange 的事件驱动架构已经落地：
 - 1 个 **Topic Exchange** `eo.domain.events`，路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`）
-- **11 个独立事件消费者**（每个模块独占一个队列 `eo.{name}`），完全是 pub/sub 模式：**同一条领域事件被多个下游各消费各的、各 ack 各的、各有各的失败重试链路**
+- **11 个独立事件消费者**（2026-07-30 决策时点口径，现役数量见文首「现状更新」；每个模块独占一个队列 `eo.{name}`），完全是 pub/sub 模式：**同一条领域事件被多个下游各消费各的、各 ack 各的、各有各的失败重试链路**
 - **DLQ 三级重试链路**：队列级 `x-dead-letter-exchange` → 失败消息自动路由到 `eo.{name}.dlq` → `DlqRetryScheduler` 每 5 分钟扫描 DLQ → 按 `x-retry-count` 指数退避重投（1min/5min/15min，自死信时间起算，手动 ack 不丢消息）→ 超过 `max-retries=3` 的毒消息转储 `eo.dlq.terminal` 等待人工介入
 - **Spring Modulith Outbox 模式**：业务表 + `EVENT_PUBLICATION` 表与应用事务同原子写入，崩溃恢复时 Modulith 自动重发未完成事件
 - **幂等**：`EventIdempotencyChecker` 基于 Redis SETNX + TTL
@@ -82,7 +82,7 @@ EasyOrange 的事件驱动架构已经落地：
   - [AGENTS.md](../../AGENTS.md) §11 领域事件机制 + traceId 传递链路
   - [README.md](../../README.md) §架构总览 + 拒绝项清单
 - 相关代码：
-  - [RabbitMQConfig.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/messaging/config/RabbitMQConfig.java)：交换机 + 10 队列 + DLQ 绑定声明（2026-08-04 起，见顶部现状更新）
+  - [RabbitMQConfig.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/messaging/config/RabbitMQConfig.java)：交换机 + 11 队列 + DLQ 绑定声明（现役数量 2026-09-18，见顶部现状更新）
   - [DlqRetryScheduler.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/dlq/DlqRetryScheduler.java)：DLQ 分级重试调度（`x-retry-count` 头驱动，重试 ≥ 3 转储 `eo.dlq.terminal`；原 `ExponentialBackoffRetryStrategy` 已并入本类，见顶部现状更新）
   - [EventConsumerHandler.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/core/EventConsumerHandler.java)：消费者统一处理（ack/nack/幂等/异常链，前身为 `AbstractDomainEventConsumer`）
   - [EventMetadataMessagePostProcessor.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/event/metadata/EventMetadataMessagePostProcessor.java)：traceId 注入 MQ 消息头
