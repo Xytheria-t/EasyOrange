@@ -69,7 +69,6 @@ public class DlqRetryScheduler {
             RabbitMQConfig.QUEUE_REPORT_NOTIFICATION + ".dlq",
             RabbitMQConfig.QUEUE_MESSAGE_WEBSOCKET + ".dlq",
             RabbitMQConfig.QUEUE_PAYMENT_METRICS + ".dlq",
-            RabbitMQConfig.QUEUE_AI_PRODUCT + ".dlq",
             RabbitMQConfig.QUEUE_AI_CREDIT + ".dlq",
             RabbitMQConfig.QUEUE_FAVORITE_PRICE_DROP + ".dlq");
 

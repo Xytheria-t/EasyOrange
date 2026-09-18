@@ -51,7 +51,7 @@ class AiRateLimitInterceptorTest {
     @Test
     @DisplayName("限流未超时放行")
     void withinLimitPass() throws Exception {
-        when(request.getRequestURI()).thenReturn("/api/ai/review");
+        when(request.getRequestURI()).thenReturn("/api/ai/pricing");
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
         when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                 .thenReturn(true);
@@ -64,7 +64,7 @@ class AiRateLimitInterceptorTest {
     @Test
     @DisplayName("Redis 异常时 fail-open")
     void redisExceptionFailOpen() throws Exception {
-        when(request.getRequestURI()).thenReturn("/api/ai/review");
+        when(request.getRequestURI()).thenReturn("/api/ai/pricing");
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
         when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                 .thenThrow(new RuntimeException("Redis down"));
@@ -77,7 +77,7 @@ class AiRateLimitInterceptorTest {
     @Test
     @DisplayName("限流超时返回 429 且响应体为 Result 信封")
     void rateLimitExceeded() throws Exception {
-        when(request.getRequestURI()).thenReturn("/api/ai/review");
+        when(request.getRequestURI()).thenReturn("/api/ai/pricing");
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
         when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                 .thenReturn(false);
@@ -93,7 +93,7 @@ class AiRateLimitInterceptorTest {
     @Test
     @DisplayName("X-Forwarded-For 头解析")
     void xForwardedForHeader() throws Exception {
-        when(request.getRequestURI()).thenReturn("/api/ai/review");
+        when(request.getRequestURI()).thenReturn("/api/ai/pricing");
         when(request.getHeader("X-Forwarded-For")).thenReturn("192.168.1.1, 10.0.0.1");
         when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                 .thenReturn(true);

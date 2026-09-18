@@ -15,9 +15,10 @@ class AiCallScopeTest {
     }
 
     @Test
-    @DisplayName("fromUri 匹配 review")
+    @DisplayName("fromUri 匹配 review（审核建议只剩管理端入口）")
     void fromUri_review() {
-        assertThat(AiCallScope.fromUri("/api/ai/review")).isEqualTo(AiCallScope.REVIEW);
+        // /api/ai/review 已于 2026-09-18 删除（无调用方的重复入口）；REVIEW 场景现由管理端触发
+        assertThat(AiCallScope.fromUri("/api/admin/products/p-1/ai-review")).isEqualTo(AiCallScope.REVIEW);
     }
 
     @Test

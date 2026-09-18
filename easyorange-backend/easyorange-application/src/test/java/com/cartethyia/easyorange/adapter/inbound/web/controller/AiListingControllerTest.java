@@ -4,13 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.ai.application.dto.AiReviewRequest;
-import com.cartethyia.easyorange.ai.application.dto.AiReviewResult;
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.application.dto.PricingRequest;
 import com.cartethyia.easyorange.ai.application.dto.PricingSuggestion;
 import com.cartethyia.easyorange.ai.application.service.AiPricingService;
-import com.cartethyia.easyorange.ai.application.service.AiReviewService;
 import com.cartethyia.easyorange.ai.application.service.AutoListingService;
 import com.cartethyia.easyorange.common.result.Result;
 import java.math.BigDecimal;
@@ -33,14 +30,11 @@ class AiListingControllerTest {
     @Mock
     private AutoListingService autoListingService;
 
-    @Mock
-    private AiReviewService reviewService;
-
     private AiListingController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new AiListingController(pricingService, autoListingService, reviewService);
+        controller = new AiListingController(pricingService, autoListingService);
     }
 
     @Nested
@@ -112,49 +106,6 @@ class AiListingControllerTest {
 
             assertThat(result.isSuccess()).isTrue();
             verify(autoListingService).analyzeImages(List.of());
-        }
-    }
-
-    @Nested
-    @DisplayName("POST /api/ai/review")
-    class ReviewProductTests {
-
-        @Test
-        @DisplayName("审核商品 — 返回 AiReviewResult")
-        void reviewProduct_success() {
-            var expected = new AiReviewResult(true, "通过", 90, List.of(), "信息完整合规");
-            when(reviewService.reviewProduct(anyString(), any(), any(), any(), any(), any(), any()))
-                    .thenReturn(expected);
-
-            var request = new AiReviewRequest(
-                    "iPhone 14", "99新手机", "手机数码", "2", "¥4500", "张三", List.of("https://example.com/phone.jpg"));
-            Result<AiReviewResult> result = controller.reviewProduct(request);
-
-            assertThat(result.isSuccess()).isTrue();
-            assertThat(result.data().suggestedAction()).isTrue();
-            assertThat(result.data().confidenceScore()).isEqualTo(90);
-            verify(reviewService)
-                    .reviewProduct(
-                            eq("iPhone 14"),
-                            eq("99新手机"),
-                            eq("手机数码"),
-                            eq("2"),
-                            eq("¥4500"),
-                            eq("张三"),
-                            eq(List.of("https://example.com/phone.jpg")));
-        }
-
-        @Test
-        @DisplayName("最少参数（只有商品名）也能正常请求")
-        void reviewProduct_minimalParams() {
-            when(reviewService.reviewProduct(anyString(), any(), any(), any(), any(), any(), any()))
-                    .thenReturn(new AiReviewResult(true, "通过", 50, List.of(), "默认通过"));
-
-            Result<AiReviewResult> result =
-                    controller.reviewProduct(new AiReviewRequest("测试商品", null, null, null, null, null, null));
-
-            assertThat(result.isSuccess()).isTrue();
-            verify(reviewService).reviewProduct(eq("测试商品"), isNull(), isNull(), isNull(), isNull(), isNull(), isNull());
         }
     }
 }
