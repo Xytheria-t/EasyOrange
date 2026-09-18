@@ -63,7 +63,7 @@ const R = {
     payment: { title: '收银台' },
     paymentResult: { title: '支付结果' },
     publish: { title: '提交资产' },
-    myProducts: { title: '我的商品' },
+    myProducts: { title: '我的发布' },
     editProduct: { title: '编辑商品' },
     notifications: { title: '通知中心' },
     credit: { title: '我的信用' },

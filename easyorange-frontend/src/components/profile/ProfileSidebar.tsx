@@ -176,7 +176,7 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
                         </Button>
                         <Button variant="outline" className="ps-btn-secondary" onClick={() => navigate('/orders')}>
                             <ShoppingBag size={18} />
-                            <span className="ps-btn-secondary-text">购买记录</span>
+                            <span className="ps-btn-secondary-text">我的订单</span>
                         </Button>
                     </div>
 

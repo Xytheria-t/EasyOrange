@@ -58,7 +58,7 @@ beforeEach(() => {
 
 // ── Tests ──
 describe('MyProductsPage', () => {
-    it('renders the page title "我发布的商品"', () => {
+    it('renders the page title "我的发布"', () => {
         mockUseMyProducts.mockReturnValue({
             data: { records: [], total: 0, pages: 1, current: 1, size: 20 },
             isLoading: false,
@@ -68,7 +68,7 @@ describe('MyProductsPage', () => {
 
         renderPage();
 
-        expect(screen.getByText('我发布的商品')).toBeInTheDocument();
+        expect(screen.getByText('我的发布')).toBeInTheDocument();
         expect(screen.getByText('管理你发布的商品，追踪审核状态')).toBeInTheDocument();
     });
 

@@ -3,8 +3,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { favoriteApi } from '@/api/favoriteApi';
 import { messageApi } from '@/api/messageApi';
-import { orderApi } from '@/api/orderApi';
-import { productApi } from '@/api/productApi';
 import { userApi } from '@/api/userApi';
 import {
     PasswordModal,
@@ -41,8 +39,6 @@ function ProfilePage() {
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [animateIn, setAnimateIn] = useState(false);
     const [favoriteCount, setFavoriteCount] = useState(0);
-    const [orderCount, setOrderCount] = useState(0);
-    const [productCount, setProductCount] = useState(0);
     const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
     useEffect(() => {
@@ -54,20 +50,6 @@ function ProfilePage() {
         favoriteApi
             .getCount()
             .then(setFavoriteCount)
-            .catch(() => {});
-    }, []);
-
-    useEffect(() => {
-        orderApi
-            .getMyOrders({ pageNum: 1, pageSize: 1 })
-            .then(res => setOrderCount(res.data?.total ?? 0))
-            .catch(() => {});
-    }, []);
-
-    useEffect(() => {
-        productApi
-            .getMyProducts({ pageNum: 1, pageSize: 1 })
-            .then(res => setProductCount(res.data?.total ?? 0))
             .catch(() => {});
     }, []);
 
@@ -178,8 +160,6 @@ function ProfilePage() {
                             <ProfileOverview
                                 user={user}
                                 favoriteCount={favoriteCount}
-                                orderCount={orderCount}
-                                productCount={productCount}
                                 unreadMessageCount={unreadMessageCount}
                                 editingField={editingField}
                                 editValue={editValue}
