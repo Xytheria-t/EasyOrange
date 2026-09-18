@@ -919,26 +919,7 @@ ON DUPLICATE KEY UPDATE
     `update_time` = new.`update_time`;
 
 -- ===================================================================
--- 12. 商品举报数据（覆盖待处理/处理中/已解决）
--- ===================================================================
-
-INSERT INTO `eo_product_report` (
-    `id`, `product_id`, `reporter_id`, `reason`, `status`, `handle_result`,
-    `create_time`, `update_time`
-) VALUES
-(1, 39, 4,  '虚拟物品交易风险，建议平台审核',   1, '已核实，商品信息真实，暂不处理', NOW() - INTERVAL 30 DAY, NOW() - INTERVAL 28 DAY),
-(2, 70, 14, '游戏账号交易存在安全隐患',         1, '已提醒资产方完善交易保障说明',     NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY),
-(3, 3,  17, '商品描述与实际不符，成色虚标',     0, NULL,                             NOW() - INTERVAL 1 DAY, NOW()),
-(4, 25, 12, '价格明显高于市场价，疑似哄抬价格', 2, '经核实价格合理，已忽略',         NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 13 DAY),
-(5, 42, 8,  '已下架商品仍在搜索结果中显示',     1, '已优化搜索索引，下架商品不再展示', NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 18 DAY)
-AS new
-ON DUPLICATE KEY UPDATE
-    `status` = new.`status`,
-    `handle_result` = new.`handle_result`,
-    `update_time` = new.`update_time`;
-
--- ===================================================================
--- 13. 操作日志数据
+-- 12. 操作日志数据
 -- ===================================================================
 
 INSERT INTO `eo_audit_log` (
@@ -969,7 +950,7 @@ ON DUPLICATE KEY UPDATE
     `created_at` = new.`created_at`;
 
 -- ===================================================================
--- 14. 商品评价数据（基于已完成订单）
+-- 13. 商品评价数据（基于已完成订单）
 -- 评分分布：5星4条 / 4星3条 / 3星2条 / 2星1条 / 1星1条，约 73% 有资产方回复
 -- 注意：同一订单同一下单人仅允许一条评价（唯一键 uk_eo_product_review_user_order）
 -- ===================================================================
@@ -1006,7 +987,7 @@ ON DUPLICATE KEY UPDATE
     `update_time` = new.`update_time`;
 
 -- ===================================================================
--- 15. 补充商品详情（ID 1013-1015：原商品 ID 46-48 与补充批次冲突，已迁移）
+-- 14. 补充商品详情（ID 1013-1015：原商品 ID 46-48 与补充批次冲突，已迁移）
 -- ===================================================================
 
 INSERT INTO `eo_product_detail` (
@@ -1021,13 +1002,61 @@ ON DUPLICATE KEY UPDATE
     `update_time` = new.`update_time`;
 
 -- ===================================================================
--- 16. 重复商品清理（1001-1012 批次去重）
+-- 15. 重复商品清理（1001-1012 批次去重）
 --     已删除条目：1003/1005/1006/1009/1010/1011/1012
 --     与早期商品 8/13/18/23/26/30/37 重复，级联删除图片/详情/评价。
 --     仅 dev 库生效（classpath:db/dev）；DELETE 幂等，重复执行无副作用。
+--     比较值一律加引号：这些列是 VARCHAR(36)（应用内主键为 UUID v7），
+--     拿裸数字比较会让 MySQL 把列转 DOUBLE，遇到真实 UUID 行报
+--     `Truncated incorrect DOUBLE value` —— 脏 dev 库上整条 R__ 迁移会失败、应用起不来。
 -- ===================================================================
 
-DELETE FROM `eo_product_review` WHERE `product_id` IN (1003, 1005, 1006, 1009, 1010, 1011, 1012);
-DELETE FROM `eo_product_image` WHERE `product_id` IN (1003, 1005, 1006, 1009, 1010, 1011, 1012);
-DELETE FROM `eo_product_detail` WHERE `product_id` IN (1003, 1005, 1006, 1009, 1010, 1011, 1012);
-DELETE FROM `eo_product` WHERE `id` IN (1003, 1005, 1006, 1009, 1010, 1011, 1012);
+DELETE FROM `eo_product_review` WHERE `product_id` IN ('1003', '1005', '1006', '1009', '1010', '1011', '1012');
+DELETE FROM `eo_product_image` WHERE `product_id` IN ('1003', '1005', '1006', '1009', '1010', '1011', '1012');
+DELETE FROM `eo_product_detail` WHERE `product_id` IN ('1003', '1005', '1006', '1009', '1010', '1011', '1012');
+DELETE FROM `eo_product` WHERE `id` IN ('1003', '1005', '1006', '1009', '1010', '1011', '1012');
+
+-- ===================================================================
+-- 16. AI 能力演示数据（建议价 + 多图商品）
+--     目的：两处 AI 能力的产出在 dev 库上直接可见，不必先手工走一遍发布流程。
+--     ① ai_suggested_price：采纳率报表（GET /api/admin/ai/pricing-adoption）只统计该列非空的行
+--        （没给出建议的商品进分母会把采纳率稀释成无意义的数），不补数据则报表恒为 0 样本。
+--        三种形态各 8 个商品，保证采纳率 / ±10% / >30% 三个口径都有数。
+--     ② 多图商品：ProductTagger 的「📸实拍」标签阈值为 3 张图，此前全库没有商品达到，
+--        该标签在 demo 里永不出现。补充图片的 URL 复用同品类已有素材（新增外链可能失效，宁可重复）。
+--     建议价是构造值，不代表模型真实输出；两条 UPDATE 都是幂等且只命中种子商品
+--     （比较值加引号的原因同第 15 节：id 是 VARCHAR，裸数字比较会在脏库上报 1292）
+--     （应用内真实发布的商品是 UUID v7 主键，不会落在这些 ID 上）。
+-- ===================================================================
+
+-- ①A 采纳：建议价与最终定价完全一致
+UPDATE `eo_product` SET `ai_suggested_price` = `price` WHERE `id` IN ('1', '5', '11', '15', '23', '33', '50', '65');
+
+-- ①B 采纳但改价 ≤10%：建议价略高于最终价
+UPDATE `eo_product` SET `ai_suggested_price` = ROUND(`price` * 1.08, 2) WHERE `id` IN ('3', '8', '16', '24', '30', '37', '58', '66');
+
+-- ①C 偏离 >30%：建议价明显高于最终价
+UPDATE `eo_product` SET `ai_suggested_price` = ROUND(`price` * 1.5, 2) WHERE `id` IN ('2', '9', '12', '26', '36', '54', '64', '96');
+
+-- ② 多图商品（补到 3 张，触发「📸实拍」标签）
+INSERT INTO `eo_product_image` (
+    `id`, `product_id`, `image_url`, `sort_order`, `is_main`, `create_time`, `update_time`
+) VALUES
+(3001, 3,  'https://images.unsplash.com/photo-1678685888221-cda773a3acdb?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW()),
+(3002, 3,  'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=800&auto=format&fit=crop', 2, 0, NOW(), NOW()),
+(3003, 6,  'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW()),
+(3004, 6,  'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=800&auto=format&fit=crop', 2, 0, NOW(), NOW()),
+(3005, 9,  'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW()),
+(3006, 9,  'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop', 2, 0, NOW(), NOW()),
+(3007, 15, 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW()),
+(3008, 15, 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=800&auto=format&fit=crop', 2, 0, NOW(), NOW()),
+(3009, 24, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW()),
+(3010, 24, 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&auto=format&fit=crop', 2, 0, NOW(), NOW()),
+(3011, 30, 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW()),
+(3012, 30, 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&auto=format&fit=crop', 2, 0, NOW(), NOW())
+AS new
+ON DUPLICATE KEY UPDATE
+    `image_url` = new.`image_url`,
+    `sort_order` = new.`sort_order`,
+    `is_main` = new.`is_main`,
+    `update_time` = new.`update_time`;
