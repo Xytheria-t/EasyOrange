@@ -10,12 +10,14 @@ application/
 │   └── com/cartethyia/easyorange/
 │       ├── EasyOrangeApplication.java     # Spring Boot 主类
 │       ├── adapter/
-│       │   ├── event/                     # 跨模块事件监听器（4 个；其余消费者在各业务模块内）
+│       │   ├── event/                     # 跨模块事件消费者（5 个 MQ 消费者 + 1 个同步指标监听器）
 │       │   │   ├── OrderNotificationEventConsumer.java
 │       │   │   ├── ProductAuditEventConsumer.java
 │       │   │   ├── ReportProcessedEventConsumer.java
-│       │   │   └── AiCreditEventConsumer.java
-│       │   ├── inbound/web/controller/  # Web 控制器（11 个）
+│       │   │   ├── AiCreditEventConsumer.java
+│       │   │   ├── FavoritePriceDropEventConsumer.java
+│       │   │   └── BusinessMetricsEventListener.java    # @EventListener 同步打点，非同 MQ 消费者
+│       │   ├── inbound/web/controller/    # Web 控制器（11 个）
 │       │   │   ├── AiChatController.java              # AI 对话（含 SSE 流式）
 │       │   │   ├── AiCostReportController.java        # AI 成本报表 + 建议价采纳率
 │       │   │   ├── AiFeedbackController.java          # AI 输出反馈
@@ -28,11 +30,13 @@ application/
 │       │   │   ├── CreditScoreController.java         # 信用分数端点
 │       │   │   └── PlatformStatsController.java       # 平台统计
 │       │   └── outbound/                  # 跨模块适配器实现（完整清单见下方「跨模块适配器」表）
-│       │       ├── admin/                 # 8 个 Admin*Adapter（分类/仪表板/订单/商品/审核/评价/举报/用户）
+│       │       ├── admin/                 # 8 个 Admin*Adapter（分类/仪表板/订单/商品/审核/评价/举报/用户）+ JdbcAiPricingAdoptionAdapter
 │       │       ├── elasticsearch/         # ES 搜索索引适配器（ElasticsearchIndexManager / ProductDocument / ReindexService / 索引读写适配器）
+│       │       ├── favorite/              # FavoritePriceDropNotificationAdapter
+│       │       ├── order/                 # CompletedOrderAdapter
 │       │       ├── payment/               # OrderPaymentGatewayAdapter
 │       │       ├── product/               # ProductInventoryAdapter / ProductNotificationAdapter / ProductSearchIndexAdapter / FavoriteProductInfoAdapter
-│       │       └── user/                  # MessageUserInfoAdapter / SellerInfoAdapter
+│       │       └── user/                  # MessageUserInfoAdapter / OrderUserInfoAdapter / SellerInfoAdapter
 ├── src/main/resources/
 │   ├── application.yaml                   # 基础配置
 │   ├── application-dev.yaml               # 开发环境
@@ -40,20 +44,19 @@ application/
 │   ├── application-test.yaml              # 测试环境
 │   ├── logback-spring.xml                 # 日志配置
 │   └── db/
-│       ├── migration/                     # Flyway 迁移脚本 (V=版本, R=可重复)
-│       │   ├── V1__init_schema.sql              # 完整 DDL（合并原 V1~V9）
+│       ├── migration/                     # Flyway 迁移脚本（V=版本，R=可重复）
+│       │   ├── V1__init_schema.sql        # 完整初始 DDL
+│       │   ├── V2__favorite_price_snapshot.sql
+│       │   ├── V3__task_scan_and_message_cleanup_indexes.sql
+│       │   ├── V4__stock_ledger.sql
+│       │   ├── V5__enum_code_integrity.sql
+│       │   ├── V6__ai_call_log_token_usage.sql
+│       │   ├── V7__product_ai_suggested_price.sql
 │       │   ├── R__seed_categories.sql           # 分类种子数据（含二级）
-│       │   ├── R__seed_message_templates.sql    # 消息模板种子数据
-│       │   └── R__seed_payment_config.sql       # 支付渠道配置
+│       │   └── R__seed_knowledge_docs.sql       # RAG 知识库种子文档
 │       └── dev/                           # 开发环境数据
 │           └── R__insert_dev_test_data.sql
-└── src/test/java/
-    └── com/cartethyia/easyorange/
-        ├── architecture/
-        │   └── ArchitectureRulesTest.java # ArchUnit 架构守卫
-        └── adapter/inbound/web/controller/
-            ├── AiListingControllerTest.java
-            └── AiQaControllerTest.java
+└── src/test/java/                         # ArchitectureRulesTest（ArchUnit 守卫）+ adapter 单测 + test/ 集成测试（*IT 与 TestDataLoader）
 ```
 
 ## 模块依赖
@@ -110,14 +113,10 @@ easyorange-application
 
 - 版本号格式: `V{N}__description.sql` (N 为递增整数)
 - DDL 放 `db/migration/`，开发数据放 `db/dev/`
-- 项目开发阶段的所有 V 迁移已合并为单个 `V1__init_schema.sql`（当前完整 DDL）
-- 后续 DDL 变更按递增版本号添加 `V{N+1}__description.sql`
+- `V1__init_schema.sql` 为完整初始 DDL，后续 DDL 变更加递增版本脚本（当前最大 `V7`）
 - **禁止修改已执行的迁移脚本**（生产环境原则；开发阶段若需重置，清库重跑即可）
 - 新增字段必须可空或有默认值
 - 迁移脚本中不写业务逻辑
-
-> **清库重置**：`DROP DATABASE easyorange; CREATE DATABASE easyorange;` 后重跑即可应用新 V1。
-> 因为合并后 V1 内容变更，已执行过旧 V1~V9 的数据库需要重置。
 
 ## 架构守卫测试
 
@@ -128,7 +127,7 @@ easyorange-application
 - 包依赖方向合规
 - 端口接口必须有适配器实现
 - 业务模块不直接导入其他模块的领域类
-- 白名单已清零（2026-07-04），所有规则严格合规
+- 白名单已清零，所有规则严格合规
 
 ## 跨模块适配器
 
@@ -138,6 +137,7 @@ easyorange-application
 |--------|---------|------|------|
 | `OrderPaymentGatewayAdapter` | `PaymentGatewayPort` | order | 支付网关调用 |
 | `ProductInventoryAdapter` | `ProductInventoryPort` | order | 订单生命周期产品操作 |
+| `OrderUserInfoAdapter` | `UserInfoPort` | order | 订单用户信息查询 |
 | `SellerInfoAdapter` | `SellerInfoPort` | product | 资产方信息查询 |
 | `MessageUserInfoAdapter` | `UserInfoPort` | message | 用户信息查询 |
 | `FavoriteProductInfoAdapter` | `ProductInfoPort` | favorite | 商品信息查询 |
@@ -145,6 +145,8 @@ easyorange-application
 | `ProductSearchIndexAdapter` | `ProductSearchIndexPort` | product | MySQL search_text 索引写入 |
 | `ElasticsearchProductSearchIndexAdapter` | `ProductSearchIndexPort` | product | ES 搜索索引写入（条件激活） |
 | `ElasticsearchProductSearchQueryAdapter` | — | — | ES 商品搜索查询（含分面聚合） |
+| `CompletedOrderAdapter` | `CompletedOrderPort` | product | 已完成订单查询（评价资格校验） |
+| `FavoritePriceDropNotificationAdapter` | `PriceDropNotificationPort` | favorite | 商品降价通知收藏者 |
 | `AdminCategoryAdapter` | `AdminCategoryPort` | admin | 管理端分类查询/操作 |
 | `AdminDashboardAdapter` | `AdminDashboardPort` | admin | 管理端仪表板聚合查询 |
 | `AdminOrderAdapter` | `AdminOrderPort` | admin | 管理端订单查询/干预 |
@@ -153,6 +155,7 @@ easyorange-application
 | `AdminRatingAdapter` | `AdminRatingPort` | admin | 管理端评价查询/删除 |
 | `AdminReportAdapter` | `AdminReportPort` | admin | 管理端举报查询/处理 |
 | `AdminUserAdapter` | `AdminUserPort` | admin | 管理端用户查询/操作（纯翻译层，委托 user 模块 `AdminUserManagementPort`） |
+| `JdbcAiPricingAdoptionAdapter` | `AiPricingAdoptionPort` | ai | 读商品表 `ai_suggested_price` 出建议价采纳率/偏离分布 |
 
 `adapter/outbound/elasticsearch/` 搜索基础设施组件：
 
@@ -166,16 +169,18 @@ easyorange-application
 
 `adapter/event/` 目录存放跨模块事件消费者（通过 Spring Modulith 的 EVENT_PUBLICATION 表持久化后异步分发到 RabbitMQ）：
 
-| 消费者 | 事件 | 功能 |
-|--------|------|------|
-| `OrderNotificationEventConsumer` | `OrderCreatedEvent` 等 6 个订单事件 | 订单状态变更→站内消息通知 |
+| 消费者 | 监听事件 | 功能 |
+|--------|---------|------|
+| `OrderNotificationEventConsumer` | `OrderEvent`（6 个订单事件） | 订单状态变更→站内消息通知 |
 | `ProductAuditEventConsumer` | `ProductAuditedEvent` | 审核结果→站内消息通知 |
 | `ReportProcessedEventConsumer` | `ReportProcessedEvent` | 举报处理结果→站内消息通知 |
 | `AiCreditEventConsumer` | `OrderCompletedEvent` / `ReportProcessedEvent` | 交易/举报→信用分重算 |
+| `FavoritePriceDropEventConsumer` | `ProductUpdatedEvent` | 降价→通知收藏者（快照 CAS 幂等） |
+| `BusinessMetricsEventListener` | 4 类领域事件（同步 `@EventListener`） | 注册/上架/下单/支付成功→Prometheus 计数器 |
 
-> 2026-09-18 删除 `AiProductEventConsumer`（AI 估值/文案）及其 `eo.ai.product` 队列：它的产出写进无读取方的 Redis key，且每次商品创建/编辑都触发一次 LLM 调用，属纯浪费。
+所有 MQ 事件消费者使用 `@RabbitListener` + `EventIdempotencyChecker` 模式，通过 Modulith at-least-once 语义 + 幂等去重实现精确一次处理。
 
-所有事件消费者使用 `@RabbitListener` + `EventIdempotencyChecker` 模式，通过 Modulith at-least-once 语义 + 幂等去重实现精确一次处理。
+> `AiProductEventConsumer`（AI 估值/文案）已删除：产出写进无读取方的 Redis key，且每次商品创建/编辑都触发一次 LLM 调用，属纯浪费。
 
 ## 常见开发任务
 

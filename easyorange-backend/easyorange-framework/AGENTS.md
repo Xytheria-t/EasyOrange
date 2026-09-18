@@ -6,230 +6,92 @@
 
 ```
 framework/
-├── async/             # 线程池配置（ThreadPoolConfig + MdcTaskDecorator，AsyncManager 已移除）
-├── cache/             # RedisCacheConfig（Spring Cache 注解式 + Redis 单层，@EnableCaching / CacheManager / fail-open CacheErrorHandler）
-├── config/            # 框架配置（线程池/Jackson/MDC/缓存/Redis/Security/WebMVC/Properties）
-├── event/             # 领域事件基础设施（EventConsumerHandler / EventMetadata / EventMetricsService / EventIdempotencyChecker / DlqAnomalyListener）
-├── exception/         # GlobalExceptionHandler（全局异常处理，统一返回 Result<T> 信封）
-├── file/              # 文件上传下载（FileController/FileService/FileStorage）
-├── idgen/             # UuidV7IdGenerator（UUID v7）
-├── mybatis/           # SlowSqlInterceptor（500ms 慢 SQL 指标）
-├── messaging/         # RabbitMQ + Spring Modulith（EventExternalizationConfig / RabbitMQConfig / ModulithDomainEventPublisher）
-├── metrics/           # BusinessMetricsService + MetricsConfig
-├── audit/             # AuditLogAspect + AuditLogService（审计日志 AOP）
-├── auth/              # TokenService + TokenServiceImpl（JWT 签发/刷新/吊销）
-├── util/              # 工具函数（FileUtils/LocalRateLimiter/SecurityContextUtil/TestSecurityUtil）
-└── web/               # 过滤器（RateLimitFilter/IdempotencyKeyFilter）+ ErrorResponseWriter（过滤器统一错误序列化）+ 处理器（CustomMetaObjectHandler）+ 幂等（web/idempotency/）
+├── audit/            # AuditLogAspect + AuditLogService（写操作审计，Outbox 事件化入库）
+├── auth/             # TokenService + TokenServiceImpl（JWT 签发/刷新/吊销）
+├── config/           # 框架配置：async / cache / database / idgen / jackson / lock / properties / redis / security / web
+├── event/            # 事件基础设施：core（EventConsumerHandler）/ dlq / idempotency / metadata / metrics
+├── exception/        # GlobalExceptionHandler（统一 Result<T> 信封）
+├── file/             # 文件上传下载（FileController / FileService / FileStorage）
+├── idgen/            # UuidV7IdGenerator
+├── lock/             # DistributedLockPort + DistributedRedissonLockAdapter + LockAcquisitionException
+├── messaging/        # RabbitMQ + Spring Modulith：config / core（ModulithDomainEventPublisher）
+├── metrics/          # BusinessMetricsService + MetricsConfig
+├── mybatis/          # SlowSqlInterceptor（500ms 慢 SQL 指标）
+├── util/             # FileUtils / LocalRateLimiter / SecurityContextUtil / TestSecurityUtil
+└── web/              # cookie / filter（RateLimitFilter、IdempotencyKeyFilter、TokenRevocationFilter、RefreshCsrfFilter）/ handler / idempotency / ErrorResponseWriter
 ```
 
 ## 核心机制
 
-### JWT 认证流程（Spring Security OAuth2 Resource Server）
+### JWT 认证
 
-JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthenticationFilter` 处理，无需自定义 Servlet Filter：
+由 Spring Security OAuth2 Resource Server 内置 `BearerTokenAuthenticationFilter` 处理，**无自定义认证 Filter**：
 
-1. `BearerTokenAuthenticationFilter` (Spring Security 内置) 从 `Authorization: Bearer xxx` 提取 Token
-2. `JwtDecoder` (SecurityConfig bean) 验证签名 (Nimbus) + issuer 检查；Token 吊销（黑名单 + 强制登出）由 `TokenRevocationFilter` 在认证完成后执行
-3. `JwtAuthenticationConverter` (SecurityConfig) 检查 token type (拒绝 refresh token)，从 `"authorities"` claim 读取权限列表，构造 `AuthUser` 并设置 `SecurityContext`
-4. `TokenService.createAccessToken()` / `createRefreshToken()` 使用 `JwtEncoder` (NimbusJwtEncoder) 答发
-5. 登出时 Token 的 jti 加入 Redis 黑名单（TTL = 剩余有效期，自动过期）
-6. `WebSocketAuthInterceptor` 复用 `JwtDecoder` bean 做连接握手认证
+1. 从 `Authorization: Bearer xxx` 提取 Token → `JwtDecoder` 验签（Nimbus）+ issuer
+2. `JwtAuthenticationConverter` 检查 token type（拒绝 refresh token），从 `"authorities"` claim 读权限，构造 `AuthUser` 写入 `SecurityContext`
+3. `TokenRevocationFilter` 在认证完成后执行黑名单 + 强制登出检查（吊销状态与密码学校验职责分离）
+4. 签发用 `JwtEncoder`；登出把 jti 加入 Redis 黑名单（TTL = 剩余有效期，自动过期）
+5. `WebSocketAuthInterceptor` 复用同一 `JwtDecoder` bean 做握手认证
 
-> **管理员判定**：后端通过 `UserType.getDefaultRoles()`（领域枚举，在 `AuthAppService.login()` 中调用）决议 `UserType → authorities`，将 `["ROLE_ADMIN", "ROLE_USER"]` 或 `["ROLE_USER"]` 写入 JWT 的 `"authorities"` claim。资源服务器直接读取该 claim，无需重新判定。
+> **管理员判定**：`UserType.getDefaultRoles()`（领域枚举，在 `AuthAppService.login()` 调用）决议 `UserType → authorities`，把 `["ROLE_ADMIN","ROLE_USER"]` 或 `["ROLE_USER"]` 写进 JWT 的 `"authorities"` claim，资源服务器直接读 claim，不重新判定。
 
-### 领域事件发布流程
+### 领域事件发布与消费
 
-业务模块注入 `DomainEventPublisher` 调用 `publish()`，实际由 `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher`。Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子），事务提交后异步读取并发布到 `eo.domain.events` Topic Exchange。各模块通过 `@RabbitListener` 注解的消费者异步处理事件。`@ConditionalOnProperty(matchIfMissing=true)` 支持无 RabbitMQ 环境启动。
+业务模块只注入 `DomainEventPublisher.publish()`，实际由 `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher`：Spring Modulith 把事件持久化到 `EVENT_PUBLICATION`（与应用事务同原子），提交后异步发布到 `eo.domain.events` Topic Exchange。`@ConditionalOnProperty(matchIfMissing=true)` 支持无 RabbitMQ 环境启动。
 
-### 事件消费者基础设施
+消费者统一用 `EventConsumerHandler` 组合，封装五个横切关注点：
 
-所有消费者使用 `EventConsumerHandler` 组合类，统一以下横切关注点：
+1. **幂等去重**：`EventIdempotencyChecker`（Redis `SET NX EX` 一条原子命令领取处理权 + 24h TTL；失败时 `unmark` 撤销标记让重投可重新执行），命名空间 `consumerId + ":" + eventType`；`idempotencyEnabled=false` 构造器关闭投影/广播/指标类消费者
+2. **事件元数据**：`EventMetadataMessagePostProcessor` 发布前注入 eventId/timestamp/traceId；`EventMetadata.from(message, event)` 消费端解码
+3. **指标埋点**：`EventMetricsService` 上报 `easyorange.events.received{type,outcome}` / `.duration` / `.dlq{queue,reason}`
+4. **DLQ 监听**：`DlqAnomalyListener` 单个 `@RabbitListener` 同时监听 11 个 DLQ 队列，提取 x-death header 记指标
+5. **组合**：`EventConsumerHandler.handle(event, message, metadata -> ...)`，业务逻辑写在 lambda 里
 
-1. **幂等去重**：`EventIdempotencyChecker`（Redis `SET NX EX` 一条原子命令领取处理权 + 24h TTL；处理失败 `unmark` 撤销标记让重投可重新执行），命名空间 `consumerId + ":" + eventType` 隔离多消费者，`idempotencyEnabled=false` 构造器关闭投影/广播/指标类消费者
-2. **事件元数据**：`EventMetadataMessagePostProcessor` 发布前向 message headers 注入 eventId/timestamp/traceId；`EventMetadata.from(message, event)` 在消费端解码
-3. **指标埋点**：`EventMetricsService` 自动上报 `easyorange.events.received{type,outcome}` / `easyorange.events.duration{type,outcome}` / `easyorange.events.dlq{queue,reason}`
-4. **DLQ 异常监听**：`DlqAnomalyListener` 单个 `@RabbitListener` 同时监听 11 个 DLQ 队列（对应 11 个业务消费者队列，见 `RabbitMQConfig`），提取 x-death header 记录指标
-5. **组合**：`EventConsumerHandler.handle(event, message, metadata -> ...)` 封装统一预处理（幂等 → metrics → 日志 → 业务 → 异常兜底），业务逻辑写在 lambda 中
+### Spring Cache 注解式缓存（cache/）
 
-### Redis 缓存操作
-
-`RedisCache` 薄封装层已移除（2026-07-17），所有缓存操作改为直接注入 `RedisTemplate<Object, Object>`。Spring Data Redis 的 `RedisTemplate` 是标准 API，无需额外学习：
-
-```java
-// KV 操作
-redisTemplate.opsForValue().set(key, value);
-redisTemplate.opsForValue().set(key, value, timeout, unit);
-Object obj = redisTemplate.opsForValue().get(key);
-// 反序列化值按需强转（GenericJacksonJsonRedisSerializer 带类型信息，字符串恒为 String）
-String val = (String) redisTemplate.opsForValue().get(key);
-redisTemplate.delete(key);
-redisTemplate.delete(List.of(key1, key2));
-
-// 键生命周期
-redisTemplate.hasKey(key);
-redisTemplate.expire(key, timeout, unit);
-redisTemplate.getExpire(key, unit);
-
-// 原子操作
-redisTemplate.opsForValue().increment(key);       // +1
-redisTemplate.opsForValue().increment(key, delta); // +delta
-
-// Hash 操作
-redisTemplate.opsForHash().putAll(key, map);
-
-// SCAN 扫描（避免 KEYS * 阻塞）
-Set<String> keys = redisTemplate.execute((RedisCallback<Set<String>>) conn -> {
-    try (Cursor<byte[]> cursor = conn.keyCommands().scan(
-            ScanOptions.scanOptions().match(pattern).count(1000).build())) {
-        Set<String> result = new HashSet<>();
-        while (cursor.hasNext()) result.add(new String(cursor.next(), StandardCharsets.UTF_8));
-        return result;
-    }
-});
-```
-
-> **技巧**: 反序列化值按需强转（`GenericJacksonJsonRedisSerializer` 带类型信息，字符串恒为 String）。需要 Lua 脚本时直接调用 `redisTemplate.execute(redisScript, keys, args)`。
-
-### 分布式锁
-
-分布式锁已迁移到 **Redisson RLock**（2026-07-17），替代旧版 RedisTemplate Lua 方案：
-
-```java
-// 通过 RedissonClient 注入
-@Autowired
-private RedissonClient redissonClient;
-
-RLock lock = redissonClient.getLock("eo:lock:" + key);
-if (lock.tryLock(waitTime, leaseTime, TimeUnit.SECONDS)) {
-    try {
-        // 业务逻辑
-    } finally {
-        if (lock.isHeldByCurrentThread()) {
-            lock.unlock();
-        }
-    }
-}
-```
-
-Redisson 自动处理锁续期（Watch Dog）、重入、死锁检测。配置见 `RedissonConfig.java`。
-
-### 日志系统与 MDC 传播
-
-**traceId 自动注入**：项目引入 `micrometer-tracing-bridge-brave`，Spring Boot 4 自动配置 `Slf4jScopeDecorator` 注入 `traceId`/`spanId` 到 MDC。HTTP 请求进入时 Brave 的 `TracingFilter` 自动开启 span，无需手写 UUID。
-
-**异步线程 MDC 传播**：`MdcTaskDecorator` 实现 Spring 的 `TaskDecorator`（类级标注 `@NullMarked` 匹配父接口契约），在 `ThreadPoolConfig` 中注入 `taskScheduler`（唯一的线程池）：
-
-```java
-@NullMarked
-public class MdcTaskDecorator implements TaskDecorator {
-    @Override
-    public Runnable decorate(Runnable runnable) {
-        Map<String, String> context = MDC.getCopyOfContextMap();  // 主线程快照
-        return () -> {
-            if (context != null) MDC.setContextMap(context);  // 复制到子线程
-            try { runnable.run(); }
-            finally { MDC.clear(); }  // 防止线程池复用时上下文泄漏
-        };
-    }
-}
-```
-
-覆盖范围：`@Scheduled` 定时任务。`@Async` 在虚拟线程模式下由 Micrometer Tracing 自动继承 MDC，无需 `MdcTaskDecorator`。
-
-**AsyncAppender 异步日志写入**：`logback-spring.xml` 配置 `ASYNC_FILE` / `ASYNC_ERROR_FILE` / `ASYNC_JSON_FILE` 包装底层同步 Appender：
-
-- `queueSize=1024` / `discardingThreshold=0`（不丢弃任何级别）
-- `neverBlock=true`（队列满不阻塞业务线程）
-- 生产环境 JSON 结构化日志使用 Spring Boot 4 内置 `StructuredLogEncoder` + logstash 格式
-
-**业务字段注入**：`LoggingInterceptor` 在 HTTP 请求进入时注入 `clientIp` / `method` / `uri` / `fullUrl` 到 MDC（traceId 由 Micrometer 自动注入）。
-
-### 布隆过滤器 (bloom/)
-
-布隆过滤器已移除（2026-07-31）：`BloomFilter` / `RedisBitmapBloomFilter` / `BloomFilterConfig` 随 product 模块缓存穿透方案简化一并删除；手写多级缓存亦已移除（2026-08-13），缓存统一走 Spring Cache 注解式 + Redis 单层（见 `RedisCacheConfig`），防穿透靠「null 结果一并缓存 + 写路径显式 evict」，不再需要独立布隆过滤器。
-
-### Spring Cache 注解式缓存 (cache/)
-
-手写多级缓存（`MultiLevelCache` + Pub/Sub 广播）已移除（2026-08-13），统一为 **Spring Cache 注解 + 纯 Redis 单层**：
-
-```java
-// 读：缓存未命中自动执行方法体回源。刻意不写 unless —— null 结果一并缓存用于防穿透
-@Cacheable(cacheNames = ProductCacheConstant.PRODUCT_INFO_CACHE, key = "#productId", condition = "#productId != null", sync = true)
-public ProductVO getProductCache(String productId, Supplier<ProductVO> loader) { ... }
-
-// 失效：写路径事件显式触发
-@CacheEvict(cacheNames = ProductCacheConstant.PRODUCT_INFO_CACHE, key = "#productId", condition = "#productId != null")
-public void evictProductCache(String productId) { }
-```
-
-> **别给这里加 `unless = "#result == null"`**：本项目的防穿透正是靠缓存 null 实现的（「ID 之后被创建」的一致性由写路径事件 evict 保证）。列表类缓存不缓存 null 的做法是 `orEmpty` 兜成可变空列表（见 `CategoryCacheAdapter`），不是加 `unless`。
+手写多级缓存（`MultiLevelCache` + Pub/Sub 广播）与 `CacheUtils` / `LocalCacheConfig` 已移除，统一为 **Spring Cache 注解 + 纯 Redis 单层**。配置项与使用示例见 [CONFIGURATION.md](./CONFIGURATION.md#缓存配置)。
 
 **行为约定**：
-- 配置在 `config/cache/RedisCacheConfig`：`@EnableCaching` + `RedisCacheManager`（String key + `GenericJacksonJsonRedisSerializer` value，与 `RedisConfig` 一致）+ 统一 TTL（`easyorange.cache.default-ttl`，默认 30m）+ `CacheErrorHandler` fail-open（Redis 故障降级直查 DB，替代旧逐点 try-catch）
-- **序列化注意**：`java.*` 包 final 类型（`Optional`、`List.of()` 的不可变列表）不带类型信息、无法反序列化 — 缓存值必须用 POJO/record（`com.cartethyia.*`）或可变 `ArrayList`
-- 缓存 key 形如 `eo:product:info::<id>`（cacheName::key，`RedisCacheManager` 默认前缀）
-- 图片处理缓存 `imageProcessCache`（Caffeine）保留独立使用
 
-### Resilience4j (resilience4j/) — 已移除
+- `RedisCacheConfig`：`@EnableCaching` + `RedisCacheManager`（String key + `GenericJacksonJsonRedisSerializer` value）+ 统一 TTL（`easyorange.cache.default-ttl`）+ `CacheErrorHandler` fail-open（Redis 故障读直查 DB、写放弃缓存）
+- 缓存 key 形如 `eo:product:info::<id>`；图片处理缓存 `imageProcessCache`（Caffeine）独立使用
+- **防穿透靠缓存 null**：不要给 `@Cacheable` 加 `unless = "#result == null"`；列表类缓存用 `orEmpty` 兜成可变空列表（见 `CategoryCacheAdapter`）
+- **序列化坑**：`java.*` 包 final 类型（`Optional`、`List.of()` 的不可变列表）不带类型信息、无法反序列化——缓存值必须是 POJO/record（`com.cartethyia.*`）或可变 `ArrayList`
 
-`Resilience4jConfig`（CircuitBreakerRegistry）已删除（2026-08-13，随手写多级缓存一并移除，无消费者）。Redis 缓存故障降级统一由 `RedisCacheConfig` 的 `CacheErrorHandler` fail-open 承担；pom 不再依赖 resilience4j。
+> 布隆过滤器（`BloomFilter` / `RedisBitmapBloomFilter`）随同一轮缓存简化一并删除，防穿透由 null 缓存承担。原 `Resilience4jConfig` 也在此轮删除（无消费者），Redis 故障降级统一由 `CacheErrorHandler` 承担。
 
-> **AI 重试/Bulkhead 已移除（2026-08-03，ADR-0008）**：原 `aiLlmRetry` / `aiVisionRetry` / `aiLlmBulkhead` / `aiVisionBulkhead` / `dbHeavyBulkhead` 预注册实例已随 Spring AI 框架化删除——重试与并发隔离由 `AiModelConfig` 的 `OpenAiSetup.setupSyncClient`（openai-java 客户端内置）承担。AI 模块不再注入本模块的 `Retry` / `Bulkhead` bean。
+### 日志与 MDC 传播
 
-### 分布式 ID 生成器 (idgen/)
+- **traceId 自动注入**：`micrometer-tracing-bridge-brave` + Spring Boot 4 自动配置 `Slf4jScopeDecorator`，HTTP 请求进入时 Brave `TracingFilter` 开 span，无需手写 UUID
+- **异步线程 MDC**：`MdcTaskDecorator`（`TaskDecorator` 实现，类级 `@NullMarked` 匹配父接口契约）在主线程快照 `MDC.getCopyOfContextMap()`、子线程 `setContextMap` + `finally MDC.clear()`。**只覆盖 `@Scheduled`**——`@Async` 在虚拟线程模式下由 Micrometer Tracing 自动继承 MDC
+- **业务字段**：`LoggingInterceptor` 注入 `clientIp` / `method` / `uri` / `fullUrl`
+- **异步日志写入**：`logback-spring.xml` 用 `ASYNC_FILE` / `ASYNC_ERROR_FILE` / `ASYNC_JSON_FILE` 包装同步 Appender，`queueSize=1024` / `discardingThreshold=0` / `neverBlock=true`；prod 走 Spring Boot 4 内置 `StructuredLogEncoder`（logstash 格式）
 
-`IdGenerator` 接口定义在 `common/idgen/`，`UuidV7IdGenerator`（`@Primary`）作为纯 Java 实现，生成 RFC 9562 UUID v7（毫秒级有序 + 随机后缀）。
+### Idempotency-Key 幂等（web/）
 
-已移除 Snowflake 备选（`SnowflakeIdGenerator` / `WorkerIdProvider` / `RedisWorkerIdProvider`），UUID v7 零配置零依赖，无需任何配置属性即可使用。
-
-### 统一响应包装
-
-`ResponseAdvice` 自动将 Controller 返回值包装为 `Result<T>`，无需手动包装。
-
-### Idempotency-Key 幂等 (web/filter/IdempotencyKeyFilter + web/idempotency/)
-
-客户端在请求头中传入 `Idempotency-Key`（UUID v4），服务端缓存成功响应结果。相同 key 的后续请求直接返回缓存，确保操作只执行一次。
-
-**实现原理**（Filter 驱动，替代原 `@Idempotent` + `IdempotencyAspect` AOP 方案）：
-1. `IdempotencyKeyFilter`（`OncePerRequestFilter`，`@Order(2)`）按 `idempotency.path-patterns` + 写方法 + 请求头递进判定是否生效，未命中则透传
-2. 命中 → 用 `ContentCachingResponseWrapper` 包装响应 → 调用 `RedisIdempotencyService.execute()`
-3. 首次请求：执行链路抓取「序列化后的 HTTP 响应」并缓存（`eo:idempotency:{key}`）；重复请求直接回放缓存响应（字节级）
-4. 非 2xx 响应（业务异常/校验失败/未认证）**不缓存**，直接提交，允许客户端重试
-5. Redis 不可用 → fail-open 透传请求
-
-**与 `RateLimitFilter` 防重的关系**：
+客户端传 `Idempotency-Key` 头（UUID v4），服务端缓存**序列化后的 HTTP 响应**，相同 key 的后续请求字节级回放——替代原 `@Idempotent` + `IdempotencyAspect` AOP 方案。首次执行缓存（`eo:idempotency:{key}`）；非 2xx（业务异常/校验失败/未认证）**不缓存**，允许客户端重试；Redis 不可用 fail-open 透传。
 
 | 机制 | 窗口 | 标识 | 缓存响应 | 语义 |
 |------|------|------|---------|------|
 | `RateLimitFilter` 防重 | 3s | IP + URI + body hash | ❌ | 防快速连点 |
-| `IdempotencyKeyFilter` 幂等 | 24h | 客户端提供的 key (UUID) | ✅ 返回相同结果 | 协议级幂等 |
+| `IdempotencyKeyFilter` 幂等 | 24h | 客户端提供的 key | ✅ 返回相同结果 | 协议级幂等 |
 
-**部署方式**：在 `application.yaml` 的 `idempotency.path-patterns` 配置要保护的写端点即可，零注解约定式覆盖。未传 `Idempotency-Key` 头的请求正常执行（向后兼容）。
-
-```yaml
-idempotency:
-  enabled: true
-  header-name: "Idempotency-Key"
-  path-patterns:
-    - /api/orders
-    - /api/products
-    - /api/reports/product/*
-    - /api/payments
-  methods: [POST, PUT, PATCH]
-```
+在 `application.yaml` 的 `idempotency.path-patterns` 配置要保护的写端点，零注解；未传头的请求正常执行。
 
 ## 修改注意
 
-- **所有框架配置类统一使用 `@AutoConfiguration` + `AutoConfiguration.imports`**：framework 模块的所有 `@Configuration` 类必须使用 `@AutoConfiguration`（而非 `@Configuration`）并列入 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`，不依赖隐式 `@ComponentScan` 发现。新增框架配置类时须同时完成两件事：① 类上加 `@AutoConfiguration`；② 在 imports 文件中追加一行。这是框架 bean 注册的唯一入口，确保配置注册无需依赖主应用包路径
-- Security 配置变更需同步检查所有模块的接口权限
-- Redis Key 命名规范: `eo:模块:业务:标识`
-- 新增 AOP 切面需评估性能影响
-- **JacksonConfig 统一使用 Jackson 3.x**：不再配置 Jackson 2.x `ObjectMapper`。通过 `JsonMapperBuilderCustomizer` 注册 `ToStringSerializer`（Long→String 防止 JS 精度丢失）到 Spring Boot 4 自动配置的 Jackson 3 `ObjectMapper`；同时保留 `jsonMapper()` Bean 供显式注入。两者均注册 `Long.class` 和 `long` 基本类型序列化。
-- **`ParameterNamesModule` 由 Spring Boot 4 自动配置**，领域事件 record 无需 @JsonCreator 注解即可反序列化；JacksonConfig 不再需要手动注册
-- **WebMvcConfig 不再重写 `extendMessageConverters`**：Spring Boot 4.0 使用 Jackson 3.x 的 HTTP 消息转换器，`MappingJackson2HttpMessageConverter`（Jackson 2.x）配置已无效
-- **RedisConfig 显式配置序列化器（2026-07-23）**：Spring Boot 4 `DataRedisAutoConfiguration` 不设任何序列化器（默认 `JdkSerializationRedisSerializer`，二进制 key/value 破坏 Lua `tonumber` 且不可读）。`RedisConfig` 通过 `@AutoConfigureBefore` 注入自定义 `@Bean RedisTemplate<Object, Object>`：`StringRedisSerializer`（key/hashKey）+ `GenericJacksonJsonRedisSerializer.builder().enableDefaultTyping(BasicPolymorphicTypeValidator).build()`（value/hashValue，含默认类型信息以便反序列化还原为原类型）。修改序列化策略时须同步评估所有 `RedisTemplate` 使用方
-- **配置属性类统一为 record + `@ConfigurationProperties` + `@ConfigurationPropertiesScan`（构造器绑定）**：新建配置类优先用 Properties record，不新增 `@Value` 散落配置，类上不加 `@Component`。默认值有两条路径——标量/字符串/`Duration` 写组件上的 `@DefaultValue`（缺省由属性注解兜底），集合与嵌套 record 在紧凑构造器里兜底为空集合/默认实例（顺带 `List.copyOf`/`Map.copyOf` 保证不可变，同时替代原 getter 里的防御性拷贝）。`@Validated` + Jakarta 约束（`@Min`/`@NotBlank`）实现启动期 fail-fast，嵌套对象需在父组件上加 `@Valid` 才能级联；手写 `@PostConstruct validate()` 仅在需要输出警告而非错误时保留。注册分两条路：应用侧由 `EasyOrangeApplication` 的 `@ConfigurationPropertiesScan` 统一注册，业务模块的 properties 不必逐个 `@EnableConfigurationProperties`；框架模块内的 properties 随该模块的 auto-config 注册（`MybatisPlusConfig` / `LockConfig`），不要把 `@EnableConfigurationProperties` 挂到适配器或其它组件上。取值面固定的字段用枚举而非 String：宽松绑定让 yml 里的小写值照常生效，非法值在绑定期即失败（`RateLimitFilterProperties.Strategy`、`SlowSqlProperties.LogLevel`；Cookie SameSite 直接用框架的 `Cookie.SameSite`）。嵌套组的默认值保持单一来源：字段上的 `@DefaultValue(CONST + "")` 与紧凑构造器的兜底实例共用同一个 `static final` 常量，避免两处字面量各自漂移。组件文档一律写类级 Javadoc 的 `@param`：record 组件上的 `/** … */` 是 dangling doc comment，根 pom 已开 `-Xlint:dangling-doc-comments` 会报警。注意两点：其一，构造器绑定下属性源无法表达 null，null 兜底只能靠紧凑构造器；其二，本仓库 MockMaker 固定为 subclass（`src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker`），record 是 final 类**无法被 Mockito mock**，测试请用 `testsupport/PropertyBindings` 经真实 Binder 构造实例（`bindOrCreate` + 空属性源即全默认值，覆盖项按相对 prefix 的 kebab-case 键传入）
-- **yml 里形如 `x:y` 的值必须加引号**：SnakeYAML 会把裸写的 `1:1` 当六十进制整数解析成 61（`4:3` → 243），绑到 String 上拿到的就是 `"61"`。已踩点 `easyorange.file.image.smart-crop.default-aspect-ratio`（两处 yml 均已加引号并留注释）
-- **`IdempotencyKeyFilter` 幂等过滤器（替代原 `IdempotencyAspect`）**：作为 `@Component` 自动注册为 servlet filter（`OncePerRequestFilter` 防重复执行），并在 `SecurityConfig` 用 `addFilterBefore(idempotencyKeyFilter, AnonymousAuthenticationFilter.class)` 置于安全链最外层，以抓取最终响应。缓存的是序列化响应而非类型化返回值。修改 filter 顺序时需评估与 `RateLimitFilter`/安全过滤器的包裹关系
-- **`RateLimitFilter` 支持 `@SkipRateLimit`/`@SkipRepeatSubmit`**：Filter 通过 `HandlerMapping` 解析目标 Controller 方法，检查方法或类上的 Skip 注解后跳过对应检查。支持类级（`@Inherited` 继承）和方法级。无法解析 handler（如静态资源）时放行默认规则
-- **`RateLimitFilter` 使用 `ObjectProvider<List<HandlerMapping>>` 延迟注入**：`HandlerMapping` 列表通过 `ObjectProvider` 延迟解析，而非构造器直接注入。原因是直接注入 `List<HandlerMapping>` 会触发 `DelegatingWebSocketMessageBrokerConfiguration` → `WebSocketConfig` → `WebSocketAuthInterceptor` → `JwtDecoder`（`SecurityConfig` 中的 Bean）→ `SecurityConfig` → `RateLimitFilter` 的循环依赖。`ObjectProvider` 在请求时才解析 HandlerMapping，打破循环。修改 `RateLimitFilter` 构造器时不要改回 `@RequiredArgsConstructor` + `List<HandlerMapping>` 直接注入
+- **所有框架配置类统一 `@AutoConfiguration` + `AutoConfiguration.imports`**：新增框架配置类必须①类上改 `@AutoConfiguration`；②在 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` 追加一行。这是框架 bean 注册的唯一入口，不依赖隐式 `@ComponentScan`
+- **`RateLimitFilter` 用 `ObjectProvider<List<HandlerMapping>>` 延迟注入**：直接注入 `List<HandlerMapping>` 会触发 `DelegatingWebSocketMessageBrokerConfiguration` → `WebSocketConfig` → `WebSocketAuthInterceptor` → `JwtDecoder` → `SecurityConfig` → `RateLimitFilter` 的循环依赖。**不要改回 `@RequiredArgsConstructor` + 直接注入**
+- **`RateLimitFilter` 支持 `@SkipRateLimit` / `@SkipRepeatSubmit`**：通过 `HandlerMapping` 解析目标 Controller 方法，检查方法或类上的注解（支持 `@Inherited` 类级）；无法解析 handler（如静态资源）时放行默认规则
+- **`IdempotencyKeyFilter` 注册**：作为 `@Component` 自动注册为 servlet filter，并在 `SecurityConfig` 用 `addFilterBefore(idempotencyKeyFilter, AnonymousAuthenticationFilter.class)` 置于安全链最外层以抓取最终响应。改 filter 顺序需评估与 `RateLimitFilter` / 安全过滤器的包裹关系
+- **`RedisConfig` 必须显式配置序列化器**：Spring Boot 4 `DataRedisAutoConfiguration` 不设任何序列化器（默认 `JdkSerializationRedisSerializer`，二进制 key/value 既破坏 Lua `tonumber` 又不可读）。`RedisConfig` 用 `@AutoConfigureBefore` 注入 `@Bean RedisTemplate<Object,Object>`：`StringRedisSerializer`（key/hashKey）+ `GenericJacksonJsonRedisSerializer.builder().enableDefaultTyping(BasicPolymorphicTypeValidator).build()`（value/hashValue）。改序列化策略须同步评估所有使用方
+- **`JacksonConfig` 统一 Jackson 3.x**：通过 `JsonMapperBuilderCustomizer` 注册 `ToStringSerializer`（Long→String 防 JS 精度丢失，同时注册 `Long.class` 与 `long`）；保留 `jsonMapper()` bean 供显式注入。不配置 Jackson 2.x `ObjectMapper`；`ParameterNamesModule` 由 Boot 4 自动配置，事件 record 无需 `@JsonCreator`
+- **`WebMvcConfig` 不再重写 `extendMessageConverters`**：Boot 4 用 Jackson 3.x 的 HTTP 消息转换器，`MappingJackson2HttpMessageConverter`（Jackson 2.x）配置已无效
+- **配置属性类统一 record + `@ConfigurationProperties` + `@ConfigurationPropertiesScan`**（构造器绑定）：不新增 `@Value` 散落配置，类上不加 `@Component`。默认值——标量/字符串/`Duration` 用组件上的 `@DefaultValue`；集合与嵌套 record 在紧凑构造器兜底（顺带 `List.copyOf`/`Map.copyOf` 保证不可变，替代 getter 里的防御性拷贝）。`@Validated` + Jakarta 约束实现启动期 fail-fast，嵌套对象需在父组件加 `@Valid` 才级联。**构造器绑定下属性源无法表达 null，null 兜底只能靠紧凑构造器**。注册：应用侧由 `EasyOrangeApplication` 的 `@ConfigurationPropertiesScan` 统一注册，业务模块 properties 不必逐个 `@EnableConfigurationProperties`；框架模块内的随该模块 auto-config 注册（`MybatisPlusConfig` / `LockConfig`），**不要把 `@EnableConfigurationProperties` 挂到适配器或其它组件上**
+- **取值面固定的字段用枚举而非 String**：宽松绑定让 yml 小写值照常生效，非法值在绑定期即失败（`RateLimitFilterProperties.Strategy`、`SlowSqlProperties.LogLevel`；Cookie SameSite 直接用框架 `Cookie.SameSite`）。嵌套组默认值保持单一来源：字段 `@DefaultValue(CONST + "")` 与紧凑构造器的兜底实例共用同一个 `static final` 常量
+- **record 组件文档写类级 Javadoc 的 `@param`**：组件上的 `/** … */` 是 dangling doc comment，根 pom 开了 `-Xlint:dangling-doc-comments` 会报警
+- **record 无法被 Mockito mock**（本仓库 MockMaker 固定 subclass，record 是 final 类）：测试用 `testsupport/PropertyBindings` 经真实 Binder 构造（`bindOrCreate` + 空属性源即全默认值，覆盖项按相对 prefix 的 kebab-case 键传入）
+- **yml 里形如 `x:y` 的值必须加引号**：SnakeYAML 会把裸写的 `1:1` 当六十进制整数解析成 61（`4:3` → 243），绑到 String 上拿到 `"61"`。已踩点 `easyorange.file.image.smart-crop.default-aspect-ratio`
+- Redis Key 命名规范：`eo:模块:业务:标识`
+- Security 配置变更需同步检查所有模块的接口权限；新增 AOP 切面需评估性能影响
+- **AI 重试 / Bulkhead 已随 Spring AI 框架化删除**（ADR-0008）：重试与并发隔离由 `AiModelConfig` 的 `OpenAiSetup.setupSyncClient`（openai-java 客户端内置）承担，AI 模块不再注入本模块的 `Retry` / `Bulkhead` bean

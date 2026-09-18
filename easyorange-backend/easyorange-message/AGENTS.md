@@ -1,134 +1,76 @@
 # easyorange-message 模块指南
 
-消息通知模块，DDD 六边形架构，支持站内消息、WebSocket 实时推送。
-
-> **架构现状**: 全模块已完成 DDD 分层迁移——聚合根在 `domain/aggregate/`（原 `entity/` 已消除），MyBatis Repository 实现在 `adapter/outbound/persistence/`（DO + Mapper + RepositoryImpl），Controller 在 `adapter/inbound/web/controller/`，入站请求 DTO 在 `adapter/inbound/web/dto/request/`，应用层（CQRS + 定时服务 + 领域服务注册）在 `application/`，端口接口在 `domain/port/`。无分层的 `service/` / `entity/` / `dto/` 目录均已消除。
+消息通知模块，DDD 六边形架构，支持站内消息与 WebSocket 实时推送。
 
 ## 目录结构
 
 ```
 message/
-├── adapter/                           # 适配器层（六边形出/入站）
-│   ├── inbound/web/
-│   │   ├── controller/                # REST 控制器
-│   │   │   ├── MessageCommandController.java
-│   │   │   └── MessageQueryController.java
-│   │   └── dto/request/               # 入站请求 DTO
-│   │       ├── QueryMessageRequest.java
-│   │       └── WsMessage.java
-│   ├── inbound/job/                   # 定时任务
-│   │   └── MessageArchiveTask.java    # 消息归档/清理（@Scheduled）
-│   ├── inbound/websocket/             # WebSocket 入站
-│   │   ├── AuthHandshakeHandler.java
-│   │   ├── ChatWebSocketHandler.java
-│   │   ├── TypingIndicatorService.java
-│   │   ├── WebSocketAttributes.java
-│   │   ├── WebSocketAuthInterceptor.java
-│   │   ├── WebSocketConfig.java
-│   │   ├── WebSocketEventConsumer.java
-│   │   └── WebSocketEventListener.java
+├── adapter/
+│   ├── inbound/
+│   │   ├── config/MessageRetentionProperties.java   # 保留/宽限天数（easyorange.message.*）
+│   │   ├── job/                       # MessageArchiveTask（@Scheduled 归档/清理）+ MessageArchiveBatchHandler
+│   │   ├── web/
+│   │   │   ├── controller/            # MessageCommandController / MessageQueryController
+│   │   │   └── dto/request/           # QueryMessageRequest / WsMessage
+│   │   └── websocket/                 # WebSocketConfig / WebSocketAuthInterceptor / AuthHandshakeHandler
+│   │                                  #   / ChatWebSocketHandler / TypingIndicatorService / WebSocketAttributes
+│   │                                  #   / WebSocketEventConsumer / WebSocketEventListener
 │   └── outbound/
-│       ├── persistence/              # 出站持久化 (MyBatis 实现)
-│       │   ├── MessageDO.java             # 数据对象 (DO)
-│       │   ├── OfflineMessageDO.java
-│       │   ├── MessageDataMapper.java     # DO ↔ 聚合根映射
-│       │   ├── MessageMapper.java
-│       │   ├── OfflineMessageMapper.java
-│       │   ├── MessageRepositoryImpl.java
-│       │   ├── query/
-│       │   │   └── MessageQueryRepositoryImpl.java
-│       │   └── OfflineMessageRepositoryImpl.java
-│       └── websocket/
-│           └── WebSocketNotifier.java     # WebSocket 出站推送
-├── application/                       # [DDD] 应用层 (CQRS)
-│   ├── config/
-│   │   └── MessageDomainConfig.java        # @Bean 方式注册服务（保持 domain 层纯净）
-│   ├── service/
-│   │   ├── RateLimiterService.java           # 消息发送频率限制（应用层运维策略）
-│   │   └── OfflineMessageStoreService.java   # 离线消息存储（应用层编排：在线则存、离线则略）
-│   ├── command/                        # 命令处理
-│   │   ├── MessageCommandHandler.java
-│   │   ├── SendMessageCommand.java
-│   │   ├── SendSystemMessageCommand.java
-│   │   ├── MarkAsReadCommand.java
-│   │   ├── MarkAsReadBatchCommand.java
-│   │   ├── DeleteMessageCommand.java
-│   │   └── RecallMessageCommand.java
-│   └── query/                         # 查询处理
-│       ├── MessageQueryHandler.java
-│       ├── ConversationQueryHandler.java
-│       ├── MessageQuery.java
-│       └── dto/                      # 查询返回 VO
-│           ├── ConversationListVO.java
-│           ├── ConversationVO.java
-│           ├── MessageVO.java
-│           └── UnreadCountVO.java
-├── domain/                            # [DDD] 领域层
-│   ├── aggregate/                     # 聚合根
-│   │   ├── Message.java
-│   │   └── OfflineMessage.java
-│   ├── event/                         # 领域事件
-│   │   ├── MessageSentEvent.java
-│   │   ├── MessageReadEvent.java
-│   │   ├── MessageDeletedEvent.java
-│   │   └── MessageRecalledEvent.java
-│   ├── port/                          # 端口接口（隔离外部依赖）
-│   │   ├── MessageNotifierPort.java
-│   │   └── UserInfoPort.java
-│   ├── repository/                    # 仓储接口 (实现已迁移到 adapter/outbound/)
-│   │   ├── MessageRepository.java
-│   │   └── OfflineMessageRepository.java
-│   ├── port/query/                    # 读仓储（读模型为 application 层概念）
-│   │   └── MessageQueryRepository.java
-│   ├── service/                       # 领域服务（纯领域规则，无仓储编排）
-│   │   └── SensitiveWordFilterService.java   # 消息内容敏感词过滤
-│   ├── constant/
-│   │   └── MessageConstant.java
-│   ├── enums/
-│   │   ├── MessageResultCode.java
-│   │   ├── MessageStatus.java
-│   │   ├── MessageType.java
-│   │   └── ReadStatus.java
-│   ├── valueobject/
-│   │   ├── MessageQuery.java
-│   │   ├── UnreadCount.java
-│   │   └── UserInfo.java
-│   └── exception/
-│       └── MessageDomainException.java    # 模块唯一领域异常（notFound/notOwner 具名工厂）
+│       ├── persistence/               # MessageDO / OfflineMessageDO / MessageDataMapper / MessageMapper
+│       │                              #   / OfflineMessageMapper / MessageRepositoryImpl / OfflineMessageRepositoryImpl
+│       │   └── query/MessageQueryRepositoryImpl.java
+│       └── websocket/WebSocketNotifier.java   # MessageNotifierPort 实现（在线判定 + /queue/notification 推送）
+├── application/
+│   ├── config/MessageDomainConfig.java        # @Bean 注册领域服务（保持 domain 层纯净）
+│   ├── service/                       # OfflineMessageStoreService / SystemNotificationPayload
+│   ├── command/                       # MessageCommandHandler + SendMessage / SendSystemMessage / MarkAsRead
+│   │                                  #   / MarkAsReadBatch / DeleteMessage / RecallMessage 命令
+│   ├── query/                         # MessageQueryHandler / ConversationQueryHandler
+│   │   └── dto/                       # ConversationListVO / ConversationVO / MessageVO / UnreadCountVO
+│   └── port/query/MessageQueryRepository.java  # 读仓储（读模型是 application 层概念）
+└── domain/
+    ├── aggregate/                     # Message / OfflineMessage
+    ├── constant/MessageConstant.java
+    ├── enums/                         # MessageResultCode / MessageStatus / MessageType / ReadStatus / PushStatus
+    ├── event/MessageRecalledEvent.java
+    ├── exception/MessageDomainException.java
+    ├── port/                          # MessageNotifierPort / UserInfoPort
+    ├── repository/                    # MessageRepository / OfflineMessageRepository
+    ├── service/SensitiveWordFilterService.java  # 消息内容敏感词过滤
+    └── valueobject/                   # MessageQuery / UnreadCount / UserInfo
 ```
 
 ## WebSocket 架构
 
 - 协议: STOMP over WebSocket
 - 认证: `WebSocketAuthInterceptor` 从 STOMP Header 提取 JWT Token
-- 推送: `WebSocketNotifier` 向在线用户实时推送消息
-- 离线: `OfflineMessageStoreService` 存储离线消息，上线后重推
+- 聊天实时帧由入站 `ChatWebSocketHandler` 发送（`/queue/chat/{conversationId}` 会话帧 + `/queue/unread-count` 未读数）
+- `WebSocketNotifier`（`MessageNotifierPort`）负责在线判定与系统通知推送（`/queue/notification`）
+- 撤回广播: `MessageRecalledEvent` → `WebSocketEventConsumer`（队列 `eo.message.websocket`）
+- 离线: `OfflineMessageStoreService` 落 `OfflineMessage`（PENDING），`replayPending` 上线后补推系统通知
 
 ## 消息路由
 
-推送判定内聚在 `MessageCommandHandler`（SendMessageCommand 路径）：
-- 在线（`MessageNotifierPort.isUserOnline`）→ `WebSocketNotifier` 实时推送
-- 离线 → `OfflineMessageStoreService.storeIfOffline` 存为离线消息，上线后重推
+REST 与 WebSocket 共用 `MessageCommandHandler`（限流唯一裁决点，避免双重计数）：
+
+- 发送前经 `SensitiveWordFilterService.filter` 过滤标题/内容，再保存 `Message`
+- 接收方离线（`MessageNotifierPort.isUserOnline` 为 false）→ `OfflineMessageStoreService.storeIfOffline` 落离线消息，上线后重推；在线聊天的实时帧由 `ChatWebSocketHandler` 推回会话频道
 
 ## 安全要点
 
 - WebSocket 连接必须 JWT 认证
-- 消息标题/内容原样存储，XSS 防护在渲染端文本输出（前端 `escapeHtml` 处理，聚合根不转义）
+- 消息发送限流: `MessageCommandHandler` + framework `DistributedRateLimiter`（5 条/秒/用户，Redis 不可用 fail-open）
+- 标题/内容经敏感词过滤后存储；XSS 防护在渲染端文本输出（前端 `escapeHtml` 处理，聚合根不转义）
 - 用户只能读取/删除自己的消息
-- 消息发送限流
 
 ## 消息归档服务
 
 `MessageArchiveTask`（`adapter/inbound/job/`）提供定时归档和清理功能：
 
-- **清理任务**: 每天凌晨 3 点清理超过保留天数的消息
-- **归档任务**: 每月 1 号凌晨 2 点将旧消息归档到 `eo_message_archive` 表
-- **配置项**: `easyorange.message.retention-days`（默认 90 天）
-- **批次大小**: 每次处理 1000 条记录
-
-## 演进路线
-
-> 历史 5 步迁移（repository/entity/controller/service/port 全量 DDD 化）已全部完成，模块已为完整 DDD 六边形架构（2026-07-31 收口）。
+- **清理任务**: 每天凌晨 3 点清理「保留天数 + 宽限期」之前的消息（分批 DELETE 1000 条）
+- **归档任务**: 每月 1 号凌晨 2 点把超期消息归档到 `eo_message_archive`（`MessageArchiveBatchHandler` 分批原子搬移）
+- **配置项**: `easyorange.message.retention-days`（默认 90 天）/ `cleanup-grace-days`（默认 35 天，宽限期须大于归档周期）
 
 ## 常见开发任务
 
