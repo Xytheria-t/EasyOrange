@@ -1,27 +1,25 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.tool;
 
-import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
+import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
-/** 市场分析工具 — LLM 基于搜索结果价格总结市场行情（均价/性价比）；失败抛给管道判定降级。 */
+/**
+ * 市场分析工具 — 规则计算（在售件数 / 均价 / 价格区间），零 LLM 调用。
+ * <p>
+ * 这一路原先把召回结果的价格文本交给模型「分析」，但那份文本本身就是编排器用商品价格拼出来的
+ * —— 让模型对已经算好的数字再做一次算术，既多付一次供应商调用，又多一层算错的可能；
+ * 而供应商变慢时这两路 LLM 工具还会恒定超时缺席，又因「降级不写缓存」被每次搜索重算一遍。
+ * 改为直接计算后，单次自然语言搜索的模型调用从 3 路降到 1 路（只剩意图识别）。
+ * <p>
+ * 仍走 {@code supplyAsync(VIRTUAL)} 而不是 {@code completedFuture}：规则工具的异常也必须落进
+ * future，否则会在编排器 try 块之外同步抛出，让「单路失败不拖垮整体」的降级约定失效。
+ */
 @Component
 public class MarketAnalysisTool implements SearchTool<String> {
-
-    private static final String PROMPT_NAME = "search_market_system";
-
-    private final ChatModel chatModel;
-    private final AiModelSupport aiModelSupport;
-    private final PromptRegistry promptRegistry;
-
-    public MarketAnalysisTool(ChatModel chatModel, AiModelSupport aiModelSupport, PromptRegistry promptRegistry) {
-        this.chatModel = chatModel;
-        this.aiModelSupport = aiModelSupport;
-        this.promptRegistry = promptRegistry;
-    }
 
     /** 工具名 —— 编排器按它取用，故此处是唯一定义处（见 SearchToolRegistry）。 */
     public static final String NAME = "market_analysis";
@@ -33,21 +31,33 @@ public class MarketAnalysisTool implements SearchTool<String> {
 
     @Override
     public CompletableFuture<String> run(SearchToolContext context) {
-        return CompletableFuture.supplyAsync(
-                () -> aiModelSupport.callText(
-                        chatModel,
-                        AiCallScope.SEARCH_ENHANCE,
-                        promptRegistry.require(PROMPT_NAME),
-                        userMessage(context.marketContext())),
-                VIRTUAL);
+        return CompletableFuture.supplyAsync(() -> summarize(context.topProducts()), VIRTUAL);
     }
 
-    /** 召回结果里的资产标题由资产方填写，属不可信内容 —— 一并包进标签块。 */
-    private static String userMessage(String marketContext) {
-        return """
-                <search_results>
-                %s
-                </search_results>
-                """.formatted(marketContext);
+    /** 无有效价格时返回 null —— 与管道「本轮无结果」语义一致，前端按 falsy 跳过渲染。 */
+    private static String summarize(List<ProductReadModel> products) {
+        List<BigDecimal> prices = products.stream()
+                .map(ProductReadModel::price)
+                .filter(price -> price != null && price.signum() > 0)
+                .toList();
+        if (prices.isEmpty()) {
+            return null;
+        }
+
+        BigDecimal min = prices.stream().min(BigDecimal::compareTo).orElseThrow();
+        BigDecimal max = prices.stream().max(BigDecimal::compareTo).orElseThrow();
+        BigDecimal avg = prices.stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(BigDecimal.valueOf(prices.size()), 0, RoundingMode.HALF_UP);
+
+        String range = min.compareTo(max) == 0
+                ? "均为 ¥%s".formatted(plain(min))
+                : "价格区间 ¥%s-¥%s".formatted(plain(min), plain(max));
+        return "当前 %d 件在售，均价 ¥%s，%s".formatted(prices.size(), plain(avg), range);
+    }
+
+    /** 去掉 BigDecimal 的小数尾巴（¥4200 而不是 ¥4200.00）。 */
+    private static String plain(BigDecimal value) {
+        return value.stripTrailingZeros().toPlainString();
     }
 }

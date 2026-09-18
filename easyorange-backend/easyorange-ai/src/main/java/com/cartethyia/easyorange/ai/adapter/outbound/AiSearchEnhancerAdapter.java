@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -29,9 +30,11 @@ import org.springframework.util.DigestUtils;
  * AI 导购搜索增强管道 — 4 路并行 Tool Calling（Tool Registry 模式）。
  * <p>
  * 用户自然语言查询进来，从 {@link SearchToolRegistry} 取 4 个工具并行执行：
- * intent_detection（LLM 意图识别）/ product_tagging（规则标签）/ market_analysis（LLM 市场分析）/
- * question_suggestion（LLM 建议问题）。单步骤失败降级不影响整体，5s 总超时，
- * 结果经 Redis 5min TTL 缓存。
+ * intent_detection（LLM 意图识别）/ product_tagging（规则标签）/ market_analysis（规则价格统计）/
+ * question_suggestion（规则追问模板）。<b>4 路里只有 1 路打模型</b> —— 另外三路的产出本来就能在本地算出来，
+ * 交给模型既多付一次调用，又会在供应商变慢时超时缺席；而「降级不写缓存」意味着缺席会被每次搜索重算一遍。
+ * 单步骤失败降级不影响整体，四路并行的总等待有上限
+ * （{@code easyorange.ai.search-enhance.timeout-seconds}，默认 5s；供应商越慢越要调大），结果经 Redis 5min TTL 缓存。
  * <p>
  * <b>对上游的契约是「永不抛异常」</b>：本类挂在商品检索主链路上（{@code ProductSearchQueryHandler}
  * 不做异常兜底），任何意外失败都返回 {@link Optional#empty()}，让检索退化为「无 AI 增强」而不是整个接口 500。
@@ -48,8 +51,8 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     private final NaturalLanguageDetector nlDetector;
     private final SearchToolRegistry toolRegistry;
     private final RedisTemplate<Object, Object> redisTemplate;
+    private final int timeoutSeconds;
 
-    private static final int TIMEOUT_SECONDS = 5;
     private static final long CACHE_TTL_MINUTES = 5;
     private static final String CACHE_KEY_PREFIX = "ai:search:enhance:";
     private static final int TOP_PRODUCTS_LIMIT = 5;
@@ -57,10 +60,12 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     public AiSearchEnhancerAdapter(
             NaturalLanguageDetector nlDetector,
             SearchToolRegistry toolRegistry,
-            ObjectProvider<RedisTemplate<Object, Object>> redisTemplateProvider) {
+            ObjectProvider<RedisTemplate<Object, Object>> redisTemplateProvider,
+            @Value("${easyorange.ai.search-enhance.timeout-seconds:5}") int timeoutSeconds) {
         this.nlDetector = nlDetector;
         this.toolRegistry = toolRegistry;
         this.redisTemplate = redisTemplateProvider.getIfAvailable();
+        this.timeoutSeconds = timeoutSeconds;
     }
 
     @Override
@@ -99,7 +104,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         }
 
         List<ProductReadModel> top5 = topProducts.subList(0, Math.min(TOP_PRODUCTS_LIMIT, topProducts.size()));
-        var context = new SearchToolContext(keyword, top5, buildMarketContext(top5));
+        var context = new SearchToolContext(keyword, top5);
 
         // 工具名取各工具自己的常量，不在编排器里再写一遍字面量：
         // 名字只在工具类里定义一次，改名不会有「注册表里查不到 → 静默降级」的窗口
@@ -110,7 +115,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
         try {
             CompletableFuture.allOf(intentFuture, tagsFuture, marketFuture, questionsFuture)
-                    .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                    .get(timeoutSeconds, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             log.warn("AI search enhancement timed out for keyword: {}", keyword);
             // cancel(false) 不中断已开始的 LLM 调用（CompletableFuture 不支持中断），在飞调用会跑到
@@ -206,17 +211,5 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         } catch (Exception ignored) {
             return defaultValue;
         }
-    }
-
-    private String buildMarketContext(List<ProductReadModel> products) {
-        var sb = new StringBuilder("搜索到以下商品价格:\n");
-        for (var p : products) {
-            sb.append(String.format("- %s: ¥%s", p.title(), p.price()));
-            if (p.originalPrice() != null) {
-                sb.append(String.format("(原价¥%s)", p.originalPrice()));
-            }
-            sb.append("\n");
-        }
-        return sb.toString();
     }
 }

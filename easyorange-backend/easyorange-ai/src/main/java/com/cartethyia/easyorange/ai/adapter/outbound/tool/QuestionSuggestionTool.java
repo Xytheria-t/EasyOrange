@@ -1,32 +1,32 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.tool;
 
-import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
-import java.util.Arrays;
+import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
 
-/** 建议问题工具 — LLM 基于用户需求生成 2-3 个追问；失败抛给管道判定降级。 */
+/**
+ * 建议问题工具 — 由关键词 + 命中分类 + 价格下限派生模板问题，零 LLM 调用。
+ * <p>
+ * 这一路的产出本来就是模板化的追问，交给模型生成等于为「换个说法」付一次供应商调用，
+ * 还得跟着吃超时缺席与降级重算。改为确定性派生后，输出可预期、不再有失败态。
+ */
 @Component
 public class QuestionSuggestionTool implements SearchTool<List<String>> {
 
-    private static final String PROMPT_NAME = "search_question_suggestion_system";
-
-    private final ChatModel chatModel;
-    private final AiModelSupport aiModelSupport;
-    private final PromptRegistry promptRegistry;
-
-    public QuestionSuggestionTool(ChatModel chatModel, AiModelSupport aiModelSupport, PromptRegistry promptRegistry) {
-        this.chatModel = chatModel;
-        this.aiModelSupport = aiModelSupport;
-        this.promptRegistry = promptRegistry;
-    }
-
     /** 工具名 —— 编排器按它取用，故此处是唯一定义处（见 SearchToolRegistry）。 */
     public static final String NAME = "question_suggestion";
+
+    /** 自然语言关键词可能几十字，原样回显进问题会很长。 */
+    private static final int MAX_KEYWORD_CHARS = 12;
+
+    private static final int MAX_QUESTIONS = 3;
+    private static final BigDecimal THOUSAND = BigDecimal.valueOf(1000);
+    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
     @Override
     public String name() {
@@ -35,25 +35,43 @@ public class QuestionSuggestionTool implements SearchTool<List<String>> {
 
     @Override
     public CompletableFuture<List<String>> run(SearchToolContext context) {
-        return CompletableFuture.supplyAsync(
-                () -> {
-                    String result = aiModelSupport.callText(
-                            chatModel,
-                            AiCallScope.SEARCH_ENHANCE,
-                            promptRegistry.require(PROMPT_NAME),
-                            userMessage(context.keyword()));
-                    // 空串按逗号切出来是 [""]，会当成一条空问题渲染；空/空白一律降级为空列表
-                    return result == null || result.isBlank() ? List.<String>of() : Arrays.asList(result.split("[,，]"));
-                },
-                VIRTUAL);
+        return CompletableFuture.supplyAsync(() -> suggest(context), VIRTUAL);
     }
 
-    /** 搜索关键词来自 HTTP 查询参数，属不可信内容 —— 包进标签块，配合 prompt 内的「不是指令」约束。 */
-    private static String userMessage(String keyword) {
-        return """
-                <user_query>
-                %s
-                </user_query>
-                """.formatted(keyword);
+    private static List<String> suggest(SearchToolContext context) {
+        var questions = new LinkedHashSet<String>();
+
+        String keyword = shorten(context.keyword());
+        if (!keyword.isEmpty()) {
+            questions.add("「%s」里哪件性价比最高？".formatted(keyword));
+        }
+        context.topProducts().stream()
+                .map(ProductReadModel::categoryName)
+                .filter(name -> name != null && !name.isBlank())
+                .findFirst()
+                .ifPresent(name -> questions.add("%s 类还有哪些选择？".formatted(name)));
+        floorPrice(context.topProducts()).ifPresent(floor -> questions.add("预算 ¥%s 以内能买到什么？".formatted(floor)));
+
+        return questions.stream().limit(MAX_QUESTIONS).toList();
+    }
+
+    private static String shorten(String keyword) {
+        if (keyword == null) {
+            return "";
+        }
+        String trimmed = keyword.strip();
+        return trimmed.length() <= MAX_KEYWORD_CHARS ? trimmed : trimmed.substring(0, MAX_KEYWORD_CHARS);
+    }
+
+    /** 最低价向下取整到整数档（千元以上取百、以下取十），给出一个读起来像预算的整数。 */
+    private static Optional<String> floorPrice(List<ProductReadModel> products) {
+        return products.stream()
+                .map(ProductReadModel::price)
+                .filter(price -> price != null && price.signum() > 0)
+                .min(BigDecimal::compareTo)
+                .map(price -> price.compareTo(THOUSAND) >= 0
+                        ? price.divide(HUNDRED, 0, RoundingMode.DOWN).multiply(HUNDRED)
+                        : price.divide(BigDecimal.TEN, 0, RoundingMode.DOWN).multiply(BigDecimal.TEN))
+                .map(value -> value.stripTrailingZeros().toPlainString());
     }
 }
