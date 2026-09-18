@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 /**
  * 生产检索依赖守卫测试 — 生产不接受 RAG 静默降级：ES 被关闭（含属性缺失、被覆盖回 false）
- * 时启动必须失败；启用时正常；非 prod profile 不得触发（dev 要保「零配置启动」）。
+ * 时启动必须失败；启用时正常；非 prod profile 不得触发（守卫只认 prod，检索开关由各 profile 自己决定）。
  */
 class ProdSearchGuardTest {
 
