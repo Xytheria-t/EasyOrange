@@ -63,6 +63,9 @@ logs/
 *.db
 *.sqlite
 coverage/
+# 本地上传文件落盘目录（file.upload.path: ./upload，相对后端启动目录）
+easyorange-backend/upload/
+easyorange-backend/*/upload/
 
 # ---------- AI 工具与生成文件（隐私） ----------
 .claude/*
