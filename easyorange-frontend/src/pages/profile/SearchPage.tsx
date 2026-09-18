@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PaginationBar } from '@/components/PaginationBar';
 import { ProductCard } from '@/components/product/ProductCard';
 import { AiSearchPanel } from '@/components/search/AiSearchPanel';
 import FacetFilter from '@/components/search/FacetFilter';
@@ -48,6 +49,9 @@ const CATEGORY_ICON_MAP: Record<string, { icon: typeof Smartphone; color: string
 
 const DEFAULT_CATEGORY_ICON = { icon: Gift, color: '#F97316', bg: '#FFF7ED' };
 
+/** 每页条数与后端 PageRequest 上限（100）以内任意值；须与请求参数 pageSize 保持一致 */
+const SEARCH_PAGE_SIZE = 20;
+
 const TRENDING_TOPICS = [
     { title: '春季新品', subtitle: '焕新季', desc: '发现最新潮流单品', color: '#F97316', icon: Flame },
     { title: '限时特惠', subtitle: '超值购', desc: '精选商品低至5折', color: '#EC4899', icon: Zap },
@@ -63,6 +67,7 @@ function SearchPage() {
         aiEnabled,
         setKeyword: setUrlKeyword,
         setFilterValue,
+        setPageNum,
         setAiEnabled: setUrlAiEnabled,
     } = useSearchUrlState();
     const [keyword, setKeyword] = useState(urlKeyword);
@@ -84,7 +89,7 @@ function SearchPage() {
         const params: ProductSearchParams = {
             keyword: submittedKeyword,
             pageNum,
-            pageSize: 20,
+            pageSize: SEARCH_PAGE_SIZE,
         };
         if (filters.category) {
             params.categoryId = filters.category;
@@ -258,6 +263,17 @@ function SearchPage() {
 
     const hasResults = submittedKeyword && products.length > 0;
     const noResults = submittedKeyword && !isSearching && products.length === 0;
+
+    // total 由后端 Long 序列化为字符串，参与运算前先归一为数字
+    const totalPages = Math.max(1, Math.ceil(Number(total) / SEARCH_PAGE_SIZE));
+
+    const handlePageChange = useCallback(
+        (nextPage: number) => {
+            setPageNum(nextPage);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        [setPageNum]
+    );
 
     const searchResultsParentRef = useRef<HTMLDivElement>(null);
 
@@ -463,9 +479,15 @@ function SearchPage() {
                                         <span>品质保障</span>
                                     </div>
                                 </div>
-                                <Button className="search-ai-btn-main">
+                                <Button
+                                    className="search-ai-btn-main"
+                                    onClick={() => {
+                                        setUrlAiEnabled(!aiEnabled);
+                                        inputRef.current?.focus();
+                                    }}
+                                >
                                     <Sparkles size={16} />
-                                    <span>开启AI搜索体验</span>
+                                    <span>{aiEnabled ? 'AI 智能搜索已开启' : '开启AI搜索体验'}</span>
                                 </Button>
                             </div>
                         </div>
@@ -636,6 +658,15 @@ function SearchPage() {
                                     );
                                 })}
                             </div>
+                        )}
+
+                        {hasResults && !isSearching && totalPages > 1 && (
+                            <PaginationBar
+                                pageNum={pageNum}
+                                totalPages={totalPages}
+                                onPageChange={handlePageChange}
+                                className="search-pagination"
+                            />
                         )}
 
                         {noResults && (

@@ -2,7 +2,6 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { Search, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SemanticSearchToggle } from '@/components/ai/SemanticSearchToggle';
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
 import { ProductCard } from '@/components/product/ProductCard';
 import '@/components/product/products-grid.css';
@@ -12,14 +11,7 @@ import SortDropdown, { type SortOption } from '@/components/search/SortDropdown'
 import { Input } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { preloadImages } from '@/components/ui/Image';
-import {
-    useCategories,
-    useColumnCount,
-    useFavoriteCheck,
-    useInfiniteProducts,
-    useListUrlState,
-    useSemanticSearch,
-} from '@/hooks';
+import { useCategories, useColumnCount, useFavoriteCheck, useInfiniteProducts, useListUrlState } from '@/hooks';
 import { useAuthStore } from '@/store/authStore';
 import type { Product } from '@/types';
 import './products-list.css';
@@ -40,7 +32,6 @@ function ProductsPage() {
     } = useListUrlState();
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [semanticPage, setSemanticPage] = useState(1);
 
     const queryParams = useMemo<{
         pageSize: number;
@@ -77,40 +68,18 @@ function ProductsPage() {
         isFetchingNextPage,
     } = useInfiniteProducts(queryParams);
 
-    const {
-        results: semanticResults,
-        isSearching: isSemanticSearching,
-        isSemanticMode,
-        total: semanticTotal,
-        error: semanticError,
-        search: semanticSearch,
-        toggleSemanticMode,
-    } = useSemanticSearch();
-
     const sentinelRef = useRef<HTMLDivElement>(null);
 
     // 从 TanStack Query 的无限查询数据中提取所有产品
     const allProducts = useMemo(() => {
-        if (isSemanticMode) {
-            return semanticResults;
-        }
         if (!infiniteData?.pages) {
             return [];
         }
         // 合并所有页面的产品数据
         return infiniteData.pages.flatMap(page => page.records ?? []);
-    }, [infiniteData, isSemanticMode, semanticResults]);
+    }, [infiniteData]);
 
-    // 获取总数（从第一页获取）
-    const total = isSemanticMode ? semanticTotal : (infiniteData?.pages?.[0]?.total ?? 0);
-    const isSearchLoading = isSemanticMode ? isSemanticSearching : isLoading;
-
-    // 语义搜索的分页逻辑
-    useEffect(() => {
-        if (isSemanticMode && queryParams.keyword) {
-            semanticSearch(queryParams.keyword, semanticPage, queryParams.pageSize);
-        }
-    }, [isSemanticMode, queryParams.keyword, semanticPage, queryParams.pageSize, semanticSearch]);
+    const total = infiniteData?.pages?.[0]?.total ?? 0;
 
     // 预加载图片
     useEffect(() => {
@@ -133,7 +102,7 @@ function ProductsPage() {
     // Intersection Observer 处理无限滚动
     useEffect(() => {
         const sentinel = sentinelRef.current;
-        if (!sentinel || isSemanticMode) {
+        if (!sentinel) {
             return;
         }
 
@@ -148,27 +117,7 @@ function ProductsPage() {
 
         observer.observe(sentinel);
         return () => observer.disconnect();
-    }, [isSemanticMode, isFetchingNextPage, hasNextPage, fetchNextPage]);
-
-    // 语义搜索的无限滚动
-    useEffect(() => {
-        const sentinel = sentinelRef.current;
-        if (!sentinel || !isSemanticMode) {
-            return;
-        }
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting && !isSemanticSearching && semanticResults.length < semanticTotal) {
-                    setSemanticPage(prev => prev + 1);
-                }
-            },
-            { rootMargin: '1200px' }
-        );
-
-        observer.observe(sentinel);
-        return () => observer.disconnect();
-    }, [isSemanticMode, isSemanticSearching, semanticResults.length, semanticTotal]);
+    }, [isFetchingNextPage, hasNextPage, fetchNextPage]);
 
     const { data: categories } = useCategories();
     const currentCategory = useMemo(() => {
@@ -186,12 +135,12 @@ function ProductsPage() {
             result.push(allProducts.slice(i, i + COLUMN_COUNT));
         }
         // 添加加载占位符
-        if ((isFetchingNextPage || isSemanticSearching) && allProducts.length > 0) {
+        if (isFetchingNextPage && allProducts.length > 0) {
             result.push(Array(COLUMN_COUNT).fill(null));
             result.push(Array(COLUMN_COUNT).fill(null));
         }
         return result;
-    }, [allProducts, COLUMN_COUNT, isFetchingNextPage, isSemanticSearching]);
+    }, [allProducts, COLUMN_COUNT, isFetchingNextPage]);
 
     const rowVirtualizer = useVirtualizer({
         count: rows.length,
@@ -203,7 +152,6 @@ function ProductsPage() {
 
     const handleSortChange = useCallback(
         (sort: SortOption) => {
-            setSemanticPage(1);
             setUrlState({ filters: { ...filters, sort } });
         },
         [filters, setUrlState]
@@ -211,7 +159,6 @@ function ProductsPage() {
 
     const handleFilterChange = useCallback(
         (filter: ToolsPlazaFilter) => {
-            setSemanticPage(1);
             if (filter === 'all') {
                 const { hasDiscount, ...next } = filters;
                 next.sort = 'newest';
@@ -225,7 +172,6 @@ function ProductsPage() {
 
     const handleApplyFilters = useCallback(
         (filterState: FilterState) => {
-            setSemanticPage(1);
             const next: Record<string, string> = {};
             if (filters.sort) {
                 next.sort = filters.sort;
@@ -249,12 +195,10 @@ function ProductsPage() {
     );
 
     const handleResetFilters = useCallback(() => {
-        setSemanticPage(1);
         resetUrl();
     }, [resetUrl]);
 
     const handleClearCategory = useCallback(() => {
-        setSemanticPage(1);
         const { category, hasDiscount, ...next } = filters;
         setUrlState({ filters: next });
     }, [filters, setUrlState]);
@@ -266,14 +210,12 @@ function ProductsPage() {
             if (trimmed === urlKeyword) {
                 return;
             }
-            setSemanticPage(1);
             setUrlKeyword(trimmed);
         },
         [urlKeyword, setUrlKeyword]
     );
 
     const handleSearchClear = useCallback(() => {
-        setSemanticPage(1);
         setUrlKeyword('');
     }, [setUrlKeyword]);
 
@@ -288,7 +230,7 @@ function ProductsPage() {
         [token, navigate, toggleFavorite]
     );
 
-    if (isSearchLoading && allProducts.length === 0) {
+    if (isLoading && allProducts.length === 0) {
         return (
             <div className="products-page-wrapper">
                 <div className="products-container">
@@ -374,7 +316,6 @@ function ProductsPage() {
                     </form>
 
                     <div className="toolbar-actions">
-                        <SemanticSearchToggle isActive={isSemanticMode} onToggle={toggleSemanticMode} />
                         <Button variant="outline" className="filter-toggle-btn" onClick={() => setIsFilterOpen(true)}>
                             <svg
                                 aria-hidden="true"
@@ -453,75 +394,23 @@ function ProductsPage() {
 
                 {allProducts.length > 0 && <div ref={sentinelRef} className="scroll-sentinel" />}
 
-                {!isSearchLoading && allProducts.length === 0 && (
+                {!isLoading && allProducts.length === 0 && (
                     <div className="no-results-premium">
-                        <div className={`no-results-icon-premium ${semanticError ? 'error' : ''}`}>
-                            {semanticError ? (
-                                <svg
-                                    aria-hidden="true"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                >
-                                    <circle cx="12" cy="12" r="10" />
-                                    <line x1="12" y1="8" x2="12" y2="12" />
-                                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                                </svg>
-                            ) : (
-                                <svg
-                                    aria-hidden="true"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                >
-                                    <circle cx="11" cy="11" r="8" />
-                                    <path d="M21 21l-4.35-4.35" />
-                                    <path d="M8 8l6 6M14 8l-6 6" />
-                                </svg>
-                            )}
+                        <div className="no-results-icon-premium">
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                            >
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="M21 21l-4.35-4.35" />
+                                <path d="M8 8l6 6M14 8l-6 6" />
+                            </svg>
                         </div>
-                        {semanticError ? (
-                            <>
-                                <h3>语义搜索暂不可用</h3>
-                                <p className="no-results-error">{semanticError}</p>
-                                <div className="no-results-actions">
-                                    <Button
-                                        className="semantic-retry-btn"
-                                        onClick={() => queryParams.keyword && semanticSearch(queryParams.keyword)}
-                                    >
-                                        重试
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="semantic-fallback-btn"
-                                        onClick={toggleSemanticMode}
-                                    >
-                                        切换到关键词搜索
-                                    </Button>
-                                </div>
-                            </>
-                        ) : isSemanticMode ? (
-                            <>
-                                <h3>未找到相关商品</h3>
-                                <p>语义搜索未匹配到结果，试试其他关键词</p>
-                                <div className="no-results-actions">
-                                    <Button
-                                        variant="outline"
-                                        className="semantic-fallback-btn"
-                                        onClick={toggleSemanticMode}
-                                    >
-                                        切换到关键词搜索
-                                    </Button>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <h3>未找到相关商品</h3>
-                                <p>尝试调整筛选条件或搜索其他关键词</p>
-                            </>
-                        )}
+                        <h3>未找到相关商品</h3>
+                        <p>尝试调整筛选条件或搜索其他关键词</p>
                     </div>
                 )}
             </div>

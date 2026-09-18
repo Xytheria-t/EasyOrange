@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
+import com.cartethyia.easyorange.product.application.port.query.QueryEmbeddingPort;
 import com.cartethyia.easyorange.product.application.port.query.SearchResult;
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
@@ -33,13 +34,15 @@ class ProductSearchQueryHandlerTest {
     @Mock
     private ProductSearchQueryPort searchQueryPort;
 
+    @Mock
+    private QueryEmbeddingPort queryEmbeddingPort;
+
     private ProductSearchQueryHandler searchQueryHandler;
     private ProductReadModel testProduct;
 
     @BeforeEach
     void setUp() {
-        searchQueryHandler = new ProductSearchQueryHandler(
-                productQueryRepository, provider((ProductSearchQueryPort) null), provider((AiSearchEnhancerPort) null));
+        searchQueryHandler = handlerWith(null, null);
 
         testProduct = new ProductReadModel(
                 "1",
@@ -110,8 +113,7 @@ class ProductSearchQueryHandlerTest {
     @Test
     @DisplayName("ES 检索路径未显式指定状态时默认只搜上架商品")
     void search_esPort_withoutStatus_shouldDefaultToOnline() {
-        var handler = new ProductSearchQueryHandler(
-                productQueryRepository, provider(searchQueryPort), provider((AiSearchEnhancerPort) null));
+        var handler = handlerWith(searchQueryPort, null);
         var criteria = new ProductSearchCriteria("手机", null, null, null, null, null, null, null, 1, 20);
         when(searchQueryPort.search(any())).thenAnswer(inv -> {
             var query = inv.getArgument(0, ProductSearchQueryPort.ProductSearchQuery.class);
@@ -127,8 +129,7 @@ class ProductSearchQueryHandlerTest {
     @Test
     @DisplayName("ES 检索路径显式指定状态时按指定状态过滤")
     void search_esPort_withStatus_shouldPassThrough() {
-        var handler = new ProductSearchQueryHandler(
-                productQueryRepository, provider(searchQueryPort), provider((AiSearchEnhancerPort) null));
+        var handler = handlerWith(searchQueryPort, null);
         var criteria = new ProductSearchCriteria("手机", null, "OFFLINE", null, null, null, null, null, 1, 20);
         when(searchQueryPort.search(any())).thenAnswer(inv -> {
             var query = inv.getArgument(0, ProductSearchQueryPort.ProductSearchQuery.class);
@@ -202,6 +203,80 @@ class ProductSearchQueryHandlerTest {
         searchQueryHandler.recordSearch("1", "手机");
 
         verify(productQueryRepository).saveSearchHistory("1", "手机");
+    }
+
+    @Test
+    @DisplayName("按相关性排序时向量化关键词，并把向量交给 ES 走两路召回")
+    void search_relevanceSort_shouldEmbedKeywordAndEnableTwoLeg() {
+        var handler = handlerWith(searchQueryPort, queryEmbeddingPort);
+        when(queryEmbeddingPort.embed("手机")).thenReturn(List.of(0.1f, 0.2f));
+        var criteria = new ProductSearchCriteria("手机", null, null, null, null, null, null, null, 1, 20);
+        when(searchQueryPort.search(any())).thenAnswer(inv -> {
+            var query = inv.getArgument(0, ProductSearchQueryPort.ProductSearchQuery.class);
+            assertThat(query.useSemanticSearch()).isTrue();
+            assertThat(query.queryEmbedding()).containsExactly(0.1f, 0.2f);
+            return new SearchResult(List.of(testProduct), 1L, 1, 20, List.of(), List.of(), List.of());
+        });
+
+        var result = handler.search(criteria, false);
+
+        assertThat(result.page().records()).hasSize(1);
+        verify(queryEmbeddingPort).embed("手机");
+    }
+
+    @Test
+    @DisplayName("显式排序（价格）不向量化：融合排名会和用户点选的排序打架")
+    void search_explicitSort_shouldNotEmbed() {
+        var handler = handlerWith(searchQueryPort, queryEmbeddingPort);
+        var criteria = new ProductSearchCriteria("手机", null, null, null, null, null, "price_asc", null, 1, 20);
+        when(searchQueryPort.search(any())).thenAnswer(inv -> {
+            var query = inv.getArgument(0, ProductSearchQueryPort.ProductSearchQuery.class);
+            assertThat(query.useSemanticSearch()).isFalse();
+            assertThat(query.queryEmbedding()).isEmpty();
+            return new SearchResult(List.of(testProduct), 1L, 1, 20, List.of(), List.of(), List.of());
+        });
+
+        handler.search(criteria, false);
+
+        verifyNoInteractions(queryEmbeddingPort);
+    }
+
+    @Test
+    @DisplayName("关键词为空不向量化：纯筛选浏览没有检索意图可编码")
+    void search_blankKeyword_shouldNotEmbed() {
+        var handler = handlerWith(searchQueryPort, queryEmbeddingPort);
+        var criteria = new ProductSearchCriteria(null, "10", null, null, null, null, null, null, 1, 20);
+        when(searchQueryPort.search(any()))
+                .thenReturn(new SearchResult(List.of(testProduct), 1L, 1, 20, List.of(), List.of(), List.of()));
+
+        handler.search(criteria, false);
+
+        verifyNoInteractions(queryEmbeddingPort);
+    }
+
+    @Test
+    @DisplayName("向量化端口缺失（无 AI key）时退化为单路召回，不抛异常")
+    void search_withoutEmbeddingPort_shouldDegradeToSingleLeg() {
+        var handler = handlerWith(searchQueryPort, null);
+        var criteria = new ProductSearchCriteria("手机", null, null, null, null, null, null, null, 1, 20);
+        when(searchQueryPort.search(any())).thenAnswer(inv -> {
+            var query = inv.getArgument(0, ProductSearchQueryPort.ProductSearchQuery.class);
+            assertThat(query.useSemanticSearch()).isFalse();
+            return new SearchResult(List.of(testProduct), 1L, 1, 20, List.of(), List.of(), List.of());
+        });
+
+        var result = handler.search(criteria, false);
+
+        assertThat(result.page().records()).hasSize(1);
+    }
+
+    /** 按需装配：两个可选出站端口谁在测试里被用到就传谁，传 null 即模拟该 bean 不存在。 */
+    private ProductSearchQueryHandler handlerWith(ProductSearchQueryPort esPort, QueryEmbeddingPort embeddingPort) {
+        return new ProductSearchQueryHandler(
+                productQueryRepository,
+                provider(esPort),
+                provider((AiSearchEnhancerPort) null),
+                provider(embeddingPort));
     }
 
     /** 构造最小 ObjectProvider：bean 为 null 时 getIfAvailable() 返回 null（模拟可选依赖缺失）。 */

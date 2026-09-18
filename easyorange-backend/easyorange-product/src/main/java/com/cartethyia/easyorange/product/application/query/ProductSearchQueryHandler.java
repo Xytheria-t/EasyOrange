@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancer
 import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
+import com.cartethyia.easyorange.product.application.port.query.QueryEmbeddingPort;
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
@@ -26,6 +27,7 @@ public class ProductSearchQueryHandler {
     private final ProductQueryRepository productQueryRepository;
     private final ObjectProvider<ProductSearchQueryPort> searchQueryPort;
     private final ObjectProvider<AiSearchEnhancerPort> aiSearchEnhancer;
+    private final ObjectProvider<QueryEmbeddingPort> queryEmbedding;
 
     @Transactional(readOnly = true)
     public ProductSearchResult search(ProductSearchCriteria criteria, boolean aiEnhanced) {
@@ -38,6 +40,7 @@ public class ProductSearchQueryHandler {
         if (esPort != null) {
             // 与 DB 回退路径一致：公开搜索未显式指定状态时默认只展示上架商品
             var effectiveStatus = criteria.status() != null ? criteria.status() : ProductStatus.ONLINE.getCode();
+            var embedding = queryEmbeddingFor(criteria);
             var query = new ProductSearchQueryPort.ProductSearchQuery(
                     criteria.keyword(),
                     criteria.categoryId(),
@@ -48,8 +51,8 @@ public class ProductSearchQueryHandler {
                     criteria.sort(),
                     criteria.effectivePageNum(),
                     criteria.effectivePageSize(),
-                    null,
-                    false);
+                    embedding,
+                    !embedding.isEmpty());
             var searchResult = esPort.search(query);
             readModels = searchResult.records();
             facets = mergeFacetsList(searchResult);
@@ -94,6 +97,24 @@ public class ProductSearchQueryHandler {
 
     public void recordSearch(String userId, String keyword) {
         productQueryRepository.saveSearchHistory(userId, keyword);
+    }
+
+    /**
+     * kNN 那一路的查询向量；返回空列表即关掉该路，检索退化为纯 BM25。
+     * <p>
+     * 只在「按相关性排序」时向量化：用户显式点了价格 / 最新 / 热度，排序语义压过相关性，
+     * 融合排名会和点选的排序打架；而且那样每次都要白付一次 embedding 调用。
+     * 关键词为空（纯筛选浏览）同理不走 kNN —— 没有检索意图可编码，
+     * 而且 kNN 缺了 query 子句只能退化成 match_all，等于按过滤条件随机取一批。
+     */
+    private List<Float> queryEmbeddingFor(ProductSearchCriteria criteria) {
+        if (!ProductSearchQueryPort.isRelevanceSort(criteria.sort())
+                || criteria.keyword() == null
+                || criteria.keyword().isBlank()) {
+            return List.of();
+        }
+        var port = queryEmbedding.getIfAvailable();
+        return port == null ? List.of() : port.embed(criteria.keyword());
     }
 
     private static List<FacetBucket> mergeFacetsList(

@@ -1,10 +1,35 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import type { Product } from '@/types';
 import type { ProductSearchParams } from '@/types/product';
 import SearchPage from './SearchPage';
+
+function makeProduct(id: string, title: string): Product {
+    return {
+        id,
+        title,
+        price: 1999,
+        images: [],
+        status: 'ONLINE',
+        condition: 1,
+        createTime: '2026-05-10T10:00:00Z',
+        views: 100,
+        categoryName: '电子数码',
+        location: '北京',
+        sellerName: '资产方',
+        description: 'desc',
+        originalPrice: null,
+        categoryId: '1',
+        conditionLevel: 1,
+        favorites: 0,
+        sellerId: 's1',
+        sellerAvatar: null,
+        sellerRating: 0,
+        updateTime: '2026-05-10T10:00:00Z',
+    };
+}
 
 function getLastSearchParams(): ProductSearchParams | undefined {
     const calls = mockUseProductSearch.mock.calls as unknown as Array<[ProductSearchParams]>;
@@ -234,5 +259,51 @@ describe('SearchPage', () => {
         const lastCall = getLastSearchParams();
         expect(lastCall).toBeDefined();
         expect(lastCall?.aiEnhanced).toBe(true);
+    });
+
+    it('enables AI search from the hero call-to-action', async () => {
+        renderPage();
+        const user = userEvent.setup();
+        await user.click(screen.getByText('开启AI搜索体验'));
+
+        expect(getLastSearchParams()?.aiEnhanced).toBe(true);
+        expect(screen.getByText('AI 智能搜索已开启')).toBeInTheDocument();
+    });
+
+    it('renders a pager past the first page and pages through results', async () => {
+        window.scrollTo = vi.fn();
+        mockUseProductSearch.mockReturnValue({
+            products: [makeProduct('p1', '第一页商品')],
+            // 后端把 Long 序列化成字符串，`total` 落到前端是 "45" 而不是 45
+            total: '45' as unknown as number,
+            facets: [],
+            aiEnhancement: undefined,
+            isLoading: false,
+            error: null,
+        });
+        renderWithProviders(<SearchPage />, { initialRoute: '/search?keyword=新' });
+
+        expect(getLastSearchParams()?.pageNum).toBe(1);
+        const pager = document.querySelector('.search-pagination');
+        expect(pager).toBeInTheDocument();
+
+        const user = userEvent.setup();
+        await user.click(within(pager as HTMLElement).getByText('2'));
+
+        expect(getLastSearchParams()?.pageNum).toBe(2);
+    });
+
+    it('hides the pager when all results fit on one page', () => {
+        mockUseProductSearch.mockReturnValue({
+            products: [makeProduct('p1', '唯一商品')],
+            total: 7,
+            facets: [],
+            aiEnhancement: undefined,
+            isLoading: false,
+            error: null,
+        });
+        renderWithProviders(<SearchPage />, { initialRoute: '/search?keyword=手机' });
+
+        expect(document.querySelector('.search-pagination')).not.toBeInTheDocument();
     });
 });

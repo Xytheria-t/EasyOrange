@@ -18,7 +18,14 @@ import lombok.RequiredArgsConstructor;
 public enum AiCallScope {
     REVIEW(10, "review"),
     AUTO_LISTING(5, "auto-listing"),
-    SEMANTIC(30, "semantic-search"),
+    /**
+     * 语义召回 — 检索词的 embedding 调用。入口是商品搜索 {@code /api/products/search}
+     * （两路召回里的 kNN 那一路），已无独立的 {@code /api/ai/semantic-search}。
+     * <p>
+     * 该路径不在 {@code AiRateLimitInterceptor} 的 {@code /api/ai/**} 范围内，
+     * 由框架 {@code RateLimitFilter} 统一限流；这一场景实际的治理面是预算与缓存键。
+     */
+    SEMANTIC(30, "products/search"),
     QA(20, "qa"),
     SEARCH_ENHANCE(30, "search-enhance"),
     CHAT(20, "chat"),

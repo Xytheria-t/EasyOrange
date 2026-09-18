@@ -28,9 +28,9 @@ class AiCallScopeTest {
     }
 
     @Test
-    @DisplayName("fromUri 匹配 semantic-search")
+    @DisplayName("fromUri 通过 products/search 片段匹配到语义召回场景")
     void fromUri_semantic() {
-        assertThat(AiCallScope.fromUri("/api/ai/semantic-search")).isEqualTo(AiCallScope.SEMANTIC);
+        assertThat(AiCallScope.fromUri("/api/products/search")).isEqualTo(AiCallScope.SEMANTIC);
     }
 
     @Test
