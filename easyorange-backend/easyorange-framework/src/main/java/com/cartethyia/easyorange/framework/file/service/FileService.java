@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.enums.FileResultCode;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.file.FileException;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.util.FileSizeFormat;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
 import com.cartethyia.easyorange.framework.file.entity.UploadFileDO;
@@ -30,6 +31,7 @@ public class FileService {
 
     private final UploadFileMapper uploadFileMapper;
     private final FileStorage fileStorage;
+    private final IdGenerator idGenerator;
 
     public UploadFileVO uploadFile(MultipartFile file, String businessType) {
         return uploadFile(file, businessType, null);
@@ -48,6 +50,7 @@ public class FileService {
             var storageKey = fileStorage.store(content, file.getOriginalFilename(), file.getContentType());
 
             var entity = new UploadFileDO();
+            entity.setId(idGenerator.generateId());
             entity.setFileName(file.getOriginalFilename());
             entity.setFilePath(storageKey);
             entity.setStorageKey(storageKey);
