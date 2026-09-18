@@ -12,7 +12,7 @@
 | [0005](0005-messaging-rabbitmq.md) | 消息选型 | 接受 | RabbitMQ（Topic + DLQ）作默认总线，拒绝 Kafka/Pulsar/NATS/Redis Streams | 2026-07-30 |
 | [0002](0002-cqrs-scope-4-modules.md) | CQRS 范围 | 接受 | 仅 product/order/payment/message 四模块上 CQRS，ArchUnit 守卫边界 | 2026-07-14 |
 | [0008](0008-ai-spring-ai-framework.md) | AI 框架化 | 接受 | 全面框架化 Spring AI 2.0，删除自研 Port/Adapter/指标（**Supersedes ADR-0003**） | 2026-08-03 |
-| [0012](0012-rag-hybrid-retrieval-rrf.md) | AI 检索 | 接受 | RAG 改两路独立召回 + RRF 排名融合，删除无效余弦重排与向量回传；语料扩到 25 篇恢复 hit@5 判别力 | 2026-09-17 |
+| [0012](0012-rag-hybrid-retrieval-rrf.md) | AI 检索 | 接受 | RAG 改两路独立召回 + RRF 排名融合，删除无效余弦重排与向量回传；语料扩到 23 篇恢复 hit@5 判别力 | 2026-09-17 |
 | [0004](0004-ai-bulkhead-token-budget.md) | AI 治理 | 部分已替代 | `@TokenBudget` AOP 日预算仍现役；Bulkhead 已删（**部分替代**，见 0008） | 2026-07-26 |
 | [0009](0009-domain-service-placement.md) | DDD 治理 | 接受 | 领域服务数量是领域性质产物，禁止按数量对齐模块 | 2026-08-06 |
 
@@ -31,4 +31,4 @@
 
 ## 工具
 
-- [0000-template.md](0000-template.md) — 新 ADR 模板与编写约定（新增 ADR 后须同步更新本索引）
+- [0000-template.md](0000-template.md) — 新 ADR 模板与编写约定（正文即现状、新增后须同步更新本索引）

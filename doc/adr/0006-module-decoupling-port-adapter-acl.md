@@ -5,8 +5,6 @@
 - **决策者**：后端架构
 - **标签**：`ddd` `port-adapter` `module-decoupling` `acl` `modularity`
 
-> **现状更新（2026-08-12）**：Port 数已从决策时点的 33 演化为 **35**（order/payment `LockPort` 收敛为 framework `DistributedLockPort`、`UserInfoPort` 单查下线、admin 查询端口拆分）。本记录保留 2026-08-08 决策时点的 33 口径；现役计数命令见 [doc/工程指标.md](../工程指标.md)。
-
 ---
 
 ## 上下文（Context）
@@ -14,7 +12,7 @@
 项目拆分为 11 个 Maven 模块后，跨模块协作需求很快出现，且随业务增长持续增多：
 
 1. **查询侧同步依赖**：order 需要 user 信息（`UserInfoPort`）；product 需要资产方信息（`SellerInfoPort`）；message 需要用户信息（`UserInfoPort`）；favorite 需要商品信息（`ProductInfoPort`）；admin 需要聚合查询商品/订单/用户（`AdminProductPort` 等）；ai 需要商品搜索（`ProductSearchQueryPort`）。
-2. **写操作跨模块副作用**：下单要扣库存（`ProductInventoryPort`）、订单状态变化要发站内信（`MessageNotifierPort`）、支付要回调校验（`CallbackSignatureVerifierPort`）、AI 估值要查信用（`JdbcCreditScoreFetcher` 走 `CreditScoreFetcher`）。
+2. **写操作跨模块副作用**：下单要扣库存（`ProductInventoryPort`）、订单状态变化要发站内信（`MessageNotifierPort`）、支付要回调校验（`CallbackSignatureVerifierPort`）、收藏降价要提醒（`PriceDropNotificationPort`）。
 3. **早期风险**：若这些协作直接 import 对方模块的 Mapper / DO / Service 类，模块边界形同虚设——依赖方向不可控、循环依赖必然出现、DDD 分层在模块粒度上失效。
 4. **已有先例教训**：`easyorange-order` 曾直接依赖 product 的 mapper 做库存扣减，导致「订单模块知道商品表的列」；后续重构才收敛。
 
@@ -55,19 +53,19 @@
 
 - 模块可独立编译/测试/演进，跨模块依赖面收敛为接口签名
 - 替换实现零成本：锁实现（Redis/Mem）、支付网关、短信供应商、ES 开关全部只改 adapter（`@ConditionalOnProperty` 已用于 RabbitMQ/ES/TokenBudgetStore）
-- 33 个 Port 成为「模块边界地图」，新人看 Port 目录即理解模块协作面
+- 46 个 Port 成为「模块边界地图」，新人看 Port 目录即理解模块协作面
 - optional 依赖 + ArchUnit 无白名单，CI 阻断任何越界依赖
 
 ### 负向后果
 
-- 每个跨模块调用多一层「接口 + 适配器」样板代码（33 Port 对应 ~33 实现类）
+- 每个跨模块调用多一层「接口 + 适配器」样板代码（每个 Port 都要有对应实现类）
 - Adapter 集中堆在 application 模块，该模块文件数偏多，导航成本上升
 - 查询链路多一跳方法调用 + 可能的 MapStruct 转换开销（可忽略，本地调用）
 - optional 标记依赖人肉维护，Maven 不校验（TD-011 技术债，2026-08-16 已由 CI 脚本闭环：除组合根 `easyorange-application` 外，跨领域模块依赖必须 `<optional>true</optional>`，违规即失败，见 [技术债务清单 TD-011](../技术债务清单.md)）
 
 ### 缓解措施
 
-- 33 Port 目录即边界地图；新增 Port 有 ArchUnit「端口必有适配器」规则自动兜底（缺实现直接红）
+- 46 Port 目录即边界地图；新增 Port 有 ArchUnit「端口必有适配器」规则自动兜底（缺实现直接红）
 - 查询端口尽量复用值对象直传，避免无意义 DTO 拷贝
 - 未来若 adapter 膨胀，可按域拆 `adapter/outbound/{domain}/` 子包（已按此组织：elasticsearch/payment/product/user/admin）
 

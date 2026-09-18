@@ -1,7 +1,5 @@
 # ADR 0008 — AI 集成全面框架化为 Spring AI 2.0，删除自研 Port/Adapter/装饰器/指标基础设施
 
-> **现状更新（2026-09-19）**：独立智能估值 / 文案生成能力已删除（发布助手对外收敛为拍照识别单入口——两者的价格 / 标题 / 描述产出与拍照识别重复），正文「六个业务服务」中的估值 / 文案两个与「估值 / 文案」注入处引用不复存在，其余为决策时点口径。
-
 - **状态**：接受
 - **日期**：2026-08-03
 - **决策者**：后端架构
@@ -11,7 +9,7 @@
 
 ## 上下文（Context）
 
-EasyOrange 的 6 个 AI 决策点（智能估值 / AI 营销文案 / AI 信用画像 / AI 智能找货 / AI 物品评估 / 内容审核）自 2025-11 起基于自研基础设施构建，到 2026-07 累计了以下代码：
+EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026-07 已支撑 6 个决策点（当时的清单：智能估值 / AI 营销文案 / AI 信用画像 / AI 智能找货 / AI 物品评估 / 内容审核），累计了以下代码：
 
 - **自研 Port/Adapter + 装饰器**：`LlmPort` / `VisionPort` 接口、`DeepSeekLlmAdapter` / `PythonLlmAdapter` / `QwenVlVisionAdapter` 底层实现、`CachingLlmAdapter` / `CachingVisionAdapter` 的 `@Primary` 装饰器（L1 Caffeine + L2 Redis 多级缓存）
 - **自研 DTO 与 HTTP 调用**：`DeepSeekRequest` / `DeepSeekResponse` / `QwenVlRequest` / `QwenVlResponse`，手写 RestClient + ObjectMapper JSON 解析，线协议是 OpenAI Chat Completions / Embeddings 兼容格式
@@ -29,7 +27,7 @@ EasyOrange 的 6 个 AI 决策点（智能估值 / AI 营销文案 / AI 信用�
 
 ## 决策（Decision）
 
-**全面框架化**：删除 AI 模块自研的 Port/Adapter/装饰器/自定义 DTO/自定义指标/Python 侧车，六个业务服务 + 语义搜索 + 搜索增强直接注入 Spring AI 的 `ChatModel` / `EmbeddingModel` bean。
+**全面框架化**：删除 AI 模块自研的 Port/Adapter/装饰器/自定义 DTO/自定义指标/Python 侧车，业务服务（拍照上架 / 内容审核 / 商品问答 / 对话与搜索增强 / 知识检索）直接注入 Spring AI 的 `ChatModel` / `EmbeddingModel` bean。
 
 ### 1. 模型 Bean（[AiModelConfig.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/AiModelConfig.java)）
 
@@ -37,7 +35,7 @@ EasyOrange 的 6 个 AI 决策点（智能估值 / AI 营销文案 / AI 信用�
 
 | Bean | 端点 | 模型 | 注入处 |
 |------|------|------|--------|
-| `chatModel`（`@Primary`） | DeepSeek `https://api.deepseek.com` | `deepseek-chat` | 估值 / 文案 / 审核 / 问答 / 搜索增强 |
+| `chatModel`（`@Primary`） | DeepSeek `https://api.deepseek.com` | `deepseek-chat` | 内容审核 / 商品问答 / 对话与工具决策 / 搜索意图识别 |
 | `visionChatModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-vl-max` | 拍照上架图片识别 |
 | `embeddingModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `text-embedding-v3`（dimensions=1024） | 语义搜索 + ES 索引写入 |
 
@@ -58,11 +56,11 @@ EasyOrange 的 6 个 AI 决策点（智能估值 / AI 营销文案 / AI 信用�
 
 - `@TokenBudget` AOP（预算治理与框架无关，保留；已移除 `AiMetricsService` 依赖）
 - `AiRateLimitInterceptor`（Redis 令牌桶，超限 429，保留；已移除 `AiMetricsService` 依赖）
-- `SemanticSearchService` / `AiSearchEnhancerAdapter` 的缓存与降级业务逻辑，仅把 LLM 调用点换成 `ChatModel`
+- `AiSearchEnhancerAdapter` 的缓存与降级业务逻辑，仅把 LLM 调用点换成 `ChatModel`；查询向量化收敛为 `QueryEmbeddingAdapter`（实现 product 侧 `QueryEmbeddingPort`，不再是独立服务）
 
 ### 5. Embedding 变真实现
 
-- 查询侧：`SemanticSearchService.search()` 用 `embeddingModel.embed(keyword)` 生成查询向量，经 `ProductSearchQueryPort` 传入 `ElasticsearchProductSearchQueryAdapter` 的 kNN 查询（`nameEmbedding` 字段）
+- 查询侧：`QueryEmbeddingAdapter.embed(keyword)` 用 `embeddingModel.embed(...)` 生成查询向量，经 `ProductSearchQueryPort` 传入 `ElasticsearchProductSearchQueryAdapter` 的 kNN 查询（`nameEmbedding` 字段）
 - 索引侧：`ElasticsearchProductSearchIndexAdapter.buildDocument()` 注入 `ObjectProvider<EmbeddingModel>`，best-effort 写入 `nameEmbedding`（失败降级 null，不阻塞索引），维度 1024 与 `product-mapping.json` 的 `dense_vector dims=1024` 对齐
 
 ## 后果（Consequences）
