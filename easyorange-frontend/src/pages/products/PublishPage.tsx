@@ -21,17 +21,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { productApi } from '@/api/productApi';
-import { AiCopyGeneration } from '@/components/ai/AiCopyGeneration';
 import { AiPhotoCapture } from '@/components/ai/AiPhotoCapture';
-import { AiPricingBadge } from '@/components/ai/AiPricingBadge';
 import { Input, Label } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { CONDITION_LABEL_MAP } from '@/constants';
 import { useCategories, useCreateProduct } from '@/hooks';
-import { useAiCopyGeneration } from '@/hooks/useAiCopyGeneration';
-import { useAiPricing } from '@/hooks/useAiPricing';
 import { useAutoListing } from '@/hooks/useAutoListing';
 import { buildProductPayload, useProductForm } from '@/hooks/useProductForm';
 import type { PublishFormData } from '@/schemas/publishSchema';
@@ -55,14 +51,14 @@ function PublishPage() {
     const navigate = useNavigate();
     const createProduct = useCreateProduct();
     const { data: categories } = useCategories();
-    const { suggestion, isLoading: aiPricingLoading, getPricing, clearSuggestion } = useAiPricing();
     const {
         result: autoListingResult,
         isLoading: autoListingLoading,
         analyzeImages,
         clearResult: clearAutoListing,
     } = useAutoListing();
-    const { result: copyResult, isLoading: copyLoading, generateCopy, clearResult: clearCopy } = useAiCopyGeneration();
+    // 拍照识别给出的建议价：随商品一起提交，供管理端算「AI 建议 vs 人工最终价」的采纳率与偏离度
+    const [aiSuggestedPrice, setAiSuggestedPrice] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [activeSection, setActiveSection] = useState(0);
@@ -100,6 +96,7 @@ function PublishPage() {
             setValue('description', autoListingResult.description);
             if (autoListingResult.price > 0) {
                 setValue('price', String(autoListingResult.price));
+                setAiSuggestedPrice(autoListingResult.price);
             }
             if (autoListingResult.conditionLevel > 0) {
                 setValue('conditionLevel', String(autoListingResult.conditionLevel));
@@ -174,7 +171,10 @@ function PublishPage() {
         const payload = buildProductPayload(data);
 
         try {
-            const productId = (await createProduct.mutateAsync(payload)) as string;
+            const productId = (await createProduct.mutateAsync({
+                ...payload,
+                aiSuggestedPrice: aiSuggestedPrice ?? undefined,
+            })) as string;
 
             if (!isDraft && productId) {
                 // 新建商品是 DRAFT，只能先提交审核（DRAFT → PENDING_REVIEW）；
@@ -578,28 +578,6 @@ function PublishPage() {
                                         />
                                         <span className="char-count-v2">{vals.description.length}/2000</span>
                                     </div>
-                                    <AiCopyGeneration
-                                        productName={vals.name}
-                                        onGenerate={style => {
-                                            const category = categories?.find(c => String(c.id) === vals.categoryId);
-                                            generateCopy({
-                                                productName: vals.name,
-                                                categoryName: category?.name || undefined,
-                                                conditionLevel: vals.conditionLevel
-                                                    ? Number(vals.conditionLevel)
-                                                    : undefined,
-                                                originalPrice: vals.originalPrice || undefined,
-                                                style,
-                                            });
-                                        }}
-                                        onApply={result => {
-                                            setValue('name', result.title);
-                                            setValue('description', result.description);
-                                            clearCopy();
-                                        }}
-                                        result={copyResult}
-                                        isLoading={copyLoading}
-                                    />
                                 </div>
 
                                 <div className="field-row-v2">
@@ -717,50 +695,6 @@ function PublishPage() {
                                             </span>
                                         </div>
                                     )}
-
-                                {vals.name && !suggestion && (
-                                    <Button
-                                        className="ai-pricing-btn"
-                                        onClick={() => {
-                                            const category = categories?.find(c => String(c.id) === vals.categoryId);
-                                            getPricing({
-                                                productName: vals.name,
-                                                description: vals.description || undefined,
-                                                categoryName: category?.name || undefined,
-                                                conditionLevel: vals.conditionLevel
-                                                    ? Number(vals.conditionLevel)
-                                                    : undefined,
-                                                originalPrice: vals.originalPrice
-                                                    ? Number(vals.originalPrice)
-                                                    : undefined,
-                                            });
-                                        }}
-                                        disabled={aiPricingLoading}
-                                    >
-                                        {aiPricingLoading ? (
-                                            <>
-                                                <Loader2 size={14} className="animate-spin" />
-                                                AI 分析中...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Sparkles size={14} />
-                                                AI 智能估值
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
-
-                                {suggestion && (
-                                    <AiPricingBadge
-                                        suggestion={suggestion}
-                                        onApply={price => {
-                                            setValue('price', String(price));
-                                            clearSuggestion();
-                                        }}
-                                        isLoading={aiPricingLoading}
-                                    />
-                                )}
 
                                 <div className="field-group-v2" style={{ maxWidth: '200px' }}>
                                     <Label className="field-label-v2" htmlFor="stock">

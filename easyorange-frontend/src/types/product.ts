@@ -54,6 +54,8 @@ export interface CreateProductRequest {
     location?: string;
     contactMethod?: string;
     imageUrls: string[];
+    /** AI 建议售价（拍照识别给出）。仅用于统计采纳率与偏离度，不参与定价逻辑 */
+    aiSuggestedPrice?: number;
 }
 
 export interface UpdateProductRequest {

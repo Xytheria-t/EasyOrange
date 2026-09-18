@@ -9,12 +9,6 @@ import org.junit.jupiter.api.Test;
 class AiCallScopeTest {
 
     @Test
-    @DisplayName("fromUri 匹配 pricing")
-    void fromUri_pricing() {
-        assertThat(AiCallScope.fromUri("/api/ai/pricing")).isEqualTo(AiCallScope.PRICING);
-    }
-
-    @Test
     @DisplayName("fromUri 匹配 review（审核建议只剩管理端入口）")
     void fromUri_review() {
         // /api/ai/review 已于 2026-09-18 删除（无调用方的重复入口）；REVIEW 场景现由管理端触发
@@ -40,12 +34,6 @@ class AiCallScopeTest {
     }
 
     @Test
-    @DisplayName("fromUri 匹配 generate-copy")
-    void fromUri_copy() {
-        assertThat(AiCallScope.fromUri("/api/ai/generate-copy")).isEqualTo(AiCallScope.COPY);
-    }
-
-    @Test
     @DisplayName("fromUri 未匹配返回 QA")
     void fromUri_unknown() {
         assertThat(AiCallScope.fromUri("/api/ai/unknown")).isEqualTo(AiCallScope.QA);
@@ -66,7 +54,7 @@ class AiCallScopeTest {
     @Test
     @DisplayName("rateLimitKeyPrefix 格式正确")
     void rateLimitKeyPrefix() {
-        assertThat(AiCallScope.PRICING.rateLimitKeyPrefix()).isEqualTo("ai:rl:pricing:");
+        assertThat(AiCallScope.AUTO_LISTING.rateLimitKeyPrefix()).isEqualTo("ai:rl:auto_listing:");
     }
 
     @Test

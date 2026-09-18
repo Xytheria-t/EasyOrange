@@ -9,13 +9,6 @@ vi.mock('@/api/aiApi', () => ({
     aiApi: {
         chatStream: vi.fn(),
         feedback: vi.fn().mockResolvedValue({ code: 'A0000', message: 'ok', data: null, timestamp: 0 }),
-        chat: vi.fn(),
-        knowledgeSearch: vi.fn(),
-        suggestPrice: vi.fn(),
-        autoListing: vi.fn(),
-        semanticSearch: vi.fn(),
-        answerQuestion: vi.fn(),
-        generateCopy: vi.fn(),
     },
 }));
 

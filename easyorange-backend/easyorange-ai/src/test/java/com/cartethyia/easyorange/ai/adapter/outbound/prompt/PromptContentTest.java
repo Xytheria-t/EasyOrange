@@ -31,8 +31,6 @@ class PromptContentTest {
     private static final String[] ALL_PROMPTS = {
         "ai_chat_system",
         "ai_chat_tool_system",
-        "ai_pricing_system",
-        "ai_copy_generation_system",
         "ai_review_system",
         "ai_qa_system",
         "auto_listing_visual",
@@ -41,7 +39,7 @@ class PromptContentTest {
     };
 
     @Test
-    @DisplayName("9 个 prompt 模板全部加载成功（6 业务服务 + 对话 + 工具决策 + 搜索意图识别）")
+    @DisplayName("7 个 prompt 模板全部加载成功（发布助手 2 + 对话 2 + 审核 + 问答 + 搜索意图识别）")
     void allPromptsLoaded() {
         for (String name : ALL_PROMPTS) {
             assertThat(registry.getLatest(name)).as("prompt '%s' 应加载成功", name).isPresent();
@@ -50,8 +48,6 @@ class PromptContentTest {
 
     @ParameterizedTest
     @CsvSource({
-        "ai_pricing_system, 智能估值助手",
-        "ai_copy_generation_system, 智能文案生成助手",
         "ai_review_system, 资产审核助手",
         "ai_qa_system, 智能客服助手",
         "auto_listing_visual, 商品类型和名称",

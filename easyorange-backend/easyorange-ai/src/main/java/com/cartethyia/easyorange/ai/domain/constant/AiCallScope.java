@@ -16,9 +16,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum AiCallScope {
-    PRICING(10, "pricing"),
     REVIEW(10, "review"),
-    COPY(20, "generate-copy"),
     AUTO_LISTING(5, "auto-listing"),
     SEMANTIC(30, "semantic-search"),
     QA(20, "qa"),
