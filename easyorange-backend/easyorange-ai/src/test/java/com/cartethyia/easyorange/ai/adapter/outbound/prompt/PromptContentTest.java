@@ -85,13 +85,12 @@ class PromptContentTest {
     @Test
     @DisplayName("JSON 输出类 prompt 包含 JSON 格式说明")
     void jsonPromptsContainJsonFormatSpec() {
-        var pricing = registry.getLatest("ai_pricing_system").orElseThrow().template();
-        var copy = registry.getLatest("ai_copy_generation_system").orElseThrow().template();
+        // 估值 / 文案两个 prompt 已随「发布助手收敛为拍照识别单入口」删除（fca8e918），
+        // 能力并入 auto_listing_system；剩下这两条是仅有的 JSON 输出 prompt
+        // （search_intent_system 直接吐一句文本，不属于此列）
         var review = registry.getLatest("ai_review_system").orElseThrow().template();
         var listing = registry.getLatest("auto_listing_system").orElseThrow().template();
 
-        assertThat(pricing).contains("JSON 格式返回", "suggestedPrice");
-        assertThat(copy).contains("JSON 格式返回", "title");
         assertThat(review).contains("JSON 格式返回", "suggestedAction");
         assertThat(listing).contains("JSON 格式返回", "title");
     }
