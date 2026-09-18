@@ -29,6 +29,9 @@ export default defineConfig({
     },
     setupFiles: ['./src/testUtils/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // 默认按核数开 worker：24 核开发机上约 23 个 jsdom worker 打满内存，随机让若干用例撞 5s 超时
+    // （pre-push 门禁随之误红）。限 4 个；CI 的 2 核 runner 本来到不了这个上限。
+    maxWorkers: 4,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
