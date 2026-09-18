@@ -31,9 +31,9 @@ class AiCallLogRecorderTest {
     }
 
     @Test
-    @DisplayName("成功调用 -> insert 完整字段")
+    @DisplayName("成功调用 -> insert 完整字段（含用量与主体）")
     void record_success() {
-        recorder.record("PRICING", "OpenAiChatModel", "abc123", "{\"price\":100}", 250L, true, null);
+        recorder.record("PRICING", "OpenAiChatModel", "abc123", "{\"price\":100}", 250L, 120, 40, "p-1", true, null);
 
         verify(jdbcTemplate)
                 .update(
@@ -44,6 +44,51 @@ class AiCallLogRecorderTest {
                         eq("abc123"),
                         eq("{\"price\":100}"),
                         eq(250L),
+                        eq(120),
+                        eq(40),
+                        eq("p-1"),
+                        eq(1),
+                        eq(null));
+    }
+
+    @Test
+    @DisplayName("未回报用量 -> 记 0（不估算，估算值混进成本报表比缺数据更危险）")
+    void record_withoutUsage_recordsZero() {
+        recorder.record("SEMANTIC", "OpenAiEmbeddingModel", "hash", null, 30L, 0, 0, null, true, null);
+
+        verify(jdbcTemplate)
+                .update(
+                        anyString(),
+                        eq("id-1"),
+                        eq("SEMANTIC"),
+                        eq("OpenAiEmbeddingModel"),
+                        eq("hash"),
+                        eq(null),
+                        eq(30L),
+                        eq(0),
+                        eq(0),
+                        eq(null),
+                        eq(1),
+                        eq(null));
+    }
+
+    @Test
+    @DisplayName("负数用量 -> 归零（供应商回报异常不该污染成本报表）")
+    void record_negativeUsageClampedToZero() {
+        recorder.record("QA", "model", "hash", "ok", 1L, -5, -1, null, true, null);
+
+        verify(jdbcTemplate)
+                .update(
+                        anyString(),
+                        eq("id-1"),
+                        eq("QA"),
+                        eq("model"),
+                        eq("hash"),
+                        eq("ok"),
+                        eq(1L),
+                        eq(0),
+                        eq(0),
+                        eq(null),
                         eq(1),
                         eq(null));
     }
@@ -51,10 +96,22 @@ class AiCallLogRecorderTest {
     @Test
     @DisplayName("失败调用 -> success=0 + error_msg")
     void record_failure() {
-        recorder.record("QA", "OpenAiChatModel", "hash", null, 500L, false, "API timeout");
+        recorder.record("QA", "OpenAiChatModel", "hash", null, 500L, 0, 0, null, false, "API timeout");
 
         verify(jdbcTemplate)
-                .update(anyString(), eq("id-1"), eq("QA"), any(), any(), any(), eq(500L), eq(0), eq("API timeout"));
+                .update(
+                        anyString(),
+                        eq("id-1"),
+                        eq("QA"),
+                        any(),
+                        any(),
+                        any(),
+                        eq(500L),
+                        any(),
+                        any(),
+                        any(),
+                        eq(0),
+                        eq("API timeout"));
     }
 
     @Test
@@ -62,9 +119,22 @@ class AiCallLogRecorderTest {
     void record_truncatesLongError() {
         String longError = "e".repeat(1000);
 
-        recorder.record("QA", "OpenAiChatModel", "hash", null, 1L, false, longError);
+        recorder.record("QA", "OpenAiChatModel", "hash", null, 1L, 0, 0, null, false, longError);
 
-        verify(jdbcTemplate).update(anyString(), any(), any(), any(), any(), any(), any(), any(), eq("e".repeat(512)));
+        verify(jdbcTemplate)
+                .update(
+                        anyString(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        eq("e".repeat(512)));
     }
 
     @Test
@@ -72,7 +142,7 @@ class AiCallLogRecorderTest {
     void record_dbFailureSwallowed() {
         doThrow(new RuntimeException("db down")).when(jdbcTemplate).update(anyString(), any(Object[].class));
 
-        assertThatCode(() -> recorder.record("QA", "model", "hash", "ok", 1L, true, null))
+        assertThatCode(() -> recorder.record("QA", "model", "hash", "ok", 1L, 0, 0, null, true, null))
                 .doesNotThrowAnyException();
     }
 }

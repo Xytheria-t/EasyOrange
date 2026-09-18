@@ -75,7 +75,18 @@ class AiModelSupportTest {
             String result = aiModelSupport.callText(chatModel, AiCallScope.QA, "system", "user");
 
             assertThat(result).isEqualTo("你好");
-            verify(callLogRecorder).record(eq("QA"), anyString(), anyString(), eq("你好"), anyLong(), eq(true), isNull());
+            verify(callLogRecorder)
+                    .record(
+                            eq("QA"),
+                            anyString(),
+                            anyString(),
+                            eq("你好"),
+                            anyLong(),
+                            anyInt(),
+                            anyInt(),
+                            isNull(),
+                            eq(true),
+                            isNull());
         }
 
         @Test
@@ -88,7 +99,38 @@ class AiModelSupportTest {
                     .isInstanceOf(RuntimeException.class);
 
             verify(callLogRecorder)
-                    .record(eq("QA"), anyString(), anyString(), isNull(), anyLong(), eq(false), anyString());
+                    .record(
+                            eq("QA"),
+                            anyString(),
+                            anyString(),
+                            isNull(),
+                            anyLong(),
+                            anyInt(),
+                            anyInt(),
+                            isNull(),
+                            eq(false),
+                            anyString());
+        }
+
+        @Test
+        @DisplayName("带主体调用 -> subjectId 落进调用日志（成本可按主体归因）")
+        void callText_withSubject_recordsSubjectId() {
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("你好"));
+
+            aiModelSupport.callText(chatModel, AiCallScope.QA, "p-42", "system", "user");
+
+            verify(callLogRecorder)
+                    .record(
+                            eq("QA"),
+                            anyString(),
+                            anyString(),
+                            eq("你好"),
+                            anyLong(),
+                            anyInt(),
+                            anyInt(),
+                            eq("p-42"),
+                            eq(true),
+                            isNull());
         }
     }
 
