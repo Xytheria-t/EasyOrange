@@ -1,79 +1,52 @@
 # easyorange-favorite 模块指南
 
-收藏模块，DDD + ACL 架构，处理用户商品收藏的增删查。
+收藏模块，DDD + ACL 架构，处理用户商品收藏的增删查与降价提醒。
 
 ## 目录结构
 
 ```
 favorite/
-├── adapter/                           # 适配器层
-│   ├── inbound/web/                   # 入站适配器
-│   │   ├── controller/
-│   │   │   └── FavoriteController.java
-│   │   ├── assembler/
-│   │   │   └── FavoriteAssembler.java
+├── adapter/
+│   ├── inbound/web/
+│   │   ├── controller/FavoriteController.java
+│   │   ├── assembler/FavoriteAssembler.java
 │   │   └── dto/
-│   │       ├── request/
-│   │       │   ├── AddFavoriteRequest.java
-│   │       │   ├── FavoritePageRequest.java
-│   │       │   ├── BatchCheckRequest.java
-│   │       │   └── BatchRemoveRequest.java
-│   │       └── response/
-│   │           ├── FavoriteResponse.java
-│   │           └── FavoriteDetailResponse.java
-│   └── outbound/persistence/          # 出站适配器
-│       ├── FavoriteDO.java
-│       ├── FavoriteMapper.java
-│       └── FavoriteRepositoryImpl.java
-├── application/                       # 应用层
-│   └── service/
-│       └── FavoriteService.java
-└── domain/                            # 领域层
-    ├── aggregate/
-    │   ├── Favorite.java              # 收藏聚合根 (不可变)
-    │   └── FavoriteCreateSpec.java    # record 收敛 create() 工厂参数
+│   │       ├── request/                  # BatchCheckRequest / BatchRemoveRequest
+│   │       └── response/                 # FavoriteResponse
+│   └── outbound/persistence/
+│       ├── FavoriteDO.java, FavoriteMapper.java, FavoriteRepositoryImpl.java
+├── application/
+│   └── service/FavoriteService.java
+└── domain/
+    ├── aggregate/Favorite.java           # 收藏聚合根（record）
     ├── port/
-    │   └── ProductInfoPort.java       # 商品信息端口
-    ├── repository/
-    │   └── FavoriteRepository.java    # 仓储接口
-    └── valueobject/
-        ├── ProductDetailInfo.java
-        ├── ProductInfo.java
-        └── SellerInfo.java
+    │   ├── ProductInfoPort.java          # 商品价格/归属查询（ACL）
+    │   └── PriceDropNotificationPort.java # 降价通知（实现在 easyorange-application）
+    ├── repository/FavoriteRepository.java
+    └── valueobject/                      # ProductDetailInfo / ProductInfo / SellerInfo
 ```
 
 ## ACL 模式
 
-通过 `ProductInfoPort` 端口接口隔离对 product 模块的依赖，实现在 application 模块的适配器中。
+通过 `ProductInfoPort` 端口接口隔离对 product 模块的依赖，实现 `FavoriteProductInfoAdapter` 在 `easyorange-application/adapter/outbound/product/`。
 
 这是项目中 ACL 模式的最佳实践示例，其他模块的跨模块依赖也应参照此模式。
 
 ## Favorite 聚合根
 
 ```java
-public class Favorite {
-    private final String id;
-    private final String userId;
-    private final String productId;
-    private final LocalDateTime createTime;
-
-    public static Favorite create(FavoriteCreateSpec spec) { ... }
-    public static Favorite reconstitute(String id, String userId, String productId, LocalDateTime createTime) { ... }
+public record Favorite(String id, String userId, String productId, BigDecimal priceSnapshot, LocalDateTime createTime) {
+    public static Favorite create(String userId, String productId, BigDecimal price);
+    public static Favorite reconstitute(String id, String userId, String productId, BigDecimal priceSnapshot, LocalDateTime createTime);
+    public void validateOwnership(String userId);
+    public boolean isPriceDrop(BigDecimal newPrice);
 }
 ```
 
-- 不可变设计，通过静态工厂方法创建
-- `id`、`userId`、`productId` 均为 String (UUID v7)
-- `create(FavoriteCreateSpec)` 用于新建（对齐 product/order/payment 的 Spec 模式，校验 null + 空字符串）
-- `reconstitute()` 用于从持久化重建
-
-## 事务规范
-
-查询方法必须标注 `@Transactional(readOnly = true)`：
-- `queryFavorites()` - 分页查询
-- `isFavorited()` - 检查是否收藏
-- `getFavoriteCount()` - 获取收藏数量
-- `batchCheckFavorited()` - 批量检查收藏状态
+- `create()` 校验 userId / productId 非空并记录收藏时价格快照（价格缺失拒绝收藏）
+- `reconstitute()` 仅从持久化重建，不做校验
+- `isPriceDrop(newPrice)` 要求新价低于快照价；快照为空视为未知，不判定降价
+- 快照更新走仓储 CAS（`WHERE price_snapshot = 旧值`），重复事件不重复通知（只提醒「再创新低」）
 
 ## 常见开发任务
 

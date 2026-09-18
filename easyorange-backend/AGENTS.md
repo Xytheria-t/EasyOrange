@@ -197,17 +197,10 @@ Resilience4j CircuitBreaker 已移除（2026-08-13，随手写多级缓存一并
 
 ### AI 调用重试与并发隔离（Spring AI 客户端内置）
 
-AI 模块已全面框架化为 Spring AI 2.0（ADR-0008），自研 `CachingLlmAdapter` / `CachingVisionAdapter` / Resilience4j `aiLlmRetry` / `aiVisionRetry` / `aiLlmBulkhead` / `aiVisionBulkhead` 已删除。重试与并发隔离由 `AiModelConfig` 的 `OpenAiSetup.setupSyncClient` 承担：
+重试与并发隔离由 `AiModelConfig` 的 `OpenAiSetup.setupSyncClient` 承担（openai-java 客户端内置 `MAX_RETRIES=2` + 连接池），不再有自研重试 / Bulkhead bean。
 
-- 重试：`MAX_RETRIES=2`（openai-java 客户端内置重试策略）
-- 并发：openai-java 客户端连接池配置（`OpenAiSetup` 默认值）
-
-**新增 AI 调用时**：直接注入 `ChatModel` / `EmbeddingModel` bean，用 `AiModelSupport` 去重调用模式；业务级治理（`@TokenBudget` / `AiRateLimitInterceptor`）保留。
-
-### AI 搜索增强并行管道
-
-`AiSearchEnhancerAdapter` 内 4 路 `CompletableFuture` 并行执行（仅意图识别打模型，商品标签 / 市场分析 / 建议问题为本地规则计算），`supplyAsync` 显式传 `SearchTool.VIRTUAL` 虚拟线程执行器（每任务一个虚拟线程，不占 `ForkJoinPool.commonPool()` 平台线程），无需自定义线程池。整体 5s 截止（`allOf(...).get(5, SECONDS)`，无单步超时；5 为硬编码常量），超时/异常后经 `getNow` 收集已完成步骤的部分结果。取消操作使用 `cancel(false)` 避免中断虚拟线程的 carrier 线程。
+**新增 AI 调用时**：直接注入 `ChatModel` / `EmbeddingModel` bean，用 `AiModelSupport` 去重调用模式；业务级治理（`@TokenBudget` / `AiRateLimitInterceptor`）保留。管道细节见 [easyorange-ai/AGENTS.md](easyorange-ai/AGENTS.md)。
 
 ### Admin 模块端口接口
 
-Admin 模块**禁止直接依赖其他模块的 Mapper/DO**，必须通过 `domain/port/`（`AdminProductPort`, `AdminUserPort`, `AdminOrderPort`, `AdminRatingPort`）接口查询，适配器在 `easyorange-application/adapter/outbound/admin/` 实现。
+Admin 模块**禁止直接依赖其他模块的 Mapper/DO**，必须通过 `domain/port/` 的 8 个 `Admin*Port`（Product / User / Order / Rating / Category / Dashboard / ProductAudit / Report）查询，适配器在 `easyorange-application/adapter/outbound/admin/` 实现。

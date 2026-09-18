@@ -10,7 +10,8 @@
 |--------|-----------|------|
 | 仪表板 | AdminDashboardController | 统计概览、待处理事项、趋势分析、最近动态、用户活跃热力图、Top 浏览量商品 |
 | 用户管理 | AdminUserController | 用户列表、详情、状态、解锁、重置密码、强制下线、角色 |
-| 商品管理 | AdminProductController | 商品列表、详情、审核(带原因)、批量审核 |
+| 商品管理 | AdminProductController | 商品列表、详情、状态变更 |
+| 商品审核 | AdminProductAuditController | 审核（带原因）、批量审核、审核日志、AI 预审结果查询 |
 | 订单管理 | AdminOrderController | 订单列表、详情、取消、强制完成、退款、统计 |
 | 分类管理 | AdminCategoryController | 分类 CRUD、树形结构、启用禁用 |
 | 举报管理 | AdminReportController | 举报列表、详情、处理、统计 |
@@ -25,9 +26,9 @@ easyorange-admin/
 └── src/main/java/com/cartethyia/easyorange/admin/
     ├── adapter/
     │   └── inbound/web/
-    │       ├── controller/           # REST 控制器
-    │       ├── assembler/            # DTO 组装器（禁止在 Service 中直接构造 Response DTO）
-    │       └── dto/                  # 数据传输对象
+    │       ├── controller/           # 8 个 Controller（见上方功能域表）
+    │       ├── assembler/            # DTO 组装器
+    │       └── dto/
     │           ├── request/          # 请求 DTO
     │           └── response/         # 响应 Response
     ├── domain/
@@ -48,24 +49,26 @@ easyorange-admin/
 
 ## 设计原则
 
-1. **只读优先**: 查询方法标注 `@Transactional(readOnly = true)`
-2. **操作审计**: 所有写操作记录 reason + 操作人信息
-3. **权限控制**: 所有接口依赖 SecurityConfig 的管理员鉴权
-4. **依赖隔离**: 通过 `<optional>true</optional>` 实现编译期隔离
+1. **操作审计**: 所有写操作记录 reason + 操作人信息
+2. **权限控制**: 所有接口依赖 SecurityConfig 的管理员鉴权
 
 ## 模块依赖
 
 ```
 easyorange-admin ──optional──> easyorange-common   (Result, PageResult, BusinessException)
                  ──optional──> easyorange-framework (TokenService, SecurityContextUtil)
-                 (其余业务模块零依赖 — 2026-08-08 收口，所有跨模块访问经 domain/port/)
+                 (其余业务模块零依赖，所有跨模块访问经 domain/port/)
 ```
 
-**跨模块通信**：通过 `domain/port/` 端口接口解耦，适配器实现在 `easyorange-application/adapter/outbound/admin/`：
-- `AdminProductAdapter` → ProductMapper / ProductRepository / 举报·审核·分类·AI 审核
-- `AdminUserAdapter` → UserMapper（含用户状态/角色/密码管理）
-- `AdminOrderAdapter` → OrderMapper / OrderQueryRepository / OrderRepository
+**跨模块通信**：通过 `domain/port/` 端口接口解耦，8 个适配器实现在 `easyorange-application/adapter/outbound/admin/`：
+- `AdminCategoryAdapter` → CategoryMapper / CategoryQueryRepository / CategoryCachePort
+- `AdminDashboardAdapter` → ProductMapper / ProductQueryRepository / JdbcTemplate（跨模块聚合统计）
+- `AdminOrderAdapter` → OrderMapper / OrderItemMapper / ProductMapper / PaymentMapper / OrderQueryRepository / OrderRepository
+- `AdminProductAdapter` → ProductMapper / ProductDetailMapper / ProductImageMapper / ProductRepository / ProductCacheEvictionPort
+- `AdminProductAuditAdapter` → ProductAuditLogRepository / ProductRepository / AiReviewService（AI 预审）
 - `AdminRatingAdapter` → ProductRatingMapper
+- `AdminReportAdapter` → ProductReportQueryRepository / ProductReportRepository / ReportHandleHistoryRepository / ProductRepository
+- `AdminUserAdapter` → `AdminUserManagementPort`（纯翻译层，读写委托 user 模块，含用户状态/角色/密码管理）
 
 ## 常见开发任务
 
