@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.framework.config.cache;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.DoubleSupplier;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.redis.cache.CacheStatistics;
@@ -18,10 +19,22 @@ class JitterTtlRedisCacheWriter implements RedisCacheWriter {
 
     private final RedisCacheWriter delegate;
     private final double jitterRatio;
+    private final DoubleSupplier uniform;
 
     JitterTtlRedisCacheWriter(RedisCacheWriter delegate, double jitterRatio) {
+        this(delegate, jitterRatio, () -> ThreadLocalRandom.current().nextDouble());
+    }
+
+    /**
+     * 随机源可注入：生产走 ThreadLocalRandom（每线程独立，避免跨线程共享同一条随机序列）；
+     * 测试注入确定性取值以钉住抖动边界（0 抖动 / 逼近上限），不依赖概率。
+     *
+     * @param uniform 返回 [0, 1) 均匀分布随机数
+     */
+    JitterTtlRedisCacheWriter(RedisCacheWriter delegate, double jitterRatio, DoubleSupplier uniform) {
         this.delegate = delegate;
         this.jitterRatio = Math.min(Math.max(jitterRatio, 0), 1);
+        this.uniform = uniform;
     }
 
     @Override
@@ -39,14 +52,13 @@ class JitterTtlRedisCacheWriter implements RedisCacheWriter {
         return delegate.putIfAbsent(name, key, value, jitter(ttl));
     }
 
-    /** null（不过期）与非正数 TTL 不抖动；其余加 0~ratio 比例随机偏移。 */
+    /** null（不过期）与非正数 TTL 不抖动；其余加 0~ratio 比例随机偏移（下界可取到，上界取不到）。 */
     @Nullable
     private Duration jitter(@Nullable Duration ttl) {
         if (ttl == null || ttl.isZero() || ttl.isNegative() || jitterRatio <= 0) {
             return ttl;
         }
-        return ttl.plusMillis(
-                (long) (ttl.toMillis() * ThreadLocalRandom.current().nextDouble(jitterRatio)));
+        return ttl.plusMillis((long) (ttl.toMillis() * jitterRatio * uniform.getAsDouble()));
     }
 
     // —— 读写与统计路径透传 ——
@@ -83,7 +95,8 @@ class JitterTtlRedisCacheWriter implements RedisCacheWriter {
 
     @Override
     public RedisCacheWriter withStatisticsCollector(CacheStatisticsCollector statisticsCollector) {
-        // 包一层保持抖动语义，避免统计收集器替换后丢失装饰
-        return new JitterTtlRedisCacheWriter(delegate.withStatisticsCollector(statisticsCollector), jitterRatio);
+        // 包一层保持抖动语义（含注入的随机源），避免统计收集器替换后丢失装饰
+        return new JitterTtlRedisCacheWriter(
+                delegate.withStatisticsCollector(statisticsCollector), jitterRatio, uniform);
     }
 }
