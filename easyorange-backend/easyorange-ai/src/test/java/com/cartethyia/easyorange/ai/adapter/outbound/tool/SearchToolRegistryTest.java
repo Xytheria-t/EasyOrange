@@ -25,7 +25,7 @@ class SearchToolRegistryTest {
         }
     };
 
-    private static final SearchToolContext CTX = new SearchToolContext("找电脑", List.<ProductReadModel>of(), "");
+    private static final SearchToolContext CTX = new SearchToolContext("找电脑", List.<ProductReadModel>of());
 
     @Test
     @DisplayName("get 按名字取工具 -> 执行正常")

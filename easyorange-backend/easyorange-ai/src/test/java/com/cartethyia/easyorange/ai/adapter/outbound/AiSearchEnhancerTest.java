@@ -37,6 +37,9 @@ import org.springframework.data.redis.core.ValueOperations;
 @DisplayName("AiSearchEnhancerAdapter -> 测试")
 class AiSearchEnhancerTest {
 
+    /** 与生产默认值一致；用例里模型是 mock（立即返回），总超时值不影响断言。 */
+    private static final int TIMEOUT_SECONDS = 5;
+
     @Mock
     private NaturalLanguageDetector nlDetector;
 
@@ -61,15 +64,15 @@ class AiSearchEnhancerTest {
     void setUp() {
         lenient().when(redisTemplateProvider.getIfAvailable()).thenReturn(redisTemplate);
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOps);
-        enhancer = new AiSearchEnhancerAdapter(nlDetector, buildRegistry(), redisTemplateProvider);
+        enhancer = new AiSearchEnhancerAdapter(nlDetector, buildRegistry(), redisTemplateProvider, TIMEOUT_SECONDS);
     }
 
     private SearchToolRegistry buildRegistry() {
         return new SearchToolRegistry(List.of(
                 new IntentDetectionTool(chatModel, TestAiModelSupport.create(), new TestPromptRegistry()),
                 new ProductTaggingTool(productTagger),
-                new MarketAnalysisTool(chatModel, TestAiModelSupport.create(), new TestPromptRegistry()),
-                new QuestionSuggestionTool(chatModel, TestAiModelSupport.create(), new TestPromptRegistry())));
+                new MarketAnalysisTool(),
+                new QuestionSuggestionTool()));
     }
 
     private ProductReadModel product(String id, String title, BigDecimal price) {
@@ -182,7 +185,7 @@ class AiSearchEnhancerTest {
         @DisplayName("Redis 缓存未配置 -> 正常走增强流程")
         void tryEnhance_noRedisConfigured() {
             when(redisTemplateProvider.getIfAvailable()).thenReturn(null);
-            enhancer = new AiSearchEnhancerAdapter(nlDetector, buildRegistry(), redisTemplateProvider);
+            enhancer = new AiSearchEnhancerAdapter(nlDetector, buildRegistry(), redisTemplateProvider, TIMEOUT_SECONDS);
             when(nlDetector.isNaturalLanguage("找电脑")).thenReturn(true);
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of()));
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("想找电脑"));
@@ -207,10 +210,6 @@ class AiSearchEnhancerTest {
             when(chatModel.call(withSystemContaining("search_intent_system")))
                     .thenReturn(textResponse("想找5000元左右的笔记本电脑"));
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of("💰超值")));
-            when(chatModel.call(withSystemContaining("search_market_system")))
-                    .thenReturn(textResponse("当前在管笔记本均价约4800元，性价比不错"));
-            when(chatModel.call(withSystemContaining("search_question_suggestion_system")))
-                    .thenReturn(textResponse("有游戏需求吗,需要轻薄吗"));
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
                     "推荐个5000的笔记本", List.of(product("1", "MacBook Air M1", BigDecimal.valueOf(4200))));
@@ -219,9 +218,12 @@ class AiSearchEnhancerTest {
             AiEnhancement enhancement = result.get();
             assertThat(enhancement.intentExplanation()).isEqualTo("想找5000元左右的笔记本电脑");
             assertThat(enhancement.productTags()).containsKey("1");
-            assertThat(enhancement.marketAnalysis()).isEqualTo("当前在管笔记本均价约4800元，性价比不错");
-            assertThat(enhancement.suggestedQuestions()).hasSize(2).containsExactly("有游戏需求吗", "需要轻薄吗");
+            // 后两路已是规则实现：均价/区间由价格算出，追问由关键词与价格下限派生
+            assertThat(enhancement.marketAnalysis()).isEqualTo("当前 1 件在售，均价 ¥4200，均为 ¥4200");
+            assertThat(enhancement.suggestedQuestions()).containsExactly("「推荐个5000的笔记本」里哪件性价比最高？", "预算 ¥4200 以内能买到什么？");
             verify(valueOps).set(anyString(), any(AiEnhancement.class), eq(5L), any());
+            // 4 路工具里只剩意图识别打模型 —— 一次搜索恰好一次 LLM 调用（此前是 3 次）
+            verify(chatModel, times(1)).call(any(Prompt.class));
         }
 
         @Test

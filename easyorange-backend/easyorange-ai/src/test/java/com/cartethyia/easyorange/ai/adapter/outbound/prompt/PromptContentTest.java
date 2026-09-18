@@ -37,13 +37,11 @@ class PromptContentTest {
         "ai_qa_system",
         "auto_listing_visual",
         "auto_listing_system",
-        "search_intent_system",
-        "search_market_system",
-        "search_question_suggestion_system"
+        "search_intent_system"
     };
 
     @Test
-    @DisplayName("11 个 prompt 模板全部加载成功（6 业务服务 + 对话 + 工具决策 + 搜索增强 3 工具）")
+    @DisplayName("9 个 prompt 模板全部加载成功（6 业务服务 + 对话 + 工具决策 + 搜索意图识别）")
     void allPromptsLoaded() {
         for (String name : ALL_PROMPTS) {
             assertThat(registry.getLatest(name)).as("prompt '%s' 应加载成功", name).isPresent();
@@ -58,9 +56,7 @@ class PromptContentTest {
         "ai_qa_system, 智能客服助手",
         "auto_listing_visual, 商品类型和名称",
         "auto_listing_system, 智能上架助手",
-        "search_intent_system, AI 导购助手",
-        "search_market_system, 市场分析助手",
-        "search_question_suggestion_system, 想追问的问题"
+        "search_intent_system, AI 导购助手"
     })
     @DisplayName("每个 prompt 模板包含服务特定的关键短语（防内容漂移）")
     void promptContainsKeyPhrase(String promptName, String keyPhrase) {
