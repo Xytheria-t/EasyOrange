@@ -48,7 +48,8 @@ public class ProductCommandHandler {
                 TradeLocation.of(command.location()),
                 ContactMethod.of(command.contactMethod()),
                 ProductDescription.of(command.description()),
-                ImageSet.of(command.imageUrls())));
+                ImageSet.of(command.imageUrls()),
+                mapIfPresent(command.aiSuggestedPrice(), Money::of)));
 
         var saved = productRepository.save(created.aggregate());
         // 库存基线落账：与资产创建同事务，给对账任务一个起点

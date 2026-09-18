@@ -87,7 +87,8 @@ class AdminProductAdapterTest {
                 TradeLocation.of("北京"),
                 ContactMethod.of("微信"),
                 ProductDescription.of("描述"),
-                ImageSet.of(List.of("http://img/1.jpg"))));
+                ImageSet.of(List.of("http://img/1.jpg")),
+                null));
         var p = t.aggregate().assignId(PRODUCT_ID);
         return switch (status) {
             case PENDING_REVIEW -> p.submitForReview(SELLER_ID).aggregate();

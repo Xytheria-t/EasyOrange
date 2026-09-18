@@ -45,6 +45,15 @@ public class Product {
     private final ProductTitle title;
     private final Money price;
     private final Money originalPrice;
+
+    /**
+     * AI 建议售价（拍照识别给出，未采到则为 null）。
+     * <p>
+     * 刻意做成聚合里的只读附加信息：不参与任何状态流转与定价校验，只随商品落库，
+     * 让「AI 建议 vs 资产方最终价」这条质量数字可被查询 —— 也是全项目唯一不依赖 LLM 评 LLM 的指标。
+     */
+    private final Money aiSuggestedPrice;
+
     private final StockQuantity stock;
     private final Version version;
     private final ProductStatus status;
@@ -77,6 +86,7 @@ public class Product {
                 .title(spec.title())
                 .price(spec.price())
                 .originalPrice(spec.originalPrice())
+                .aiSuggestedPrice(spec.aiSuggestedPrice())
                 .stock(spec.stock() != null ? spec.stock() : StockQuantity.of(1))
                 .version(Version.INITIAL)
                 .status(ProductStatus.DRAFT)

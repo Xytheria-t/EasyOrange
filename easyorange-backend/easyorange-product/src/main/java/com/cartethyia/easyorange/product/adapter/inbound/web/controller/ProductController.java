@@ -65,7 +65,8 @@ public class ProductController {
                 request.location(),
                 request.contactMethod(),
                 request.description(),
-                request.imageUrls());
+                request.imageUrls(),
+                request.aiSuggestedPrice());
         return Result.success(commandHandler.createProduct(user.userId(), cmd));
     }
 

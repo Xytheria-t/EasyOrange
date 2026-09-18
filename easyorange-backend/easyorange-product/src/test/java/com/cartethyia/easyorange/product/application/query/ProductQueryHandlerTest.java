@@ -70,7 +70,8 @@ class ProductQueryHandlerTest {
                         TradeLocation.of("北京"),
                         ContactMethod.of("微信"),
                         ProductDescription.of("描述"),
-                        ImageSet.of(List.of("http://img/1.jpg"))))
+                        ImageSet.of(List.of("http://img/1.jpg")),
+                        null))
                 .aggregate()
                 .assignId("1");
 

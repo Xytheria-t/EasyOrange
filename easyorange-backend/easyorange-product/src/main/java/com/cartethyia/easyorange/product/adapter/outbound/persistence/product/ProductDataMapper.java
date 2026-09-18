@@ -20,6 +20,7 @@ public class ProductDataMapper {
                 .name(val(p.getTitle()))
                 .price(val(p.getPrice()))
                 .originalPrice(val(p.getOriginalPrice()))
+                .aiSuggestedPrice(val(p.getAiSuggestedPrice()))
                 .stock(val(p.getStock()))
                 .version(val(p.getVersion()))
                 .status(p.getStatus())
@@ -65,6 +66,8 @@ public class ProductDataMapper {
                 .title(ProductTitle.of(productDO.getName()))
                 .price(Money.of(productDO.getPrice()))
                 .originalPrice(productDO.getOriginalPrice() != null ? Money.of(productDO.getOriginalPrice()) : null)
+                .aiSuggestedPrice(
+                        productDO.getAiSuggestedPrice() != null ? Money.of(productDO.getAiSuggestedPrice()) : null)
                 .stock(StockQuantity.of(productDO.getStock()))
                 .version(Version.of(productDO.getVersion()))
                 .status(productDO.getStatus())
