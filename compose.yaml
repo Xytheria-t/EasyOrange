@@ -75,11 +75,12 @@ services:
       start_period: 15s
 
   # ---------------------------------------------------------------------------
-  # ES 搜索 — profile: search 显式启用。镜像内置 IK 分词插件，构建/体量较大，不随三件套默认拉起：
-  #   docker compose --profile search up -d
+  # ES 搜索 — 镜像内置 IK 分词插件，构建/体量较大，不随三件套默认拉起：
+  #   docker compose --profile search up -d        # 单起 ES（本地跑后端时必须：dev profile 默认开 ES）
+  #   docker compose --profile fullstack up -d     # 全栈时随 app 一起拉起（app 启动期即建索引，故同 profile）
   # ES 集成测试（application-it-es.yaml）通过 services 显式点名启动本服务。
   elasticsearch:
-    profiles: [search]
+    profiles: [search, fullstack]
     build: ./infra/elasticsearch
     image: easyorange-elasticsearch:local
     container_name: easyorange-es
@@ -127,6 +128,8 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-easyorange123}
       # 压测透传开关：RATE_LIMIT_FILTER_ENABLED=false docker compose up -d --scale easyorange-app=2
       RATE_LIMIT_FILTER_ENABLED: ${RATE_LIMIT_FILTER_ENABLED:-true}
+      # dev profile 默认启用 ES 搜索，容器内 DNS 名覆盖宿主机视角的 localhost
+      ES_URIS: http://elasticsearch:9200
       # 链路追踪 span 上报 → compose 内 Zipkin（默认 localhost 在容器内不可达）
       ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     ports:
@@ -138,6 +141,9 @@ services:
       redis:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      # dev profile 下 app 启动期就要建 ES 索引，ES 未就绪会直接启动失败
+      elasticsearch:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------

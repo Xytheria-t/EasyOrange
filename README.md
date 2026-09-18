@@ -187,7 +187,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 | **后端** | Java 25 · Spring Boot 4 · MyBatis-Plus · MapStruct |
 | **安全** | Spring Security OAuth2 Resource Server · **双 Token**：RSA 签名 Access（30min 无状态）+ Opaque Refresh（Redis SHA-256，HttpOnly Cookie，轮换 + 复用检测）· BCrypt |
 | **前端** | React 19 · TypeScript · Vite · TanStack Query 5 · Zustand 5 · Tailwind 4 · shadcn/ui · Biome |
-| **数据 / 消息** | MySQL 8.4 · Redis 8 · RabbitMQ 4.3 · Elasticsearch 9.2（可选） |
+| **数据 / 消息** | MySQL 8.4 · Redis 8 · RabbitMQ 4.3 · Elasticsearch 9.2（dev / prod 默认启用，关掉走 LIKE 兜底） |
 | **AI** | Spring AI 2.0 · DeepSeek · Qwen-VL · DashScope Embedding |
 | **可靠性** | Redisson（分布式锁 / 令牌桶）· Spring Modulith Outbox · CacheErrorHandler fail-open |
 | **可观测** | Micrometer + Prometheus · Brave（traceId）· Spring AI Observation · 结构化日志 |
@@ -198,11 +198,13 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 ```bash
 git clone https://github.com/Xytheria-t/EasyOrange.git && cd easy-orange
 docker compose -f compose.yaml up -d                               # MySQL / Redis / RabbitMQ
+docker compose --profile search up -d elasticsearch                # ES（IK 分词，首次构建镜像略慢）
+                                                                   # dev 默认启用检索，起后端前必须先起 ES，否则启动期建索引失败
 cd easyorange-backend && ./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application   # :8080
 cd easyorange-frontend && npm install && npm run dev               # :5173
 
 # 压测 / 多实例 / 可观测（详见 doc/工程指标.md §2.3；fullstack profile 下裸 up -d 不受影响）
-docker compose --profile fullstack up -d --build --scale easyorange-app=2  # 后端多实例（nginx 自动 LB）
+docker compose --profile fullstack up -d --build --scale easyorange-app=2  # 后端多实例（nginx 自动 LB；ES 同 profile 随 app 拉起）
 docker compose up -d prometheus grafana                                    # Prometheus :9090 + Grafana :3000
 k6 run --vus 50 --duration 30s load-tests/product-list.js                  # k6 压测（阈值 p95<500ms 内置）
 ```

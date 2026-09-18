@@ -103,9 +103,17 @@ file:
     url-prefix: /api/file/                # 文件访问 URL 前缀
 
 # -------------------------------------------------------------------
-# 图片处理配置
+# 检索配置 - 开发环境默认启用 ES
+# 前置：先 `docker compose --profile search up -d elasticsearch`，
+# 否则启动期建索引失败（ElasticsearchIndexManager 会在 ES 不可达时抛错）
 # -------------------------------------------------------------------
 easyorange:
+  search:
+    elasticsearch:
+      enabled: true
+  # -------------------------------------------------------------------
+  # 图片处理配置
+  # -------------------------------------------------------------------
   file:
     image:
       quality: 0.80
@@ -141,6 +149,10 @@ jwt:
 # Actuator 监控端点配置
 # -------------------------------------------------------------------
 management:
+  # 与 easyorange.search.elasticsearch.enabled 同步：dev 启用 ES 搜索，健康检查如实报 ES 状态
+  health:
+    elasticsearch:
+      enabled: true
   endpoints:
     web:
       exposure:
