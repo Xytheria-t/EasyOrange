@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.exception.TokenBudgetExceededException;
+import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.ToolDecision;
@@ -24,6 +25,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -41,9 +43,11 @@ import tools.jackson.databind.ObjectMapper;
  * 编排结构（单步 ReAct，编排手写不依赖框架黑盒）：
  * <pre>
  * 1. 记忆装配：Redis 会话窗口（短期）+ 用户画像表（长期）
- * 2. 工具决策：模型输出 JSON 决定是否检索知识库（knowledge_search），顺带提取用户偏好
- * 3. 执行工具：KnowledgeRetrievalService 两路召回 + RRF 排名融合（排序在 ES 适配器内完成），返回带来源的命中
- * 4. 生成回答：system prompt 注入画像/历史/检索结果，回答末尾 [来源:标题] 引用溯源
+ * 2. 工具决策：模型输出 JSON 决定本轮检索什么（知识库 / 在售资产 / 两者 / 不检索），顺带提取用户偏好
+ * 3. 执行工具：{@link KnowledgeRetrievalService}（平台规则，两路召回 + RRF）与
+ *    {@link AssetSourcingService}（在售资产，ONLINE 过滤）—— 两者是同一形态的不同语料，
+ *    RAG 链路与引用溯源一行没改，换的只是检索对象
+ * 4. 生成回答：system prompt 注入画像/历史/两类检索结果，回答末尾 [来源:标题] 引用溯源
  * </pre>
  * 流式路径（SSE）在方法返回前完成不了 AOP 预算记账，由 {@link #streamAnswer}
  * 手动执行与 {@link TokenBudget} 相同的预算检查。
@@ -58,7 +62,10 @@ public class AiChatService {
     private static final int DEFAULT_MAX_TOKENS = 1500;
     private static final int DEFAULT_DAILY_LIMIT = 300_000;
     private static final int RETRIEVAL_TOP_K = 5;
+    private static final int ASSET_TOP_K = 5;
     private static final String TOOL_KNOWLEDGE_SEARCH = "knowledge_search";
+    private static final String TOOL_PRODUCT_SEARCH = "product_search";
+    private static final String TOOL_BOTH = "both";
     private static final String ANONYMOUS_USER = "anonymous";
 
     private final ChatModel chatModel;
@@ -68,6 +75,7 @@ public class AiChatService {
     private final ChatSessionPort sessionStore;
     private final UserPreferenceRepository preferenceRepository;
     private final KnowledgeRetrievalService retrievalService;
+    private final AssetSourcingService assetSourcingService;
     private final AiModelRouter modelRouter;
     private final TokenBudgetStore budgetStore;
     private final AiProperties aiProperties;
@@ -84,6 +92,7 @@ public class AiChatService {
             ChatSessionPort sessionStore,
             UserPreferenceRepository preferenceRepository,
             KnowledgeRetrievalService retrievalService,
+            AssetSourcingService assetSourcingService,
             AiModelRouter modelRouter,
             TokenBudgetStore budgetStore,
             AiProperties aiProperties,
@@ -97,6 +106,7 @@ public class AiChatService {
         this.sessionStore = sessionStore;
         this.preferenceRepository = preferenceRepository;
         this.retrievalService = retrievalService;
+        this.assetSourcingService = assetSourcingService;
         this.modelRouter = modelRouter;
         this.budgetStore = budgetStore;
         this.aiProperties = aiProperties;
@@ -162,6 +172,14 @@ public class AiChatService {
         return meterRegistry.counter("easyorange.ai.chat.degraded", "reason", reason);
     }
 
+    /**
+     * 工具选择计数。「找货类问题占多少」是判断这条 RAG 是落在主链路上还是摆设的第一个数字
+     * —— 没有它，检索质量再好也不知道有没有人在用。
+     */
+    private Counter toolCounter(String tool) {
+        return meterRegistry.counter("easyorange.ai.chat.tool", "name", tool);
+    }
+
     private static String staleKey(String question) {
         return AiCallScope.CHAT.cacheKeyPrefix() + question;
     }
@@ -198,27 +216,39 @@ public class AiChatService {
         List<UserPreference> prefs =
                 ANONYMOUS_USER.equals(userId) ? List.of() : preferenceRepository.findByUserId(userId);
 
-        // 2. 工具决策（单步 ReAct）：是否检索知识库 + 顺带提取用户偏好
+        // 2. 工具决策（单步 ReAct）：本轮检索什么（知识库 / 在售资产 / 两者）+ 顺带提取用户偏好
         ToolDecision decision = decideTool(request.question(), history, prefs);
+        toolCounter(decision.tool()).increment();
+        boolean wantKnowledge = TOOL_KNOWLEDGE_SEARCH.equals(decision.tool()) || TOOL_BOTH.equals(decision.tool());
+        boolean wantAssets = TOOL_PRODUCT_SEARCH.equals(decision.tool()) || TOOL_BOTH.equals(decision.tool());
+
+        // 3. 执行工具：两条召回是同一形态、不同语料，共用同一份 query
         List<KnowledgeHit> hits = List.of();
-        if (TOOL_KNOWLEDGE_SEARCH.equals(decision.tool())
-                && decision.query() != null
-                && !decision.query().isBlank()) {
-            hits = retrievalService.search(decision.query(), RETRIEVAL_TOP_K);
+        List<AssetHit> assets = List.of();
+        if (decision.query() != null && !decision.query().isBlank()) {
+            if (wantKnowledge) {
+                hits = retrievalService.search(decision.query(), RETRIEVAL_TOP_K);
+            }
+            if (wantAssets) {
+                assets = assetSourcingService.search(decision.query(), ASSET_TOP_K);
+            }
         }
         if (decision.preference() != null && !ANONYMOUS_USER.equals(userId)) {
             preferenceRepository.record(
                     userId, decision.preference().key(), decision.preference().value());
         }
-        List<String> sources =
-                hits.stream().map(KnowledgeHit::title).distinct().limit(3).toList();
+        List<String> sources = Stream.concat(
+                        hits.stream().map(KnowledgeHit::title), assets.stream().map(AssetHit::title))
+                .distinct()
+                .limit(3)
+                .toList();
         if (handler != null && !sources.isEmpty()) {
             handler.onSources(sources);
         }
 
         // 4. 生成回答（按角色传消息：system / 历史 user+assistant / 当前 user，流式时逐 token 回调）
         List<Message> messages =
-                buildMessages(promptRegistry.require(CHAT_PROMPT), request.question(), history, prefs, hits);
+                buildMessages(promptRegistry.require(CHAT_PROMPT), request.question(), history, prefs, hits, assets);
         String answer = handler != null
                 ? aiModelSupport.callTextStream(chatModel, AiCallScope.CHAT, messages, handler::onToken)
                 : aiModelSupport.callText(chatModel, AiCallScope.CHAT, messages);
@@ -315,7 +345,8 @@ public class AiChatService {
             String question,
             List<ChatTurn> history,
             List<UserPreference> prefs,
-            List<KnowledgeHit> hits) {
+            List<KnowledgeHit> hits,
+            List<AssetHit> assets) {
         List<Message> messages = new ArrayList<>(history.size() + 2);
         messages.add(new SystemMessage(systemPrompt));
         for (ChatTurn turn : history) {
@@ -324,12 +355,12 @@ public class AiChatService {
                             ? new UserMessage(turn.content())
                             : new AssistantMessage(turn.content()));
         }
-        messages.add(new UserMessage(buildCurrentUserMessage(question, prefs, hits)));
+        messages.add(new UserMessage(buildCurrentUserMessage(question, prefs, hits, assets)));
         return messages;
     }
 
     private static String buildCurrentUserMessage(
-            String question, List<UserPreference> prefs, List<KnowledgeHit> hits) {
+            String question, List<UserPreference> prefs, List<KnowledgeHit> hits, List<AssetHit> assets) {
         return """
                 <user_question>
                 %s
@@ -342,7 +373,11 @@ public class AiChatService {
                 <knowledge_snippets>
                 %s
                 </knowledge_snippets>
-                """.formatted(question, formatPrefs(prefs), formatHits(hits));
+
+                <candidate_assets>
+                %s
+                </candidate_assets>
+                """.formatted(question, formatPrefs(prefs), formatHits(hits), formatAssets(assets));
     }
 
     private static String formatHistory(List<ChatTurn> history) {
@@ -369,6 +404,29 @@ public class AiChatService {
         for (int i = 0; i < hits.size(); i++) {
             KnowledgeHit hit = hits.get(i);
             sb.append("[%d] (%s)\n%s\n".formatted(i + 1, hit.title(), hit.content()));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 资产块带 id 与价格：模型据此写推荐理由，而 id 是回答「推荐的确实是真实在售资产」的校验锚点
+     * —— 提示词已硬约束不得编造资产与数字，这里再把可核对的信息（id）显式给到，让约束有据可依。
+     */
+    private static String formatAssets(List<AssetHit> assets) {
+        if (assets.isEmpty()) {
+            return "(无可推荐资产)";
+        }
+        var sb = new StringBuilder();
+        for (AssetHit asset : assets) {
+            sb.append("[%s] %s | ¥%s | %s | %s\n"
+                    .formatted(
+                            asset.productId(),
+                            asset.title(),
+                            asset.price() == null
+                                    ? "面议"
+                                    : asset.price().stripTrailingZeros().toPlainString(),
+                            asset.categoryName() == null ? "未分类" : asset.categoryName(),
+                            asset.conditionDesc() == null ? "成色未标注" : asset.conditionDesc()));
         }
         return sb.toString();
     }
