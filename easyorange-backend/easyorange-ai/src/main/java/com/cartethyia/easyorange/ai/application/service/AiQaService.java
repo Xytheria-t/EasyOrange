@@ -28,7 +28,8 @@ public class AiQaService {
         log.debug("Answering question for productId={}, question={}", request.productId(), request.question());
 
         try {
-            String answer = aiModelSupport.callText(chatModel, AiCallScope.QA, systemPrompt, userMessage);
+            String answer =
+                    aiModelSupport.callText(chatModel, AiCallScope.QA, request.productId(), systemPrompt, userMessage);
 
             if (answer == null || answer.isBlank()) {
                 log.warn("AI returned empty answer for productId={}", request.productId());
