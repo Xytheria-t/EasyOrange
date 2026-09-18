@@ -41,7 +41,7 @@ test.describe('发布资产流程', () => {
     await expect(categoryTrigger).toContainText(MOCK_CATEGORY.name);
   });
 
-  test('填写必填项提交后调用创建与上架接口并跳转详情', async ({ page }) => {
+  test('填写必填项提交后调用创建与提交审核接口并跳转详情', async ({ page }) => {
     const calls: { method: string; url: string; body?: unknown }[] = [];
     await page.route('**/api/products**', async route => {
       const method = route.request().method();
@@ -54,7 +54,7 @@ test.describe('发布资产流程', () => {
         });
         return;
       }
-      if (method === 'PUT' && route.request().url().includes('/prod-new-1/online')) {
+      if (method === 'PUT' && route.request().url().includes('/prod-new-1/submit')) {
         calls.push({ method, url: route.request().url() });
         await route.fulfill({
             status: 200,
@@ -96,7 +96,13 @@ test.describe('发布资产流程', () => {
             body: JSON.stringify({
                 code: 'A0000',
                 message: 'ok',
-                data: { url: 'https://e2e.local/a.png', filename: 'e2e.png', size: 1024, type: 'image/png' },
+                data: {
+                    id: 'e2e-file-1',
+                    fileName: 'e2e.png',
+                    fileUrl: 'https://e2e.local/a.png',
+                    fileSize: '1024',
+                    mimeType: 'image/png',
+                },
             }),
         })
     );
@@ -126,11 +132,11 @@ test.describe('发布资产流程', () => {
 
     await page.getByText('立即发布').first().click();
 
-    // 创建 + 上架都被调用，且跳转到新资产详情页
+    // 创建 + 提交审核都被调用，且跳转到新资产详情页
     await expect(page).toHaveURL(/\/products\/prod-new-1/, { timeout: 15000 });
     const createCall = calls.find(c => c.method === 'POST');
     expect(createCall).toBeTruthy();
     expect((createCall?.body as { name?: string }).name).toBe('E2E 测试资产');
-    expect(calls.some(c => c.method === 'PUT' && c.url.includes('/online'))).toBeTruthy();
+    expect(calls.some(c => c.method === 'PUT' && c.url.includes('/submit'))).toBeTruthy();
   });
 });

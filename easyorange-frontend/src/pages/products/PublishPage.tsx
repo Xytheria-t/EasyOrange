@@ -177,7 +177,9 @@ function PublishPage() {
             const productId = (await createProduct.mutateAsync(payload)) as string;
 
             if (!isDraft && productId) {
-                await productApi.goOnline(productId);
+                // 新建商品是 DRAFT，只能先提交审核（DRAFT → PENDING_REVIEW）；
+                // 置为 ONLINE 由管理端在审核通过后执行 —— PUT /{id}/online 是 ADMIN-only
+                await productApi.submitForReview(productId);
             }
 
             navigate(`/products/${productId}`);
