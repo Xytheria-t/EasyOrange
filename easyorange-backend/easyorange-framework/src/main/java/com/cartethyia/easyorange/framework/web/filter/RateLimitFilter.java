@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -91,9 +90,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         String method = request.getMethod().toUpperCase(Locale.ROOT);
 
-        // 写请求需要缓存 body 以便 filter 和 controller 都能读取
+        // 写请求需要缓存 body 以便 filter 和 controller 都能读取；multipart 例外，见 isMultipart
         @Nullable CachedBodyHttpServletRequestWrapper wrappedRequest = null;
-        if (WRITE_METHODS.contains(method)) {
+        if (WRITE_METHODS.contains(method) && !isMultipart(request)) {
             wrappedRequest = new CachedBodyHttpServletRequestWrapper(request);
         }
 
@@ -112,19 +111,27 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 checkRateLimit(effectiveRequest, method, matchedRule);
             }
 
-            // 防重 — 写方法且没有 @SkipRepeatSubmit 时检查
-            if (WRITE_METHODS.contains(method) && !hasSkipAnnotation(handlerMethod, SkipRepeatSubmit.class)) {
-                // 写方法必已在上方缓存 body；requireNonNull 显式向数据流分析保证非空
-                checkRepeatSubmit(
-                        effectiveRequest,
-                        method,
-                        Objects.requireNonNull(wrappedRequest).getCachedBody());
+            // 防重 — 有缓存 body 的写请求且没有 @SkipRepeatSubmit 时检查
+            // （wrappedRequest 非空 ⟺ 写方法且非 multipart，防重 key 依赖 body hash）
+            if (wrappedRequest != null && !hasSkipAnnotation(handlerMethod, SkipRepeatSubmit.class)) {
+                checkRepeatSubmit(effectiveRequest, method, wrappedRequest.getCachedBody());
             }
 
             filterChain.doFilter(wrappedRequest != null ? wrappedRequest : request, response);
         } catch (BusinessException ex) {
             writeErrorResponse(response, ex);
         }
+    }
+
+    /**
+     * multipart 请求不能预读 body：{@link CachedBodyHttpServletRequestWrapper} 构造时就把原始输入流读空，
+     * 容器随后解析 parts 只能拿到已耗尽的流（MultipartException → 400，文件上传必挂）。
+     * 代价是这类请求没有 body 可算防重 key，跳过防重检查 —— 用「不拦截」换「能上传」：
+     * 重复上传的代价只是多一条文件记录，而误判（键退化成 URI+IP）会挡住正常上传。
+     */
+    private static boolean isMultipart(HttpServletRequest request) {
+        String contentType = request.getContentType();
+        return contentType != null && contentType.toLowerCase(Locale.ROOT).startsWith("multipart/");
     }
 
     private @Nullable Rule findMatchingRule(String method, String uri) {
