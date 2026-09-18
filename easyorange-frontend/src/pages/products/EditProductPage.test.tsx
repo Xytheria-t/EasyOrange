@@ -99,7 +99,13 @@ beforeEach(() => {
         isPending: false,
     });
     mockUploadFile.mockResolvedValue({
-        data: { url: 'https://example.com/new-image.jpg' },
+        data: {
+            id: 'f2',
+            fileName: 'new-image.jpg',
+            fileUrl: 'https://example.com/new-image.jpg',
+            fileSize: '1024',
+            mimeType: 'image/jpeg',
+        },
     });
     mockCompressImage.mockResolvedValue(new File([''], 'compressed.jpg', { type: 'image/jpeg' }));
 });

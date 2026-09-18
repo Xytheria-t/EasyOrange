@@ -77,8 +77,8 @@ export function useProductForm() {
             try {
                 const compressed = await compressImage(file);
                 const result = await uploadFile(compressed);
-                if (result.data?.url) {
-                    setValue('imageUrls', [...watch('imageUrls'), result.data.url], { shouldValidate: true });
+                if (result.data?.fileUrl) {
+                    setValue('imageUrls', [...watch('imageUrls'), result.data.fileUrl], { shouldValidate: true });
                 }
             } catch {
                 addToast({ type: 'error', message: '图片上传失败，请重试' });
