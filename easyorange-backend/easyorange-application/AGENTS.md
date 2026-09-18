@@ -13,8 +13,6 @@ application/
 │       │   ├── event/                     # 跨模块事件消费者（5 个 MQ 消费者 + 1 个同步指标监听器）
 │       │   │   ├── OrderNotificationEventConsumer.java
 │       │   │   ├── ProductAuditEventConsumer.java
-│       │   │   ├── ReportProcessedEventConsumer.java
-│       │   │   ├── AiCreditEventConsumer.java
 │       │   │   ├── FavoritePriceDropEventConsumer.java
 │       │   │   └── BusinessMetricsEventListener.java    # @EventListener 同步打点，非同 MQ 消费者
 │       │   ├── inbound/web/controller/    # Web 控制器（11 个）
@@ -27,10 +25,9 @@ application/
 │       │   │   ├── AdminFeedbackExportController.java # 反馈导出金标准用例
 │       │   │   ├── AdminKnowledgeController.java      # 知识库管理
 │       │   │   ├── AdminSearchReindexController.java  # ES 重索引管理
-│       │   │   ├── CreditScoreController.java         # 信用分数端点
 │       │   │   └── PlatformStatsController.java       # 平台统计
 │       │   └── outbound/                  # 跨模块适配器实现（完整清单见下方「跨模块适配器」表）
-│       │       ├── admin/                 # 8 个 Admin*Adapter（分类/仪表板/订单/商品/审核/评价/举报/用户）+ JdbcAiPricingAdoptionAdapter
+│       │       ├── admin/                 # 7 个 Admin*Adapter（分类/仪表板/订单/商品/审核/评价/用户）+ JdbcAiPricingAdoptionAdapter
 │       │       ├── elasticsearch/         # ES 搜索索引适配器（ElasticsearchIndexManager / ProductDocument / ReindexService / 索引读写适配器）
 │       │       ├── favorite/              # FavoritePriceDropNotificationAdapter
 │       │       ├── order/                 # CompletedOrderAdapter
@@ -153,7 +150,6 @@ easyorange-application
 | `AdminProductAdapter` | `AdminProductPort` | admin | 管理端商品查询/状态操作 |
 | `AdminProductAuditAdapter` | `AdminProductAuditPort` | admin | 管理端商品审核（含 AI 预审） |
 | `AdminRatingAdapter` | `AdminRatingPort` | admin | 管理端评价查询/删除 |
-| `AdminReportAdapter` | `AdminReportPort` | admin | 管理端举报查询/处理 |
 | `AdminUserAdapter` | `AdminUserPort` | admin | 管理端用户查询/操作（纯翻译层，委托 user 模块 `AdminUserManagementPort`） |
 | `JdbcAiPricingAdoptionAdapter` | `AiPricingAdoptionPort` | ai | 读商品表 `ai_suggested_price` 出建议价采纳率/偏离分布 |
 
@@ -173,8 +169,6 @@ easyorange-application
 |--------|---------|------|
 | `OrderNotificationEventConsumer` | `OrderEvent`（6 个订单事件） | 订单状态变更→站内消息通知 |
 | `ProductAuditEventConsumer` | `ProductAuditedEvent` | 审核结果→站内消息通知 |
-| `ReportProcessedEventConsumer` | `ReportProcessedEvent` | 举报处理结果→站内消息通知 |
-| `AiCreditEventConsumer` | `OrderCompletedEvent` / `ReportProcessedEvent` | 交易/举报→信用分重算 |
 | `FavoritePriceDropEventConsumer` | `ProductUpdatedEvent` | 降价→通知收藏者（快照 CAS 幂等） |
 | `BusinessMetricsEventListener` | 4 类领域事件（同步 `@EventListener`） | 注册/上架/下单/支付成功→Prometheus 计数器 |
 

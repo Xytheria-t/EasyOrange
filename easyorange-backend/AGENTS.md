@@ -47,7 +47,7 @@ Spring Boot 4 + Java 25 后端，采用 DDD + 六边形架构（精确版本以�
 | 操作类型 | 返回值 | 说明 | 示例 |
 |---------|--------|------|------|
 | **创建** (create/register/add) | `String` (ID) | 客户端需要获取新资源标识；服务端通过 `IdGenerator`（UUID v7）生成 | `createProduct()`, `register()`, `createReview()` |
-| **命令/更新/删除** (update/delete/remove/handle/put/take/mark/submit/cancel/process) | `void` | 命令不返回值；前端通过 React Query 的 `invalidateQueries` 重新拉取最新数据 | `updateProduct()`, `deleteProduct()`, `addFavorite()`, `handleReport()`, `putOnline()` |
+| **命令/更新/删除** (update/delete/remove/handle/put/take/mark/submit/cancel/process) | `void` | 命令不返回值；前端通过 React Query 的 `invalidateQueries` 重新拉取最新数据 | `updateProduct()`, `deleteProduct()`, `addFavorite()`, `handleAudit()`, `putOnline()` |
 | **批量操作** 可能返回结果 DTO（如 `BatchAuditResultResponse`），因需要聚合成功率/失败信息
 
 > 背景：务实混合约定——不是严格 CQRS，也不是 RESTful 完整资源返回。Spring Boot + TanStack Query 上下文下的最佳平衡。
@@ -203,4 +203,4 @@ Resilience4j CircuitBreaker 已移除（2026-08-13，随手写多级缓存一并
 
 ### Admin 模块端口接口
 
-Admin 模块**禁止直接依赖其他模块的 Mapper/DO**，必须通过 `domain/port/` 的 8 个 `Admin*Port`（Product / User / Order / Rating / Category / Dashboard / ProductAudit / Report）查询，适配器在 `easyorange-application/adapter/outbound/admin/` 实现。
+Admin 模块**禁止直接依赖其他模块的 Mapper/DO**，必须通过 `domain/port/` 的 7 个 `Admin*Port`（Product / User / Order / Rating / Category / Dashboard / ProductAudit）查询，适配器在 `easyorange-application/adapter/outbound/admin/` 实现。

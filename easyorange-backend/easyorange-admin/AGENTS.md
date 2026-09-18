@@ -14,7 +14,6 @@
 | 商品审核 | AdminProductAuditController | 审核（带原因）、批量审核、审核日志、AI 预审结果查询 |
 | 订单管理 | AdminOrderController | 订单列表、详情、取消、强制完成、退款、统计 |
 | 分类管理 | AdminCategoryController | 分类 CRUD、树形结构、启用禁用 |
-| 举报管理 | AdminReportController | 举报列表、详情、处理、统计 |
 | 评价管理 | AdminRatingController | 评价列表、详情、删除 |
 
 ## 目录结构
@@ -26,13 +25,13 @@ easyorange-admin/
 └── src/main/java/com/cartethyia/easyorange/admin/
     ├── adapter/
     │   └── inbound/web/
-    │       ├── controller/           # 8 个 Controller（见上方功能域表）
+    │       ├── controller/           # 7 个 Controller（见上方功能域表）
     │       ├── assembler/            # DTO 组装器
     │       └── dto/
     │           ├── request/          # 请求 DTO
     │           └── response/         # 响应 Response
     ├── domain/
-    │   ├── enums/                    # 领域枚举（AdminResultCode / ReportHandleAction）
+    │   ├── enums/                    # 领域枚举（AdminResultCode）
     │   └── port/                     # 端口接口（防腐层）
     │       ├── AdminCategoryPort.java      # 分类查询/操作端口
     │       ├── AdminDashboardPort.java     # 仪表板聚合查询端口
@@ -40,8 +39,7 @@ easyorange-admin/
     │       ├── AdminProductAuditPort.java  # 商品审核端口（含 AI 预审）
     │       ├── AdminProductPort.java       # 商品查询/状态操作端口
     │       ├── AdminRatingPort.java        # 评价查询/删除端口
-    │       ├── AdminReportPort.java        # 举报查询/处理端口
-    │       └── AdminUserPort.java          # 用户查询/操作端口
+        │       └── AdminUserPort.java          # 用户查询/操作端口
     └── service/              # 业务服务层
 ```
 
@@ -60,14 +58,13 @@ easyorange-admin ──optional──> easyorange-common   (Result, PageResult, 
                  (其余业务模块零依赖，所有跨模块访问经 domain/port/)
 ```
 
-**跨模块通信**：通过 `domain/port/` 端口接口解耦，8 个适配器实现在 `easyorange-application/adapter/outbound/admin/`：
+**跨模块通信**：通过 `domain/port/` 端口接口解耦，7 个适配器实现在 `easyorange-application/adapter/outbound/admin/`：
 - `AdminCategoryAdapter` → CategoryMapper / CategoryQueryRepository / CategoryCachePort
 - `AdminDashboardAdapter` → ProductMapper / ProductQueryRepository / JdbcTemplate（跨模块聚合统计）
 - `AdminOrderAdapter` → OrderMapper / OrderItemMapper / ProductMapper / PaymentMapper / OrderQueryRepository / OrderRepository
 - `AdminProductAdapter` → ProductMapper / ProductDetailMapper / ProductImageMapper / ProductRepository / ProductCacheEvictionPort
 - `AdminProductAuditAdapter` → ProductAuditLogRepository / ProductRepository / AiReviewService（AI 预审）
 - `AdminRatingAdapter` → ProductRatingMapper
-- `AdminReportAdapter` → ProductReportQueryRepository / ProductReportRepository / ReportHandleHistoryRepository / ProductRepository
 - `AdminUserAdapter` → `AdminUserManagementPort`（纯翻译层，读写委托 user 模块，含用户状态/角色/密码管理）
 
 ## 常见开发任务

@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 在 DDD 六边形架构里集成 LLM：AI 链路**可换供应商、可降级、可观测**的工程化实战项目。
 >
-> **11 模块解耦 · 46 个 Port 接口编译期隔离 · 11 事件消费者 · 12 条 ADR · 2,400+ 测试守卫 · AI 两条主线链路 × 8 项工程化**
+> **11 模块解耦 · 46 个 Port 接口编译期隔离 · 9 事件消费者 · 12 条 ADR · 2,400+ 测试守卫 · AI 两条主线链路 × 8 项工程化**
 >
 > 业务载体：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。
 
@@ -46,8 +46,8 @@ flowchart TB
     FAV["favorite"]
     ADMIN["admin · 管理端"]
     AI["ai · Spring AI + Agent"]
-    MQ[("RabbitMQ · 11 消费者 + DLQ")]
-    DB[("MySQL · 29 表")]
+    MQ[("RabbitMQ · 9 消费者 + DLQ")]
+    DB[("MySQL · 26 表")]
     REDIS[("Redis · 缓存 / 令牌桶 / 锁")]
     ES[("Elasticsearch · 可选")]
     LLM["DeepSeek / Qwen-VL / DashScope"]
@@ -82,7 +82,7 @@ flowchart TB
 - **前端**：React 19 SPA，C 端 + 管理端（暖橙指挥中心设计系统）双布局
 - **后端**：Spring Boot 4 聚合 11 个 Maven 模块，DDD 六边形 + CQRS 分层
 - **数据**：MySQL（Flyway 迁移）+ Redis（缓存 / 令牌桶 / 分布式锁 / 会话）+ Elasticsearch（BM25 + kNN）
-- **消息**：Spring Modulith Outbox → RabbitMQ Topic Exchange，11 个事件消费者，DLQ 三级重试
+- **消息**：Spring Modulith Outbox → RabbitMQ Topic Exchange，9 个事件消费者，DLQ 三级重试
 - **AI**：DeepSeek（Chat）/ Qwen-VL（Vision）/ DashScope（Embedding），统一 OpenAI 兼容协议
 
 > 组件级细节见 [doc/架构/架构-系统架构.md](doc/架构/架构-系统架构.md)。
@@ -108,7 +108,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 | 卖家「发布助手」 | 拍照识别单入口（Vision 一次产出属性 + 建议价 + 标题 / 描述），建议价随创建请求落库供采纳率统计 |
 | 买家「对话式找货」 | 搜索增强 → 对话式检索：同一套 RAG 链路换语料（知识库规则 + 在售资产） |
 
-> 早期口径「6 个决策点（4 LLM + 2 规则）」已收敛为上表两条链路：信用画像是**零 LLM 规则引擎**（SQL 聚合 + 计分规则），已移出 AI 叙事；独立的智能估值 / 文案生成入口因产出与拍照识别重复而删除，发布路径的模型调用从最多 5 次降到 1 次。被追问时的完整应答见 [doc/interview/00-怎么说.md](doc/interview/00-怎么说.md)。
+> 早期口径「6 个决策点（4 LLM + 2 规则）」已收敛为上表两条链路：独立的智能估值 / 文案生成入口因产出与拍照识别重复而删除，发布路径的模型调用从最多 5 次降到 1 次。被追问时的完整应答见 [doc/interview/00-怎么说.md](doc/interview/00-怎么说.md)。
 
 ### AI 对话 / RAG 完整链路 / 评估闭环
 
@@ -138,7 +138,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 | 全模块 CQRS | user / favorite / ai 等读写比均衡或调用外部 API，收益 < 维护成本 | 仅 product / order / payment / message 4 模块 | [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md) |
 | LangChain4j | Tool 调用反射黑盒 + 升级兼容差 | 手写 AiSearchEnhancer 4 路 Tool 编排 | [ADR-0008](doc/adr/0008-ai-spring-ai-framework.md) |
 | Milvus / PGVector | SKU < 10 万，向量库 ROI 低（ANN 建索引 / 调参 / 运维一整套换不来可感知收益） | ES 原生 kNN + BM25 两路独立召回，索引侧 RRF 排名融合（**不做余弦重排**） | [ADR-0012](doc/adr/0012-rag-hybrid-retrieval-rrf.md) |
-| Kafka / Pulsar 默认 MQ | Kafka 无原生 DLQ；1 事件 → 11 消费者模型不匹配；Pulsar 本地太重 | RabbitMQ Topic Exchange + 队列级 DLQ | [ADR-0005](doc/adr/0005-messaging-rabbitmq.md) |
+| Kafka / Pulsar 默认 MQ | Kafka 无原生 DLQ；1 事件 → 9 消费者模型不匹配；Pulsar 本地太重 | RabbitMQ Topic Exchange + 队列级 DLQ | [ADR-0005](doc/adr/0005-messaging-rabbitmq.md) |
 
 ## 技术栈
 
@@ -162,14 +162,14 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 | **application** | 启动聚合层：主入口、Flyway、跨模块适配器、ArchUnit 守卫 |
 | **common** | 统一响应体 / 异常 / 领域事件接口 / 工具 |
 | **framework** | Security（双 Token）/ Redis / MyBatis / RabbitMQ / 限流 / 审计 AOP |
-| **user** | 认证（双 Token）、用户资料、信用分 |
-| **product** | 商品（CQRS）+ 审核 / 举报 + ES 搜索 + 语义检索 |
+| **user** | 认证（双 Token）、用户资料 |
+| **product** | 商品（CQRS）+ 审核 + ES 搜索 + 语义检索 |
 | **order** | 订单（CQRS）+ 单事务 + 分布式锁 + 生命周期事件 |
 | **payment** | 支付（CQRS）+ 幂等 + Mock 网关 |
 | **message** | 消息（CQRS）+ 站内信 + WebSocket / STOMP 实时沟通 |
 | **favorite** | 收藏 + 批量校验 |
 | **ai** | Spring AI 框架化 + Agent 编排 + 令牌桶 / 预算 / Prompt |
-| **admin** | 后台 API（用户 / 商品审核 / 订单 / 举报 / 统计） |
+| **admin** | 后台 API（用户 / 商品审核 / 订单 / 统计） |
 
 > 各模块「能放什么」与依赖规则见 [doc/架构/架构-系统架构.md](doc/架构/架构-系统架构.md)。
 

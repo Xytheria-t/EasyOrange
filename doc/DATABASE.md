@@ -34,14 +34,13 @@
 
 ## 表总览
 
-共 29 张表：27 张 `eo_*` 业务/观测表 + 2 张 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。
+共 26 张表：24 张 `eo_*` 业务/观测表 + 2 张 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。
 
-> 早期建表时预留过 4 张从未被代码引用的表（eo_payment_config / eo_product_question / eo_audit_suggestion / eo_credit_change_log），已随 V1 收口删除——库里的表应当都有消费者。
+> 早期建表时预留过 4 张从未被代码引用的表（eo_payment_config / eo_product_question / eo_audit_suggestion / eo_credit_change_log），已随 V1 收口删除——库里的表应当都有消费者。另有 3 张表（eo_user_credit / eo_product_report / eo_report_handle_history）随信用、举报两个功能下线一并从 V1 移除。
 
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
 | 用户 | eo_user | 用户信息 | UserDO |
-| 用户 | eo_user_credit | 用户信用评分 | UserCreditDO |
 | 商品 | eo_category | 商品分类（两级树） | CategoryDO |
 | 商品 | eo_product | 商品信息 | ProductDO |
 | 商品 | eo_product_detail | 商品详情（1:1） | ProductDetailDO |
@@ -49,8 +48,6 @@
 | 商品 | eo_stock_ledger | 库存流水（幂等落账 + 对账基准，见文末） | StockLedgerDO |
 | 商品 | eo_product_audit_log | 商品审核记录 | — |
 | 商品 | eo_product_review | 商品评价 | ProductReviewDO |
-| 商品 | eo_product_report | 商品举报 | ProductReportDO |
-| 商品 | eo_report_handle_history | 举报处理历史 | ReportHandleHistoryDO |
 | 商品 | eo_favorite | 用户收藏 | FavoriteDO |
 | 搜索 | eo_search_history | 搜索历史 | SearchHistoryDO |
 | 搜索 | eo_hot_keyword | 热门关键词 | HotKeywordDO |
@@ -124,15 +121,12 @@ eo_user ──1:N── eo_product (user_id)
               ├──1:N── eo_product_image (product_id)
               ├──1:1── eo_product_detail (product_id)
               ├──1:N── eo_product_review (product_id)
-              ├──1:N── eo_product_report (product_id)
-              │   └──1:N── eo_report_handle_history (report_id)
               └──1:N── eo_favorite (user_id + product_id)
 
 eo_category ──1:N── eo_product (category_id)
     └──自引用── eo_category (parent_id)
 
 eo_user ──1:N── eo_order (buyer_id / seller_id)
-eo_user ──1:1── eo_user_credit (user_id)
 eo_order ──1:N── eo_order_item (order_id)
 eo_product ──1:N── eo_order_item (product_id)
 eo_order ──1:1── eo_payment (order_id)

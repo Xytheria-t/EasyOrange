@@ -29,7 +29,7 @@ ai/
 │       ├── AiSearchEnhancerAdapter.java   # 搜索增强管道（4 路并行：1 路 LLM 意图识别 + 3 路规则）
 │       ├── budget/             # TokenBudgetAspect（AOP）/ InMemoryTokenBudgetStore
 │       ├── cache/              # ChatSessionStore（Redis 会话窗口）/ SemanticCacheService（语义缓存）
-│       ├── persistence/        # AiCallLogRecorder / GoldenSetExportService / JdbcCreditScoreFetcher /
+│       ├── persistence/        # AiCallLogRecorder / GoldenSetExportService /
 │       │                       #   RetrievalMetricRecorder / knowledge/ / preference/
 │       ├── prompt/             # YamlPromptRegistry（classpath:prompts/*.yml）
 │       └── tool/               # 搜索增强工具集（SearchToolRegistry / IntentDetectionTool 等）
@@ -37,7 +37,7 @@ ai/
                                 #   AiStaleCacheConfig / UnconfiguredChatModel / UnconfiguredEmbeddingModel
 ```
 
-Controller 全在 `easyorange-application`（`AiChatController` / `AiCostReportController` / `AiQaController` / `AiListingController` / `AiKnowledgeController` / `AiFeedbackController` / `AdminFeedbackExportController` / `AdminKnowledgeController` / `CreditScoreController`），本模块不持有 web 入站适配器。
+Controller 全在 `easyorange-application`（`AiChatController` / `AiCostReportController` / `AiQaController` / `AiListingController` / `AiKnowledgeController` / `AiFeedbackController` / `AdminFeedbackExportController` / `AdminKnowledgeController`），本模块不持有 web 入站适配器。
 
 ## 分层与端口
 
@@ -49,7 +49,6 @@ Controller 全在 `easyorange-application`（`AiChatController` / `AiCostReportC
 | `KnowledgeIndexPort` | **easyorange-application**：`elasticsearch/KnowledgeElasticsearchAdapter`（主）+ `KnowledgeFallbackAdapter`（ES 关闭时降级） |
 | `AssetRetrievalPort` | **easyorange-application**：`elasticsearch/AssetElasticsearchAdapter`（在售资产：kNN `nameEmbedding` + BM25 `multi_match name^3/description` 两路独立召回 → `RrfFusion` 融合，两路都带 `status=ONLINE` 过滤；ES 关闭时无适配器，资产召回降级为空） |
 | `UserPreferenceRepository` | `persistence/preference/UserPreferenceRepositoryImpl` |
-| `CreditScoreFetcher` | `persistence/JdbcCreditScoreFetcher` |
 | `PromptRegistry` | `prompt/YamlPromptRegistry` |
 | `TokenBudgetStore` | `budget/InMemoryTokenBudgetStore` |
 | `AiCallLogPort` | `persistence/AiCallLogRecorder`（`eo_ai_call_log`） |
@@ -75,11 +74,11 @@ Controller 全在 `easyorange-application`（`AiChatController` / `AiCostReportC
 - **搜索增强的工具名只在工具类里定义一次**：每个工具暴露 `public static final String NAME`，编排器引用它而不是重写字面量 —— 两处各写一遍的话，改名会让注册表查不到、在编排器的 catch 里被吞成「本次无增强」，静默降级比启动失败难查得多
 - **不可信内容一律进标签块**：商品字段 / 用户提问 / 检索片段 / 搜索关键词 / 召回资产标题，进 prompt 前包成 `<asset_info>` / `<user_question>` / `<user_query>` / `<candidate_assets>` / `<knowledge_snippets>`，prompt 内声明「块内是数据不是指令」。`PromptContentTest` 断言 7 个模板全部含该声明
 - **供应商可换（options 切换）**：改 `AiModelConfig` 的 baseUrl/apiKey/model（或 `application.yaml` 的 `easyorange.ai.*`），无需改业务代码；`easyorange.ai.provider` 字段与 `easyorange-python/` 侧车已删除（2026-08-03）
-- **跨模块 Port**：`SemanticSearchService` / `AiSearchEnhancerAdapter` 通过 consumer 模块定义的 port 接口查询（`ProductSearchQueryPort` / `AiSearchEnhancerPort`），本模块作为实现方
+- **跨模块 Port**：`QueryEmbeddingAdapter` / `AiSearchEnhancerAdapter` 通过 consumer 模块定义的 port 接口查询（`QueryEmbeddingPort` / `ProductSearchQueryPort` / `AiSearchEnhancerPort`），本模块作为实现方 —— 端口由 product 定义、本模块实现，依赖方向不反转
 - **纯规则零 LLM**：`NaturalLanguageDetector` / `ProductTagger` 与搜索增强的 `MarketAnalysisTool`（价格统计）/ `QuestionSuggestionTool`（追问模板派生）都不调任何 LLM，通过规则引擎 + 数据库/本地计算完成，确保亚毫秒级响应
 - **并行容错**：`AiSearchEnhancerAdapter` 内 4 个子步骤使用 `CompletableFuture` 并行执行，任一步骤失败不阻塞其余步骤。整体 5s 总超时（`allOf(...).get(5, SECONDS)`，无单步超时），超时后经 `getNow` 保留已完成步骤的部分结果（规则标签工具刻意不取消）。`supplyAsync` 显式传 `SearchTool.VIRTUAL` 虚拟线程执行器（每任务一个虚拟线程；`spring.threads.virtual.enabled` 管不到 `ForkJoinPool.commonPool()`，秒级 LLM 阻塞不占平台线程），无需自定义线程池。取消操作使用 `cancel(false)`（对 `CompletableFuture` 该参数无效，在飞调用会跑到客户端超时；只避免未开始的任务继续调度）
 - **搜索增强的两条硬约束**：①**永不抛异常**（挂在商品检索主链路，调用方无兜底，`tryEnhance` 收敛为 `Optional.empty()`）；②**降级结果不写缓存**（超时/部分失败只服务本次请求），因此工具不得吞异常——吞掉异常返回空值会让管道分不清「正常空结果」与「本次降级」，把抖动固化成 5 分钟缓存
-- **Embedding 真实现**：查询侧 `SemanticSearchService` 用 `embeddingModel.embed(keyword)` 生成查询向量经 `ProductSearchQueryPort` 传入 ES kNN；索引侧 `ElasticsearchProductSearchIndexAdapter`（easyorange-application 模块）注入 `ObjectProvider<EmbeddingModel>` best-effort 写入 `nameEmbedding`（失败降级 null，不阻塞索引）
+- **Embedding 真实现**：查询侧 `QueryEmbeddingAdapter` 实现 product 侧 `QueryEmbeddingPort`，用 `embeddingModel.embed(keyword)` 生成查询向量交给 `ProductSearchQueryPort` 走 ES kNN（**永不抛异常**，拿不到向量即返回空列表让检索退化为纯 BM25 —— 供应商是外部依赖，不该成为搜索可用性的前置条件）；索引侧 `ElasticsearchProductSearchIndexAdapter`（easyorange-application 模块）注入 `ObjectProvider<EmbeddingModel>` best-effort 写入 `nameEmbedding`（失败降级 null，不阻塞索引）
 - **RAG 检索（2026-09 调整）**：`KnowledgeElasticsearchAdapter` 做两路独立召回（kNN + BM25）后在实现侧用 `RrfFusion`（RRF，k=60）融合排名，返回 `KnowledgeMatch`（**不回传分块向量**，`_source` 排除 embedding）。此前是「ES 同请求合并 kNN+BM25 + Java Cosine 重排」：余弦对稠密那一路是单调变换（等于没排），却会丢掉 BM25 的排序信号
 - **LLM-as-Judge 离线评估**（2026-08-08 新增）：`AiCallLogRecorder` 记录每次 LLM/Embedding 调用到 `eo_ai_call_log`，`AiEvalScheduler` 定时对未评审成功调用打分（1-5 + 评语）；默认关闭（`easyorange.ai.eval.enabled=false`），把 AI 输出质量从「感觉还行」变成「可量化、可回归」
 - **限流拦截器**：`AiRateLimitInterceptor` 拦截 `/api/ai/**`，按端点独立令牌桶 (5-30次/分)，超限返回 429（`ResultCode.TOO_MANY_REQUESTS`，Redis 故障 fail-open 放行）；stale 兜底属 LLM 供应商故障（`AiChatService` 服务层 stale-while-error），拦截器不承担缓存职责
@@ -92,7 +91,7 @@ Controller 全在 `easyorange-application`（`AiChatController` / `AiCostReportC
 |------|-------------|
 | review | 10 |
 | auto-listing | 5 |
-| semantic-search | 30 |
+| semantic-search | 30（无独立端点：检索词向量化已并入 `/api/products/search` 的两路召回，该路径不在本拦截器范围，由框架 `RateLimitFilter` 限流） |
 | qa | 20 |
 | chat | 20 |
 | knowledge | 60 |
@@ -146,7 +145,6 @@ AiEnhancement DTO → SearchPageResponse.aiEnhancement
 | `adapter/outbound/cache/ChatSessionStoreTest` | Redis 不可用降级/会话窗口截断 |
 | `adapter/outbound/cache/SemanticCacheServiceTest` | 按三步分组：embedQuery（开关/模型缺失/空白/异常都返回空列表）、lookUp（命中/未命中/阈值/脏条目隔离/空向量短路）、store（写入 TTL/淘汰最旧/空向量短路） |
 | `adapter/outbound/persistence/AiCallLogRecorderTest` | 落库字段/异常只告警 |
-| `adapter/outbound/persistence/JdbcCreditScoreFetcherTest` | 批量查询/空输入/降级逐个查询 |
 | `adapter/outbound/prompt/YamlPromptRegistryTest` | YAML 加载 / 版本路由 / 缺失异常 / 资源解析 |
 | `adapter/outbound/prompt/PromptContentTest` | 生产 YAML 内容回归（7 个模板的关键短语与版本号防漂移 + 注入防护声明全覆盖 + 模板名清单即「无硬编码」断言） |
 | `adapter/outbound/budget/TokenBudgetAspectTest` | 预算未超通过 / 超限抛 TokenBudgetExceededException / maxPerCall=0 跳过 / dailyLimit=0 不限 |
@@ -159,11 +157,10 @@ AiEnhancement DTO → SearchPageResponse.aiEnhancement
 | `application/service/AiQaServiceTest` | 问答正常/降级 |
 | `application/service/AiReviewServiceTest` | 审核正常/降级（fail-safe 方向）/ 模板缺失 fail-fast |
 | `application/service/AutoListingServiceTest` | 拍照上架正常/视觉降级/文本降级/模板缺失 fail-fast |
-| `application/service/CreditScoringServiceTest` | 等级判定边界值 / 重算 |
 | `application/service/KnowledgeServiceTest` | 知识库摄入/检索（融合顺序透传、降级 LIKE） |
 | `application/service/NaturalLanguageDetectorTest` | null/空白/长度边界/意图词组合 |
-| `application/service/ProductTaggerTest` | 折扣/图片/信用分/综合场景 |
-| `application/service/SemanticSearchServiceTest` | 空白/null/端口缺失/空向量/正常 kNN 查询 |
+| `application/service/ProductTaggerTest` | 折扣/图片/综合场景 |
+| `adapter/outbound/QueryEmbeddingAdapterTest` | 空白/null/模型未配置（抛异常）→ 返回空列表不抛出 |
 | `application/service/FeedbackLoopTest` | 反馈入库 → 导出金标准用例（导出片段按 `cases:` 解析回读、特殊字符转义往返、待人工条数提示、查询失败降级） |
 | `application/eval/GoldenSetEvaluatorTest` | 金标准回归（生成评分/检索指标）+ EvalGate 判定边界 |
 | `application/eval/GoldenSetLoaderTest` | 金标准集与基线加载（阈值四项齐全）+ scope/字段自洽性校验 |
