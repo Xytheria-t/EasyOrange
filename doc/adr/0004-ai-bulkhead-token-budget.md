@@ -1,6 +1,6 @@
 # ADR 0004 — AI 调用隔离用 Resilience4j Bulkhead，预算治理用注解 + AOP
 
-> **状态**：**部分已替代（Partially superseded by ADR-0008）** — 有效部分：`@TokenBudget` AOP 日预算治理（现役）；失效部分：Bulkhead 并发隔离与 Resilience4j 配置（2026-08-03 随 ADR-0008 全面框架化删除，重试/并发隔离由 openai-java 客户端内置连接池承担；2026-08-13 Resilience4j 整体移除）。文中引用的 `Resilience4jConfig` / `CachingLlmAdapter` 代码均已删除，保留作历史记录。
+> **状态**：**部分已替代（Partially superseded by ADR-0008）** — 有效部分：`@TokenBudget` AOP 日预算治理（现役）；失效部分：Bulkhead 并发隔离与 Resilience4j 配置（2026-08-03 随 ADR-0008 全面框架化删除，重试/并发隔离由 openai-java 客户端内置连接池承担；2026-08-13 Resilience4j 整体移除）。文中引用的 `Resilience4jConfig` / `CachingLlmAdapter` 代码均已删除，保留作历史记录；2026-09-19 补注：正文举例的 `AiPricingService.suggestPrice` 已随独立估值能力删除，当前 5 个 service 方法标注 `@TokenBudget`。
 
 - **状态**：部分已替代
 - **日期**：2026-07-26

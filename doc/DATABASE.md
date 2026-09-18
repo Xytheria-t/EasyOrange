@@ -25,6 +25,9 @@
 | `V2__favorite_price_snapshot.sql` | 收藏价格快照（收藏降价功能首个增量） |
 | `V3__task_scan_and_message_cleanup_indexes.sql` | 消息清理 / 订单定时扫描索引 |
 | `V4__stock_ledger.sql` | 库存流水表 `eo_stock_ledger` 与存量资产基线 |
+| `V5__enum_code_integrity.sql` | 枚举码列去非法默认值 + `chk_eo_*` CHECK 约束（修 `eo_message.type DEFAULT 0` 类历史事故） |
+| `V6__ai_call_log_token_usage.sql` | `eo_ai_call_log` 补 `token_input` / `token_output` / `subject_id` 三列 + `idx_ai_call_log_subject` 索引 |
+| `V7__product_ai_suggested_price.sql` | `eo_product` 补 `ai_suggested_price` 列（拍照识别建议价，供采纳率 / 偏离度统计，不参与定价） |
 | `R__seed_*.sql` | 可重复执行种子：分类、RAG 知识库文档 |
 
 迁移规范与演进策略见 [架构-数据库迁移.md](架构/架构-数据库迁移.md)。
@@ -164,7 +167,15 @@ eo_message ──1:1── eo_message_archive (id)
 
 > **现状**：`AiCallLogRecorder`（easyorange-ai/adapter/outbound/persistence/）在每次 LLM/Embedding 调用后 JDBC 直写一条（记录失败仅告警，不阻塞主链路）；`AiEvalScheduler`（adapter/inbound/job/）定时对 `judge_score IS NULL AND success = 1` 的记录用 ChatModel 打分（1-5 + 评语）。默认关闭（`easyorange.ai.eval.enabled=false`）。
 
-关键列：`scope`（AI 调用场景）、`prompt_hash`（system+user prompt 摘要 MD5，去重与回归用）、`judge_score` / `judge_comment`（LLM-as-Judge 结果，NULL = 待评估）。
+关键列：`scope`（AI 调用场景）、`prompt_hash`（system+user prompt 摘要 MD5，去重与回归用）、`token_input` / `token_output`（供应商真实回报的用量，未回报记 0 不估算）、`subject_id`（调用主体，如商品 ID；部分调用发生在主体创建之前故可空）、`judge_score` / `judge_comment`（LLM-as-Judge 结果，NULL = 待评估）。
+
+> **用量与主体的用途**（2026-09-19 由 `V6__ai_call_log_token_usage.sql` 补列）：没有这两组列时，这张表只能回答「哪个场景调用得多」，回答不了「哪个场景花得多」。补列后 `AiCostReportService` 可按场景出 token 报表（`GET /api/admin/ai/cost-report`），`subject_id` 供按主体做成本归因。注意 embedding 用量与未带 usage 的流式调用仍记 0。
+
+### eo_product.ai_suggested_price — AI 建议售价
+
+> **来源**：`V7__product_ai_suggested_price.sql`。拍照识别（发布助手）给出的建议价随创建请求一起落库；**只写不改**，不参与定价逻辑与状态流转。
+
+> **为什么落在商品侧**：智能估值发生在商品创建之前，那时 `eo_ai_call_log.subject_id` 还没有值、商品也不存在，所以「AI 建议多少」只能由商品自己记。落库后 `GET /api/admin/ai/pricing-adoption` 才能算出采纳率与偏离分布 —— 这是全项目唯一不依赖 LLM 评 LLM 的质量数字（检索指标有语料免责、Judge 均分有自评偏差）。
 
 ### 已删除的表（历史记录）
 

@@ -100,10 +100,8 @@
 
 | 功能 | 方法+路径 | 参数 |
 |------|----------|------|
-| 智能估值 | `POST /api/ai/pricing` | productName（必填）, description, categoryName, conditionLevel, originalPrice |
-| 拍照上架 | `POST /api/ai/auto-listing` | imageUrls（JSON 字符串数组，非 multipart） |
+| 拍照上架（发布助手单入口） | `POST /api/ai/auto-listing` | imageUrls（JSON 字符串数组，非 multipart）；一次返回属性 + 建议价 + 标题 / 描述 |
 | 智能问答 | `POST /api/ai/qa` | question（必填）+ 商品上下文 productId / productName / productDescription / categoryName / price / conditionLevel / sellerName / sellerCreditLevel |
-| 智能文案 | `POST /api/ai/generate-copy` | productName（必填）, categoryName, conditionLevel, originalPrice, style (standard/detailed/concise/emotional) |
 | 语义搜索 | `GET /api/ai/semantic-search` | keyword, pageNum, pageSize |
 | AI 对话（多轮 Agent） | `POST /api/ai/chat` | question, sessionId, forceFresh；响应含 `degraded` 标记，`sessionId` 恒为本次请求值（缓存命中 / 降级亦然） |
 | AI 对话（SSE 流式） | `POST /api/ai/chat/stream` | question, sessionId；事件：token / sources / done / error |
@@ -120,7 +118,7 @@
 | `/api/ai/chat/stream` | `error` 事件，文案同上 |
 | `/api/admin/products/{id}/ai-review` | `suggestedAction=false` + `riskFlags: ["AI_UNAVAILABLE"]` + `confidenceScore=0`（「无法判定」而非「审核通过」）。管理端点，卖家侧无入口 —— `POST /api/ai/review` 已于 2026-09-18 删除（无调用方的重复入口） |
 | `/api/ai/qa` | 「AI服务暂时不可用」+ `confidence=false` |
-| `/api/ai/pricing`、`/generate-copy`、`/auto-listing` | 200 + `data: null` |
+| `/api/ai/auto-listing` | 200 + `data: null` |
 | `/api/ai/knowledge/search` | ES 关闭时降级 MySQL LIKE，仍可返回字面命中（分数为 0） |
 | `/api/products/search`（增强） | 无 `aiEnhancement` 字段，检索结果本身不受影响 |
 
@@ -134,6 +132,7 @@
 | 补索引（重试 PENDING） | `POST /api/admin/knowledge/reindex` | — |
 | 反馈导出为金标准用例 | `GET /api/admin/ai/feedback/export` | limit |
 | AI 成本报表（按场景聚合） | `GET /api/admin/ai/cost-report` | hours（默认 24，上限 720 = 30 天）；返回各场景的调用数 / token 入出 / 平均耗时 / 失败数（token 只记供应商回报值，未回报记 0） |
+| AI 建议价采纳率 | `GET /api/admin/ai/pricing-adoption` | 无参数；返回样本数 / 完全采纳数 / 采纳率 / ±10% 内 / >30% 偏离 / 平均绝对偏离（建议价只做统计，不参与定价逻辑） |
 
 ## 八、信用
 
