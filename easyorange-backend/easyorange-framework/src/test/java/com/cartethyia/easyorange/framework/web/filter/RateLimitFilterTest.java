@@ -20,8 +20,10 @@ import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
 import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -230,5 +232,39 @@ class RateLimitFilterTest {
         assertThat(keyCaptor.getAllValues()).doesNotHaveDuplicates();
         assertThat(keyCaptor.getAllValues().get(0)).contains(":POST:/api/favorites/2001:");
         assertThat(keyCaptor.getAllValues().get(1)).contains(":DELETE:/api/favorites/2001:");
+    }
+
+    // ==================== multipart：不预读 body ====================
+
+    @Test
+    @DisplayName("multipart 写请求：原样透传不包装（包装会读空输入流，容器随后解析 parts 必失败）")
+    void multipartWriteRequest_passesThroughUnwrapped() throws Exception {
+        stubHandler(handlerFor("noSkip"));
+
+        var req = new MockHttpServletRequest("POST", "/api/file/upload");
+        req.setContentType("multipart/form-data; boundary=----eoBoundary");
+        req.setContent("------eoBoundary--".getBytes(StandardCharsets.UTF_8));
+        var res = new MockHttpServletResponse();
+        var downstream = new AtomicReference<Object>();
+
+        filter.doFilter(req, res, (r, s) -> downstream.set(r));
+
+        // 同一实例 = 未被 CachedBodyHttpServletRequestWrapper 包裹，原始流仍留给容器解析 parts
+        assertThat(downstream.get()).isSameAs(req);
+        assertThat(res.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("multipart 写请求：无 body 可算防重 key，跳过防重（不误拦截上传）")
+    void multipartWriteRequest_skipsRepeatSubmit() throws Exception {
+        stubHandler(handlerFor("noSkip"));
+
+        var req = new MockHttpServletRequest("POST", "/api/file/upload");
+        req.setContentType("multipart/form-data; boundary=----eoBoundary");
+        req.setContent("------eoBoundary--".getBytes(StandardCharsets.UTF_8));
+
+        filter.doFilter(req, new MockHttpServletResponse(), (r, s) -> {});
+
+        verify(redisTemplate, never()).opsForValue();
     }
 }
