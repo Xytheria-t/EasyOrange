@@ -15,6 +15,13 @@ import type {
 } from '@/types';
 import { request } from './core/request';
 
+/**
+ * 开了 AI 增强的检索超时：后端 4 路 LLM 增强有独立等待上限
+ * （easyorange.ai.search-enhance.timeout-seconds），叠加检索与融合后会长于 10s 默认值，
+ * 沿用默认会在增强结果回来前先断在前端、白烧一次 LLM 调用。
+ */
+const AI_ENHANCED_SEARCH_TIMEOUT = 30000;
+
 export const productApi = {
     getProducts(params?: ProductQueryParams) {
         return request<PageResult<RawProduct>>('/products', {
@@ -76,6 +83,7 @@ export const productApi = {
         return request<ProductSearchResult>('/products/search', {
             method: 'GET',
             params: params as Record<string, unknown>,
+            timeout: params.aiEnhanced ? AI_ENHANCED_SEARCH_TIMEOUT : undefined,
             skipAuth: true,
         });
     },
