@@ -5,9 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
-import com.cartethyia.easyorange.ai.application.dto.PricingRequest;
-import com.cartethyia.easyorange.ai.application.dto.PricingSuggestion;
-import com.cartethyia.easyorange.ai.application.service.AiPricingService;
 import com.cartethyia.easyorange.ai.application.service.AutoListingService;
 import com.cartethyia.easyorange.common.result.Result;
 import java.math.BigDecimal;
@@ -25,47 +22,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AiListingControllerTest {
 
     @Mock
-    private AiPricingService pricingService;
-
-    @Mock
     private AutoListingService autoListingService;
 
     private AiListingController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new AiListingController(pricingService, autoListingService);
-    }
-
-    @Nested
-    @DisplayName("POST /api/ai/pricing")
-    class SuggestPriceTests {
-
-        @Test
-        @DisplayName("请求定价 — 返回 PricingSuggestion")
-        void suggestPrice_success() {
-            var expected = new PricingSuggestion(
-                    new BigDecimal("4500"), new BigDecimal("4200"), new BigDecimal("4800"), "成色较新，折价合理", "同款均价4500左右");
-            when(pricingService.suggestPrice(anyString(), any(), any(), any(), any()))
-                    .thenReturn(expected);
-
-            var request = new PricingRequest("在管 iPhone 14", "99新", "手机数码", "2", new BigDecimal("6999"));
-            Result<PricingSuggestion> result = controller.suggestPrice(request);
-
-            assertThat(result.isSuccess()).isTrue();
-            assertThat(result.data()).isEqualTo(expected);
-            assertThat(result.data().suggestedPrice()).isEqualByComparingTo(new BigDecimal("4500"));
-            verify(pricingService)
-                    .suggestPrice(eq("在管 iPhone 14"), eq("99新"), eq("手机数码"), eq("2"), eq(new BigDecimal("6999")));
-        }
-
-        @Test
-        @DisplayName("只有商品名称时也能正常请求")
-        void suggestPrice_onlyRequiredParams() {
-            controller.suggestPrice(new PricingRequest("测试商品", null, null, null, null));
-
-            verify(pricingService).suggestPrice(eq("测试商品"), isNull(), isNull(), isNull(), isNull());
-        }
+        controller = new AiListingController(autoListingService);
     }
 
     @Nested

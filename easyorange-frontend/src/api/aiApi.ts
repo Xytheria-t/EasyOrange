@@ -3,14 +3,6 @@ import type { ChatAnswer, ChatFeedbackRequest, ChatRequest, ChatStreamEvent, Kno
 import { request } from './core/request';
 import { streamChat } from './core/stream';
 
-export interface PricingSuggestion {
-    suggestedPrice: number;
-    minPrice: number;
-    maxPrice: number;
-    reasoning: string;
-    marketContext: string;
-}
-
 export interface AutoListingResult {
     title: string;
     description: string;
@@ -56,40 +48,20 @@ export interface QaResponse {
     hasConfidence: boolean;
 }
 
-export interface PriceSuggestionParams {
-    productName: string;
-    description?: string;
-    categoryName?: string;
-    conditionLevel?: number;
-    originalPrice?: number;
-}
-
-export interface CopyGenerationParams {
-    productName: string;
-    categoryName?: string;
-    conditionLevel?: number;
-    originalPrice?: string;
-    style?: 'standard' | 'detailed' | 'concise' | 'emotional';
-}
-
-export interface CopyGenerationResult {
-    title: string;
-    description: string;
-    style: string;
-}
+/**
+ * AI 调用专用超时：LLM 单次生成远慢于普通接口（实测视觉识别 ~12s、文案生成 6~28s，
+ * 视供应商档位而定），沿用 10s 默认值会让请求被前端中断、后端白算一次。
+ * 取值必须高于后端供应商超时（easyorange.ai.deepseek.timeout 30s / qwen-vl.timeout 60s），
+ * 否则后端自己的降级结果来不及返回，前端先断在超时上。
+ */
+const AI_TIMEOUT = 90000;
 
 export const aiApi = {
-    suggestPrice(params: PriceSuggestionParams) {
-        return request<PricingSuggestion>('/ai/pricing', {
-            method: 'POST',
-            body: params,
-        });
-    },
-
     autoListing(imageUrls: string[]) {
         return request<AutoListingResult>('/ai/auto-listing', {
             method: 'POST',
             body: imageUrls,
+            timeout: AI_TIMEOUT,
         });
     },
 
@@ -97,6 +69,7 @@ export const aiApi = {
         return request<SemanticSearchResult>('/ai/semantic-search', {
             method: 'GET',
             params: params as Record<string, unknown>,
+            timeout: AI_TIMEOUT,
         });
     },
 
@@ -104,13 +77,7 @@ export const aiApi = {
         return request<QaResponse>('/ai/qa', {
             method: 'POST',
             body: data,
-        });
-    },
-
-    generateCopy(params: CopyGenerationParams) {
-        return request<CopyGenerationResult>('/ai/generate-copy', {
-            method: 'POST',
-            body: params,
+            timeout: AI_TIMEOUT,
         });
     },
 
@@ -119,6 +86,7 @@ export const aiApi = {
         return request<ChatAnswer>('/ai/chat', {
             method: 'POST',
             body: data,
+            timeout: AI_TIMEOUT,
         });
     },
 
@@ -127,6 +95,7 @@ export const aiApi = {
         return request<KnowledgeHit[]>('/ai/knowledge/search', {
             method: 'GET',
             params: { keyword, topK },
+            timeout: AI_TIMEOUT,
         });
     },
 
@@ -135,6 +104,7 @@ export const aiApi = {
         return request<void>('/ai/feedback', {
             method: 'POST',
             body: data,
+            timeout: AI_TIMEOUT,
         });
     },
 
