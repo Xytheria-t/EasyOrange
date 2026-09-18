@@ -13,7 +13,7 @@
 
 EasyOrange 的 AI 工程化叙事承诺「可降级、可观测」，但 6 个 AI 决策点（估值/审核/文案/客服/语义搜索/自动上架）存在两个未落地的工程缺口：
 
-1. **并发隔离缺失**：LLM/Vision 调用慢且耗资源。若 6 个 AI 场景共享线程池，任一供应商变慢（DeepSeek P99 飙到 30s）会拖垮所有 AI 端点，甚至通过线程池传导到商品/订单等核心链路。项目已引入 Resilience4j 的 CircuitBreaker + Retry（见 [Resilience4jConfig.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/config/resilience4j/Resilience4jConfig.java)），但缺少并发数上限隔离。
+1. **并发隔离缺失**：LLM/Vision 调用慢且耗资源。若 6 个 AI 场景共享线程池，任一供应商变慢（DeepSeek P99 飙到 30s）会拖垮所有 AI 端点，甚至通过线程池传导到商品/订单等核心链路。项目已引入 Resilience4j 的 CircuitBreaker + Retry（见 `Resilience4jConfig.java`），但缺少并发数上限隔离。
 2. **Token 预算治理缺失**：`@TokenBudget` 注解已定义但零业务接入，6 个 AI service 直接调 LLM 无日预算上限。DeepSeek 按 token 计费，一次失控循环（如 Prompt 版本回退导致输出暴涨）可能产生数千元账单。这是「已声明未落地」与 AI 工程化叙事的直接冲突。
 
 强制约束：
@@ -29,7 +29,7 @@ AI 调用的并发隔离与预算治理分别采用以下方案：
 
 ### 1. Bulkhead 隔离 — Resilience4j `BulkheadRegistry` + 三个具名隔离仓
 
-在 [Resilience4jConfig.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/config/resilience4j/Resilience4jConfig.java) 新增 `BulkheadRegistry`，声明三个隔离仓：
+在 `Resilience4jConfig.java` 新增 `BulkheadRegistry`，声明三个隔离仓：
 
 - `aiLlm`（并发 8）— DeepSeek LLM 调用
 - `aiVision`（并发 4）— Qwen-VL 视觉调用（更慢更耗资源）
@@ -37,7 +37,7 @@ AI 调用的并发隔离与预算治理分别采用以下方案：
 
 `maxWaitDuration=100ms`，超时抛 `BulkheadFullException`，调用方捕获后走 stale 缓存降级。`TaggedBulkheadMetrics` 自动绑定 `MeterRegistry`，暴露 `resilience4j_bulkhead_available_concurrent_calls` / `resilience4j_bulkhead_max_allowed_concurrent_calls` 指标。
 
-[CachingLlmAdapter](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/CachingLlmAdapter.java) / `CachingVisionAdapter` 用 `Bulkhead.decorateSupplier(aiBulkhead, Retry.decorateSupplier(aiRetry, loader))` 包装 LLM/Vision 调用，隔离 + 重试叠加。`BulkheadFullException` 捕获后上报 `AiMetricsService.recordBulkheadRejected`。
+`CachingLlmAdapter` / `CachingVisionAdapter` 用 `Bulkhead.decorateSupplier(aiBulkhead, Retry.decorateSupplier(aiRetry, loader))` 包装 LLM/Vision 调用，隔离 + 重试叠加。`BulkheadFullException` 捕获后上报 `AiMetricsService.recordBulkheadRejected`。
 
 ### 2. Token 预算治理 — `@TokenBudget` 注解 + AOP 切面 + 配置覆盖
 
@@ -81,5 +81,5 @@ AI 调用的并发隔离与预算治理分别采用以下方案：
 ## 备注（Notes）
 
 - 相关 ADR：[ADR 0003](./0003-ai-port-adapter-decorator.md)（AI Port/Adapter + 装饰器，本 ADR 的 Bulkhead 装饰在其装饰器内部；该 ADR 已被 ADR-0008 替代）、[ADR 0008](./0008-ai-spring-ai-framework.md)（部分替代：Bulkhead 删除，`@TokenBudget` 保留）
-- 相关代码：[Resilience4jConfig.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/config/resilience4j/Resilience4jConfig.java)、[TokenBudgetAspect.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/budget/TokenBudgetAspect.java)、[CachingLlmAdapter.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/CachingLlmAdapter.java)
+- 相关代码：`Resilience4jConfig.java`、[TokenBudgetAspect.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/budget/TokenBudgetAspect.java)、`CachingLlmAdapter.java`
 - 后续演进触发：当供应商返回 `usage` 字段时，升级 TokenBudget 为精确计数；当 AI 场景 > 10 个时，考虑按 `AiCallScope` 自动派发 Bulkhead 而非硬编码具名实例。

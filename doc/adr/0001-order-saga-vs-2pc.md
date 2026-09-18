@@ -32,7 +32,7 @@ EasyOrange 的 C2C 资产流转业务中，「认领方下单」是一个跨三�
 
 核心实现：
 
-- 编排器：[CreateOrderSaga.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/saga/CreateOrderSaga.java)
+- 编排器：`CreateOrderSaga.java`
 - 步骤：创建订单 → 同步扣库存 → 创建支付；失败时逆序执行补偿（`restoreStock` → `cancelOrder`）
 - 状态机持久化到 `eo_saga` 表：`PENDING → ORDER_CREATED → PAYMENT_CREATED → COMPLETED` / `COMPENSATING → COMPENSATED`；`SagaTimeoutScheduler` 每 60s 扫描 30 分钟无更新的活跃 saga，重试达到 `MAX_RETRY_COUNT` 的标记 `MANUAL_INTERVENTION`，其余标记 `TIMEOUT` 等待人工介入
 - 分布式锁按 `productId` 排序获取（`DistributedLockManager`），避免死锁

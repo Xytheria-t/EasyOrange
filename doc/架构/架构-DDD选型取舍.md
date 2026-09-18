@@ -1,6 +1,6 @@
 # EasyOrange 为什么上 DDD + 六边形：收益与代价
 
-> 只回答三件事：为什么这么分层、拿到了什么、付出了什么。怎么做见 [架构-DDD规范.md](架构-DDD规范.md) / [架构-模块结构.md](架构-模块结构.md)；具体决策见 [ADR-0002](../adr/0002-cqrs-scope-4-modules.md) / [ADR-0006](../adr/0006-module-decoupling-port-adapter-acl.md) / [ADR-0007](../adr/0007-order-local-tx-over-saga.md) / [ADR-0009](../adr/0009-domain-service-placement.md)；数字口径以 [工程指标.md](../工程指标.md) 为唯一来源。
+> 只回答三件事：为什么这么分层、拿到了什么、付出了什么。怎么做见 [架构-DDD规范.md](架构-DDD规范.md) / [架构-系统架构.md](架构-系统架构.md)；具体决策见 [ADR-0002](../adr/0002-cqrs-scope-4-modules.md) / [ADR-0006](../adr/0006-module-decoupling-port-adapter-acl.md) / [ADR-0007](../adr/0007-order-local-tx-over-saga.md) / [ADR-0009](../adr/0009-domain-service-placement.md)；数字口径以 [工程指标.md](../工程指标.md) 为唯一来源。
 
 **一句话**：让「业务规则」有唯一落点、让「模块边界」能被测试强制；代价是每个跨模块协作多一层接口 + 适配器，以及模块间结构不统一。
 
@@ -79,6 +79,6 @@
 ## 相关文档
 
 - 规范细则（聚合根 / 值对象 / 领域服务 / 仓储 / 事件 / 异常 / ACL）→ [架构-DDD规范.md](架构-DDD规范.md)
-- 分层与包结构约定 → [架构-模块结构.md](架构-模块结构.md)
+- 分层与包结构约定 → [架构-系统架构.md](架构-系统架构.md) §三
 - 决策记录 → [ADR-0002](../adr/0002-cqrs-scope-4-modules.md)（CQRS 范围）、[ADR-0006](../adr/0006-module-decoupling-port-adapter-acl.md)（跨模块解耦）、[ADR-0009](../adr/0009-domain-service-placement.md)（领域服务分布）
 - 面试话术 → [01-怎么答.md §二](../interview/01-怎么答.md)（DDD 核心思想 + 刻意不做清单）
