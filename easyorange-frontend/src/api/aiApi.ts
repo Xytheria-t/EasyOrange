@@ -1,4 +1,3 @@
-import type { RawProduct } from '@/types';
 import type { ChatAnswer, ChatFeedbackRequest, ChatRequest, ChatStreamEvent, KnowledgeHit } from '@/types/ai';
 import { request } from './core/request';
 import { streamChat } from './core/stream';
@@ -21,14 +20,6 @@ export interface AiReviewResult {
     confidenceScore: number;
     riskFlags: string[];
     reasoning: string;
-}
-
-export interface SemanticSearchResult {
-    records: RawProduct[];
-    total: number;
-    current: number;
-    size: number;
-    pages: number;
 }
 
 export interface QaRequest {
@@ -61,14 +52,6 @@ export const aiApi = {
         return request<AutoListingResult>('/ai/auto-listing', {
             method: 'POST',
             body: imageUrls,
-            timeout: AI_TIMEOUT,
-        });
-    },
-
-    semanticSearch(params: { keyword: string; pageNum?: number; pageSize?: number }) {
-        return request<SemanticSearchResult>('/ai/semantic-search', {
-            method: 'GET',
-            params: params as Record<string, unknown>,
             timeout: AI_TIMEOUT,
         });
     },

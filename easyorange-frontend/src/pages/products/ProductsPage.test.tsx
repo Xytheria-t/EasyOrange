@@ -11,17 +11,6 @@ const mockUseColumnCount = vi.hoisted(() => vi.fn());
 const mockUseAuthStore = vi.hoisted(() => vi.fn(() => ({ user: null, token: null, isAuthenticated: false })));
 const mockNavigate = vi.hoisted(() => vi.fn());
 
-const mockUseSemanticSearch = vi.hoisted(() =>
-    vi.fn(() => ({
-        results: [],
-        isSearching: false,
-        isSemanticMode: false,
-        total: 0,
-        search: vi.fn(),
-        toggleSemanticMode: vi.fn(),
-    }))
-);
-
 vi.mock('@/hooks', async () => {
     const actual = await vi.importActual<typeof import('@/hooks')>('@/hooks');
     return {
@@ -30,7 +19,6 @@ vi.mock('@/hooks', async () => {
         useCategories: mockUseCategories,
         useFavoriteCheck: mockUseFavoriteCheck,
         useColumnCount: mockUseColumnCount,
-        useSemanticSearch: mockUseSemanticSearch,
     };
 });
 

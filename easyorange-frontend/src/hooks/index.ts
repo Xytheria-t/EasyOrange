@@ -30,4 +30,3 @@ export {
     useUpdateProduct,
 } from './product';
 export { useColumnCount, useListUrlState, useScrollReveal } from './ui';
-export { useSemanticSearch } from './useSemanticSearch';
