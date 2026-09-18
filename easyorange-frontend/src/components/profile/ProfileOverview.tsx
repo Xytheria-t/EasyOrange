@@ -9,7 +9,7 @@
  * - 会员等级（黄金会员）
  *
  * 已实现真实数据：
- * - 订单数、发布数、消息数、收藏数
+ * - 消息数、收藏数
  */
 
 import {
@@ -25,11 +25,9 @@ import {
     Lightbulb,
     Mail,
     MessageSquare,
-    Package,
     Pencil,
     Phone,
     Shield,
-    ShoppingBag,
     Sparkles,
     Star,
     Target,
@@ -47,8 +45,6 @@ type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId';
 interface ProfileOverviewProps {
     user: UserType | undefined;
     favoriteCount: number;
-    orderCount: number;
-    productCount: number;
     unreadMessageCount: number;
     editingField: EditableField | null;
     editValue: string;
@@ -62,8 +58,6 @@ interface ProfileOverviewProps {
 export function ProfileOverview({
     user,
     favoriteCount,
-    orderCount,
-    productCount,
     unreadMessageCount,
     editingField,
     editValue,
@@ -88,10 +82,10 @@ export function ProfileOverview({
         { key: 'createTime', label: '注册时间', value: user?.createTime, icon: Calendar },
     ];
 
+    // 「我的发布」「我的订单」入口只保留侧边栏一处：概览页再放同名卡片会有多个入口指向同一页面，
+    // 且此前「我的发布」卡片指向的 /products?seller=me 是公共商品列表（seller 参数无人解析）
     const quickActions = [
         { label: '我的收藏', icon: Heart, count: favoriteCount, path: '/favorites', color: 'rose' },
-        { label: '我的订单', icon: ShoppingBag, count: orderCount, path: '/orders', color: 'blue' },
-        { label: '我的发布', icon: Package, count: productCount, path: '/products?seller=me', color: 'orange' },
         { label: '消息中心', icon: MessageSquare, count: unreadMessageCount, path: '/messages', color: 'green' },
     ];
 
@@ -101,12 +95,6 @@ export function ProfileOverview({
                 <div className="header-title">
                     <h2>数据概览</h2>
                     <p className="header-subtitle">实时追踪你的智能托管数据</p>
-                </div>
-                <div className="header-actions">
-                    <Button variant="ghost" onClick={() => navigate('/orders')}>
-                        <ShoppingBag size={16} />
-                        查看订单
-                    </Button>
                 </div>
             </div>
 

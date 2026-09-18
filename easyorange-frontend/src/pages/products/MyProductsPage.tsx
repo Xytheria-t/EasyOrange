@@ -105,7 +105,7 @@ function MyProductsPage() {
                 <div className="orders-hero-content">
                     <h1 className="orders-hero-title">
                         <Package size={20} className="orders-hero-icon" />
-                        我发布的商品
+                        我的发布
                     </h1>
                     <p className="orders-hero-subtitle">管理你发布的商品，追踪审核状态</p>
                 </div>

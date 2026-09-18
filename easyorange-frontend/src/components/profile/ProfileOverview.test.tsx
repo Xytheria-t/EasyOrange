@@ -28,8 +28,6 @@ const mockUser: User = {
 const defaultProps = {
     user: mockUser,
     favoriteCount: 10,
-    orderCount: 3,
-    productCount: 5,
     unreadMessageCount: 2,
     editingField: null as EditableField | null,
     editValue: '',
@@ -72,9 +70,13 @@ describe('ProfileOverview', () => {
     it('renders quick action buttons', () => {
         render(<ProfileOverview {...defaultProps} />);
         expect(screen.getByText('我的收藏')).toBeInTheDocument();
-        expect(screen.getByText('我的订单')).toBeInTheDocument();
-        expect(screen.getByText('我的发布')).toBeInTheDocument();
         expect(screen.getByText('消息中心')).toBeInTheDocument();
+    });
+
+    it('keeps 我的发布 / 我的订单 out of the overview so the sidebar holds the only entry', () => {
+        render(<ProfileOverview {...defaultProps} />);
+        expect(screen.queryByText('我的发布')).not.toBeInTheDocument();
+        expect(screen.queryByText('我的订单')).not.toBeInTheDocument();
     });
 
     it('navigates to favorites on click', () => {
