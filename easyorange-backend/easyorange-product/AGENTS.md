@@ -1,6 +1,6 @@
 # easyorange-product 模块指南
 
-商品管理模块，DDD + CQRS 架构，支持商品 CRUD、搜索、库存、分类、举报、评价。
+商品管理模块，DDD + CQRS 架构，支持商品 CRUD、搜索、库存、分类、评价。
 
 ## 目录结构
 
@@ -9,7 +9,7 @@ product/
 ├── adapter/
 │   ├── inbound/
 │   │   ├── web/
-│   │   │   ├── controller/              # ProductController / ProductSearchController / ProductReportController / ProductRatingController
+│   │   │   ├── controller/              # ProductController / ProductSearchController / ProductRatingController
 │   │   │   ├── assembler/
 │   │   │   └── dto/request/ + dto/response/
 │   │   └── messaging/ProductEventConsumer.java   # RabbitMQ 领域事件消费者（异步投影：CQRS 缓存、索引、通知）
@@ -19,7 +19,6 @@ product/
 │       │   │                            #   + ProductRepositoryImpl + ProductQueryRepositoryImpl + ProductDataMapper + ProductSnapshotAdapter
 │       │   ├── category/                # 分类：CategoryDO + CategoryProductCount + Mapper + QueryRepositoryImpl
 │       │   ├── audit/                   # 审核日志：ProductAuditLogDO + Mapper + DataMapper + RepositoryImpl
-│       │   ├── report/                  # 举报：ProductReportDO + ReportHandleHistoryDO + Mapper × 2 + RepositoryImpl × 3
 │       │   ├── rating/                  # 评价：ProductRatingDO + Mapper + QueryRepositoryImpl + RepositoryImpl
 │       │   ├── search/                  # 搜索：HotKeywordDO + SearchHistoryDO + Mapper × 2
 │       │   └── stock/                   # 库存流水：StockLedgerDO + Mapper + RepositoryImpl
@@ -35,37 +34,33 @@ product/
 │   │   ├── ProductCommand.java               # 密封接口（所有命令实现此接口）
 │   │   ├── CreateProductCommand.java / UpdateProductCommand.java / CreateProductRatingCommand.java（顶层 record）
 │   │   ├── ProductCommandHandler.java
-│   │   ├── ProductReportCommandHandler.java
 │   │   └── ProductRatingCommandHandler.java
 │   ├── query/                           # 查询侧 (CQRS Read)
-│   │   ├── ProductQueryHandler.java / ProductReportQueryHandler.java / ProductRatingQueryHandler.java
+│   │   ├── ProductQueryHandler.java / ProductRatingQueryHandler.java
 │   │   ├── ProductSearchQueryHandler.java / ProductSearchCriteria.java / CategoryQueryHandler.java
 │   │   ├── dto/                         # 应用层输出 VO：ProductVO / ProductRatingVO / RatingStatsVO
 │   │   ├── readmodel/                   # 读模型：ProductReadModel / CategoryReadModel / SellerReadModel / HotKeywordReadModel / SearchHistoryReadModel
 │   │   └── assembler/ProductReadModelAssembler.java
 │   ├── port/                            # 应用层端口
 │   │   ├── cache/                       # ProductCachePort / CategoryCachePort / SellerCachePort / ViewCountPort
-│   │   └── query/                       # ProductQueryRepository / ProductReportQueryRepository / ProductRatingQueryRepository
+│   │   └── query/                       # ProductQueryRepository / ProductRatingQueryRepository
 │   │                                    #   / CategoryQueryRepository / ProductSearchQueryPort / AiSearchEnhancerPort
 │   ├── event/ProductDomainEventListener.java  # 同步监听：缓存失效、审核日志（异步投影见 ProductEventConsumer）
-│   ├── config/ProductDomainConfig.java
 │   └── service/                         # ProductViewCountAppService（浏览量 Redis 增量）
 │                                        #   / ViewCountBatchProcessor（批量刷入 DB）/ SearchHistoryBufferAppService
 ├── domain/
 │   ├── aggregate/Product.java
-│   ├── entity/                          # ProductAuditLog / ProductDetail / ProductRating / ProductReport / ReportHandleHistory
+│   ├── entity/                          # ProductAuditLog / ProductDetail / ProductRating
 │   ├── valueobject/                     # CategoryId, SellerId / StockQuantity, Version / StockChange, StockDrift, ViewCountEntry
 │   │                                    #   / ProductTitle, ProductDescription / ImageUrl, ImageSet, TagSet
 │   │                                    #   / ContactMethod, TradeLocation / SellerInfo / Rating, ReviewContent
 │   ├── event/                           # ProductEvent（sealed）+ Created/Updated/Deleted/SubmittedForReview/PutOnline
-│   │                                    #   / TakeOffline/MarkedSold/Audited/StockDecreased/StockRestored/ReportProcessed 事件
+│   │                                    #   / TakeOffline/MarkedSold/Audited/StockDecreased/StockRestored 事件
 │   ├── port/                            # ProductCacheEvictionPort（仅 evict）/ ProductSnapshotPort / SellerInfoPort（跨模块）
 │   │                                    #   / CompletedOrderPort（跨模块，评价资格）/ ProductNotificationPort / ProductSearchIndexPort
-│   ├── repository/                      # ProductRepository / ProductReportRepository / ProductRatingRepository
-│   │                                    #   / ProductAuditLogRepository / ReportHandleHistoryRepository / StockLedgerRepository
-│   ├── service/ProductReportDomainService.java
-│   ├── enums/                           # ProductStatus, ConditionLevel, AuditAction, ReportReasonType, StockChangeType
-│   │                                    #   / ProductReportStatus / ProductResultCode
+│   ├── repository/                      # ProductRepository / ProductRatingRepository
+│   │                                    #   / ProductAuditLogRepository / StockLedgerRepository
+│   ├── enums/                           # ProductStatus, ConditionLevel, AuditAction, StockChangeType / ProductResultCode
 │   ├── constant/ProductConstant.java
 │   └── exception/ProductDomainException.java
 ```
