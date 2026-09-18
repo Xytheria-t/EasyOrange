@@ -60,7 +60,8 @@ public final class ProductTestFixture {
                     location,
                     contactMethod,
                     description,
-                    images);
+                    images,
+                    null);
         }
     }
 

@@ -29,7 +29,11 @@ public record ProductCreateRequest(
 
         @Size(max = 100, message = "交易地点不能超过 100 个字符") String location,
         @Size(max = 50, message = "联系方式不能超过 50 个字符") String contactMethod,
-        @Size(max = 9, message = "图片数量不能超过 9 张") List<String> imageUrls) {
+        @Size(max = 9, message = "图片数量不能超过 9 张") List<String> imageUrls,
+
+        // 拍照识别给出的建议价：只写不改，不参与定价逻辑，用于统计 AI 建议的采纳率与偏离度
+        @DecimalMin(value = "0.01", message = "AI 建议价必须大于 0")
+        BigDecimal aiSuggestedPrice) {
     public ProductCreateRequest {
         if (stock == null) {
             stock = 1;

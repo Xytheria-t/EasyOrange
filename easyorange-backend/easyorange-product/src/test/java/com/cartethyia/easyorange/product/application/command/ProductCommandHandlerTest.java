@@ -74,7 +74,8 @@ class ProductCommandHandlerTest {
                 "北京",
                 "微信",
                 "描述",
-                java.util.List.of("http://img/1.jpg"));
+                java.util.List.of("http://img/1.jpg"),
+                null);
 
         String productId = commandHandler.createProduct(SELLER_ID, command);
 
@@ -104,7 +105,8 @@ class ProductCommandHandlerTest {
                 "北京",
                 "微信",
                 "描述",
-                java.util.List.of("http://img/1.jpg"));
+                java.util.List.of("http://img/1.jpg"),
+                null);
 
         assertThat(commandHandler.createProduct(SELLER_ID, command)).isEqualTo("43");
         verify(stockLedgerRepository).record(argThat(change -> change.delta() == 0 && change.stockAfter() == 0));

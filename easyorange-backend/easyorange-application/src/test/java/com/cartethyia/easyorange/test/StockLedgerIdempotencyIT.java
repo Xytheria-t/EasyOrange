@@ -104,7 +104,8 @@ class StockLedgerIdempotencyIT extends AbstractIntegrationTest {
                         "北京",
                         "微信",
                         "IT",
-                        List.of("http://img/it.jpg")));
+                        List.of("http://img/it.jpg"),
+                        null));
     }
 
     private int stockOf(String id) {

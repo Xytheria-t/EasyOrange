@@ -2,6 +2,8 @@ package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.ai.application.dto.AiCostReportRow;
 import com.cartethyia.easyorange.ai.application.service.AiCostReportService;
+import com.cartethyia.easyorange.ai.domain.model.PricingAdoptionReport;
+import com.cartethyia.easyorange.ai.domain.port.AiPricingAdoptionPort;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -12,21 +14,28 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * AI 成本报表端点（管理端）— 按场景看「谁在花 token」。
+ * AI 管理端报表端点 — 成本（钱花在哪）+ 效果（建议有没有被采信）。
  * <p>
+ * 两边合起来才完整：成本报表说「谁在花 token」，采纳率说「花出去的 token 有没有用」。
  * 路径落在 {@code /api/admin/**} 下，由安全配置统一限 ADMIN/MANAGER（见 SecurityConfig 管理后台规则），
  * 不额外标 {@code @PreAuthorize}。
  */
-@Tag(name = "AI 成本报表", description = "按场景聚合的 AI 调用次数 / token 用量 / 平均耗时 / 失败次数")
+@Tag(name = "AI 报表", description = "AI 成本报表（按场景）与建议价采纳率")
 @RestController
 @RequestMapping("/api/admin/ai")
 @RequiredArgsConstructor
 public class AiCostReportController {
 
     private final AiCostReportService costReportService;
+    private final AiPricingAdoptionPort pricingAdoptionPort;
 
     @GetMapping("/cost-report")
     public Result<List<AiCostReportRow>> costReport(@RequestParam(defaultValue = "24") int hours) {
         return Result.success(costReportService.report(hours));
+    }
+
+    @GetMapping("/pricing-adoption")
+    public Result<PricingAdoptionReport> pricingAdoption() {
+        return Result.success(pricingAdoptionPort.report());
     }
 }
