@@ -521,7 +521,7 @@ CREATE TABLE `eo_ai_call_log` (
   DEFAULT CHARSET = utf8mb4
   COMMENT = 'AI 调用日志（LLM-as-Judge 离线评估数据源）';
 
--- AI 输出用户反馈（反馈飞轮：👍/👎 入库，导出后自动扩充金标准评测集）
+-- AI 输出用户反馈（反馈飞轮：赞/踩入库，导出后自动扩充金标准评测集）
 CREATE TABLE `eo_ai_feedback` (
     `id`            VARCHAR(36)  NOT NULL COMMENT '主键 UUID v7',
     `scope`         VARCHAR(32)  NOT NULL COMMENT 'AI 调用场景 (QA/CHAT/SEMANTIC/...)',
