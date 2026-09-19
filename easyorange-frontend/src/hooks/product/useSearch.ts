@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { productApi } from '@/api/productApi';
 import type { AiEnhancement, Product, ProductSearchParams, ProductSearchResult } from '@/types/product';
+import { normalizeProduct } from '@/utils/product';
 
 export interface UseProductSearchResult {
     products: Product[];
@@ -23,7 +24,8 @@ export function useProductSearch(params: ProductSearchParams = {}): UseProductSe
     });
 
     return {
-        products: query.data?.records ?? [],
+        // 与商品列表链路同一归一（username→sellerName、images/mainImageUrl 兜底等）
+        products: (query.data?.records ?? []).map(normalizeProduct),
         total: query.data?.total ?? 0,
         facets: query.data?.facets ?? [],
         aiEnhancement: query.data?.aiEnhancement,
