@@ -81,7 +81,7 @@
 ## 备注（Notes）
 
 - 相关 ADR：[0006](0006-module-decoupling-port-adapter-acl.md)（跨模块 Port/ACL，ID 以 String 作契约）、[0007](0007-order-local-tx-over-saga.md)（本地单事务，ID 前置使订单号/事件/幂等键可在事务内派生）
-- 相关文档：[doc/架构/架构-数据库迁移.md](../架构/架构-数据库迁移.md)（§九 表结构设计规范）、[doc/DATABASE.md](../DATABASE.md)（主键策略）、[easyorange-framework/AGENTS.md](../../easyorange-backend/easyorange-framework/AGENTS.md)（分布式 ID 生成器）
+- 相关文档：[doc/架构/架构-数据库迁移.md](../架构/架构-数据库迁移.md)（§九 表结构设计规范）、[doc/DATABASE.md](../DATABASE.md)（主键策略）、[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「DTO / 类型 / 序列化」（`String` ID 与 `BaseDO` 约定）
 - 相关代码：`UuidV7` / `IdGenerator` / `UuidV7IdGenerator` / `BaseDO` / `Order.createOrder` / `OrderCommandHandler.createOrderFlow`
 - 后续演进触发条件：单表行数达千万级，或主键与二级索引占用成为可观测瓶颈（有表空间/缓冲池命中率数据支撑）时，评估 `BINARY(16)` 存储形态（`UUID_TO_BIN` / `BIN_TO_UUID`，转换收敛在出站适配层）；算法与 ID 语义不变，对外仍是 36 位字符串。
 - 分库/分片兼容性：本决策无中央发号与自增序列依赖，未来拆库不构成阻碍（拆分判据见 [ADR-0010](0010-order-saga-evolution-plan.md)）。

@@ -201,15 +201,14 @@ easy-orange/
 ├── compose.yaml            # MySQL + Redis + RabbitMQ + 后端应用（多实例）+ Prometheus + Grafana
 ├── infra/                  # 基础设施即代码（Prometheus / Grafana provisioning / ES IK 镜像）
 ├── k8s/                    # K8s 部署（kustomize，无状态应用层）
-├── load-tests/             # k6 压测脚本
-└── .claude/rules/ecc/      # AI 编码规则（ECC）
+└── load-tests/             # k6 压测脚本
 ```
 
 ## 文档地图
 
 | 资源 | 内容 |
 |---|---|
-| [AGENTS.md](./AGENTS.md) | 唯一规范来源 + 参考索引（细分内容见 [doc/agents/](doc/agents/)） |
+| [AGENTS.md](./AGENTS.md) | 唯一规范来源 + 参考索引；后端 / 前端编码约定见各自目录下的 [AGENTS.md](./easyorange-backend/AGENTS.md) |
 | [doc/架构/](doc/架构/) | 系统架构 / DDD 规范与选型取舍 / 技术栈 / 安全认证 / 数据库迁移 / 部署 |
 | [doc/集成/](doc/集成/) | AI 资产管理 / API 速查 |
 | [doc/adr/](doc/adr/) | 12 条架构决策记录 |

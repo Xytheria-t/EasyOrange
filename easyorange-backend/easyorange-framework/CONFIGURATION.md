@@ -1,6 +1,6 @@
 # EasyOrange Framework 配置指南
 
-> 只放 `easyorange.*` / `spring.*` 配置项与使用示例。各机制的实现要点、改动注意事项见 [AGENTS.md](./AGENTS.md)。
+> 只放 `easyorange.*` / `spring.*` 配置项与使用示例。各机制的实现要点、改动注意事项见 [easyorange-backend/AGENTS.md](../AGENTS.md)。
 
 ## 安全配置
 
@@ -114,4 +114,4 @@ public void evictProductCache(String productId) { }
 | `REDIS_PORT` | Redis 端口 | 6379 |
 | `REDIS_PASSWORD` | Redis 密码 | easyorange123 |
 
-全部环境变量的单一来源是仓库根 `.env.example`；其余键见 [开发规范.md](../../doc/agents/开发规范.md)「环境变量」。
+全部环境变量的单一来源是仓库根 `.env.example`；其余键见 [easyorange-backend/AGENTS.md](../AGENTS.md)「构建 / 启动 / 环境」。

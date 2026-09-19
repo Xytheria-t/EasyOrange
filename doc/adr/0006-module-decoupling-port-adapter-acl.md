@@ -30,7 +30,7 @@
 具体规则：
 
 1. **Port 归调用方**：谁需要数据/能力，谁在自己模块的 `domain/port/`（出站）或 `application/port/query/`（读侧）定义接口，签名只用 JDK 类型 + 本模块值对象。
-2. **Adapter 归应用模块**：`easyorange-application` 的 `adapter/outbound/` 下集中实现所有跨模块 Port（`ProductInventoryAdapter`、`SellerInfoAdapter`、`MessageUserInfoAdapter`、`FavoriteProductInfoAdapter`、admin 各 `Admin*Adapter`（8 个）等），实现类标 `@Primary`（IntelliJ 误报 + 多实现冲突规避，见后端 AGENTS.md 踩坑警示）。
+2. **Adapter 归应用模块**：`easyorange-application` 的 `adapter/outbound/` 下集中实现所有跨模块 Port（`ProductInventoryAdapter`、`SellerInfoAdapter`、`MessageUserInfoAdapter`、`FavoriteProductInfoAdapter`、admin 各 `Admin*Adapter`（8 个）等），实现类标 `@Primary`（IntelliJ 误报 + 多实现冲突规避，见 [easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「IDE 误报」）。
 3. **Maven `<optional>true</optional>`**：业务模块之间的依赖全部 optional——编译期可见、运行时/传递依赖不可见，ArchUnit 在包级别兜底（规则 4/6）。
 4. **写操作事件化**：跨模块写副作用一律走领域事件 + Outbox（`OrderCreatedEvent` → 扣库存、完成/取消 → 恢复库存），不允许同步跨模块写（[ADR-0007](0007-order-local-tx-over-saga.md) 的本地单事务内只保留同事务必需的同步端口调用）。
 5. **ACL 语义**：跨模块只能看到 Port 接口与值对象，看不到对方聚合根/DO/Mapper——这就是防腐层的最小形态（接口即契约）。
@@ -79,6 +79,6 @@
 ## 备注（Notes）
 
 - 相关 ADR：[0002-cqrs-scope-4-modules.md](0002-cqrs-scope-4-modules.md)（CQRS 边界）、[0005-messaging-rabbitmq.md](0005-messaging-rabbitmq.md)（消息中间件选型）、[0007-order-local-tx-over-saga.md](0007-order-local-tx-over-saga.md)（本地单事务 + 端口同步调用边界）
-- 相关文档：[doc/架构/架构-DDD规范.md](../架构/架构-DDD规范.md)、[后端 AGENTS.md](../../easyorange-backend/AGENTS.md)「跨模块通信」节
+- 相关文档：[doc/架构/架构-DDD规范.md](../架构/架构-DDD规范.md)、[AGENTS.md](../../AGENTS.md)「全局硬约束」（CQRS + ACL 隔离）、[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「模块要点」（各模块的端口定义方与实现位置）
 - 相关代码：`easyorange-application/adapter/outbound/` 全部适配器、`ArchitectureRulesTest.java` 规则 4/6
 - 后续演进触发条件：若模块数量继续增长、adapter 层超 60 文件，评估按域拆 adapter 子模块；若拆分独立部署（多 JVM），Port 演进为 Feign/gRPC 契约（见 ADR-0007 的演进触发条件）

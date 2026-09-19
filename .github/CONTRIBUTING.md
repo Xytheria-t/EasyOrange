@@ -63,7 +63,7 @@ ci: enable JaCoCo gate in workflow
    ```bash
    git config core.hooksPath .githooks
    ```
-4. **开发**：遵循 [`../.claude/rules/ecc/`](../.claude/rules/ecc/) 下的编码规范（ECC 分层规则集，common 通用 + java/typescript/react/web 语言专用）
+4. **开发**：遵循 [根 AGENTS.md](../AGENTS.md)（全局硬约束）与后端 / 前端目录下的 [AGENTS.md](../easyorange-backend/AGENTS.md)（编码约定与踩坑）
 5. **本地验证**：
    ```bash
    # 后端
