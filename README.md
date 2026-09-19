@@ -96,7 +96,7 @@ flowchart TB
     MQ -. "异步消费" .-> PAY
 ```
 
-- **前端**：React 19 SPA，C 端 + 管理端（暖橙指挥中心设计系统）双布局
+- **前端**：React 19 SPA，C 端 + 管理端（统一设计系统）双布局
 - **后端**：Spring Boot 4 聚合 11 个 Maven 模块，DDD 六边形 + CQRS 分层
 - **数据**：MySQL（Flyway 迁移）+ Redis（缓存 / 令牌桶 / 分布式锁 / 会话）+ Elasticsearch（BM25 + kNN）
 - **消息**：Spring Modulith Outbox → RabbitMQ Topic Exchange，9 个事件消费者，DLQ 三级重试

@@ -1,6 +1,6 @@
 # EasyOrange Frontend
 
-> React 19 + TypeScript + Vite 的 SPA，C 端 + 管理端（暖橙指挥中心设计系统）双布局。
+> React 19 + TypeScript + Vite 的 SPA，C 端 + 管理端（统一设计系统）双布局。
 >
 > **开发约定见 [AGENTS.md](./AGENTS.md)**（管理端 Portal / AdminTable 签名 / Zustand 写入规则等「不按这个写就出 bug」的坑）；全局硬约束见 [根 AGENTS.md](../AGENTS.md)。本文只放前端自身的入口地图与命令。
 
