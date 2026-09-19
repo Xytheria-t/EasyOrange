@@ -69,6 +69,13 @@ export default defineConfig({
                         if (id.includes('recharts') || id.includes('d3-') || id.includes('victory-vendor')) {
                             return 'vendor-recharts';
                         }
+                        // react-markdown 的 micromark 全家桶体积大且路径含 "react"，须先于 react 判断分组
+                        if (
+                            id.includes('react-markdown') ||
+                            /micromark|mdast|unist|hast|remark|rehype|unified|vfile/.test(id)
+                        ) {
+                            return 'vendor-markdown';
+                        }
                         if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
                             return 'vendor-react';
                         }

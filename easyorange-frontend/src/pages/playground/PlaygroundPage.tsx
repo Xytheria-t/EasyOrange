@@ -14,6 +14,7 @@ import {
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { aiApi } from '@/api/aiApi';
 import type { AgentStep, ChatStreamEvent } from '@/types/ai';
+import { MarkdownContent } from './MarkdownContent';
 import './playground.css';
 
 interface ChatMessage {
@@ -284,14 +285,22 @@ export default function PlaygroundPage() {
                                             aria-hidden="true"
                                         />
                                     )}
-                                    {message.content ||
-                                        (message.status === 'streaming' && (
+                                    {message.content ? (
+                                        // 用户消息与错误文案保持纯文本；助手回答走 Markdown（不渲染内嵌 HTML）
+                                        message.role === 'assistant' && message.status !== 'error' ? (
+                                            <MarkdownContent content={message.content} />
+                                        ) : (
+                                            message.content
+                                        )
+                                    ) : (
+                                        message.status === 'streaming' && (
                                             <span className="playground-typing" role="status" aria-label="思考中">
                                                 <span className="playground-typing__dot" />
                                                 <span className="playground-typing__dot" />
                                                 <span className="playground-typing__dot" />
                                             </span>
-                                        ))}
+                                        )
+                                    )}
                                 </div>
                                 {message.role === 'assistant' &&
                                     message.status === 'done' &&

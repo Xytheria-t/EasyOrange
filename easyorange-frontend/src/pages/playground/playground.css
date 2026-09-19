@@ -734,3 +734,87 @@
         opacity: 0.6;
     }
 }
+
+/* ============ MARKDOWN(助手气泡) ============ */
+/* 气泡的 pre-wrap 只服务纯文本;markdown 块级元素自管换行,子树覆盖回 normal */
+.playground-md {
+    white-space: normal;
+}
+
+.playground-md > :first-child {
+    margin-top: 0;
+}
+
+.playground-md > :last-child {
+    margin-bottom: 0;
+}
+
+.playground-md p {
+    margin: 0.35em 0;
+}
+
+.playground-md ul,
+.playground-md ol {
+    margin: 0.35em 0;
+    padding-left: 1.4em;
+}
+
+.playground-md li {
+    margin: 0.15em 0;
+}
+
+.playground-md table {
+    width: 100%;
+    margin: 0.5em 0;
+    border-collapse: collapse;
+    font-size: 0.875em;
+}
+
+.playground-md th,
+.playground-md td {
+    border: 1px solid rgba(42, 37, 32, 0.12);
+    padding: 0.3em 0.6em;
+    text-align: left;
+}
+
+.playground-md th {
+    background: rgba(249, 115, 22, 0.08);
+    font-weight: 600;
+}
+
+.playground-md code {
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    background: rgba(42, 37, 32, 0.06);
+    font-size: 0.875em;
+}
+
+.playground-md pre {
+    padding: 0.6em 0.8em;
+    border-radius: 8px;
+    background: rgba(42, 37, 32, 0.05);
+    overflow-x: auto;
+}
+
+.playground-md pre code {
+    padding: 0;
+    background: none;
+}
+
+.playground-md blockquote {
+    margin: 0.4em 0;
+    padding: 0.1em 0.8em;
+    border-left: 3px solid var(--primary-500);
+    color: var(--text-secondary);
+}
+
+.playground-md a {
+    color: var(--primary-600, #ea580c);
+    text-decoration: underline;
+}
+
+.playground-md hr {
+    margin: 0.6em 0;
+    border: none;
+    border-top: 1px solid rgba(42, 37, 32, 0.1);
+}
