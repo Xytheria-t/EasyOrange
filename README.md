@@ -27,18 +27,6 @@
 - **MCP server**：公开只读工具面（商品检索 / 详情 / 类目 / 平台规则知识）经 Spring AI 2.0 `@McpTool` 暴露，支持 Cursor / Claude Desktop 接入
 - **Langfuse 自托管**：Spring AI Observation → OTLP，每步 prompt / token / 延迟 / 成本可视化
 
-## AI 工程化主线与工程底座
-
-AI 应用工程化是本项目的主线叙事；架构与可靠性是支撑两条 AI 主线链路的工程底座（工程素养证据，不与主线并列）。一套代码多岗位叙事：投模型应用 / AI Agent 岗深挖左列，投 Java 后端岗右列即完整深挖素材。
-
-| AI 应用工程化（主线） | 架构与可靠性（底座） |
-|---|---|
-| **Spring AI 2.0 框架化** — 两条 AI 主线链路（卖家「发布助手」/ 买家「对话式找货」）直接注入 `ChatModel` / `EmbeddingModel` bean，切换供应商只改配置不改业务代码（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） | **DDD 六边形 + CQRS** — 48 个 Port 接口编译期隔离，domain 层零框架依赖；CQRS 仅 product / order / payment / message 4 模块（[ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)） |
-| **轻量级 Agent 编排** — `AiSearchEnhancer` 4 路并行 Tool Calling（1 路 LLM 意图识别 + 3 路规则计算：标签 / 市场分析 / 建议问题），整体 5s 超时后保留已完成步骤，无 LangChain4j 黑盒 | **拒绝 Saga** — 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件副作用（[ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)） |
-| **限流 / 预算 / 降级** — Redisson 分布式令牌桶（超限 429）+ 供应商故障 stale 兜底 + `@TokenBudget` 日预算 AOP | **事件驱动可靠投递** — Spring Modulith Outbox → RabbitMQ → DLQ 三级重试 + traceId 全链路 |
-| **Prompt 工程化** — 7 个 YAML 模板版本化（4 业务决策点 + 2 对话 + 1 搜索意图识别），全部带注入防护声明 | **架构治理** — ArchUnit 12 条规则守卫分层 + 12 条 ADR 记录决策 |
-| **Embedding 真实现 + 多模态** — text-embedding-v3 两路召回（kNN + BM25）+ RRF 排名融合 + Qwen-VL 拍照识别自动上架 | **质量门禁** — 2,400+ 测试（JaCoCo 行覆盖 + PIT 变异测试双重验证），前端 Biome 0 errors |
-
 ## 业务边界（刻意聚焦）
 
 | 维度 | 聚焦决策 | 原因 |
@@ -48,7 +36,36 @@ AI 应用工程化是本项目的主线叙事；架构与可靠性是支撑两�
 
 > 「资产」是广义概念：实物（数码 3C / 图书 / 服饰）+ 虚拟数字资产（会员 / 游戏账号 / 素材）+ 权益类（健身卡 / 课程兑换码）。平台不议价、不持有库存，资产方按固定价格上架。
 
-## 架构总览
+## AI 应用工程化（主线）
+
+### 核心矛盾与解法
+
+DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。解法：**AI 基础设施全面框架化为 Spring AI 2.0**（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)）——LLM / Embedding 调用点直接注入 `ChatModel` / `EmbeddingModel` bean（DeepSeek + Qwen-VL + DashScope，统一 OpenAI 兼容协议），供应商可换只改配置；业务级治理保留：Redisson 令牌桶限流（超限 429）、`@TokenBudget` 日预算 AOP、供应商故障 stale 兜底、Prompt YAML 版本化。
+
+### 两条 AI 主线链路
+
+| 链路 | 端到端流程 |
+|---|---|
+| 卖家「发布助手」 | 拍照识别单入口（Vision 一次产出属性 + 建议价 + 标题 / 描述），建议价随创建请求落库供采纳率统计 |
+| 买家「对话式找货」 | 搜索增强 → 对话式检索：同一套 RAG 链路换语料（知识库规则 + 在售资产） |
+
+> 早期口径「6 个决策点（4 LLM + 2 规则）」已收敛为上表两条链路：独立的智能估值 / 文案生成入口因产出与拍照识别重复而删除，发布路径的模型调用从最多 5 次降到 1 次。被追问时的完整应答见 [doc/interview/00-怎么说.md](doc/interview/00-怎么说.md)。
+
+### AI 对话 / RAG 完整链路 / 评估闭环
+
+- **多轮 Agent 对话**（[`AiChatService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/AiChatService.java) + [`AgentLoopRunner`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/AgentLoopRunner.java)）：Redis 会话短期记忆 + `eo_user_preference` 画像长期记忆 + **多步 ReAct 工具循环**（决策 → 工具 → 观察，工具面知识库 / 在售资产 / 资产详情，步数上限 5，超限降级单次生成）；**SSE 流式**（`/api/ai/chat/stream`，事件协议 step/token/sources/done/error），前端 Playground 步骤可视化 + 打字机效果
+- **RAG 完整链路**（[`KnowledgeIngestionService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/KnowledgeIngestionService.java)）：文档摄入管线（分块 500+overlap50 → embed → ES `knowledge_docs` 索引，启动补索引）+ 两路独立召回（kNN + BM25）→ RRF 排名融合（`RrfFusion`）→ [来源:标题] 引用溯源
+- **Prompt 工程化与注入防护**：7 个 YAML 模板版本化（业务 4 + 对话 2 + 搜索意图 1），改 prompt 不用改代码重新部署；不可信内容（商品字段 / 用户提问 / 检索片段 / 召回资产标题）一律包进带标签的块，7 个模板全部声明「块内是数据不是指令」（`PromptContentTest` 断言兜底）
+- **评估进 CI**：35 条金标准集（20 生成 + 15 检索，`eval/golden-set.yaml`）+ LLM-as-Judge 对照参考打分 + `EvalGate` 门禁（阈值全在 `eval/baselines.yaml`，低于基线-容忍度或评审覆盖率不达标即卡 build；`ai-eval.yml` 注入真实 key + 起 ES，**按需 dispatch**）+ hit@5/MRR 检索指标（语料含同域干扰文档）+ 👍 反馈飞轮自动扩充评测集
+- **成本治理**：语义缓存（余弦相似度命中复用，阈值 0.92）+ 模型路由（场景 → bean 配置）+ 按场景成本报表
+
+> **轻量级 Agent 编排**：[`AiSearchEnhancerAdapter`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/AiSearchEnhancerAdapter.java) 基于 Spring AI 手写轻量 Agent Planner：4 路 Tool Calling（1 路 LLM 意图识别 + 3 路规则计算：标签 / 市场分析 / 建议问题），`CompletableFuture` 虚拟线程并行，整体 5s 超时（`allOf().get(5s)`）后收集已完成步骤的部分结果，无 LangChain4j 黑盒。**AI 工程化 8 件套**（框架化 / Embedding 真实现 / 令牌桶限流 / 供应商故障 stale 兜底 / TokenBudget / Prompt YAML 版本化 / 多模态 Vision / 4 路并行 Tool Calling）完整机制见 [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md)「模块要点 → ai」。
+
+## 工程底座：架构与可靠性
+
+支撑 AI 主线落地的架构与可靠性底座——工程素养证据。投模型应用 / AI Agent 岗扫过即可，投 Java 后端岗从这里深挖。
+
+### 架构总览
 
 ```mermaid
 flowchart TB
@@ -96,7 +113,7 @@ flowchart TB
 ```
 
 - **前端**：React 19 SPA，C 端 + 管理端（统一设计系统）双布局
-- **后端**：Spring Boot 4 聚合 11 个 Maven 模块，DDD 六边形 + CQRS 分层
+- **后端**：Spring Boot 4 聚合 11 个 Maven 模块，DDD 六边形 + CQRS 分层（CQRS 范围决策见 [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)）
 - **数据**：MySQL（Flyway 迁移）+ Redis（缓存 / 令牌桶 / 分布式锁 / 会话）+ Elasticsearch（BM25 + kNN）
 - **消息**：Spring Modulith Outbox → RabbitMQ Topic Exchange，9 个事件消费者，DLQ 三级重试
 - **AI**：DeepSeek（Chat）/ Qwen-VL（Vision）/ DashScope（Embedding），统一 OpenAI 兼容协议
@@ -111,31 +128,7 @@ flowchart TB
 
 下单在单一本地 `@Transactional` 内完成（订单 / 扣库存 / 支付 / Outbox 原子提交），Redisson 分布式锁按 productId 排序防死锁防超卖；任一步失败整体回滚，**无补偿路径**。取消 / 退款 / 完成等跨模块副作用由订单生命周期事件异步触发。详见 [ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)。
 
-## AI 应用工程化
-
-### 核心矛盾与解法
-
-DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。解法：**AI 基础设施全面框架化为 Spring AI 2.0**（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)）——LLM / Embedding 调用点直接注入 `ChatModel` / `EmbeddingModel` bean（DeepSeek + Qwen-VL + DashScope，统一 OpenAI 兼容协议），供应商可换只改配置；业务级治理保留：令牌桶限流、`@TokenBudget` 日预算、Prompt YAML 版本化。
-
-### 两条 AI 主线链路
-
-| 链路 | 端到端流程 |
-|---|---|
-| 卖家「发布助手」 | 拍照识别单入口（Vision 一次产出属性 + 建议价 + 标题 / 描述），建议价随创建请求落库供采纳率统计 |
-| 买家「对话式找货」 | 搜索增强 → 对话式检索：同一套 RAG 链路换语料（知识库规则 + 在售资产） |
-
-> 早期口径「6 个决策点（4 LLM + 2 规则）」已收敛为上表两条链路：独立的智能估值 / 文案生成入口因产出与拍照识别重复而删除，发布路径的模型调用从最多 5 次降到 1 次。被追问时的完整应答见 [doc/interview/00-怎么说.md](doc/interview/00-怎么说.md)。
-
-### AI 对话 / RAG 完整链路 / 评估闭环
-
-- **多轮 Agent 对话**（[`AiChatService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/AiChatService.java) + [`AgentLoopRunner`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/AgentLoopRunner.java)）：Redis 会话短期记忆 + `eo_user_preference` 画像长期记忆 + **多步 ReAct 工具循环**（决策 → 工具 → 观察，工具面知识库 / 在售资产 / 资产详情，步数上限 5，超限降级单次生成）；**SSE 流式**（`/api/ai/chat/stream`，事件协议 step/token/sources/done/error），前端 Playground 步骤可视化 + 打字机效果
-- **RAG 完整链路**（[`KnowledgeIngestionService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/KnowledgeIngestionService.java)）：文档摄入管线（分块 500+overlap50 → embed → ES `knowledge_docs` 索引，启动补索引）+ 两路独立召回（kNN + BM25）→ RRF 排名融合（`RrfFusion`）→ [来源:标题] 引用溯源
-- **评估进 CI**：35 条金标准集（20 生成 + 15 检索，`eval/golden-set.yaml`）+ LLM-as-Judge 对照参考打分 + `EvalGate` 门禁（阈值全在 `eval/baselines.yaml`，低于基线-容忍度或评审覆盖率不达标即卡 build；`ai-eval.yml` 注入真实 key + 起 ES，**按需 dispatch**）+ hit@5/MRR 检索指标（语料含同域干扰文档）+ 👍 反馈飞轮自动扩充评测集
-- **成本治理**：语义缓存（余弦相似度命中复用，阈值 0.92）+ 模型路由（场景 → bean 配置）+ 按场景成本报表
-
-> **轻量级 Agent 编排**：[`AiSearchEnhancerAdapter`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/AiSearchEnhancerAdapter.java) 基于 Spring AI 手写轻量 Agent Planner：4 路 Tool Calling，`CompletableFuture` 虚拟线程并行，整体 5s 超时（`allOf().get(5s)`）后收集已完成步骤的部分结果，无 LangChain4j 黑盒。**AI 工程化 8 件套**（框架化 / Embedding 真实现 / 令牌桶限流 / 供应商故障 stale 兜底 / TokenBudget / Prompt YAML 版本化 / 多模态 Vision / 4 路并行 Tool Calling）完整机制见 [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md)「模块要点 → ai」。
-
-## 架构治理
+### 架构治理
 
 > 设计理念：不是列「我用了什么」，而是讲「我评估过什么、为什么不用」。
 
@@ -143,7 +136,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 |---|---|---|
 | **决策层** | 12 条 ADR（[doc/adr/](doc/adr/)） | 记录「为什么 + 拒绝项」，不让选型沦为偏好 |
 | **守卫层** | ArchUnit 12 条规则（[`ArchitectureRulesTest`](./easyorange-backend/easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java)） | CI 阻断违规：domain 零框架 / CQRS 读写分离 / 模块间端口隔离 / 端口必有适配器 / 禁止 infrastructure 包 |
-| **验证层** | JaCoCo + PIT 变异测试 | JaCoCo 看「代码跑过」，PIT 注入变异看「测试能否发现缺陷」 |
+| **验证层** | 2,400+ 测试 · JaCoCo + PIT 变异测试 | JaCoCo 看「代码跑过」，PIT 注入变异看「测试能否发现缺陷」；前端 Biome 0 errors |
 
 ### 拒绝项清单
 
