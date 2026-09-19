@@ -150,7 +150,7 @@ describe('HeroSection', () => {
     it('renders AI entry button', () => {
         render(<HeroSection />);
         expect(screen.getByText('AI 工程化')).toBeInTheDocument();
-        expect(screen.getByText('拍照估值 · 智能写描述 · 一键发布')).toBeInTheDocument();
+        expect(screen.getByText('拍照识别 · 建议价与标题描述一次生成')).toBeInTheDocument();
     });
 
     it('renders platform stats with data-count attributes', () => {
