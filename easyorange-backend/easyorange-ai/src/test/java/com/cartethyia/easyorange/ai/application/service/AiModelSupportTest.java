@@ -72,12 +72,12 @@ class AiModelSupportTest {
         void callText_withScope_recordsLog() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("你好"));
 
-            String result = aiModelSupport.callText(chatModel, AiCallScope.QA, "system", "user");
+            String result = aiModelSupport.callText(chatModel, AiCallScope.CHAT, "system", "user");
 
             assertThat(result).isEqualTo("你好");
             verify(callLogRecorder)
                     .record(
-                            eq("QA"),
+                            eq("CHAT"),
                             anyString(),
                             anyString(),
                             eq("你好"),
@@ -95,12 +95,12 @@ class AiModelSupportTest {
             when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("API timeout"));
 
             org.assertj.core.api.Assertions.assertThatThrownBy(
-                            () -> aiModelSupport.callText(chatModel, AiCallScope.QA, "system", "user"))
+                            () -> aiModelSupport.callText(chatModel, AiCallScope.CHAT, "system", "user"))
                     .isInstanceOf(RuntimeException.class);
 
             verify(callLogRecorder)
                     .record(
-                            eq("QA"),
+                            eq("CHAT"),
                             anyString(),
                             anyString(),
                             isNull(),
@@ -117,11 +117,11 @@ class AiModelSupportTest {
         void callText_withSubject_recordsSubjectId() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("你好"));
 
-            aiModelSupport.callText(chatModel, AiCallScope.QA, "p-42", "system", "user");
+            aiModelSupport.callText(chatModel, AiCallScope.CHAT, "p-42", "system", "user");
 
             verify(callLogRecorder)
                     .record(
-                            eq("QA"),
+                            eq("CHAT"),
                             anyString(),
                             anyString(),
                             eq("你好"),
@@ -246,7 +246,7 @@ class AiModelSupportTest {
             assertThat(AiCallScope.CHAT.budgetScenario()).isEqualTo("chat");
             assertThat(AiCallScope.AUTO_LISTING.budgetScenario()).isEqualTo("auto_listing");
             assertThat(AiCallScope.SEMANTIC.budgetScenario()).isEqualTo("semantic");
-            assertThat(AiCallScope.QA.budgetScenario()).isEqualTo("qa");
+            assertThat(AiCallScope.KNOWLEDGE.budgetScenario()).isEqualTo("knowledge");
         }
     }
 

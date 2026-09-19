@@ -34,7 +34,6 @@ import { messageApi } from '@/api/messageApi';
 import { productApi } from '@/api/productApi';
 import { reviewApi } from '@/api/reviewApi';
 import placeholderImage from '@/assets/placeholder.png';
-import AiQaPanel from '@/components/ai/AiQaPanel';
 import {
     Dialog,
     DialogContent,
@@ -49,7 +48,6 @@ import { Button } from '@/components/ui/button';
 import { Image, preloadImages } from '@/components/ui/Image';
 import { CONDITION_LABEL_MAP, STATUS_LABEL_MAP } from '@/constants';
 import { useCreateOrder, useProduct, useSimilarProducts } from '@/hooks';
-import { useAiQa } from '@/hooks/useAiQa';
 import { type OrderFormData, orderFormSchema, type ReviewFormData, reviewSchema } from '@/schemas/productDetailSchema';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -81,7 +79,6 @@ function ProductDetailPage() {
 
     const queryClient = useQueryClient();
     const createOrder = useCreateOrder();
-    const { qaHistory: aiQaHistory, isLoading: aiQaLoading, ask: aiAsk } = useAiQa();
     const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
     const [showOrderModal, setShowOrderModal] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
@@ -660,23 +657,6 @@ function ProductDetailPage() {
                             {product.description || '资产方暂未填写详细描述，可通过下方「联系资产方」了解更多信息'}
                         </p>
                     </div>
-                </div>
-
-                <div className="pdp-ai-qa-section">
-                    <AiQaPanel
-                        product={{
-                            id: product.id,
-                            title: product.title,
-                            description: product.description,
-                            categoryName: product.categoryName,
-                            price: product.price,
-                            conditionLevel: product.conditionLevel,
-                            sellerName: product.sellerName,
-                        }}
-                        onAsk={aiAsk}
-                        qaHistory={aiQaHistory}
-                        isLoading={aiQaLoading}
-                    />
                 </div>
 
                 <div className="pdp-section-divider" />
