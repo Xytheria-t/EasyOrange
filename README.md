@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 按生产级标准做 LLM Agent 工程化：多范式工具编排（Workflow 式并行扇出 + 自治式 Agent 工具循环）· RAG 检索增强（两路召回 + RRF 融合）· 评估闭环进 CI · 限流 / Token 预算 / stale 降级 · LLM 专用可观测——AI 链路**可换供应商、可降级、可观测、可评估**。
 >
-> **11 模块解耦 · 48 个 Port 接口编译期隔离 · 9 事件消费者 · 12 条 ADR · 2,400+ 测试守卫 · AI 两条主线链路 × 8 项工程化**
+> **11 模块解耦 · 49 个 Port 接口编译期隔离 · 9 事件消费者 · 12 条 ADR · 2,400+ 测试守卫 · AI 两条主线链路 × 8 项工程化**
 >
 > 业务载体：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给 AI 工程化与架构落地。
 
@@ -24,7 +24,6 @@
 
 ## 正在迭代（2026 Q4）
 
-- **MCP server**：公开只读工具面（商品检索 / 详情 / 类目 / 平台规则知识）经 Spring AI 2.0 `@McpTool` 暴露，支持 Cursor / Claude Desktop 接入
 - **Langfuse 自托管**：Spring AI Observation → OTLP，每步 prompt / token / 延迟 / 成本可视化
 
 ## 业务边界（刻意聚焦）
@@ -60,6 +59,28 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 - **成本治理**：语义缓存（余弦相似度命中复用，阈值 0.92）+ 模型路由（场景 → bean 配置）+ 按场景成本报表
 
 > **轻量级 Agent 编排**：[`AiSearchEnhancerAdapter`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/AiSearchEnhancerAdapter.java) 基于 Spring AI 手写轻量 Agent Planner：4 路 Tool Calling（1 路 LLM 意图识别 + 3 路规则计算：标签 / 市场分析 / 建议问题），`CompletableFuture` 虚拟线程并行，整体 5s 超时（`allOf().get(5s)`）后收集已完成步骤的部分结果，无 LangChain4j 黑盒。**AI 工程化 8 件套**（框架化 / Embedding 真实现 / 令牌桶限流 / 供应商故障 stale 兜底 / TokenBudget / Prompt YAML 版本化 / 多模态 Vision / 4 路并行 Tool Calling）完整机制见 [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md)「模块要点 → ai」。
+
+### MCP 工具面 — 对外开放（streamable HTTP，`/mcp`）
+
+Spring AI 2.0 `@McpTool` 暴露 4 个**公开只读**工具，外部 MCP client 可实时查平台数据：
+
+| 工具 | 语义 |
+|---|---|
+| `search_products` | 在售资产检索：kNN + BM25 两路召回 → RRF 融合（与站内搜索同一套 RAG 检索底座） |
+| `get_product_detail` | 按资产 ID 查详情（描述 / 成色 / 卖家 / 在售状态） |
+| `list_categories` | 类目逐层浏览（含各类目在售资产数） |
+| `search_platform_knowledge` | 平台规则知识库检索（交易流程 / 担保支付 / 退换规则） |
+
+**信任边界（两级暴露）**：与 Agent 内部工具（`AgentLoopRunner` 工具面）是两级独立暴露——外部 MCP client 无用户上下文，只挂公开只读数据，**不暴露订单 / 个人信息 / 写路径**；匿名可达但纳入统一限流（60 次/分/IP），防重豁免（JSON-RPC 超时重试复用同一请求体属协议内合法行为）。
+
+**接入**（先启动后端，见「快速开始」）：
+
+- Cursor：`~/.cursor/mcp.json` 加入
+  ```json
+  { "mcpServers": { "easyorange": { "url": "http://localhost:8080/mcp" } } }
+  ```
+- Claude Desktop：Settings → Connectors → Add custom connector，URL 填 `http://localhost:8080/mcp`
+- 验证：`curl -X POST http://localhost:8080/mcp -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"t","version":"0"}}}'`
 
 ## 工程底座：架构与可靠性
 

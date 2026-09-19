@@ -53,7 +53,7 @@
 
 - 模块可独立编译/测试/演进，跨模块依赖面收敛为接口签名
 - 替换实现零成本：锁实现（Redis/Mem）、支付网关、短信供应商、ES 开关全部只改 adapter（`@ConditionalOnProperty` 已用于 RabbitMQ/ES/TokenBudgetStore）
-- 48 个 Port 成为「模块边界地图」，新人看 Port 目录即理解模块协作面
+- 49 个 Port 成为「模块边界地图」，新人看 Port 目录即理解模块协作面
 - optional 依赖 + ArchUnit 无白名单，CI 阻断任何越界依赖
 
 ### 负向后果
@@ -65,7 +65,7 @@
 
 ### 缓解措施
 
-- 48 Port 目录即边界地图；新增 Port 有 ArchUnit「端口必有适配器」规则自动兜底（缺实现直接红）
+- 49 Port 目录即边界地图；新增 Port 有 ArchUnit「端口必有适配器」规则自动兜底（缺实现直接红）
 - 查询端口尽量复用值对象直传，避免无意义 DTO 拷贝
 - 未来若 adapter 膨胀，可按域拆 `adapter/outbound/{domain}/` 子包（已按此组织：elasticsearch/payment/product/user/admin）
 
