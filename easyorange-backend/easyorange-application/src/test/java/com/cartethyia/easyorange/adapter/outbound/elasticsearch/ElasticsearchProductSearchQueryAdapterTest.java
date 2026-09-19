@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import com.cartethyia.easyorange.product.application.port.cache.SellerCachePort;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort.ProductSearchQuery;
 import com.cartethyia.easyorange.product.application.port.query.SearchResult;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -33,13 +34,16 @@ class ElasticsearchProductSearchQueryAdapterTest {
     @Mock
     private ElasticsearchOperations elasticsearchOperations;
 
+    @Mock
+    private SellerCachePort sellerCachePort;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private ElasticsearchProductSearchQueryAdapter adapter;
 
     @BeforeEach
     void setUp() {
-        adapter = new ElasticsearchProductSearchQueryAdapter(elasticsearchOperations, objectMapper);
+        adapter = new ElasticsearchProductSearchQueryAdapter(elasticsearchOperations, objectMapper, sellerCachePort);
     }
 
     @Test
