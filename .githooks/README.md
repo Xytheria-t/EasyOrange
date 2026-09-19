@@ -44,7 +44,7 @@ SKIP=1        git commit -m "..."   # 任何非空值都视为跳过
 | `easyorange-frontend/{src,tests}/**/*.{ts,tsx,js,jsx}` | `biome check`（仅变更文件） | `node_modules/.bin/biome` |
 | `**/*.md` / `easyorange-backend/pom.xml` | 测试口径漂移校验（文档声明 vs 代码事实） | `python3 check-test-tier-drift.py` |
 | `**/*.md` / `pom.xml` / `*.sql` / `*.java` | 结构计数漂移校验（N 模块 / N Port / N ADR…） | `python3 check-metrics-drift.py` |
-| `doc/架构/架构-技术栈.md` / `compose.yaml` / `easyorange-backend/pom.xml` / `infra/elasticsearch/Dockerfile` | 版本漂移校验（文档版本表 vs 权威来源） | `python3 check-version-drift.py` |
+| `doc/技术栈.md` / `compose.yaml` / `easyorange-backend/pom.xml` / `infra/elasticsearch/Dockerfile` | 版本漂移校验（文档版本表 vs 权威来源） | `python3 check-version-drift.py` |
 | `**/AGENTS.md` | 上下文预算校验（份数 + 字符预算） | `python3 check-context-budget.py` |
 | 纯文档/Markdown/YAML | 跳过（仅过密钥扫描 + 口径校验） | — |
 

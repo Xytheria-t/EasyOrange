@@ -72,7 +72,7 @@
 ## 备注（Notes）
 
 - 相关 ADR：Related to [ADR-0008](0008-ai-spring-ai-framework.md)（Spring AI 2.0 框架化）、[ADR-0004](0004-ai-bulkhead-token-budget.md)（Token 预算仍现役）
-- 相关文档：[doc/集成/AI-资产管理.md](../集成/AI-资产管理.md) §7.1/§7.2、[doc/工程指标.md](../工程指标.md)（AI 能力表）
+- 相关文档：[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「模块要点 → ai」（RAG 检索）、[doc/工程指标.md](../工程指标.md)（AI 能力表）
 - 相关代码：`RrfFusion` / `KnowledgeElasticsearchAdapter` / `KnowledgeMatch` / `KnowledgeRetrievalService`
 - 后续演进触发条件：语料分块数超过 ES `num_candidates`（100）的量级，或 hit@5 触顶而 MRR 停滞时，重新评估重排模型与独立向量库
 - 决策回顾周期：下次 `ai-eval.yml` 回归给出新口径数字后回看（按需 `workflow_dispatch` 触发，单次约 60 次真实模型调用）

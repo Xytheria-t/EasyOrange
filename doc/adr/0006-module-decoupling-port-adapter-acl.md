@@ -79,6 +79,6 @@
 ## 备注（Notes）
 
 - 相关 ADR：[0002-cqrs-scope-4-modules.md](0002-cqrs-scope-4-modules.md)（CQRS 边界）、[0005-messaging-rabbitmq.md](0005-messaging-rabbitmq.md)（消息中间件选型）、[0007-order-local-tx-over-saga.md](0007-order-local-tx-over-saga.md)（本地单事务 + 端口同步调用边界）
-- 相关文档：[doc/架构/架构-DDD规范.md](../架构/架构-DDD规范.md)、[AGENTS.md](../../AGENTS.md)「全局硬约束」（CQRS + ACL 隔离）、[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「模块要点」（各模块的端口定义方与实现位置）
+- 相关文档：[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)（后端约定）、[AGENTS.md](../../AGENTS.md)「全局硬约束」（CQRS + ACL 隔离）、[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「模块要点」（各模块的端口定义方与实现位置）
 - 相关代码：`easyorange-application/adapter/outbound/` 全部适配器、`ArchitectureRulesTest.java` 规则 4/6
 - 后续演进触发条件：若模块数量继续增长、adapter 层超 60 文件，评估按域拆 adapter 子模块；若拆分独立部署（多 JVM），Port 演进为 Feign/gRPC 契约（见 ADR-0007 的演进触发条件）

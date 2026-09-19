@@ -8,7 +8,7 @@
 
 TypeScript · React 19 · React Router v7 · Vite · Tailwind CSS 4 + shadcn/ui · TanStack Query 5（服务端状态）· Zustand 5（客户端状态）· react-hook-form + Zod（表单）· react-helmet-async（路由级 meta）· Lucide（图标）· Biome + jsx-a11y（lint/format）· Vitest + Testing Library（单元/组件）· Playwright（E2E）。
 
-> 版本与测试数的单一来源：[doc/架构/架构-技术栈.md](../doc/架构/架构-技术栈.md)、[doc/工程指标.md §1.2](../doc/工程指标.md)（前端测试规模在该节，§1.4 只放前端工程化的其余计数）。
+> 版本与测试数的单一来源：[doc/技术栈.md](../doc/技术栈.md)、[doc/工程指标.md §1.2](../doc/工程指标.md)（前端测试规模在该节，§1.4 只放前端工程化的其余计数）。
 
 ## 可用命令
 

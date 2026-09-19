@@ -24,7 +24,24 @@
 | `V1__init_schema.sql` | 26 张表初始化（当前完整 DDL；开发阶段三次收口为单文件：V1~V6、V1~V9、V2~V7，项目未发版无生产历史） |
 | `R__seed_*.sql` | 可重复执行种子：分类、RAG 知识库文档 |
 
-迁移规范与演进策略见 [架构-数据库迁移.md](架构/架构-数据库迁移.md)。
+## Flyway 迁移规范
+
+| 原则 | 说明 |
+|------|------|
+| **DDL 与 DML 分离** | 结构变更（V 前缀）与参考数据（R 前缀）分开成独立迁移文件 |
+| **迁移不可变** | 已部署的 V 版本禁止修改，只能新增 |
+| **自包含** | 一个功能一个迁移文件，含完整结构（建表、索引、约束内联在 CREATE TABLE 里）；不按「索引层 / 约束层」拆分 |
+| **紧凑格式** | CREATE TABLE 列定义**禁止对齐填充**（列名与类型间大量空格会让 Flyway MySQL 解析器报 1064） |
+
+**`R__` 可重复迁移**：必须 `ON DUPLICATE KEY UPDATE` 保证幂等（用 MySQL 8.0.20+ 的 `AS new` 别名语法，弃用 `VALUES()` 函数）、包在 `START TRANSACTION` / `COMMIT` 中；频繁更新的 DML 优先用 `R__`，避免堆空版本号。
+
+**ALTER TABLE**：同表多个操作合并成一条语句，顺序 `DROP CHECK` → `MODIFY COLUMN` → `ADD CONSTRAINT` → `ADD COLUMN`；新增列用 `AFTER {column}` 定位。**CHECK 约束值必须与字段 COMMENT 一致**——调用方可能按 COMMENT 判断，两者冲突等于埋雷。
+
+**Flyway 配置要点**：`clean-disabled: true`（生产禁止 clean）；`validate-on-migrate: true` 仅干净库 / CI 开启，dev / it profile 关闭——开发阶段改 V1 后 checksum 会挡启动，不必每次重置，想刷新 schema 时 `DROP DATABASE easyorange; CREATE DATABASE easyorange;` 重跑应用即从头执行 V1。
+
+**常用命令**：`mvn flyway:info`（状态）/ `flyway:migrate` / `flyway:validate`（CI）/ `flyway:repair`（修 checksum，谨慎）/ `flyway:clean`（仅开发）。
+
+**反模式**：修改已部署的 V 迁移（checksum 失败）· DDL/DML 混合 · 按「索引层」拆文件（每次新表都要改旧文件）· NOT NULL 无默认值（锁表重写全表，应 nullable → backfill → 再加约束）· 生产执行 clean · 对齐列格式（1064）· 1 起点的枚举码列给 `DEFAULT 0`（见上文历史事故）· 缺 `create_by` / `update_by` / `del_flag` / `version` 审计字段。
 
 ## 表总览
 

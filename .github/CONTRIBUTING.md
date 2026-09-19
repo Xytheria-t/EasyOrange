@@ -120,7 +120,7 @@ ci: enable JaCoCo gate in workflow
 - **领域事件实现 `DomainEvent` 接口**
 - **CQRS 限于 product/order/payment/message 四模块**
 
-详见 [`../doc/架构/架构-DDD规范.md`](../doc/架构/架构-DDD规范.md) 与 [`../AGENTS.md`](../AGENTS.md)。
+详见 [`../AGENTS.md`](../AGENTS.md)「全局硬约束」与 [`../easyorange-backend/AGENTS.md`](../easyorange-backend/AGENTS.md)。
 
 ## 问题与讨论
 

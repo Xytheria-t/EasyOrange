@@ -5,7 +5,7 @@
 Elasticsearch 8 / Flyway 11 一类过期声明（2026-09-15 修正）。约定收敛为：
 
   1. 大版本（Spring Boot 4 / Java 25）可以写在 README / AGENTS 等技术栈表里，它承载技术取舍；
-  2. **精确版本只在 `doc/架构/架构-技术栈.md` 的版本表里写一处**，其余文档引用它；
+  2. **精确版本只在 `doc/技术栈.md` 的版本表里写一处**，其余文档引用它；
   3. 本脚本校验那张表 —— 表与 pom/compose 不一致即视为漂移，提交时挡下。
 
 权威来源：`easyorange-backend/pom.xml`（依赖）+ `compose.yaml` / `infra/elasticsearch/Dockerfile`（运行时镜像）。
@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TABLE_DOC = ROOT / "doc/架构/架构-技术栈.md"
+TABLE_DOC = ROOT / "doc/技术栈.md"
 POM = ROOT / "easyorange-backend/pom.xml"
 COMPOSE = ROOT / "compose.yaml"
 ES_DOCKERFILE = ROOT / "infra/elasticsearch/Dockerfile"
@@ -34,7 +34,7 @@ def read(path: Path) -> str:
 
 
 def parse_table() -> dict[str, str]:
-    """架构-技术栈.md 的版本表 → {技术: 版本}（只取 4 列表格行）。"""
+    """技术栈.md 的版本表 → {技术: 版本}（只取 4 列表格行）。"""
     rows: dict[str, str] = {}
     for line in read(TABLE_DOC).splitlines():
         cells = [c.strip() for c in line.split("|")]
@@ -119,7 +119,7 @@ def main() -> int:
         for item in drift:
             print(item, file=sys.stderr)
         print(
-            "\n修法：改 doc/架构/架构-技术栈.md 的版本表（唯一权威落点），或确认 pom/compose 是否漏改。\n"
+            "\n修法：改 doc/技术栈.md 的版本表（唯一权威落点），或确认 pom/compose 是否漏改。\n"
             "跳过本次校验：SKIP=git-hooks。",
             file=sys.stderr,
         )

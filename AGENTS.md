@@ -20,7 +20,7 @@
 
 ## 项目结构
 
-monorepo：`easyorange-backend/`（11 Maven 模块，约定见 [AGENTS.md](easyorange-backend/AGENTS.md)）· `easyorange-frontend/`（约定见 [AGENTS.md](easyorange-frontend/AGENTS.md)）· `doc/`（架构 / 集成 / ADR / agents 参考 / DATABASE）· `infra/`（IaC）· `k8s/`（kustomize，无状态应用层）· `load-tests/`（k6 压测）
+monorepo：`easyorange-backend/`（11 Maven 模块，约定见 [AGENTS.md](easyorange-backend/AGENTS.md)）· `easyorange-frontend/`（约定见 [AGENTS.md](easyorange-frontend/AGENTS.md)）· `doc/`（技术栈 / ADR / agents 参考 / DATABASE / 面试）· `infra/`（IaC）· `k8s/`（kustomize，无状态应用层）· `load-tests/`（k6 压测）
 
 ## 技术栈
 
@@ -35,7 +35,7 @@ monorepo：`easyorange-backend/`（11 Maven 模块，约定见 [AGENTS.md](easyo
 | **迁移** | Flyway 13 |
 | **部署** | Docker / compose.yaml（凭据统一经根 `.env` 插值）+ K8s kustomize |
 
-> 本表只写大版本（大版本才承载技术取舍）；**精确版本以 `easyorange-backend/pom.xml` 与 `compose.yaml` 为单一来源**。
+> 本表只写大版本（大版本才承载技术取舍）；**精确版本以 `easyorange-backend/pom.xml` 与 `compose.yaml` 为单一来源**，[doc/技术栈.md](doc/技术栈.md) 的版本表是唯一文档落点（`check-version-drift.py` 钩子校验一致）。
 > **Elasticsearch 例外**：9.2.8 是硬锁（Spring Data ES 6.0.6 按它编译 + IK 插件同版本，见 `infra/elasticsearch/Dockerfile` 注释），升级须整体等 Boot 带动客户端。
 
 ## 全局硬约束（任何改动都适用，违反即返工）
@@ -45,7 +45,7 @@ monorepo：`easyorange-backend/`（11 Maven 模块，约定见 [AGENTS.md](easyo
 - **DDD 分层**：domain → application → adapter，依赖方向单向向内；聚合根不可变（`@Builder(toBuilder = true)`），值对象用 `record`
 - **CQRS + ACL 隔离**：命令与查询分离（product/order/payment/message）；跨模块必须通过 Port/ACL 适配，禁止直接依赖领域模型/Mapper
 - **Assembler 模式**：DTO 转换统一在 `adapter/inbound/web/assembler/`，禁止在 Controller/Service 直接构造 Response DTO
-- **异常**：领域异常必须继承 `BaseBusinessException`（否则落 500 兜底）；抛异常用 `BusinessException.of(...)` / `FileException.of(...)`；用模块专属 `ResultCode`（如 `ProductResultCode`），禁止回退全局 `B0002`；**每个业务模块只保留一个统一领域异常**，具体语义走类上的具名工厂（`notFound(id)` / `notOwner(id)`…）、构造器非公开，不新增「一码一类」的叶子异常（判据见 [架构-DDD规范](doc/架构/架构-DDD规范.md) 异常一节，门禁见 `ArchitectureRulesTest` Rule 11）
+- **异常**：领域异常必须继承 `BaseBusinessException`（否则落 500 兜底）；抛异常用 `BusinessException.of(...)` / `FileException.of(...)`；用模块专属 `ResultCode`（如 `ProductResultCode`），禁止回退全局 `B0002`；**每个业务模块只保留一个统一领域异常**，具体语义走类上的具名工厂（`notFound(id)` / `notOwner(id)`…）、构造器非公开，不新增「一码一类」的叶子异常（判据见 [架构参考](doc/agents/架构参考.md)「异常与校验细则」，门禁见 `ArchitectureRulesTest` Rule 11）
 - **ID 统一 UUID v7 String**（36 位，`IdGenerator` / `UuidV7IdGenerator`）；前端实体 ID 保持 string
 - **多模块构建**：修改子模块后启动前必须 `./mvnw install -DskipTests`（或 `clean package -pl <module> -am`），否则 ClassNotFoundException
 - **删过资源文件就必须 `clean`**：`install` 只增量复制 `src/main/resources`，**不会删除 `target/classes` 里已移除的文件**。删迁移脚本/配置/模板后若只跑 `install`，老副本仍留在 classpath 上被读取（2026-09-17 实测：删掉 `R__seed_payment_config.sql` 后 Flyway 读到陈旧副本、对新 schema 执行而启动失败）。判据：`diff <(ls src/main/resources/**) <(ls target/classes/**)` 有差集就 `clean`
@@ -66,13 +66,11 @@ monorepo：`easyorange-backend/`（11 Maven 模块，约定见 [AGENTS.md](easyo
 | 主题 | 位置 |
 |------|------|
 | 商品 / 订单状态机、领域术语与 ADR 消费约定 | [doc/agents/领域参考.md](doc/agents/领域参考.md) |
-| 错误码规范、模块依赖边、已知问题 | [doc/agents/架构参考.md](doc/agents/架构参考.md) |
-| 构建 / 测试 / 启动 / 部署命令、gh CLI、CI/CD | [doc/agents/常用命令.md](doc/agents/常用命令.md) |
-| 架构规范（系统架构 / DDD 规范 / DDD 选型取舍） | `doc/架构/`（入口 [架构-系统架构.md](doc/架构/架构-系统架构.md)） |
-| 安全认证（双 Token 流程 / 配置要点 / OWASP） | [doc/架构/架构-安全认证.md](doc/架构/架构-安全认证.md) |
-| 部署（配置分层 / JVM / Docker / K8s） | [doc/架构/架构-部署.md](doc/架构/架构-部署.md) |
-| AI 资产管理（两条 AI 主线链路 / RAG / 成本与采纳率 / WebSocket 协议） | [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md) |
-| 数据库约定 / 表清单 / 迁移脚本索引；Flyway 流程 | [doc/DATABASE.md](doc/DATABASE.md) + [架构-数据库迁移.md](doc/架构/架构-数据库迁移.md) |
+| 模块职责 / 依赖边 / 错误码 / 异常判据 / 可观测 / 已知问题 | [doc/agents/架构参考.md](doc/agents/架构参考.md) |
+| 后端编码约定（命名 / DTO / 缓存 / 安全 / 事件 / 各模块要点含 AI 全链路） | [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md) |
+| 构建 / 测试 / 启动 / 部署命令、gh CLI、CI/CD | [doc/agents/常用命令.md](doc/agents/常用命令.md) + [k8s/README.md](k8s/README.md) |
+| 精确版本表（钩子校验单一落点） | [doc/技术栈.md](doc/技术栈.md) |
+| 数据库约定 / 表清单 / Flyway 迁移规范 / 脚本索引 | [doc/DATABASE.md](doc/DATABASE.md) |
 | 测试数 / 覆盖率 / 压测数字（**数字单一来源**）；已知技术债 | [doc/工程指标.md](doc/工程指标.md) + [doc/技术债务清单.md](doc/技术债务清单.md) |
 | 迭代路线（Agent 升级 sprint / 双项目排期 / 收口纪律） | [doc/迭代路线.md](doc/迭代路线.md) |
 | 面试脚本（简历 / 自我介绍 / 追问应答 / 八股 / 代码走读 / 设计题） | [doc/interview/](doc/interview/) |

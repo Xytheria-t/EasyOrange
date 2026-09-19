@@ -17,7 +17,7 @@ EasyOrange 的 C2C 资产流转业务中，「认领方下单」是一个跨三�
 2. **product 模块**：锁定 / 扣减商品库存，标记商品 `SOLD`
 3. **payment 模块**：创建支付记录，等待认领方付款
 
-模块边界已经通过 DDD 六边形 + Port/Adapter + `<optional>true</optional>` Maven 隔离落地（见 [架构-系统架构.md](../../doc/架构/架构-系统架构.md)），跨模块通信已大量使用 RabbitMQ Topic Exchange + 11 个消费者 + DLQ（如 `OrderCreatedEvent`、`StockReservationRequestedEvent`、`PaymentInitiationRequestedEvent`）。
+模块边界已经通过 DDD 六边形 + Port/Adapter + `<optional>true</optional>` Maven 隔离落地（见 [架构参考.md](../../doc/agents/架构参考.md)「模块依赖边」），跨模块通信已大量使用 RabbitMQ Topic Exchange + 11 个消费者 + DLQ（如 `OrderCreatedEvent`、`StockReservationRequestedEvent`、`PaymentInitiationRequestedEvent`）。
 
 强制约束：
 
@@ -86,5 +86,5 @@ CreateOrderSaga.execute()  ─ @Transactional ─
 ## 备注（Notes）
 
 - **Superseded** by [ADR-0007](0007-order-local-tx-over-saga.md)（2026-08-02）：订单创建移除 Saga 层，回归本地单事务 + 分布式锁 + Outbox
-- 相关文档：[doc/集成/AI-资产管理.md](../../doc/集成/AI-资产管理.md)（订单闭环）、[doc/架构/架构-系统架构.md](../../doc/架构/架构-系统架构.md)
+- 相关文档：[doc/agents/架构参考.md](../../doc/agents/架构参考.md)（模块依赖边）、[ADR-0007](0007-order-local-tx-over-saga.md)
 - 重评估触发：当业务引入资金托管（不再 C2C 直发）或 product/payment 模块拆分独立数据源时，重新评估跨服务编排（真 Saga / 事务性 Outbox 补偿），见 ADR-0007 备注。
