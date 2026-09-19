@@ -110,9 +110,14 @@
             <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
         </dependency>
 
+        <!--
+            链路追踪（OTel 桥）— micrometer Observation → OpenTelemetry SDK → OTLP 上报 Langfuse。
+            替代 micrometer-tracing-bridge-brave：Brave 无 OTLP 出口（且 zipkin-reporter 依赖从未引入，
+            原 Zipkin 上报实为死链路），OTel 桥是 Spring AI gen_ai 语义进 Langfuse 的唯一通路
+        -->
         <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-tracing-bridge-brave</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-opentelemetry</artifactId>
         </dependency>
 
         <dependency>
