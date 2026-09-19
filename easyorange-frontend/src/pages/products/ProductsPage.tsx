@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
@@ -8,7 +8,6 @@ import '@/components/product/products-grid.css';
 import { ToolsPlaza, type ToolsPlazaFilter } from '@/components/product/ToolsPlaza';
 
 import SortDropdown, { type SortOption } from '@/components/search/SortDropdown';
-import { Input } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { preloadImages } from '@/components/ui/Image';
 import { useCategories, useColumnCount, useFavoriteCheck, useInfiniteProducts, useListUrlState } from '@/hooks';
@@ -23,19 +22,12 @@ function ProductsPage() {
     const { token } = useAuthStore();
     const navigate = useNavigate();
     const { checkFavorites, isFavorited, toggleFavorite } = useFavoriteCheck();
-    const {
-        keyword: urlKeyword,
-        filters,
-        setKeyword: setUrlKeyword,
-        setState: setUrlState,
-        reset: resetUrl,
-    } = useListUrlState();
+    const { filters, setState: setUrlState, reset: resetUrl } = useListUrlState();
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     const queryParams = useMemo<{
         pageSize: number;
-        keyword?: string;
         categoryId?: string;
         sort?: ProductSort;
         priceMin?: number;
@@ -48,7 +40,6 @@ function ProductsPage() {
             sortValue && SORT_OPTIONS.includes(sortValue as ProductSort) ? (sortValue as ProductSort) : 'newest';
         return {
             pageSize: 20,
-            keyword: urlKeyword || undefined,
             categoryId: filters.category || undefined,
             sort,
             priceMin: filters.priceMin ? Number(filters.priceMin) : undefined,
@@ -56,7 +47,7 @@ function ProductsPage() {
             conditions: filters.conditions ? filters.conditions.split(',').map(Number) : undefined,
             hasDiscount: filters.hasDiscount === '1' || undefined,
         };
-    }, [urlKeyword, filters]);
+    }, [filters]);
 
     const activeFilter: ToolsPlazaFilter = queryParams.hasDiscount ? 'discount' : 'all';
 
@@ -203,22 +194,6 @@ function ProductsPage() {
         setUrlState({ filters: next });
     }, [filters, setUrlState]);
 
-    const handleSearchSubmit = useCallback(
-        (e: React.FormEvent<HTMLFormElement>) => {
-            e.preventDefault();
-            const trimmed = (new FormData(e.currentTarget).get('keyword') as string | null)?.trim() ?? '';
-            if (trimmed === urlKeyword) {
-                return;
-            }
-            setUrlKeyword(trimmed);
-        },
-        [urlKeyword, setUrlKeyword]
-    );
-
-    const handleSearchClear = useCallback(() => {
-        setUrlKeyword('');
-    }, [setUrlKeyword]);
-
     const handleFavorite = useCallback(
         async (productId: string, shouldFavorite: boolean) => {
             if (!token) {
@@ -290,30 +265,6 @@ function ProductsPage() {
                         <span className="results-count">{total}</span>
                         <span className="results-text"> 件商品</span>
                     </div>
-
-                    <form className="search-bar" onSubmit={handleSearchSubmit}>
-                        <Search size={16} className="search-bar-icon" />
-                        <Input
-                            key={urlKeyword}
-                            type="text"
-                            name="keyword"
-                            className="search-bar-input"
-                            placeholder="搜索托管商品..."
-                            defaultValue={urlKeyword}
-                        />
-                        {urlKeyword && (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="search-bar-clear"
-                                onClick={handleSearchClear}
-                                aria-label="清除搜索"
-                            >
-                                <X size={14} />
-                            </Button>
-                        )}
-                    </form>
 
                     <div className="toolbar-actions">
                         <Button variant="outline" className="filter-toggle-btn" onClick={() => setIsFilterOpen(true)}>

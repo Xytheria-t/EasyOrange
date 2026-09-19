@@ -705,76 +705,6 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-/* ============ SEARCH BAR ============ */
-.search-bar {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.85);
-    border: 1.5px solid rgba(249, 115, 22, 0.12);
-    border-radius: var(--radius-xl);
-    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-    max-width: 380px;
-    min-width: 160px;
-}
-
-.search-bar:focus-within {
-    border-color: var(--primary-400);
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow:
-        0 0 0 3px rgba(249, 115, 22, 0.08),
-        0 4px 12px rgba(249, 115, 22, 0.06);
-}
-
-.search-bar-icon {
-    flex-shrink: 0;
-    color: var(--text-tertiary);
-    transition: color 0.3s ease;
-}
-
-.search-bar:focus-within .search-bar-icon {
-    color: var(--primary-500);
-}
-
-.search-bar-input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    outline: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-primary);
-    font-family: inherit;
-    min-width: 0;
-}
-
-.search-bar-input::placeholder {
-    color: var(--text-tertiary);
-    font-weight: 400;
-}
-
-.search-bar-clear {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(17, 24, 39, 0.08);
-    color: var(--text-tertiary);
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-    padding: 0;
-}
-
-.search-bar-clear:hover {
-    background: rgba(244, 63, 94, 0.12);
-    color: var(--rose-500);
-}
-
 /* ============ TOOLBAR ACTIONS ============ */
 .toolbar-actions {
     display: flex;
@@ -1549,10 +1479,6 @@
         padding: 1rem;
     }
 
-    .search-bar {
-        max-width: 100%;
-    }
-
     .toolbar-actions {
         justify-content: flex-end;
         flex-wrap: wrap;
@@ -1583,14 +1509,6 @@
         padding: 0.75rem;
         border-radius: var(--radius-xl);
         gap: 0.625rem;
-    }
-
-    .search-bar {
-        padding: 0.375rem 0.75rem;
-    }
-
-    .search-bar-input {
-        font-size: 0.8125rem;
     }
 
     .toolbar-actions {
