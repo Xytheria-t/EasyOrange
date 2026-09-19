@@ -27,11 +27,13 @@ describe('AIFeaturesSection', () => {
         expect(screen.getByText('认领方放心')).toBeInTheDocument();
     });
 
-    it('renders both mainlines in column headers', () => {
+    it('renders two swimlanes grouped by mainline', () => {
         render(<AIFeaturesSection />);
 
-        expect(screen.getByText('资产方侧 · 发布助手单入口')).toBeInTheDocument();
-        expect(screen.getByText('认领方侧 · 对话式找货')).toBeInTheDocument();
+        expect(screen.getByText('资产方')).toBeInTheDocument();
+        expect(screen.getByText('认领方')).toBeInTheDocument();
+        expect(screen.getByText('发布助手单入口')).toBeInTheDocument();
+        expect(screen.getByText('对话式找货')).toBeInTheDocument();
     });
 
     it('renders five steps across both sides', () => {
@@ -40,12 +42,12 @@ describe('AIFeaturesSection', () => {
         expect(screen.getAllByTestId(/^pipeline-step-/)).toHaveLength(5);
     });
 
-    it('renders only citable stats', () => {
+    it('renders only citable stats in the footnote', () => {
         render(<AIFeaturesSection />);
 
-        expect(screen.getByText('2 条')).toBeInTheDocument();
-        expect(screen.getByText('1 次')).toBeInTheDocument();
-        expect(screen.getByText('4 路')).toBeInTheDocument();
-        expect(screen.getByText('35 条')).toBeInTheDocument();
+        expect(screen.getByText(/2 条主线链路/)).toBeInTheDocument();
+        expect(screen.getByText(/发布路径 1 次模型调用/)).toBeInTheDocument();
+        expect(screen.getByText(/4 路并行编排/)).toBeInTheDocument();
+        expect(screen.getByText(/金标准 35 条进 CI/)).toBeInTheDocument();
     });
 });
