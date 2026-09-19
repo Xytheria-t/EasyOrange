@@ -70,7 +70,7 @@ AI 集成采用 **六边形 Port/Adapter + `@Primary` 装饰器模式**，业务
 
 - 类数量增加：每个供应商需要 Port + 底层 Adapter + 装饰器，对简单场景略重
 - 装饰器链顺序敏感：缓存必须在限流之后（否则限流拒绝时缓存已查），需在配置中明确
-- `@Primary` 与 IntelliJ 误报：项目踩坑记录中已说明，Adapter 实现类加 `@Primary` 解决（见 `easyorange-backend/AGENTS.md`「Port/Adapter / MapStruct IntelliJ 误报」）
+- `@Primary` 与 IntelliJ 误报：项目踩坑记录中已说明，Adapter 实现类加 `@Primary` 解决（见 `easyorange-backend/AGENTS.md`「IDE 误报」节）
 
 ### 缓解措施
 

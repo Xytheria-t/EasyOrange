@@ -10,11 +10,13 @@ git config core.hooksPath .githooks
 
 | 文件 | 用途 | 耗时 |
 |------|------|------|
-| `pre-commit` | staged 内容快速检查（密钥 + 空白 + 冲突标记 + 大文件 + 前端 lint + 文档口径校验） | <1s~几秒 |
+| `pre-commit` | staged 内容快速检查（密钥 + 空白 + 冲突标记 + 大文件 + 前端 lint + 文档口径校验 + 上下文预算） | <1s~几秒 |
 | `pre-push` | 重门禁（后端 `mvn test` + 前端 `npm test`，按推送变更分发） | 数秒~数分钟 |
 | `commit-msg` | Conventional Commits 格式校验（标题 + breaking change）+ 消息-内容一致性（纯文档提交必须标 `docs`） | <100ms |
 | `check-version-drift.py` | 文档版本表 vs pom/compose/镜像 tag 一致性校验 | <100ms |
 | `check-test-tier-drift.py` | 文档的「集成测试」声明 vs 代码事实（`*IT` 文件 + pom failsafe 绑定）一致性校验 | <100ms |
+| `check-metrics-drift.py` | 文档声称的结构计数（模块/Port/ADR/消费者/表/ArchUnit 规则/Prompt 模板）vs 代码事实 | <100ms |
+| `check-context-budget.py` | AGENTS.md 份数（≤3）与字符预算（根 6500 / 合计 45000） | <100ms |
 | `_lib.sh` | 共享工具（颜色、日志、SKIP、staged 文件、密钥扫描、快检函数） | — |
 
 **职责分层**：`pre-commit` 只放秒级快检，构建/测试的重活放 `pre-push`，避免每次提交付全量编译成本。
@@ -41,7 +43,9 @@ SKIP=1        git commit -m "..."   # 任何非空值都视为跳过
 | 任意文本 | 大文件 >2MB | `git cat-file -s`（staged blob） |
 | `easyorange-frontend/{src,tests}/**/*.{ts,tsx,js,jsx}` | `biome check`（仅变更文件） | `node_modules/.bin/biome` |
 | `**/*.md` / `easyorange-backend/pom.xml` | 测试口径漂移校验（文档声明 vs 代码事实） | `python3 check-test-tier-drift.py` |
+| `**/*.md` / `pom.xml` / `*.sql` / `*.java` | 结构计数漂移校验（N 模块 / N Port / N ADR…） | `python3 check-metrics-drift.py` |
 | `doc/架构/架构-技术栈.md` / `compose.yaml` / `easyorange-backend/pom.xml` / `infra/elasticsearch/Dockerfile` | 版本漂移校验（文档版本表 vs 权威来源） | `python3 check-version-drift.py` |
+| `**/AGENTS.md` | 上下文预算校验（份数 + 字符预算） | `python3 check-context-budget.py` |
 | 纯文档/Markdown/YAML | 跳过（仅过密钥扫描 + 口径校验） | — |
 
 > 快检全部基于 **staged 内容**（`git diff --cached` / `git cat-file :path`），不受工作区未暂存改动影响。

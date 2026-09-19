@@ -10,6 +10,7 @@
 #   4. 版本漂移：仅当技术栈表 / pom / compose / ES 镜像变更时校验文档版本与权威来源一致
 #   5. 测试口径漂移：文档/pom 变更时校验「集成测试是否存在」的声明与代码事实（*IT + failsafe 绑定）一致
 #   6. 结构计数漂移：文档/pom/迁移/源码变更时校验「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」与代码事实一致
+#   7. 上下文预算：AGENTS.md 变更时校验份数（≤3）与字符预算（根 6500 / 合计 45000）
 #
 # 重门禁（构建 + 测试）在 pre-push，提交时不挡路。
 #
@@ -144,6 +145,23 @@ if [[ -n "$tier_files" ]] || echo "$files" | grep -qE '^easyorange-backend/.*(po
   fi
 else
   hook_log "No doc/pom/migration/source changes, skipping metrics drift check"
+fi
+
+# 7. 上下文预算：AGENTS.md 变更时校验「份数 + 字符预算」——根文件每会话常驻，
+#    模块级副本不会被自动加载（ZCode 只解析工作目录向上的一个），两份都不该再长回来
+if echo "$files" | grep -qE '(^|/)AGENTS\.md$'; then
+  if command -v python3 >/dev/null 2>&1; then
+    hook_log "AGENTS.md 变更 → 校验 AI 上下文预算..."
+    if python3 "$SCRIPT_DIR/check-context-budget.py"; then
+      hook_ok "context budget check"
+    else
+      hook_fail "AI 上下文预算或结构违规（见上方输出；SKIP=git-hooks 可跳过）"
+    fi
+  else
+    hook_warn "python3 not found, skipping context budget check"
+  fi
+else
+  hook_log "No AGENTS.md changes, skipping context budget check"
 fi
 
 hook_ok "pre-commit passed"

@@ -2,13 +2,13 @@
 
 > React 19 + TypeScript + Vite 的 SPA，C 端 + 管理端（暖橙指挥中心设计系统）双布局。
 >
-> **开发约定（管理端 Portal / AdminTable 签名 / Zustand 写入规则等 15 条坑）见 [doc/agents/开发规范.md §前端约定](../doc/agents/开发规范.md)**；全局硬约束见 [根 AGENTS.md](../AGENTS.md)。本文只放前端自身的入口地图与命令。
+> **开发约定见 [AGENTS.md](./AGENTS.md)**（管理端 Portal / AdminTable 签名 / Zustand 写入规则等「不按这个写就出 bug」的坑）；全局硬约束见 [根 AGENTS.md](../AGENTS.md)。本文只放前端自身的入口地图与命令。
 
 ## 技术栈
 
 TypeScript · React 19 · React Router v7 · Vite · Tailwind CSS 4 + shadcn/ui · TanStack Query 5（服务端状态）· Zustand 5（客户端状态）· react-hook-form + Zod（表单）· react-helmet-async（路由级 meta）· Lucide（图标）· Biome + jsx-a11y（lint/format）· Vitest + Testing Library（单元/组件）· Playwright（E2E）。
 
-> 版本与测试数的单一来源：[doc/架构/架构-技术栈.md](../doc/架构/架构-技术栈.md)、[doc/工程指标.md §1.4](../doc/工程指标.md)。
+> 版本与测试数的单一来源：[doc/架构/架构-技术栈.md](../doc/架构/架构-技术栈.md)、[doc/工程指标.md §1.2](../doc/工程指标.md)（前端测试规模在该节，§1.4 只放前端工程化的其余计数）。
 
 ## 可用命令
 
