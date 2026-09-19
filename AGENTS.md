@@ -72,6 +72,7 @@ monorepo：`easyorange-backend/`（11 Maven 模块，约定见 [AGENTS.md](easyo
 | AI 资产管理（两条 AI 主线链路 / RAG / 成本与采纳率 / WebSocket 协议） | [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md) |
 | 数据库约定 / 表清单 / 迁移脚本索引；Flyway 流程 | [doc/DATABASE.md](doc/DATABASE.md) + [架构-数据库迁移.md](doc/架构/架构-数据库迁移.md) |
 | 测试数 / 覆盖率 / 压测数字（**数字单一来源**）；已知技术债 | [doc/工程指标.md](doc/工程指标.md) + [doc/技术债务清单.md](doc/技术债务清单.md) |
+| 迭代路线（Agent 升级 sprint / 双项目排期 / 收口纪律） | [doc/迭代路线.md](doc/迭代路线.md) |
 | 面试脚本（简历 / 自我介绍 / 追问应答 / 八股 / 代码走读 / 设计题） | [doc/interview/](doc/interview/) |
 | ADR 决策记录（12 个：ADR-0007 拒绝 Saga、ADR-0011 UUID v7 主键、ADR-0012 RAG 改 RRF 等） | `doc/adr/` |
 | Issues / PRD（含 triage label：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`） | GitHub issues，用 `gh` CLI（模板见常用命令.md） |
