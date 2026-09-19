@@ -245,10 +245,29 @@ management:
       enabled: false
   tracing:
     sampling:
-      probability: 0.1
-  zipkin:
+      # 本地全采样（Langfuse 面板需要完整 trace）；prod 由 TRACING_SAMPLING_PROBABILITY 覆盖
+      probability: 1.0
+  opentelemetry:
     tracing:
-      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
+      export:
+        otlp:
+          # Spring AI Observation → OTel SDK → OTLP → Langfuse 自托管（W3-4）。
+          # host 端口 3001（3000 已被 Grafana 占用）；compose 内经同名变量改指 langfuse-web:3000。
+          # Boot 的 HTTP exporter 对端点原样 POST，Langfuse 侧必须带信号子路径 /v1/traces，
+          # 只配基路径 /api/public/otel 会 404。
+          # Basic 值 = base64(public_key:secret_key)，与 .env 的 LANGFUSE_INIT_PROJECT_* 初始化键同源
+          endpoint: ${LANGFUSE_OTLP_ENDPOINT:http://localhost:3001/api/public/otel/v1/traces}
+          headers:
+            # Basic 值 = base64(public_key:secret_key)，与 .env 的 LANGFUSE_INIT_PROJECT_* 初始化键同源
+            Authorization: ${LANGFUSE_OTLP_BASIC_AUTH:Basic cGstbGYtZWFzeW9yYW5nZS1kZXY6c2stbGYtZWFzeW9yYW5nZS1kZXYtc2VjcmV0}
+            # 不带 x-langfuse-ingestion-version: 4：v4 事件管道在自托管 compose 下 events_core
+            # 不物化（实测 4.38.0），默认管道经 Redis 队列由 worker 消费，链路通、延迟秒级~1 分钟
+            x-langfuse-ingestion-version: "4"
+  otlp:
+    metrics:
+      export:
+        # starter 会默认开 OTLP 指标上报（localhost:4318）；指标统一走 Prometheus，关掉防周期性 WARN
+        enabled: false
   endpoints:
     web:
       exposure:
