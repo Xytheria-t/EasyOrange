@@ -44,7 +44,7 @@
     height: 380px;
     bottom: -80px;
     left: -100px;
-    background: radial-gradient(circle, rgba(195, 155, 211, 0.2) 0%, rgba(195, 155, 211, 0.06) 50%, transparent 70%);
+    background: radial-gradient(circle, rgba(251, 113, 133, 0.18) 0%, rgba(251, 113, 133, 0.06) 50%, transparent 70%);
     animation: playgroundOrbFloat 20s ease-in-out infinite reverse;
 }
 
@@ -66,7 +66,7 @@
     inset: 0;
     background:
         radial-gradient(ellipse 70% 45% at 25% 35%, rgba(249, 115, 22, 0.05) 0%, transparent 50%),
-        radial-gradient(ellipse 55% 40% at 75% 65%, rgba(195, 155, 211, 0.05) 0%, transparent 50%);
+        radial-gradient(ellipse 55% 40% at 75% 65%, rgba(251, 113, 133, 0.05) 0%, transparent 50%);
 }
 
 /* ============ GLASS SHELL ============ */
@@ -139,8 +139,8 @@
     background: linear-gradient(
         135deg,
         rgba(249, 115, 22, 0.14) 0%,
-        rgba(251, 113, 133, 0.1) 55%,
-        rgba(195, 155, 211, 0.12) 100%
+        rgba(251, 113, 133, 0.12) 55%,
+        rgba(251, 191, 36, 0.1) 100%
     );
     border: 1px solid rgba(249, 115, 22, 0.15);
     color: var(--primary-500);
@@ -153,7 +153,10 @@
     font-size: 1.25rem;
     font-weight: 800;
     letter-spacing: -0.01em;
-    color: var(--text-heading);
+    background: var(--gradient-text-warm);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin: 0;
 }
 
@@ -266,9 +269,9 @@
 }
 
 .playground-msg--assistant .playground-msg__avatar {
-    background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 40%, #8b5cf6 100%);
+    background: linear-gradient(135deg, #fda4af 0%, #fb7185 45%, #f43f5e 100%);
     box-shadow:
-        0 3px 10px rgba(139, 92, 246, 0.4),
+        0 3px 10px rgba(244, 63, 94, 0.35),
         inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
@@ -278,7 +281,7 @@
     position: absolute;
     inset: -3px;
     border-radius: 50%;
-    border: 2px solid rgba(139, 92, 246, 0.45);
+    border: 2px solid rgba(244, 63, 94, 0.4);
     animation: avatarPulse 1.6s var(--ease-out) infinite;
 }
 
@@ -322,9 +325,9 @@
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.02em;
-    color: var(--purple-600);
-    background: rgba(139, 92, 246, 0.07);
-    border: 1px solid rgba(139, 92, 246, 0.16);
+    color: #b45309;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.22);
     border-radius: var(--radius-full);
     padding: 0.1875rem 0.5rem 0.1875rem 0.25rem;
     cursor: default;
@@ -338,7 +341,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: rgba(139, 92, 246, 0.14);
+    background: rgba(251, 191, 36, 0.2);
     flex-shrink: 0;
 }
 
@@ -378,7 +381,7 @@
 }
 
 .playground-msg--assistant .playground-msg__bubble {
-    background: rgba(255, 255, 255, 0.92);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 250, 244, 0.92) 100%);
     border: 1px solid rgba(42, 37, 32, 0.06);
     border-top-left-radius: 4px;
     box-shadow:
@@ -387,7 +390,7 @@
 }
 
 .playground-msg--user .playground-msg__bubble {
-    background: var(--gradient-primary);
+    background: var(--gradient-orange-glow);
     color: white;
     border-top-right-radius: 4px;
     box-shadow:
@@ -454,7 +457,7 @@
 
 .playground-typing__dot:nth-child(3) {
     animation-delay: 0.3s;
-    background: var(--purple-400);
+    background: var(--gold-400);
 }
 
 @keyframes typingBounce {
@@ -626,7 +629,7 @@
     flex-shrink: 0;
     border: none;
     border-radius: 50%;
-    background: var(--gradient-primary);
+    background: var(--gradient-orange-glow);
     color: white;
     cursor: pointer;
     box-shadow:
