@@ -1,9 +1,20 @@
-import { Bot, Send, Sparkles, ThumbsDown, ThumbsUp, User } from 'lucide-react';
+import {
+    BookOpen,
+    Bot,
+    CheckCircle2,
+    FileSearch,
+    Search,
+    Send,
+    Sparkles,
+    ThumbsDown,
+    ThumbsUp,
+    User,
+} from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { aiApi } from '@/api/aiApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { ChatStreamEvent } from '@/types/ai';
+import type { AgentStep, ChatStreamEvent } from '@/types/ai';
 import './playground.css';
 
 interface ChatMessage {
@@ -11,8 +22,32 @@ interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;
     sources: string[];
+    steps: AgentStep[];
     status: 'streaming' | 'done' | 'error';
     feedback: 'helpful' | 'unhelpful' | null;
+}
+
+/** Agent 工具循环各步骤的展示文案（与后端 AgentLoopRunner 工具面对齐） */
+const STEP_LABELS: Record<string, string> = {
+    knowledge_search: '查规则',
+    product_search: '找资产',
+    product_detail: '看详情',
+    finish: '生成回答',
+};
+
+function StepIcon({ tool }: { tool: string }) {
+    switch (tool) {
+        case 'knowledge_search':
+            return <BookOpen size={12} aria-hidden="true" />;
+        case 'product_search':
+            return <Search size={12} aria-hidden="true" />;
+        case 'product_detail':
+            return <FileSearch size={12} aria-hidden="true" />;
+        case 'finish':
+            return <CheckCircle2 size={12} aria-hidden="true" />;
+        default:
+            return <Sparkles size={12} aria-hidden="true" />;
+    }
 }
 
 const SUGGESTED_QUESTIONS = [
@@ -29,6 +64,7 @@ const WELCOME_MESSAGE: ChatMessage = {
     content:
         '你好，我是 EasyOrange AI 助手 🤖 可以回答平台交易、退款、运费、禁售品类等规则问题，也能帮你在在售资产里找货。每次回答会标注知识库来源。',
     sources: [],
+    steps: [],
     status: 'done',
     feedback: null,
 };
@@ -59,6 +95,10 @@ export default function PlaygroundPage() {
         setMessages(prev => prev.map(msg => (msg.id === messageId ? { ...msg, content: msg.content + token } : msg)));
     }, []);
 
+    const appendStep = useCallback((messageId: string, step: AgentStep) => {
+        setMessages(prev => prev.map(msg => (msg.id === messageId ? { ...msg, steps: [...msg.steps, step] } : msg)));
+    }, []);
+
     const setMessage = useCallback((messageId: string, patch: Partial<ChatMessage>) => {
         setMessages(prev => prev.map(msg => (msg.id === messageId ? { ...msg, ...patch } : msg)));
     }, []);
@@ -73,6 +113,7 @@ export default function PlaygroundPage() {
             role: 'user',
             content: text,
             sources: [],
+            steps: [],
             status: 'done',
             feedback: null,
         };
@@ -81,6 +122,7 @@ export default function PlaygroundPage() {
             role: 'assistant',
             content: '',
             sources: [],
+            steps: [],
             status: 'streaming',
             feedback: null,
         };
@@ -93,6 +135,9 @@ export default function PlaygroundPage() {
 
         const handleEvent = (event: ChatStreamEvent) => {
             switch (event.type) {
+                case 'step':
+                    appendStep(assistantMessage.id, event.data);
+                    break;
                 case 'token':
                     appendToken(assistantMessage.id, event.data);
                     break;
@@ -170,6 +215,20 @@ export default function PlaygroundPage() {
                             {message.role === 'user' ? <User size={16} /> : <Bot size={16} />}
                         </div>
                         <div className="playground-msg__body">
+                            {message.steps.length > 0 && (
+                                <ul className="playground-msg__steps" aria-label="Agent 执行步骤">
+                                    {message.steps.map(step => (
+                                        <li
+                                            key={`${step.step}-${step.tool}`}
+                                            className="playground-msg__step"
+                                            title={step.observation ?? undefined}
+                                        >
+                                            <StepIcon tool={step.tool} />
+                                            {step.thought ?? STEP_LABELS[step.tool] ?? step.tool}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                             {message.sources.length > 0 && (
                                 <div className="playground-msg__sources">
                                     {message.sources.map(source => (

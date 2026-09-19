@@ -42,8 +42,17 @@ export interface KnowledgeDoc {
     createTime: string;
 }
 
+/** Agent 工具循环单步（与后端 AgentStepView 对齐：step 事件载荷，前端步骤可视化） */
+export interface AgentStep {
+    step: number;
+    tool: string;
+    thought?: string;
+    observation?: string;
+}
+
 /** SSE 流式事件（与后端 SseEmitter 事件名对齐） */
 export type ChatStreamEvent =
+    | { type: 'step'; data: AgentStep }
     | { type: 'token'; data: string }
     | { type: 'sources'; data: string[] }
     | { type: 'done'; data: string }
