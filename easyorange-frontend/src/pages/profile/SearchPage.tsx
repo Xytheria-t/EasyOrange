@@ -503,9 +503,7 @@ function SearchPage() {
                         </div>
 
                         {facets.length > 0 && (
-                            <div className="px-0.5">
-                                <FacetFilter facets={facets} filters={filters} onFilterChange={handleFilterChange} />
-                            </div>
+                            <FacetFilter facets={facets} filters={filters} onFilterChange={handleFilterChange} />
                         )}
 
                         {aiEnhancement && (
