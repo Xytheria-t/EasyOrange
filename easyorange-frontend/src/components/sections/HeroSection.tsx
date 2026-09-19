@@ -249,7 +249,7 @@ export default function HeroSection() {
                     </h1>
 
                     <p className="hero-subtitle animate-slide-up delay-1">
-                        LLM × DDD · 业务聚焦核心流程，把复杂度留给架构与 AI 工程化
+                        Agent 编排 × RAG × 评估闭环 · DDD + 事件驱动可靠性
                     </p>
 
                     <div className="hero-search animate-slide-up delay-2">
