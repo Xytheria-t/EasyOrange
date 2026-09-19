@@ -73,7 +73,7 @@ export const aiApi = {
         });
     },
 
-    /** AI 输出反馈（👍/👎 反馈飞轮） */
+    /** AI 输出反馈（反馈飞轮） */
     feedback(data: ChatFeedbackRequest) {
         return request<void>('/ai/feedback', {
             method: 'POST',

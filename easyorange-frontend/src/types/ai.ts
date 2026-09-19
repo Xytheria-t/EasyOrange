@@ -13,7 +13,7 @@ export interface ChatAnswer {
     degraded: boolean;
 }
 
-/** AI 输出反馈（👍/👎 反馈飞轮） */
+/** AI 输出反馈（反馈飞轮） */
 export interface ChatFeedbackRequest {
     scope: string;
     question: string;
