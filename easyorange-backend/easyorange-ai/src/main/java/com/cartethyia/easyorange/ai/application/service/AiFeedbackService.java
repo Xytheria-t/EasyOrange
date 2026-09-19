@@ -9,7 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * AI 输出反馈入库（👍/👎 反馈飞轮）— 观测类数据，仿 eo_ai_call_log 用 JdbcTemplate 直写，
+ * AI 输出反馈入库（反馈飞轮）— 观测类数据，仿 eo_ai_call_log 用 JdbcTemplate 直写，
  * 失败只告警不阻塞主链路。导出逻辑见 {@link GoldenSetExportPort}。
  */
 @Slf4j

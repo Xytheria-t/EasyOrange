@@ -71,7 +71,7 @@ describe('PlaygroundPage (AI 智能助手)', () => {
         });
     });
 
-    it('👍 反馈 -> 调用 feedback 接口', async () => {
+    it('赞反馈 -> 调用 feedback 接口', async () => {
         mockedChatStream.mockResolvedValue(undefined);
         renderWithProviders(<PlaygroundPage />);
 

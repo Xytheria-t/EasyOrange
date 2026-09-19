@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  * （{@code GoldenSetLoader.validate}），chat 用例必须有非空 reference_answer、retrieval 用例必须有
  * gold_doc_ids —— 从反馈里能自动拿到的只有前者，因此：
  * <ul>
- *   <li><b>helpful = 0（👎）不能自动成用例</b>：反馈里存的 response_text 正是被用户嫌弃的那条回答，
+ *   <li><b>helpful = 0（点踩）不能自动成用例</b>：反馈里存的 response_text 正是被用户嫌弃的那条回答，
  *       拿它当 reference_answer 等于把错答案钉成标准，下一轮评测会把「答得对」判成回归。
  *       负样本必须先由人工补一条正确回答，故只统计不导出。</li>
  *   <li><b>scope != chat</b>：反馈里没有 gold_doc_ids，导出的片段必然过不了加载校验。</li>
@@ -81,7 +81,7 @@ public class GoldenSetExportService implements GoldenSetExportPort {
         if (needsManual > 0) {
             yaml.append("# 另有 ")
                     .append(needsManual)
-                    .append(" 条未导出反馈不能自动成用例（👎 需人工补正确回答；非 chat 场景需人工补 gold_doc_ids；字段为空需人工补全），\n")
+                    .append(" 条未导出反馈不能自动成用例（点踩需人工补正确回答；非 chat 场景需人工补 gold_doc_ids；字段为空需人工补全），\n")
                     .append("# 未标记 exported，可用 SELECT ... FROM eo_ai_feedback WHERE exported = 0 复核\n");
         }
         if (!cases.isEmpty()) {

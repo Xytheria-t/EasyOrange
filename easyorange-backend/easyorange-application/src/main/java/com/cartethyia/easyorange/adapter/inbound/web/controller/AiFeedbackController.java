@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * AI 输出反馈端点（👍/👎 反馈飞轮）— 前端在回答旁展示两个按钮，点击落 eo_ai_feedback。
+ * AI 输出反馈端点（反馈飞轮）— 前端在回答旁展示两个按钮，点击落 eo_ai_feedback。
  */
-@Tag(name = "AI 反馈", description = "AI 输出 👍/👎 反馈（反馈飞轮入口）")
+@Tag(name = "AI 反馈", description = "AI 输出赞/踩反馈（反馈飞轮入口）")
 @RestController
 @RequestMapping("/api/ai/feedback")
 @RequiredArgsConstructor

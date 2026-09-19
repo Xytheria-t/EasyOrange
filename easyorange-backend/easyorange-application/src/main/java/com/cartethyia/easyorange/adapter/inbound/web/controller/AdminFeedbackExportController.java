@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 反馈 → 金标准评测集导出（管理端）— 把用户 👍/👎 反馈渲染成 golden-set.yaml 用例片段，
+ * 反馈 → 金标准评测集导出（管理端）— 把用户赞/踩反馈渲染成 golden-set.yaml 用例片段，
  * 导出即标记 exported=1；人工审核后合入 eval/golden-set.yaml，实现「反馈飞轮自动扩充评测集」。
  */
 @Tag(name = "平台运维", description = "AI 反馈导出为金标准评测集用例")
