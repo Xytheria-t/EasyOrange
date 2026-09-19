@@ -28,6 +28,24 @@ spring:
       image: false
       moderation: false
 
+    # MCP server — 公开只读工具面（streamable HTTP，端点 /mcp，工具 4 个）。
+    # 外部 MCP client（Cursor / Claude Desktop）无用户上下文：只暴露在售资产检索/详情、
+    # 类目、平台规则知识，不含用户态数据与写路径（信任边界见根 AGENTS.md）
+    mcp:
+      server:
+        name: easyorange
+        version: "1.0.0"
+        # protocol 必须显式写：EnabledStreamableServerCondition 读 Environment 而非属性对象，
+        # 属性默认值（streamable）不进 Environment，缺省时传输端点整个不装配（实测 404）
+        protocol: streamable
+        instructions: >-
+          EasyOrange 二手交易平台的公开只读工具面：在售资产检索与详情、类目浏览、
+          平台规则知识检索。不含用户态数据与写路径。
+        capabilities:
+          prompt: false
+          resource: false
+          completion: false
+
   datasource:
     url: jdbc:mysql://${EASYORANGE_DB_HOST:localhost}:${EASYORANGE_DB_PORT:3306}/${EASYORANGE_DB_NAME:easyorange}?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&connectTimeout=5000&socketTimeout=30000&connectionCollation=utf8mb4_0900_ai_ci
     username: ${EASYORANGE_DB_USERNAME:easyorange_app}
@@ -151,11 +169,21 @@ rate-limit-filter:
       max-requests: 30
       window-seconds: 60
       message: "操作过于频繁，请稍后重试"
+    # MCP 工具面 — 公开匿名端点（不在 /api 下，需单独限流）
+    - path-pattern: /mcp
+      method: POST
+      strategy: redis
+      max-requests: 60
+      window-seconds: 60
+      message: "请求过于频繁，请稍后重试"
   repeat-submit:
     enabled: true
     interval-ms: 3000
     message: "不允许重复提交"
     methods: [POST, PUT, DELETE, PATCH]
+    # MCP 端点豁免 — JSON-RPC 超时重试复用同一请求体，防重会拒绝协议内合法重试
+    exclude-path-patterns:
+      - /mcp
 
 server:
   port: 8080
@@ -258,6 +286,8 @@ webmvc:
     - /favicon.ico
     - /error
     - /actuator/**
+    # MCP streamable HTTP — GET /mcp 是长连 SSE 流，计入 http.server.request 会拖垮分位值口径
+    - /mcp
   skip-logging-paths:
     - /api/health
     - /api/stats/platform
@@ -288,6 +318,9 @@ security:
     # WebSocket 握手端点 — 由 WebSocketAuthInterceptor 自行完成 JWT 认证与吊销校验
     - /ws
     - /ws/**
+    # MCP 工具面 — 外部 MCP client 无用户上下文，匿名可达；安全性由「仅公开只读工具 +
+    # 独立限流 + 防重豁免」的信任边界承担（见根 AGENTS.md）
+    - /mcp
     # SpringDoc OpenAPI 3 — API 契约文档 + Swagger UI（仅开发/测试环境暴露，生产通过反向代理拦截）
     - /v3/api-docs/**
     - /swagger-ui/**

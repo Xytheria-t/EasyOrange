@@ -202,6 +202,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (!config.enabled()) {
             return;
         }
+        if (isRepeatSubmitExcluded(request.getRequestURI())) {
+            return;
+        }
         if (!config.methods().isEmpty() && config.methods().stream().noneMatch(m -> m.equalsIgnoreCase(method))) {
             return;
         }
@@ -230,6 +233,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
             log.warn("action=repeat_submit_check_error, key={}", key, ex);
             // Redis 不可用时放行（fail-open）
         }
+    }
+
+    /**
+     * 豁免路径（{@code repeat-submit.exclude-path-patterns}）不做防重 —— 机器协议端点的
+     * 重复请求体是协议内合法行为（JSON-RPC 超时重试复用同一请求体），拦掉会把 client
+     * 卡死在错误循环里。
+     */
+    private boolean isRepeatSubmitExcluded(String uri) {
+        for (String pattern : properties.repeatSubmit().excludePathPatterns()) {
+            if (PATH_MATCHER.match(pattern, uri)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ==================== Skip 注解检查 ====================

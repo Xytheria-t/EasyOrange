@@ -182,6 +182,11 @@ rate-limit-filter:
       strategy: redis
       max-requests: 20
       window-seconds: 60
+    - path-pattern: /mcp
+      method: POST
+      strategy: redis
+      max-requests: 30
+      window-seconds: 60
   repeat-submit:
     enabled: true
     interval-ms: 3000
@@ -200,6 +205,9 @@ security:
     # WebSocket 握手端点 — 由 WebSocketAuthInterceptor 自行完成 JWT 认证与吊销校验
     - /ws
     - /ws/**
+    # MCP 工具面 — 外部 MCP client 无用户上下文，匿名可达；安全性由「仅公开只读工具 +
+    # 独立限流 + 防重豁免」的信任边界承担（见根 AGENTS.md）
+    - /mcp
   product-paths:
     - /api/products
     - /api/products/{id}

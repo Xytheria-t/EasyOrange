@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
+import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.RepeatSubmitConfig;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Rule;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Strategy;
 import com.cartethyia.easyorange.framework.testsupport.PropertyBindings;
@@ -232,6 +233,42 @@ class RateLimitFilterTest {
         assertThat(keyCaptor.getAllValues()).doesNotHaveDuplicates();
         assertThat(keyCaptor.getAllValues().get(0)).contains(":POST:/api/favorites/2001:");
         assertThat(keyCaptor.getAllValues().get(1)).contains(":DELETE:/api/favorites/2001:");
+    }
+
+    @Test
+    @DisplayName("防重豁免路径（exclude-path-patterns）：机器协议端点透传不查 Redis")
+    void repeatSubmit_excludedPath_passesThrough() throws Exception {
+        stubHandler(handlerFor("noSkip"));
+        filter = newFilter(new RateLimitFilterProperties(
+                true, List.of(), new RepeatSubmitConfig(true, 3000L, "不允许重复提交", List.of(), List.of("/mcp"))));
+
+        var req = new MockHttpServletRequest("POST", "/mcp");
+        var res = new MockHttpServletResponse();
+        var invoked = new AtomicBoolean(false);
+
+        filter.doFilter(req, res, (r, s) -> invoked.set(true));
+
+        assertThat(invoked).isTrue();
+        assertThat(res.getStatus()).isEqualTo(200);
+        verify(redisTemplate, never()).opsForValue();
+    }
+
+    @Test
+    @DisplayName("防重豁免路径不外溢：同一配置下普通 API 路径照常防重")
+    void repeatSubmit_exclusionScopedToConfiguredPaths() throws Exception {
+        @SuppressWarnings("unchecked")
+        ValueOperations<Object, Object> valueOps = mock(ValueOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(valueOps.setIfAbsent(anyString(), any(), anyLong(), any())).thenReturn(false);
+        stubHandler(handlerFor("noSkip"));
+        filter = newFilter(new RateLimitFilterProperties(
+                true, List.of(), new RepeatSubmitConfig(true, 3000L, "不允许重复提交", List.of(), List.of("/mcp"))));
+
+        var res = new MockHttpServletResponse();
+
+        filter.doFilter(new MockHttpServletRequest("POST", "/api/orders"), res, (r, s) -> {});
+
+        assertThat(res.getStatus()).isEqualTo(429);
     }
 
     // ==================== multipart：不预读 body ====================

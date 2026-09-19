@@ -195,6 +195,11 @@ rate-limit-filter:
       strategy: redis
       max-requests: 1000
       window-seconds: 60
+    - path-pattern: /mcp
+      method: POST
+      strategy: redis
+      max-requests: 1000
+      window-seconds: 60
   repeat-submit:
     enabled: true
     interval-ms: 3000
