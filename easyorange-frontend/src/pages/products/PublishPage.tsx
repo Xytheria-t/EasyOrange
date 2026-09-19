@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import {
     AlertCircle,
     Camera,
@@ -13,9 +14,12 @@ import {
     MessageCircle,
     Package,
     Sparkles,
+    Star,
     Tag,
+    ThumbsUp,
     Trash2,
     Upload,
+    Wrench,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller } from 'react-hook-form';
@@ -33,12 +37,17 @@ import { buildProductPayload, useProductForm } from '@/hooks/useProductForm';
 import type { PublishFormData } from '@/schemas/publishSchema';
 import './publish.css';
 
-const CONDITION_ICONS: Record<number, string> = {
-    1: '✨',
-    2: '🌟',
-    3: '👍',
-    4: '🔧',
+const CONDITION_ICONS: Record<number, LucideIcon> = {
+    1: Sparkles,
+    2: Star,
+    3: ThumbsUp,
+    4: Wrench,
 };
+
+function ConditionIcon({ level }: { level: number }) {
+    const Icon = CONDITION_ICONS[level];
+    return Icon ? <Icon size={28} /> : null;
+}
 
 const CONDITION_DESC: Record<number, string> = {
     1: '未拆封，全新状态',
@@ -535,7 +544,7 @@ function PublishPage() {
                                 {vals.conditionLevel && (
                                     <div className="condition-preview">
                                         <div className="condition-icon-large">
-                                            {CONDITION_ICONS[Number(vals.conditionLevel)]}
+                                            <ConditionIcon level={Number(vals.conditionLevel)} />
                                         </div>
                                         <div className="condition-info">
                                             <span className="condition-name">
