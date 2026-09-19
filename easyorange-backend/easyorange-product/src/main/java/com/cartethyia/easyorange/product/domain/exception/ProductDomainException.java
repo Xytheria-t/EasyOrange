@@ -10,7 +10,7 @@ import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 /**
  * 资产域业务异常 — 模块唯一领域异常类，构造走 {@link #of} 与具名工厂（不新增叶子类）。
  * <p>
- * 判据见《架构-DDD规范》异常一节：调用方需要按类型分支（降级/重试/格式化展示）才值得独立异常类，
+ * 判据见《架构参考》异常细则（doc/agents/架构参考.md）：调用方需要按类型分支（降级/重试/格式化展示）才值得独立异常类，
  * 只负责把错误码与文案送到客户端的语义一律用本类的具名工厂，错误码统一进 {@link ProductResultCode}。
  */
 public class ProductDomainException extends BaseBusinessException {

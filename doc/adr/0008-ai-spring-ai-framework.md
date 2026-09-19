@@ -96,6 +96,6 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 ## 备注（Notes）
 
 - Supersedes [ADR 0003](./0003-ai-port-adapter-decorator.md)（其第 84 行「用 Spring AI Starter：拒绝」决策翻转）；Related to [ADR 0004](./0004-ai-bulkhead-token-budget.md)（`@TokenBudget` 保留，Bulkhead 隔离仓删除）
-- 相关文档：[doc/集成/AI-资产管理.md](../集成/AI-资产管理.md)、根目录 `AGENTS.md`「AI 能力清单」
+- 相关文档：[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「模块要点 → ai」、根目录 `AGENTS.md`
 - 相关代码：[AiModelConfig.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/AiModelConfig.java)、[AiModelSupport.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/AiModelSupport.java)、[ElasticsearchProductSearchIndexAdapter.java](../../easyorange-backend/easyorange-application/src/main/java/com/cartethyia/easyorange/adapter/outbound/elasticsearch/ElasticsearchProductSearchIndexAdapter.java)
 - 后续演进触发：Spring AI 新版本升级时评估 API 变更；上线前 curl 验证 DashScope `text-embedding-v3` endpoint 可用性（#5647），失败则切 SiliconFlow BAAI/bge-m3（同为 OpenAI 兼容线协议）

@@ -68,6 +68,6 @@
 ## 备注（Notes）
 
 - 相关 ADR：[0002-cqrs-scope-4-modules.md](0002-cqrs-scope-4-modules.md)（CQRS 边界）、[0007-order-local-tx-over-saga.md](0007-order-local-tx-over-saga.md)（拒绝过度设计）
-- 相关文档：[doc/架构/架构-DDD规范.md](../架构/架构-DDD规范.md)、[doc/interview/01-怎么答.md](../interview/01-怎么答.md)（§二 DDD 核心思想）
+- 相关文档：[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「命名与事务」（领域模型归属）、[doc/interview/01-怎么答.md](../interview/01-怎么答.md)（§二 DDD 核心思想）
 - 相关代码：user 认证族（`AuthenticationService`/`LoginSecurityService`/`SmsVerificationService`/`PasswordManagementService`）、message 净化（`SensitiveWordFilterService`）
 - 后续演进触发条件：若某模块出现「领域服务一堆但聚合为数据容器」的贫血模型，重新评估并下沉规则回聚合

@@ -101,7 +101,7 @@ flowchart TB
 - **消息**：Spring Modulith Outbox → RabbitMQ Topic Exchange，9 个事件消费者，DLQ 三级重试
 - **AI**：DeepSeek（Chat）/ Qwen-VL（Vision）/ DashScope（Embedding），统一 OpenAI 兼容协议
 
-> 组件级细节见 [doc/架构/架构-系统架构.md](doc/架构/架构-系统架构.md)。
+> 组件级细节见 [doc/agents/架构参考.md](doc/agents/架构参考.md)。
 
 ### 事件驱动：Outbox → RabbitMQ → DLQ
 
@@ -133,7 +133,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 - **评估进 CI**：35 条金标准集（20 生成 + 15 检索，`eval/golden-set.yaml`）+ LLM-as-Judge 对照参考打分 + `EvalGate` 门禁（阈值全在 `eval/baselines.yaml`，低于基线-容忍度或评审覆盖率不达标即卡 build；`ai-eval.yml` 注入真实 key + 起 ES，**按需 dispatch**）+ hit@5/MRR 检索指标（语料含同域干扰文档）+ 👍 反馈飞轮自动扩充评测集
 - **成本治理**：语义缓存（余弦相似度命中复用，阈值 0.92）+ 模型路由（场景 → bean 配置）+ 按场景成本报表
 
-> **轻量级 Agent 编排**：[`AiSearchEnhancerAdapter`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/AiSearchEnhancerAdapter.java) 基于 Spring AI 手写轻量 Agent Planner：4 路 Tool Calling，`CompletableFuture` 虚拟线程并行，整体 5s 超时（`allOf().get(5s)`）后收集已完成步骤的部分结果，无 LangChain4j 黑盒。**AI 工程化 8 件套**（框架化 / Embedding 真实现 / 令牌桶限流 / 供应商故障 stale 兜底 / TokenBudget / Prompt YAML 版本化 / 多模态 Vision / 4 路并行 Tool Calling）完整机制见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md)。
+> **轻量级 Agent 编排**：[`AiSearchEnhancerAdapter`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/AiSearchEnhancerAdapter.java) 基于 Spring AI 手写轻量 Agent Planner：4 路 Tool Calling，`CompletableFuture` 虚拟线程并行，整体 5s 超时（`allOf().get(5s)`）后收集已完成步骤的部分结果，无 LangChain4j 黑盒。**AI 工程化 8 件套**（框架化 / Embedding 真实现 / 令牌桶限流 / 供应商故障 stale 兜底 / TokenBudget / Prompt YAML 版本化 / 多模态 Vision / 4 路并行 Tool Calling）完整机制见 [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md)「模块要点 → ai」。
 
 ## 架构治理
 
@@ -169,7 +169,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 | **可观测** | Micrometer + Prometheus · Brave（traceId）· Spring AI Observation · 结构化日志 |
 | **DevOps** | Docker / docker-compose · GitHub Actions · Flyway 13 |
 
-> 精确版本以 [doc/架构/架构-技术栈.md](doc/架构/架构-技术栈.md) 的版本表为唯一权威落点（`.githooks/check-version-drift.py` 校验其与 `pom.xml` / `compose.yaml` 一致）。
+> 精确版本以 [doc/技术栈.md](doc/技术栈.md) 的版本表为唯一权威落点（`.githooks/check-version-drift.py` 校验其与 `pom.xml` / `compose.yaml` 一致）。
 
 ## 模块结构
 
@@ -187,7 +187,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 | **ai** | Spring AI 框架化 + Agent 编排 + 令牌桶 / 预算 / Prompt |
 | **admin** | 后台 API（用户 / 商品审核 / 订单 / 统计） |
 
-> 各模块「能放什么」与依赖规则见 [doc/架构/架构-系统架构.md](doc/架构/架构-系统架构.md)。
+> 各模块「能放什么」与依赖规则见 [doc/agents/架构参考.md](doc/agents/架构参考.md)。
 
 ## 快速开始
 
@@ -213,7 +213,7 @@ k6 run --vus 50 --duration 30s load-tests/product-list.js                  # k6 
 easy-orange/
 ├── easyorange-backend/     # Spring Boot 后端（11 Maven 模块，DDD 六边形）
 ├── easyorange-frontend/    # React 前端（C 端 + 管理端）
-├── doc/                    # 架构 / 集成 / ADR / agents 参考 / 面试
+├── doc/                    # 技术栈 / ADR / agents 参考 / DATABASE / 面试
 ├── compose.yaml            # MySQL + Redis + RabbitMQ + 后端应用（多实例）+ Prometheus + Grafana
 ├── infra/                  # 基础设施即代码（Prometheus / Grafana provisioning / ES IK 镜像）
 ├── k8s/                    # K8s 部署（kustomize，无状态应用层）
@@ -225,11 +225,11 @@ easy-orange/
 | 资源 | 内容 |
 |---|---|
 | [AGENTS.md](./AGENTS.md) | 唯一规范来源 + 参考索引；后端 / 前端编码约定见各自目录下的 [AGENTS.md](./easyorange-backend/AGENTS.md) |
-| [doc/架构/](doc/架构/) | 系统架构 / DDD 规范与选型取舍 / 技术栈 / 安全认证 / 数据库迁移 / 部署 |
-| [doc/集成/](doc/集成/) | AI 资产管理 / API 速查 |
+| [doc/技术栈.md](doc/技术栈.md) | 精确版本表（`check-version-drift.py` 钩子校验与 pom/compose 一致） |
 | [doc/adr/](doc/adr/) | 12 条架构决策记录 |
+| [doc/agents/](doc/agents/) | 按需读取参考：架构（错误码 / 依赖边 / 异常 / 可观测）/ 领域 / 常用命令 |
 | [doc/工程指标.md](doc/工程指标.md) | 测试数 / 覆盖率单一事实来源（2,400+ 为取整下限） |
-| [doc/DATABASE.md](doc/DATABASE.md) | 数据库全局约定、表清单与迁移脚本索引 |
+| [doc/DATABASE.md](doc/DATABASE.md) | 数据库全局约定、表清单、Flyway 迁移规范与脚本索引 |
 | [doc/interview/](doc/interview/) | 面试脚本（怎么说 / 怎么答） |
 
 ## 贡献与许可

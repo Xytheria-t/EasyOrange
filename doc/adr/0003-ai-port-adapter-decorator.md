@@ -16,7 +16,7 @@ EasyOrange 在「资产方 / 认领方双端」共 6 个 AI 决策点（智能�
 - **DeepSeek**（文本 LLM）：估值、文案、找货增强、审核
 - **通义千问 VL**（视觉模型）：拍照上架图片识别
 
-强制约束（见 `doc/集成/AI-资产管理.md` 与 `README.md`「AI 工程化」节）：
+强制约束（见 `README.md`「AI 工程化」节）：
 
 - **供应商可替换**：项目定位是 LLM × DDD 工程化实战项目，必须能在 DeepSeek / Qwen-VL 之外低成本切换或叠加新供应商
 - **LLM 调用昂贵且不稳定**：必须有多级缓存 + 限流降级，否则单次调用的成本与延迟不可控
@@ -87,7 +87,7 @@ AI 集成采用 **六边形 Port/Adapter + `@Primary` 装饰器模式**，业务
 
 ## 备注（Notes）
 
-- 相关文档：[doc/集成/AI-资产管理.md](../../doc/集成/AI-资产管理.md)、[doc/架构/架构-系统架构.md](../../doc/架构/架构-系统架构.md)「可观测性」表
+- 相关文档：[doc/agents/架构参考.md](../../doc/agents/架构参考.md)「可观测组件」
 - 相关代码：`LlmPort.java`、`CachingLlmAdapter.java`、`AiMetricsService.java`
 - 相关 ADR：[ADR 0002](./0002-cqrs-scope-4-modules.md)（ai 模块不上 CQRS，用 Port/Adapter + 装饰器替代）；**本 ADR 已被 [ADR 0008](./0008-ai-spring-ai-framework.md) 替代（2026-08-03，Spring AI 2.0 全面框架化）**
 - 重评估触发：Spring AI 进入稳定版且能覆盖 L1/L2 + stale 降级 + 按 scope 指标时，重新评估是否迁移；或当供应商数量 > 3 时考虑引入策略路由替代 `@Primary` 单选。

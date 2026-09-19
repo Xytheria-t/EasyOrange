@@ -2,7 +2,7 @@
 """测试口径漂移校验 — 文档对「集成测试」的声明 vs 代码事实。
 
 背景：`doc/工程指标.md` §3.1 曾长期写着「Testcontainers 集成测试无法跑 → 全量改为单元测试 +
-Mockito mock」，`doc/架构/架构-DDD规范.md` 测试分层表写着「集成测试已移除（WSL2 Docker 兼容性限制）」，
+Mockito mock」，当时的架构文档测试分层表写着「集成测试已移除（WSL2 Docker 兼容性限制）」，
 而代码里 11 个 `*IT` 早已由 failsafe 在 `mvn verify` 真实跑 MySQL/Redis/RabbitMQ（TD-001，2026-08-07 已还）。
 两份文档互相矛盾、且都与代码不符 —— 评审/面试当场可查，会连带质疑其余数字。约定：
 
