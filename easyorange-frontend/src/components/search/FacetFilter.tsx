@@ -1,6 +1,5 @@
-import { X } from 'lucide-react';
+import { SlidersHorizontal, X } from 'lucide-react';
 import { useMemo } from 'react';
-import { Button } from '@/components/ui/button';
 import { CONDITION_LABEL_MAP } from '@/constants';
 import type { FacetBucket } from '@/types/product';
 
@@ -101,67 +100,54 @@ export default function FacetFilter({ facets, filters, onFilterChange }: FacetFi
         return null;
     }
 
-    return (
-        <fieldset className="w-full" aria-label="搜索结果过滤">
-            {/* Mobile: stacked layout; sm+: horizontal wrapping */}
-            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-6">
-                {groups.map(group => (
-                    <div key={group.key} className="flex-1 sm:flex-initial min-w-[140px]">
-                        {/* Group header */}
-                        <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-sm font-semibold text-gray-700">{group.label}</h4>
-                            {filters[group.key] && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onFilterChange(group.key, null)}
-                                    className="text-[11px] text-orange-500 hover:text-orange-600 font-medium transition-colors ml-2 shrink-0 h-auto min-h-0"
-                                >
-                                    清除
-                                </Button>
-                            )}
-                        </div>
+    const activeKeys = groups.filter(group => filters[group.key]).map(group => group.key);
 
-                        {/* Filter pills */}
-                        <div className="flex flex-wrap gap-1.5">
+    const handleClearAll = () => {
+        activeKeys.forEach(key => {
+            onFilterChange(key, null);
+        });
+    };
+
+    return (
+        <section className="facet-panel" aria-label="搜索结果过滤">
+            <div className="facet-panel-header">
+                <div className="facet-panel-icon">
+                    <SlidersHorizontal size={14} />
+                </div>
+                <h3 className="facet-panel-title">结果筛选</h3>
+                {activeKeys.length > 0 && (
+                    <button type="button" className="facet-clear-all" onClick={handleClearAll}>
+                        <X size={12} />
+                        <span>清除全部</span>
+                    </button>
+                )}
+            </div>
+
+            <div className="facet-groups">
+                {groups.map(group => (
+                    <div key={group.key} className="facet-group">
+                        <h4 className="facet-group-label">{group.label}</h4>
+                        <div className="facet-chips">
                             {group.items.map(item => {
                                 const isActive = filters[group.key] === item.value;
                                 return (
-                                    <Button
+                                    <button
                                         key={item.value}
                                         type="button"
-                                        variant="outline"
-                                        size="sm"
+                                        className={`facet-chip${isActive ? ' active' : ''}`}
                                         onClick={() => onFilterChange(group.key, isActive ? null : item.value)}
-                                        className={`
-                      inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium
-                      transition-all duration-200 border h-auto min-h-0
-                      ${
-                          isActive
-                              ? 'bg-orange-50 text-orange-600 border-orange-200 shadow-sm'
-                              : 'bg-white text-gray-600 border-gray-200 hover:border-orange-200 hover:text-orange-500 hover:bg-orange-50/50'
-}
-                    `}
                                         aria-pressed={isActive}
                                     >
                                         <span>{item.label}</span>
-                                        <span
-                                            className={`
-                        text-[10px] leading-none px-1 py-0.5 rounded font-medium
-                        ${isActive ? 'bg-orange-100 text-orange-500' : 'bg-gray-100 text-gray-400'}
-                      `}
-                                        >
-                                            {item.count}
-                                        </span>
-                                        {isActive && <X size={10} className="text-orange-400 shrink-0" />}
-                                    </Button>
+                                        <span className="facet-chip-count">{item.count}</span>
+                                        {isActive && <X size={12} className="facet-chip-x" aria-hidden="true" />}
+                                    </button>
                                 );
                             })}
                         </div>
                     </div>
                 ))}
             </div>
-        </fieldset>
+        </section>
     );
 }
