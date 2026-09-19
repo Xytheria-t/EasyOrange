@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""结构计数漂移校验 — 文档声称的「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」vs 代码事实。
+"""结构计数漂移校验 — 文档声称的「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板 / N 文件 / N 条金标准集」vs 代码事实。
 
 背景：这几类计数无单一来源、靠人肉同步，已经漂移过一整轮 —— README 写 11 条 ADR（实际 12）、
 根 AGENTS.md 写 11 个（实际 12）、面试文档写 10 个消费者（实际 12）、mermaid 写 32 表（实际 33）、
@@ -68,6 +68,15 @@ CLAIM_PATTERNS: dict[str, tuple[re.Pattern[str], str]] = {
         re.compile(r"(\d+)\s*文件(?=\s*/\s*[\d,]+\s*用例|\s*[)）])"),
         "easyorange-frontend/src 下 *.test.ts(x) 数",
     ),
+    # 金标准集条数：README / 工程指标 / 集成文档 / 面试脚本共约 6 处独立陈述，语料与用例集刚扩过一轮
+    # （5 篇 → 23 篇语料、用例集重编），是最容易整体漂移的一组数字。
+    # 模式刻意写窄：「N 条金标准集」本身即总数语义，直接认；反向的「金标准集 N 条」必须后面紧跟
+    # 分隔符或行尾才算总数 —— 否则会误伤「金标准集 15 条**检索**用例」这类「全集里的子集」写法
+    # （实际发生过：全集 35 条 = 20 生成 + 15 检索，子集数被当成总数）。中间隔开路径的写法漏检。
+    "golden_set_cases": (
+        re.compile(r"(\d+)\s*条\s*金标准集|金标准集\s*(\d+)\s*条(?=\s*[（(，,、。+｜|]|\s*$)"),
+        "eval/golden-set.yaml 的 `- id:` 条目数",
+    ),
 }
 
 
@@ -118,6 +127,13 @@ def code_facts() -> dict[str, int]:
     facts["frontend_test_files"] = (
         len(list(frontend_src.rglob("*.test.ts"))) + len(list(frontend_src.rglob("*.test.tsx")))
         if frontend_src.exists()
+        else 0
+    )
+
+    golden = BACKEND / "easyorange-ai/src/main/resources/eval/golden-set.yaml"
+    facts["golden_set_cases"] = (
+        len(re.findall(r"^\s+- id:", golden.read_text(encoding="utf-8"), re.MULTILINE))
+        if golden.exists()
         else 0
     )
 
