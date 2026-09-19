@@ -2,7 +2,7 @@
 # EasyOrange 本地开发栈
 # 凭据/端口的唯一来源 = 仓库根 .env（Docker Compose 原生自动读取本文件做插值）。
 # 全部写成 ${VAR:-default}，因此没有 .env 也能零配置启动（走默认值）。
-# 容器内主机名（mysql/redis/rabbitmq/zipkin）仍显式覆盖 —— 那是 compose 服务 DNS，
+# 容器内主机名（mysql/redis/rabbitmq 等基础设施）仍显式覆盖 —— 那是 compose 服务 DNS，
 # 与 .env 里宿主机视角的 localhost 不是一回事。
 # 注意：本文件用 ${VAR:-default}（compose/shell 语法）；application*.yaml 必须用
 # ${VAR:default}（单冒号），写错会让 Spring 把 "-default" 当字面量。
@@ -130,8 +130,10 @@ services:
       RATE_LIMIT_FILTER_ENABLED: ${RATE_LIMIT_FILTER_ENABLED:-true}
       # dev profile 默认启用 ES 搜索，容器内 DNS 名覆盖宿主机视角的 localhost
       ES_URIS: http://elasticsearch:9200
-      # 链路追踪 span 上报 → compose 内 Zipkin（默认 localhost 在容器内不可达）
-      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
+      # LLM trace 上报 → compose 内 Langfuse（host 视角 :3001，容器内 DNS 是 3000）
+      LANGFUSE_OTLP_ENDPOINT: http://langfuse-web:3000/api/public/otel/v1/traces
+      # Basic 认证值与 .env 的 LANGFUSE_INIT_PROJECT_* 初始化键同源（base64(public:secret)）
+      LANGFUSE_OTLP_BASIC_AUTH: ${LANGFUSE_OTLP_BASIC_AUTH:-Basic cGstbGYtZWFzeW9yYW5nZS1kZXY6c2stbGYtZWFzeW9yYW5nZS1kZXYtc2VjcmV0}
     ports:
       # 端口区间：scale=1 占 8080，scale=N 依次占 8080..8080+N-1（无需改配置即可多实例）
       - "8080-8085:8080"
@@ -280,16 +282,174 @@ services:
         condition: service_started
 
   # ---------------------------------------------------------------------------
-  # 链路追踪 — Zipkin 接收 Micrometer/Brave span（application.yaml 端点经
-  # ZIPKIN_ENDPOINT 环境变量指向本服务）。演示用内存存储，重启即清。
+  # LLM 可观测 — Langfuse 自托管（W3-4）：Spring AI Observation → OTel → OTLP → Langfuse。
+  # web UI / OTLP 入口 :3001（3000 已被 Grafana 占用）；基础设施不映射 host 端口，仅容器网络可达。
+  # 首次启动经 LANGFUSE_INIT_* 自动建组织 / 项目 / 用户，pk/sk 固定，供应用 OTLP Basic 认证
+  # （与 .env / application.yaml 的 LANGFUSE_OTLP_BASIC_AUTH 同源；改键须删 langfuse-postgres 卷重建）。
+  # 应用容器内 endpoint 由 easyorange-app 的 LANGFUSE_OTLP_ENDPOINT 指向 langfuse-web:3000。
+  # 随后端一起拉起：docker compose --profile fullstack up -d；仅观测栈：
+  #   docker compose --profile langfuse up -d
+  # worker 持共享环境锚点，web 用 <<: 合并并追加初始化键（YAML 锚点先定义后引用，故 worker 在前）
   # ---------------------------------------------------------------------------
-  zipkin:
-    image: openzipkin/zipkin:3
-    container_name: easyorange-zipkin
+  langfuse-worker:
+    image: langfuse/langfuse-worker:4
+    container_name: easyorange-langfuse-worker
+    hostname: easyorange-langfuse-worker
     restart: unless-stopped
-    profiles: [fullstack]
+    profiles: [fullstack, langfuse]
+    environment: &langfuse-common
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3001}
+      # 密钥三元组生产必改（.env 覆盖）；dev 默认值仅本地演示用
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dd6e863940d3e0844bfb32a639e147e7100d9023304b2e5089504f3f2220d659}
+      SALT: ${LANGFUSE_SALT:-186a5a127b2dea4d501579f904b554b1}
+      ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY:-ffbeac7d1c7ec16e24699606766918f53998387804a957332c61f2a71bfd23c4}
+      TELEMETRY_ENABLED: "false"
+      DATABASE_URL: postgresql://${LANGFUSE_PG_USER:-postgres}:${LANGFUSE_PG_PASSWORD:-easyorange123}@langfuse-postgres:5432/postgres
+      CLICKHOUSE_MIGRATION_URL: clickhouse://langfuse-clickhouse:9000
+      CLICKHOUSE_URL: http://langfuse-clickhouse:8123
+      CLICKHOUSE_USER: ${LANGFUSE_CH_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: ${LANGFUSE_CH_PASSWORD:-easyorange123}
+      # 单节点必须显式 false：缺省时 Langfuse 走 ReplicatedMergeTree（要 ZooKeeper），迁移报 no Zookeeper configuration
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      REDIS_HOST: langfuse-redis
+      REDIS_PORT: "6379"
+      REDIS_AUTH: ${LANGFUSE_REDIS_PASSWORD:-easyorange123}
+      # 事件摄取（必需）与媒体上传（文本 trace 不用，端点仅容器内可达）
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${LANGFUSE_S3_KEY:-minio}
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${LANGFUSE_S3_SECRET:-miniosecret}
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://langfuse-minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: ${LANGFUSE_S3_KEY:-minio}
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${LANGFUSE_S3_SECRET:-miniosecret}
+      LANGFUSE_S3_MEDIA_UPLOAD_INTERNAL_ENDPOINT: http://langfuse-minio:9000
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+    depends_on:
+      langfuse-postgres:
+        condition: service_healthy
+      langfuse-clickhouse:
+        condition: service_healthy
+      langfuse-minio:
+        condition: service_healthy
+      langfuse-redis:
+        condition: service_healthy
+
+  langfuse-web:
+    image: langfuse/langfuse:4
+    container_name: easyorange-langfuse-web
+    hostname: easyorange-langfuse-web
+    restart: unless-stopped
+    profiles: [fullstack, langfuse]
     ports:
-      - "9411:9411"
+      - "3001:3000"
+    environment:
+      <<: *langfuse-common
+      # 仅首次启动（空库）生效：自动建组织 / 项目 / 用户，并固定 pk/sk。
+      # v4 要求 ORG_ID / PROJECT_ID 必须显式设置，否则整组 INIT 变量被忽略（见 web 启动日志）
+      LANGFUSE_INIT_ORG_ID: ${LANGFUSE_INIT_ORG_ID:-easyorange-org}
+      LANGFUSE_INIT_ORG_NAME: ${LANGFUSE_INIT_ORG_NAME:-EasyOrange}
+      LANGFUSE_INIT_PROJECT_ID: ${LANGFUSE_INIT_PROJECT_ID:-easyorange-dev}
+      LANGFUSE_INIT_PROJECT_NAME: ${LANGFUSE_INIT_PROJECT_NAME:-easyorange-dev}
+      LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:-admin@easyorange.dev}
+      LANGFUSE_INIT_USER_NAME: ${LANGFUSE_INIT_USER_NAME:-EasyOrange Admin}
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-Password123}
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_INIT_PROJECT_PUBLIC_KEY:-pk-lf-easyorange-dev}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_INIT_PROJECT_SECRET_KEY:-sk-lf-easyorange-dev-secret}
+    depends_on:
+      langfuse-postgres:
+        condition: service_healthy
+      langfuse-clickhouse:
+        condition: service_healthy
+      langfuse-minio:
+        condition: service_healthy
+      langfuse-redis:
+        condition: service_healthy
+
+  langfuse-clickhouse:
+    image: docker.io/clickhouse/clickhouse-server:25.12
+    container_name: easyorange-langfuse-clickhouse
+    hostname: easyorange-langfuse-clickhouse
+    restart: unless-stopped
+    profiles: [fullstack, langfuse]
+    # 官方镜像要求固定 uid/gid 101 运行
+    user: "101:101"
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: ${LANGFUSE_CH_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: ${LANGFUSE_CH_PASSWORD:-easyorange123}
+    volumes:
+      - langfuse-clickhouse-data:/var/lib/clickhouse
+      - langfuse-clickhouse-logs:/var/log/clickhouse-server
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  langfuse-minio:
+    image: cgr.dev/chainguard/minio
+    container_name: easyorange-langfuse-minio
+    hostname: easyorange-langfuse-minio
+    restart: unless-stopped
+    profiles: [fullstack, langfuse]
+    entrypoint: sh
+    # 先建 langfuse bucket 再启动服务（免初始化容器）
+    command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
+    environment:
+      MINIO_ROOT_USER: ${LANGFUSE_S3_KEY:-minio}
+      MINIO_ROOT_PASSWORD: ${LANGFUSE_S3_SECRET:-miniosecret}
+    volumes:
+      - langfuse-minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  langfuse-postgres:
+    image: docker.io/postgres:17
+    container_name: easyorange-langfuse-postgres
+    hostname: easyorange-langfuse-postgres
+    restart: unless-stopped
+    profiles: [fullstack, langfuse]
+    environment:
+      POSTGRES_USER: ${LANGFUSE_PG_USER:-postgres}
+      POSTGRES_PASSWORD: ${LANGFUSE_PG_PASSWORD:-easyorange123}
+      POSTGRES_DB: ${LANGFUSE_PG_DB:-postgres}
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - langfuse-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LANGFUSE_PG_USER:-postgres}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  langfuse-redis:
+    image: redis:8.10.0-alpine
+    container_name: easyorange-langfuse-redis
+    hostname: easyorange-langfuse-redis
+    restart: unless-stopped
+    profiles: [fullstack, langfuse]
+    # Langfuse 队列（BullMQ）要求 noeviction：缓存式淘汰会丢摄取任务
+    command: redis-server --appendonly yes --maxmemory-policy noeviction --requirepass ${LANGFUSE_REDIS_PASSWORD:-easyorange123}
+    volumes:
+      - langfuse-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${LANGFUSE_REDIS_PASSWORD:-easyorange123}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
 volumes:
   mysql-data:
@@ -299,3 +459,8 @@ volumes:
   grafana-data:
   loki-data:
   promtail-positions:
+  langfuse-postgres-data:
+  langfuse-clickhouse-data:
+  langfuse-clickhouse-logs:
+  langfuse-minio-data:
+  langfuse-redis-data:
