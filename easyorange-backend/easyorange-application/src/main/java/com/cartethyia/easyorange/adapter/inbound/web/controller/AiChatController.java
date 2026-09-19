@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.service.AiChatService;
+import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.result.Result;
@@ -21,7 +22,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * AI 对话端点 — 非流式（语义缓存 + Judge 回归同源）与 SSE 流式（打字机效果）。
  * <p>
  * SSE 走 POST + SseEmitter（前端用 fetch + ReadableStream 消费，可带 Authorization 头）；
- * 事件协议：token（逐字）/ sources（知识库来源）/ done（完整回答）/ error（降级文案）。
+ * 事件协议：step（Agent 工具循环每步：工具 + 决策理由 + 观察摘要，前端步骤可视化）/
+ * token（逐字）/ sources（知识库来源）/ done（完整回答）/ error（降级文案）。
  * 流式工作在虚拟线程上执行（spring.threads.virtual.enabled=true，与全站异步惯例一致），
  * Controller 只负责事件 → SseEmitter 的适配；客户端断开视为正常收尾，不补发 error。
  */
@@ -51,6 +53,11 @@ public class AiChatController {
     private void runStream(SseEmitter emitter, ChatRequest request) {
         try {
             chatService.streamAnswer(request, new ChatStreamHandler() {
+                @Override
+                public void onStep(AgentStepView step) {
+                    send(emitter, SseEmitter.event().name("step").data(step));
+                }
+
                 @Override
                 public void onToken(String token) {
                     send(emitter, SseEmitter.event().name("token").data(token));

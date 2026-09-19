@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.config;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -21,7 +22,7 @@ public record AiProperties(
         @Valid Eval eval,
         Routing routing,
         @Valid SemanticCache semanticCache,
-        Chat chat) {
+        @Valid Chat chat) {
 
     public AiProperties {
         // 嵌套 record 在属性源里完全没有对应键时可能绑成 null，这里补上等价默认值 ——
@@ -55,7 +56,7 @@ public record AiProperties(
             semanticCache = new SemanticCache(true, 0.92, 200, 24);
         }
         if (chat == null) {
-            chat = new Chat(24, 6);
+            chat = new Chat(24, 6, 5);
         }
     }
 
@@ -182,12 +183,14 @@ public record AiProperties(
             @DefaultValue("24") int ttlHours) {}
 
     /**
-     * 多轮对话记忆配置 — Redis 会话窗口（短期记忆）+ 画像注入（长期记忆）。
+     * 多轮对话记忆与 Agent 循环配置 — Redis 会话窗口（短期记忆）+ 画像注入（长期记忆）+ 多步工具循环上限。
      *
      * @param sessionTtlHours 会话 TTL（小时），过期即遗忘短期记忆
      * @param historyLimit 注入 prompt 的历史轮数（最近 N 轮）
+     * @param maxSteps 多步 ReAct 循环的单次上限（含 finish 轮；达到上限未收敛则用已积累观察强制生成）
      */
     public record Chat(
             @DefaultValue("24") int sessionTtlHours,
-            @DefaultValue("6") int historyLimit) {}
+            @DefaultValue("6") int historyLimit,
+            @Min(1) @Max(10) @DefaultValue("5") int maxSteps) {}
 }

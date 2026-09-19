@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.ai.domain.port;
 
+import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import java.util.List;
 
 /**
@@ -7,6 +8,9 @@ import java.util.List;
  * 服务只向回调推事件，SSE 适配在 Controller 层完成，便于单测。
  */
 public interface ChatStreamHandler {
+
+    /** Agent 工具循环的每一步（决策理由 + 观察摘要），生成开始前推送，前端步骤可视化。 */
+    void onStep(AgentStepView step);
 
     /** 生成过程中的每个 token。 */
     void onToken(String token);
