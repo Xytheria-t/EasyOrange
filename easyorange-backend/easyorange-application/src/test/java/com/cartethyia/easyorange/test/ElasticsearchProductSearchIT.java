@@ -31,6 +31,9 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * <p>激活 profile {@code it-es}（{@code application-it-es.yaml}）：测试自行拉起 compose 的
  * mysql/redis/rabbitmq/elasticsearch（start-only），再把 {@code easyorange.search.elasticsearch.enabled} 打开。
+ *
+ * <p>IT 复用共享 dev ES 索引（含种子商品等存量文档），计数敏感断言一律靠独占标记词
+ * {@link #MARKER} 检索——真实词（如 iPhone）会撞上存量商品，精确数断言会随索引内容漂移。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles({"it", "it-es"})
@@ -38,6 +41,15 @@ class ElasticsearchProductSearchIT {
 
     private static final String DOC_ID_1 = "it-es-doc-1";
     private static final String DOC_ID_2 = "it-es-doc-2";
+
+    /**
+     * 独占标记词：嵌入两份测试文档的 name，计数敏感断言都用它做 keyword。
+     * 取无实词混淆的 ASCII 串，multi_match 的 fuzziness AUTO 也不会把共享索引里的存量文档误召回。
+     */
+    private static final String MARKER = "ITESZQ";
+
+    /** doc1 独有的描述标记：保住 multi_match 对 description 字段的命中覆盖（name 标记两份文档都有）。 */
+    private static final String DESC_MARKER = "ITESZQDESC";
 
     @Autowired
     private ElasticsearchOperations elasticsearchOperations;
@@ -56,31 +68,28 @@ class ElasticsearchProductSearchIT {
             var newer = LocalDateTime.of(2026, 8, 10, 12, 0, 0);
             var older = LocalDateTime.of(2026, 8, 9, 10, 15, 30);
 
-            save(DOC_ID_1, "iPhone 14 Pro 深蓝色 手机", "9成新 无拆修", older, 5999.0, 5, 120);
-            save(DOC_ID_2, "iPhone 14 白色 手机", "全新未拆封", newer, 6999.0, 0, 300);
+            save(DOC_ID_1, MARKER + " iPhone 14 Pro 深蓝色 手机", DESC_MARKER + " 9成新 无拆修", older, 5999.0, 5, 120);
+            save(DOC_ID_2, MARKER + " iPhone 14 白色 手机", "全新未拆封", newer, 6999.0, 0, 300);
             elasticsearchOperations.indexOps(ProductDocument.class).refresh();
 
             // keyword 命中 + newest 排序（createTime 为 epoch_millis，数字排序不涉时区）
             var keywordHit = queryAdapter.search(
-                    new ProductSearchQuery("iPhone", null, null, null, null, null, "newest", 1, 20, null, false));
-            assertThat(keywordHit.records()).extracting(ProductReadModel::id).contains(DOC_ID_1, DOC_ID_2);
+                    new ProductSearchQuery(MARKER, null, null, null, null, null, "newest", 1, 20, null, false));
             assertThat(keywordHit.total()).isEqualTo(2);
             assertThat(keywordHit.records())
-                    .as("newest 应将 createTime 更晚的 DOC_ID_2 排最前")
-                    .first()
                     .extracting(ProductReadModel::id)
-                    .isEqualTo(DOC_ID_2);
+                    .containsExactly(DOC_ID_2, DOC_ID_1);
 
-            // status 过滤：ONLINE 命中文档，OFFLINE 应返回空
-            var onlineOnly = search(keyword("iPhone", null));
+            // status 过滤：ONLINE 命中两份测试文档，OFFLINE 应返回空（标记词域内无存量数据）
+            var onlineOnly = search(keyword(MARKER, null));
             assertThat(onlineOnly.records()).hasSize(2);
             var offlineOnly = search(
-                    new ProductSearchQuery("iPhone", null, "OFFLINE", null, null, null, null, 1, 20, null, false));
+                    new ProductSearchQuery(MARKER, null, "OFFLINE", null, null, null, null, 1, 20, null, false));
             assertThat(offlineOnly.records()).isEmpty();
 
             // 价格范围过滤
             var inRange = search(new ProductSearchQuery(
-                    null,
+                    MARKER,
                     null,
                     null,
                     BigDecimal.valueOf(6000),
@@ -98,7 +107,7 @@ class ElasticsearchProductSearchIT {
             assertThat(all.categoryFacets()).as("品类 facet 应从 ES terms 聚合读出").isNotEmpty();
 
             // 日期读回：createTime 非空（epoch_millis 序列化 + 反序列化通路成立）
-            var readBack = search(keyword("无拆修", null));
+            var readBack = search(keyword(DESC_MARKER, null));
             assertThat(readBack.records()).hasSize(1);
             assertThat(readBack.records().get(0).createTime()).isNotNull();
         } finally {
