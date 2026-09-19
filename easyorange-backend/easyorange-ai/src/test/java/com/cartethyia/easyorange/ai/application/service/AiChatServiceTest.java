@@ -96,6 +96,8 @@ class AiChatServiceTest {
                 sessionStore,
                 preferenceRepository,
                 agentLoopRunner,
+                // 真实实例：默认预算 2000 token，测试历史远小于预算，行为等同直通
+                new ChatContextTrimmer(aiProperties, meterRegistry),
                 aiProperties,
                 staleCache,
                 meterRegistry);

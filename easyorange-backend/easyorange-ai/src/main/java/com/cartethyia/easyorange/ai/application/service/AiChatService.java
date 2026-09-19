@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service;
  * 编排结构（多步 ReAct，循环体在 {@link AgentLoopRunner}，与 4 路并行编排
  * {@code AiSearchEnhancerAdapter} 形成「Workflow vs 自治 Agent」对照）：
  * <pre>
- * 1. 记忆装配：Redis 会话窗口（短期）+ 用户画像表（长期）
+ * 1. 记忆装配：Redis 会话窗口（短期）+ 用户画像表（长期），历史注入前过 token 预算裁剪（{@link ChatContextTrimmer}）
  * 2. 工具循环：{@link AgentLoopRunner} 逐轮「决策 → 工具 → 观察」，模型判定信息足够（finish）收敛；
  *    步数 / 预算超限降级为「用已积累观察直接生成」，决策失败降级为按原始问题检索一次
  * 3. 生成回答：system prompt 注入画像/历史/知识片段/资产/资产详情，回答末尾 [来源:标题] 引用溯源
@@ -65,6 +65,7 @@ public class AiChatService {
     private final ChatSessionPort sessionStore;
     private final UserPreferenceRepository preferenceRepository;
     private final AgentLoopRunner agentLoopRunner;
+    private final ChatContextTrimmer contextTrimmer;
     private final AiProperties aiProperties;
     private final Cache<String, Object> staleCache;
     private final MeterRegistry meterRegistry;
@@ -78,6 +79,7 @@ public class AiChatService {
             ChatSessionPort sessionStore,
             UserPreferenceRepository preferenceRepository,
             AgentLoopRunner agentLoopRunner,
+            ChatContextTrimmer contextTrimmer,
             AiProperties aiProperties,
             @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
             MeterRegistry meterRegistry) {
@@ -88,6 +90,7 @@ public class AiChatService {
         this.sessionStore = sessionStore;
         this.preferenceRepository = preferenceRepository;
         this.agentLoopRunner = agentLoopRunner;
+        this.contextTrimmer = contextTrimmer;
         this.aiProperties = aiProperties;
         this.staleCache = staleCache;
         this.meterRegistry = meterRegistry;
@@ -181,8 +184,10 @@ public class AiChatService {
 
     private ChatAnswer agenticAnswer(ChatRequest request, @Nullable ChatStreamHandler handler) {
         String userId = SecurityContextUtil.getCurrentUserId().orElse(ANONYMOUS_USER);
-        List<ChatTurn> history =
+        List<ChatTurn> rawHistory =
                 sessionStore.loadRecent(request.sessionId(), aiProperties.chat().historyLimit());
+        // token 级上下文治理：轮数窗口（存储侧）之上再按 token 预算裁注入窗口，一处裁、决策与生成两处生效
+        List<ChatTurn> history = contextTrimmer.trim(rawHistory).history();
         List<UserPreference> prefs =
                 ANONYMOUS_USER.equals(userId) ? List.of() : preferenceRepository.findByUserId(userId);
 

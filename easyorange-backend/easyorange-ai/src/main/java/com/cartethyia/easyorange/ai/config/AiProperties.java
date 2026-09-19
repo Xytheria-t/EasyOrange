@@ -56,7 +56,7 @@ public record AiProperties(
             semanticCache = new SemanticCache(true, 0.92, 200, 24);
         }
         if (chat == null) {
-            chat = new Chat(24, 6, 5);
+            chat = new Chat(24, 6, 5, 2000);
         }
     }
 
@@ -188,9 +188,12 @@ public record AiProperties(
      * @param sessionTtlHours 会话 TTL（小时），过期即遗忘短期记忆
      * @param historyLimit 注入 prompt 的历史轮数（最近 N 轮）
      * @param maxSteps 多步 ReAct 循环的单次上限（含 finish 轮；达到上限未收敛则用已积累观察强制生成）
+     * @param maxHistoryTokens 历史注入 prompt 的 token 预算（估算口径见 TokenEstimator），
+     *     轮数窗口之上的第二道裁剪；&lt;=0 关闭。超限只裁历史、不影响生成（生成侧由 maxTokensPerCall 兜底）
      */
     public record Chat(
             @DefaultValue("24") int sessionTtlHours,
             @DefaultValue("6") int historyLimit,
-            @Min(1) @Max(10) @DefaultValue("5") int maxSteps) {}
+            @Min(1) @Max(10) @DefaultValue("5") int maxSteps,
+            @DefaultValue("2000") int maxHistoryTokens) {}
 }
