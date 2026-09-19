@@ -266,7 +266,10 @@
 }
 
 .playground-msg--assistant .playground-msg__avatar {
-    background: linear-gradient(135deg, var(--purple-300), var(--purple-500));
+    background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 40%, #8b5cf6 100%);
+    box-shadow:
+        0 3px 10px rgba(139, 92, 246, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 /* 流式回答时头像呼吸光环 */
@@ -275,7 +278,7 @@
     position: absolute;
     inset: -3px;
     border-radius: 50%;
-    border: 2px solid rgba(175, 122, 197, 0.4);
+    border: 2px solid rgba(139, 92, 246, 0.45);
     animation: avatarPulse 1.6s var(--ease-out) infinite;
 }
 

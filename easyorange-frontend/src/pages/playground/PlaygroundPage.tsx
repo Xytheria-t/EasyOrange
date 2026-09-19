@@ -2,7 +2,6 @@ import {
     AlertCircle,
     ArrowUpRight,
     BookOpen,
-    Bot,
     CheckCircle2,
     FileSearch,
     Search,
@@ -234,7 +233,7 @@ export default function PlaygroundPage() {
                                 .join(' ')}
                         >
                             <div className="playground-msg__avatar" aria-hidden="true">
-                                {message.role === 'user' ? <User size={15} /> : <Bot size={15} />}
+                                {message.role === 'user' ? <User size={15} /> : <Sparkles size={14} />}
                             </div>
                             <div className="playground-msg__body">
                                 {message.steps.length > 0 && (
