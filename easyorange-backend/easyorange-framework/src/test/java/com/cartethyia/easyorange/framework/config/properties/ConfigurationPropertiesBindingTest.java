@@ -80,6 +80,7 @@ class ConfigurationPropertiesBindingTest {
             assertThat(repeatSubmit.intervalMs()).isEqualTo(3000L);
             assertThat(repeatSubmit.message()).isEqualTo("不允许重复提交");
             assertThat(repeatSubmit.methods()).isEmpty();
+            assertThat(repeatSubmit.excludePathPatterns()).isEmpty();
         });
     }
 

@@ -54,6 +54,7 @@ public record RateLimitFilterProperties(
                     RepeatSubmitConfig.DEFAULT_ENABLED,
                     RepeatSubmitConfig.DEFAULT_INTERVAL_MS,
                     RepeatSubmitConfig.DEFAULT_MESSAGE,
+                    List.of(),
                     List.of());
         }
     }
@@ -100,12 +101,15 @@ public record RateLimitFilterProperties(
      * @param intervalMs 防重间隔（毫秒）
      * @param message 触发时的提示信息
      * @param methods 需要防重的 HTTP 方法（不区分大小写）；为空表示所有写操作方法（POST/PUT/DELETE/PATCH）
+     * @param excludePathPatterns 豁免防重的路径模式（Ant 风格）——机器协议端点（如 MCP 的 /mcp）
+     *     的重复请求体是协议内合法行为（JSON-RPC 超时重试复用同一请求体），不适用浏览器表单防重语义
      */
     public record RepeatSubmitConfig(
             @DefaultValue(DEFAULT_ENABLED + "") boolean enabled,
             @Min(1) @DefaultValue(DEFAULT_INTERVAL_MS + "") long intervalMs,
             @DefaultValue(DEFAULT_MESSAGE) String message,
-            List<String> methods) {
+            List<String> methods,
+            List<String> excludePathPatterns) {
 
         private static final boolean DEFAULT_ENABLED = true;
         private static final long DEFAULT_INTERVAL_MS = 3000L;
@@ -113,6 +117,7 @@ public record RateLimitFilterProperties(
 
         public RepeatSubmitConfig {
             methods = methods == null ? List.of() : List.copyOf(methods);
+            excludePathPatterns = excludePathPatterns == null ? List.of() : List.copyOf(excludePathPatterns);
         }
     }
 }
