@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -366,6 +367,34 @@ class AgentLoopRunnerTest {
         run("我喜欢复古风格的东西", "anonymous", null);
 
         verifyNoInteractions(preferenceRepository);
+    }
+
+    @Test
+    @DisplayName("决策偏好字段缺失（模型输出空对象 {}）-> 丢弃不落库，对话照常收敛")
+    void run_blankPreferenceSkipped() {
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
+                .thenReturn("{\"thought\":\"记住偏好\",\"tool\":\"finish\",\"query\":\"\",\"productId\":null,"
+                        + "\"preference\":{}}");
+
+        Result result = run("我想买台九成新的相机", "user-1", null);
+
+        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        verify(preferenceRepository, never()).record(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("画像落库失败 -> 只告警不抛，对话照常收敛（旁路存储不打挂主链路）")
+    void run_preferenceRecordFailureNotFatal() {
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
+                .thenReturn("{\"thought\":\"记住偏好\",\"tool\":\"finish\",\"query\":\"\",\"productId\":null,"
+                        + "\"preference\":{\"key\":\"style\",\"value\":\"复古\"}}");
+        doThrow(new RuntimeException("db down"))
+                .when(preferenceRepository)
+                .record(anyString(), anyString(), anyString());
+
+        Result result = run("我喜欢复古风格的东西", "user-1", null);
+
+        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
     }
 
     @Test
