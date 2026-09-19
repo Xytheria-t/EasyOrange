@@ -24,7 +24,6 @@
 
 ## 正在迭代（2026 Q4）
 
-- **多步 Agent 工具循环**：决策 → 工具 → 观察多轮自治循环，步数上限 + 每步 trace 落库，超限降级回现有单步
 - **MCP server**：公开只读工具面（商品检索 / 详情 / 类目 / 平台规则知识）经 Spring AI 2.0 `@McpTool` 暴露，支持 Cursor / Claude Desktop 接入
 - **Langfuse 自托管**：Spring AI Observation → OTLP，每步 prompt / token / 延迟 / 成本可视化
 
