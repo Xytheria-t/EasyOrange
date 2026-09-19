@@ -420,9 +420,11 @@ easyorange:
       # 命中判定要全量拉取并逐条比对，条目数直接决定未命中时的开销（见 AiProperties.SemanticCache 注释）
       max-entries: 200
       ttl-hours: 24
-    chat:                  # 多轮对话记忆 — Redis 会话窗口（短期）
+    chat:                  # 多轮对话记忆 + Agent 循环 — Redis 会话窗口（短期）
       session-ttl-hours: 24
       history-limit: 6
+      # 多步 ReAct 循环单次上限（含 finish 轮）；达到上限未 finish 用已积累观察强制收敛
+      max-steps: 5
 
   mybatis-plus:
     # 单页条数上限，请求超出即被截断；与 API 层 PageRequest.MAX_PAGE_SIZE 口径一致

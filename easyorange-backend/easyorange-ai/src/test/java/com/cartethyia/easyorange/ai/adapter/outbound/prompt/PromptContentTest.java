@@ -74,11 +74,15 @@ class PromptContentTest {
     }
 
     @Test
-    @DisplayName("所有 prompt 版本号为 v1.0.0")
-    void allPromptsAtVersionV1_0_0() {
+    @DisplayName("所有 prompt 版本号受控（模板内容变更必须升版本）")
+    void allPromptsAtControlledVersions() {
+        // 已升版的 prompt 单列：ai_chat_tool_system 随多步 ReAct 循环改造（W1）升 v2.0.0
+        var bumpedVersions = java.util.Map.of("ai_chat_tool_system", "v2.0.0");
         for (String name : ALL_PROMPTS) {
             var template = registry.getLatest(name).orElseThrow();
-            assertThat(template.version()).as("prompt '%s' 版本号", name).isEqualTo("v1.0.0");
+            assertThat(template.version())
+                    .as("prompt '%s' 版本号", name)
+                    .isEqualTo(bumpedVersions.getOrDefault(name, "v1.0.0"));
         }
     }
 

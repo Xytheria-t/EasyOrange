@@ -13,7 +13,11 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
+import com.cartethyia.easyorange.ai.application.service.AgentLoopRunner.Input;
+import com.cartethyia.easyorange.ai.application.service.AgentLoopRunner.Result;
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
+import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
@@ -21,17 +25,15 @@ import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
-import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.common.security.AuthUser;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,9 +49,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiChatService (Agent 编排) -> 测试")
@@ -77,16 +76,7 @@ class AiChatServiceTest {
     private UserPreferenceRepository preferenceRepository;
 
     @Mock
-    private KnowledgeRetrievalService retrievalService;
-
-    @Mock
-    private AssetSourcingService assetSourcingService;
-
-    @Mock
-    private AiModelRouter modelRouter;
-
-    @Mock
-    private TokenBudgetStore budgetStore;
+    private AgentLoopRunner agentLoopRunner;
 
     private AiProperties aiProperties;
     private Cache<String, Object> staleCache;
@@ -105,57 +95,62 @@ class AiChatServiceTest {
                 semanticCache,
                 sessionStore,
                 preferenceRepository,
-                retrievalService,
-                assetSourcingService,
-                modelRouter,
-                budgetStore,
+                agentLoopRunner,
                 aiProperties,
-                new ObjectMapper(),
                 staleCache,
                 meterRegistry);
-        // 部分用例（空问题/预算超限/缓存命中）不会走到工具决策，router stub 允许不被消费
-        lenient().when(modelRouter.choose("chat_tool")).thenReturn(chatModel);
+        // 部分用例（空问题/预算超限/缓存命中）不会走到循环，runner 的默认行为允许不被消费
+        lenient()
+                .when(agentLoopRunner.run(any(Input.class)))
+                .thenReturn(new Result(List.of(), List.of(), List.of(), AgentLoopRunner.OUTCOME_FINISHED, 1));
     }
 
     @Test
-    @DisplayName("知识类问题 -> 工具决策命中知识库检索 -> 回答带引用来源")
+    @DisplayName("知识类问题 -> 循环产出知识命中 -> 回答带引用来源")
     void answer_withKnowledgeRetrieval() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"knowledge_search\",\"query\":\"退款\",\"preference\":null}");
+        when(agentLoopRunner.run(any()))
+                .thenReturn(new Result(
+                        List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)),
+                        List.of(),
+                        List.of(),
+                        AgentLoopRunner.OUTCOME_FINISHED,
+                        2));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("签收后 7 天内支持无理由退货 [来源:退款规则]");
-        when(retrievalService.search("退款", 5))
-                .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)));
 
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
 
         assertThat(answer.answer()).contains("[来源:退款规则]");
         assertThat(answer.sources()).containsExactly("退款规则");
-        verify(retrievalService).search("退款", 5);
         verify(sessionStore).saveTurn("sess-1", "user", "怎么退款？");
         verify(sessionStore).saveTurn("sess-1", "assistant", answer.answer());
         verify(semanticCache).store(any(), anyString(), anyList(), any());
+        // 循环输入：问题与会话 ID 透传
+        ArgumentCaptor<Input> input = ArgumentCaptor.forClass(Input.class);
+        verify(agentLoopRunner).run(input.capture());
+        assertThat(input.getValue().question()).isEqualTo("怎么退款？");
+        assertThat(input.getValue().sessionId()).isEqualTo("sess-1");
     }
 
     @Test
-    @DisplayName("找货类问题 -> 工具决策命中在售资产召回 -> 引用来源为资产、不查知识库")
+    @DisplayName("找货类问题 -> 循环产出资产命中 -> 引用来源为资产，资产块进 prompt")
     @SuppressWarnings("unchecked")
     void answer_withAssetSourcing() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"product_search\",\"query\":\"5000 以内笔记本\",\"preference\":null}");
+        when(agentLoopRunner.run(any()))
+                .thenReturn(new Result(
+                        List.of(),
+                        List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)),
+                        List.of(),
+                        AgentLoopRunner.OUTCOME_FINISHED,
+                        2));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("这几件在预算内：MacBook Air M1 [来源:MacBook Air M1]");
-        when(assetSourcingService.search("5000 以内笔记本", 5))
-                .thenReturn(
-                        List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)));
 
         ChatAnswer answer = chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false));
 
         assertThat(answer.sources()).containsExactly("MacBook Air M1");
-        verify(assetSourcingService).search("5000 以内笔记本", 5);
-        verify(retrievalService, never()).search(anyString(), any(Integer.class));
 
         // 资产块必须真的进了 prompt：带 id 与价格，模型的推荐理由才有据可依、也才能核对是否编造
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
@@ -165,63 +160,65 @@ class AiChatServiceTest {
     }
 
     @Test
-    @DisplayName("规则 + 找货兼有 -> 两条召回都执行，来源合并")
-    void answer_withBothTools() {
+    @DisplayName("product_detail 轮次的详情 -> <asset_details> 块进 prompt（推荐理由有描述可依）")
+    @SuppressWarnings("unchecked")
+    void answer_injectsAssetDetails() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"both\",\"query\":\"笔记本\",\"preference\":null}");
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("担保交易保障双方 [来源:交易规则]");
-        when(retrievalService.search("笔记本", 5))
-                .thenReturn(List.of(new KnowledgeHit("kb-0007", "交易规则", "平台担保交易…", 0.9)));
-        when(assetSourcingService.search("笔记本", 5))
-                .thenReturn(
-                        List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)));
+        when(agentLoopRunner.run(any()))
+                .thenReturn(new Result(
+                        List.of(),
+                        List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)),
+                        List.of(new AssetDetail(
+                                "p-1", "MacBook Air M1", "M1 芯片，95 新无磕碰，电池循环 32 次",
+                                BigDecimal.valueOf(4200), "数码", "九五新", "上海", "liming", "ONLINE")),
+                        AgentLoopRunner.OUTCOME_FINISHED,
+                        3));
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("推荐 MacBook [来源:MacBook Air M1]");
 
-        ChatAnswer answer = chatService.answer(new ChatRequest("5000 的笔记本有吗？平台怎么保障交易？", "sess-1", false));
+        chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false));
 
-        assertThat(answer.sources()).containsExactly("交易规则", "MacBook Air M1");
-        verify(retrievalService).search("笔记本", 5);
-        verify(assetSourcingService).search("笔记本", 5);
+        ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
+        verify(aiModelSupport).callText(any(), any(), captor.capture());
+        String currentUserMessage = captor.getValue().getLast().getText();
+        assertThat(currentUserMessage)
+                .contains("<asset_details>", "[p-1]", "M1 芯片，95 新无磕碰，电池循环 32 次");
     }
 
     @Test
-    @DisplayName("闲聊 -> 不触发检索，直接回答")
+    @DisplayName("多来源合并 -> 知识与资产标题去重后进 sources")
+    void answer_mergesSourcesFromLoopResult() {
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(agentLoopRunner.run(any()))
+                .thenReturn(new Result(
+                        List.of(new KnowledgeHit("kb-0007", "交易规则", "平台担保交易…", 0.9)),
+                        List.of(new AssetHit("p-1", "交易规则", null, null, null, 0.5)),
+                        List.of(),
+                        AgentLoopRunner.OUTCOME_FINISHED,
+                        3));
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("担保交易保障双方 [来源:交易规则]");
+
+        ChatAnswer answer = chatService.answer(new ChatRequest("5000 的笔记本有吗？平台怎么保障交易？", "sess-1", false));
+
+        assertThat(answer.sources()).containsExactly("交易规则");
+    }
+
+    @Test
+    @DisplayName("闲聊 -> 循环无召回，直接回答")
     void answer_noTool() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("在的，有什么可以帮你？");
 
         ChatAnswer answer = chatService.answer(new ChatRequest("在吗？", "sess-1", false));
 
         assertThat(answer.answer()).isEqualTo("在的，有什么可以帮你？");
         assertThat(answer.sources()).isEmpty();
-        verify(retrievalService, never()).search(anyString(), any(Integer.class));
     }
 
     @Test
-    @DisplayName("对话中出现偏好 -> 提取并写入用户画像（长期记忆）")
-    void answer_extractsPreference() {
-        SecurityContextHolder.getContext()
-                .setAuthentication(
-                        new UsernamePasswordAuthenticationToken(new AuthUser("user-1", "tester"), null, List.of()));
-        assertThat(SecurityContextUtil.getCurrentUserId()).contains("user-1");
-        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":{\"key\":\"style\",\"value\":\"复古\"}}");
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("好的，记住你喜欢复古风格。");
-
-        chatService.answer(new ChatRequest("我喜欢复古风格的东西", "sess-1", false));
-
-        verify(preferenceRepository).record("user-1", "style", "复古");
-        SecurityContextHolder.clearContext();
-    }
-
-    @Test
-    @DisplayName("语义缓存命中 -> 不调模型直接返回，且不再写回")
+    @DisplayName("语义缓存命中 -> 不进循环直接返回，且不再写回")
     void answer_cacheHit() {
         ChatAnswer cached = new ChatAnswer("缓存回答", List.of(), "sess-1", false);
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
@@ -231,6 +228,7 @@ class AiChatServiceTest {
 
         assertThat(answer).isEqualTo(cached);
         verify(aiModelSupport, never()).callText(any(), any(), anyList());
+        verify(agentLoopRunner, never()).run(any());
         verify(semanticCache, never()).store(any(), anyString(), anyList(), any());
     }
 
@@ -253,8 +251,6 @@ class AiChatServiceTest {
     void answer_cacheMiss_embedsOnce() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
 
         chatService.answer(new ChatRequest("问题", "sess-1", false));
@@ -266,8 +262,6 @@ class AiChatServiceTest {
     @Test
     @DisplayName("forceFresh -> 跳过语义缓存（评估回归用），连查询向量化都不做")
     void answer_forceFreshSkipsCache() {
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
 
         chatService.answer(new ChatRequest("问题", "sess-1", true));
@@ -278,27 +272,38 @@ class AiChatServiceTest {
     }
 
     @Test
-    @DisplayName("流式回答 -> token/sources/done 事件依次回调")
+    @DisplayName("流式回答 -> step/token/sources/done 事件依次回调")
     void stream_happyPath() {
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"knowledge_search\",\"query\":\"退款\",\"preference\":null}");
-        when(retrievalService.search("退款", 5))
-                .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)));
+        when(agentLoopRunner.run(any()))
+                .thenAnswer(invocation -> {
+                    Input input = invocation.getArgument(0);
+                    input.handler().onStep(new AgentStepView(1, "knowledge_search", "查退款规则", "命中 1 条"));
+                    return new Result(
+                            List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)),
+                            List.of(),
+                            List.of(),
+                            AgentLoopRunner.OUTCOME_FINISHED,
+                            2);
+                });
         when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenAnswer(invocation -> {
-                    @SuppressWarnings("unchecked")
                     Consumer<String> consumer = invocation.getArgument(3);
                     consumer.accept("可以");
                     consumer.accept("退款");
                     return "可以退款";
                 });
-        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(10, 10, 0)));
 
         var tokens = new StringBuilder();
         AtomicReference<List<String>> sources = new AtomicReference<>();
         AtomicReference<String> done = new AtomicReference<>();
         AtomicReference<String> error = new AtomicReference<>();
+        List<AgentStepView> steps = new ArrayList<>();
         chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-1", false), new ChatStreamHandler() {
+            @Override
+            public void onStep(AgentStepView step) {
+                steps.add(step);
+            }
+
             @Override
             public void onToken(String token) {
                 tokens.append(token);
@@ -321,20 +326,22 @@ class AiChatServiceTest {
         });
 
         assertThat(tokens.toString()).isEqualTo("可以退款");
+        assertThat(steps).extracting(AgentStepView::tool).containsExactly("knowledge_search");
         assertThat(sources.get()).containsExactly("退款规则");
         assertThat(done.get()).isEqualTo("可以退款");
         assertThat(error.get()).isNull();
-        // 记账由 AiModelSupport 按真实用量做，服务层再记一次会重复计数
-        verify(budgetStore, never()).recordUsage(anyString(), any(Integer.class), any(Integer.class));
     }
 
     @Test
     @DisplayName("流式回答 -> 预算超限走 onError 降级")
     void stream_budgetExceeded() {
-        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(500_000, 0, 0)));
+        when(agentLoopRunner.chatBudgetExhausted()).thenReturn(true);
 
         AtomicReference<String> error = new AtomicReference<>();
         chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), new ChatStreamHandler() {
+            @Override
+            public void onStep(AgentStepView step) {}
+
             @Override
             public void onToken(String token) {}
 
@@ -360,6 +367,9 @@ class AiChatServiceTest {
         AtomicReference<String> error = new AtomicReference<>();
         chatService.streamAnswer(new ChatRequest("  ", "sess-1", false), new ChatStreamHandler() {
             @Override
+            public void onStep(AgentStepView step) {}
+
+            @Override
             public void onToken(String token) {}
 
             @Override
@@ -382,8 +392,6 @@ class AiChatServiceTest {
     void answer_llmFailureFallsBackToStale() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList()))
                 .thenReturn("正常回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
@@ -403,8 +411,6 @@ class AiChatServiceTest {
     void answer_staleFallbackUsesCurrentSessionId() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList()))
                 .thenReturn("正常回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
@@ -422,8 +428,6 @@ class AiChatServiceTest {
     void answer_llmFailureWithoutStaleDegrades() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(new RuntimeException("DeepSeek 超时"));
 
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
@@ -439,8 +443,6 @@ class AiChatServiceTest {
     void answer_businessExceptionPropagates() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(BusinessException.of("AI 调用预算已用尽"));
 
         Assertions.assertThatThrownBy(() -> chatService.answer(new ChatRequest("怎么退款？", "sess-1", false)))
@@ -451,8 +453,6 @@ class AiChatServiceTest {
     @Test
     @DisplayName("forceFresh 成功回答同样写入降级缓存（后续故障可兜底）")
     void answer_forceFreshWritesStaleCache() {
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList()))
                 .thenReturn("新鲜回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
@@ -472,8 +472,6 @@ class AiChatServiceTest {
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(sessionStore.loadRecent("sess-1", 6))
                 .thenReturn(List.of(new ChatTurn("user", "上一轮问题"), new ChatTurn("assistant", "上一轮回答")));
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"tool\":\"none\",\"query\":\"\",\"preference\":null}");
         when(aiModelSupport.callText(any(), any(), anyList())).thenAnswer(invocation -> {
             List<Message> messages = invocation.getArgument(2);
             assertThat(messages).hasSize(4);
@@ -491,22 +489,5 @@ class AiChatServiceTest {
         ChatAnswer answer = chatService.answer(new ChatRequest("继续", "sess-1", false));
 
         assertThat(answer.answer()).isEqualTo("记住了");
-    }
-
-    @Test
-    @DisplayName("工具决策失败 -> 降级为按原始问题检索（不把决策故障伪装成「无需检索」）")
-    void answer_toolDecisionFailure_fallsBackToRetrieval() {
-        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenThrow(new RuntimeException("决策模型不可用"));
-        when(retrievalService.search("怎么退款？", 5))
-                .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.9)));
-        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("签收后 7 天内可退 [来源:退款规则]");
-
-        ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
-
-        verify(retrievalService).search("怎么退款？", 5);
-        assertThat(answer.sources()).containsExactly("退款规则");
     }
 }
