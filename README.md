@@ -27,11 +27,11 @@
 - **MCP server**：公开只读工具面（商品检索 / 详情 / 类目 / 平台规则知识）经 Spring AI 2.0 `@McpTool` 暴露，支持 Cursor / Claude Desktop 接入
 - **Langfuse 自托管**：Spring AI Observation → OTLP，每步 prompt / token / 延迟 / 成本可视化
 
-## 两条技术主线
+## AI 工程化主线与工程底座
 
-EasyOrange 在两条技术主线上都有独立且完整的落地，可分别展开讲解：
+AI 应用工程化是本项目的主线叙事；架构与可靠性是支撑两条 AI 主线链路的工程底座（工程素养证据，不与主线并列）。一套代码多岗位叙事：投模型应用 / AI Agent 岗深挖左列，投 Java 后端岗右列即完整深挖素材。
 
-| AI 应用工程化 | 架构落地 |
+| AI 应用工程化（主线） | 架构与可靠性（底座） |
 |---|---|
 | **Spring AI 2.0 框架化** — 两条 AI 主线链路（卖家「发布助手」/ 买家「对话式找货」）直接注入 `ChatModel` / `EmbeddingModel` bean，切换供应商只改配置不改业务代码（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） | **DDD 六边形 + CQRS** — 48 个 Port 接口编译期隔离，domain 层零框架依赖；CQRS 仅 product / order / payment / message 4 模块（[ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)） |
 | **轻量级 Agent 编排** — `AiSearchEnhancer` 4 路并行 Tool Calling（1 路 LLM 意图识别 + 3 路规则计算：标签 / 市场分析 / 建议问题），整体 5s 超时后保留已完成步骤，无 LangChain4j 黑盒 | **拒绝 Saga** — 订单创建本地单事务 + Redisson 分布式锁防超卖 + Outbox 事件副作用（[ADR-0007](doc/adr/0007-order-local-tx-over-saga.md)） |
