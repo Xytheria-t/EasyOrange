@@ -72,6 +72,7 @@ public class AgentLoopRunner {
     private static final int DETAIL_DESC_MAX_CHARS = 80;
     /** 与 {@code @TokenBudget(scenario="chat")} 注解默认值一致（yaml 缺失时兜底；改注解要同步改这里）。 */
     private static final int DEFAULT_MAX_TOKENS_PER_CALL = 1500;
+
     private static final int DEFAULT_DAILY_LIMIT = 300_000;
     private static final String ANONYMOUS_USER = "anonymous";
 
@@ -166,8 +167,7 @@ public class AgentLoopRunner {
                         "action=agent_loop_degraded, reason=budget, sessionId={}, rounds={}",
                         input.sessionId(),
                         rounds);
-                return new Result(
-                        List.copyOf(hits), List.copyOf(assets), List.copyOf(details), OUTCOME_BUDGET, rounds);
+                return new Result(List.copyOf(hits), List.copyOf(assets), List.copyOf(details), OUTCOME_BUDGET, rounds);
             }
             Optional<AgentStepDecision> decided = decideStep(input, observations);
             if (decided.isEmpty()) {
@@ -245,9 +245,10 @@ public class AgentLoopRunner {
                 yield new ToolOutcome(true, summarizeAssets(found));
             }
             case TOOL_PRODUCT_DETAIL -> fetchDetail(decision.productId(), details);
-            default -> new ToolOutcome(
-                    false,
-                    "未知工具 %s，请改用 knowledge_search / product_search / product_detail / finish".formatted(tool));
+            default ->
+                new ToolOutcome(
+                        false,
+                        "未知工具 %s，请改用 knowledge_search / product_search / product_detail / finish".formatted(tool));
         };
     }
 
@@ -267,10 +268,7 @@ public class AgentLoopRunner {
             details.add(detail.get());
             return new ToolOutcome(true, summarizeDetail(detail.get()));
         } catch (Exception e) {
-            log.warn(
-                    "action=agent_tool_failed, tool=product_detail, productId={}, reason={}",
-                    productId,
-                    reasonOf(e));
+            log.warn("action=agent_tool_failed, tool=product_detail, productId={}, reason={}", productId, reasonOf(e));
             return new ToolOutcome(false, "资产详情查询失败: " + reasonOf(e));
         }
     }
@@ -307,7 +305,10 @@ public class AgentLoopRunner {
         if (decision.preference() == null || ANONYMOUS_USER.equals(input.userId())) {
             return;
         }
-        preferenceRepository.record(input.userId(), decision.preference().key(), decision.preference().value());
+        preferenceRepository.record(
+                input.userId(),
+                decision.preference().key(),
+                decision.preference().value());
     }
 
     private static String buildStepUserMessage(Input input, List<StepObservation> observations) {
@@ -325,8 +326,7 @@ public class AgentLoopRunner {
 
                 已执行步骤：
                 %s
-                """
-                .formatted(
+                """.formatted(
                         input.question(),
                         formatHistory(input.history()),
                         formatPrefs(input.prefs()),

@@ -76,15 +76,13 @@ class ElasticsearchProductSearchIT {
             var keywordHit = queryAdapter.search(
                     new ProductSearchQuery(MARKER, null, null, null, null, null, "newest", 1, 20, null, false));
             assertThat(keywordHit.total()).isEqualTo(2);
-            assertThat(keywordHit.records())
-                    .extracting(ProductReadModel::id)
-                    .containsExactly(DOC_ID_2, DOC_ID_1);
+            assertThat(keywordHit.records()).extracting(ProductReadModel::id).containsExactly(DOC_ID_2, DOC_ID_1);
 
             // status 过滤：ONLINE 命中两份测试文档，OFFLINE 应返回空（标记词域内无存量数据）
             var onlineOnly = search(keyword(MARKER, null));
             assertThat(onlineOnly.records()).hasSize(2);
-            var offlineOnly = search(
-                    new ProductSearchQuery(MARKER, null, "OFFLINE", null, null, null, null, 1, 20, null, false));
+            var offlineOnly =
+                    search(new ProductSearchQuery(MARKER, null, "OFFLINE", null, null, null, null, 1, 20, null, false));
             assertThat(offlineOnly.records()).isEmpty();
 
             // 价格范围过滤

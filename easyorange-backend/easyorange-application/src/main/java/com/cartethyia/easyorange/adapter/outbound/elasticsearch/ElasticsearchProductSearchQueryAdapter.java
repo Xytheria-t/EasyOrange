@@ -409,7 +409,8 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
      */
     private Aggregation categoryAgg() {
         return Aggregation.of(a -> a.terms(t -> t.field("categoryId").size(20))
-                .aggregations("name", na -> na.terms(t -> t.field("categoryName").size(1))));
+                .aggregations(
+                        "name", na -> na.terms(t -> t.field("categoryName").size(1))));
     }
 
     private Aggregation conditionAgg() {
@@ -444,9 +445,10 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 .condition(doc.getConditionLevel())
                 .location(doc.getLocation())
                 // 索引侧 images 常缺省而 mainImage 恒有值：补位保证前端卡片取得到首图
-                .images(doc.getImages() != null && !doc.getImages().isEmpty()
-                        ? doc.getImages()
-                        : doc.getMainImage() != null ? List.of(doc.getMainImage()) : List.of())
+                .images(
+                        doc.getImages() != null && !doc.getImages().isEmpty()
+                                ? doc.getImages()
+                                : doc.getMainImage() != null ? List.of(doc.getMainImage()) : List.of())
                 .mainImageUrl(Objects.requireNonNullElse(doc.getMainImage(), ""))
                 .createTime(fromEpochMillis(doc.getCreateTime()))
                 .updateTime(fromEpochMillis(doc.getUpdateTime()))
@@ -509,7 +511,9 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
             return fallback;
         }
         var aggregate = nameAgg.sterms();
-        if (aggregate != null && aggregate.buckets() != null && !aggregate.buckets().array().isEmpty()) {
+        if (aggregate != null
+                && aggregate.buckets() != null
+                && !aggregate.buckets().array().isEmpty()) {
             return aggregate.buckets().array().get(0).key().stringValue();
         }
         return fallback;

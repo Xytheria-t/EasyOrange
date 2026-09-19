@@ -131,7 +131,8 @@ class AgentLoopRunnerTest {
     @DisplayName("首轮 finish（寒暄）-> 不调任何工具，trace 落 finish 行，step 事件推送")
     void run_finishOnFirstRound() {
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn("{\"thought\":\"闲聊无需检索\",\"tool\":\"finish\",\"query\":\"\",\"productId\":null,\"preference\":null}");
+                .thenReturn(
+                        "{\"thought\":\"闲聊无需检索\",\"tool\":\"finish\",\"query\":\"\",\"productId\":null,\"preference\":null}");
         var steps = new RecordingHandler();
 
         Result result = run("在吗？", "anonymous", steps);
@@ -140,14 +141,18 @@ class AgentLoopRunnerTest {
         assertThat(result.rounds()).isEqualTo(1);
         assertThat(result.knowledgeHits()).isEmpty();
         verifyNoInteractions(retrievalService, assetSourcingService);
-        verify(tracePort).record(argThat(trace ->
-                "finish".equals(trace.tool()) && trace.stepIndex() == 1 && "trace-1".equals(trace.traceId())));
+        verify(tracePort)
+                .record(argThat(trace ->
+                        "finish".equals(trace.tool()) && trace.stepIndex() == 1 && "trace-1".equals(trace.traceId())));
         assertThat(steps.steps).hasSize(1);
         assertThat(steps.steps.getFirst().tool()).isEqualTo("finish");
         assertThat(steps.steps.getFirst().thought()).isEqualTo("闲聊无需检索");
-        assertThat(meterRegistry.counter("easyorange.ai.chat.loop", "outcome", "finished").count())
+        assertThat(meterRegistry
+                        .counter("easyorange.ai.chat.loop", "outcome", "finished")
+                        .count())
                 .isEqualTo(1.0);
-        assertThat(meterRegistry.get("easyorange.ai.chat.steps").summary().count()).isEqualTo(1);
+        assertThat(meterRegistry.get("easyorange.ai.chat.steps").summary().count())
+                .isEqualTo(1);
     }
 
     @Test
@@ -169,8 +174,7 @@ class AgentLoopRunnerTest {
         // 第二轮决策的 user message 携带第一步的工具与观察（ReAct 的核心：观察驱动下一步）
         ArgumentCaptor<String> userMessage = ArgumentCaptor.forClass(String.class);
         verify(aiModelSupport, times(2)).callJson(any(), any(), anyString(), userMessage.capture());
-        assertThat(userMessage.getAllValues().get(1))
-                .contains("第 1 步 [knowledge_search] 退款", "观察：命中 1 条：退款规则");
+        assertThat(userMessage.getAllValues().get(1)).contains("第 1 步 [knowledge_search] 退款", "观察：命中 1 条：退款规则");
     }
 
     @Test
@@ -179,12 +183,19 @@ class AgentLoopRunnerTest {
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn(decision("product_search", "5000 笔记本"), detailDecision("p-1"), decision("finish", ""));
         when(assetSourcingService.search("5000 笔记本", 5))
-                .thenReturn(List.of(
-                        new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)));
+                .thenReturn(
+                        List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)));
         when(assetDetailPort.findDetail("p-1"))
                 .thenReturn(Optional.of(new AssetDetail(
-                        "p-1", "MacBook Air M1", "M1 芯片，95 新无磕碰", BigDecimal.valueOf(4200),
-                        "数码", "九五新", "上海", "liming", "ONLINE")));
+                        "p-1",
+                        "MacBook Air M1",
+                        "M1 芯片，95 新无磕碰",
+                        BigDecimal.valueOf(4200),
+                        "数码",
+                        "九五新",
+                        "上海",
+                        "liming",
+                        "ONLINE")));
         var steps = new RecordingHandler();
 
         Result result = run("预算 5000 想买笔记本", "user-1", steps);
@@ -196,8 +207,12 @@ class AgentLoopRunnerTest {
         assertThat(result.details().getFirst().description()).isEqualTo("M1 芯片，95 新无磕碰");
 
         // 步骤事件序列完整（前端步骤可视化的数据源）
-        assertThat(steps.steps).extracting(AgentStepView::tool).containsExactly(
-                AgentLoopRunner.TOOL_PRODUCT_SEARCH, AgentLoopRunner.TOOL_PRODUCT_DETAIL, AgentLoopRunner.TOOL_FINISH);
+        assertThat(steps.steps)
+                .extracting(AgentStepView::tool)
+                .containsExactly(
+                        AgentLoopRunner.TOOL_PRODUCT_SEARCH,
+                        AgentLoopRunner.TOOL_PRODUCT_DETAIL,
+                        AgentLoopRunner.TOOL_FINISH);
 
         // 召回观察带 [资产 ID]（product_detail 的 productId 取值锚点）与价格
         ArgumentCaptor<String> userMessage = ArgumentCaptor.forClass(String.class);
@@ -206,8 +221,9 @@ class AgentLoopRunnerTest {
         assertThat(userMessage.getAllValues().get(2)).contains("第 2 步 [product_detail] p-1", "M1 芯片，95 新无磕碰");
 
         // 详情步骤的 trace 带入参 productId
-        verify(tracePort, times(3)).record(argThat(trace ->
-                !AgentLoopRunner.TOOL_PRODUCT_DETAIL.equals(trace.tool()) || "p-1".equals(trace.toolInput())));
+        verify(tracePort, times(3))
+                .record(argThat(trace ->
+                        !AgentLoopRunner.TOOL_PRODUCT_DETAIL.equals(trace.tool()) || "p-1".equals(trace.toolInput())));
     }
 
     @Test
@@ -216,7 +232,9 @@ class AgentLoopRunnerTest {
         aiProperties = PropertyBindings.bind(AiProperties.class, "chat.max-steps", "2");
         runner = newRunner();
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn(decision("knowledge_search", "退款"), decision("knowledge_search", "退货"),
+                .thenReturn(
+                        decision("knowledge_search", "退款"),
+                        decision("knowledge_search", "退货"),
                         decision("knowledge_search", "换货"));
         when(retrievalService.search(anyString(), anyInt())).thenReturn(List.of());
 
@@ -225,7 +243,9 @@ class AgentLoopRunnerTest {
         assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_STEP_LIMIT);
         assertThat(result.rounds()).isEqualTo(2);
         verify(aiModelSupport, times(2)).callJson(any(), any(), anyString(), anyString());
-        assertThat(meterRegistry.counter("easyorange.ai.chat.loop", "outcome", "step_limit").count())
+        assertThat(meterRegistry
+                        .counter("easyorange.ai.chat.loop", "outcome", "step_limit")
+                        .count())
                 .isEqualTo(1.0);
     }
 
@@ -233,8 +253,7 @@ class AgentLoopRunnerTest {
     @DisplayName("循环中途预算耗尽 -> 停止循环（budget），已完成的观察保留")
     void run_budgetExhaustedStopsLoop() {
         // 循环只在第 2 轮起做预算检查；首轮已执行一次工具，第 2 轮检查时余量已耗尽
-        when(budgetStore.getTodayUsage("chat"))
-                .thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(500_000, 0, 0)));
+        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(500_000, 0, 0)));
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
                 .thenReturn(decision("knowledge_search", "退款"), decision("knowledge_search", "退货"));
         when(retrievalService.search(anyString(), anyInt())).thenReturn(List.of());
@@ -249,8 +268,7 @@ class AgentLoopRunnerTest {
     @Test
     @DisplayName("决策调用故障 -> 降级按原始问题检索一次（单步降级语义），trace 不落步骤")
     void run_decisionFailureFallsBackToSingleStep() {
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenThrow(new RuntimeException("决策模型超时"));
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString())).thenThrow(new RuntimeException("决策模型超时"));
         when(retrievalService.search("怎么退款？", 5))
                 .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.9)));
 
@@ -260,7 +278,9 @@ class AgentLoopRunnerTest {
         assertThat(result.knowledgeHits()).hasSize(1);
         verify(retrievalService).search("怎么退款？", 5);
         verify(tracePort, never()).record(any());
-        assertThat(meterRegistry.counter("easyorange.ai.chat.loop", "outcome", "decision_failed").count())
+        assertThat(meterRegistry
+                        .counter("easyorange.ai.chat.loop", "outcome", "decision_failed")
+                        .count())
                 .isEqualTo(1.0);
     }
 
@@ -287,8 +307,9 @@ class AgentLoopRunnerTest {
 
         assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
         assertThat(result.details()).isEmpty();
-        verify(tracePort, times(2)).record(argThat(trace ->
-                trace.stepIndex() != 1 || (trace.success() && trace.observation().contains("未找到该资产"))));
+        verify(tracePort, times(2))
+                .record(argThat(trace -> trace.stepIndex() != 1
+                        || (trace.success() && trace.observation().contains("未找到该资产"))));
     }
 
     @Test
@@ -302,8 +323,9 @@ class AgentLoopRunnerTest {
 
         assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
-        verify(tracePort, times(2)).record(argThat(trace ->
-                trace.stepIndex() != 1 || (!trace.success() && trace.errorMsg().contains("DB connection lost"))));
+        verify(tracePort, times(2))
+                .record(argThat(trace -> trace.stepIndex() != 1
+                        || (!trace.success() && trace.errorMsg().contains("DB connection lost"))));
     }
 
     @Test
@@ -316,17 +338,18 @@ class AgentLoopRunnerTest {
 
         assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
-        verify(tracePort).record(argThat(trace ->
-                "web_browse".equals(trace.tool()) && !trace.success() && trace.observation().contains("未知工具")));
+        verify(tracePort)
+                .record(argThat(trace -> "web_browse".equals(trace.tool())
+                        && !trace.success()
+                        && trace.observation().contains("未知工具")));
     }
 
     @Test
     @DisplayName("决策携带偏好 -> 提取并写入用户画像（长期记忆沿用）")
     void run_extractsPreference() {
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn(
-                        "{\"thought\":\"记住偏好\",\"tool\":\"finish\",\"query\":\"\",\"productId\":null,"
-                                + "\"preference\":{\"key\":\"style\",\"value\":\"复古\"}}");
+                .thenReturn("{\"thought\":\"记住偏好\",\"tool\":\"finish\",\"query\":\"\",\"productId\":null,"
+                        + "\"preference\":{\"key\":\"style\",\"value\":\"复古\"}}");
 
         run("我喜欢复古风格的东西", "user-1", null);
 
@@ -337,9 +360,8 @@ class AgentLoopRunnerTest {
     @DisplayName("匿名对话 -> 即便提取到偏好也不落画像")
     void run_anonymousSkipsPreference() {
         when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn(
-                        "{\"thought\":\"记住偏好\",\"tool\":\"finish\",\"query\":\"\",\"productId\":null,"
-                                + "\"preference\":{\"key\":\"style\",\"value\":\"复古\"}}");
+                .thenReturn("{\"thought\":\"记住偏好\",\"tool\":\"finish\",\"query\":\"\",\"productId\":null,"
+                        + "\"preference\":{\"key\":\"style\",\"value\":\"复古\"}}");
 
         run("我喜欢复古风格的东西", "anonymous", null);
 
@@ -349,20 +371,17 @@ class AgentLoopRunnerTest {
     @Test
     @DisplayName("chatBudgetExhausted -> used + maxPerCall 超日限即 true（与入口检查同判据）")
     void chatBudgetExhausted() {
-        when(budgetStore.getTodayUsage("chat"))
-                .thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(299_000, 0, 0)));
+        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(299_000, 0, 0)));
         assertThat(runner.chatBudgetExhausted()).isTrue();
 
-        when(budgetStore.getTodayUsage("chat"))
-                .thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(1000, 0, 0)));
+        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(1000, 0, 0)));
         assertThat(runner.chatBudgetExhausted()).isFalse();
     }
 
     @Test
     @DisplayName("非流式路径（handler 为空）-> trace 照常落库，无 step 事件")
     void run_nonStreamStillTraces() {
-        when(aiModelSupport.callJson(any(), any(), anyString(), anyString()))
-                .thenReturn(decision("finish", ""));
+        when(aiModelSupport.callJson(any(), any(), anyString(), anyString())).thenReturn(decision("finish", ""));
 
         Result result = run("在吗？");
 

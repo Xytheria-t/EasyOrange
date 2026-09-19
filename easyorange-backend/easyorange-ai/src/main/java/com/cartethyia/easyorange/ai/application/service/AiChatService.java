@@ -187,8 +187,8 @@ public class AiChatService {
                 ANONYMOUS_USER.equals(userId) ? List.of() : preferenceRepository.findByUserId(userId);
 
         // 2. 多步工具循环（决策 → 工具 → 观察，步数/预算超限在循环内降级）
-        AgentLoopRunner.Result run = agentLoopRunner.run(new AgentLoopRunner.Input(
-                request.question(), request.sessionId(), userId, history, prefs, handler));
+        AgentLoopRunner.Result run = agentLoopRunner.run(
+                new AgentLoopRunner.Input(request.question(), request.sessionId(), userId, history, prefs, handler));
 
         List<String> sources = Stream.concat(
                         Stream.concat(
@@ -252,7 +252,8 @@ public class AiChatService {
         return messages;
     }
 
-    private static String buildCurrentUserMessage(String question, List<UserPreference> prefs, AgentLoopRunner.Result run) {
+    private static String buildCurrentUserMessage(
+            String question, List<UserPreference> prefs, AgentLoopRunner.Result run) {
         return """
                 <user_question>
                 %s
@@ -273,8 +274,7 @@ public class AiChatService {
                 <asset_details>
                 %s
                 </asset_details>
-                """
-                .formatted(
+                """.formatted(
                         question,
                         formatPrefs(prefs),
                         formatHits(run.knowledgeHits()),
