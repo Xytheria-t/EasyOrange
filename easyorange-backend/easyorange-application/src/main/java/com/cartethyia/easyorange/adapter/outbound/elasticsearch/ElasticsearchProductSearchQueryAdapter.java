@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.AggregationRange;
 import com.cartethyia.easyorange.ai.domain.model.RrfFusion;
@@ -86,6 +87,15 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
      */
     private static final int NUM_CANDIDATES = 100;
 
+    /**
+     * kNN 路的余弦相似度下限：低于该值的文档不进候选池。
+     * <p>
+     * 纯 kNN 召回没有相关性门槛 —— 小语料下 ANN 会把全库都凑满 {@code k} 条，
+     * 融合后不相关商品被顶进结果页。下限挡住明显无关的召回（同类目商品典型在 0.5 以上，
+     * 无关商品普遍低于 0.45），只影响语义路，BM25 词面命中不受限。
+     */
+    private static final float KNN_MIN_SIMILARITY = 0.5f;
+
     /** 索引里只取检索需要的字段（1024 维向量不回传，只在 ES 内部参与打分）。 */
     private static final SourceFilter SOURCE_FILTER =
             new FetchSourceFilterBuilder().withExcludes("nameEmbedding").build();
@@ -154,7 +164,9 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
 
         // total 取 BM25 路的总命中：它是「过滤条件 + 关键词词面匹配」的完整计数，也是唯一有全量语义的口径
         // （kNN 只返回候选池条数，不是匹配总数）；BM25 路挂掉时退化为候选池大小。
-        long bm25Total = bm25Leg.hits() != null ? bm25Leg.total() : docsById.size();
+        // 与融合后记录数取 max：语义路在词面命中之外补进来的召回也承诺给了用户（就记录在当前候选池里），
+        // 只报 BM25 数会出现「共找到 4 件」却列出 10 张卡的口径裂缝。
+        long bm25Total = bm25Leg.hits() != null ? bm25Leg.total() : 0L;
 
         var fused = RrfFusion.fuse(RrfFusion.DEFAULT_K, rankedLists);
         int from = Math.min((page - 1) * size, fused.size());
@@ -167,7 +179,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
 
         // 词面命中为 0、但语义路召回到了结果时必须改报候选池大小：
         // 报 0 会让前端显示「共找到 0 件商品」却列着 N 张卡，同时翻页控件也消失
-        long total = bm25Total > 0 ? bm25Total : fused.size();
+        long total = Math.max(bm25Total, fused.size());
 
         // facets 来自 BM25 那路的聚合：聚合是「过滤条件命中的语料」上的统计量，
         // 与融合后的排序无关，因此只需要一路带聚合，不必两路都算一遍。
@@ -224,7 +236,8 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 .withKnnSearches(knn -> knn.field("nameEmbedding")
                         .queryVector(query.queryEmbedding())
                         .k(k)
-                        .numCandidates(numCandidates))
+                        .numCandidates(numCandidates)
+                        .similarity(KNN_MIN_SIMILARITY))
                 .withQuery(Queries.wrapperQueryAsQuery(buildFilterQuery(query).toString()))
                 .withSourceFilter(SOURCE_FILTER)
                 .withSort(byScoreDesc())
@@ -258,6 +271,9 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
             multiMatch.put("query", keyword);
             multiMatch.put("type", "best_fields");
             multiMatch.put("fuzziness", "AUTO");
+            // 默认 OR 下多词查询任中一词即返回（「轻薄便携笔记本」混进充电器/羽绒服）；
+            // ≤2 词仍要求全命中，≥3 词按 75% 向下取整（3 词命中 2 即可），词面召回保持宽容但不再是噪声
+            multiMatch.put("minimum_should_match", "2<75%");
             ArrayNode fields = multiMatch.putArray("fields");
             fields.add("name^3");
             fields.add("description");
@@ -345,8 +361,12 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         };
     }
 
+    /**
+     * 分类聚合：categoryId 分桶 + categoryName 子聚合取展示名 —— 前端筛选要传 id、展示要名称，两者都从桶里出。
+     */
     private Aggregation categoryAgg() {
-        return Aggregation.of(a -> a.terms(t -> t.field("categoryId").size(20)));
+        return Aggregation.of(a -> a.terms(t -> t.field("categoryId").size(20))
+                .aggregations("name", na -> na.terms(t -> t.field("categoryName").size(1))));
     }
 
     private Aggregation conditionAgg() {
@@ -377,7 +397,10 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 .views(doc.getViewCount())
                 .condition(doc.getConditionLevel())
                 .location(doc.getLocation())
-                .images(Objects.requireNonNullElseGet(doc.getImages(), List::of))
+                // 索引侧 images 常缺省而 mainImage 恒有值：补位保证前端卡片取得到首图
+                .images(doc.getImages() != null && !doc.getImages().isEmpty()
+                        ? doc.getImages()
+                        : doc.getMainImage() != null ? List.of(doc.getMainImage()) : List.of())
                 .mainImageUrl(Objects.requireNonNullElse(doc.getMainImage(), ""))
                 .createTime(fromEpochMillis(doc.getCreateTime()))
                 .updateTime(fromEpochMillis(doc.getUpdateTime()))
@@ -406,7 +429,10 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
             var sterms = aggregate.sterms();
             if (sterms != null && sterms.buckets() != null) {
                 return sterms.buckets().array().stream()
-                        .map(b -> new FacetBucket(b.key().stringValue(), b.key().stringValue(), b.docCount()))
+                        .map(b -> new FacetBucket(
+                                b.key().stringValue(),
+                                subAggLabel(b.aggregations(), b.key().stringValue()),
+                                b.docCount()))
                         .toList();
             }
         }
@@ -416,12 +442,31 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
             var lterms = aggregate.lterms();
             if (lterms != null && lterms.buckets() != null) {
                 return lterms.buckets().array().stream()
-                        .map(b -> new FacetBucket(String.valueOf(b.key()), String.valueOf(b.key()), b.docCount()))
+                        .map(b -> new FacetBucket(
+                                String.valueOf(b.key()),
+                                subAggLabel(b.aggregations(), String.valueOf(b.key())),
+                                b.docCount()))
                         .toList();
             }
         }
 
         return List.of();
+    }
+
+    /** 分类桶的展示名来自 categoryName 子聚合；无子聚合的 agg（成色）回退为桶 key 本身。 */
+    private static String subAggLabel(Map<String, Aggregate> subAggs, String fallback) {
+        if (subAggs == null) {
+            return fallback;
+        }
+        Aggregate nameAgg = subAggs.get("name");
+        if (nameAgg == null || !nameAgg.isSterms()) {
+            return fallback;
+        }
+        var aggregate = nameAgg.sterms();
+        if (aggregate != null && aggregate.buckets() != null && !aggregate.buckets().array().isEmpty()) {
+            return aggregate.buckets().array().get(0).key().stringValue();
+        }
+        return fallback;
     }
 
     private List<FacetBucket> extractRangeAggBuckets(SearchHits<?> searchHits, String aggName) {
@@ -435,6 +480,8 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         var rangeAgg = aggregate.range();
         if (rangeAgg != null && rangeAgg.buckets() != null) {
             return rangeAgg.buckets().array().stream()
+                    // ES range agg 固定返回声明的全部区间：空桶（count=0）对用户是噪音「¥500-¥1000 0」，不下发
+                    .filter(b -> b.docCount() > 0)
                     .map(b -> {
                         String key = b.key() != null ? b.key() : (b.from() + "-" + b.to());
                         return new FacetBucket(key, key, b.docCount());

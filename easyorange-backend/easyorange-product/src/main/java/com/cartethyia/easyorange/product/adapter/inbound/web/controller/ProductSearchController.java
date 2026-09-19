@@ -134,20 +134,26 @@ public class ProductSearchController {
     private static ProductResponse toProductResponse(ProductReadModel model) {
         return ProductResponse.builder()
                 .id(model.id())
+                .sellerId(model.sellerId())
+                .categoryId(model.categoryId())
+                .categoryName(model.categoryName())
                 .title(model.title())
+                .description(model.description())
                 .price(model.price())
                 .originalPrice(model.originalPrice())
-                .mainImageUrl(model.mainImageUrl())
                 .status(model.status())
                 .statusDesc(model.statusDesc())
+                .views(model.views())
                 .condition(model.condition())
                 .conditionDesc(model.conditionDesc())
                 .location(model.location())
+                .images(model.images())
+                .mainImageUrl(model.mainImageUrl())
                 .createTime(model.createTime())
                 .build();
     }
 
     private static FacetBucketResponse toFacetBucketResponse(FacetBucket fb) {
-        return new FacetBucketResponse(fb.key(), fb.count());
+        return new FacetBucketResponse(fb.key(), fb.label(), fb.count());
     }
 }
