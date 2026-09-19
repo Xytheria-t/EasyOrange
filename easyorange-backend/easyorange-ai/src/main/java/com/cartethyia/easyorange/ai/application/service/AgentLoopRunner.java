@@ -301,14 +301,30 @@ public class AgentLoopRunner {
         }
     }
 
+    /**
+     * 画像提取旁路落库 — 两道防线：① 模型输出不可信，偏好字段可能整体缺失（实测决策 JSON 出过
+     * {@code "preference":{}}，解出 null key/value 直插被 NOT NULL 拒写），空值直接丢弃；
+     * ② 落库失败只告警不抛——画像是长期记忆的旁路存储，任何异常不得把整轮对话打成不可用。
+     */
     private void recordPreference(Input input, AgentStepDecision decision) {
         if (decision.preference() == null || ANONYMOUS_USER.equals(input.userId())) {
             return;
         }
-        preferenceRepository.record(
-                input.userId(),
-                decision.preference().key(),
-                decision.preference().value());
+        String key = decision.preference().key();
+        String value = decision.preference().value();
+        if (key == null || key.isBlank() || value == null || value.isBlank()) {
+            log.debug(
+                    "action=preference_discarded, reason=blank_fields, sessionId={}", input.sessionId());
+            return;
+        }
+        try {
+            preferenceRepository.record(input.userId(), key, value);
+        } catch (Exception e) {
+            log.warn(
+                    "action=preference_record_failed, sessionId={}, reason={}",
+                    input.sessionId(),
+                    reasonOf(e));
+        }
     }
 
     private static String buildStepUserMessage(Input input, List<StepObservation> observations) {
