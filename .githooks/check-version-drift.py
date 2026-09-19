@@ -84,6 +84,7 @@ def expected_versions() -> dict[str, tuple[str | None, str]]:
         "MyBatis-Plus": (pom_property("mybatis-plus.version"), "pom <mybatis-plus.version>"),
         "MySQL": (compose_image_version("mysql"), "compose mysql 镜像 tag"),
         "Redis": (compose_image_version("redis", "-alpine"), "compose redis 镜像 tag"),
+        "Langfuse": (compose_image_version("langfuse/langfuse"), "compose langfuse-web 镜像 tag"),
         "RabbitMQ": (compose_image_version("rabbitmq", "-management"), "compose rabbitmq 镜像 tag"),
         "Elasticsearch": (es_version(), "infra/elasticsearch/Dockerfile FROM"),
         "Flyway": (pom_property("flyway.version"), "pom <flyway.version>"),
