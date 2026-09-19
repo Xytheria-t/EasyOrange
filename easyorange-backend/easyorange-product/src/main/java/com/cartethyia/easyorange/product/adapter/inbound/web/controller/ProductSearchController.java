@@ -135,6 +135,8 @@ public class ProductSearchController {
         return ProductResponse.builder()
                 .id(model.id())
                 .sellerId(model.sellerId())
+                .username(model.username())
+                .userAvatar(model.userAvatar())
                 .categoryId(model.categoryId())
                 .categoryName(model.categoryName())
                 .title(model.title())
