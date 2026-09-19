@@ -10,4 +10,8 @@ import org.jspecify.annotations.Nullable;
  * @param thought     模型决策理由（不超过 20 字）
  * @param observation 观察摘要（命中数 / 命中标题 / 详情摘要；finish 轮为 null）
  */
-public record AgentStepView(int step, String tool, @Nullable String thought, @Nullable String observation) {}
+public record AgentStepView(
+        int step,
+        String tool,
+        @Nullable String thought,
+        @Nullable String observation) {}

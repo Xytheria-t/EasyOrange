@@ -9,8 +9,7 @@ package com.cartethyia.easyorange.ai.domain.model;
  * @param productId  资产 ID（仅 product_detail 使用，必须来自此前 product_search 的观察）
  * @param preference 提取到的用户偏好（无则 null，沿用单步 ReAct 时代的画像提取）
  */
-public record AgentStepDecision(
-        String thought, String tool, String query, String productId, Preference preference) {
+public record AgentStepDecision(String thought, String tool, String query, String productId, Preference preference) {
 
     public record Preference(String key, String value) {}
 }

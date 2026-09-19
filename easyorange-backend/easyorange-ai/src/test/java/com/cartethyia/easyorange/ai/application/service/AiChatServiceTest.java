@@ -170,8 +170,15 @@ class AiChatServiceTest {
                         List.of(),
                         List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)),
                         List.of(new AssetDetail(
-                                "p-1", "MacBook Air M1", "M1 芯片，95 新无磕碰，电池循环 32 次",
-                                BigDecimal.valueOf(4200), "数码", "九五新", "上海", "liming", "ONLINE")),
+                                "p-1",
+                                "MacBook Air M1",
+                                "M1 芯片，95 新无磕碰，电池循环 32 次",
+                                BigDecimal.valueOf(4200),
+                                "数码",
+                                "九五新",
+                                "上海",
+                                "liming",
+                                "ONLINE")),
                         AgentLoopRunner.OUTCOME_FINISHED,
                         3));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("推荐 MacBook [来源:MacBook Air M1]");
@@ -181,8 +188,7 @@ class AiChatServiceTest {
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
         verify(aiModelSupport).callText(any(), any(), captor.capture());
         String currentUserMessage = captor.getValue().getLast().getText();
-        assertThat(currentUserMessage)
-                .contains("<asset_details>", "[p-1]", "M1 芯片，95 新无磕碰，电池循环 32 次");
+        assertThat(currentUserMessage).contains("<asset_details>", "[p-1]", "M1 芯片，95 新无磕碰，电池循环 32 次");
     }
 
     @Test
@@ -274,17 +280,16 @@ class AiChatServiceTest {
     @Test
     @DisplayName("流式回答 -> step/token/sources/done 事件依次回调")
     void stream_happyPath() {
-        when(agentLoopRunner.run(any()))
-                .thenAnswer(invocation -> {
-                    Input input = invocation.getArgument(0);
-                    input.handler().onStep(new AgentStepView(1, "knowledge_search", "查退款规则", "命中 1 条"));
-                    return new Result(
-                            List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)),
-                            List.of(),
-                            List.of(),
-                            AgentLoopRunner.OUTCOME_FINISHED,
-                            2);
-                });
+        when(agentLoopRunner.run(any())).thenAnswer(invocation -> {
+            Input input = invocation.getArgument(0);
+            input.handler().onStep(new AgentStepView(1, "knowledge_search", "查退款规则", "命中 1 条"));
+            return new Result(
+                    List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)),
+                    List.of(),
+                    List.of(),
+                    AgentLoopRunner.OUTCOME_FINISHED,
+                    2);
+        });
         when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenAnswer(invocation -> {
                     Consumer<String> consumer = invocation.getArgument(3);

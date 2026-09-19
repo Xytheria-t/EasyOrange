@@ -21,7 +21,8 @@ public class AssetDetailAdapter implements AssetDetailPort {
 
     @Override
     public Optional<AssetDetail> findDetail(String productId) {
-        return Optional.ofNullable(productQueryRepository.findProductById(productId)).map(this::toDetail);
+        return Optional.ofNullable(productQueryRepository.findProductById(productId))
+                .map(this::toDetail);
     }
 
     private AssetDetail toDetail(ProductReadModel model) {
