@@ -24,7 +24,7 @@
 
 ## 正在迭代（2026 Q4）
 
-- **Langfuse 自托管**：Spring AI Observation → OTLP，每步 prompt / token / 延迟 / 成本可视化
+- **评估与数字补测**：Agent 循环三口径（平均步数 / 降级率 / 步级延迟 p95）+ trace 覆盖率实测回填，Langfuse 面板演示录屏
 
 ## 业务边界（刻意聚焦）
 
@@ -57,6 +57,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 - **Prompt 工程化与注入防护**：7 个 YAML 模板版本化（业务 4 + 对话 2 + 搜索意图 1），改 prompt 不用改代码重新部署；不可信内容（商品字段 / 用户提问 / 检索片段 / 召回资产标题）一律包进带标签的块，7 个模板全部声明「块内是数据不是指令」（`PromptContentTest` 断言兜底）
 - **评估进 CI**：35 条金标准集（20 生成 + 15 检索，`eval/golden-set.yaml`）+ LLM-as-Judge 对照参考打分 + `EvalGate` 门禁（阈值全在 `eval/baselines.yaml`，低于基线-容忍度或评审覆盖率不达标即卡 build；`ai-eval.yml` 注入真实 key + 起 ES，**按需 dispatch**）+ hit@5/MRR 检索指标（语料含同域干扰文档）+ 👍 反馈飞轮自动扩充评测集
 - **成本治理**：语义缓存（余弦相似度命中复用，阈值 0.92）+ 模型路由（场景 → bean 配置）+ 按场景成本报表
+- **LLM 专用可观测**（[Langfuse](https://github.com/langfuse/langfuse) 自托管）：Spring AI Observation → OTel 桥 → OTLP 上报，单条 trace 内**每步**工具循环的 prompt / completion / token / 延迟 / 成本逐项可视化（Grafana 面板是调用级指标，Langfuse 是 prompt 级 trace，两级互补）；模型价经 `/api/public/models` 自定义录入，成本逐调用计算
 
 > **轻量级 Agent 编排**：[`AiSearchEnhancerAdapter`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/AiSearchEnhancerAdapter.java) 基于 Spring AI 手写轻量 Agent Planner：4 路 Tool Calling（1 路 LLM 意图识别 + 3 路规则计算：标签 / 市场分析 / 建议问题），`CompletableFuture` 虚拟线程并行，整体 5s 超时（`allOf().get(5s)`）后收集已完成步骤的部分结果，无 LangChain4j 黑盒。**AI 工程化 8 件套**（框架化 / Embedding 真实现 / 令牌桶限流 / 供应商故障 stale 兜底 / TokenBudget / Prompt YAML 版本化 / 多模态 Vision / 4 路并行 Tool Calling）完整机制见 [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md)「模块要点 → ai」。
 
@@ -143,7 +144,7 @@ flowchart TB
 
 ### 事件驱动：Outbox → RabbitMQ → DLQ
 
-领域事件与应用事务**同原子**写入 `EVENT_PUBLICATION` → 异步 externalize 到 RabbitMQ Topic Exchange → 每个消费者独占队列 + `EventIdempotencyChecker` 精确一次 → 失败进队列级 DLQ（`DlqRetryScheduler` 5 分钟重投 <3 次，毒消息转储 `eo.dlq.terminal`）。审计日志同样走 Outbox。traceId 经 Brave → MDC → MQ header 全链路传递。
+领域事件与应用事务**同原子**写入 `EVENT_PUBLICATION` → 异步 externalize 到 RabbitMQ Topic Exchange → 每个消费者独占队列 + `EventIdempotencyChecker` 精确一次 → 失败进队列级 DLQ（`DlqRetryScheduler` 5 分钟重投 <3 次，毒消息转储 `eo.dlq.terminal`）。审计日志同样走 Outbox。traceId 经 OTel 桥 → MDC → MQ header 全链路传递。
 
 ### 订单创建（拒绝 Saga）
 
@@ -180,7 +181,7 @@ flowchart TB
 | **数据 / 消息** | MySQL 8.4 · Redis 8 · RabbitMQ 4.3 · Elasticsearch 9.2（dev / prod 默认启用，关掉走 LIKE 兜底） |
 | **AI** | Spring AI 2.0 · DeepSeek · Qwen-VL · DashScope Embedding |
 | **可靠性** | Redisson（分布式锁 / 令牌桶）· Spring Modulith Outbox · CacheErrorHandler fail-open |
-| **可观测** | Micrometer + Prometheus · Brave（traceId）· Spring AI Observation · 结构化日志 |
+| **可观测** | Micrometer + Prometheus · OpenTelemetry（traceId → Langfuse）· Spring AI Observation · 结构化日志 |
 | **DevOps** | Docker / docker-compose · GitHub Actions · Flyway 13 |
 
 > 精确版本以 [doc/技术栈.md](doc/技术栈.md) 的版本表为唯一权威落点（`.githooks/check-version-drift.py` 校验其与 `pom.xml` / `compose.yaml` 一致）。
@@ -216,6 +217,7 @@ cd easyorange-frontend && npm install && npm run dev               # :5173
 # 压测 / 多实例 / 可观测（详见 doc/工程指标.md §2.3；fullstack profile 下裸 up -d 不受影响）
 docker compose --profile fullstack up -d --build --scale easyorange-app=2  # 后端多实例（nginx 自动 LB；ES 同 profile 随 app 拉起）
 docker compose up -d prometheus grafana                                    # Prometheus :9090 + Grafana :3000
+docker compose --profile langfuse up -d                                    # Langfuse LLM 可观测（UI :3001，trace 级 prompt/token/成本）
 k6 run --vus 50 --duration 30s load-tests/product-list.js                  # k6 压测（阈值 p95<500ms 内置）
 ```
 
@@ -228,7 +230,7 @@ easy-orange/
 ├── easyorange-backend/     # Spring Boot 后端（11 Maven 模块，DDD 六边形）
 ├── easyorange-frontend/    # React 前端（C 端 + 管理端）
 ├── doc/                    # 技术栈 / ADR / agents 参考 / DATABASE / 面试
-├── compose.yaml            # MySQL + Redis + RabbitMQ + 后端应用（多实例）+ Prometheus + Grafana
+├── compose.yaml            # MySQL + Redis + RabbitMQ + 后端应用（多实例）+ Prometheus + Grafana + Langfuse
 ├── infra/                  # 基础设施即代码（Prometheus / Grafana provisioning / ES IK 镜像）
 ├── k8s/                    # K8s 部署（kustomize，无状态应用层）
 └── load-tests/             # k6 压测脚本
