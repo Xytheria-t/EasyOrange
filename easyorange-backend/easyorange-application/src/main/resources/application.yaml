@@ -473,6 +473,9 @@ easyorange:
       history-limit: 6
       # 多步 ReAct 循环单次上限（含 finish 轮）；达到上限未 finish 用已积累观察强制收敛
       max-steps: 5
+      # 历史注入 prompt 的 token 预算（估算口径见 TokenEstimator）— 轮数窗口之上的第二道裁剪，
+      # 超限从最新向前保留连续窗口；<=0 关闭。指标：easyorange.ai.chat.context.tokens / .trim
+      max-history-tokens: 2000
 
   mybatis-plus:
     # 单页条数上限，请求超出即被截断；与 API 层 PageRequest.MAX_PAGE_SIZE 口径一致
