@@ -58,6 +58,26 @@ describe('PlaygroundPage (AI 智能助手)', () => {
         });
     });
 
+    it('assistant 回答按 Markdown 渲染(列表/加粗),用户消息保持纯文本', async () => {
+        mockedChatStream.mockResolvedValue(undefined);
+        renderWithProviders(<PlaygroundPage />);
+
+        fireEvent.change(screen.getByLabelText('问题输入'), { target: { value: '怎么退款？' } });
+        fireEvent.click(screen.getByRole('button', { name: '发送' }));
+        emit([
+            {
+                type: 'done',
+                data: '退款步骤：\n\n1. **打开订单**\n2. 申请退款\n\n| 项目 | 说明 |\n|---|---|\n| 时效 | 3 天 |',
+            },
+        ]);
+
+        await waitFor(() => {
+            expect(screen.getByRole('list')).toBeInTheDocument();
+        });
+        expect(screen.getByText('打开订单').tagName).toBe('STRONG');
+        expect(screen.getByRole('table')).toBeInTheDocument();
+    });
+
     it('error 事件 -> 展示降级文案', async () => {
         mockedChatStream.mockResolvedValue(undefined);
         renderWithProviders(<PlaygroundPage />);
