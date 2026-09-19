@@ -21,13 +21,7 @@
 
 | 脚本 | 内容 |
 |------|------|
-| `V1__init_schema.sql` | 28 张表初始化（开发阶段 V1~V9 收口为单文件） |
-| `V2__favorite_price_snapshot.sql` | 收藏价格快照（收藏降价功能首个增量） |
-| `V3__task_scan_and_message_cleanup_indexes.sql` | 消息清理 / 订单定时扫描索引 |
-| `V4__stock_ledger.sql` | 库存流水表 `eo_stock_ledger` 与存量资产基线 |
-| `V5__enum_code_integrity.sql` | 枚举码列去非法默认值 + `chk_eo_*` CHECK 约束（修 `eo_message.type DEFAULT 0` 类历史事故） |
-| `V6__ai_call_log_token_usage.sql` | `eo_ai_call_log` 补 `token_input` / `token_output` / `subject_id` 三列 + `idx_ai_call_log_subject` 索引 |
-| `V7__product_ai_suggested_price.sql` | `eo_product` 补 `ai_suggested_price` 列（拍照识别建议价，供采纳率 / 偏离度统计，不参与定价） |
+| `V1__init_schema.sql` | 26 张表初始化（当前完整 DDL；开发阶段三次收口为单文件：V1~V6、V1~V9、V2~V7，项目未发版无生产历史） |
 | `R__seed_*.sql` | 可重复执行种子：分类、RAG 知识库文档 |
 
 迁移规范与演进策略见 [架构-数据库迁移.md](架构/架构-数据库迁移.md)。
@@ -112,7 +106,7 @@
 | 布尔 | TINYINT | is_main TINYINT DEFAULT 0 |
 | 文件大小 | BIGINT | file_size BIGINT |
 
-**枚举码列的默认值必须是该列的合法码**：布尔/0 起点标志用 `DEFAULT 0`；**1 起点的枚举码列不许给 `DEFAULT 0`**——要么不给默认值（`NOT NULL` 无默认，漏传即报错），要么给一个合法码，并用 `chk_eo_{table}_{column}` 把合法码钉死。历史事故：`eo_message.type DEFAULT 0` 不是合法 `MessageType` 码，未显式赋值即落成非法码，读侧枚举转换抛异常让整个消息列表 500（根治见 V5 迁移）。
+**枚举码列的默认值必须是该列的合法码**：布尔/0 起点标志用 `DEFAULT 0`；**1 起点的枚举码列不许给 `DEFAULT 0`**——要么不给默认值（`NOT NULL` 无默认，漏传即报错），要么给一个合法码，并用 `chk_eo_{table}_{column}` 把合法码钉死。历史事故：`eo_message.type DEFAULT 0` 不是合法 `MessageType` 码，未显式赋值即落成非法码，读侧枚举转换抛异常让整个消息列表 500（现行 DDL 已根治：无默认值 + `chk_eo_message_type` 钉死）。
 
 ## 表关系图
 
@@ -145,7 +139,7 @@ eo_message ──1:1── eo_message_archive (id)
 
 以下表的设计理由不在 SQL 字面里，单独记录。
 
-### eo_stock_ledger — 库存流水表（V4 新增）
+### eo_stock_ledger — 库存流水表
 
 > **定位**：库存变更的单一事实来源。每次库存变更（初始化 / 下单扣减 / 取消退款恢复 / 人工调整）都在同一事务内落一条流水，`eo_product.stock` 退化为可由流水复现的余额快照。
 >
@@ -163,11 +157,11 @@ eo_message ──1:1── eo_message_archive (id)
 
 关键列：`scope`（AI 调用场景）、`prompt_hash`（system+user prompt 摘要 MD5，去重与回归用）、`token_input` / `token_output`（供应商真实回报的用量，未回报记 0 不估算）、`subject_id`（调用主体，如商品 ID；部分调用发生在主体创建之前故可空）、`judge_score` / `judge_comment`（LLM-as-Judge 结果，NULL = 待评估）。
 
-> **用量与主体的用途**（2026-09-19 由 `V6__ai_call_log_token_usage.sql` 补列）：没有这两组列时，这张表只能回答「哪个场景调用得多」，回答不了「哪个场景花得多」。补列后 `AiCostReportService` 可按场景出 token 报表（`GET /api/admin/ai/cost-report`），`subject_id` 供按主体做成本归因。注意 embedding 用量与未带 usage 的流式调用仍记 0。
+> **用量与主体的用途**：没有这两组列时，这张表只能回答「哪个场景调用得多」，回答不了「哪个场景花得多」。补列后 `AiCostReportService` 可按场景出 token 报表（`GET /api/admin/ai/cost-report`），`subject_id` 供按主体做成本归因。注意 embedding 用量与未带 usage 的流式调用仍记 0。
 
 ### eo_product.ai_suggested_price — AI 建议售价
 
-> **来源**：`V7__product_ai_suggested_price.sql`。拍照识别（发布助手）给出的建议价随创建请求一起落库；**只写不改**，不参与定价逻辑与状态流转。
+> **来源**：拍照识别（发布助手）给出的建议价随创建请求一起落库；**只写不改**，不参与定价逻辑与状态流转。
 
 > **为什么落在商品侧**：智能估值发生在商品创建之前，那时 `eo_ai_call_log.subject_id` 还没有值、商品也不存在，所以「AI 建议多少」只能由商品自己记。落库后 `GET /api/admin/ai/pricing-adoption` 才能算出采纳率与偏离分布（口径与可引用性见 [工程指标](./工程指标.md)）。
 
