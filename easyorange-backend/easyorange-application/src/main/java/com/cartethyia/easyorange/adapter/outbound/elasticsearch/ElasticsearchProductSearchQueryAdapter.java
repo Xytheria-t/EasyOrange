@@ -6,10 +6,12 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.AggregationRange;
 import com.cartethyia.easyorange.ai.domain.model.RrfFusion;
+import com.cartethyia.easyorange.product.application.port.cache.SellerCachePort;
 import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
 import com.cartethyia.easyorange.product.application.port.query.SearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -19,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -102,6 +105,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
 
     private final ElasticsearchOperations elasticsearchOperations;
     private final ObjectMapper objectMapper;
+    private final SellerCachePort sellerCachePort;
 
     @Override
     public SearchResult search(ProductSearchQuery query) {
@@ -136,7 +140,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         SearchHits<ProductDocument> searchHits =
                 elasticsearchOperations.search(queryBuilder.build(), ProductDocument.class);
 
-        return toResult(searchHits, page, size, searchHits.getTotalHits(), extractRecords(searchHits));
+        return toResult(searchHits, page, size, searchHits.getTotalHits(), fillSellers(extractRecords(searchHits)));
     }
 
     /** 两路召回 + RRF 融合：候选池按需增长，融合后按页切片（顺序由排名决定，不由 ES 分页决定）。 */
@@ -171,11 +175,11 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         var fused = RrfFusion.fuse(RrfFusion.DEFAULT_K, rankedLists);
         int from = Math.min((page - 1) * size, fused.size());
         int to = Math.min(from + size, fused.size());
-        var records = fused.subList(from, to).stream()
+        var records = fillSellers(fused.subList(from, to).stream()
                 .map(f -> docsById.get(f.id()))
                 .filter(Objects::nonNull)
                 .map(this::toReadModel)
-                .toList();
+                .toList());
 
         // 词面命中为 0、但语义路召回到了结果时必须改报候选池大小：
         // 报 0 会让前端显示「共找到 0 件商品」却列着 N 张卡，同时翻页控件也消失
@@ -205,6 +209,45 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         return hits.getSearchHits().stream()
                 .map(SearchHit::getContent)
                 .map(this::toReadModel)
+                .toList();
+    }
+
+    /**
+     * 批量补卖家展示信息（昵称/头像）：索引侧不含 sellerName，查询时经 {@link SellerCachePort}（Caffeine）回填。
+     * 卖家服务不可用时降级为匿名展示，不影响检索主链路。
+     */
+    private List<ProductReadModel> fillSellers(List<ProductReadModel> records) {
+        if (records.isEmpty()) {
+            return records;
+        }
+        var sellerIds = records.stream()
+                .map(ProductReadModel::sellerId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (sellerIds.isEmpty()) {
+            return records;
+        }
+        Map<String, SellerReadModel> sellers;
+        try {
+            sellers = sellerCachePort.getSellers(sellerIds);
+        } catch (Exception e) {
+            log.warn("Seller info unavailable, search results fall back to anonymous seller", e);
+            return records;
+        }
+        if (sellers == null || sellers.isEmpty()) {
+            return records;
+        }
+        return records.stream()
+                .map(r -> {
+                    var seller = r.sellerId() != null ? sellers.get(r.sellerId()) : null;
+                    if (seller == null) {
+                        return r;
+                    }
+                    return r.toBuilder()
+                            .username(seller.nickName() != null ? seller.nickName() : seller.username())
+                            .userAvatar(seller.avatar())
+                            .build();
+                })
                 .toList();
     }
 
@@ -386,6 +429,9 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         return ProductReadModel.builder()
                 .id(doc.getId())
                 .sellerId(doc.getUserId() != null ? doc.getUserId().toString() : null)
+                // 索引侧字段名是 seller*，读模型/响应侧叫 username（前端归一为 sellerName）
+                .username(doc.getSellerName())
+                .userAvatar(doc.getSellerAvatar())
                 .categoryId(doc.getCategoryId())
                 .categoryName(doc.getCategoryName())
                 .title(doc.getName())
