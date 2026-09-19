@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.application.dto;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * AI 对话回答 — 带引用溯源（来源标题，回答末尾用 [来源:标题] 标注）。
@@ -32,6 +33,6 @@ public record ChatAnswer(String answer, List<String> sources, String sessionId, 
      * 缓存命中处一律用它改成当前请求的 id，响应语义才是「这次请求的回答」。
      */
     public ChatAnswer withSessionId(String sessionId) {
-        return sessionId.equals(this.sessionId) ? this : new ChatAnswer(answer, sources, sessionId, degraded);
+        return Objects.equals(sessionId, this.sessionId) ? this : new ChatAnswer(answer, sources, sessionId, degraded);
     }
 }
