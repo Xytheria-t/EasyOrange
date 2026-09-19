@@ -1,4 +1,3 @@
-import type { AiReviewResult } from '@/api/aiApi';
 import { request } from '@/api/core/request';
 import type { PageResult } from '@/types';
 import type {
@@ -150,10 +149,6 @@ export const adminApi = {
 
     getAuditLogs(id: string) {
         return request<AuditLogResponse[]>(`${ADMIN_API_PREFIX}/products/${id}/audit-logs`);
-    },
-
-    aiReviewProduct(id: string) {
-        return request<AiReviewResult>(`${ADMIN_API_PREFIX}/products/${id}/ai-review`);
     },
 
     getOrders(params: AdminOrderQuery) {

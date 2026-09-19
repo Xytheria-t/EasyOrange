@@ -14,14 +14,6 @@ export interface AutoListingResult {
     imageDescriptions: string[];
 }
 
-export interface AiReviewResult {
-    isApproved: boolean;
-    suggestedActionDesc: string;
-    confidenceScore: number;
-    riskFlags: string[];
-    reasoning: string;
-}
-
 export interface QaRequest {
     productId: string;
     question: string;

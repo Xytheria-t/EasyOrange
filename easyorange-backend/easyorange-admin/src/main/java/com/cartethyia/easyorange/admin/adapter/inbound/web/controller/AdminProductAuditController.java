@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAudi
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAuditRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort.AiReviewRecord;
 import com.cartethyia.easyorange.admin.service.AdminProductAuditService;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
@@ -41,10 +40,5 @@ public class AdminProductAuditController {
     @GetMapping("/{id}/audit-logs")
     public Result<List<AuditLogResponse>> getAuditLogs(@PathVariable String id) {
         return Result.success(adminProductAuditService.getAuditLogs(id));
-    }
-
-    @GetMapping("/{id}/ai-review")
-    public Result<AiReviewRecord> getAiReview(@PathVariable String id) {
-        return Result.success(adminProductAuditService.getAiReview(id));
     }
 }

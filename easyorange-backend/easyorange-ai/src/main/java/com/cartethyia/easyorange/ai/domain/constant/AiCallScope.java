@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum AiCallScope {
-    REVIEW(10, "review"),
     AUTO_LISTING(5, "auto-listing"),
     /**
      * 语义召回 — 检索词的 embedding 调用。入口是商品搜索 {@code /api/products/search}

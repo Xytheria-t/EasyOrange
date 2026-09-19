@@ -7,8 +7,7 @@ import java.util.Objects;
  * AI 对话回答 — 带引用溯源（来源标题，回答末尾用 [来源:标题] 标注）。
  *
  * @param degraded 本次回答不是模型实时生成的结果（供应商故障时复用 stale 旧回答，或没有旧回答可兜底的降级文案）。
- *                 与 {@code AiReviewResult} 的 {@code AI_UNAVAILABLE} 标记同义：降级必须对调用方与埋点可见，
- *                 否则「AI 挂了」会被统计成「AI 答得差」。
+ *                 降级必须对调用方与埋点可见，否则「AI 挂了」会被统计成「AI 答得差」。
  */
 public record ChatAnswer(String answer, List<String> sources, String sessionId, boolean degraded) {
 

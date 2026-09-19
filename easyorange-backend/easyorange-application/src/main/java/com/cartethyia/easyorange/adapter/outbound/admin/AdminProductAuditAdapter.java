@@ -1,20 +1,13 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort;
-import com.cartethyia.easyorange.ai.application.dto.AiReviewResult;
-import com.cartethyia.easyorange.ai.application.service.AiReviewService;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
-import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
@@ -23,7 +16,6 @@ import com.cartethyia.easyorange.product.domain.exception.ProductDomainException
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import java.util.List;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
@@ -35,7 +27,7 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * Admin 商品审核适配器
  * <p>
- * 实现 {@link AdminProductAuditPort}，执行商品审核、查询审核日志与 AI 预审。
+ * 实现 {@link AdminProductAuditPort}，执行商品审核与查询审核日志。
  */
 @Slf4j
 @Primary
@@ -46,44 +38,10 @@ public class AdminProductAuditAdapter implements AdminProductAuditPort {
     private static final TypeReference<List<String>> DIMENSIONS_TYPE = new TypeReference<>() {};
 
     private final ProductMapper productMapper;
-    private final ProductDetailMapper productDetailMapper;
     private final ProductRepository productRepository;
     private final ProductAuditLogRepository productAuditLogRepository;
-    private final AiReviewService aiReviewService;
     private final DomainEventPublisher domainEventPublisher;
     private final ObjectMapper objectMapper;
-
-    @Override
-    public AiReviewData getAiReviewData(String productId) {
-        ProductDO product = productMapper.selectById(productId);
-        if (product == null || product.getDelFlag() != 0) {
-            return null;
-        }
-
-        List<ProductDetailDO> details = productDetailMapper.selectDetailsByProductIds(List.of(productId));
-        String description = details.isEmpty() ? null : details.get(0).getDescription();
-
-        List<CategoryDO> categories = productMapper.selectCategoriesByIds(List.of(product.getCategoryId()));
-        String categoryName = categories.isEmpty() ? null : categories.get(0).getName();
-
-        List<SellerReadModel> sellers = productMapper.selectSellersByIds(Set.of(product.getUserId()));
-        String sellerName = sellers.isEmpty() ? null : sellers.get(0).nickName();
-
-        List<String> imageUrls = productMapper.selectImagesByProductIds(List.of(productId)).stream()
-                .map(ProductImageDO::getImageUrl)
-                .toList();
-
-        return new AiReviewData(
-                product.getName(),
-                description,
-                categoryName,
-                product.getConditionLevel() != null
-                        ? product.getConditionLevel().getCode()
-                        : null,
-                product.getPrice(),
-                sellerName,
-                imageUrls);
-    }
 
     @Override
     public void auditProduct(
@@ -140,38 +98,6 @@ public class AdminProductAuditAdapter implements AdminProductAuditPort {
         return productAuditLogRepository.findByProductId(productId).stream()
                 .map(this::toAuditLogRecord)
                 .toList();
-    }
-
-    @Override
-    public AiReviewRecord getAiReview(String productId) {
-        AiReviewData data = getAiReviewData(productId);
-        if (data == null) {
-            throw ProductDomainException.notFound(ProductId.of(productId));
-        }
-        try {
-            return toReviewRecord(aiReviewService.reviewProduct(
-                    data.name(),
-                    data.description(),
-                    data.categoryName(),
-                    data.conditionLevel(),
-                    data.price().toString(),
-                    data.sellerName(),
-                    data.imageUrls()));
-        } catch (Exception e) {
-            // AI 建议拿不到不该让审核页打不开，降级为「无法判定」。复用服务内的同一降级工厂，
-            // 避免降级口径（false + AI_UNAVAILABLE）在这里写成第二份实现而漂移
-            log.warn("AI review suggestion unavailable for product {}, fallback to manual review", productId, e);
-            return toReviewRecord(AiReviewService.unavailable("AI 审核不可用，请人工审核"));
-        }
-    }
-
-    private static AiReviewRecord toReviewRecord(AiReviewResult result) {
-        return new AiReviewRecord(
-                result.suggestedAction(),
-                result.suggestedActionDesc(),
-                result.confidenceScore(),
-                result.riskFlags(),
-                result.reasoning());
     }
 
     private static AuditAction parseAction(Integer actionCode) {

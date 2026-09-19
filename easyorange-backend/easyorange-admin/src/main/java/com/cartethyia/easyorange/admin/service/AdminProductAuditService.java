@@ -5,7 +5,6 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAu
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort.AiReviewRecord;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort.AuditLogRecord;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import java.util.ArrayList;
@@ -63,10 +62,6 @@ public class AdminProductAuditService {
         return adminProductAuditPort.getAuditLogs(productId).stream()
                 .map(this::toAuditLogResponse)
                 .toList();
-    }
-
-    public AiReviewRecord getAiReview(String productId) {
-        return adminProductAuditPort.getAiReview(productId);
     }
 
     private AuditLogResponse toAuditLogResponse(AuditLogRecord log) {
