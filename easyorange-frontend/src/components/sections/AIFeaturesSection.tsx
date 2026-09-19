@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import './ai-features.css';
 
-type StepStatus = 'pending' | 'running' | 'done';
-
 interface PipelineStep {
     id: string;
     index: number;
@@ -11,76 +9,53 @@ interface PipelineStep {
     title: string;
     subtitle: string;
     detail: string;
-    durationMs: number;
-    status: StepStatus;
 }
 
 const PIPELINE_STEPS: PipelineStep[] = [
     {
-        id: 'pricing',
+        id: 'vision',
         index: 1,
         side: 'seller',
-        icon: '💎',
-        title: 'AI 资产估值',
-        subtitle: '上传图片 · 3 秒定价',
-        detail: '基于同款成交均价 + 视觉评估,生成建议售价',
-        durationMs: 800,
-        status: 'pending',
+        icon: '📸',
+        title: '拍照识别 · 单入口',
+        subtitle: '一次上传 · 1 次模型调用',
+        detail: '同步产出属性、建议价与标题描述——发布路径只有这一个 AI 入口',
     },
     {
-        id: 'copy',
+        id: 'adopt',
         index: 2,
         side: 'seller',
-        icon: '✍️',
-        title: 'AI 智能写描述',
-        subtitle: '30 秒生成标题 + 卖点',
-        detail: '通义千问 VL 提炼图片卖点,生成 3 套不同调性的标题与描述',
-        durationMs: 1200,
-        status: 'pending',
+        icon: '💰',
+        title: '核对即发布',
+        subtitle: '建议价与成交价同行可比',
+        detail: 'AI 建议价随商品落库,采纳率与偏离分布可量化,不靠 LLM 判分',
     },
     {
-        id: 'listing',
+        id: 'enhance',
         index: 3,
-        side: 'seller',
-        icon: '🚀',
-        title: 'AI 一键发布',
-        subtitle: '描述/类目/价格自动填充',
-        detail: '填好图和价,AI 补全标题、卖点、类目与适配关键词',
-        durationMs: 1000,
-        status: 'pending',
+        side: 'buyer',
+        icon: '🎯',
+        title: '搜索增强',
+        subtitle: '4 路并行 Tool Calling',
+        detail: '标签 / 市场分析 / 建议问题走本地规则,仅意图识别打模型,超时降级不阻塞',
     },
     {
-        id: 'search',
+        id: 'rag',
         index: 4,
         side: 'buyer',
         icon: '🔍',
-        title: 'AI 智能找货',
-        subtitle: '说人话就能找到',
-        detail: '"想要 500 以内的桌面摆件" — 自然语言 → 精准匹配',
-        durationMs: 900,
-        status: 'pending',
+        title: '对话式检索',
+        subtitle: 'kNN + BM25 双路召回',
+        detail: 'RRF 融合排名,只检索在售资产,答案带 [来源:标题] 溯源',
     },
     {
-        id: 'evaluate',
+        id: 'chat',
         index: 5,
         side: 'buyer',
-        icon: '🛡️',
-        title: 'AI 资产核验',
-        subtitle: '实物拍照验货 / 虚拟凭证核查',
-        detail: '识别实物瑕疵与描述差异,核验虚拟资产凭证有效性,给你一份"交割清单"',
-        durationMs: 1100,
-        status: 'pending',
-    },
-    {
-        id: 'qa',
-        index: 6,
-        side: 'buyer',
         icon: '💬',
-        title: 'AI 商品问答',
-        subtitle: '就着商品问到底',
-        detail: '基于商品信息回答成色、配件、交割方式等问题,答不上来时不硬编',
-        durationMs: 700,
-        status: 'pending',
+        title: '流式商品问答',
+        subtitle: 'SSE 逐字输出 · 多轮记忆',
+        detail: '会话窗口 24h + 偏好画像,答不上来不硬编,超预算直接拦截',
     },
 ];
 
@@ -183,7 +158,7 @@ function AIFeaturesSection() {
                     <div className="ai-features-title-group">
                         <span className="ai-features-label">
                             <span className="label-rule" aria-hidden="true" />
-                            六步闭环
+                            两条主线
                             <span className="label-rule" aria-hidden="true" />
                         </span>
                         <h2 className="ai-features-title">
@@ -196,14 +171,14 @@ function AIFeaturesSection() {
                         <span className="subtitle-side">
                             <span className="subtitle-dot subtitle-dot-seller" aria-hidden="true" />
                             <span>
-                                <strong>资产方侧</strong>,AI 替你估值、写描述、智能发布
+                                <strong>资产方侧</strong>,拍照识别一次产出建议价与标题描述
                             </span>
                         </span>
                         <span className="subtitle-divider" aria-hidden="true" />
                         <span className="subtitle-side">
                             <span className="subtitle-dot subtitle-dot-buyer" aria-hidden="true" />
                             <span>
-                                <strong>认领方侧</strong>,AI 帮你找货、评估、答疑
+                                <strong>认领方侧</strong>,对话式找货、溯源答疑
                             </span>
                         </span>
                     </div>
@@ -213,8 +188,8 @@ function AIFeaturesSection() {
                     <div className="pipeline-column">
                         <div className="pipeline-column-header">
                             <span className="pipeline-column-tag pipeline-column-tag-seller">资产方</span>
-                            <h3>资产方侧 · 3 步发布</h3>
-                            <p>传图写价,AI 补全其余信息</p>
+                            <h3>资产方侧 · 发布助手单入口</h3>
+                            <p>拍一张照,建议价与描述一次生成</p>
                         </div>
                         <div className="pipeline-column-list">
                             {sellerSteps.map(step => {
@@ -229,15 +204,15 @@ function AIFeaturesSection() {
 
                     <div className="pipeline-divider" aria-hidden="true">
                         <div className="pipeline-divider-line" />
-                        <span className="pipeline-divider-label">AI 能力 · 一肩挑双端</span>
+                        <span className="pipeline-divider-label">两条主线 · 同一套 AI 底座</span>
                         <div className="pipeline-divider-line" />
                     </div>
 
                     <div className="pipeline-column">
                         <div className="pipeline-column-header">
                             <span className="pipeline-column-tag pipeline-column-tag-buyer">认领方</span>
-                            <h3>认领方侧 · 3 步安心</h3>
-                            <p>找得到 · 看得清 · 买得放心</p>
+                            <h3>认领方侧 · 对话式找货</h3>
+                            <p>找得到 · 有出处 · 答得诚实</p>
                         </div>
                         <div className="pipeline-column-list">
                             {buyerSteps.map(step => {
@@ -254,30 +229,30 @@ function AIFeaturesSection() {
                 <div className="ai-features-stats">
                     <div className="ai-stat-item">
                         <div className="ai-stat-value">
-                            <span className="gradient-text">3 秒</span>
+                            <span className="gradient-text">2 条</span>
                         </div>
-                        <div className="ai-stat-label">AI 定价</div>
+                        <div className="ai-stat-label">AI 主线链路</div>
                     </div>
                     <div className="ai-stat-divider" />
                     <div className="ai-stat-item">
                         <div className="ai-stat-value">
-                            <span className="gradient-text">24h</span>
+                            <span className="gradient-text">1 次</span>
                         </div>
-                        <div className="ai-stat-label">AI 在线</div>
+                        <div className="ai-stat-label">发布路径模型调用</div>
                     </div>
                     <div className="ai-stat-divider" />
                     <div className="ai-stat-item">
                         <div className="ai-stat-value">
-                            <span className="gradient-text">98%</span>
+                            <span className="gradient-text">4 路</span>
                         </div>
-                        <div className="ai-stat-label">AI 估值准确</div>
+                        <div className="ai-stat-label">并行 Tool Calling</div>
                     </div>
                     <div className="ai-stat-divider" />
                     <div className="ai-stat-item">
                         <div className="ai-stat-value">
-                            <span className="gradient-text">0</span>
+                            <span className="gradient-text">35 条</span>
                         </div>
-                        <div className="ai-stat-label">需要你盯的</div>
+                        <div className="ai-stat-label">金标准用例进 CI</div>
                     </div>
                 </div>
             </div>

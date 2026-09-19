@@ -169,7 +169,8 @@ function MyProductsPage() {
                     <h3 className="orders-empty-title">还没有提交资产</h3>
                     <p className="orders-empty-desc">
                         开始托管你的第一件资产吧
-                        <br />让 AI 帮你定价、写描述、发布上线
+                        <br />
+                        拍张照，AI 生成建议价与标题描述
                     </p>
                     <Button onClick={() => navigate('/publish')} className="orders-empty-cta">
                         提交资产

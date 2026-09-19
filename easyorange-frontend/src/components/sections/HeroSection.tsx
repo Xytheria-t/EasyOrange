@@ -341,7 +341,7 @@ export default function HeroSection() {
                             </div>
                             <div className="ai-entry-content">
                                 <span className="ai-entry-title">AI 工程化</span>
-                                <span className="ai-entry-desc">拍照估值 · 智能写描述 · 一键发布</span>
+                                <span className="ai-entry-desc">拍照识别 · 建议价与标题描述一次生成</span>
                             </div>
                             <div className="ai-entry-indicator">
                                 <div className="ai-indicator-dot" />
