@@ -90,12 +90,13 @@ EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 
 ### 5.3 AI 对话（多轮 Agent + SSE 流式）
 
-- 编排（单步 ReAct，`AiChatService`）：记忆装配（Redis 会话窗口 + 用户画像表）→ 工具决策（LLM 输出 JSON 决定检索什么——`knowledge_search` 平台规则 / `product_search` 在售资产 / `both` / `none`，顺带提取用户偏好；2026-09-18 起四选一，见 §5.9）→ 执行工具 → 生成回答
+- 编排（多步 ReAct，2026-09-19 W1 起）：记忆装配（Redis 会话窗口 + 用户画像表）→ `AgentLoopRunner` 逐轮「决策 → 工具 → 观察」——决策器每轮输出 JSON（thought + 工具 + 参数，顺带提取用户偏好），观察进入下一轮上下文，模型判信息足够即 finish 收敛；工具面 `knowledge_search` / `product_search` / `product_detail`（见 §5.9），步数上限 `easyorange.ai.chat.max-steps`（默认 5，含 finish 轮）→ 带全部观察生成回答。与 4 路并行编排（§5.2）构成「Workflow vs 自治 Agent」对照
 - 生成按**角色传多消息**（`[system, 历史 user/assistant …, 当前 user]`，`AiModelSupport.callText(…, List<Message>)`）：历史不压进当前 user 消息，跨轮次前缀稳定才能命中供应商上下文缓存（重复前缀按折扣计价）
-- 工具决策失败（模型故障 / JSON 解析失败）**降级为「按原始问题检索」**而不是不检索，并打 `action=chat_tool_decision_failed` 日志：不把决策链路失效伪装成「这题本来就不需要检索」
-- **编排为什么手写而不是用框架 tool calling**（被追问时的口径）：单步 ReAct 只需要「一次决策 + 一次生成」，Spring AI 的 `@Tool` / `ChatClient` 工具循环在这里没有增量收益；而手写单次 JSON 决策还有一个框架给不了的好处 —— **同一次调用顺带提取用户偏好**，换成工具调用会多出一次模型往返。代价是 JSON 解析失败要自己兜底（已降级为「按原问题检索」并打日志）。触发切换的条件：需要多步工具编排（连续检索/计算/再检索）时，手写状态机会迅速变复杂，那时换 `ChatClient` + `@Tool` 更划算
+- **降级三口径（自治循环被切断，已积累的观察不丢弃）**：① 上限内未 finish → 停发决策调用，用已积累观察直接单次生成；② 循环中途日预算耗尽（`AgentLoopRunner.chatBudgetExhausted`，与流式入口同一判定）→ 同上；③ 决策失败（模型故障 / JSON 解析失败）→ **按原始问题检索一次**而不是不检索，并打 `action=agent_decision_failed` 日志——不把决策链路失效伪装成「这题本来就不需要检索」。结局计 `easyorange.ai.chat.loop{outcome=finished|step_limit|budget|decision_failed}`
+- 每轮 trace 落 `eo_agent_step_trace`（V2 新表，一次请求一个 trace_id，含 finish 轮；`AgentTracePort` 观测副产物，失败只告警不抛）+ 流式 `onStep` 事件（工具 + 决策理由 + 观察摘要，前端步骤可视化）
+- **编排为什么手写而不是用框架 tool calling**（被追问时的口径）：多步循环仍是「决策器单次 JSON 调用 + 本地 while」，不需要框架 Agent 黑盒；手写还有框架给不了的三个点 —— **同一次决策顺带提取用户偏好**（换工具调用多一次模型往返）、**循环边界可控**（步数 / 预算 / 决策失败三条降级口径）、**每步 trace 与 step 事件可定制**。代价是 JSON 解析失败要自己兜底（已降级为「按原问题检索」并打日志）
 - 记忆：短期 = Redis List（`eo:chat:session:{sessionId}`，TTL 24h，最近 N 轮）；长期 = `eo_user_preference` 用户画像表（跨会话持久，聊天时注入 prompt）
-- 流式：`POST /api/ai/chat/stream` → SseEmitter，事件协议 token / sources / done / error；前端 fetch + ReadableStream 消费（可带 Authorization 头）
+- 流式：`POST /api/ai/chat/stream` → SseEmitter，事件协议 step（Agent 每步：工具 + 决策理由 + 观察摘要）/ token / sources / done / error；前端 fetch + ReadableStream 消费（可带 Authorization 头）
 - 供应商故障（生成阶段）：非流式与流式**同口径** —— 有 stale 旧回答就复用、没有就返回降级文案「AI 服务暂时不可用，请稍后重试」，两者都不抛异常；非流式回 200 + `degraded: true`，流式发 `error` 事件，并计入 `easyorange.ai.chat.degraded{reason=stale|unavailable}`。抛出去只会变成 500 + 通用错误码：调用方读不到「AI 不可用」这个语义，错误率大盘也分不清供应商故障与代码缺陷（2026-09-17 修正，此前非流式冷缓存下直接 500）。**预算超限不属降级**——那是客户端可控的 4xx（B8001），照常上抛
 - **响应里的 `sessionId` 恒为本次请求的**：两个缓存存的都是整个 `ChatAnswer`，复用旧回答时会把第一次那个请求的会话 id 一起带出来（同一问题换个会话再问，响应里的 id 仍是旧会话的）。缓存命中处一律经 `ChatAnswer.withSessionId` 改写成当前请求的 id —— `sessionId` 是请求上下文不是回答内容（2026-09-17 修正）
 - 预算：流式方法在流结束前返回，`@TokenBudget` AOP 拦不住 → `AiChatService` 手动执行同一套预算检查（超限 onError 降级）
@@ -136,7 +137,7 @@ EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 - **不是新增旁路，是换语料换落点**：检索对象从「平台规则文档」换成「在售资产」，引用溯源从客服问答挪到了找货这条交易主链路上；两条链路共用同一套**形态**与**同一份融合实现**——`KnowledgeElasticsearchAdapter` 与 `AssetElasticsearchAdapter` 各自做两路独立召回（kNN + BM25），再调用同一个 `RrfFusion`（RRF，k=60）按排名融合；不共用的只有语料、索引与过滤条件（资产侧两路都过滤 `status=ONLINE`）
 - `AssetSourcingService`（资产召回）：查询向量化（`AiModelSupport.embed`，`AiCallScope.SEMANTIC`）→ `AssetRetrievalPort`（实现 `AssetElasticsearchAdapter`：kNN `nameEmbedding` + BM25 `multi_match name^3/description` 两路独立召回 → `RrfFusion` 融合，**两路都带 `status=ONLINE` 过滤**——对话里推荐的每一条都得当下可下单，把草稿或已售资产推给用户是坏演示）→ 资产命中。**向量化失败不放弃检索**（空向量交给端口，退化为 BM25 单路；单路召回失败同理退化为另一路）；端口缺失（ES 关闭）/ 检索异常返回空列表而不抛出——调用方是对话主链路，召回为空只少一次推荐，抛出去会让整轮对话降级
 - `AssetHit`（`productId / title / price / categoryName / conditionDesc`）与 `KnowledgeHit` 刻意分开：知识片段靠 docId + 正文定性，资产靠 id + 价格定量，合成一个 record 会让两边都拿到用不上的字段；`productId` 是回答「推荐的确实是真实在售资产」的校验锚点
-- **工具决策四选一**（`ToolDecision.tool`，prompt `ai_chat_tool.yml`）：`knowledge_search`（平台规则）/ `product_search`（在售资产）/ `both`（两者兼有，如「预算 5000 的笔记本有吗？平台怎么保障交易？」）/ `none`（寒暄闲聊）；`AiChatService` 按决策执行一条或两条召回（topK 各 5），命中标题去重后合并进 `sources`（流式 `onSources` 事件 / 非流式 `ChatAnswer.sources`）
+- **循环工具面三工具 + finish**（prompt `ai_chat_tool.yml` v2.0.0，决策器每轮选一个）：`knowledge_search`（平台规则）/ `product_search`（在售资产，观察带 `[资产 ID] 标题 ¥价格`——`product_detail` 的取参锚点）/ `product_detail`（按 ID 查单件资产详情，`AssetDetailPort` → product 查询仓储，描述进 `<asset_details>` 块，推荐理由有描述可依）/ `finish`（信息足够或无需检索）；规则类 + 找货类兼有时分两步分别检索（topK 各 5），命中标题去重后合并进 `sources`（流式 `onSources` 事件 / 非流式 `ChatAnswer.sources`）。查无此资产是**有效观察**（模型可换目标），端口故障才是步骤失败（循环继续）
 - **反幻觉硬约束**（prompt `ai_chat.yml`）：只推荐 `<candidate_assets>` 里真实出现的资产，标题与价格必须照抄，不得编造、不得改动任何数字，块内没有合适的资产就直说没有；资产块带 id 与价格，让约束有据可依
 - **可观测**：新增 `easyorange.ai.chat.tool{name=...}` 计数器（按决策值计数）——「找货类问题占多少」是判断这条 RAG 落在主链路上还是摆设的第一个数字
 

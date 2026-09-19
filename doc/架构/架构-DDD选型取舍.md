@@ -24,7 +24,7 @@
 |---|---|
 | 不变量只写一处 | 建单校验走 `Order.createOrder` 的 `BizRequire` 链 + `OrderAction.canApply`；商品两条上架路径共用 `validateOnline()`；支付状态判断全收口到 6 个谓词，无散写 |
 | 依赖方向由 CI 强制，不靠自觉 | ArchUnit 12 条规则在 `./mvnw test` 内，失败即 CI 红；domain 白名单准入（只准 JDK + `common`）；domain/application 禁 `org.springframework.dao`；禁反向依赖 adapter（历史债用 `FreezingArchRule` 冻结，不新增） |
-| 模块边界 = 接口签名 | 46 个 Port 接口 + 跨模块 Maven 依赖全 `<optional>true</optional>` + 适配器集中 `easyorange-application/adapter/outbound/`；Port 目录本身就是模块协作地图 |
+| 模块边界 = 接口签名 | 48 个 Port 接口 + 跨模块 Maven 依赖全 `<optional>true</optional>` + 适配器集中 `easyorange-application/adapter/outbound/`；Port 目录本身就是模块协作地图 |
 | 换实现 / 降级只动 adapter | ES 关闭时 `KnowledgeFallbackAdapter` 走 LIKE 兜底；MQ 可关应用照起；AI 供应商切换 = 改 `AiModelConfig` 的 options；手写多级缓存整体换成 Spring Cache 单层（2026-08-13）；自研 AI Port / 适配器 / 装饰器全部删除换 Spring AI（ADR-0008） |
 | 领域层可独立测试 | domain 行覆盖 88.9%；PIT 765 变异 / 约 3 分钟；聚合根用例不启动 Spring |
 | 读路径可独立优化 | product 5 个 ReadModel 承载 ES 全文搜索 + facets，order 2 个承载订单列表分页；payment / message 只做 Handler 级分离（ADR-0002） |
@@ -72,7 +72,7 @@
 
 ## 六、口头版（60 秒内用）
 
-「MVC 三层按技术切，规则会散、边界靠自觉；我按领域切：不变量下沉聚合根（订单状态机、商品上架校验、支付守卫），domain 零框架依赖只依赖接口，跨模块只经 Port + 值对象——46 个 Port 接口加 ArchUnit 12 条规则在 CI 里强制边界。收益是规则单点、换实现和降级只改 adapter、领域层能纯单测；代价是每个跨模块调用多一层接口和适配器、模块间风格不统一、有学习门槛。所以 favorite / user 这类简单场景我刻意不上 CQRS，AI 侧干脆把自研 Port 删了换 Spring AI——六边形不是什么都自己包一层。」
+「MVC 三层按技术切，规则会散、边界靠自觉；我按领域切：不变量下沉聚合根（订单状态机、商品上架校验、支付守卫），domain 零框架依赖只依赖接口，跨模块只经 Port + 值对象——48 个 Port 接口加 ArchUnit 12 条规则在 CI 里强制边界。收益是规则单点、换实现和降级只改 adapter、领域层能纯单测；代价是每个跨模块调用多一层接口和适配器、模块间风格不统一、有学习门槛。所以 favorite / user 这类简单场景我刻意不上 CQRS，AI 侧干脆把自研 Port 删了换 Spring AI——六边形不是什么都自己包一层。」
 
 ---
 
