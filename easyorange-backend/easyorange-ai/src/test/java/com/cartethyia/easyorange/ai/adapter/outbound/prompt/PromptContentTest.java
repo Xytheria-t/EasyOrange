@@ -31,14 +31,13 @@ class PromptContentTest {
     private static final String[] ALL_PROMPTS = {
         "ai_chat_system",
         "ai_chat_tool_system",
-        "ai_qa_system",
         "auto_listing_visual",
         "auto_listing_system",
         "search_intent_system"
     };
 
     @Test
-    @DisplayName("6 个 prompt 模板全部加载成功（发布助手 2 + 对话 2 + 问答 + 搜索意图识别）")
+    @DisplayName("5 个 prompt 模板全部加载成功（发布助手 2 + 对话 2 + 搜索意图识别）")
     void allPromptsLoaded() {
         for (String name : ALL_PROMPTS) {
             assertThat(registry.getLatest(name)).as("prompt '%s' 应加载成功", name).isPresent();
@@ -47,7 +46,6 @@ class PromptContentTest {
 
     @ParameterizedTest
     @CsvSource({
-        "ai_qa_system, 智能客服助手",
         "auto_listing_visual, 商品类型和名称",
         "auto_listing_system, 智能上架助手",
         "search_intent_system, AI 导购助手"
@@ -88,9 +86,9 @@ class PromptContentTest {
     @DisplayName("JSON 输出类 prompt 包含 JSON 格式说明")
     void jsonPromptsContainJsonFormatSpec() {
         // 估值 / 文案两个 prompt 已随「发布助手收敛为拍照识别单入口」删除（fca8e918），
-        // 能力并入 auto_listing_system；ai_review_system 已随管理端商品审核 AI 建议删除（2026-09-19）。
-        // 剩下 auto_listing_system 是仅有的 JSON 输出 prompt
-        // （search_intent_system 直接吐一句文本，ai_qa_system 输出纯文本回答，均不属于此列）
+        // 能力并入 auto_listing_system；ai_review_system 已随管理端商品审核 AI 建议删除、
+        // ai_qa_system 已随商品详情 AI 问答删除（均 2026-09-19，不在两条 AI 主线）。
+        // 剩下 auto_listing_system 是仅有的 JSON 输出 prompt（search_intent_system 直接吐一句文本）
         var listing = registry.getLatest("auto_listing_system").orElseThrow().template();
 
         assertThat(listing).contains("JSON 格式返回", "title");

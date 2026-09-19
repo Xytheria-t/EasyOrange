@@ -15,33 +15,29 @@ class AiCallScopeTest {
     }
 
     @Test
-    @DisplayName("fromUri 匹配 qa")
-    void fromUri_qa() {
-        assertThat(AiCallScope.fromUri("/api/ai/qa")).isEqualTo(AiCallScope.QA);
-    }
-
-    @Test
     @DisplayName("fromUri 通过 products/search 片段匹配到语义召回场景")
     void fromUri_semantic() {
         assertThat(AiCallScope.fromUri("/api/products/search")).isEqualTo(AiCallScope.SEMANTIC);
     }
 
     @Test
-    @DisplayName("fromUri 未匹配返回 QA")
+    @DisplayName("fromUri 未匹配返回 CHAT")
     void fromUri_unknown() {
-        assertThat(AiCallScope.fromUri("/api/ai/unknown")).isEqualTo(AiCallScope.QA);
+        // /api/ai/qa 已于 2026-09-19 随商品详情 AI 问答删除；未匹配的兜底场景为 CHAT
+        assertThat(AiCallScope.fromUri("/api/ai/qa")).isEqualTo(AiCallScope.CHAT);
+        assertThat(AiCallScope.fromUri("/api/ai/unknown")).isEqualTo(AiCallScope.CHAT);
     }
 
     @Test
-    @DisplayName("fromUri null 返回 QA")
+    @DisplayName("fromUri null 返回 CHAT")
     void fromUri_null() {
-        assertThat(AiCallScope.fromUri(null)).isEqualTo(AiCallScope.QA);
+        assertThat(AiCallScope.fromUri(null)).isEqualTo(AiCallScope.CHAT);
     }
 
     @Test
     @DisplayName("cacheKeyPrefix 格式正确")
     void cacheKeyPrefix() {
-        assertThat(AiCallScope.QA.cacheKeyPrefix()).isEqualTo("ai:stale:qa:");
+        assertThat(AiCallScope.CHAT.cacheKeyPrefix()).isEqualTo("ai:stale:chat:");
     }
 
     @Test
@@ -61,7 +57,7 @@ class AiCallScopeTest {
     @Test
     @DisplayName("限流配置正确")
     void rateLimitConfig() {
-        assertThat(AiCallScope.QA.getRatePerMinute()).isEqualTo(20);
+        assertThat(AiCallScope.CHAT.getRatePerMinute()).isEqualTo(20);
         assertThat(AiCallScope.AUTO_LISTING.getRatePerMinute()).isEqualTo(5);
     }
 }

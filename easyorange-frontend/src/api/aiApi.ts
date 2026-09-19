@@ -14,22 +14,6 @@ export interface AutoListingResult {
     imageDescriptions: string[];
 }
 
-export interface QaRequest {
-    productId: string;
-    question: string;
-    productName: string;
-    productDescription: string;
-    categoryName: string;
-    price: string;
-    conditionLevel: string;
-    sellerName: string;
-}
-
-export interface QaResponse {
-    answer: string;
-    hasConfidence: boolean;
-}
-
 /**
  * AI 调用专用超时：LLM 单次生成远慢于普通接口（实测视觉识别 ~12s、文案生成 6~28s，
  * 视供应商档位而定），沿用 10s 默认值会让请求被前端中断、后端白算一次。
@@ -43,14 +27,6 @@ export const aiApi = {
         return request<AutoListingResult>('/ai/auto-listing', {
             method: 'POST',
             body: imageUrls,
-            timeout: AI_TIMEOUT,
-        });
-    },
-
-    answerQuestion(data: QaRequest) {
-        return request<QaResponse>('/ai/qa', {
-            method: 'POST',
-            body: data,
             timeout: AI_TIMEOUT,
         });
     },

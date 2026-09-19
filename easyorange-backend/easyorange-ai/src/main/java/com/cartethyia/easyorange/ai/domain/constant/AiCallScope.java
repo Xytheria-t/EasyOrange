@@ -25,7 +25,6 @@ public enum AiCallScope {
      * 由框架 {@code RateLimitFilter} 统一限流；这一场景实际的治理面是预算与缓存键。
      */
     SEMANTIC(30, "products/search"),
-    QA(20, "qa"),
     SEARCH_ENHANCE(30, "search-enhance"),
     CHAT(20, "chat"),
     KNOWLEDGE(60, "knowledge");
@@ -37,11 +36,11 @@ public enum AiCallScope {
     private final String uriSuffix;
 
     public static AiCallScope fromUri(String uri) {
-        if (uri == null) return QA;
+        if (uri == null) return CHAT;
         for (var scope : values()) {
             if (uri.contains(scope.uriSuffix)) return scope;
         }
-        return QA;
+        return CHAT;
     }
 
     /**
