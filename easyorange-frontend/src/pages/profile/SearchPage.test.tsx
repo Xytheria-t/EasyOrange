@@ -261,15 +261,6 @@ describe('SearchPage', () => {
         expect(lastCall?.aiEnhanced).toBe(true);
     });
 
-    it('enables AI search from the hero call-to-action', async () => {
-        renderPage();
-        const user = userEvent.setup();
-        await user.click(screen.getByText('开启AI搜索体验'));
-
-        expect(getLastSearchParams()?.aiEnhanced).toBe(true);
-        expect(screen.getByText('AI 智能搜索已开启')).toBeInTheDocument();
-    });
-
     it('renders a pager past the first page and pages through results', async () => {
         window.scrollTo = vi.fn();
         mockUseProductSearch.mockReturnValue({

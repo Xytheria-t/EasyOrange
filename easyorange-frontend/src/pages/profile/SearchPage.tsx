@@ -5,7 +5,6 @@ import {
     ChevronRight,
     Clock,
     Dumbbell,
-    Flame,
     Gift,
     History,
     Home,
@@ -14,11 +13,9 @@ import {
     ShoppingBag,
     Smartphone,
     Sparkles,
-    Star,
     Trash2,
     TrendingUp,
     X,
-    Zap,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -52,12 +49,6 @@ const DEFAULT_CATEGORY_ICON = { icon: Gift, color: '#F97316', bg: '#FFF7ED' };
 /** 每页条数与后端 PageRequest 上限（100）以内任意值；须与请求参数 pageSize 保持一致 */
 const SEARCH_PAGE_SIZE = 20;
 
-const TRENDING_TOPICS = [
-    { title: '春季新品', subtitle: '焕新季', desc: '发现最新潮流单品', color: '#F97316', icon: Flame },
-    { title: '限时特惠', subtitle: '超值购', desc: '精选商品低至5折', color: '#EC4899', icon: Zap },
-    { title: '品质生活', subtitle: '精选集', desc: '提升生活幸福感', color: '#8B5CF6', icon: Star },
-];
-
 function SearchPage() {
     const navigate = useNavigate();
     const {
@@ -74,7 +65,6 @@ function SearchPage() {
     const [submittedKeyword, setSubmittedKeyword] = useState(urlKeyword);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [searchHistory, setSearchHistory] = useState<string[]>(() => {
         try {
             return JSON.parse(localStorage.getItem('eo_search_history') || '[]');
@@ -252,14 +242,6 @@ function SearchPage() {
         },
         [debouncedSetKeyword]
     );
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        setMousePos({
-            x: ((e.clientX - rect.left) / rect.width) * 100,
-            y: ((e.clientY - rect.top) / rect.height) * 100,
-        });
-    };
 
     const hasResults = submittedKeyword && products.length > 0;
     const noResults = submittedKeyword && !isSearching && products.length === 0;
@@ -447,51 +429,6 @@ function SearchPage() {
                             </div>
                         )}
 
-                        {/* AI Smart Search Section */}
-                        <div className="search-ai-section">
-                            <div className="search-ai-card">
-                                <div className="search-ai-header">
-                                    <div className="search-ai-icon">
-                                        <Sparkles size={20} />
-                                    </div>
-                                    <div className="search-ai-title-group">
-                                        <h3 className="search-ai-title">AI智能搜索</h3>
-                                        <p className="search-ai-desc">拍照识别 · 智能推荐 · 一键发布</p>
-                                    </div>
-                                </div>
-                                <div className="search-ai-features">
-                                    <div className="search-ai-feature">
-                                        <div className="ai-feature-icon">
-                                            <Zap size={16} />
-                                        </div>
-                                        <span>拍照估价</span>
-                                    </div>
-                                    <div className="search-ai-feature">
-                                        <div className="ai-feature-icon">
-                                            <TrendingUp size={16} />
-                                        </div>
-                                        <span>智能推荐</span>
-                                    </div>
-                                    <div className="search-ai-feature">
-                                        <div className="ai-feature-icon">
-                                            <Star size={16} />
-                                        </div>
-                                        <span>品质保障</span>
-                                    </div>
-                                </div>
-                                <Button
-                                    className="search-ai-btn-main"
-                                    onClick={() => {
-                                        setUrlAiEnabled(!aiEnabled);
-                                        inputRef.current?.focus();
-                                    }}
-                                >
-                                    <Sparkles size={16} />
-                                    <span>{aiEnabled ? 'AI 智能搜索已开启' : '开启AI搜索体验'}</span>
-                                </Button>
-                            </div>
-                        </div>
-
                         {/* Category Quick Access - 8 columns compact grid */}
                         <div className="search-categories-section">
                             <div className="search-section-header-compact">
@@ -525,60 +462,6 @@ function SearchPage() {
                                         </Button>
                                     );
                                 })}
-                            </div>
-                        </div>
-
-                        {/* Trending Topics Cards */}
-                        <div className="search-trending-section">
-                            <div className="search-section-header-compact">
-                                <div className="search-section-icon-compact">
-                                    <Flame size={14} />
-                                </div>
-                                <h3 className="search-section-title-compact">发现资产</h3>
-                            </div>
-                            <div className="search-trending-cards">
-                                {TRENDING_TOPICS.map(topic => (
-                                    // biome-ignore lint/a11y/noStaticElementInteractions: 鼠标跟随的渐变光晕是纯装饰性视觉增强（基于 mousePos 状态动态计算 radial-gradient 位置），无法用纯 CSS :hover 实现；卡片本身无点击/键盘交互，未提供指针设备时静默降级
-                                    <div
-                                        key={topic.title}
-                                        className="search-trending-card"
-                                        style={{ '--topic-color': topic.color } as React.CSSProperties}
-                                        onMouseMove={handleMouseMove}
-                                    >
-                                        <div
-                                            className="trending-card-glow"
-                                            style={{
-                                                background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, ${topic.color}18 0%, transparent 50%)`,
-                                            }}
-                                        />
-                                        <div className="trending-card-content">
-                                            <div className="trending-card-badge" style={{ color: topic.color }}>
-                                                <topic.icon size={12} />
-                                                <span>{topic.subtitle}</span>
-                                            </div>
-                                            <h4 className="trending-card-title">{topic.title}</h4>
-                                            <p className="trending-card-desc">{topic.desc}</p>
-                                        </div>
-                                        <div className="trending-card-shine" />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Tips Card */}
-                        <div className="search-tips-section">
-                            <div className="search-tips-card">
-                                <div className="search-tips-icon">
-                                    <Sparkles size={18} />
-                                </div>
-                                <div className="search-tips-content">
-                                    <h4 className="search-tips-title">搜索小技巧</h4>
-                                    <ul className="search-tips-list">
-                                        <li>输入关键词即可搜索商品标题和描述</li>
-                                        <li>使用空格分隔多个关键词进行精确搜索</li>
-                                        <li>浏览热门商品发现更多资产</li>
-                                    </ul>
-                                </div>
                             </div>
                         </div>
                     </div>
