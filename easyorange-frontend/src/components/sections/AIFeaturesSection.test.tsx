@@ -43,11 +43,13 @@ describe('AIFeaturesSection', () => {
     });
 
     it('renders only citable stats in the footnote', () => {
-        render(<AIFeaturesSection />);
+        const { container } = render(<AIFeaturesSection />);
 
-        expect(screen.getByText(/2 条主线链路/)).toBeInTheDocument();
-        expect(screen.getByText(/发布路径 1 次模型调用/)).toBeInTheDocument();
-        expect(screen.getByText(/4 路并行编排/)).toBeInTheDocument();
-        expect(screen.getByText(/金标准 35 条进 CI/)).toBeInTheDocument();
+        const metrics = container.querySelector('.pipeline-metrics');
+        expect(metrics?.textContent).toContain('2 条主线链路');
+        expect(metrics?.textContent).toContain('发布路径 1 次模型调用');
+        expect(metrics?.textContent).toContain('4 路并行编排');
+        expect(metrics?.textContent).toContain('金标准 35 条进 CI');
+        expect(container.querySelectorAll('.metric-chip')).toHaveLength(4);
     });
 });

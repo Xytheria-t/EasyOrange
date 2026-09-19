@@ -85,6 +85,8 @@ interface PipelineStep {
     title: string;
     subtitle: string;
     detail: string;
+    /** 主卡内嵌微型可视化：outputs = 一次调用三产出链路；chat = SSE 流式问答 */
+    visual?: 'outputs' | 'chat';
 }
 
 const PIPELINE_STEPS: PipelineStep[] = [
@@ -96,6 +98,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
         title: '拍照识别 · 单入口',
         subtitle: '一次上传 · 1 次模型调用',
         detail: '同步产出属性、建议价与标题描述——发布路径只有这一个 AI 入口',
+        visual: 'outputs',
     },
     {
         id: 'adopt',
@@ -132,13 +135,47 @@ const PIPELINE_STEPS: PipelineStep[] = [
         title: '流式商品问答',
         subtitle: 'SSE 逐字输出 · 多轮记忆',
         detail: '会话窗口 24h + 偏好画像,答不上来不硬编,超预算直接拦截',
+        visual: 'chat',
     },
 ];
 
+/** 主卡微可视化：1 次调用 → 三类产出 */
+function OutputsVisual() {
+    return (
+        <div className="step-visual step-visual-outputs" aria-hidden="true">
+            <span className="visual-node">拍照</span>
+            <span className="visual-link" />
+            <span className="visual-chip">属性</span>
+            <span className="visual-chip">建议价</span>
+            <span className="visual-chip">标题描述</span>
+        </div>
+    );
+}
+
+/** 主卡微可视化：SSE 流式问答 + 溯源 */
+function ChatVisual() {
+    return (
+        <div className="step-visual step-visual-chat" aria-hidden="true">
+            <span className="visual-bubble visual-bubble-user">这个相机有磕碰吗？</span>
+            <span className="visual-bubble visual-bubble-ai">成色 95 新,功能正常,快门数 ~1.2k</span>
+            <span className="visual-meta">
+                <span className="visual-typing">
+                    <i />
+                    <i />
+                    <i />
+                </span>
+                [来源:标题]
+            </span>
+        </div>
+    );
+}
+
 function PipelineStepRow({ step, isActive, isDone }: { step: PipelineStep; isActive: boolean; isDone: boolean }) {
     return (
-        <div
-            className={`pipeline-step ${isActive ? 'is-active' : ''} ${isDone ? 'is-done' : ''}`}
+        <article
+            className={`pipeline-step ${isActive ? 'is-active' : ''} ${isDone ? 'is-done' : ''} ${
+                step.visual ? 'is-hero' : ''
+            }`}
             data-testid={`pipeline-step-${step.id}`}
         >
             <div className="step-top">
@@ -156,12 +193,14 @@ function PipelineStepRow({ step, isActive, isDone }: { step: PipelineStep; isAct
             </div>
             <p className="step-subtitle">{step.subtitle}</p>
             <p className="step-detail">{step.detail}</p>
+            {step.visual === 'outputs' && <OutputsVisual />}
+            {step.visual === 'chat' && <ChatVisual />}
             {isActive && (
                 <div className="step-progress">
                     <div className="step-progress-bar" />
                 </div>
             )}
-        </div>
+        </article>
     );
 }
 
@@ -286,12 +325,10 @@ function AIFeaturesSection() {
                                         const isActive = PIPELINE_STEPS[activeIndex]?.id === step.id;
                                         const isDone = completedCount > PIPELINE_STEPS.findIndex(s => s.id === step.id);
                                         return (
-                                            <PipelineStepRow
-                                                key={step.id}
-                                                step={step}
-                                                isActive={isActive}
-                                                isDone={isDone}
-                                            />
+                                            <div key={step.id} className="station">
+                                                <span className="station-dot" aria-hidden="true" />
+                                                <PipelineStepRow step={step} isActive={isActive} isDone={isDone} />
+                                            </div>
                                         );
                                     })}
                                 </div>
@@ -300,8 +337,19 @@ function AIFeaturesSection() {
                     })}
                 </div>
 
-                <p className="pipeline-footnote">
-                    2 条主线链路 · 发布路径 1 次模型调用 · 4 路并行编排 · 金标准 35 条进 CI
+                <p className="pipeline-metrics">
+                    <span className="metric-chip">
+                        <strong>2</strong> 条主线链路
+                    </span>
+                    <span className="metric-chip">
+                        发布路径 <strong>1</strong> 次模型调用
+                    </span>
+                    <span className="metric-chip">
+                        <strong>4</strong> 路并行编排
+                    </span>
+                    <span className="metric-chip">
+                        金标准 <strong>35</strong> 条进 CI
+                    </span>
                 </p>
             </div>
         </section>

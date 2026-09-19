@@ -279,7 +279,7 @@
 .ai-gradient-orb.orb-2 {
     width: 400px;
     height: 400px;
-    background: radial-gradient(circle, rgba(195, 155, 211, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(251, 113, 133, 0.15) 0%, transparent 70%);
     bottom: -50px;
     right: -50px;
     animation: orbFloat 18s ease-in-out infinite reverse;
@@ -317,7 +317,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(195, 155, 211, 0.08) 100%);
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(251, 191, 36, 0.08) 100%);
     border: 1px solid rgba(249, 115, 22, 0.15);
     border-radius: var(--radius-full);
     font-size: 0.875rem;
@@ -332,9 +332,9 @@
 }
 
 .ai-badge.ai-badge-alt {
-    background: linear-gradient(135deg, rgba(195, 155, 211, 0.1) 0%, rgba(249, 115, 22, 0.08) 100%);
-    border-color: rgba(195, 155, 211, 0.2);
-    color: var(--purple-500);
+    background: linear-gradient(135deg, rgba(251, 113, 133, 0.1) 0%, rgba(249, 115, 22, 0.08) 100%);
+    border-color: rgba(251, 113, 133, 0.2);
+    color: var(--rose-600);
 }
 
 /* Header badge - warm gradient pill with a live dot */
@@ -454,7 +454,7 @@
 }
 
 .title-side-buyer {
-    background-image: linear-gradient(115deg, var(--purple-600) 0%, var(--purple-500) 100%);
+    background-image: linear-gradient(115deg, var(--rose-600) 0%, var(--rose-400) 100%);
 }
 
 .title-dot {
@@ -503,8 +503,8 @@
 }
 
 .subtitle-dot-buyer {
-    background: linear-gradient(135deg, var(--purple-300), var(--purple-500));
-    box-shadow: 0 0 0 3px rgba(195, 155, 211, 0.18);
+    background: linear-gradient(135deg, var(--rose-400), var(--rose-600));
+    box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.14);
 }
 
 .subtitle-divider {
@@ -1098,34 +1098,57 @@
 }
 
 /* ============================================================
-   AI 工程化 - 两条主线双泳道(资产方 2 卡 / 认领方 3 卡)
+   AI 工程化 - 双轨流水线 Bento(资产方 2 卡 / 认领方 3 卡)
    ============================================================ */
 
 .pipeline-lanes {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
     margin: 2.5rem 0 1.75rem;
 }
 
-/* ====== 泳道:侧别信息轨 + 卡片组 ====== */
+/* ====== 泳道:玻璃面板 + 侧别信息轨 + 卡片组 ====== */
 .pipeline-lane {
+    position: relative;
     display: grid;
     grid-template-columns: 216px 1fr;
     gap: 1.25rem;
-    padding: 1.25rem;
+    padding: 1.5rem 1.5rem 1.625rem;
     border-radius: var(--radius-2xl);
-    border: 1px solid var(--border-light);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+        0 4px 16px rgba(42, 37, 32, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    overflow: hidden;
+}
+
+/* 顶部发丝线:与全站玻璃面板同款 */
+.pipeline-lane::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(249, 115, 22, 0.18) 18%,
+        rgba(251, 113, 133, 0.28) 50%,
+        rgba(249, 115, 22, 0.18) 82%,
+        transparent 100%
+    );
 }
 
 .lane-seller {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.05) 0%, rgba(251, 113, 133, 0.03) 100%), var(--glass-bg);
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.05) 0%, rgba(251, 191, 36, 0.03) 100%), var(--glass-bg);
 }
 
 .lane-buyer {
-    background: linear-gradient(135deg, rgba(195, 155, 211, 0.07) 0%, rgba(216, 180, 254, 0.04) 100%), var(--glass-bg);
+    background: linear-gradient(135deg, rgba(251, 113, 133, 0.055) 0%, rgba(251, 191, 36, 0.03) 100%), var(--glass-bg);
 }
 
 .lane-info {
@@ -1151,9 +1174,9 @@
 }
 
 .lane-tag-buyer {
-    color: color-mix(in srgb, var(--purple-600) 78%, var(--gray-900));
-    background: linear-gradient(135deg, rgba(195, 155, 211, 0.15) 0%, rgba(216, 180, 254, 0.11) 100%);
-    border: 1px solid rgba(195, 155, 211, 0.3);
+    color: var(--rose-600);
+    background: linear-gradient(135deg, rgba(251, 113, 133, 0.13) 0%, rgba(251, 191, 36, 0.08) 100%);
+    border: 1px solid rgba(251, 113, 133, 0.26);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
@@ -1173,18 +1196,116 @@
     letter-spacing: 0.02em;
 }
 
+/* ====== 卡片组:Bento 网格 + 流水线轨道 ====== */
 .lane-cards {
+    position: relative;
     display: grid;
     gap: 0.875rem;
     align-items: stretch;
 }
 
+/* 资产方:主卡(01)加宽;认领方:三卡等宽节奏 */
 .lane-seller .lane-cards {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1.5fr 1fr;
 }
 
 .lane-buyer .lane-cards {
     grid-template-columns: repeat(3, 1fr);
+}
+
+/* 流光脉冲:沿轨道持续流动,流水线"活着"的呼吸感 */
+.lane-cards::after {
+    content: "";
+    position: absolute;
+    top: -0.625rem;
+    left: 0;
+    width: 14px;
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--primary-500) 50%, transparent 100%);
+    opacity: 0;
+    animation: trackPulse 11s ease-in-out infinite;
+}
+
+.lane-buyer .lane-cards::after {
+    background: linear-gradient(90deg, transparent 0%, var(--rose-500) 50%, transparent 100%);
+    animation-duration: 15.4s;
+}
+
+@keyframes trackPulse {
+    0% {
+        left: 0;
+        opacity: 0;
+    }
+    6% {
+        opacity: 0.9;
+    }
+    94% {
+        opacity: 0.9;
+    }
+    100% {
+        left: calc(100% - 14px);
+        opacity: 0;
+    }
+}
+
+/* 站点:轨道线穿卡间隙,圆点对齐卡内图标 */
+.station {
+    position: relative;
+    display: flex;
+}
+
+.station::before {
+    content: "";
+    position: absolute;
+    top: -0.625rem;
+    left: -0.4375rem;
+    right: -0.4375rem;
+    height: 2px;
+    border-radius: 1px;
+    background: linear-gradient(90deg, rgba(42, 37, 32, 0.07) 0%, rgba(42, 37, 32, 0.05) 100%);
+    transition: background 0.35s var(--ease-out);
+}
+
+.station:first-child::before {
+    left: 2.375rem;
+}
+
+.station-dot {
+    position: absolute;
+    top: -0.625rem;
+    left: 2.375rem;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: transform 0.35s var(--ease-spring);
+}
+
+.lane-seller .station-dot {
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    box-shadow:
+        0 0 0 3px rgba(255, 255, 255, 0.9),
+        0 2px 6px rgba(249, 115, 22, 0.35);
+}
+
+.lane-buyer .station-dot {
+    background: linear-gradient(135deg, var(--rose-400), var(--rose-600));
+    box-shadow:
+        0 0 0 3px rgba(255, 255, 255, 0.9),
+        0 2px 6px rgba(244, 63, 94, 0.3);
+}
+
+.station:has(.pipeline-step.is-active) .station-dot {
+    transform: translate(-50%, -50%) scale(1.35);
+}
+
+.station:has(.pipeline-step.is-active)::before {
+    background: linear-gradient(90deg, rgba(249, 115, 22, 0.35) 0%, rgba(251, 113, 133, 0.18) 100%);
+}
+
+.lane-buyer .station:has(.pipeline-step.is-active)::before {
+    background: linear-gradient(90deg, rgba(251, 113, 133, 0.4) 0%, rgba(251, 191, 36, 0.2) 100%);
 }
 
 /* ====== 步骤卡 ====== */
@@ -1192,6 +1313,7 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    width: 100%;
     padding: 1.125rem 1.25rem 1.25rem;
     background: rgba(255, 255, 255, 0.72);
     border: 1px solid rgba(42, 37, 32, 0.05);
@@ -1209,6 +1331,17 @@
     box-shadow: var(--shadow-md);
 }
 
+/* 主卡(01/05):暖色微渐变底,视觉重心 */
+.pipeline-step.is-hero {
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 251, 245, 0.78) 100%);
+    border-color: rgba(249, 115, 22, 0.1);
+}
+
+.lane-buyer .pipeline-step.is-hero {
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 245, 246, 0.78) 100%);
+    border-color: rgba(251, 113, 133, 0.12);
+}
+
 .pipeline-step.is-active {
     background: rgba(255, 255, 255, 0.95);
     transform: translateY(-2px);
@@ -1219,9 +1352,9 @@
 }
 
 .lane-buyer .pipeline-step.is-active {
-    border-color: rgba(195, 155, 211, 0.42);
+    border-color: rgba(251, 113, 133, 0.4);
     box-shadow:
-        0 12px 28px -10px rgba(195, 155, 211, 0.24),
+        0 12px 28px -10px rgba(244, 63, 94, 0.22),
         0 2px 6px -2px rgba(42, 37, 32, 0.05);
 }
 
@@ -1252,9 +1385,9 @@
 }
 
 .lane-buyer .pipeline-step .step-icon-box {
-    background: linear-gradient(135deg, rgba(195, 155, 211, 0.13) 0%, rgba(216, 180, 254, 0.09) 100%);
-    border-color: rgba(195, 155, 211, 0.24);
-    color: var(--purple-600);
+    background: linear-gradient(135deg, rgba(251, 113, 133, 0.12) 0%, rgba(251, 191, 36, 0.08) 100%);
+    border-color: rgba(251, 113, 133, 0.22);
+    color: var(--rose-600);
 }
 
 .step-icon {
@@ -1281,7 +1414,7 @@
 }
 
 .lane-buyer .pipeline-step.is-active .step-index-num {
-    color: var(--purple-600);
+    color: var(--rose-600);
 }
 
 .step-title-row {
@@ -1323,13 +1456,13 @@
 }
 
 .lane-buyer .step-running-badge {
-    color: color-mix(in srgb, var(--purple-600) 78%, var(--gray-900));
-    background: rgba(195, 155, 211, 0.14);
-    border-color: rgba(195, 155, 211, 0.3);
+    color: var(--rose-600);
+    background: rgba(251, 113, 133, 0.12);
+    border-color: rgba(251, 113, 133, 0.26);
 }
 
 .lane-buyer .step-running-badge::before {
-    background: var(--purple-500);
+    background: var(--rose-500);
 }
 
 @keyframes step-pulse {
@@ -1386,7 +1519,7 @@
 }
 
 .lane-buyer .step-progress::before {
-    background: rgba(195, 155, 211, 0.14);
+    background: rgba(251, 113, 133, 0.14);
 }
 
 .step-progress-bar {
@@ -1401,7 +1534,7 @@
 }
 
 .lane-buyer .step-progress-bar {
-    background: linear-gradient(90deg, rgba(195, 155, 211, 0.95) 0%, rgba(216, 180, 254, 0.95) 100%);
+    background: linear-gradient(90deg, rgba(251, 113, 133, 0.95) 0%, rgba(251, 191, 36, 0.9) 100%);
 }
 
 @keyframes step-progress {
@@ -1413,13 +1546,161 @@
     }
 }
 
-/* ====== 规格脚注:硬数字收成一行 ====== */
-.pipeline-footnote {
-    text-align: center;
-    font-size: 0.8125rem;
-    color: var(--text-tertiary);
-    letter-spacing: 0.05em;
+/* ====== 主卡微可视化 ====== */
+.step-visual {
+    margin-top: auto;
+    padding-top: 0.875rem;
+}
+
+/* 01:一次调用 → 三类产出 */
+.step-visual-outputs {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.visual-node {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--primary-700);
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, rgba(251, 113, 133, 0.08) 100%);
+    border: 1px solid rgba(249, 115, 22, 0.2);
+    border-radius: var(--radius-full);
+    padding: 0.25rem 0.625rem;
+}
+
+.visual-link {
+    width: 0.875rem;
+    height: 1px;
+    background: repeating-linear-gradient(90deg, rgba(249, 115, 22, 0.4) 0 4px, transparent 4px 8px);
+}
+
+.visual-chip {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(42, 37, 32, 0.08);
+    border-radius: var(--radius-full);
+    padding: 0.25rem 0.5625rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* 05:SSE 流式问答迷你现场 */
+.step-visual-chat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3125rem;
+}
+
+.visual-bubble {
+    font-size: 0.6875rem;
+    line-height: 1.5;
+    padding: 0.3125rem 0.625rem;
+    border-radius: 10px;
+    max-width: 92%;
+}
+
+.visual-bubble-user {
+    align-self: flex-end;
+    background: var(--gradient-orange-glow);
+    color: white;
+    border-bottom-right-radius: 3px;
+    font-weight: 500;
+}
+
+.visual-bubble-ai {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(42, 37, 32, 0.06);
+    border-bottom-left-radius: 3px;
+    color: var(--text-secondary);
+    box-shadow: 0 1px 4px rgba(42, 37, 32, 0.04);
+}
+
+.visual-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    align-self: flex-start;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    color: var(--primary-600);
+}
+
+.visual-typing {
+    display: inline-flex;
+    gap: 3px;
+}
+
+.visual-typing i {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--primary-400);
+    animation: visualTyping 1.3s ease-in-out infinite;
+}
+
+.visual-typing i:nth-child(2) {
+    background: var(--rose-400);
+    animation-delay: 0.15s;
+}
+
+.visual-typing i:nth-child(3) {
+    background: var(--gold-400);
+    animation-delay: 0.3s;
+}
+
+@keyframes visualTyping {
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+    30% {
+        transform: translateY(-3px);
+        opacity: 1;
+    }
+}
+
+/* ====== 规格脚注:硬数字收成指标 chips ====== */
+.pipeline-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.625rem;
     margin: 0;
+}
+
+.metric-chip {
+    display: inline-flex;
+    align-items: baseline;
+    padding: 0.4375rem 0.9375rem;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+        0 2px 8px rgba(42, 37, 32, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.03em;
+}
+
+.metric-chip strong {
+    font-family: var(--font-price);
+    font-size: 1.0625rem;
+    font-weight: 700;
+    margin: 0 0.0625rem;
+    background: var(--gradient-text-warm);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 /* ====== 响应式 ====== */
@@ -1433,8 +1714,16 @@
         padding: 0;
     }
 
-    .lane-cards {
+    .lane-seller .lane-cards,
+    .lane-buyer .lane-cards {
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    /* 自动列宽下站点对位失准,轨道整体退场 */
+    .station::before,
+    .station-dot,
+    .lane-cards::after {
+        display: none;
     }
 }
 
@@ -1454,8 +1743,14 @@
 
 @media (prefers-reduced-motion: reduce) {
     .step-running-badge::before,
-    .step-progress-bar {
+    .step-progress-bar,
+    .lane-cards::after,
+    .visual-typing i {
         animation: none;
+    }
+
+    .lane-cards::after {
+        display: none;
     }
 }
 
