@@ -1,15 +1,32 @@
-# EasyOrange — LLM × DDD：Java 架构工程化实战
+# EasyOrange — Java AI Agent 工程化实战
 
-> **EasyOrange** — 在 DDD 六边形架构里集成 LLM：AI 链路**可换供应商、可降级、可观测**的工程化实战项目。
+> **EasyOrange** — 把 LLM Agent 做到生产级：多范式工具编排（Workflow 式并行扇出 + 自治式 Agent 工具循环）· RAG 检索增强（两路召回 + RRF 融合）· 评估闭环进 CI · 限流 / Token 预算 / stale 降级 · LLM 专用可观测——AI 链路**可换供应商、可降级、可观测、可评估**。
 >
 > **11 模块解耦 · 46 个 Port 接口编译期隔离 · 9 事件消费者 · 12 条 ADR · 2,400+ 测试守卫 · AI 两条主线链路 × 8 项工程化**
 >
-> 业务载体：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。
+> 业务载体：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给 AI 工程化与架构落地。
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-ED8B00)](https://openjdk.java.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-6DB33F)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
+[![Spring AI](https://img.shields.io/badge/Spring%20AI-2.0-6DB33F)](https://spring.io/projects/spring-ai)
+
+<!--
+## 演示（GIF，30 秒看完）
+
+录制后取消本注释，gif 放 docs/gifs/（本地一键复现见「快速开始」）：
+
+| 多步 Agent 对话式找货（流式） | Cursor 连接 MCP server 实时查在售商品 | Langfuse 全链路 trace |
+|---|---|---|
+| <img src="docs/gifs/agent-find.gif" width="320"> | <img src="docs/gifs/mcp-cursor.gif" width="320"> | <img src="docs/gifs/langfuse-trace.gif" width="320"> |
+-->
+
+## 正在迭代（2026 Q4）
+
+- **多步 Agent 工具循环**：决策 → 工具 → 观察多轮自治循环，步数上限 + 每步 trace 落库，超限降级回现有单步
+- **MCP server**：公开只读工具面（商品检索 / 详情 / 类目 / 平台规则知识）经 Spring AI 2.0 `@McpTool` 暴露，支持 Cursor / Claude Desktop 接入
+- **Langfuse 自托管**：Spring AI Observation → OTLP，每步 prompt / token / 延迟 / 成本可视化
 
 ## 两条技术主线
 
@@ -176,7 +193,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 ## 快速开始
 
 ```bash
-git clone https://github.com/Xytheria-t/EasyOrange.git && cd easy-orange
+git clone https://github.com/Xytheria-t/EasyOrange.git && cd EasyOrange
 docker compose -f compose.yaml up -d                               # MySQL / Redis / RabbitMQ
 docker compose --profile search up -d elasticsearch                # ES（IK 分词，首次构建镜像略慢）
                                                                    # dev 默认启用检索，起后端前必须先起 ES，否则启动期建索引失败
@@ -226,6 +243,6 @@ easy-orange/
 
 <div align="center">
 
-**EasyOrange** · LLM × DDD：Java 架构工程化实战 · Java 25 + Spring Boot 4 · DDD + CQRS + 本地单事务/分布式锁 + 事件驱动 + AI 工程化 · [GitHub](https://github.com/Xytheria-t/EasyOrange)
+**EasyOrange** · Java AI Agent 工程化实战 · Java 25 + Spring Boot 4 + Spring AI 2.0 · Agent 编排 + RAG + 评估闭环 + DDD + 事件驱动可靠性 · [GitHub](https://github.com/Xytheria-t/EasyOrange)
 
 </div>
