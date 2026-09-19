@@ -12,6 +12,7 @@ export interface Product {
     conditionLevel: number;
     status: ProductStatus;
     images: string[];
+    mainImageUrl?: string | null;
     location: string;
     views: number;
     favorites: number;
@@ -116,9 +117,10 @@ export interface Favorite {
     createTime: string;
 }
 
-/** ES facet aggregation bucket */
+/** ES facet aggregation bucket（label：后端聚合出的展示名，分类为类目名、价格为区间文案） */
 export interface FacetBucket {
     code: string;
+    label?: string;
     count: number;
 }
 
@@ -150,6 +152,8 @@ export interface ProductSearchParams {
     maxPrice?: number;
     conditionLevel?: number;
     sort?: 'default' | 'price_asc' | 'price_desc' | 'newest';
+    /** 后端 /products/search 绑定的是 PageRequest.sortField（relevance 不传即可） */
+    sortField?: 'relevance' | 'newest' | 'price_asc' | 'price_desc' | 'popular';
     pageNum?: number;
     pageSize?: number;
     aiEnhanced?: boolean;

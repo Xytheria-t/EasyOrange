@@ -62,14 +62,15 @@ function formatPriceLabel(value: string): string {
     return value;
 }
 
-function getItemLabel(group: string, value: string): string {
+function getItemLabel(group: string, value: string, backendLabel?: string): string {
     switch (group) {
         case 'condition':
-            return CONDITION_LABEL_MAP[Number(value)] ?? value;
+            return CONDITION_LABEL_MAP[Number(value)] ?? backendLabel ?? value;
         case 'price':
             return formatPriceLabel(value);
         default:
-            return value;
+            // 分类等动态维度：后端聚合出展示名（类目名）时优先用它，原始 id 只作兜底
+            return backendLabel && backendLabel !== value ? backendLabel : value;
     }
 }
 
@@ -88,7 +89,7 @@ export default function FacetFilter({ facets, filters, onFilterChange }: FacetFi
             }
             map.get(group)?.items.push({
                 value,
-                label: getItemLabel(group, value),
+                label: getItemLabel(group, value, facet.label),
                 count: facet.count,
             });
         }

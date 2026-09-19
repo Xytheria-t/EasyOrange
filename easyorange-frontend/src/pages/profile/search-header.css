@@ -135,7 +135,7 @@
 .search-page-content {
     position: relative;
     z-index: 1;
-    max-width: 960px;
+    max-width: 1120px;
     margin: 0 auto;
     padding: 0 1.5rem;
 }
@@ -145,7 +145,8 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 2.5rem;
+    max-width: 880px;
+    margin: 0 auto 2.25rem;
 }
 
 /* Back button */
@@ -255,12 +256,18 @@
     background: transparent;
     padding: 0.75rem 0.75rem;
     min-width: 0;
-    font-family: var(--font-sans);
+    font-family: inherit;
+    height: auto;
 }
 
 .search-input-field::placeholder {
     color: var(--text-tertiary);
     font-weight: 400;
+}
+
+.search-input-field:focus-visible {
+    outline: none;
+    box-shadow: none;
 }
 
 /* Clear button */
