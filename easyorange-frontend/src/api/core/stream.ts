@@ -1,10 +1,10 @@
 import { getStoredToken } from '@/features/auth/session';
-import type { ChatStreamEvent } from '@/types/ai';
+import type { AgentStep, ChatStreamEvent } from '@/types/ai';
 
 /**
  * SSE 流式消费（fetch + ReadableStream）— POST 请求可携带 Authorization 头，
  * 这是原生 EventSource（仅 GET、不能带头）无法满足的；逐帧解析 text/event-stream。
- * 事件协议与后端 SseEmitter 对齐：token / sources / done / error。
+ * 事件协议与后端 SseEmitter 对齐：step / token / sources / done / error。
  */
 export async function streamChat(
     endpoint: string,
@@ -62,6 +62,9 @@ function handleFrame(frame: string, onEvent: (event: ChatStreamEvent) => void) {
     }
     const raw = dataLines.join('\n');
     switch (eventName) {
+        case 'step':
+            onEvent({ type: 'step', data: parseAgentStep(raw) });
+            break;
         case 'token':
             onEvent({ type: 'token', data: parseRaw(raw) });
             break;
@@ -99,4 +102,22 @@ function parseJsonArray(raw: string): string[] {
         // fall through
     }
     return raw ? [raw] : [];
+}
+
+/** step 事件载荷为 JSON 对象（AgentStepView），解析失败时降级为最小可用形状 */
+function parseAgentStep(raw: string): AgentStep {
+    try {
+        const parsed = JSON.parse(raw) as Partial<AgentStep>;
+        if (parsed && typeof parsed === 'object' && typeof parsed.tool === 'string') {
+            return {
+                step: typeof parsed.step === 'number' ? parsed.step : 0,
+                tool: parsed.tool,
+                thought: parsed.thought,
+                observation: parsed.observation,
+            };
+        }
+    } catch {
+        // fall through
+    }
+    return { step: 0, tool: raw };
 }

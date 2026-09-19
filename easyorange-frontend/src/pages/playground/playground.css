@@ -88,6 +88,28 @@
     gap: 0.375rem;
 }
 
+/* Agent 工具循环步骤（step 事件）：决策理由直观可见 */
+.playground-msg__steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.playground-msg__step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
+    color: var(--purple-600, #7c3aed);
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.18);
+    border-radius: 999px;
+    padding: 0.125rem 0.5rem;
+}
+
 .playground-msg__source {
     font-size: 0.6875rem;
     color: var(--primary-600);

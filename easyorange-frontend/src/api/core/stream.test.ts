@@ -42,6 +42,39 @@ describe('streamChat (SSE 流式消费)', () => {
         expect(events).toEqual(['token:"你"', 'token:"好"', 'sources:["退款规则"]', 'done:"你好"']);
     });
 
+    it('step 事件解析为 AgentStep 对象（Agent 步骤可视化）', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi
+                .fn()
+                .mockResolvedValue(
+                    sseResponse([
+                        'event: step\ndata: {"step":1,"tool":"knowledge_search","thought":"查退款规则","observation":"命中 2 条：退款规则 / 售后政策"}\n\n',
+                        'event: token\ndata: 可以\n\n',
+                    ])
+                )
+        );
+
+        const events: string[] = [];
+        await streamChat('/ai/chat/stream', { question: '怎么退款？' }, event => {
+            events.push(`${event.type}:${JSON.stringify(event.data)}`);
+        });
+
+        expect(events).toEqual([
+            'step:{"step":1,"tool":"knowledge_search","thought":"查退款规则","observation":"命中 2 条：退款规则 / 售后政策"}',
+            'token:"可以"',
+        ]);
+    });
+
+    it('step 事件载荷非法时降级为最小形状', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(sseResponse(['event: step\ndata: [broken\n\n'])));
+
+        const events: Array<{ type: string; data: unknown }> = [];
+        await streamChat('/ai/chat/stream', {}, event => events.push(event));
+
+        expect(events).toEqual([{ type: 'step', data: { step: 0, tool: '[broken' } }]);
+    });
+
     it('error 事件与跨帧切分（数据分两次到达）', async () => {
         const encoder = new TextEncoder();
         const body = new ReadableStream<Uint8Array>({
