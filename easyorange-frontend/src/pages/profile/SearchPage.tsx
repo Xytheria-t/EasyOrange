@@ -1,4 +1,3 @@
-import { useVirtualizer } from '@tanstack/react-virtual';
 import {
     ArrowLeft,
     BookOpen,
@@ -21,9 +20,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PaginationBar } from '@/components/PaginationBar';
 import { ProductCard } from '@/components/product/ProductCard';
+import '@/components/product/products-grid.css';
 import { AiSearchPanel } from '@/components/search/AiSearchPanel';
 import FacetFilter from '@/components/search/FacetFilter';
-import { Input } from '@/components/ui';
+import SortDropdown, { type SortOption } from '@/components/search/SortDropdown';
 import { Button } from '@/components/ui/button';
 import { useCategories, useFavoriteCheck, useHotKeywords, useProductSearch, useSearchSuggestions } from '@/hooks';
 import { useSearchUrlState } from '@/hooks/product/useSearchUrlState';
@@ -56,10 +56,11 @@ function SearchPage() {
         filters,
         pageNum,
         aiEnabled,
-        setKeyword: setUrlKeyword,
         setFilterValue,
         setPageNum,
         setAiEnabled: setUrlAiEnabled,
+        setState: setUrlState,
+        reset,
     } = useSearchUrlState();
     const [keyword, setKeyword] = useState(urlKeyword);
     const [submittedKeyword, setSubmittedKeyword] = useState(urlKeyword);
@@ -95,6 +96,10 @@ function SearchPage() {
             if (max) {
                 params.maxPrice = Number(max);
             }
+        }
+        // 相关度排序是后端默认行为，不传 sortField
+        if (filters.sort && filters.sort !== 'relevance') {
+            params.sortField = filters.sort as ProductSearchParams['sortField'];
         }
         if (aiEnabled) {
             params.aiEnhanced = true;
@@ -150,6 +155,16 @@ function SearchPage() {
         inputRef.current?.focus();
     }, []);
 
+    // URL keyword 变化（首页热门词、头部搜索入口等外部导航）时本地状态跟随；
+    // 自己提交的搜索 URL 与本地一致，此效应为 no-op
+    useEffect(() => {
+        if (urlKeyword !== submittedKeyword) {
+            setKeyword(urlKeyword);
+            setSubmittedKeyword(urlKeyword);
+            setDebouncedKeyword(urlKeyword);
+        }
+    }, [urlKeyword, submittedKeyword]);
+
     const addToHistory = useCallback((kw: string) => {
         if (!kw.trim()) {
             return;
@@ -176,62 +191,60 @@ function SearchPage() {
         localStorage.removeItem('eo_search_history');
     }, []);
 
+    /** 发起一次新搜索：URL（keyword + 回到第一页）与本地状态一次对齐 */
+    const runSearch = useCallback(
+        (kw: string) => {
+            const trimmed = kw.trim();
+            if (!trimmed) {
+                return;
+            }
+            setUrlState({ keyword: trimmed, pageNum: 1 });
+            setKeyword(trimmed);
+            setSubmittedKeyword(trimmed);
+            setDebouncedKeyword(trimmed);
+            setShowSuggestions(false);
+            addToHistory(trimmed);
+        },
+        [setUrlState, addToHistory]
+    );
+
     const handleSubmit = useCallback(
         (e: React.FormEvent) => {
             e.preventDefault();
-            const trimmed = keyword.trim();
-            if (trimmed) {
-                setSubmittedKeyword(trimmed);
-                setShowSuggestions(false);
-                addToHistory(trimmed);
-                setUrlKeyword(trimmed);
-            }
+            runSearch(keyword);
         },
-        [keyword, addToHistory, setUrlKeyword]
+        [keyword, runSearch]
     );
 
     const handleAiToggle = useCallback(() => {
         setUrlAiEnabled(!aiEnabled);
     }, [aiEnabled, setUrlAiEnabled]);
 
-    const handleAiQuestionClick = useCallback(
-        (question: string) => {
-            setKeyword(question);
-            setDebouncedKeyword(question);
-            setSubmittedKeyword(question);
-            addToHistory(question);
-            inputRef.current?.focus();
+    const handleSuggestionClick = useCallback(
+        (suggestion: string) => {
+            runSearch(suggestion);
         },
-        [addToHistory]
+        [runSearch]
     );
 
-    const handleSuggestionClick = (suggestion: string) => {
-        setKeyword(suggestion);
-        setDebouncedKeyword(suggestion);
-        setSubmittedKeyword(suggestion);
-        setShowSuggestions(false);
-        addToHistory(suggestion);
-    };
-
-    const handleHotKeywordClick = (kw: string) => {
-        setKeyword(kw);
-        setDebouncedKeyword(kw);
-        setSubmittedKeyword(kw);
-        setShowSuggestions(false);
-        addToHistory(kw);
-    };
+    const handleHotKeywordClick = useCallback(
+        (kw: string) => {
+            runSearch(kw);
+        },
+        [runSearch]
+    );
 
     const handleCategoryClick = (categoryId: string) => {
         navigate(`/products?filters=category:${encodeURIComponent(categoryId)}`);
     };
 
-    const handleClear = () => {
+    const handleClear = useCallback(() => {
         setKeyword('');
         setDebouncedKeyword('');
         setSubmittedKeyword('');
-        setUrlKeyword('');
+        reset();
         inputRef.current?.focus();
-    };
+    }, [reset]);
 
     const handleKeywordChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -241,6 +254,16 @@ function SearchPage() {
             debouncedSetKeyword(value);
         },
         [debouncedSetKeyword]
+    );
+
+    const sortValue = (filters.sort as SortOption) || 'relevance';
+
+    const handleSortChange = useCallback(
+        (sort: SortOption) => {
+            // 换排序回到第一页；relevance（后端默认）不占 filters 参数
+            setFilterValue('sort', sort === 'relevance' ? null : sort);
+        },
+        [setFilterValue]
     );
 
     const hasResults = submittedKeyword && products.length > 0;
@@ -256,16 +279,6 @@ function SearchPage() {
         },
         [setPageNum]
     );
-
-    const searchResultsParentRef = useRef<HTMLDivElement>(null);
-
-    const searchVirtualizer = useVirtualizer({
-        count: Math.ceil(products.length / 2),
-        getScrollElement: () =>
-            (typeof window !== 'undefined' ? window.document.documentElement : null) as HTMLElement | null,
-        estimateSize: () => 520,
-        overscan: 3,
-    });
 
     return (
         <div className="search-page-wrapper">
@@ -286,7 +299,7 @@ function SearchPage() {
                     <form onSubmit={handleSubmit} className="search-form-wrapper">
                         <div className="search-input-premium">
                             <Search size={18} className="search-input-icon" />
-                            <Input
+                            <input
                                 ref={inputRef}
                                 type="text"
                                 value={keyword}
@@ -295,6 +308,7 @@ function SearchPage() {
                                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                 placeholder="搜索你想要的商品..."
                                 className="search-input-field"
+                                aria-label="搜索商品"
                             />
                             {keyword && (
                                 <Button
@@ -429,7 +443,7 @@ function SearchPage() {
                             </div>
                         )}
 
-                        {/* Category Quick Access - 8 columns compact grid */}
+                        {/* Category Quick Access */}
                         <div className="search-categories-section">
                             <div className="search-section-header-compact">
                                 <div className="search-section-icon-compact">
@@ -470,17 +484,22 @@ function SearchPage() {
                 {/* Search Results */}
                 {submittedKeyword && (
                     <div className="search-results-section">
-                        <div className="search-results-header">
-                            <div className="search-results-badge">
-                                <Search size={12} />
-                                <span>搜索结果</span>
+                        <div className="search-results-toolbar">
+                            <div className="search-results-info">
+                                <span className="search-results-badge">
+                                    <Search size={12} />
+                                    <span>搜索结果</span>
+                                </span>
+                                <h2 className="search-results-title">
+                                    &ldquo;<span className="search-keyword-highlight">{submittedKeyword}</span>&rdquo;
+                                </h2>
+                                <p className="search-results-count">
+                                    共 <span className="search-count-number">{total}</span> 件相关商品
+                                </p>
                             </div>
-                            <h2 className="search-results-title">
-                                搜索 &ldquo;<span className="search-keyword-highlight">{submittedKeyword}</span>&rdquo;
-                            </h2>
-                            <p className="search-results-count">
-                                共找到 <span className="search-count-number">{total}</span> 件商品
-                            </p>
+                            <div className="search-results-actions">
+                                <SortDropdown value={sortValue} onChange={handleSortChange} />
+                            </div>
                         </div>
 
                         {facets.length > 0 && (
@@ -490,7 +509,7 @@ function SearchPage() {
                         )}
 
                         {aiEnhancement && (
-                            <AiSearchPanel enhancement={aiEnhancement} onQuestionClick={handleAiQuestionClick} />
+                            <AiSearchPanel enhancement={aiEnhancement} onQuestionClick={handleHotKeywordClick} />
                         )}
 
                         {isSearching && (
@@ -501,45 +520,17 @@ function SearchPage() {
                         )}
 
                         {hasResults && !isSearching && (
-                            <div
-                                ref={searchResultsParentRef}
-                                style={{
-                                    position: 'relative',
-                                    height: `${searchVirtualizer.getTotalSize()}px`,
-                                    width: '100%',
-                                }}
-                            >
-                                {searchVirtualizer.getVirtualItems().map(virtualRow => {
-                                    const startIdx = virtualRow.index * 2;
-                                    const rowProducts = products.slice(startIdx, startIdx + 2);
-                                    return (
-                                        <div
-                                            key={virtualRow.index}
-                                            style={{
-                                                position: 'absolute',
-                                                top: 0,
-                                                left: 0,
-                                                width: '100%',
-                                                height: virtualRow.size,
-                                                transform: `translateY(${virtualRow.start}px)`,
-                                                display: 'grid',
-                                                gridTemplateColumns: 'repeat(2, 1fr)',
-                                                gap: '1.1rem',
-                                                padding: '0 0 1.1rem 0',
-                                            }}
-                                        >
-                                            {rowProducts.map((product: import('@/types/product').Product) => (
-                                                <ProductCard
-                                                    key={product.id}
-                                                    product={product}
-                                                    aiTags={aiEnhancement?.productTags[product.id]}
-                                                    isFavorited={isFavorited(product.id)}
-                                                    onFavorite={handleFavorite}
-                                                />
-                                            ))}
-                                        </div>
-                                    );
-                                })}
+                            <div className="search-results-grid products-grid-premium">
+                                {products.map((product, index) => (
+                                    <ProductCard
+                                        key={product.id}
+                                        product={product}
+                                        index={index}
+                                        aiTags={aiEnhancement?.productTags[product.id]}
+                                        isFavorited={isFavorited(product.id)}
+                                        onFavorite={handleFavorite}
+                                    />
+                                ))}
                             </div>
                         )}
 

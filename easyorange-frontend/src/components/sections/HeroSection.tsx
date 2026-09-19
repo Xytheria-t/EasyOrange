@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Image } from '@/components/ui/Image';
-import { Input } from '@/components/ui/input';
 
 const HERO_PRODUCT = {
     image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop',
@@ -266,7 +265,7 @@ export default function HeroSection() {
                                 <circle cx="11" cy="11" r="8" />
                                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
                             </svg>
-                            <Input
+                            <input
                                 type="text"
                                 className="search-input"
                                 placeholder="搜索你想要的资产..."

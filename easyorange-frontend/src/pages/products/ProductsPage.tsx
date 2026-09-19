@@ -287,6 +287,7 @@ function ProductsPage() {
 
                         <SortDropdown
                             value={(queryParams.sort ?? 'newest') as SortOption}
+                            options={['newest', 'price_asc', 'price_desc', 'popular']}
                             onChange={handleSortChange}
                         />
                     </div>

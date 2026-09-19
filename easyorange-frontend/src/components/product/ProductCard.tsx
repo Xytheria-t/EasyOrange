@@ -26,7 +26,7 @@ export const ProductCard = memo(
         const [isHovered, setIsHovered] = useState(false);
         const [imageLoaded, setImageLoaded] = useState(false);
 
-        const imageUrl = product.images?.[0] || placeholderImage;
+        const imageUrl = product.images?.[0] || product.mainImageUrl || placeholderImage;
         const secondaryImageUrl = product.images?.[1] || null;
         const conditionLabel = CONDITION_LABEL_MAP[product.condition] || product.condition;
         const hasDiscount = product.originalPrice != null && product.originalPrice > product.price;
