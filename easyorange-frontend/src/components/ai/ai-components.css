@@ -185,80 +185,6 @@
     font-weight: 500;
 }
 
-.ai-review-suggestion {
-    background: #fefce8;
-    border: 1px solid #fde68a;
-    border-radius: 12px;
-    padding: 16px;
-}
-
-.ai-review-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 600;
-    color: #a16207;
-    margin-bottom: 12px;
-}
-
-.ai-review-trigger {
-    padding: 8px 16px;
-    border: 1px solid #eab308;
-    border-radius: 8px;
-    background: white;
-    font-size: 14px;
-    height: auto;
-    min-height: unset;
-}
-
-.ai-review-action {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-weight: 500;
-    font-size: 14px;
-}
-
-.ai-review-action.pass {
-    background: #dcfce7;
-    color: #15803d;
-}
-.ai-review-action.reject {
-    background: #fef2f2;
-    color: #dc2626;
-}
-/* AI 不可用：既不是通过也不是拒绝，用中性色避免误导人工审核 */
-.ai-review-action.pending {
-    background: #fefce8;
-    color: #a16207;
-}
-
-.ai-risk-flags {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin: 8px 0;
-}
-
-.risk-flag {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 8px;
-    background: #fef2f2;
-    color: #dc2626;
-    border-radius: 6px;
-    font-size: 12px;
-}
-
-.ai-review-result .ai-reasoning {
-    font-size: 13px;
-    color: #713f12;
-    margin: 8px 0;
-}
-
 /* ============ AI QA PANEL - PREMIUM GLASSMORPHISM ============ */
 .pdp-ai-qa-section {
     margin: 1.5rem 0;
@@ -952,14 +878,6 @@
 
 .pulse {
     animation: sparkle-pulse 2s ease-in-out infinite;
-}
-
-.ai-review-loading {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #a16207;
-    font-size: 14px;
 }
 
 .qa-loading {

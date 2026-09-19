@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ImagePreviewOverlay } from '@/admin/components/ImagePreviewOverlay';
-import type { AiReviewResult } from '@/api/aiApi';
 import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, Textarea } from '@/components/ui';
 import { cn } from '@/lib/utils';
-import { AiReviewSuggestion } from '../../../components/ai/AiReviewSuggestion';
-import { adminApi } from '../../api/adminApi';
 import { useAuditLogs, useAuditProduct } from '../../hooks/useAdminProductAudit';
 import { useAdminProductDetail } from '../../hooks/useAdminProducts';
 import type { AuditDimension, AuditLogResponse } from '../../types/admin';
@@ -46,9 +43,6 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
     const [state, setState] = useState(createInitialState);
     const { selectedImage, previewImage, selectedDimensions, auditRemark, rejectReason, showRejectModal } = state;
 
-    const [aiReviewResult, setAiReviewResult] = useState<AiReviewResult | null>(null);
-    const [aiReviewLoading, setAiReviewLoading] = useState(false);
-
     const { data: product, isLoading, refetch } = useAdminProductDetail(productId ?? '');
     const updateStatus = useAuditProduct();
     const auditLogs = useAuditLogs(productId);
@@ -56,38 +50,9 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
     useEffect(() => {
         if (open && productId) {
             setState(createInitialState());
-            setAiReviewResult(null);
-            setAiReviewLoading(false);
             refetch();
         }
     }, [open, productId, refetch]);
-
-    const handleGetAiSuggestion = async () => {
-        if (!product) {
-            return;
-        }
-        setAiReviewLoading(true);
-        setAiReviewResult(null);
-        try {
-            const response = await adminApi.aiReviewProduct(product.productId);
-            setAiReviewResult(response.data);
-        } catch {
-            setAiReviewResult(null);
-        } finally {
-            setAiReviewLoading(false);
-        }
-    };
-
-    const handleApplyAiSuggestion = (action: 'approve' | 'reject') => {
-        if (!product) {
-            return;
-        }
-        if (action === 'approve') {
-            handleApproveWithDimensions();
-        } else {
-            setState(prev => ({ ...prev, showRejectModal: true }));
-        }
-    };
 
     const handleApproveWithDimensions = () => {
         if (!product) {
@@ -508,14 +473,6 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                 {/* Footer actions */}
                 {product && (
                     <div className="flex flex-col gap-3 border-t border-[rgba(229,224,219,0.4)] bg-[linear-gradient(180deg,rgba(250,248,245,0.5),rgba(250,248,245,0.9))] px-6 py-4">
-                        {/* AI 审核建议 */}
-                        <AiReviewSuggestion
-                            result={aiReviewResult}
-                            isLoading={aiReviewLoading}
-                            onGetSuggestion={handleGetAiSuggestion}
-                            onApply={handleApplyAiSuggestion}
-                        />
-
                         {/* 审核维度 */}
                         <div>
                             <div className="mb-[0.45rem] text-[0.78rem] font-semibold text-[#6B6460]">审核维度</div>

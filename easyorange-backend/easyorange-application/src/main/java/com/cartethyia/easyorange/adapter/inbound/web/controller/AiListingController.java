@@ -17,10 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>
  * 只留一个入口：识别结果已经填满上架表单要的字段（属性 / 建议价 / 标题 / 描述），
  * 独立的「智能估值」与「文案生成」是对同一批产出的重复入口、各自还要多付一次模型调用，
- * 已于 2026-09-19 一并删除。
- * <p>
- * 商品审核不在这里：审核建议由管理端按需触发（{@code GET /api/admin/products/{id}/ai-review}），
- * 卖家侧没有入口。
+ * 已于 2026-09-19 一并删除；管理端商品审核 AI 建议同日删除（不在两条 AI 主线上、无量化数字）。
  */
 @SkipRateLimit
 @Tag(name = "AI 服务", description = "AI 上架辅助：拍照识别")

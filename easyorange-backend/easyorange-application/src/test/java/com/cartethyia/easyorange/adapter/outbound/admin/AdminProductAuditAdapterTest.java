@@ -7,12 +7,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort.AuditLogRecord;
-import com.cartethyia.easyorange.ai.application.service.AiReviewService;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
@@ -51,16 +49,10 @@ class AdminProductAuditAdapterTest {
     private ProductMapper productMapper;
 
     @Mock
-    private ProductDetailMapper productDetailMapper;
-
-    @Mock
     private ProductRepository productRepository;
 
     @Mock
     private ProductAuditLogRepository productAuditLogRepository;
-
-    @Mock
-    private AiReviewService aiReviewService;
 
     @Mock
     private DomainEventPublisher domainEventPublisher;
@@ -75,10 +67,8 @@ class AdminProductAuditAdapterTest {
     void setUp() {
         adapter = new AdminProductAuditAdapter(
                 productMapper,
-                productDetailMapper,
                 productRepository,
                 productAuditLogRepository,
-                aiReviewService,
                 domainEventPublisher,
                 new ObjectMapper());
     }

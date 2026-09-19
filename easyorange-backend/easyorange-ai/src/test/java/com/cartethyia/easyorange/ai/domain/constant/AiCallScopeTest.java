@@ -9,13 +9,6 @@ import org.junit.jupiter.api.Test;
 class AiCallScopeTest {
 
     @Test
-    @DisplayName("fromUri 匹配 review（审核建议只剩管理端入口）")
-    void fromUri_review() {
-        // /api/ai/review 已于 2026-09-18 删除（无调用方的重复入口）；REVIEW 场景现由管理端触发
-        assertThat(AiCallScope.fromUri("/api/admin/products/p-1/ai-review")).isEqualTo(AiCallScope.REVIEW);
-    }
-
-    @Test
     @DisplayName("fromUri 匹配 auto-listing")
     void fromUri_autoListing() {
         assertThat(AiCallScope.fromUri("/api/ai/auto-listing")).isEqualTo(AiCallScope.AUTO_LISTING);
@@ -48,7 +41,7 @@ class AiCallScopeTest {
     @Test
     @DisplayName("cacheKeyPrefix 格式正确")
     void cacheKeyPrefix() {
-        assertThat(AiCallScope.REVIEW.cacheKeyPrefix()).isEqualTo("ai:stale:review:");
+        assertThat(AiCallScope.QA.cacheKeyPrefix()).isEqualTo("ai:stale:qa:");
     }
 
     @Test
@@ -68,7 +61,7 @@ class AiCallScopeTest {
     @Test
     @DisplayName("限流配置正确")
     void rateLimitConfig() {
-        assertThat(AiCallScope.REVIEW.getRatePerMinute()).isEqualTo(10);
+        assertThat(AiCallScope.QA.getRatePerMinute()).isEqualTo(20);
         assertThat(AiCallScope.AUTO_LISTING.getRatePerMinute()).isEqualTo(5);
     }
 }
