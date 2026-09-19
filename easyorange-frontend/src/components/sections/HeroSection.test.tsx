@@ -102,7 +102,7 @@ describe('HeroSection', () => {
 
     it('renders the subtitle', () => {
         render(<HeroSection />);
-        expect(screen.getByText('LLM × DDD · 业务聚焦核心流程，把复杂度留给架构与 AI 工程化')).toBeInTheDocument();
+        expect(screen.getByText('Agent 编排 × RAG × 评估闭环 · DDD + 事件驱动可靠性')).toBeInTheDocument();
     });
 
     it('renders search input', () => {
