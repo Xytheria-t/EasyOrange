@@ -54,7 +54,7 @@ describe('PlaygroundPage (AI 智能助手)', () => {
 
         await waitFor(() => {
             expect(screen.getByText('可以退款')).toBeInTheDocument();
-            expect(screen.getByText('[来源:退款规则]')).toBeInTheDocument();
+            expect(screen.getByText('来源 · 退款规则')).toBeInTheDocument();
         });
     });
 

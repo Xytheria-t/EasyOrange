@@ -1,94 +1,308 @@
-/* ============ AI PLAYGROUND - 流式对话 ============ */
+/* ============================================================
+   EasyOrange - AI Playground (AI 智能助手)
+   Design: Luxury Refined · Orange-Pink Diffusion Gradient
+   ============================================================ */
+
+/* ============ PAGE SHELL ============ */
 .playground {
-    max-width: 720px;
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    max-width: 780px;
     margin: 0 auto;
-    padding: 2rem 1.25rem 1.5rem;
-    display: flex;
-    flex-direction: column;
+    padding: 1.75rem 1.25rem 2rem;
     min-height: calc(100vh - 140px);
+    display: flex;
 }
 
+/* ============ AMBIENT BACKGROUND ============ */
+.playground__bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.playground__orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.45;
+}
+
+.playground__orb--1 {
+    width: 420px;
+    height: 420px;
+    top: -120px;
+    right: -80px;
+    background: radial-gradient(circle, rgba(249, 115, 22, 0.22) 0%, rgba(251, 146, 60, 0.1) 50%, transparent 70%);
+    animation: playgroundOrbFloat 16s ease-in-out infinite;
+}
+
+.playground__orb--2 {
+    width: 380px;
+    height: 380px;
+    bottom: -80px;
+    left: -100px;
+    background: radial-gradient(circle, rgba(195, 155, 211, 0.2) 0%, rgba(195, 155, 211, 0.06) 50%, transparent 70%);
+    animation: playgroundOrbFloat 20s ease-in-out infinite reverse;
+}
+
+@keyframes playgroundOrbFloat {
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    33% {
+        transform: translate(20px, -16px) scale(1.05);
+    }
+    66% {
+        transform: translate(-16px, 12px) scale(0.96);
+    }
+}
+
+.playground__mesh {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 70% 45% at 25% 35%, rgba(249, 115, 22, 0.05) 0%, transparent 50%),
+        radial-gradient(ellipse 55% 40% at 75% 65%, rgba(195, 155, 211, 0.05) 0%, transparent 50%);
+}
+
+/* ============ GLASS SHELL ============ */
+.playground__shell {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: var(--radius-3xl);
+    box-shadow:
+        0 16px 48px rgba(42, 37, 32, 0.08),
+        0 4px 16px rgba(42, 37, 32, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    overflow: hidden;
+    animation: shellIn 0.6s var(--ease-out) both;
+}
+
+/* 顶部橙粉渐变发丝线（与搜索页玻璃面板同款） */
+.playground__shell::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(249, 115, 22, 0.2) 20%,
+        rgba(251, 113, 133, 0.3) 50%,
+        rgba(249, 115, 22, 0.2) 80%,
+        transparent 100%
+    );
+    z-index: 2;
+}
+
+@keyframes shellIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============ HEADER ============ */
 .playground__header {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 1.25rem;
+    padding: 1.25rem 1.75rem 1rem;
+    border-bottom: 1px solid var(--border-light);
 }
 
 .playground__header-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(
+        135deg,
+        rgba(249, 115, 22, 0.14) 0%,
+        rgba(251, 113, 133, 0.1) 55%,
+        rgba(195, 155, 211, 0.12) 100%
+    );
+    border: 1px solid rgba(249, 115, 22, 0.15);
     color: var(--primary-500);
-    width: 28px;
-    height: 28px;
+    flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .playground__title {
+    font-family: var(--font-display);
     font-size: 1.25rem;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: -0.01em;
-    color: var(--text-primary);
+    color: var(--text-heading);
+    margin: 0;
 }
 
 .playground__subtitle {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     color: var(--text-tertiary);
+    margin: 0.125rem 0 0;
+    letter-spacing: 0.02em;
 }
 
+.playground__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: auto;
+    padding: 0.3125rem 0.75rem;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(16, 185, 129, 0.15);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--status-success);
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.playground__status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--status-success-dot);
+    animation: statusPulse 2.4s ease-out infinite;
+}
+
+@keyframes statusPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+/* ============ CHAT LIST ============ */
 .playground__chat {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.375rem;
     overflow-y: auto;
-    padding: 0.25rem 0.25rem 1rem;
+    padding: 1.5rem 1.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(42, 37, 32, 0.15) transparent;
 }
 
+.playground__chat::-webkit-scrollbar {
+    width: 5px;
+}
+
+.playground__chat::-webkit-scrollbar-thumb {
+    background: rgba(42, 37, 32, 0.12);
+    border-radius: 999px;
+}
+
+/* ============ MESSAGE ============ */
 .playground-msg {
     display: flex;
     gap: 0.625rem;
     align-items: flex-start;
+    animation: msgIn 0.4s var(--ease-out) both;
 }
 
 .playground-msg--user {
     flex-direction: row-reverse;
 }
 
+@keyframes msgIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .playground-msg__avatar {
+    position: relative;
     flex-shrink: 0;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
+    box-shadow:
+        0 2px 8px rgba(42, 37, 32, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .playground-msg--user .playground-msg__avatar {
-    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
 }
 
 .playground-msg--assistant .playground-msg__avatar {
-    background: linear-gradient(135deg, var(--purple-400), var(--primary-500));
+    background: linear-gradient(135deg, var(--purple-300), var(--purple-500));
+}
+
+/* 流式回答时头像呼吸光环 */
+.playground-msg--assistant.is-streaming .playground-msg__avatar::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2px solid rgba(175, 122, 197, 0.4);
+    animation: avatarPulse 1.6s var(--ease-out) infinite;
+}
+
+@keyframes avatarPulse {
+    0% {
+        transform: scale(0.9);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.35);
+        opacity: 0;
+    }
 }
 
 .playground-msg__body {
     display: flex;
     flex-direction: column;
-    gap: 0.375rem;
+    gap: 0.5rem;
     max-width: 82%;
+    min-width: 0;
 }
 
 .playground-msg--user .playground-msg__body {
     align-items: flex-end;
 }
 
-.playground-msg__sources {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-}
-
-/* Agent 工具循环步骤（step 事件）：决策理由直观可见 */
+/* ============ AGENT STEPS ============ */
 .playground-msg__steps {
     display: flex;
     flex-wrap: wrap;
@@ -101,55 +315,171 @@
 .playground-msg__step {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.3125rem;
     font-size: 0.6875rem;
-    color: var(--purple-600, #7c3aed);
-    background: rgba(139, 92, 246, 0.08);
-    border: 1px solid rgba(139, 92, 246, 0.18);
-    border-radius: 999px;
-    padding: 0.125rem 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--purple-600);
+    background: rgba(139, 92, 246, 0.07);
+    border: 1px solid rgba(139, 92, 246, 0.16);
+    border-radius: var(--radius-full);
+    padding: 0.1875rem 0.5rem 0.1875rem 0.25rem;
+    cursor: default;
+    animation: msgIn 0.35s var(--ease-out) both;
+}
+
+.playground-msg__step-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(139, 92, 246, 0.14);
+    flex-shrink: 0;
+}
+
+/* ============ SOURCES ============ */
+.playground-msg__sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
 .playground-msg__source {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
     font-size: 0.6875rem;
-    color: var(--primary-600);
-    background: rgba(249, 115, 22, 0.08);
-    border: 1px solid rgba(249, 115, 22, 0.15);
-    border-radius: 999px;
-    padding: 0.125rem 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--primary-700);
+    background: rgba(249, 115, 22, 0.07);
+    border: 1px solid rgba(249, 115, 22, 0.16);
+    border-radius: var(--radius-full);
+    padding: 0.1875rem 0.625rem;
 }
 
+/* ============ BUBBLES ============ */
 .playground-msg__bubble {
-    padding: 0.625rem 0.875rem;
+    padding: 0.75rem 1rem;
     border-radius: var(--radius-lg);
-    font-size: 0.90625rem;
-    line-height: 1.65;
+    font-size: 0.9375rem;
+    line-height: 1.7;
     color: var(--text-primary);
     white-space: pre-wrap;
     word-break: break-word;
 }
 
 .playground-msg--assistant .playground-msg__bubble {
-    background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(42, 37, 32, 0.06);
     border-top-left-radius: 4px;
+    box-shadow:
+        0 2px 8px rgba(42, 37, 32, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .playground-msg--user .playground-msg__bubble {
-    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    background: var(--gradient-primary);
     color: white;
     border-top-right-radius: 4px;
+    box-shadow:
+        0 6px 18px rgba(249, 115, 22, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* 流式生成中的光标 */
+.playground-msg__bubble.is-streaming::after {
+    content: "";
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    background: var(--primary-500);
+    animation: caretBlink 0.9s ease-in-out infinite;
+}
+
+@keyframes caretBlink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
 }
 
 .playground-msg__bubble--error {
-    background: rgba(239, 68, 68, 0.08);
-    border-color: rgba(239, 68, 68, 0.2);
-    color: var(--rose-600);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    background: rgba(244, 63, 94, 0.06);
+    border: 1px solid rgba(244, 63, 94, 0.18);
+    color: var(--status-error);
 }
 
+.playground-msg__error-icon {
+    flex-shrink: 0;
+    margin-top: 0.2em;
+}
+
+/* 思考中三点 */
+.playground-typing {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.25rem 0;
+}
+
+.playground-typing__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary-400);
+    animation: typingBounce 1.4s ease-in-out infinite;
+}
+
+.playground-typing__dot:nth-child(2) {
+    animation-delay: 0.15s;
+    background: var(--rose-400);
+}
+
+.playground-typing__dot:nth-child(3) {
+    animation-delay: 0.3s;
+    background: var(--purple-400);
+}
+
+@keyframes typingBounce {
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+    30% {
+        transform: translateY(-5px);
+        opacity: 1;
+    }
+}
+
+/* ============ FEEDBACK ============ */
 .playground-msg__feedback {
     display: flex;
-    gap: 0.375rem;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0.65;
+    transition: opacity var(--transition-fast);
+}
+
+.playground-msg__feedback:hover {
+    opacity: 1;
 }
 
 .playground-msg__feedback-btn {
@@ -158,58 +488,243 @@
     justify-content: center;
     width: 26px;
     height: 26px;
-    border-radius: 8px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: var(--radius-full);
+    border: none;
     background: transparent;
     color: var(--text-tertiary);
     cursor: pointer;
-    transition: all 0.2s var(--ease-out);
+    transition: all var(--transition-fast);
 }
 
 .playground-msg__feedback-btn:hover {
     color: var(--primary-600);
-    border-color: rgba(249, 115, 22, 0.3);
+    background: rgba(249, 115, 22, 0.1);
+    transform: translateY(-1px);
 }
 
 .playground-msg__feedback-btn.is-active {
     color: var(--primary-600);
-    background: rgba(249, 115, 22, 0.1);
-    border-color: rgba(249, 115, 22, 0.3);
+    background: rgba(249, 115, 22, 0.12);
 }
 
+/* ============ SUGGESTIONS ============ */
 .playground__suggestions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
     justify-content: center;
-    margin-bottom: 1rem;
+    padding: 0 1.75rem 1rem;
 }
 
 .playground__suggestion {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
     font-size: 0.8125rem;
-    color: var(--primary-700);
-    background: rgba(249, 115, 22, 0.06);
-    border: 1px solid rgba(249, 115, 22, 0.18);
-    border-radius: 999px;
-    padding: 0.375rem 0.875rem;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(249, 115, 22, 0.12);
+    border-radius: var(--radius-full);
+    padding: 0.4375rem 0.875rem;
     cursor: pointer;
-    transition: all 0.2s var(--ease-out);
+    transition: all var(--transition-normal);
+}
+
+.playground__suggestion svg {
+    color: var(--primary-400);
+    opacity: 0;
+    transform: translate(-2px, 2px);
+    transition: all var(--transition-fast);
 }
 
 .playground__suggestion:hover {
-    background: rgba(249, 115, 22, 0.12);
+    transform: translateY(-2px);
+    color: var(--primary-600);
+    border-color: rgba(249, 115, 22, 0.25);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 6px 16px rgba(249, 115, 22, 0.12);
+}
+
+.playground__suggestion:hover svg {
+    opacity: 1;
+    transform: translate(0, 0);
 }
 
 .playground__suggestion:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
-.playground__input {
+/* ============ COMPOSER ============ */
+.playground__composer {
+    padding: 0.25rem 1.75rem 1.25rem;
+}
+
+.playground__composer-bar {
     display: flex;
-    gap: 0.625rem;
-    position: sticky;
-    bottom: 0;
-    background: var(--background, #fff);
-    padding-top: 0.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(42, 37, 32, 0.08);
+    border-radius: var(--radius-full);
+    padding: 0.3125rem 0.3125rem 0.3125rem 1rem;
+    box-shadow:
+        0 2px 8px rgba(42, 37, 32, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transition: all var(--transition-normal);
+}
+
+.playground__composer-bar:focus-within {
+    border-color: rgba(249, 115, 22, 0.3);
+    box-shadow:
+        0 0 0 4px rgba(249, 115, 22, 0.1),
+        0 8px 24px rgba(249, 115, 22, 0.12);
+}
+
+.playground__composer-icon {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+    transition: color var(--transition-fast);
+}
+
+.playground__composer-bar:focus-within .playground__composer-icon {
+    color: var(--primary-500);
+}
+
+.playground__composer-field {
+    flex: 1 1 0%;
+    width: 0;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--text-primary);
+    padding: 0.5rem 0;
+}
+
+.playground__composer-field::placeholder {
+    color: var(--text-tertiary);
+    font-weight: 400;
+}
+
+.playground__send {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    color: white;
+    cursor: pointer;
+    box-shadow:
+        0 4px 12px rgba(249, 115, 22, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-normal);
+}
+
+.playground__send::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.35) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.playground__send:hover:not(:disabled) {
+    transform: translateY(-1px) scale(1.04);
+    box-shadow:
+        0 8px 20px rgba(249, 115, 22, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.playground__send:hover:not(:disabled)::before {
+    transform: translateX(100%);
+}
+
+.playground__send:active:not(:disabled) {
+    transform: scale(0.94);
+    transition-duration: 0.1s;
+}
+
+.playground__send:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.playground__send svg {
+    position: relative;
+    z-index: 1;
+}
+
+.playground__disclaimer {
+    margin: 0.5rem 0 0;
+    text-align: center;
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+    opacity: 0.75;
+    letter-spacing: 0.02em;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+    .playground {
+        padding: 1rem 0.75rem 1.25rem;
+    }
+
+    .playground__header {
+        padding: 1rem 1.25rem 0.875rem;
+    }
+
+    .playground__status {
+        display: none;
+    }
+
+    .playground__chat {
+        padding: 1.125rem 1.25rem;
+        gap: 1.125rem;
+    }
+
+    .playground-msg__body {
+        max-width: 88%;
+    }
+
+    .playground__suggestions {
+        padding: 0 1.25rem 0.875rem;
+    }
+
+    .playground__composer {
+        padding: 0.25rem 1.25rem 1rem;
+    }
+}
+
+/* ============ REDUCED MOTION ============ */
+@media (prefers-reduced-motion: reduce) {
+    .playground__orb,
+    .playground__shell,
+    .playground-msg,
+    .playground-msg__step,
+    .playground-typing__dot,
+    .playground__status-dot,
+    .playground-msg--assistant.is-streaming .playground-msg__avatar::after {
+        animation: none;
+    }
+
+    .playground-msg__bubble.is-streaming::after {
+        animation: none;
+        opacity: 0.6;
+    }
 }
