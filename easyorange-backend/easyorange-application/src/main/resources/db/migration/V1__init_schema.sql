@@ -1,11 +1,12 @@
 -- ===================================================================
 -- EasyOrange - 数据库初始化（V1 合并版）
--- 职责: 创建所有初始表结构、索引、约束（当前完整 DDL）
--- 说明: 开发阶段合并 V1~V9 为单文件（项目未发版，无生产历史）。
---       折叠删表/删列/加列迁移：eo_idempotency_key（原 V2）、eo_audit_log.oper_location（原 V5）、
---       eo_order.refund_reason/refund_time（原 V4）；并入原 V3/V6/V7/V8/V9 新增的 AI 观测与
---       知识库表（eo_ai_call_log / eo_ai_feedback / eo_knowledge_doc / eo_user_preference /
---       eo_retrieval_metric）。更早的删表迁移（eo_saga_status 等，对应 ADR-0007）已在上次合并折叠。
+-- 职责: 创建所有初始表结构、索引、约束（当前完整 DDL，26 张表）
+-- 说明: 开发阶段三次收口为单文件（项目未发版，无生产历史）：V1~V6、V1~V9、V2~V7。
+--       本次（V2~V7）并入：eo_favorite.price_snapshot（原 V2）、消息清理/订单定时扫描索引
+--       （原 V3）、eo_stock_ledger 表（原 V4，其存量基线 INSERT 在干净库为空操作，随之折叠）、
+--       枚举码完整性（原 V5：eo_message / eo_message_archive.type 去默认值加 CHECK、
+--       eo_user.sex 默认改 2）、eo_ai_call_log 用量与主体列（原 V6）、
+--       eo_product.ai_suggested_price（原 V7）。
 -- Database: MySQL 8.0
 -- Charset: utf8mb4
 -- ===================================================================
@@ -25,7 +26,7 @@ CREATE TABLE `eo_user` (
     `real_name`   VARCHAR(30)  DEFAULT NULL COMMENT '真实姓名',
     `nick_name`   VARCHAR(30)  DEFAULT NULL COMMENT '用户昵称',
     `avatar`      VARCHAR(500) DEFAULT NULL COMMENT '头像 URL',
-    `sex`         TINYINT      NOT NULL DEFAULT 0 COMMENT '用户性别（0 未知 1 男 2 女）',
+    `sex`         TINYINT      NOT NULL DEFAULT 2 COMMENT '用户性别（0 女 1 男 2 未知）',
     `status`      VARCHAR(20)  NOT NULL DEFAULT 'NORMAL' COMMENT '帐号状态（NORMAL 正常 DISABLED 禁用 LOCKED 锁定）',
     `login_ip`    VARCHAR(128) DEFAULT NULL COMMENT '最后登录 IP',
     `login_date`  DATETIME     DEFAULT NULL COMMENT '最后登录时间',
@@ -80,6 +81,7 @@ CREATE TABLE `eo_product` (
     `name`        VARCHAR(100)  NOT NULL COMMENT '商品名称',
     `price`       DECIMAL(10,2) NOT NULL COMMENT '售价',
     `original_price` DECIMAL(10,2) DEFAULT NULL COMMENT '原价',
+    `ai_suggested_price` DECIMAL(10,2) DEFAULT NULL COMMENT 'AI 建议售价（拍照识别给出，资产方未采到则 NULL）',
     `stock`       INT           NOT NULL DEFAULT 1 COMMENT '库存数量',
     `status`      VARCHAR(20)   NOT NULL DEFAULT 'DRAFT' COMMENT '商品状态（DRAFT 草稿 PENDING_REVIEW 待审核 REJECTED 已驳回 ONLINE 上架 SOLD 已售出 OFFLINE 下架）',
     `view_count`  INT           NOT NULL DEFAULT 0 COMMENT '浏览次数',
@@ -188,6 +190,7 @@ CREATE TABLE `eo_favorite` (
     `id`         VARCHAR(36) NOT NULL COMMENT '主键 ID',
     `user_id`    VARCHAR(36) NOT NULL COMMENT '用户 ID',
     `product_id` VARCHAR(36) NOT NULL COMMENT '商品 ID',
+    `price_snapshot` DECIMAL(10,2) DEFAULT NULL COMMENT '价格快照（收藏时价格，降价通知后更新为最近通知价）',
     `create_time` DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `create_by`  VARCHAR(36) DEFAULT NULL COMMENT '创建者',
@@ -199,6 +202,27 @@ CREATE TABLE `eo_favorite` (
     KEY `idx_eo_favorite_user_time` (`user_id`, `create_time` DESC),
     KEY `idx_eo_favorite_product_count` (`product_id`, `del_flag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户收藏表';
+
+-- 库存流水（库存变更的单一事实来源：每次变更在同一事务落一条流水，eo_product.stock 退化为
+-- 可由流水复现的余额快照。唯一索引 (change_type, biz_id, product_id) 承载幂等——MQ 重投 /
+-- DLQ 重放撞唯一键即跳过，库存不会被二次加减；对账见 StockReconcileScheduler，设计详见 DATABASE.md）
+CREATE TABLE `eo_stock_ledger` (
+    `id`          VARCHAR(36) NOT NULL COMMENT '主键 ID',
+    `product_id`  VARCHAR(36) NOT NULL COMMENT '资产 ID',
+    `biz_id`      VARCHAR(36) DEFAULT NULL COMMENT '业务单号（订单 ID）；INIT/ADJUST 无常规业务单号，留空以脱离幂等约束',
+    `change_type` VARCHAR(20) NOT NULL COMMENT '变更类型（INIT 初始化 DECREASE 下单扣减 RESTORE 取消/退款恢复 ADJUST 人工调整）',
+    `delta`       INT         NOT NULL COMMENT '库存变化量（正数增加 / 负数减少）',
+    `stock_after` INT         NOT NULL COMMENT '变更后库存余额，对账基准',
+    `create_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `create_by`   VARCHAR(36) DEFAULT NULL COMMENT '创建者',
+    `update_by`   VARCHAR(36) DEFAULT NULL COMMENT '更新者',
+    `del_flag`    TINYINT     NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 1 删除）',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_eo_stock_ledger_biz` (`change_type`, `biz_id`, `product_id`),
+    KEY `idx_eo_stock_ledger_product_time` (`product_id`, `create_time`),
+    KEY `idx_eo_stock_ledger_biz_id` (`biz_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='库存流水表';
 
 -- ===================================================================
 -- 3. 搜索模块
@@ -269,6 +293,8 @@ CREATE TABLE `eo_order` (
     KEY `idx_eo_order_buyer_status_time` (`buyer_id`, `status`, `del_flag`, `create_time` DESC),
     KEY `idx_eo_order_seller_status_time` (`seller_id`, `status`, `del_flag`, `create_time` DESC),
     KEY `idx_eo_order_status_payment` (`status`, `payment_status`, `create_time` DESC),
+    KEY `idx_eo_order_status_create` (`status`, `create_time`),
+    KEY `idx_eo_order_status_update` (`status`, `update_time`),
     CONSTRAINT `chk_eo_order_total_amount` CHECK (`total_amount` >= 0),
     CONSTRAINT `chk_eo_order_status` CHECK (`status` IN ('PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED', 'CANCELLED', 'REFUNDED')),
     CONSTRAINT `chk_eo_order_payment_status` CHECK (`payment_status` IN ('UNPAID', 'PAID', 'REFUNDED'))
@@ -338,7 +364,7 @@ CREATE TABLE `eo_message` (
     `id`              VARCHAR(36) NOT NULL COMMENT '主键 ID',
     `sender_id`       VARCHAR(36) DEFAULT NULL COMMENT '发送者 ID',
     `receiver_id`     VARCHAR(36) NOT NULL COMMENT '接收者 ID',
-    `type`            TINYINT     NOT NULL DEFAULT 0 COMMENT '消息类型',
+    `type`            TINYINT     NOT NULL COMMENT '消息类型（1 系统 2 聊天 3 订单 4 支付 5 活动）',
     `title`           VARCHAR(200) DEFAULT NULL COMMENT '消息标题',
     `content`         TEXT        NOT NULL COMMENT '消息内容',
     `is_read`         TINYINT     NOT NULL DEFAULT 0 COMMENT '是否已读（0 未读 1 已读）',
@@ -358,14 +384,16 @@ CREATE TABLE `eo_message` (
     KEY `idx_eo_message_receiver_read_type_del_time` (`receiver_id`, `is_read`, `del_flag`, `type`, `create_time` DESC),
     KEY `idx_eo_message_conversation_time` (`conversation_id`, `create_time` DESC),
     KEY `idx_eo_message_business_id` (`business_id`),
-    CONSTRAINT `chk_eo_message_is_read` CHECK (`is_read` IN (0, 1))
+    KEY `idx_eo_message_create_time` (`create_time`),
+    CONSTRAINT `chk_eo_message_is_read` CHECK (`is_read` IN (0, 1)),
+    CONSTRAINT `chk_eo_message_type` CHECK (`type` IN (1, 2, 3, 4, 5))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='消息表';
 
 CREATE TABLE `eo_message_archive` (
     `id`              VARCHAR(36) NOT NULL COMMENT '消息 ID',
     `sender_id`       VARCHAR(36) DEFAULT NULL COMMENT '发送者 ID',
     `receiver_id`     VARCHAR(36) NOT NULL COMMENT '接收者 ID',
-    `type`            TINYINT     NOT NULL DEFAULT 0 COMMENT '消息类型',
+    `type`            TINYINT     NOT NULL COMMENT '消息类型（1 系统 2 聊天 3 订单 4 支付 5 活动）',
     `title`           VARCHAR(200) DEFAULT NULL COMMENT '消息标题',
     `content`         TEXT        NOT NULL COMMENT '消息内容',
     `is_read`         TINYINT     NOT NULL DEFAULT 0 COMMENT '是否已读',
@@ -379,7 +407,8 @@ CREATE TABLE `eo_message_archive` (
     `archived_at`     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '归档时间',
     PRIMARY KEY (`id`),
     KEY `idx_eo_message_archive_receiver` (`receiver_id`),
-    KEY `idx_eo_message_archive_time` (`archived_at`)
+    KEY `idx_eo_message_archive_time` (`archived_at`),
+    CONSTRAINT `chk_eo_message_archive_type` CHECK (`type` IN (1, 2, 3, 4, 5))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='消息归档表';
 
 CREATE TABLE `eo_offline_message` (
@@ -476,6 +505,9 @@ CREATE TABLE `eo_ai_call_log` (
     `prompt_hash`   CHAR(32)     NOT NULL COMMENT 'system+user prompt 摘要 MD5（去重与回归用）',
     `response_text` TEXT         NULL COMMENT '模型输出文本',
     `latency_ms`    BIGINT       NOT NULL DEFAULT 0 COMMENT '调用耗时毫秒',
+    `token_input`   INT          NOT NULL DEFAULT 0 COMMENT '输入 token（供应商回报；未回报为 0，不估算）',
+    `token_output`  INT          NOT NULL DEFAULT 0 COMMENT '输出 token（供应商回报；未回报为 0，不估算）',
+    `subject_id`    VARCHAR(36)  NULL COMMENT '调用主体（如商品 ID，可空 —— 部分调用发生在主体创建之前）',
     `success`       TINYINT(1)   NOT NULL DEFAULT 1 COMMENT '是否成功 1/0',
     `error_msg`     VARCHAR(512) NULL COMMENT '失败原因',
     `judge_score`   TINYINT      NULL COMMENT 'LLM-as-Judge 质量评分 1-5（NULL=待评估）',
@@ -483,6 +515,7 @@ CREATE TABLE `eo_ai_call_log` (
     `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (`id`),
     KEY `idx_ai_call_log_scope` (`scope`, `created_at`),
+    KEY `idx_ai_call_log_subject` (`subject_id`, `scope`),
     KEY `idx_ai_call_log_judge` (`judge_score`, `created_at`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4

@@ -142,13 +142,13 @@ EasyOrange 在 AI 工程上的**架构侧关注点**（8 件套）：
 
 ### 5.10 成本可见性（按场景成本报表，2026-09-18）
 
-`eo_ai_call_log` 补三列（迁移 `V6__ai_call_log_token_usage.sql`）：`token_input` / `token_output`（供应商真实回报的用量，未回报记 0、**不估算**）、`subject_id`（调用主体，如商品 ID；可空——部分调用发生在主体创建之前），并加 `idx_ai_call_log_subject` 索引；`AiCallLogRecorder` 写入这些列，`AiModelSupport` 新增带 `subjectId` 的 `callText` 重载（`AiQaService` 已用 `request.productId()` 作为主体）。
+`eo_ai_call_log` 补三列：`token_input` / `token_output`（供应商真实回报的用量，未回报记 0、**不估算**）、`subject_id`（调用主体，如商品 ID；可空——部分调用发生在主体创建之前），并加 `idx_ai_call_log_subject` 索引；`AiCallLogRecorder` 写入这些列，`AiModelSupport` 新增带 `subjectId` 的 `callText` 重载（`AiQaService` 已用 `request.productId()` 作为主体）。
 
 `AiCostReportService` + `GET /api/admin/ai/cost-report?hours=24`：按场景聚合调用数 / token 入出 / 平均耗时 / 失败数（默认 24h，上限 30 天）——补 token 列后，按场景的成本排布第一次可查。**报表里为 0 的两类调用**：embedding（供应商不回报 usage）与流式（未带 usage），它们记 0 而不是估算——估算值混进成本报表，会把「没测到」当成「不花钱」。语义缓存命中率仍无计数器（TD-015），命中的那次 embedding 也仍是账外项。
 
 ### 5.11 建议价采纳率（不依赖 LLM 判分的效果指标，2026-09-19）
 
-拍照识别给出的建议价随创建请求写入商品表（`eo_product.ai_suggested_price`，迁移 `V7__product_ai_suggested_price.sql`）——智能估值发生在商品创建之前，调用日志的 `subject_id` 那时还没有值，只有商品侧自己记才能让「AI 建议多少」与「资产方最终卖多少」落在同一行里可比。`AiPricingAdoptionPort`（ai 模块声明读需求）→ `JdbcAiPricingAdoptionAdapter`（application 模块实现，ai 不直接碰别人的表）→ `GET /api/admin/ai/pricing-adoption` 返回 `PricingAdoptionReport`：样本数 / 完全采纳数 / 采纳率 / ±10% 内 / >30% 偏离 / 平均绝对偏离。
+拍照识别给出的建议价随创建请求写入商品表（`eo_product.ai_suggested_price`）——智能估值发生在商品创建之前，调用日志的 `subject_id` 那时还没有值，只有商品侧自己记才能让「AI 建议多少」与「资产方最终卖多少」落在同一行里可比。`AiPricingAdoptionPort`（ai 模块声明读需求）→ `JdbcAiPricingAdoptionAdapter`（application 模块实现，ai 不直接碰别人的表）→ `GET /api/admin/ai/pricing-adoption` 返回 `PricingAdoptionReport`：样本数 / 完全采纳数 / 采纳率 / ±10% 内 / >30% 偏离 / 平均绝对偏离。
 
 **为什么单独做这件事**：检索指标须等语料换血后重跑才能引用（5 篇语料下 hit@5 恒为 100%，不构成检索质量证据）、Judge 均分有自评偏差（Judge 与生成同模型），采纳率是唯一由**真实使用行为**投出来的效果数字——资产方改价即说明建议没用。建议价只做统计，**不参与定价逻辑**（产品侧 `ProductCreateSpec.aiSuggestedPrice` 只写不改）；样本量随真实发布量增长，引用时必须带上样本量。
 
