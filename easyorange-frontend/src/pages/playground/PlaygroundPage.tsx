@@ -1,4 +1,6 @@
 import {
+    AlertCircle,
+    ArrowUpRight,
     BookOpen,
     Bot,
     CheckCircle2,
@@ -12,8 +14,6 @@ import {
 } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { aiApi } from '@/api/aiApi';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import type { AgentStep, ChatStreamEvent } from '@/types/ai';
 import './playground.css';
 
@@ -38,15 +38,15 @@ const STEP_LABELS: Record<string, string> = {
 function StepIcon({ tool }: { tool: string }) {
     switch (tool) {
         case 'knowledge_search':
-            return <BookOpen size={12} aria-hidden="true" />;
+            return <BookOpen size={11} aria-hidden="true" />;
         case 'product_search':
-            return <Search size={12} aria-hidden="true" />;
+            return <Search size={11} aria-hidden="true" />;
         case 'product_detail':
-            return <FileSearch size={12} aria-hidden="true" />;
+            return <FileSearch size={11} aria-hidden="true" />;
         case 'finish':
-            return <CheckCircle2 size={12} aria-hidden="true" />;
+            return <CheckCircle2 size={11} aria-hidden="true" />;
         default:
-            return <Sparkles size={12} aria-hidden="true" />;
+            return <Sparkles size={11} aria-hidden="true" />;
     }
 }
 
@@ -62,7 +62,7 @@ const WELCOME_MESSAGE: ChatMessage = {
     id: 'welcome',
     role: 'assistant',
     content:
-        '你好，我是 EasyOrange AI 助手 🤖 可以回答平台交易、退款、运费、禁售品类等规则问题，也能帮你在在售资产里找货。每次回答会标注知识库来源。',
+        '你好，我是 EasyOrange AI 助手，可以回答平台交易、退款、运费、禁售品类等规则问题，也能帮你在在售资产里找货。每次回答会标注知识库来源。',
     sources: [],
     steps: [],
     status: 'done',
@@ -200,109 +200,173 @@ export default function PlaygroundPage() {
 
     return (
         <div className="playground">
-            <div className="playground__header">
-                <Sparkles className="playground__header-icon" aria-hidden="true" />
-                <div>
-                    <h1 className="playground__title">AI 智能助手</h1>
-                    <p className="playground__subtitle">多轮 Agent · 知识库引用溯源 · SSE 流式 · 反馈飞轮</p>
-                </div>
+            <div className="playground__bg" aria-hidden="true">
+                <span className="playground__orb playground__orb--1" />
+                <span className="playground__orb playground__orb--2" />
+                <div className="playground__mesh" />
             </div>
 
-            <div className="playground__chat" aria-live="polite">
-                {messages.map(message => (
-                    <div key={message.id} className={`playground-msg playground-msg--${message.role}`}>
-                        <div className="playground-msg__avatar" aria-hidden="true">
-                            {message.role === 'user' ? <User size={16} /> : <Bot size={16} />}
-                        </div>
-                        <div className="playground-msg__body">
-                            {message.steps.length > 0 && (
-                                <ul className="playground-msg__steps" aria-label="Agent 执行步骤">
-                                    {message.steps.map(step => (
-                                        <li
-                                            key={`${step.step}-${step.tool}`}
-                                            className="playground-msg__step"
-                                            title={step.observation ?? undefined}
-                                        >
-                                            <StepIcon tool={step.tool} />
-                                            {step.thought ?? STEP_LABELS[step.tool] ?? step.tool}
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                            {message.sources.length > 0 && (
-                                <div className="playground-msg__sources">
-                                    {message.sources.map(source => (
-                                        <span key={source} className="playground-msg__source" title="知识库引用来源">
-                                            [来源:{source}]
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                            <div
-                                className={`playground-msg__bubble ${message.status === 'error' ? 'playground-msg__bubble--error' : ''}`}
-                            >
-                                {message.content ||
-                                    (message.status === 'streaming' && (
-                                        <span className="ai-typing-dot" role="status" aria-label="思考中" />
-                                    ))}
-                            </div>
-                            {message.role === 'assistant' && message.status === 'done' && message.id !== 'welcome' && (
-                                <fieldset className="playground-msg__feedback">
-                                    <legend className="sr-only">反馈</legend>
-                                    <button
-                                        type="button"
-                                        className={`playground-msg__feedback-btn ${message.feedback === 'helpful' ? 'is-active' : ''}`}
-                                        onClick={() => void handleFeedback(message, true)}
-                                        aria-label="有帮助"
-                                        aria-pressed={message.feedback === 'helpful'}
-                                    >
-                                        <ThumbsUp size={14} />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`playground-msg__feedback-btn ${message.feedback === 'unhelpful' ? 'is-active' : ''}`}
-                                        onClick={() => void handleFeedback(message, false)}
-                                        aria-label="没帮助"
-                                        aria-pressed={message.feedback === 'unhelpful'}
-                                    >
-                                        <ThumbsDown size={14} />
-                                    </button>
-                                </fieldset>
-                            )}
-                        </div>
+            <section className="playground__shell">
+                <header className="playground__header">
+                    <div className="playground__header-icon" aria-hidden="true">
+                        <Sparkles size={18} />
                     </div>
-                ))}
-                <div ref={listEndRef} />
-            </div>
+                    <div>
+                        <h1 className="playground__title">AI 智能助手</h1>
+                        <p className="playground__subtitle">多轮 Agent · 知识库溯源 · SSE 流式</p>
+                    </div>
+                    <span className="playground__status">
+                        <span className="playground__status-dot" aria-hidden="true" />
+                        Agent 就绪
+                    </span>
+                </header>
 
-            {messages.length === 1 && (
-                <div className="playground__suggestions">
-                    {SUGGESTED_QUESTIONS.map(question => (
-                        <button
-                            key={question}
-                            type="button"
-                            className="playground__suggestion"
-                            onClick={() => void handleSend(question)}
-                            disabled={isStreaming}
+                <div className="playground__chat" aria-live="polite">
+                    {messages.map(message => (
+                        <div
+                            key={message.id}
+                            className={[
+                                'playground-msg',
+                                `playground-msg--${message.role}`,
+                                message.role === 'assistant' && message.status === 'streaming' ? 'is-streaming' : '',
+                            ]
+                                .filter(Boolean)
+                                .join(' ')}
                         >
-                            {question}
-                        </button>
+                            <div className="playground-msg__avatar" aria-hidden="true">
+                                {message.role === 'user' ? <User size={15} /> : <Bot size={15} />}
+                            </div>
+                            <div className="playground-msg__body">
+                                {message.steps.length > 0 && (
+                                    <ul className="playground-msg__steps" aria-label="Agent 执行步骤">
+                                        {message.steps.map((step, index) => (
+                                            <li
+                                                key={`${step.step}-${step.tool}`}
+                                                className="playground-msg__step"
+                                                style={{ animationDelay: `${index * 70}ms` }}
+                                                title={step.observation ?? undefined}
+                                            >
+                                                <span className="playground-msg__step-icon" aria-hidden="true">
+                                                    <StepIcon tool={step.tool} />
+                                                </span>
+                                                {step.thought ?? STEP_LABELS[step.tool] ?? step.tool}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {message.sources.length > 0 && (
+                                    <ul className="playground-msg__sources" aria-label="知识库引用来源">
+                                        {message.sources.map(source => (
+                                            <li key={source}>
+                                                <span
+                                                    className="playground-msg__source"
+                                                    title={`知识库来源：${source}`}
+                                                >
+                                                    <BookOpen size={11} aria-hidden="true" />
+                                                    来源 · {source}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                <div
+                                    className={[
+                                        'playground-msg__bubble',
+                                        message.status === 'error' ? 'playground-msg__bubble--error' : '',
+                                        message.status === 'streaming' && message.content ? 'is-streaming' : '',
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' ')}
+                                >
+                                    {message.status === 'error' && (
+                                        <AlertCircle
+                                            size={15}
+                                            className="playground-msg__error-icon"
+                                            aria-hidden="true"
+                                        />
+                                    )}
+                                    {message.content ||
+                                        (message.status === 'streaming' && (
+                                            <span className="playground-typing" role="status" aria-label="思考中">
+                                                <span className="playground-typing__dot" />
+                                                <span className="playground-typing__dot" />
+                                                <span className="playground-typing__dot" />
+                                            </span>
+                                        ))}
+                                </div>
+                                {message.role === 'assistant' &&
+                                    message.status === 'done' &&
+                                    message.id !== 'welcome' && (
+                                        <fieldset className="playground-msg__feedback">
+                                            <legend className="sr-only">反馈</legend>
+                                            <button
+                                                type="button"
+                                                className={`playground-msg__feedback-btn ${message.feedback === 'helpful' ? 'is-active' : ''}`}
+                                                onClick={() => void handleFeedback(message, true)}
+                                                aria-label="有帮助"
+                                                aria-pressed={message.feedback === 'helpful'}
+                                            >
+                                                <ThumbsUp size={13} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`playground-msg__feedback-btn ${message.feedback === 'unhelpful' ? 'is-active' : ''}`}
+                                                onClick={() => void handleFeedback(message, false)}
+                                                aria-label="没帮助"
+                                                aria-pressed={message.feedback === 'unhelpful'}
+                                            >
+                                                <ThumbsDown size={13} />
+                                            </button>
+                                        </fieldset>
+                                    )}
+                            </div>
+                        </div>
                     ))}
+                    <div ref={listEndRef} />
                 </div>
-            )}
 
-            <form className="playground__input" onSubmit={handleSubmit}>
-                <Input
-                    value={inputValue}
-                    onChange={e => setInputValue(e.target.value)}
-                    placeholder="输入问题，如：怎么申请退款？"
-                    aria-label="问题输入"
-                    disabled={isStreaming}
-                />
-                <Button type="submit" size="icon" disabled={isStreaming || !inputValue.trim()} aria-label="发送">
-                    <Send size={18} />
-                </Button>
-            </form>
+                {messages.length === 1 && (
+                    <div className="playground__suggestions">
+                        {SUGGESTED_QUESTIONS.map(question => (
+                            <button
+                                key={question}
+                                type="button"
+                                className="playground__suggestion"
+                                onClick={() => void handleSend(question)}
+                                disabled={isStreaming}
+                            >
+                                {question}
+                                <ArrowUpRight size={13} aria-hidden="true" />
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                <form className="playground__composer" onSubmit={handleSubmit}>
+                    <div className="playground__composer-bar">
+                        <Sparkles size={16} className="playground__composer-icon" aria-hidden="true" />
+                        <input
+                            type="text"
+                            className="playground__composer-field"
+                            value={inputValue}
+                            onChange={e => setInputValue(e.target.value)}
+                            placeholder="输入问题，如：怎么申请退款？"
+                            aria-label="问题输入"
+                            autoComplete="off"
+                            disabled={isStreaming}
+                        />
+                        <button
+                            type="submit"
+                            className="playground__send"
+                            disabled={isStreaming || !inputValue.trim()}
+                            aria-label="发送"
+                        >
+                            <Send size={15} />
+                        </button>
+                    </div>
+                    <p className="playground__disclaimer">回答由 AI 生成，请以平台规则原文为准</p>
+                </form>
+            </section>
         </div>
     );
 }
