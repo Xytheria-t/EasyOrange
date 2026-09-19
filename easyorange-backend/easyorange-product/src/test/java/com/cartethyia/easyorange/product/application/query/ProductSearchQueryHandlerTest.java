@@ -206,7 +206,7 @@ class ProductSearchQueryHandlerTest {
     }
 
     @Test
-    @DisplayName("按相关性排序时向量化关键词，并把向量交给 ES 走两路召回")
+    @DisplayName("开启 AI 智能搜索且按相关性排序时向量化关键词，并把向量交给 ES 走两路召回")
     void search_relevanceSort_shouldEmbedKeywordAndEnableTwoLeg() {
         var handler = handlerWith(searchQueryPort, queryEmbeddingPort);
         when(queryEmbeddingPort.embed("手机")).thenReturn(List.of(0.1f, 0.2f));
@@ -218,17 +218,17 @@ class ProductSearchQueryHandlerTest {
             return new SearchResult(List.of(testProduct), 1L, 1, 20, List.of(), List.of(), List.of());
         });
 
-        var result = handler.search(criteria, false);
+        var result = handler.search(criteria, true);
 
         assertThat(result.page().records()).hasSize(1);
         verify(queryEmbeddingPort).embed("手机");
     }
 
     @Test
-    @DisplayName("显式排序（价格）不向量化：融合排名会和用户点选的排序打架")
-    void search_explicitSort_shouldNotEmbed() {
+    @DisplayName("默认搜索（未开 AI）不向量化：词面命中已精准，不白付 embedding 也不引入语义噪声")
+    void search_defaultSearch_shouldNotEmbed() {
         var handler = handlerWith(searchQueryPort, queryEmbeddingPort);
-        var criteria = new ProductSearchCriteria("手机", null, null, null, null, null, "price_asc", null, 1, 20);
+        var criteria = new ProductSearchCriteria("手机", null, null, null, null, null, null, null, 1, 20);
         when(searchQueryPort.search(any())).thenAnswer(inv -> {
             var query = inv.getArgument(0, ProductSearchQueryPort.ProductSearchQuery.class);
             assertThat(query.useSemanticSearch()).isFalse();
@@ -242,6 +242,23 @@ class ProductSearchQueryHandlerTest {
     }
 
     @Test
+    @DisplayName("显式排序（价格）不向量化：即使开了 AI 智能搜索，排序语义也压过相关性")
+    void search_explicitSort_shouldNotEmbed() {
+        var handler = handlerWith(searchQueryPort, queryEmbeddingPort);
+        var criteria = new ProductSearchCriteria("手机", null, null, null, null, null, "price_asc", null, 1, 20);
+        when(searchQueryPort.search(any())).thenAnswer(inv -> {
+            var query = inv.getArgument(0, ProductSearchQueryPort.ProductSearchQuery.class);
+            assertThat(query.useSemanticSearch()).isFalse();
+            assertThat(query.queryEmbedding()).isEmpty();
+            return new SearchResult(List.of(testProduct), 1L, 1, 20, List.of(), List.of(), List.of());
+        });
+
+        handler.search(criteria, true);
+
+        verifyNoInteractions(queryEmbeddingPort);
+    }
+
+    @Test
     @DisplayName("关键词为空不向量化：纯筛选浏览没有检索意图可编码")
     void search_blankKeyword_shouldNotEmbed() {
         var handler = handlerWith(searchQueryPort, queryEmbeddingPort);
@@ -249,7 +266,7 @@ class ProductSearchQueryHandlerTest {
         when(searchQueryPort.search(any()))
                 .thenReturn(new SearchResult(List.of(testProduct), 1L, 1, 20, List.of(), List.of(), List.of()));
 
-        handler.search(criteria, false);
+        handler.search(criteria, true);
 
         verifyNoInteractions(queryEmbeddingPort);
     }

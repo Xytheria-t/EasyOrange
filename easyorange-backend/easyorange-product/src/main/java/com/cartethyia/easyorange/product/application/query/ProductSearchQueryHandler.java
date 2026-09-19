@@ -40,7 +40,7 @@ public class ProductSearchQueryHandler {
         if (esPort != null) {
             // 与 DB 回退路径一致：公开搜索未显式指定状态时默认只展示上架商品
             var effectiveStatus = criteria.status() != null ? criteria.status() : ProductStatus.ONLINE.getCode();
-            var embedding = queryEmbeddingFor(criteria);
+            var embedding = queryEmbeddingFor(criteria, aiEnhanced);
             var query = new ProductSearchQueryPort.ProductSearchQuery(
                     criteria.keyword(),
                     criteria.categoryId(),
@@ -102,13 +102,16 @@ public class ProductSearchQueryHandler {
     /**
      * kNN 那一路的查询向量；返回空列表即关掉该路，检索退化为纯 BM25。
      * <p>
-     * 只在「按相关性排序」时向量化：用户显式点了价格 / 最新 / 热度，排序语义压过相关性，
-     * 融合排名会和点选的排序打架；而且那样每次都要白付一次 embedding 调用。
-     * 关键词为空（纯筛选浏览）同理不走 kNN —— 没有检索意图可编码，
+     * 只在用户显式开启 AI 智能搜索（{@code aiEnhanced}）且按相关性排序时向量化：
+     * 词面命中本就精准的关键词搜索没有语义召回的必要 —— kNN 缺相似度下限时在小语料上会召回全库，
+     * 融合后把不相关商品顶进结果，还会白付一次 embedding 调用；
+     * 用户显式点了价格 / 最新 / 热度同理，排序语义压过相关性，融合排名会和点选的排序打架。
+     * 关键词为空（纯筛选浏览）也不走 kNN —— 没有检索意图可编码，
      * 而且 kNN 缺了 query 子句只能退化成 match_all，等于按过滤条件随机取一批。
      */
-    private List<Float> queryEmbeddingFor(ProductSearchCriteria criteria) {
-        if (!ProductSearchQueryPort.isRelevanceSort(criteria.sort())
+    private List<Float> queryEmbeddingFor(ProductSearchCriteria criteria, boolean aiEnhanced) {
+        if (!aiEnhanced
+                || !ProductSearchQueryPort.isRelevanceSort(criteria.sort())
                 || criteria.keyword() == null
                 || criteria.keyword().isBlank()) {
             return List.of();
