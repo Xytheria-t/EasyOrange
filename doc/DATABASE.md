@@ -169,7 +169,7 @@ eo_message ──1:1── eo_message_archive (id)
 
 > **来源**：`V7__product_ai_suggested_price.sql`。拍照识别（发布助手）给出的建议价随创建请求一起落库；**只写不改**，不参与定价逻辑与状态流转。
 
-> **为什么落在商品侧**：智能估值发生在商品创建之前，那时 `eo_ai_call_log.subject_id` 还没有值、商品也不存在，所以「AI 建议多少」只能由商品自己记。落库后 `GET /api/admin/ai/pricing-adoption` 才能算出采纳率与偏离分布 —— 这是全项目唯一不依赖 LLM 评 LLM 的质量数字（检索指标有语料免责、Judge 均分有自评偏差）。
+> **为什么落在商品侧**：智能估值发生在商品创建之前，那时 `eo_ai_call_log.subject_id` 还没有值、商品也不存在，所以「AI 建议多少」只能由商品自己记。落库后 `GET /api/admin/ai/pricing-adoption` 才能算出采纳率与偏离分布（口径与可引用性见 [工程指标](./工程指标.md)）。
 
 ### 已删除的表（历史记录）
 
