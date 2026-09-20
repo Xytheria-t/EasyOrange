@@ -53,4 +53,4 @@ TypeScript · React 19 · React Router v7 · Vite · Tailwind CSS 4 + shadcn/ui 
 
 ## 许可
 
-MIT License
+木兰宽松许可证第 2 版（[Mulan PSL v2](../LICENSE)）
