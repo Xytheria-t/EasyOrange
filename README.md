@@ -242,7 +242,7 @@ easy-orange/
 |---|---|
 | [AGENTS.md](./AGENTS.md) | 唯一规范来源 + 参考索引；后端 / 前端编码约定见各自目录下的 [AGENTS.md](./easyorange-backend/AGENTS.md) |
 | [doc/技术栈.md](doc/技术栈.md) | 精确版本表（`check-version-drift.py` 钩子校验与 pom/compose 一致） |
-| [doc/adr/](doc/adr/) | 12 条架构决策记录 |
+| [doc/adr/](doc/adr/) | 架构决策记录 |
 | [doc/agents/](doc/agents/) | 按需读取参考：架构（错误码 / 依赖边 / 异常 / 可观测）/ 领域 / 常用命令 |
 | [doc/工程指标.md](doc/工程指标.md) | 数字单一事实来源：测试数 / 覆盖率 / 压测（**收口重测后回填**）+ [结构计数](doc/工程指标.md#结构计数) |
 | [doc/DATABASE.md](doc/DATABASE.md) | 数据库全局约定、表清单、Flyway 迁移规范与脚本索引 |
