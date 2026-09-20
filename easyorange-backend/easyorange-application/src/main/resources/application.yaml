@@ -431,9 +431,7 @@ easyorange:
       # 按场景配置 token 预算 — 覆盖 @TokenBudget 注解默认值，运维可热更新而无需发版
       # scenario 键与 AiCallScope 枚举名（小写）对齐：auto_listing/semantic/chat/search_enhance/knowledge
       # 缺一个场景的后果不是「不限额」而是「该场景的用量恒记 0」——预算里看不见的调用照样在供应商那边计费
-      # pricing / copy 两个场景已于 2026-09-19 随「独立估值 / 文案生成」能力一起删除（重复入口，各占一次模型调用）；
-      # review 场景同日随管理端商品审核 AI 建议删除（不在两条 AI 主线上、无量化数字）；
-      # qa 场景同日随商品详情 AI 问答删除（与对话链路重复的第三入口，无量化数字）
+      # pricing / copy / review / qa 四个场景已随各自的重复入口下线（独立估值 / 文案生成 / 商品详情问答 / 管理端审核建议），不在两条 AI 主线上，勿再加回
       scenarios:
         auto_listing:      # 拍照识别（发布助手）— Vision + LLM JSON，~3000 token/call
           max-tokens-per-call: 3000

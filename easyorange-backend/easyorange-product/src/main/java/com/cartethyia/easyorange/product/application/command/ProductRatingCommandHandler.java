@@ -25,7 +25,7 @@ public class ProductRatingCommandHandler {
      * 创建评价 —— 仅成交完成的买家可评价，且一笔订单只评价一次。
      * <p>
      * 订单 ID 由服务端按 (买家, 资产) 反查已完成订单得到，不接受客户端传入，避免越权绑定任意订单；
-     * 评价落库后进入 AI 信用画像的评分口径（{@code review_avg_rating}），故必须绑定真实成交。
+     * 评价落库后对买家公开（商品详情页评分与评价列表），故必须绑定真实成交。
      *
      * @return 评价 ID
      * @throws BusinessException 无已完成订单（B2016）或该订单已评价（B2017）
