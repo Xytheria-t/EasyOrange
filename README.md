@@ -245,7 +245,7 @@ easy-orange/
 | [doc/agents/](doc/agents/) | 按需读取参考：架构（错误码 / 依赖边 / 异常 / 可观测）/ 领域 / 常用命令 |
 | [doc/工程指标.md](doc/工程指标.md) | 数字单一事实来源：测试数 / 覆盖率 / 压测（**收口重测后回填**）+ [结构计数](doc/工程指标.md#结构计数) |
 | [doc/DATABASE.md](doc/DATABASE.md) | 数据库全局约定、表清单、Flyway 迁移规范与脚本索引 |
-| [doc/interview/](doc/interview/) | 面试脚本（怎么说 / 怎么答） |
+| [doc/interview/](doc/interview/) | 面试脚本六册：怎么说（对外脚本）· 速答 · DDD 工程底座 · 代码走读 · 设计题与手撕 · 模拟题库 |
 
 ## 贡献与许可
 
