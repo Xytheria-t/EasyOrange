@@ -11,7 +11,8 @@
      `[结构计数](…)` 链接或定性表述（「Port 接口编译期隔离」），不再复制数字；
   2. 该区块由 `--fix` 从代码事实重算回写（幂等），提交时由 pre-commit 校验；
   3. **反向检查**：计数出现在该区块之外即报错并指出 `文件:行` —— **无例外**（`modules` 亦不例外：
-     数字只在区块里，正文写「Maven 多模块」）。
+     数字只在区块里，正文写「Maven 多模块」）。唯一按值判定的是裸写「N 模块」：命中值等于模块总数
+     才算重复落点，`4 模块`（CQRS 作用域）这类子集口径放过（见 `BARE_MODULES`）。
 
 计数**以代码为准**（每项都给出推导方式），文档必须与之一致。**ADR 正文参与校验**：ADR 规则 4
 「正文即现状」要求实现细节随代码演进直接改正文（不写「现状更新」横幅），所以 `doc/adr/NNNN-*.md`
@@ -54,11 +55,16 @@ def _cell(label: str) -> str:
     return rf"\|\s*[^|\n]*{label}[^|\n]*\|\s*{_B}(\d[\d,]*){_B}\s*\|"
 
 
+# 裸写「N 模块」（不带 Maven）：`4 模块`（CQRS 作用域）、`8 模块 domain`（域覆盖率口径）在词法上
+# 与「又写了一遍模块总数」没有区别，只能**按值判定** —— 命中值等于模块总数才算重复落点，小于总数
+# 的当子集口径放过。这是唯一一处按值判定的模式，不算独立类别、不进单点区块。
+BARE_MODULES = re.compile(rf"{_B}(\d+){_B}\s*个?\s*模块")
+
 # (名称, 匹配「在说总数」的写法, 期望值来源)
 # 刻意写窄：模式宁可漏检也不误报 —— 会误报的检查器最终会被 SKIP 掉，比没有更糟。
-# 已知需回避的同形异义：`4 模块`（CQRS 作用域）、`V1 的 26 张表`（单脚本表数，非总数）、
-# `11 个 DLQ`（ADR-0005 决策时点口径，正文豁免）。已知漏检：把关键词换成同义词的改写
-# （如 `doc/adr/README.md` 的「决策 12 篇」）不在词表内，靠反向检查的人工复核兜底。
+# 已知需回避的同形异义：`4 模块`（CQRS 作用域，见 BARE_MODULES）、`V1 的 26 张表`（单脚本表数，
+# 非总数，故 `N 张表` 不设模式）、`11 个 DLQ`（ADR-0005 决策时点口径，正文豁免）。
+# 已知漏检：词表之外的同义改写（如 `十一模块` 这种中文数字写法）。
 CLAIM_PATTERNS: dict[str, tuple[re.Pattern[str], str]] = {
     "modules": (
         re.compile(
@@ -245,12 +251,13 @@ def render_inline(facts: dict[str, int]) -> str:
     return " / ".join(f"{key}={facts[key]}" for key in CLAIM_PATTERNS)
 
 
-def scan_claims() -> tuple[list[tuple[str, int, str, str, str]], int]:
-    """扫描全仓 md 的结构计数写法，返回 ([(相对路径, 行号, 名称, 数字, 命中文本)], 检查处数)。
+def scan_claims() -> tuple[list[tuple[str, int, str, str, str, bool]], int]:
+    """扫描全仓 md 的结构计数写法，返回 ([(相对路径, 行号, 名称, 数字, 命中文本, 按值判定)], 检查处数)。
 
     单点区块自身与豁免文件跳过 —— 区块是唯一允许出现这些数字的地方，其余位置由调用方判违规。
+    末位 `按值判定` 为真时（只有裸写「N 模块」），命中值等于总数才算违规，小于总数当子集口径放过。
     """
-    hits: list[tuple[str, int, str, str, str]] = []
+    hits: list[tuple[str, int, str, str, str, bool]] = []
     checked = 0
     for path in sorted(ROOT.rglob("*.md")):
         rel = path.relative_to(ROOT)
@@ -262,13 +269,19 @@ def scan_claims() -> tuple[list[tuple[str, int, str, str, str]], int]:
         for lineno, line in enumerate(text.splitlines(), 1):
             if lineno - 1 in skip:
                 continue
-            for key, (pattern, _source) in CLAIM_PATTERNS.items():
-                for match in pattern.finditer(line):
-                    raw = next((g for g in match.groups() if g), None)
-                    if raw is None:
-                        continue
-                    checked += 1
-                    hits.append((str(rel), lineno, key, raw.replace(",", ""), match.group(0).strip()))
+            found = [
+                (key, match)
+                for key, (pattern, _source) in CLAIM_PATTERNS.items()
+                for match in pattern.finditer(line)
+            ]
+            found += [("modules", match) for match in BARE_MODULES.finditer(line)]
+            for key, match in found:
+                raw = next((g for g in match.groups() if g), None)
+                if raw is None:
+                    continue
+                checked += 1
+                tolerant = match.re is BARE_MODULES
+                hits.append((str(rel), lineno, key, raw.replace(",", ""), match.group(0).strip(), tolerant))
     return hits, checked
 
 
@@ -323,7 +336,10 @@ def main() -> int:
                 )
 
     hits, checked = scan_claims()
-    for rel, lineno, key, raw, text in hits:
+    for rel, lineno, key, raw, text, tolerant in hits:
+        if tolerant and int(raw) != facts[key]:
+            # 子集口径（`4 模块` CQRS 作用域 / `8 模块 domain`）：只在等于总数时才算重复落点
+            continue
         scattered.append(
             f"  {rel}:{lineno} 出现 {key} 计数「{text}」"
             f"（实际 {facts[key]}）—— 结构计数只在 {SSOT.relative_to(ROOT)} 的「结构计数」区块维护"
