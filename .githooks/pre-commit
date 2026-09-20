@@ -146,4 +146,21 @@ else
   hook_log "No AGENTS.md changes, skipping context budget check"
 fi
 
+# 7. 文档链接：*.md 变更时校验仓库内相对链接与锚点可解析——手册间互引很密（节号
+#    `NN §x` 靠人肉同步，文件名与锚点这半边可以断言），改册名 / 拆册 / 重排章号时最容易静默失效
+if echo "$files" | grep -qE '\.md$'; then
+  if command -v python3 >/dev/null 2>&1; then
+    hook_log "文档变更 → 校验相对链接与锚点..."
+    if python3 "$SCRIPT_DIR/check-doc-links.py"; then
+      hook_ok "doc links check"
+    else
+      hook_fail "存在失效的文档链接 / 锚点（见上方输出；SKIP=git-hooks 可跳过）"
+    fi
+  else
+    hook_warn "python3 not found, skipping doc links check"
+  fi
+else
+  hook_log "No markdown changes, skipping doc links check"
+fi
+
 hook_ok "pre-commit passed"
