@@ -15,7 +15,7 @@ git config core.hooksPath .githooks
 | `commit-msg` | Conventional Commits 格式校验（标题 + breaking change）+ 消息-内容一致性（纯文档提交必须标 `docs`） | <100ms |
 | `check-version-drift.py` | 文档版本表 vs pom/compose/镜像 tag 一致性校验 | <100ms |
 | `check-test-tier-drift.py` | 文档的「集成测试」声明 vs 代码事实（`*IT` 文件 + pom failsafe 绑定）一致性校验 | <100ms |
-| `check-metrics-drift.py` | 文档声称的结构计数（模块/Port/ADR/消费者/表/ArchUnit 规则/Prompt 模板）vs 代码事实 | <100ms |
+| `check-metrics-drift.py` | 结构计数（模块/Port/ADR/消费者/表/ArchUnit 规则/Prompt 模板/前端测试文件/金标准集）单点区块 vs 代码事实；区块外出现计数即失败（`--fix` 自动回写） | <100ms |
 | `check-context-budget.py` | AGENTS.md 份数（≤3）与字符预算（根 6500 / 合计 45000） | <100ms |
 | `_lib.sh` | 共享工具（颜色、日志、SKIP、staged 文件、密钥扫描、快检函数） | — |
 
@@ -43,7 +43,7 @@ SKIP=1        git commit -m "..."   # 任何非空值都视为跳过
 | 任意文本 | 大文件 >2MB | `git cat-file -s`（staged blob） |
 | `easyorange-frontend/{src,tests}/**/*.{ts,tsx,js,jsx}` | `biome check`（仅变更文件） | `node_modules/.bin/biome` |
 | `**/*.md` / `easyorange-backend/pom.xml` | 测试口径漂移校验（文档声明 vs 代码事实） | `python3 check-test-tier-drift.py` |
-| `**/*.md` / `pom.xml` / `*.sql` / `*.java` | 结构计数漂移校验（N 模块 / N Port / N ADR…） | `python3 check-metrics-drift.py` |
+| `**/*.md` / `pom.xml` / `*.sql` / `*.java` | 结构计数漂移校验（单点区块 vs 代码事实 + 区块外不得出现） | `python3 check-metrics-drift.py` |
 | `doc/技术栈.md` / `compose.yaml` / `easyorange-backend/pom.xml` / `infra/elasticsearch/Dockerfile` | 版本漂移校验（文档版本表 vs 权威来源） | `python3 check-version-drift.py` |
 | `**/AGENTS.md` | 上下文预算校验（份数 + 字符预算） | `python3 check-context-budget.py` |
 | 纯文档/Markdown/YAML | 跳过（仅过密钥扫描 + 口径校验） | — |

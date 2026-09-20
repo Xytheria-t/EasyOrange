@@ -21,7 +21,7 @@
 
 | 脚本 | 内容 |
 |------|------|
-| `V1__init_schema.sql` | 26 张表初始化（当前完整 DDL；开发阶段三次收口为单文件：V1~V6、V1~V9、V2~V7，项目未发版无生产历史） |
+| `V1__init_schema.sql` | 26 表初始化（当前完整 DDL；开发阶段三次收口为单文件：V1~V6、V1~V9、V2~V7，项目未发版无生产历史） |
 | `R__seed_*.sql` | 可重复执行种子：分类、RAG 知识库文档 |
 
 ## Flyway 迁移规范
@@ -45,9 +45,9 @@
 
 ## 表总览
 
-共 26 张表：24 张 `eo_*` 业务/观测表 + 2 张 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。
+共 26 表：24 个 `eo_*` 业务/观测表 + 2 个 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。
 
-> 早期建表时预留过 4 张从未被代码引用的表（eo_payment_config / eo_product_question / eo_audit_suggestion / eo_credit_change_log），已随 V1 收口删除——库里的表应当都有消费者。另有 3 张表（eo_user_credit / eo_product_report / eo_report_handle_history）随信用、举报两个功能下线一并从 V1 移除。
+> 早期建表时预留过 4 张从未被代码引用的表（eo_payment_config / eo_product_question / eo_audit_suggestion / eo_credit_change_log），已随 V1 收口删除——库里的表应当都有消费者。另有 eo_user_credit / eo_product_report / eo_report_handle_history 随信用、举报两个功能下线一并从 V1 移除。
 
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
@@ -174,7 +174,7 @@ eo_message ──1:1── eo_message_archive (id)
 
 关键列：`scope`（AI 调用场景）、`prompt_hash`（system+user prompt 摘要 MD5，去重与回归用）、`token_input` / `token_output`（供应商真实回报的用量，未回报记 0 不估算）、`subject_id`（调用主体，如商品 ID；部分调用发生在主体创建之前故可空）、`judge_score` / `judge_comment`（LLM-as-Judge 结果，NULL = 待评估）。
 
-> **用量与主体的用途**：没有这两组列时，这张表只能回答「哪个场景调用得多」，回答不了「哪个场景花得多」。补列后 `AiCostReportService` 可按场景出 token 报表（`GET /api/admin/ai/cost-report`），`subject_id` 供按主体做成本归因。注意 embedding 用量与未带 usage 的流式调用仍记 0。
+> **用量与主体的用途**：没有这两组列时，该表只能回答「哪个场景调用得多」，回答不了「哪个场景花得多」。补列后 `AiCostReportService` 可按场景出 token 报表（`GET /api/admin/ai/cost-report`），`subject_id` 供按主体做成本归因。注意 embedding 用量与未带 usage 的流式调用仍记 0。
 
 ### eo_product.ai_suggested_price — AI 建议售价
 

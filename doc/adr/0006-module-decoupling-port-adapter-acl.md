@@ -53,19 +53,19 @@
 
 - 模块可独立编译/测试/演进，跨模块依赖面收敛为接口签名
 - 替换实现零成本：锁实现（Redis/Mem）、支付网关、短信供应商、ES 开关全部只改 adapter（`@ConditionalOnProperty` 已用于 RabbitMQ/ES/TokenBudgetStore）
-- 49 个 Port 成为「模块边界地图」，新人看 Port 目录即理解模块协作面
+- Port 目录成为「模块边界地图」，新人看 Port 目录即理解模块协作面
 - optional 依赖 + ArchUnit 无白名单，CI 阻断任何越界依赖
 
 ### 负向后果
 
-- 每个跨模块调用多一层「接口 + 适配器」样板代码（每个 Port 都要有对应实现类）
+- 每个跨模块调用多一层「接口 + 适配器」样板代码（Port 与实现类一一对应）
 - Adapter 集中堆在 application 模块，该模块文件数偏多，导航成本上升
 - 查询链路多一跳方法调用 + 可能的 MapStruct 转换开销（可忽略，本地调用）
 - optional 标记依赖人肉维护，Maven 不校验（TD-011 技术债，2026-08-16 已由 CI 脚本闭环：除组合根 `easyorange-application` 外，跨领域模块依赖必须 `<optional>true</optional>`，违规即失败，见 [技术债务清单 TD-011](../技术债务清单.md)）
 
 ### 缓解措施
 
-- 49 Port 目录即边界地图；新增 Port 有 ArchUnit「端口必有适配器」规则自动兜底（缺实现直接红）
+- Port 目录即边界地图；新增 Port 有 ArchUnit「端口必有适配器」规则自动兜底（缺实现直接红）
 - 查询端口尽量复用值对象直传，避免无意义 DTO 拷贝
 - 未来若 adapter 膨胀，可按域拆 `adapter/outbound/{domain}/` 子包（已按此组织：elasticsearch/payment/product/user/admin）
 
