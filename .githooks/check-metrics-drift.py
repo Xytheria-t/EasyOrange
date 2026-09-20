@@ -10,7 +10,8 @@
   1. 上述计数**只在 `doc/工程指标.md` 的「结构计数」区块维护**（唯一落点）；其余文档一律写
      `[结构计数](…)` 链接或定性表述（「Port 接口编译期隔离」），不再复制数字；
   2. 该区块由 `--fix` 从代码事实重算回写（幂等），提交时由 pre-commit 校验；
-  3. **反向检查**：计数出现在该区块之外即报错并指出 `文件:行`（例外见 `REVERSE_EXEMPT`）。
+  3. **反向检查**：计数出现在该区块之外即报错并指出 `文件:行` —— **无例外**（`modules` 亦不例外：
+     数字只在区块里，正文写「Maven 多模块」）。
 
 计数**以代码为准**（每项都给出推导方式），文档必须与之一致。**ADR 正文参与校验**：ADR 规则 4
 「正文即现状」要求实现细节随代码演进直接改正文（不写「现状更新」横幅），所以 `doc/adr/NNNN-*.md`
@@ -43,10 +44,6 @@ FIX_CMD = "python3 .githooks/check-metrics-drift.py --fix"
 
 SKIP_DIRS = {".git", ".zcode", "node_modules", "target", "dist", ".venv", "archunit_store"}
 
-# 反向检查豁免：`modules` 变动极少（拆模块是罕见事件），且「11 Maven 模块」是简历硬点与
-# 面试口播的固定搭配 —— 与其逼出十几处拗口的改写，不如让它留在正文里做正向校验（数字仍必须对）。
-REVERSE_EXEMPT = {"modules"}
-
 # Markdown 加粗：`**49**` / `**49 个**` / `49 个` 三种断法都要能认 —— 历史漏检正是从这儿来的
 # （`doc/工程指标.md` 的表格把数字与关键词分到两个单元，旧正则只认「N 个 Port」相邻写法）。
 _B = r"\*{0,2}"
@@ -71,11 +68,21 @@ CLAIM_PATTERNS: dict[str, tuple[re.Pattern[str], str]] = {
     ),
     "ports": (re.compile(rf"{_B}(\d+){_B}\s*个?\s*Port\b|{_cell('Port')}"), "main 源码 `interface *Port` 数"),
     "adrs": (
-        re.compile(rf"{_B}(\d+){_B}\s*[条个]\s*ADR\b|ADR\s*决策记录\s*（\s*{_B}(\d+){_B}\s*个"),
+        # `ADR 决策记录（N 个…）` 是「关键词在前」的改写，`决策 N 篇` 是 ADR 索引里的写法。
+        re.compile(
+            rf"{_B}(\d+){_B}\s*[条个]\s*ADR\b|ADR\s*决策记录\s*（\s*{_B}(\d+){_B}\s*个|决策\s*{_B}(\d+){_B}\s*篇"
+        ),
         "doc/adr/ 下 NNNN-*.md（排除 0000-template）",
     ),
     "consumers": (
-        re.compile(rf"{_B}(\d+){_B}\s*个?\s*(?:事件)?消费者|{_cell('消费者')}"),
+        # 「N 个消费者」的三种同义改写也拦：「独立下游」「DLQ 队列」「consumer group」——
+        # 实测过 `11 个 DLQ 队列` / `11 个独立下游` 这类换词写法在正文里长期漂移。
+        re.compile(
+            rf"{_B}(\d+){_B}\s*个?\s*(?:事件)?消费者"
+            rf"|{_B}(\d+){_B}\s*个?\s*(?:独立)?下游"
+            rf"|{_B}(\d+){_B}\s*个?\s*DLQ\s*队列"
+            rf"|{_cell('消费者')}"
+        ),
         "main 源码 @RabbitListener 引用的业务队列常量数（不含 DlqAnomalyListener）",
     ),
     "tables": (
@@ -93,7 +100,10 @@ CLAIM_PATTERNS: dict[str, tuple[re.Pattern[str], str]] = {
     # `模板（**5 个**：…）` 这种「关键词在数字前」的写法也认；「10 个 YAML 配置属性」被 `模板` 挡住。
     "prompt_templates": (
         re.compile(
-            rf"{_B}(\d+){_B}\s*个\s*(?:YAML\s*)?模板|模板\s*（\s*{_B}(\d+){_B}\s*个|Prompt\s*{_B}(\d+){_B}\s*个\s*YAML"
+            rf"{_B}(\d+){_B}\s*个\s*(?:YAML\s*)?模板"
+            rf"|模板\s*（\s*{_B}(\d+){_B}\s*个"
+            rf"|{_B}(\d+){_B}\s*个\s*[Pp]rompt\b"
+            rf"|Prompt\s*{_B}(\d+){_B}\s*个\s*YAML"
         ),
         "easyorange-ai/src/main/resources/prompts/*.yml 数",
     ),
@@ -314,13 +324,6 @@ def main() -> int:
 
     hits, checked = scan_claims()
     for rel, lineno, key, raw, text in hits:
-        if key in REVERSE_EXEMPT:
-            if int(raw) != facts[key]:
-                drift.append(
-                    f"  {rel}:{lineno} 声称 {raw}（{key}），实际 {facts[key]}"
-                    f" —— 「{text}」；权威来源：{CLAIM_PATTERNS[key][1]}"
-                )
-            continue
         scattered.append(
             f"  {rel}:{lineno} 出现 {key} 计数「{text}」"
             f"（实际 {facts[key]}）—— 结构计数只在 {SSOT.relative_to(ROOT)} 的「结构计数」区块维护"
