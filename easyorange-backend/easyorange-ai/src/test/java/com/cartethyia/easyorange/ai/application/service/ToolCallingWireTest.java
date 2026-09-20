@@ -90,7 +90,7 @@ class ToolCallingWireTest {
     }
 
     @Test
-    @DisplayName("请求体带 4 个工具的 schema 与模型名、不带 response_format；响应的 tool call 可解析")
+    @DisplayName("请求体带 5 个工具的 schema 与模型名、不带 response_format；响应的 tool call 可解析")
     void callWithTools_wireContract() throws Exception {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
@@ -99,7 +99,7 @@ class ToolCallingWireTest {
                 new InMemoryTokenBudgetStore(),
                 PropertyBindings.bind(AiProperties.class),
                 new ObjectMapper());
-        var tools = new AgentTools(List.of(), List.of(), List.of(), null, null, null);
+        var tools = new AgentTools(List.of(), List.of(), List.of(), null, null, null, null, null);
 
         List<AssistantMessage.ToolCall> calls = support.callWithTools(
                 chatModel, AiCallScope.CHAT, "你是多步工具决策器", "用户问题：怎么退款？", List.of(ToolCallbacks.from(tools)));
@@ -111,6 +111,7 @@ class ToolCallingWireTest {
                         AgentTools.TOOL_KNOWLEDGE_SEARCH,
                         AgentTools.TOOL_PRODUCT_SEARCH,
                         AgentTools.TOOL_PRODUCT_DETAIL,
+                        AgentTools.TOOL_REMEMBER_PREFERENCE,
                         AgentTools.TOOL_FINISH);
         assertThat(request).contains("\"thought\"", "\"query\"", "\"productId\"", "\"preferenceKey\"");
         assertThat(request).contains("\"model\":\"deepseek-chat\"");

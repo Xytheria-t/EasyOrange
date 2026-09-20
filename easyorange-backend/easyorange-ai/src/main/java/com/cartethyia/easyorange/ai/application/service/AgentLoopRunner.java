@@ -41,7 +41,7 @@ import tools.jackson.databind.ObjectMapper;
  * 多步 Agent 工具循环（ReAct）— 逐轮「决策 → 工具 → 观察」推进，直到模型判定信息足够（finish）。
  * <p>
  * 编排结构（与 4 路并行编排 {@code AiSearchEnhancerAdapter} 形成「Workflow vs 自治 Agent」对照）：
- * 每轮把 4 个工具的 JSON Schema（{@link AgentTools} 的 {@code @Tool} 注解生成、供应商侧校验）随请求发出，
+ * 每轮把 7 个工具的 JSON Schema（{@link AgentTools} 的 {@code @Tool} 注解生成、供应商侧校验）随请求发出，
  * 模型以原生 tool calling 返回「调用哪个工具 + 参数 + 理由」，工具执行结果作为观察进入下一轮决策上下文；
  * 规则类与找货类需求兼有时由模型分两步分别检索，而非一次穷举。
  * <b>手写循环 + 原生模型接口</b>：工具只负责 schema 与「执行 + 观察格式」，调不调、调几次由本类决定
@@ -76,7 +76,9 @@ public class AgentLoopRunner {
     private static final String CHAT_SCENARIO = "chat";
     /** 未知工具观察里的工具清单（与 {@link AgentTools} 的常量同源，不重写字面量）。 */
     private static final String TOOL_MENU = AgentTools.TOOL_KNOWLEDGE_SEARCH + " / " + AgentTools.TOOL_PRODUCT_SEARCH
-            + " / " + AgentTools.TOOL_PRODUCT_DETAIL + " / " + AgentTools.TOOL_FINISH;
+            + " / " + AgentTools.TOOL_PRODUCT_DETAIL + " / " + AgentTools.TOOL_MARKET_PRICE_STATS + " / "
+            + AgentTools.TOOL_COMPARE_ASSETS + " / " + AgentTools.TOOL_REMEMBER_PREFERENCE + " / "
+            + AgentTools.TOOL_FINISH;
 
     /** 与 {@code @TokenBudget(scenario="chat")} 注解默认值一致（yaml 缺失时兜底；改注解要同步改这里）。 */
     private static final int DEFAULT_MAX_TOKENS_PER_CALL = 1500;
@@ -167,7 +169,15 @@ public class AgentLoopRunner {
         List<AssetDetail> details = new ArrayList<>();
         List<StepObservation> observations = new ArrayList<>();
         // 工具实例与回调表按请求构建一次：召回物累加器跨轮复用，工具 schema 每轮随决策调用发出
-        var tools = new AgentTools(hits, assets, details, retrievalService, assetSourcingService, assetDetailPort);
+        var tools = new AgentTools(
+                hits,
+                assets,
+                details,
+                retrievalService,
+                assetSourcingService,
+                assetDetailPort,
+                preferenceRepository,
+                subjectUserId(input));
         List<ToolCallback> toolCallbacks = List.of(ToolCallbacks.from(tools));
         Map<String, ToolCallback> callbacksByName = toolCallbacks.stream()
                 .collect(Collectors.toMap(
@@ -195,8 +205,6 @@ public class AgentLoopRunner {
             AgentStepDecision decision = decided.get();
 
             if (AgentTools.TOOL_FINISH.equals(decision.tool())) {
-                // 画像提取只在收敛轮发生（偏好由 finish 工具参数带出），降级收尾时不提取
-                recordPreference(input, decision);
                 recordStep(input, traceId, round, decision, null, null, 0, true, null);
                 return new Result(
                         List.copyOf(hits), List.copyOf(assets), List.copyOf(details), OUTCOME_FINISHED, rounds);
@@ -297,7 +305,7 @@ public class AgentLoopRunner {
         tracePort.record(new AgentStepTrace(
                 traceId,
                 input.sessionId(),
-                ANONYMOUS_USER.equals(input.userId()) ? null : input.userId(),
+                subjectUserId(input),
                 round,
                 decision.tool(),
                 toolInput,
@@ -313,24 +321,14 @@ public class AgentLoopRunner {
     }
 
     /**
-     * 画像提取旁路落库（偏好由 finish 工具参数带出）— 两道防线：① 模型输出不可信，偏好字段可能缺失或
-     * 为空串，空值直接丢弃；② 落库失败只告警不抛——画像是长期记忆的旁路存储，任何异常不得把整轮对话打成不可用。
+     * 画像归属用户 — 匿名会话返回 null（长期记忆不落库），与 trace 的 subject 口径一致。
+     * <p>
+     * 偏好提取本身已移入 {@link AgentTools#rememberPreference}（独立工具、模型自主决定何时写），
+     * 不再由本类按 finish 轮旁路落库——原先只在收敛轮提取，步数超限 / 预算耗尽 / 决策失败三条降级
+     * 路径下偏好会静默丢失。
      */
-    private void recordPreference(Input input, AgentStepDecision decision) {
-        if (ANONYMOUS_USER.equals(input.userId())) {
-            return;
-        }
-        String key = decision.preferenceKey();
-        String value = decision.preferenceValue();
-        if (key == null || key.isBlank() || value == null || value.isBlank()) {
-            log.debug("action=preference_discarded, reason=blank_fields, sessionId={}", input.sessionId());
-            return;
-        }
-        try {
-            preferenceRepository.record(input.userId(), key, value);
-        } catch (Exception e) {
-            log.warn("action=preference_record_failed, sessionId={}, reason={}", input.sessionId(), reasonOf(e));
-        }
+    private static String subjectUserId(Input input) {
+        return ANONYMOUS_USER.equals(input.userId()) ? null : input.userId();
     }
 
     private static String buildStepUserMessage(Input input, List<StepObservation> observations) {
@@ -385,7 +383,16 @@ public class AgentLoopRunner {
     }
 
     private static String toolInputOf(AgentStepDecision decision) {
-        return AgentTools.TOOL_PRODUCT_DETAIL.equals(decision.tool()) ? decision.productId() : decision.query();
+        if (AgentTools.TOOL_PRODUCT_DETAIL.equals(decision.tool())) {
+            return decision.productId();
+        }
+        if (AgentTools.TOOL_COMPARE_ASSETS.equals(decision.tool())) {
+            return decision.productIds() == null ? null : String.join("、", decision.productIds());
+        }
+        if (AgentTools.TOOL_REMEMBER_PREFERENCE.equals(decision.tool())) {
+            return decision.preferenceKey() + "=" + decision.preferenceValue();
+        }
+        return decision.query();
     }
 
     private static String reasonOf(Throwable e) {

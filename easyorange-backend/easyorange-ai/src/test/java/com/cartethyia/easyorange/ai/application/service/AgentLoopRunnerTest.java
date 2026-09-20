@@ -130,7 +130,7 @@ class AgentLoopRunnerTest {
         return "{\"thought\":\"闲聊无需检索\"}";
     }
 
-    private static String preferenceFinishArgs(String key, String value) {
+    private static String rememberArgs(String key, String value) {
         return "{\"thought\":\"记住偏好\",\"preferenceKey\":\"%s\",\"preferenceValue\":\"%s\"}".formatted(key, value);
     }
 
@@ -185,7 +185,7 @@ class AgentLoopRunnerTest {
     }
 
     @Test
-    @DisplayName("决策把 4 个工具的 schema（@Tool 注解生成）随请求下发 —— 供供应商侧校验与参数名锚定")
+    @DisplayName("决策把 7 个工具的 schema（@Tool 注解生成）随请求下发 —— 供供应商侧校验与参数名锚定")
     void run_passesToolSchemasToModel() {
         stubDecisions(toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
 
@@ -204,12 +204,20 @@ class AgentLoopRunnerTest {
                         AgentTools.TOOL_KNOWLEDGE_SEARCH,
                         AgentTools.TOOL_PRODUCT_SEARCH,
                         AgentTools.TOOL_PRODUCT_DETAIL,
+                        AgentTools.TOOL_MARKET_PRICE_STATS,
+                        AgentTools.TOOL_COMPARE_ASSETS,
+                        AgentTools.TOOL_REMEMBER_PREFERENCE,
                         AgentTools.TOOL_FINISH);
         // 参数名来自编译期 -parameters（缺失会退化成 arg0/arg1，模型填不对参数）
         assertThat(schemas.get(AgentTools.TOOL_KNOWLEDGE_SEARCH)).contains("thought", "query");
         assertThat(schemas.get(AgentTools.TOOL_PRODUCT_SEARCH)).contains("thought", "query");
         assertThat(schemas.get(AgentTools.TOOL_PRODUCT_DETAIL)).contains("thought", "productId");
-        assertThat(schemas.get(AgentTools.TOOL_FINISH)).contains("thought", "preferenceKey", "preferenceValue");
+        assertThat(schemas.get(AgentTools.TOOL_MARKET_PRICE_STATS)).contains("thought");
+        assertThat(schemas.get(AgentTools.TOOL_COMPARE_ASSETS)).contains("thought", "productIds");
+        assertThat(schemas.get(AgentTools.TOOL_REMEMBER_PREFERENCE))
+                .contains("thought", "preferenceKey", "preferenceValue");
+        // 偏好已从 finish 的参数副作用拆成独立工具，finish 不再带偏好字段（拆分的回归守卫）
+        assertThat(schemas.get(AgentTools.TOOL_FINISH)).contains("thought").doesNotContain("preferenceKey");
     }
 
     @Test
@@ -282,6 +290,91 @@ class AgentLoopRunnerTest {
         verify(tracePort, times(3))
                 .record(argThat(trace ->
                         !AgentTools.TOOL_PRODUCT_DETAIL.equals(trace.tool()) || "p-1".equals(trace.toolInput())));
+    }
+
+    @Test
+    @DisplayName("compare_assets：一次比对多件候选（替代逐件 product_detail），确定性结论进下一轮决策")
+    void run_compareAssetsFlow() {
+        stubDecisions(
+                toolCallResponse(AgentTools.TOOL_PRODUCT_SEARCH, searchArgs("5000 笔记本")),
+                toolCallResponse(AgentTools.TOOL_COMPARE_ASSETS, compareArgs(List.of("p-1", "p-2"))),
+                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+        when(assetSourcingService.search("5000 笔记本", 5))
+                .thenReturn(List.of(
+                        new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "轻微使用痕迹", 0.83),
+                        new AssetHit("p-2", "ThinkPad X1", BigDecimal.valueOf(4800), "数码", "几乎全新", 0.79)));
+        // 便宜的那件成色差一档、贵的那件成色好——两维各自给出胜出方（不是同一件包揽）
+        when(assetDetailPort.findDetail("p-1"))
+                .thenReturn(Optional.of(detail("p-1", BigDecimal.valueOf(4200), "轻微使用痕迹")));
+        when(assetDetailPort.findDetail("p-2"))
+                .thenReturn(Optional.of(detail("p-2", BigDecimal.valueOf(4800), "几乎全新")));
+        var steps = new RecordingHandler();
+
+        Result result = run("预算 5000 想买笔记本，帮我挑一台", "user-1", steps);
+
+        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        // 一次 compare_assets 拿到两件详情（等价于两次 product_detail）但只花一步
+        assertThat(result.details()).hasSize(2);
+        assertThat(steps.steps)
+                .extracting(AgentStepView::tool)
+                .containsExactly(
+                        AgentTools.TOOL_PRODUCT_SEARCH, AgentTools.TOOL_COMPARE_ASSETS, AgentTools.TOOL_FINISH);
+
+        // 比对结论是代码算的，进下一轮决策上下文（模型据此取舍，不用自己心算）
+        ArgumentCaptor<String> userMessage = ArgumentCaptor.forClass(String.class);
+        verify(aiModelSupport, times(3)).callWithTools(any(), any(), anyString(), userMessage.capture(), anyList());
+        assertThat(userMessage.getAllValues().get(2))
+                .contains("价格：p-1 最低 ¥4200", "成色：p-2 成色最好（几乎全新）");
+
+        // compare_assets 的 trace 带入参 ID 列表
+        verify(tracePort, times(3))
+                .record(argThat(trace -> !AgentTools.TOOL_COMPARE_ASSETS.equals(trace.tool())
+                        || "p-1、p-2".equals(trace.toolInput())));
+    }
+
+    @Test
+    @DisplayName("compare_assets 少于 2 个 ID -> 回观察文本而非失败，模型可换 ID 重试")
+    void run_compareAssetsTooFewIds() {
+        stubDecisions(
+                toolCallResponse(AgentTools.TOOL_COMPARE_ASSETS, compareArgs(List.of("p-1"))),
+                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+
+        Result result = run("比一下", "user-1", null);
+
+        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        verifyNoInteractions(assetDetailPort);
+    }
+
+    @Test
+    @DisplayName("market_price_stats：对已召回资产出行情统计（零模型计算），口径与 MarketAnalysisTool 一致")
+    void run_marketPriceStatsFlow() {
+        stubDecisions(
+                toolCallResponse(AgentTools.TOOL_PRODUCT_SEARCH, searchArgs("5000 笔记本")),
+                toolCallResponse(AgentTools.TOOL_MARKET_PRICE_STATS, "{\"thought\":\"看行情\"}"),
+                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+        when(assetSourcingService.search("5000 笔记本", 5))
+                .thenReturn(List.of(
+                        new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83),
+                        new AssetHit("p-2", "ThinkPad X1", BigDecimal.valueOf(4800), "数码", "九五新", 0.79)));
+        var steps = new RecordingHandler();
+
+        Result result = run("预算 5000 想买笔记本", "user-1", steps);
+
+        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(steps.steps.get(1).tool()).isEqualTo(AgentTools.TOOL_MARKET_PRICE_STATS);
+        assertThat(steps.steps.get(1).observation()).isEqualTo("当前 2 件在售，均价 ¥4500，价格区间 ¥4200-¥4800");
+        // 行情统计只吃已召回资产，不额外读详情
+        verifyNoInteractions(assetDetailPort);
+    }
+
+    /** compare_assets 的工具参数 JSON（productIds 是数组，与 {@code @ToolParam} 的 List 参数对齐）。 */
+    private static String compareArgs(List<String> productIds) {
+        return "{\"thought\":\"比一比\",\"productIds\":[%s]}"
+                .formatted(productIds.stream().map(id -> "\"%s\"".formatted(id)).collect(Collectors.joining(",")));
+    }
+
+    private static AssetDetail detail(String id, BigDecimal price, String conditionDesc) {
+        return new AssetDetail(id, "资产 " + id, "描述", price, "数码", conditionDesc, "上海", "liming", "ONLINE");
     }
 
     @Test
@@ -459,9 +552,11 @@ class AgentLoopRunnerTest {
     }
 
     @Test
-    @DisplayName("finish 轮带出偏好 -> 提取并写入用户画像（长期记忆沿用）")
+    @DisplayName("remember_preference -> 写入用户画像（长期记忆，模型自主决定的一步）")
     void run_extractsPreference() {
-        stubDecisions(toolCallResponse(AgentTools.TOOL_FINISH, preferenceFinishArgs("style", "复古")));
+        stubDecisions(
+                toolCallResponse(AgentTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
+                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
 
         run("我喜欢复古风格的东西", "user-1", null);
 
@@ -469,9 +564,11 @@ class AgentLoopRunnerTest {
     }
 
     @Test
-    @DisplayName("匿名对话 -> 即便提取到偏好也不落画像")
+    @DisplayName("匿名对话 -> 即便模型调了 remember_preference 也不落画像")
     void run_anonymousSkipsPreference() {
-        stubDecisions(toolCallResponse(AgentTools.TOOL_FINISH, preferenceFinishArgs("style", "复古")));
+        stubDecisions(
+                toolCallResponse(AgentTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
+                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
 
         run("我喜欢复古风格的东西", "anonymous", null);
 
@@ -479,9 +576,11 @@ class AgentLoopRunnerTest {
     }
 
     @Test
-    @DisplayName("finish 未带偏好参数（模型没提取）-> 丢弃不落库，对话照常收敛")
+    @DisplayName("remember_preference 收到空值 -> 跳过落库并回观察文本，对话照常收敛")
     void run_blankPreferenceSkipped() {
-        stubDecisions(toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+        stubDecisions(
+                toolCallResponse(AgentTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("", "")),
+                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
 
         Result result = run("我想买台九成新的相机", "user-1", null);
 
@@ -490,9 +589,11 @@ class AgentLoopRunnerTest {
     }
 
     @Test
-    @DisplayName("画像落库失败 -> 只告警不抛，对话照常收敛（旁路存储不打挂主链路）")
+    @DisplayName("画像落库失败 -> 收敛成失败观察交回模型，对话照常收敛（旁路存储不打挂主链路）")
     void run_preferenceRecordFailureNotFatal() {
-        stubDecisions(toolCallResponse(AgentTools.TOOL_FINISH, preferenceFinishArgs("style", "复古")));
+        stubDecisions(
+                toolCallResponse(AgentTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
+                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
         doThrow(new RuntimeException("db down"))
                 .when(preferenceRepository)
                 .record(anyString(), anyString(), anyString());
