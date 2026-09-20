@@ -175,16 +175,16 @@ flowchart TB
 
 | 层 | 技术 |
 |---|---|
-| **后端** | Java · Spring Boot · MyBatis-Plus · MapStruct |
+| **后端** | Java（容器内显式 G1，非 ZGC）· Spring Boot（虚拟线程默认启用）· MyBatis-Plus（逻辑删除 / 乐观锁 / 分页）· MapStruct · OpenRewrite |
 | **安全** | Spring Security OAuth2 Resource Server · **双 Token**：RSA 签名 Access（30min 无状态）+ Opaque Refresh（Redis SHA-256，HttpOnly Cookie，轮换 + 复用检测）· BCrypt |
-| **前端** | React · TypeScript · Vite · TanStack Query · Zustand · Tailwind CSS · shadcn/ui · Biome |
-| **数据 / 消息** | MySQL · Redis · RabbitMQ · Elasticsearch（dev / prod 默认启用，关掉走 LIKE 兜底） |
-| **AI** | Spring AI · DeepSeek · Qwen-VL · DashScope Embedding |
-| **可靠性** | Redisson（分布式锁 / 令牌桶）· Spring Modulith Outbox · CacheErrorHandler fail-open |
-| **可观测** | Micrometer + Prometheus · OpenTelemetry（traceId → Langfuse）· Spring AI Observation · 结构化日志 |
-| **DevOps** | Docker / docker-compose · GitHub Actions · Flyway |
+| **前端** | React · TypeScript · Vite · React Router · TanStack Query · Zustand · Tailwind CSS · shadcn/ui · react-hook-form + Zod · Framer Motion · Biome · Playwright |
+| **数据 / 消息** | MySQL（utf8mb4 / InnoDB）· Redis（业务缓存单层，Caffeine 仅用于 stale / 图片处理等专用本地缓存）· RabbitMQ（Topic Exchange + Quorum Queue）· Elasticsearch（dev / prod 默认启用，关掉走 LIKE 兜底；**版本硬锁**见 `infra/elasticsearch/Dockerfile` 注释） |
+| **AI** | Spring AI · DeepSeek · Qwen-VL · DashScope Embedding · MCP server（`@McpTool` 公开只读工具面） |
+| **可靠性** | Redisson（分布式锁 / 令牌桶）· Spring Modulith Outbox · CacheErrorHandler fail-open · UUID v7 主键 |
+| **可观测** | Micrometer + Prometheus · OpenTelemetry（traceId → Langfuse）· Spring AI Observation · StructuredLogEncoder（prod 输出 logstash JSON） |
+| **DevOps** | Docker / docker-compose（多阶段构建，非 root 运行）· GitHub Actions · Flyway（DDL / DML 分离） |
 
-> 精确版本以 [doc/技术栈.md](doc/技术栈.md) 的版本表为唯一权威落点（`.githooks/check-version-drift.py` 校验其与 `pom.xml` / `compose.yaml` 一致）。
+> **版本单一来源**：后端依赖见 [`easyorange-backend/pom.xml`](easyorange-backend/pom.xml)、前端见 [`easyorange-frontend/package.json`](easyorange-frontend/package.json)、运行时中间件见 [`compose.yaml`](compose.yaml) 与 `infra/` 镜像 tag——**文档一律不复刻版本号**。选型理由与拒绝项见 [doc/adr/](doc/adr/) 与上文「拒绝项清单」。
 
 ## 模块结构
 
@@ -241,7 +241,6 @@ easy-orange/
 | 资源 | 内容 |
 |---|---|
 | [AGENTS.md](./AGENTS.md) | 唯一规范来源 + 参考索引；后端 / 前端编码约定见各自目录下的 [AGENTS.md](./easyorange-backend/AGENTS.md) |
-| [doc/技术栈.md](doc/技术栈.md) | 精确版本表（`check-version-drift.py` 钩子校验与 pom/compose 一致） |
 | [doc/adr/](doc/adr/) | 架构决策记录 |
 | [doc/agents/](doc/agents/) | 按需读取参考：架构（错误码 / 依赖边 / 异常 / 可观测）/ 领域 / 常用命令 |
 | [doc/工程指标.md](doc/工程指标.md) | 数字单一事实来源：测试数 / 覆盖率 / 压测（**收口重测后回填**）+ [结构计数](doc/工程指标.md#结构计数) |

@@ -5,9 +5,7 @@ name: Docs Check
 # **恒触发、不配 paths 过滤**（配了 paths 的 PR 过滤会让这个 job 在无关 PR 上不报告，
 # 一旦被加进分支保护就永久 BLOCKED —— 见 backend-ci.yml 顶部同一教训）。
 #
-# 版本漂移校验（check-version-drift.py）**不在这里**：2026-09-20 起文档不再复刻版本号
-# （权威源只有 pom.xml / package.json / compose.yaml），该脚本已从 pre-commit 摘除，
-# 待 doc/技术栈.md 版本表回填时再挂回。
+# 文档不复刻版本号（权威源只有 pom.xml / package.json / compose.yaml），因此没有版本漂移校验。
 on:
   push:
     branches:

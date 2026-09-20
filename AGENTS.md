@@ -35,7 +35,7 @@ monorepo：`easyorange-backend/`（Maven 多模块，约定见 [AGENTS.md](easyo
 | **迁移** | Flyway |
 | **部署** | Docker / compose.yaml（凭据统一经根 `.env` 插值）+ K8s kustomize |
 
-> **文档一律不复刻版本号**：精确版本以 `easyorange-backend/pom.xml` / `easyorange-frontend/package.json` 与 `compose.yaml` 为单一来源，[doc/技术栈.md](doc/技术栈.md) 只记选型与说明（版本漂移钩子已摘，回填版本表时再挂）。
+> **文档一律不复刻版本号**：精确版本以 `easyorange-backend/pom.xml` / `easyorange-frontend/package.json` 与 `compose.yaml` 为单一来源；技术栈选型与说明见 [README](README.md#技术栈)。
 > **Elasticsearch 例外**：版本是硬锁——Spring Data ES 客户端与 IK 分词器都按它编译，见 `infra/elasticsearch/Dockerfile` 注释；升级须整体等 Boot 带动客户端，**不要在 infra 侧单独升**。
 
 ## 全局硬约束（任何改动都适用，违反即返工）
@@ -68,7 +68,7 @@ monorepo：`easyorange-backend/`（Maven 多模块，约定见 [AGENTS.md](easyo
 | 模块职责 / 依赖边 / 错误码 / 异常判据 / 可观测 / 已知问题 | [doc/agents/架构参考.md](doc/agents/架构参考.md) |
 | 后端编码约定（命名 / DTO / 缓存 / 安全 / 事件 / 各模块要点含 AI 全链路） | [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md) |
 | 构建 / 测试 / 启动 / 部署命令、gh CLI、CI/CD | [doc/agents/常用命令.md](doc/agents/常用命令.md) + [k8s/README.md](k8s/README.md) |
-| 技术栈选型与说明（版本见 pom / compose） | [doc/技术栈.md](doc/技术栈.md) |
+| 技术栈选型与说明 | [README](README.md#技术栈) |
 | 数据库约定 / 表清单 / Flyway 迁移规范 / 脚本索引 | [doc/DATABASE.md](doc/DATABASE.md) |
 | 测试数 / 覆盖率 / 压测数字 / [结构计数](doc/工程指标.md#结构计数)（模块 · Port · ADR · 消费者 · 表 · 规则 · 模板 · 金标准集，**数字单一来源**）；已知技术债 | [doc/工程指标.md](doc/工程指标.md) + [doc/技术债务清单.md](doc/技术债务清单.md) |
 | 迭代路线（Agent 升级 sprint / 双项目排期 / 收口纪律） | [doc/迭代路线.md](doc/迭代路线.md) |
