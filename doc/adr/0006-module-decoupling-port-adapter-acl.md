@@ -9,7 +9,7 @@
 
 ## 上下文（Context）
 
-项目拆分为 11 个 Maven 模块后，跨模块协作需求很快出现，且随业务增长持续增多：
+项目拆分为 Maven 多模块后，跨模块协作需求很快出现，且随业务增长持续增多：
 
 1. **查询侧同步依赖**：order 需要 user 信息（`UserInfoPort`）；product 需要资产方信息（`SellerInfoPort`）；message 需要用户信息（`UserInfoPort`）；favorite 需要商品信息（`ProductInfoPort`）；admin 需要聚合查询商品/订单/用户（`AdminProductPort` 等）；ai 需要商品搜索（`ProductSearchQueryPort`）。
 2. **写操作跨模块副作用**：下单要扣库存（`ProductInventoryPort`）、订单状态变化要发站内信（`MessageNotifierPort`）、支付要回调校验（`CallbackSignatureVerifierPort`）、收藏降价要提醒（`PriceDropNotificationPort`）。

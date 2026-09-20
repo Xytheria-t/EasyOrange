@@ -64,14 +64,14 @@
 
 ## 备选方案（Alternatives Considered）
 
-- **ES 原生 RRF retriever（`retrievers: [{rrf: ...}]`）**：ES 9.x 已内置，但属于 retriever DSL，Spring Data ES 6.0.x 没有对应 API，只能绕开 `ElasticsearchOperations` 直接发原始请求 —— 为省一个纯函数而破坏全模块统一的查询出口，不划算。若未来升级 SDES 并支持该 DSL，可平移替换本实现。
+- **ES 原生 RRF retriever（`retrievers: [{rrf: ...}]`）**：ES 已内置，但属于 retriever DSL，Spring Data Elasticsearch 没有对应 API，只能绕开 `ElasticsearchOperations` 直接发原始请求 —— 为省一个纯函数而破坏全模块统一的查询出口，不划算。若未来升级 SDES 并支持该 DSL，可平移替换本实现。
 - **保留余弦重排，另加 cross-encoder 重排模型**：效果上限更高，但要引入新的推理调用（成本、延迟、又一个供应商），且在当前语料规模下无法验证收益（指标刚恢复判别力，加变量会让归因变模糊）。触发条件：语料上到千级分块且 hit@5 触顶（≥95%）而 MRR 偏低时再评估。
 - **加权分数融合（weighted score fusion）**：需要把余弦相似度与 BM25 分值归一化到可比区间，归一化参数随语料分布漂移，是典型的「调参负债」；RRF 用排名天然免调参。
 - **直接加大 topK 或换更大 embedding 模型**：回避问题本身。增加 topK 会把更多噪声塞进 prompt，换模型不解决「两路信号怎么合」的结构问题。
 
 ## 备注（Notes）
 
-- 相关 ADR：Related to [ADR-0008](0008-ai-spring-ai-framework.md)（Spring AI 2.0 框架化）、[ADR-0004](0004-ai-bulkhead-token-budget.md)（Token 预算仍现役）
+- 相关 ADR：Related to [ADR-0008](0008-ai-spring-ai-framework.md)（Spring AI 框架化）、[ADR-0004](0004-ai-bulkhead-token-budget.md)（Token 预算仍现役）
 - 相关文档：[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「模块要点 → ai」（RAG 检索）、[doc/工程指标.md](../工程指标.md)（AI 能力表）
 - 相关代码：`RrfFusion` / `KnowledgeElasticsearchAdapter` / `KnowledgeMatch` / `KnowledgeRetrievalService`
 - 后续演进触发条件：语料分块数超过 ES `num_candidates`（100）的量级，或 hit@5 触顶而 MRR 停滞时，重新评估重排模型与独立向量库
