@@ -178,11 +178,13 @@ eo_message ──1:1── eo_message_archive (id)
 
 > **用量与主体的用途**：没有这两组列时，该表只能回答「哪个场景调用得多」，回答不了「哪个场景花得多」。补列后 `AiCostReportService` 可按场景出 token 报表（`GET /api/admin/ai/cost-report`），`subject_id` 供按主体做成本归因。注意 embedding 用量与未带 usage 的流式调用仍记 0。
 
-### eo_product.ai_suggested_price — AI 建议售价
+### eo_product.ai_suggestion — AI 建议快照
 
-> **来源**：拍照识别（发布助手）给出的建议价随创建请求一起落库；**只写不改**，不参与定价逻辑与状态流转。
+> **来源**：拍照识别（发布助手）给出的六个字段（title / description / price / categoryName / conditionLevel / location）随创建请求一起落库，JSON 原文；**只写不改**，不参与定价逻辑与状态流转。
 
-> **为什么落在商品侧**：智能估值发生在商品创建之前，那时 `eo_ai_call_log.subject_id` 还没有值、商品也不存在，所以「AI 建议多少」只能由商品自己记。落库后 `GET /api/admin/ai/pricing-adoption` 才能算出采纳率与偏离分布（口径与可引用性见 [工程指标](./工程指标.md)）。
+> **为什么落在商品侧**：拍照识别发生在商品创建之前，那时 `eo_ai_call_log.subject_id` 还没有值、商品也不存在，所以「AI 建议了什么」只能由商品自己记。落库后 `GET /api/admin/ai/listing-adoption` 才能算出字段级采纳率与价格偏离分布（口径与可引用性见 [工程指标](./工程指标.md)）。
+
+> **为什么存原文而不是预先算好的采纳结论**：采纳判定（哪些算「一致」）随查询走，口径以后收紧时历史数据可直接重算，不必回填。
 
 ## 维护约定
 
