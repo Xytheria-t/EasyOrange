@@ -27,7 +27,7 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 ## 决策（Decision）
 
-**全面框架化**：删除 AI 模块自研的 Port/Adapter/装饰器/自定义 DTO/自定义指标/Python 侧车，业务服务（拍照上架 / 内容审核 / 商品问答 / 对话与搜索增强 / 知识检索）直接注入 Spring AI 的 `ChatModel` / `EmbeddingModel` bean。
+**全面框架化**：删除 AI 模块自研的 Port/Adapter/装饰器/自定义 DTO/自定义指标/Python 侧车，业务服务（拍照上架 / 对话与搜索增强 / 知识检索 / 评估）直接注入 Spring AI 的 `ChatModel` / `EmbeddingModel` bean。
 
 ### 1. 模型 Bean（[AiModelConfig.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/AiModelConfig.java)）
 
@@ -35,9 +35,9 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 | Bean | 端点 | 模型 | 注入处 |
 |------|------|------|--------|
-| `chatModel`（`@Primary`） | DeepSeek `https://api.deepseek.com` | `deepseek-chat` | 内容审核 / 商品问答 / 对话与工具决策 / 搜索意图识别 |
+| `chatModel`（`@Primary`） | DeepSeek `https://api.deepseek.com` | `deepseek-chat` | 发布助手文本生成 / 对话与工具决策 / 搜索意图识别 / LLM-as-Judge 评审 |
 | `visionChatModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-vl-max` | 拍照上架图片识别 |
-| `embeddingModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | embedding 模型（dimensions=1024） | 语义搜索 + ES 索引写入 |
+| `embeddingModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | embedding 模型（dimensions=1024） | 语义召回（商品 / 知识库）+ ES 索引写入 |
 
 `OpenAiChatAutoConfiguration` 的 `@ConditionalOnMissingBean`（按返回类型推断）会因自定义 bean 存在而安全退让，不产生重复 bean。
 

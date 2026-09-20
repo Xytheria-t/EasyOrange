@@ -23,7 +23,7 @@ public sealed interface OrderEvent extends DomainEvent
     String orderId();
 
     /**
-     * 买家 ID — 所有订单事件携带买家，下游通知/信用重算自包含消费，无需回查订单。
+     * 买家 ID — 所有订单事件携带买家，下游通知自包含消费，无需回查订单。
      */
     String buyerId();
 

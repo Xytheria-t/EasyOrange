@@ -23,8 +23,6 @@ class AiCallScopeTest {
     @Test
     @DisplayName("fromUri 未匹配返回 CHAT")
     void fromUri_unknown() {
-        // /api/ai/qa 已于 2026-09-19 随商品详情 AI 问答删除；未匹配的兜底场景为 CHAT
-        assertThat(AiCallScope.fromUri("/api/ai/qa")).isEqualTo(AiCallScope.CHAT);
         assertThat(AiCallScope.fromUri("/api/ai/unknown")).isEqualTo(AiCallScope.CHAT);
     }
 

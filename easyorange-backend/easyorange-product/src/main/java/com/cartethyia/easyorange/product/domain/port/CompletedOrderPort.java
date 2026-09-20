@@ -12,7 +12,7 @@ public interface CompletedOrderPort {
 
     /**
      * 查询买家针对该资产已完成交易的订单 ID。评价必须落到真实成交订单上，
-     * 否则 AI 信用画像的评分口径可被无成交记录的评价污染。
+     * 否则商品详情页公开的评分与评价列表可被无成交记录的刷评污染。
      *
      * @param buyerId   买家 ID
      * @param productId 资产 ID
