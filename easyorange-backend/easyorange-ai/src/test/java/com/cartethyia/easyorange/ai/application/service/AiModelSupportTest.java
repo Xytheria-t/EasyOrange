@@ -12,20 +12,24 @@ import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.embedding.EmbeddingModel;
 
 @ExtendWith(MockitoExtension.class)
@@ -167,23 +171,52 @@ class AiModelSupportTest {
     }
 
     @Nested
-    @DisplayName("analyzeImages")
-    class AnalyzeImagesTests {
+    @DisplayName("callJsonAsWithImages")
+    class CallJsonAsWithImagesTests {
 
         @Test
-        @DisplayName("多图 Media 随提示词交给视觉模型")
-        void analyzeImages_success() {
-            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("看到一个九成新的手机"));
+        @DisplayName("多图按 URL 后缀标注 MIME，随提示词交给视觉模型并解析成结构化结果")
+        void callJsonAsWithImages_attachesMediaAndParses() {
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"title\":\"二手相机\"}"));
 
-            String result = aiModelSupport.analyzeImages(
+            Optional<Listing> result = aiModelSupport.callJsonAsWithImages(
                     chatModel,
                     AiCallScope.AUTO_LISTING,
-                    List.of("http://example.com/a.jpg", "http://example.com/b.jpg"),
-                    "请描述图片内容");
+                    "system",
+                    "user",
+                    List.of("http://example.com/a.png", "http://example.com/b.webp"),
+                    Listing.class);
 
-            assertThat(result).isEqualTo("看到一个九成新的手机");
-            verify(chatModel).call(any(Prompt.class));
+            assertThat(result).isPresent();
+            assertThat(result.get().title()).isEqualTo("二手相机");
+
+            var captor = ArgumentCaptor.forClass(Prompt.class);
+            verify(chatModel).call(captor.capture());
+            var userMessage = (UserMessage) captor.getValue().getInstructions().get(1);
+            assertThat(userMessage.getText()).isEqualTo("user");
+            assertThat(userMessage.getMedia())
+                    .extracting(Media::getMimeType)
+                    .containsExactly(Media.Format.IMAGE_PNG, Media.Format.IMAGE_WEBP);
         }
+
+        @Test
+        @DisplayName("模型输出不可解析 — 返回 empty 由调用方决定语义，不抛异常")
+        void callJsonAsWithImages_unparsable() {
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{broken}"));
+
+            Optional<Listing> result = aiModelSupport.callJsonAsWithImages(
+                    chatModel,
+                    AiCallScope.AUTO_LISTING,
+                    "system",
+                    "user",
+                    List.of("http://example.com/a.jpg"),
+                    Listing.class);
+
+            assertThat(result).isEmpty();
+        }
+
+        /** 只用到 title，够验证反序列化走通即可。 */
+        private record Listing(String title) {}
     }
 
     @Nested

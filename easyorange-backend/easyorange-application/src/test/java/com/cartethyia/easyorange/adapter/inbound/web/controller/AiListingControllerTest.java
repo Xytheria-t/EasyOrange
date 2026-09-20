@@ -1,11 +1,14 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.application.service.AutoListingService;
+import com.cartethyia.easyorange.ai.domain.constant.AiResultCode;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
 import java.math.BigDecimal;
 import java.util.List;
@@ -38,16 +41,7 @@ class AiListingControllerTest {
         @Test
         @DisplayName("图片分析 — 返回 AutoListingResult")
         void autoListing_success() {
-            var expected = new AutoListingResult(
-                    "在管 iPhone 14",
-                    "99新",
-                    new BigDecimal("4500"),
-                    "手机数码",
-                    "1",
-                    "2",
-                    "广州",
-                    List.of("手机", "数码"),
-                    List.of("正面照片", "背面照片"));
+            var expected = new AutoListingResult("在管 iPhone 14", "99新", new BigDecimal("4500"), "手机数码", "2", "广州");
             when(autoListingService.analyzeImages(anyList())).thenReturn(expected);
 
             var imageUrls = List.of("https://example.com/img1.jpg", "https://example.com/img2.jpg");
@@ -60,15 +54,15 @@ class AiListingControllerTest {
         }
 
         @Test
-        @DisplayName("空图片列表 — 仍可正常请求")
-        void autoListing_emptyImages() {
+        @DisplayName("识别失败 — 业务异常向上抛，由全局异常处理转成 B8002（而不是 200 + null）")
+        void autoListing_serviceThrows() {
             when(autoListingService.analyzeImages(anyList()))
-                    .thenReturn(new AutoListingResult(null, null, null, null, null, null, null, List.of(), List.of()));
+                    .thenThrow(BusinessException.of(AiResultCode.AI_UNAVAILABLE));
 
-            Result<AutoListingResult> result = controller.autoListing(List.of());
-
-            assertThat(result.isSuccess()).isTrue();
-            verify(autoListingService).analyzeImages(List.of());
+            assertThatThrownBy(() -> controller.autoListing(List.of("https://example.com/img.jpg")))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo("B8002");
         }
     }
 }

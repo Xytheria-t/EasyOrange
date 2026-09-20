@@ -8,6 +8,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -30,11 +31,12 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
+import org.springframework.util.MimeType;
 import tools.jackson.databind.ObjectMapper;
 
 /**
  * Spring AI 调用小工具 — 收敛 system+user 双消息、JSON 结构化输出、原生 tool calling、Embedding、
- * 多图视觉识别这几类重复调用模式，避免每个服务重复组装 {@link Prompt}。
+ * 多模态结构化输出这几类重复调用模式，避免每个服务重复组装 {@link Prompt}。
  * <p>
  * 带 {@link AiCallScope} 的重载在调用前后做两件横切记账（两者都是「调用副产物」，失败绝不影响业务）：
  * <ul>
@@ -79,7 +81,7 @@ public class AiModelSupport {
      * <p>
      * 主体只用于**成本归因**：没有它，{@code eo_ai_call_log} 只能回答「哪个场景花得多」，
      * 回答不了「这个商品花了多少」。值为 null 表示本次调用没有可归因的主体
-     * （部分调用发生在主体创建之前，例如商品发布前的智能估值）。
+     * （部分调用发生在主体创建之前，例如商品发布前的拍照识别）。
      */
     public String callText(
             ChatModel chatModel,
@@ -226,18 +228,28 @@ public class AiModelSupport {
     }
 
     /**
-     * 多图视觉识别：图片以 {@link Media}（URL）随提示词一并交给视觉模型。
+     * 多模态结构化输出一步到位：图片随提示词交给视觉模型 + 要求 JSON 输出 + 反序列化。
+     * <p>
+     * 刻意做成**一次调用**：图与「要哪些字段」在同一次请求里给到模型。先前「视觉模型写自由文本、
+     * 文本模型再把文字转成 JSON」的两段式里，第二次调用看不到图片，只是对第一次的产出做格式转换 ——
+     * 多付一次调用的钱与延迟，还会丢掉没写进文字的画面细节。
      */
-    public String analyzeImages(ChatModel visionChatModel, AiCallScope scope, List<String> imageUrls, String prompt) {
-        List<Media> media = imageUrls.stream()
-                .map(url -> Media.builder()
-                        .mimeType(Media.Format.IMAGE_JPEG)
-                        .data(URI.create(url))
-                        .build())
-                .toList();
-        Message userMessage = UserMessage.builder().text(prompt).media(media).build();
-        return recordCall(
-                scope, visionChatModel, prompt, () -> chatOutcome(visionChatModel.call(new Prompt(userMessage))));
+    public <T> Optional<T> callJsonAsWithImages(
+            ChatModel chatModel,
+            AiCallScope scope,
+            String systemPrompt,
+            String userText,
+            List<String> imageUrls,
+            Class<T> responseType) {
+        Message userMessage =
+                UserMessage.builder().text(userText).media(mediaOf(imageUrls)).build();
+        String json = recordCall(
+                scope,
+                chatModel,
+                systemPrompt + userText,
+                () -> chatOutcome(chatModel.call(
+                        new Prompt(List.of(new SystemMessage(systemPrompt), userMessage), jsonOptions(chatModel)))));
+        return parseJson(scope, json, responseType);
     }
 
     /**
@@ -252,8 +264,12 @@ public class AiModelSupport {
      */
     public <T> Optional<T> callJsonAs(
             ChatModel chatModel, AiCallScope scope, String systemPrompt, String userMessage, Class<T> responseType) {
+        String json = callJson(chatModel, scope, systemPrompt, userMessage);
+        return parseJson(scope, json, responseType);
+    }
+
+    private <T> Optional<T> parseJson(AiCallScope scope, @Nullable String json, Class<T> responseType) {
         try {
-            String json = callJson(chatModel, scope, systemPrompt, userMessage);
             if (json == null || json.isBlank()) {
                 log.warn("action=ai_json_empty, scope={}, message=模型返回空内容", scope);
                 return Optional.empty();
@@ -263,6 +279,35 @@ public class AiModelSupport {
             log.warn("action=ai_json_unparsable, scope={}, reason={}", scope, e.getMessage());
             return Optional.empty();
         }
+    }
+
+    /** 图片以 {@link Media}（URL）承载，MIME 类型按 URL 后缀推断。 */
+    private static List<Media> mediaOf(List<String> imageUrls) {
+        return imageUrls.stream()
+                .map(url -> Media.builder()
+                        .mimeType(mimeTypeOf(url))
+                        .data(URI.create(url))
+                        .build())
+                .toList();
+    }
+
+    /**
+     * 按 URL 后缀推断图片 MIME 类型 — 一律标 JPEG 会让 PNG/WebP 被供应商按错误类型解码，
+     * 图片类型与声明的 MIME 不符时部分模型直接拒答。认不出来时回退 JPEG。
+     */
+    private static MimeType mimeTypeOf(String url) {
+        int query = url.indexOf('?');
+        int end = query >= 0 ? query : url.length();
+        int dot = url.lastIndexOf('.', end - 1);
+        if (dot < 0) {
+            return Media.Format.IMAGE_JPEG;
+        }
+        return switch (url.substring(dot + 1, end).toLowerCase(Locale.ROOT)) {
+            case "png" -> Media.Format.IMAGE_PNG;
+            case "webp" -> Media.Format.IMAGE_WEBP;
+            case "gif" -> Media.Format.IMAGE_GIF;
+            default -> Media.Format.IMAGE_JPEG;
+        };
     }
 
     /**
