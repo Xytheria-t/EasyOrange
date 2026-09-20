@@ -55,11 +55,10 @@ monorepo：`easyorange-backend/`（11 Maven 模块，约定见 [AGENTS.md](easyo
 
 ## 提交规范（Git 工作流）
 
-- **小步提交**：一个逻辑单元（功能/修复/重构/文档）一个提交，验证通过即提交；禁止攒「收口」大提交、禁止 `git add -A` 批量盲提。一个特性/修复 1~2 个提交（跨模块大特性 2~3 个封顶）；同特性内的跨模块基建（队列注册、常量等）并入特性提交
-- **消息格式**：`<type>[(<scope>)]: <一句中文描述>`；type 用 `feat|fix|refactor|docs|test|chore|perf|ci|style|build|revert`（日常以前 6 个为主）；一行说清改了什么/为什么，禁止 `+` 拼接多主题；一般无 body
-- **消息与内容对应**：仅含文档文件（`doc/`、`*.md`）的提交 type 必须为 `docs`（commit-msg 钩子机械校验）；代码为主体的提交不要标 `docs`
-- **格式改动不独立成提交**：import 顺序、占位符改名等纯格式调整揉进所属逻辑提交；`style` type 仅用于修复 spotless/CI 格式校验失败
-- **历史纪律**：不重写已推送历史；tag 只在真实发布时打。仓库提供 `.githooks/`（需 `git config core.hooksPath .githooks` 启用，紧急时 `SKIP=git-hooks` 跳过）
+- **小步提交**：一个逻辑单元一个提交（大特性 2~3 个封顶），验证通过即提交；禁攒「收口」大提交、禁 `git add -A`；纯格式调整揉进所属逻辑提交（`style` 仅用于修 spotless/CI 格式失败）
+- **消息**：`<type>[(<scope>)]: <一句中文描述>`，一行说清改了什么/为什么，禁 `+` 拼接多主题；type 集合与「仅文档提交用 `docs`」等机械规则由 `.githooks/commit-msg` 校验，照报错改
+- **分支与历史**：单人开发**直接在 `develop` 上提交**（不开 feature 分支）；不重写已推送历史，tag 只在真实发布时打
+- **钩子**：`git config core.hooksPath .githooks` 启用（紧急 `SKIP=git-hooks`）
 
 ## 参考索引（按需读取，不常驻上下文）
 
