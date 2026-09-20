@@ -72,7 +72,7 @@ monorepo：`easyorange-backend/`（Maven 多模块，约定见 [AGENTS.md](easyo
 | 数据库约定 / 表清单 / Flyway 迁移规范 / 脚本索引 | [doc/DATABASE.md](doc/DATABASE.md) |
 | 测试数 / 覆盖率 / 压测数字 / [结构计数](doc/工程指标.md#结构计数)（模块 · Port · ADR · 消费者 · 表 · 规则 · 模板 · 金标准集，**数字单一来源**）；已知技术债 | [doc/工程指标.md](doc/工程指标.md) + [doc/技术债务清单.md](doc/技术债务清单.md) |
 | 迭代路线（寒假实习备战排期 / 投递时间线 / 双项目分工 / 不做清单） | [doc/迭代路线.md](doc/迭代路线.md) |
-| 面试脚本（简历 / 自我介绍 / 追问应答 / 八股 / 代码走读 / 设计题） | [doc/interview/](doc/interview/) |
+| 面试脚本（简历 / 自我介绍 / 追问应答 / 八股 / 代码走读 / 设计题 / [备战清单](doc/interview/06-备战清单.md)） | [doc/interview/](doc/interview/) |
 | ADR 决策记录（拒绝 Saga / UUID v7 主键 / RAG 改 RRF 等，篇数见[结构计数](doc/工程指标.md#结构计数)） | `doc/adr/` |
 | Issues / PRD（含 triage label：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`） | GitHub issues，用 `gh` CLI（模板见常用命令.md） |
 | 后端 REST 端点 | 起 dev 服务后看 Swagger UI（`/swagger-ui.html`，springdoc 从 Controller 注解生成，**无手工清单**） |
