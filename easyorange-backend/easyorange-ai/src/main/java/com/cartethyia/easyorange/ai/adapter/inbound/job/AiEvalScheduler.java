@@ -17,6 +17,10 @@ import org.springframework.stereotype.Component;
  * 拉取候选、回写 judge_score / judge_comment。输出质量从「感觉还行」变成
  * 「可量化、可回归」：某个 prompt 版本改动后平均分变化可观测。
  * <p>
+ * 候选只取**有回答文本**的调用：embedding（scope=semantic / knowledge）与工具决策轮的
+ * response_text 为空，评审它们等于给「空回答」固定打 1 分，只会稀释评分样本；这些行不标
+ * judge_score 也不会反复入选（被 WHERE 过滤），不占 LIMIT 名额。
+ * <p>
  * 默认关闭（easyorange.ai.eval.enabled=false），演示/生产按需开启。
  */
 @Slf4j
@@ -28,6 +32,7 @@ public class AiEvalScheduler {
             SELECT id, scope, prompt_hash, response_text
             FROM eo_ai_call_log
             WHERE judge_score IS NULL AND success = 1
+              AND response_text IS NOT NULL AND response_text <> ''
             ORDER BY created_at DESC
             LIMIT ?
             """;
