@@ -37,7 +37,9 @@ public class ChatModelContentObservationFilter implements ObservationFilter {
 
             if (chat.getResponse() != null) {
                 List<String> completions = chat.getResponse().getResults().stream()
-                        .map(generation -> generation.getOutput() == null ? null : generation.getOutput().getText())
+                        .map(generation -> generation.getOutput() == null
+                                ? null
+                                : generation.getOutput().getText())
                         .filter(StringUtils::hasText)
                         .toList();
                 addHighCardinality(chat, COMPLETION_KEY, completions);
@@ -54,7 +56,8 @@ public class ChatModelContentObservationFilter implements ObservationFilter {
         if (contents.isEmpty()) {
             return;
         }
-        boolean alreadyPresent = context.getAllKeyValues().stream().anyMatch(kv -> kv.getKey().equals(key));
+        boolean alreadyPresent =
+                context.getAllKeyValues().stream().anyMatch(kv -> kv.getKey().equals(key));
         if (!alreadyPresent) {
             context.addHighCardinalityKeyValue(KeyValue.of(key, ObservabilityHelper.concatenateStrings(contents)));
         }

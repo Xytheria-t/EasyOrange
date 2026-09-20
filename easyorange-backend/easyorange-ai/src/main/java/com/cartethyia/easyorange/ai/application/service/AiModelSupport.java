@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -26,12 +27,13 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Spring AI 调用小工具 — 收敛 system+user 双消息、JSON 结构化输出、Embedding、
+ * Spring AI 调用小工具 — 收敛 system+user 双消息、JSON 结构化输出、原生 tool calling、Embedding、
  * 多图视觉识别这几类重复调用模式，避免每个服务重复组装 {@link Prompt}。
  * <p>
  * 带 {@link AiCallScope} 的重载在调用前后做两件横切记账（两者都是「调用副产物」，失败绝不影响业务）：
@@ -134,6 +136,30 @@ public class AiModelSupport {
                 () -> chatOutcome(chatModel.call(new Prompt(
                         List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)),
                         jsonOptions(chatModel)))));
+    }
+
+    /**
+     * 原生 tool calling 调用（带调用日志与预算记账）：把工具 schema 发给供应商侧校验，返回模型请求的
+     * 工具调用（空列表 = 模型没调工具，由调用方按决策失败处理）。
+     * <p>
+     * 只发请求、不执行工具：Spring AI 2.0 的 {@code ChatModel.call} 原样返回 tool call（自动工具执行
+     * 已收进 ChatClient 的 ToolCallingAdvisor），执行与循环控制权因此留在调用方。
+     * <p>
+     * 与 {@link #callJson} 同规矩：per-request options 必须继承模型的连接与模型名（只设 toolCallbacks
+     * 时 {@code model} 为 null，openai-java 会回退 SDK 默认模型名，对非 OpenAI 供应商直接 404）。
+     */
+    public List<AssistantMessage.ToolCall> callWithTools(
+            ChatModel chatModel,
+            AiCallScope scope,
+            String systemPrompt,
+            String userMessage,
+            List<ToolCallback> toolCallbacks) {
+        return recordCall(scope, chatModel, systemPrompt + userMessage, () -> {
+            ChatResponse response = chatModel.call(new Prompt(
+                    List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)),
+                    toolOptions(chatModel, toolCallbacks)));
+            return new CallOutcome<>(toolCallsOf(response), reportedUsage(response));
+        });
     }
 
     /**
@@ -272,6 +298,12 @@ public class AiModelSupport {
         return jsonOptions.build();
     }
 
+    private static OpenAiChatOptions toolOptions(ChatModel chatModel, List<ToolCallback> toolCallbacks) {
+        var toolOptions = OpenAiChatOptions.builder().toolCallbacks(toolCallbacks);
+        inheritConnection(toolOptions, chatModel);
+        return toolOptions.build();
+    }
+
     /**
      * per-request options 继承模型的连接与模型名（缺 model 时 openai-java 会回退 SDK 默认模型，
      * 对非 OpenAI 供应商直接 404 —— 见 {@link #callJson}）。
@@ -292,11 +324,30 @@ public class AiModelSupport {
         if (response == null) {
             return new CallOutcome<>("", null);
         }
-        Usage usage = response.getMetadata() != null ? response.getMetadata().getUsage() : null;
-        Integer in = usage != null ? usage.getPromptTokens() : null;
-        Integer out = usage != null ? usage.getCompletionTokens() : null;
+        return new CallOutcome<>(outputText(response), reportedUsage(response));
+    }
+
+    /** 模型请求的工具调用（可能为空：模型直接回了文本）；供应商侧未回结果时同样为空。 */
+    private static List<AssistantMessage.ToolCall> toolCallsOf(@Nullable ChatResponse response) {
+        if (response == null || response.getResult() == null) {
+            return List.of();
+        }
+        return response.getResult().getOutput().getToolCalls();
+    }
+
+    /** 供应商回报的 token 用量；未回报（无元数据或全 0）时返回 null，记账退化为按场景上限估算。 */
+    private static @Nullable Usage reportedUsage(@Nullable ChatResponse response) {
+        if (response == null || response.getMetadata() == null) {
+            return null;
+        }
+        Usage usage = response.getMetadata().getUsage();
+        if (usage == null) {
+            return null;
+        }
+        Integer in = usage.getPromptTokens();
+        Integer out = usage.getCompletionTokens();
         boolean reported = (in != null && in > 0) || (out != null && out > 0);
-        return new CallOutcome<>(outputText(response), reported ? usage : null);
+        return reported ? usage : null;
     }
 
     private <T> T recordCall(AiCallScope scope, Object model, String promptText, Supplier<CallOutcome<T>> supplier) {

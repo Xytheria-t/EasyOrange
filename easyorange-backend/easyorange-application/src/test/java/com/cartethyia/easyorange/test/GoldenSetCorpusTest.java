@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("评测集与种子语料一致性 -> 测试")
 class GoldenSetCorpusTest {
 
-    /** 与 GoldenSetEvaluator.RETRIEVAL_TOP_K / AgentLoopRunner.RETRIEVAL_TOP_K 保持一致（两者均为 5）。 */
+    /** 与 GoldenSetEvaluator.RETRIEVAL_TOP_K / AgentTools.RETRIEVAL_TOP_K 保持一致（两者均为 5）。 */
     private static final int RETRIEVAL_TOP_K = 5;
 
     /**
