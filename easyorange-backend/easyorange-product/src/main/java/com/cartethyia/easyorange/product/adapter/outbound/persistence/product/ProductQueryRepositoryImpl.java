@@ -284,6 +284,14 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 records, productPage.getTotal(), (int) productPage.getCurrent(), (int) productPage.getSize());
     }
 
+    /**
+     * 只填 {@code eo_product} 单表能拿到的列：description / categoryName / username 要 join 副表或用户表，
+     * 留给消费方按需补（列表由 {@code ProductQueryHandler} 批量补、AI 详情适配器单件补）—— 放进这里会让
+     * {@code findProductsByIds} 的批量路径退化成 N+1。
+     * <p>
+     * location 是原始列值、不在这里脱敏：脱敏属展示边界的职责，由买家可见的出口（商品详情 VO、AI 详情适配器）
+     * 各自处理。
+     */
     private ProductReadModel convertToReadModel(ProductDO product) {
         return ProductReadModel.builder()
                 .id(product.getId())
@@ -300,6 +308,11 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                         product.getConditionLevel() != null
                                 ? product.getConditionLevel().getCode()
                                 : null)
+                .conditionDesc(
+                        product.getConditionLevel() != null
+                                ? product.getConditionLevel().getDesc()
+                                : null)
+                .location(product.getLocation())
                 .images(List.of())
                 .mainImageUrl("")
                 .createTime(product.getCreateTime())
