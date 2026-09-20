@@ -1,6 +1,6 @@
 # easyorange-frontend — 前端约定与踩坑
 
-> React 19 + Vite + TypeScript + TanStack Query。入口地图与命令见 [README.md](./README.md)。
+> React + Vite + TypeScript + TanStack Query。入口地图与命令见 [README.md](./README.md)。
 > **本文件只写「不按这个写就出 bug」的约定**——这些坑的共同特征是：代码看起来完全正常，但运行结果是错的或会无限循环。
 > 全局硬约束（`Result<T>` / UUID v7 string ID / `Long → String`）见[根 AGENTS.md](../AGENTS.md)。
 
@@ -17,7 +17,7 @@
 ## 状态（Zustand）
 
 - **store 只接受事件驱动写入**（STOMP 回调、用户操作回调），**禁止在 `useEffect` 内写 store**——spread 新引用 → 重渲染 → 无限循环
-- **selector 里 `?? []` / `?? {}` 必须用模块级常量**，禁止内联：内联产生新引用触发无限循环，**React 19 StrictMode 下会放大到 50 层**
+- **selector 里 `?? []` / `?? {}` 必须用模块级常量**，禁止内联：内联产生新引用触发无限循环，**React StrictMode 下会放大到 50 层**
 
 ## 性能与加载
 

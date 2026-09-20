@@ -99,7 +99,7 @@ ci: enable JaCoCo gate in workflow
 ## 测试要求
 
 ### 后端
-- 单元测试：JUnit 5 + AssertJ + Mockito（`src/test/java/`）
+- 单元测试：JUnit + AssertJ + Mockito（`src/test/java/`）
 - 测试夹具：domain 层用 `*TestFixture`（如 `OrderTestFixture`）
 - 命名：`methodName_scenario_expectedBehavior()` + `@DisplayName`
 - 模式：AAA（Arrange-Act-Assert）

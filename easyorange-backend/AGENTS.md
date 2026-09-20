@@ -1,6 +1,6 @@
 # easyorange-backend — 后端约定与踩坑
 
-> 11 个 Maven 模块（`common` / `framework` / 8 个业务模块）+ 组装模块 `easyorange-application`。
+> Maven 多模块（`common` / `framework` / 各业务模块 + 组装模块 `easyorange-application`）；模块清单与总数见[结构计数](../doc/工程指标.md#结构计数)。
 > 分层、异常、ID、Flyway、Assembler、`Result<T>` 等全局硬约束见[根 AGENTS.md](../AGENTS.md)。
 > **本文件只写读代码看不出来的约定与踩坑**——目录树、类清单、端口→实现对照表一律不收录（`find` 一秒的事，写进来只会漂移）。
 
@@ -13,7 +13,7 @@
 - **占位符语法必须区分**：`application*.yaml` 用 `${VAR:default}`（单冒号）；`compose.yaml` 与 shell 用 `${VAR:-default}`。YAML 里误写 `:-` 会让 Spring 把 `-default` 当字面量——Redis 密码多一个前导连字符 → `WRONGPASS`
 - 仅 prod profile 读 `SERVER_PORT` / `TRACING_SAMPLING_PROBABILITY`；压测关限流用 `RATE_LIMIT_FILTER_ENABLED=false`；AI 的 base-url / model 硬编码在 `application.yaml`（非环境变量）
 - **dev seed 账号**：`db/dev/R__insert_dev_test_data.sql` 中所有账号共用同一 bcrypt 哈希，明文密码统一 **`Password123`**（admin / testuser / liming 等，压测脚本已对齐）。登录失败 5 次触发 Redis 登录锁 30 分钟，清 `eo:user:login:attempts:<identifier>` 解锁
-- **JDK 25 + Lombok**：JDK 23+ 弃用 `sun.misc.Unsafe::objectFieldOffset` 而 Lombok 1.18.46 仍在用，启动会打 `WARNING`。已配编译期 `.mvn/jvm.config` + 运行期 `spring-boot-maven-plugin jvmArguments` 为 `--sun-misc-unsafe-memory-access=allow`。**JDK 26+ 默认 deny，届时需升级 Lombok**
+- **JDK + Lombok**：JDK 23+ 弃用 `sun.misc.Unsafe::objectFieldOffset` 而 Lombok 仍在用，启动会打 `WARNING`。已配编译期 `.mvn/jvm.config` + 运行期 `spring-boot-maven-plugin jvmArguments` 为 `--sun-misc-unsafe-memory-access=allow`。**JDK 26+ 默认 deny，届时需升级 Lombok**
 - **依赖版本以 `pom.xml` 为单一来源**（MapStruct / ArchUnit / Spring Data ES 等），不在文档维护副本
 
 ## 命名与事务
@@ -87,12 +87,12 @@
 - **领域事件**：业务模块只注入 `DomainEventPublisher.publish()`，由 `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher`；Spring Modulith 把事件持久化到 `EVENT_PUBLICATION`（**与应用事务同原子**，即 Outbox），提交后异步发布到 `eo.domain.events` Topic Exchange；`@ConditionalOnProperty(matchIfMissing = true)` 支持无 RabbitMQ 环境启动
 - **路由键按事件类名派生**（`PaymentXxxEvent` → `payment.xxx`），无需手动注册
 - **所有 MQ 消费者用 `@RabbitListener` + `EventConsumerHandler`**（封装五个横切关注点）：① 幂等去重 `EventIdempotencyChecker`（Redis `SET NX EX` 一条原子命令领取处理权 + **24h TTL**；失败时 `unmark` 撤销标记让重投可重新执行），命名空间 `consumerId + ":" + eventType`，`idempotencyEnabled=false` 构造器关闭投影/广播/指标类消费者；② `EventMetadataMessagePostProcessor` 发布前注入 eventId/timestamp/traceId，消费端 `EventMetadata.from(message, event)` 解码；③ `EventMetricsService` 上报 `easyorange.events.received{type,outcome}` / `.duration` / `.dlq{queue,reason}`；④ `DlqAnomalyListener` 单个监听器同时监听**全部 DLQ 队列**，提取 x-death header 记指标；⑤ `EventConsumerHandler.handle(event, message, metadata -> ...)` 组合。Modulith at-least-once + 幂等去重实现**精确一次处理**
-- **RabbitMQ Spring AMQP 4.0.x API**：`CorrelationData` 在 `org.springframework.amqp.rabbit.connection`；`ReturnsCallback.returnedMessage()` 收 `ReturnedMessage` 对象；concurrency 用 `concurrent-consumers` + `max-concurrent-consumers`（**不支持 `"1-5"` 范围格式**）
+- **RabbitMQ Spring AMQP API**：`CorrelationData` 在 `org.springframework.amqp.rabbit.connection`；`ReturnsCallback.returnedMessage()` 收 `ReturnedMessage` 对象；concurrency 用 `concurrent-consumers` + `max-concurrent-consumers`（**不支持 `"1-5"` 范围格式**）
 - **不要按商品事件触发 LLM**：已删除的 `AiProductEventConsumer` 每次商品创建/编辑都触发一次 LLM 调用，且产出写进无读取方的 Redis key，属纯浪费
 
 ## 测试
 
-- **Mockito Java 25 兼容**：已配 `mock-maker-subclass` 模式，**新测试不要改回 inline**（WSL2 下 ByteBuddy attach 会失败）
+- **Mockito 与新 JDK 的兼容**：已配 `mock-maker-subclass` 模式，**新测试不要改回 inline**（WSL2 下 ByteBuddy attach 会失败）
 - **集成测试不用 Testcontainers**：`*IT` 继承 `AbstractIntegrationTest`，基础设施由 `spring-boot-docker-compose` 复用根 `compose.yaml`（start-only）提供，failsafe 绑定 `mvn verify` 真实连 MySQL/Redis/RabbitMQ。不要自己搭 `@Testcontainers`（ryuk sidecar 在无代理 Docker 下拉取失败会让用例**静默跳过**，掩盖装配错误，见 [技术债务清单 TD-001](../doc/技术债务清单.md)）
 - `src/test/resources/application-it.yaml`（`it` profile）复用 dev 栈：显式 localhost 直连，**关 Flyway 校验**（开发者库历史可能 diverged）
 - **record 无法被 Mockito mock**（本仓库 MockMaker 固定 subclass，record 是 final 类）：测试用 `testsupport/PropertyBindings` 经真实 Binder 构造（`bindOrCreate` + 空属性源即全默认值，覆盖项按相对 prefix 的 kebab-case 键传入）
@@ -165,10 +165,10 @@
 
 ### ai
 
-- **全面框架化为 Spring AI 2.0**（ADR-0008，Supersedes ADR-0003）：所有 LLM/Embedding 调用直接注入 Spring AI `ChatModel` / `EmbeddingModel` bean，**不再有自研 LlmPort/VisionPort/装饰器层**；对外协作者（持久化、缓存、日志、评测）一律经 `domain/port`。ADR-0003 曾在 2025-11 拒绝 Spring AI 1.0（不稳定），2.0.0 GA 后迁移
-- **模型 Bean（`AiModelConfig`）** 三个统一走 `OpenAiSetup.setupSyncClient`（OpenAI 兼容线协议）：`chatModel`（`@Primary`，DeepSeek `deepseek-chat`）、`visionChatModel`（Qwen-VL `qwen-vl-max`，注入处用 `@Qualifier("visionChatModel")`）、`embeddingModel`（DashScope `text-embedding-v3`，**dimensions=1024 必须与 ES `dense_vector` 映射对齐**）
+- **全面框架化为 Spring AI**（ADR-0008，Supersedes ADR-0003）：所有 LLM/Embedding 调用直接注入 Spring AI `ChatModel` / `EmbeddingModel` bean，**不再有自研 LlmPort/VisionPort/装饰器层**；对外协作者（持久化、缓存、日志、评测）一律经 `domain/port`。ADR-0003 曾在 2025-11 拒绝 Spring AI（当时不稳定），稳定版 GA 后迁移
+- **模型 Bean（`AiModelConfig`）** 三个统一走 `OpenAiSetup.setupSyncClient`（OpenAI 兼容线协议）：`chatModel`（`@Primary`，DeepSeek `deepseek-chat`）、`visionChatModel`（Qwen-VL `qwen-vl-max`，注入处用 `@Qualifier("visionChatModel")`）、`embeddingModel`（DashScope embedding 服务，**dimensions=1024 必须与 ES `dense_vector` 映射对齐**）
 - **模型路由（`AiModelRouter`）**：场景→bean 名映射在 `easyorange.ai.routing.scenarios`（yaml 可热更新），未配置回退 `routing.default-model`；已接入 `chat_tool` → chatModel、`vision` → visionChatModel、`judge` → chatModel（**评审模型独立可换，用于消除自评偏差**）
-- **多步工具循环（`AgentLoopRunner`）**：`AiChatService` 只管记忆/缓存/降级/生成，循环体独立成类——逐轮「决策 → 工具 → 观察」。决策走**原生 tool calling**：工具面（`AgentTools` 的 4 个 `@Tool` 方法 knowledge_search / product_search / product_detail / finish）schema 由注解生成、随请求下发，参数名依赖编译期 `-parameters`（`spring-boot-starter-parent` 已开，缺了退化成 arg0/arg1）；**Spring AI 2.0 的 `ChatModel.call` 不自动执行工具**（自动执行已收进 ChatClient 的 ToolCallingAdvisor），执行与循环控制权都在 runner。三个易踩点：① 工具方法**抛异常 = 该步失败**（runner 收敛成失败观察交回模型做修复轮），所以「查无此资产」这类有效结果必须返回观察文本；② `thought` 是每个工具的必填参数（原生 tool calling 没有决策理由通道，理由随参数带回，供 trace / SSE）；③ 工具返回值必须挂 `AgentTools.ObservationTextConverter`——默认转换器会把 String 再 JSON 化，观察文本多一层引号。用户偏好由 finish 轮参数带出（不再每轮提取）。步数上限 `easyorange.ai.chat.max-steps`（默认 5，含 finish 轮）。降级三口径：步数超限 / 循环中途预算耗尽 → 用已积累观察直接生成（工作不丢弃）；决策失败（调用故障 / 未返回工具调用 / 参数不可解析）→ 按原始问题检索一次。**预算判定 `chatBudgetExhausted` 是流式入口（AiChatService.checkBudget）与循环中途共用的唯一实现，别在 Service 侧复制判据**；每轮 trace 经 `AgentTracePort` 落 `eo_agent_step_trace`（观测副产物，失败只告警不抛）
+- **多步工具循环（`AgentLoopRunner`）**：`AiChatService` 只管记忆/缓存/降级/生成，循环体独立成类——逐轮「决策 → 工具 → 观察」。决策走**原生 tool calling**：工具面（`AgentTools` 的 4 个 `@Tool` 方法 knowledge_search / product_search / product_detail / finish）schema 由注解生成、随请求下发，参数名依赖编译期 `-parameters`（`spring-boot-starter-parent` 已开，缺了退化成 arg0/arg1）；**Spring AI 的 `ChatModel.call` 不自动执行工具**（自动执行已收进 ChatClient 的 ToolCallingAdvisor），执行与循环控制权都在 runner。三个易踩点：① 工具方法**抛异常 = 该步失败**（runner 收敛成失败观察交回模型做修复轮），所以「查无此资产」这类有效结果必须返回观察文本；② `thought` 是每个工具的必填参数（原生 tool calling 没有决策理由通道，理由随参数带回，供 trace / SSE）；③ 工具返回值必须挂 `AgentTools.ObservationTextConverter`——默认转换器会把 String 再 JSON 化，观察文本多一层引号。用户偏好由 finish 轮参数带出（不再每轮提取）。步数上限 `easyorange.ai.chat.max-steps`（默认 5，含 finish 轮）。降级三口径：步数超限 / 循环中途预算耗尽 → 用已积累观察直接生成（工作不丢弃）；决策失败（调用故障 / 未返回工具调用 / 参数不可解析）→ 按原始问题检索一次。**预算判定 `chatBudgetExhausted` 是流式入口（AiChatService.checkBudget）与循环中途共用的唯一实现，别在 Service 侧复制判据**；每轮 trace 经 `AgentTracePort` 落 `eo_agent_step_trace`（观测副产物，失败只告警不抛）
 - **上下文窗口治理（`ChatContextTrimmer` + `TokenEstimator`）**：轮数窗口（存储侧）之上的第二道预算——历史在 `AiChatService.agenticAnswer` 注入前按估算 token 裁剪，**一处裁、决策与生成两条装配共用**；估算口径 CJK 0.7 / 其余 0.3 token/字符（保守高估方向），预算 `easyorange.ai.chat.max-history-tokens`（默认 2000，<=0 关闭），从最新向前保留**连续窗口**、单条超预算仍保最新一条（永不空历史）。指标 `easyorange.ai.chat.context.tokens`（p50/p95）/ `.trim{action}`（触发率）。**有意不做 LLM 摘要压缩**（步数与轮数上限下收益小、每轮摘要多一次模型调用翻倍成本），别当缺漏补回来
 - **MCP 工具面（`adapter/inbound/mcp/PlatformMcpTools`）与 Agent 内部工具是两级暴露**：外部 MCP client 无用户上下文，只挂公开只读工具（4 个，复用 AssetSourcing / KnowledgeRetrieval / AssetDetail / CategoryList 端口），**禁止在这里加用户态数据或写路径**。踩坑：`spring.ai.mcp.server.protocol` 必须**显式**写 `streamable`——传输端点的条件装配读 Environment 而非属性对象，属性默认值不进 Environment，缺省时 `/mcp` 整个不注册（启动正常但 404）；端点匿名可达靠 `security.ignore-paths`（dev/prod 两份都要加），限流走独立 yaml 规则、防重走 `repeat-submit.exclude-path-patterns`（JSON-RPC 重试复用请求体，浏览器表单防重语义不适用）
 - **调用收敛（`AiModelSupport`，不构成端口/适配器抽象）**：`callText`、`callJson`（`response_format=json_object`）、`callJsonAs`（调用+反序列化+降级一步到位，返回 `Optional<T>`）、`callTextStream`（逐 token 回调）、`embed`（float[]→List<Float>）、`analyzeImages`。带 `AiCallScope` 的重载做两类横切记账：`AiCallLogPort` 落 `eo_ai_call_log`、`TokenBudgetStore` 落**真实 token 用量**（供应商未回报用量时退化为场景上限估算）；**不带 scope 的重载不记账**（`SemanticCacheService` 查询向量化走这条，语义缓存的 embedding 成本是账外项，TD-015）

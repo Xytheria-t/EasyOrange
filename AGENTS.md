@@ -20,23 +20,23 @@
 
 ## 项目结构
 
-monorepo：`easyorange-backend/`（11 Maven 模块，约定见 [AGENTS.md](easyorange-backend/AGENTS.md)）· `easyorange-frontend/`（约定见 [AGENTS.md](easyorange-frontend/AGENTS.md)）· `doc/`（技术栈 / ADR / agents 参考 / DATABASE / 面试）· `infra/`（IaC）· `k8s/`（kustomize，无状态应用层）· `load-tests/`（k6 压测）
+monorepo：`easyorange-backend/`（Maven 多模块，约定见 [AGENTS.md](easyorange-backend/AGENTS.md)）· `easyorange-frontend/`（约定见 [AGENTS.md](easyorange-frontend/AGENTS.md)）· `doc/`（技术栈 / ADR / agents 参考 / DATABASE / 面试）· `infra/`（IaC）· `k8s/`（kustomize，无状态应用层）· `load-tests/`（k6 压测）
 
 ## 技术栈
 
 | 层 | 技术 |
 |---|------|
-| **后端** | Java 25, Spring Boot 4, MyBatis-Plus |
-| **前端** | TypeScript, React 19 |
-| **数据库** | MySQL 8.4, Redis 8 |
-| **消息队列** | RabbitMQ 4.3 (Spring AMQP 4.0.x) |
-| **搜索引擎** | Elasticsearch 9.2.8 (IK 中文分词器) |
+| **后端** | Java, Spring Boot, MyBatis-Plus |
+| **前端** | TypeScript, React |
+| **数据库** | MySQL, Redis |
+| **消息队列** | RabbitMQ (Spring AMQP) |
+| **搜索引擎** | Elasticsearch (IK 中文分词器) |
 | **认证** | JWT Access (RSA) + Opaque Refresh (Redis, HttpOnly Cookie) |
-| **迁移** | Flyway 13 |
+| **迁移** | Flyway |
 | **部署** | Docker / compose.yaml（凭据统一经根 `.env` 插值）+ K8s kustomize |
 
-> 本表只写大版本（大版本才承载技术取舍）；**精确版本以 `easyorange-backend/pom.xml` 与 `compose.yaml` 为单一来源**，[doc/技术栈.md](doc/技术栈.md) 的版本表是唯一文档落点（`check-version-drift.py` 钩子校验一致）。
-> **Elasticsearch 例外**：9.2.8 是硬锁（Spring Data ES 6.0.6 按它编译 + IK 插件同版本，见 `infra/elasticsearch/Dockerfile` 注释），升级须整体等 Boot 带动客户端。
+> **文档一律不复刻版本号**：精确版本以 `easyorange-backend/pom.xml` / `easyorange-frontend/package.json` 与 `compose.yaml` 为单一来源，[doc/技术栈.md](doc/技术栈.md) 只记选型与说明（版本漂移钩子已摘，回填版本表时再挂）。
+> **Elasticsearch 例外**：版本是硬锁——Spring Data ES 客户端与 IK 分词器都按它编译，见 `infra/elasticsearch/Dockerfile` 注释；升级须整体等 Boot 带动客户端，**不要在 infra 侧单独升**。
 
 ## 全局硬约束（任何改动都适用，违反即返工）
 
@@ -68,7 +68,7 @@ monorepo：`easyorange-backend/`（11 Maven 模块，约定见 [AGENTS.md](easyo
 | 模块职责 / 依赖边 / 错误码 / 异常判据 / 可观测 / 已知问题 | [doc/agents/架构参考.md](doc/agents/架构参考.md) |
 | 后端编码约定（命名 / DTO / 缓存 / 安全 / 事件 / 各模块要点含 AI 全链路） | [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md) |
 | 构建 / 测试 / 启动 / 部署命令、gh CLI、CI/CD | [doc/agents/常用命令.md](doc/agents/常用命令.md) + [k8s/README.md](k8s/README.md) |
-| 精确版本表（钩子校验单一落点） | [doc/技术栈.md](doc/技术栈.md) |
+| 技术栈选型与说明（版本见 pom / compose） | [doc/技术栈.md](doc/技术栈.md) |
 | 数据库约定 / 表清单 / Flyway 迁移规范 / 脚本索引 | [doc/DATABASE.md](doc/DATABASE.md) |
 | 测试数 / 覆盖率 / 压测数字 / [结构计数](doc/工程指标.md#结构计数)（模块 · Port · ADR · 消费者 · 表 · 规则 · 模板 · 金标准集，**数字单一来源**）；已知技术债 | [doc/工程指标.md](doc/工程指标.md) + [doc/技术债务清单.md](doc/技术债务清单.md) |
 | 迭代路线（Agent 升级 sprint / 双项目排期 / 收口纪律） | [doc/迭代路线.md](doc/迭代路线.md) |

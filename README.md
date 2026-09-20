@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 按生产级标准做 LLM Agent 工程化：多范式工具编排（Workflow 式并行扇出 + 自治式 Agent 工具循环）· RAG 检索增强（两路召回 + RRF 融合）· 评估闭环进 CI · 限流 / Token 预算 / stale 降级 · LLM 专用可观测——AI 链路**可换供应商、可降级、可观测、可评估**。
 >
-> **11 模块解耦 · Port 接口编译期隔离 · 事件驱动 + DLQ 三级重试 · ADR 决策记录 · 2,400+ 测试守卫 · AI 两条主线链路 × 8 项工程化**
+> **Maven 多模块解耦 · Port 接口编译期隔离 · 事件驱动 + DLQ 三级重试 · ADR 决策记录 · 全量测试守卫 · AI 两条主线链路 × 8 项工程化**
 >
 > 业务载体：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给 AI 工程化与架构落地。
 
@@ -39,7 +39,7 @@
 
 ### 核心矛盾与解法
 
-DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。解法：**AI 基础设施全面框架化为 Spring AI 2.0**（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)）——LLM / Embedding 调用点直接注入 `ChatModel` / `EmbeddingModel` bean（DeepSeek + Qwen-VL + DashScope，统一 OpenAI 兼容协议），供应商可换只改配置；业务级治理保留：Redisson 令牌桶限流（超限 429）、`@TokenBudget` 日预算 AOP、供应商故障 stale 兜底、Prompt YAML 版本化。
+DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。解法：**AI 基础设施全面框架化为 Spring AI**（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)）——LLM / Embedding 调用点直接注入 `ChatModel` / `EmbeddingModel` bean（DeepSeek + Qwen-VL + DashScope，统一 OpenAI 兼容协议），供应商可换只改配置；业务级治理保留：Redisson 令牌桶限流（超限 429）、`@TokenBudget` 日预算 AOP、供应商故障 stale 兜底、Prompt YAML 版本化。
 
 ### 两条 AI 主线链路
 
@@ -63,7 +63,7 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 
 ### MCP 工具面 — 对外开放（streamable HTTP，`/mcp`）
 
-Spring AI 2.0 `@McpTool` 暴露 4 个**公开只读**工具，外部 MCP client 可实时查平台数据：
+Spring AI `@McpTool` 暴露 4 个**公开只读**工具，外部 MCP client 可实时查平台数据：
 
 | 工具 | 语义 |
 |---|---|
@@ -91,8 +91,8 @@ Spring AI 2.0 `@McpTool` 暴露 4 个**公开只读**工具，外部 MCP client 
 
 ```mermaid
 flowchart TB
-    FE["React 19 前端"]
-    APP["easyorange-application · Spring Boot 4"]
+    FE["React 前端"]
+    APP["easyorange-application · Spring Boot"]
     USER["user · 认证/用户"]
     PROD["product · CQRS + ES 搜索"]
     ORD["order · 单事务 + 分布式锁"]
@@ -134,8 +134,8 @@ flowchart TB
     MQ -. "异步消费" .-> PAY
 ```
 
-- **前端**：React 19 SPA，C 端 + 管理端（统一设计系统）双布局
-- **后端**：Spring Boot 4 聚合 11 个 Maven 模块，DDD 六边形 + CQRS 分层（CQRS 范围决策见 [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)）
+- **前端**：React SPA，C 端 + 管理端（统一设计系统）双布局
+- **后端**：Spring Boot 聚合 Maven 多模块，DDD 六边形 + CQRS 分层（CQRS 范围决策见 [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)）
 - **数据**：MySQL（Flyway 迁移）+ Redis（缓存 / 令牌桶 / 分布式锁 / 会话）+ Elasticsearch（BM25 + kNN）
 - **消息**：Spring Modulith Outbox → RabbitMQ Topic Exchange，每个业务模块独占队列的消费者，DLQ 三级重试
 - **AI**：DeepSeek（Chat）/ Qwen-VL（Vision）/ DashScope（Embedding），统一 OpenAI 兼容协议
@@ -158,7 +158,7 @@ flowchart TB
 |---|---|---|
 | **决策层** | ADR 决策记录（[doc/adr/](doc/adr/)） | 记录「为什么 + 拒绝项」，不让选型沦为偏好 |
 | **守卫层** | ArchUnit 依赖规则（[`ArchitectureRulesTest`](./easyorange-backend/easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java)） | CI 阻断违规：domain 零框架 / CQRS 读写分离 / 模块间端口隔离 / 端口必有适配器 / 禁止 infrastructure 包 |
-| **验证层** | 2,400+ 测试 · JaCoCo + PIT 变异测试 | JaCoCo 看「代码跑过」，PIT 注入变异看「测试能否发现缺陷」；前端 Biome 0 errors |
+| **验证层** | 全量测试 + JaCoCo + PIT 变异测试 | JaCoCo 看「代码跑过」，PIT 注入变异看「测试能否发现缺陷」；前端 Biome 0 errors |
 
 ### 拒绝项清单
 
@@ -175,14 +175,14 @@ flowchart TB
 
 | 层 | 技术 |
 |---|---|
-| **后端** | Java 25 · Spring Boot 4 · MyBatis-Plus · MapStruct |
+| **后端** | Java · Spring Boot · MyBatis-Plus · MapStruct |
 | **安全** | Spring Security OAuth2 Resource Server · **双 Token**：RSA 签名 Access（30min 无状态）+ Opaque Refresh（Redis SHA-256，HttpOnly Cookie，轮换 + 复用检测）· BCrypt |
-| **前端** | React 19 · TypeScript · Vite · TanStack Query 5 · Zustand 5 · Tailwind 4 · shadcn/ui · Biome |
-| **数据 / 消息** | MySQL 8.4 · Redis 8 · RabbitMQ 4.3 · Elasticsearch 9.2（dev / prod 默认启用，关掉走 LIKE 兜底） |
-| **AI** | Spring AI 2.0 · DeepSeek · Qwen-VL · DashScope Embedding |
+| **前端** | React · TypeScript · Vite · TanStack Query · Zustand · Tailwind CSS · shadcn/ui · Biome |
+| **数据 / 消息** | MySQL · Redis · RabbitMQ · Elasticsearch（dev / prod 默认启用，关掉走 LIKE 兜底） |
+| **AI** | Spring AI · DeepSeek · Qwen-VL · DashScope Embedding |
 | **可靠性** | Redisson（分布式锁 / 令牌桶）· Spring Modulith Outbox · CacheErrorHandler fail-open |
 | **可观测** | Micrometer + Prometheus · OpenTelemetry（traceId → Langfuse）· Spring AI Observation · 结构化日志 |
-| **DevOps** | Docker / docker-compose · GitHub Actions · Flyway 13 |
+| **DevOps** | Docker / docker-compose · GitHub Actions · Flyway |
 
 > 精确版本以 [doc/技术栈.md](doc/技术栈.md) 的版本表为唯一权威落点（`.githooks/check-version-drift.py` 校验其与 `pom.xml` / `compose.yaml` 一致）。
 
@@ -227,7 +227,7 @@ k6 run --vus 50 --duration 30s load-tests/product-list.js                  # k6 
 
 ```
 easy-orange/
-├── easyorange-backend/     # Spring Boot 后端（11 Maven 模块，DDD 六边形）
+├── easyorange-backend/     # Spring Boot 后端（Maven 多模块，DDD 六边形）
 ├── easyorange-frontend/    # React 前端（C 端 + 管理端）
 ├── doc/                    # 技术栈 / ADR / agents 参考 / DATABASE / 面试
 ├── compose.yaml            # MySQL + Redis + RabbitMQ + 后端应用（多实例）+ Prometheus + Grafana + Langfuse
@@ -244,7 +244,7 @@ easy-orange/
 | [doc/技术栈.md](doc/技术栈.md) | 精确版本表（`check-version-drift.py` 钩子校验与 pom/compose 一致） |
 | [doc/adr/](doc/adr/) | 12 条架构决策记录 |
 | [doc/agents/](doc/agents/) | 按需读取参考：架构（错误码 / 依赖边 / 异常 / 可观测）/ 领域 / 常用命令 |
-| [doc/工程指标.md](doc/工程指标.md) | 数字单一事实来源：测试数 / 覆盖率（2,400+ 为取整下限）/ [结构计数](doc/工程指标.md#结构计数) |
+| [doc/工程指标.md](doc/工程指标.md) | 数字单一事实来源：测试数 / 覆盖率 / 压测（**收口重测后回填**）+ [结构计数](doc/工程指标.md#结构计数) |
 | [doc/DATABASE.md](doc/DATABASE.md) | 数据库全局约定、表清单、Flyway 迁移规范与脚本索引 |
 | [doc/interview/](doc/interview/) | 面试脚本（怎么说 / 怎么答） |
 
@@ -258,6 +258,6 @@ easy-orange/
 
 <div align="center">
 
-**EasyOrange** · Java AI Agent 工程化实战 · Java 25 + Spring Boot 4 + Spring AI 2.0 · Agent 编排 + RAG + 评估闭环 + DDD + 事件驱动可靠性 · [GitHub](https://github.com/Xytheria-t/EasyOrange)
+**EasyOrange** · Java AI Agent 工程化实战 · Java + Spring Boot + Spring AI · Agent 编排 + RAG + 评估闭环 + DDD + 事件驱动可靠性 · [GitHub](https://github.com/Xytheria-t/EasyOrange)
 
 </div>
