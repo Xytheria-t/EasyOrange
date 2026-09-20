@@ -20,7 +20,15 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum AiResultCode implements IResultCode {
-    TOKEN_BUDGET_EXCEEDED("B8001", "今日 AI 调用预算已用尽，请明天再试");
+    TOKEN_BUDGET_EXCEEDED("B8001", "今日 AI 调用预算已用尽，请明天再试"),
+
+    /**
+     * 拍照识别没有产出可用结果（模型返回空 / 输出不可解析 / 供应商异常）。
+     * <p>
+     * 走显式错误码而不是 HTTP 200 + {@code data:null}：发布助手没有「部分可用」的结果可言，
+     * 静默成功会让用户点了按钮、等一会儿、零反馈 —— 失败必须是用户看得见的事实。
+     */
+    AI_UNAVAILABLE("B8002", "AI 服务暂时不可用，请稍后重试");
 
     private final String code;
     private final String message;
