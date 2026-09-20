@@ -44,6 +44,17 @@ export interface ProductQueryParams {
     hasDiscount?: boolean;
 }
 
+/** AI 建议快照（拍照识别给出）— 仅用于统计字段级采纳率，不参与定价逻辑 */
+export interface AiSuggestionSnapshot {
+    title: string;
+    description: string;
+    price: number;
+    categoryName: string;
+    /** 成色等级 "1"~"4"（与后端 AutoListingResult 同形） */
+    conditionLevel: string;
+    location: string;
+}
+
 export interface CreateProductRequest {
     name: string;
     description: string;
@@ -55,8 +66,8 @@ export interface CreateProductRequest {
     location?: string;
     contactMethod?: string;
     imageUrls: string[];
-    /** AI 建议售价（拍照识别给出）。仅用于统计采纳率与偏离度，不参与定价逻辑 */
-    aiSuggestedPrice?: number;
+    /** AI 建议快照（拍照识别给出）：后端留档后与最终值比对，出字段级采纳率 */
+    aiSuggestion?: AiSuggestionSnapshot;
 }
 
 export interface UpdateProductRequest {

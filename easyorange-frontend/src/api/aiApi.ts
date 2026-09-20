@@ -7,11 +7,9 @@ export interface AutoListingResult {
     description: string;
     price: number;
     categoryName: string;
-    categoryId: string;
-    conditionLevel: number;
+    /** 成色等级 "1"~"4"（后端按枚举 code 传输，与发布表单同形） */
+    conditionLevel: string;
     location: string;
-    tags: string[];
-    imageDescriptions: string[];
 }
 
 /**
