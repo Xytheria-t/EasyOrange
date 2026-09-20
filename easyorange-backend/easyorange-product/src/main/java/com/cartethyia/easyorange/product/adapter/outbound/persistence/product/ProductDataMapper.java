@@ -7,10 +7,23 @@ import com.cartethyia.easyorange.product.domain.valueobject.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
+/**
+ * Product 聚合 ↔ 持久化对象映射。
+ * <p>
+ * AI 建议快照以 JSON 原文存列（{@code ai_suggestion}）：它是六个字段的留档、不是商品属性，
+ * 展开成六列会让商品表为「统计元数据」变宽，序列化失败也只丢掉快照、不影响商品落库。
+ */
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class ProductDataMapper {
+
+    private final ObjectMapper objectMapper;
 
     public ProductDO toDataObject(Product p) {
         return ProductDO.builder()
@@ -20,7 +33,7 @@ public class ProductDataMapper {
                 .name(val(p.getTitle()))
                 .price(val(p.getPrice()))
                 .originalPrice(val(p.getOriginalPrice()))
-                .aiSuggestedPrice(val(p.getAiSuggestedPrice()))
+                .aiSuggestion(toJson(p.getAiSuggestion()))
                 .stock(val(p.getStock()))
                 .version(val(p.getVersion()))
                 .status(p.getStatus())
@@ -66,8 +79,7 @@ public class ProductDataMapper {
                 .title(ProductTitle.of(productDO.getName()))
                 .price(Money.of(productDO.getPrice()))
                 .originalPrice(productDO.getOriginalPrice() != null ? Money.of(productDO.getOriginalPrice()) : null)
-                .aiSuggestedPrice(
-                        productDO.getAiSuggestedPrice() != null ? Money.of(productDO.getAiSuggestedPrice()) : null)
+                .aiSuggestion(fromJson(productDO.getAiSuggestion()))
                 .stock(StockQuantity.of(productDO.getStock()))
                 .version(Version.of(productDO.getVersion()))
                 .status(productDO.getStatus())
@@ -93,6 +105,34 @@ public class ProductDataMapper {
                         img.getSortOrder(),
                         img.getIsMain() != null && img.getIsMain().equals(1)))
                 .toList());
+    }
+
+    /**
+     * 快照的序列化/反序列化失败一律降级为 null 并告警：它只是统计附加信息，
+     * 不能因为一份留档损坏就让商品创建或查询失败。
+     */
+    private String toJson(AiSuggestion suggestion) {
+        if (suggestion == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(suggestion);
+        } catch (Exception e) {
+            log.warn("action=ai_suggestion_serialize_failed, reason={}", e.getMessage());
+            return null;
+        }
+    }
+
+    private AiSuggestion fromJson(String json) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(json, AiSuggestion.class);
+        } catch (Exception e) {
+            log.warn("action=ai_suggestion_deserialize_failed, reason={}", e.getMessage());
+            return null;
+        }
     }
 
     // -- null-safe helpers for value objects --

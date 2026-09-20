@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.ai.application.dto.AiCostReportRow;
 import com.cartethyia.easyorange.ai.application.service.AiCostReportService;
-import com.cartethyia.easyorange.ai.domain.model.PricingAdoptionReport;
-import com.cartethyia.easyorange.ai.domain.port.AiPricingAdoptionPort;
+import com.cartethyia.easyorange.ai.domain.model.AiListingAdoptionReport;
+import com.cartethyia.easyorange.ai.domain.port.AiListingAdoptionPort;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -20,22 +20,22 @@ import org.springframework.web.bind.annotation.RestController;
  * 路径落在 {@code /api/admin/**} 下，由安全配置统一限 ADMIN/MANAGER（见 SecurityConfig 管理后台规则），
  * 不额外标 {@code @PreAuthorize}。
  */
-@Tag(name = "AI 报表", description = "AI 成本报表（按场景）与建议价采纳率")
+@Tag(name = "AI 报表", description = "AI 成本报表（按场景）与 AI 建议字段级采纳率")
 @RestController
 @RequestMapping("/api/admin/ai")
 @RequiredArgsConstructor
 public class AiCostReportController {
 
     private final AiCostReportService costReportService;
-    private final AiPricingAdoptionPort pricingAdoptionPort;
+    private final AiListingAdoptionPort listingAdoptionPort;
 
     @GetMapping("/cost-report")
     public Result<List<AiCostReportRow>> costReport(@RequestParam(defaultValue = "24") int hours) {
         return Result.success(costReportService.report(hours));
     }
 
-    @GetMapping("/pricing-adoption")
-    public Result<PricingAdoptionReport> pricingAdoption() {
-        return Result.success(pricingAdoptionPort.report());
+    @GetMapping("/listing-adoption")
+    public Result<AiListingAdoptionReport> listingAdoption() {
+        return Result.success(listingAdoptionPort.report());
     }
 }

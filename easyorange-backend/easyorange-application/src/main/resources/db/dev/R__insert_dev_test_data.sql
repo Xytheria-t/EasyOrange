@@ -1017,26 +1017,52 @@ DELETE FROM `eo_product_detail` WHERE `product_id` IN ('1003', '1005', '1006', '
 DELETE FROM `eo_product` WHERE `id` IN ('1003', '1005', '1006', '1009', '1010', '1011', '1012');
 
 -- ===================================================================
--- 16. AI 能力演示数据（建议价 + 多图商品）
+-- 16. AI 能力演示数据（建议快照 + 多图商品）
 --     目的：两处 AI 能力的产出在 dev 库上直接可见，不必先手工走一遍发布流程。
---     ① ai_suggested_price：采纳率报表（GET /api/admin/ai/pricing-adoption）只统计该列非空的行
+--     ① ai_suggestion：采纳率报表（GET /api/admin/ai/listing-adoption）只统计该列非空的行
 --        （没给出建议的商品进分母会把采纳率稀释成无意义的数），不补数据则报表恒为 0 样本。
---        三种形态各 8 个商品，保证采纳率 / ±10% / >30% 三个口径都有数。
+--        快照存的是**建议原文**（六字段 JSON），采纳与否由报表 SQL 与商品最终值比对得出 ——
+--        所以造数只要控制「建议值与最终值差在哪几个字段」，字段级采纳率就自然拉开：
+--        ①A 全字段一致（全采纳）；①B 只改价 ≤10%；①C 改价 >30% 且标题被改写。
 --     ② 多图商品：ProductTagger 的「📸实拍」标签阈值为 3 张图，此前全库没有商品达到，
 --        该标签在 demo 里永不出现。补充图片的 URL 复用同品类已有素材（新增外链可能失效，宁可重复）。
---     建议价是构造值，不代表模型真实输出；两条 UPDATE 都是幂等且只命中种子商品
+--     建议值是构造值，不代表模型真实输出；三条 UPDATE 都是幂等且只命中种子商品
 --     （比较值加引号的原因同第 15 节：id 是 VARCHAR，裸数字比较会在脏库上报 1292）
 --     （应用内真实发布的商品是 UUID v7 主键，不会落在这些 ID 上）。
 -- ===================================================================
 
--- ①A 采纳：建议价与最终定价完全一致
-UPDATE `eo_product` SET `ai_suggested_price` = `price` WHERE `id` IN ('1', '5', '11', '15', '23', '33', '50', '65');
+-- ①A 全字段采纳：快照与最终值六项全等
+UPDATE `eo_product` p
+SET p.ai_suggestion = JSON_OBJECT(
+        'title', p.name,
+        'description', (SELECT d.description FROM `eo_product_detail` d WHERE d.product_id = p.id),
+        'price', p.price,
+        'categoryName', (SELECT c.name FROM `eo_category` c WHERE c.id = p.category_id),
+        'conditionLevel', p.condition_level,
+        'location', COALESCE(p.location, ''))
+WHERE p.id IN ('1', '5', '11', '15', '23', '33', '50', '65');
 
--- ①B 采纳但改价 ≤10%：建议价略高于最终价
-UPDATE `eo_product` SET `ai_suggested_price` = ROUND(`price` * 1.08, 2) WHERE `id` IN ('3', '8', '16', '24', '30', '37', '58', '66');
+-- ①B 采纳但改价 ≤10%：只有价格与建议不同
+UPDATE `eo_product` p
+SET p.ai_suggestion = JSON_OBJECT(
+        'title', p.name,
+        'description', (SELECT d.description FROM `eo_product_detail` d WHERE d.product_id = p.id),
+        'price', ROUND(p.price * 1.08, 2),
+        'categoryName', (SELECT c.name FROM `eo_category` c WHERE c.id = p.category_id),
+        'conditionLevel', p.condition_level,
+        'location', COALESCE(p.location, ''))
+WHERE p.id IN ('3', '8', '16', '24', '30', '37', '58', '66');
 
--- ①C 偏离 >30%：建议价明显高于最终价
-UPDATE `eo_product` SET `ai_suggested_price` = ROUND(`price` * 1.5, 2) WHERE `id` IN ('2', '9', '12', '26', '36', '54', '64', '96');
+-- ①C 偏离 >30%：价格大改，且标题被资产方重写（模拟文案不被采信）
+UPDATE `eo_product` p
+SET p.ai_suggestion = JSON_OBJECT(
+        'title', CONCAT('九成新 ', p.name),
+        'description', (SELECT d.description FROM `eo_product_detail` d WHERE d.product_id = p.id),
+        'price', ROUND(p.price * 1.5, 2),
+        'categoryName', (SELECT c.name FROM `eo_category` c WHERE c.id = p.category_id),
+        'conditionLevel', p.condition_level,
+        'location', COALESCE(p.location, ''))
+WHERE p.id IN ('2', '9', '12', '26', '36', '54', '64', '96');
 
 -- ② 多图商品（补到 3 张，触发「📸实拍」标签）
 INSERT INTO `eo_product_image` (

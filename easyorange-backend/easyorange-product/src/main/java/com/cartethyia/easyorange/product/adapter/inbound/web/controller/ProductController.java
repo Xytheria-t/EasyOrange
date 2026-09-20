@@ -17,6 +17,7 @@ import com.cartethyia.easyorange.product.application.query.CategoryQueryHandler;
 import com.cartethyia.easyorange.product.application.query.ProductQueryHandler;
 import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
+import com.cartethyia.easyorange.product.domain.valueobject.AiSuggestion;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -66,8 +67,22 @@ public class ProductController {
                 request.contactMethod(),
                 request.description(),
                 request.imageUrls(),
-                request.aiSuggestedPrice());
+                toAiSuggestion(request.aiSuggestion()));
         return Result.success(commandHandler.createProduct(user.userId(), cmd));
+    }
+
+    /** 请求里的建议快照 → 领域值对象；整块缺失即 null（这单没走过拍照识别，不进采纳率分母）。 */
+    private static AiSuggestion toAiSuggestion(ProductCreateRequest.AiSuggestionSnapshot snapshot) {
+        if (snapshot == null) {
+            return null;
+        }
+        return new AiSuggestion(
+                snapshot.title(),
+                snapshot.description(),
+                snapshot.price(),
+                snapshot.categoryName(),
+                snapshot.conditionLevel(),
+                snapshot.location());
     }
 
     @PutMapping("/{id}")

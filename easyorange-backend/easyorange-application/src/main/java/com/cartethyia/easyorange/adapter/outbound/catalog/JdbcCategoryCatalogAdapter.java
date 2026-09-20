@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
  * 平台类目清单读取适配器 — 实现 {@link CategoryCatalogPort}。
  * <p>
  * 放在 application 模块：类目表属 product 模块，ai 模块只声明端口、不碰别人的表 ——
- * 与 {@code JdbcAiPricingAdoptionAdapter} 同一分工（读需求在 ai，跨表读取在组合根）。
+ * 与 {@code JdbcAiListingAdoptionAdapter} 同一分工（读需求在 ai，跨表读取在组合根）。
  */
 @Component
 @RequiredArgsConstructor

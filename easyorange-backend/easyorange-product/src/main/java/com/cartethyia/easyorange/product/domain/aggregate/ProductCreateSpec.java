@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.domain.aggregate;
 
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.valueobject.AiSuggestion;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
@@ -17,8 +18,8 @@ import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
  * 收敛长参数为单一 record，提升调用点可读性并避免参数顺序错配。
  * 纯 VO 字段，domain 层零框架依赖。
  *
- * @param aiSuggestedPrice AI 建议售价（拍照识别给出）。只写不改，不参与定价与状态流转 ——
- *                         它的唯一用途是让「AI 建议 vs 资产方最终价」这条质量数字可被查询
+ * @param aiSuggestion AI 建议快照（拍照识别给出）。只写不改，不参与定价与状态流转 ——
+ *                     它的唯一用途是让「AI 建议 vs 资产方最终值」这条质量数字可被按字段查询
  */
 public record ProductCreateSpec(
         SellerId sellerId,
@@ -32,4 +33,4 @@ public record ProductCreateSpec(
         ContactMethod contactMethod,
         ProductDescription description,
         ImageSet images,
-        Money aiSuggestedPrice) {}
+        AiSuggestion aiSuggestion) {}

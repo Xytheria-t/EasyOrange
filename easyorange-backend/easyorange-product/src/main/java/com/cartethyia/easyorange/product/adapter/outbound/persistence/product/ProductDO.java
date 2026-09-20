@@ -27,8 +27,8 @@ public class ProductDO extends BaseDO {
     private BigDecimal price;
     private BigDecimal originalPrice;
 
-    /** AI 建议售价（拍照识别给出，资产方未用则 null）。采纳率与偏离度的数据来源 */
-    private BigDecimal aiSuggestedPrice;
+    /** AI 建议快照（拍照识别产出，未识别则 null）JSON 原文。字段级采纳率与价格偏离度的数据来源 */
+    private String aiSuggestion;
 
     private Integer stock;
 
