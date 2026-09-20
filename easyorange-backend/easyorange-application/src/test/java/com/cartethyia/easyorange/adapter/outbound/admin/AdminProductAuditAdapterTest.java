@@ -66,11 +66,7 @@ class AdminProductAuditAdapterTest {
     @BeforeEach
     void setUp() {
         adapter = new AdminProductAuditAdapter(
-                productMapper,
-                productRepository,
-                productAuditLogRepository,
-                domainEventPublisher,
-                new ObjectMapper());
+                productMapper, productRepository, productAuditLogRepository, domainEventPublisher, new ObjectMapper());
     }
 
     private Product createProductWithStatus(ProductStatus status) {
