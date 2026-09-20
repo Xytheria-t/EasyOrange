@@ -15,11 +15,11 @@
 <!--
 ## 演示（GIF，30 秒看完）
 
-录制后取消本注释，gif 放 docs/gifs/（本地一键复现见「快速开始」）：
+录制后取消本注释，gif 放 doc/assets/gifs/（本地一键复现见「快速开始」）：
 
 | 多步 Agent 对话式找货（流式） | Cursor 连接 MCP server 实时查在售商品 | Langfuse 全链路 trace |
 |---|---|---|
-| <img src="docs/gifs/agent-find.gif" width="320"> | <img src="docs/gifs/mcp-cursor.gif" width="320"> | <img src="docs/gifs/langfuse-trace.gif" width="320"> |
+| <img src="doc/assets/gifs/agent-find.gif" width="320"> | <img src="doc/assets/gifs/mcp-cursor.gif" width="320"> | <img src="doc/assets/gifs/langfuse-trace.gif" width="320"> |
 -->
 
 ## 正在迭代（2026 Q4）
