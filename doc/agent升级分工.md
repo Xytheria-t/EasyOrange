@@ -138,3 +138,20 @@ cd easyorange-backend && ./mvnw test -pl easyorange-application -Dtest='Architec
 4. `AgentLoopRunnerTest` 适配；SSE step 协议与 `eo_agent_step_trace` 字段语义不变
 5. 文档校准：面试文档里的失实表述与工程指标残留数字（清单在 B 的会话里，不在本文）
 6. 收口：ArchUnit + ai 模块全绿 + `python3 .githooks/check-metrics-drift.py --fix`
+
+## 八、状态与未清项
+
+**已落地（B）**：`remember_preference` 从 `finish` 参数副作用拆成独立工具（含真实落库与失败观察）、`finish` 瘦身、`max-steps` 5 → 7、prompt 升 `v4.0.0`、`market_price_stats` / `compare_assets` 接入工具面、`AgentStepDecision` 增 `productIds` 字段、`AgentLoopRunner` 的 `TOOL_MENU` 与 `toolInputOf` 同步。
+
+**A 的未清项（已由 A 自行收口，B 误改后已撤回）**：
+
+- `AssetComparisonTest.of_dimensionOrderAndPlainTextObservation` 首次运行失败，A 看到后**判定实现正确、改了测试期望**（note 逐件列出有地区的候选，不按地区去重）。
+- B 一度按旧期望改了实现（按地区取首个代表），核对测试期望已被翻转后**撤回**——A 的选择更好：note 是逐件事实清单，去重会把第 3 件的地区整个丢掉，而模型正需要这份「哪件在哪」来判直邮与运费。
+- 教训：**跨会话并行时，测试期望被翻转与实现被改坏，在报告里长得一模一样**。改对方文件前先看两侧的 mtime 与最近一次报告，别只看一次的 expected/but was。
+- 另一条：**「A 只新建文件」不等于「A 的交付可以不管绿」**——收口方要跑全模块，不能只看自己 lane 的测试。
+
+## 九、踩坑记录（给后续会话）
+
+- **`@Tool` 必须挂 `resultConverter = AgentTools.ObservationTextConverter.class`**：漏挂时默认转换器把 String 观察再 JSON 化，观察文本多一层引号（`"当前 2 件在售…"`）。B 接 `market_price_stats` / `compare_assets` 时踩到，靠测试断言原值捕获。
+- **两条 lane 都要跑 Maven 时**：并发会撞 `target/` 与本地仓库。A 的等待循环（`pgrep classworlds.launcher.Launcher`）是本仓库可复用的串行化做法。
+- **成色维度依赖码表值**：`AssetComparison.gradeOf` 只认 `ConditionLevel` 的四个 desc（全新 / 几乎全新 / 轻微使用痕迹 / 明显使用痕迹）。真实数据里出现的自由文本（如「九五新」）会被判为不可判定、该维不参与比较——这是刻意的（不猜档位），但要在观察文本里点明，别让模型把「没被提到」读成「比过且不占优」。

@@ -45,8 +45,13 @@
 
 ### P0-1 原生 tool calling 迁移（W1 + W5）
 
-> 状态：**已实施** —— 4 个工具改由 `AgentTools` 的 `@Tool` 注解定义 schema（随请求走原生 tool calling），
-> 循环仍手写在 `AgentLoopRunner`；偏好提取移至 finish 轮参数，W5 由「失败观察 → 模型换参数重试」自然消除。
+> 状态：**已实施** —— 工具改由 `AgentTools` 的 `@Tool` 注解定义 schema（随请求走原生 tool calling），
+> 循环仍手写在 `AgentLoopRunner`；W5 由「失败观察 → 模型换参数重试」自然消除。
+> **后续演进（2026-09-20）**：偏好提取不再搭在 finish 轮参数上，已拆成独立工具 `remember_preference`
+> （原方案在步数超限 / 预算耗尽 / 决策失败三条降级路径下会静默丢失偏好）；同时工具面由 4 个扩到 7 个，
+> 新增两个计算类工具（`market_price_stats` / `compare_assets`）——原工具面全是只读检索，循环存在的
+> 唯一意义是换关键词重试，补上计算类工具后第 N 步才真正依赖第 N-1 步的输出。步数上限随之 5 → 7。
+> 详见 [agent升级分工.md](agent升级分工.md)（临时协调文档，收口后删）。
 > **API 实况**：Spring AI 无 `internalToolExecutionEnabled`（自动工具执行已收进 ChatClient 的
 > ToolCallingAdvisor），`ChatModel.call` 本就不执行工具 —— 走 `AiModelSupport.callWithTools` 即天然满足
 > 「关闭框架内自动执行、循环控制权留在 runner」。
