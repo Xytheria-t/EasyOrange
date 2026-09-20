@@ -20,6 +20,7 @@ import com.cartethyia.easyorange.product.domain.event.ProductUpdatedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
 import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
+import com.cartethyia.easyorange.product.domain.valueobject.AiSuggestion;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
@@ -47,12 +48,13 @@ public class Product {
     private final Money originalPrice;
 
     /**
-     * AI 建议售价（拍照识别给出，未采到则为 null）。
+     * AI 建议快照（拍照识别给出，未识别则为 null）。
      * <p>
      * 刻意做成聚合里的只读附加信息：不参与任何状态流转与定价校验，只随商品落库，
-     * 让「AI 建议 vs 资产方最终价」这条质量数字可被查询 —— 也是全项目唯一不依赖 LLM 评 LLM 的指标。
+     * 让「AI 建议的各字段 vs 资产方最终值」这条质量数字可被按字段查询 ——
+     * 也是全项目唯一不依赖 LLM 评 LLM 的指标。
      */
-    private final Money aiSuggestedPrice;
+    private final AiSuggestion aiSuggestion;
 
     private final StockQuantity stock;
     private final Version version;
@@ -86,7 +88,7 @@ public class Product {
                 .title(spec.title())
                 .price(spec.price())
                 .originalPrice(spec.originalPrice())
-                .aiSuggestedPrice(spec.aiSuggestedPrice())
+                .aiSuggestion(spec.aiSuggestion())
                 .stock(spec.stock() != null ? spec.stock() : StockQuantity.of(1))
                 .version(Version.INITIAL)
                 .status(ProductStatus.DRAFT)
