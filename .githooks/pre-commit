@@ -7,10 +7,12 @@
 #   3. merge 冲突标记残留
 #   4. 大文件（默认 >2MB 阻断）
 #   5. 前端：仅当 src/tests 下 ts/tsx 变更时跑 biome check
-#   4. 版本漂移：仅当技术栈表 / pom / compose / ES 镜像变更时校验文档版本与权威来源一致
-#   5. 测试口径漂移：文档/pom 变更时校验「集成测试是否存在」的声明与代码事实（*IT + failsafe 绑定）一致
-#   6. 结构计数漂移：文档/pom/迁移/源码变更时校验「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」与代码事实一致
-#   7. 上下文预算：AGENTS.md 变更时校验份数（≤3）与字符预算（根 6500 / 合计 45000）
+#   6. 测试口径漂移：文档/pom 变更时校验「集成测试是否存在」的声明与代码事实（*IT + failsafe 绑定）一致
+#   7. 结构计数漂移：文档/pom/迁移/源码变更时校验「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」与代码事实一致
+#   8. 上下文预算：AGENTS.md 变更时校验份数（≤3）与字符预算（根 6500 / 合计 45000）
+#
+# 已摘除：版本漂移（check-version-drift.py）—— 文档不再复刻版本号，权威源只有 pom / compose；
+# 回填 doc/技术栈.md 版本表时再挂回。
 #
 # 重门禁（构建 + 测试）在 pre-push，提交时不挡路。
 #
@@ -90,27 +92,7 @@ else
   hook_log "No frontend TS changes, skipping biome check"
 fi
 
-# 4. 版本漂移：文档版本表（唯一权威落点）与 pom / compose / 镜像 tag 必须一致
-drift_files=$(echo "$files" \
-  | grep -E '^(doc/架构/架构-技术栈\.md|compose\.yaml|easyorange-backend/pom\.xml|infra/elasticsearch/Dockerfile)$' \
-  || true)
-
-if [[ -n "$drift_files" ]]; then
-  if command -v python3 >/dev/null 2>&1; then
-    hook_log "版本相关文件 staged → 校验文档版本与 pom/compose 一致性..."
-    if python3 "$SCRIPT_DIR/check-version-drift.py"; then
-      hook_ok "version drift check"
-    else
-      hook_fail "文档版本与 pom/compose 不一致（见上方输出；SKIP=git-hooks 可跳过）"
-    fi
-  else
-    hook_warn "python3 not found, skipping version drift check"
-  fi
-else
-  hook_log "No version-source changes, skipping version drift check"
-fi
-
-# 5. 测试口径漂移：文档对「集成测试是否存在」的声明 vs 代码事实（*IT 文件 + pom 的 failsafe 绑定）
+# 4. 测试口径漂移：文档对「集成测试是否存在」的声明 vs 代码事实（*IT 文件 + pom 的 failsafe 绑定）
 tier_files=$(echo "$files" \
   | grep -E '\.md$|^easyorange-backend/pom\.xml$' \
   || true)
@@ -130,7 +112,7 @@ else
   hook_log "No doc/pom changes, skipping test tier drift check"
 fi
 
-# 6. 结构计数漂移：文档 / pom / 迁移脚本 / 源码变更时校验「N 模块 / N Port / N ADR /
+# 5. 结构计数漂移：文档 / pom / 迁移脚本 / 源码变更时校验「N 模块 / N Port / N ADR /
 #    N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」与代码事实一致（这几类数字无单一来源，靠人肉同步漂移过一整轮）
 if [[ -n "$tier_files" ]] || echo "$files" | grep -qE '^easyorange-backend/.*(pom\.xml|\.sql|\.java)$'; then
   if command -v python3 >/dev/null 2>&1; then
@@ -147,7 +129,7 @@ else
   hook_log "No doc/pom/migration/source changes, skipping metrics drift check"
 fi
 
-# 7. 上下文预算：AGENTS.md 变更时校验「份数 + 字符预算」——根文件每会话常驻，
+# 6. 上下文预算：AGENTS.md 变更时校验「份数 + 字符预算」——根文件每会话常驻，
 #    模块级副本不会被自动加载（ZCode 只解析工作目录向上的一个），两份都不该再长回来
 if echo "$files" | grep -qE '(^|/)AGENTS\.md$'; then
   if command -v python3 >/dev/null 2>&1; then
