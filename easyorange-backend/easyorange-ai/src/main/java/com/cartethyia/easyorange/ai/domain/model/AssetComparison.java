@@ -47,8 +47,9 @@ public final class AssetComparison {
 
     /** 不足 MIN_CANDIDATES 件时返回 empty，由调用方转成模型可读的失败观察。 */
     public static Optional<AssetComparison> of(List<AssetDetail> details) {
-        List<AssetDetail> candidates =
-                details == null ? List.of() : details.stream().filter(Objects::nonNull).toList();
+        List<AssetDetail> candidates = details == null
+                ? List.of()
+                : details.stream().filter(Objects::nonNull).toList();
         if (candidates.size() < MIN_CANDIDATES) {
             return Optional.empty();
         }
@@ -79,12 +80,16 @@ public final class AssetComparison {
      */
     private static Optional<Dimension> priceDimension(List<AssetDetail> candidates) {
         List<AssetDetail> priced = candidates.stream()
-                .filter(candidate -> candidate.price() != null && candidate.price().signum() > 0)
+                .filter(candidate ->
+                        candidate.price() != null && candidate.price().signum() > 0)
                 .toList();
         if (priced.size() < MIN_CANDIDATES) {
             return Optional.empty();
         }
-        BigDecimal lowest = priced.stream().map(AssetDetail::price).min(BigDecimal::compareTo).orElseThrow();
+        BigDecimal lowest = priced.stream()
+                .map(AssetDetail::price)
+                .min(BigDecimal::compareTo)
+                .orElseThrow();
         List<AssetDetail> cheapest = priced.stream()
                 .filter(candidate -> candidate.price().compareTo(lowest) == 0)
                 .toList();
@@ -124,10 +129,10 @@ public final class AssetComparison {
         }
         String winner = bests.size() == 1 ? bests.getFirst().productId() : null;
         String label = normalized(bests.getFirst().conditionDesc());
-        String note = winner == null
-                ? "%s 成色并列最好（%s）".formatted(ids(bests), label)
-                : "%s 成色最好（%s）".formatted(winner, label);
-        return Optional.of(new Dimension(DIMENSION_CONDITION, winner, note + unjudgedSuffix(unjudged, DIMENSION_CONDITION)));
+        String note =
+                winner == null ? "%s 成色并列最好（%s）".formatted(ids(bests), label) : "%s 成色最好（%s）".formatted(winner, label);
+        return Optional.of(
+                new Dimension(DIMENSION_CONDITION, winner, note + unjudgedSuffix(unjudged, DIMENSION_CONDITION)));
     }
 
     /** 地区：没有客观优劣，胜出方恒为 null，只在候选分散在不同地区时列出事实。 */
@@ -151,7 +156,8 @@ public final class AssetComparison {
                         .map(candidate -> "%s %s".formatted(candidate.productId(), normalized(candidate.location())))
                         .collect(Collectors.joining("、"))
                 + "，无客观优劣";
-        return Optional.of(new Dimension(DIMENSION_LOCATION, null, note + unjudgedSuffix(unjudged, DIMENSION_LOCATION)));
+        return Optional.of(
+                new Dimension(DIMENSION_LOCATION, null, note + unjudgedSuffix(unjudged, DIMENSION_LOCATION)));
     }
 
     /**

@@ -60,8 +60,7 @@ class AssetComparisonTest {
                 .orElseThrow();
 
         assertThat(comparison.dimensions()).isEmpty();
-        assertThat(comparison.observation())
-                .isEqualTo("对比 2 件：p1、p2；价格 / 成色 / 地区 / 在售状态 均无可判定差异，不构成选择依据");
+        assertThat(comparison.observation()).isEqualTo("对比 2 件：p1、p2；价格 / 成色 / 地区 / 在售状态 均无可判定差异，不构成选择依据");
     }
 
     @Test
@@ -77,9 +76,8 @@ class AssetComparisonTest {
     @Test
     @DisplayName("成色维：胜出方是档位最新的一件")
     void of_conditionPicksNewest() {
-        var comparison = AssetComparison.of(List.of(
-                        asset("p1", null, "轻微使用痕迹", null, "ONLINE"),
-                        asset("p2", null, "全新", null, "ONLINE")))
+        var comparison = AssetComparison.of(
+                        List.of(asset("p1", null, "轻微使用痕迹", null, "ONLINE"), asset("p2", null, "全新", null, "ONLINE")))
                 .orElseThrow();
 
         assertThat(comparison.dimensions()).extracting(Dimension::name).containsExactly("成色");
@@ -104,8 +102,7 @@ class AssetComparisonTest {
     @DisplayName("成色维：码表外的自由文本不猜档位，可判定不足 2 件则该维不进结果")
     void of_conditionFreeTextOutOfTableNotGuessed() {
         var comparison = AssetComparison.of(List.of(
-                        asset("p1", null, "九五新，无磕碰", null, "ONLINE"),
-                        asset("p2", null, "几乎全新", null, "ONLINE")))
+                        asset("p1", null, "九五新，无磕碰", null, "ONLINE"), asset("p2", null, "几乎全新", null, "ONLINE")))
                 .orElseThrow();
 
         assertThat(comparison.dimensions()).isEmpty();
@@ -127,8 +124,8 @@ class AssetComparisonTest {
     @Test
     @DisplayName("地区维：地区不同时只列事实，无胜出方")
     void of_locationDiffersHasNoWinner() {
-        var comparison = AssetComparison.of(List.of(
-                        asset("p1", null, null, "杭州", "ONLINE"), asset("p2", null, null, "深圳", "ONLINE")))
+        var comparison = AssetComparison.of(
+                        List.of(asset("p1", null, null, "杭州", "ONLINE"), asset("p2", null, null, "深圳", "ONLINE")))
                 .orElseThrow();
 
         assertThat(comparison.dimensions().getFirst().name()).isEqualTo("地区");
@@ -140,13 +137,12 @@ class AssetComparisonTest {
     @DisplayName("地区维：地区相同（或都未标注）时该维不进结果")
     void of_sameLocationSkipsDimension() {
         assertThat(AssetComparison.of(List.of(
-                                        asset("p1", null, null, "杭州", "ONLINE"),
-                                        asset("p2", null, null, "杭州", "ONLINE")))
+                                asset("p1", null, null, "杭州", "ONLINE"), asset("p2", null, null, "杭州", "ONLINE")))
                         .orElseThrow()
                         .dimensions())
                 .isEmpty();
-        assertThat(AssetComparison.of(
-                                List.of(asset("p1", null, null, null, "ONLINE"), asset("p2", null, null, " ", "ONLINE")))
+        assertThat(AssetComparison.of(List.of(
+                                asset("p1", null, null, null, "ONLINE"), asset("p2", null, null, " ", "ONLINE")))
                         .orElseThrow()
                         .dimensions())
                 .isEmpty();
@@ -194,8 +190,7 @@ class AssetComparisonTest {
                 .orElseThrow();
 
         assertThat(comparison.dimensions()).isEmpty();
-        assertThat(comparison.observation())
-                .isEqualTo("对比 2 件：p1、p2；价格 / 成色 / 地区 / 在售状态 均无可判定差异，不构成选择依据");
+        assertThat(comparison.observation()).isEqualTo("对比 2 件：p1、p2；价格 / 成色 / 地区 / 在售状态 均无可判定差异，不构成选择依据");
     }
 
     @Test
@@ -207,9 +202,7 @@ class AssetComparisonTest {
                         asset("p3", "5000", "明显使用痕迹", "深圳", "SOLD")))
                 .orElseThrow();
 
-        assertThat(comparison.dimensions())
-                .extracting(Dimension::name)
-                .containsExactly("价格", "成色", "地区", "在售状态");
+        assertThat(comparison.dimensions()).extracting(Dimension::name).containsExactly("价格", "成色", "地区", "在售状态");
         assertThat(comparison.observation())
                 .isEqualTo("对比 3 件：p1、p2、p3；价格：p2 最低 ¥3400；成色：p2 成色最好（全新）；"
                         + "地区：p1 杭州、p2 深圳、p3 深圳，无客观优劣；在售状态：p3（SOLD）非在售，不建议推荐")

@@ -16,10 +16,8 @@ class PriceStatsTest {
     void of_noValidPrice() {
         assertThat(PriceStats.of(null)).isEmpty();
         assertThat(PriceStats.of(List.of())).isEmpty();
-        assertThat(PriceStats.of(List.of(hit("p1", null), hit("p2", null))))
-                .isEmpty();
-        assertThat(PriceStats.of(List.of(hit("p1", "0"), hit("p2", "-5"))))
-                .isEmpty();
+        assertThat(PriceStats.of(List.of(hit("p1", null), hit("p2", null)))).isEmpty();
+        assertThat(PriceStats.of(List.of(hit("p1", "0"), hit("p2", "-5")))).isEmpty();
     }
 
     @Test

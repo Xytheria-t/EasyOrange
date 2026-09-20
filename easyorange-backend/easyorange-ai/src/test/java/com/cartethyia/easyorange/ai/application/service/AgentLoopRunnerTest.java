@@ -323,13 +323,12 @@ class AgentLoopRunnerTest {
         // 比对结论是代码算的，进下一轮决策上下文（模型据此取舍，不用自己心算）
         ArgumentCaptor<String> userMessage = ArgumentCaptor.forClass(String.class);
         verify(aiModelSupport, times(3)).callWithTools(any(), any(), anyString(), userMessage.capture(), anyList());
-        assertThat(userMessage.getAllValues().get(2))
-                .contains("价格：p-1 最低 ¥4200", "成色：p-2 成色最好（几乎全新）");
+        assertThat(userMessage.getAllValues().get(2)).contains("价格：p-1 最低 ¥4200", "成色：p-2 成色最好（几乎全新）");
 
         // compare_assets 的 trace 带入参 ID 列表
         verify(tracePort, times(3))
-                .record(argThat(trace -> !AgentTools.TOOL_COMPARE_ASSETS.equals(trace.tool())
-                        || "p-1、p-2".equals(trace.toolInput())));
+                .record(argThat(trace ->
+                        !AgentTools.TOOL_COMPARE_ASSETS.equals(trace.tool()) || "p-1、p-2".equals(trace.toolInput())));
     }
 
     @Test
