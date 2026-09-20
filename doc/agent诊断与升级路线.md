@@ -51,7 +51,7 @@
 > （原方案在步数超限 / 预算耗尽 / 决策失败三条降级路径下会静默丢失偏好）；同时工具面由 4 个扩到 7 个，
 > 新增两个计算类工具（`market_price_stats` / `compare_assets`）——原工具面全是只读检索，循环存在的
 > 唯一意义是换关键词重试，补上计算类工具后第 N 步才真正依赖第 N-1 步的输出。步数上限随之 5 → 7。
-> 详见 [agent升级分工.md](agent升级分工.md)（临时协调文档，收口后删）。
+> 跨会话并行的踩坑（Maven 必须串行、改对方文件前先看两侧 mtime）见 [常用命令.md](agents/常用命令.md) 的并发提示。
 > **API 实况**：Spring AI 无 `internalToolExecutionEnabled`（自动工具执行已收进 ChatClient 的
 > ToolCallingAdvisor），`ChatModel.call` 本就不执行工具 —— 走 `AiModelSupport.callWithTools` 即天然满足
 > 「关闭框架内自动执行、循环控制权留在 runner」。
@@ -60,7 +60,7 @@
 - **方案**：`@Tool` 注解（或 `ToolCallback`）定义 4 个工具（knowledge_search / product_search / product_detail / finish），`internalToolExecutionEnabled(false)` 关闭框架内自动执行、循环控制权留在 `AgentLoopRunner`；具体 API 以仓库内 Spring AI 实际签名为准
 - **迁移点**：
   - 工具参数 schema 从 prompt 文案移入注解；`ai_chat_tool.yml` 瘦身（只留规则 / 偏好约束 / 注入防御声明），`PromptContentTest` 模板清单同步
-  - **偏好提取是决策 JSON 的旁路字段**（`AgentStepDecision.preference`），迁移后需保留等价能力——设计决策：finish 轮结构化输出提取，或独立轻量提取调用，实施时定
+  - **偏好提取是决策 JSON 的旁路字段**（`AgentStepDecision.preference`），迁移后需保留等价能力——**已定（2026-09-20）：独立工具 `remember_preference`**，不再搭在 finish 轮上（原方案在三条降级路径下会丢偏好）
   - `decision_failed` 降级路径保留（模型故障仍可能发生），决策解析失败语义由「JSON 解析异常」变为「无 tool call 返回」
 - **收益**：工具获得供应商侧校验的 JSON Schema、决策格式错误基本消失、具备并行工具调用基础
 - **验收**：
