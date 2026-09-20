@@ -18,7 +18,8 @@ import org.springframework.stereotype.Component;
  * 永不返回空历史。检索片段 / 资产详情等固定块不在裁剪范围——它们由 topK 与分块上限天然约束，
  * 会无界膨胀的只有用户与助手的原文。
  * <p>
- * 不做 LLM 摘要压缩（有意取舍）：maxSteps ≤ 5、historyLimit ≤ 6 轮下压缩收益小，
+ * 不做 LLM 摘要压缩（有意取舍）：步数上限（{@code easyorange.ai.chat.max-steps}，默认 7）与
+ * 轮数窗口（{@code historyLimit}，默认 6 轮）都不大时压缩收益小，
  * 而每轮摘要多一次模型调用，直接翻倍延迟与成本——裁剪 + 轮数窗口已把上下文封顶。
  * <p>
  * 指标（成本治理口径，每请求一次）：
