@@ -20,4 +20,4 @@
 | 各机制的实现要点、改动注意事项、踩坑 | [easyorange-backend/AGENTS.md](../AGENTS.md)（安全 / 过滤器链、缓存与 Redis、事件与 MQ 三节） |
 | `easyorange.*` 配置项、环境变量、完整 yaml 示例 | [CONFIGURATION.md](./CONFIGURATION.md) |
 | 全局硬约束（响应体 / 异常 / ID / 分层） | [根 AGENTS.md](../../AGENTS.md) |
-| 依赖精确版本 | [技术栈.md](../../doc/技术栈.md)（版本表唯一权威落点，`.githooks/check-version-drift.py` 校验） |
+| 依赖精确版本 | `pom.xml` / `compose.yaml`（文档不复刻版本号） |
