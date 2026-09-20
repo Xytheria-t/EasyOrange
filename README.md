@@ -6,7 +6,7 @@
 >
 > 业务载体：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给 AI 工程化与架构落地。
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-MulanPSL--2.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-ED8B00)](https://openjdk.java.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-6DB33F)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
@@ -252,7 +252,7 @@ easy-orange/
 
 - **贡献**：Conventional Commits · `main / develop / feature/* / bugfix/*`，见 [CONTRIBUTING.md](./.github/CONTRIBUTING.md)
 - **安全**：漏洞报告见 [SECURITY.md](./.github/SECURITY.md)
-- **许可**：MIT License
+- **许可**：木兰宽松许可证第 2 版（[Mulan PSL v2](./LICENSE)）
 
 ---
 
