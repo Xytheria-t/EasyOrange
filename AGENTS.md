@@ -35,7 +35,7 @@ monorepo：`easyorange-backend/`（Maven 多模块，约定见 [AGENTS.md](easyo
 | **迁移** | Flyway |
 | **部署** | Docker / compose.yaml（凭据统一经根 `.env` 插值）+ K8s kustomize |
 
-> **文档一律不复刻版本号**：精确版本以 `easyorange-backend/pom.xml` / `easyorange-frontend/package.json` 与 `compose.yaml` 为单一来源；技术栈选型与说明见 [README](README.md#技术栈)。
+> **文档一律不复刻版本号**：精确版本以 `easyorange-backend/pom.xml` / `easyorange-frontend/package.json` 与 `compose.yaml` 为单一来源；技术栈选型与说明见 [README](README.md#技术栈)（README 顶部徽章的版本只作品牌展示，不在同步范围内）。
 > **Elasticsearch 例外**：版本是硬锁——Spring Data ES 客户端与 IK 分词器都按它编译，见 `infra/elasticsearch/Dockerfile` 注释；升级须整体等 Boot 带动客户端，**不要在 infra 侧单独升**。
 
 ## 全局硬约束（任何改动都适用，违反即返工）
