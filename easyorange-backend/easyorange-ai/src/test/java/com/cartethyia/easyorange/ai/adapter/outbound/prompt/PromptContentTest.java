@@ -64,8 +64,9 @@ class PromptContentTest {
     @Test
     @DisplayName("所有 prompt 版本号受控（模板内容变更必须升版本）")
     void allPromptsAtControlledVersions() {
-        // 已升版的 prompt 单列：ai_chat_tool_system 随原生 tool calling 迁移（P0-1）升 v3.0.0
-        var bumpedVersions = java.util.Map.of("ai_chat_tool_system", "v3.0.0");
+        // 已升版的 prompt 单列：ai_chat_tool_system 随原生 tool calling 迁移（P0-1）升 v3.0.0；
+        // 随工具面扩到 7 个（新增计算类工具 market_price_stats / compare_assets 与独立 remember_preference）升 v4.0.0
+        var bumpedVersions = java.util.Map.of("ai_chat_tool_system", "v4.0.0");
         for (String name : ALL_PROMPTS) {
             var template = registry.getLatest(name).orElseThrow();
             assertThat(template.version())
