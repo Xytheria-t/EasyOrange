@@ -1,6 +1,9 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.job;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.application.service.AiJudge;
@@ -14,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -54,6 +58,22 @@ class AiEvalSchedulerTest {
 
     private static ChatResponse textResponse(String text) {
         return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
+    }
+
+    @Test
+    @DisplayName("候选查询只取有回答文本的调用（空响应 = 工具决策轮 / embedding，评审它们等于给空回答打 1 分）")
+    void eval_queryExcludesEmptyResponses() {
+        scheduler = scheduler(true);
+        when(jdbcTemplate.queryForList(anyString(), any(Integer.class))).thenReturn(List.of());
+
+        scheduler.evaluateUnjudgedCalls();
+
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).queryForList(sql.capture(), eq(50));
+        assertThat(sql.getValue())
+                .contains("response_text IS NOT NULL")
+                .contains("response_text <> ''")
+                .contains("judge_score IS NULL");
     }
 
     @Test
