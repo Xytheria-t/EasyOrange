@@ -15,13 +15,14 @@
 | 乐观锁 | version INT DEFAULT 0 |
 | 时间精度 | 业务表 DATETIME，基础设施表 DATETIME(3) |
 | 外键 | 无物理外键，通过应用层保证一致性 |
-| 全文索引 | MySQL 侧不建全文索引；商品检索由 Elasticsearch + IK 分词器承担（`infra/elasticsearch` 镜像内置 analysis-ik 9.2.8，经 `docker compose --profile search` 启用） |
+| 全文索引 | MySQL 侧不建全文索引；商品检索由 Elasticsearch + IK 分词器承担（`infra/elasticsearch` 镜像内置 analysis-ik，版本硬锁见该 Dockerfile 注释，经 `docker compose --profile search` 启用） |
 
 ## 迁移脚本
 
 | 脚本 | 内容 |
 |------|------|
-| `V1__init_schema.sql` | 26 表初始化（当前完整 DDL；开发阶段三次收口为单文件：V1~V6、V1~V9、V2~V7，项目未发版无生产历史） |
+| `V1__init_schema.sql` | 26 表初始化（当前完整 DDL；开发阶段三次收口为单文件，项目未发版无生产历史） |
+| `V2__agent_step_trace.sql` | Agent 步级轨迹表 `eo_agent_step_trace`（一次请求一个 trace_id） |
 | `R__seed_*.sql` | 可重复执行种子：分类、RAG 知识库文档 |
 
 ## Flyway 迁移规范
@@ -45,7 +46,7 @@
 
 ## 表总览
 
-共 26 表：24 个 `eo_*` 业务/观测表 + 2 个 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）。
+V1 的 24 个 `eo_*` 业务/观测表 + 2 个 Spring Modulith 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE）+ V2 的 `eo_agent_step_trace`——**总数以[结构计数](./工程指标.md#结构计数)为准**。
 
 > 早期建表时预留过 4 张从未被代码引用的表（eo_payment_config / eo_product_question / eo_audit_suggestion / eo_credit_change_log），已随 V1 收口删除——库里的表应当都有消费者。另有 eo_user_credit / eo_product_report / eo_report_handle_history 随信用、举报两个功能下线一并从 V1 移除。
 
@@ -75,8 +76,9 @@
 | 观测 | eo_ai_call_log | AI 调用日志（LLM-as-Judge 数据源，见文末） | —（JDBC 直写） |
 | 观测 | eo_ai_feedback | AI 输出用户反馈（反馈飞轮，导出后自动扩充金标准评测集） | — |
 | 观测 | eo_knowledge_doc | RAG 知识库文档（解析→分块→embed→ES 索引，启动补索引） | — |
-| 观测 | eo_user_preference | 用户长期画像（Agent 长期记忆，聊天气氛注入） | — |
+| 观测 | eo_user_preference | 用户长期画像（Agent 长期记忆，聊天时注入 prompt） | — |
 | 观测 | eo_retrieval_metric | RAG 检索指标采样（hit@5 / MRR，金标准集回归数据源） | — |
+| 观测 | eo_agent_step_trace | Agent 步级轨迹（V2 表：工具 / 参数 / 理由 / 观察，一次请求一个 trace_id） | —（JDBC 直写） |
 
 ## 公共字段
 
@@ -181,13 +183,6 @@ eo_message ──1:1── eo_message_archive (id)
 > **来源**：拍照识别（发布助手）给出的建议价随创建请求一起落库；**只写不改**，不参与定价逻辑与状态流转。
 
 > **为什么落在商品侧**：智能估值发生在商品创建之前，那时 `eo_ai_call_log.subject_id` 还没有值、商品也不存在，所以「AI 建议多少」只能由商品自己记。落库后 `GET /api/admin/ai/pricing-adoption` 才能算出采纳率与偏离分布（口径与可引用性见 [工程指标](./工程指标.md)）。
-
-### 已删除的表（历史记录）
-
-| 表 | 删除时间 | 替代方案 |
-|----|---------|---------|
-| `eo_domain_event` | 2026-07-14 | Spring Modulith `EVENT_PUBLICATION` 表承载 Outbox 模式 |
-| `eo_idempotency_key` | 2026-08（迁移合并时） | framework 的 `IdempotencyKeyFilter` + Redis 承载幂等保护 |
 
 ## 维护约定
 
