@@ -10,14 +10,14 @@
 
 - 工程治理层（降级 / 预算 / 观测 / 评估 / MCP）是真实代码而非叙事，高于 demo 水准——含金量的真实来源
 - Agent 核心模型接口层是 prompt 约定 JSON（`response_format=json_object` + 手写 switch 分发），未走原生 function calling——「不专业」感的精确来源
-- 可对外引用的 AI 效果数字当前为 0：唯一实测数字（Judge 3.73→4.67、hit@5 20/20）已在 5 篇语料时代被文档自己作废，新口径数字全部「待补」
+- 可对外引用的 AI 效果数字当前为 0：唯一实测数字（旧口径的 Judge 均分 / hit@5）已在 5 篇语料时代被文档自己作废，新口径数字全部「待补」
 
 ### 1.1 弱项清单
 
 | # | 问题 | 现状 | 位置 |
 |---|---|---|---|
 | W1 | 非原生 function calling | 决策靠 prompt 约定 JSON + 手写 switch 分发，无工具 JSON Schema、无供应商侧结构化约束；MCP 工具面已用规范 `@McpTool` 注解 schema，agent 循环自己没用 | [AgentLoopRunner.java:236](../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/AgentLoopRunner.java) + [ai_chat_tool.yml](../easyorange-backend/easyorange-ai/src/main/resources/prompts/ai_chat_tool.yml) |
-| W2 | 可引用效果数字为 0 | 平均步数 / 降级率 / 步级 p95 / 注入 token p50-p95 / 裁剪触发率 / 新口径金标准分数全部待补（指标管道已就绪，只缺跑量） | [工程指标.md](工程指标.md) §1.3 各「待补」行 |
+| W2 | 可引用效果数字为 0 | 平均步数 / 降级率 / 步级 p95 / 注入 token p50-p95 / 裁剪触发率 / 新口径金标准分数全部待补（指标管道已就绪，只缺跑量） | [工程指标.md](工程指标.md) §1.3 各「待补实测」行 |
 | W3 | 无跨供应商容灾 | 每场景单供应商，无 failover 链、无应用层断路器，降级是 stale 旧答案而非切换模型 | `AiChatService` |
 | W4 | 预算存储单机 | `TokenBudgetStore` 仅 `InMemoryTokenBudgetStore` 实现，多实例下日预算失准 | [AiConfig.java](../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/AiConfig.java) |
 | W5 | 决策无修复重试 | 决策 JSON 解析失败即降级单次检索，无带错误反馈的修复轮（W1 落地后此问题基本消失） | `AgentLoopRunner.decideStep` |
@@ -47,12 +47,12 @@
 
 > 状态：**已实施** —— 4 个工具改由 `AgentTools` 的 `@Tool` 注解定义 schema（随请求走原生 tool calling），
 > 循环仍手写在 `AgentLoopRunner`；偏好提取移至 finish 轮参数，W5 由「失败观察 → 模型换参数重试」自然消除。
-> **API 实况**：Spring AI 2.0.0 无 `internalToolExecutionEnabled`（自动工具执行已收进 ChatClient 的
+> **API 实况**：Spring AI 无 `internalToolExecutionEnabled`（自动工具执行已收进 ChatClient 的
 > ToolCallingAdvisor），`ChatModel.call` 本就不执行工具 —— 走 `AiModelSupport.callWithTools` 即天然满足
 > 「关闭框架内自动执行、循环控制权留在 runner」。
 
-- **目标**：`AgentLoopRunner` 决策接口从 prompt 约定 JSON 迁移到 Spring AI 2.0 原生 tool calling；**保留手写循环**（「手写循环 + 原生模型接口」的叙事优于全托管框架循环）
-- **方案**：`@Tool` 注解（或 `ToolCallback`）定义 4 个工具（knowledge_search / product_search / product_detail / finish），`internalToolExecutionEnabled(false)` 关闭框架内自动执行、循环控制权留在 `AgentLoopRunner`；具体 API 以仓库内 Spring AI 2.0.0 实际签名为准
+- **目标**：`AgentLoopRunner` 决策接口从 prompt 约定 JSON 迁移到 Spring AI 原生 tool calling；**保留手写循环**（「手写循环 + 原生模型接口」的叙事优于全托管框架循环）
+- **方案**：`@Tool` 注解（或 `ToolCallback`）定义 4 个工具（knowledge_search / product_search / product_detail / finish），`internalToolExecutionEnabled(false)` 关闭框架内自动执行、循环控制权留在 `AgentLoopRunner`；具体 API 以仓库内 Spring AI 实际签名为准
 - **迁移点**：
   - 工具参数 schema 从 prompt 文案移入注解；`ai_chat_tool.yml` 瘦身（只留规则 / 偏好约束 / 注入防御声明），`PromptContentTest` 模板清单同步
   - **偏好提取是决策 JSON 的旁路字段**（`AgentStepDecision.preference`），迁移后需保留等价能力——设计决策：finish 轮结构化输出提取，或独立轻量提取调用，实施时定
@@ -66,9 +66,9 @@
 
 ### P0-2 重跑评估回填数字（W2）
 
-- dispatch `ai-eval.yml` 拿 23 篇语料 + RRF 下的新鲜金标准分数（约 60 次真实调用 / 5-8 万 token）
+- dispatch `ai-eval.yml` 拿 23 篇语料 + RRF 下的新鲜金标准分数（真实调用成本不低，按需 dispatch）
 - 自驱流量（curl 循环打 `/api/ai/chat/stream` 与非流式口）回填：平均步数 / 降级率 / 步级延迟 p95 / 注入 token p50-p95 / 裁剪触发率
-- 回填落点：[工程指标.md](工程指标.md) 对应「待补」行，遵守其维护约定
+- 回填落点：[工程指标.md](工程指标.md) 对应「待补实测」行，遵守其维护约定
 
 ### P1 TokenBudgetStore Redis 实现（W4）
 

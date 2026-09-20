@@ -78,7 +78,7 @@ ci: enable JaCoCo gate in workflow
 ## PR 要求
 
 ### 必须通过
-- [ ] CI 全量 11 模块测试全绿
+- [ ] CI 全量多模块测试全绿
 - [ ] JaCoCo 覆盖率门禁（line ≥ 80%, branch ≥ 60%）
 - [ ] 前端 `npm run lint:check` 0 errors
 - [ ] 前端 `npm test` 全绿
