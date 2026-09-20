@@ -69,5 +69,5 @@ ADR-0001 决定订单创建采用 Saga 编排 + 反向补偿，ADR-0007 初版�
 ## 备注（Notes）
 
 - 替代关系：ADR-0001「订单创建采用 Saga 而非 2PC」整体被本 ADR 替代（含补偿机制与状态机）；「拒绝 2PC」的结论保留。
-- 相关 ADR：[0001-order-saga-vs-2pc.md](0001-order-saga-vs-2pc.md)（已标记 Superseded）
+- 相关 ADR：ADR 0001（Saga vs 2PC，已替代；记录见[已替代决策.md](已替代决策.md)）
 - 后续演进触发条件：product 或 payment 模块拆分独立数据源/独立部署，或出现真实跨库异步副作用时，重新评估跨服务编排（真 Saga / 事务性 Outbox 补偿）
