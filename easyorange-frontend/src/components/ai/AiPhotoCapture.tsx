@@ -28,7 +28,7 @@ export function AiPhotoCapture({ onAnalyze, isLoading, hasImages }: AiPhotoCaptu
                     </>
                 )}
             </Button>
-            <p className="ai-photo-hint">一键识别商品信息，自动填写名称、描述和类别</p>
+            <p className="ai-photo-hint">一键识别商品信息，自动填写名称、描述、价格、类别、成色和地点</p>
         </div>
     );
 }

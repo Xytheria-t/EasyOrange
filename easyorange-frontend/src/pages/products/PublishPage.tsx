@@ -24,6 +24,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+import type { AutoListingResult } from '@/api/aiApi';
 import { productApi } from '@/api/productApi';
 import { AiPhotoCapture } from '@/components/ai/AiPhotoCapture';
 import { Input, Label } from '@/components/ui';
@@ -66,8 +67,8 @@ function PublishPage() {
         analyzeImages,
         clearResult: clearAutoListing,
     } = useAutoListing();
-    // 拍照识别给出的建议价：随商品一起提交，供管理端算「AI 建议 vs 人工最终价」的采纳率与偏离度
-    const [aiSuggestedPrice, setAiSuggestedPrice] = useState<number | null>(null);
+    // 拍照识别的建议原文：随商品一起提交，供管理端按字段统计「AI 建议 vs 资产方最终值」的采纳率
+    const [aiSuggestion, setAiSuggestion] = useState<AutoListingResult | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [activeSection, setActiveSection] = useState(0);
@@ -101,19 +102,26 @@ function PublishPage() {
 
     useEffect(() => {
         if (autoListingResult) {
-            setValue('name', autoListingResult.title);
-            setValue('description', autoListingResult.description);
-            if (autoListingResult.price > 0) {
+            // 建议原文总是留档（采纳率算的是「建议 vs 最终值」，与是否覆盖表单无关）
+            setAiSuggestion(autoListingResult);
+            // 只填用户没亲手改过的字段：否则「识别 → 手改 → 再识别」会把人的修改冲掉
+            const dirty = formState.dirtyFields;
+            if (!dirty.name) {
+                setValue('name', autoListingResult.title);
+            }
+            if (!dirty.description) {
+                setValue('description', autoListingResult.description);
+            }
+            if (!dirty.price && autoListingResult.price > 0) {
                 setValue('price', String(autoListingResult.price));
-                setAiSuggestedPrice(autoListingResult.price);
             }
-            if (autoListingResult.conditionLevel > 0) {
-                setValue('conditionLevel', String(autoListingResult.conditionLevel));
+            if (!dirty.conditionLevel && autoListingResult.conditionLevel) {
+                setValue('conditionLevel', autoListingResult.conditionLevel);
             }
-            if (autoListingResult.location) {
+            if (!dirty.location && autoListingResult.location) {
                 setValue('location', autoListingResult.location);
             }
-            if (autoListingResult.categoryName) {
+            if (!dirty.categoryId && autoListingResult.categoryName) {
                 const category = categories?.find(c => c.name === autoListingResult.categoryName);
                 if (category) {
                     setValue('categoryId', String(category.id));
@@ -121,7 +129,7 @@ function PublishPage() {
             }
             clearAutoListing();
         }
-    }, [autoListingResult, categories, setValue, clearAutoListing]);
+    }, [autoListingResult, categories, setValue, clearAutoListing, formState.dirtyFields]);
 
     const handleDragStart = (index: number) => {
         dragItemRef.current = index;
@@ -182,7 +190,7 @@ function PublishPage() {
         try {
             const productId = (await createProduct.mutateAsync({
                 ...payload,
-                aiSuggestedPrice: aiSuggestedPrice ?? undefined,
+                aiSuggestion: aiSuggestion ?? undefined,
             })) as string;
 
             if (!isDraft && productId) {

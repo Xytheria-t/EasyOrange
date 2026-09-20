@@ -13,6 +13,10 @@ interface RequestConfig extends RequestInit {
     headers: Record<string, string>;
 }
 
+/**
+ * 请求层异常。`status` 存的是后端业务码（如 B8002），`message` 是后端给用户看的文案 ——
+ * 调用方需要区分「后端明确失败」与「网络层异常」时按 instanceof 判断，前者可直接展示 message。
+ */
 class ApiClientError extends Error {
     status: ApiCode;
     details: unknown;
