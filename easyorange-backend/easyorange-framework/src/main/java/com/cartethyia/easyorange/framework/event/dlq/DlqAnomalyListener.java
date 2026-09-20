@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  * RabbitMQ 死信路由：业务队列的 {@code x-dead-letter-exchange=eo.dlq}，
  * 消息重试耗尽或被拒绝时进入对应 {@code <queue>.dlq} 队列。
  * <p>
- * 监听方式：单个 @RabbitListener 同时监听 12 个 DLQ 队列（对应 12 个业务消费者队列，见 RabbitMQConfig），
+ * 监听方式：单个 @RabbitListener 同时监听全部 DLQ 队列（与 RabbitMQConfig 声明的主队列一一对应），
  * 通过 message properties 的 {@code x-death} header 提取：
  * <ul>
  *   <li>原始 queue / exchange / routing-key</li>
