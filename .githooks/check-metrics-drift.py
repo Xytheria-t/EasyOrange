@@ -11,8 +11,9 @@
      `[结构计数](…)` 链接或定性表述（「Port 接口编译期隔离」），不再复制数字；
   2. 该区块由 `--fix` 从代码事实重算回写（幂等），提交时由 pre-commit 校验；
   3. **反向检查**：计数出现在该区块之外即报错并指出 `文件:行` —— **无例外**（`modules` 亦不例外：
-     数字只在区块里，正文写「Maven 多模块」）。唯一按值判定的是裸写「N 模块」：命中值等于模块总数
-     才算重复落点，`4 模块`（CQRS 作用域）这类子集口径放过（见 `BARE_MODULES`）。
+     数字只在区块里，正文写「Maven 多模块」）。同形异义压不住的两类（裸写「N 模块」/「N 张表」）与
+     中文数字写法（`十一模块`）改为**按值判定**：命中值等于该类总数才算重复落点，`4 模块`
+     （CQRS 作用域）、`26 张表`（V1 单脚本）这类子集口径放过（见 `TOLERANT_PATTERNS` / `CN_VOCAB`）。
 
 计数**以代码为准**（每项都给出推导方式），文档必须与之一致。**ADR 正文参与校验**：ADR 规则 4
 「正文即现状」要求实现细节随代码演进直接改正文（不写「现状更新」横幅），所以 `doc/adr/NNNN-*.md`
@@ -55,16 +56,55 @@ def _cell(label: str) -> str:
     return rf"\|\s*[^|\n]*{label}[^|\n]*\|\s*{_B}(\d[\d,]*){_B}\s*\|"
 
 
-# 裸写「N 模块」（不带 Maven）：`4 模块`（CQRS 作用域）、`8 模块 domain`（域覆盖率口径）在词法上
-# 与「又写了一遍模块总数」没有区别，只能**按值判定** —— 命中值等于模块总数才算重复落点，小于总数
-# 的当子集口径放过。这是唯一一处按值判定的模式，不算独立类别、不进单点区块。
-BARE_MODULES = re.compile(rf"{_B}(\d+){_B}\s*个?\s*模块")
+# 按值判定的模式：同形异义太多，词法上分不出「在说总数」，只能按值 —— 命中值 == 该类总数才算
+# 重复落点，否则当子集口径放过。
+#   - 裸写「N 模块」：`4 模块`（CQRS 作用域）、`8 模块 domain`（域覆盖率）是子集
+#   - 裸写「N 张表」：`V1 的 26 张表`（单脚本）是子集
+# 与下面的中文数字扫描共用同一套判定；不算独立类别、不进单点区块。
+TOLERANT_PATTERNS: dict[str, tuple[re.Pattern[str], str]] = {
+    "modules": (re.compile(rf"{_B}(\d+){_B}\s*个?\s*模块"), "pom.xml 的 <module> 数"),
+    "tables": (re.compile(rf"{_B}(\d+){_B}\s*(?:张)?表"), "全部 V*.sql 的 CREATE TABLE − DROP TABLE"),
+}
+
+# 中文数字（`十一模块` / `二十七张表`）：与阿拉伯数字同标准，同样由「按值判定」兜住子集口径
+# ——`四模块`（CQRS 子集，仓库里确实有这种写法）不等于模块总数，放过。
+_CN_NUMBER = re.compile(r"(?<!第)[零一二三四五六七八九十百]{1,4}")
+_CN_DIGIT = str.maketrans("零一二三四五六七八九", "0123456789")
+# 中文数字后面允许跟上的「计数词」——即每类计数在正文里的说法
+CN_VOCAB: dict[str, re.Pattern[str]] = {
+    "modules": re.compile(r"个?\s*模块"),
+    "ports": re.compile(r"个?\s*Port\b"),
+    "adrs": re.compile(r"[条个]\s*ADR\b"),
+    "consumers": re.compile(r"个?\s*(?:事件)?消费者"),
+    "tables": re.compile(r"张?\s*表"),
+    "archunit_rules": re.compile(r"条\s*(?:规则|@ArchTest)"),
+    "prompt_templates": re.compile(r"个?\s*(?:YAML\s*)?模板"),
+    "frontend_test_files": re.compile(r"个?\s*文件"),
+    "golden_set_cases": re.compile(r"条\s*金标准集"),
+}
+
+
+def cn_number(text: str) -> int | None:
+    """中文数字 → 整数（`十二`=12 / `二十七`=27 / `一百零六`=106）；连写或非数字写法返回 None。"""
+    if not text:
+        return None
+    if "百" in text:
+        head, _, tail = text.partition("百")
+        base = 100 * (int(head.translate(_CN_DIGIT)) if head else 1)
+        return base + (cn_number(tail.lstrip("零")) or 0)
+    if "十" in text:
+        head, _, tail = text.partition("十")
+        return 10 * (int(head.translate(_CN_DIGIT)) if head else 1) + (
+            int(tail.translate(_CN_DIGIT)) if tail else 0
+        )
+    return int(text.translate(_CN_DIGIT)) if len(text) == 1 else None
+
 
 # (名称, 匹配「在说总数」的写法, 期望值来源)
 # 刻意写窄：模式宁可漏检也不误报 —— 会误报的检查器最终会被 SKIP 掉，比没有更糟。
-# 已知需回避的同形异义：`4 模块`（CQRS 作用域，见 BARE_MODULES）、`V1 的 26 张表`（单脚本表数，
-# 非总数，故 `N 张表` 不设模式）、`11 个 DLQ`（ADR-0005 决策时点口径，正文豁免）。
-# 已知漏检：词表之外的同义改写（如 `十一模块` 这种中文数字写法）。
+# 同形异义（`4 模块` CQRS 作用域、`V1 的 26 张表` 单脚本表数、`11 个 DLQ` 决策时点口径）改由
+# 按值判定或正文豁免处理，不再靠「干脆不设模式」回避。
+# 已知漏检：换词写法（`N 个下游`/`N 个 DLQ 队列`/`决策 N 篇`/`N 个 prompt` 已补入；新的换词仍可能漏）。
 CLAIM_PATTERNS: dict[str, tuple[re.Pattern[str], str]] = {
     "modules": (
         re.compile(
@@ -255,7 +295,8 @@ def scan_claims() -> tuple[list[tuple[str, int, str, str, str, bool]], int]:
     """扫描全仓 md 的结构计数写法，返回 ([(相对路径, 行号, 名称, 数字, 命中文本, 按值判定)], 检查处数)。
 
     单点区块自身与豁免文件跳过 —— 区块是唯一允许出现这些数字的地方，其余位置由调用方判违规。
-    末位 `按值判定` 为真时（只有裸写「N 模块」），命中值等于总数才算违规，小于总数当子集口径放过。
+    末位 `按值判定` 为真时（裸写「N 模块」/「N 张表」与中文数字写法），命中值等于总数才算违规，
+    小于总数当子集口径放过。
     """
     hits: list[tuple[str, int, str, str, str, bool]] = []
     checked = 0
@@ -270,17 +311,32 @@ def scan_claims() -> tuple[list[tuple[str, int, str, str, str, bool]], int]:
             if lineno - 1 in skip:
                 continue
             found = [
-                (key, match)
+                (key, match, key in TOLERANT_PATTERNS)
                 for key, (pattern, _source) in CLAIM_PATTERNS.items()
                 for match in pattern.finditer(line)
             ]
-            found += [("modules", match) for match in BARE_MODULES.finditer(line)]
-            for key, match in found:
+            found += [
+                (key, match, True)
+                for key, (pattern, _source) in TOLERANT_PATTERNS.items()
+                for match in pattern.finditer(line)
+            ]
+            # 中文数字写法单独扫（不归一，避免与上面漏报/重复）：值按 cn_number 解析后同样按值判定
+            for cn in _CN_NUMBER.finditer(line):
+                value = cn_number(cn.group(0))
+                if value is None:
+                    continue
+                for key, vocab in CN_VOCAB.items():
+                    tail = vocab.match(line, cn.end())
+                    if tail is None:
+                        continue
+                    checked += 1
+                    hits.append((str(rel), lineno, key, str(value), cn.group(0) + tail.group(0), True))
+                    break
+            for key, match, tolerant in found:
                 raw = next((g for g in match.groups() if g), None)
                 if raw is None:
                     continue
                 checked += 1
-                tolerant = match.re is BARE_MODULES
                 hits.append((str(rel), lineno, key, raw.replace(",", ""), match.group(0).strip(), tolerant))
     return hits, checked
 
