@@ -36,6 +36,8 @@
 
 **`R__` 可重复迁移**：必须 `ON DUPLICATE KEY UPDATE` 保证幂等（用 MySQL 8.0.20+ 的 `AS new` 别名语法，弃用 `VALUES()` 函数）、包在 `START TRANSACTION` / `COMMIT` 中；频繁更新的 DML 优先用 `R__`，避免堆空版本号。
 
+**`R__` 执行顺序 = 名称字典序**：Flyway 在所有 V 版本之后按**描述名排序**依次执行可重复迁移，与目录、加入时间无关。因此**依赖其它种子数据的 `R__` 必须靠命名排到后面**——例如 `R__seed_zz_ai_demo.sql`（建议快照要读 `eo_category` 的类目名）排在 `R__seed_categories.sql` 之后。放错位置在已初始化过的库上看不出问题（数据早就在），只在**全新库**上静默写坏数据（读不到依赖 → 写入 NULL），验证时必须用空库按 `V* → R*` 全序跑一遍。
+
 **ALTER TABLE**：同表多个操作合并成一条语句，顺序 `DROP CHECK` → `MODIFY COLUMN` → `ADD CONSTRAINT` → `ADD COLUMN`；新增列用 `AFTER {column}` 定位。**CHECK 约束值必须与字段 COMMENT 一致**——调用方可能按 COMMENT 判断，两者冲突等于埋雷。
 
 **Flyway 配置要点**：`clean-disabled: true`（生产禁止 clean）；`validate-on-migrate: true` 仅干净库 / CI 开启，dev / it profile 关闭——开发阶段改 V1 后 checksum 会挡启动，不必每次重置，想刷新 schema 时 `DROP DATABASE easyorange; CREATE DATABASE easyorange;` 重跑应用即从头执行 V1。
