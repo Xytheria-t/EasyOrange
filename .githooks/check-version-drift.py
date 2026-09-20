@@ -8,6 +8,9 @@ Elasticsearch 8 / Flyway 11 一类过期声明（2026-09-15 修正）。约定�
   2. **精确版本只在 `doc/技术栈.md` 的版本表里写一处**，其余文档引用它；
   3. 本脚本校验那张表 —— 表与 pom/compose 不一致即视为漂移，提交时挡下。
 
+**当前状态（2026-09-20）**：已从 pre-commit 摘除 —— 文档不再复刻版本号（`doc/技术栈.md` 只记选型与说明），
+权威源直接是下面两处；等版本表回填时再挂回本脚本。
+
 权威来源：`easyorange-backend/pom.xml`（依赖）+ `compose.yaml` / `infra/elasticsearch/Dockerfile`（运行时镜像）。
 
 用法：

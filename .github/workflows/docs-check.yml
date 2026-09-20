@@ -1,0 +1,41 @@
+name: Docs Check
+
+# 文档治理门禁：结构计数单点（.githooks/check-metrics-drift.py）、测试口径（check-test-tier-drift.py）、
+# 上下文预算（check-context-budget.py）。三个脚本都是纯标准库 python3、秒级完成，所以
+# **恒触发、不配 paths 过滤**（配了 paths 的 PR 过滤会让这个 job 在无关 PR 上不报告，
+# 一旦被加进分支保护就永久 BLOCKED —— 见 backend-ci.yml 顶部同一教训）。
+#
+# 版本漂移校验（check-version-drift.py）**不在这里**：2026-09-20 起文档不再复刻版本号
+# （权威源只有 pom.xml / package.json / compose.yaml），该脚本已从 pre-commit 摘除，
+# 待 doc/技术栈.md 版本表回填时再挂回。
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: 结构计数单点校验（区块 vs 代码事实 + 区块外不得出现）
+        run: python3 .githooks/check-metrics-drift.py
+      - name: 测试口径校验（集成测试声明 vs *IT + failsafe）
+        run: python3 .githooks/check-test-tier-drift.py
+      - name: 上下文预算校验（AGENTS.md 份数 + 字符预算）
+        run: python3 .githooks/check-context-budget.py
