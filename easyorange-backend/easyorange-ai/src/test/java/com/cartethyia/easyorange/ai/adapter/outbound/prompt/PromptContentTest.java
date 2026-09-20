@@ -29,11 +29,7 @@ class PromptContentTest {
     }
 
     private static final String[] ALL_PROMPTS = {
-        "ai_chat_system",
-        "ai_chat_tool_system",
-        "auto_listing_visual",
-        "auto_listing_system",
-        "search_intent_system"
+        "ai_chat_system", "ai_chat_tool_system", "auto_listing_visual", "auto_listing_system", "search_intent_system"
     };
 
     @Test
@@ -45,11 +41,7 @@ class PromptContentTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-        "auto_listing_visual, 商品类型和名称",
-        "auto_listing_system, 智能上架助手",
-        "search_intent_system, AI 导购助手"
-    })
+    @CsvSource({"auto_listing_visual, 商品类型和名称", "auto_listing_system, 智能上架助手", "search_intent_system, AI 导购助手"})
     @DisplayName("每个 prompt 模板包含服务特定的关键短语（防内容漂移）")
     void promptContainsKeyPhrase(String promptName, String keyPhrase) {
         var template =
@@ -72,8 +64,8 @@ class PromptContentTest {
     @Test
     @DisplayName("所有 prompt 版本号受控（模板内容变更必须升版本）")
     void allPromptsAtControlledVersions() {
-        // 已升版的 prompt 单列：ai_chat_tool_system 随多步 ReAct 循环改造（W1）升 v2.0.0
-        var bumpedVersions = java.util.Map.of("ai_chat_tool_system", "v2.0.0");
+        // 已升版的 prompt 单列：ai_chat_tool_system 随原生 tool calling 迁移（P0-1）升 v3.0.0
+        var bumpedVersions = java.util.Map.of("ai_chat_tool_system", "v3.0.0");
         for (String name : ALL_PROMPTS) {
             var template = registry.getLatest(name).orElseThrow();
             assertThat(template.version())

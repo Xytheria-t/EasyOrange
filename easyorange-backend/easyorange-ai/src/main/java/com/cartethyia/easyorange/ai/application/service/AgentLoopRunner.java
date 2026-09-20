@@ -23,12 +23,17 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
@@ -36,17 +41,24 @@ import tools.jackson.databind.ObjectMapper;
  * 多步 Agent 工具循环（ReAct）— 逐轮「决策 → 工具 → 观察」推进，直到模型判定信息足够（finish）。
  * <p>
  * 编排结构（与 4 路并行编排 {@code AiSearchEnhancerAdapter} 形成「Workflow vs 自治 Agent」对照）：
- * 每轮模型输出 JSON（thought + 工具 + 参数，顺带提取用户偏好），工具执行结果作为观察
- * 进入下一轮决策上下文；规则类与找货类需求兼有时由模型分两步分别检索，而非一次穷举。
+ * 每轮把 4 个工具的 JSON Schema（{@link AgentTools} 的 {@code @Tool} 注解生成、供应商侧校验）随请求发出，
+ * 模型以原生 tool calling 返回「调用哪个工具 + 参数 + 理由」，工具执行结果作为观察进入下一轮决策上下文；
+ * 规则类与找货类需求兼有时由模型分两步分别检索，而非一次穷举。
+ * <b>手写循环 + 原生模型接口</b>：工具只负责 schema 与「执行 + 观察格式」，调不调、调几次由本类决定
+ * —— Spring AI 2.0 的 {@code ChatModel.call} 不自动执行工具（自动执行已收进 ChatClient 的
+ * ToolCallingAdvisor），步数 / 预算 / 降级这些循环控制权都留在本类。
  * <p>
  * 降级口径（自治循环被切断，退回确定性的单次生成，已积累的观察不丢弃）：
  * <ul>
  *   <li><b>步数超限</b> — 上限内未 finish：不再发第 N+1 次决策调用，直接用已积累观察生成；</li>
  *   <li><b>预算超限</b> — 循环中途日预算余量不足（与流式入口 {@link #chatBudgetExhausted} 同一判定）：
  *       同上强制生成，最坏超发被 maxTokensPerCall 兜住；</li>
- *   <li><b>决策失败</b> — 决策调用故障 / JSON 解析失败：按原始问题补一次知识库检索后直接生成
- *       （规则类问题走检索是常态，识别不出来最坏是多几条不相关片段进 prompt，好过把检索链路失效伪装成「无需检索」）。</li>
+ *   <li><b>决策失败</b> — 决策调用故障 / 未返回工具调用 / 参数 JSON 不可解析：按原始问题补一次知识库检索后
+ *       直接生成（规则类问题走检索是常态，识别不出来最坏是多几条不相关片段进 prompt，好过把检索链路失效
+ *       伪装成「无需检索」）。</li>
  * </ul>
+ * 工具执行失败（参数不合 schema / 工具内部故障）不算决策失败：收敛成失败观察交回模型（带错误反馈的
+ * 修复轮），与「查无此资产」同属正常观察，不打断对话。
  * 每轮 trace 落库（{@link AgentTracePort}）、每步向流式回调推 step 事件（前端步骤可视化）、
  * 每次循环计指标（步数分布 / 步级延迟 / 循环结局）—— 三者都是观测副产物，失败绝不影响主链路。
  */
@@ -55,10 +67,6 @@ import tools.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class AgentLoopRunner {
 
-    static final String TOOL_KNOWLEDGE_SEARCH = "knowledge_search";
-    static final String TOOL_PRODUCT_SEARCH = "product_search";
-    static final String TOOL_PRODUCT_DETAIL = "product_detail";
-    static final String TOOL_FINISH = "finish";
     static final String OUTCOME_FINISHED = "finished";
     static final String OUTCOME_STEP_LIMIT = "step_limit";
     static final String OUTCOME_BUDGET = "budget";
@@ -66,10 +74,10 @@ public class AgentLoopRunner {
 
     private static final String TOOL_PROMPT = "ai_chat_tool_system";
     private static final String CHAT_SCENARIO = "chat";
-    static final int RETRIEVAL_TOP_K = 5;
-    static final int ASSET_TOP_K = 5;
-    private static final int OBSERVATION_SUMMARY_LIMIT = 3;
-    private static final int DETAIL_DESC_MAX_CHARS = 80;
+    /** 未知工具观察里的工具清单（与 {@link AgentTools} 的常量同源，不重写字面量）。 */
+    private static final String TOOL_MENU = AgentTools.TOOL_KNOWLEDGE_SEARCH + " / " + AgentTools.TOOL_PRODUCT_SEARCH
+            + " / " + AgentTools.TOOL_PRODUCT_DETAIL + " / " + AgentTools.TOOL_FINISH;
+
     /** 与 {@code @TokenBudget(scenario="chat")} 注解默认值一致（yaml 缺失时兜底；改注解要同步改这里）。 */
     private static final int DEFAULT_MAX_TOKENS_PER_CALL = 1500;
 
@@ -158,6 +166,12 @@ public class AgentLoopRunner {
         List<AssetHit> assets = new ArrayList<>();
         List<AssetDetail> details = new ArrayList<>();
         List<StepObservation> observations = new ArrayList<>();
+        // 工具实例与回调表按请求构建一次：召回物累加器跨轮复用，工具 schema 每轮随决策调用发出
+        var tools = new AgentTools(hits, assets, details, retrievalService, assetSourcingService, assetDetailPort);
+        List<ToolCallback> toolCallbacks = List.of(ToolCallbacks.from(tools));
+        Map<String, ToolCallback> callbacksByName = toolCallbacks.stream()
+                .collect(Collectors.toMap(
+                        callback -> callback.getToolDefinition().name(), Function.identity()));
         int maxSteps = aiProperties.chat().maxSteps();
         int rounds = 0;
 
@@ -169,19 +183,20 @@ public class AgentLoopRunner {
                         rounds);
                 return new Result(List.copyOf(hits), List.copyOf(assets), List.copyOf(details), OUTCOME_BUDGET, rounds);
             }
-            Optional<AgentStepDecision> decided = decideStep(input, observations);
+            Optional<AgentStepDecision> decided = decideStep(input, observations, toolCallbacks);
             if (decided.isEmpty()) {
                 // 决策失败降级：按原始问题补一次知识库检索（规则类问题走检索是常态，
                 // 识别不出来最坏是多几条不相关片段进 prompt，好过把检索链路失效伪装成「无需检索」）
-                hits.addAll(retrievalService.search(input.question(), RETRIEVAL_TOP_K));
+                hits.addAll(retrievalService.search(input.question(), AgentTools.RETRIEVAL_TOP_K));
                 return new Result(
                         List.copyOf(hits), List.copyOf(assets), List.copyOf(details), OUTCOME_DECISION_FAILED, rounds);
             }
             rounds = round;
             AgentStepDecision decision = decided.get();
-            recordPreference(input, decision);
 
-            if (TOOL_FINISH.equals(decision.tool())) {
+            if (AgentTools.TOOL_FINISH.equals(decision.tool())) {
+                // 画像提取只在收敛轮发生（偏好由 finish 工具参数带出），降级收尾时不提取
+                recordPreference(input, decision);
                 recordStep(input, traceId, round, decision, null, null, 0, true, null);
                 return new Result(
                         List.copyOf(hits), List.copyOf(assets), List.copyOf(details), OUTCOME_FINISHED, rounds);
@@ -189,7 +204,7 @@ public class AgentLoopRunner {
             toolCounter(decision.tool()).increment();
 
             long start = System.nanoTime();
-            ToolOutcome outcome = executeTool(decision, hits, assets, details);
+            ToolOutcome outcome = executeTool(decision, callbacksByName);
             long latencyMs = (System.nanoTime() - start) / 1_000_000;
             stepTimer(decision.tool()).record(latencyMs, TimeUnit.MILLISECONDS);
 
@@ -210,17 +225,35 @@ public class AgentLoopRunner {
     }
 
     /**
-     * 步骤决策：模型输出 JSON 选择下一个工具。决策失败（模型故障 / JSON 解析失败）返回 empty，
-     * 由调用方走单步降级 —— 不在循环里重试，一次请求最多一次决策故障。
+     * 步骤决策：工具 schema 随请求下发，模型以原生 tool calling 返回「调用哪个工具 + 参数」。
+     * 决策失败（调用故障 / 未返回工具调用 / 参数 JSON 不可解析）返回 empty，由调用方走单步降级
+     * —— 不在循环里重试，一次请求最多一次决策故障。
      */
-    private Optional<AgentStepDecision> decideStep(Input input, List<StepObservation> observations) {
+    private Optional<AgentStepDecision> decideStep(
+            Input input, List<StepObservation> observations, List<ToolCallback> toolCallbacks) {
         try {
-            String json = aiModelSupport.callJson(
+            List<AssistantMessage.ToolCall> toolCalls = aiModelSupport.callWithTools(
                     modelRouter.choose("chat_tool"),
                     AiCallScope.CHAT,
                     promptRegistry.require(TOOL_PROMPT),
-                    buildStepUserMessage(input, observations));
-            return Optional.ofNullable(objectMapper.readValue(json, AgentStepDecision.class));
+                    buildStepUserMessage(input, observations),
+                    toolCallbacks);
+            if (toolCalls.isEmpty()) {
+                log.warn(
+                        "action=agent_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",
+                        input.sessionId());
+                return Optional.empty();
+            }
+            if (toolCalls.size() > 1) {
+                // 循环按「每步一个工具」推进：并行工具调用只取第一个，其余留给下一轮（模型可再发起）
+                log.info(
+                        "action=agent_parallel_tool_calls, sessionId={}, count={}",
+                        input.sessionId(),
+                        toolCalls.size());
+            }
+            AssistantMessage.ToolCall toolCall = toolCalls.getFirst();
+            AgentStepDecision arguments = objectMapper.readValue(toolCall.arguments(), AgentStepDecision.class);
+            return Optional.of(arguments.withToolCall(toolCall.name(), toolCall.arguments()));
         } catch (Exception e) {
             log.warn(
                     "action=agent_decision_failed, fallback=single_step, sessionId={}, reason={}",
@@ -230,46 +263,24 @@ public class AgentLoopRunner {
         }
     }
 
-    private ToolOutcome executeTool(
-            AgentStepDecision decision, List<KnowledgeHit> hits, List<AssetHit> assets, List<AssetDetail> details) {
-        String tool = decision.tool() == null ? "" : decision.tool();
-        return switch (tool) {
-            case TOOL_KNOWLEDGE_SEARCH -> {
-                List<KnowledgeHit> found = retrievalService.search(orEmpty(decision.query()), RETRIEVAL_TOP_K);
-                hits.addAll(found);
-                yield new ToolOutcome(true, summarizeKnowledge(found));
-            }
-            case TOOL_PRODUCT_SEARCH -> {
-                List<AssetHit> found = assetSourcingService.search(orEmpty(decision.query()), ASSET_TOP_K);
-                assets.addAll(found);
-                yield new ToolOutcome(true, summarizeAssets(found));
-            }
-            case TOOL_PRODUCT_DETAIL -> fetchDetail(decision.productId(), details);
-            default ->
-                new ToolOutcome(
-                        false,
-                        "未知工具 %s，请改用 knowledge_search / product_search / product_detail / finish".formatted(tool));
-        };
-    }
-
     /**
-     * product_detail 工具 — 查不到（不存在 / 已下架）不是失败而是有效观察（模型据此换目标），
-     * 但端口抛出（DB 故障）按工具失败处理：记一条失败观察让循环继续，不把整轮对话打挂。
+     * 执行工具调用 — 按名称分发到 {@link AgentTools} 的 {@code @Tool} 回调（工具语义不在循环里实现）。
+     * 未知工具与工具抛异常（参数不合 schema / 工具内部故障）都收敛成失败观察：模型据此换参数重试或收敛，
+     * 不把整轮对话打成不可用。
      */
-    private ToolOutcome fetchDetail(@Nullable String productId, List<AssetDetail> details) {
-        if (productId == null || productId.isBlank()) {
-            return new ToolOutcome(false, "缺少 productId，无法查询资产详情");
+    private ToolOutcome executeTool(AgentStepDecision decision, Map<String, ToolCallback> callbacksByName) {
+        String tool = decision.tool() == null ? "" : decision.tool();
+        ToolCallback callback = callbacksByName.get(tool);
+        if (callback == null) {
+            return new ToolOutcome(false, "未知工具 %s，请改用 %s".formatted(tool, TOOL_MENU));
         }
         try {
-            Optional<AssetDetail> detail = assetDetailPort.findDetail(productId.trim());
-            if (detail.isEmpty()) {
-                return new ToolOutcome(true, "未找到该资产（可能不存在或已下架）");
-            }
-            details.add(detail.get());
-            return new ToolOutcome(true, summarizeDetail(detail.get()));
+            return new ToolOutcome(true, callback.call(decision.arguments()));
         } catch (Exception e) {
-            log.warn("action=agent_tool_failed, tool=product_detail, productId={}, reason={}", productId, reasonOf(e));
-            return new ToolOutcome(false, "资产详情查询失败: " + reasonOf(e));
+            // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
+            String reason = reasonOf(e.getCause() != null ? e.getCause() : e);
+            log.warn("action=agent_tool_failed, tool={}, input={}, reason={}", tool, toolInputOf(decision), reason);
+            return new ToolOutcome(false, reason);
         }
     }
 
@@ -302,28 +313,23 @@ public class AgentLoopRunner {
     }
 
     /**
-     * 画像提取旁路落库 — 两道防线：① 模型输出不可信，偏好字段可能整体缺失（实测决策 JSON 出过
-     * {@code "preference":{}}，解出 null key/value 直插被 NOT NULL 拒写），空值直接丢弃；
-     * ② 落库失败只告警不抛——画像是长期记忆的旁路存储，任何异常不得把整轮对话打成不可用。
+     * 画像提取旁路落库（偏好由 finish 工具参数带出）— 两道防线：① 模型输出不可信，偏好字段可能缺失或
+     * 为空串，空值直接丢弃；② 落库失败只告警不抛——画像是长期记忆的旁路存储，任何异常不得把整轮对话打成不可用。
      */
     private void recordPreference(Input input, AgentStepDecision decision) {
-        if (decision.preference() == null || ANONYMOUS_USER.equals(input.userId())) {
+        if (ANONYMOUS_USER.equals(input.userId())) {
             return;
         }
-        String key = decision.preference().key();
-        String value = decision.preference().value();
+        String key = decision.preferenceKey();
+        String value = decision.preferenceValue();
         if (key == null || key.isBlank() || value == null || value.isBlank()) {
-            log.debug(
-                    "action=preference_discarded, reason=blank_fields, sessionId={}", input.sessionId());
+            log.debug("action=preference_discarded, reason=blank_fields, sessionId={}", input.sessionId());
             return;
         }
         try {
             preferenceRepository.record(input.userId(), key, value);
         } catch (Exception e) {
-            log.warn(
-                    "action=preference_record_failed, sessionId={}, reason={}",
-                    input.sessionId(),
-                    reasonOf(e));
+            log.warn("action=preference_record_failed, sessionId={}, reason={}", input.sessionId(), reasonOf(e));
         }
     }
 
@@ -378,60 +384,8 @@ public class AgentLoopRunner {
         return prefs.stream().map(p -> p.key() + ": " + p.value()).collect(Collectors.joining("\n"));
     }
 
-    private static String summarizeKnowledge(List<KnowledgeHit> found) {
-        if (found.isEmpty()) {
-            return "知识库未命中，可换关键词重试或直接 finish";
-        }
-        return "命中 %d 条：%s"
-                .formatted(
-                        found.size(),
-                        found.stream()
-                                .map(KnowledgeHit::title)
-                                .limit(OBSERVATION_SUMMARY_LIMIT)
-                                .collect(Collectors.joining(" / ")));
-    }
-
-    private static String summarizeAssets(List<AssetHit> found) {
-        if (found.isEmpty()) {
-            return "在售资产未召回，可换更宽泛的关键词重试或直接 finish";
-        }
-        return found.stream()
-                .limit(OBSERVATION_SUMMARY_LIMIT)
-                .map(asset -> "[%s] %s ¥%s"
-                        .formatted(
-                                asset.productId(),
-                                asset.title(),
-                                asset.price() == null
-                                        ? "面议"
-                                        : asset.price().stripTrailingZeros().toPlainString()))
-                .collect(Collectors.joining("；", "召回 %d 件：".formatted(found.size()), ""));
-    }
-
-    private static String summarizeDetail(AssetDetail detail) {
-        return "描述：%s｜成色：%s｜位置：%s｜卖家：%s｜状态：%s"
-                .formatted(
-                        ellipsis(detail.description(), DETAIL_DESC_MAX_CHARS),
-                        orDefault(detail.conditionDesc(), "未标注"),
-                        orDefault(detail.location(), "未知"),
-                        orDefault(detail.sellerName(), "未知"),
-                        orDefault(detail.status(), "未知"));
-    }
-
     private static String toolInputOf(AgentStepDecision decision) {
-        return TOOL_PRODUCT_DETAIL.equals(decision.tool()) ? decision.productId() : decision.query();
-    }
-
-    private static String orEmpty(String value) {
-        return value == null ? "" : value;
-    }
-
-    private static String orDefault(@Nullable String value, String fallback) {
-        return value == null || value.isBlank() ? fallback : value;
-    }
-
-    private static String ellipsis(@Nullable String value, int maxChars) {
-        String text = orDefault(value, "无");
-        return text.length() > maxChars ? text.substring(0, maxChars) + "…" : text;
+        return AgentTools.TOOL_PRODUCT_DETAIL.equals(decision.tool()) ? decision.productId() : decision.query();
     }
 
     private static String reasonOf(Throwable e) {
