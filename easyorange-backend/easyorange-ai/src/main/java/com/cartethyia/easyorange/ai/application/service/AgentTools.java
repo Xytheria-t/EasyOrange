@@ -200,8 +200,7 @@ public class AgentTools {
 
     @Tool(
             name = TOOL_REMEMBER_PREFERENCE,
-            description = "记录用户的长期偏好（成色 / 价格区间 / 风格 / 地区）到用户画像，跨会话生效；"
-                    + "对话中出现明确偏好时调用一次即可，同一偏好不要重复记录")
+            description = "记录用户的长期偏好（成色 / 价格区间 / 风格 / 地区）到用户画像，跨会话生效；" + "对话中出现明确偏好时调用一次即可，同一偏好不要重复记录")
     public String rememberPreference(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "偏好类别，只允许 condition（成色）/ price_range（价格区间）/ style（风格）/ location（地区）")
