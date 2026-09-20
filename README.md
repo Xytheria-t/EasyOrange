@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 按生产级标准做 LLM Agent 工程化：多范式工具编排（Workflow 式并行扇出 + 自治式 Agent 工具循环）· RAG 检索增强（两路召回 + RRF 融合）· 评估闭环进 CI · 限流 / Token 预算 / stale 降级 · LLM 专用可观测——AI 链路**可换供应商、可降级、可观测、可评估**。
 >
-> **11 模块解耦 · 49 个 Port 接口编译期隔离 · 9 事件消费者 · 12 条 ADR · 2,400+ 测试守卫 · AI 两条主线链路 × 8 项工程化**
+> **11 模块解耦 · Port 接口编译期隔离 · 事件驱动 + DLQ 三级重试 · ADR 决策记录 · 2,400+ 测试守卫 · AI 两条主线链路 × 8 项工程化**
 >
 > 业务载体：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给 AI 工程化与架构落地。
 
@@ -54,8 +54,8 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 
 - **多轮 Agent 对话**（[`AiChatService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/AiChatService.java) + [`AgentLoopRunner`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/AgentLoopRunner.java)）：Redis 会话短期记忆 + `eo_user_preference` 画像长期记忆 + **多步 ReAct 工具循环**（决策 → 工具 → 观察，工具面知识库 / 在售资产 / 资产详情，步数上限 5，超限降级单次生成）；**SSE 流式**（`/api/ai/chat/stream`，事件协议 step/token/sources/done/error），前端 Playground 步骤可视化 + 打字机效果
 - **RAG 完整链路**（[`KnowledgeIngestionService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/KnowledgeIngestionService.java)）：文档摄入管线（分块 500+overlap50 → embed → ES `knowledge_docs` 索引，启动补索引）+ 两路独立召回（kNN + BM25）→ RRF 排名融合（`RrfFusion`）→ [来源:标题] 引用溯源
-- **Prompt 工程化与注入防护**：5 个 YAML 模板版本化（业务 2 + 对话 2 + 搜索意图 1），改 prompt 不用改代码重新部署；不可信内容（商品字段 / 用户提问 / 检索片段 / 召回资产标题）一律包进带标签的块，5 个模板全部声明「块内是数据不是指令」（`PromptContentTest` 断言兜底）
-- **评估进 CI**：35 条金标准集（20 生成 + 15 检索，`eval/golden-set.yaml`）+ LLM-as-Judge 对照参考打分 + `EvalGate` 门禁（阈值全在 `eval/baselines.yaml`，低于基线-容忍度或评审覆盖率不达标即卡 build；`ai-eval.yml` 注入真实 key + 起 ES，**按需 dispatch**）+ hit@5/MRR 检索指标（语料含同域干扰文档）+ 反馈飞轮自动扩充评测集
+- **Prompt 工程化与注入防护**：Prompt 模板全部 YAML 版本化（业务 / 对话 / 搜索意图分文件，数量见[结构计数](doc/工程指标.md#结构计数)），改 prompt 不用改代码重新部署；不可信内容（商品字段 / 用户提问 / 检索片段 / 召回资产标题）一律包进带标签的块，全部模板声明「块内是数据不是指令」（`PromptContentTest` 断言兜底）
+- **评估进 CI**：金标准集（生成 + 检索两类用例，`eval/golden-set.yaml`）+ LLM-as-Judge 对照参考打分 + `EvalGate` 门禁（阈值全在 `eval/baselines.yaml`，低于基线-容忍度或评审覆盖率不达标即卡 build；`ai-eval.yml` 注入真实 key + 起 ES，**按需 dispatch**）+ hit@5/MRR 检索指标（语料含同域干扰文档）+ 反馈飞轮自动扩充评测集
 - **成本治理**：语义缓存（余弦相似度命中复用，阈值 0.92）+ 模型路由（场景 → bean 配置）+ 按场景成本报表
 - **LLM 专用可观测**（[Langfuse](https://github.com/langfuse/langfuse) 自托管）：Spring AI Observation → OTel 桥 → OTLP 上报，单条 trace 内**每步**工具循环的 prompt / completion / token / 延迟 / 成本逐项可视化（Grafana 面板是调用级指标，Langfuse 是 prompt 级 trace，两级互补）；模型价经 `/api/public/models` 自定义录入，成本逐调用计算
 
@@ -101,8 +101,8 @@ flowchart TB
     FAV["favorite"]
     ADMIN["admin · 管理端"]
     AI["ai · Spring AI + Agent"]
-    MQ[("RabbitMQ · 9 消费者 + DLQ")]
-    DB[("MySQL · 27 表")]
+    MQ[("RabbitMQ · 事件消费者 + DLQ")]
+    DB[("MySQL")]
     REDIS[("Redis · 缓存 / 令牌桶 / 锁")]
     ES[("Elasticsearch · 可选")]
     LLM["DeepSeek / Qwen-VL / DashScope"]
@@ -137,14 +137,14 @@ flowchart TB
 - **前端**：React 19 SPA，C 端 + 管理端（统一设计系统）双布局
 - **后端**：Spring Boot 4 聚合 11 个 Maven 模块，DDD 六边形 + CQRS 分层（CQRS 范围决策见 [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)）
 - **数据**：MySQL（Flyway 迁移）+ Redis（缓存 / 令牌桶 / 分布式锁 / 会话）+ Elasticsearch（BM25 + kNN）
-- **消息**：Spring Modulith Outbox → RabbitMQ Topic Exchange，9 个事件消费者，DLQ 三级重试
+- **消息**：Spring Modulith Outbox → RabbitMQ Topic Exchange，每个业务模块独占队列的消费者，DLQ 三级重试
 - **AI**：DeepSeek（Chat）/ Qwen-VL（Vision）/ DashScope（Embedding），统一 OpenAI 兼容协议
 
 > 组件级细节见 [doc/agents/架构参考.md](doc/agents/架构参考.md)。
 
 ### 事件驱动：Outbox → RabbitMQ → DLQ
 
-领域事件与应用事务**同原子**写入 `EVENT_PUBLICATION` → 异步 externalize 到 RabbitMQ Topic Exchange → 每个消费者独占队列 + `EventIdempotencyChecker` 精确一次 → 失败进队列级 DLQ（`DlqRetryScheduler` 5 分钟重投 <3 次，毒消息转储 `eo.dlq.terminal`）。审计日志同样走 Outbox。traceId 经 OTel 桥 → MDC → MQ header 全链路传递。
+领域事件与应用事务**同原子**写入 `EVENT_PUBLICATION` → 异步 externalize 到 RabbitMQ Topic Exchange → 消费者各自独占队列 + `EventIdempotencyChecker` 精确一次 → 失败进队列级 DLQ（`DlqRetryScheduler` 5 分钟重投 <3 次，毒消息转储 `eo.dlq.terminal`）。审计日志同样走 Outbox。traceId 经 OTel 桥 → MDC → MQ header 全链路传递。
 
 ### 订单创建（拒绝 Saga）
 
@@ -156,8 +156,8 @@ flowchart TB
 
 | 层 | 机制 | 解决的问题 |
 |---|---|---|
-| **决策层** | 12 条 ADR（[doc/adr/](doc/adr/)） | 记录「为什么 + 拒绝项」，不让选型沦为偏好 |
-| **守卫层** | ArchUnit 12 条规则（[`ArchitectureRulesTest`](./easyorange-backend/easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java)） | CI 阻断违规：domain 零框架 / CQRS 读写分离 / 模块间端口隔离 / 端口必有适配器 / 禁止 infrastructure 包 |
+| **决策层** | ADR 决策记录（[doc/adr/](doc/adr/)） | 记录「为什么 + 拒绝项」，不让选型沦为偏好 |
+| **守卫层** | ArchUnit 依赖规则（[`ArchitectureRulesTest`](./easyorange-backend/easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java)） | CI 阻断违规：domain 零框架 / CQRS 读写分离 / 模块间端口隔离 / 端口必有适配器 / 禁止 infrastructure 包 |
 | **验证层** | 2,400+ 测试 · JaCoCo + PIT 变异测试 | JaCoCo 看「代码跑过」，PIT 注入变异看「测试能否发现缺陷」；前端 Biome 0 errors |
 
 ### 拒绝项清单
@@ -169,7 +169,7 @@ flowchart TB
 | 全模块 CQRS | user / favorite / ai 等读写比均衡或调用外部 API，收益 < 维护成本 | 仅 product / order / payment / message 4 模块 | [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md) |
 | LangChain4j | Tool 调用反射黑盒 + 升级兼容差 | 手写 AiSearchEnhancer 4 路 Tool 编排 | [ADR-0008](doc/adr/0008-ai-spring-ai-framework.md) |
 | Milvus / PGVector | SKU < 10 万，向量库 ROI 低（ANN 建索引 / 调参 / 运维一整套换不来可感知收益） | ES 原生 kNN + BM25 两路独立召回，索引侧 RRF 排名融合（**不做余弦重排**） | [ADR-0012](doc/adr/0012-rag-hybrid-retrieval-rrf.md) |
-| Kafka / Pulsar 默认 MQ | Kafka 无原生 DLQ；1 事件 → 9 消费者模型不匹配；Pulsar 本地太重 | RabbitMQ Topic Exchange + 队列级 DLQ | [ADR-0005](doc/adr/0005-messaging-rabbitmq.md) |
+| Kafka / Pulsar 默认 MQ | Kafka 无原生 DLQ；单事件扇出到多消费者的模型不匹配；Pulsar 本地太重 | RabbitMQ Topic Exchange + 队列级 DLQ | [ADR-0005](doc/adr/0005-messaging-rabbitmq.md) |
 
 ## 技术栈
 
@@ -244,7 +244,7 @@ easy-orange/
 | [doc/技术栈.md](doc/技术栈.md) | 精确版本表（`check-version-drift.py` 钩子校验与 pom/compose 一致） |
 | [doc/adr/](doc/adr/) | 12 条架构决策记录 |
 | [doc/agents/](doc/agents/) | 按需读取参考：架构（错误码 / 依赖边 / 异常 / 可观测）/ 领域 / 常用命令 |
-| [doc/工程指标.md](doc/工程指标.md) | 测试数 / 覆盖率单一事实来源（2,400+ 为取整下限） |
+| [doc/工程指标.md](doc/工程指标.md) | 数字单一事实来源：测试数 / 覆盖率（2,400+ 为取整下限）/ [结构计数](doc/工程指标.md#结构计数) |
 | [doc/DATABASE.md](doc/DATABASE.md) | 数据库全局约定、表清单、Flyway 迁移规范与脚本索引 |
 | [doc/interview/](doc/interview/) | 面试脚本（怎么说 / 怎么答） |
 

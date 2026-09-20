@@ -76,7 +76,7 @@
 - **Snowflake（64-bit 发号器）**：拒绝。workerId 分配（含 Redis 协调）与时钟回拨处理是纯运维成本（约束 4），本项目无跨集群发号需求；相关实现 `SnowflakeIdGenerator` / `WorkerIdProvider` / `RedisWorkerIdProvider` 已删除。数字 ID 还需额外解决对外展示与前端 String 契约的一致性。
 - **UUID v4（全随机）**：拒绝。122 位全随机使 InnoDB 聚簇索引随机插入，带来页分裂与缓冲池命中率下降；v7 用同样的 128 位买到了时间有序。
 - **ULID（Crockford Base32 同族方案）**：未采用。布局与 v7 同源（48-bit 时间戳 + 随机），但 JDK 无原生类型，需引三方库或自写编码/解析；UUID v7 是 RFC 9562 标准且可直接由 `java.util.UUID` 承载，本项目 ID 不追求 Base32 可读性（ID 不暴露给用户排序）。
-- **UUID v7 + `BINARY(16)` 存储**：暂缓（算法与语义不变，只换存储形态）。可省约 55% 主键字节，但需全库 32 张表 + 全部 DO + MyBatis-Plus 读写路径 + ACL/DTO 序列化统一改造，收益在当前数据规模下不可测；触发条件见「备注」。
+- **UUID v7 + `BINARY(16)` 存储**：暂缓（算法与语义不变，只换存储形态）。可省约 55% 主键字节，但需全库所有表 + 全部 DO + MyBatis-Plus 读写路径 + ACL/DTO 序列化统一改造，收益在当前数据规模下不可测；触发条件见「备注」。
 
 ## 备注（Notes）
 
