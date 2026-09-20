@@ -443,6 +443,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 .status(doc.getStatus())
                 .views(doc.getViewCount())
                 .condition(doc.getConditionLevel())
+                .conditionDesc(ConditionLevelText.of(doc.getConditionLevel()))
                 .location(doc.getLocation())
                 // 索引侧 images 常缺省而 mainImage 恒有值：补位保证前端卡片取得到首图
                 .images(

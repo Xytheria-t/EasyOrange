@@ -5,7 +5,6 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.RrfFusion;
 import com.cartethyia.easyorange.ai.domain.port.AssetRetrievalPort;
-import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -188,19 +187,7 @@ public class AssetElasticsearchAdapter implements AssetRetrievalPort {
                 doc.getName(),
                 doc.getPrice() != null ? BigDecimal.valueOf(doc.getPrice()) : null,
                 doc.getCategoryName(),
-                conditionDesc(doc.getConditionLevel()),
+                ConditionLevelText.of(doc.getConditionLevel()),
                 score);
-    }
-
-    /** 索引里存的是成色码，回答里要给人看的是中文描述；码表里没有的原样透出，不吞信息。 */
-    private static String conditionDesc(String code) {
-        if (code == null || code.isBlank()) {
-            return null;
-        }
-        try {
-            return ConditionLevel.fromCode(code).getDesc();
-        } catch (Exception e) {
-            return code;
-        }
     }
 }

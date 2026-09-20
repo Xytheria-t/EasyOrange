@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.adapter.outbound.elasticsearch.ProductDocument;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort.ProductSearchQuery;
 import com.cartethyia.easyorange.product.application.port.query.SearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -108,6 +109,14 @@ class ElasticsearchProductSearchIT {
             var readBack = search(keyword(DESC_MARKER, null));
             assertThat(readBack.records()).hasSize(1);
             assertThat(readBack.records().get(0).createTime()).isNotNull();
+
+            // 成色码 → 展示文本：索引里存的是码 "2"，读模型要给出中文描述（AI 工具面按描述比成色）
+            assertThat(keywordHit.records())
+                    .extracting(ProductReadModel::condition)
+                    .containsOnly("2");
+            assertThat(keywordHit.records())
+                    .extracting(ProductReadModel::conditionDesc)
+                    .containsOnly(ConditionLevel.fromCode("2").getDesc());
         } finally {
             elasticsearchOperations.delete(DOC_ID_1, ProductDocument.class);
             elasticsearchOperations.delete(DOC_ID_2, ProductDocument.class);
