@@ -31,6 +31,41 @@ describe('PlaygroundPage (AI 智能助手)', () => {
         expect(screen.getByRole('button', { name: '平台交易流程是什么？' })).toBeInTheDocument();
     });
 
+    // 后端 AgentTools 的工具面（单一来源：easyorange-backend 的 AgentTools.TOOL_* 常量）。
+    // 后端加工具必须同步 PlaygroundPage 的 STEP_LABELS，否则该步渲染成裸工具名 —— 本用例就是这条同步的断言。
+    const BACKEND_TOOLS: Record<string, string> = {
+        knowledge_search: '查规则',
+        product_search: '找资产',
+        product_detail: '看详情',
+        market_price_stats: '看行情',
+        compare_assets: '比候选',
+        remember_preference: '记偏好',
+        finish: '生成回答',
+    };
+
+    it('每个后端工具在步骤区都有中文文案，不出现裸工具名', async () => {
+        mockedChatStream.mockResolvedValue(undefined);
+        renderWithProviders(<PlaygroundPage />);
+
+        fireEvent.change(screen.getByLabelText('问题输入'), { target: { value: '预算 5000 想买笔记本，帮我挑一台' } });
+        fireEvent.click(screen.getByRole('button', { name: '发送' }));
+
+        // 不带 thought：走标签兜底分支（带 thought 时展示的是模型给出的理由，不是标签）
+        emit(
+            Object.keys(BACKEND_TOOLS).map((tool, index) => ({
+                type: 'step' as const,
+                data: { step: index + 1, tool },
+            }))
+        );
+
+        await waitFor(() => {
+            for (const [tool, label] of Object.entries(BACKEND_TOOLS)) {
+                expect(screen.getByText(label)).toBeInTheDocument();
+                expect(screen.queryByText(tool)).not.toBeInTheDocument();
+            }
+        });
+    });
+
     it('发送问题 -> 流式 token 逐字渲染 + 知识库来源 + done 收口', async () => {
         mockedChatStream.mockResolvedValue(undefined);
         renderWithProviders(<PlaygroundPage />);

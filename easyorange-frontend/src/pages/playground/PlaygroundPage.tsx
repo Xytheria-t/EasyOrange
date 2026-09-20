@@ -1,14 +1,17 @@
 import {
     AlertCircle,
     ArrowUpRight,
+    Bookmark,
     BookOpen,
     CheckCircle2,
     FileSearch,
+    GitCompare,
     Search,
     Send,
     Sparkles,
     ThumbsDown,
     ThumbsUp,
+    TrendingUp,
     User,
 } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
@@ -27,11 +30,17 @@ interface ChatMessage {
     feedback: 'helpful' | 'unhelpful' | null;
 }
 
-/** Agent 工具循环各步骤的展示文案（与后端 AgentLoopRunner 工具面对齐） */
+/**
+ * Agent 工具循环各步骤的展示文案（与后端 AgentLoopRunner 工具面对齐）。
+ * 后端加工具必须同步这里，否则该步在前端渲染成裸工具名——`PlaygroundPage.test.tsx` 有断言兜底。
+ */
 const STEP_LABELS: Record<string, string> = {
     knowledge_search: '查规则',
     product_search: '找资产',
     product_detail: '看详情',
+    market_price_stats: '看行情',
+    compare_assets: '比候选',
+    remember_preference: '记偏好',
     finish: '生成回答',
 };
 
@@ -43,6 +52,12 @@ function StepIcon({ tool }: { tool: string }) {
             return <Search size={11} aria-hidden="true" />;
         case 'product_detail':
             return <FileSearch size={11} aria-hidden="true" />;
+        case 'market_price_stats':
+            return <TrendingUp size={11} aria-hidden="true" />;
+        case 'compare_assets':
+            return <GitCompare size={11} aria-hidden="true" />;
+        case 'remember_preference':
+            return <Bookmark size={11} aria-hidden="true" />;
         case 'finish':
             return <CheckCircle2 size={11} aria-hidden="true" />;
         default:
