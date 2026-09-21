@@ -27,12 +27,12 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
  * 定义发给供应商、原样返回 tool call，执行与循环控制权都在 {@link AgentLoopRunner}
  * （步数上限 / 预算 / 降级在那边，这里只管单个工具的语义）。
  * <p>
- * 三点非显而易见的约定：
+ * 四点非显而易见的约定：
  * <ul>
  *   <li><b>thought 是每个工具的必填参数</b> —— 原生 tool calling 没有独立的「决策理由」通道，理由只能
  *       随参数带回；工具方法不消费它，由 runner 取出落 trace / 推 SSE。</li>
  *   <li><b>抛异常 = 该步失败</b> —— runner 把异常收敛成失败观察交回模型（带错误反馈的修复轮），
- *       所以「查无此资产」这类**有效**结果必须返回观察文本而不是抛异常。</li>
+ *       所以「查无此资产」这类<b>有效</b>结果必须返回观察文本而不是抛异常。</li>
  *   <li><b>finish 只有 schema 没有执行</b> —— 收敛轮由 runner 在执行前按名称拦截，方法体不会被调用。</li>
  *   <li><b>remember_preference 是唯一的写路径</b> —— 长期画像 upsert，按 (userId, key) 唯一键幂等。
  *       它从 finish 的参数副作用提升为独立工具，是为了让「写入长期记忆」成为模型自主决策的一步，
@@ -47,6 +47,7 @@ public class AgentTools {
     static final String TOOL_KNOWLEDGE_SEARCH = "knowledge_search";
 
     static final String TOOL_PRODUCT_SEARCH = "product_search";
+
     static final String TOOL_PRODUCT_DETAIL = "product_detail";
 
     static final String TOOL_MARKET_PRICE_STATS = "market_price_stats";
@@ -61,7 +62,11 @@ public class AgentTools {
     static final int RETRIEVAL_TOP_K = 5;
 
     static final int ASSET_TOP_K = 5;
+
+    /** 观察里列举的命中条数上限 —— 观察是给下一轮决策的摘要，召回多少条都只列举这么多。 */
     private static final int OBSERVATION_SUMMARY_LIMIT = 3;
+
+    /** 详情描述进观察前截断的字数 —— 描述是自由文本，长度不可控。 */
     private static final int DETAIL_DESC_MAX_CHARS = 80;
 
     private final List<KnowledgeHit> knowledgeHits;
@@ -100,7 +105,7 @@ public class AgentTools {
     public String knowledgeSearch(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "改写后的检索关键词，3-10 字") String query) {
-        List<KnowledgeHit> found = retrievalService.search(orEmpty(query), RETRIEVAL_TOP_K);
+        List<KnowledgeHit> found = retrievalService.search(query, RETRIEVAL_TOP_K);
         knowledgeHits.addAll(found);
         return summarizeKnowledge(found);
     }
@@ -109,7 +114,7 @@ public class AgentTools {
     public String productSearch(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "改写后的找货关键词，3-10 字，保留品类与硬约束（预算 / 成色）") String query) {
-        List<AssetHit> found = assetSourcingService.search(orEmpty(query), ASSET_TOP_K);
+        List<AssetHit> found = assetSourcingService.search(query, ASSET_TOP_K);
         assets.addAll(found);
         return summarizeAssets(found);
     }
@@ -121,7 +126,7 @@ public class AgentTools {
     public String productDetail(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "资产 ID，必须取自此前 product_search 观察中方括号里的资产 ID") String productId) {
-        if (productId == null || productId.isBlank()) {
+        if (isBlank(productId)) {
             throw new IllegalArgumentException("缺少 productId，无法查询资产详情");
         }
         Optional<AssetDetail> found = findDetail(productId.trim());
@@ -154,7 +159,7 @@ public class AgentTools {
         List<String> requested = productIds == null
                 ? List.of()
                 : productIds.stream()
-                        .filter(id -> id != null && !id.isBlank())
+                        .filter(id -> !isBlank(id))
                         .map(String::strip)
                         .distinct()
                         .toList();
@@ -182,28 +187,9 @@ public class AgentTools {
                 .orElse("可用于对比的资产不足 2 件（可能不存在或已下架）" + missingNote);
     }
 
-    /**
-     * 按 ID 查资产详情 — product_detail 与 compare_assets 共用同一条通道与同一种失败语义：
-     * 端口抛出（DB 故障）按工具失败上报（模型可换目标重试），empty（查无此资产）是正常结果。
-     */
-    private Optional<AssetDetail> findDetail(String productId) {
-        try {
-            return assetDetailPort.findDetail(productId);
-        } catch (Exception e) {
-            throw new IllegalStateException("资产详情查询失败: " + reasonOf(e), e);
-        }
-    }
-
-    @Tool(name = TOOL_FINISH, description = "信息已足够回答，或无需检索（寒暄 / 闲聊），不再调用任何工具")
-    public String finish(@ToolParam(description = "收敛理由，不超过 20 字的中文概括") String thought) {
-        // 方法体不会被执行：收敛轮由 runner 在执行前按名称拦截（finish 不产生 observation 与耗时），
-        // 这里的存在意义是让 finish 出现在发给供应商的工具 schema 里
-        return TOOL_FINISH;
-    }
-
     @Tool(
             name = TOOL_REMEMBER_PREFERENCE,
-            description = "记录用户的长期偏好（成色 / 价格区间 / 风格 / 地区）到用户画像，跨会话生效；" + "对话中出现明确偏好时调用一次即可，同一偏好不要重复记录")
+            description = "记录用户的长期偏好（成色 / 价格区间 / 风格 / 地区）到用户画像，跨会话生效；对话中出现明确偏好时调用一次即可，同一偏好不要重复记录")
     public String rememberPreference(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "偏好类别，只允许 condition（成色）/ price_range（价格区间）/ style（风格）/ location（地区）")
@@ -227,24 +213,41 @@ public class AgentTools {
         return "已记录偏好：%s = %s".formatted(key, value);
     }
 
+    @Tool(name = TOOL_FINISH, description = "信息已足够回答，或无需检索（寒暄 / 闲聊），不再调用任何工具")
+    public String finish(@ToolParam(description = "收敛理由，不超过 20 字的中文概括") String thought) {
+        // 方法体不会被执行：收敛轮由 runner 在执行前按名称拦截（finish 不产生 observation 与耗时），
+        // 这里的存在意义是让 finish 出现在发给供应商的工具 schema 里
+        return TOOL_FINISH;
+    }
+
+    /**
+     * 按 ID 查资产详情 — product_detail 与 compare_assets 共用同一条通道与同一种失败语义：
+     * 端口抛出（DB 故障）按工具失败上报（模型可换目标重试），empty（查无此资产）是正常结果。
+     */
+    private Optional<AssetDetail> findDetail(String productId) {
+        try {
+            return assetDetailPort.findDetail(productId);
+        } catch (Exception e) {
+            throw new IllegalStateException("资产详情查询失败: " + reasonOf(e), e);
+        }
+    }
+
     private static String summarizeKnowledge(List<KnowledgeHit> found) {
         if (found.isEmpty()) {
             return "知识库未命中，可换关键词重试或直接 finish";
         }
-        return "命中 %d 条：%s"
-                .formatted(
-                        found.size(),
-                        found.stream()
-                                .map(KnowledgeHit::title)
-                                .limit(OBSERVATION_SUMMARY_LIMIT)
-                                .collect(Collectors.joining(" / ")));
+        String titles = found.stream()
+                .limit(OBSERVATION_SUMMARY_LIMIT)
+                .map(KnowledgeHit::title)
+                .collect(Collectors.joining(" / "));
+        return "命中 %d 条：%s".formatted(found.size(), titles);
     }
 
     private static String summarizeAssets(List<AssetHit> found) {
         if (found.isEmpty()) {
             return "在售资产未召回，可换更宽泛的关键词重试或直接 finish";
         }
-        return found.stream()
+        String items = found.stream()
                 .limit(OBSERVATION_SUMMARY_LIMIT)
                 .map(asset -> "[%s] %s ¥%s"
                         .formatted(
@@ -253,7 +256,8 @@ public class AgentTools {
                                 asset.price() == null
                                         ? "面议"
                                         : asset.price().stripTrailingZeros().toPlainString()))
-                .collect(Collectors.joining("；", "召回 %d 件：".formatted(found.size()), ""));
+                .collect(Collectors.joining("；"));
+        return "召回 %d 件：%s".formatted(found.size(), items);
     }
 
     private static String summarizeDetail(AssetDetail detail) {
@@ -266,16 +270,12 @@ public class AgentTools {
                         orDefault(detail.status(), "未知"));
     }
 
-    private static String orEmpty(String value) {
-        return value == null ? "" : value;
-    }
-
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
     }
 
     private static String orDefault(String value, String fallback) {
-        return value == null || value.isBlank() ? fallback : value;
+        return isBlank(value) ? fallback : value;
     }
 
     private static String ellipsis(String value) {
