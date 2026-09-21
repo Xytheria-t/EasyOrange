@@ -563,6 +563,20 @@ class AgentLoopRunnerTest {
     }
 
     @Test
+    @DisplayName("remember_preference 的观察与其余执行类工具同一种：纯文本，不带默认转换器的 JSON 引号")
+    void run_preferenceObservationIsPlainText() {
+        stubDecisions(
+                toolCallResponse(AgentTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
+                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+
+        run("我喜欢复古风格的东西", "user-1", null);
+
+        verify(tracePort)
+                .record(argThat(trace -> AgentTools.TOOL_REMEMBER_PREFERENCE.equals(trace.tool())
+                        && "已记录偏好：style = 复古".equals(trace.observation())));
+    }
+
+    @Test
     @DisplayName("匿名对话 -> 即便模型调了 remember_preference 也不落画像")
     void run_anonymousSkipsPreference() {
         stubDecisions(
