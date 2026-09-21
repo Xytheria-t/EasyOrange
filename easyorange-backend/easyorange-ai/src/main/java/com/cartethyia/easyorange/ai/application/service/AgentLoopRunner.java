@@ -73,7 +73,8 @@ public class AgentLoopRunner {
     static final String OUTCOME_DECISION_FAILED = "decision_failed";
 
     private static final String TOOL_PROMPT = "ai_chat_tool_system";
-    private static final String CHAT_SCENARIO = "chat";
+    /** 预算场景键取自 {@link AiCallScope}（枚举名小写），与 {@code @TokenBudget(scenario=...)} 单点同源不重写。 */
+    private static final String CHAT_SCENARIO = AiCallScope.CHAT.budgetScenario();
     /** 未知工具观察里的工具清单（与 {@link AgentTools} 的常量同源，不重写字面量）。 */
     private static final String TOOL_MENU = String.join(
             " / ",
@@ -89,7 +90,9 @@ public class AgentLoopRunner {
     private static final int DEFAULT_MAX_TOKENS_PER_CALL = 1500;
 
     private static final int DEFAULT_DAILY_LIMIT = 300_000;
-    private static final String ANONYMOUS_USER = "anonymous";
+
+    /** 匿名会话的用户标识 —— {@link Input#userId()} 的契约值，入口 {@code AiChatService} 与本类共用这一份。 */
+    static final String ANONYMOUS_USER = "anonymous";
 
     private final AiModelSupport aiModelSupport;
     private final AiModelRouter modelRouter;

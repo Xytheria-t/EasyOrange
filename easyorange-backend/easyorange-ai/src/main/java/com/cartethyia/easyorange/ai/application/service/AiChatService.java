@@ -55,8 +55,6 @@ import org.springframework.stereotype.Service;
 public class AiChatService {
 
     private static final String CHAT_PROMPT = "ai_chat_system";
-    private static final String CHAT_SCENARIO = "chat";
-    private static final String ANONYMOUS_USER = "anonymous";
 
     private final ChatModel chatModel;
     private final PromptRegistry promptRegistry;
@@ -183,13 +181,13 @@ public class AiChatService {
     }
 
     private ChatAnswer agenticAnswer(ChatRequest request, @Nullable ChatStreamHandler handler) {
-        String userId = SecurityContextUtil.getCurrentUserId().orElse(ANONYMOUS_USER);
+        String userId = SecurityContextUtil.getCurrentUserId().orElse(AgentLoopRunner.ANONYMOUS_USER);
         List<ChatTurn> rawHistory =
                 sessionStore.loadRecent(request.sessionId(), aiProperties.chat().historyLimit());
         // token 级上下文治理：轮数窗口（存储侧）之上再按 token 预算裁注入窗口，一处裁、决策与生成两处生效
         List<ChatTurn> history = contextTrimmer.trim(rawHistory).history();
         List<UserPreference> prefs =
-                ANONYMOUS_USER.equals(userId) ? List.of() : preferenceRepository.findByUserId(userId);
+                AgentLoopRunner.ANONYMOUS_USER.equals(userId) ? List.of() : preferenceRepository.findByUserId(userId);
 
         // 2. 多步工具循环（决策 → 工具 → 观察，步数/预算超限在循环内降级）
         AgentLoopRunner.Result run = agentLoopRunner.run(
@@ -225,7 +223,7 @@ public class AiChatService {
     private void checkBudget() {
         if (agentLoopRunner.chatBudgetExhausted()) {
             // 流式链路绕过 @TokenBudget 切面，这里手动检查 —— 判定与循环中途共用 AgentLoopRunner 同一方法
-            log.warn("action=token_budget_exceeded, scenario={}", CHAT_SCENARIO);
+            log.warn("action=token_budget_exceeded, scenario={}", AiCallScope.CHAT.budgetScenario());
             throw new TokenBudgetExceededException();
         }
     }
