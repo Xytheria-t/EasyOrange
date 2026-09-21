@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.ai.application.service;
 import com.cartethyia.easyorange.ai.application.dto.AiCostReportRow;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,6 @@ import org.springframework.stereotype.Service;
  * 不在这里估算。估算口径留给预算器（它按场景上限兜底是为了让日限额不被绕过），
  * 但成本报表里混入估算值会让人把「没测到」当成「不花钱」——比缺数据更危险。
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiCostReportService {
