@@ -1,6 +1,7 @@
-package com.cartethyia.easyorange.ai.config;
+package com.cartethyia.easyorange.ai.adapter.inbound.config;
 
 import com.cartethyia.easyorange.ai.adapter.inbound.web.AiRateLimitInterceptor;
+import com.cartethyia.easyorange.ai.config.AiProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -9,17 +10,15 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * AI Web 配置 — 注册 {@link AiRateLimitInterceptor} 拦截 {@code /api/ai/**}。
+ * AI 限流装配 — 注册 {@link AiRateLimitInterceptor} 拦截 {@code /api/ai/**}，超限返回 429。
  * <p>
- * 多级响应缓存（L1 Caffeine + L2 Redis + 跨节点失效）已随 {@code CachingLlmAdapter}/
- * {@code CachingVisionAdapter} 一并移除（2026-08 迁移至 Spring AI），
- * 仅保留 stale 缓存（AiStaleCacheConfig）供 LLM 供应商故障兜底（stale-while-error，消费方在
- * {@code AiChatService}）；限流超限由 {@link AiRateLimitInterceptor} 返回 429，不经缓存。
+ * 缓存不在本类：多级响应缓存随 Spring AI 迁移一并删除，仅存的 stale 缓存（LLM 供应商故障兜底，
+ * 消费方 {@code AiChatService}）在 {@link com.cartethyia.easyorange.ai.config.AiStaleCacheConfig}。
  */
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class AiCacheConfig implements WebMvcConfigurer {
+public class AiRateLimitConfig implements WebMvcConfigurer {
 
     private final AiProperties aiProperties;
     private final AiRateLimitInterceptor aiRateLimitInterceptor;

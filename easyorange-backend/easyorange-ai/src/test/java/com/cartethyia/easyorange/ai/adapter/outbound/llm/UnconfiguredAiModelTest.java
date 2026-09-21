@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.config;
+package com.cartethyia.easyorange.ai.adapter.outbound.llm;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

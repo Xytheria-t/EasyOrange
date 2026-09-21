@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.ai.config;
 
+import com.cartethyia.easyorange.ai.adapter.outbound.llm.UnconfiguredChatModel;
+import com.cartethyia.easyorange.ai.adapter.outbound.llm.UnconfiguredEmbeddingModel;
 import com.openai.client.OpenAIClient;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;

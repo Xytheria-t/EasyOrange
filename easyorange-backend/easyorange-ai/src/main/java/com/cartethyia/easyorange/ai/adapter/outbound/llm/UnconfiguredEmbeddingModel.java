@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.config;
+package com.cartethyia.easyorange.ai.adapter.outbound.llm;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
