@@ -1,16 +1,12 @@
 package com.cartethyia.easyorange.user.application.service;
 
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.user.application.dto.UserView;
 import com.cartethyia.easyorange.user.domain.aggregate.ContactUpdateSpec;
 import com.cartethyia.easyorange.user.domain.aggregate.PersonalUpdateSpec;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
-import com.cartethyia.easyorange.user.domain.event.UserAvatarChangedEvent;
-import com.cartethyia.easyorange.user.domain.event.UserProfileUpdatedEvent;
 import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.ProfileUpdateService;
@@ -27,7 +23,6 @@ public class ProfileAppService {
 
     private final UserRepository userRepository;
     private final AvatarFilePort avatarFilePort;
-    private final DomainEventPublisher domainEventPublisher;
     private final ProfileUpdateService profileUpdateService;
 
     public record UpdateCommand(
@@ -56,7 +51,6 @@ public class ProfileAppService {
                         currentUser.getId());
 
         userRepository.update(updated);
-        domainEventPublisher.publish(new UserProfileUpdatedEvent(UuidV7.generateId(), currentUser.getId()));
         return UserView.from(updated);
     }
 
@@ -75,7 +69,6 @@ public class ProfileAppService {
             Avatar avatar = Avatar.uploaded(avatarUrl, content, contentType);
             User updated = currentUser.changeAvatar(avatar, currentUser.getId());
             userRepository.update(updated);
-            domainEventPublisher.publish(new UserAvatarChangedEvent(UuidV7.generateId(), currentUser.getId()));
             return UserView.from(updated);
         } catch (Exception e) {
             throw BusinessException.of("头像上传失败", e);

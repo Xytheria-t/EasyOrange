@@ -117,12 +117,6 @@ public class MessageCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void markAllAsRead(String userId) {
-        messageRepository.markAllAsRead(userId);
-        log.info("action=mark_all_read userId={}", userId);
-    }
-
-    @Transactional(rollbackFor = Exception.class)
     public void markAsReadByType(String userId, Integer type) {
         messageRepository.markAsReadByType(userId, type);
         log.info("action=mark_type_read userId={} type={}", userId, type);
@@ -143,20 +137,6 @@ public class MessageCommandHandler {
         domainEventPublisher.publish(recallResult.event());
 
         log.info("action=recall_message messageId={} userId={}", command.messageId(), userId);
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public void deleteMessage(String userId, DeleteMessageCommand command) {
-        Message aggregate = messageRepository
-                .findById(command.messageId())
-                .orElseThrow(() -> MessageDomainException.notFound(command.messageId()));
-
-        BizRequire.requireTrue(aggregate.isOwnedBy(userId), MessageResultCode.MESSAGE_NOT_OWNER);
-
-        aggregate.delete(userId);
-        messageRepository.delete(command.messageId());
-
-        log.info("action=delete_message messageId={} userId={}", command.messageId(), userId);
     }
 
     /**

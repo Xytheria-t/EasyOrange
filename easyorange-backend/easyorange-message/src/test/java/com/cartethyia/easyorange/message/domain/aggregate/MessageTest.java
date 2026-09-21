@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.message.domain.aggregate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
@@ -207,29 +206,6 @@ class MessageTest {
             Message result = aggregate.read(RECEIVER_ID);
 
             assertThat(result).isSameAs(aggregate);
-        }
-    }
-
-    @Nested
-    @DisplayName("delete")
-    class DeleteTests {
-
-        @Test
-        @DisplayName("接收者可以删除消息")
-        void delete_byReceiver_doesNotThrow() {
-            Message aggregate = testMessage(LocalDateTime.now());
-
-            assertThatCode(() -> aggregate.delete(RECEIVER_ID)).doesNotThrowAnyException();
-        }
-
-        @Test
-        @DisplayName("非接收者不能删除消息")
-        void delete_notReceiver_throws() {
-            Message aggregate = testMessage(LocalDateTime.now());
-
-            assertThatThrownBy(() -> aggregate.delete(SENDER_ID))
-                    .isInstanceOf(MessageDomainException.class)
-                    .hasMessageContaining("不能删除他人的消息");
         }
     }
 

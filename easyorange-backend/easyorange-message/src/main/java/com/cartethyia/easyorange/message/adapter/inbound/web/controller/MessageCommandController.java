@@ -2,14 +2,11 @@ package com.cartethyia.easyorange.message.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
-import com.cartethyia.easyorange.message.adapter.inbound.websocket.TypingIndicatorService;
-import com.cartethyia.easyorange.message.application.command.DeleteMessageCommand;
 import com.cartethyia.easyorange.message.application.command.MarkAsReadBatchCommand;
 import com.cartethyia.easyorange.message.application.command.MarkAsReadCommand;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.RecallMessageCommand;
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
-import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 public class MessageCommandController {
 
     private final MessageCommandHandler commandHandler;
-    private final TypingIndicatorService typingIndicatorService;
 
     @PostMapping
     public Result<Void> sendMessage(
@@ -34,21 +30,9 @@ public class MessageCommandController {
         return Result.success();
     }
 
-    @PostMapping("/system")
-    public Result<Void> sendSystemMessage(@RequestBody SendSystemMessageCommand command) {
-        commandHandler.sendSystemMessage(command);
-        return Result.success();
-    }
-
     @PutMapping("/{id}/read")
     public Result<Void> markAsRead(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
         commandHandler.markAsRead(user.userId(), new MarkAsReadCommand(id));
-        return Result.success();
-    }
-
-    @PutMapping("/read-all")
-    public Result<Void> markAllAsRead(@AuthenticationPrincipal AuthUser user) {
-        commandHandler.markAllAsRead(user.userId());
         return Result.success();
     }
 
@@ -66,24 +50,9 @@ public class MessageCommandController {
         return Result.success();
     }
 
-    @DeleteMapping("/{id}")
-    public Result<Void> deleteMessage(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
-        commandHandler.deleteMessage(user.userId(), new DeleteMessageCommand(id));
-        return Result.success();
-    }
-
     @PutMapping("/{id}/recall")
     public Result<Void> recallMessage(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
         commandHandler.recallMessage(user.userId(), new RecallMessageCommand(id));
-        return Result.success();
-    }
-
-    @PostMapping("/typing")
-    public Result<Void> typing(
-            @AuthenticationPrincipal AuthUser user, @RequestBody java.util.Map<String, String> body) {
-        String conversationId = body.get("conversationId");
-        String targetUserId = body.get("targetUserId");
-        typingIndicatorService.setTyping(conversationId, user.userId());
         return Result.success();
     }
 }

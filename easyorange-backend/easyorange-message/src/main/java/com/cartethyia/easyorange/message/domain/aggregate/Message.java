@@ -199,17 +199,6 @@ public record Message(
                 updated, new MessageRecalledEvent(UuidV7.generateId(), this.id, conversationId, operatorId, now));
     }
 
-    /**
-     * 删除消息（仅校验接收者权限；删除动作由应用层执行）。
-     *
-     * @throws MessageDomainException 如果 userId 不是接收者
-     */
-    public void delete(String userId) {
-        if (!isOwnedBy(userId)) {
-            throw MessageDomainException.notOwner("不能删除他人的消息");
-        }
-    }
-
     // ==================== Result Record ====================
 
     public record MessageRecallResult(Message aggregate, MessageRecalledEvent event) {}

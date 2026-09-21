@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.framework.config.async;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 /**
@@ -19,7 +18,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
  * @see org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
  */
 @AutoConfiguration
-@EnableAsync
 public class ThreadPoolConfig {
 
     private static final boolean WAIT_FOR_TASKS_TO_COMPLETE = true;

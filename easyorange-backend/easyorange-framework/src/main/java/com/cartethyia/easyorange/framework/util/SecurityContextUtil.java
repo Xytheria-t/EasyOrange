@@ -13,7 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
  * 当前登录用户访问器。
  * <p>
  * 约定：{@code SecurityContextHolder} 的 principal 恒为 {@link AuthUser}
- * （由 {@code SecurityConfig#jwtAuthenticationConverter} 注入，测试用 {@link TestSecurityUtil}）。
+ * （由 {@code SecurityConfig#jwtAuthenticationConverter} 注入）。
  * 匿名请求（permitAll 路径）视为未登录，返回 {@code empty}。
  */
 @UtilityClass

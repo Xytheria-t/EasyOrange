@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.application.dto.UserView;
 import com.cartethyia.easyorange.user.application.service.ProfileAppService.UpdateCommand;
@@ -34,9 +33,6 @@ class ProfileAppServiceTest {
     @Mock
     private AvatarFilePort avatarFilePort;
 
-    @Mock
-    private DomainEventPublisher domainEventPublisher;
-
     private ProfileAppService profileAppService;
     private ProfileUpdateService profileUpdateService;
 
@@ -45,8 +41,7 @@ class ProfileAppServiceTest {
     @BeforeEach
     void setUp() {
         profileUpdateService = new ProfileUpdateService(userRepository);
-        profileAppService =
-                new ProfileAppService(userRepository, avatarFilePort, domainEventPublisher, profileUpdateService);
+        profileAppService = new ProfileAppService(userRepository, avatarFilePort, profileUpdateService);
     }
 
     @Nested

@@ -61,26 +61,6 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
     }
 
     @Override
-    public PageResult<Message> findUnreadByReceiverId(MessageQuery query, String userId) {
-        var pageReq = PageRequest.builder()
-                .pageNum(query.pageNum())
-                .pageSize(query.pageSize())
-                .build();
-        Page<MessageDO> page = new Page<>(pageReq.getPageNum(), pageReq.getPageSize());
-        var wrapper = lambdaQuery();
-        wrapper.eq(MessageDO::getReceiverId, userId).eq(MessageDO::getIsRead, ReadStatus.UNREAD);
-
-        if (query.type() != null) {
-            wrapper.eq(MessageDO::getType, query.type());
-        }
-
-        wrapper.orderByDesc(MessageDO::getCreateTime);
-
-        Page<MessageDO> messagePage = wrapper.page(page);
-        return toAggregatePageResult(messagePage);
-    }
-
-    @Override
     public UnreadCount countUnreadByReceiverId(String userId) {
         List<Map<String, Object>> counts =
                 mapper.countUnreadByType(userId, Integer.valueOf(ReadStatus.UNREAD.getCode()));
