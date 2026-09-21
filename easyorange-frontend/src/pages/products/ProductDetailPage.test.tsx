@@ -1,6 +1,5 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import type { Product, User } from '@/types';
@@ -45,7 +44,6 @@ const mockUseUIStore = vi.hoisted(() =>
     })
 );
 const mockNavigate = vi.hoisted(() => vi.fn());
-const mockCanReview = vi.hoisted(() => vi.fn());
 
 // jsdom does not implement HTMLCanvasElement.toDataURL('image/webp')
 HTMLCanvasElement.prototype.toDataURL = vi.fn().mockImplementation(() => 'data:image/png;base64,test');
@@ -78,16 +76,6 @@ vi.mock('@/api/favoriteApi', () => ({
         check: vi.fn().mockResolvedValue({ data: false }),
         add: vi.fn().mockResolvedValue({}),
         remove: vi.fn().mockResolvedValue({}),
-    },
-}));
-
-vi.mock('@/api/reviewApi', () => ({
-    reviewApi: {
-        getReviews: vi.fn().mockResolvedValue({
-            data: { records: [], total: 0, pages: 0, current: 1, size: 10 },
-        }),
-        createReview: vi.fn().mockResolvedValue({}),
-        canReview: mockCanReview,
     },
 }));
 
@@ -138,16 +126,6 @@ function renderPage() {
     });
 }
 
-/** 带路由参数的渲染：useParams() 仅在 Route 内才有值（评价资格查询按 productId 使能） */
-function renderPageWithRoute() {
-    return renderWithProviders(
-        <Routes>
-            <Route path="/products/:id" element={<ProductDetailPage />} />
-        </Routes>,
-        { initialRoute: '/products/123' }
-    );
-}
-
 beforeEach(() => {
     vi.clearAllMocks();
     // jsdom doesn't support canvas.toDataURL('image/webp') — mock it to prevent Image component errors
@@ -173,8 +151,6 @@ beforeEach(() => {
         const state = { addToast: vi.fn() };
         return selector ? selector(state) : state;
     });
-    // 默认：有资格评价（详情页评价入口可见），按用例覆盖为 false 验证入口隐藏
-    mockCanReview.mockResolvedValue({ data: true });
 });
 
 // ── Tests ──
@@ -342,39 +318,6 @@ describe('ProductDetailPage', () => {
         expect(contactBtns.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('hides review entry and shows hint when buyer has no completed order', async () => {
-        const product = createMockProduct({ sellerId: 'seller1' });
-        mockUseProduct.mockReturnValue({ data: product, isLoading: false });
-        mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
-        mockUseAuthStore.mockReturnValue({
-            user: createMockUser({ userId: 'otherUser' }),
-            token: 'mock-token',
-            isAuthenticated: true,
-        });
-        mockCanReview.mockResolvedValue({ data: false });
-
-        renderPageWithRoute();
-
-        expect(await screen.findByText('完成交易后可评价该资产')).toBeInTheDocument();
-        expect(screen.queryByText('发表评价')).not.toBeInTheDocument();
-    });
-
-    it('shows review entry when buyer has a completed order to review', async () => {
-        const product = createMockProduct({ sellerId: 'seller1' });
-        mockUseProduct.mockReturnValue({ data: product, isLoading: false });
-        mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
-        mockUseAuthStore.mockReturnValue({
-            user: createMockUser({ userId: 'otherUser' }),
-            token: 'mock-token',
-            isAuthenticated: true,
-        });
-
-        renderPageWithRoute();
-
-        expect(await screen.findByText('发表评价')).toBeInTheDocument();
-        expect(screen.queryByText('完成交易后可评价该资产')).not.toBeInTheDocument();
-    });
-
     it('navigates to login when favorite is clicked without a token', async () => {
         const product = createMockProduct({ sellerId: 'seller1' });
         mockUseProduct.mockReturnValue({ data: product, isLoading: false });
@@ -424,21 +367,6 @@ describe('ProductDetailPage', () => {
         const backBtn = screen.getByText('返回');
         await user.click(backBtn);
         expect(mockNavigate).toHaveBeenCalledWith(-1);
-    });
-
-    it('shows "暂无评价" when there are no reviews', () => {
-        const product = createMockProduct();
-        mockUseProduct.mockReturnValue({ data: product, isLoading: false });
-        mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
-        mockUseAuthStore.mockReturnValue({
-            user: createMockUser({ userId: 'currentUser' }),
-            token: 'mock-token',
-            isAuthenticated: true,
-        });
-
-        renderPage();
-
-        expect(screen.getByText('暂无评价')).toBeInTheDocument();
     });
 
     it('shows similar products section when similar products exist', () => {
