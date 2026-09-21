@@ -9,6 +9,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
@@ -20,6 +21,7 @@ import tools.jackson.databind.ObjectMapper;
  * Redis 不可用 / 会话为空时返回空列表（fail-open：丢记忆不阻塞回答）。
  */
 @Slf4j
+@Primary
 @Component
 @RequiredArgsConstructor
 public class ChatSessionStore implements ChatSessionPort {
