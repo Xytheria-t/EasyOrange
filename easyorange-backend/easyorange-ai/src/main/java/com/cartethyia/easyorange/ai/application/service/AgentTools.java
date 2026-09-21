@@ -256,7 +256,7 @@ public class AgentTools {
     private static String summarizeDetail(AssetDetail detail) {
         return "描述：%s｜成色：%s｜位置：%s｜卖家：%s｜状态：%s"
                 .formatted(
-                        ellipsis(detail.description(), DETAIL_DESC_MAX_CHARS),
+                        ellipsis(detail.description()),
                         orDefault(detail.conditionDesc(), "未标注"),
                         orDefault(detail.location(), "未知"),
                         orDefault(detail.sellerName(), "未知"),
@@ -275,9 +275,9 @@ public class AgentTools {
         return value == null || value.isBlank() ? fallback : value;
     }
 
-    private static String ellipsis(String value, int maxChars) {
+    private static String ellipsis(String value) {
         String text = orDefault(value, "无");
-        return text.length() > maxChars ? text.substring(0, maxChars) + "…" : text;
+        return text.length() > DETAIL_DESC_MAX_CHARS ? text.substring(0, DETAIL_DESC_MAX_CHARS) + "…" : text;
     }
 
     private static String reasonOf(Throwable e) {
