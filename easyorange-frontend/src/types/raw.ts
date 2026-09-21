@@ -22,7 +22,6 @@ export interface RawProduct {
     images?: string[];
     location?: string;
     views?: number;
-    favorites?: number;
     sellerId: string;
     sellerName?: string;
     username?: string; // 后端可能返回 username 而非 sellerName

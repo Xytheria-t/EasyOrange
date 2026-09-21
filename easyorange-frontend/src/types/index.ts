@@ -16,7 +16,6 @@ export type {
     Category,
     CreateProductRequest,
     FacetBucket,
-    Favorite,
     Product,
     ProductQueryParams,
     ProductSearchParams,

@@ -32,9 +32,6 @@ public class RabbitMQConfig {
     public static final String QUEUE_MESSAGE_WEBSOCKET = "eo.message.websocket";
     public static final String QUEUE_PAYMENT_METRICS = "eo.payment.metrics";
 
-    // 收藏降价提醒
-    public static final String QUEUE_FAVORITE_PRICE_DROP = "eo.favorite.price-drop";
-
     // === Exchanges ===
 
     @Bean
@@ -64,8 +61,7 @@ public class RabbitMQConfig {
                 new QueueSpec(QUEUE_AUDIT_NOTIFICATION, "product.audited"),
                 new QueueSpec(QUEUE_AUDIT_LOG, "audit.log"),
                 new QueueSpec(QUEUE_MESSAGE_WEBSOCKET, "message.recalled"),
-                new QueueSpec(QUEUE_PAYMENT_METRICS, "payment.#"),
-                new QueueSpec(QUEUE_FAVORITE_PRICE_DROP, "product.updated"));
+                new QueueSpec(QUEUE_PAYMENT_METRICS, "payment.#"));
 
         for (var q : specs) {
             var queue = QueueBuilder.durable(q.name())

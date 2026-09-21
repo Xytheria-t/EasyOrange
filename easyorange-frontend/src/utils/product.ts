@@ -24,7 +24,6 @@ export function normalizeProduct(raw: RawProduct): Product {
         images: raw.images ?? [],
         location: raw.location ?? '',
         views: raw.views ?? 0,
-        favorites: raw.favorites ?? 0,
         sellerId: raw.sellerId,
         sellerName: raw.sellerName ?? raw.username ?? '匿名用户',
         sellerAvatar: raw.sellerAvatar ?? raw.userAvatar ?? null,

@@ -26,7 +26,6 @@
         <module>easyorange-order</module>
         <module>easyorange-payment</module>
         <module>easyorange-message</module>
-        <module>easyorange-favorite</module>
         <module>easyorange-admin</module>
         <module>easyorange-ai</module>
         <module>easyorange-application</module>
@@ -107,11 +106,6 @@
             <dependency>
                 <groupId>com.cartethyia</groupId>
                 <artifactId>easyorange-message</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.cartethyia</groupId>
-                <artifactId>easyorange-favorite</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

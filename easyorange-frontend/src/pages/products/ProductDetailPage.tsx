@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import './product-detail.css';
 import {
     ArrowLeft,
@@ -9,7 +9,6 @@ import {
     Clock,
     Copy,
     Eye,
-    Heart,
     Info,
     MapPin,
     MessageCircle,
@@ -27,7 +26,6 @@ import {
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { favoriteApi } from '@/api/favoriteApi';
 import { messageApi } from '@/api/messageApi';
 import { productApi } from '@/api/productApi';
 import placeholderImage from '@/assets/placeholder.png';
@@ -75,7 +73,6 @@ function ProductDetailPage() {
 
     const queryClient = useQueryClient();
     const createOrder = useCreateOrder();
-    const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
     const [showOrderModal, setShowOrderModal] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
     const [showChatModal, setShowChatModal] = useState(false);
@@ -89,16 +86,6 @@ function ProductDetailPage() {
     const [copied, setCopied] = useState(false);
 
     const productId = id ?? '';
-
-    const { data: isFavorited = false } = useQuery({
-        queryKey: ['favorite-check', productId],
-        queryFn: async () => {
-            const response = await favoriteApi.checkFavorite(productId);
-            return response.data === true;
-        },
-        enabled: !!token && !!productId,
-        staleTime: 30 * 1000,
-    });
 
     useEffect(() => {
         if (productId) {
@@ -178,29 +165,6 @@ function ProductDetailPage() {
     const isRejected = product.status === 'REJECTED';
     const hasDiscount = product.originalPrice != null && product.originalPrice > product.price;
     const discountPercent = hasDiscount ? Math.round((1 - product.price / (product.originalPrice as number)) * 100) : 0;
-
-    const handleFavoriteToggle = async () => {
-        if (!token) {
-            navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
-            return;
-        }
-        setIsFavoriteLoading(true);
-        try {
-            if (isFavorited) {
-                await favoriteApi.removeFavorite(productId);
-                addToast({ type: 'success', message: '已取消收藏' });
-            } else {
-                await favoriteApi.addFavorite(productId);
-                addToast({ type: 'success', message: '已收藏' });
-            }
-            queryClient.invalidateQueries({ queryKey: ['favorites'] });
-            queryClient.invalidateQueries({ queryKey: ['favorite-check', productId] });
-        } catch {
-            addToast({ type: 'error', message: isFavorited ? '取消收藏失败' : '收藏失败' });
-        } finally {
-            setIsFavoriteLoading(false);
-        }
-    };
 
     const handleBuyClick = () => {
         if (!token) {
@@ -349,14 +313,7 @@ function ProductDetailPage() {
                 </nav>
 
                 <div className="pdp-hero">
-                    <ProductGallery
-                        images={images}
-                        isFavorited={isFavorited}
-                        isFavoriteLoading={isFavoriteLoading}
-                        isSold={isSold}
-                        onFavoriteToggle={handleFavoriteToggle}
-                        onShare={handleShare}
-                    />
+                    <ProductGallery images={images} isSold={isSold} onShare={handleShare} />
 
                     <div className="pdp-info">
                         <div className="pdp-info-sticky">
@@ -404,10 +361,6 @@ function ProductDetailPage() {
                                     <span className="pdp-meta-item">
                                         <Eye size={14} />
                                         {product.views} 次浏览
-                                    </span>
-                                    <span className="pdp-meta-item">
-                                        <Heart size={14} />
-                                        {product.favorites} 人收藏
                                     </span>
                                     <span className="pdp-meta-item">
                                         <Clock size={14} />
@@ -569,15 +522,6 @@ function ProductDetailPage() {
                                         >
                                             <MessageCircle size={18} />
                                             联系资产方
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className={`pdp-btn pdp-btn-fav ${isFavorited ? 'favorited' : ''}`}
-                                            onClick={handleFavoriteToggle}
-                                            disabled={isFavoriteLoading}
-                                        >
-                                            <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
                                         </Button>
                                     </>
                                 )}

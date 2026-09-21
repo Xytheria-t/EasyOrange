@@ -1,7 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { favoriteApi } from '@/api/favoriteApi';
 import { messageApi } from '@/api/messageApi';
 import { userApi } from '@/api/userApi';
 import {
@@ -38,19 +37,11 @@ function ProfilePage() {
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [animateIn, setAnimateIn] = useState(false);
-    const [favoriteCount, setFavoriteCount] = useState(0);
     const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
     useEffect(() => {
         const timer = setTimeout(() => setAnimateIn(true), 100);
         return () => clearTimeout(timer);
-    }, []);
-
-    useEffect(() => {
-        favoriteApi
-            .getCount()
-            .then(setFavoriteCount)
-            .catch(() => {});
     }, []);
 
     useEffect(() => {
@@ -159,7 +150,6 @@ function ProfilePage() {
                         {activeTab === 'overview' && (
                             <ProfileOverview
                                 user={user}
-                                favoriteCount={favoriteCount}
                                 unreadMessageCount={unreadMessageCount}
                                 editingField={editingField}
                                 editValue={editValue}

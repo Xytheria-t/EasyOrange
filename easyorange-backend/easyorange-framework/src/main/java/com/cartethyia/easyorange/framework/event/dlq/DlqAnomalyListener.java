@@ -47,8 +47,7 @@ public class DlqAnomalyListener {
                 RabbitMQConfig.QUEUE_AUDIT_NOTIFICATION + ".dlq",
                 RabbitMQConfig.QUEUE_AUDIT_LOG + ".dlq",
                 RabbitMQConfig.QUEUE_MESSAGE_WEBSOCKET + ".dlq",
-                RabbitMQConfig.QUEUE_PAYMENT_METRICS + ".dlq",
-                RabbitMQConfig.QUEUE_FAVORITE_PRICE_DROP + ".dlq"
+                RabbitMQConfig.QUEUE_PAYMENT_METRICS + ".dlq"
             })
     public void onDeadLetter(Message message) {
         var props = message.getMessageProperties();

@@ -15,23 +15,16 @@
 import {
     Award,
     BadgeCheck,
-    Brain,
     Calendar,
     Check,
     ChevronRight,
-    Eye,
     GraduationCap,
-    Heart,
-    Lightbulb,
     Mail,
     MessageSquare,
     Pencil,
     Phone,
     Shield,
     Sparkles,
-    Star,
-    Target,
-    TrendingUp,
     User,
     X,
 } from 'lucide-react';
@@ -44,7 +37,6 @@ type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId';
 
 interface ProfileOverviewProps {
     user: UserType | undefined;
-    favoriteCount: number;
     unreadMessageCount: number;
     editingField: EditableField | null;
     editValue: string;
@@ -57,7 +49,6 @@ interface ProfileOverviewProps {
 
 export function ProfileOverview({
     user,
-    favoriteCount,
     unreadMessageCount,
     editingField,
     editValue,
@@ -85,7 +76,6 @@ export function ProfileOverview({
     // 「我的发布」「我的订单」入口只保留侧边栏一处：概览页再放同名卡片会有多个入口指向同一页面，
     // 且此前「我的发布」卡片指向的 /products?seller=me 是公共商品列表（seller 参数无人解析）
     const quickActions = [
-        { label: '我的收藏', icon: Heart, count: favoriteCount, path: '/favorites', color: 'rose' },
         { label: '消息中心', icon: MessageSquare, count: unreadMessageCount, path: '/messages', color: 'green' },
     ];
 
@@ -95,125 +85,6 @@ export function ProfileOverview({
                 <div className="header-title">
                     <h2>数据概览</h2>
                     <p className="header-subtitle">实时追踪你的智能托管数据</p>
-                </div>
-            </div>
-
-            <div className="metrics-grid">
-                <div className="metric-card primary">
-                    <div className="metric-bg"></div>
-                    <div className="metric-content">
-                        <div className="metric-top">
-                            <div className="metric-icon">
-                                <TrendingUp size={18} />
-                            </div>
-                            <span className="metric-trend up">
-                                <TrendingUp size={10} />
-                                +23.5%
-                            </span>
-                        </div>
-                        <div className="metric-data">
-                            <span className="metric-value">¥12,580</span>
-                            <span className="metric-label">本月交易额</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="metric-card">
-                    <div className="metric-content">
-                        <div className="metric-top">
-                            <div className="metric-icon blue">
-                                <Eye size={18} />
-                            </div>
-                            <span className="metric-trend up">
-                                <TrendingUp size={10} />
-                                +15.2%
-                            </span>
-                        </div>
-                        <div className="metric-data">
-                            <span className="metric-value">1,234</span>
-                            <span className="metric-label">商品浏览</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="metric-card">
-                    <div className="metric-content">
-                        <div className="metric-top">
-                            <div className="metric-icon purple">
-                                <Heart size={18} />
-                            </div>
-                            <span className="metric-trend up">
-                                <TrendingUp size={10} />
-                                +8.7%
-                            </span>
-                        </div>
-                        <div className="metric-data">
-                            <span className="metric-value">{favoriteCount}</span>
-                            <span className="metric-label">收藏商品</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="metric-card">
-                    <div className="metric-content">
-                        <div className="metric-top">
-                            <div className="metric-icon orange">
-                                <Star size={18} />
-                            </div>
-                            <span className="metric-trend flat">持平</span>
-                        </div>
-                        <div className="metric-data">
-                            <span className="metric-value">4.9</span>
-                            <span className="metric-label">平均评分</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="ai-assistant-section">
-                <div className="ai-assistant-header">
-                    <div className="ai-assistant-title">
-                        <div className="ai-icon-wrapper">
-                            <Brain size={20} />
-                        </div>
-                        <div>
-                            <h3>AI交易助手</h3>
-                            <p>智能分析你的交易习惯，提供个性化建议</p>
-                        </div>
-                    </div>
-                    <Button variant="outline" size="sm" className="ai-refresh-btn">
-                        <Sparkles size={14} />
-                        刷新建议
-                    </Button>
-                </div>
-                <div className="ai-insights-grid">
-                    <div className="ai-insight-card highlight">
-                        <div className="insight-icon">
-                            <Target size={18} />
-                        </div>
-                        <div className="insight-content">
-                            <span className="insight-label">最佳发布时间</span>
-                            <span className="insight-value">周三、周五晚 20:00-22:00</span>
-                            <span className="insight-desc">根据你的历史数据，此时段浏览量最高</span>
-                        </div>
-                    </div>
-                    <div className="ai-insight-card">
-                        <div className="insight-icon green">
-                            <TrendingUp size={18} />
-                        </div>
-                        <div className="insight-content">
-                            <span className="insight-label">价格建议</span>
-                            <span className="insight-value">定价略低于市场均价5-10%</span>
-                            <span className="insight-desc">可提高成交速度约30%</span>
-                        </div>
-                    </div>
-                    <div className="ai-insight-card">
-                        <div className="insight-icon purple">
-                            <Lightbulb size={18} />
-                        </div>
-                        <div className="insight-content">
-                            <span className="insight-label">热门品类</span>
-                            <span className="insight-value">数码产品、教材资料</span>
-                            <span className="insight-desc">平台需求最旺盛的托管品类</span>
-                        </div>
-                    </div>
                 </div>
             </div>
 
