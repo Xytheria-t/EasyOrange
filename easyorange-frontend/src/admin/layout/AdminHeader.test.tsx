@@ -37,7 +37,7 @@ describe('AdminHeader', () => {
 
     it('renders dashboard title by default', () => {
         render(<AdminHeader />);
-        expect(screen.getByText('仪表盘')).toBeInTheDocument();
+        expect(screen.getByText('数据统计')).toBeInTheDocument();
     });
 
     it('renders correct title based on pathname', () => {
