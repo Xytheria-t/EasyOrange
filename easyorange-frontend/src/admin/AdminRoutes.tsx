@@ -16,7 +16,6 @@ const ProductReviewPage = lazy(() => import('./pages/products/ProductReviewPage'
 const OrderManagePage = lazy(() => import('./pages/orders/OrderManagePage'));
 const StatsPage = lazy(() => import('./pages/stats/StatsPage'));
 const CategoryManagePage = lazy(() => import('./pages/categories/CategoryManagePage'));
-const RatingManagePage = lazy(() => import('./pages/ratings/RatingManagePage'));
 const KnowledgePage = lazy(() => import('./pages/knowledge/KnowledgePage'));
 
 export function AdminRoutes() {
@@ -30,7 +29,6 @@ export function AdminRoutes() {
                         <Route path="products" element={<ProductReviewPage />} />
                         <Route path="orders" element={<OrderManagePage />} />
                         <Route path="categories" element={<CategoryManagePage />} />
-                        <Route path="reviews" element={<RatingManagePage />} />
                         <Route path="stats" element={<StatsPage />} />
                         <Route path="knowledge" element={<KnowledgePage />} />
                     </Route>

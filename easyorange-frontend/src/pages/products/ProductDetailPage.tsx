@@ -13,7 +13,6 @@ import {
     Info,
     MapPin,
     MessageCircle,
-    MessageSquare,
     Pencil,
     Send,
     Shield,
@@ -21,7 +20,6 @@ import {
     Sparkles,
     Star,
     Tag,
-    ThumbsUp,
     TrendingUp,
     User,
     Zap,
@@ -32,7 +30,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { favoriteApi } from '@/api/favoriteApi';
 import { messageApi } from '@/api/messageApi';
 import { productApi } from '@/api/productApi';
-import { reviewApi } from '@/api/reviewApi';
 import placeholderImage from '@/assets/placeholder.png';
 import {
     Dialog,
@@ -48,12 +45,11 @@ import { Button } from '@/components/ui/button';
 import { Image, preloadImages } from '@/components/ui/Image';
 import { CONDITION_LABEL_MAP, STATUS_LABEL_MAP } from '@/constants';
 import { useCreateOrder, useProduct, useSimilarProducts } from '@/hooks';
-import { type OrderFormData, orderFormSchema, type ReviewFormData, reviewSchema } from '@/schemas/productDetailSchema';
+import { type OrderFormData, orderFormSchema } from '@/schemas/productDetailSchema';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import type { ChatMessage } from '@/types/message';
 import { formatRelativeTime } from '@/utils';
-import { errorHandler } from '@/utils/errorHandler';
 import { normalizeChatMessages } from '@/utils/message';
 import { ProductGallery } from './components/ProductGallery';
 
@@ -83,21 +79,14 @@ function ProductDetailPage() {
     const [showOrderModal, setShowOrderModal] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
     const [showChatModal, setShowChatModal] = useState(false);
-    const [showReviewModal, setShowReviewModal] = useState(false);
     const orderForm = useForm<OrderFormData>({
         resolver: zodResolver(orderFormSchema),
         defaultValues: { phone: '', remark: '' },
         reValidateMode: 'onChange',
     });
-    const reviewForm = useForm<ReviewFormData>({
-        resolver: zodResolver(reviewSchema),
-        defaultValues: { rating: 5, content: '' },
-        reValidateMode: 'onChange',
-    });
     const [chatMessage, setChatMessage] = useState('');
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [copied, setCopied] = useState(false);
-    const reviewRating = reviewForm.watch('rating');
 
     const productId = id ?? '';
 
@@ -110,36 +99,6 @@ function ProductDetailPage() {
         enabled: !!token && !!productId,
         staleTime: 30 * 1000,
     });
-
-    const { data: canReview = false } = useQuery({
-        queryKey: ['review-eligibility', productId],
-        queryFn: async () => {
-            const response = await reviewApi.canReview(productId);
-            return response.data === true;
-        },
-        enabled: !!token && !!productId,
-        staleTime: 30 * 1000,
-    });
-
-    const { data: reviewsData, isLoading: reviewsLoading } = useQuery({
-        queryKey: ['reviews', productId],
-        queryFn: async () => {
-            const response = await reviewApi.getReviews(productId);
-            return response.data;
-        },
-        enabled: !!productId,
-        staleTime: 60 * 1000,
-    });
-
-    const reviews = reviewsData?.records ?? [];
-    const reviewTotal = reviewsData?.total ?? 0;
-    const avgRating =
-        reviews.length > 0
-            ? (
-                  reviews.reduce((sum: number, r: Record<string, unknown>) => sum + ((r.rating as number) || 5), 0) /
-                  reviews.length
-              ).toFixed(1)
-            : '5.0';
 
     useEffect(() => {
         if (productId) {
@@ -161,22 +120,6 @@ function ProductDetailPage() {
         };
         loadChatHistory();
     }, [showChatModal, product?.sellerId, token]);
-
-    const submitReview = useMutation({
-        mutationFn: async ({ rating, content }: ReviewFormData) => {
-            await reviewApi.createReview(productId, { rating, content });
-        },
-        onSuccess: () => {
-            addToast({ type: 'success', message: '评价提交成功' });
-            setShowReviewModal(false);
-            reviewForm.reset();
-            queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
-        },
-        onError: error => {
-            // 透出服务端业务原因（如「仅可评价已完成订单中的资产」「该订单已评价」）
-            addToast({ type: 'error', message: errorHandler.handle(error, 'api') });
-        },
-    });
 
     const resubmitForReview = useMutation({
         mutationFn: async () => {
@@ -351,10 +294,6 @@ function ProductDetailPage() {
     const handleQuickReply = (text: string) => {
         setChatMessage(text);
     };
-
-    const handleSubmitReview = reviewForm.handleSubmit(values => {
-        submitReview.mutate(values);
-    });
 
     const handleSubmitOrder = orderForm.handleSubmit(async values => {
         try {
@@ -661,101 +600,6 @@ function ProductDetailPage() {
 
                 <div className="pdp-section-divider" />
 
-                <div className="pdp-reviews-section">
-                    <div className="pdp-section-header">
-                        <div className="pdp-section-accent" />
-                        <h3 className="pdp-section-title">
-                            <MessageSquare size={20} />
-                            商品评价
-                        </h3>
-                        <div className="pdp-reviews-stats">
-                            <span className="pdp-reviews-avg">
-                                <Star size={14} fill="currentColor" />
-                                {avgRating}
-                            </span>
-                            <span className="pdp-reviews-count">{reviewTotal} 条评价</span>
-                        </div>
-                    </div>
-
-                    {reviewsLoading ? (
-                        <div className="pdp-reviews-loading">
-                            <div className="pdp-loading-ring" />
-                            <span>加载评价中...</span>
-                        </div>
-                    ) : reviews.length > 0 ? (
-                        <div className="pdp-reviews-list">
-                            {reviews.slice(0, 5).map((review: Record<string, unknown>) => (
-                                <div key={review.id as number} className="pdp-review-item">
-                                    <div className="pdp-review-header">
-                                        <div className="pdp-review-user">
-                                            <div className="pdp-review-avatar">
-                                                <User size={16} />
-                                            </div>
-                                            <span className="pdp-review-username">
-                                                {(review.username as string) || '匿名用户'}
-                                            </span>
-                                        </div>
-                                        <div className="pdp-review-meta">
-                                            <div className="pdp-review-rating">
-                                                {[1, 2, 3, 4, 5].map(star => (
-                                                    <Star
-                                                        key={star}
-                                                        size={14}
-                                                        fill={
-                                                            star <= ((review.rating as number) || 5)
-                                                                ? 'currentColor'
-                                                                : 'none'
-                                                        }
-                                                    />
-                                                ))}
-                                            </div>
-                                            <span className="pdp-review-time">
-                                                {formatRelativeTime(
-                                                    (review.createTime as string) || new Date().toISOString()
-                                                )}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <p className="pdp-review-content">
-                                        {(review.content as string) || '用户未填写评价内容'}
-                                    </p>
-                                    {(review.likes as number) > 0 && (
-                                        <div className="pdp-review-footer">
-                                            <Button variant="ghost" size="sm" className="pdp-review-like">
-                                                <ThumbsUp size={14} />
-                                                <span>{String(review.likes)}</span>
-                                            </Button>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="pdp-reviews-empty">
-                            <MessageSquare size={36} />
-                            <p>暂无评价</p>
-                            <span>成为第一个评价的人吧</span>
-                        </div>
-                    )}
-
-                    {token && !isOwner && canReview && (
-                        <div className="pdp-reviews-action">
-                            <Button
-                                variant="outline"
-                                className="pdp-btn pdp-btn-secondary"
-                                onClick={() => setShowReviewModal(true)}
-                            >
-                                <Star size={16} />
-                                发表评价
-                            </Button>
-                        </div>
-                    )}
-
-                    {token && !isOwner && !canReview && <p className="pdp-reviews-hint">完成交易后可评价该资产</p>}
-                </div>
-
-                <div className="pdp-section-divider" />
-
                 <div className="pdp-similar-section">
                     <div className="pdp-section-header">
                         <div className="pdp-section-accent" />
@@ -1028,78 +872,6 @@ function ProductDetailPage() {
                             <Send size={18} />
                         </Button>
                     </div>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={showReviewModal} onOpenChange={open => !open && setShowReviewModal(false)}>
-                <DialogContent className="sm:max-w-[520px]">
-                    <DialogHeader>
-                        <DialogTitle>发表评价</DialogTitle>
-                    </DialogHeader>
-
-                    <div className="pdp-modal-product">
-                        <div className="pdp-modal-product-image">
-                            {images.length > 0 ? (
-                                <Image
-                                    src={images[0]}
-                                    alt={product.title}
-                                    loading="lazy"
-                                    placeholder="skeleton"
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                            ) : (
-                                <div className="pdp-modal-product-placeholder">
-                                    <Star size={20} />
-                                </div>
-                            )}
-                        </div>
-                        <div className="pdp-modal-product-info">
-                            <p className="pdp-modal-product-name">{product.title}</p>
-                        </div>
-                    </div>
-
-                    <div className="pdp-modal-form">
-                        <div className="pdp-form-group">
-                            <Label className="pdp-form-label" id="review-rating-label">
-                                评分
-                            </Label>
-                            <fieldset className="pdp-review-stars" aria-labelledby="review-rating-label">
-                                {[1, 2, 3, 4, 5].map(star => (
-                                    <Button
-                                        key={star}
-                                        variant="ghost"
-                                        size="icon"
-                                        className={`pdp-review-star ${star <= reviewRating ? 'active' : ''}`}
-                                        onClick={() => reviewForm.setValue('rating', star)}
-                                        aria-label={`${star}星`}
-                                    >
-                                        <Star size={24} fill={star <= reviewRating ? 'currentColor' : 'none'} />
-                                    </Button>
-                                ))}
-                            </fieldset>
-                        </div>
-                        <div className="pdp-form-group">
-                            <Label htmlFor="review-content">评价内容</Label>
-                            <Textarea
-                                id="review-content"
-                                placeholder="分享您的购买体验..."
-                                rows={4}
-                                {...reviewForm.register('content')}
-                            />
-                            {reviewForm.formState.errors.content && (
-                                <p className="pdp-form-error">{reviewForm.formState.errors.content.message}</p>
-                            )}
-                        </div>
-                    </div>
-
-                    <DialogFooter className="flex-row gap-2.5 sm:justify-end">
-                        <Button variant="outline" onClick={() => setShowReviewModal(false)}>
-                            取消
-                        </Button>
-                        <Button onClick={handleSubmitReview} disabled={submitReview.isPending}>
-                            {submitReview.isPending ? '提交中...' : '提交评价'}
-                        </Button>
-                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

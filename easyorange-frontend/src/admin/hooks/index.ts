@@ -43,11 +43,6 @@ export {
     useUpdateProductStatus,
 } from './useAdminProducts';
 export {
-    useAdminRatingDetail,
-    useAdminRatings,
-    useDeleteRating,
-} from './useAdminRatings';
-export {
     useAdminUserDetail,
     useAdminUsers,
     useUpdateUserStatus,

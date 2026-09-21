@@ -336,38 +336,6 @@ export interface UserUnlockRequest {
 
 // ==================== Rating Types ====================
 
-export interface AdminRating {
-    reviewId: string;
-    productId: string;
-    productName: string | null;
-    userId: string;
-    username: string | null;
-    userAvatar: string | null;
-    rating: number;
-    content: string;
-    replyContent: string | null;
-    likes: number;
-    status: number;
-    createTime: string | null;
-    updateTime: string | null;
-}
-
-export interface AdminRatingQuery {
-    pageNum: number;
-    pageSize: number;
-    productId?: string;
-    userId?: string;
-    rating?: number;
-    status?: number;
-    keyword?: string;
-    startTime?: string;
-    endTime?: string;
-}
-
-export interface AdminRatingDeleteRequest {
-    reason: string;
-}
-
 // ==================== Dashboard Chart Types ====================
 
 export interface UserActivityItem {

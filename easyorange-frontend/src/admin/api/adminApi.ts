@@ -7,9 +7,6 @@ import type {
     AdminOrderQuery,
     AdminProduct,
     AdminProductQuery,
-    AdminRating,
-    AdminRatingDeleteRequest,
-    AdminRatingQuery,
     AdminUser,
     AdminUserQuery,
     AuditLogResponse,
@@ -218,25 +215,6 @@ export const adminApi = {
     deleteCategory(id: string) {
         return request<void>(`${ADMIN_API_PREFIX}/categories/${id}`, {
             method: 'DELETE',
-        });
-    },
-
-    // ==================== Rating Management ====================
-
-    getReviews(params: AdminRatingQuery) {
-        return request<PageResult<AdminRating>>(`${ADMIN_API_PREFIX}/reviews`, {
-            params: { ...params },
-        });
-    },
-
-    getReviewById(id: string) {
-        return request<AdminRating>(`${ADMIN_API_PREFIX}/reviews/${id}`);
-    },
-
-    deleteReview(id: string, data: AdminRatingDeleteRequest) {
-        return request<void>(`${ADMIN_API_PREFIX}/reviews/${id}`, {
-            method: 'DELETE',
-            body: data,
         });
     },
 
