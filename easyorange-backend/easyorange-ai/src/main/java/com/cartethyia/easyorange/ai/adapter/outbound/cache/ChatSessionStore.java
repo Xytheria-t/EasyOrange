@@ -16,7 +16,7 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * 多轮对话短期记忆 — Redis List 会话窗口（TTL 24h，最近 N 轮），
- * 与 {@link com.cartethyia.easyorange.ai.application.service.AiChatService} 的「最近 N 轮 + 工具结果」注入配合。
+ * 与 {@link com.cartethyia.easyorange.ai.application.chat.AiChatService} 的「最近 N 轮 + 工具结果」注入配合。
  * <p>
  * Redis 不可用 / 会话为空时返回空列表（fail-open：丢记忆不阻塞回答）。
  */

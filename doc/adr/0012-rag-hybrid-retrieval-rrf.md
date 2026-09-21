@@ -36,7 +36,7 @@
 
 - 融合：[RrfFusion.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/domain/model/RrfFusion.java)
 - 索引侧两路召回：[KnowledgeElasticsearchAdapter.java](../../easyorange-backend/easyorange-application/src/main/java/com/cartethyia/easyorange/adapter/outbound/elasticsearch/KnowledgeElasticsearchAdapter.java)
-- 检索服务：[KnowledgeRetrievalService.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/KnowledgeRetrievalService.java)
+- 检索服务：[KnowledgeRetrievalService.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/retrieval/KnowledgeRetrievalService.java)
 - 语料与评测集：[R__seed_knowledge_docs.sql](../../easyorange-backend/easyorange-application/src/main/resources/db/migration/R__seed_knowledge_docs.sql)、[golden-set.yaml](../../easyorange-backend/easyorange-ai/src/main/resources/eval/golden-set.yaml)
 
 ## 后果（Consequences）

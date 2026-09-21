@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.job;
 
-import com.cartethyia.easyorange.ai.application.service.KnowledgeIngestionService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeIngestionService;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

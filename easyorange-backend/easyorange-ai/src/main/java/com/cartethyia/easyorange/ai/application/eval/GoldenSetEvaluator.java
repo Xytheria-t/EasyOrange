@@ -1,10 +1,9 @@
 package com.cartethyia.easyorange.ai.application.eval;
 
+import com.cartethyia.easyorange.ai.application.chat.AiChatService;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
-import com.cartethyia.easyorange.ai.application.service.AiChatService;
-import com.cartethyia.easyorange.ai.application.service.AiJudge;
-import com.cartethyia.easyorange.ai.application.service.KnowledgeRetrievalService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.RetrievalReport;
