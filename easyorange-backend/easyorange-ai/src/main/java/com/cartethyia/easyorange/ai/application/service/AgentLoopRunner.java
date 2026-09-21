@@ -428,7 +428,7 @@ public class AgentLoopRunner {
                 """.formatted(
                         input.question(),
                         formatHistory(input.history()),
-                        formatPrefs(input.prefs()),
+                        UserPreference.format(input.prefs()),
                         formatObservations(observations));
     }
 
@@ -452,13 +452,6 @@ public class AgentLoopRunner {
         return history.stream()
                 .map(turn -> ("user".equals(turn.role()) ? "用户" : "助手") + ": " + turn.content())
                 .collect(Collectors.joining("\n"));
-    }
-
-    private static String formatPrefs(List<UserPreference> prefs) {
-        if (prefs.isEmpty()) {
-            return "(无)";
-        }
-        return prefs.stream().map(p -> p.key() + ": " + p.value()).collect(Collectors.joining("\n"));
     }
 
     /** 工具入参摘要（trace 落库与失败日志用）—— 每个工具取自有字段，其余轮次即检索词。 */
