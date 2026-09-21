@@ -123,5 +123,4 @@ public class AdminUserAdapter implements AdminUserPort {
                 detail.createTime(),
                 detail.updateTime());
     }
-
 }

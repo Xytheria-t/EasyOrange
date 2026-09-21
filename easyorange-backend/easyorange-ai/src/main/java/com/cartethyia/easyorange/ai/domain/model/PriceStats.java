@@ -35,7 +35,8 @@ public final class PriceStats {
         if (hits == null) {
             return Optional.empty();
         }
-        return ofPrices(hits.stream().filter(Objects::nonNull).map(AssetHit::price).toList());
+        return ofPrices(
+                hits.stream().filter(Objects::nonNull).map(AssetHit::price).toList());
     }
 
     /**

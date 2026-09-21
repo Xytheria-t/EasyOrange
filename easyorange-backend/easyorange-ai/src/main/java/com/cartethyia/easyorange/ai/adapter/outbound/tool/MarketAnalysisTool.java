@@ -37,7 +37,8 @@ public class MarketAnalysisTool implements SearchTool<String> {
 
     /** 无有效价格时返回 null —— 与管道「本轮无结果」语义一致，前端按 falsy 跳过渲染。 */
     private static String summarize(List<ProductReadModel> products) {
-        return PriceStats.ofPrices(products.stream().map(ProductReadModel::price).toList())
+        return PriceStats.ofPrices(
+                        products.stream().map(ProductReadModel::price).toList())
                 .map(PriceStats::observation)
                 .orElse(null);
     }

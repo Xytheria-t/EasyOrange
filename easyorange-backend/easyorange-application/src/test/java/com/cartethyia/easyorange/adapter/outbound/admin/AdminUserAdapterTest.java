@@ -220,6 +220,5 @@ class AdminUserAdapterTest {
             assertThat(result.totalUsers()).isEqualTo(100L);
             assertThat(result.todayNewUsers()).isEqualTo(5L);
         }
-
     }
 }

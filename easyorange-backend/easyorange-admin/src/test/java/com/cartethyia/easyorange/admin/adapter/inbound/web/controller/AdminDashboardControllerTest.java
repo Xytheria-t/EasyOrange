@@ -85,5 +85,4 @@ class AdminDashboardControllerTest {
                 .andExpect(jsonPath("$.data[0].type").value("user"))
                 .andExpect(jsonPath("$.data[0].text").value("新用户 test 完成注册"));
     }
-
 }

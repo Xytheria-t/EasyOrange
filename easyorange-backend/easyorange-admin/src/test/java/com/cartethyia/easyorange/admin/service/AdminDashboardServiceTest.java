@@ -48,7 +48,6 @@ class AdminDashboardServiceTest {
     @InjectMocks
     private AdminDashboardService dashboardService;
 
-
     @Nested
     @DisplayName("getDashboardStats")
     class GetDashboardStatsTests {
@@ -136,5 +135,4 @@ class AdminDashboardServiceTest {
             assertThat(activities.get(1).getText()).contains("高等数学教材");
         }
     }
-
 }
