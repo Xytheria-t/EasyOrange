@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.config;
+package com.cartethyia.easyorange.ai.adapter.outbound.llm;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;

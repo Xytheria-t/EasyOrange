@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.config;
+package com.cartethyia.easyorange.ai.adapter.outbound.llm;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;

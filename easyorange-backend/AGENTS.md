@@ -24,6 +24,7 @@
 - 无状态协作者组件用施事名词（`*er` / `*or`，如 `OrderItemPreparer`、`OrderCacheEvictor`），不用过程名词
 - **一个事务只修改一个聚合根**；聚合间通过 ID 引用，不直接持有其他聚合引用。状态机只给真有生命周期的聚合上（Order / Product 强、Payment 中等、User 无状态机就不硬造）
 - **领域服务不用 `@Service` 等框架注解**，由 `config/` 下的配置类手动注册 Bean；依赖外部功能走端口接口
+- **配置类按「配什么」落点**：装配根（选 / 构造 adapter 实现或 domain bean）留模块根 `config/`；某个适配器自己的配置进 `adapter/{inbound,outbound}/config/`；`config/` 不收非配置类（占位实现、观测 Filter 归对应 adapter 包）。domain 里不能有 Spring 注解（Rule 1 白名单），装配 adapter 的配置也进不了 `application/`（Rule 7 拦 application→adapter）——两者合起来使模块根 `config/` 成为组装根的唯一合法位
 - **领域模型归属一句话记法**：聚合根「我变我自己」/ 领域服务「我帮你们协调」/ 应用服务「我负责跑腿」——`user.changePassword()` 归聚合根；查用户名是否已存在、密码加密比对（外部能力 `PasswordEncoderPort`）、登录失败锁定（涉及 `LoginAttempt`）归领域服务；登录后组装 Token 返回归应用服务。**应用服务按职责聚合**：依赖集与事务边界一致的用例合并（`AuthAppService` 管注册 / 登录 / 登出 / 刷新 / 改密码），判据：**构造函数变更不应强迫修改不相关的调用方**
 - **常量分层放置**（紧贴使用者所在层）：业务枚举 / 状态 → `domain/enums`、`domain/constant`；全局共享业务枚举（`ResultCode`、`BusinessType`）→ `common/enums`；全局技术常量 → `common/constant`；框架层常量 → `config/constant`；模块业务错误码 → `domain/constant/*ResultCode`；技术常量（Redis Key 等）→ 对应适配器层。包名：枚举用复数 `enums/`（`enum` 是关键字）；常量包统一 `constant/`（单数）
 - **服务层返回值**：创建（create/register/add）返回 `String` ID；命令/更新/删除（update/delete/remove/handle/put/take/mark/submit/cancel/process）返回 `void`，前端靠 React Query `invalidateQueries` 重拉；批量操作可返回结果 DTO（如 `BatchAuditResultResponse`，需聚合成功率/失败信息）。这是务实混合约定，不是严格 CQRS
