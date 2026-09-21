@@ -162,7 +162,7 @@ class GlobalExceptionHandlerTest {
         @Test
         @DisplayName("DuplicateKeyException 应返回 400（唯一键兜底）而非 500")
         void handleDuplicateKey_returnsBadRequest() {
-            var ex = new DuplicateKeyException("Duplicate entry 'x' for key 'uk_eo_favorite_user_product_del'");
+            var ex = new DuplicateKeyException("Duplicate entry 'x' for key 'uk_eo_user_username'");
 
             ResponseEntity<Result<Void>> response = handler.handle(ex);
 

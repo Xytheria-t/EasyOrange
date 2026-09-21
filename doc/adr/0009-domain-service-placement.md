@@ -9,7 +9,7 @@
 
 ## 上下文（Context）
 
-项目各业务模块的 `domain/service` 数量差异显著：user=6、message=1、product=0、order=0、favorite=0、payment=0。评审与讨论中，这种数量差异容易被误读为质量差异，产生「对齐数量」的重构冲动——例如质疑 user 模块「为什么这么多领域服务」、或反向质疑 product 模块「为什么一个都没有」。
+项目各业务模块的 `domain/service` 数量差异显著：user=6、message=1、product=0、order=0、payment=0。评审与讨论中，这种数量差异容易被误读为质量差异，产生「对齐数量」的重构冲动——例如质疑 user 模块「为什么这么多领域服务」、或反向质疑 product 模块「为什么一个都没有」。
 
 现状事实：
 

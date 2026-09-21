@@ -141,7 +141,7 @@
 - **商品领域事件统一实现 `ProductEvent` 密封接口**（extends `DomainEvent`）：共享 `String productId()` 作聚合根标识，密封接口的 `aggregateId()` 默认实现由它派生；新增事件只需 `implements ProductEvent` 并定义组件，**无需手动实现 `aggregateId()`**
 - 同步副作用（缓存失效、审核日志）走 `ProductDomainEventListener`（`@EventListener`，同事务同线程）；异步投影走 `ProductEventConsumer`（`@RabbitListener`，队列 `eo.product.cqrs`）
 - **缓存端口按读写职责分拆**：domain 层 `ProductCacheEvictionPort` **仅** `evictProductCache(productId)`（领域服务只做驱逐）；application 层 `ProductCachePort` **仅** `getProductCache(productId, loader)`（未命中回源，**`null` 不落缓存**——与「防穿透靠缓存 null」不同，这里的 loader 语义是 `null = 未命中或不存在`）；adapter 层 `ProductCacheAdapter` 同时实现两个端口。另有 `CategoryCachePort`（用 `CategoryReadModel`）、`SellerCachePort`（批量卖家信息）、`ViewCountPort`（浏览量 Redis hash 缓冲，`ViewCountBatchProcessor` 定时落库）
-- **本模块是端口定义方**：order 通过 `ProductInventoryPort` 操作产品生命周期（快照、库存、售出）；favorite 通过 `ProductInfoPort`；ai 通过 `ProductSearchQueryPort` / `AiSearchEnhancerPort`。实现都在 `easyorange-application/adapter/outbound/`
+- **本模块是端口定义方**：order 通过 `ProductInventoryPort` 操作产品生命周期（快照、库存、售出）；ai 通过 `ProductSearchQueryPort` / `AiSearchEnhancerPort`。实现都在 `easyorange-application/adapter/outbound/`
 
 ### user
 
@@ -161,7 +161,6 @@
 - **WebSocket 是 STOMP over WebSocket**：`WebSocketAuthInterceptor` 从 STOMP Header 提取 JWT；聊天实时帧由 `ChatWebSocketHandler` 发（`/queue/chat/{conversationId}` 会话帧 + `/queue/unread-count` 未读数）；`WebSocketNotifier`（`MessageNotifierPort`）负责在线判定与系统通知推送（`/queue/notification`）；撤回广播 `MessageRecalledEvent` → `WebSocketEventConsumer`（队列 `eo.message.websocket`）；离线 `OfflineMessageStoreService` 落 `OfflineMessage`（PENDING），`replayPending` 上线后补推
 - **REST 与 WebSocket 必须共用 `MessageCommandHandler`**——它是**限流唯一裁决点**，避免双重计数。发送前经 `SensitiveWordFilterService.filter` 过滤标题/内容再保存；接收方离线（`MessageNotifierPort.isUserOnline` false）→ `OfflineMessageStoreService.storeIfOffline`
 - 安全：消息发送限流 `MessageCommandHandler` + framework `DistributedRateLimiter`（**5 条/秒/用户**，Redis 不可用 fail-open）；**XSS 防护在渲染端文本输出**（前端 `escapeHtml`，**聚合根不转义**）；用户只能读取/删除自己的消息
-- 归档：`MessageArchiveTask`（`adapter/inbound/job/`）——清理任务**每天凌晨 3 点**清理「保留天数 + 宽限期」之前的消息（**分批 DELETE 1000 条**）；归档任务**每月 1 号凌晨 2 点**把超期消息搬移进 `eo_message_archive`（`MessageArchiveBatchHandler` 分批原子搬移）。配置 `easyorange.message.retention-days`（默认 90）/ `cleanup-grace-days`（默认 35，**宽限期须大于归档周期**）
 - 聊天 conversationId 格式：排序双 ID `conv_{minId}_{maxId}`，保证 A→B 与 B→A 一致
 
 ### ai
@@ -193,18 +192,12 @@
 - `AiListingAdoptionPort` → `JdbcAiListingAdoptionAdapter`（读商品表 `ai_suggestion` 快照出**字段级**采纳率 + 价格偏离分布）；`CategoryCatalogPort` → `JdbcCategoryCatalogAdapter`（读 `eo_category` 给拍照识别注入类目约束）；**ai 模块不直接碰 product 的表**
 - **纯规则零 LLM**：`NaturalLanguageDetector` / `ProductTagger` 与搜索增强的 `MarketAnalysisTool`（价格统计）/ `QuestionSuggestionTool`（追问模板派生）不调任何 LLM，规则引擎 + 数据库/本地计算，确保亚毫秒级响应
 - **反馈导出只出「可用」用例**：`GoldenSetExportService` 的 `EXPORTABLE` 判据（`helpful = 1 AND scope = 'chat'` 且字段非空）是唯一真值源，导出查询与「待人工处理」计数共用。**helpful=0（被嫌弃）的回答不能自动成用例**（当 reference 会把错答案钉成标准）；不能自动成用例的行不标 `exported`，保持可见直到人工处理
-- `AiEvalScheduler` 定时对未评审成功调用做 LLM-as-Judge 打分（1-5 + 评语），默认关闭（`easyorange.ai.eval.enabled=false`）
 - 供应商可换：改 `AiModelConfig` 的 baseUrl/apiKey/model（或 `application.yaml` 的 `easyorange.ai.*`），无需改业务代码
 - 重试/并发隔离由 `OpenAiSetup.setupSyncClient` 承担（openai-java 内置 `MAX_RETRIES=2` + 连接池），**无自研 Retry/Bulkhead bean**；新增 AI 调用直接注入 `ChatModel` / `EmbeddingModel` 并复用 `AiModelSupport`
 
-### favorite
-
-- **`Favorite` 聚合根（record）**：`create()` 校验 userId/productId 非空并记录**收藏时价格快照**（**价格缺失拒绝收藏**）；`reconstitute()` 仅从持久化重建、不做校验；`isPriceDrop(newPrice)` 要求新价低于快照价，**快照为空视为未知、不判定降价**；快照更新走仓储 CAS（`WHERE price_snapshot = 旧值`），**重复事件不重复通知（只提醒「再创新低」）**
-- **ACL 模式的最佳实践示例**：通过 `ProductInfoPort` 端口隔离对 product 模块的依赖，实现 `FavoriteProductInfoAdapter` 在 `easyorange-application/adapter/outbound/product/`；其他模块的跨模块依赖应参照本模块
-
 ### admin
 
-- **禁止直接依赖其他模块的 Mapper/DO**，必须通过 `domain/port/` 的 7 个 `Admin*Port`（Product / User / Order / Rating / Category / Dashboard / ProductAudit），适配器在 `easyorange-application/adapter/outbound/admin/`
+- **禁止直接依赖其他模块的 Mapper/DO**，必须通过 `domain/port/` 的 `Admin*Port`（Product / User / Order / Category / Dashboard / ProductAudit），适配器在 `easyorange-application/adapter/outbound/admin/`
 - 模块依赖仅 `optional` 依赖 `easyorange-common`（Result / PageResult / BusinessException）与 `easyorange-framework`（TokenService / SecurityContextUtil）；**其余业务模块零依赖**
 - `AdminUserAdapter` → `AdminUserManagementPort`（纯翻译层，读写委托 user 模块）；`AdminDashboardAdapter` 用 `JdbcTemplate` 做跨模块聚合统计
 - 所有写操作记录 reason + 操作人信息；所有接口依赖 SecurityConfig 的管理员鉴权

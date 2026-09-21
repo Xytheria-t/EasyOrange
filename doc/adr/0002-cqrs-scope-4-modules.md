@@ -25,7 +25,7 @@ EasyOrange 后端是 Maven 多模块工程（见 `README.md` 与 `easyorange-bac
 
 ## 决策（Decision）
 
-**只在 product / order / payment / message 四个模块落地 CQRS**，其余模块（user / favorite / ai / admin / framework / common / application）不上 CQRS。
+**只在 product / order / payment / message 四个模块落地 CQRS**，其余模块（user / ai / admin / framework / common / application）不上 CQRS。
 
 四模块共性与决策驱动力：
 
@@ -50,7 +50,6 @@ EasyOrange 后端是 Maven 多模块工程（见 `README.md` 与 `easyorange-bac
 | payment | 是 | 写操作幂等 + 流水查询解耦，收益在 Handler 级分离已足够 |
 | message | 是 | 会话列表 / 未读数 / 历史消息查询维度独立，与命令天然分离 |
 | user | 否 | 读写比均衡，CRUD 即可，强套 CQRS 是空壳 |
-| favorite | 否 | 六边形架构已足够，无独立查询维度 |
 | ai | 否 | 核心是 Port/Adapter + 装饰器（见 ADR 0003），非读写分离诉求 |
 
 ## 后果（Consequences）
@@ -79,14 +78,14 @@ EasyOrange 后端是 Maven 多模块工程（见 `README.md` 与 `easyorange-bac
 
 ## 备选方案（Alternatives Considered）
 
-- **全模块上 CQRS**：拒绝。user / favorite / ai 等模块读写比均衡或以调用外部 API 为主（ai 模块核心是 Port/Adapter + 装饰器，见 ADR 0003），强行套 CQRS 会引入无意义的 CommandHandler 空壳，违反 KISS / YAGNI。
+- **全模块上 CQRS**：拒绝。user / admin / ai 等模块读写比均衡或以调用外部 API 为主（ai 模块核心是 Port/Adapter + 装饰器，见 ADR 0003），强行套 CQRS 会引入无意义的 CommandHandler 空壳，违反 KISS / YAGNI。
 - **完全不上 CQRS**：拒绝。product 的 ES 全文搜索 + facets 聚合、order 的多维度分页查询，用单一 Service + Repository 难以承载，扩展性差；也无法在「LLM × DDD 工程化实战项目」中讲清楚 CQRS。
 - **只在 product 上 CQRS**：拒绝。order 的写链路与查询分离、message 的会话/未读数查询维度独立，都有真实诉求；只做 product 会丢失这些场景的展示价值。
-- **未来扩展到 user / favorite**：暂不排除。当 user 模块的「个人主页 / 信用画像」查询维度独立演化、或 favorite 出现大流量收藏列表分页时，再评估是否新增 ADR 扩展。
+- **未来扩展到 user**：暂不排除。当 user 模块的「个人主页 / 信用画像」查询维度独立演化时，再评估是否新增 ADR 扩展。
 
 ## 备注（Notes）
 
 - 相关文档：[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「命名与事务」节、[README.md](../../README.md)「架构模式落地」表
 - 相关代码：[MessageCommandHandler.java](../../easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/command/MessageCommandHandler.java)、[MessageQueryHandler.java](../../easyorange-backend/easyorange-message/src/main/java/com/cartethyia/easyorange/message/application/query/MessageQueryHandler.java)
 - 相关 ADR：[ADR 0007](./0007-order-local-tx-over-saga.md)（order 写链路：本地单事务 + 分布式锁 + Outbox，拒绝 Saga）、ADR 0003（ai 模块选择 Port/Adapter 而非 CQRS；该 ADR 已被 [ADR 0008](./0008-ai-spring-ai-framework.md) 替代、记录归入[已替代决策](./已替代决策.md)，ai 模块现为 Spring AI 框架化，「不上 CQRS」结论不变）
-- 重评估触发：user 或 favorite 模块出现独立的复杂查询维度、或 ArchUnit 守卫频繁被绕过时，重新评估 CQRS 范围。
+- 重评估触发：user 模块出现独立的复杂查询维度、或 ArchUnit 守卫频繁被绕过时，重新评估 CQRS 范围。
