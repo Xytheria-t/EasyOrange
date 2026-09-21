@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.ai.application.chat;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.TokenEstimator;
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
@@ -40,55 +39,49 @@ public class ChatContextTrimmer {
     }
 
     /**
-     * @param history          裁剪后实际注入 prompt 的历史（最新连续窗口）
-     * @param trimmed          是否触发了裁剪（false = 预算内全量注入）
-     * @param estimatedTokens  注入历史的估算 token 数
+     * 裁剪要注入 prompt 的历史。
+     *
+     * @return 预算内放得下的最新连续窗口（预算内全量时原样返回）
      */
-    public record TrimResult(List<ChatTurn> history, boolean trimmed, int estimatedTokens) {}
-
-    public TrimResult trim(List<ChatTurn> history) {
+    public List<ChatTurn> trim(List<ChatTurn> history) {
         int budget = aiProperties.chat().maxHistoryTokens();
         // 预算 <=0 视为关闭 token 裁剪（退回纯轮数窗口），不产口径
         if (budget <= 0) {
-            return new TrimResult(history, false, estimateTokens(history));
+            return history;
         }
-        int total = estimateTokens(history);
+        int[] tokens = new int[history.size()];
+        int total = 0;
+        for (int i = 0; i < tokens.length; i++) {
+            tokens[i] = TokenEstimator.estimate(history.get(i).content());
+            total += tokens[i];
+        }
         if (total <= budget) {
-            counter(false).increment();
-            tokensSummary().record(total);
-            return new TrimResult(history, false, total);
+            record(false, total);
+            return history;
         }
         // 最新一条无条件保留（超长单条也注入，由 maxTokensPerCall 兜住生成侧），其余从最新向前累计
-        int keptFrom = history.size() - 1;
-        int kept = TokenEstimator.estimate(history.get(keptFrom).content());
+        int keptFrom = tokens.length - 1;
+        int kept = tokens[keptFrom];
         for (int i = keptFrom - 1; i >= 0; i--) {
-            int turnTokens = TokenEstimator.estimate(history.get(i).content());
-            if (kept + turnTokens > budget) {
+            if (kept + tokens[i] > budget) {
                 break;
             }
-            kept += turnTokens;
+            kept += tokens[i];
             keptFrom = i;
         }
-        List<ChatTurn> keptHistory = List.copyOf(history.subList(keptFrom, history.size()));
-        counter(true).increment();
-        tokensSummary().record(kept);
-        return new TrimResult(keptHistory, true, kept);
+        record(true, kept);
+        return List.copyOf(history.subList(keptFrom, history.size()));
     }
 
-    private static int estimateTokens(List<ChatTurn> history) {
-        return history.stream()
-                .mapToInt(turn -> TokenEstimator.estimate(turn.content()))
-                .sum();
-    }
-
-    private Counter counter(boolean trimmed) {
-        return meterRegistry.counter("easyorange.ai.chat.context.trim", "action", trimmed ? "trimmed" : "within");
-    }
-
-    private DistributionSummary tokensSummary() {
-        return DistributionSummary.builder("easyorange.ai.chat.context.tokens")
+    /** 每请求一次的两条口径同处记录 —— 裁剪触发率与注入 token 分布都取自这里。 */
+    private void record(boolean trimmed, int tokens) {
+        meterRegistry
+                .counter("easyorange.ai.chat.context.trim", "action", trimmed ? "trimmed" : "within")
+                .increment();
+        DistributionSummary.builder("easyorange.ai.chat.context.tokens")
                 .description("注入 prompt 的历史上下文估算 token 数（裁剪后）")
                 .publishPercentiles(0.5, 0.95)
-                .register(meterRegistry);
+                .register(meterRegistry)
+                .record(tokens);
     }
 }
