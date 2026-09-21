@@ -88,7 +88,6 @@ flowchart TB
     ORD["order · 单事务 + 分布式锁"]
     PAY["payment · CQRS + 幂等"]
     MSG["message · WebSocket"]
-    FAV["favorite"]
     ADMIN["admin · 管理端"]
     AI["ai · Spring AI + Agent"]
     MQ[("RabbitMQ · 事件消费者 + DLQ")]
@@ -156,7 +155,7 @@ flowchart TB
 |---|---|---|---|
 | 2PC / XA / Seata AT | 强一致锁表久 + 连接池代理侵入 | 本地单事务 + Redisson 分布式锁 + Outbox | [ADR-0007](doc/adr/0007-order-local-tx-over-saga.md) |
 | Saga 编排（跨模块补偿） | 单库下补偿与回滚重复、失败状态随事务回滚丢失 | 本地单事务 + 分布式锁 + Outbox | [ADR-0007](doc/adr/0007-order-local-tx-over-saga.md) |
-| 全模块 CQRS | user / favorite / ai 等读写比均衡或调用外部 API，收益 < 维护成本 | 仅 product / order / payment / message 4 模块 | [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md) |
+| 全模块 CQRS | user / admin / ai 等读写比均衡或调用外部 API，收益 < 维护成本 | 仅 product / order / payment / message 4 模块 | [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md) |
 | LangChain4j | 不是「反射黑盒」——两家 `@Tool` 都是运行时反射生成 schema，不是差异点；真实取舍是**循环控制权**：托管的工具执行循环（AI Services / `ChatClient` ToolCallingAdvisor）插不进步数上限、循环中途预算检查、按终止原因分类的降级 | 自持循环 + Spring AI `ChatModel` 层（只发 schema、不执行工具） | — （未评估为候选，无 ADR；选型见 [ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） |
 | Milvus / PGVector | SKU < 10 万，向量库 ROI 低（ANN 建索引 / 调参 / 运维一整套换不来可感知收益） | ES 原生 kNN + BM25 两路独立召回，索引侧 RRF 排名融合（**不做余弦重排**） | [ADR-0012](doc/adr/0012-rag-hybrid-retrieval-rrf.md) |
 | Kafka / Pulsar 默认 MQ | Kafka 无原生 DLQ；单事件扇出到多消费者的模型不匹配；Pulsar 本地太重 | RabbitMQ Topic Exchange + 队列级 DLQ | [ADR-0005](doc/adr/0005-messaging-rabbitmq.md) |
@@ -188,7 +187,6 @@ flowchart TB
 | **order** | 订单（CQRS）+ 单事务 + 分布式锁 + 生命周期事件 |
 | **payment** | 支付（CQRS）+ 幂等 + Mock 网关 |
 | **message** | 消息（CQRS）+ 站内信 + WebSocket / STOMP 实时沟通 |
-| **favorite** | 收藏 + 批量校验 |
 | **ai** | Spring AI 框架化 + Agent 编排 + 令牌桶 / 预算 / Prompt |
 | **admin** | 后台 API（用户 / 商品审核 / 订单 / 统计） |
 

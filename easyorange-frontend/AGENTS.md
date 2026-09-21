@@ -26,7 +26,7 @@
 
 ## 数据边界
 
-- **`Long → String` 收敛**：后端全局把 `long`/`Long` 序列化成字符串（JS 精度安全，见后端 `JacksonConfig`），计数字段线上是 `"3"` 而非 `3`（含 `PageResult.total`）。**前端 API 层声明为 `number` 的计数字段必须 `Number(...)` 收敛**（参考 `favoriteApi.getCount()`），否则算术会变字符串拼接
+- **`Long → String` 收敛**：后端全局把 `long`/`Long` 序列化成字符串（JS 精度安全，见后端 `JacksonConfig`），计数字段线上是 `"3"` 而非 `3`（含 `PageResult.total`）。**前端 API 层声明为 `number` 的计数字段必须 `Number(...)` 收敛**（参考 `paymentApi` / `adminApi` 里的计数字段处理），否则算术会变字符串拼接
 
 ## 交互
 

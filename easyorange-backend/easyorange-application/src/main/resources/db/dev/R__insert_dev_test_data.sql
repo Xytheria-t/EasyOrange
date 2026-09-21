@@ -560,59 +560,7 @@ ON DUPLICATE KEY UPDATE
     `description` = new.`description`,
     `update_time` = new.`update_time`;
 
--- ===================================================================
--- 5. 收藏数据
--- ===================================================================
-
-INSERT INTO `eo_favorite` (
-    `id`, `user_id`, `product_id`, `create_time`, `update_time`
-) VALUES
-(1,  3, 1,  NOW() - INTERVAL 20 DAY, NOW()),
-(2,  3, 5,  NOW() - INTERVAL 18 DAY, NOW()),
-(3,  4, 8,  NOW() - INTERVAL 15 DAY, NOW()),
-(4,  4, 13, NOW() - INTERVAL 12 DAY, NOW()),
-(5,  4, 23, NOW() - INTERVAL 10 DAY, NOW()),
-(6,  5, 2,  NOW() - INTERVAL 8 DAY, NOW()),
-(7,  5, 9,  NOW() - INTERVAL 7 DAY, NOW()),
-(8,  5, 37, NOW() - INTERVAL 5 DAY, NOW()),
-(9,  6, 1,  NOW() - INTERVAL 6 DAY, NOW()),
-(10, 6, 26, NOW() - INTERVAL 4 DAY, NOW()),
-(11, 6, 35, NOW() - INTERVAL 3 DAY, NOW()),
-(12, 7, 14, NOW() - INTERVAL 5 DAY, NOW()),
-(13, 7, 22, NOW() - INTERVAL 3 DAY, NOW()),
-(14, 8, 18, NOW() - INTERVAL 4 DAY, NOW()),
-(15, 8, 20, NOW() - INTERVAL 2 DAY, NOW()),
-(16, 8, 24, NOW() - INTERVAL 1 DAY, NOW()),
-(17, 1, 2,  NOW() - INTERVAL 10 DAY, NOW()),
-(18, 1, 13, NOW() - INTERVAL 5 DAY, NOW()),
-(19, 3, 14, NOW() - INTERVAL 3 DAY, NOW()),
-(20, 5, 39, NOW() - INTERVAL 1 DAY, NOW()),
-(21, 11, 5,  NOW() - INTERVAL 12 DAY, NOW()),
-(22, 11, 14, NOW() - INTERVAL 8 DAY, NOW()),
-(23, 12, 48, NOW() - INTERVAL 5 DAY, NOW()),
-(24, 12, 8,  NOW() - INTERVAL 3 DAY, NOW()),
-(25, 13, 46, NOW() - INTERVAL 10 DAY, NOW()),
-(26, 13, 58, NOW() - INTERVAL 7 DAY, NOW()),
-(27, 14, 54, NOW() - INTERVAL 4 DAY, NOW()),
-(28, 14, 66, NOW() - INTERVAL 2 DAY, NOW()),
-(29, 15, 50, NOW() - INTERVAL 6 DAY, NOW()),
-(30, 15, 37, NOW() - INTERVAL 3 DAY, NOW()),
-(31, 16, 59, NOW() - INTERVAL 8 DAY, NOW()),
-(32, 16, 67, NOW() - INTERVAL 1 DAY, NOW()),
-(33, 17, 53, NOW() - INTERVAL 5 DAY, NOW()),
-(34, 17, 69, NOW() - INTERVAL 2 DAY, NOW()),
-(35, 18, 47, NOW() - INTERVAL 3 DAY, NOW()),
-(36, 18, 63, NOW() - INTERVAL 1 DAY, NOW()),
-(37, 1,  48, NOW() - INTERVAL 4 DAY, NOW()),
-(38, 3,  54, NOW() - INTERVAL 2 DAY, NOW()),
-(39, 5,  66, NOW() - INTERVAL 1 DAY, NOW()),
-(40, 7,  58, NOW() - INTERVAL 3 DAY, NOW())
-AS new
-ON DUPLICATE KEY UPDATE
-    `update_time` = new.`update_time`;
-
--- ===================================================================
--- 6. 订单数据（22 个：覆盖全部状态机）
+-- 5. 订单数据（22 个：覆盖全部状态机）
 -- ===================================================================
 
 INSERT INTO `eo_order` (
@@ -656,7 +604,7 @@ ON DUPLICATE KEY UPDATE
     `update_time` = new.`update_time`;
 
 -- ===================================================================
--- 7. 订单行项数据（与 eo_order 一一对应，关联商品和价格）
+-- 6. 订单行项数据（与 eo_order 一一对应，关联商品和价格）
 -- ===================================================================
 
 INSERT INTO `eo_order_item` (
@@ -718,7 +666,7 @@ WHERE JSON_TYPE(oi.`product_snapshot`) = 'OBJECT'
   AND JSON_LENGTH(oi.`product_snapshot`) = 0;
 
 -- ===================================================================
--- 8. 支付记录数据（与已支付/已退款订单对应）
+-- 7. 支付记录数据（与已支付/已退款订单对应）
 -- ===================================================================
 
 INSERT INTO `eo_payment` (
@@ -750,7 +698,7 @@ ON DUPLICATE KEY UPDATE
     `update_time` = new.`update_time`;
 
 -- ===================================================================
--- 9. 消息数据（系统消息、订单消息、私聊对话）
+-- 8. 消息数据（系统消息、订单消息、私聊对话）
 -- ===================================================================
 
 INSERT INTO `eo_message` (
@@ -829,7 +777,7 @@ ON DUPLICATE KEY UPDATE
     `update_time` = new.`update_time`;
 
 -- ===================================================================
--- 10. 搜索历史数据
+-- 9. 搜索历史数据
 -- ===================================================================
 
 INSERT INTO `eo_search_history` (
@@ -876,7 +824,7 @@ ON DUPLICATE KEY UPDATE
     `update_time` = new.`update_time`;
 
 -- ===================================================================
--- 11. 热门关键词数据（去重后 30 个，keyword 唯一）
+-- 10. 热门关键词数据（去重后 30 个，keyword 唯一）
 -- ===================================================================
 
 INSERT INTO `eo_hot_keyword` (
@@ -919,7 +867,7 @@ ON DUPLICATE KEY UPDATE
     `update_time` = new.`update_time`;
 
 -- ===================================================================
--- 12. 操作日志数据
+-- 11. 操作日志数据
 -- ===================================================================
 
 INSERT INTO `eo_audit_log` (
@@ -949,75 +897,12 @@ ON DUPLICATE KEY UPDATE
     `method` = new.`method`,
     `created_at` = new.`created_at`;
 
--- ===================================================================
--- 13. 商品评价数据（基于已完成订单）
--- 评分分布：5星4条 / 4星3条 / 3星2条 / 2星1条 / 1星1条，约 73% 有资产方回复
--- 注意：同一订单同一下单人仅允许一条评价（唯一键 uk_eo_product_review_user_order）
--- ===================================================================
-
-INSERT INTO `eo_product_review` (
-    `id`, `product_id`, `user_id`, `order_id`, `rating`, `content`,
-    `reply_content`, `reply_time`, `likes`, `status`,
-    `create_time`, `update_time`, `del_flag`, `version`
-) VALUES
--- 5星评价（好评）
-(2,  8,  4,  2,  5, 'AirPods 全新未拆封，正品保障，价格比官网便宜很多，超值！', '谢谢好评，欢迎再来~', NOW() - INTERVAL 52 DAY, 18, 1, NOW() - INTERVAL 53 DAY, NOW() - INTERVAL 52 DAY, 0, 0),
-(4,  13, 3,  11, 5, 'Switch OLED屏幕效果惊艳，掌机模式太爽了，生活必备！', '哈哈，游戏愉快！', NOW() - INTERVAL 7 DAY, 15, 1, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 7 DAY, 0, 0),
-(5,  46, 14, 13, 5, '三星S24 Ultra的S Pen太好用了，AI功能也很强大，资产方服务态度超好！', '感谢认可，有问题随时联系~', NOW() - INTERVAL 9 DAY, 8, 1, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 9 DAY, 0, 0),
-(6,  50, 11, 18, 5, 'Bose降噪效果一流，戴上后世界都安静了，图书馆神器！', NULL, NULL, 11, 1, NOW() - INTERVAL 17 DAY, NOW(), 0, 0),
--- 4星评价（较好）
-(9,  38, 8,  12, 4, '羽毛球拍手感不错，就是线断了需要重新穿，总体满意。', '抱歉线的问题，可以推荐穿线师傅', NOW() - INTERVAL 4 DAY, 4, 1, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 4 DAY, 0, 0),
-(10, 47, 15, 14, 4, 'vivo X100 Pro拍照确实厉害，蔡司镜头不是盖的，就是电池续航一般。', NULL, NULL, 7, 1, NOW() - INTERVAL 6 DAY, NOW(), 0, 0),
-(11, 51, 12, 19, 4, '漫步者耳机性价比很高，降噪效果不错，就是有点夹头。', '可以调节一下头梁位置试试', NOW() - INTERVAL 12 DAY, 5, 1, NOW() - INTERVAL 13 DAY, NOW() - INTERVAL 12 DAY, 0, 0),
--- 3星评价（一般）
-(1,  1,  3,  1,  3, '手机整体还行，但电池健康度只有88%，和描述的92%有差距。', '抱歉描述有误，可以退差价', NOW() - INTERVAL 58 DAY, 3, 1, NOW() - INTERVAL 58 DAY, NOW() - INTERVAL 58 DAY, 0, 0),
-(3,  2,  5,  3,  3, '手机功能正常，但边框有轻微磕碰没在描述中提到，希望能更诚实。', NULL, NULL, 2, 1, NOW() - INTERVAL 48 DAY, NOW(), 0, 0),
--- 2星评价（较差）
-(8,  24, 6,  10, 2, '鞋子尺码偏小，和资产方说的不一样，只能送人了。', '抱歉尺码问题，可以联系我换货', NOW() - INTERVAL 23 DAY, 1, 1, NOW() - INTERVAL 23 DAY, NOW() - INTERVAL 23 DAY, 0, 0),
--- 1星评价（差评）
-(7,  11, 5,  9,  1, '手环用了两天就充不进电了，质量太差！', '可以联系售后，可能是充电器问题', NOW() - INTERVAL 28 DAY, 0, 1, NOW() - INTERVAL 28 DAY, NOW() - INTERVAL 28 DAY, 0, 0)
-AS new
-ON DUPLICATE KEY UPDATE
-    `rating` = new.`rating`,
-    `content` = new.`content`,
-    `reply_content` = new.`reply_content`,
-    `reply_time` = new.`reply_time`,
-    `likes` = new.`likes`,
-    `status` = new.`status`,
-    `update_time` = new.`update_time`;
-
--- ===================================================================
--- 14. 补充商品详情（ID 1013-1015：原商品 ID 46-48 与补充批次冲突，已迁移）
--- ===================================================================
-
-INSERT INTO `eo_product_detail` (
-    `product_id`, `description`, `create_time`, `update_time`
-) VALUES
-(1013, '哔哩哔哩大会员 剩余10个月 官方会员直充<br><br>【类型】大会员（含影视番剧）<br><br>【时长】剩余10个月，支持连续登录验证<br><br>【备注】账号直充，可改绑', NOW(), NOW()),
-(1014, 'Figma设计系统UI组件包 500+矢量素材<br><br>【内容】按钮、表单、导航、图表等 500+ 组件<br><br>【格式】Figma 源文件，可编辑<br><br>【适合】UI 设计师、产品原型制作', NOW(), NOW()),
-(1015, 'Notion个人版会员 剩余8个月<br><br>【类型】Notion Plus 个人版<br><br>【时长】剩余8个月<br><br>【备注】邮箱直登，可改绑', NOW(), NOW())
-AS new
-ON DUPLICATE KEY UPDATE
-    `description` = new.`description`,
-    `update_time` = new.`update_time`;
-
--- ===================================================================
--- 15. 重复商品清理（1001-1012 批次去重）
---     已删除条目：1003/1005/1006/1009/1010/1011/1012
---     与早期商品 8/13/18/23/26/30/37 重复，级联删除图片/详情/评价。
---     仅 dev 库生效（classpath:db/dev）；DELETE 幂等，重复执行无副作用。
---     比较值一律加引号：这些列是 VARCHAR(36)（应用内主键为 UUID v7），
---     拿裸数字比较会让 MySQL 把列转 DOUBLE，遇到真实 UUID 行报
---     `Truncated incorrect DOUBLE value` —— 脏 dev 库上整条 R__ 迁移会失败、应用起不来。
--- ===================================================================
-
-DELETE FROM `eo_product_review` WHERE `product_id` IN ('1003', '1005', '1006', '1009', '1010', '1011', '1012');
 DELETE FROM `eo_product_image` WHERE `product_id` IN ('1003', '1005', '1006', '1009', '1010', '1011', '1012');
 DELETE FROM `eo_product_detail` WHERE `product_id` IN ('1003', '1005', '1006', '1009', '1010', '1011', '1012');
 DELETE FROM `eo_product` WHERE `id` IN ('1003', '1005', '1006', '1009', '1010', '1011', '1012');
 
 -- ===================================================================
--- 16. AI 能力演示数据（多图商品）
+-- 12. AI 能力演示数据（多图商品）
 --     目的：ProductTagger 的「📸实拍」标签阈值为 3 张图，此前全库没有商品达到，
 --     该标签在 demo 里永不出现。补充图片的 URL 复用同品类已有素材（新增外链可能失效，宁可重复）。
 --     ① 建议快照 ai_suggestion 的造数在 R__seed_zz_ai_demo.sql：那份数据要读 eo_category 的类目名，

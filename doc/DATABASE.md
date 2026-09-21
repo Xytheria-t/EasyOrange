@@ -23,6 +23,7 @@
 |------|------|
 | `V1__init_schema.sql` | 26 表初始化（当前完整 DDL；开发阶段三次收口为单文件，项目未发版无生产历史） |
 | `V2__agent_step_trace.sql` | Agent 步级轨迹表 `eo_agent_step_trace`（一次请求一个 trace_id） |
+| `V4__drop_retired_tables.sql` | 清理已下线能力的表与列（收藏 / 商品评价 / 消息归档 / AI 调用主体与离线评审分） |
 | `R__seed_*.sql` | 可重复执行种子：分类、RAG 知识库文档 |
 
 ## Flyway 迁移规范
@@ -61,21 +62,18 @@ V1 的 24 个 `eo_*` 业务/观测表 + 2 个 Spring Modulith 基础设施表（
 | 商品 | eo_product_image | 商品图片（1:N） | ProductImageDO |
 | 商品 | eo_stock_ledger | 库存流水（幂等落账 + 对账基准，见文末） | StockLedgerDO |
 | 商品 | eo_product_audit_log | 商品审核记录 | — |
-| 商品 | eo_product_review | 商品评价 | ProductReviewDO |
-| 商品 | eo_favorite | 用户收藏 | FavoriteDO |
 | 搜索 | eo_search_history | 搜索历史 | SearchHistoryDO |
 | 搜索 | eo_hot_keyword | 热门关键词 | HotKeywordDO |
 | 订单 | eo_order | 订单 | OrderDO |
 | 订单 | eo_order_item | 订单行项 | OrderItemDO |
 | 支付 | eo_payment | 支付记录 | PaymentDO |
 | 消息 | eo_message | 消息 | MessageDO |
-| 消息 | eo_message_archive | 消息归档 | — |
 | 消息 | eo_offline_message | 离线消息 | OfflineMessageDO |
 | 文件 | eo_upload_file | 文件上传记录 | UploadFileDO |
 | 审计 | eo_audit_log | 审计日志 | AuditLog |
 | 事件 | EVENT_PUBLICATION | 领域事件注册表（Spring Modulith） | Modulith |
 | 事件 | EVENT_PUBLICATION_ARCHIVE | 领域事件归档表（Spring Modulith） | Modulith |
-| 观测 | eo_ai_call_log | AI 调用日志（LLM-as-Judge 数据源，见文末） | —（JDBC 直写） |
+| 观测 | eo_ai_call_log | AI 调用日志（成本报表数据源，见文末） | —（JDBC 直写） |
 | 观测 | eo_ai_feedback | AI 输出用户反馈（反馈飞轮，导出后自动扩充金标准评测集） | — |
 | 观测 | eo_knowledge_doc | RAG 知识库文档（解析→分块→embed→ES 索引，启动补索引） | — |
 | 观测 | eo_user_preference | 用户长期画像（Agent 长期记忆，聊天时注入 prompt） | — |
@@ -98,7 +96,6 @@ V1 的 24 个 `eo_*` 业务/观测表 + 2 个 Spring Modulith 基础设施表（
 **例外**：
 
 - 基础设施表（EVENT_PUBLICATION / EVENT_PUBLICATION_ARCHIVE / eo_ai_call_log）使用 created_at / updated_at 时间字段，精度为毫秒 DATETIME(3)。
-- 归档表（eo_message_archive）无 del_flag / version，使用 archived_at 记录归档时间。
 - eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键 id 和时间字段 created_at。
 - eo_stock_ledger 无 version（append-only，落账是插入，冲突由唯一索引裁决）。
 
@@ -135,8 +132,6 @@ V1 的 24 个 `eo_*` 业务/观测表 + 2 个 Spring Modulith 基础设施表（
 eo_user ──1:N── eo_product (user_id)
               ├──1:N── eo_product_image (product_id)
               ├──1:1── eo_product_detail (product_id)
-              ├──1:N── eo_product_review (product_id)
-              └──1:N── eo_favorite (user_id + product_id)
 
 eo_category ──1:N── eo_product (category_id)
     └──自引用── eo_category (parent_id)
@@ -145,13 +140,11 @@ eo_user ──1:N── eo_order (buyer_id / seller_id)
 eo_order ──1:N── eo_order_item (order_id)
 eo_product ──1:N── eo_order_item (product_id)
 eo_order ──1:1── eo_payment (order_id)
-eo_order ──1:N── eo_product_review (order_id)
 
 eo_user ──1:N── eo_message (sender_id / receiver_id)
 eo_user ──1:N── eo_search_history (user_id)
 eo_user ──1:N── eo_offline_message (user_id)
 
-eo_message ──1:1── eo_message_archive (id)
 ```
 
 ---
@@ -174,17 +167,17 @@ eo_message ──1:1── eo_message_archive (id)
 
 ### eo_ai_call_log — AI 调用日志表
 
-> **现状**：`AiCallLogRecorder`（easyorange-ai/adapter/outbound/persistence/）在每次 LLM/Embedding 调用后 JDBC 直写一条（记录失败仅告警，不阻塞主链路）；`AiEvalScheduler`（adapter/inbound/job/）定时对 `judge_score IS NULL AND success = 1` 的记录用 ChatModel 打分（1-5 + 评语）。默认关闭（`easyorange.ai.eval.enabled=false`）。
+> **现状**：`AiCallLogRecorder`（easyorange-ai/adapter/outbound/persistence/）在每次 LLM/Embedding 调用后 JDBC 直写一条（记录失败仅告警，不阻塞主链路）；写入方只有这一处，读取方是成本报表与 `GET /api/admin/ai/cost-report`。
 
-关键列：`scope`（AI 调用场景）、`prompt_hash`（system+user prompt 摘要 MD5，去重与回归用）、`token_input` / `token_output`（供应商真实回报的用量，未回报记 0 不估算）、`subject_id`（调用主体，如商品 ID；部分调用发生在主体创建之前故可空）、`judge_score` / `judge_comment`（LLM-as-Judge 结果，NULL = 待评估）。
+关键列：`scope`（AI 调用场景）、`prompt_hash`（system+user prompt 摘要 MD5，去重与回归用）、`token_input` / `token_output`（供应商真实回报的用量，未回报记 0 不估算）、`response_text`（完整回答文本，流式调用落拼接结果）。
 
-> **用量与主体的用途**：没有这两组列时，该表只能回答「哪个场景调用得多」，回答不了「哪个场景花得多」。补列后 `AiCostReportService` 可按场景出 token 报表（`GET /api/admin/ai/cost-report`），`subject_id` 供按主体做成本归因。注意 embedding 用量与未带 usage 的流式调用仍记 0。
+> **用量的用途**：没有 token 列时，该表只能回答「哪个场景调用得多」，回答不了「哪个场景花得多」。有列后 `AiCostReportService` 可按场景出 token 报表（`GET /api/admin/ai/cost-report`）。注意 embedding 用量与未带 usage 的流式调用仍记 0（不估算）。
 
 ### eo_product.ai_suggestion — AI 建议快照
 
 > **来源**：拍照识别（发布助手）给出的六个字段（title / description / price / categoryName / conditionLevel / location）随创建请求一起落库，JSON 原文；**只写不改**，不参与定价逻辑与状态流转。
 
-> **为什么落在商品侧**：拍照识别发生在商品创建之前，那时 `eo_ai_call_log.subject_id` 还没有值、商品也不存在，所以「AI 建议了什么」只能由商品自己记。落库后 `GET /api/admin/ai/listing-adoption` 才能算出字段级采纳率与价格偏离分布（口径与可引用性见 [工程指标](./工程指标.md)）。
+> **为什么落在商品侧**：拍照识别发生在商品创建之前，那时商品还不存在、调用日志也无从关联主体，所以「AI 建议了什么」只能由商品自己记。落库后 `GET /api/admin/ai/listing-adoption` 才能算出字段级采纳率与价格偏离分布（口径与可引用性见 [工程指标](./工程指标.md)）。
 
 > **为什么存原文而不是预先算好的采纳结论**：采纳判定（哪些算「一致」）随查询走，口径以后收紧时历史数据可直接重算，不必回填。
 
