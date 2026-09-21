@@ -19,7 +19,7 @@ vi.mock('../../hooks', () => ({
     useRecentActivity: (...args: unknown[]) => mockUseRecentActivity(...args),
 }));
 
-vi.mock('../dashboard/charts/lazyCharts', () => ({
+vi.mock('./charts/lazyCharts', () => ({
     LazyTrendChart: ({ data: _data, isCompact, height }: { data: TrendItem[]; isCompact: boolean; height: number }) => (
         <div data-testid="trend-chart" data-compact={isCompact} data-height={height}>
             TrendChart

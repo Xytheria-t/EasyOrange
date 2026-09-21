@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useAdminCategories, useAdminOrderStats, useDashboardStats, useRecentActivity, useTrend } from '../../hooks';
-import { LazyTrendChart } from '../dashboard/charts/lazyCharts';
+import { LazyTrendChart } from './charts/lazyCharts';
 
 const CATEGORY_COLORS = ['#F97316', '#FB7185', '#C39BD3', '#FBBF24', '#10B981', '#8B857E'];
 

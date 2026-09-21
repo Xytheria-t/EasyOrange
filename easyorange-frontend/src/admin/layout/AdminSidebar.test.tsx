@@ -33,14 +33,12 @@ describe('AdminSidebar', () => {
 
     it('renders all nav sections', () => {
         render(<AdminSidebar />);
-        expect(screen.getByText('概览')).toBeInTheDocument();
         expect(screen.getByText('管理')).toBeInTheDocument();
         expect(screen.getByText('数据')).toBeInTheDocument();
     });
 
     it('renders all nav items', () => {
         render(<AdminSidebar />);
-        expect(screen.getByText('仪表盘')).toBeInTheDocument();
         expect(screen.getByText('用户管理')).toBeInTheDocument();
         expect(screen.getByText('商品审核')).toBeInTheDocument();
         expect(screen.getByText('订单管理')).toBeInTheDocument();
@@ -52,10 +50,10 @@ describe('AdminSidebar', () => {
         expect(screen.getByText('返回主站')).toBeInTheDocument();
     });
 
-    it('marks dashboard as active when on /admin', () => {
+    it('marks 数据统计 as active when on /admin', () => {
         render(<AdminSidebar />);
-        const dashboardLink = screen.getByText('仪表盘').closest('a');
-        expect(dashboardLink).toHaveClass('active');
+        const statsLink = screen.getByText('数据统计').closest('a');
+        expect(statsLink).toHaveClass('active');
     });
 
     it('marks user management as active when on /admin/users', () => {
@@ -75,7 +73,7 @@ describe('AdminSidebar', () => {
 
     it('does not collapse sections when sidebarCollapsed is false', () => {
         render(<AdminSidebar />);
-        expect(screen.getByText('概览')).toBeVisible();
+        expect(screen.getByText('管理')).toBeVisible();
     });
 
     it('hides section titles when sidebarCollapsed is true', () => {
@@ -83,7 +81,6 @@ describe('AdminSidebar', () => {
             sidebarCollapsed: true,
         });
         render(<AdminSidebar />);
-        expect(screen.queryByText('概览')).not.toBeInTheDocument();
         expect(screen.queryByText('管理')).not.toBeInTheDocument();
         expect(screen.queryByText('数据')).not.toBeInTheDocument();
     });

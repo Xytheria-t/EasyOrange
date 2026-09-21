@@ -3,29 +3,6 @@ import { useAdminStore } from '../store';
 
 const navItems = [
     {
-        section: '概览',
-        items: [
-            {
-                path: '/admin',
-                label: '仪表盘',
-                icon: (
-                    <svg
-                        aria-hidden="true"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    >
-                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                        <polyline points="9 22 9 12 15 12 15 22" />
-                    </svg>
-                ),
-            },
-        ],
-    },
-    {
         section: '管理',
         items: [
             {
@@ -112,7 +89,7 @@ const navItems = [
         section: '数据',
         items: [
             {
-                path: '/admin/stats',
+                path: '/admin',
                 label: '数据统计',
                 icon: (
                     <svg

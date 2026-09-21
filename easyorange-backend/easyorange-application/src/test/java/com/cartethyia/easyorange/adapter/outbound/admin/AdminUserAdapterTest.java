@@ -9,7 +9,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryResult;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort;
-import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminRecentUser;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserDetail;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserInfo;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserPage;
@@ -222,29 +221,5 @@ class AdminUserAdapterTest {
             assertThat(result.todayNewUsers()).isEqualTo(5L);
         }
 
-        @Test
-        @DisplayName("getRecentUsers 委托并映射最近注册用户")
-        void getRecentUsers_maps() {
-            AdminRecentUser recent = new AdminRecentUser(
-                    USER_ID,
-                    "testuser",
-                    "小张",
-                    "/avatar/test.png",
-                    "test@example.com",
-                    "13812345678",
-                    "01",
-                    "普通用户",
-                    "NORMAL",
-                    "正常",
-                    LocalDateTime.of(2026, 8, 15, 9, 0));
-            when(adminUserManagementPort.getRecentUsers(5)).thenReturn(List.of(recent));
-
-            var result = adapter.getRecentUsers(5);
-
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).id()).isEqualTo(USER_ID);
-            assertThat(result.get(0).username()).isEqualTo("testuser");
-            assertThat(result.get(0).userTypeDesc()).isEqualTo("普通用户");
-        }
     }
 }

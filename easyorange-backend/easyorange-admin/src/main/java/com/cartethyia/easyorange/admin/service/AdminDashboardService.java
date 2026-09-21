@@ -2,18 +2,11 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ActivityResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.DashboardStatsResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.PendingItemsResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentProductResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentUserResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TopProductResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
 import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminDashboardPort.RecentProductRecord;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.RecentUser;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserStats;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -57,29 +50,6 @@ public class AdminDashboardService {
                 .totalRevenue(orderStats.totalRevenue())
                 .build();
     }
-
-    public PendingItemsResponse getPendingItems() {
-        long pendingOrders = adminOrderPort.getOrderStats().pendingPayment();
-        long pendingProducts = adminDashboardPort.getProductStats().pending();
-
-        return PendingItemsResponse.builder()
-                .pendingOrders(pendingOrders)
-                .pendingProducts(pendingProducts)
-                .build();
-    }
-
-    public List<RecentUserResponse> getRecentUsers(int limit) {
-        return adminUserPort.getRecentUsers(limit).stream()
-                .map(this::toRecentUserResponse)
-                .toList();
-    }
-
-    public List<RecentProductResponse> getRecentProducts(int limit) {
-        return adminDashboardPort.getRecentProducts(limit).stream()
-                .map(this::toRecentProductResponse)
-                .toList();
-    }
-
     @Transactional(readOnly = true)
     public List<TrendResponse> getTrend() {
         LocalDate since = LocalDate.now().minusMonths(TREND_MONTHS);
@@ -164,41 +134,6 @@ public class AdminDashboardService {
                         .type("order")
                         .build());
     }
-
-    @Transactional(readOnly = true)
-    public List<UserActivityHeatmapResponse> getUserActivityHeatmap() {
-        LocalDateTime since = LocalDate.now().minusDays(30).atStartOfDay();
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT DAYOFWEEK(created_at) AS day_of_week, HOUR(created_at) AS hour, COUNT(*) AS cnt "
-                        + "FROM eo_audit_log WHERE created_at >= ? "
-                        + "GROUP BY DAYOFWEEK(created_at), HOUR(created_at) "
-                        + "ORDER BY day_of_week, hour",
-                since);
-        List<UserActivityHeatmapResponse> result = new ArrayList<>();
-        for (Map<String, Object> row : rows) {
-            result.add(new UserActivityHeatmapResponse(
-                    ((Number) row.get("day_of_week")).intValue(),
-                    ((Number) row.get("hour")).intValue(),
-                    ((Number) row.get("cnt")).longValue()));
-        }
-        return result;
-    }
-
-    @Transactional(readOnly = true)
-    public List<TopProductResponse> getTopProducts(int limit) {
-        return adminDashboardPort.getTopProducts(limit).stream()
-                .map(row -> TopProductResponse.builder()
-                        .productId(row.productId())
-                        .name(row.name())
-                        .viewCount(row.viewCount())
-                        .price(row.price())
-                        .mainImage(row.mainImage())
-                        .status(row.status())
-                        .statusDesc(row.statusDesc())
-                        .build())
-                .toList();
-    }
-
     private static LocalDateTime toLocalDateTime(Object value) {
         if (value instanceof java.sql.Timestamp ts) {
             return ts.toLocalDateTime();
@@ -216,37 +151,5 @@ public class AdminDashboardService {
             result.put((String) row.get("month"), ((Number) row.get("cnt")).longValue());
         }
         return result;
-    }
-
-    private RecentUserResponse toRecentUserResponse(RecentUser user) {
-        return RecentUserResponse.builder()
-                .userId(user.id())
-                .username(user.username())
-                .nickname(user.nickName())
-                .avatar(user.avatar())
-                .email(user.email())
-                .phone(user.phone())
-                .userType(user.userType())
-                .userTypeDesc(user.userTypeDesc())
-                .status(user.status())
-                .statusDesc(user.statusDesc())
-                .createTime(user.createTime())
-                .build();
-    }
-
-    private RecentProductResponse toRecentProductResponse(RecentProductRecord model) {
-        return RecentProductResponse.builder()
-                .productId(model.id())
-                .sellerId(model.sellerId())
-                .name(model.title())
-                .price(model.price())
-                .mainImage(model.mainImageUrl())
-                .status(model.status())
-                .statusDesc(model.statusDesc())
-                .sellerName(model.sellerName())
-                .categoryName(model.categoryName())
-                .viewCount(model.views())
-                .createTime(model.createTime())
-                .build();
     }
 }

@@ -29,39 +29,6 @@ export interface DashboardStats {
     totalRevenue: number;
 }
 
-export interface PendingItems {
-    pendingOrders: number;
-    pendingProducts: number;
-}
-
-export interface RecentUser {
-    userId: string;
-    username: string;
-    nickname: string | null;
-    avatar: string | null;
-    email: string | null;
-    phone: string | null;
-    userType: string | null;
-    userTypeDesc: string | null;
-    status: string | null;
-    statusDesc: string | null;
-    createTime: string | null;
-}
-
-export interface RecentProduct {
-    productId: string;
-    name: string;
-    price: number | null;
-    mainImage: string | null;
-    status: ProductStatus | null;
-    statusDesc: string | null;
-    sellerId: string | null;
-    sellerName: string | null;
-    categoryName: string | null;
-    viewCount: number | null;
-    createTime: string | null;
-}
-
 export interface AdminProduct {
     productId: string;
     name: string;
@@ -337,22 +304,6 @@ export interface UserUnlockRequest {
 // ==================== Rating Types ====================
 
 // ==================== Dashboard Chart Types ====================
-
-export interface UserActivityItem {
-    dayOfWeek: number;
-    hour: number;
-    count: number;
-}
-
-export interface TopProductItem {
-    productId: string;
-    name: string;
-    viewCount: number;
-    price: number;
-    mainImage: string | null;
-    status: number;
-    statusDesc: string;
-}
 
 /** 知识库文档（RAG 摄入管线，管理端）— 列表接口不返回正文（content） */
 export interface KnowledgeDoc {
