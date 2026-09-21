@@ -64,8 +64,8 @@ class NaturalLanguageDetectorTest {
         }
 
         @Test
-        @DisplayName("刚好4个字符 — 不满足最小长度")
-        void isNaturalLanguage_exactlyFourChars() {
+        @DisplayName("「找电脑」3 个字符 — 含意图词但不足最小长度")
+        void isNaturalLanguage_threeCharsWithIntentWord() {
             assertThat(detector.isNaturalLanguage("找电脑")).isFalse();
         }
 
