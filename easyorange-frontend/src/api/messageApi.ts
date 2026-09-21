@@ -2,17 +2,11 @@
  * @fileoverview 消息 API 模块
  */
 
-import type { ChatSession, PageResult, RawChatMessage } from '@/types';
+import type { ChatSession, RawChatMessage } from '@/types';
 import type { RecallPayload } from '@/types/message';
 import { request } from './core/request';
 
 export const messageApi = {
-    getMessages() {
-        return request<PageResult<Record<string, unknown>>>('/messages/list', {
-            method: 'GET',
-        });
-    },
-
     getConversations() {
         return request<ChatSession[]>('/messages/conversations');
     },
@@ -33,19 +27,6 @@ export const messageApi = {
         return request('/messages/read', {
             method: 'PUT',
             body: idArray,
-        });
-    },
-
-    deleteMessage(id: string) {
-        return request(`/messages/${id}`, {
-            method: 'DELETE',
-        });
-    },
-
-    typing(data: { conversationId: string; targetUserId: string }) {
-        return request('/messages/typing', {
-            method: 'POST',
-            body: data,
         });
     },
 

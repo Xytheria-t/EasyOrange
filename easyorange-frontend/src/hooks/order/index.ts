@@ -8,11 +8,3 @@ export {
     useRefundOrder,
     useSoldOrders,
 } from './useOrders';
-export {
-    useClosePayment,
-    useCreatePayment,
-    usePayment,
-    usePaymentByOrder,
-    usePaymentStatus,
-    useRefundPayment,
-} from './usePayment';

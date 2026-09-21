@@ -1,4 +1,4 @@
-import type { ChatAnswer, ChatFeedbackRequest, ChatRequest, ChatStreamEvent, KnowledgeHit } from '@/types/ai';
+import type { ChatFeedbackRequest, ChatRequest, ChatStreamEvent } from '@/types/ai';
 import { request } from './core/request';
 import { streamChat } from './core/stream';
 
@@ -25,24 +25,6 @@ export const aiApi = {
         return request<AutoListingResult>('/ai/auto-listing', {
             method: 'POST',
             body: imageUrls,
-            timeout: AI_TIMEOUT,
-        });
-    },
-
-    /** AI 对话（多轮 Agent + 知识库引用溯源，非流式） */
-    chat(data: ChatRequest) {
-        return request<ChatAnswer>('/ai/chat', {
-            method: 'POST',
-            body: data,
-            timeout: AI_TIMEOUT,
-        });
-    },
-
-    /** 知识库检索（RAG 检索侧演示） */
-    knowledgeSearch(keyword: string, topK = 5) {
-        return request<KnowledgeHit[]>('/ai/knowledge/search', {
-            method: 'GET',
-            params: { keyword, topK },
             timeout: AI_TIMEOUT,
         });
     },

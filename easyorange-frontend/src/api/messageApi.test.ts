@@ -11,11 +11,6 @@ describe('messageApi', () => {
         vi.clearAllMocks();
     });
 
-    it('getList calls request with correct path', () => {
-        messageApi.getMessages();
-        expect(mockRequest).toHaveBeenCalledWith('/messages/list', { method: 'GET' });
-    });
-
     it('getConversations calls request with correct path', () => {
         messageApi.getConversations();
         expect(mockRequest).toHaveBeenCalledWith('/messages/conversations');
@@ -48,22 +43,6 @@ describe('messageApi', () => {
         expect(mockRequest).toHaveBeenCalledWith('/messages/read', {
             method: 'PUT',
             body: [1, 2, 3],
-        });
-    });
-
-    it('delete calls request with DELETE', () => {
-        messageApi.deleteMessage('msg-1');
-        expect(mockRequest).toHaveBeenCalledWith('/messages/msg-1', {
-            method: 'DELETE',
-        });
-    });
-
-    it('typing calls request with POST and body', () => {
-        const data = { conversationId: 'conv-1', targetUserId: 'user-1' };
-        messageApi.typing(data);
-        expect(mockRequest).toHaveBeenCalledWith('/messages/typing', {
-            method: 'POST',
-            body: data,
         });
     });
 
