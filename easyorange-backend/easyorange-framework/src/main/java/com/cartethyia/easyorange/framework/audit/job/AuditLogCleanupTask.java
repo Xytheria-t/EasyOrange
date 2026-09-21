@@ -11,8 +11,7 @@ import org.springframework.stereotype.Component;
 /**
  * 审计日志保留期限清理任务 — 每日删除超过 {@code audit.retention-days} 的审计记录。
  * <p>
- * 分批删除（每次 {@code LIMIT 1000}，循环直至删完），避免单条大 DELETE 长时间持锁；
- * 与 message 模块 {@code MessageArchiveTask} 的清理惯例对齐。
+ * 分批删除（每次 {@code LIMIT 1000}，循环直至删完），避免单条大 DELETE 长时间持锁。
  * </p>
  */
 @Slf4j
