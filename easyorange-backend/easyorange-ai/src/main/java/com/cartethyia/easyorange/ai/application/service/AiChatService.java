@@ -47,13 +47,16 @@ import org.springframework.stereotype.Service;
  * </pre>
  * 流式路径（SSE）在方法返回前完成不了 AOP 预算记账，由 {@link #streamAnswer}
  * 手动执行与 {@link TokenBudget} 相同的预算检查（判定与循环中途共用
- * {@link AgentLoopRunner#chatBudgetExhausted}，口径单处维护）。
+ * {@link AgentLoopRunner#chatBudgetExhausted()}，口径单处维护）。
  */
 @Slf4j
 @Service
 public class AiChatService {
 
     private static final String CHAT_PROMPT = "ai_chat_system";
+
+    /** 空问题的提示语：非流式走 {@link ChatAnswer}、流式走 SSE error 事件，同源一处维护。 */
+    private static final String EMPTY_QUESTION_TEXT = "请描述你的问题";
 
     private final ChatModel chatModel;
     private final PromptRegistry promptRegistry;
@@ -101,7 +104,7 @@ public class AiChatService {
      * 无条件刷新 —— {@code forceFresh} 只是绕过语义缓存，故障时仍能拿到旧回答。
      * <p>
      * 供应商故障不抛异常：有 stale 旧回答就复用它，没有就返回降级文案，两者都把
-     * {@link ChatAnswer#degraded} 置真并计入 {@code easyorange.ai.chat.degraded} ——
+     * {@link ChatAnswer#degraded()} 置真并计入 {@code easyorange.ai.chat.degraded} ——
      * 抛出去只会变成 500 + 通用错误码（调用方读不到「AI 不可用」这个语义，错误率大盘也分不清
      * 供应商故障与代码缺陷），与流式路径的 error 事件口径不一致。预算超限等业务异常照旧上抛，
      * 那是客户端可控的 4xx，不该伪装成降级回答。
@@ -109,7 +112,7 @@ public class AiChatService {
     @TokenBudget(scenario = "chat", maxTokensPerCall = 1500, dailyTokenLimit = 300_000)
     public ChatAnswer answer(ChatRequest request) {
         if (request.question() == null || request.question().isBlank()) {
-            return new ChatAnswer("请描述你的问题", List.of(), request.sessionId(), false);
+            return new ChatAnswer(EMPTY_QUESTION_TEXT, List.of(), request.sessionId(), false);
         }
         try {
             // 查询向量只算一次：命中查找与未命中后的写入共用（空列表 = 缓存开关关闭 / embedding 不可用）
@@ -163,7 +166,7 @@ public class AiChatService {
      */
     public void streamAnswer(ChatRequest request, ChatStreamHandler handler) {
         if (request.question() == null || request.question().isBlank()) {
-            handler.onError("请描述你的问题");
+            handler.onError(EMPTY_QUESTION_TEXT);
             return;
         }
         try {
