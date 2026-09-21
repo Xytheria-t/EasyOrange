@@ -4,7 +4,6 @@ import HeroSection from '@/components/sections/HeroSection';
 
 const AIFeaturesSection = lazy(() => import('@/components/sections/AIFeaturesSection'));
 const CategoriesSection = lazy(() => import('@/components/sections/CategoriesSection'));
-const AIRecommendSection = lazy(() => import('@/components/sections/AIRecommendSection'));
 const ProductsSection = lazy(() => import('@/components/sections/ProductsSection'));
 
 const SectionSkeleton = () => (
@@ -35,10 +34,6 @@ function HomePage() {
 
             <Suspense fallback={<SectionSkeleton />}>
                 <CategoriesSection />
-            </Suspense>
-
-            <Suspense fallback={<SectionSkeleton />}>
-                <AIRecommendSection />
             </Suspense>
 
             <Suspense fallback={<SectionSkeleton />}>

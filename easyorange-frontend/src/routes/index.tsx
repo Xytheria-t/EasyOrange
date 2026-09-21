@@ -20,8 +20,6 @@ const MessagesPage = lazy(() => import('@/pages/messages/MessagesPage'));
 const ChatWindowPage = lazy(() => import('@/pages/messages/ChatWindowPage'));
 const OrdersPage = lazy(() => import('@/pages/orders/OrdersPage'));
 const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage'));
-const PaymentPage = lazy(() => import('@/pages/orders/PaymentPage'));
-const PaymentResultPage = lazy(() => import('@/pages/orders/PaymentResultPage'));
 const PublishPage = lazy(() => import('@/pages/products/PublishPage'));
 const MyProductsPage = lazy(() => import('@/pages/products/MyProductsPage'));
 const SearchPage = lazy(() => import('@/pages/profile/SearchPage'));
@@ -59,8 +57,6 @@ const R = {
     chat: { title: '聊天' },
     orders: { title: '我的订单' },
     orderDetail: { title: '订单详情' },
-    payment: { title: '收银台' },
-    paymentResult: { title: '支付结果' },
     publish: { title: '提交资产' },
     myProducts: { title: '我的发布' },
     editProduct: { title: '编辑商品' },
@@ -106,14 +102,6 @@ export const router = createBrowserRouter(
                 <Route
                     path="orders/:id"
                     element={<ProtectedRoute>{withSuspense(OrderDetailPage, R.orderDetail)}</ProtectedRoute>}
-                />
-                <Route
-                    path="payment"
-                    element={<ProtectedRoute>{withSuspense(PaymentPage, R.payment)}</ProtectedRoute>}
-                />
-                <Route
-                    path="payment/result"
-                    element={<ProtectedRoute>{withSuspense(PaymentResultPage, R.paymentResult)}</ProtectedRoute>}
                 />
                 <Route
                     path="publish"

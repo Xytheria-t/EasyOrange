@@ -20,22 +20,3 @@ export const uploadFile = async (file: File) => {
         dedupe: false,
     });
 };
-
-export const uploadFiles = async (files: File[]) => {
-    const formData = new FormData();
-    files.forEach(file => {
-        formData.append('files', file);
-    });
-
-    return request<UploadResponse[]>('/file/uploads', {
-        method: 'POST',
-        body: formData,
-        headers: {},
-        dedupe: false,
-    });
-};
-
-export const uploadApi = {
-    uploadFile,
-    uploadFiles,
-};

@@ -16,10 +16,6 @@ vi.mock('@/components/sections/CategoriesSection', () => ({
     default: () => <div data-testid="categories">Categories</div>,
 }));
 
-vi.mock('@/components/sections/AIRecommendSection', () => ({
-    default: () => <div data-testid="ai-recommend">AIRecommend</div>,
-}));
-
 vi.mock('@/components/sections/ProductsSection', () => ({
     default: () => <div data-testid="products-section">Products</div>,
 }));
@@ -44,7 +40,6 @@ describe('HomePage', () => {
         // Lazy loaded sections should appear after Suspense resolves
         expect(await screen.findByTestId('ai-features')).toBeInTheDocument();
         expect(await screen.findByTestId('categories')).toBeInTheDocument();
-        expect(await screen.findByTestId('ai-recommend')).toBeInTheDocument();
         expect(await screen.findByTestId('products-section')).toBeInTheDocument();
     });
 });

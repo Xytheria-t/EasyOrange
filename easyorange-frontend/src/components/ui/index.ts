@@ -1,17 +1,7 @@
-// Existing project components (kept for backwards compatibility)
+// EasyOrange 共享 UI 组件（shadcn/ui 风格，对齐项目设计令牌）
 
-export { Avatar, AvatarFallback, AvatarImage } from './avatar';
 export { Badge, badgeVariants } from './badge';
-// shadcn/ui components (styled to match EasyOrange design system)
 export { Button, buttonVariants } from './button';
-export {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from './card';
 export { Checkbox } from './checkbox';
 export {
     Dialog,
@@ -25,23 +15,6 @@ export {
     DialogTitle,
     DialogTrigger,
 } from './dialog';
-export {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuPortal,
-    DropdownMenuRadioGroup,
-    DropdownMenuRadioItem,
-    DropdownMenuSeparator,
-    DropdownMenuShortcut,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger,
-} from './dropdown-menu';
 export { Image, preloadImage, preloadImages } from './Image';
 export { Input } from './input';
 export { Label } from './label';
@@ -54,7 +27,6 @@ export {
     PaginationNext,
     PaginationPrevious,
 } from './pagination';
-export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './popover';
 export { RadioGroup, RadioGroupItem } from './radio-group';
 export { default as ScrollProgressBar } from './ScrollProgressBar';
 export {
@@ -69,7 +41,6 @@ export {
     SelectTrigger,
     SelectValue,
 } from './select';
-export { Separator } from './separator';
 export {
     Sheet,
     SheetClose,
@@ -82,7 +53,6 @@ export {
     SheetTitle,
     SheetTrigger,
 } from './sheet';
-export { Skeleton } from './skeleton';
 export { Switch } from './switch';
 export { ToastContainer } from './Toast';
 export {
@@ -95,7 +65,6 @@ export {
     TableHeader,
     TableRow,
 } from './table';
-export { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
 export { Textarea } from './textarea';
 export {
     Toast,
@@ -108,9 +77,3 @@ export {
     ToastTitle,
     ToastViewport,
 } from './toast-primitive';
-export {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from './tooltip';
