@@ -190,7 +190,6 @@ server:
   shutdown: graceful
   servlet:
     context-path: /
-  trusted-proxies: ${SERVER_TRUSTED_PROXIES:127.0.0.1,localhost,0:0:0:0:0:0:0:1}
 
 # -------------------------------------------------------------------
 # SpringDoc OpenAPI 3 — 自动生成 API 契约文档 + Swagger UI
@@ -308,8 +307,6 @@ webmvc:
     # MCP streamable HTTP — GET /mcp 是长连 SSE 流，计入 http.server.request 会拖垮分位值口径
     - /mcp
   skip-logging-paths:
-    - /api/health
-    - /api/stats/platform
     - /actuator/**
     - /api/file/**
   interceptor-order: 0
@@ -321,11 +318,8 @@ security:
     - /api/auth/sms-code
     - /api/auth/register
     - /api/auth/password-reset
-    - /api/health
-    - /api/stats/platform
     - /api/products/{id}/view
     - /api/products/batch
-    - /api/products/categories/cache
     # 支付网关回调 — 匿名可达，安全性由 HMAC 签名校验承担（CallbackSignatureVerifier）
     - /api/payments/callback
     # Actuator 运维端点 — 仅放行健康/信息/指标抓取（探针与 Prometheus 需匿名访问）；

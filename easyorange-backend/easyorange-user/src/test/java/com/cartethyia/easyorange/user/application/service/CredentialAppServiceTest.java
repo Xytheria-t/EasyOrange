@@ -1,17 +1,14 @@
 package com.cartethyia.easyorange.user.application.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.aggregate.UserTestFixture;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
-import com.cartethyia.easyorange.user.domain.event.UserPasswordChangedEvent;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.PasswordManagementService;
 import java.util.Optional;
@@ -36,9 +33,6 @@ class CredentialAppServiceTest {
     @Mock
     private TokenService tokenService;
 
-    @Mock
-    private DomainEventPublisher domainEventPublisher;
-
     private CredentialAppService service;
 
     private static final String USER_ID = UserTestFixture.USER_ID;
@@ -46,8 +40,7 @@ class CredentialAppServiceTest {
 
     @BeforeEach
     void setUp() {
-        service =
-                new CredentialAppService(passwordManagementService, userRepository, tokenService, domainEventPublisher);
+        service = new CredentialAppService(passwordManagementService, userRepository, tokenService);
     }
 
     @Nested
@@ -89,7 +82,6 @@ class CredentialAppServiceTest {
             verify(passwordManagementService).changePassword(user, "oldPwd123", "NewPass123");
             verify(userRepository).update(updatedUser);
             verify(tokenService).revokeAllUserSessions(USER_ID);
-            verify(domainEventPublisher).publish(any(UserPasswordChangedEvent.class));
         }
 
         @Test

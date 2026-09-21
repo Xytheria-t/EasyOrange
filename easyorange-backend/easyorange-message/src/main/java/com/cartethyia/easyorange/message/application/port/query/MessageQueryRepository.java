@@ -13,8 +13,6 @@ public interface MessageQueryRepository {
 
     PageResult<Message> findByReceiverId(MessageQuery query, String userId);
 
-    PageResult<Message> findUnreadByReceiverId(MessageQuery query, String userId);
-
     UnreadCount countUnreadByReceiverId(String userId);
 
     /** 两个用户之间的近期消息（create_time 升序，最新 500 条窗口）——会话详情。 */

@@ -1,14 +1,11 @@
 package com.cartethyia.easyorange.message.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.message.application.port.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
-import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
-import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
@@ -31,26 +28,8 @@ public class MessageQueryHandler {
     private final UserInfoPort userInfoPort;
 
     @Transactional(readOnly = true)
-    public MessageVO getMessageDetail(String userId, String messageId) {
-        Message aggregate = queryRepository.findById(messageId);
-        if (aggregate == null) {
-            throw MessageDomainException.notFound(messageId);
-        }
-
-        BizRequire.requireTrue(Objects.equals(aggregate.receiverId(), userId), MessageResultCode.MESSAGE_NOT_OWNER);
-
-        return toMessageVO(aggregate, resolveUsernames(Set.of(aggregate)));
-    }
-
-    @Transactional(readOnly = true)
     public PageResult<MessageVO> getMyMessages(String userId, MessageQuery query) {
         PageResult<Message> messagePage = queryRepository.findByReceiverId(query, userId);
-        return toMessageVOPage(messagePage);
-    }
-
-    @Transactional(readOnly = true)
-    public PageResult<MessageVO> getUnreadMessages(String userId, MessageQuery query) {
-        PageResult<Message> messagePage = queryRepository.findUnreadByReceiverId(query, userId);
         return toMessageVOPage(messagePage);
     }
 

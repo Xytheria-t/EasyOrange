@@ -381,36 +381,4 @@ class MessageCommandHandlerTest {
             verify(messageRepository, never()).update(any());
         }
     }
-
-    @Nested
-    @DisplayName("deleteMessage(DeleteMessageCommand)")
-    class DeleteMessageTests {
-
-        @Test
-        @DisplayName("正常删除消息")
-        void deleteMessage_success() {
-            DeleteMessageCommand command = new DeleteMessageCommand(MESSAGE_ID);
-
-            Message aggregate = createTestMessage();
-            when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
-
-            commandHandler.deleteMessage(RECEIVER_ID, command);
-
-            verify(messageRepository).delete(MESSAGE_ID);
-        }
-
-        @Test
-        @DisplayName("非接收者删除消息抛出异常")
-        void deleteMessage_notOwner_throws() {
-            DeleteMessageCommand command = new DeleteMessageCommand(MESSAGE_ID);
-
-            Message aggregate = createTestMessage();
-            when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
-
-            assertThatThrownBy(() -> commandHandler.deleteMessage("999", command))
-                    .isInstanceOf(BusinessException.class);
-
-            verify(messageRepository, never()).delete(anyString());
-        }
-    }
 }

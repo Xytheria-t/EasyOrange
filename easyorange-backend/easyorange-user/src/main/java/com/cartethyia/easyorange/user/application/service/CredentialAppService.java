@@ -1,12 +1,9 @@
 package com.cartethyia.easyorange.user.application.service;
 
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
-import com.cartethyia.easyorange.user.domain.event.UserPasswordChangedEvent;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.PasswordManagementService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +21,6 @@ public class CredentialAppService {
     private final PasswordManagementService passwordManagementService;
     private final UserRepository userRepository;
     private final TokenService tokenService;
-    private final DomainEventPublisher domainEventPublisher;
 
     @Transactional(rollbackFor = Exception.class)
     public void resetPassword(String phone, String verifyCode, String newPassword) {
@@ -39,6 +35,5 @@ public class CredentialAppService {
         User updated = passwordManagementService.changePassword(user, oldPassword, newPassword);
         userRepository.update(updated);
         tokenService.revokeAllUserSessions(userId);
-        domainEventPublisher.publish(new UserPasswordChangedEvent(UuidV7.generateId(), userId));
     }
 }

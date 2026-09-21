@@ -1,12 +1,10 @@
 package com.cartethyia.easyorange.message.application.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.message.application.port.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
@@ -15,7 +13,6 @@ import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
-import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
@@ -65,51 +62,6 @@ class MessageQueryHandlerTest {
     }
 
     @Nested
-    @DisplayName("getMessageDetail")
-    class GetMessageDetailTests {
-
-        @Test
-        @DisplayName("获取消息详情成功")
-        void getMessageDetail_success() {
-            Message aggregate = createTestMessage();
-            when(queryRepository.findById(MESSAGE_ID)).thenReturn(aggregate);
-            when(userInfoPort.getUserInfoMap(any()))
-                    .thenReturn(Map.of(
-                            SENDER_ID,
-                            new UserInfo(SENDER_ID, "发送者", "avatar.jpg"),
-                            USER_ID,
-                            new UserInfo(USER_ID, "接收者", null)));
-
-            MessageVO vo = queryHandler.getMessageDetail(USER_ID, MESSAGE_ID);
-
-            assertThat(vo).isNotNull();
-            assertThat(vo.getId()).isEqualTo(MESSAGE_ID);
-            assertThat(vo.getSenderId()).isEqualTo(SENDER_ID);
-            assertThat(vo.getReceiverId()).isEqualTo(USER_ID);
-            assertThat(vo.getTitle()).isEqualTo("标题");
-        }
-
-        @Test
-        @DisplayName("消息不存在时抛出异常")
-        void getMessageDetail_notFound_throws() {
-            when(queryRepository.findById(MESSAGE_ID)).thenReturn(null);
-
-            assertThatThrownBy(() -> queryHandler.getMessageDetail(USER_ID, MESSAGE_ID))
-                    .isInstanceOf(MessageDomainException.class);
-        }
-
-        @Test
-        @DisplayName("非接收者获取详情时抛出异常")
-        void getMessageDetail_notOwner_throws() {
-            Message aggregate = createTestMessage();
-            when(queryRepository.findById(MESSAGE_ID)).thenReturn(aggregate);
-
-            assertThatThrownBy(() -> queryHandler.getMessageDetail("999", MESSAGE_ID))
-                    .isInstanceOf(BusinessException.class);
-        }
-    }
-
-    @Nested
     @DisplayName("getMyMessages")
     class GetMyMessagesTests {
 
@@ -146,31 +98,6 @@ class MessageQueryHandlerTest {
 
             assertThat(result.records()).isEmpty();
             assertThat(result.total()).isZero();
-        }
-    }
-
-    @Nested
-    @DisplayName("getUnreadMessages")
-    class GetUnreadMessagesTests {
-
-        @Test
-        @DisplayName("获取未读消息列表")
-        void getUnreadMessages_returnsPage() {
-            MessageQuery query = new MessageQuery(1, 20, null, null);
-            Message aggregate = createTestMessage();
-            PageResult<Message> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
-            when(queryRepository.findUnreadByReceiverId(any(MessageQuery.class), anyString()))
-                    .thenReturn(pageResult);
-            when(userInfoPort.getUserInfoMap(any()))
-                    .thenReturn(Map.of(
-                            SENDER_ID,
-                            new UserInfo(SENDER_ID, "发送者", null),
-                            USER_ID,
-                            new UserInfo(USER_ID, "接收者", null)));
-
-            PageResult<MessageVO> result = queryHandler.getUnreadMessages(USER_ID, query);
-
-            assertThat(result.records()).hasSize(1);
         }
     }
 

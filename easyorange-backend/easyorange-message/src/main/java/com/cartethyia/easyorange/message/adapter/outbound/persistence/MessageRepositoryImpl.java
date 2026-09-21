@@ -39,20 +39,6 @@ public class MessageRepositoryImpl extends BaseRepository<MessageMapper, Message
     }
 
     @Override
-    public void delete(String id) {
-        mapper.deleteById(id);
-    }
-
-    @Override
-    public void markAllAsRead(String receiverId) {
-        lambdaUpdate()
-                .eq(MessageDO::getReceiverId, receiverId)
-                .eq(MessageDO::getIsRead, ReadStatus.UNREAD)
-                .set(MessageDO::getIsRead, ReadStatus.READ)
-                .update();
-    }
-
-    @Override
     public void markAsReadByType(String receiverId, Integer type) {
         lambdaUpdate()
                 .eq(MessageDO::getReceiverId, receiverId)

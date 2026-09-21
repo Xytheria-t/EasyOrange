@@ -8,7 +8,6 @@ com.cartethyia.easyorange.framework.config.cache.RedisCacheConfig
 com.cartethyia.easyorange.framework.config.cache.ImageProcessCacheConfig
 com.cartethyia.easyorange.framework.config.idgen.IdGeneratorConfig
 com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig
-com.cartethyia.easyorange.framework.metrics.MetricsConfig
 com.cartethyia.easyorange.framework.config.redis.RedissonConfig
 com.cartethyia.easyorange.framework.messaging.config.EventExternalizationConfig
 com.cartethyia.easyorange.framework.config.database.TransactionTemplateConfig

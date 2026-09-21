@@ -11,9 +11,5 @@ public interface MessageRepository {
 
     void update(Message message);
 
-    void delete(String id);
-
-    void markAllAsRead(String receiverId);
-
     void markAsReadByType(String receiverId, Integer type);
 }

@@ -32,21 +32,10 @@ public class MessageQueryController {
         return Result.success(conversationQueryHandler.getConversations(user.userId()));
     }
 
-    @GetMapping("/{id}")
-    public Result<MessageVO> getMessageDetail(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
-        return Result.success(queryHandler.getMessageDetail(user.userId(), id));
-    }
-
     @GetMapping("/list")
     public Result<PageResult<MessageVO>> getMyMessages(
             @AuthenticationPrincipal AuthUser user, QueryMessageRequest request) {
         return Result.success(queryHandler.getMyMessages(user.userId(), toMessageQuery(request)));
-    }
-
-    @GetMapping("/unread")
-    public Result<PageResult<MessageVO>> getUnreadMessages(
-            @AuthenticationPrincipal AuthUser user, QueryMessageRequest request) {
-        return Result.success(queryHandler.getUnreadMessages(user.userId(), toMessageQuery(request)));
     }
 
     @GetMapping("/unread-count")
