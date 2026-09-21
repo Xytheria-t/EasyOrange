@@ -27,7 +27,6 @@ const mockUser: User = {
 
 const defaultProps = {
     user: mockUser,
-    favoriteCount: 10,
     unreadMessageCount: 2,
     editingField: null as EditableField | null,
     editValue: '',
@@ -62,14 +61,8 @@ describe('ProfileOverview', () => {
         expect(screen.getByText('2021001')).toBeInTheDocument();
     });
 
-    it('renders favorite count', () => {
-        render(<ProfileOverview {...defaultProps} favoriteCount={10} />);
-        expect(screen.getByText('10')).toBeInTheDocument();
-    });
-
     it('renders quick action buttons', () => {
         render(<ProfileOverview {...defaultProps} />);
-        expect(screen.getByText('我的收藏')).toBeInTheDocument();
         expect(screen.getByText('消息中心')).toBeInTheDocument();
     });
 
@@ -77,12 +70,6 @@ describe('ProfileOverview', () => {
         render(<ProfileOverview {...defaultProps} />);
         expect(screen.queryByText('我的发布')).not.toBeInTheDocument();
         expect(screen.queryByText('我的订单')).not.toBeInTheDocument();
-    });
-
-    it('navigates to favorites on click', () => {
-        render(<ProfileOverview {...defaultProps} />);
-        fireEvent.click(screen.getByText('我的收藏'));
-        expect(mockNavigate).toHaveBeenCalledWith('/favorites');
     });
 
     it('shows read-only fields', () => {
@@ -96,11 +83,6 @@ describe('ProfileOverview', () => {
         const statusElements = screen.getAllByText('账号状态');
         expect(statusElements.length).toBeGreaterThanOrEqual(1);
         expect(screen.getByText('正常')).toBeInTheDocument();
-    });
-
-    it('shows AI assistant section', () => {
-        render(<ProfileOverview {...defaultProps} />);
-        expect(screen.getByText('AI交易助手')).toBeInTheDocument();
     });
 
     it('shows edit button for editable fields', () => {

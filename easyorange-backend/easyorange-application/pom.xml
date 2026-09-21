@@ -43,11 +43,6 @@
 
         <dependency>
             <groupId>com.cartethyia</groupId>
-            <artifactId>easyorange-favorite</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-order</artifactId>
         </dependency>
 

@@ -36,7 +36,6 @@ const baseProduct = createMockProduct({
     location: '北京',
     sellerName: '资产方小明',
     views: 50,
-    favorites: 10,
     images: ['https://example.com/image.jpg'],
     categoryName: '电子产品',
 });
@@ -62,19 +61,6 @@ describe('ProductCard', () => {
         const card = screen.getByLabelText('商品：测试商品标题');
         await userEvent.click(card);
         expect(mockNavigate).toHaveBeenCalledWith('/products/1');
-    });
-
-    it('calls onFavorite when favorite button is clicked', async () => {
-        const onFavorite = vi.fn();
-        renderWithProviders(<ProductCard product={baseProduct} onFavorite={onFavorite} />);
-        const favBtn = screen.getByLabelText('收藏');
-        await userEvent.click(favBtn);
-        expect(onFavorite).toHaveBeenCalledWith('1', true);
-    });
-
-    it('shows favorited state', () => {
-        renderWithProviders(<ProductCard product={baseProduct} isFavorited={true} />);
-        expect(screen.getByLabelText('取消收藏')).toBeInTheDocument();
     });
 
     it('shows view count', () => {

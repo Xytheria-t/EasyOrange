@@ -15,7 +15,6 @@ const HomePage = lazy(() => import('@/pages/home/HomePage'));
 const ProductsPage = lazy(() => import('@/pages/products/ProductsPage'));
 const ProductDetailPage = lazy(() => import('@/pages/products/ProductDetailPage'));
 const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'));
-const FavoritesPage = lazy(() => import('@/pages/favorites/FavoritesPage'));
 const MessagesPage = lazy(() => import('@/pages/messages/MessagesPage'));
 const ChatWindowPage = lazy(() => import('@/pages/messages/ChatWindowPage'));
 const OrdersPage = lazy(() => import('@/pages/orders/OrdersPage'));
@@ -52,7 +51,6 @@ const R = {
     login: { title: '登录', description: '登录 EasyOrange' },
     forgotPwd: { title: '忘记密码' },
     profile: { title: '个人中心' },
-    favorites: { title: '我的收藏' },
     messages: { title: '消息' },
     chat: { title: '聊天' },
     orders: { title: '我的订单' },
@@ -85,10 +83,6 @@ export const router = createBrowserRouter(
                 <Route
                     path="profile"
                     element={<ProtectedRoute>{withSuspense(ProfilePage, R.profile)}</ProtectedRoute>}
-                />
-                <Route
-                    path="favorites"
-                    element={<ProtectedRoute>{withSuspense(FavoritesPage, R.favorites)}</ProtectedRoute>}
                 />
                 <Route
                     path="messages"

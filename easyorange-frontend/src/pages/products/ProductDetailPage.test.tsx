@@ -109,7 +109,6 @@ function createMockProduct(overrides: Partial<Product> = {}): Product {
         images: ['https://example.com/image.jpg'],
         location: '北京海淀',
         views: 100,
-        favorites: 20,
         sellerId: 'seller1',
         sellerName: '资产方张三',
         sellerAvatar: null,
@@ -316,20 +315,6 @@ describe('ProductDetailPage', () => {
         // Buyer sees "联系资产方" section
         const contactBtns = screen.getAllByText('联系资产方');
         expect(contactBtns.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('navigates to login when favorite is clicked without a token', async () => {
-        const product = createMockProduct({ sellerId: 'seller1' });
-        mockUseProduct.mockReturnValue({ data: product, isLoading: false });
-        mockUseAuthStore.mockReturnValue({ user: null, token: null, isAuthenticated: false });
-
-        const { container } = renderPage();
-        const user = userEvent.setup();
-        // The heart favorite toggle button (first .pdp-action-fab, has no accessible name)
-        const heartBtn = container.querySelector('.pdp-action-fab') as HTMLElement;
-        expect(heartBtn).not.toBeNull();
-        await user.click(heartBtn);
-        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/login?redirect='));
     });
 
     it('navigates to messages when contact seller is clicked while logged in', async () => {

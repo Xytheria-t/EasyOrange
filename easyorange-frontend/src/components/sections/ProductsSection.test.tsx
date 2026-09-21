@@ -33,16 +33,9 @@ vi.mock('react-router-dom', () => ({
 }));
 
 const mockUseProducts = vi.fn();
-const mockUseFavoriteCheck = vi.fn();
-const mockUseAuthStore = vi.fn();
 
 vi.mock('@/hooks', () => ({
     useProducts: (...args: unknown[]) => mockUseProducts(...args),
-    useFavoriteCheck: () => mockUseFavoriteCheck(),
-}));
-
-vi.mock('@/store/authStore', () => ({
-    useAuthStore: () => mockUseAuthStore(),
 }));
 
 // Mock ProductCard
@@ -69,14 +62,6 @@ describe('ProductsSection', () => {
         mockUseProducts.mockReturnValue({
             data: { records: mockProducts },
             isLoading: false,
-        });
-        mockUseFavoriteCheck.mockReturnValue({
-            checkFavorites: vi.fn(),
-            isFavorited: vi.fn().mockReturnValue(false),
-            toggleFavorite: vi.fn(),
-        });
-        mockUseAuthStore.mockReturnValue({
-            token: 'test-token',
         });
     });
 
@@ -129,43 +114,6 @@ describe('ProductsSection', () => {
     it('renders "查看更多资产" button', () => {
         render(<ProductsSection />);
         expect(screen.getByText('查看更多资产')).toBeInTheDocument();
-    });
-
-    it('calls checkFavorites when products and token exist', () => {
-        const checkFavorites = vi.fn();
-        mockUseFavoriteCheck.mockReturnValue({
-            checkFavorites,
-            isFavorited: vi.fn().mockReturnValue(false),
-            toggleFavorite: vi.fn(),
-        });
-        render(<ProductsSection />);
-        expect(checkFavorites).toHaveBeenCalledWith(['1', '2', '3', '4', '5', '6', '7', '8']);
-    });
-
-    it('does not call checkFavorites when no token', () => {
-        mockUseAuthStore.mockReturnValue({ token: null });
-        const checkFavorites = vi.fn();
-        mockUseFavoriteCheck.mockReturnValue({
-            checkFavorites,
-            isFavorited: vi.fn().mockReturnValue(false),
-            toggleFavorite: vi.fn(),
-        });
-        render(<ProductsSection />);
-        expect(checkFavorites).not.toHaveBeenCalled();
-    });
-
-    it('navigates to login when favoriting without token', () => {
-        mockUseAuthStore.mockReturnValue({ token: null });
-        const toggleFavorite = vi.fn();
-        mockUseFavoriteCheck.mockReturnValue({
-            checkFavorites: vi.fn(),
-            isFavorited: vi.fn().mockReturnValue(false),
-            toggleFavorite,
-        });
-        render(<ProductsSection />);
-        // The ProductCard receives handleFavorite which checks token internally
-        // This is verified by ensuring the hook was set up correctly
-        expect(mockUseFavoriteCheck).toHaveBeenCalled();
     });
 
     it('creates IntersectionObserver for scroll reveal', () => {

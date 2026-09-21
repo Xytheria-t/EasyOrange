@@ -13,7 +13,6 @@ export {
     useCategories,
     useCreateProduct,
     useDeleteProduct,
-    useFavoriteCheck,
     useHotKeywords,
     useInfiniteProducts,
     useProduct,

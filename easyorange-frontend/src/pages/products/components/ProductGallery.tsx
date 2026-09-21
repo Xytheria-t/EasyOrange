@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Heart, Share2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import placeholderImage from '@/assets/placeholder.png';
 import { Button } from '@/components/ui/button';
@@ -6,21 +6,11 @@ import { buildThumbnailUrl, Image, preloadImages } from '@/components/ui/Image';
 
 interface ProductGalleryProps {
     images: string[];
-    isFavorited: boolean;
-    isFavoriteLoading: boolean;
     isSold: boolean;
-    onFavoriteToggle: () => void;
     onShare: () => void;
 }
 
-export function ProductGallery({
-    images,
-    isFavorited,
-    isFavoriteLoading,
-    isSold,
-    onFavoriteToggle,
-    onShare,
-}: ProductGalleryProps) {
+export function ProductGallery({ images, isSold, onShare }: ProductGalleryProps) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -131,16 +121,6 @@ export function ProductGallery({
                 )}
 
                 <div className="pdp-gallery-actions">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className={`pdp-action-fab ${isFavorited ? 'favorited' : ''}`}
-                        onClick={onFavoriteToggle}
-                        disabled={isFavoriteLoading}
-                    >
-                        <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
-                    </Button>
                     <Button type="button" variant="outline" size="icon" className="pdp-action-fab" onClick={onShare}>
                         <Share2 size={18} />
                     </Button>

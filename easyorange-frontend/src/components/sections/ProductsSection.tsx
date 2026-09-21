@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ProductCard } from '@/components/product/ProductCard';
 import '@/components/product/products-grid.css';
 import { Button } from '@/components/ui/button';
-import { useFavoriteCheck, useProducts } from '@/hooks';
-import { useAuthStore } from '@/store/authStore';
+import { useProducts } from '@/hooks';
 import type { Product, ProductQueryParams } from '@/types';
 
 type FilterKey = 'all' | 'new' | 'hot' | 'discount';
@@ -17,34 +16,10 @@ const FILTER_PARAMS: Record<FilterKey, ProductQueryParams> = {
 };
 
 export default function ProductsSection() {
+    const navigate = useNavigate();
     const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
     const { data, isLoading } = useProducts(FILTER_PARAMS[activeFilter]);
-    const { token } = useAuthStore();
-    const navigate = useNavigate();
-    const { checkFavorites, isFavorited, toggleFavorite } = useFavoriteCheck();
-
     const products = data?.records ?? [];
-
-    // Use a ref to stabilize the products reference and avoid cascading re-renders
-    const prevProductsKeyRef = useRef<string>('');
-    const productsKey = products.length > 0 ? products.map(p => p.id).join(',') : '';
-    useEffect(() => {
-        if (productsKey && productsKey !== prevProductsKeyRef.current && token) {
-            prevProductsKeyRef.current = productsKey;
-            checkFavorites(productsKey.split(','));
-        }
-    }, [productsKey, token, checkFavorites]);
-
-    const handleFavorite = useCallback(
-        async (productId: string, shouldFavorite: boolean) => {
-            if (!token) {
-                navigate('/login');
-                return;
-            }
-            toggleFavorite(productId, shouldFavorite);
-        },
-        [token, navigate, toggleFavorite]
-    );
 
     const filters: { id: FilterKey; label: string }[] = [
         { id: 'all', label: '全部' },
@@ -231,8 +206,6 @@ export default function ProductsSection() {
                             <ProductCard
                                 key={product.id}
                                 product={product}
-                                isFavorited={isFavorited(product.id)}
-                                onFavorite={handleFavorite}
                                 style={{
                                     animationDelay: `${index * 80}ms`,
                                     opacity: isVisible ? 1 : 0,

@@ -97,7 +97,7 @@ class ArchitectureRulesTest {
 
     // ==================== Rule 4: 业务模块间仅通过端口通信 ====================
 
-    private static final Set<String> BUSINESS_MODULES = Set.of("order", "product", "message", "favorite");
+    private static final Set<String> BUSINESS_MODULES = Set.of("order", "product", "message");
 
     @ArchTest
     static final ArchRule business_modules_communicate_only_through_ports = classes()
@@ -105,8 +105,7 @@ class ArchitectureRulesTest {
             .resideInAnyPackage(
                     "com.cartethyia.easyorange.order..",
                     "com.cartethyia.easyorange.product..",
-                    "com.cartethyia.easyorange.message..",
-                    "com.cartethyia.easyorange.favorite..")
+                    "com.cartethyia.easyorange.message..")
             .and()
             .resideOutsideOfPackage("..adapter.outbound.messaging..")
             .should(notDirectlyDependOnOtherBusinessModuleInternals())

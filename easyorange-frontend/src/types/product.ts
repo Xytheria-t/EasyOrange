@@ -15,7 +15,6 @@ export interface Product {
     mainImageUrl?: string | null;
     location: string;
     views: number;
-    favorites: number;
     sellerId: string;
     sellerName: string;
     sellerAvatar: string | null;
@@ -93,39 +92,6 @@ export interface Category {
     status?: number;
     children?: Category[];
     productCount?: number;
-}
-
-export interface FavoriteProduct {
-    id: string;
-    sellerId: string;
-    username: string;
-    userAvatar: string | null;
-    categoryId: string;
-    categoryName: string;
-    title: string;
-    description: string;
-    price: number;
-    originalPrice: number | null;
-    stock: number;
-    status: number;
-    statusDesc: string | null;
-    views: number;
-    condition: number;
-    conditionDesc: string | null;
-    location: string;
-    contactMethod: string | null;
-    images: string[];
-    mainImageUrl: string | null;
-    createTime: string;
-    updateTime: string;
-}
-
-export interface Favorite {
-    id: string;
-    productId: string;
-    priceSnapshot: number | null;
-    product: FavoriteProduct;
-    createTime: string;
 }
 
 /** ES facet aggregation bucket（label：后端聚合出的展示名，分类为类目名、价格为区间文案） */

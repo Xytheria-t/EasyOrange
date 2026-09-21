@@ -1,7 +1,6 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
 import { ProductCard } from '@/components/product/ProductCard';
 import '@/components/product/products-grid.css';
@@ -10,8 +9,7 @@ import { ToolsPlaza, type ToolsPlazaFilter } from '@/components/product/ToolsPla
 import SortDropdown, { type SortOption } from '@/components/search/SortDropdown';
 import { Button } from '@/components/ui/button';
 import { preloadImages } from '@/components/ui/Image';
-import { useCategories, useColumnCount, useFavoriteCheck, useInfiniteProducts, useListUrlState } from '@/hooks';
-import { useAuthStore } from '@/store/authStore';
+import { useCategories, useColumnCount, useInfiniteProducts, useListUrlState } from '@/hooks';
 import type { Product } from '@/types';
 import './products-list.css';
 
@@ -19,9 +17,6 @@ const SORT_OPTIONS = ['newest', 'price_asc', 'price_desc', 'popular'] as const;
 type ProductSort = (typeof SORT_OPTIONS)[number];
 
 function ProductsPage() {
-    const { token } = useAuthStore();
-    const navigate = useNavigate();
-    const { checkFavorites, isFavorited, toggleFavorite } = useFavoriteCheck();
     const { filters, setState: setUrlState, reset: resetUrl } = useListUrlState();
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -82,13 +77,6 @@ function ProductsPage() {
             preloadImages(upcomingImages, { width: 300, format: 'webp', quality: 75 }).catch(() => {});
         }
     }, [allProducts]);
-
-    // 检查收藏状态
-    useEffect(() => {
-        if (allProducts.length > 0 && token) {
-            checkFavorites(allProducts.map(p => p.id));
-        }
-    }, [allProducts, token, checkFavorites]);
 
     // Intersection Observer 处理无限滚动
     useEffect(() => {
@@ -193,17 +181,6 @@ function ProductsPage() {
         const { category, hasDiscount, ...next } = filters;
         setUrlState({ filters: next });
     }, [filters, setUrlState]);
-
-    const handleFavorite = useCallback(
-        async (productId: string, shouldFavorite: boolean) => {
-            if (!token) {
-                navigate('/login');
-                return;
-            }
-            toggleFavorite(productId, shouldFavorite);
-        },
-        [token, navigate, toggleFavorite]
-    );
 
     if (isLoading && allProducts.length === 0) {
         return (
@@ -334,8 +311,6 @@ function ProductsPage() {
                                             key={item.id}
                                             product={item}
                                             index={virtualRow.index * COLUMN_COUNT + colIndex}
-                                            isFavorited={isFavorited(item.id)}
-                                            onFavorite={handleFavorite}
                                         />
                                     )
                                 )}

@@ -1,4 +1,3 @@
-export { useFavoriteCheck } from './useFavoriteCheck';
 export {
     useCategories,
     useCreateProduct,

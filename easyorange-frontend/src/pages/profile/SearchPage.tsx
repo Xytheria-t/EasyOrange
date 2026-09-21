@@ -25,9 +25,8 @@ import { AiSearchPanel } from '@/components/search/AiSearchPanel';
 import FacetFilter from '@/components/search/FacetFilter';
 import SortDropdown, { type SortOption } from '@/components/search/SortDropdown';
 import { Button } from '@/components/ui/button';
-import { useCategories, useFavoriteCheck, useHotKeywords, useProductSearch, useSearchSuggestions } from '@/hooks';
+import { useCategories, useHotKeywords, useProductSearch, useSearchSuggestions } from '@/hooks';
 import { useSearchUrlState } from '@/hooks/product/useSearchUrlState';
-import { useAuthStore } from '@/store/authStore';
 import type { ProductSearchParams } from '@/types/product';
 import { debounce } from '@/utils';
 import '@/styles/main.css';
@@ -111,27 +110,6 @@ function SearchPage() {
     const { data: suggestions } = useSearchSuggestions(debouncedKeyword);
     const { data: hotKeywords } = useHotKeywords(10);
     const { data: categories } = useCategories();
-    const { token } = useAuthStore();
-    const { checkFavorites, isFavorited, toggleFavorite } = useFavoriteCheck();
-
-    // 结果集变化后批量查询收藏状态，卡片心形才有初始态
-    useEffect(() => {
-        if (token && products.length > 0) {
-            checkFavorites(products.map(p => p.id));
-        }
-    }, [products, token, checkFavorites]);
-
-    const handleFavorite = useCallback(
-        async (productId: string, shouldFavorite: boolean) => {
-            if (!token) {
-                navigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
-                return;
-            }
-            await toggleFavorite(productId, shouldFavorite);
-        },
-        [token, navigate, toggleFavorite]
-    );
-
     const handleFilterChange = useCallback(
         (key: string, value: string | null) => {
             setFilterValue(key, value);
@@ -525,8 +503,6 @@ function SearchPage() {
                                         product={product}
                                         index={index}
                                         aiTags={aiEnhancement?.productTags[product.id]}
-                                        isFavorited={isFavorited(product.id)}
-                                        onFavorite={handleFavorite}
                                     />
                                 ))}
                             </div>
