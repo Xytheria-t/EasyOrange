@@ -157,15 +157,6 @@ class ToolCallingWireTest {
     }
 
     private static AiCallLogPort noopCallLog() {
-        return (scope,
-                model,
-                promptHash,
-                response,
-                latencyMs,
-                tokenInput,
-                tokenOutput,
-                subjectId,
-                success,
-                errorMsg) -> {};
+        return (scope, model, promptHash, response, latencyMs, tokenInput, tokenOutput, success, errorMsg) -> {};
     }
 }

@@ -49,7 +49,7 @@ class AiJudgeTest {
     void judge_scores() {
         when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"score\": 4, \"comment\": \"准确\"}"));
 
-        Optional<AiJudge.Judgement> result = aiJudge.judge("CHAT", "回答内容");
+        Optional<AiJudge.Judgement> result = aiJudge.judge("chat", "回答内容");
 
         assertThat(result).isPresent();
         assertThat(result.get().score()).isEqualTo(4);
@@ -72,7 +72,7 @@ class AiJudgeTest {
     void judge_invalidScore_empty() {
         when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"score\": 99, \"comment\": \"bad\"}"));
 
-        assertThat(aiJudge.judge("CHAT", "x")).isEmpty();
+        assertThat(aiJudge.judgeAgainstReference("参考", "x")).isEmpty();
     }
 
     @Test
@@ -80,7 +80,7 @@ class AiJudgeTest {
     void judge_unparseable_empty() {
         when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("我不知道"));
 
-        assertThat(aiJudge.judge("CHAT", "x")).isEmpty();
+        assertThat(aiJudge.judgeAgainstReference("参考", "x")).isEmpty();
     }
 
     @Test
@@ -88,6 +88,6 @@ class AiJudgeTest {
     void judge_modelError_empty() {
         when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("down"));
 
-        assertThat(aiJudge.judge("CHAT", "x")).isEmpty();
+        assertThat(aiJudge.judgeAgainstReference("参考", "x")).isEmpty();
     }
 }

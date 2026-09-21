@@ -88,7 +88,6 @@ class AiModelSupportTest {
                             anyLong(),
                             anyInt(),
                             anyInt(),
-                            isNull(),
                             eq(true),
                             isNull());
         }
@@ -111,17 +110,16 @@ class AiModelSupportTest {
                             anyLong(),
                             anyInt(),
                             anyInt(),
-                            isNull(),
                             eq(false),
                             anyString());
         }
 
         @Test
-        @DisplayName("带主体调用 -> subjectId 落进调用日志（成本可按主体归因）")
-        void callText_withSubject_recordsSubjectId() {
+        @DisplayName("成功调用 -> 响应文本与 scope 落进调用日志")
+        void callText_success_recordsCallLog() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("你好"));
 
-            aiModelSupport.callText(chatModel, AiCallScope.CHAT, "p-42", "system", "user");
+            aiModelSupport.callText(chatModel, AiCallScope.CHAT, "system", "user");
 
             verify(callLogRecorder)
                     .record(
@@ -132,7 +130,6 @@ class AiModelSupportTest {
                             anyLong(),
                             anyInt(),
                             anyInt(),
-                            eq("p-42"),
                             eq(true),
                             isNull());
         }

@@ -442,12 +442,6 @@ easyorange:
         knowledge:         # 知识库检索 — 仅 embedding（不回报 usage，按上限估算记账）
           max-tokens-per-call: 500
           daily-token-limit: 200000
-    eval:                  # LLM-as-Judge 离线评估 — 定时给 eo_ai_call_log 未评审记录打分
-      enabled: false       # 默认关闭；开启后按 cron 每天对成功调用打分（1-5 + 评语）
-      cron: "0 0 3 * * ?"
-      batch-size: 50
-      retrieval-enabled: false   # RAG 检索指标回归（hit@5 / MRR）— 仅需 embedding，默认关闭
-      retrieval-cron: "0 15 3 * * ?"
     routing:               # 模型路由 — 场景 → 模型 bean 名（接入新模型只需改配置）
       default-model: chatModel
       scenarios:
