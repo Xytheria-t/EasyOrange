@@ -454,7 +454,7 @@ public class AgentLoopRunner {
             return "(无)";
         }
         return history.stream()
-                .map(turn -> ("user".equals(turn.role()) ? "用户" : "助手") + ": " + turn.content())
+                .map(turn -> (turn.role().isUser() ? "用户" : "助手") + ": " + turn.content())
                 .collect(Collectors.joining("\n"));
     }
 
