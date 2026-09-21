@@ -42,15 +42,33 @@ public class AssetSourcingService {
             return List.of();
         }
 
-        List<Float> embedding = aiModelSupport.embed(embeddingModel, AiCallScope.SEMANTIC, query);
-        if (embedding.isEmpty()) {
-            log.warn("Empty embedding for sourcing query, falling back to BM25-only retrieval, query={}", query);
-        }
+        List<Float> embedding = embedOrEmpty(query);
 
         try {
             return port.search(query, embedding, topK);
         } catch (Exception e) {
             log.warn("Asset sourcing failed, chat proceeds without recommendations, query={}", query, e);
+            return List.of();
+        }
+    }
+
+    /**
+     * 查询向量化 —— 失败退化为空向量，而不是把异常抛出去中断检索：空向量交给端口只跑 BM25 那一路
+     * （见 {@link AssetRetrievalPort#search} 的入参约定）。抛出去在这条链路上没有收益：对话侧要等
+     * 工具失败被收敛成失败观察、MCP 侧直接变成工具报错，两处都比「少一路召回」更糟。
+     * <p>
+     * 抛异常的不只是供应商抖动 —— key 未配置时装配的占位模型（{@code UnconfiguredEmbeddingModel}）
+     * 也是调用即抛，这条降级路径同时承担「AI 密钥可选、不影响应用启动」的契约。
+     */
+    private List<Float> embedOrEmpty(String query) {
+        try {
+            List<Float> embedding = aiModelSupport.embed(embeddingModel, AiCallScope.SEMANTIC, query);
+            if (embedding.isEmpty()) {
+                log.warn("Empty embedding for sourcing query, falling back to BM25-only retrieval, query={}", query);
+            }
+            return embedding;
+        } catch (Exception e) {
+            log.warn("Query embed failed, sourcing falls back to BM25-only retrieval, query={}", query, e);
             return List.of();
         }
     }
