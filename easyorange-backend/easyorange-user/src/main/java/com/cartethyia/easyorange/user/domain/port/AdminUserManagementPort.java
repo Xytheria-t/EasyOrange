@@ -63,12 +63,7 @@ public interface AdminUserManagementPort {
      */
     AdminUserStats getStats();
 
-    /**
-     * 查询今日注册用户（按注册时间倒序，limit 条）。
-     */
-    List<AdminRecentUser> getRecentUsers(int limit);
-
-    /**
+        /**
      * 用户基础信息
      */
     record AdminUserInfo(String id, String username, String nickName, String avatar, String phone) {}
@@ -121,19 +116,4 @@ public interface AdminUserManagementPort {
      */
     record AdminUserStats(long totalUsers, long todayNewUsers) {}
 
-    /**
-     * 最近注册用户
-     */
-    record AdminRecentUser(
-            String id,
-            String username,
-            String nickName,
-            String avatar,
-            String email,
-            String phone,
-            String userType,
-            String userTypeDesc,
-            String status,
-            String statusDesc,
-            LocalDateTime createTime) {}
-}
+    }

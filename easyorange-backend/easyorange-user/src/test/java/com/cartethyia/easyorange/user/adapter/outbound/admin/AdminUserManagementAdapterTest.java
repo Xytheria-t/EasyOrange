@@ -194,7 +194,7 @@ class AdminUserManagementAdapterTest {
     }
 
     @Nested
-    @DisplayName("query / getStats / getRecentUsers")
+    @DisplayName("query / getStats")
     class PageQueryTests {
 
         @Test
@@ -221,19 +221,6 @@ class AdminUserManagementAdapterTest {
 
             assertThat(stats.totalUsers()).isEqualTo(100L);
             assertThat(stats.todayNewUsers()).isEqualTo(5L);
-        }
-
-        @Test
-        @DisplayName("查询最近注册用户")
-        void getRecentUsers_returnsList() {
-            Page<UserDO> page = new Page<>(1, 10, 1);
-            page.setRecords(List.of(userDO(UserStatus.NORMAL)));
-            when(userMapper.selectPage(any(), any())).thenReturn(page);
-
-            var result = adapter.getRecentUsers(10);
-
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).username()).isEqualTo("testuser");
         }
     }
 }

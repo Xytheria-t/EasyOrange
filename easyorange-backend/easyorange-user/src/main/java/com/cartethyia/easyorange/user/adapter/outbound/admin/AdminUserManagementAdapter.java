@@ -143,21 +143,6 @@ public class AdminUserManagementAdapter implements AdminUserManagementPort {
         return new AdminUserStats(totalUsers, todayNewUsers);
     }
 
-    @Override
-    public List<AdminRecentUser> getRecentUsers(int limit) {
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-
-        return ChainWrappers.lambdaQueryChain(userMapper)
-                .eq(UserDO::getDelFlag, 0)
-                .ge(UserDO::getCreateTime, todayStart)
-                .orderByDesc(UserDO::getCreateTime)
-                .page(new Page<>(1, limit))
-                .getRecords()
-                .stream()
-                .map(this::toRecentUser)
-                .toList();
-    }
-
     private AdminUserInfo toInfo(UserDO user) {
         return new AdminUserInfo(
                 user.getId(), user.getUsername(), user.getNickName(), user.getAvatar(), user.getPhone());
@@ -181,22 +166,6 @@ public class AdminUserManagementAdapter implements AdminUserManagementPort {
                 user.getLoginDate(),
                 user.getCreateTime(),
                 user.getUpdateTime());
-    }
-
-    private AdminRecentUser toRecentUser(UserDO user) {
-        AdminUserDetail detail = toDetail(user);
-        return new AdminRecentUser(
-                detail.id(),
-                detail.username(),
-                detail.nickName(),
-                detail.avatar(),
-                detail.email(),
-                detail.phone(),
-                detail.userType(),
-                detail.userTypeDesc(),
-                detail.status(),
-                detail.statusDesc(),
-                detail.createTime());
     }
 
     private UserDO findActive(String userId) {

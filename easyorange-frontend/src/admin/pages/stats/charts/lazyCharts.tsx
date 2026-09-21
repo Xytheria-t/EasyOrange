@@ -1,17 +1,12 @@
 import { lazy, Suspense } from 'react';
-import type { TopProductItem, TrendItem } from '../../../types/admin';
+import type { TrendItem } from '../../../types/admin';
 
 const TrendChart = lazy(() => import('./TrendChart'));
-const TopProductsChart = lazy(() => import('./TopProductsChart'));
 
 interface TrendChartProps {
     data: TrendItem[];
     isCompact?: boolean;
     height?: number;
-}
-
-interface TopProductsChartProps {
-    data: TopProductItem[];
 }
 
 const ChartFallback = ({ height = 200 }: { height?: number }) => (
@@ -39,12 +34,4 @@ export function LazyTrendChart(props: TrendChartProps) {
     );
 }
 
-export function LazyTopProductsChart(props: TopProductsChartProps) {
-    return (
-        <Suspense fallback={<ChartFallback />}>
-            <TopProductsChart {...props} />
-        </Suspense>
-    );
-}
-
-export type { TopProductsChartProps, TrendChartProps };
+export type { TrendChartProps };

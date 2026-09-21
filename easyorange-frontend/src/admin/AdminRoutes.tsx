@@ -10,7 +10,6 @@ const LoadingFallback = () => (
     </div>
 );
 
-const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const UserManagePage = lazy(() => import('./pages/users/UserManagePage'));
 const ProductReviewPage = lazy(() => import('./pages/products/ProductReviewPage'));
 const OrderManagePage = lazy(() => import('./pages/orders/OrderManagePage'));
@@ -24,12 +23,11 @@ export function AdminRoutes() {
             <Routes>
                 <Route element={<AdminRouteGuard />}>
                     <Route element={<AdminLayout />}>
-                        <Route index element={<DashboardPage />} />
+                        <Route index element={<StatsPage />} />
                         <Route path="users" element={<UserManagePage />} />
                         <Route path="products" element={<ProductReviewPage />} />
                         <Route path="orders" element={<OrderManagePage />} />
                         <Route path="categories" element={<CategoryManagePage />} />
-                        <Route path="stats" element={<StatsPage />} />
                         <Route path="knowledge" element={<KnowledgePage />} />
                     </Route>
                 </Route>

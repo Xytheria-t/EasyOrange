@@ -20,16 +20,11 @@ import type {
     KnowledgeDoc,
     OrderInterventionRequest,
     OrderStatsResponse,
-    PendingItems,
     ProductAuditRequest,
-    RecentProduct,
-    RecentUser,
     ResetPasswordRequest,
-    TopProductItem,
     TrendItem,
     UpdateStatusRequest,
     UpdateUserStatusRequest,
-    UserActivityItem,
     UserRoleRequest,
     UserUnlockRequest,
 } from '../types/admin';
@@ -41,38 +36,12 @@ export const adminApi = {
         return request<DashboardStats>(`${ADMIN_API_PREFIX}/dashboard/stats`);
     },
 
-    getPendingItems() {
-        return request<PendingItems>(`${ADMIN_API_PREFIX}/dashboard/pending`);
-    },
-
-    getRecentUsers(limit = 5) {
-        return request<RecentUser[]>(`${ADMIN_API_PREFIX}/dashboard/recent-users`, {
-            params: { limit },
-        });
-    },
-
-    getRecentProducts(limit = 5) {
-        return request<RecentProduct[]>(`${ADMIN_API_PREFIX}/dashboard/recent-products`, {
-            params: { limit },
-        });
-    },
-
     getTrend() {
         return request<TrendItem[]>(`${ADMIN_API_PREFIX}/dashboard/trend`);
     },
 
     getActivity() {
         return request<ActivityItem[]>(`${ADMIN_API_PREFIX}/dashboard/activity`);
-    },
-
-    getUserActivityHeatmap() {
-        return request<UserActivityItem[]>(`${ADMIN_API_PREFIX}/dashboard/user-activity-heatmap`);
-    },
-
-    getTopProducts(limit = 10) {
-        return request<TopProductItem[]>(`${ADMIN_API_PREFIX}/dashboard/top-products`, {
-            params: { limit },
-        });
     },
 
     getUsers(params: AdminUserQuery) {

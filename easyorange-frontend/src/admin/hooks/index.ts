@@ -8,13 +8,8 @@ export {
 } from './useAdminCategories';
 export {
     useDashboardStats,
-    usePendingItems,
     useRecentActivity,
-    useRecentProducts,
-    useRecentUsers,
-    useTopProducts,
     useTrend,
-    useUserActivityHeatmap,
 } from './useAdminDashboard';
 export { useAdminGuard } from './useAdminGuard';
 export {

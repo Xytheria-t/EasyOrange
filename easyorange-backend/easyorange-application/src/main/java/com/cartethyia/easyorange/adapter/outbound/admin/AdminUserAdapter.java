@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.RecentUser;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserAuth;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
@@ -9,7 +8,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryCondit
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserStats;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort;
-import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminRecentUser;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserDetail;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserInfo;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserPage;
@@ -102,13 +100,6 @@ public class AdminUserAdapter implements AdminUserPort {
         return new UserStats(stats.totalUsers(), stats.todayNewUsers());
     }
 
-    @Override
-    public List<RecentUser> getRecentUsers(int limit) {
-        return adminUserManagementPort.getRecentUsers(limit).stream()
-                .map(this::toRecentUser)
-                .toList();
-    }
-
     private UserInfo toUserInfo(AdminUserInfo info) {
         return new UserInfo(info.id(), info.username(), info.nickName(), info.avatar(), info.phone());
     }
@@ -133,18 +124,4 @@ public class AdminUserAdapter implements AdminUserPort {
                 detail.updateTime());
     }
 
-    private RecentUser toRecentUser(AdminRecentUser user) {
-        return new RecentUser(
-                user.id(),
-                user.username(),
-                user.nickName(),
-                user.avatar(),
-                user.email(),
-                user.phone(),
-                user.userType(),
-                user.userTypeDesc(),
-                user.status(),
-                user.statusDesc(),
-                user.createTime());
-    }
 }
