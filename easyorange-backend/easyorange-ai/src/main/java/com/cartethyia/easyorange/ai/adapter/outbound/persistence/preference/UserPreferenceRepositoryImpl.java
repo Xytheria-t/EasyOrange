@@ -5,11 +5,13 @@ import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import java.util.List;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 /**
  * 用户画像仓储（MyBatis-Plus）— upsert 按 (userId, prefKey) 唯一键保证幂等。
  */
+@Primary
 @Repository
 public class UserPreferenceRepositoryImpl extends BaseRepository<UserPreferenceMapper, UserPreferenceDO>
         implements UserPreferenceRepository {
