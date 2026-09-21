@@ -37,3 +37,5 @@ jobs:
         run: python3 .githooks/check-test-tier-drift.py
       - name: 上下文预算校验（AGENTS.md 份数 + 字符预算）
         run: python3 .githooks/check-context-budget.py
+      - name: 文档链接校验（仓库内相对链接 + 锚点）
+        run: python3 .githooks/check-doc-links.py

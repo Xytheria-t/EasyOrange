@@ -12,16 +12,6 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
 [![Spring AI](https://img.shields.io/badge/Spring%20AI-2.0-6DB33F)](https://spring.io/projects/spring-ai)
 
-<!--
-## 演示（GIF，30 秒看完）
-
-录制后取消本注释，gif 放 doc/assets/gifs/（本地一键复现见「快速开始」）：
-
-| 多步 Agent 对话式找货（流式） | Cursor 连接 MCP server 实时查在售商品 | Langfuse 全链路 trace |
-|---|---|---|
-| <img src="doc/assets/gifs/agent-find.gif" width="320"> | <img src="doc/assets/gifs/mcp-cursor.gif" width="320"> | <img src="doc/assets/gifs/langfuse-trace.gif" width="320"> |
--->
-
 ## 正在迭代（2026 Q4）
 
 - **评估与数字补测**：Agent 循环三口径（平均步数 / 降级率 / 步级延迟 p95）+ trace 覆盖率实测回填，Langfuse 面板演示录屏
@@ -249,8 +239,8 @@ easy-orange/
 
 ## 贡献与许可
 
-- **贡献**：Conventional Commits · `main / develop / feature/* / bugfix/*`，见 [CONTRIBUTING.md](./.github/CONTRIBUTING.md)
-- **安全**：漏洞报告见 [SECURITY.md](./.github/SECURITY.md)
+- **提交规范**：Conventional Commits（`commit-msg` hook 校验），单人开发直接在 `develop` 上提交——见 [AGENTS.md](./AGENTS.md#提交规范git-工作流)
+- **安全**：漏洞报告与已实现的安全特性见 [SECURITY.md](./.github/SECURITY.md)
 - **许可**：木兰宽松许可证第 2 版（[Mulan PSL v2](./LICENSE)）
 
 ---
