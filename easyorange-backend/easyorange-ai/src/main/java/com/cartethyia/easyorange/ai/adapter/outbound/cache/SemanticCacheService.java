@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.cache;
 
-import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.VectorUtils;

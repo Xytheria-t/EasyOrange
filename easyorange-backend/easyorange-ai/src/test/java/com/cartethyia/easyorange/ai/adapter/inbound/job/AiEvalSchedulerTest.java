@@ -6,8 +6,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.ai.application.service.AiJudge;
-import com.cartethyia.easyorange.ai.application.service.AiModelRouter;
+import com.cartethyia.easyorange.ai.application.eval.AiJudge;
+import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;

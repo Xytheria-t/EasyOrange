@@ -166,6 +166,7 @@
 
 ### ai
 
+- **application 按能力分包**（原单一 `service/` 大包已拆）：`chat`（对话主链路：Agent 循环 / 记忆 / 上下文治理）、`retrieval`（RAG 摄入检索 + 资产召回）、`enhancement`（搜索增强的零 LLM 规则件）、`listing`（发布助手）、`support`（模型调用收敛 + 成本治理）、`eval`（评估闭环）；依赖单向，`support` 是最底层，反向依赖不成立
 - **全面框架化为 Spring AI**（ADR-0008，Supersedes ADR-0003）：所有 LLM/Embedding 调用直接注入 Spring AI `ChatModel` / `EmbeddingModel` bean，**不再有自研 LlmPort/VisionPort/装饰器层**；对外协作者（持久化、缓存、日志、评测）一律经 `domain/port`。ADR-0003 曾在 2025-11 拒绝 Spring AI（当时不稳定），稳定版 GA 后迁移
 - **模型 Bean（`AiModelConfig`）** 三个统一走 `OpenAiSetup.setupSyncClient`（OpenAI 兼容线协议）：`chatModel`（`@Primary`，DeepSeek `deepseek-chat`）、`visionChatModel`（Qwen-VL `qwen-vl-max`，注入处用 `@Qualifier("visionChatModel")`）、`embeddingModel`（DashScope embedding 服务，**dimensions=1024 必须与 ES `dense_vector` 映射对齐**）
 - **模型路由（`AiModelRouter`）**：场景→bean 名映射在 `easyorange.ai.routing.scenarios`（yaml 可热更新），未配置回退 `routing.default-model`；已接入 `chat_tool` → chatModel、`vision` → visionChatModel、`judge` → chatModel（**评审模型独立可换，用于消除自评偏差**）

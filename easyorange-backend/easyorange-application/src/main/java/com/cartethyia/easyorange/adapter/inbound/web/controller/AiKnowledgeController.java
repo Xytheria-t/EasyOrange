@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.application.service.KnowledgeRetrievalService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.result.Result;

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.tool;
 
-import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import java.util.concurrent.CompletableFuture;

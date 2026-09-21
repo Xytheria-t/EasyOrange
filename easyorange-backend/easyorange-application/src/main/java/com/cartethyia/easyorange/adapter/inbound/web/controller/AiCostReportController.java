@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.ai.application.dto.AiCostReportRow;
-import com.cartethyia.easyorange.ai.application.service.AiCostReportService;
+import com.cartethyia.easyorange.ai.application.support.AiCostReportService;
 import com.cartethyia.easyorange.ai.domain.model.AiListingAdoptionReport;
 import com.cartethyia.easyorange.ai.domain.port.AiListingAdoptionPort;
 import com.cartethyia.easyorange.common.result.Result;

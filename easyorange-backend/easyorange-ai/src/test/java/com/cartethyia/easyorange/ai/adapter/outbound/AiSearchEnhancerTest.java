@@ -6,8 +6,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.tool.*;
-import com.cartethyia.easyorange.ai.application.service.NaturalLanguageDetector;
-import com.cartethyia.easyorange.ai.application.service.ProductTagger;
+import com.cartethyia.easyorange.ai.application.enhancement.NaturalLanguageDetector;
+import com.cartethyia.easyorange.ai.application.enhancement.ProductTagger;
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;

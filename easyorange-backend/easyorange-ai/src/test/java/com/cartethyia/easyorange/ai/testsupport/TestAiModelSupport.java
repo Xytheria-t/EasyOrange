@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.ai.testsupport;
 import static org.mockito.Mockito.mock;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.budget.InMemoryTokenBudgetStore;
-import com.cartethyia.easyorange.ai.application.service.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;

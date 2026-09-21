@@ -41,7 +41,7 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 `OpenAiChatAutoConfiguration` 的 `@ConditionalOnMissingBean`（按返回类型推断）会因自定义 bean 存在而安全退让，不产生重复 bean。
 
-### 2. 调用去重（[AiModelSupport.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/AiModelSupport.java)）
+### 2. 调用去重（[AiModelSupport.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/support/AiModelSupport.java)）
 
 `callText` / `callJson`（`response_format=json_object`）/ `embed`（`float[] → List<Float>`）/ `analyzeImages`（多图 Media + `UserMessage.builder`）四个静态工具收敛重复调用模式，**不是**端口/适配器抽象，只是代码去重。
 
@@ -97,5 +97,5 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 - Supersedes ADR 0003（其「用 Spring AI Starter：拒绝」决策翻转）；Related to ADR 0004（`@TokenBudget` 保留，Bulkhead 隔离仓删除）——两份记录均已归档：[已替代决策.md](./已替代决策.md)
 - 相关文档：[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「模块要点 → ai」、根目录 `AGENTS.md`
-- 相关代码：[AiModelConfig.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/AiModelConfig.java)、[AiModelSupport.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/service/AiModelSupport.java)、[ElasticsearchProductSearchIndexAdapter.java](../../easyorange-backend/easyorange-application/src/main/java/com/cartethyia/easyorange/adapter/outbound/elasticsearch/ElasticsearchProductSearchIndexAdapter.java)
+- 相关代码：[AiModelConfig.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/AiModelConfig.java)、[AiModelSupport.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/support/AiModelSupport.java)、[ElasticsearchProductSearchIndexAdapter.java](../../easyorange-backend/easyorange-application/src/main/java/com/cartethyia/easyorange/adapter/outbound/elasticsearch/ElasticsearchProductSearchIndexAdapter.java)
 - 后续演进触发：Spring AI 新版本升级时评估 API 变更；上线前 curl 验证 DashScope embedding 服务 endpoint 可用性（#5647），失败则切 SiliconFlow BAAI/bge-m3（同为 OpenAI 兼容线协议）

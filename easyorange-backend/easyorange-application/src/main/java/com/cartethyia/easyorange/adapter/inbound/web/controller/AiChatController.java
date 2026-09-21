@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
+import com.cartethyia.easyorange.ai.application.chat.AiChatService;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
-import com.cartethyia.easyorange.ai.application.service.AiChatService;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;

@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.adapter.inbound.web.assembler.KnowledgeDocAssembler;
 import com.cartethyia.easyorange.adapter.inbound.web.request.CreateKnowledgeDocRequest;
 import com.cartethyia.easyorange.adapter.inbound.web.response.KnowledgeDocVO;
-import com.cartethyia.easyorange.ai.application.service.KnowledgeIngestionService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeIngestionService;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.mcp;
 
-import com.cartethyia.easyorange.ai.application.service.AssetSourcingService;
-import com.cartethyia.easyorange.ai.application.service.KnowledgeRetrievalService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.CategorySummary;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
