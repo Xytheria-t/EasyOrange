@@ -218,8 +218,9 @@ public class AiChatService {
             throw new IllegalStateException("AI returned empty answer");
         }
 
-        sessionStore.saveTurn(request.sessionId(), "user", request.question());
-        sessionStore.saveTurn(request.sessionId(), "assistant", answer);
+        // 一轮对话一次写入（提问 + 回答），存储侧一次落盘也不会留下半轮记忆
+        sessionStore.saveTurns(
+                request.sessionId(), List.of(ChatTurn.user(request.question()), ChatTurn.assistant(answer)));
         return new ChatAnswer(answer, sources, request.sessionId(), false);
     }
 
@@ -249,10 +250,9 @@ public class AiChatService {
         List<Message> messages = new ArrayList<>(history.size() + 2);
         messages.add(new SystemMessage(systemPrompt));
         for (ChatTurn turn : history) {
-            messages.add(
-                    "user".equals(turn.role())
-                            ? new UserMessage(turn.content())
-                            : new AssistantMessage(turn.content()));
+            messages.add(turn.role().isUser()
+                    ? new UserMessage(turn.content())
+                    : new AssistantMessage(turn.content()));
         }
         messages.add(new UserMessage(buildCurrentUserMessage(question, prefs, run)));
         return messages;
