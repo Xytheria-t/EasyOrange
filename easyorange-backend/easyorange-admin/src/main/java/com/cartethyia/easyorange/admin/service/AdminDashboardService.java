@@ -50,6 +50,7 @@ public class AdminDashboardService {
                 .totalRevenue(orderStats.totalRevenue())
                 .build();
     }
+
     @Transactional(readOnly = true)
     public List<TrendResponse> getTrend() {
         LocalDate since = LocalDate.now().minusMonths(TREND_MONTHS);
@@ -134,6 +135,7 @@ public class AdminDashboardService {
                         .type("order")
                         .build());
     }
+
     private static LocalDateTime toLocalDateTime(Object value) {
         if (value instanceof java.sql.Timestamp ts) {
             return ts.toLocalDateTime();

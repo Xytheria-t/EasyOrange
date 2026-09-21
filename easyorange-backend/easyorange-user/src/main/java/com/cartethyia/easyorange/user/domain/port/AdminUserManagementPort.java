@@ -63,7 +63,7 @@ public interface AdminUserManagementPort {
      */
     AdminUserStats getStats();
 
-        /**
+    /**
      * 用户基础信息
      */
     record AdminUserInfo(String id, String username, String nickName, String avatar, String phone) {}
@@ -115,5 +115,4 @@ public interface AdminUserManagementPort {
      * 用户统计
      */
     record AdminUserStats(long totalUsers, long todayNewUsers) {}
-
-    }
+}
