@@ -22,15 +22,11 @@ import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -44,7 +40,8 @@ import org.springframework.stereotype.Service;
  * 1. 记忆装配：Redis 会话窗口（短期）+ 用户画像表（长期），历史注入前过 token 预算裁剪（{@link ChatContextTrimmer}）
  * 2. 工具循环：{@link AgentLoopRunner} 逐轮「决策 → 工具 → 观察」，模型判定信息足够（finish）收敛；
  *    步数 / 预算超限降级为「用已积累观察直接生成」，决策失败降级为按原始问题检索一次
- * 3. 生成回答：system prompt 注入画像/历史/知识片段/资产/资产详情，回答末尾 [来源:标题] 引用溯源
+ * 3. 生成回答：system prompt 注入画像/历史/知识片段/资产/资产详情（消息装配在 {@link ChatPromptAssembler}），
+ *    回答末尾 [来源:标题] 引用溯源
  * </pre>
  * 流式路径（SSE）在方法返回前完成不了 AOP 预算记账，由 {@link #streamAnswer}
  * 手动执行与 {@link TokenBudget} 相同的预算检查（判定与循环中途共用
@@ -208,9 +205,9 @@ public class AiChatService {
             handler.onSources(sources);
         }
 
-        // 3. 生成回答（按角色传消息：system / 历史 user+assistant / 当前 user，流式时逐 token 回调）
-        List<Message> messages =
-                buildMessages(promptRegistry.require(CHAT_PROMPT), request.question(), history, prefs, run);
+        // 3. 生成回答（流式时逐 token 回调；消息形状见 ChatPromptAssembler）
+        List<Message> messages = ChatPromptAssembler.assemble(
+                promptRegistry.require(CHAT_PROMPT), request.question(), history, prefs, run);
         String answer = handler != null
                 ? aiModelSupport.callTextStream(chatModel, AiCallScope.CHAT, messages, handler::onToken)
                 : aiModelSupport.callText(chatModel, AiCallScope.CHAT, messages);
@@ -230,115 +227,5 @@ public class AiChatService {
             log.warn("action=token_budget_exceeded, scenario={}", AiCallScope.CHAT.budgetScenario());
             throw new TokenBudgetExceededException();
         }
-    }
-
-    /**
-     * 组装生成回答的消息序列：system + 历史 user/assistant 轮次 + 当前 user（画像 / 检索结果 / 问题）。
-     * <p>
-     * 历史不进当前 user 消息 —— 跨轮次的前缀保持稳定，供应商上下文缓存（按前缀命中折扣计价）才有效，
-     * 历史也按原始角色呈现（而不是压平成一段文本），模型对轮次的区分更准。
-     * <p>
-     * 用户问题与检索片段一律放进带标签的块：它们是数据不是指令，配合 system prompt 的约束，
-     * 降低「商品描述/提问里写指令操纵模型」的成功率。
-     */
-    private static List<Message> buildMessages(
-            String systemPrompt,
-            String question,
-            List<ChatTurn> history,
-            List<UserPreference> prefs,
-            AgentLoopRunner.Result run) {
-        List<Message> messages = new ArrayList<>(history.size() + 2);
-        messages.add(new SystemMessage(systemPrompt));
-        for (ChatTurn turn : history) {
-            messages.add(turn.role().isUser()
-                    ? new UserMessage(turn.content())
-                    : new AssistantMessage(turn.content()));
-        }
-        messages.add(new UserMessage(buildCurrentUserMessage(question, prefs, run)));
-        return messages;
-    }
-
-    private static String buildCurrentUserMessage(
-            String question, List<UserPreference> prefs, AgentLoopRunner.Result run) {
-        return """
-                <user_question>
-                %s
-                </user_question>
-
-                <user_profile>
-                %s
-                </user_profile>
-
-                <knowledge_snippets>
-                %s
-                </knowledge_snippets>
-
-                <candidate_assets>
-                %s
-                </candidate_assets>
-
-                <asset_details>
-                %s
-                </asset_details>
-                """.formatted(
-                        question,
-                        UserPreference.format(prefs),
-                        formatHits(run.knowledgeHits()),
-                        formatAssets(run.assets()),
-                        formatDetails(run.details()));
-    }
-
-    private static String formatHits(List<KnowledgeHit> hits) {
-        if (hits.isEmpty()) {
-            return "(无检索结果)";
-        }
-        var sb = new StringBuilder();
-        for (int i = 0; i < hits.size(); i++) {
-            KnowledgeHit hit = hits.get(i);
-            sb.append("[%d] (%s)\n%s\n".formatted(i + 1, hit.title(), hit.content()));
-        }
-        return sb.toString();
-    }
-
-    /**
-     * 资产块带 id 与价格：模型据此写推荐理由，而 id 是回答「推荐的确实是真实在售资产」的校验锚点
-     * —— 提示词已硬约束不得编造资产与数字，这里再把可核对的信息（id）显式给到，让约束有据可依。
-     */
-    private static String formatAssets(List<AssetHit> assets) {
-        if (assets.isEmpty()) {
-            return "(无可推荐资产)";
-        }
-        var sb = new StringBuilder();
-        for (AssetHit asset : assets) {
-            sb.append("[%s] %s | ¥%s | %s | %s\n"
-                    .formatted(
-                            asset.productId(),
-                            asset.title(),
-                            asset.price() == null
-                                    ? "面议"
-                                    : asset.price().stripTrailingZeros().toPlainString(),
-                            asset.categoryName() == null ? "未分类" : asset.categoryName(),
-                            asset.conditionDesc() == null ? "成色未标注" : asset.conditionDesc()));
-        }
-        return sb.toString();
-    }
-
-    /**
-     * 详情块承接 product_detail 轮次的观察：描述全文进 prompt，模型对某件资产的推荐理由
-     * 才有据可写（资产块里只有标题 / 价格 / 成色一行摘要）。
-     */
-    private static String formatDetails(List<AssetDetail> details) {
-        if (details.isEmpty()) {
-            return "(无)";
-        }
-        var sb = new StringBuilder();
-        for (AssetDetail detail : details) {
-            sb.append("[%s] %s\n描述：%s\n"
-                    .formatted(
-                            detail.productId(),
-                            detail.title(),
-                            detail.description() == null ? "无描述" : detail.description()));
-        }
-        return sb.toString();
     }
 }
