@@ -73,27 +73,10 @@ public class AiModelSupport {
      * 普通文本生成（带调用日志与预算记账）：system + user 双消息，成功后记录 scope/model/耗时/用量。
      */
     public String callText(ChatModel chatModel, AiCallScope scope, String systemPrompt, String userMessage) {
-        return callText(chatModel, scope, null, systemPrompt, userMessage);
-    }
-
-    /**
-     * 同 {@link #callText(ChatModel, AiCallScope, String, String)}，但把调用主体（如商品 ID）一并落进调用日志。
-     * <p>
-     * 主体只用于**成本归因**：没有它，{@code eo_ai_call_log} 只能回答「哪个场景花得多」，
-     * 回答不了「这个商品花了多少」。值为 null 表示本次调用没有可归因的主体
-     * （部分调用发生在主体创建之前，例如商品发布前的拍照识别）。
-     */
-    public String callText(
-            ChatModel chatModel,
-            AiCallScope scope,
-            @Nullable String subjectId,
-            String systemPrompt,
-            String userMessage) {
         return recordCall(
                 scope,
                 chatModel,
                 systemPrompt + userMessage,
-                subjectId,
                 () -> chatOutcome(chatModel.call(
                         new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage))))));
     }
@@ -125,19 +108,6 @@ public class AiModelSupport {
         inheritConnection(jsonOptions, chatModel);
         return outputText(chatModel.call(new Prompt(
                 List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)), jsonOptions.build())));
-    }
-
-    /**
-     * JSON 结构化输出（带调用日志与预算记账）：同 {@link #callJson}，记录 scope/model/耗时/用量。
-     */
-    public String callJson(ChatModel chatModel, AiCallScope scope, String systemPrompt, String userMessage) {
-        return recordCall(
-                scope,
-                chatModel,
-                systemPrompt + userMessage,
-                () -> chatOutcome(chatModel.call(new Prompt(
-                        List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)),
-                        jsonOptions(chatModel)))));
     }
 
     /**
@@ -370,15 +340,6 @@ public class AiModelSupport {
     }
 
     private <T> T recordCall(AiCallScope scope, Object model, String promptText, Supplier<CallOutcome<T>> supplier) {
-        return recordCall(scope, model, promptText, null, supplier);
-    }
-
-    private <T> T recordCall(
-            AiCallScope scope,
-            Object model,
-            String promptText,
-            @Nullable String subjectId,
-            Supplier<CallOutcome<T>> supplier) {
         long start = System.nanoTime();
         CallOutcome<T> outcome = null;
         boolean success = false;
@@ -391,7 +352,7 @@ public class AiModelSupport {
             errorMsg = e.getMessage();
             throw e;
         } finally {
-            recordCallLog(scope, model, promptText, outcome, start, subjectId, success, errorMsg);
+            recordCallLog(scope, model, promptText, outcome, start, success, errorMsg);
             recordBudgetUsage(scope, outcome);
         }
     }
@@ -402,7 +363,6 @@ public class AiModelSupport {
             String promptText,
             @Nullable CallOutcome<?> outcome,
             long startNanos,
-            @Nullable String subjectId,
             boolean success,
             @Nullable String errorMsg) {
         try {
@@ -417,7 +377,6 @@ public class AiModelSupport {
                     (System.nanoTime() - startNanos) / 1_000_000,
                     usage != null && usage.getPromptTokens() != null ? usage.getPromptTokens() : 0,
                     usage != null && usage.getCompletionTokens() != null ? usage.getCompletionTokens() : 0,
-                    subjectId,
                     success,
                     errorMsg);
         } catch (Exception e) {

@@ -8,11 +8,11 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * LLM-as-Judge 评审器 — 用 ChatModel 当评审员，按四维标准给 AI 输出打 1-5 分。
+ * LLM-as-Judge 评审器 — 用 ChatModel 当评审员，给 AI 输出打 1-5 分。
  * <p>
- * 供两处复用：{@link com.cartethyia.easyorange.ai.adapter.inbound.job.AiEvalScheduler}
- * 对 eo_ai_call_log 未评审记录打分；金标准集回归（GoldenSetEvaluator）对测试用例打分。
- * Judge 调用不落调用日志（避免「谁来评估评估者」的套娃）。
+ * 唯一消费方是金标准集回归（{@link GoldenSetEvaluator}，由 CI 的 {@code ai-eval.yml} 触发）：
+ * 有用例参考回答的走 {@link #judgeAgainstReference}，没有的走 {@link #judge} 的四维通用标准；
+ * Judge 打分与检索指标共同构成 EvalGate 的双门禁。Judge 调用不落调用日志（避免「谁来评估评估者」的套娃）。
  * <p>
  * <b>评审模型走场景路由</b>（{@code judge} → 默认 chatModel）：自评有偏差（同一模型倾向给自己
  * 风格的输出高分），把评审模型换成另一个更强的模型只需改 {@code easyorange.ai.routing.scenarios.judge}
@@ -52,7 +52,7 @@ public class AiJudge {
     private final ObjectMapper objectMapper;
 
     /**
-     * 无参考回答的通用评审（四维标准）。
+     * 无参考回答的通用评审（四维标准）—— 金标准集里未写参考回答的用例走这条。
      */
     public Optional<Judgement> judge(String scope, String response) {
         return judgeWith(JUDGE_SYSTEM_PROMPT, "场景: " + scope + "\nAI 回答: " + (response != null ? response : "(空)"));

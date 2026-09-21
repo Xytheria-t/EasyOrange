@@ -9,9 +9,9 @@ import java.util.Optional;
 /**
  * 已召回资产的价格统计 — market_price_stats 工具的观察物：件数 / 均价 / 价格区间，零 LLM 调用。
  * <p>
- * 口径与搜索管道的 {@code MarketAnalysisTool.summarize} 完全一致（只统计有效价格、均价 HALF_UP 取整到整数、
- * 金额去小数尾巴）：那边吃 {@code ProductReadModel}、这边吃 {@link AssetHit}，两个注册表互不相干，
- * 抽公共类会让搜索管道反过来依赖 agent 侧类型，所以是照口径重写而不是复用。
+ * 同口径的另一个消费方是搜索管道的 {@code MarketAnalysisTool}（吃 {@code ProductReadModel}）——
+ * 两者共用 {@link #ofPrices} 计算与 {@link #observation()} 文案，避免「同一句话两处各写一份、
+ * 靠一条同步测试盯着别漂移」。
  * <p>
  * {@link #count()} 是<b>有效价格件数</b>而非入参件数：面议（price 为 null）与非正价不进统计，
  * 也就不能算进均价的分母。
@@ -32,11 +32,20 @@ public final class PriceStats {
 
     /** 无有效价格（空列表 / 全为 null / 全为非正）时返回 empty。 */
     public static Optional<PriceStats> of(List<AssetHit> hits) {
-        List<BigDecimal> prices = hits == null
+        if (hits == null) {
+            return Optional.empty();
+        }
+        return ofPrices(hits.stream().filter(Objects::nonNull).map(AssetHit::price).toList());
+    }
+
+    /**
+     * 从价格列表建统计（{@code null} 与非正价先剔除）—— 不依赖 {@link AssetHit}，
+     * 供搜索管道复用同一口径。
+     */
+    public static Optional<PriceStats> ofPrices(List<BigDecimal> rawPrices) {
+        List<BigDecimal> prices = rawPrices == null
                 ? List.of()
-                : hits.stream()
-                        .filter(Objects::nonNull)
-                        .map(AssetHit::price)
+                : rawPrices.stream()
                         .filter(price -> price != null && price.signum() > 0)
                         .toList();
         if (prices.isEmpty()) {

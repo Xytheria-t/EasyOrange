@@ -19,7 +19,6 @@ public record AiProperties(
         Cache cache,
         RateLimit rateLimit,
         Budget budget,
-        @Valid Eval eval,
         Routing routing,
         @Valid SemanticCache semanticCache,
         @Valid Chat chat) {
@@ -45,9 +44,6 @@ public record AiProperties(
         }
         if (budget == null) {
             budget = new Budget(true, Map.of());
-        }
-        if (eval == null) {
-            eval = new Eval(false, "0 0 3 * * ?", 50, false, "0 15 3 * * ?");
         }
         if (routing == null) {
             routing = new Routing("chatModel", Map.of());
@@ -105,8 +101,7 @@ public record AiProperties(
     /**
      * Token 预算治理配置 — 按场景限制单次调用 token 上限 + 日预算上限。
      * <p>
-     * 场景键与 {@link com.cartethyia.easyorange.ai.domain.constant.AiCallScope} 枚举名对齐
-     * （pricing / review / copy / auto_listing / semantic / qa）。
+     * 场景键与 {@link com.cartethyia.easyorange.ai.domain.constant.AiCallScope} 枚举名对齐。
      * 注解 {@code @TokenBudget} 上的字段为默认兜底值，配置文件可覆盖。
      */
     public record Budget(
@@ -127,24 +122,6 @@ public record AiProperties(
                 @DefaultValue("2000") int maxTokensPerCall,
                 @DefaultValue("500000") int dailyTokenLimit) {}
     }
-
-    /**
-     * LLM-as-Judge 离线评估配置 — 定时对 eo_ai_call_log 中未评审的成功调用打分（1-5 + 评语）。
-     * <p>
-     * 回答「怎么判断 AI 输出质量」：输出质量从「感觉还行」变成「可量化、可回归」。
-     *
-     * @param enabled 是否启用离线评估
-     * @param cron 评估任务调度表达式
-     * @param batchSize 单轮评估的最大样本数
-     * @param retrievalEnabled 是否启用 RAG 检索指标回归（hit@5 / MRR）— 仅需 embedding，不需要 LLM 生成
-     * @param retrievalCron 检索指标回归任务的调度表达式
-     */
-    public record Eval(
-            @DefaultValue("false") boolean enabled,
-            @DefaultValue("0 0 3 * * ?") String cron,
-            @Min(1) @DefaultValue("50") int batchSize,
-            @DefaultValue("false") boolean retrievalEnabled,
-            @DefaultValue("0 15 3 * * ?") String retrievalCron) {}
 
     /**
      * 模型路由配置 — 按场景把调用分给不同模型 bean（对话走文本模型 / 图片分析走视觉模型）。
