@@ -4,11 +4,12 @@ import { useAuthStore } from '@/store';
 import { useAdminStore } from '../store';
 
 const PAGE_TITLES: Record<string, string> = {
-    '/admin': '仪表盘',
+    '/admin': '数据统计',
     '/admin/users': '用户管理',
     '/admin/products': '商品审核',
     '/admin/orders': '订单管理',
-    '/admin/stats': '数据统计',
+    '/admin/categories': '分类管理',
+    '/admin/knowledge': '知识库管理',
 };
 
 export function AdminHeader() {
