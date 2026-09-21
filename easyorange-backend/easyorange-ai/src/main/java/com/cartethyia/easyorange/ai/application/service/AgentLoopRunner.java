@@ -75,10 +75,15 @@ public class AgentLoopRunner {
     private static final String TOOL_PROMPT = "ai_chat_tool_system";
     private static final String CHAT_SCENARIO = "chat";
     /** 未知工具观察里的工具清单（与 {@link AgentTools} 的常量同源，不重写字面量）。 */
-    private static final String TOOL_MENU = AgentTools.TOOL_KNOWLEDGE_SEARCH + " / " + AgentTools.TOOL_PRODUCT_SEARCH
-            + " / " + AgentTools.TOOL_PRODUCT_DETAIL + " / " + AgentTools.TOOL_MARKET_PRICE_STATS + " / "
-            + AgentTools.TOOL_COMPARE_ASSETS + " / " + AgentTools.TOOL_REMEMBER_PREFERENCE + " / "
-            + AgentTools.TOOL_FINISH;
+    private static final String TOOL_MENU = String.join(
+            " / ",
+            AgentTools.TOOL_KNOWLEDGE_SEARCH,
+            AgentTools.TOOL_PRODUCT_SEARCH,
+            AgentTools.TOOL_PRODUCT_DETAIL,
+            AgentTools.TOOL_MARKET_PRICE_STATS,
+            AgentTools.TOOL_COMPARE_ASSETS,
+            AgentTools.TOOL_REMEMBER_PREFERENCE,
+            AgentTools.TOOL_FINISH);
 
     /** 与 {@code @TokenBudget(scenario="chat")} 注解默认值一致（yaml 缺失时兜底；改注解要同步改这里）。 */
     private static final int DEFAULT_MAX_TOKENS_PER_CALL = 1500;
@@ -125,7 +130,7 @@ public class AgentLoopRunner {
      * @param assets        全部轮次累加的在售资产命中
      * @param details       product_detail 查得的资产详情
      * @param outcome       finished / step_limit / budget / decision_failed
-     * @param rounds        实际发出的决策轮数（含 finish 轮）
+     * @param rounds        已完成的决策轮数（含 finish 轮；决策失败轮不计，那一轮没有决策）
      */
     public record Result(
             List<KnowledgeHit> knowledgeHits,
@@ -138,7 +143,14 @@ public class AgentLoopRunner {
     private record StepObservation(String tool, String input, String observation) {}
 
     /** 工具执行结果 — success=false 时 observation 即失败原因（模型据此决定重试或收敛）。 */
-    private record ToolOutcome(boolean success, String observation) {}
+    private record ToolOutcome(boolean success, String observation) {
+
+        /** 失败步的错误原因与交回模型的那段观察文本同源；成功步为 null（trace 不落 errorMsg）。 */
+        @Nullable
+        String errorMsg() {
+            return success ? null : observation;
+        }
+    }
 
     public Result run(Input input) {
         Result result = executeLoop(input);
@@ -191,45 +203,34 @@ public class AgentLoopRunner {
                         "action=agent_loop_degraded, reason=budget, sessionId={}, rounds={}",
                         input.sessionId(),
                         rounds);
-                return new Result(List.copyOf(hits), List.copyOf(assets), List.copyOf(details), OUTCOME_BUDGET, rounds);
+                return snapshot(hits, assets, details, OUTCOME_BUDGET, rounds);
             }
             Optional<AgentStepDecision> decided = decideStep(input, observations, toolCallbacks);
             if (decided.isEmpty()) {
                 // 决策失败降级：按原始问题补一次知识库检索（规则类问题走检索是常态，
                 // 识别不出来最坏是多几条不相关片段进 prompt，好过把检索链路失效伪装成「无需检索」）
                 hits.addAll(retrievalService.search(input.question(), AgentTools.RETRIEVAL_TOP_K));
-                return new Result(
-                        List.copyOf(hits), List.copyOf(assets), List.copyOf(details), OUTCOME_DECISION_FAILED, rounds);
+                return snapshot(hits, assets, details, OUTCOME_DECISION_FAILED, rounds);
             }
             rounds = round;
             AgentStepDecision decision = decided.get();
 
             if (AgentTools.TOOL_FINISH.equals(decision.tool())) {
-                recordStep(input, traceId, round, decision, null, null, 0, true, null);
-                return new Result(
-                        List.copyOf(hits), List.copyOf(assets), List.copyOf(details), OUTCOME_FINISHED, rounds);
+                recordFinishStep(input, traceId, round, decision);
+                return snapshot(hits, assets, details, OUTCOME_FINISHED, rounds);
             }
-            toolCounter(decision.tool()).increment();
-
-            long start = System.nanoTime();
-            ToolOutcome outcome = executeTool(decision, callbacksByName);
-            long latencyMs = (System.nanoTime() - start) / 1_000_000;
-            stepTimer(decision.tool()).record(latencyMs, TimeUnit.MILLISECONDS);
-
-            String toolInput = toolInputOf(decision);
-            recordStep(
-                    input,
-                    traceId,
-                    round,
-                    decision,
-                    toolInput,
-                    outcome.observation(),
-                    latencyMs,
-                    outcome.success(),
-                    outcome.success() ? null : outcome.observation());
-            observations.add(new StepObservation(decision.tool(), toolInput, outcome.observation()));
+            executeToolStep(input, traceId, round, decision, callbacksByName, observations);
         }
-        return new Result(List.copyOf(hits), List.copyOf(assets), List.copyOf(details), OUTCOME_STEP_LIMIT, rounds);
+        return snapshot(hits, assets, details, OUTCOME_STEP_LIMIT, rounds);
+    }
+
+    /**
+     * 退出快照 — 四条出口（finish / 步数超限 / 预算耗尽 / 决策失败）共用同一口径：召回物拷贝成不可变
+     * （循环内的累加器仍被工具实例持有，不把可变引用交出去），outcome 与轮数供指标与降级归因。
+     */
+    private static Result snapshot(
+            List<KnowledgeHit> hits, List<AssetHit> assets, List<AssetDetail> details, String outcome, int rounds) {
+        return new Result(List.copyOf(hits), List.copyOf(assets), List.copyOf(details), outcome, rounds);
     }
 
     /**
@@ -260,8 +261,8 @@ public class AgentLoopRunner {
                         toolCalls.size());
             }
             AssistantMessage.ToolCall toolCall = toolCalls.getFirst();
-            AgentStepDecision arguments = objectMapper.readValue(toolCall.arguments(), AgentStepDecision.class);
-            return Optional.of(arguments.withToolCall(toolCall.name(), toolCall.arguments()));
+            AgentStepDecision decision = objectMapper.readValue(toolCall.arguments(), AgentStepDecision.class);
+            return Optional.of(decision.withToolCall(toolCall.name(), toolCall.arguments()));
         } catch (Exception e) {
             log.warn(
                     "action=agent_decision_failed, fallback=single_step, sessionId={}, reason={}",
@@ -272,11 +273,34 @@ public class AgentLoopRunner {
     }
 
     /**
-     * 执行工具调用 — 按名称分发到 {@link AgentTools} 的 {@code @Tool} 回调（工具语义不在循环里实现）。
+     * 执行一步工具，并把该步落成观测副产物：trace 落库（{@link AgentTracePort}）、SSE step 事件
+     * （流式回调）、步级指标（调用计数 + 耗时）；观察文本追加进下一步决策上下文。
+     */
+    private void executeToolStep(
+            Input input,
+            String traceId,
+            int round,
+            AgentStepDecision decision,
+            Map<String, ToolCallback> callbacksByName,
+            List<StepObservation> observations) {
+        toolCounter(decision.tool()).increment();
+
+        long start = System.nanoTime();
+        ToolOutcome outcome = invokeTool(decision, callbacksByName);
+        long latencyMs = (System.nanoTime() - start) / 1_000_000;
+        stepTimer(decision.tool()).record(latencyMs, TimeUnit.MILLISECONDS);
+
+        String toolInput = toolInputOf(decision);
+        recordStep(input, traceId, round, decision, toolInput, outcome, latencyMs);
+        observations.add(new StepObservation(decision.tool(), toolInput, outcome.observation()));
+    }
+
+    /**
+     * 按名称分发到 {@link AgentTools} 的 {@code @Tool} 回调（工具语义不在循环里实现）。
      * 未知工具与工具抛异常（参数不合 schema / 工具内部故障）都收敛成失败观察：模型据此换参数重试或收敛，
      * 不把整轮对话打成不可用。
      */
-    private ToolOutcome executeTool(AgentStepDecision decision, Map<String, ToolCallback> callbacksByName) {
+    private ToolOutcome invokeTool(AgentStepDecision decision, Map<String, ToolCallback> callbacksByName) {
         String tool = decision.tool() == null ? "" : decision.tool();
         ToolCallback callback = callbacksByName.get(tool);
         if (callback == null) {
@@ -292,6 +316,36 @@ public class AgentLoopRunner {
         }
     }
 
+    /** 收敛轮落 trace —— 该轮无执行体：无入参 / 无观察 / 零耗时 / 无错误。 */
+    private void recordFinishStep(Input input, String traceId, int round, AgentStepDecision decision) {
+        recordStep(input, traceId, round, decision, null, null, 0, true, null);
+    }
+
+    /** 工具步落 trace —— 观察与成败取自 {@link ToolOutcome}（失败步的观察即错误原因）。 */
+    private void recordStep(
+            Input input,
+            String traceId,
+            int round,
+            AgentStepDecision decision,
+            @Nullable String toolInput,
+            ToolOutcome outcome,
+            long latencyMs) {
+        recordStep(
+                input,
+                traceId,
+                round,
+                decision,
+                toolInput,
+                outcome.observation(),
+                latencyMs,
+                outcome.success(),
+                outcome.errorMsg());
+    }
+
+    /**
+     * 落一步 trace 并向流式回调推 step 事件 —— 前端步骤可视化与「平均步数 / 降级率 / 步级延迟」
+     * 三个口径的数据来源，两处都是观测副产物（端口实现内部兜底，不打挂主链路）。
+     */
     private void recordStep(
             Input input,
             String traceId,
@@ -404,17 +458,15 @@ public class AgentLoopRunner {
         return prefs.stream().map(p -> p.key() + ": " + p.value()).collect(Collectors.joining("\n"));
     }
 
+    /** 工具入参摘要（trace 落库与失败日志用）—— 每个工具取自有字段，其余轮次即检索词。 */
     private static String toolInputOf(AgentStepDecision decision) {
-        if (AgentTools.TOOL_PRODUCT_DETAIL.equals(decision.tool())) {
-            return decision.productId();
-        }
-        if (AgentTools.TOOL_COMPARE_ASSETS.equals(decision.tool())) {
-            return decision.productIds() == null ? null : String.join("、", decision.productIds());
-        }
-        if (AgentTools.TOOL_REMEMBER_PREFERENCE.equals(decision.tool())) {
-            return decision.preferenceKey() + "=" + decision.preferenceValue();
-        }
-        return decision.query();
+        return switch (decision.tool() == null ? "" : decision.tool()) {
+            case AgentTools.TOOL_PRODUCT_DETAIL -> decision.productId();
+            case AgentTools.TOOL_COMPARE_ASSETS ->
+                decision.productIds() == null ? null : String.join("、", decision.productIds());
+            case AgentTools.TOOL_REMEMBER_PREFERENCE -> decision.preferenceKey() + "=" + decision.preferenceValue();
+            default -> decision.query();
+        };
     }
 
     private static String reasonOf(Throwable e) {
