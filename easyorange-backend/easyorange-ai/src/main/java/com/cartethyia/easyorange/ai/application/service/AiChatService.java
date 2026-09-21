@@ -23,7 +23,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -279,17 +278,10 @@ public class AiChatService {
                 </asset_details>
                 """.formatted(
                         question,
-                        formatPrefs(prefs),
+                        UserPreference.format(prefs),
                         formatHits(run.knowledgeHits()),
                         formatAssets(run.assets()),
                         formatDetails(run.details()));
-    }
-
-    private static String formatPrefs(List<UserPreference> prefs) {
-        if (prefs.isEmpty()) {
-            return "(无)";
-        }
-        return prefs.stream().map(p -> p.key() + ": " + p.value()).collect(Collectors.joining("\n"));
     }
 
     private static String formatHits(List<KnowledgeHit> hits) {
