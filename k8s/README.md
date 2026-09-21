@@ -38,7 +38,6 @@ k8s/
 │       ├── infra/           # MySQL/Redis/RabbitMQ StatefulSet（demo-only）
 │       └── patch-configmap.yaml  # HTTP 演示覆盖项
 ├── observability/           # ServiceMonitor + PrometheusRule（需 kube-prometheus-stack）
-└── scripts/                 # JWT 密钥生成脚本
 ```
 
 ## 现代化最佳实践清单

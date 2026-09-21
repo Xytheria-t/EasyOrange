@@ -16,6 +16,7 @@ git config core.hooksPath .githooks
 | `check-test-tier-drift.py` | 文档的「集成测试」声明 vs 代码事实（`*IT` 文件 + pom failsafe 绑定）一致性校验 | <100ms |
 | `check-metrics-drift.py` | 结构计数（模块/Port/ADR/消费者/表/ArchUnit 规则/Prompt 模板/前端测试文件/金标准集）单点区块 vs 代码事实；区块外出现计数即失败（`--fix` 自动回写） | <100ms |
 | `check-context-budget.py` | AGENTS.md 份数（≤3）与字符预算（根 6500 / 合计 45000） | <100ms |
+| `check-doc-links.py` | 仓库内 `*.md` 的相对链接与锚点可解析（文件改名 / 拆册 / 重排章号后的静默 404） | <100ms |
 | `_lib.sh` | 共享工具（颜色、日志、SKIP、staged 文件、密钥扫描、快检函数） | — |
 
 **职责分层**：`pre-commit` 只放秒级快检，构建/测试的重活放 `pre-push`，避免每次提交付全量编译成本。
