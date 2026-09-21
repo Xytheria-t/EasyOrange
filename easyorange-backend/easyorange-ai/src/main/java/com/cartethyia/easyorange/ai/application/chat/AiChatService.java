@@ -188,7 +188,7 @@ public class AiChatService {
         List<ChatTurn> rawHistory =
                 sessionStore.loadRecent(request.sessionId(), aiProperties.chat().historyLimit());
         // token 级上下文治理：轮数窗口（存储侧）之上再按 token 预算裁注入窗口，一处裁、决策与生成两处生效
-        List<ChatTurn> history = contextTrimmer.trim(rawHistory).history();
+        List<ChatTurn> history = contextTrimmer.trim(rawHistory);
         List<UserPreference> prefs =
                 AgentLoopRunner.ANONYMOUS_USER.equals(userId) ? List.of() : preferenceRepository.findByUserId(userId);
 
