@@ -320,6 +320,28 @@ public class AgentLoopRunner {
         }
     }
 
+    private Counter loopCounter(String outcome) {
+        return meterRegistry.counter("easyorange.ai.chat.loop", "outcome", outcome);
+    }
+
+    private Counter toolCounter(String tool) {
+        return meterRegistry.counter("easyorange.ai.chat.tool", "name", tool);
+    }
+
+    private DistributionSummary stepsSummary() {
+        return DistributionSummary.builder("easyorange.ai.chat.steps")
+                .description("每次对话请求的 Agent 决策轮数（含 finish 轮）")
+                .publishPercentiles(0.5, 0.95)
+                .register(meterRegistry);
+    }
+
+    private Timer stepTimer(String tool) {
+        return Timer.builder("easyorange.ai.chat.step.duration")
+                .tag("tool", tool)
+                .publishPercentiles(0.95)
+                .register(meterRegistry);
+    }
+
     /**
      * 画像归属用户 — 匿名会话返回 null（长期记忆不落库），与 trace 的 subject 口径一致。
      * <p>
@@ -397,27 +419,5 @@ public class AgentLoopRunner {
 
     private static String reasonOf(Throwable e) {
         return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-    }
-
-    private Counter loopCounter(String outcome) {
-        return meterRegistry.counter("easyorange.ai.chat.loop", "outcome", outcome);
-    }
-
-    private Counter toolCounter(String tool) {
-        return meterRegistry.counter("easyorange.ai.chat.tool", "name", tool);
-    }
-
-    private DistributionSummary stepsSummary() {
-        return DistributionSummary.builder("easyorange.ai.chat.steps")
-                .description("每次对话请求的 Agent 决策轮数（含 finish 轮）")
-                .publishPercentiles(0.5, 0.95)
-                .register(meterRegistry);
-    }
-
-    private Timer stepTimer(String tool) {
-        return Timer.builder("easyorange.ai.chat.step.duration")
-                .tag("tool", tool)
-                .publishPercentiles(0.95)
-                .register(meterRegistry);
     }
 }
