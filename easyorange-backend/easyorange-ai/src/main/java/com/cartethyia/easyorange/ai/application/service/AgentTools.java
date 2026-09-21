@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
@@ -38,6 +40,7 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
  *       偏好会静默丢失。</li>
  * </ul>
  */
+@SuppressWarnings("unused") // thought 只进工具 schema，方法体不消费（见类注释）
 public class AgentTools {
 
     /** 工具名与 {@code @Tool(name = ...)} 同源，编排器引用常量而不是重写字面量。 */
@@ -289,10 +292,11 @@ public class AgentTools {
      * String 结果因此多一层引号（观察变成 {@code "命中 1 条：…"}）；本工具面的观察是进下一轮 prompt
      * 的纯文本，不需要引号。finish 无执行体、不需要该转换器。
      */
+    @NullMarked
     public static final class ObservationTextConverter implements ToolCallResultConverter {
 
         @Override
-        public String convert(Object result, Type returnType) {
+        public String convert(@Nullable Object result, @Nullable Type returnType) {
             return result == null ? "" : String.valueOf(result);
         }
     }
