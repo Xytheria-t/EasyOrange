@@ -155,11 +155,10 @@ class AiChatServiceTest {
 
         assertThat(answer.sources()).containsExactly("MacBook Air M1");
 
-        // 资产块必须真的进了 prompt：带 id 与价格，模型的推荐理由才有据可依、也才能核对是否编造
+        // 循环召回的在售资产必须真的进 prompt（块内形状见 ChatPromptAssemblerTest）
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
         verify(aiModelSupport).callText(any(), any(), captor.capture());
-        String currentUserMessage = captor.getValue().getLast().getText();
-        assertThat(currentUserMessage).contains("<candidate_assets>", "[p-1]", "MacBook Air M1", "¥4200", "九五新");
+        assertThat(captor.getValue().getLast().getText()).contains("<candidate_assets>", "[p-1]");
     }
 
     @Test
@@ -188,10 +187,10 @@ class AiChatServiceTest {
 
         chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false));
 
+        // product_detail 轮次的观察要真的进 prompt（块内形状见 ChatPromptAssemblerTest）
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
         verify(aiModelSupport).callText(any(), any(), captor.capture());
-        String currentUserMessage = captor.getValue().getLast().getText();
-        assertThat(currentUserMessage).contains("<asset_details>", "[p-1]", "M1 芯片，95 新无磕碰，电池循环 32 次");
+        assertThat(captor.getValue().getLast().getText()).contains("<asset_details>", "[p-1]");
     }
 
     @Test
