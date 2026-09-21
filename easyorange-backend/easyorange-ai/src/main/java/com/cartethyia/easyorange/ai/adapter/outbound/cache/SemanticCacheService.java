@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
@@ -42,6 +43,7 @@ import tools.jackson.databind.ObjectMapper;
  * 按次计费且有秒级延迟。
  */
 @Slf4j
+@Primary
 @Component
 @RequiredArgsConstructor
 public class SemanticCacheService implements SemanticCachePort {
