@@ -253,21 +253,11 @@ public class AiModelSupport {
     }
 
     /**
-     * 结构化输出一步到位：{@link #callJson} + 反序列化 + 失败降级。
+     * 解析模型返回的 JSON；空内容或解析失败返回 empty（调用方据此降级，不抛出去打断业务链路）。
      * <p>
-     * 各 AI 决策点此前各自复制一份「调 JSON → readValue → catch 返回 null」的样板，
-     * 唯一的差别只是兜底值；统一到这里后，解析失败的语义只有一种：调用方拿到
-     * {@link Optional#empty()}，自行决定返回空对象还是降级结果。
-     * <p>
-     * 模型输出不合 schema（字段缺失、数字带单位）时不会抛出去打断业务链路 —— 但要留意
-     * 它和「模型不可用」在这里是同一个结果，需要区分的场景应直接用 {@link #callJson}。
+     * 不合 schema（字段缺失、数字带单位）与「模型不可用」在这里是同一个结果 ——
+     * 需要区分两者的场景应直接用 {@link #callJson} 自行解析。
      */
-    public <T> Optional<T> callJsonAs(
-            ChatModel chatModel, AiCallScope scope, String systemPrompt, String userMessage, Class<T> responseType) {
-        String json = callJson(chatModel, scope, systemPrompt, userMessage);
-        return parseJson(scope, json, responseType);
-    }
-
     private <T> Optional<T> parseJson(AiCallScope scope, @Nullable String json, Class<T> responseType) {
         try {
             if (json == null || json.isBlank()) {
@@ -316,22 +306,6 @@ public class AiModelSupport {
     private static String outputText(ChatResponse response) {
         var result = response.getResult();
         return result != null ? result.getOutput().getText() : "";
-    }
-
-    /**
-     * 成色等级（"1"~"4"）→ 中文标签。多个 AI 服务拼 prompt 时共用，避免各自复制一份映射。
-     */
-    public static String formatCondition(String conditionLevel) {
-        if (conditionLevel == null) {
-            return "未知";
-        }
-        return switch (conditionLevel) {
-            case "1" -> "全新";
-            case "2" -> "九五新";
-            case "3" -> "八五新";
-            case "4" -> "七成新";
-            default -> "未知";
-        };
     }
 
     private static OpenAiChatOptions jsonOptions(ChatModel chatModel) {
