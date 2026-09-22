@@ -321,7 +321,12 @@ function OrderCard({ order, onCancel, onPay, onReceive, to, isCancelling, index 
                             <Button
                                 variant="outline"
                                 className="order-btn-secondary"
-                                onClick={() => onCancel(order.id)}
+                                onClick={e => {
+                                    // 卡片整体是 Link：不拦截会冒泡跳详情页，取消后应留在列表切分组
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onCancel(order.id);
+                                }}
                                 disabled={isCancelling}
                             >
                                 {isCancelling ? <Loader2 size={14} className="animate-spin" /> : null}
