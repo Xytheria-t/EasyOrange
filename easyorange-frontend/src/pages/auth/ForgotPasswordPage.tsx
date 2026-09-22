@@ -63,7 +63,13 @@ function ForgotPasswordPage() {
             addToast({ type: 'warning', message: formState.errors.verifyCode?.message || '请输入验证码' });
             return;
         }
-        setStep(3);
+        try {
+            await userApi.verifySmsCode(vals.phone, vals.verifyCode);
+            setStep(3);
+        } catch (err) {
+            const msg = errorHandler.handle(err as Error);
+            addToast({ type: 'error', message: msg });
+        }
     };
 
     const handleResetPassword = async () => {

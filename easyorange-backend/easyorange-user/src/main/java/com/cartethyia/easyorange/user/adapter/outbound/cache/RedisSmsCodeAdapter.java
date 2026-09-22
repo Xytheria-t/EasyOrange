@@ -54,6 +54,15 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
 
     @Override
     public VerifyResult verify(String phone, String code) {
+        return evaluate(phone, code, true);
+    }
+
+    @Override
+    public VerifyResult check(String phone, String code) {
+        return evaluate(phone, code, false);
+    }
+
+    private VerifyResult evaluate(String phone, String code, boolean consume) {
         if (code == null || code.isBlank()) {
             return VerifyResult.NOT_FOUND;
         }
@@ -77,8 +86,10 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
             return VerifyResult.NOT_FOUND;
         }
 
-        redisTemplate.delete(CODE_KEY + phone);
-        redisTemplate.delete(VERIFY_KEY + phone);
+        if (consume) {
+            redisTemplate.delete(CODE_KEY + phone);
+            redisTemplate.delete(VERIFY_KEY + phone);
+        }
         return VerifyResult.OK;
     }
 }

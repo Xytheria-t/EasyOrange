@@ -62,4 +62,25 @@ class SmsVerificationServiceTest {
                 .extracting(e -> ((BusinessException) e).getCode())
                 .isEqualTo(UserResultCode.SMS_CODE_VERIFY_TOO_FREQUENT.getCode());
     }
+
+    @Test
+    @DisplayName("预检验证码正确 — 调 check 而非 verify（不消费）")
+    void checkOk() {
+        when(smsCodePort.check(PHONE, CODE)).thenReturn(SmsCodePort.VerifyResult.OK);
+
+        assertThatCode(() -> service.checkCodeOrThrow(PHONE, CODE)).doesNotThrowAnyException();
+        verify(smsCodePort).check(PHONE, CODE);
+        verify(smsCodePort, org.mockito.Mockito.never()).verify(PHONE, CODE);
+    }
+
+    @Test
+    @DisplayName("预检验证码无效 — 抛 B1008")
+    void checkNotFound() {
+        when(smsCodePort.check(PHONE, CODE)).thenReturn(SmsCodePort.VerifyResult.NOT_FOUND);
+
+        assertThatThrownBy(() -> service.checkCodeOrThrow(PHONE, CODE))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getCode())
+                .isEqualTo(UserResultCode.SMS_CODE_INVALID.getCode());
+    }
 }

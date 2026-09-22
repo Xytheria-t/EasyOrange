@@ -16,6 +16,7 @@ import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.AuthenticationService;
 import com.cartethyia.easyorange.user.domain.service.RegistrationService;
+import com.cartethyia.easyorange.user.domain.service.SmsVerificationService;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class AuthAppService {
     private final TokenService tokenService;
     private final UserRepository userRepository;
     private final SmsCodePort smsCodePort;
+    private final SmsVerificationService smsVerificationService;
     private final DomainEventPublisher domainEventPublisher;
 
     @Transactional(rollbackFor = Exception.class)
@@ -65,6 +67,11 @@ public class AuthAppService {
         if (!smsCodePort.send(phone)) {
             throw BusinessException.of(UserResultCode.SMS_CODE_SEND_TOO_FREQUENT);
         }
+    }
+
+    /** 预检验证码正确性（不消费）— 忘记密码第二步「下一步」即时反馈。 */
+    public void verifySmsCode(String phone, String verifyCode) {
+        smsVerificationService.checkCodeOrThrow(phone, verifyCode);
     }
 
     /**

@@ -25,6 +25,14 @@ export const userApi = {
         });
     },
 
+    /** 预检验证码（不消费）— 忘记密码第二步即时校验 */
+    verifySmsCode(phone: string, verifyCode: string) {
+        return request<void>('/auth/sms-code/verify', {
+            method: 'POST',
+            body: { phone, verifyCode },
+        });
+    },
+
     forgotPassword(data: { phone: string; verifyCode: string; newPassword: string }) {
         return request<void>('/auth/password/reset', {
             method: 'POST',

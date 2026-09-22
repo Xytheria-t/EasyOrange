@@ -15,7 +15,16 @@ public class SmsVerificationService {
     private final SmsCodePort smsCodePort;
 
     public void verifyCodeOrThrow(String phone, String verifyCode) {
-        switch (smsCodePort.verify(phone, verifyCode)) {
+        throwIfInvalid(smsCodePort.verify(phone, verifyCode));
+    }
+
+    /** 预检验证码（不消费）— 通过后最终仍由 {@link #verifyCodeOrThrow} 消费。 */
+    public void checkCodeOrThrow(String phone, String verifyCode) {
+        throwIfInvalid(smsCodePort.check(phone, verifyCode));
+    }
+
+    private void throwIfInvalid(SmsCodePort.VerifyResult result) {
+        switch (result) {
             case TOO_MANY_ATTEMPTS -> throw BusinessException.of(UserResultCode.SMS_CODE_VERIFY_TOO_FREQUENT);
             case NOT_FOUND -> throw BusinessException.of(UserResultCode.SMS_CODE_INVALID);
             case OK -> {}
