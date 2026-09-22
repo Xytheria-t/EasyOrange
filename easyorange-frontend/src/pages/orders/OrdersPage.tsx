@@ -14,20 +14,20 @@ import { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PaginationBar } from '@/components/PaginationBar';
 import { Button } from '@/components/ui/button';
-import { getOrderStatusFromCode, getOrderStatusLabel } from '@/constants';
+import { getOrderStatusLabel } from '@/constants';
 import { useCancelOrder, useListUrlState, useMyOrders, usePayOrder, useReceiveOrder } from '@/hooks';
 import { useUIStore } from '@/store';
 import type { Order, OrderStatus } from '@/types';
 import { orderErrorMessage } from '@/utils/order';
 import './orders-page.css';
 
-const STATUS_TAB_MAP: { id: string; label: string; icon: typeof Package; statusCode?: number }[] = [
-    { id: 'all', label: '全部', icon: Package, statusCode: undefined },
-    { id: 'PENDING_PAYMENT', label: '待付款', icon: Clock, statusCode: 0 },
-    { id: 'PAID', label: '待发货', icon: Package, statusCode: 1 },
-    { id: 'SHIPPED', label: '已发货', icon: Truck, statusCode: 2 },
-    { id: 'COMPLETED', label: '已完成', icon: CheckCircle, statusCode: 3 },
-    { id: 'CANCELLED', label: '已取消', icon: XCircle, statusCode: 4 },
+const STATUS_TAB_MAP: { id: 'all' | OrderStatus; label: string; icon: typeof Package }[] = [
+    { id: 'all', label: '全部', icon: Package },
+    { id: 'PENDING_PAYMENT', label: '待付款', icon: Clock },
+    { id: 'PAID', label: '待发货', icon: Package },
+    { id: 'SHIPPED', label: '已发货', icon: Truck },
+    { id: 'COMPLETED', label: '已完成', icon: CheckCircle },
+    { id: 'CANCELLED', label: '已取消', icon: XCircle },
 ];
 
 const STATUS_STYLE_MAP: Record<OrderStatus, { bg: string; text: string; border: string; glow: string; dot: string }> = {
@@ -82,16 +82,18 @@ function OrdersPage() {
     const { filters, pageNum, setFilterValue: setUrlFilter, setPageNum: setUrlPageNum } = useListUrlState();
     const navigate = useNavigate();
 
-    const activeTab = VALID_TAB_IDS.includes(filters.status ?? '') ? (filters.status as string) : 'all';
+    const activeTab = VALID_TAB_IDS.includes(filters.status as 'all' | OrderStatus)
+        ? (filters.status as 'all' | OrderStatus)
+        : 'all';
 
     const queryParams = useMemo(() => {
         const tab = STATUS_TAB_MAP.find(t => t.id === activeTab);
-        const baseParams: { status?: number; pageNum?: number; pageSize?: number } = {
+        const baseParams: { status?: OrderStatus; pageNum?: number; pageSize?: number } = {
             pageNum,
             pageSize: ORDER_PAGE_SIZE,
         };
-        if (tab?.statusCode !== undefined) {
-            baseParams.status = tab.statusCode;
+        if (tab && tab.id !== 'all') {
+            baseParams.status = tab.id;
         }
         return baseParams;
     }, [activeTab, pageNum]);
@@ -256,7 +258,7 @@ interface OrderCardProps {
 }
 
 function OrderCard({ order, onCancel, onPay, onReceive, to, isCancelling, index }: OrderCardProps) {
-    const statusKey = getOrderStatusFromCode(order.status);
+    const statusKey = order.status;
     const statusLabel = getOrderStatusLabel(order.status);
     const statusStyle = STATUS_STYLE_MAP[statusKey] ?? STATUS_STYLE_MAP.CANCELLED;
     const firstItem = order.items?.[0];

@@ -17,7 +17,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getOrderStatusFromCode, getOrderStatusLabel } from '@/constants';
+import { getOrderStatusLabel } from '@/constants';
 import { useCancelOrder, useOrderDetail, usePayOrder, useReceiveOrder, useRefundOrder } from '@/hooks';
 import { useUIStore } from '@/store';
 import type { OrderStatus } from '@/types';
@@ -115,7 +115,7 @@ function OrderDetailPage() {
         );
     }
 
-    const statusKey = getOrderStatusFromCode(order.status);
+    const statusKey = order.status;
     const statusLabel = getOrderStatusLabel(order.status);
     const heroStyle = STATUS_HERO_MAP[statusKey] ?? STATUS_HERO_MAP.CANCELLED;
     const StatusIcon = heroStyle.icon;

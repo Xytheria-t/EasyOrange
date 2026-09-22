@@ -30,7 +30,7 @@ function Wrapper({ children }: { children: ReactNode }) {
 describe('useMyOrders', () => {
     it('returns paginated my orders', async () => {
         const mockPage = {
-            records: [{ id: '1', orderNo: 'ORD001', status: 1 }],
+            records: [{ id: '1', orderNo: 'ORD001', status: 'PAID' }],
             total: 1,
             current: 1,
             size: 20,
@@ -86,7 +86,7 @@ describe('useSoldOrders', () => {
                     code: 'A0000',
                     message: 'success',
                     data: {
-                        records: [{ id: '2', orderNo: 'ORD002', status: 2 }],
+                        records: [{ id: '2', orderNo: 'ORD002', status: 'SHIPPED' }],
                         total: 1,
                         current: 1,
                         size: 20,
@@ -114,7 +114,7 @@ describe('useOrderDetail', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { id: '1', orderNo: 'ORD001', status: 1 },
+                    data: { id: '1', orderNo: 'ORD001', status: 'PAID' },
                     timestamp: Date.now(),
                 });
             })
