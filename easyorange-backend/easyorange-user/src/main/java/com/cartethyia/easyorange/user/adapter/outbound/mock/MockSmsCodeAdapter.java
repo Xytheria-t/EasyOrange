@@ -35,6 +35,15 @@ public class MockSmsCodeAdapter implements SmsCodePort {
 
     @Override
     public VerifyResult verify(String phone, String code) {
+        VerifyResult result = check(phone, code);
+        if (result == VerifyResult.OK) {
+            codes.remove(phone);
+        }
+        return result;
+    }
+
+    @Override
+    public VerifyResult check(String phone, String code) {
         if (code == null || code.isBlank()) {
             return VerifyResult.NOT_FOUND;
         }
@@ -47,7 +56,6 @@ public class MockSmsCodeAdapter implements SmsCodePort {
             return VerifyResult.NOT_FOUND;
         }
 
-        codes.remove(phone);
         return VerifyResult.OK;
     }
 

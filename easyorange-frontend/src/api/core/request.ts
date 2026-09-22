@@ -73,7 +73,13 @@ const buildQueryParams = (params: Record<string, unknown>): string => {
     return query ? `?${query}` : '';
 };
 
-const PUBLIC_ENDPOINTS = new Set(['/auth/login', '/auth/register', '/auth/password/reset', '/auth/sms-code']);
+const PUBLIC_ENDPOINTS = new Set([
+    '/auth/login',
+    '/auth/register',
+    '/auth/password/reset',
+    '/auth/sms-code',
+    '/auth/sms-code/verify',
+]);
 
 const shouldHandleUnauthorized = (endpoint: string, skipAuth: boolean): boolean => {
     if (skipAuth) {

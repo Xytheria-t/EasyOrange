@@ -316,6 +316,8 @@ security:
     - /api/auth/login
     - /api/auth/refresh
     - /api/auth/sms-code
+    # 验证码预检（忘记密码第二步）— 匿名可达，爆破防护走 SmsCodePort 验证次数上限
+    - /api/auth/sms-code/verify
     - /api/auth/register
     - /api/auth/password/reset
     - /api/products/{id}/view

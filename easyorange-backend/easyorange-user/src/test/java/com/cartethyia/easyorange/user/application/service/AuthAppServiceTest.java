@@ -12,10 +12,12 @@ import com.cartethyia.easyorange.framework.auth.TokenRotation;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.aggregate.UserTestFixture;
+import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.AuthenticationService;
 import com.cartethyia.easyorange.user.domain.service.RegistrationService;
+import com.cartethyia.easyorange.user.domain.service.SmsVerificationService;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -48,6 +50,9 @@ class AuthAppServiceTest {
     private SmsCodePort smsCodePort;
 
     @Mock
+    private SmsVerificationService smsVerificationService;
+
+    @Mock
     private DomainEventPublisher domainEventPublisher;
 
     private AuthAppService service;
@@ -64,6 +69,7 @@ class AuthAppServiceTest {
                 tokenService,
                 userRepository,
                 smsCodePort,
+                smsVerificationService,
                 domainEventPublisher);
     }
 
@@ -232,6 +238,32 @@ class AuthAppServiceTest {
             when(smsCodePort.send(PHONE)).thenReturn(false);
 
             assertThatThrownBy(() -> service.sendSmsCode(PHONE)).isInstanceOf(BusinessException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("预检短信验证码")
+    class VerifySmsCode {
+
+        @Test
+        @DisplayName("验证码正确 — 应委托 SmsVerificationService.checkCodeOrThrow（不消费）")
+        void success() {
+            service.verifySmsCode(PHONE, "123456");
+
+            verify(smsVerificationService).checkCodeOrThrow(PHONE, "123456");
+        }
+
+        @Test
+        @DisplayName("验证码无效 — 领域异常应原样抛出")
+        void invalid() {
+            doThrow(BusinessException.of(UserResultCode.SMS_CODE_INVALID))
+                    .when(smsVerificationService)
+                    .checkCodeOrThrow(PHONE, "000000");
+
+            assertThatThrownBy(() -> service.verifySmsCode(PHONE, "000000"))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(UserResultCode.SMS_CODE_INVALID.getCode());
         }
     }
 }

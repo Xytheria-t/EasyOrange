@@ -5,6 +5,7 @@ import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import ForgotPasswordPage from './ForgotPasswordPage';
 
 const mockUserApiSendSmsCode = vi.hoisted(() => vi.fn());
+const mockUserApiVerifySmsCode = vi.hoisted(() => vi.fn());
 const mockUserApiForgotPassword = vi.hoisted(() => vi.fn());
 const mockErrorHandlerHandle = vi.hoisted(() => vi.fn());
 const mockNavigate = vi.hoisted(() => vi.fn());
@@ -28,6 +29,7 @@ vi.mock('react-router-dom', async () => {
 vi.mock('@/api/userApi', () => ({
     userApi: {
         sendSmsCode: mockUserApiSendSmsCode,
+        verifySmsCode: mockUserApiVerifySmsCode,
         forgotPassword: mockUserApiForgotPassword,
     },
 }));
@@ -43,6 +45,7 @@ function renderPage() {
 beforeEach(() => {
     vi.clearAllMocks();
     mockUserApiSendSmsCode.mockResolvedValue(undefined);
+    mockUserApiVerifySmsCode.mockResolvedValue(undefined);
     mockUserApiForgotPassword.mockResolvedValue(undefined);
     mockErrorHandlerHandle.mockReturnValue('模拟错误');
     mockAddToast.mockClear();
@@ -117,9 +120,24 @@ describe('ForgotPasswordPage', () => {
         await user.click(screen.getByTestId('btn-send-code'));
         await user.type(screen.getByTestId('input-verify-code'), '123456');
         await user.click(screen.getByTestId('btn-verify-next'));
+        expect(mockUserApiVerifySmsCode).toHaveBeenCalledWith('13800138000', '123456');
         expect(screen.getByTestId('input-new-password')).toBeInTheDocument();
         expect(screen.getByTestId('input-confirm-new-password')).toBeInTheDocument();
         expect(screen.getByTestId('btn-reset-password')).toBeInTheDocument();
+    });
+
+    it('stays on step 2 and shows error toast when verify code is wrong', async () => {
+        mockUserApiVerifySmsCode.mockRejectedValue(new Error('验证码无效或已过期'));
+        mockErrorHandlerHandle.mockReturnValue('验证码无效或已过期');
+        renderPage();
+        const user = userEvent.setup();
+        await user.type(screen.getByTestId('input-forgot-phone'), '13800138000');
+        await user.click(screen.getByTestId('btn-send-code'));
+        await user.type(screen.getByTestId('input-verify-code'), '000000');
+        await user.click(screen.getByTestId('btn-verify-next'));
+        expect(mockAddToast).toHaveBeenCalledWith({ type: 'error', message: '验证码无效或已过期' });
+        expect(screen.getByTestId('input-verify-code')).toBeInTheDocument();
+        expect(screen.queryByTestId('input-new-password')).not.toBeInTheDocument();
     });
 
     it('renders step 3 with password inputs and reset button', async () => {

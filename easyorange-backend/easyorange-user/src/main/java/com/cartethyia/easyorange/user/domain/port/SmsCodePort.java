@@ -12,8 +12,14 @@ public interface SmsCodePort {
     /** 发送验证码，限流时返回 false */
     boolean send(String phone);
 
-    /** 验证验证码 */
+    /** 验证验证码，成功即消费（删除），此后 verify/check 均不再匹配 */
     VerifyResult verify(String phone, String code);
+
+    /**
+     * 校验验证码但不消费 — 供「下一步」预检；计入验证次数防爆破，
+     * 成功后验证码保留，最终由 {@link #verify} 消费。
+     */
+    VerifyResult check(String phone, String code);
 
     /**
      * 生成 6 位数字验证码。

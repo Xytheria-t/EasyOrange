@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.Chang
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.PasswordLoginRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.PasswordResetRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.RegisterRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.SmsCodeVerifyRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.SmsLoginRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResult;
 import com.cartethyia.easyorange.user.application.service.AuthAppService;
@@ -97,6 +98,13 @@ public class AuthController {
                     @RequestParam
                     String phone) {
         authAppService.sendSmsCode(phone);
+        return Result.success();
+    }
+
+    /** 验证码预检（不消费）— 忘记密码流程第二步即时校验，最终重置时再真正消费。 */
+    @PostMapping("/sms-code/verify")
+    public Result<Void> verifySmsCode(@Valid @RequestBody SmsCodeVerifyRequest request) {
+        authAppService.verifySmsCode(request.phone(), request.verifyCode());
         return Result.success();
     }
 
