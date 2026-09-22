@@ -197,6 +197,27 @@ class AiModelSupportTest {
         }
 
         @Test
+        @DisplayName("data URL 从 mime 头解析类型（服务端取图转 base64 后的内联形态，后缀推断对 base64 无效）")
+        void callJsonAsWithImages_dataUrlMimeFromHeader() {
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"title\":\"二手相机\"}"));
+
+            Optional<Listing> result = aiModelSupport.callJsonAsWithImages(
+                    chatModel,
+                    AiCallScope.AUTO_LISTING,
+                    "system",
+                    "user",
+                    List.of("data:image/png;base64,iVBORw0KGgo="),
+                    Listing.class);
+
+            assertThat(result).isPresent();
+
+            var captor = ArgumentCaptor.forClass(Prompt.class);
+            verify(chatModel).call(captor.capture());
+            var userMessage = (UserMessage) captor.getValue().getInstructions().get(1);
+            assertThat(userMessage.getMedia()).extracting(Media::getMimeType).containsExactly(Media.Format.IMAGE_PNG);
+        }
+
+        @Test
         @DisplayName("模型输出不可解析 — 返回 empty 由调用方决定语义，不抛异常")
         void callJsonAsWithImages_unparsable() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{broken}"));

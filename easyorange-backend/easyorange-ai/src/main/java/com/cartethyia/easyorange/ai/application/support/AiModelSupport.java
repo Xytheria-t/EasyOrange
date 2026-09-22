@@ -241,7 +241,10 @@ public class AiModelSupport {
         }
     }
 
-    /** 图片以 {@link Media}（URL）承载，MIME 类型按 URL 后缀推断。 */
+    /**
+     * 图片以 {@link Media}（URL）承载，MIME 类型按 URL 后缀推断；
+     * {@code data:} URL（服务端取图转 base64 后的内联形态）从 mime 头直接解析。
+     */
     private static List<Media> mediaOf(List<String> imageUrls) {
         return imageUrls.stream()
                 .map(url -> Media.builder()
@@ -252,10 +255,22 @@ public class AiModelSupport {
     }
 
     /**
-     * 按 URL 后缀推断图片 MIME 类型 — 一律标 JPEG 会让 PNG/WebP 被供应商按错误类型解码，
+     * 推断图片 MIME 类型 — 一律标 JPEG 会让 PNG/WebP 被供应商按错误类型解码，
      * 图片类型与声明的 MIME 不符时部分模型直接拒答。认不出来时回退 JPEG。
      */
     private static MimeType mimeTypeOf(String url) {
+        if (url.startsWith("data:")) {
+            int headerEnd = url.indexOf(',', "data:".length());
+            int semicolon = url.indexOf(';');
+            String type = url.substring(
+                    "data:".length(),
+                    semicolon > 0 && (headerEnd < 0 || semicolon < headerEnd) ? semicolon : headerEnd);
+            try {
+                return MimeType.valueOf(type);
+            } catch (Exception e) {
+                return Media.Format.IMAGE_JPEG;
+            }
+        }
         int query = url.indexOf('?');
         int end = query >= 0 ? query : url.length();
         int dot = url.lastIndexOf('.', end - 1);
