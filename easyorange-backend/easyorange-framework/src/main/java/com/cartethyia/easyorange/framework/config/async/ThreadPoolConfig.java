@@ -12,8 +12,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
  * <p>
  * 注意：此 bean 必须由框架声明，不能依赖 Boot 的 TaskSchedulingAutoConfiguration —
  * 虚拟线程开启时 Boot 会构建 {@code SimpleAsyncTaskScheduler}（同名 {@code taskScheduler}），
- * 而 WebSocketConfig 按 {@code @Qualifier("taskScheduler")} 注入
- * {@code ThreadPoolTaskScheduler} 做心跳调度，类型不匹配会导致启动失败。
+ * 而 WebSocketConfig 注入的是 {@code ThreadPoolTaskScheduler} 做心跳调度，类型不匹配会导致启动失败
+ * （全仓只有本类声明该类型，注入按类型即可唯一解析，无需 {@code @Qualifier}）。
  *
  * @see org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
  */
