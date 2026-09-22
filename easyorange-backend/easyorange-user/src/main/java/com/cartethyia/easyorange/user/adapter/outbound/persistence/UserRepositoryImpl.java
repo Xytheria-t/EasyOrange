@@ -9,7 +9,6 @@ import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
@@ -20,10 +19,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     private final UserEntityMapper entityMapper;
     private final IdGenerator idGenerator;
 
-    public UserRepositoryImpl(
-            UserMapper userMapper,
-            @Qualifier("userEntityMapperImpl") UserEntityMapper entityMapper,
-            IdGenerator idGenerator) {
+    public UserRepositoryImpl(UserMapper userMapper, UserEntityMapper entityMapper, IdGenerator idGenerator) {
         super(userMapper);
         this.entityMapper = entityMapper;
         this.idGenerator = idGenerator;

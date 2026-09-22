@@ -10,35 +10,23 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ImageQueryService {
 
     private final FileService fileService;
     private final ImageProcessingService imageProcessingService;
     private final ImageProcessingProperties imageProcessingProperties;
-    private final Cache<String, Object> imageProcessCache;
+    private final Cache<String, ImageProcessingCacheEntry> imageProcessCache;
 
     private static final int[] PRESET_WIDTHS = {150, 300, 600, 1200};
-
-    public ImageQueryService(
-            FileService fileService,
-            ImageProcessingService imageProcessingService,
-            ImageProcessingProperties imageProcessingProperties,
-            @Qualifier("imageProcessCache") Cache<String, Object> imageProcessCache) {
-        this.fileService = fileService;
-        this.imageProcessingService = imageProcessingService;
-        this.imageProcessingProperties = imageProcessingProperties;
-        this.imageProcessCache = imageProcessCache;
-    }
-
-    public record ImageProcessingCacheEntry(File file, String mimeType, String eTag) {}
 
     public record ImageQueryResult(Resource resource, String mimeType, String eTag, boolean notModified) {}
 
@@ -97,10 +85,8 @@ public class ImageQueryService {
         log.info("Evicted image cache for fileId={}", fileId);
     }
 
-    @SuppressWarnings("unchecked")
     private ImageProcessingCacheEntry getFromCache(String cacheKey) {
-        var cached = imageProcessCache.getIfPresent(cacheKey);
-        return cached != null ? (ImageProcessingCacheEntry) cached : null;
+        return imageProcessCache.getIfPresent(cacheKey);
     }
 
     private void putToCache(String cacheKey, ImageProcessingCacheEntry entry) {
@@ -141,7 +127,10 @@ public class ImageQueryService {
 
     private static ImageQueryResult toResult(ProcessCacheEntry e) {
         return new ImageQueryResult(
-                new FileSystemResource(e.entry().file), e.entry().mimeType, e.entry().eTag, e.notModified);
+                new FileSystemResource(e.entry().file()),
+                e.entry().mimeType(),
+                e.entry().eTag(),
+                e.notModified);
     }
 
     private record ProcessCacheEntry(ImageProcessingCacheEntry entry, boolean notModified) {}

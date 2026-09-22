@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -26,10 +25,7 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
     private final OrderDataMapper dataMapper;
     private final OrderItemMapper orderItemMapper;
 
-    public OrderRepositoryImpl(
-            OrderMapper orderMapper,
-            @Qualifier("orderDataMapper") OrderDataMapper dataMapper,
-            OrderItemMapper orderItemMapper) {
+    public OrderRepositoryImpl(OrderMapper orderMapper, OrderDataMapper dataMapper, OrderItemMapper orderItemMapper) {
         super(orderMapper);
         this.dataMapper = dataMapper;
         this.orderItemMapper = orderItemMapper;
