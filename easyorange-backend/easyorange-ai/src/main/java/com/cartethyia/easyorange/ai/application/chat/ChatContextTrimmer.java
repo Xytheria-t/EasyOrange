@@ -9,23 +9,18 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
- * 多轮对话上下文的 token 级裁剪 — 轮数窗口（{@code ChatSessionStore} 按轮数裁存储）
- * 之上的第二道预算：历史注入 prompt 前按估算 token 裁到预算内。
+ * 多轮对话上下文的 token 级裁剪 — 轮数窗口（{@code ChatSessionStore} 按轮数裁存储）之上的第二道预算：
+ * 历史注入 prompt 前按估算 token 裁到预算内。
  * <p>
- * 裁剪策略：从最新一条消息向前累计估算 token，保留放得进预算的<b>最新连续窗口</b>
- * （丢旧不丢新、不跳条保留——对话连续性比多留一条旧消息值钱）；单条超预算时仍保最新一条，
- * 永不返回空历史。检索片段 / 资产详情等固定块不在裁剪范围——它们由 topK 与分块上限天然约束，
- * 会无界膨胀的只有用户与助手的原文。
+ * 从最新一条向前累计估算 token，保留放得进预算的<b>最新连续窗口</b>（丢旧不丢新、不跳条保留——对话连续性
+ * 比多留一条旧消息值钱）；单条超预算时仍保最新一条，永不返回空历史。检索片段 / 资产详情等固定块不在裁剪
+ * 范围——它们由 topK 与分块上限天然约束，会无界膨胀的只有用户与助手的原文。
  * <p>
- * 不做 LLM 摘要压缩（有意取舍）：步数上限（{@code easyorange.ai.chat.max-steps}，默认 7）与
- * 轮数窗口（{@code historyLimit}，默认 6 轮）都不大时压缩收益小，
- * 而每轮摘要多一次模型调用，直接翻倍延迟与成本——裁剪 + 轮数窗口已把上下文封顶。
+ * 不做 LLM 摘要压缩（有意取舍）：步数上限（{@code max-steps}，默认 7）与轮数窗口（{@code historyLimit}，
+ * 默认 6 轮）都不大时压缩收益小，而每轮摘要多一次模型调用、直接翻倍延迟与成本——裁剪 + 轮数窗口已封顶。
  * <p>
- * 指标（成本治理口径，每请求一次）：
- * <ul>
- *   <li>{@code easyorange.ai.chat.context.tokens} — 实际注入历史的估算 token（p50/p95）；</li>
- *   <li>{@code easyorange.ai.chat.context.trim{action}} — trimmed / within，裁剪触发率 = trimmed ÷ 总数。</li>
- * </ul>
+ * 指标（成本治理口径，每请求一次）：{@code easyorange.ai.chat.context.tokens} = 注入历史的估算 token
+ * （p50/p95）；{@code easyorange.ai.chat.context.trim{action}}（trimmed / within）→ 触发率 = trimmed ÷ 总数。
  */
 @Component
 public class ChatContextTrimmer {
