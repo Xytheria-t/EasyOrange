@@ -320,18 +320,21 @@ export function LoginForm({ onLoginSuccess, onSwitchToRegister }: LoginFormProps
                             maxLength={6}
                             autoComplete="one-time-code"
                             aria-label="短信验证码"
-                            className="pl-10 pr-24"
+                            className="pl-10 pr-32"
                             {...loginForm.register('smsCode')}
                         />
-                        <Button
-                            type="button"
-                            size="sm"
-                            className="absolute right-2 top-1/2 -translate-y-1/2"
-                            onClick={handleSendSmsCode}
-                            disabled={countdown > 0 || isSendingCode || !loginVals.phone}
-                        >
-                            {isSendingCode ? '发送中...' : countdown > 0 ? `${countdown}s` : '获取验证码'}
-                        </Button>
+                        {/* 定位放在容器上：按钮 variant 自带 hover translate，会覆盖 -translate-y-1/2 把按钮甩出输入框 */}
+                        <div className="absolute inset-y-0 right-1 flex items-center pointer-events-none">
+                            <Button
+                                type="button"
+                                size="sm"
+                                className="pointer-events-auto"
+                                onClick={handleSendSmsCode}
+                                disabled={countdown > 0 || isSendingCode || !loginVals.phone}
+                            >
+                                {isSendingCode ? '发送中...' : countdown > 0 ? `${countdown}s` : '获取验证码'}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             )}
