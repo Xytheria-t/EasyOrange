@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.product;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
@@ -172,7 +172,8 @@ class ProductQueryRepositoryImplTest {
     void countByStatus_withStatusFilters() {
         when(productMapper.selectCount(any())).thenReturn(3L);
 
-        assertThat(repository.countByStatus(ProductStatus.PENDING_REVIEW.getCode())).isEqualTo(3L);
+        assertThat(repository.countByStatus(ProductStatus.PENDING_REVIEW.getCode()))
+                .isEqualTo(3L);
 
         verify(productMapper).selectCount(countWrapperCaptor.capture());
         assertThat(countWrapperCaptor.getValue().getSqlSegment()).contains("status");

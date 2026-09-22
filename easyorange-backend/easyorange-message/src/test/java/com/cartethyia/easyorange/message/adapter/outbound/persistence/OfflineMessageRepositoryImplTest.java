@@ -39,7 +39,8 @@ class OfflineMessageRepositoryImplTest {
     void save_updatesWhenPresent() {
         var repository = new OfflineMessageRepositoryImpl(mapper, messageDataMapper);
         var offline = OfflineMessage.create("of-1", "u1", "m1", "/queue/notification");
-        when(mapper.selectById("of-1")).thenReturn(OfflineMessageDO.builder().id("of-1").build());
+        when(mapper.selectById("of-1"))
+                .thenReturn(OfflineMessageDO.builder().id("of-1").build());
 
         repository.save(offline);
 

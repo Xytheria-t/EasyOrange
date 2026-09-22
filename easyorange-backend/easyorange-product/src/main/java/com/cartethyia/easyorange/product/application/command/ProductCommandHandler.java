@@ -5,8 +5,6 @@ import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
-import com.cartethyia.easyorange.product.domain.event.ProductEvent;
 import com.cartethyia.easyorange.framework.metrics.BusinessMetricsService;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
@@ -14,6 +12,8 @@ import com.cartethyia.easyorange.product.domain.aggregate.ProductUpdateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
 import com.cartethyia.easyorange.product.domain.enums.StockChangeType;
+import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
+import com.cartethyia.easyorange.product.domain.event.ProductEvent;
 import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.repository.StockLedgerRepository;
@@ -58,8 +58,7 @@ public class ProductCommandHandler {
         var stock = saved.getStock().value();
         stockLedgerRepository.record(new StockChange(StockChangeType.INIT, null, saved.getId(), stock, stock));
         // 事件须用落库后的聚合重建：Product.create 阶段尚未分配 ID，直接发布会带 null productId（ES 索引跳过、通知发错对象）
-        domainEventPublisher.publish(
-                new ProductCreatedEvent(created.event().eventId(), ProductEvent.Data.from(saved)));
+        domainEventPublisher.publish(new ProductCreatedEvent(created.event().eventId(), ProductEvent.Data.from(saved)));
         return saved.getId().value();
     }
 
