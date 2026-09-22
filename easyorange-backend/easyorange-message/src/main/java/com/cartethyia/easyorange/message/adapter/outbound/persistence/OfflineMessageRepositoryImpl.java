@@ -24,7 +24,12 @@ public class OfflineMessageRepositoryImpl extends BaseRepository<OfflineMessageM
     @Override
     public OfflineMessage save(OfflineMessage message) {
         OfflineMessageDO entity = messageDataMapper.toEntity(message);
-        mapper.insert(entity);
+        // 新建与重推状态流转共用同一主键：已有行走更新，否则 markAsPushed 重复 INSERT 撞主键、离线消息永远停在 PENDING
+        if (mapper.selectById(entity.getId()) == null) {
+            mapper.insert(entity);
+        } else {
+            mapper.updateById(entity);
+        }
         return messageDataMapper.toAggregate(entity);
     }
 
