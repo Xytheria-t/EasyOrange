@@ -165,9 +165,11 @@ describe('useCreateOrder', () => {
 });
 
 describe('useCancelOrder', () => {
-    it('cancels order successfully', async () => {
+    it('cancels order with reason in JSON body（后端要 @RequestBody，query 传参必 400）', async () => {
+        let receivedBody: unknown;
         server.use(
-            http.put('/api/orders/1/cancel', () => {
+            http.put('/api/orders/1/cancel', async ({ request }) => {
+                receivedBody = await request.json();
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
@@ -184,6 +186,26 @@ describe('useCancelOrder', () => {
         result.current.mutate({ id: '1', reason: '不想要了' });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(receivedBody).toEqual({ reason: '不想要了' });
+    });
+
+    it('调用方未传 reason 时填默认值（@NotBlank 校验不落空）', async () => {
+        let receivedBody: unknown;
+        server.use(
+            http.put('/api/orders/1/cancel', async ({ request }) => {
+                receivedBody = await request.json();
+                return HttpResponse.json({ code: 'A0000', message: 'success', data: null, timestamp: Date.now() });
+            })
+        );
+
+        const { result } = renderHook(() => useCancelOrder(), {
+            wrapper: Wrapper,
+        });
+
+        result.current.mutate({ id: '1' });
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(receivedBody).toEqual({ reason: '用户取消' });
     });
 });
 
