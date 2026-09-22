@@ -24,11 +24,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 /**
@@ -47,6 +47,7 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AiChatService {
 
     private static final String CHAT_PROMPT = "ai_chat_system";
@@ -62,32 +63,10 @@ public class AiChatService {
     private final UserPreferenceRepository preferenceRepository;
     private final AgentLoopRunner agentLoopRunner;
     private final ChatContextTrimmer contextTrimmer;
-    private final Cache<String, Object> staleCache;
-    private final MeterRegistry meterRegistry;
+    /** 值类型是 {@link ChatAnswer}：与 framework 的 {@code imageProcessCache} 按泛型区分，注入无需 {@code @Qualifier}。 */
+    private final Cache<String, ChatAnswer> staleCache;
 
-    // Lombok 构造器不会把 @Qualifier 复制到参数上，故手写显式构造器以保留 "aiStaleCache" 限定
-    public AiChatService(
-            ChatModel chatModel,
-            PromptRegistry promptRegistry,
-            AiModelSupport aiModelSupport,
-            SemanticCachePort semanticCache,
-            ChatSessionPort sessionStore,
-            UserPreferenceRepository preferenceRepository,
-            AgentLoopRunner agentLoopRunner,
-            ChatContextTrimmer contextTrimmer,
-            @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
-            MeterRegistry meterRegistry) {
-        this.chatModel = chatModel;
-        this.promptRegistry = promptRegistry;
-        this.aiModelSupport = aiModelSupport;
-        this.semanticCache = semanticCache;
-        this.sessionStore = sessionStore;
-        this.preferenceRepository = preferenceRepository;
-        this.agentLoopRunner = agentLoopRunner;
-        this.contextTrimmer = contextTrimmer;
-        this.staleCache = staleCache;
-        this.meterRegistry = meterRegistry;
-    }
+    private final MeterRegistry meterRegistry;
 
     /**
      * 非流式回答（语义缓存 + 预算 AOP + 故障降级）。
@@ -126,14 +105,14 @@ public class AiChatService {
         } catch (BaseBusinessException e) {
             throw e;
         } catch (Exception e) {
-            Object stale = staleCache.getIfPresent(staleKey(request.question()));
-            if (stale instanceof ChatAnswer cached) {
+            ChatAnswer stale = staleCache.getIfPresent(staleKey(request.question()));
+            if (stale != null) {
                 log.warn(
                         "action=chat_degraded, reason=stale, question={}, cause={}",
                         request.question(),
                         e.getMessage());
                 degradedCounter("stale").increment();
-                return cached.asDegraded().withSessionId(request.sessionId());
+                return stale.asDegraded().withSessionId(request.sessionId());
             }
             log.error("action=chat_degraded, reason=unavailable, question={}", request.question(), e);
             degradedCounter("unavailable").increment();

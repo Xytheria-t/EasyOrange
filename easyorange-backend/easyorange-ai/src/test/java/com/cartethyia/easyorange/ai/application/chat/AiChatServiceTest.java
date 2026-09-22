@@ -80,7 +80,7 @@ class AiChatServiceTest {
     private AgentLoopRunner agentLoopRunner;
 
     private AiProperties aiProperties;
-    private Cache<String, Object> staleCache;
+    private Cache<String, ChatAnswer> staleCache;
     private SimpleMeterRegistry meterRegistry;
     private AiChatService chatService;
 
