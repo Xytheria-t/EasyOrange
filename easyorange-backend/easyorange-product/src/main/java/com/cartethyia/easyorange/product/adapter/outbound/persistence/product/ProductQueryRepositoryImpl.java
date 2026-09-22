@@ -270,8 +270,9 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
 
     @Override
     public long countByStatus(String status) {
+        // null = 不过滤状态（仪表盘总商品数）；直接 eq(null) 会拼出 status = NULL 恒假
         return ChainWrappers.lambdaQueryChain(productMapper)
-                .eq(ProductDO::getStatus, status)
+                .eq(status != null, ProductDO::getStatus, status)
                 .count();
     }
 

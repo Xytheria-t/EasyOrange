@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.product;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
@@ -22,6 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -148,5 +151,30 @@ class ProductQueryRepositoryImplTest {
 
         assertThat(readModels).extracting("conditionDesc").containsExactly("全新", "明显使用痕迹");
         verifyNoInteractions(productDetailMapper, productImageMapper, categoryMapper);
+    }
+
+    @Captor
+    private ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.Wrapper<ProductDO>> countWrapperCaptor;
+
+    @Test
+    @DisplayName("countByStatus(null) 不拼状态条件——总商品数不能因 status = NULL 恒查 0")
+    void countByStatus_nullSkipsCondition() {
+        when(productMapper.selectCount(any())).thenReturn(7L);
+
+        assertThat(repository.countByStatus(null)).isEqualTo(7L);
+
+        verify(productMapper).selectCount(countWrapperCaptor.capture());
+        assertThat(countWrapperCaptor.getValue().getSqlSegment()).doesNotContain("status");
+    }
+
+    @Test
+    @DisplayName("countByStatus 带状态值时按状态过滤")
+    void countByStatus_withStatusFilters() {
+        when(productMapper.selectCount(any())).thenReturn(3L);
+
+        assertThat(repository.countByStatus(ProductStatus.PENDING_REVIEW.getCode())).isEqualTo(3L);
+
+        verify(productMapper).selectCount(countWrapperCaptor.capture());
+        assertThat(countWrapperCaptor.getValue().getSqlSegment()).contains("status");
     }
 }
