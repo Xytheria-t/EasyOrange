@@ -226,7 +226,7 @@ function PublishPage() {
         { id: 'images', label: '资产图片', icon: ImageIcon },
         { id: 'basic', label: '基本信息', icon: Tag },
         { id: 'detail', label: '详细信息', icon: FileText },
-        { id: 'price', label: '价格库存', icon: DollarSign },
+        { id: 'price-section', label: '价格库存', icon: DollarSign },
     ];
 
     return (
@@ -636,7 +636,7 @@ function PublishPage() {
                         </section>
 
                         {/* Price Section */}
-                        <section className="form-section-v2" id="price">
+                        <section className="form-section-v2" id="price-section">
                             <div className="section-header-v2">
                                 <div className="section-icon-v2">
                                     <DollarSign size={20} />
