@@ -57,9 +57,11 @@ function extractFileId(src: string | undefined): string | null {
         return null;
     }
 
-    const match = src.match(/\/api\/file\/([^/]+)/);
+    const match = src.match(/\/api\/file\/([^?#]+)/);
     if (match) {
-        return match[1];
+        // 日期路径（/api/file/2026/09/23/x.jpg）不是单段 fileId：优化端点只收单段，
+        // 截首段会拼出 /api/file/2026/responsive 恒 400，整图落占位图
+        return match[1].includes('/') ? null : match[1];
     }
 
     if (/^\d+$/.test(src)) {
