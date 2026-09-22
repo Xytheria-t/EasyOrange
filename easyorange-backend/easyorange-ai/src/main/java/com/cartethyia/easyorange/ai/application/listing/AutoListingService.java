@@ -35,6 +35,7 @@ public class AutoListingService {
     private final PromptRegistry promptRegistry;
     private final AiModelSupport aiModelSupport;
     private final CategoryCatalogPort categoryCatalogPort;
+    private final VisionImageLoader visionImageLoader;
 
     @TokenBudget(scenario = "auto_listing", maxTokensPerCall = 3000, dailyTokenLimit = 500_000)
     public AutoListingResult analyzeImages(List<String> imageUrls) {
@@ -52,6 +53,8 @@ public class AutoListingService {
     /** 供应商异常返回空 Optional，与「模型输出不可解析」收敛成同一个用户可见结果（识别失败）。 */
     private Optional<AutoListingResult> callVision(List<String> imageUrls, String prompt) {
         try {
+            // 供应商抓不到 localhost/相对地址：先在服务端把图取回转 base64 data URL 再进模型调用
+            List<String> dataUrls = visionImageLoader.toDataUrls(imageUrls);
             // 视觉模型走场景路由（vision → visionChatModel），与文本生成解耦、可独立换模型；
             // 带 scope 以便视觉模型的 token 用量计入 auto_listing 场景预算
             return aiModelSupport.callJsonAsWithImages(
@@ -59,7 +62,7 @@ public class AutoListingService {
                     AiCallScope.AUTO_LISTING,
                     prompt,
                     userMessage(),
-                    imageUrls,
+                    dataUrls,
                     AutoListingResult.class);
         } catch (Exception e) {
             log.error("Auto listing analysis failed for {} images", imageUrls.size(), e);

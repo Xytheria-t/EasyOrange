@@ -3,14 +3,6 @@ import { type AutoListingResult, aiApi } from '@/api/aiApi';
 import { ApiClientError } from '@/api/core/request';
 import { useUIStore } from '@/store/uiStore';
 
-function checkImageAccessibility(urls: string[]): boolean {
-    const hasLocalhost = urls.some(
-        u => u.startsWith('http://localhost') || u.startsWith('https://localhost') || u.startsWith('http://127.0.0.1')
-    );
-    const hasRelative = urls.some(u => u.startsWith('/') && !u.startsWith('//'));
-    return !hasLocalhost && !hasRelative;
-}
-
 /**
  * 失败文案：后端失败（B8002 等）自带面向用户的说明，优先展示它；
  * 只有网络层/未知异常才回落到本地兜底话术 —— 用户至少知道「这次没成」。
@@ -29,9 +21,6 @@ export function useAutoListing() {
 
     const analyzeImages = useCallback(
         async (imageUrls: string[]) => {
-            if (!checkImageAccessibility(imageUrls)) {
-                addToast({ type: 'warning', message: '部分图片使用本地地址，AI 可能无法访问；建议部署后使用' });
-            }
             setIsLoading(true);
             try {
                 const result = await aiApi.autoListing(imageUrls);

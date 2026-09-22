@@ -42,14 +42,23 @@ class AutoListingServiceTest {
     @Mock
     private CategoryCatalogPort categoryCatalogPort;
 
+    @Mock
+    private VisionImageLoader visionImageLoader;
+
     private AutoListingService service;
 
     @BeforeEach
     void setUp() {
         lenient().when(modelRouter.choose("vision")).thenReturn(visionChatModel);
         lenient().when(categoryCatalogPort.listAvailableCategoryNames()).thenReturn(List.of("手机数码", "图书教材"));
+        // 取图转 data URL 是 I/O 边界，单测直通透传（取图行为由 VisionImageLoaderTest 覆盖）
+        lenient().when(visionImageLoader.toDataUrls(any())).thenAnswer(inv -> inv.getArgument(0));
         service = new AutoListingService(
-                modelRouter, new TestPromptRegistry(), TestAiModelSupport.create(), categoryCatalogPort);
+                modelRouter,
+                new TestPromptRegistry(),
+                TestAiModelSupport.create(),
+                categoryCatalogPort,
+                visionImageLoader);
     }
 
     private static ChatResponse textResponse(String text) {
@@ -134,10 +143,26 @@ class AutoListingServiceTest {
         @DisplayName("Prompt 模板缺失时抛 IllegalStateException（配置错误 fail-fast，不伪装成 AI 不可用）")
         void analyzeImages_missingPrompt() {
             service = new AutoListingService(
-                    modelRouter, TestPromptRegistry.empty(), TestAiModelSupport.create(), categoryCatalogPort);
+                    modelRouter,
+                    TestPromptRegistry.empty(),
+                    TestAiModelSupport.create(),
+                    categoryCatalogPort,
+                    visionImageLoader);
 
             assertThatThrownBy(() -> service.analyzeImages(List.of("http://example.com/a.jpg")))
                     .isInstanceOf(IllegalStateException.class);
+            verify(visionChatModel, never()).call(any(Prompt.class));
+        }
+
+        @Test
+        @DisplayName("取图失败（文件缺失/下载失败）— 降级为 B8002，不把坏图发给供应商")
+        void analyzeImages_imageLoadFails() {
+            when(visionImageLoader.toDataUrls(any())).thenThrow(new IllegalStateException("图片下载失败: HTTP 404"));
+
+            assertThatThrownBy(() -> service.analyzeImages(List.of("https://example.com/gone.jpg")))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo("B8002");
             verify(visionChatModel, never()).call(any(Prompt.class));
         }
     }
