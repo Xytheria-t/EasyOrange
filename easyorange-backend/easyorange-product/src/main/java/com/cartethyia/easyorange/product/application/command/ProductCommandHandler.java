@@ -5,6 +5,8 @@ import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
+import com.cartethyia.easyorange.product.domain.event.ProductEvent;
 import com.cartethyia.easyorange.framework.metrics.BusinessMetricsService;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
@@ -55,7 +57,9 @@ public class ProductCommandHandler {
         // 库存基线落账：与资产创建同事务，给对账任务一个起点
         var stock = saved.getStock().value();
         stockLedgerRepository.record(new StockChange(StockChangeType.INIT, null, saved.getId(), stock, stock));
-        domainEventPublisher.publish(created.event());
+        // 事件须用落库后的聚合重建：Product.create 阶段尚未分配 ID，直接发布会带 null productId（ES 索引跳过、通知发错对象）
+        domainEventPublisher.publish(
+                new ProductCreatedEvent(created.event().eventId(), ProductEvent.Data.from(saved)));
         return saved.getId().value();
     }
 
