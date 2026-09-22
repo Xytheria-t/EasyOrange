@@ -62,4 +62,10 @@ describe('Image', () => {
         const img = screen.getByAltText('custom');
         expect(img).toHaveClass('custom-img');
     });
+
+    it('日期路径的上传图直接用原地址，不拼会 400 的 /responsive（截首段会丢整图）', () => {
+        render(<Image src="/api/file/2026/09/23/abc123.jpg" alt="dated" lazy={false} />);
+        const img = screen.getByAltText('dated');
+        expect(img.getAttribute('src')).toBe('/api/file/2026/09/23/abc123.jpg');
+    });
 });
