@@ -98,7 +98,7 @@ test.describe('商品下单流程', () => {
                     buyerId: '1',
                     sellerId: '2',
                     totalAmount: 299,
-                    status: 0,
+                    status: 'PENDING_PAYMENT',
                     statusDesc: '待付款',
                     items: [
                         {

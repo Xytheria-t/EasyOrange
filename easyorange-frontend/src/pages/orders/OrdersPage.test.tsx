@@ -56,7 +56,7 @@ function createMockOrder(overrides: Partial<Order> = {}): Order {
         ],
         totalAmount: 99.99,
         singleItem: true,
-        status: 0,
+        status: 'PENDING_PAYMENT',
         statusDesc: '待付款',
         address: '北京市海淀区',
         phone: '13800138000',
@@ -127,7 +127,7 @@ describe('OrdersPage', () => {
                     },
                 ],
                 totalAmount: 50,
-                status: 0,
+                status: 'PENDING_PAYMENT',
             }),
             createMockOrder({
                 id: '2',
@@ -143,7 +143,7 @@ describe('OrdersPage', () => {
                     },
                 ],
                 totalAmount: 100,
-                status: 2,
+                status: 'SHIPPED',
             }),
         ];
         mockUseMyOrders.mockReturnValue({ data: createMockPage(orders), isLoading: false, isError: false });
@@ -157,7 +157,7 @@ describe('OrdersPage', () => {
     });
 
     it('shows cancel and pay buttons for PENDING_PAYMENT orders', () => {
-        const order = createMockOrder({ id: '1', status: 0 });
+        const order = createMockOrder({ id: '1', status: 'PENDING_PAYMENT' });
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
         expect(screen.getByText('取消订单')).toBeInTheDocument();
@@ -165,7 +165,7 @@ describe('OrdersPage', () => {
     });
 
     it('shows confirm receive button for SHIPPED orders', () => {
-        const order = createMockOrder({ id: '1', status: 2 });
+        const order = createMockOrder({ id: '1', status: 'SHIPPED' });
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
         expect(screen.getByText('确认收货')).toBeInTheDocument();
@@ -174,7 +174,7 @@ describe('OrdersPage', () => {
     });
 
     it('does not show action buttons for COMPLETED/CANCELLED orders', () => {
-        const order = createMockOrder({ id: '1', status: 3 });
+        const order = createMockOrder({ id: '1', status: 'COMPLETED' });
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
         expect(screen.queryByText('取消订单')).not.toBeInTheDocument();
@@ -183,7 +183,7 @@ describe('OrdersPage', () => {
     });
 
     it('shows status badge with correct label for each status', () => {
-        const order = createMockOrder({ id: '1', status: 0 });
+        const order = createMockOrder({ id: '1', status: 'PENDING_PAYMENT' });
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
         const statusBadges = screen.getAllByText('待付款');
@@ -193,7 +193,7 @@ describe('OrdersPage', () => {
     it('calls cancelOrder when cancel button is clicked', async () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
         mockUseCancelOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        const order = createMockOrder({ id: 'order1', status: 0 });
+        const order = createMockOrder({ id: 'order1', status: 'PENDING_PAYMENT' });
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
         const user = userEvent.setup();
@@ -207,7 +207,7 @@ describe('OrdersPage', () => {
     it('calls payOrder when pay button is clicked', async () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
         mockUsePayOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        const order = createMockOrder({ id: 'order1', status: 0 });
+        const order = createMockOrder({ id: 'order1', status: 'PENDING_PAYMENT' });
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
         const user = userEvent.setup();
@@ -221,7 +221,7 @@ describe('OrdersPage', () => {
     it('calls receiveOrder when confirm receive button is clicked', async () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
         mockUseReceiveOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        const order = createMockOrder({ id: 'order1', status: 2 });
+        const order = createMockOrder({ id: 'order1', status: 'SHIPPED' });
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
         const user = userEvent.setup();
@@ -233,7 +233,7 @@ describe('OrdersPage', () => {
     });
 
     it('navigates to order detail when order card is clicked', async () => {
-        const order = createMockOrder({ id: 'order-detail-1', status: 0 });
+        const order = createMockOrder({ id: 'order-detail-1', status: 'PENDING_PAYMENT' });
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
         // OrderCard root is a <Link>, so check href instead of navigate mock

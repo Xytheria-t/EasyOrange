@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { orderApi } from '@/api/orderApi';
-import type { CreateOrderRequest, Order, OrderDetail, OrderQueryParams, PageResult } from '@/types';
+import type { CreateOrderRequest, Order, OrderDetail, OrderQueryParams, OrderStatus, PageResult } from '@/types';
 
 const ORDER_KEYS = {
     all: ['orders'] as const,
@@ -69,12 +69,12 @@ export function useCancelOrder() {
         onMutate: async ({ id }) => {
             await queryClient.cancelQueries({ queryKey: ORDER_KEYS.all });
 
-            const previousLists = queryClient.getQueriesData<{ records: Array<{ id: string; status: number }> }>({
+            const previousLists = queryClient.getQueriesData<{ records: Array<{ id: string; status: OrderStatus }> }>({
                 queryKey: ORDER_KEYS.all,
             });
             const previousDetail = queryClient.getQueryData(ORDER_KEYS.detail(id));
 
-            queryClient.setQueriesData<{ records: Array<{ id: string; status: number }> }>(
+            queryClient.setQueriesData<{ records: Array<{ id: string; status: OrderStatus }> }>(
                 { queryKey: ORDER_KEYS.all },
                 oldData => {
                     if (!oldData?.records) {
@@ -82,16 +82,18 @@ export function useCancelOrder() {
                     }
                     return {
                         ...oldData,
-                        records: oldData.records.map(order => (order.id === id ? { ...order, status: 4 } : order)),
+                        records: oldData.records.map(order =>
+                            order.id === id ? { ...order, status: 'CANCELLED' as OrderStatus } : order
+                        ),
                     };
                 }
             );
 
-            queryClient.setQueryData(ORDER_KEYS.detail(id), (oldData: { status: number } | undefined) => {
+            queryClient.setQueryData(ORDER_KEYS.detail(id), (oldData: { status: OrderStatus } | undefined) => {
                 if (!oldData) {
                     return oldData;
                 }
-                return { ...oldData, status: 4 };
+                return { ...oldData, status: 'CANCELLED' };
             });
 
             return { previousLists, previousDetail };

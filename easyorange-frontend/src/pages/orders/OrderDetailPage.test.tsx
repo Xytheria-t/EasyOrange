@@ -54,7 +54,7 @@ function createMockOrderDetail(overrides: Partial<OrderDetail> = {}): OrderDetai
         ],
         totalAmount: 99.99,
         singleItem: true,
-        status: 0,
+        status: 'PENDING_PAYMENT',
         statusDesc: '待付款',
         address: '北京市海淀区',
         phone: '13800138000',
@@ -149,7 +149,7 @@ describe('OrderDetailPage', () => {
     });
 
     it('shows status hero with correct label for PENDING_PAYMENT', () => {
-        const order = createMockOrderDetail({ status: 0 });
+        const order = createMockOrderDetail({ status: 'PENDING_PAYMENT' });
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false, isError: false });
         renderPage();
         expect(screen.getByText('待付款')).toBeInTheDocument();
@@ -157,7 +157,7 @@ describe('OrderDetailPage', () => {
     });
 
     it('shows timeline for active orders', () => {
-        const order = createMockOrderDetail({ status: 1 });
+        const order = createMockOrderDetail({ status: 'PAID' });
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false, isError: false });
         renderPage();
         expect(screen.getByText('下单')).toBeInTheDocument();
@@ -167,7 +167,7 @@ describe('OrderDetailPage', () => {
     });
 
     it('does not show timeline for CANCELLED orders', () => {
-        const order = createMockOrderDetail({ status: 4 });
+        const order = createMockOrderDetail({ status: 'CANCELLED' });
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false, isError: false });
         renderPage();
         expect(screen.queryByText('下单')).not.toBeInTheDocument();
@@ -177,7 +177,7 @@ describe('OrderDetailPage', () => {
     });
 
     it('shows cancel and pay buttons for PENDING_PAYMENT', () => {
-        const order = createMockOrderDetail({ status: 0 });
+        const order = createMockOrderDetail({ status: 'PENDING_PAYMENT' });
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false, isError: false });
         renderPage();
         expect(screen.getByText('取消订单')).toBeInTheDocument();
@@ -185,7 +185,7 @@ describe('OrderDetailPage', () => {
     });
 
     it('shows refund button for PAID', () => {
-        const order = createMockOrderDetail({ status: 1 });
+        const order = createMockOrderDetail({ status: 'PAID' });
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false, isError: false });
         renderPage();
         expect(screen.getByText('申请退款')).toBeInTheDocument();
@@ -193,14 +193,14 @@ describe('OrderDetailPage', () => {
     });
 
     it('shows receive button for SHIPPED', () => {
-        const order = createMockOrderDetail({ status: 2 });
+        const order = createMockOrderDetail({ status: 'SHIPPED' });
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false, isError: false });
         renderPage();
         expect(screen.getByText('确认收货')).toBeInTheDocument();
     });
 
     it('does not show action buttons for COMPLETED', () => {
-        const order = createMockOrderDetail({ status: 3 });
+        const order = createMockOrderDetail({ status: 'COMPLETED' });
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false, isError: false });
         renderPage();
         expect(screen.queryByText('取消订单')).not.toBeInTheDocument();
@@ -212,7 +212,7 @@ describe('OrderDetailPage', () => {
     it('calls cancelOrder when cancel button is clicked', async () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
         mockUseCancelOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        const order = createMockOrderDetail({ status: 0 });
+        const order = createMockOrderDetail({ status: 'PENDING_PAYMENT' });
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false, isError: false });
         renderPage();
         const user = userEvent.setup();
@@ -226,7 +226,7 @@ describe('OrderDetailPage', () => {
     it('calls payOrder when pay button is clicked', async () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
         mockUsePayOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        const order = createMockOrderDetail({ status: 0 });
+        const order = createMockOrderDetail({ status: 'PENDING_PAYMENT' });
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false, isError: false });
         renderPage();
         const user = userEvent.setup();
@@ -240,7 +240,7 @@ describe('OrderDetailPage', () => {
     it('calls receiveOrder when receive button is clicked', async () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
         mockUseReceiveOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        const order = createMockOrderDetail({ status: 2 });
+        const order = createMockOrderDetail({ status: 'SHIPPED' });
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false, isError: false });
         renderPage();
         const user = userEvent.setup();
@@ -254,7 +254,7 @@ describe('OrderDetailPage', () => {
     it('calls refundOrder when refund button is clicked', async () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
         mockUseRefundOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        const order = createMockOrderDetail({ status: 1 });
+        const order = createMockOrderDetail({ status: 'PAID' });
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false, isError: false });
         renderPage();
         const user = userEvent.setup();

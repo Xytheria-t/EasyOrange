@@ -22,7 +22,8 @@ export interface Order {
     items: OrderItemVO[];
     totalAmount: number;
     singleItem: boolean;
-    status: number;
+    /** 订单状态 String 枚举 code（后端 OrderStatus @JsonValue，与查询参数同契约） */
+    status: OrderStatus;
     statusDesc: string;
     address: string;
     phone: string;
@@ -40,7 +41,7 @@ export interface CreateOrderRequest {
 
 export interface OrderQueryParams {
     orderNo?: string;
-    status?: number | OrderStatus;
+    status?: OrderStatus;
     buyerId?: string;
     sellerId?: string;
     role?: 'buyer' | 'seller';

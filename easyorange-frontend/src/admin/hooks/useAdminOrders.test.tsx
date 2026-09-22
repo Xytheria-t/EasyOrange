@@ -32,7 +32,7 @@ describe('useAdminOrders', () => {
                     code: 'A0000',
                     message: 'success',
                     data: {
-                        records: [{ id: 1, orderNo: 'ORD001', status: 1 }],
+                        records: [{ id: 1, orderNo: 'ORD001', status: 'PAID' }],
                         total: 1,
                         current: 1,
                         size: 20,
@@ -60,7 +60,7 @@ describe('useAdminOrderDetail', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { id: 1, orderNo: 'ORD001', status: 1 },
+                    data: { id: 1, orderNo: 'ORD001', status: 'PAID' },
                     timestamp: Date.now(),
                 });
             })

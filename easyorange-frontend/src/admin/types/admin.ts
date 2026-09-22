@@ -178,8 +178,9 @@ export interface AdminOrderQuery {
     orderNo?: string;
     buyerId?: string;
     sellerId?: string;
-    status?: number;
-    paymentStatus?: number;
+    /** 订单状态 String 枚举 code（与后端 OrderStatus 一致） */
+    status?: OrderStatus;
+    paymentStatus?: string;
     startTime?: string;
     endTime?: string;
 }

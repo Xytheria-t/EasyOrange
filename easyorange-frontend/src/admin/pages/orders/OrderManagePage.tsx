@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePagination } from '@/hooks/usePagination';
+import type { OrderStatus } from '@/types';
 import { AdminSelect } from '../../components/AdminSelect';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -20,7 +21,7 @@ const STATUS_FILTER_OPTIONS = [
 ];
 
 export default function OrderManagePage() {
-    const [statusFilter, setStatusFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
     const [keyword, setKeyword] = useState('');
     const [searchInput, setSearchInput] = useState('');
     const {
@@ -36,7 +37,7 @@ export default function OrderManagePage() {
         pageNum: page,
         pageSize,
         orderNo: keyword || undefined,
-        status: statusFilter ? Number(statusFilter) : undefined,
+        status: statusFilter || undefined,
     });
 
     const handleSearch = useCallback(() => {
@@ -420,7 +421,7 @@ export default function OrderManagePage() {
                             options={STATUS_FILTER_OPTIONS}
                             value={statusFilter}
                             onChange={val => {
-                                setStatusFilter(val);
+                                setStatusFilter(val as OrderStatus | '');
                                 goTo(1);
                             }}
                         />
