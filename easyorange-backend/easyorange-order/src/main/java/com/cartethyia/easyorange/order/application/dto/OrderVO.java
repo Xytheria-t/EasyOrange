@@ -31,6 +31,7 @@ public class OrderVO {
     private String address;
     private String phone;
     private String remark;
+    private String cancelReason;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 

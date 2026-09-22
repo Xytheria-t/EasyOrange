@@ -28,6 +28,7 @@ export interface Order {
     address: string;
     phone: string;
     remark: string | null;
+    cancelReason?: string | null;
     createTime: string;
     updateTime: string;
 }
