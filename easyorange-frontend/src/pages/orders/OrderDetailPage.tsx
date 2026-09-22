@@ -178,7 +178,11 @@ function OrderDetailPage() {
                     </div>
                     <div className="order-detail-status-hero-text">
                         <h2 className="order-detail-status-hero-label">{statusLabel}</h2>
-                        <p className="order-detail-status-hero-hint">{heroStyle.hint}</p>
+                        <p className="order-detail-status-hero-hint">
+                            {order?.status === 'CANCELLED' && order.cancelReason
+                                ? `取消原因：${order.cancelReason}`
+                                : heroStyle.hint}
+                        </p>
                     </div>
                 </div>
             </div>

@@ -45,6 +45,7 @@ public class OrderReadModelAssembler {
                 .status(order.status())
                 .statusDesc(order.statusDesc())
                 .remark(order.remark())
+                .cancelReason(order.cancelReason())
                 .createTime(order.createTime())
                 .updateTime(order.updateTime());
 
