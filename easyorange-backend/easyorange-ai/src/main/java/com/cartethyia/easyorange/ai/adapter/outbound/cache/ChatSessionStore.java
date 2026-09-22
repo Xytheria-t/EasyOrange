@@ -19,7 +19,8 @@ import tools.jackson.databind.ObjectMapper;
  * 与 {@link com.cartethyia.easyorange.ai.application.chat.AiChatService} 的「最近 N 轮 + 工具结果」注入配合。
  * <p>
  * 一轮对话（提问 + 回答）一次 {@code RPUSH} + 一次裁剪 + 一次续期：两次单条写入会把 Redis 往返翻倍，
- * 且中间失败会留下只有提问没有回答的半轮记忆。
+ * 且中间失败会留下只有提问没有回答的半轮记忆。读写共用 {@code historyLimit} 一个轮数旋钮
+ * （{@link ChatSessionPort} 契约：调用方不指定轮数）。
  * <p>
  * Redis 不可用 / 会话为空时返回空列表（fail-open：丢记忆不阻塞回答）；单条记录读不出来只跳过该条
  * —— 一条脏数据不该让整段对话记忆作废。
@@ -39,9 +40,7 @@ public class ChatSessionStore implements ChatSessionPort {
     private final ObjectMapper objectMapper;
     private final AiProperties aiProperties;
 
-    /**
-     * 保存一轮对话（提问 + 回答），并裁剪到最近 N 轮 + 刷新 TTL。
-     */
+    /** 保存一轮对话（提问 + 回答），裁剪到最近 N 轮 + 刷新 TTL。 */
     @Override
     public void saveTurns(String sessionId, List<ChatTurn> turns) {
         if (sessionId == null || sessionId.isBlank() || turns == null || turns.isEmpty()) {
@@ -56,18 +55,16 @@ public class ChatSessionStore implements ChatSessionPort {
             List<String> payloads =
                     turns.stream().map(objectMapper::writeValueAsString).toList();
             redis.opsForList().rightPushAll(key, payloads);
-            redis.opsForList().trim(key, -entries(aiProperties.chat().historyLimit()), -1);
+            redis.opsForList().trim(key, -entries(), -1);
             redis.expire(key, Duration.ofHours(aiProperties.chat().sessionTtlHours()));
         } catch (Exception e) {
             log.warn("action=chat_session_save_failed, sessionId={}", sessionId, e);
         }
     }
 
-    /**
-     * 读取最近 N 轮对话（不含当前问题）。
-     */
+    /** 读取最近 N 轮对话（不含当前问题）。 */
     @Override
-    public List<ChatTurn> loadRecent(String sessionId, int limit) {
+    public List<ChatTurn> loadRecent(String sessionId) {
         if (sessionId == null || sessionId.isBlank()) {
             return List.of();
         }
@@ -77,7 +74,7 @@ public class ChatSessionStore implements ChatSessionPort {
         }
         List<String> raw;
         try {
-            raw = redis.opsForList().range(KEY_PREFIX + sessionId, -entries(limit), -1);
+            raw = redis.opsForList().range(KEY_PREFIX + sessionId, -entries(), -1);
         } catch (Exception e) {
             log.warn("action=chat_session_load_failed, sessionId={}", sessionId, e);
             return List.of();
@@ -99,8 +96,8 @@ public class ChatSessionStore implements ChatSessionPort {
         return turns;
     }
 
-    /** 轮数 → Redis List 元素数（存储按条，配置按轮）。 */
-    private static long entries(int rounds) {
-        return Math.max(rounds, 1) * (long) TURNS_PER_EXCHANGE;
+    /** 轮数窗口 → Redis List 元素数（存储按条，配置按轮），读写同一份 {@code historyLimit}。 */
+    private int entries() {
+        return Math.max(aiProperties.chat().historyLimit(), 1) * TURNS_PER_EXCHANGE;
     }
 }

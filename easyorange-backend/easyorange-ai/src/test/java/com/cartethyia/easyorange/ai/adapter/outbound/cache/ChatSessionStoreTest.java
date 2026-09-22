@@ -81,7 +81,7 @@ class ChatSessionStoreTest {
                 .thenReturn(List.of(
                         "{\"role\":\"user\",\"content\":\"问题\"}", "{\"role\":\"assistant\",\"content\":\"回答\"}"));
 
-        List<ChatTurn> turns = store.loadRecent("sess-1", 6);
+        List<ChatTurn> turns = store.loadRecent("sess-1");
 
         assertThat(turns).containsExactly(ChatTurn.user("问题"), ChatTurn.assistant("回答"));
     }
@@ -96,7 +96,7 @@ class ChatSessionStoreTest {
                         "{\"role\":\"system\",\"content\":\"角色未知\"}",
                         "{\"role\":\"assistant\",\"content\":\"回答\"}"));
 
-        List<ChatTurn> turns = store.loadRecent("sess-1", 6);
+        List<ChatTurn> turns = store.loadRecent("sess-1");
 
         assertThat(turns).containsExactly(ChatTurn.user("问题"), ChatTurn.assistant("回答"));
     }
@@ -104,9 +104,9 @@ class ChatSessionStoreTest {
     @Test
     @DisplayName("会话为空/Redis 异常 -> 空列表（fail-open 丢记忆不阻塞）")
     void loadRecent_emptyOrError() {
-        assertThat(store.loadRecent(null, 6)).isEmpty();
-        assertThat(store.loadRecent("sess-x", 6)).isEmpty();
+        assertThat(store.loadRecent(null)).isEmpty();
+        assertThat(store.loadRecent("sess-x")).isEmpty();
         when(listOps.range("eo:chat:session:sess-x", -12L, -1)).thenThrow(new RuntimeException("redis down"));
-        assertThat(store.loadRecent("sess-x", 6)).isEmpty();
+        assertThat(store.loadRecent("sess-x")).isEmpty();
     }
 }

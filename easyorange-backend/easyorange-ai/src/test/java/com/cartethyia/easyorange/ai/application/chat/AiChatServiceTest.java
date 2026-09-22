@@ -99,7 +99,6 @@ class AiChatServiceTest {
                 agentLoopRunner,
                 // 真实实例：默认预算 2000 token，测试历史远小于预算，行为等同直通
                 new ChatContextTrimmer(aiProperties, meterRegistry),
-                aiProperties,
                 staleCache,
                 meterRegistry);
         // 部分用例（空问题/预算超限/缓存命中）不会走到循环，runner 的默认行为允许不被消费
@@ -477,7 +476,7 @@ class AiChatServiceTest {
     void answer_injectsHistory() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(sessionStore.loadRecent("sess-1", 6))
+        when(sessionStore.loadRecent("sess-1"))
                 .thenReturn(List.of(ChatTurn.user("上一轮问题"), ChatTurn.assistant("上一轮回答")));
         when(aiModelSupport.callText(any(), any(), anyList())).thenAnswer(invocation -> {
             List<Message> messages = invocation.getArgument(2);
