@@ -44,8 +44,9 @@ export function ProductGallery({ images, isSold, onShare }: ProductGalleryProps)
             <div className="pdp-gallery-main">
                 <div className={`pdp-gallery-image-wrapper ${imageLoaded ? 'loaded' : ''}`}>
                     {(() => {
-                        const fileIdMatch = productImages[currentImageIndex]?.match(/\/api\/file\/([^/]+)/);
-                        const fileId = fileIdMatch?.[1];
+                        // 日期路径不是单段 fileId：截首段会拼出 /api/file/2026/thumbnail 恒 400
+                        const fileIdMatch = productImages[currentImageIndex]?.match(/\/api\/file\/([^?#]+)/);
+                        const fileId = fileIdMatch && !fileIdMatch[1].includes('/') ? fileIdMatch[1] : undefined;
                         const thumbSrc = fileId ? buildThumbnailUrl(fileId, 400) : productImages[currentImageIndex];
                         return (
                             <>
