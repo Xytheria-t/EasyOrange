@@ -81,7 +81,10 @@ class ProductCommandHandlerTest {
 
         assertThat(productId).isEqualTo("42");
         verify(productRepository).save(any(Product.class));
-        verify(domainEventPublisher).publish(any(ProductCreatedEvent.class));
+        var eventCaptor = org.mockito.ArgumentCaptor.forClass(ProductCreatedEvent.class);
+        verify(domainEventPublisher).publish(eventCaptor.capture());
+        // 发布事件必须携带落库后的聚合 ID，否则下游 ES 索引与通知拿不到 productId
+        assertThat(eventCaptor.getValue().productId()).isEqualTo("42");
         verify(stockLedgerRepository)
                 .record(argThat(change -> change.changeType() == StockChangeType.INIT
                         && change.bizId() == null
