@@ -5,13 +5,17 @@ import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * Redis 实现的短信验证码适配器。
+ * Redis 实现的短信验证码适配器（it/prod 环境）。
+ * <p>
+ * 与 {@code MockSmsCodeAdapter} 按 {@code @Profile} 互斥（dev/test ↔ it/prod）。
  */
 @Component("redisSmsCodeAdapter")
+@Profile({"it", "prod"})
 @RequiredArgsConstructor
 public class RedisSmsCodeAdapter implements SmsCodePort {
 
@@ -41,6 +45,9 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
         }
 
         String code = SmsCodePort.generateCode();
+        // 先投递后落码与间隔锁：发送失败时不残留码、不白锁 60 秒
+        // （每日配额在投递前已计，失败尝试照扣防刷）
+        smsSenderPort.send(phone, code);
         redisTemplate
                 .opsForValue()
                 .set(CODE_KEY + phone, code, UserSecurityConstant.SMS_CODE_TTL.getSeconds(), TimeUnit.SECONDS);
@@ -48,7 +55,6 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
                 .opsForValue()
                 .set(LIMIT_KEY + phone, "1", UserSecurityConstant.SMS_SEND_INTERVAL.getSeconds(), TimeUnit.SECONDS);
 
-        smsSenderPort.send(phone, code);
         return true;
     }
 
