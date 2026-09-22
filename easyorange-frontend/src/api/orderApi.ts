@@ -28,9 +28,10 @@ export const orderApi = {
     },
 
     cancelOrder(id: string, reason?: string) {
+        // 后端 CancelOrderRequest 要求 @RequestBody 且 reason @NotBlank，query 传参会 400
         return request(`/orders/${id}/cancel`, {
             method: 'PUT',
-            params: reason ? ({ reason } as Record<string, unknown>) : undefined,
+            body: { reason: reason || '用户取消' },
         });
     },
 
@@ -53,9 +54,10 @@ export const orderApi = {
     },
 
     refundOrder(id: string, reason?: string) {
+        // 与 cancelOrder 同构：后端 RefundOrderRequest 同样要 JSON body + @NotBlank reason
         return request(`/orders/${id}/refund`, {
             method: 'PUT',
-            params: reason ? ({ reason } as Record<string, unknown>) : undefined,
+            body: { reason: reason || '用户申请退款' },
         });
     },
 };
