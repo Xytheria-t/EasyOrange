@@ -17,6 +17,7 @@ import com.cartethyia.easyorange.common.result.Result;
 import jakarta.validation.ConstraintViolationException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatusCode;
@@ -144,6 +145,13 @@ public class GlobalExceptionHandler {
             case NoResourceFoundException ignored -> {
                 log.debug("静态资源不存在: {}", ignored.getResourcePath());
                 yield response(NOT_FOUND, ResultCode.NOT_FOUND);
+            }
+            // 客户端在响应写出途中断开（刷新/关页/代理超时，Tomcat 写管道抛出）：请求已被客户端放弃，
+            // 不是服务故障 —— 降 debug、不进 system_error 的 ERROR 大盘（与流式断流 ChatStreamAborted 同一分级）。
+            // 响应通常已部分提交，返回体本就无人接收，沿用 500 形状只为闭合 switch
+            case ClientAbortException ignored -> {
+                log.debug("action=client_disconnected, type={}", e.getClass().getName());
+                yield response(INTERNAL_SERVER_ERROR, ResultCode.INTERNAL_SERVER_ERROR);
             }
             default -> {
                 log.error("action=system_error, type={}", e.getClass().getName(), e);

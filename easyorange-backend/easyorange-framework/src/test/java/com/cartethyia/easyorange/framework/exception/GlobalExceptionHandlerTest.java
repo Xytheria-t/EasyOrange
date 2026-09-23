@@ -144,7 +144,7 @@ class GlobalExceptionHandlerTest {
         }
 
         @Test
-        @DisplayName("A0429 错误码应映射到 429")
+        @DisplayName("A0429 错误码应映射为 429")
         void handleTooManyRequests_mapsTo429() {
             BaseBusinessException ex = BusinessException.of(ResultCode.TOO_MANY_REQUESTS, "请求过于频繁");
 
@@ -152,6 +152,33 @@ class GlobalExceptionHandlerTest {
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
             assertThat(response.getBody().code()).isEqualTo(ResultCode.TOO_MANY_REQUESTS.getCode());
+        }
+
+        @Test
+        @DisplayName("ClientAbortException（写出途中客户端断开）按客户端离开分级：只 debug，不进 system_error ERROR")
+        void handleClientAbort_classifiedAsClientGone_debugNotError() {
+            var listAppender = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+            listAppender.start();
+            var logger =
+                    (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+            var previousLevel = logger.getLevel();
+            logger.setLevel(ch.qos.logback.classic.Level.DEBUG);
+            logger.addAppender(listAppender);
+            try {
+                ResponseEntity<Result<Void>> response =
+                        handler.handle(new org.apache.catalina.connector.ClientAbortException("Broken pipe"));
+
+                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+                assertThat(response.getBody().code()).isEqualTo(ResultCode.INTERNAL_SERVER_ERROR.getCode());
+                assertThat(listAppender.list)
+                        .as("客户端断开必须落在 debug，打 ERROR 会把刷新/关页虚增成故障率")
+                        .isNotEmpty()
+                        .allSatisfy(
+                                event -> assertThat(event.getLevel()).isEqualTo(ch.qos.logback.classic.Level.DEBUG));
+            } finally {
+                logger.setLevel(previousLevel);
+                logger.detachAppender(listAppender);
+            }
         }
     }
 
