@@ -12,6 +12,10 @@ function ChatWindowPage() {
     const { targetUserId } = useParams<{ targetUserId: string }>();
     const navigate = useNavigate();
 
+    // 系统通知伪会话（后端 ConversationQueryHandler.SYSTEM_CONVERSATION）：只读——
+    // 发出的 WS 帧既不落库也无回执，静默失败比禁用输入更糟
+    const isSystemSession = targetUserId === 'system';
+
     const { user } = useAuthStore();
     const currentUserId = user?.userId ?? '';
 
@@ -51,7 +55,7 @@ function ChatWindowPage() {
 
     const handleSend = useCallback(
         (content: string) => {
-            if (!targetUserId || !content.trim()) {
+            if (!targetUserId || isSystemSession || !content.trim()) {
                 return;
             }
             sendMessage({
@@ -61,19 +65,19 @@ function ChatWindowPage() {
                 conversationId,
             });
         },
-        [targetUserId, conversationId, sendMessage]
+        [targetUserId, isSystemSession, conversationId, sendMessage]
     );
 
     const handleTyping = useCallback(() => {
-        if (targetUserId) {
+        if (targetUserId && !isSystemSession) {
             sendTyping(conversationId, targetUserId);
         }
-    }, [targetUserId, conversationId, sendTyping]);
+    }, [targetUserId, isSystemSession, conversationId, sendTyping]);
 
     const handleBack = useCallback(() => navigate(-1), [navigate]);
 
     const isTyping = typingUsers.size > 0;
-    const targetUserName = targetUserId ?? '用户';
+    const targetUserName = isSystemSession ? '系统通知' : (targetUserId ?? '用户');
 
     return (
         <div className="chat-window-page">
@@ -105,7 +109,12 @@ function ChatWindowPage() {
             </div>
 
             <div className="chat-input-area">
-                <ChatInputBar onSend={handleSend} onTyping={handleTyping} isDisabled={!targetUserId} />
+                <ChatInputBar
+                    onSend={handleSend}
+                    onTyping={handleTyping}
+                    isDisabled={!targetUserId || isSystemSession}
+                    disabledPlaceholder={isSystemSession ? '系统通知不支持回复' : undefined}
+                />
             </div>
         </div>
     );

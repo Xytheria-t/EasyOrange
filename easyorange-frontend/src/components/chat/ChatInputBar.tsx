@@ -7,9 +7,11 @@ interface ChatInputBarProps {
     onSend: (content: string) => void;
     onTyping: () => void;
     isDisabled?: boolean;
+    /** 禁用态占位文案（如系统通知会话）；缺省仍为空串 */
+    disabledPlaceholder?: string;
 }
 
-function ChatInputBar({ onSend, onTyping, isDisabled = false }: ChatInputBarProps) {
+function ChatInputBar({ onSend, onTyping, isDisabled = false, disabledPlaceholder }: ChatInputBarProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [value, setValue] = useState('');
     const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,7 +92,7 @@ function ChatInputBar({ onSend, onTyping, isDisabled = false }: ChatInputBarProp
                         onKeyDown={handleKeyDown}
                         disabled={isDisabled}
                         rows={1}
-                        placeholder={isDisabled ? '' : '输入消息...'}
+                        placeholder={isDisabled ? (disabledPlaceholder ?? '') : '输入消息...'}
                         className="chat-textarea"
                         style={{ maxHeight: 120 }}
                     />

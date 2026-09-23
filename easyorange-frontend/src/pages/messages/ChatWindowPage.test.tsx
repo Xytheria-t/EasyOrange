@@ -7,6 +7,7 @@ import ChatWindowPage from './ChatWindowPage';
 
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockSendMessage = vi.hoisted(() => vi.fn());
+const mockTargetUserId = vi.hoisted(() => ({ value: 'user2' }));
 const mockUseChatMessages = vi.hoisted(() =>
     vi.fn(() => ({ messages: [] as ChatMessage[], isLoading: true, loadOlder: vi.fn(), hasMore: false }))
 );
@@ -14,7 +15,11 @@ const mockRecallMessage = vi.hoisted(() => vi.fn());
 
 vi.mock('react-router-dom', async () => {
     const actual = await vi.importActual('react-router-dom');
-    return { ...(actual as object), useNavigate: () => mockNavigate, useParams: () => ({ targetUserId: 'user2' }) };
+    return {
+        ...(actual as object),
+        useNavigate: () => mockNavigate,
+        useParams: () => ({ targetUserId: mockTargetUserId.value }),
+    };
 });
 
 vi.mock('@/stores/chatStore', () => ({
@@ -54,8 +59,17 @@ vi.mock('@/components/chat', () => ({
             ))}
         </div>
     ),
-    ChatInputBar: ({ onSend }: { onSend: (content: string) => void }) => (
-        <div data-testid="chat-input-bar">
+    ChatInputBar: ({
+        onSend,
+        isDisabled,
+        disabledPlaceholder,
+    }: {
+        onSend: (content: string) => void;
+        isDisabled?: boolean;
+        disabledPlaceholder?: string;
+    }) => (
+        <div data-testid="chat-input-bar" data-disabled={String(isDisabled ?? false)}>
+            {disabledPlaceholder && <span data-testid="disabled-placeholder">{disabledPlaceholder}</span>}
             <button type="button" onClick={() => onSend?.('hello')}>
                 send-btn
             </button>
@@ -69,6 +83,7 @@ function renderPage() {
 
 beforeEach(() => {
     vi.clearAllMocks();
+    mockTargetUserId.value = 'user2';
 });
 
 describe('ChatWindowPage', () => {
@@ -116,5 +131,23 @@ describe('ChatWindowPage', () => {
         expect(mockSendMessage).toHaveBeenCalledWith(
             expect.objectContaining({ content: 'hello', receiverId: 'user2', conversationId: 'conv_user1_user2' })
         );
+    });
+
+    it('system conversation is read-only: input disabled with placeholder, send blocked', async () => {
+        mockTargetUserId.value = 'system';
+        mockUseChatMessages.mockReturnValue({
+            messages: [] as ChatMessage[],
+            isLoading: false,
+            loadOlder: vi.fn(),
+            hasMore: false,
+        });
+        renderWithProviders(<ChatWindowPage />, { initialRoute: '/messages/system' });
+
+        expect(screen.getByTestId('chat-input-bar')).toHaveAttribute('data-disabled', 'true');
+        expect(screen.getByTestId('disabled-placeholder')).toHaveTextContent('系统通知不支持回复');
+
+        // 即使绕过组件禁用触发 onSend，页面守卫也不应发出 WS 帧（发了也不落库，静默失败）
+        await userEvent.click(screen.getByText('send-btn'));
+        expect(mockSendMessage).not.toHaveBeenCalled();
     });
 });

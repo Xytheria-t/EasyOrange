@@ -69,6 +69,20 @@ describe('ChatInputBar', () => {
         expect(screen.getByPlaceholderText('')).toBeDisabled();
     });
 
+    it('disabled textarea shows disabledPlaceholder (system conversation is read-only)', () => {
+        render(
+            <ChatInputBar
+                onSend={() => {}}
+                onTyping={() => {}}
+                isDisabled={true}
+                disabledPlaceholder="系统通知不支持回复"
+            />
+        );
+        const textarea = screen.getByPlaceholderText('系统通知不支持回复');
+        expect(textarea).toBeDisabled();
+        expect(screen.getByLabelText('发送')).toBeDisabled();
+    });
+
     it('send button is disabled when disabled prop is true', () => {
         render(<ChatInputBar onSend={() => {}} onTyping={() => {}} isDisabled={true} />);
         expect(screen.getByLabelText('发送')).toBeDisabled();
