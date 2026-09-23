@@ -88,11 +88,24 @@ export function getStoredToken(): string | null {
     return useAuthStore.getState().token;
 }
 
+/** 后端随 refresh cookie 同发的非 HttpOnly 标记（见后端 RefreshCookie），无它即无 refresh 会话。 */
+const REFRESH_MARKER_COOKIE = 'has_rt';
+
+function hasRefreshMarker(): boolean {
+    return document.cookie.split('; ').includes(`${REFRESH_MARKER_COOKIE}=1`);
+}
+
 /**
  * 刷新 access token。refresh token 在 HttpOnly Cookie 中，随请求自动携带，JS 不可见。
  * 并发请求复用：正在刷新时等待结果（单飞）。
+ * <p>
+ * 无标记 cookie 时跳过：冷启动没有 refresh 会话却盲调 /auth/refresh 必 401（TD-023 console 噪音）。
  */
 export async function refreshAccessToken(): Promise<string | null> {
+    if (!hasRefreshMarker()) {
+        return null;
+    }
+
     // 并发请求复用：正在刷新时等待结果
     if (refreshCoordinator.getIsRefreshing()) {
         return refreshCoordinator.waitForRefresh();
