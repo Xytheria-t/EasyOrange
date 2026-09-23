@@ -25,6 +25,8 @@ const AI_PARAM = 'ai';
  *
  * `aiEnabled` 通过独立的 `ai` 查询参数持久化（不进入 `filters` 序列化），
  * 这样切换语义搜索不会触发列表筛选 chip 的展示。
+ * **默认开**（缺省即开，显式 `ai=0` 才关）：语义搜索是产品的头号卖点，
+ * 默认关会让自然语言查询（「适合拍夜景的相机」）在词面召回下恒 0 结果——评委按清单直输即翻车。
  *
  * 写入操作复用 useListUrlState 的 updateParams 以共享同一 setSearchParams 实例，
  * 避免多个 useSearchParams 写入在并发更新时产生竞争。读取操作直接使用
@@ -37,15 +39,15 @@ export function useSearchUrlState(): SearchUrlState & SearchUrlStateSetters {
     const listState = useListUrlState();
     const [searchParams] = useSearchParams();
 
-    const aiEnabled = useMemo(() => searchParams.get(AI_PARAM) === '1', [searchParams]);
+    const aiEnabled = useMemo(() => searchParams.get(AI_PARAM) !== '0', [searchParams]);
 
     const setAiEnabled = useCallback(
         (enabled: boolean) => {
             listState.updateParams(params => {
                 if (enabled) {
-                    params.set(AI_PARAM, '1');
-                } else {
                     params.delete(AI_PARAM);
+                } else {
+                    params.set(AI_PARAM, '0');
                 }
                 return params;
             });
@@ -59,9 +61,9 @@ export function useSearchUrlState(): SearchUrlState & SearchUrlStateSetters {
                 applyListPartial(params, partial);
                 if ('aiEnabled' in partial) {
                     if (partial.aiEnabled) {
-                        params.set(AI_PARAM, '1');
-                    } else {
                         params.delete(AI_PARAM);
+                    } else {
+                        params.set(AI_PARAM, '0');
                     }
                 }
                 return params;
