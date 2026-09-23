@@ -138,9 +138,9 @@ public class ProductCommandHandler {
         mutate(product, p -> p.submitForReview(userId));
     }
 
-    public void putOnline(String productId) {
+    public void putOnline(String userId, String productId) {
         var product = findByIdOrThrow(ProductId.of(productId));
-        mutate(product, Product::putOnline);
+        mutate(product, p -> p.putOnline(userId));
     }
 
     public void takeOffline(String userId, String productId) {

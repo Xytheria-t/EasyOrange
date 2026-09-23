@@ -159,6 +159,13 @@ public class Product {
         return new Transition<>(updated, new ProductPutOnlineEvent(UuidV7.generateId(), id.value(), sellerId.value()));
     }
 
+    public Transition<Product, ProductPutOnlineEvent> putOnline(String userId) {
+        if (!this.sellerId.equals(SellerId.of(userId))) {
+            throw ProductDomainException.notOwner(id, "只能上架自己的资产");
+        }
+        return putOnline();
+    }
+
     public Transition<Product, ProductTakeOfflineEvent> takeOffline() {
         return new Transition<>(
                 transitionTo(ProductStatus.OFFLINE),

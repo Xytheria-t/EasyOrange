@@ -23,7 +23,6 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -121,10 +120,11 @@ public class ProductController {
         return Result.success();
     }
 
+    // 上架与下架对称：卖家重新上架自己的下架商品（C2C 直发，平台不代持货架）；
+    // 管理员强制改状态走 /api/admin/products/{id}/status
     @PutMapping("/{productId}/online")
-    @PreAuthorize("hasRole('ADMIN')")
-    public Result<Void> putOnline(@PathVariable String productId) {
-        commandHandler.putOnline(productId);
+    public Result<Void> putOnline(@AuthenticationPrincipal AuthUser user, @PathVariable String productId) {
+        commandHandler.putOnline(user.userId(), productId);
         return Result.success();
     }
 

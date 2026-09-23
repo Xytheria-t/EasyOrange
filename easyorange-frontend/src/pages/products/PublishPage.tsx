@@ -195,7 +195,7 @@ function PublishPage() {
 
             if (!isDraft && productId) {
                 // 新建商品是 DRAFT，只能先提交审核（DRAFT → PENDING_REVIEW）；
-                // 置为 ONLINE 由管理端在审核通过后执行 —— PUT /{id}/online 是 ADMIN-only
+                // 通过后由管理端置 ONLINE；已下架商品的重新上架走「我的发布」上的上架按钮
                 await productApi.submitForReview(productId);
             }
 

@@ -12,6 +12,7 @@ const mockNavigate = vi.hoisted(() => vi.fn());
 // ── Module mocks ──
 vi.mock('@/hooks/product/useProducts', () => ({
     useMyProducts: mockUseMyProducts,
+    useToggleProductShelf: () => ({ mutate: vi.fn(), isPending: false, variables: undefined }),
 }));
 
 vi.mock('react-router-dom', async () => {
