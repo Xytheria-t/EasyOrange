@@ -148,17 +148,34 @@ class AdminCategoryServiceTest {
     class UpdateCategoryTests {
 
         @Test
-        @DisplayName("更新分类成功")
+        @DisplayName("更新分类成功（一级分类计数走子树聚合口径，TD-028）")
         void updateCategory_success() {
             when(adminCategoryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "旧名称", null, 1));
             when(adminCategoryPort.findCategoryByName("新名称")).thenReturn(null);
-            when(adminCategoryPort.countProductsByCategoryIds(anyList())).thenReturn(Map.of(CATEGORY_ID, 0L));
+            when(adminCategoryPort.countProductsByCategoryIdsWithChildren(anyList()))
+                    .thenReturn(Map.of(CATEGORY_ID, 0L));
 
             CategoryUpdateRequest request = new CategoryUpdateRequest("新名称", null, 2);
 
             categoryService.updateCategory(CATEGORY_ID, request);
 
             verify(adminCategoryPort).updateCategory(any(CategoryRecord.class));
+            verify(adminCategoryPort).countProductsByCategoryIdsWithChildren(List.of(CATEGORY_ID));
+        }
+
+        @Test
+        @DisplayName("叶子分类计数仍按直接挂载（TD-028 口径拆分）")
+        void updateCategory_leafLevel_countsDirectly() {
+            when(adminCategoryPort.getCategory(PARENT_ID)).thenReturn(createCategory(PARENT_ID, "手机", CATEGORY_ID, 2));
+            when(adminCategoryPort.countProductsByCategoryIds(anyList())).thenReturn(Map.of(PARENT_ID, 5L));
+
+            // parentId 带原值保持在叶子层（null 会被服务移到根、重算 level=1 走子树口径）
+            CategoryUpdateRequest request = new CategoryUpdateRequest("手机2", CATEGORY_ID, null);
+            categoryService.updateCategory(PARENT_ID, request);
+
+            verify(adminCategoryPort).countProductsByCategoryIds(List.of(PARENT_ID));
+            verify(adminCategoryPort, org.mockito.Mockito.never())
+                    .countProductsByCategoryIdsWithChildren(anyList());
         }
 
         @Test
