@@ -181,12 +181,30 @@ public class AdminCategoryService {
         }
     }
 
+    /**
+     * 一级分类聚合子树商品数、其余按直接挂载计数（TD-028）——商品挂在叶子上，
+     * 顶级行用直接挂载口径恒为 0 被过滤；混合列表按 level 拆两批各查再合并。
+     */
     private Map<String, Long> countProductMaps(List<CategoryRecord> categories) {
         if (categories == null || categories.isEmpty()) {
             return Map.of();
         }
-        List<String> ids = categories.stream().map(CategoryRecord::id).collect(Collectors.toList());
-        return adminCategoryPort.countProductsByCategoryIds(ids);
+        Map<String, Long> counts = new LinkedHashMap<>();
+        List<String> topLevelIds = categories.stream()
+                .filter(c -> c.level() != null && c.level() == 1)
+                .map(CategoryRecord::id)
+                .collect(Collectors.toList());
+        List<String> leafIds = categories.stream()
+                .filter(c -> c.level() == null || c.level() != 1)
+                .map(CategoryRecord::id)
+                .collect(Collectors.toList());
+        if (!topLevelIds.isEmpty()) {
+            counts.putAll(adminCategoryPort.countProductsByCategoryIdsWithChildren(topLevelIds));
+        }
+        if (!leafIds.isEmpty()) {
+            counts.putAll(adminCategoryPort.countProductsByCategoryIds(leafIds));
+        }
+        return counts;
     }
 
     private Long countProductsByCategoryId(String categoryId) {

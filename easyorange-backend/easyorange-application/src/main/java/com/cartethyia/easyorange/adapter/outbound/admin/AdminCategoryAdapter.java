@@ -132,6 +132,14 @@ public class AdminCategoryAdapter implements AdminCategoryPort {
         return categoryQueryRepository.countProductsByCategoryIds(categoryIds);
     }
 
+    @Override
+    public Map<String, Long> countProductsByCategoryIdsWithChildren(List<String> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return Map.of();
+        }
+        return categoryQueryRepository.countProductsByCategoryIdsWithChildren(categoryIds);
+    }
+
     private CategoryRecord toCategoryRecord(CategoryDO category) {
         return new CategoryRecord(
                 category.getId(),

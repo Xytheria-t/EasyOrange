@@ -56,6 +56,12 @@ public interface AdminCategoryPort {
     Map<String, Long> countProductsByCategoryIds(List<String> categoryIds);
 
     /**
+     * 按分类 ID 列表统计关联商品数（含子分类聚合）——一级分类行的展示口径：
+     * 商品挂在叶子上，直接挂载计数会让顶级行恒为 0（TD-028）
+     */
+    Map<String, Long> countProductsByCategoryIdsWithChildren(List<String> categoryIds);
+
+    /**
      * 分类记录
      */
     record CategoryRecord(
