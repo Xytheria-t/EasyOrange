@@ -27,6 +27,11 @@ interface SeedUser {
 export async function seedSession(page: Page, user: SeedUser): Promise<void> {
     const userType = user.userType ?? '01';
 
+    // refresh 恢复链有前置门槛：无 has_rt 标记 cookie 时 restoreSession 直接跳过刷新
+    // （session.ts hasRefreshMarker / TD-023），不种这颗 cookie 会话永远立不起来 ——
+    // 表现为所有 seedSession 用例停在未登录态
+    await page.context().addCookies([{ name: 'has_rt', value: '1', url: 'http://localhost:5173' }]);
+
     await page.route('**/api/auth/refresh**', route =>
         route.fulfill({
             status: 200,
@@ -62,6 +67,20 @@ export async function seedSession(page: Page, user: SeedUser): Promise<void> {
     // handleUnauthorized 跳登录，退出用例需要干净的清会话路径。
     await page.route('**/api/auth/logout**', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(OK) })
+    );
+
+    // 通知铃轮询的未读数若放行到真实后端：伪造 token → 401 → 刷新(被 mock 成功) → 重试仍 401 →
+    // clearSession 把种下的会话清掉，受保护路由随后弹回 /login?redirect=…
+    // （本地起了后端时必现；CI 无后端走代理错误不触发 401 路径）
+    await page.route('**/api/messages/unread-count**', route =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                ...OK,
+                data: { total: 0, systemCount: 0, chatCount: 0, orderCount: 0, paymentCount: 0, activityCount: 0 },
+            }),
+        })
     );
 }
 

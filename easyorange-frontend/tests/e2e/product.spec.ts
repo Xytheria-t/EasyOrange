@@ -105,8 +105,7 @@ test.describe('商品浏览与搜索', () => {
     await page.goto('/search');
 
     // 热门搜索区域应可见（如果 API 返回数据）
-    const hotSection = page.locator('.search-top-card').first();
-    const initialContent = page.locator('.search-initial-content').first();
-    await expect(hotSection.or(initialContent)).toBeVisible({ timeout: 10000 });
+    // CSS 或选择器 + first()：两个区域同时渲染时 A.or(B) 会命中 2 个元素触发 strict mode
+    await expect(page.locator('.search-top-card, .search-initial-content').first()).toBeVisible({ timeout: 10000 });
   });
 });
