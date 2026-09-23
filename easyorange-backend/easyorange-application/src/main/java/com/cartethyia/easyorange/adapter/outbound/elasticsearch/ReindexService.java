@@ -23,8 +23,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ReindexService {
 
-    /** 单页商品数：全量重建按页游标推进，避免一次性加载全部在线商品 ID。 */
-    private static final long REINDEX_PAGE_SIZE = 500;
+    /**
+     * 单页商品数：全量重建按页游标推进，避免一次性加载全部在线商品 ID。
+     * 必须 ≤ {@code easyorange.mybatis-plus.max-limit}（当前 100）：PaginationInnerInterceptor 会把
+     * 大页静默截到 100，而本循环以「返回条数 < 页大小」判末页，size 取 500 会让第一页拿到 100 行后
+     * 误判结束 —— 在线商品超 100 时第 101 行起永不进索引（2026-09-23 实测：DB 101 vs ES 100）。
+     */
+    private static final long REINDEX_PAGE_SIZE = 100;
 
     private final ProductMapper productMapper;
     private final ElasticsearchOperations elasticsearchOperations;
