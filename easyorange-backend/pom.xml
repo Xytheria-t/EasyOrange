@@ -55,7 +55,7 @@
         <flyway.version>13.2.0</flyway.version>
         <archunit.version>1.5.0</archunit.version>
         <redisson.version>4.7.0</redisson.version>
-        <springdoc.version>3.1.0</springdoc.version>
+        <springdoc.version>3.1.1</springdoc.version>
         <swagger-annotations.version>2.2.53</swagger-annotations.version>
         <spring-ai.version>2.0.0</spring-ai.version>
 
