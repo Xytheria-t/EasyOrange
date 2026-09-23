@@ -28,6 +28,10 @@ spring:
         - rabbitmq
 
   flyway:
+    # 与 dev 同基线：额外加载 db/dev 演示种子（部分 IT 断言依赖种子商品，如
+    # AssetDetailReadPathIT 找「带成色/地区的在售种子商品」）；it 库独立且可随时重建，
+    # 种子灌入不影响 dev 演示库。
+    locations: classpath:db/migration,classpath:db/dev
     # 关校验：开发期改 V1 后 checksum 会挡启动（与 dev 关校验同一原因），IT 库随 reset 重建；
     # 干净库/CI 仍走默认校验。隔离已由 easyorange_it 独立库达成，不再依赖「复用 dev 库历史 diverged」。
     validate-on-migrate: false
