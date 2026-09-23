@@ -936,4 +936,92 @@ ON DUPLICATE KEY UPDATE
     `is_main` = new.`is_main`,
     `update_time` = new.`update_time`;
 
+-- ===================================================================
+-- 13. 相机类演示商品（6 件）
+--     目的：演示主打查询「适合拍夜景的相机」——此前全库仅 1 件相机类商品，
+--     语义召回只能出 1 张卡，列表看起来像坏了；补 6 件到新建类目「相机」(id=15)，
+--     词面 + kNN 两路都有 4-6 条候选。图片 URL 已逐一探活（2026-09-24），
+--     均为相机实拍素材；改名/改价后无需同步 ES —— 演示启动流程含全量 reindex。
+-- ===================================================================
+
+INSERT INTO `eo_product` (
+    `id`, `user_id`, `category_id`, `name`, `price`, `original_price`,
+    `stock`, `status`, `view_count`, `condition_level`, `location`,
+    `contact_method`, `tags`, `search_text`, `del_flag`, `create_time`, `update_time`
+) VALUES
+(401, 1,  15, '佳能 EOS R50 微单相机套机',    4399.00, 5699.00, 1, 'ONLINE', 156, 3, '同城',    '微信: test123',    '佳能,微单,相机,夜景',       '佳能 EOS R50 微单相机 套机 佳能 微单 相机 夜景',       0, NOW() - INTERVAL 18 DAY, NOW()),
+(402, 3,  15, '索尼 A7M3 全画幅微单相机',      6799.00, 9999.00, 1, 'ONLINE', 231, 2, '教学楼',  '微信: liming_wx',  '索尼,全画幅,相机,夜景',     '索尼 A7M3 全画幅微单相机 索尼 全画幅 相机 夜景 高感',   0, NOW() - INTERVAL 22 DAY, NOW()),
+(403, 5,  15, '尼康 Z5 入门全画幅相机',        5499.00, 7999.00, 1, 'ONLINE', 118, 3, '图书馆',  '微信: zhaowei_wx', '尼康,全画幅,相机',           '尼康 Z5 入门全画幅相机 尼康 全画幅 相机',             0, NOW() - INTERVAL 12 DAY, NOW()),
+(404, 7,  15, '富士 X-T30 II 复古微单相机',    5899.00, 7499.00, 1, 'ONLINE', 97,  3, '同城',    '微信: zhouyang_w', '富士,微单,相机,复古',       '富士 X-T30 II 复古微单相机 富士 微单 相机 复古',       0, NOW() - INTERVAL 9 DAY, NOW()),
+(405, 11, 15, '佳能 200D II 单反相机 套机',    3299.00, 4599.00, 1, 'ONLINE', 86,  4, '宿舍',    '微信: huangjie_w', '佳能,单反,相机,入门',       '佳能 200D II 单反相机 套机 佳能 单反 相机 入门',       0, NOW() - INTERVAL 6 DAY, NOW()),
+(406, 13, 15, 'GoPro Hero12 Black 运动相机',   2699.00, 3398.00, 1, 'ONLINE', 142, 2, '运动场',  '微信: wanghai_w',  'GoPro,运动相机,相机,夜景',   'GoPro Hero12 Black 运动相机 GoPro 运动相机 夜景',       0, NOW() - INTERVAL 15 DAY, NOW())
+AS new
+ON DUPLICATE KEY UPDATE
+    `price` = new.`price`, `stock` = new.`stock`, `status` = new.`status`,
+    `tags` = new.`tags`, `search_text` = new.`search_text`, `update_time` = NOW();
+
+INSERT INTO `eo_product_detail` (
+    `product_id`, `description`, `create_time`, `update_time`
+) VALUES
+(401, '佳能 EOS R50 微单相机套机 含15-45mm镜头<br><br>【成色】9成新，快门数不足5000，屏幕无划痕<br><br>【夜景】APS-C传感器 + F4.0光圈，手持夜景出片干净<br><br>【配件】原装电池×2、充电器、相机包<br><br>【适合】旅行随拍、校园夜景人像', NOW(), NOW()),
+(402, '索尼 A7M3 全画幅微单相机 机身<br><br>【成色】8成新，底部轻微使用痕迹，功能全正常<br><br>【夜景】全画幅高感纯净，ISO 6400 可用，夜景扫街利器<br><br>【配件】原装电池×2、64G存储卡、背带<br><br>【快门】快门数约2.1万，远低于寿命上限', NOW(), NOW()),
+(403, '尼康 Z5 入门全画幅微单相机 含24-50mm套头<br><br>【成色】9成新，屏幕贴膜未撕<br><br>【夜景】五轴防抖 + 全画幅，暗光手持不糊<br><br>【配件】原装电池、充电器、原箱<br><br>【适合】入门全画幅首选，风光与夜景兼顾', NOW(), NOW()),
+(404, '富士 X-T30 II 复古微单相机 银黑色<br><br>【成色】95新，快门数约3000<br><br>【夜景】APS-C X-Trans传感器，胶片模拟直出氛围感强<br><br>【配件】原装电池×2、皮质肩带<br><br>【特色】颜值与画质并存，女生也爱背出门', NOW(), NOW()),
+(405, '佳能 200D II 单反相机 套机 18-55mm<br><br>【成色】8成新，手柄有正常使用痕迹<br><br>【夜景】入门单反里少有的轻便机身，搭配大光圈头夜景好上手<br><br>【配件】原装电池、充电器、128G存储卡<br><br>【适合】摄影入门、课堂与社团活动记录', NOW(), NOW()),
+(406, 'GoPro Hero12 Black 运动相机 全套<br><br>【成色】9成新，机身无磕碰<br><br>【夜景】超强防抖 + 夜景模式，骑行夜拍不糊<br><br>【配件】原装电池×2、充电线、吸盘支架、防水壳<br><br>【适合】运动记录、Vlog 创作', NOW(), NOW())
+AS new
+ON DUPLICATE KEY UPDATE
+    `description` = new.`description`, `update_time` = NOW();
+
+INSERT INTO `eo_product_image` (
+    `id`, `product_id`, `image_url`, `sort_order`, `is_main`, `create_time`, `update_time`
+) VALUES
+(4001, 401, 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(4002, 402, 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(4003, 403, 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(4004, 404, 'https://images.unsplash.com/photo-1495707902641-75cac588d2e9?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(4005, 405, 'https://images.unsplash.com/photo-1452780212940-6f5c0d14d848?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(4006, 406, 'https://images.unsplash.com/photo-1564466809058-bf4114d55352?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(4014, 410, 'https://images.unsplash.com/photo-1519638831568-d9897f54ed69?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(4015, 411, 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(4016, 412, 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(4017, 413, 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW())
+AS new
+ON DUPLICATE KEY UPDATE
+    `image_url` = new.`image_url`,
+    `is_main` = new.`is_main`,
+    `update_time` = new.`update_time`;
+
+-- ===================================================================
+-- 14. testuser（user_id=1）四状态演示位（我的发布分组逐个点都有货）
+--     PENDING_REVIEW 顶管理端「待审核」队列；REJECTED/OFFLINE/SOLD 补齐
+--     「待审核·在售·下架·已售」四个分组——种子里其他状态都在别的卖家名下，
+--     只看 testuser 的话这四组全是空的。状态直接落库（不走状态机，种子即终态）。
+-- ===================================================================
+
+INSERT INTO `eo_product` (
+    `id`, `user_id`, `category_id`, `name`, `price`, `original_price`,
+    `stock`, `status`, `view_count`, `condition_level`, `location`,
+    `contact_method`, `tags`, `search_text`, `del_flag`, `create_time`, `update_time`
+) VALUES
+(410, 1, 15, '索尼 ZV-1 便携数码相机',      3499.00, 4299.00, 1, 'PENDING_REVIEW', 64,  3, '宿舍',   '微信: test123', '索尼,便携相机,相机',     '索尼 ZV-1 便携数码相机 索尼 便携 相机',     0, NOW() - INTERVAL 2 DAY, NOW()),
+(411, 1, 41, '罗技 MX Master 3S 无线鼠标',   549.00,  799.00,  1, 'REJECTED',       41,  3, '计算机学院', '微信: test123', '罗技,鼠标,办公',       '罗技 MX Master 3S 无线鼠标 罗技 鼠标 办公', 0, NOW() - INTERVAL 8 DAY, NOW()),
+(412, 1, 12, 'AKG K72 头戴式监听耳机',       329.00,  499.00,  1, 'OFFLINE',        77,  3, '音乐教室', '微信: test123', 'AKG,耳机,监听',         'AKG K72 头戴式监听耳机 AKG 耳机 监听',     0, NOW() - INTERVAL 30 DAY, NOW()),
+(413, 1, 12, '小米 Air2S 真无线蓝牙耳机',    219.00,  399.00,  0, 'SOLD',           289, 3, '同城',    '微信: test123', '小米,耳机,蓝牙',       '小米 Air2S 真无线蓝牙耳机 小米 耳机 蓝牙', 0, NOW() - INTERVAL 45 DAY, NOW())
+AS new
+ON DUPLICATE KEY UPDATE
+    `price` = new.`price`, `stock` = new.`stock`, `status` = new.`status`,
+    `tags` = new.`tags`, `search_text` = new.`search_text`, `update_time` = NOW();
+
+INSERT INTO `eo_product_detail` (
+    `product_id`, `description`, `create_time`, `update_time`
+) VALUES
+(410, '索尼 ZV-1 便携数码相机 Vlog神器<br><br>【成色】9成新，屏幕无划痕<br><br>【状态】已提交审核，等待管理员上架<br><br>【配件】原装电池、存储卡、相机包', NOW(), NOW()),
+(411, '罗技 MX Master 3S 无线鼠标 静音点击<br><br>【成色】95新，滚轮与按键正常<br><br>【说明】图片清晰度不足，已提交的这版被打回，补图后重新提交', NOW(), NOW()),
+(412, 'AKG K72 头戴式监听耳机<br><br>【成色】8成新，耳罩无脱皮<br><br>【说明】卖家临时下架，重新上架后恢复在售', NOW(), NOW()),
+(413, '小米 Air2S 真无线蓝牙耳机<br><br>【成色】8成新，续航正常<br><br>【已售出】此商品已成交，仅供展示', NOW(), NOW())
+AS new
+ON DUPLICATE KEY UPDATE
+    `description` = new.`description`, `update_time` = NOW();
+
 COMMIT;

@@ -17,7 +17,8 @@ describe('useSearchUrlState', () => {
         expect(result.current.keyword).toBe('');
         expect(result.current.filters).toEqual({});
         expect(result.current.pageNum).toBe(1);
-        expect(result.current.aiEnabled).toBe(false);
+        // AI 语义搜索默认开：空 URL 即开，显式 ai=0 才关
+        expect(result.current.aiEnabled).toBe(true);
     });
 
     it('parses keyword from URL', () => {
@@ -190,6 +191,15 @@ describe('useSearchUrlState', () => {
         expect(result.current.keyword).toBe('');
         expect(result.current.filters).toEqual({});
         expect(result.current.pageNum).toBe(1);
+        // reset 回到默认态 = AI 开
+        expect(result.current.aiEnabled).toBe(true);
+    });
+
+    it('reads explicit ai=0 as disabled', () => {
+        const { result } = renderHook(() => useSearchUrlState(), {
+            wrapper: createWrapper(['/search?ai=0']),
+        });
+
         expect(result.current.aiEnabled).toBe(false);
     });
 });

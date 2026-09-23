@@ -254,15 +254,21 @@ describe('SearchPage', () => {
         expect(lastCall?.keyword).toBe('平板');
     });
 
-    it('toggles AI flag and passes aiEnhanced to search params', async () => {
+    it('AI 搜索默认开启，可关闭再开启并透传 aiEnhanced', async () => {
         renderPage();
         const user = userEvent.setup();
-        const aiButton = screen.getByTitle('开启AI智能搜索');
+        // 默认开：按钮初始态即「关闭AI智能搜索」
+        const aiButton = screen.getByTitle('关闭AI智能搜索');
         await user.click(aiButton);
 
-        const lastCall = getLastSearchParams();
-        expect(lastCall).toBeDefined();
-        expect(lastCall?.aiEnhanced).toBe(true);
+        const offCall = getLastSearchParams();
+        expect(offCall).toBeDefined();
+        expect(offCall?.aiEnhanced).toBeFalsy();
+
+        await user.click(screen.getByTitle('开启AI智能搜索'));
+        const onCall = getLastSearchParams();
+        expect(onCall).toBeDefined();
+        expect(onCall?.aiEnhanced).toBe(true);
     });
 
     it('renders a pager past the first page and pages through results', async () => {
