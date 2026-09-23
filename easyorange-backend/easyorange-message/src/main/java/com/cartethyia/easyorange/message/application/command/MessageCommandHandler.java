@@ -99,7 +99,12 @@ public class MessageCommandHandler {
     @Transactional(rollbackFor = Exception.class)
     public void markAsReadBatch(String userId, MarkAsReadBatchCommand command) {
         var messageIds = command.messageIds();
-        BizRequire.notEmpty(messageIds, "消息ID列表不能为空");
+        if (messageIds == null || messageIds.isEmpty()) {
+            // 空列表 = 无可标记：no-op 成功（TD-026）—— 原 notEmpty 回 B0002 会把前端
+            // 竞态下清空的入参误伤成 400，而语义上「没有要标记的」本就该是成功
+            log.debug("action=mark_batch_read_skip reason=empty userId={}", userId);
+            return;
+        }
         BizRequire.requireTrue(!messageIds.contains(null), "消息ID不能为null");
 
         for (String messageId : messageIds) {

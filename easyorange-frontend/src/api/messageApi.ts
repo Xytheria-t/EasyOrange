@@ -23,7 +23,8 @@ export const messageApi = {
     },
 
     markAsRead(ids: (string | number) | (string | number)[]) {
-        const idArray = Array.isArray(ids) ? ids : [ids];
+        // filter(Boolean) 兜底空/脏入参（TD-026）：后端对空列表已改 no-op 成功，两侧都不再出 400
+        const idArray = (Array.isArray(ids) ? ids : [ids]).filter(Boolean);
         return request('/messages/read', {
             method: 'PUT',
             body: idArray,

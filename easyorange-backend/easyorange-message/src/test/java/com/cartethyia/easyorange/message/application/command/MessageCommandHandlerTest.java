@@ -336,6 +336,14 @@ class MessageCommandHandlerTest {
 
             verify(messageRepository, times(1)).update(any(Message.class));
         }
+
+        @Test
+        @DisplayName("空列表 no-op 成功：无可标记不再回 B0002（TD-026）")
+        void markAsReadBatch_emptyList_noop() {
+            commandHandler.markAsReadBatch(RECEIVER_ID, new MarkAsReadBatchCommand(List.of()));
+
+            verifyNoInteractions(messageRepository);
+        }
     }
 
     @Nested
