@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.framework.config.cache;
 
 import com.cartethyia.easyorange.framework.config.properties.CacheProperties;
 import com.cartethyia.easyorange.framework.config.redis.RedisConfig;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -42,9 +43,12 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class RedisCacheConfig implements CachingConfigurer {
 
     private final CacheProperties cacheProperties;
+    /** fail-open 吞异常可以、吞统计不行：缓存故障计数进 Prometheus，日志只留排障细节。 */
+    private final MeterRegistry meterRegistry;
 
-    public RedisCacheConfig(CacheProperties cacheProperties) {
+    public RedisCacheConfig(CacheProperties cacheProperties, MeterRegistry meterRegistry) {
         this.cacheProperties = cacheProperties;
+        this.meterRegistry = meterRegistry;
     }
 
     /**
@@ -82,6 +86,7 @@ public class RedisCacheConfig implements CachingConfigurer {
                         cache.getName(),
                         key,
                         exception.getMessage());
+                recordFailure("get", cache);
             }
 
             @Override
@@ -91,6 +96,7 @@ public class RedisCacheConfig implements CachingConfigurer {
                         cache.getName(),
                         key,
                         exception.getMessage());
+                recordFailure("put", cache);
             }
 
             @Override
@@ -100,11 +106,19 @@ public class RedisCacheConfig implements CachingConfigurer {
                         cache.getName(),
                         key,
                         exception.getMessage());
+                recordFailure("evict", cache);
             }
 
             @Override
             public void handleCacheClearError(RuntimeException exception, Cache cache) {
                 log.warn("action=cache_clear_failed, cache={}, error={}", cache.getName(), exception.getMessage());
+                recordFailure("clear", cache);
+            }
+
+            private void recordFailure(String op, Cache cache) {
+                meterRegistry
+                        .counter("easyorange.cache.failures", "op", op, "cache", cache.getName())
+                        .increment();
             }
         };
     }

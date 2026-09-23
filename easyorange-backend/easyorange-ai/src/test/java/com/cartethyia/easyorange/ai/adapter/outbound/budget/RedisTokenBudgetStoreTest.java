@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Map;
@@ -38,9 +39,11 @@ class RedisTokenBudgetStoreTest {
 
     private RedisTokenBudgetStore store;
 
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+
     @BeforeEach
     void setUp() {
-        store = new RedisTokenBudgetStore(redisProvider);
+        store = new RedisTokenBudgetStore(redisProvider, meterRegistry);
     }
 
     @Test
@@ -106,20 +109,34 @@ class RedisTokenBudgetStoreTest {
     }
 
     @Test
-    @DisplayName("Redis 读异常 -> fail-open 返回 empty（记账失败不把对话打成不可用）")
+    @DisplayName("Redis 读异常 -> fail-open 返回 empty 且计数（吞异常可以、吞统计不行）")
     void readFailure_failsOpen() {
         when(redisProvider.getIfAvailable()).thenReturn(redis);
         when(redis.opsForHash()).thenThrow(new RuntimeException("connection refused"));
 
         assertThat(store.getTodayUsage("chat")).isEmpty();
+
+        var counter = meterRegistry
+                .find("easyorange.ai.budget.failopen")
+                .tags("op", "read")
+                .counter();
+        assertThat(counter).isNotNull();
+        assertThat(counter.count()).isEqualTo(1.0);
     }
 
     @Test
-    @DisplayName("Redis 写异常 -> 只告警不抛（本次调用不计入，不打断业务链路）")
+    @DisplayName("Redis 写异常 -> 只告警不抛且计数（本次调用不计入，不打断业务链路）")
     void writeFailure_failsOpen() {
         when(redisProvider.getIfAvailable()).thenReturn(redis);
         when(redis.opsForHash()).thenThrow(new RuntimeException("connection refused"));
 
         store.recordUsage("chat", 1200, 300);
+
+        var counter = meterRegistry
+                .find("easyorange.ai.budget.failopen")
+                .tags("op", "write")
+                .counter();
+        assertThat(counter).isNotNull();
+        assertThat(counter.count()).isEqualTo(1.0);
     }
 }

@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.budget;
 
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Map;
@@ -34,9 +35,12 @@ public class RedisTokenBudgetStore implements TokenBudgetStore {
     private static final Duration KEY_TTL = Duration.ofHours(48);
 
     private final ObjectProvider<StringRedisTemplate> redisProvider;
+    /** fail-open 只 log 会隐身：读写失败计数是这段时间预算判定「按未用量放行」的唯一统计面。 */
+    private final MeterRegistry meterRegistry;
 
-    public RedisTokenBudgetStore(ObjectProvider<StringRedisTemplate> redisProvider) {
+    public RedisTokenBudgetStore(ObjectProvider<StringRedisTemplate> redisProvider, MeterRegistry meterRegistry) {
         this.redisProvider = redisProvider;
+        this.meterRegistry = meterRegistry;
         log.info("TokenBudgetStore: 使用 Redis 版存储（日预算跨实例共享）");
     }
 
@@ -57,6 +61,7 @@ public class RedisTokenBudgetStore implements TokenBudgetStore {
                     System.currentTimeMillis()));
         } catch (Exception e) {
             log.warn("Read today's token usage failed, budget check proceeds as unused: {}", e.getMessage());
+            meterRegistry.counter("easyorange.ai.budget.failopen", "op", "read").increment();
             return Optional.empty();
         }
     }
@@ -78,6 +83,9 @@ public class RedisTokenBudgetStore implements TokenBudgetStore {
             redis.expire(key, KEY_TTL);
         } catch (Exception e) {
             log.warn("Record token usage failed, this call is not counted: {}", e.getMessage());
+            meterRegistry
+                    .counter("easyorange.ai.budget.failopen", "op", "write")
+                    .increment();
         }
     }
 
