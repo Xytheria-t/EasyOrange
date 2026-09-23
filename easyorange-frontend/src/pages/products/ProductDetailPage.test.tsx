@@ -375,7 +375,7 @@ describe('ProductDetailPage', () => {
         renderPage();
 
         expect(screen.getByText('相似商品')).toBeInTheDocument();
-        expect(screen.getByText('¥80')).toBeInTheDocument();
+        expect(screen.getByText('¥80.00')).toBeInTheDocument();
         expect(screen.getByText('查看更多相似商品')).toBeInTheDocument();
     });
 

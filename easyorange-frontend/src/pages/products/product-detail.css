@@ -1439,7 +1439,7 @@
 .pdp-similar-skeleton-image {
     aspect-ratio: 1;
 }
-.pdp-skeleton-line {
+.pdp-similar-skeleton-line {
     height: 0.75rem;
     border-radius: var(--radius-sm);
 }
