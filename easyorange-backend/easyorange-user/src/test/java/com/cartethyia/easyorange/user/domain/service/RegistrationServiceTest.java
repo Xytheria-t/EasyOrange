@@ -33,6 +33,7 @@ class RegistrationServiceTest {
 
     private static final String USERNAME = "newuser";
     private static final String PASSWORD = "Password123";
+    private static final String PHONE = "13900000001";
 
     @BeforeEach
     void setUp() {
@@ -47,9 +48,10 @@ class RegistrationServiceTest {
         @DisplayName("注册成功")
         void success() {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.empty());
+            when(userRepository.findByPhone(PHONE)).thenReturn(Optional.empty());
             when(passwordEncoder.encode(PASSWORD)).thenReturn("$2a$10$encoded");
 
-            User result = service.registerNewUser(USERNAME, PASSWORD);
+            User result = service.registerNewUser(USERNAME, PASSWORD, PHONE);
 
             assertThat(result).isNotNull();
             assertThat(result.getCredentials()).isNotNull();
@@ -69,7 +71,7 @@ class RegistrationServiceTest {
                     .build();
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(existingUser));
 
-            assertThatThrownBy(() -> service.registerNewUser(USERNAME, PASSWORD))
+            assertThatThrownBy(() -> service.registerNewUser(USERNAME, PASSWORD, PHONE))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("用户名已存在");
 

@@ -87,18 +87,22 @@ class AuthAppServiceTest {
         void success() {
             String username = "newuser";
             String password = "Password123";
+            String phone = "13900000002";
+            String verifyCode = "123456";
 
             User savedUser = UserTestFixture.userWithCredentials(username, "encodedPassword").toBuilder()
                     .id("100")
                     .personalInfo(null)
                     .build();
-            when(registrationService.registerNewUser(username, password)).thenReturn(savedUser);
+            when(registrationService.registerNewUser(username, password, phone)).thenReturn(savedUser);
             when(userRepository.save(savedUser)).thenReturn(savedUser);
 
-            String result = service.register(username, password);
+            String result = service.register(username, password, phone, verifyCode);
 
             assertThat(result).isEqualTo("100");
-            verify(registrationService).registerNewUser(username, password);
+            verify(registrationService).validateRegisterable(username, phone);
+            verify(smsVerificationService).verifyCodeOrThrow(phone, verifyCode);
+            verify(registrationService).registerNewUser(username, password, phone);
             verify(userRepository).save(savedUser);
         }
     }

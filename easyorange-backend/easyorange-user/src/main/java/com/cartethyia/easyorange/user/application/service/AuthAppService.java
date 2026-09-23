@@ -35,8 +35,11 @@ public class AuthAppService {
     private final DomainEventPublisher domainEventPublisher;
 
     @Transactional(rollbackFor = Exception.class)
-    public String register(String username, String password) {
-        User user = registrationService.registerNewUser(username, password);
+    public String register(String username, String password, String phone, String verifyCode) {
+        // 先查重再消费验证码：用户名/手机号已存在时用户只需改字段重试，不用重新取码
+        registrationService.validateRegisterable(username, phone);
+        smsVerificationService.verifyCodeOrThrow(phone, verifyCode);
+        User user = registrationService.registerNewUser(username, password, phone);
         User saved = userRepository.save(user);
         domainEventPublisher.publish(new UserRegisteredEvent(UuidV7.generateId(), saved.getId(), username));
         return saved.getId();

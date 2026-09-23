@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.application.listing.AutoListingService;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
+import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
@@ -34,6 +35,9 @@ public class AiListingController {
 
     private final AutoListingService autoListingService;
 
+    // 只读识别调用，无状态可重复提交风险；防重 3s 会把「再次识别」误拦成 429（连点/连跑不一致），
+    // 频控由 AI 限流（auto-listing 5 次/分）与 token 预算承担
+    @SkipRepeatSubmit
     @PostMapping("/auto-listing")
     public Result<AutoListingResult> autoListing(
             @RequestBody @NotEmpty(message = "请至少上传一张图片") @Size(max = 9, message = "图片数量不能超过 9 张")

@@ -44,14 +44,19 @@ public class AuthController {
 
     @PostMapping("/register")
     public Result<String> register(@Valid @RequestBody RegisterRequest request) {
-        return Result.success(authAppService.register(request.username(), request.password()));
+        return Result.success(
+                authAppService.register(request.username(), request.password(), request.phone(), request.verifyCode()));
     }
 
+    // 登录豁免防重：防重按「同请求体 3s」拦，会把演示里的连续输错计数打断（第 2-5 次错误密码被 429 吞掉，
+    // 5 次锁定永不触发）；爆破防护由 5 次失败锁定 + 限流承担，重复同密码本就无爆破价值
+    @SkipRepeatSubmit
     @PostMapping("/login")
     public Result<LoginResult> login(@Valid @RequestBody PasswordLoginRequest request, HttpServletResponse response) {
         return doLogin(request.toCredential(), response);
     }
 
+    @SkipRepeatSubmit
     @PostMapping("/sms-login")
     public Result<LoginResult> smsLogin(@Valid @RequestBody SmsLoginRequest request, HttpServletResponse response) {
         return doLogin(request.toCredential(), response);

@@ -217,10 +217,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
         // 用 IP 作为用户标识（Filter 在认证之前执行，无法获取 userId）
         String userIdentifier = RequestUtil.getClientIp(request);
 
-        // key 含方法 + 请求体 hash：同 URI 的不同方法（如收藏 POST / 取消收藏 DELETE）是不同操作，
-        // 不同参数也不会被误判为重复
+        // key 含方法 + 查询串 + 请求体 hash：同 URI 的不同方法（如收藏 POST / 取消收藏 DELETE）是不同操作；
+        // 查询串必须入 key —— 发验证码这类参数走 @RequestParam（body 恒空），不带查询串会把
+        // 「给不同手机号取码」误判成 3 秒内重复提交
         String bodyHash = md5(cachedBody);
-        String key = "eo:repeat:" + userIdentifier + ":" + method + ":" + request.getRequestURI() + ":" + bodyHash;
+        String query = request.getQueryString() == null ? "" : "?" + request.getQueryString();
+        String key =
+                "eo:repeat:" + userIdentifier + ":" + method + ":" + request.getRequestURI() + query + ":" + bodyHash;
 
         try {
             if (Boolean.FALSE.equals(
