@@ -106,7 +106,14 @@ function SearchPage() {
         return params;
     }, [submittedKeyword, pageNum, filters, aiEnabled]);
 
-    const { products, total, facets, aiEnhancement, isLoading: isSearching } = useProductSearch(searchQueryParams);
+    const {
+        products,
+        total,
+        facets,
+        aiEnhancement,
+        aiEnhancementDegraded,
+        isLoading: isSearching,
+    } = useProductSearch(searchQueryParams);
     const { data: suggestions } = useSearchSuggestions(debouncedKeyword);
     const { data: hotKeywords } = useHotKeywords(10);
     const { data: categories } = useCategories();
@@ -486,6 +493,13 @@ function SearchPage() {
 
                         {aiEnhancement && (
                             <AiSearchPanel enhancement={aiEnhancement} onQuestionClick={handleHotKeywordClick} />
+                        )}
+
+                        {!aiEnhancement && aiEnhancementDegraded && (
+                            <div className="ai-search-degraded" role="status">
+                                <Sparkles size={14} />
+                                <span>AI 分析暂不可用，结果为普通检索</span>
+                            </div>
                         )}
 
                         {isSearching && (

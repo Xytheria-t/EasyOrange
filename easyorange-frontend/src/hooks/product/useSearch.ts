@@ -8,6 +8,8 @@ export interface UseProductSearchResult {
     total: number;
     facets: import('@/types/product').FacetBucket[];
     aiEnhancement?: AiEnhancement;
+    /** 已开启增强但本次失败（尝试过才为 true，短关键词「不适用」不会误报） */
+    aiEnhancementDegraded: boolean;
     isLoading: boolean;
     error: Error | null;
 }
@@ -29,6 +31,7 @@ export function useProductSearch(params: ProductSearchParams = {}): UseProductSe
         total: query.data?.total ?? 0,
         facets: query.data?.facets ?? [],
         aiEnhancement: query.data?.aiEnhancement,
+        aiEnhancementDegraded: query.data?.aiEnhancementDegraded ?? false,
         isLoading: query.isLoading,
         error: query.error,
     };

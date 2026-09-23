@@ -37,7 +37,8 @@ import org.springframework.util.DigestUtils;
  * （{@code easyorange.ai.search-enhance.timeout-seconds}，默认 5s；供应商越慢越要调大），结果经 Redis 5min TTL 缓存。
  * <p>
  * <b>对上游的契约是「永不抛异常」</b>：本类挂在商品检索主链路上（{@code ProductSearchQueryHandler}
- * 不做异常兜底），任何意外失败都返回 {@link Optional#empty()}，让检索退化为「无 AI 增强」而不是整个接口 500。
+ * 不做异常兜底），任何意外失败都收敛为 {@code degraded} 标记（无结果 + 降级），让检索退化为「无 AI 增强」
+ * 而不是整个接口 500，并让前端能区分「本次失败」与「非自然语言不适用」。
  * <p>
  * <b>降级结果不进缓存</b>：超时/异常分支只把残缺结果返回给本次请求，不写 Redis ——
  * 供应商抖动一次若被缓存 5 分钟，会让「降级」在缓存 TTL 内固化成「正常结果」。
@@ -69,24 +70,22 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     }
 
     @Override
-    public Optional<AiEnhancement> tryEnhance(String keyword, List<ProductReadModel> topProducts) {
+    public EnhanceOutcome tryEnhance(String keyword, List<ProductReadModel> topProducts) {
         try {
-            return doEnhance(keyword, topProducts);
+            // 前置检查不适用（非自然语言 / 无结果）：没尝试过，不算降级
+            if (!nlDetector.isNaturalLanguage(keyword) || topProducts == null || topProducts.isEmpty()) {
+                return EnhanceOutcome.notApplicable();
+            }
+            AiEnhancement enhancement = doEnhance(keyword, topProducts).orElse(null);
+            return enhancement != null ? EnhanceOutcome.of(enhancement) : EnhanceOutcome.failed();
         } catch (Exception e) {
             // 契约：异常不越过 Port 边界（调用方无兜底，逃逸即整个检索接口失败）
             log.warn("AI search enhancement failed, search proceeds without enhancement, keyword={}", keyword, e);
-            return Optional.empty();
+            return EnhanceOutcome.failed();
         }
     }
 
     private Optional<AiEnhancement> doEnhance(String keyword, List<ProductReadModel> topProducts) {
-        if (!nlDetector.isNaturalLanguage(keyword)) {
-            return Optional.empty();
-        }
-        if (topProducts == null || topProducts.isEmpty()) {
-            return Optional.empty();
-        }
-
         String cacheKey = CACHE_KEY_PREFIX + md5(keyword);
 
         if (redisTemplate != null) {

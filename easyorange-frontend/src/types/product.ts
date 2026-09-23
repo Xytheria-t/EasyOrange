@@ -110,6 +110,8 @@ export interface ProductSearchResult {
     pages: number;
     facets: FacetBucket[];
     aiEnhancement?: AiEnhancement;
+    /** 已开启 AI 增强但本次失败（后端 degraded 标记），UI 据此显示降级提示 */
+    aiEnhancementDegraded?: boolean;
 }
 
 /** AI 智能导购增强数据 */

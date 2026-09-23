@@ -297,3 +297,23 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1);
 }
+
+/* ============ AI DEGRADED NOTICE（开启增强但本次失败的降级提示） ============ */
+.ai-search-degraded {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px dashed rgba(249, 115, 22, 0.3);
+    border-radius: var(--radius-2xl);
+    background: rgba(249, 115, 22, 0.05);
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    animation: aiPanelSlideIn 0.4s var(--ease-out) both;
+}
+
+.ai-search-degraded svg {
+    color: var(--primary-400);
+    flex-shrink: 0;
+}
