@@ -5,6 +5,7 @@ import jakarta.annotation.Nullable;
 import java.util.Objects;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.ResolvableType;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
@@ -25,7 +26,24 @@ public class ResponseAdvice implements ResponseBodyAdvice<Object> {
     @Override
     public boolean supports(
             MethodParameter returnType, @Nullable Class<? extends HttpMessageConverter<?>> converterType) {
-        return !alreadyEnveloped(returnType);
+        return !alreadyEnveloped(returnType) && !isBinaryResourceResponse(returnType);
+    }
+
+    /**
+     * 二进制 Resource 响应（file 下载 / view / thumbnail / responsive）不进封套。
+     * <p>
+     * converter 是按<b>原始</b> Resource 体选中的（ResourceHttpMessageConverter），
+     * {@link #beforeBodyWrite} 再把体换成 {@link Result} 会触发
+     * {@code Result cannot be cast to Resource} 的 ClassCastException —— 这几个端点恒 500
+     * （TD-018 验收时实测 download/view/thumbnail/responsive 全挂）；二进制流本身也不是 API 信封。
+     */
+    private static boolean isBinaryResourceResponse(MethodParameter returnType) {
+        ResolvableType type = ResolvableType.forMethodParameter(returnType);
+        if (Resource.class.isAssignableFrom(type.toClass())) {
+            return true;
+        }
+        ResolvableType body = type.getGeneric(0);
+        return body.resolve() != null && Resource.class.isAssignableFrom(body.toClass());
     }
 
     /**

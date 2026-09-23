@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.framework.web;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -9,10 +10,15 @@ import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.config.web.ResponseAdvice;
 import com.cartethyia.easyorange.framework.exception.GlobalExceptionHandler;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -78,6 +84,15 @@ class ResponseEnvelopeTest {
                 .andExpect(jsonPath("$.message").value("自定义失败"));
     }
 
+    @Test
+    @DisplayName("Resource 二进制响应不进封套：包成 Result 会让 Resource converter CCE 恒 500（TD-018 关联）")
+    void resourceResponse_isNotWrapped() throws Exception {
+        mockMvc.perform(get("/probe/binary"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/plain"))
+                .andExpect(content().string("binary-content"));
+    }
+
     @RestController
     @RequestMapping("/probe")
     static class ProbeController {
@@ -100,6 +115,18 @@ class ResponseEnvelopeTest {
         @GetMapping("/explicit")
         Result<Void> explicit() {
             return Result.error("B9999", "自定义失败");
+        }
+
+        @GetMapping("/binary")
+        ResponseEntity<Resource> binary() {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .body(new ByteArrayResource("binary-content".getBytes(StandardCharsets.UTF_8)) {
+                        @Override
+                        public String getFilename() {
+                            return "probe.txt";
+                        }
+                    });
         }
     }
 
