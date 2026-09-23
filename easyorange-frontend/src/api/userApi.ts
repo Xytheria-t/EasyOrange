@@ -10,6 +10,15 @@ export const userApi = {
         });
     },
 
+    /** 短信验证码登录 —— 走独立端点（验证码不是密码，发 /auth/login 会恒报账号或密码错误） */
+    smsLogin(phone: string, verifyCode: string) {
+        return request<LoginResponse>('/auth/sms-login', {
+            method: 'POST',
+            body: { phone, verifyCode },
+            skipAuth: true,
+        });
+    },
+
     register(data: RegisterRequest) {
         return request<number>('/auth/register', {
             method: 'POST',

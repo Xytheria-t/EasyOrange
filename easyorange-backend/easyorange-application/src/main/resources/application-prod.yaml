@@ -194,6 +194,8 @@ rate-limit-filter:
 security:
   ignore-paths:
     - /api/auth/login
+    # 短信登录与密码登录同为「未登录状态下的换票入口」，漏放行会让匿名请求吃 401（登录页验证码 tab 恒失败）
+    - /api/auth/sms-login
     - /api/auth/refresh
     - /api/auth/sms-code
     # 验证码预检（忘记密码第二步）— 匿名可达，爆破防护走 SmsCodePort 验证次数上限
