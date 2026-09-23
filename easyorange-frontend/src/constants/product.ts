@@ -3,9 +3,8 @@ import type { ProductStatus } from '@/types/product';
 export const CONDITION_LABEL_MAP: Record<number, string> = {
     1: '全新',
     2: '几乎全新',
-    3: '轻微使用',
-    4: '明显使用',
-    5: '有缺陷',
+    3: '轻微使用痕迹',
+    4: '明显使用痕迹',
 };
 
 export const STATUS_LABEL_MAP: Record<ProductStatus, string> = {

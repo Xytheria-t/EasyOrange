@@ -237,7 +237,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
                                     onCheckedChange={() => handleConditionToggle(3)}
                                 />
                                 <label htmlFor="cond-3" className="checkbox-label">
-                                    轻微使用
+                                    轻微使用痕迹
                                 </label>
                                 <span className="condition-icon">💫</span>
                             </div>
@@ -248,7 +248,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
                                     onCheckedChange={() => handleConditionToggle(4)}
                                 />
                                 <label htmlFor="cond-4" className="checkbox-label">
-                                    明显使用
+                                    明显使用痕迹
                                 </label>
                                 <span className="condition-icon">⭐</span>
                             </div>
