@@ -856,6 +856,17 @@
     margin-bottom: 0.875rem;
 }
 
+.pdp-section-heading {
+    flex: 1;
+    min-width: 0;
+}
+
+.pdp-section-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .pdp-section-accent {
     width: 4px;
     height: 22px;
@@ -1236,13 +1247,27 @@
     color: var(--primary-500);
 }
 .pdp-section-badge {
-    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
     font-size: 0.6875rem;
-    font-weight: 500;
-    color: var(--text-tertiary);
+    font-weight: 600;
+    color: var(--primary-700);
     padding: 0.25rem 0.5rem;
-    background: rgba(249, 115, 22, 0.05);
-    border-radius: var(--radius-md);
+    background: rgba(249, 115, 22, 0.09);
+    border: 1px solid rgba(249, 115, 22, 0.2);
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.pdp-section-badge svg {
+    color: var(--primary-500);
+}
+
+.pdp-section-subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
 }
 .pdp-similar-grid {
     display: grid;
@@ -1274,6 +1299,10 @@
         0 8px 16px -8px rgba(147, 51, 234, 0.06);
     border-color: rgba(195, 155, 211, 0.2);
 }
+.pdp-similar-card:focus-visible {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
+}
 .pdp-similar-image {
     position: relative;
     aspect-ratio: 1;
@@ -1288,28 +1317,149 @@
 .pdp-similar-card:hover .pdp-similar-image img {
     transform: scale(1.05);
 }
+.pdp-similar-card.is-sold .pdp-similar-image img {
+    filter: grayscale(0.85);
+    opacity: 0.75;
+}
+.pdp-similar-badges {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.375rem;
+    pointer-events: none;
+}
+.pdp-similar-chip {
+    display: inline-flex;
+    align-items: center;
+    max-width: 60%;
+    padding: 0.1875rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--white);
+    background: rgba(17, 24, 39, 0.62);
+    backdrop-filter: blur(6px);
+    border-radius: 999px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pdp-similar-chip-discount {
+    margin-left: auto;
+    background: linear-gradient(135deg, #ef4444, #f97316);
+    font-weight: 700;
+}
+.pdp-similar-sold-mask {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(17, 24, 39, 0.35);
+}
+.pdp-similar-sold-mask span {
+    padding: 0.3125rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--white);
+    background: rgba(17, 24, 39, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+    letter-spacing: 0.05em;
+}
 .pdp-similar-content {
-    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.625rem 0.75rem 0.75rem;
 }
 .pdp-similar-title {
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--text-primary);
-    line-height: 1.3;
-    margin-bottom: 0.375rem;
+    line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    min-height: 2.8em;
+}
+.pdp-similar-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    flex-wrap: wrap;
 }
 .pdp-similar-price {
     font-family: var(--font-price);
-    font-size: 0.9375rem;
+    font-size: 1rem;
     font-weight: 700;
     background: var(--gradient-text-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+.pdp-similar-original {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-decoration: line-through;
+}
+.pdp-similar-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    flex-wrap: wrap;
+    padding-top: 0.375rem;
+    border-top: 1px dashed var(--border-light);
+    font-size: 0.6875rem;
+    color: var(--text-secondary);
+}
+.pdp-similar-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1875rem;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pdp-similar-meta-item svg {
+    flex-shrink: 0;
+    color: var(--primary-500);
+}
+/* 骨架屏：保持与真实卡片同构，避免加载完成时布局跳动 */
+.pdp-similar-skeleton {
+    pointer-events: none;
+}
+.pdp-similar-skeleton-image {
+    aspect-ratio: 1;
+}
+.pdp-skeleton-line {
+    height: 0.75rem;
+    border-radius: var(--radius-sm);
+}
+.pdp-shimmer {
+    background: linear-gradient(
+        100deg,
+        rgba(42, 37, 32, 0.06) 40%,
+        rgba(42, 37, 32, 0.12) 50%,
+        rgba(42, 37, 32, 0.06) 60%
+    );
+    background-size: 200% 100%;
+    animation: pdpShimmer 1.4s ease-in-out infinite;
+}
+@keyframes pdpShimmer {
+    from {
+        background-position: 200% 0;
+    }
+    to {
+        background-position: -200% 0;
+    }
 }
 .pdp-similar-footer {
     margin-top: 1.25rem;
@@ -1356,10 +1506,7 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 .pdp-ai-tips-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 1rem;
+    padding: 1rem 1.125rem;
     background: linear-gradient(
         135deg,
         rgba(16, 185, 129, 0.04) 0%,
@@ -1371,10 +1518,19 @@
     box-shadow:
         0 4px 16px -4px rgba(16, 185, 129, 0.06),
         inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition:
+        border-color 0.3s ease,
+        box-shadow 0.3s ease;
+}
+.pdp-ai-tips-header {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-bottom: 0.875rem;
 }
 .pdp-ai-tips-icon {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1383,39 +1539,75 @@
     color: var(--status-success);
     flex-shrink: 0;
 }
-.pdp-ai-tips-content {
-    flex: 1;
-}
 .pdp-ai-tips-title {
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin: 0;
 }
-.pdp-ai-tips-list {
+.pdp-ai-tips-tag {
+    margin-left: auto;
+    padding: 0.1875rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--status-success);
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.22);
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.pdp-ai-tips-grid {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+}
+.pdp-ai-tips-item {
     display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
+    align-items: flex-start;
+    gap: 0.625rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(16, 185, 129, 0.14);
+    border-radius: var(--radius-xl);
+    transition:
+        transform 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
 }
-.pdp-ai-tips-list li {
+.pdp-ai-tips-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 12px -4px rgba(16, 185, 129, 0.18);
+}
+.pdp-ai-tips-item-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(5, 150, 105, 0.09));
+    border-radius: var(--radius-md);
+    color: var(--status-success);
+}
+.pdp-ai-tips-item-body {
+    min-width: 0;
+}
+.pdp-ai-tips-item-body strong {
+    display: block;
     font-size: 0.8125rem;
-    color: var(--text-secondary);
-    padding-left: 1rem;
-    position: relative;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.1875rem;
 }
-.pdp-ai-tips-list li::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0.5em;
-    width: 6px;
-    height: 6px;
-    background: var(--status-success-dot);
-    border-radius: 50%;
-    box-shadow: 0 0 4px rgba(16, 185, 129, 0.3);
+.pdp-ai-tips-item-body p {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
 }
 @media (max-width: 1024px) {
     .pdp-similar-grid {
@@ -1431,8 +1623,10 @@
         grid-template-columns: repeat(2, 1fr);
         gap: 0.75rem;
     }
+    .pdp-ai-tips-grid {
+        grid-template-columns: 1fr;
+    }
     .pdp-ai-tips-card {
-        flex-direction: column;
         padding: 1rem;
     }
 }
@@ -1442,13 +1636,24 @@
         gap: 0.625rem;
     }
     .pdp-similar-content {
-        padding: 0.625rem;
+        padding: 0.5rem 0.625rem 0.625rem;
     }
     .pdp-similar-title {
         font-size: 0.75rem;
+        min-height: 0;
     }
     .pdp-similar-price {
-        font-size: 0.875rem;
+        font-size: 0.9375rem;
+    }
+    .pdp-similar-meta {
+        gap: 0.5rem;
+    }
+    /* 窄屏放不下三条 meta，保留位置 + 浏览，隐藏时间 */
+    .pdp-similar-meta-item:last-child {
+        display: none;
+    }
+    .pdp-ai-tips-tag {
+        display: none;
     }
 }
 .pdp-share-content {
@@ -1516,13 +1721,35 @@
     margin-top: 0.5rem;
 }
 .pdp-similar-empty {
-    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2.5rem 1rem;
     text-align: center;
     color: var(--text-tertiary);
+}
+.pdp-similar-empty-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(249, 115, 22, 0.07);
+    border: 1px dashed rgba(249, 115, 22, 0.3);
+    border-radius: 50%;
+    color: var(--primary-500);
 }
 .pdp-similar-empty p {
     margin: 0;
     font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.pdp-similar-empty-hint {
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: var(--text-tertiary);
 }
 @media (max-width: 768px) {
     .pdp-share-platforms {
@@ -1572,5 +1799,28 @@
     }
     50% {
         transform: translateY(-3px);
+    }
+}
+
+/* 本块必须位于相似卡/安全提示规则之后，否则同优先级被前文覆盖 */
+@media (prefers-reduced-motion: reduce) {
+    .pdp-shimmer {
+        animation: none;
+    }
+    .pdp-similar-card,
+    .pdp-ai-tips-item {
+        transition: none;
+    }
+    .pdp-similar-image img {
+        transition: none;
+    }
+    .pdp-similar-card:hover {
+        transform: none;
+    }
+    .pdp-similar-card:hover .pdp-similar-image img {
+        transform: none;
+    }
+    .pdp-ai-tips-item:hover {
+        transform: none;
     }
 }

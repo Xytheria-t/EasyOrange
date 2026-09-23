@@ -9,12 +9,16 @@ import {
     Clock,
     Copy,
     Eye,
-    Info,
+    Handshake,
+    LifeBuoy,
     MapPin,
     MessageCircle,
+    PackageOpen,
     Pencil,
     Shield,
+    ShieldCheck,
     ShoppingCart,
+    Sparkles,
     Tag,
     User,
 } from 'lucide-react';
@@ -48,7 +52,7 @@ function ProductDetailPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { data: product, isLoading } = useProduct(id ?? '');
-    const { data: similarProducts } = useSimilarProducts(id ?? '');
+    const { data: similarProducts, isLoading: similarLoading } = useSimilarProducts(id ?? '');
     const { token, user } = useAuthStore();
     const addToast = useUIStore(s => s.addToast);
 
@@ -426,36 +430,117 @@ function ProductDetailPage() {
                 <div className="pdp-similar-section">
                     <div className="pdp-section-header">
                         <div className="pdp-section-accent" />
-                        <h3 className="pdp-section-title">同类商品推荐</h3>
-                        <span className="pdp-section-badge">同品类匹配</span>
+                        <div className="pdp-section-heading">
+                            <div className="pdp-section-title-row">
+                                <h3 className="pdp-section-title">同类商品推荐</h3>
+                                <span className="pdp-section-badge">
+                                    <Sparkles size={12} />
+                                    同品类匹配
+                                </span>
+                            </div>
+                            <p className="pdp-section-subtitle">
+                                {similarProducts && similarProducts.length > 0
+                                    ? `按当前商品类目为你匹配到 ${similarProducts.length} 件商品`
+                                    : '按当前商品类目实时检索'}
+                            </p>
+                        </div>
                     </div>
 
-                    {similarProducts && similarProducts.length > 0 ? (
+                    {similarLoading && !similarProducts ? (
+                        <div className="pdp-similar-grid" aria-hidden="true">
+                            {[0, 1, 2, 3].map(i => (
+                                <div key={i} className="pdp-similar-card pdp-similar-skeleton">
+                                    <div className="pdp-similar-skeleton-image shimmer" />
+                                    <div className="pdp-similar-content">
+                                        <div className="pdp-similar-skeleton-line shimmer" style={{ width: '85%' }} />
+                                        <div className="pdp-similar-skeleton-line shimmer" style={{ width: '45%' }} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : similarProducts && similarProducts.length > 0 ? (
                         <>
                             <div className="pdp-similar-grid">
-                                {similarProducts.slice(0, 4).map(item => (
-                                    <Link key={item.id} to={`/products/${item.id}`} className="pdp-similar-card">
-                                        <div className="pdp-similar-image">
-                                            <Image
-                                                src={item.images?.[0] || placeholderImage}
-                                                alt={item.title}
-                                                loading="lazy"
-                                                placeholder="skeleton"
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                            />
-                                        </div>
-                                        <div className="pdp-similar-content">
-                                            <h4 className="pdp-similar-title">{item.title}</h4>
-                                            <div className="pdp-similar-price">¥{item.price.toFixed(0)}</div>
-                                        </div>
-                                    </Link>
-                                ))}
+                                {similarProducts.slice(0, 4).map(item => {
+                                    const itemConditionLabel = item.conditionLevel
+                                        ? (CONDITION_LABEL_MAP[item.conditionLevel] ?? item.condition)
+                                        : item.condition;
+                                    const itemHasDiscount =
+                                        item.originalPrice != null && item.originalPrice > item.price;
+                                    const itemDiscountPercent = itemHasDiscount
+                                        ? Math.round((1 - item.price / (item.originalPrice as number)) * 100)
+                                        : 0;
+                                    const isItemSold = item.status === 'SOLD';
+                                    return (
+                                        <Link
+                                            key={item.id}
+                                            to={`/products/${item.id}`}
+                                            className={`pdp-similar-card${isItemSold ? ' is-sold' : ''}`}
+                                        >
+                                            <div className="pdp-similar-image">
+                                                <Image
+                                                    src={item.images?.[0] || placeholderImage}
+                                                    alt={item.title}
+                                                    loading="lazy"
+                                                    placeholder="skeleton"
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                />
+                                                <div className="pdp-similar-badges">
+                                                    {itemConditionLabel ? (
+                                                        <span className="pdp-similar-chip">{itemConditionLabel}</span>
+                                                    ) : null}
+                                                    {itemHasDiscount ? (
+                                                        <span className="pdp-similar-chip pdp-similar-chip-discount">
+                                                            -{itemDiscountPercent}%
+                                                        </span>
+                                                    ) : null}
+                                                </div>
+                                                {isItemSold ? (
+                                                    <div className="pdp-similar-sold-mask">
+                                                        <span>{STATUS_LABEL_MAP.SOLD}</span>
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                            <div className="pdp-similar-content">
+                                                <h4 className="pdp-similar-title">{item.title}</h4>
+                                                <div className="pdp-similar-price-row">
+                                                    <span className="pdp-similar-price">¥{item.price.toFixed(0)}</span>
+                                                    {itemHasDiscount ? (
+                                                        <span className="pdp-similar-original">
+                                                            ¥{(item.originalPrice as number).toFixed(0)}
+                                                        </span>
+                                                    ) : null}
+                                                </div>
+                                                <div className="pdp-similar-meta">
+                                                    <span className="pdp-similar-meta-item">
+                                                        <MapPin size={12} />
+                                                        {item.location?.trim() || '校内面交'}
+                                                    </span>
+                                                    <span className="pdp-similar-meta-item">
+                                                        <Eye size={12} />
+                                                        {item.views}
+                                                    </span>
+                                                    <span className="pdp-similar-meta-item">
+                                                        <Clock size={12} />
+                                                        {formatRelativeTime(item.createTime)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
                             </div>
                             <div className="pdp-similar-footer">
                                 <Button
                                     variant="ghost"
                                     className="pdp-similar-more"
-                                    onClick={() => navigate('/products')}
+                                    onClick={() =>
+                                        navigate(
+                                            product.categoryId
+                                                ? `/products?filters=category:${encodeURIComponent(product.categoryId)}`
+                                                : '/products'
+                                        )
+                                    }
                                 >
                                     <span>查看更多相似商品</span>
                                     <ChevronRight size={16} />
@@ -464,7 +549,11 @@ function ProductDetailPage() {
                         </>
                     ) : (
                         <div className="pdp-similar-empty">
+                            <div className="pdp-similar-empty-icon">
+                                <PackageOpen size={28} />
+                            </div>
                             <p>暂无相似商品推荐</p>
+                            <p className="pdp-similar-empty-hint">该类目下暂时没有其它商品</p>
                         </div>
                     )}
                 </div>
@@ -473,17 +562,42 @@ function ProductDetailPage() {
 
                 <div className="pdp-ai-tips-section">
                     <div className="pdp-ai-tips-card">
-                        <div className="pdp-ai-tips-icon">
-                            <Info size={20} />
-                        </div>
-                        <div className="pdp-ai-tips-content">
+                        <div className="pdp-ai-tips-header">
+                            <div className="pdp-ai-tips-icon">
+                                <ShieldCheck size={18} />
+                            </div>
                             <h4 className="pdp-ai-tips-title">交易安全提示</h4>
-                            <ul className="pdp-ai-tips-list">
-                                <li>建议与资产方确认资产细节后再进行交易</li>
-                                <li>优先选择校内面交，安全便捷</li>
-                                <li>如遇纠纷可联系平台客服协助处理</li>
-                            </ul>
+                            <span className="pdp-ai-tips-tag">平台担保 · 自主交易</span>
                         </div>
+                        <ul className="pdp-ai-tips-grid">
+                            <li className="pdp-ai-tips-item">
+                                <span className="pdp-ai-tips-item-icon">
+                                    <Handshake size={16} />
+                                </span>
+                                <div className="pdp-ai-tips-item-body">
+                                    <strong>确认细节再交易</strong>
+                                    <p>建议与资产方确认资产细节后再进行交易</p>
+                                </div>
+                            </li>
+                            <li className="pdp-ai-tips-item">
+                                <span className="pdp-ai-tips-item-icon">
+                                    <MapPin size={16} />
+                                </span>
+                                <div className="pdp-ai-tips-item-body">
+                                    <strong>优先校内面交</strong>
+                                    <p>优先选择校内面交，安全便捷</p>
+                                </div>
+                            </li>
+                            <li className="pdp-ai-tips-item">
+                                <span className="pdp-ai-tips-item-icon">
+                                    <LifeBuoy size={16} />
+                                </span>
+                                <div className="pdp-ai-tips-item-body">
+                                    <strong>平台客服协助</strong>
+                                    <p>如遇纠纷可联系平台客服协助处理</p>
+                                </div>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
