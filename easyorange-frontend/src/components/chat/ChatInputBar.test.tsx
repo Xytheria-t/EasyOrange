@@ -36,6 +36,9 @@ describe('ChatInputBar', () => {
         const textarea = screen.getByPlaceholderText('输入消息...') as HTMLTextAreaElement;
         await userEvent.type(textarea, 'hello');
         await userEvent.click(screen.getByLabelText('发送'));
+        // 终态断言必须绑定请求级信号：清空/按钮禁用是同步副作用，
+        // 只断它们的话「发送没发生」也同样通过（假通过）
+        expect(onSend).toHaveBeenCalledWith('hello');
         expect(textarea.value).toBe('');
     });
 
