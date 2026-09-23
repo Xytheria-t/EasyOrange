@@ -3,9 +3,8 @@
 -- 目的: GET /api/admin/ai/listing-adoption 在 dev 库上直接有数，不必先手工走一遍发布流程。
 --       报表只统计 ai_suggestion 非空的行（没给出建议的商品进分母会把采纳率稀释成无意义的数），
 --       不补数据则报表恒为 0 样本。
--- 为什么单独一个文件: 快照要读 eo_category 的类目名，而 Flyway 按**名称字典序**执行可重复迁移 ——
---   本文件以 zz 前缀排在最后，此时商品（R__insert_dev_test_data）与类目（R__seed_categories）都已入库。
---   放进 R__insert_dev_test_data 会让快照的 categoryName 在全新库上恒为 NULL。
+-- 为什么单独一个文件: 快照要读 eo_category 的类目名与商品行，而 Flyway 按**名称字典序**执行可重复迁移 ——
+--   本文件以 zz 前缀排在最后，此时商品（R__seed_dev_test_data）与类目（R__seed_categories）都已入库。
 -- 造数思路: 快照存的是**建议原文**（六字段 JSON），采纳与否由报表 SQL 与商品最终值比对得出 ——
 --   所以只要控制「建议值与最终值差在哪几个字段」，字段级采纳率就自然拉开：
 --   ①A 全字段一致（全采纳）；①B 只改价 ≤10%；①C 改价 >30% 且标题被资产方重写（文案不被采信）。
@@ -14,6 +13,8 @@
 --   应用内真实发布的商品是 UUID v7 主键，不会落在这些 ID 上）。
 -- Database: MySQL 8.0
 -- ===================================================================
+
+START TRANSACTION;
 
 -- ①A 全字段采纳：快照与最终值六项全等
 UPDATE `eo_product` p
@@ -47,3 +48,5 @@ SET p.ai_suggestion = JSON_OBJECT(
         'conditionLevel', p.condition_level,
         'location', COALESCE(p.location, ''))
 WHERE p.id IN ('2', '9', '12', '26', '36', '54', '64', '96');
+
+COMMIT;
