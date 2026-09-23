@@ -36,6 +36,7 @@
 ## 提交规范（Git 工作流）
 
 - 一个逻辑单元一个提交，验证通过即提交；禁攒大提交、禁 `git add -A`；直接在 `develop` 提交
+- 推送仅在用户主动要求时执行
 - 消息格式与 type 规则照 `.githooks/commit-msg` 报错改；钩子 `git config core.hooksPath .githooks`（紧急 `SKIP=git-hooks`）
 
 ## 参考索引（按需读取，不常驻上下文）
