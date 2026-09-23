@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ImagePreviewOverlay } from '@/admin/components/ImagePreviewOverlay';
 import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, Textarea } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { useUIStore } from '@/store/uiStore';
 import { useAuditLogs, useAuditProduct } from '../../hooks/useAdminProductAudit';
 import { useAdminProductDetail } from '../../hooks/useAdminProducts';
 import type { AuditDimension, AuditLogResponse } from '../../types/admin';
@@ -46,6 +47,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
     const { data: product, isLoading, refetch } = useAdminProductDetail(productId ?? '');
     const updateStatus = useAuditProduct();
     const auditLogs = useAuditLogs(productId);
+    const addToast = useUIStore(s => s.addToast);
 
     useEffect(() => {
         if (open && productId) {
@@ -64,6 +66,9 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                 data: { action: 1, dimensions: selectedDimensions, remark: auditRemark || undefined },
             })
             .then(() => {
+                // 审核动作要有即时反馈：只关抽屉的话，点完「通过审核」界面几乎无变化，
+                // 演示者会以为没点上
+                addToast({ type: 'success', message: '审核已通过，商品已上架' });
                 onSuccess();
                 onClose();
             });
@@ -84,6 +89,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                 },
             });
             setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' }));
+            addToast({ type: 'success', message: '已驳回，理由已记录在审核日志' });
             onSuccess();
             onClose();
         } catch {
