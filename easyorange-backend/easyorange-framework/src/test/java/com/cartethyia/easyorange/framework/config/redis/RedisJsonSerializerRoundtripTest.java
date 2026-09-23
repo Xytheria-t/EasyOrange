@@ -54,7 +54,8 @@ class RedisJsonSerializerRoundtripTest {
     @DisplayName("String / Long 根值不带类型包装，读回等值（限流、SMS、幂等标记形态；JSON 数字无类型时 Jackson 归一为 Integer，按数值断言）")
     void scalars_roundtrip() {
         assertThat(serializer.deserialize(serializer.serialize("1"))).isEqualTo("1");
-        assertThat(((Number) serializer.deserialize(serializer.serialize(42L))).longValue()).isEqualTo(42L);
+        assertThat(((Number) serializer.deserialize(serializer.serialize(42L))).longValue())
+                .isEqualTo(42L);
     }
 
     @Test

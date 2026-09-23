@@ -23,7 +23,8 @@ class AiChatControllerSseTest {
         SseEmitter emitter = new SseEmitter(1000L);
         emitter.complete();
 
-        assertThatThrownBy(() -> AiChatController.send(emitter, SseEmitter.event().name("token").data("x")))
+        assertThatThrownBy(() -> AiChatController.send(
+                        emitter, SseEmitter.event().name("token").data("x")))
                 .isInstanceOf(AiChatController.ClientDisconnectedException.class);
     }
 
@@ -41,7 +42,9 @@ class AiChatControllerSseTest {
     void sendAndComplete_beforeCompletion_works() {
         SseEmitter emitter = new SseEmitter(1000L);
 
-        assertThatNoException().isThrownBy(() -> AiChatController.send(emitter, SseEmitter.event().name("token").data("x")));
+        assertThatNoException()
+                .isThrownBy(() -> AiChatController.send(
+                        emitter, SseEmitter.event().name("token").data("x")));
         assertThatNoException().isThrownBy(() -> AiChatController.completeQuietly(emitter));
     }
 }

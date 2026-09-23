@@ -174,8 +174,7 @@ class AdminCategoryServiceTest {
             categoryService.updateCategory(PARENT_ID, request);
 
             verify(adminCategoryPort).countProductsByCategoryIds(List.of(PARENT_ID));
-            verify(adminCategoryPort, org.mockito.Mockito.never())
-                    .countProductsByCategoryIdsWithChildren(anyList());
+            verify(adminCategoryPort, org.mockito.Mockito.never()).countProductsByCategoryIdsWithChildren(anyList());
         }
 
         @Test
