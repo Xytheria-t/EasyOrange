@@ -121,6 +121,18 @@ class MockSmsCodeAdapterTest {
         assertThat(failing.check(PHONE, attempted.get(0))).isEqualTo(SmsCodePort.VerifyResult.NOT_FOUND);
     }
 
+    @Test
+    @DisplayName("demo-code 配置后固定发该码，未配置仍随机（演示免查日志）")
+    void configuredDemoCodeIsUsed() {
+        MockSmsCodeAdapter fixed = new MockSmsCodeAdapter(sender, mutableClock(), "307519");
+
+        fixed.send(PHONE);
+
+        assertThat(sentCodes.get(sentCodes.size() - 1)).isEqualTo("307519");
+        assertThat(fixed.check(PHONE, "307519")).isEqualTo(SmsCodePort.VerifyResult.OK);
+        assertThat(fixed.check(PHONE, "000000")).isEqualTo(SmsCodePort.VerifyResult.NOT_FOUND);
+    }
+
     private Clock mutableClock() {
         return new Clock() {
             @Override
