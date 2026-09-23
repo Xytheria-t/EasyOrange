@@ -26,9 +26,13 @@ beforeEach(() => {
 });
 
 describe('AdminRouteGuard', () => {
-    it('redirects to login when not authenticated', () => {
+    it('redirects to login when not authenticated', async () => {
         renderWithProviders(<AdminRouteGuard />, { initialRoute: '/admin/products' });
-        expect(mockNavigate).toHaveBeenCalledWith('/login?redirect=%2Fadmin%2Fproducts');
+        // 会话恢复是异步的（restoreSession 的 finally 才置位 sessionChecked），
+        // 恢复失败后才判定未登录并跳转 —— 断言要等这条链走完
+        await vi.waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/login?redirect=%2Fadmin%2Fproducts'), {
+            timeout: 5000,
+        });
     });
 
     it('renders protected content when admin', () => {

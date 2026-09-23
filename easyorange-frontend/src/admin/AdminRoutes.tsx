@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminRouteGuard } from './components/AdminRouteGuard';
 import { AdminLayout } from './layout';
 import '@/admin/styles/admin.css';
@@ -24,11 +24,16 @@ export function AdminRoutes() {
                 <Route element={<AdminRouteGuard />}>
                     <Route element={<AdminLayout />}>
                         <Route index element={<StatsPage />} />
+                        {/* /admin/stats 深链别名：与 index 同页。缺它时该 URL 在内层 Routes
+                            无匹配 → 整棵树渲染 null → 白屏（无链接指向时也兜住手输地址） */}
+                        <Route path="stats" element={<StatsPage />} />
                         <Route path="users" element={<UserManagePage />} />
                         <Route path="products" element={<ProductReviewPage />} />
                         <Route path="orders" element={<OrderManagePage />} />
                         <Route path="categories" element={<CategoryManagePage />} />
                         <Route path="knowledge" element={<KnowledgePage />} />
+                        {/* 后台内未知路径回数据统计，绝不给演示留白屏 */}
+                        <Route path="*" element={<Navigate to="/admin" replace />} />
                     </Route>
                 </Route>
             </Routes>
