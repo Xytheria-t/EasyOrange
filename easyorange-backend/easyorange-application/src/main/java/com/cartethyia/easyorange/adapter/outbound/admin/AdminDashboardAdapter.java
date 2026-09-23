@@ -23,6 +23,6 @@ public class AdminDashboardAdapter implements AdminDashboardPort {
     public ProductStats getProductStats() {
         return new ProductStats(
                 productQueryRepository.countByStatus(null),
-                productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode()));
+                productQueryRepository.countByStatus(ProductStatus.PENDING_REVIEW.getCode()));
     }
 }
