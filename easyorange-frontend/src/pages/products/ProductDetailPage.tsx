@@ -13,15 +13,10 @@ import {
     MapPin,
     MessageCircle,
     Pencil,
-    Send,
     Shield,
     ShoppingCart,
-    Sparkles,
-    Star,
     Tag,
-    TrendingUp,
     User,
-    Zap,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -46,9 +41,7 @@ import { useCreateOrder, useProduct, useSimilarProducts } from '@/hooks';
 import { type OrderFormData, orderFormSchema } from '@/schemas/productDetailSchema';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import type { ChatMessage } from '@/types/message';
 import { formatRelativeTime } from '@/utils';
-import { normalizeChatMessages } from '@/utils/message';
 import { ProductGallery } from './components/ProductGallery';
 
 function ProductDetailPage() {
@@ -75,14 +68,11 @@ function ProductDetailPage() {
     const createOrder = useCreateOrder();
     const [showOrderModal, setShowOrderModal] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
-    const [showChatModal, setShowChatModal] = useState(false);
     const orderForm = useForm<OrderFormData>({
         resolver: zodResolver(orderFormSchema),
         defaultValues: { phone: '', remark: '' },
         reValidateMode: 'onChange',
     });
-    const [chatMessage, setChatMessage] = useState('');
-    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [copied, setCopied] = useState(false);
 
     const productId = id ?? '';
@@ -92,21 +82,6 @@ function ProductDetailPage() {
             productApi.incrementView(productId).catch(() => {});
         }
     }, [productId]);
-
-    useEffect(() => {
-        if (!showChatModal || !product?.sellerId || !token) {
-            return;
-        }
-        const loadChatHistory = async () => {
-            try {
-                const response = await messageApi.getConversation(product.sellerId);
-                setChatMessages(normalizeChatMessages(response.data ?? []).reverse());
-            } catch {
-                setChatMessages([]);
-            }
-        };
-        loadChatHistory();
-    }, [showChatModal, product?.sellerId, token]);
 
     const resubmitForReview = useMutation({
         mutationFn: async () => {
@@ -225,40 +200,6 @@ function ProductDetailPage() {
         }
     };
 
-    const handleSendMessage = async () => {
-        if (!chatMessage.trim() || !product?.sellerId) {
-            return;
-        }
-        try {
-            await messageApi.sendMessage({
-                receiverId: product.sellerId,
-                content: chatMessage.trim(),
-            });
-            setChatMessages(prev => [
-                ...prev,
-                {
-                    id: String(Date.now()),
-                    senderId: user?.userId ?? '',
-                    receiverId: product.sellerId,
-                    content: chatMessage.trim(),
-                    type: 'TEXT',
-                    status: 'SENT',
-                    createTime: new Date().toISOString(),
-                    readTime: null,
-                    recalledAt: null,
-                },
-            ]);
-            setChatMessage('');
-            addToast({ type: 'success', message: '消息已发送' });
-        } catch {
-            addToast({ type: 'error', message: '发送失败，请重试' });
-        }
-    };
-
-    const handleQuickReply = (text: string) => {
-        setChatMessage(text);
-    };
-
     const handleSubmitOrder = orderForm.handleSubmit(async values => {
         try {
             const orderId = await createOrder.mutateAsync({
@@ -274,8 +215,6 @@ function ProductDetailPage() {
             addToast({ type: 'error', message: '创建订单失败，请重试' });
         }
     });
-
-    const quickReplies = ['这个商品还在吗？', '能便宜点吗？', '可以面交吗？', '商品有什么瑕疵吗？'];
 
     return (
         <div className="pdp-page">
@@ -380,106 +319,13 @@ function ProductDetailPage() {
                                             <span className="pdp-discount-badge">-{discountPercent}%</span>
                                         </div>
                                     )}
-                                </div>
-                                {hasDiscount && (
-                                    <div className="pdp-savings">
-                                        比原价省{' '}
-                                        <strong>
-                                            ¥{((product.originalPrice as number) - product.price).toFixed(2)}
-                                        </strong>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="pdp-ai-pricing-card">
-                                <div className="pdp-ai-pricing-header">
-                                    <div className="pdp-ai-badge">
-                                        <Sparkles size={14} />
-                                        <span>AI智能估价</span>
-                                    </div>
-                                    <span className="pdp-ai-confidence">置信度 95%</span>
-                                </div>
-                                <div className="pdp-ai-pricing-body">
-                                    <div className="pdp-ai-price-range">
-                                        <div className="pdp-ai-price-item">
-                                            <span className="pdp-ai-price-label">市场均价</span>
-                                            <span className="pdp-ai-price-value">
-                                                ¥{((product.price || 100) * 1.15).toFixed(0)}
-                                            </span>
+                                    {hasDiscount && (
+                                        <div className="pdp-savings">
+                                            比原价省{' '}
+                                            <strong>
+                                                ¥{((product.originalPrice as number) - product.price).toFixed(2)}
+                                            </strong>
                                         </div>
-                                        <div className="pdp-ai-price-divider" />
-                                        <div className="pdp-ai-price-item">
-                                            <span className="pdp-ai-price-label">低价区间</span>
-                                            <span className="pdp-ai-price-value low">
-                                                ¥{((product.price || 100) * 0.85).toFixed(0)}
-                                            </span>
-                                        </div>
-                                        <div className="pdp-ai-price-divider" />
-                                        <div className="pdp-ai-price-item highlight">
-                                            <span className="pdp-ai-price-label">当前定价</span>
-                                            <span className="pdp-ai-price-value">¥{product.price.toFixed(0)}</span>
-                                        </div>
-                                    </div>
-                                    <div className="pdp-ai-pricing-analysis">
-                                        <div className="pdp-ai-analysis-icon">
-                                            <TrendingUp size={14} />
-                                        </div>
-                                        <p className="pdp-ai-analysis-text">
-                                            该商品定价<span className="highlight">合理偏低</span>
-                                            ，相比同类商品具有价格优势，性价比突出
-                                        </p>
-                                    </div>
-                                    <div className="pdp-ai-pricing-tags">
-                                        <span className="pdp-ai-tag">
-                                            <Zap size={10} />
-                                            价格优势
-                                        </span>
-                                        <span className="pdp-ai-tag">
-                                            <Star size={10} />
-                                            值得购买
-                                        </span>
-                                        <span className="pdp-ai-tag">
-                                            <TrendingUp size={10} />
-                                            热门品类
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pdp-details-card">
-                                <div className="pdp-detail-item">
-                                    <div className="pdp-detail-icon-wrap">
-                                        <MapPin size={16} />
-                                    </div>
-                                    <div className="pdp-detail-content">
-                                        <span className="pdp-detail-label">交易地点</span>
-                                        <span className="pdp-detail-value">{product.location || '未指定'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="pdp-detail-item">
-                                    <div className="pdp-detail-icon-wrap">
-                                        <Shield size={16} />
-                                    </div>
-                                    <div className="pdp-detail-content">
-                                        <span className="pdp-detail-label">商品成色</span>
-                                        <span className="pdp-detail-value">{conditionLabel || '未标注'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="pdp-detail-item pdp-seller-item">
-                                    <div className="pdp-detail-icon-wrap pdp-seller-avatar-wrap">
-                                        <User size={16} />
-                                    </div>
-                                    <div className="pdp-detail-content">
-                                        <span className="pdp-detail-label">资产方</span>
-                                        <span className="pdp-detail-value">{product.sellerName}</span>
-                                    </div>
-                                    {!isOwner && (
-                                        <Button className="pdp-contact-btn" onClick={handleContactSeller}>
-                                            <MessageCircle size={14} />
-                                            联系
-                                        </Button>
                                     )}
                                 </div>
                             </div>
@@ -526,19 +372,52 @@ function ProductDetailPage() {
                                     </>
                                 )}
                             </div>
-                        </div>
-                    </div>
-                </div>
 
-                <div className="pdp-description-section">
-                    <div className="pdp-section-header">
-                        <div className="pdp-section-accent" />
-                        <h3 className="pdp-section-title">商品描述</h3>
-                    </div>
-                    <div className="pdp-description-body">
-                        <p className="pdp-description-text">
-                            {product.description || '资产方暂未填写详细描述，可通过下方「联系资产方」了解更多信息'}
-                        </p>
+                            <div className="pdp-details-card">
+                                <div className="pdp-detail-item">
+                                    <div className="pdp-detail-icon-wrap">
+                                        <MapPin size={16} />
+                                    </div>
+                                    <div className="pdp-detail-content">
+                                        <span className="pdp-detail-label">交易地点</span>
+                                        <span className="pdp-detail-value">{product.location || '未指定'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="pdp-detail-item">
+                                    <div className="pdp-detail-icon-wrap">
+                                        <Shield size={16} />
+                                    </div>
+                                    <div className="pdp-detail-content">
+                                        <span className="pdp-detail-label">商品成色</span>
+                                        <span className="pdp-detail-value">{conditionLabel || '未标注'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="pdp-detail-item pdp-seller-item">
+                                    <div className="pdp-detail-icon-wrap pdp-seller-avatar-wrap">
+                                        <User size={16} />
+                                    </div>
+                                    <div className="pdp-detail-content">
+                                        <span className="pdp-detail-label">资产方</span>
+                                        <span className="pdp-detail-value">{product.sellerName}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pdp-description-section">
+                                <div className="pdp-section-header">
+                                    <div className="pdp-section-accent" />
+                                    <h3 className="pdp-section-title">商品描述</h3>
+                                </div>
+                                <div className="pdp-description-body">
+                                    <p className="pdp-description-text">
+                                        {product.description ||
+                                            '资产方暂未填写详细描述，可通过「联系资产方」了解更多信息'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -547,11 +426,8 @@ function ProductDetailPage() {
                 <div className="pdp-similar-section">
                     <div className="pdp-section-header">
                         <div className="pdp-section-accent" />
-                        <h3 className="pdp-section-title">
-                            <Sparkles size={20} />
-                            AI推荐相似商品
-                        </h3>
-                        <span className="pdp-section-badge">基于商品特征智能匹配</span>
+                        <h3 className="pdp-section-title">同类商品推荐</h3>
+                        <span className="pdp-section-badge">同品类匹配</span>
                     </div>
 
                     {similarProducts && similarProducts.length > 0 ? (
@@ -601,7 +477,7 @@ function ProductDetailPage() {
                             <Info size={20} />
                         </div>
                         <div className="pdp-ai-tips-content">
-                            <h4 className="pdp-ai-tips-title">AI助手温馨提示</h4>
+                            <h4 className="pdp-ai-tips-title">交易安全提示</h4>
                             <ul className="pdp-ai-tips-list">
                                 <li>建议与资产方确认资产细节后再进行交易</li>
                                 <li>优先选择校内面交，安全便捷</li>
@@ -747,74 +623,6 @@ function ProductDetailPage() {
                                 </Button>
                             </div>
                         </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={showChatModal} onOpenChange={open => !open && setShowChatModal(false)}>
-                <DialogContent className="sm:max-w-[520px]">
-                    <DialogHeader>
-                        <DialogTitle>
-                            <MessageCircle size={18} />
-                            联系资产方
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div className="pdp-chat-seller">
-                        <div className="pdp-chat-seller-avatar">
-                            <User size={20} />
-                        </div>
-                        <div className="pdp-chat-seller-info">
-                            <span className="pdp-chat-seller-name">{product.sellerName}</span>
-                            <span className="pdp-chat-product">{product.title}</span>
-                        </div>
-                    </div>
-
-                    <div className="pdp-chat-messages">
-                        {chatMessages.length > 0 ? (
-                            chatMessages.map(msg => (
-                                <div
-                                    key={msg.id}
-                                    className={`pdp-chat-message ${msg.senderId === user?.userId ? 'mine' : 'theirs'}`}
-                                >
-                                    <div className="pdp-chat-bubble">{msg.content}</div>
-                                    <span className="pdp-chat-time">{formatRelativeTime(msg.createTime)}</span>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="pdp-chat-empty">
-                                <MessageCircle size={32} />
-                                <p>开始与资产方聊天吧</p>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="pdp-chat-quick-replies">
-                        {quickReplies.map(text => (
-                            <Button
-                                key={text}
-                                variant="outline"
-                                size="sm"
-                                className="pdp-chat-quick-reply"
-                                onClick={() => handleQuickReply(text)}
-                            >
-                                {text}
-                            </Button>
-                        ))}
-                    </div>
-
-                    <div className="relative flex items-center gap-2">
-                        <Input
-                            type="text"
-                            value={chatMessage}
-                            onChange={e => setChatMessage(e.target.value)}
-                            placeholder="输入消息..."
-                            onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                            className="flex-1"
-                        />
-                        <Button size="icon" onClick={handleSendMessage} disabled={!chatMessage.trim()}>
-                            <Send size={18} />
-                        </Button>
                     </div>
                 </DialogContent>
             </Dialog>
