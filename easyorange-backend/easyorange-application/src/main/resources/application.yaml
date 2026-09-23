@@ -486,7 +486,7 @@ spring:
       jdbc-schema-initialization:
         enabled: false            # 由 Flyway 管理
       republish-outstanding-events-on-restart: true
-      completion-mode: update     # 完成后更新 COMPLETION_DATE，不删除
+      completion-mode: update     # 完成后更新 COMPLETION_DATE，不删除；超期行由 EventPublicationArchiveTask 搬入 ARCHIVE 表
       externalization:
         enabled: true
         serialize-externalization: true
@@ -494,6 +494,11 @@ spring:
         published: PT5M           # PUBLISHED 超过 5 分钟标记为 FAILED
         processing: PT10M         # PROCESSING 超过 10 分钟标记为 FAILED
         check-interval: PT1M      # 每分钟检查一次
+
+easyorange:
+  events:
+    # COMPLETED 事件在 EVENT_PUBLICATION 的保留天数，超期由归档任务搬入 EVENT_PUBLICATION_ARCHIVE
+    archive-after-days: 7
 
 ---
 # -------------------------------------------------------------------
