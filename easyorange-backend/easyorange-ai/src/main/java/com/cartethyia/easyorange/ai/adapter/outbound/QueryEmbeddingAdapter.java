@@ -18,7 +18,8 @@ import org.springframework.stereotype.Component;
  * key 缺失时 AI 模块装配的是 {@code UnconfiguredEmbeddingModel}（调用即抛），
  * 因此「不带任何 AI key 也能正常搜索」由这里的 catch 保证。
  * <p>
- * 预算走 {@code semantic} 场景：embedding 接口不回报 usage，用量按场景上限估算（见 {@link AiModelSupport}）。
+ * 预算走 {@code semantic} 场景：用量取供应商回报的真实 prompt token，
+ * 未回报时才退化为按场景上限估算（见 {@link AiModelSupport}）。
  */
 @Slf4j
 @Component

@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.application.retrieval;
 
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.constant.KnowledgeDocStatus;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
@@ -159,7 +160,7 @@ public class KnowledgeIngestionService {
             return null;
         }
         try {
-            return aiModelSupport.embed(model, text);
+            return aiModelSupport.embed(model, AiCallScope.KNOWLEDGE, text);
         } catch (Exception e) {
             log.warn("Knowledge chunk embed failed, chunk falls back to text-only: {}", e.getMessage());
             return null;

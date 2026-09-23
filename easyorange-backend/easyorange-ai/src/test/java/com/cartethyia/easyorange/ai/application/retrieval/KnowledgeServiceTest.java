@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.application.retrieval;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -23,7 +24,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.beans.factory.ObjectProvider;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,6 +50,11 @@ class KnowledgeServiceTest {
 
     private KnowledgeIngestionService ingestionService;
     private KnowledgeRetrievalService retrievalService;
+
+    /** embedding 响应夹具：向量化走 embedForResponse（拿得到响应本体，记账才取得到 usage）。 */
+    private static EmbeddingResponse embeddingResponse(float[] vector) {
+        return new EmbeddingResponse(List.of(new Embedding(vector, 0)));
+    }
 
     private void setUpIngestion() {
         ingestionService = new KnowledgeIngestionService(
@@ -105,7 +113,7 @@ class KnowledgeServiceTest {
         when(indexPort.isAvailable()).thenReturn(true);
         when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
         when(repository.save(any())).thenReturn("doc-1");
-        when(embeddingModel.embed(anyString())).thenReturn(new float[] {1f, 0f, 0f});
+        when(embeddingModel.embedForResponse(anyList())).thenReturn(embeddingResponse(new float[] {1f, 0f, 0f}));
 
         ingestionService.ingest("交易流程", "步骤".repeat(400), "平台规则");
 
@@ -138,7 +146,7 @@ class KnowledgeServiceTest {
         when(indexPort.isAvailable()).thenReturn(true);
         when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
         when(repository.save(any())).thenReturn("doc-1");
-        when(embeddingModel.embed(anyString())).thenThrow(new RuntimeException("embed api down"));
+        when(embeddingModel.embedForResponse(anyList())).thenThrow(new RuntimeException("embed api down"));
 
         ingestionService.ingest("标题", "内容内容内容内容内容内容内容内容内容内容", "来源");
 
@@ -161,7 +169,7 @@ class KnowledgeServiceTest {
         when(indexPortProvider.getIfAvailable()).thenReturn(indexPort);
         when(indexPort.isAvailable()).thenReturn(true);
         when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
-        when(embeddingModel.embed(anyString())).thenReturn(new float[] {1f, 0f, 0f});
+        when(embeddingModel.embedForResponse(anyList())).thenReturn(embeddingResponse(new float[] {1f, 0f, 0f}));
 
         ingestionService.reindexPending("doc-1");
         ingestionService.reindexPending("doc-2");
@@ -181,7 +189,7 @@ class KnowledgeServiceTest {
         when(indexPortProvider.getIfAvailable()).thenReturn(indexPort);
         when(indexPort.isAvailable()).thenReturn(true);
         when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
-        when(embeddingModel.embed(anyString())).thenReturn(new float[] {1f, 0f, 0f});
+        when(embeddingModel.embedForResponse(anyList())).thenReturn(embeddingResponse(new float[] {1f, 0f, 0f}));
         // 融合分由索引侧算好：kb-a 排前是因为两路都命中，光看余弦 kb-b 反而更近
         when(indexPort.search("退款", List.of(1f, 0f, 0f), 2))
                 .thenReturn(List.of(

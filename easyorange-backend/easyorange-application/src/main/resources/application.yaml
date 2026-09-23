@@ -432,7 +432,7 @@ easyorange:
         auto_listing:      # 拍照识别（发布助手）— Vision + LLM JSON，~3000 token/call
           max-tokens-per-call: 3000
           daily-token-limit: 500000
-        semantic:          # 语义搜索 — 仅 embedding（无生成），~500 token/call
+        semantic:          # 语义搜索 — 仅 embedding（无生成）；上限是单次预留，用量按供应商回报记账
           max-tokens-per-call: 500
           daily-token-limit: 200000
         chat:              # AI 对话 — 工具决策 + 生成（流式/非流式），~1500 token/call
@@ -441,7 +441,7 @@ easyorange:
         search_enhance:    # 搜索增强 — 4 路工具里仅意图识别打模型（另三路是规则计算），~800 token/call
           max-tokens-per-call: 800
           daily-token-limit: 200000
-        knowledge:         # 知识库检索 — 仅 embedding（不回报 usage，按上限估算记账）
+        knowledge:         # 知识库检索与摄入 — 仅 embedding（无生成）
           max-tokens-per-call: 500
           daily-token-limit: 200000
     routing:               # 模型路由 — 场景 → 模型 bean 名（接入新模型只需改配置）

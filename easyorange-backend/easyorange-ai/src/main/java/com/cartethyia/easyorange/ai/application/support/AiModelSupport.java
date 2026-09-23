@@ -26,6 +26,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -43,7 +44,7 @@ import tools.jackson.databind.ObjectMapper;
  *   <li>{@link AiCallLogPort} — 记一条 eo_ai_call_log（LLM-as-Judge 离线评估数据源）；</li>
  *   <li>{@link TokenBudgetStore} — 记本次调用的真实 token 用量（场景键 = scope 小写），
  *       供 {@code TokenBudgetAspect} / 流式链路的预算前置检查累计。供应商未回报用量时
- *       （embedding 接口不返回 usage、部分兼容端点忽略 stream_options）退化为按场景上限估算，
+ *       （部分兼容端点忽略 stream_options）退化为按场景上限估算，
  *       宁可高估也不让预算静默失效。</li>
  * </ul>
  * <p>
@@ -180,21 +181,28 @@ public class AiModelSupport {
      * 文本向量化：{@code float[]} 转 {@code List<Float>}（ES kNN 查询需要的形态）。
      */
     public List<Float> embed(EmbeddingModel embeddingModel, String text) {
-        float[] arr = embeddingModel.embed(text);
+        return toFloatList(embeddingModel.embed(text));
+    }
+
+    /**
+     * 文本向量化（带调用日志与预算记账）：同 {@link #embed}，响应不落库只记成功与否。
+     * <p>
+     * 走 {@code embedForResponse} 拿响应本体：{@code embed(String)} 会把 {@link EmbeddingResponse}
+     * 的 metadata 丢在中间层，供应商回报的 usage 取不到，成本报表里 embedding 一行就永远是 0。
+     */
+    public List<Float> embed(EmbeddingModel embeddingModel, AiCallScope scope, String text) {
+        return recordCall(scope, embeddingModel, "embed" + text, () -> {
+            EmbeddingResponse response = embeddingModel.embedForResponse(List.of(text));
+            return new CallOutcome<>(toFloatList(response.getResult().getOutput()), reportedUsage(response));
+        });
+    }
+
+    private static List<Float> toFloatList(float[] arr) {
         var list = new ArrayList<Float>(arr.length);
         for (float value : arr) {
             list.add(value);
         }
         return list;
-    }
-
-    /**
-     * 文本向量化（带调用日志与预算记账）：同 {@link #embed}，响应不落库只记成功与否；
-     * embedding 接口不回报 usage，用量按场景上限估算（见类注释）。
-     */
-    public List<Float> embed(EmbeddingModel embeddingModel, AiCallScope scope, String text) {
-        return recordCall(
-                scope, embeddingModel, "embed" + text, () -> new CallOutcome<>(embed(embeddingModel, text), null));
     }
 
     /**
@@ -341,10 +349,19 @@ public class AiModelSupport {
 
     /** 供应商回报的 token 用量；未回报（无元数据或全 0）时返回 null，记账退化为按场景上限估算。 */
     private static @Nullable Usage reportedUsage(@Nullable ChatResponse response) {
-        if (response == null || response.getMetadata() == null) {
-            return null;
-        }
-        Usage usage = response.getMetadata().getUsage();
+        return response == null || response.getMetadata() == null
+                ? null
+                : reportedUsage(response.getMetadata().getUsage());
+    }
+
+    /** embedding 响应的用量挂在与 chat 同一套 metadata 结构上，取法一致。 */
+    private static @Nullable Usage reportedUsage(@Nullable EmbeddingResponse response) {
+        return response == null || response.getMetadata() == null
+                ? null
+                : reportedUsage(response.getMetadata().getUsage());
+    }
+
+    private static @Nullable Usage reportedUsage(@Nullable Usage usage) {
         if (usage == null) {
             return null;
         }

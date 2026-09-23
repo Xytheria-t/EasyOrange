@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.Pr
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
+import com.cartethyia.easyorange.product.application.port.query.QueryEmbeddingPort;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import java.math.BigDecimal;
@@ -23,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 
@@ -46,10 +46,10 @@ class ElasticsearchProductSearchIndexAdapterTest {
     private ElasticsearchOperations elasticsearchOperations;
 
     @Mock
-    private ObjectProvider<EmbeddingModel> embeddingModelProvider;
+    private ObjectProvider<QueryEmbeddingPort> queryEmbeddingPortProvider;
 
     @Mock
-    private EmbeddingModel embeddingModel;
+    private QueryEmbeddingPort queryEmbeddingPort;
 
     @Mock
     private ProductSearchIndexAdapter mysqlSearchTextIndex;
@@ -58,14 +58,14 @@ class ElasticsearchProductSearchIndexAdapterTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(embeddingModelProvider.getIfAvailable()).thenReturn(null);
+        lenient().when(queryEmbeddingPortProvider.getIfAvailable()).thenReturn(null);
         adapter = new ElasticsearchProductSearchIndexAdapter(
                 productMapper,
                 productDetailMapper,
                 productImageMapper,
                 categoryMapper,
                 elasticsearchOperations,
-                embeddingModelProvider,
+                queryEmbeddingPortProvider,
                 mysqlSearchTextIndex);
     }
 
@@ -168,10 +168,10 @@ class ElasticsearchProductSearchIndexAdapterTest {
     }
 
     @Test
-    @DisplayName("embedding 服务可用时应写入 nameEmbedding")
+    @DisplayName("embedding 端口可用时应写入 nameEmbedding")
     void buildDocument_shouldWriteNameEmbedding() {
-        when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
-        when(embeddingModel.embed("测试商品")).thenReturn(new float[] {0.1f, 0.2f, 0.3f});
+        when(queryEmbeddingPortProvider.getIfAvailable()).thenReturn(queryEmbeddingPort);
+        when(queryEmbeddingPort.embed("测试商品")).thenReturn(List.of(0.1f, 0.2f, 0.3f));
 
         ProductDO product = ProductDO.builder()
                 .id("100")
@@ -188,10 +188,31 @@ class ElasticsearchProductSearchIndexAdapterTest {
     }
 
     @Test
-    @DisplayName("embedding 调用失败时降级为 null，不阻塞索引")
+    @DisplayName("端口返回空列表（未配置 / 调用失败）时降级为 null，不阻塞索引")
+    void buildDocument_emptyEmbedding_fallsBackToNull() {
+        when(queryEmbeddingPortProvider.getIfAvailable()).thenReturn(queryEmbeddingPort);
+        when(queryEmbeddingPort.embed(anyString())).thenReturn(List.of());
+
+        ProductDO product = ProductDO.builder()
+                .id("100")
+                .userId("200")
+                .name("测试商品")
+                .price(new BigDecimal("10"))
+                .build();
+        when(productDetailMapper.selectById("100")).thenReturn(null);
+        when(productImageMapper.selectList(any())).thenReturn(List.of());
+
+        ProductDocument doc = adapter.buildDocument(product);
+
+        assertThat(doc.getNameEmbedding()).isNull();
+        assertThat(doc.getName()).isEqualTo("测试商品");
+    }
+
+    @Test
+    @DisplayName("端口抛异常（日预算耗尽等）时降级为 null，不阻塞索引")
     void buildDocument_embeddingFailure_fallsBackToNull() {
-        when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
-        when(embeddingModel.embed(anyString())).thenThrow(new RuntimeException("embedding API down"));
+        when(queryEmbeddingPortProvider.getIfAvailable()).thenReturn(queryEmbeddingPort);
+        when(queryEmbeddingPort.embed(anyString())).thenThrow(new RuntimeException("embedding API down"));
 
         ProductDO product = ProductDO.builder()
                 .id("100")

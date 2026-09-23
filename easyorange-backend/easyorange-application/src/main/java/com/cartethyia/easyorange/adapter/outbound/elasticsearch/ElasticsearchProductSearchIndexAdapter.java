@@ -10,10 +10,10 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.Pr
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
+import com.cartethyia.easyorange.product.application.port.query.QueryEmbeddingPort;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +22,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
@@ -47,7 +46,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
     private final ProductImageMapper productImageMapper;
     private final CategoryMapper categoryMapper;
     private final ElasticsearchOperations elasticsearchOperations;
-    private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
+    private final ObjectProvider<QueryEmbeddingPort> queryEmbeddingPort;
     private final ProductSearchIndexAdapter mysqlSearchTextIndex;
 
     @Override
@@ -220,20 +219,23 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
 
     /**
      * 商品名向量化（best-effort）：用于 ES kNN 语义搜索。
-     * <p>embedding 服务不可用或调用失败时返回 {@code null}，索引照常写入（仅缺失向量匹配能力，不阻塞索引）。</p>
+     * <p>
+     * 走 {@link QueryEmbeddingPort} 而不是直接调 {@code EmbeddingModel}：查询侧与索引侧必须同一个
+     * 编码器（同模型同维度，否则 kNN 相似度没有意义），顺带同享预算记账与调用日志。
+     * <p>端口返回空（未配置 / 调用失败）或抛异常（日预算耗尽）时返回 {@code null}，
+     * 索引照常写入 —— 仅缺失向量匹配能力，不阻塞索引。</p>
      */
     private List<Float> embedName(String name) {
-        EmbeddingModel model = embeddingModelProvider.getIfAvailable();
-        if (model == null || name == null || name.isBlank()) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        var port = queryEmbeddingPort.getIfAvailable();
+        if (port == null) {
             return null;
         }
         try {
-            float[] arr = model.embed(name);
-            var embedding = new ArrayList<Float>(arr.length);
-            for (float value : arr) {
-                embedding.add(value);
-            }
-            return embedding;
+            List<Float> vector = port.embed(name);
+            return vector.isEmpty() ? null : vector;
         } catch (Exception e) {
             log.warn("Failed to embed product name for ES index: {}", name, e);
             return null;
