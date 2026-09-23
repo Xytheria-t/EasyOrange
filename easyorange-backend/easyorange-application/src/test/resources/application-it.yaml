@@ -1,10 +1,20 @@
-# 集成测试 profile（AbstractIntegrationTest 激活）— 复用项目 docker compose 的 dev 基础设施。
+# 集成测试 profile（AbstractIntegrationTest 激活）— 复用项目 docker compose 的基础设施容器
+# （MySQL / Redis / RabbitMQ），但连**独立库 easyorange_it**：测试残留与 dev 演示库物理隔离
+# （TD-001），dev 库永远只有种子与运行期演示数据。
 # 前置：dev 三件套需已运行（`docker compose up -d`）——测试内 Boot 默认跳过 compose
 # （spring.docker.compose.skip.in-tests 默认 true），下方配置在本地不生效；
 # CI 的 ai-eval.yml（按需 dispatch）显式置 SPRING_DOCKER_COMPOSE_SKIP_IN_TESTS=false 才由 Boot 拉起。
 # 应用连接使用下方显式 localhost 直连（compose 把容器端口发布到宿主机，凭据与 compose.yaml 一致）。
 # 相比 Testcontainers：不依赖 ryuk sidecar 镜像（无代理 Docker 拉取失败会让用例静默跳过，掩盖真实装配错误）。
 spring:
+  datasource:
+    # 与 application.yaml 同参，仅库名换 easyorange_it；建库授权见 infra/mysql/init/01-easyorange-it.sql
+    # （新卷由 entrypoint 执行；存量卷由 scripts/db-reset.sh 幂等补执行），Flyway 首跑自动建表
+    url: jdbc:mysql://${EASYORANGE_DB_HOST:localhost}:${EASYORANGE_DB_PORT:3306}/${EASYORANGE_IT_DB_NAME:easyorange_it}?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&connectTimeout=5000&socketTimeout=30000&connectionCollation=utf8mb4_0900_ai_ci
+    username: ${EASYORANGE_DB_USERNAME:easyorange_app}
+    password: ${EASYORANGE_DB_PASSWORD:easyorange_app_dev}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
   docker:
     compose:
       # 相对应用目录：easyorange-application/ → 仓库根 compose.yaml（start-only 只保证运行、不销毁 dev 栈）
@@ -18,8 +28,8 @@ spring:
         - rabbitmq
 
   flyway:
-    # 复用开发者 dev 库时，其迁移历史可能与当前脚本 diverged（repeatable seed 曾被移除过）。
-    # 本 profile 关闭校验：IT 是装配/连通性冒烟，不承担迁移校验职责；干净库/CI 仍走默认校验。
+    # 关校验：开发期改 V1 后 checksum 会挡启动（与 dev 关校验同一原因），IT 库随 reset 重建；
+    # 干净库/CI 仍走默认校验。隔离已由 easyorange_it 独立库达成，不再依赖「复用 dev 库历史 diverged」。
     validate-on-migrate: false
 
   data:

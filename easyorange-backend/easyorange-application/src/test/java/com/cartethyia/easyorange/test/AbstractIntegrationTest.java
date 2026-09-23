@@ -4,7 +4,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * 集成测试基类 — 复用项目 docker compose 的 dev 基础设施（MySQL / Redis / RabbitMQ）。
+ * 集成测试基类 — 复用 compose 基础设施容器，但连独立库 easyorange_it
+ * （application-it.yaml）：测试残留与 dev 演示库物理隔离（TD-001）。
  * <p>
  * 基础设施由 Spring Boot 的 {@code spring-boot-docker-compose} 按仓库根 {@code compose.yaml}
  * （{@code lifecycle-management: start-only}）保证处于运行态；应用连接使用 {@code application-it.yaml}
