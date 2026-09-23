@@ -32,7 +32,7 @@ spring:
     out-of-order: false
     # 开发阶段关闭校验：AI 改代码可能变更 V1 迁移文件校验和，
     # 开启 validate-on-migrate 会导致每次启动崩溃。
-    # 需要真正刷新 schema 时手工重置：DROP DATABASE easyorange; CREATE DATABASE easyorange;
+    # 需要真正刷新 schema 时跑 scripts/db-reset.sh（DROP/CREATE dev 与 IT 库一体，随后重启应用即重跑迁移）。
     validate-on-migrate: false
 
   # -------------------------------------------------------------------

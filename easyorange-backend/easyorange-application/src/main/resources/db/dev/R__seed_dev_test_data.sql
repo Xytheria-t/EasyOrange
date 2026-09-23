@@ -2,9 +2,10 @@
 -- EasyOrange AI 智能托管平台 - 开发环境测试数据
 -- 说明：仅在 dev profile 中通过 classpath:db/dev 加载
 -- 幂等：全部 INSERT 使用 ON DUPLICATE KEY UPDATE，可重复执行
--- 注意：支付渠道配置见 db/migration/R__seed_payment_config.sql，此处不重复维护
 -- 结构：按业务表分组，编号连续；同表数据合并为单条 INSERT
 -- ===================================================================
+
+START TRANSACTION;
 
 -- ===================================================================
 -- 1. 用户数据（18 个：普通用户/管理员、多性别、含锁定/禁用状态）
@@ -905,8 +906,8 @@ DELETE FROM `eo_product` WHERE `id` IN ('1003', '1005', '1006', '1009', '1010', 
 -- 12. AI 能力演示数据（多图商品）
 --     目的：ProductTagger 的「📸实拍」标签阈值为 3 张图，此前全库没有商品达到，
 --     该标签在 demo 里永不出现。补充图片的 URL 复用同品类已有素材（新增外链可能失效，宁可重复）。
---     ① 建议快照 ai_suggestion 的造数在 R__seed_zz_ai_demo.sql：那份数据要读 eo_category 的类目名，
---        而 Flyway 按名称字典序执行可重复迁移，本文件排在 R__seed_categories 之前，此时类目还没入库。
+--     ① 建议快照 ai_suggestion 的造数在 R__seed_zz_ai_demo.sql：那份数据要读类目名与本文件的商品行，
+--        该文件以 zz 前缀按字典序排在全部种子之后（含本文件），两者都已入库。
 -- ===================================================================
 
 -- ② 多图商品（补到 3 张，触发「📸实拍」标签）
@@ -931,3 +932,5 @@ ON DUPLICATE KEY UPDATE
     `sort_order` = new.`sort_order`,
     `is_main` = new.`is_main`,
     `update_time` = new.`update_time`;
+
+COMMIT;

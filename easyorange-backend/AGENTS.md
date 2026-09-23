@@ -10,7 +10,7 @@
 - **环境变量单一来源是根 `.env`**（键位看 `.env.example`）：compose 插值 / 终端 `set -a; source .env; set +a` / IDEA 默认不读，需 Run Configuration 或 EnvFile
 - **占位符语法**：`application*.yaml` 用 `${VAR:default}`；`compose.yaml` / shell 用 `${VAR:-default}`——YAML 误写 `:-` 把 `-default` 当字面量（Redis 密码 → WRONGPASS）
 - 仅 prod 读 `SERVER_PORT` / `TRACING_SAMPLING_PROBABILITY`；压测关限流 `RATE_LIMIT_FILTER_ENABLED=false`；AI base-url / model 硬编码在 `application.yaml`
-- **dev seed 账号**明文统一 `Password123`（`db/dev/R__insert_dev_test_data.sql`）；登录失败 5 次锁 30 分钟，清 `eo:user:login:attempts:<identifier>` 解锁
+- **dev seed 账号**明文统一 `Password123`（`db/dev/R__seed_dev_test_data.sql`）；登录失败 5 次锁 30 分钟，清 `eo:user:login:attempts:<identifier>` 解锁
 - 启动的 Unsafe WARNING 已配 `--sun-misc-unsafe-memory-access=allow` 抑制（Lombok 仍用 Unsafe）；**JDK 26+ 默认 deny，届时升级 Lombok**
 
 ## 命名与事务
