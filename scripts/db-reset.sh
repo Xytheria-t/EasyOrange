@@ -45,7 +45,7 @@ done
 docker exec -i easyorange-mysql mysql -uroot -p"$ROOT_PASSWORD" <<SQL
 DROP DATABASE IF EXISTS \`${DB_NAME}\`;
 CREATE DATABASE \`${DB_NAME}\` DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-DROP DATABASE IF NOT EXISTS \`easyorange_it\`;
+DROP DATABASE IF EXISTS \`easyorange_it\`;
 SQL
 # IT 库建库授权与 docker-entrypoint-initdb.d 同一份（存量卷不会重跑 initdb，这里幂等补执行）
 docker exec -i easyorange-mysql mysql -uroot -p"$ROOT_PASSWORD" < infra/mysql/init/01-easyorange-it.sql
