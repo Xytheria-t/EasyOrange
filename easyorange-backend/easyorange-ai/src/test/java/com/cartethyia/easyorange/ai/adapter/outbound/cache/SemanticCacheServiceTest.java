@@ -227,6 +227,31 @@ class SemanticCacheServiceTest {
     }
 
     @Test
+    @DisplayName("store 写出的条目能被 lookUp 原样读回（写读对称：手写 fixture 可能与真实写入漂移，这条锁两端一致）")
+    void store_thenLookUp_roundtrip() {
+        when(redisProvider.getIfAvailable()).thenReturn(redis);
+        when(redis.opsForHash()).thenReturn(hashOps);
+        when(hashOps.size("eo:ai:semantic:chat")).thenReturn(0L);
+        var written = new java.util.concurrent.atomic.AtomicReference<String>();
+        org.mockito.Mockito.doAnswer(inv -> {
+                    written.set(inv.getArgument(2));
+                    return null;
+                })
+                .when(hashOps)
+                .put(eq("eo:ai:semantic:chat"), anyString(), anyString());
+
+        var original = new ChatAnswer("退款路径是这样的", List.of("帮助中心"), "s-9", false);
+        cache.store(AiCallScope.CHAT, "怎么退款？", QUERY_VECTOR, original);
+
+        assertThat(written.get()).isNotNull();
+        when(hashOps.entries("eo:ai:semantic:chat")).thenReturn(Map.of("f", written.get()));
+        var result = cache.lookUp(AiCallScope.CHAT, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
+
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(original);
+    }
+
+    @Test
     @DisplayName("Redis 不可用但向量已算好 -> 仍不动作（缓存 fail-open，问答继续）")
     void redisMissingIsFailOpen() {
         SemanticCacheService cacheNoRedis = new SemanticCacheService(

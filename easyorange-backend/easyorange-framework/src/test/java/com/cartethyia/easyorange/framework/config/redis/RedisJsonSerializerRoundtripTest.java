@@ -67,4 +67,16 @@ class RedisJsonSerializerRoundtripTest {
         assertThat(org.assertj.core.api.Assertions.catchThrowable(() -> serializer.deserialize(legacy)))
                 .isInstanceOf(RuntimeException.class);
     }
+
+    @Test
+    @DisplayName("AiEnhancement 写读对称（ai:search:enhance:* 形态：RedisTemplate 直写、嵌套 Map/List）")
+    void aiEnhancement_roundtrip() {
+        var value = new com.cartethyia.easyorange.common.dto.AiEnhancement(
+                "想找笔记本", java.util.Map.of("p-1", java.util.List.of("💰超值")), "均价 4200", java.util.List.of("哪家更便宜？"));
+
+        byte[] bytes = serializer.serialize(value);
+        Object back = serializer.deserialize(bytes);
+
+        assertThat(back).isEqualTo(value);
+    }
 }
