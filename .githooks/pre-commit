@@ -9,7 +9,7 @@
 #   5. 前端：仅当 src/tests 下 ts/tsx 变更时跑 biome check
 #   6. 测试口径漂移：文档/pom 变更时校验「集成测试是否存在」的声明与代码事实（*IT + failsafe 绑定）一致
 #   7. 结构计数漂移：文档/pom/迁移/源码变更时校验「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」与代码事实一致
-#   8. 上下文预算：AGENTS.md 变更时校验份数（≤3）与字符预算（根 6500 / 合计 45000）
+#   8. 上下文预算：AGENTS.md 变更时校验份数（≤3）与字符预算（根 3000 / 合计 18000）
 #
 # 已摘除：版本漂移（check-version-drift.py）—— 文档不再复刻版本号，权威源只有 pom / compose；
 # 回填 doc/技术栈.md 版本表时再挂回。
