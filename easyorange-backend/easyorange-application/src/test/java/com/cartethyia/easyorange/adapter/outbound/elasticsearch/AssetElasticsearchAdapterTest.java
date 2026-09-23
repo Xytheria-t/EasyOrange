@@ -12,7 +12,10 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.port.AssetRetrievalPort;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -116,20 +119,44 @@ class AssetElasticsearchAdapterTest {
     }
 
     @Test
-    @DisplayName("两路召回都带 status=ONLINE 过滤（只过滤一路会把不可售资产带进候选池）")
+    @DisplayName("两路都带 status=ONLINE 过滤，且 kNN 腿不挂顶层 query（纯并集会放 DRAFT 进候选池并架空阈值）")
     void search_bothLegsFilterOnline() {
-        var adapter = (AssetElasticsearchAdapter) adapter();
+        var adapter = adapter();
+        List<NativeQuery> issued = new ArrayList<>();
+        var legHits = hits("p-1");
+        when(elasticsearchOperations.search(any(NativeQuery.class), eq(ProductDocument.class)))
+                .thenAnswer(inv -> {
+                    issued.add(inv.getArgument(0));
+                    return legHits;
+                });
 
-        // kNN 那路传 null 取纯过滤体，BM25 那路带关键词 —— 两条腿共用这个构造器，
-        // 所以断言它即可覆盖两路（穿透 mock 去读 NativeQuery 的请求体读不到 wrapper 里的 JSON）
-        assertThat(adapter.buildBm25Query(null).toString())
-                .as("kNN 路的过滤体")
-                .contains("ONLINE")
-                .contains("match_all");
-        assertThat(adapter.buildBm25Query("笔记本").toString())
-                .as("BM25 路的请求体")
-                .contains("ONLINE")
-                .contains("multi_match", "笔记本");
+        adapter.search("笔记本", List.of(1f, 0f), 3);
+
+        var knnLeg = issued.stream()
+                .filter(q -> !q.getKnnSearches().isEmpty())
+                .findFirst()
+                .orElseThrow();
+        // 顶层 query 与 kNN 是纯并集不是过滤器：挂了它 kNN 候选不受过滤（DRAFT/REJECTED 可进池），
+        // 且补 knn.similarity 后阈值被架空（TD-020 四组对照 g3，repro 脚本可复跑）
+        assertThat(knnLeg.getQuery()).isNull();
+        var wrappedFilter =
+                knnLeg.getKnnSearches().get(0).filter().get(0).wrapper().query();
+        assertThat(new String(Base64.getDecoder().decode(wrappedFilter), StandardCharsets.UTF_8))
+                .startsWith("{\"bool\"")
+                .contains("status")
+                .contains("ONLINE");
+
+        var bm25Leg = issued.stream()
+                .filter(q -> q.getKnnSearches().isEmpty())
+                .findFirst()
+                .orElseThrow();
+        assertThat(decode(bm25Leg)).contains("ONLINE", "multi_match", "笔记本");
+    }
+
+    /** NativeQuery 把 query DSL 以 wrapper 查询承载（base64），解码后断言其内容。 */
+    private static String decode(NativeQuery nativeQuery) {
+        return new String(
+                Base64.getDecoder().decode(nativeQuery.getQuery().wrapper().query()), StandardCharsets.UTF_8);
     }
 
     @Test
