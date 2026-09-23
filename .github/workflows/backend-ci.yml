@@ -25,7 +25,7 @@ permissions:
   contents: read
 
 jobs:
-  # 后端门禁：一次 verify 完成 11 模块单测 + JaCoCo（80% 行/60% 分支）+ Spotless 格式 +
+  # 后端门禁：一次 verify 完成全模块单测 + JaCoCo（80% 行/60% 分支）+ Spotless 格式 +
   # 跨模块 optional 依赖校验（TD-011）。唯一 merge-freeze 后端闸门。OWASP / PIT 慢扫描为
   # 独立 schedule workflow（security-scan.yml / pit-mutation.yml），不进 PR 路径。
   backend:

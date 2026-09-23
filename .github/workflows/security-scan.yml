@@ -34,7 +34,7 @@ jobs:
           path: ~/.dependency-check-data
           key: ${{ runner.os }}-owasp-nvd
 
-      # verify -Powasp：仅激活 OWASP dependency-check（NVD 漏洞扫描），reactor 含全 11 模块，
+      # verify -Powasp：仅激活 OWASP dependency-check（NVD 漏洞扫描），reactor 含全部后端模块，
       # 依赖树从 reactor 解析，无需先 install。-DskipTests=true 跳过测试执行（测试编译仍发生）
       - name: OWASP dependency-check (NVD)
         run: ./mvnw verify -B -Powasp -DskipTests=true
