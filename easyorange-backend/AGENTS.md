@@ -61,6 +61,7 @@
 
 - **`RedisConfig` 必须显式配置序列化器**：Boot 4 的 `DataRedisAutoConfiguration` **不设置任何序列化器**（默认 `JdkSerializationRedisSerializer`——二进制 key/value，Redis CLI 不可读、Lua `tonumber(ARGV)` 返回 nil）。约定：注入处声明 `RedisTemplate<Object, Object>`；`RedisConfig` 用 `@AutoConfigureBefore(DataRedisAutoConfiguration.class)` 提供 `@Bean RedisTemplate<Object, Object>`——`StringRedisSerializer`（key/hashKey）+ `GenericJacksonJsonRedisSerializer.builder().enableDefaultTyping(BasicPolymorphicTypeValidator...).build()`（value/hashValue）；**禁止自定义 `RedisTemplate<String, Object>` Bean**；Mock 的 `HashOperations` / `ValueOperations` 也需 `<Object, Object>`。根因教训（2026-07-23）：不设序列化器 → `RateLimitFilter` 的 Lua `ARGV` 变二进制 → **限流器 fail-open**；修复是全局配序列化器 + 限流器改用 `opsForValue()` 标准 API（`increment()+expire()`）替代 Lua
 - **序列化坑**：`java.*` 包 final 类型（`Optional`、`List.of()` 的不可变列表）不带类型信息、**无法反序列化**——缓存值必须是 POJO/record（`com.cartethyia.*`）或可变 `ArrayList`
+- **缓存形状必须有写读对称断言**：新增 Redis 存储形状（含 RedisTemplate 直写）在对应模块补一条 roundtrip 测试（模板 `RedisJsonSerializerRoundtripTest` / `CacheSerializerRoundTripTest`），序列化器 / 类型信息改动先过这些断言再合入——Jackson 写读不对称要靠考古源码才能定位（2026-09-23 实测）
 - **防穿透靠缓存 null**：不要给 `@Cacheable` 加 `unless = "#result == null"`；列表类缓存用 `orEmpty` 兜成可变空列表（见 `CategoryCacheAdapter`）
 - 缓存 key 形如 `eo:product:info::<id>`；图片处理缓存 `imageProcessCache`（Caffeine）独立；**Redis Key 命名规范 `eo:模块:业务:标识`**
 - `RedisCacheConfig` 的 `CacheErrorHandler` 统一承担 Redis 故障降级 fail-open（读直查 DB / 写放弃本次缓存），**不再逐点包熔断**——Resilience4j `CircuitBreaker`、`MultiLevelCache` + Pub/Sub、`CacheUtils` / `LocalCacheConfig`、布隆过滤器均已随缓存简化删除（无消费者）

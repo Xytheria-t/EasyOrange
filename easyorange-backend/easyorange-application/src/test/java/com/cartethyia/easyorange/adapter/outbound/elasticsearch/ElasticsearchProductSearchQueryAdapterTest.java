@@ -413,6 +413,34 @@ class ElasticsearchProductSearchQueryAdapterTest {
                 .hasSize(2);
     }
 
+    @Test
+    @DisplayName("BM25 腿 wrapper DSL 锁住词面契约：fuzziness AUTO + minimum_should_match 2<75% + 字段权重（静默改动会改变乱码/多词召回语义）")
+    void search_bm25Leg_shouldCarryFuzzyContract() {
+        List<NativeQuery> issued = new ArrayList<>();
+        var hitsMock = hits(List.of(), 0L);
+        when(elasticsearchOperations.search(any(NativeQuery.class), eq(ProductDocument.class)))
+                .thenAnswer(inv -> {
+                    NativeQuery q = inv.getArgument(0);
+                    issued.add(q);
+                    return hitsMock;
+                });
+
+        adapter.search(twoLegQuery(null));
+
+        var bm25Leg = issued.stream()
+                .filter(q -> q.getKnnSearches().isEmpty())
+                .findFirst()
+                .orElseThrow();
+        String dsl = decode(bm25Leg);
+        assertThat(dsl).contains("\"multi_match\"");
+        assertThat(dsl).contains("\"fuzziness\":\"AUTO\"");
+        assertThat(dsl).contains("\"minimum_should_match\":\"2<75%\"");
+        assertThat(dsl).contains("name^3");
+        // 过滤条件两路都得带（只过滤一路会把被过滤商品带进候选池）
+        assertThat(dsl).contains("\"filter\"");
+        assertThat(dsl).contains("ONLINE");
+    }
+
     private static ProductSearchQuery twoLegQuery(String sort) {
         return new ProductSearchQuery("手机", null, "ONLINE", null, null, null, sort, 1, 20, List.of(0.1f, 0.2f), true);
     }
