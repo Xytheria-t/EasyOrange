@@ -27,12 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class EventPublicationArchiveTask {
 
     /** 与 {@code spring.modulith.events.completion-mode: update} 配套：完成但超期即搬走 */
-    private static final String WHERE_COMPLETED_BEFORE =
-            "WHERE STATUS = 'COMPLETED' AND COMPLETION_DATE < ?";
+    private static final String WHERE_COMPLETED_BEFORE = "WHERE STATUS = 'COMPLETED' AND COMPLETION_DATE < ?";
 
-    private static final String COLUMNS =
-            "ID, LISTENER_ID, EVENT_TYPE, SERIALIZED_EVENT, PUBLICATION_DATE, "
-                    + "COMPLETION_DATE, STATUS, COMPLETION_ATTEMPTS, LAST_RESUBMISSION_DATE";
+    private static final String COLUMNS = "ID, LISTENER_ID, EVENT_TYPE, SERIALIZED_EVENT, PUBLICATION_DATE, "
+            + "COMPLETION_DATE, STATUS, COMPLETION_ATTEMPTS, LAST_RESUBMISSION_DATE";
 
     private final JdbcTemplate jdbcTemplate;
     private final EventArchiveProperties properties;
@@ -43,8 +41,8 @@ public class EventPublicationArchiveTask {
     public void archiveCompletedEvents() {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(properties.archiveAfterDays());
         int moved = jdbcTemplate.update(
-                "INSERT INTO EVENT_PUBLICATION_ARCHIVE (" + COLUMNS + ") "
-                        + "SELECT " + COLUMNS + " FROM EVENT_PUBLICATION " + WHERE_COMPLETED_BEFORE,
+                "INSERT INTO EVENT_PUBLICATION_ARCHIVE (" + COLUMNS + ") " + "SELECT " + COLUMNS
+                        + " FROM EVENT_PUBLICATION " + WHERE_COMPLETED_BEFORE,
                 cutoff);
         if (moved > 0) {
             jdbcTemplate.update("DELETE FROM EVENT_PUBLICATION " + WHERE_COMPLETED_BEFORE, cutoff);

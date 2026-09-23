@@ -16,4 +16,5 @@ import org.springframework.validation.annotation.Validated;
  */
 @Validated
 @ConfigurationProperties(prefix = "easyorange.events")
-public record EventArchiveProperties(@Min(1) @DefaultValue("7") int archiveAfterDays) {}
+public record EventArchiveProperties(
+        @Min(1) @DefaultValue("7") int archiveAfterDays) {}
