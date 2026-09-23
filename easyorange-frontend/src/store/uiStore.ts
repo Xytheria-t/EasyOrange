@@ -6,10 +6,19 @@ interface Toast {
     message: string;
 }
 
+interface ProfileSetup {
+    open: boolean;
+    username: string;
+}
+
 export interface UIState {
     toasts: Toast[];
     addToast: (toast: Omit<Toast, 'id'>) => void;
     removeToast: (id: string) => void;
+    /** 注册后的完善信息弹窗 — 全局态，注册页跳转卸载后弹窗仍存活 */
+    profileSetup: ProfileSetup;
+    openProfileSetup: (username: string) => void;
+    closeProfileSetup: () => void;
 }
 
 let toastCounter = 0;
@@ -39,4 +48,10 @@ export const useUIStore = create<UIState>()(set => ({
         set(state => ({
             toasts: state.toasts.filter(t => t.id !== id),
         })),
+
+    profileSetup: { open: false, username: '' },
+
+    openProfileSetup: username => set({ profileSetup: { open: true, username } }),
+
+    closeProfileSetup: () => set({ profileSetup: { open: false, username: '' } }),
 }));

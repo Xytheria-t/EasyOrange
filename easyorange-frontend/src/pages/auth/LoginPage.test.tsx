@@ -10,11 +10,16 @@ const mockUserApiSendSmsCode = vi.hoisted(() => vi.fn());
 const mockErrorHandlerHandle = vi.hoisted(() => vi.fn());
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockAddToast = vi.hoisted(() => vi.fn());
+const mockOpenProfileSetup = vi.hoisted(() => vi.fn());
 const mockUseUIStore = vi.hoisted(() =>
-    vi.fn((selector?: (s: { addToast: typeof mockAddToast }) => unknown) => {
-        const state = { addToast: mockAddToast };
-        return selector ? selector(state) : state;
-    })
+    vi.fn(
+        (
+            selector?: (s: { addToast: typeof mockAddToast; openProfileSetup: typeof mockOpenProfileSetup }) => unknown
+        ) => {
+            const state = { addToast: mockAddToast, openProfileSetup: mockOpenProfileSetup };
+            return selector ? selector(state) : state;
+        }
+    )
 );
 
 vi.mock('@/hooks', () => ({
@@ -167,6 +172,9 @@ describe('LoginPage', () => {
             username: 'newuser',
             password: 'Password1',
         });
+        // 注册成功即离开登录页（弹窗提升在 App 层），否则登录/注册界面留在弹窗背后
+        expect(mockOpenProfileSetup).toHaveBeenCalledWith('newuser');
+        expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
     });
 
     it('shows error on register form when password mismatch', async () => {

@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ProfileSetupModal } from '@/components/profile/ProfileSetupModal';
 import { Button } from '@/components/ui/button';
 import { useUIStore } from '@/store/uiStore';
 import { LoginForm } from './LoginForm';
@@ -9,10 +8,9 @@ import './login.css';
 
 function LoginPage() {
     const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
-    const [showProfileSetup, setShowProfileSetup] = useState(false);
-    const [registeredUsername, setRegisteredUsername] = useState('');
     const navigate = useNavigate();
     const addToast = useUIStore(s => s.addToast);
+    const openProfileSetup = useUIStore(s => s.openProfileSetup);
 
     const handleLoginSuccess = useCallback(() => {
         addToast({ type: 'success', message: '登录成功' });
@@ -20,10 +18,15 @@ function LoginPage() {
         navigate(redirect, { replace: true });
     }, [addToast, navigate]);
 
-    const handleRegisterSuccess = useCallback((username: string) => {
-        setRegisteredUsername(username);
-        setShowProfileSetup(true);
-    }, []);
+    const handleRegisterSuccess = useCallback(
+        (username: string) => {
+            // 登录/注册界面随跳转卸载，完善信息弹窗提升在 App 层不被带走
+            openProfileSetup(username);
+            const redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
+            navigate(redirect, { replace: true });
+        },
+        [openProfileSetup, navigate]
+    );
 
     return (
         <div className="auth-page-container">
@@ -178,12 +181,6 @@ function LoginPage() {
                     )}
                 </div>
             </div>
-
-            <ProfileSetupModal
-                isOpen={showProfileSetup}
-                onClose={() => setShowProfileSetup(false)}
-                username={registeredUsername}
-            />
         </div>
     );
 }

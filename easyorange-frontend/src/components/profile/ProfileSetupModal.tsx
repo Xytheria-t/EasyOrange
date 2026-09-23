@@ -4,7 +4,6 @@ import { AlertCircle, Check, GraduationCap, Mail, Phone, User } from 'lucide-rea
 import type { ComponentType } from 'react';
 import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
 import { userApi } from '@/api/userApi';
 import {
     Dialog,
@@ -70,7 +69,6 @@ const formFields: FormField[] = [
 ];
 
 export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupModalProps) {
-    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const addToast = useUIStore(s => s.addToast);
 
@@ -91,8 +89,7 @@ export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupMod
     const handleClose = useCallback(() => {
         addToast({ type: 'info', message: '您可以在个人中心随时完善信息' });
         onClose();
-        navigate('/');
-    }, [addToast, onClose, navigate]);
+    }, [addToast, onClose]);
 
     const onSubmit = rhfHandleSubmit(async data => {
         try {
@@ -105,7 +102,6 @@ export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupMod
             await queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
             addToast({ type: 'success', message: '个人信息完善成功！' });
             onClose();
-            navigate('/');
         } catch (err) {
             const msg = errorHandler.handle(err as Error);
             addToast({ type: 'error', message: msg });

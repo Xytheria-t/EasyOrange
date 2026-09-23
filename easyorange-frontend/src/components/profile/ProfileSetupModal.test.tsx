@@ -3,16 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProfileSetupModal } from './ProfileSetupModal';
 
 // ─── Mocks ──────────────────────────────────────────────────────────────
-const { mockNavigate, mockUpdateProfile, mockInvalidateQueries, mockAddToast, mockHandleError } = vi.hoisted(() => ({
-    mockNavigate: vi.fn(),
+const { mockUpdateProfile, mockInvalidateQueries, mockAddToast, mockHandleError } = vi.hoisted(() => ({
     mockUpdateProfile: vi.fn(),
     mockInvalidateQueries: vi.fn(),
     mockAddToast: vi.fn(),
     mockHandleError: vi.fn(),
-}));
-
-vi.mock('react-router-dom', () => ({
-    useNavigate: () => mockNavigate,
 }));
 
 vi.mock('@/api/userApi', () => ({
@@ -232,7 +227,6 @@ describe('ProfileSetupModal', () => {
             queryKey: ['auth', 'user'],
         });
         expect(onClose).toHaveBeenCalled();
-        expect(mockNavigate).toHaveBeenCalledWith('/');
     });
 
     it('disables submit button while submitting', async () => {
@@ -253,20 +247,19 @@ describe('ProfileSetupModal', () => {
 
     // ── Close ────────────────────────────────────────────────────────────
 
-    it('calls onClose and navigates to home on "稍后再说" click', () => {
+    it('calls onClose and shows skip hint on "稍后再说" click', () => {
         const onClose = vi.fn();
         render(<ProfileSetupModal {...defaultProps} onClose={onClose} />);
         fireEvent.click(screen.getByText('稍后再说'));
 
         expect(onClose).toHaveBeenCalled();
-        expect(mockNavigate).toHaveBeenCalledWith('/');
         expect(mockAddToast).toHaveBeenCalledWith({
             type: 'info',
             message: '您可以在个人中心随时完善信息',
         });
     });
 
-    it('calls onClose and navigates on close button click (X)', () => {
+    it('calls onClose on close button click (X)', () => {
         const onClose = vi.fn();
         render(<ProfileSetupModal {...defaultProps} onClose={onClose} />);
         // Dialog's built-in close button has sr-only text "关闭"
@@ -274,7 +267,6 @@ describe('ProfileSetupModal', () => {
         fireEvent.click(closeBtn);
 
         expect(onClose).toHaveBeenCalled();
-        expect(mockNavigate).toHaveBeenCalledWith('/');
     });
 
     // Note: backdrop click dismiss is built-in Radix Dialog behavior;
@@ -288,7 +280,6 @@ describe('ProfileSetupModal', () => {
         fireEvent.keyDown(document, { key: 'Escape' });
 
         expect(onClose).toHaveBeenCalled();
-        expect(mockNavigate).toHaveBeenCalledWith('/');
     });
 
     it('does not submit via Enter when already submitting', async () => {
