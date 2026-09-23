@@ -23,7 +23,7 @@
     transform: translateX(-50%);
     z-index: 1000;
     height: var(--island-height);
-    max-width: 800px;
+    max-width: 900px;
     width: calc(100% - 48px);
     background: linear-gradient(
         135deg,
@@ -319,11 +319,13 @@
     display: flex;
     align-items: center;
     gap: 2px;
+    flex-shrink: 0;
 }
 
 .floating-nav__link {
     display: flex;
     align-items: center;
+    white-space: nowrap;
     padding: 10px 18px;
     border-radius: 14px;
     text-decoration: none;
@@ -951,6 +953,21 @@
 
 .is-hidden {
     display: none;
+}
+
+/* 769–960px 中窄桌面：登录态右侧内容（铃铛/消息/用户名）放不下时先收用户名，保导航链接完整 */
+@media (max-width: 960px) {
+    .floating-nav__user-name {
+        display: none;
+    }
+}
+
+/* 769–860px 更窄桌面：再收品牌文字与分隔线，只留 Logo，确保导航链接不被压缩换行 */
+@media (max-width: 860px) {
+    .floating-nav__brand-name,
+    .floating-nav__divider {
+        display: none;
+    }
 }
 
 @media (max-width: 768px) {
