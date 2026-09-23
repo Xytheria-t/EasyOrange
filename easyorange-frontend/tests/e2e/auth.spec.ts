@@ -141,8 +141,10 @@ test.describe('认证流程', () => {
     await page.locator('[data-testid="tab-register"]').click();
     await expect(page.locator('[data-testid="tab-register"].auth-page-tab--active')).toBeVisible();
 
-    // 填写密码但两次不一致
+    // 填写密码但两次不一致（手机号 + 验证码为注册必填，先补齐让交叉校验先跑起来）
     await page.locator('[data-testid="input-register-username"]').fill('newuser123');
+    await page.locator('[data-testid="input-register-phone"]').fill('13800000000');
+    await page.locator('[data-testid="input-register-verify-code"]').fill('123456');
     await page.locator('[data-testid="input-register-password"]').fill('Password123');
     await page.locator('[data-testid="input-register-confirm-password"]').fill('DifferentPass456');
 
