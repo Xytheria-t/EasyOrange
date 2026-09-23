@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.cartethyia.easyorange.adapter.outbound.product.ProductSearchIndexAdapter;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
@@ -50,6 +51,9 @@ class ElasticsearchProductSearchIndexAdapterTest {
     @Mock
     private EmbeddingModel embeddingModel;
 
+    @Mock
+    private ProductSearchIndexAdapter mysqlSearchTextIndex;
+
     private ElasticsearchProductSearchIndexAdapter adapter;
 
     @BeforeEach
@@ -61,7 +65,8 @@ class ElasticsearchProductSearchIndexAdapterTest {
                 productImageMapper,
                 categoryMapper,
                 elasticsearchOperations,
-                embeddingModelProvider);
+                embeddingModelProvider,
+                mysqlSearchTextIndex);
     }
 
     @Test
@@ -265,6 +270,44 @@ class ElasticsearchProductSearchIndexAdapterTest {
     }
 
     @Test
+    @DisplayName("indexProduct 应同步委托 MySQL 双写 search_text")
+    void indexProduct_shouldAlsoMaintainSearchText() {
+        ProductDO product = ProductDO.builder()
+                .id("100")
+                .userId("200")
+                .name("测试商品")
+                .price(new BigDecimal("99.99"))
+                .build();
+
+        when(productMapper.selectById("100")).thenReturn(product);
+        when(productDetailMapper.selectById("100")).thenReturn(null);
+        when(productImageMapper.selectList(any())).thenReturn(List.of());
+
+        adapter.indexProduct("100");
+
+        verify(mysqlSearchTextIndex).indexProduct("100");
+    }
+
+    @Test
+    @DisplayName("updateProductIndex 应同步委托 MySQL 双写 search_text")
+    void updateProductIndex_shouldAlsoMaintainSearchText() {
+        ProductDO product = ProductDO.builder()
+                .id("100")
+                .userId("200")
+                .name("测试商品")
+                .price(new BigDecimal("99.99"))
+                .build();
+
+        when(productMapper.selectById("100")).thenReturn(product);
+        when(productDetailMapper.selectById("100")).thenReturn(null);
+        when(productImageMapper.selectList(any())).thenReturn(List.of());
+
+        adapter.updateProductIndex("100");
+
+        verify(mysqlSearchTextIndex).updateProductIndex("100");
+    }
+
+    @Test
     @DisplayName("不存在的商品应跳过索引")
     void indexProduct_shouldSkipWhenProductNotFound() {
         when(productMapper.selectById("999")).thenReturn(null);
@@ -275,10 +318,11 @@ class ElasticsearchProductSearchIndexAdapterTest {
     }
 
     @Test
-    @DisplayName("removeProductIndex 应删除文档")
+    @DisplayName("removeProductIndex 应删除文档并清 search_text")
     void removeProductIndex_shouldDeleteDocument() {
         adapter.removeProductIndex("100");
 
+        verify(mysqlSearchTextIndex).removeProductIndex("100");
         verify(elasticsearchOperations).delete("100", ProductDocument.class);
     }
 }
