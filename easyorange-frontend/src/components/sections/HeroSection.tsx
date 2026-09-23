@@ -5,6 +5,7 @@ import { Image } from '@/components/ui/Image';
 
 const HERO_PRODUCT = {
     image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=96&h=96&fit=crop&crop=faces',
     tag: '精选好物 · 99新',
     name: 'MacBook Pro 14" M3 Pro',
     price: '¥12,999',
@@ -55,6 +56,7 @@ export default function HeroSection() {
     const stats = PLATFORM_STATS;
     const navigate = useNavigate();
     const [searchKeyword, setSearchKeyword] = useState('');
+    const [avatarFailed, setAvatarFailed] = useState(false);
 
     const handleSearchSubmit = useCallback(
         (e?: React.FormEvent) => {
@@ -411,17 +413,31 @@ export default function HeroSection() {
                                     <span className="preview-tag">{HERO_PRODUCT.tag}</span>
                                     <div className="seller-info">
                                         <div className="seller-avatar">
-                                            <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                                                <circle cx="16" cy="16" r="16" fill="url(#avatarGrad)" />
-                                                <circle cx="16" cy="12" r="4" fill="rgba(255,255,255,0.8)" />
-                                                <ellipse cx="16" cy="24" rx="7" ry="5" fill="rgba(255,255,255,0.6)" />
-                                                <defs>
-                                                    <linearGradient id="avatarGrad" x1="0" y1="0" x2="32" y2="32">
-                                                        <stop offset="0%" stopColor="#ea580c" />
-                                                        <stop offset="100%" stopColor="#f97316" />
-                                                    </linearGradient>
-                                                </defs>
-                                            </svg>
+                                            {avatarFailed ? (
+                                                <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                                                    <circle cx="16" cy="16" r="16" fill="url(#avatarGrad)" />
+                                                    <circle cx="16" cy="12" r="4" fill="rgba(255,255,255,0.8)" />
+                                                    <ellipse
+                                                        cx="16"
+                                                        cy="24"
+                                                        rx="7"
+                                                        ry="5"
+                                                        fill="rgba(255,255,255,0.6)"
+                                                    />
+                                                    <defs>
+                                                        <linearGradient id="avatarGrad" x1="0" y1="0" x2="32" y2="32">
+                                                            <stop offset="0%" stopColor="#ea580c" />
+                                                            <stop offset="100%" stopColor="#f97316" />
+                                                        </linearGradient>
+                                                    </defs>
+                                                </svg>
+                                            ) : (
+                                                <img
+                                                    src={HERO_PRODUCT.avatar}
+                                                    alt=""
+                                                    onError={() => setAvatarFailed(true)}
+                                                />
+                                            )}
                                         </div>
                                         <div className="seller-detail">
                                             <span className="seller-name">极客数码</span>
