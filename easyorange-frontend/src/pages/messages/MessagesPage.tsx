@@ -170,7 +170,11 @@ function MessagesPage() {
                         <div className="messages-list">
                             {hasConversations ? (
                                 paginatedConversations.map(conv => (
-                                    <Link key={conv.id} to={`/messages/${conv.targetUserId}`} className="message-card">
+                                    <Link
+                                        key={conv.targetUserId}
+                                        to={`/messages/${conv.targetUserId}`}
+                                        className="message-card"
+                                    >
                                         <div className="message-avatar-wrap">
                                             {conv.targetUserAvatar ? (
                                                 <img
