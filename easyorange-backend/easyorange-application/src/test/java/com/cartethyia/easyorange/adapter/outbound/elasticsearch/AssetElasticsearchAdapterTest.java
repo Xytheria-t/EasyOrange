@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.port.AssetRetrievalPort;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -36,7 +37,8 @@ class AssetElasticsearchAdapterTest {
     private ElasticsearchOperations elasticsearchOperations;
 
     private AssetRetrievalPort adapter() {
-        return new AssetElasticsearchAdapter(elasticsearchOperations, new ObjectMapper());
+        return new AssetElasticsearchAdapter(
+                elasticsearchOperations, new ObjectMapper(), new SearchLegMetrics(new SimpleMeterRegistry()));
     }
 
     @Test

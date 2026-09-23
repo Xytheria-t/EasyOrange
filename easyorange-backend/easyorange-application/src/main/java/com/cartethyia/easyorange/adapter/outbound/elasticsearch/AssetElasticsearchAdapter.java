@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.RrfFusion;
 import com.cartethyia.easyorange.ai.domain.port.AssetRetrievalPort;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,6 +62,7 @@ public class AssetElasticsearchAdapter implements AssetRetrievalPort {
 
     private final ElasticsearchOperations elasticsearchOperations;
     private final ObjectMapper objectMapper;
+    private final SearchLegMetrics legMetrics;
 
     @Override
     public List<AssetHit> search(String query, List<Float> queryEmbedding, int topK) {
@@ -72,12 +74,12 @@ public class AssetElasticsearchAdapter implements AssetRetrievalPort {
         var rankedLists = new ArrayList<List<String>>();
 
         if (queryEmbedding != null && !queryEmbedding.isEmpty()) {
-            var knnLeg = runLeg(knnQuery(queryEmbedding, candidateK));
+            var knnLeg = runLeg("knn", knnQuery(queryEmbedding, candidateK));
             docsById.putAll(knnLeg.docs());
             rankedLists.add(knnLeg.ids());
         }
         if (query != null && !query.isBlank()) {
-            var bm25Leg = runLeg(bm25Query(query, candidateK));
+            var bm25Leg = runLeg("bm25", bm25Query(query, candidateK));
             docsById.putAll(bm25Leg.docs());
             rankedLists.add(bm25Leg.ids());
         }
@@ -100,7 +102,8 @@ public class AssetElasticsearchAdapter implements AssetRetrievalPort {
     /** 单路召回结果：有序 ID 列表 + id → 文档（融合后按 id 回捞字段）。 */
     private record Leg(List<String> ids, Map<String, ProductDocument> docs) {}
 
-    private Leg runLeg(NativeQuery esQuery) {
+    private Leg runLeg(String leg, NativeQuery esQuery) {
+        long start = System.nanoTime();
         try {
             var hits = elasticsearchOperations.search(esQuery, ProductDocument.class);
             var ids = new ArrayList<String>(hits.getSearchHits().size());
@@ -109,10 +112,12 @@ public class AssetElasticsearchAdapter implements AssetRetrievalPort {
                 ids.add(hit.getId());
                 docs.put(hit.getId(), hit.getContent());
             }
+            legMetrics.record("asset", leg, Duration.ofNanos(System.nanoTime() - start), true);
             return new Leg(ids, docs);
         } catch (Exception e) {
             // 单路失败不影响另一路：退化为单路召回（向量那路优先于零结果）
             log.warn("Asset retrieval leg failed, falling back to single-leg ranking", e);
+            legMetrics.record("asset", leg, Duration.ofNanos(System.nanoTime() - start), false);
             return new Leg(List.of(), Map.of());
         }
     }
