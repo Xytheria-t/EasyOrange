@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.cartethyia.easyorange.ai.adapter.outbound.budget.InMemoryTokenBudgetStore;
 import com.cartethyia.easyorange.ai.adapter.outbound.budget.RedisTokenBudgetStore;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,8 @@ class TokenBudgetStoreWiringTest {
             context.getEnvironment()
                     .getPropertySources()
                     .addFirst(new MapPropertySource("test", Map.of("easyorange.ai.budget.store", "redis")));
+            // fail-open 计数依赖 MeterRegistry（生产由 actuator 提供），这里按同形态补上
+            context.registerBean(MeterRegistry.class, SimpleMeterRegistry::new);
             context.register(AiConfig.class);
             context.refresh();
 

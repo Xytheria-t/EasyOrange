@@ -10,6 +10,7 @@ import com.cartethyia.easyorange.ai.application.enhancement.NaturalLanguageDetec
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     private final SearchToolRegistry toolRegistry;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final int timeoutSeconds;
+    private final MeterRegistry meterRegistry;
 
     private static final long CACHE_TTL_MINUTES = 5;
     private static final String CACHE_KEY_PREFIX = "ai:search:enhance:";
@@ -62,15 +64,29 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
             NaturalLanguageDetector nlDetector,
             SearchToolRegistry toolRegistry,
             ObjectProvider<RedisTemplate<Object, Object>> redisTemplateProvider,
-            @Value("${easyorange.ai.search-enhance.timeout-seconds:5}") int timeoutSeconds) {
+            @Value("${easyorange.ai.search-enhance.timeout-seconds:5}") int timeoutSeconds,
+            MeterRegistry meterRegistry) {
         this.nlDetector = nlDetector;
         this.toolRegistry = toolRegistry;
         this.redisTemplate = redisTemplateProvider.getIfAvailable();
         this.timeoutSeconds = timeoutSeconds;
+        this.meterRegistry = meterRegistry;
     }
 
+    /**
+     * 降级必须可见：{@code failed()} 收敛掉的原因只在日志里，计数是
+     * 「搜索增强降级率」（aiEnhancementDegraded 出数的频率口径）唯一不靠 grep 的来源。
+     */
     @Override
     public EnhanceOutcome tryEnhance(String keyword, List<ProductReadModel> topProducts) {
+        EnhanceOutcome outcome = doTryEnhance(keyword, topProducts);
+        if (outcome.degraded()) {
+            meterRegistry.counter("easyorange.ai.search.enhance.degraded").increment();
+        }
+        return outcome;
+    }
+
+    private EnhanceOutcome doTryEnhance(String keyword, List<ProductReadModel> topProducts) {
         try {
             // 前置检查不适用（非自然语言 / 无结果）：没尝试过，不算降级
             if (!nlDetector.isNaturalLanguage(keyword) || topProducts == null || topProducts.isEmpty()) {

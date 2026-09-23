@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -59,11 +60,14 @@ class AiSearchEnhancerTest {
 
     private AiSearchEnhancerAdapter enhancer;
 
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+
     @BeforeEach
     void setUp() {
         lenient().when(redisTemplateProvider.getIfAvailable()).thenReturn(redisTemplate);
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOps);
-        enhancer = new AiSearchEnhancerAdapter(nlDetector, buildRegistry(), redisTemplateProvider, TIMEOUT_SECONDS);
+        enhancer = new AiSearchEnhancerAdapter(
+                nlDetector, buildRegistry(), redisTemplateProvider, TIMEOUT_SECONDS, meterRegistry);
     }
 
     private SearchToolRegistry buildRegistry() {
@@ -186,7 +190,8 @@ class AiSearchEnhancerTest {
         @DisplayName("Redis 缓存未配置 -> 正常走增强流程")
         void tryEnhance_noRedisConfigured() {
             when(redisTemplateProvider.getIfAvailable()).thenReturn(null);
-            enhancer = new AiSearchEnhancerAdapter(nlDetector, buildRegistry(), redisTemplateProvider, TIMEOUT_SECONDS);
+            enhancer = new AiSearchEnhancerAdapter(
+                    nlDetector, buildRegistry(), redisTemplateProvider, TIMEOUT_SECONDS, meterRegistry);
             when(nlDetector.isNaturalLanguage("找电脑")).thenReturn(true);
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of()));
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("想找电脑"));
@@ -304,6 +309,11 @@ class AiSearchEnhancerTest {
 
             assertThat(result.enhancement()).isNull();
             assertThat(result.degraded()).isTrue();
+            // 降级必须出数：degraded 收敛只留日志的话，降级率就只能 grep 日志才能算
+            var counter =
+                    meterRegistry.find("easyorange.ai.search.enhance.degraded").counter();
+            assertThat(counter).isNotNull();
+            assertThat(counter.count()).isEqualTo(1.0);
         }
     }
 }

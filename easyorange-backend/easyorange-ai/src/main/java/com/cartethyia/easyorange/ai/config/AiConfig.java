@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.config;
 import com.cartethyia.easyorange.ai.adapter.outbound.budget.InMemoryTokenBudgetStore;
 import com.cartethyia.easyorange.ai.adapter.outbound.budget.RedisTokenBudgetStore;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -26,8 +27,9 @@ public class AiConfig {
      */
     @Bean
     @ConditionalOnProperty(name = "easyorange.ai.budget.store", havingValue = "redis")
-    public TokenBudgetStore redisTokenBudgetStore(ObjectProvider<StringRedisTemplate> redisProvider) {
-        return new RedisTokenBudgetStore(redisProvider);
+    public TokenBudgetStore redisTokenBudgetStore(
+            ObjectProvider<StringRedisTemplate> redisProvider, MeterRegistry meterRegistry) {
+        return new RedisTokenBudgetStore(redisProvider, meterRegistry);
     }
 
     @Bean
