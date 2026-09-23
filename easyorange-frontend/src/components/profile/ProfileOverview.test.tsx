@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { User } from '@/types';
 import { ProfileOverview } from './ProfileOverview';
 
-type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId';
+type EditableField = 'nickname' | 'email' | 'phone' | 'realName';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
@@ -18,7 +18,6 @@ const mockUser: User = {
     phone: '13800138000',
     avatar: null,
     realName: 'Test',
-    studentId: '2021001',
     status: 0,
     userType: '01',
     createTime: '2026-01-01T00:00:00Z',
@@ -47,7 +46,6 @@ describe('ProfileOverview', () => {
         render(<ProfileOverview {...defaultProps} />);
         expect(screen.getByText('昵称')).toBeInTheDocument();
         expect(screen.getByText('真实姓名')).toBeInTheDocument();
-        expect(screen.getByText('学号')).toBeInTheDocument();
         expect(screen.getByText('邮箱')).toBeInTheDocument();
         expect(screen.getByText('手机')).toBeInTheDocument();
     });
@@ -58,7 +56,6 @@ describe('ProfileOverview', () => {
         expect(screen.getByText('testuser')).toBeInTheDocument();
         expect(screen.getByText('test@example.com')).toBeInTheDocument();
         expect(screen.getByText('13800138000')).toBeInTheDocument();
-        expect(screen.getByText('2021001')).toBeInTheDocument();
     });
 
     it('renders quick action buttons', () => {
@@ -88,7 +85,7 @@ describe('ProfileOverview', () => {
     it('shows edit button for editable fields', () => {
         render(<ProfileOverview {...defaultProps} />);
         const editButtons = document.querySelectorAll('.profile-edit-btn');
-        expect(editButtons.length).toBe(5);
+        expect(editButtons.length).toBe(4);
     });
 
     it('shows editing input when editing field is active', () => {

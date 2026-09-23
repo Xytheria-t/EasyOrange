@@ -69,7 +69,6 @@ class UserRepositoryImplTest {
                 .status(UserStatus.NORMAL)
                 .email("test@example.com")
                 .phone("13812345678")
-                .studentId("2024001")
                 .realName("张三")
                 .nickName("小张")
                 .sex(Sex.MALE)
@@ -93,7 +92,6 @@ class UserRepositoryImplTest {
                         .realName("张三")
                         .nickName("小张")
                         .sex(Sex.MALE)
-                        .studentId("2024001")
                         .avatar("/avatar/test.png")
                         .build())
                 .loginInfo(new LoginInfo(

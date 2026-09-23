@@ -41,9 +41,6 @@ function fillAllFields() {
     fireEvent.change(screen.getByPlaceholderText('请输入您的真实姓名'), {
         target: { value: '张三' },
     });
-    fireEvent.change(screen.getByPlaceholderText('请输入您的学号'), {
-        target: { value: '2024001' },
-    });
     fireEvent.change(screen.getByPlaceholderText('请输入您的邮箱地址'), {
         target: { value: 'test@example.com' },
     });
@@ -87,18 +84,16 @@ describe('ProfileSetupModal', () => {
 
     // ── Form Fields ──────────────────────────────────────────────────────
 
-    it('renders all 4 form fields with labels', () => {
+    it('renders all 3 form fields with labels', () => {
         render(<ProfileSetupModal {...defaultProps} />);
         expect(screen.getByText('真实姓名')).toBeInTheDocument();
-        expect(screen.getByText('学号')).toBeInTheDocument();
         expect(screen.getByText('邮箱')).toBeInTheDocument();
         expect(screen.getByText('手机号')).toBeInTheDocument();
     });
 
-    it('renders all 4 inputs with placeholders', () => {
+    it('renders all 3 inputs with placeholders', () => {
         render(<ProfileSetupModal {...defaultProps} />);
         expect(screen.getByPlaceholderText('请输入您的真实姓名')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('请输入您的学号')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('请输入您的邮箱地址')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('请输入您的手机号')).toBeInTheDocument();
     });
@@ -116,17 +111,12 @@ describe('ProfileSetupModal', () => {
         fireEvent.change(screen.getByPlaceholderText('请输入您的真实姓名'), {
             target: { value: '张三' },
         });
-        expect(screen.getByText('25%')).toBeInTheDocument();
-
-        fireEvent.change(screen.getByPlaceholderText('请输入您的学号'), {
-            target: { value: '12345' },
-        });
-        expect(screen.getByText('50%')).toBeInTheDocument();
+        expect(screen.getByText('33%')).toBeInTheDocument();
 
         fireEvent.change(screen.getByPlaceholderText('请输入您的邮箱地址'), {
             target: { value: 'test@test.com' },
         });
-        expect(screen.getByText('75%')).toBeInTheDocument();
+        expect(screen.getByText('67%')).toBeInTheDocument();
 
         fireEvent.change(screen.getByPlaceholderText('请输入您的手机号'), {
             target: { value: '13800138000' },
@@ -141,7 +131,6 @@ describe('ProfileSetupModal', () => {
         fireEvent.click(screen.getByText('完成设置'));
 
         expect(await screen.findByText('真实姓名至少需要2个字符')).toBeInTheDocument();
-        expect(await screen.findByText('请输入有效的学号')).toBeInTheDocument();
         expect(await screen.findByText('邮箱不能为空')).toBeInTheDocument();
         expect(await screen.findByText('手机号不能为空')).toBeInTheDocument();
     });
@@ -202,7 +191,6 @@ describe('ProfileSetupModal', () => {
         await vi.waitFor(() => {
             expect(mockUpdateProfile).toHaveBeenCalledWith({
                 realName: '张三',
-                studentId: '2024001',
                 email: 'test@example.com',
                 phone: '13800138000',
             });

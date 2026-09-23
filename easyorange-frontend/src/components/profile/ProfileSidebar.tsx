@@ -114,8 +114,8 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
                     </div>
                 </div>
 
-                {/* Student ID / Tagline */}
-                <p className="ps-tagline">{user?.studentId ? `学号 ${user.studentId}` : 'AI 智能托管达人'}</p>
+                {/* Tagline */}
+                <p className="ps-tagline">AI 智能托管达人</p>
 
                 {/* Badges */}
                 <div className="ps-badges">

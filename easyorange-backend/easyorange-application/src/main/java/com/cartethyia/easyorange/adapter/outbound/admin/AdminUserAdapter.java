@@ -112,7 +112,6 @@ public class AdminUserAdapter implements AdminUserPort {
                 detail.avatar(),
                 detail.email(),
                 detail.phone(),
-                detail.studentId(),
                 detail.realName(),
                 detail.userType(),
                 detail.userTypeDesc(),

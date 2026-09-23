@@ -47,7 +47,6 @@ export async function seedSession(page: Page, user: SeedUser): Promise<void> {
                     nickname: user.nickname,
                     email: '',
                     phone: null,
-                    studentId: null,
                     realName: null,
                     avatar: null,
                     status: 0,

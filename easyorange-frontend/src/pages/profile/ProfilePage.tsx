@@ -20,7 +20,7 @@ import './profile-sidebar.css';
 import './profile-dashboard.css';
 import './profile-modals.css';
 
-type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId';
+type EditableField = 'nickname' | 'email' | 'phone' | 'realName';
 type TabType = 'overview' | 'activity' | 'security' | 'preferences';
 
 function ProfilePage() {
@@ -68,7 +68,7 @@ function ProfilePage() {
             const data: Record<string, unknown> = {};
             data[editingField] = editValue;
             await userApi.updateProfile(
-                data as { nickname?: string; email?: string; phone?: string; realName?: string; studentId?: string }
+                data as { nickname?: string; email?: string; phone?: string; realName?: string }
             );
             await queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
             setEditingField(null);

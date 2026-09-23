@@ -42,7 +42,6 @@ public final class UserTestFixture {
                         .realName("张三")
                         .nickName("小张")
                         .sex(Sex.MALE)
-                        .studentId("2024001")
                         .avatar("/avatar/test.png")
                         .build())
                 .loginInfo(LoginInfo.empty());

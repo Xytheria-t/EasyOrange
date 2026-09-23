@@ -13,8 +13,6 @@ public interface CommonUserFields {
 
     void setAvatar(String v);
 
-    void setStudentId(String v);
-
     void setStatus(String v);
 
     void setCreateTime(LocalDateTime v);

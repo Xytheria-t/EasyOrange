@@ -10,7 +10,6 @@ const mockUser: AdminUser = {
     avatar: null,
     email: 'alice@example.com',
     phone: '13800138000',
-    studentId: null,
     realName: null,
     userType: '01',
     userTypeDesc: '学生',

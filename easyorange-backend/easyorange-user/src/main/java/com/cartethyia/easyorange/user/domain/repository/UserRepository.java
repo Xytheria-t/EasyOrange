@@ -18,8 +18,6 @@ public interface UserRepository {
 
     Optional<User> findByPhone(String phone);
 
-    Optional<User> findByStudentId(String studentId);
-
     Optional<User> findByUsername(String username);
 
     Optional<User> findByLoginIdentifier(String identifier);

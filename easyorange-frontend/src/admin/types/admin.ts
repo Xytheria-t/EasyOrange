@@ -7,7 +7,6 @@ export interface AdminUser {
     avatar: string | null;
     email: string | null;
     phone: string | null;
-    studentId: string | null;
     realName: string | null;
     userType: string | null;
     userTypeDesc: string | null;

@@ -16,14 +16,13 @@ public class ProfileUpdateService {
     private final UserRepository userRepository;
 
     /**
-     * 校验联系方式（邮箱、手机号）和学号的唯一性。
+     * 校验联系方式（邮箱、手机号）的唯一性。
      *
      * @param email       待校验邮箱
      * @param phone       待校验手机号
-     * @param studentId   待校验学号
      * @param currentUser 当前用户聚合根
      */
-    public void validateUniqueContact(String email, String phone, String studentId, User currentUser) {
+    public void validateUniqueContact(String email, String phone, User currentUser) {
         var contact = currentUser.getContactInfo();
         if (isPresent(email)
                 && !email.equals(contact != null ? contact.email() : null)
@@ -33,12 +32,6 @@ public class ProfileUpdateService {
                 && !phone.equals(contact != null ? contact.phone() : null)
                 && userRepository.findByPhone(phone).isPresent())
             throw BusinessException.of(UserResultCode.PHONE_EXISTS);
-
-        var personal = currentUser.getPersonalInfo();
-        if (isPresent(studentId)
-                && !studentId.equals(personal != null ? personal.studentId() : null)
-                && userRepository.findByStudentId(studentId).isPresent())
-            throw BusinessException.of(UserResultCode.STUDENT_ID_EXISTS);
     }
 
     private static boolean isPresent(String value) {

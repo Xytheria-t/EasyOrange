@@ -20,8 +20,6 @@ public class AdminUserResponse {
 
     private String phone;
 
-    private String studentId;
-
     private String realName;
 
     private String userType;

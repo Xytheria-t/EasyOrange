@@ -91,7 +91,6 @@ public class AdminUserService {
                 .avatar(user.avatar())
                 .email(user.email())
                 .phone(user.phone())
-                .studentId(user.studentId())
                 .realName(user.realName())
                 .userType(user.userType())
                 .userTypeDesc(user.userTypeDesc())

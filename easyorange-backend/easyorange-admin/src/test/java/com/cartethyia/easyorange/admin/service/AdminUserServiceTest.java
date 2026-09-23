@@ -46,7 +46,6 @@ class AdminUserServiceTest {
                 "test@example.com",
                 "13800138000",
                 null,
-                null,
                 "01",
                 "普通用户",
                 "NORMAL",

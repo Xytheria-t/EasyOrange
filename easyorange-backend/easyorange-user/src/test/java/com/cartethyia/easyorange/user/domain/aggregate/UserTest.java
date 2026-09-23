@@ -205,8 +205,8 @@ class UserTest {
     class UpdateProfileTests {
 
         @Test
-        @DisplayName("应更新邮箱、手机、性别和学号")
-        void shouldUpdateEmailPhoneSexAndStudentId() {
+        @DisplayName("应更新邮箱、手机和性别")
+        void shouldUpdateEmailPhoneSex() {
             User user = User.builder()
                     .id("1")
                     .credentials(new Credentials("testuser", "password"))
@@ -215,12 +215,11 @@ class UserTest {
                     .build();
 
             User updatedUser = user.updateContactInfo(new ContactUpdateSpec("new@example.com", "13999999999"), "1")
-                    .updatePersonalInfo(new PersonalUpdateSpec(null, null, Sex.FEMALE, "2024001"), "1");
+                    .updatePersonalInfo(new PersonalUpdateSpec(null, null, Sex.FEMALE), "1");
 
             assertThat(updatedUser.getContactInfo().email()).isEqualTo("new@example.com");
             assertThat(updatedUser.getContactInfo().phone()).isEqualTo("13999999999");
             assertThat(updatedUser.getPersonalInfo().sex()).isEqualTo(Sex.FEMALE);
-            assertThat(updatedUser.getPersonalInfo().studentId()).isEqualTo("2024001");
             assertThat(updatedUser.getAuditInfo()).isNotNull();
         }
 

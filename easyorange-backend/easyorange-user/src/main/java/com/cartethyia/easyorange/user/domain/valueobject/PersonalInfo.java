@@ -11,12 +11,10 @@ public record PersonalInfo(
         @Nullable String realName,
         @Nullable String nickName,
         @Nullable Sex sex,
-        @Nullable String studentId,
         @Nullable String avatar) {
     public PersonalInfo {
         rejectBlank(realName, "realName");
         rejectBlank(nickName, "nickName");
-        rejectBlank(studentId, "studentId");
         rejectBlank(avatar, "avatar");
     }
 
@@ -28,6 +26,6 @@ public record PersonalInfo(
     }
 
     public static PersonalInfo empty() {
-        return new PersonalInfo(null, null, null, null, null);
+        return new PersonalInfo(null, null, null, null);
     }
 }

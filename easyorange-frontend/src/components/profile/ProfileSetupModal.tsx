@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, Check, GraduationCap, Mail, Phone, User } from 'lucide-react';
+import { AlertCircle, Check, Mail, Phone, User } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
@@ -45,13 +45,6 @@ const formFields: FormField[] = [
         type: 'text',
     },
     {
-        key: 'studentId',
-        label: '学号',
-        placeholder: '请输入您的学号',
-        icon: GraduationCap,
-        type: 'text',
-    },
-    {
         key: 'email',
         label: '邮箱',
         placeholder: '请输入您的邮箱地址',
@@ -81,7 +74,7 @@ export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupMod
         resolver: zodResolver(profileSetupSchema),
         reValidateMode: 'onChange',
         mode: 'onTouched',
-        defaultValues: { realName: '', studentId: '', email: '', phone: '' },
+        defaultValues: { realName: '', email: '', phone: '' },
     });
     const vals = watch();
     const isSubmitting = formState.isSubmitting;
@@ -97,7 +90,6 @@ export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupMod
                 email: data.email.trim(),
                 phone: data.phone.trim(),
                 realName: data.realName.trim(),
-                studentId: data.studentId.trim(),
             });
             await queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
             addToast({ type: 'success', message: '个人信息完善成功！' });

@@ -25,8 +25,6 @@ public class UserProfileResponse implements CommonUserFields {
 
     private String phone;
 
-    private String studentId;
-
     private String realName;
 
     private String status;

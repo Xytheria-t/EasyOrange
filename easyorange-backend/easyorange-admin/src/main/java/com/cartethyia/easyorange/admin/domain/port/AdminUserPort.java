@@ -75,7 +75,6 @@ public interface AdminUserPort {
             String avatar,
             String email,
             String phone,
-            String studentId,
             String realName,
             String userType,
             String userTypeDesc,

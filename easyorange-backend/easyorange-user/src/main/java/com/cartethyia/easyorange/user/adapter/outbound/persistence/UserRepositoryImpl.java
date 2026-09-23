@@ -50,11 +50,6 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     }
 
     @Override
-    public Optional<User> findByStudentId(String studentId) {
-        return findBy(UserDO::getStudentId, studentId).map(entityMapper::toDomain);
-    }
-
-    @Override
     public Optional<User> findByUsername(String username) {
         return findBy(UserDO::getUsername, username).map(entityMapper::toDomain);
     }
