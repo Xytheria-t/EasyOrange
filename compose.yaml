@@ -24,6 +24,8 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+      # 卷首次初始化时执行（建 IT 独立库等）；存量卷不重跑，由 scripts/db-reset.sh 幂等补执行
+      - ./infra/mysql/init:/docker-entrypoint-initdb.d:ro
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_0900_ai_ci
