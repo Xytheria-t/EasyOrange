@@ -49,6 +49,14 @@ public class AiChatController {
     @PostMapping("/stream")
     public SseEmitter stream(@Valid @RequestBody ChatRequest request) {
         SseEmitter emitter = new SseEmitter(STREAM_TIMEOUT_MS);
+        // 客户端挂到超时 / 传输错误 = 客户端侧放弃（刷新、关页、代理掐线）：注册回调安静收尾，
+        // 否则超时走 AsyncRequestTimeoutException 落 GlobalExceptionHandler 的 system_error ERROR 兜底——
+        // 把「客户端走了」误记成服务故障。onTimeout 里 complete 后容器不再抛超时异常
+        emitter.onTimeout(() -> completeQuietly(emitter));
+        emitter.onError(e -> {
+            log.debug("sse emitter error, client gone", e);
+            completeQuietly(emitter);
+        });
         Thread.ofVirtual().name("ai-chat-stream").start(() -> runStream(emitter, request));
         return emitter;
     }
