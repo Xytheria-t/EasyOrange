@@ -338,6 +338,30 @@ class ElasticsearchProductSearchQueryAdapterTest {
     }
 
     @Test
+    @DisplayName("kNN 腿携带相似度下限且过滤条件进 knn.filter、不挂顶层 query（顶层 query 会让相似度剪枝失效，乱码返全库）")
+    void search_knnLeg_shouldCarrySimilarityAndInnerFilterWithoutTopLevelQuery() {
+        List<NativeQuery> issued = new ArrayList<>();
+        var hitsMock = hits(List.of(), 0L);
+        when(elasticsearchOperations.search(any(NativeQuery.class), eq(ProductDocument.class)))
+                .thenAnswer(inv -> {
+                    NativeQuery q = inv.getArgument(0);
+                    issued.add(q);
+                    return hitsMock;
+                });
+
+        adapter.search(twoLegQuery(null));
+
+        var knnLeg = issued.stream()
+                .filter(q -> !q.getKnnSearches().isEmpty())
+                .findFirst()
+                .orElseThrow();
+        var knn = knnLeg.getKnnSearches().get(0);
+        assertThat(knn.similarity()).isEqualTo(0.5f);
+        assertThat(knn.filter()).isNotEmpty();
+        assertThat(knnLeg.getQuery()).isNull();
+    }
+
+    @Test
     @DisplayName("词面命中为 0 但语义路有召回时不能报 total=0：否则前端显示「共找到 0 件」却列着卡片")
     void search_shouldNotReportZeroTotalWhenOnlySemanticLegMatches() {
         var knnHits = hits(List.of(hit(doc("A", "商品A"), "A"), hit(doc("B", "商品B"), "B")), 2L);

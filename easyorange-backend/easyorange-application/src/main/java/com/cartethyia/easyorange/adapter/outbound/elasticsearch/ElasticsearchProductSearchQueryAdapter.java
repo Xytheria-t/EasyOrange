@@ -91,11 +91,13 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
     private static final int NUM_CANDIDATES = 100;
 
     /**
-     * kNN 路的余弦相似度下限：低于该值的文档不进候选池。
+     * kNN 路的余弦相似度下限：低于该值的文档不进候选池，按 0 命中处理。
      * <p>
      * 纯 kNN 召回没有相关性门槛 —— 小语料下 ANN 会把全库都凑满 {@code k} 条，
-     * 融合后不相关商品被顶进结果页。下限挡住明显无关的召回（同类目商品典型在 0.5 以上，
-     * 无关商品普遍低于 0.45），只影响语义路，BM25 词面命中不受限。
+     * 融合后不相关商品被顶进结果页。实测（2026-09-23，106 文档 / text-embedding-v3 + bbq_hnsw）：
+     * 乱码查询 0 命中、「相机」4 条、自然语言查询 7 条 —— 门槛按 ANN 图上的估计分剪枝，
+     * 报告的 {@code _score} 是 rescore 后的值，0.5 参数对应报告分约 0.75 的有效切点。
+     * 只影响语义路，BM25 词面命中不受限。
      */
     private static final float KNN_MIN_SIMILARITY = 0.5f;
 
@@ -272,16 +274,28 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         }
     }
 
+    /**
+     * kNN 腿：过滤条件放 {@code knn.filter}（预过滤），<b>不得挂顶层 query</b> ——
+     * 顶层 query（match_all + 过滤）与 {@code knn.similarity} 并存时，kNN 侧被相似度剪成 0 后
+     * ES 仍把 query 侧命中当结果返回（实测乱码查询该腿返 100 条、分值恒为 match_all 的 1.0），
+     * 相似度门槛等于没有、任意乱码召回全库；过滤条件搬进 knn.filter 后同样查询 0 命中。
+     */
     private NativeQuery knnQuery(ProductSearchQuery query, int k) {
         int numCandidates = Math.max(NUM_CANDIDATES, k * 2);
+        var filterClauses = buildFilterClauses(query);
         return NativeQuery.builder()
                 .withPageable(PageRequest.of(0, k))
-                .withKnnSearches(knn -> knn.field("nameEmbedding")
-                        .queryVector(query.queryEmbedding())
-                        .k(k)
-                        .numCandidates(numCandidates)
-                        .similarity(KNN_MIN_SIMILARITY))
-                .withQuery(Queries.wrapperQueryAsQuery(buildFilterQuery(query).toString()))
+                .withKnnSearches(knn -> {
+                    knn.field("nameEmbedding")
+                            .queryVector(query.queryEmbedding())
+                            .k(k)
+                            .numCandidates(numCandidates)
+                            .similarity(KNN_MIN_SIMILARITY);
+                    if (filterClauses.size() > 0) {
+                        knn.filter(Queries.wrapperQueryAsQuery(filterClauses.toString()));
+                    }
+                    return knn;
+                })
                 .withSourceFilter(SOURCE_FILTER)
                 .withSort(byScoreDesc())
                 .build();
@@ -335,26 +349,11 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         return objectMapper.createObjectNode().set("bool", bool);
     }
 
-    private JsonNode buildFilterQuery(ProductSearchQuery query) {
-        ObjectNode bool = objectMapper.createObjectNode();
-
-        ArrayNode must = objectMapper.createArrayNode();
-        must.add(objectMapper.createObjectNode().set("match_all", objectMapper.createObjectNode()));
-        bool.set("must", must);
-
-        ArrayNode filter = buildFilterClauses(query);
-        if (filter.size() > 0) {
-            bool.set("filter", filter);
-        }
-
-        return objectMapper.createObjectNode().set("bool", bool);
-    }
-
     /**
      * 过滤子句（status/categoryId/conditionLevel/price），两路召回共用。
      * <p>
      * <b>两路都必须带</b>：只过滤一路的话，不过滤的那路会把被过滤掉的商品带进候选池，
-     * 融合后照样可能出现在结果里。
+     * 融合后照样可能出现在结果里。kNN 路以 {@code knn.filter} 承载（见 {@link #knnQuery}）。
      */
     private ArrayNode buildFilterClauses(ProductSearchQuery query) {
         ArrayNode filter = objectMapper.createArrayNode();
