@@ -61,7 +61,7 @@ export function ProductGallery({ images, isSold, onShare }: ProductGalleryProps)
                                         style={{
                                             width: '100%',
                                             height: '100%',
-                                            objectFit: 'contain',
+                                            objectFit: 'cover',
                                             position: 'absolute',
                                             inset: 0,
                                         }}
@@ -78,7 +78,7 @@ export function ProductGallery({ images, isSold, onShare }: ProductGalleryProps)
                                     style={{
                                         width: '100%',
                                         height: '100%',
-                                        objectFit: 'contain',
+                                        objectFit: 'cover',
                                         position: imageLoaded ? 'relative' : 'absolute',
                                         inset: 0,
                                         zIndex: imageLoaded ? 1 : 0,

@@ -330,8 +330,8 @@ describe('ProductDetailPage', () => {
         renderPage();
 
         const user = userEvent.setup();
-        // Click the "联系" button in the seller detail row
-        const contactBtn = screen.getByRole('button', { name: '联系' });
+        // Click the primary "联系资产方" action button
+        const contactBtn = screen.getByRole('button', { name: '联系资产方' });
         await user.click(contactBtn);
         expect(mockNavigate).toHaveBeenCalledWith('/messages/seller1');
     });
