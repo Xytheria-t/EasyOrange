@@ -45,12 +45,12 @@ public class User {
         this.auditInfo = auditInfo;
     }
 
-    public static User create(String username, String encodedPassword) {
+    public static User create(String username, String encodedPassword, String phone) {
         return User.builder()
                 .credentials(new Credentials(username, encodedPassword))
                 .userType(UserType.NORMAL)
                 .status(UserStatus.NORMAL)
-                .contactInfo(ContactInfo.empty())
+                .contactInfo(ContactInfo.empty().withPhone(phone))
                 .personalInfo(PersonalInfo.builder().nickName(username).build())
                 .loginInfo(LoginInfo.empty())
                 .build();

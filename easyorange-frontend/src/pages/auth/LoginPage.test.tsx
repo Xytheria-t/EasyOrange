@@ -163,6 +163,8 @@ describe('LoginPage', () => {
         const user = userEvent.setup();
         await user.click(screen.getByTestId('tab-register'));
         await user.type(screen.getByTestId('input-register-username'), 'newuser');
+        await user.type(screen.getByTestId('input-register-phone'), '13800000000');
+        await user.type(screen.getByTestId('input-register-verify-code'), '123456');
         await user.type(screen.getByTestId('input-register-password'), 'Password1');
         await user.type(screen.getByTestId('input-register-confirm-password'), 'Password1');
         await user.click(screen.getByRole('checkbox'));
@@ -170,6 +172,8 @@ describe('LoginPage', () => {
         expect(registerMutateAsync).toHaveBeenCalledWith({
             username: 'newuser',
             password: 'Password1',
+            phone: '13800000000',
+            verifyCode: '123456',
         });
         // 注册成功即离开登录页（弹窗提升在 App 层），否则登录/注册界面留在弹窗背后
         expect(mockOpenProfileSetup).toHaveBeenCalledWith('newuser');
@@ -181,6 +185,8 @@ describe('LoginPage', () => {
         const user = userEvent.setup();
         await user.click(screen.getByTestId('tab-register'));
         await user.type(screen.getByTestId('input-register-username'), 'newuser');
+        await user.type(screen.getByTestId('input-register-phone'), '13800000000');
+        await user.type(screen.getByTestId('input-register-verify-code'), '123456');
         await user.type(screen.getByTestId('input-register-password'), 'Password1');
         await user.type(screen.getByTestId('input-register-confirm-password'), 'Password2');
         await user.click(screen.getByText('服务条款'));

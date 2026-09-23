@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { userApi } from '@/api/userApi';
 import { Checkbox, Input, Label } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { useLogin, useRegister } from '@/hooks';
@@ -18,6 +19,8 @@ export function RegisterForm({ onRegisterSuccess, onSwitchToLogin }: RegisterFor
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [capsLock, setCapsLock] = useState(false);
+    const [countdown, setCountdown] = useState(0);
+    const [isSendingCode, setIsSendingCode] = useState(false);
     const login = useLogin();
     const register = useRegister();
     const addToast = useUIStore(s => s.addToast);
@@ -25,7 +28,14 @@ export function RegisterForm({ onRegisterSuccess, onSwitchToLogin }: RegisterFor
     const registerForm = useForm<RegisterFormValues>({
         resolver: zodResolver(registerSchema),
         reValidateMode: 'onChange',
-        defaultValues: { username: '', password: '', confirmPassword: '', agreeTerms: false },
+        defaultValues: {
+            username: '',
+            phone: '',
+            verifyCode: '',
+            password: '',
+            confirmPassword: '',
+            agreeTerms: false,
+        },
     });
     const regVals = registerForm.watch();
 
@@ -44,6 +54,37 @@ export function RegisterForm({ onRegisterSuccess, onSwitchToLogin }: RegisterFor
         }
     };
 
+    const startCountdown = () => {
+        setCountdown(60);
+        const timer = setInterval(() => {
+            setCountdown(prev => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
+    const handleSendCode = async () => {
+        const valid = await registerForm.trigger('phone');
+        if (!valid) {
+            addToast({ type: 'error', message: registerForm.formState.errors.phone?.message ?? '请输入手机号' });
+            return;
+        }
+        setIsSendingCode(true);
+        try {
+            await userApi.sendSmsCode(regVals.phone);
+            startCountdown();
+            addToast({ type: 'success', message: '验证码已发送' });
+        } catch (err) {
+            addToast({ type: 'error', message: errorHandler.handle(err as Error, 'unknown') });
+        } finally {
+            setIsSendingCode(false);
+        }
+    };
+
     const onRegisterSubmit = registerForm.handleSubmit(
         async data => {
             setError(null);
@@ -53,6 +94,8 @@ export function RegisterForm({ onRegisterSuccess, onSwitchToLogin }: RegisterFor
                 await register.mutateAsync({
                     username: data.username,
                     password: data.password,
+                    phone: data.phone,
+                    verifyCode: data.verifyCode,
                 });
 
                 addToast({ type: 'success', message: '注册成功！正在登录...' });
@@ -122,6 +165,72 @@ export function RegisterForm({ onRegisterSuccess, onSwitchToLogin }: RegisterFor
                     />
                 </div>
                 <div className="auth-page-input-hint">3-20位，仅支持字母、数字和下划线</div>
+            </div>
+
+            <div className="auth-page-input-group">
+                <div className="relative flex items-center">
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none"
+                        aria-hidden="true"
+                    >
+                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                        <path d="M12 18h.01" />
+                    </svg>
+                    <Input
+                        type="tel"
+                        placeholder="手机号"
+                        required
+                        maxLength={11}
+                        autoComplete="tel"
+                        aria-label="手机号"
+                        data-testid="input-register-phone"
+                        className="pl-10"
+                        {...registerForm.register('phone')}
+                    />
+                </div>
+            </div>
+
+            <div className="auth-page-input-group">
+                <div className="relative flex items-center">
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none"
+                        aria-hidden="true"
+                    >
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <Input
+                        type="text"
+                        placeholder="短信验证码"
+                        required
+                        maxLength={6}
+                        autoComplete="one-time-code"
+                        aria-label="短信验证码"
+                        data-testid="input-register-verify-code"
+                        className="pl-10 pr-32"
+                        {...registerForm.register('verifyCode')}
+                    />
+                    {/* 定位放在容器上：按钮 variant 自带 hover translate，会覆盖 -translate-y-1/2 把按钮甩出输入框 */}
+                    <div className="absolute inset-y-0 right-1 flex items-center pointer-events-none">
+                        <Button
+                            type="button"
+                            size="sm"
+                            className="pointer-events-auto"
+                            data-testid="btn-register-send-code"
+                            onClick={handleSendCode}
+                            disabled={countdown > 0 || isSendingCode || !regVals.phone}
+                        >
+                            {isSendingCode ? '发送中...' : countdown > 0 ? `${countdown}s` : '获取验证码'}
+                        </Button>
+                    </div>
+                </div>
             </div>
 
             <div className="auth-page-input-group">

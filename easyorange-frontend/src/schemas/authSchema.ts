@@ -23,6 +23,11 @@ export const registerSchema = z
             .min(3, '用户名至少需要3个字符')
             .max(20, '用户名不能超过20个字符')
             .regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字和下划线'),
+        phone: z
+            .string()
+            .min(1, '请输入手机号')
+            .regex(/^1[3-9]\d{9}$/, '请输入有效的手机号'),
+        verifyCode: z.string().min(1, '请输入验证码').max(6, '验证码最多6位'),
         password: z.string().min(8, '密码至少需要8个字符').max(128, '密码不能超过128个字符'),
         confirmPassword: z.string().min(1, '请确认密码'),
         agreeTerms: z.boolean().refine(v => v, '请同意服务条款和隐私政策'),

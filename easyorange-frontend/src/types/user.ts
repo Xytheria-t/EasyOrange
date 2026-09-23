@@ -25,6 +25,8 @@ export interface LoginRequest {
 export interface RegisterRequest {
     username: string;
     password: string;
+    phone: string;
+    verifyCode: string;
 }
 
 export interface LoginResponse {
