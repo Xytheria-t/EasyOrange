@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.framework.config.redis;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
@@ -59,6 +61,22 @@ public class RedisConfig {
                 .build();
         return GenericJacksonJsonRedisSerializer.builder()
                 .enableDefaultTyping(typeValidator)
+                // 根 Collection 手工补类型包装（TD-017）：Jackson 3 + Spring Data 4 对「根数组」写读不对称——
+                // 写侧省掉根类型（产出 [{…@class…}]），读侧仍按包装数组期待首元素为类型 id 字符串，
+                // 恒抛 Unexpected token START_OBJECT → 每次读 WARN + 直查 DB（eo:category:list 即此形态）。
+                // 包装成 ["java.util.ArrayList",[…]] 即与读侧对齐；对象 / 标量路径不动，存量值零失效、自愈回写。
+                .writer((mapper, value) -> {
+                    if (value instanceof Collection<?> collection) {
+                        byte[] inner = mapper.writeValueAsBytes(collection);
+                        byte[] prefix = "[\"java.util.ArrayList\",".getBytes(StandardCharsets.UTF_8);
+                        byte[] out = new byte[prefix.length + inner.length + 1];
+                        System.arraycopy(prefix, 0, out, 0, prefix.length);
+                        System.arraycopy(inner, 0, out, prefix.length, inner.length);
+                        out[out.length - 1] = ']';
+                        return out;
+                    }
+                    return mapper.writeValueAsBytes(value);
+                })
                 .build();
     }
 }
