@@ -80,7 +80,7 @@ class SemanticCacheServiceTest {
         @DisplayName("正常 -> 返回查询向量")
         void embedQuery_ok() {
             when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
-            when(aiModelSupport.embed(any(), anyString())).thenReturn(QUERY_VECTOR);
+            when(aiModelSupport.embed(any(), any(), anyString())).thenReturn(QUERY_VECTOR);
 
             assertThat(cache.embedQuery("怎么退款？")).isEqualTo(QUERY_VECTOR);
         }
@@ -106,14 +106,14 @@ class SemanticCacheServiceTest {
         @DisplayName("空白查询 -> 空列表，不调模型")
         void embedQuery_blank() {
             assertThat(cache.embedQuery("  ")).isEmpty();
-            verify(aiModelSupport, never()).embed(any(), anyString());
+            verify(aiModelSupport, never()).embed(any(), any(), anyString());
         }
 
         @Test
         @DisplayName("向量化异常 -> 空列表（不抛出，缓存失败不阻塞问答）")
         void embedQuery_embeddingThrows() {
             when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
-            when(aiModelSupport.embed(any(), anyString())).thenThrow(new RuntimeException("dashscope timeout"));
+            when(aiModelSupport.embed(any(), any(), anyString())).thenThrow(new RuntimeException("dashscope timeout"));
 
             assertThat(cache.embedQuery("问题")).isEmpty();
         }

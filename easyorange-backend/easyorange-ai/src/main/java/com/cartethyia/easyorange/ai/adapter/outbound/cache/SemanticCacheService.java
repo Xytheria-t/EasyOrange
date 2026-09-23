@@ -59,10 +59,9 @@ public class SemanticCacheService implements SemanticCachePort {
     /**
      * 查询向量化 — 命中查找与写入共用这一次调用的结果。
      * <p>
-     * 不传 {@link AiCallScope} 是刻意的：本方法走 {@code AiModelSupport} 不带 scope 的 embed 重载，
-     * 因此<b>不落调用日志、不计入 token 日预算</b>。原因是 embedding 接口不回报 usage，
-     * 纳入预算只能按场景的单次上限估算，而 chat / qa 的上限是 1500 / 1000 token ——
-     * 给一次 1024 维 embedding 记上千 token，会让日预算被虚高用量提前打满（见 TD-015）。
+     * 按 {@link AiCallScope#CHAT} 记账（缓存的读写键也是 CHAT）：命中一次就是一次真实的供应商调用，
+     * 不落日志不计预算就永远是账外项。原先不传 scope 的理由是「embedding 不回报 usage，
+     * 只能按场景上限估算，会把日预算虚高打满」—— 用量改取供应商真实回报后该理由已不成立（见 TD-015）。
      */
     @Override
     public List<Float> embedQuery(String query) {
@@ -74,7 +73,7 @@ public class SemanticCacheService implements SemanticCachePort {
             return List.of();
         }
         try {
-            return aiModelSupport.embed(embeddingModel, query);
+            return aiModelSupport.embed(embeddingModel, AiCallScope.CHAT, query);
         } catch (Exception e) {
             log.warn("Semantic cache query embedding failed, skip cache for this call", e);
             return List.of();

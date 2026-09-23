@@ -30,7 +30,10 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiModelSupport 调用去重工具测试")
@@ -280,6 +283,47 @@ class AiModelSupportTest {
         }
 
         @Test
+        @DisplayName("embedding 供应商回报 usage -> 按真实 prompt token 记账（成本报表不再恒 0）")
+        void embedding_recordsReportedUsage() {
+            when(embeddingModel.embedForResponse(List.of("二手手机"))).thenReturn(embeddingResponseWithUsage(12));
+
+            List<Float> result = support.embed(embeddingModel, AiCallScope.SEMANTIC, "二手手机");
+
+            assertThat(result).containsExactly(0.5f, -0.25f);
+            var usage = budgetStore.getTodayUsage(AiCallScope.SEMANTIC.budgetScenario());
+            assertThat(usage).isPresent();
+            assertThat(usage.get().inputTokens()).isEqualTo(12);
+            assertThat(usage.get().total()).isEqualTo(12);
+            verify(callLogRecorder)
+                    .record(
+                            eq("SEMANTIC"),
+                            anyString(),
+                            anyString(),
+                            isNull(),
+                            anyLong(),
+                            eq(12),
+                            eq(0),
+                            eq(true),
+                            isNull());
+        }
+
+        @Test
+        @DisplayName("embedding 未回报 usage -> 仍退化为场景上限估算，预算不会静默不累计")
+        void embedding_fallsBackToConfiguredEstimate() {
+            when(embeddingModel.embedForResponse(List.of("二手手机")))
+                    .thenReturn(new EmbeddingResponse(List.of(new Embedding(new float[] {0.5f}, 0))));
+            var props =
+                    PropertyBindings.bind(AiProperties.class, "budget.scenarios.semantic.max-tokens-per-call", "500");
+            support = TestAiModelSupport.create(callLogRecorder, budgetStore, props);
+
+            support.embed(embeddingModel, AiCallScope.SEMANTIC, "二手手机");
+
+            var usage = budgetStore.getTodayUsage(AiCallScope.SEMANTIC.budgetScenario());
+            assertThat(usage).isPresent();
+            assertThat(usage.get().total()).isEqualTo(500);
+        }
+
+        @Test
         @DisplayName("调用失败不记账（只在成功且有用量可依据时累计）")
         void failure_recordsNothing() {
             when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("provider down"));
@@ -307,5 +351,12 @@ class AiModelSupportTest {
                 ChatResponseMetadata.builder()
                         .usage(new DefaultUsage(promptTokens, completionTokens))
                         .build());
+    }
+
+    /** embedding 响应夹具：向量 + 供应商回报的 prompt token（completion 对 embedding 恒为 0）。 */
+    private static EmbeddingResponse embeddingResponseWithUsage(int promptTokens) {
+        return new EmbeddingResponse(
+                List.of(new Embedding(new float[] {0.5f, -0.25f}, 0)),
+                new EmbeddingResponseMetadata("text-embedding-v3", new DefaultUsage(promptTokens, 0)));
     }
 }

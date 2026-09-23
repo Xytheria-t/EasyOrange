@@ -3,7 +3,8 @@ package com.cartethyia.easyorange.product.application.port.query;
 import java.util.List;
 
 /**
- * 检索词向量化出站端口 —— 商品检索的第二路召回（kNN）需要先把关键词编码成 dense vector。
+ * 文本向量化出站端口 —— 商品检索的 kNN 那一路需要 dense vector：查询侧编码关键词，
+ * 索引侧编码商品名，两侧必须同一个编码器（同模型同维度），否则相似度没有意义。
  * <p>
  * 端口定义在 product、实现在 ai（`QueryEmbeddingAdapter`）：向量化依赖 {@code EmbeddingModel} 与
  * AI 记账设施，都在 ai 模块；方向与 {@link ProductSearchQueryPort} 由 ai 侧实现一致，
