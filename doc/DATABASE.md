@@ -21,11 +21,7 @@
 
 | 脚本 | 内容 |
 |------|------|
-| `V1__init_schema.sql` | 26 表初始化（当前完整 DDL；开发阶段三次收口为单文件，项目未发版无生产历史） |
-| `V2__agent_step_trace.sql` | Agent 步级轨迹表 `eo_agent_step_trace`（一次请求一个 trace_id） |
-| `V3__ai_suggestion_snapshot.sql` | `eo_product` 的 `ai_suggested_price` 单列换 `ai_suggestion` JSON 快照（字段级采纳率数据源） |
-| `V4__drop_retired_tables.sql` | 清理已下线能力的表与列（收藏 / 商品评价 / 消息归档 / AI 调用主体与离线评审分） |
-| `V5__audit_log_basodo_columns.sql` | `eo_product_audit_log` 补齐 BaseDO 四列（update_time / create_by / update_by / del_flag，逐列查 INFORMATION_SCHEMA 幂等执行） |
+| `V1__init_schema.sql` | 单文件完整 DDL（当前完整结构；开发阶段收口为单文件，项目未发版无生产历史，上线后禁止改、只增 V2+） |
 | `R__seed_*.sql` | 可重复执行种子：分类、RAG 知识库文档 |
 
 ## Flyway 迁移规范
@@ -51,7 +47,7 @@
 
 ## 表总览
 
-V1 建 26 表（24 个 `eo_*` 业务/观测表 + 2 个 Spring Modulith 基础设施表），V4 删 3 张已下线表，V2 增 `eo_agent_step_trace`——**总数以[结构计数](./工程指标.md#结构计数)为准**。
+V1 单脚本建全部表（`eo_*` 业务/观测表 + 2 个 Spring Modulith 基础设施表）——**总数以[结构计数](./工程指标.md#结构计数)为准**。
 
 > 早期建表时预留过 4 张从未被代码引用的表（eo_payment_config / eo_product_question / eo_audit_suggestion / eo_credit_change_log），已随 V1 收口删除——库里的表应当都有消费者。另有 eo_user_credit / eo_product_report / eo_report_handle_history 随信用、举报两个功能下线一并从 V1 移除。
 
