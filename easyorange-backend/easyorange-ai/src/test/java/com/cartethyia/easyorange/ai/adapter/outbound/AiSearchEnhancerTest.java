@@ -15,7 +15,6 @@ import com.cartethyia.easyorange.product.application.query.readmodel.ProductRead
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -130,36 +129,39 @@ class AiSearchEnhancerTest {
     class PreconditionChecks {
 
         @Test
-        @DisplayName("非自然语言 -> 返回 empty")
+        @DisplayName("非自然语言 -> 不适用（无结果、不标降级）")
         void tryEnhance_notNaturalLanguage() {
             when(nlDetector.isNaturalLanguage("MacBook")).thenReturn(false);
 
-            Optional<AiEnhancement> result =
+            var result =
                     enhancer.tryEnhance("MacBook", List.of(product("1", "MacBook", BigDecimal.valueOf(8000))));
 
-            assertThat(result).isEmpty();
+            assertThat(result.enhancement()).isNull();
+            assertThat(result.degraded()).isFalse();
             verifyNoInteractions(chatModel, productTagger, redisTemplate);
         }
 
         @Test
-        @DisplayName("空商品列表 -> 返回 empty")
+        @DisplayName("空商品列表 -> 不适用（无结果、不标降级）")
         void tryEnhance_emptyProducts() {
             when(nlDetector.isNaturalLanguage("找电脑")).thenReturn(true);
 
-            Optional<AiEnhancement> result = enhancer.tryEnhance("找电脑", List.of());
+            var result = enhancer.tryEnhance("找电脑", List.of());
 
-            assertThat(result).isEmpty();
+            assertThat(result.enhancement()).isNull();
+            assertThat(result.degraded()).isFalse();
             verifyNoInteractions(chatModel, productTagger);
         }
 
         @Test
-        @DisplayName("null 商品列表 -> 返回 empty")
+        @DisplayName("null 商品列表 -> 不适用（无结果、不标降级）")
         void tryEnhance_nullProducts() {
             when(nlDetector.isNaturalLanguage("找电脑")).thenReturn(true);
 
-            Optional<AiEnhancement> result = enhancer.tryEnhance("找电脑", null);
+            var result = enhancer.tryEnhance("找电脑", null);
 
-            assertThat(result).isEmpty();
+            assertThat(result.enhancement()).isNull();
+            assertThat(result.degraded()).isFalse();
         }
     }
 
@@ -174,10 +176,11 @@ class AiSearchEnhancerTest {
             AiEnhancement cached = new AiEnhancement("想找低价智能手机", Map.of(), "市场均价2000左右", List.of());
             when(valueOps.get(anyString())).thenReturn(cached);
 
-            Optional<AiEnhancement> result =
+            var result =
                     enhancer.tryEnhance("找便宜手机", List.of(product("1", "手机", BigDecimal.valueOf(1500))));
 
-            assertThat(result).isPresent().get().isEqualTo(cached);
+            assertThat(result.enhancement()).isEqualTo(cached);
+            assertThat(result.degraded()).isFalse();
             verifyNoInteractions(chatModel, productTagger);
         }
 
@@ -190,10 +193,11 @@ class AiSearchEnhancerTest {
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of()));
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("想找电脑"));
 
-            Optional<AiEnhancement> result =
+            var result =
                     enhancer.tryEnhance("找电脑", List.of(product("1", "笔记本", BigDecimal.valueOf(4000))));
 
-            assertThat(result).isPresent();
+            assertThat(result.enhancement()).isNotNull();
+            assertThat(result.degraded()).isFalse();
             verify(chatModel, atLeastOnce()).call(any(Prompt.class));
         }
     }
@@ -211,11 +215,12 @@ class AiSearchEnhancerTest {
                     .thenReturn(textResponse("想找5000元左右的笔记本电脑"));
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of("💰超值")));
 
-            Optional<AiEnhancement> result = enhancer.tryEnhance(
+            var result = enhancer.tryEnhance(
                     "推荐个5000的笔记本", List.of(product("1", "MacBook Air M1", BigDecimal.valueOf(4200))));
 
-            assertThat(result).isPresent();
-            AiEnhancement enhancement = result.get();
+            assertThat(result.degraded()).isFalse();
+            AiEnhancement enhancement = result.enhancement();
+            assertThat(enhancement).isNotNull();
             assertThat(enhancement.intentExplanation()).isEqualTo("想找5000元左右的笔记本电脑");
             assertThat(enhancement.productTags()).containsKey("1");
             // 后两路已是规则实现：均价/区间由价格算出，追问由关键词与价格下限派生
@@ -234,26 +239,28 @@ class AiSearchEnhancerTest {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(null));
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of("💰超值", "📸实拍")));
 
-            Optional<AiEnhancement> result =
+            var result =
                     enhancer.tryEnhance("找个手机", List.of(product("1", "iPhone", BigDecimal.valueOf(2500))));
 
-            assertThat(result).isPresent();
-            assertThat(result.get().productTags()).containsKey("1");
-            assertThat(result.get().intentExplanation()).isNull();
+            assertThat(result.enhancement()).isNotNull();
+            assertThat(result.degraded()).isFalse();
+            assertThat(result.enhancement().productTags()).containsKey("1");
+            assertThat(result.enhancement().intentExplanation()).isNull();
         }
 
         @Test
-        @DisplayName("所有任务都返回空 -> 返回 empty")
+        @DisplayName("所有任务都返回空 -> 无结果且标记降级（值得向用户提示）")
         void tryEnhance_allEmpty() {
             when(nlDetector.isNaturalLanguage("随便看看")).thenReturn(true);
             when(valueOps.get(anyString())).thenReturn(null);
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse(null));
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of());
 
-            Optional<AiEnhancement> result =
+            var result =
                     enhancer.tryEnhance("随便看看", List.of(product("1", "商品A", BigDecimal.valueOf(100))));
 
-            assertThat(result).isEmpty();
+            assertThat(result.enhancement()).isNull();
+            assertThat(result.degraded()).isTrue();
             verify(valueOps, never()).set(anyString(), any(), anyLong(), any());
         }
     }
@@ -270,12 +277,14 @@ class AiSearchEnhancerTest {
             when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("API timeout"));
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of("💰超值")));
 
-            Optional<AiEnhancement> result =
+            var result =
                     enhancer.tryEnhance("找东西", List.of(product("1", "商品X", BigDecimal.valueOf(999))));
 
-            assertThat(result).isPresent();
-            assertThat(result.get().productTags()).containsKey("1");
-            assertThat(result.get().intentExplanation()).isNull();
+            // 部分结果仍可展示（规则标签在）：有内容就不标降级，面板照常渲染
+            assertThat(result.enhancement()).isNotNull();
+            assertThat(result.degraded()).isFalse();
+            assertThat(result.enhancement().productTags()).containsKey("1");
+            assertThat(result.enhancement().intentExplanation()).isNull();
         }
 
         @Test
@@ -296,10 +305,11 @@ class AiSearchEnhancerTest {
         void tryEnhance_unexpectedFailure_neverThrows() {
             when(nlDetector.isNaturalLanguage("找东西")).thenThrow(new IllegalStateException("detector broken"));
 
-            Optional<AiEnhancement> result = assertDoesNotThrow(
+            var result = assertDoesNotThrow(
                     () -> enhancer.tryEnhance("找东西", List.of(product("1", "商品X", BigDecimal.valueOf(999)))));
 
-            assertThat(result).isEmpty();
+            assertThat(result.enhancement()).isNull();
+            assertThat(result.degraded()).isTrue();
         }
     }
 }

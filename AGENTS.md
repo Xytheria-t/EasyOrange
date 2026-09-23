@@ -40,7 +40,7 @@ monorepo：`easyorange-backend/`（Maven 多模块，约定见 [AGENTS.md](easyo
 
 ## 全局硬约束（任何改动都适用，违反即返工）
 
-- **API 统一返回 `Result<T>`**；分页 `PageResult<T>`；搜索 `SearchPageResponse<T>`（`records/total/current/size/pages` + `facets` + `aiEnhancement`）。成功判据：`"A0000".equals(code)`
+- **API 统一返回 `Result<T>`**；分页 `PageResult<T>`；搜索 `SearchPageResponse<T>`（`records/total/current/size/pages` + `facets` + `aiEnhancement` + `aiEnhancementDegraded`）。成功判据：`"A0000".equals(code)`
 - **数据库变更必须通过 Flyway 迁移脚本**（CREATE TABLE 用紧凑格式，**禁止对齐列**）；DO 枚举字段经 `@EnumValue` 注解持久化（内置 `MybatisEnumTypeHandler`，禁止手写 TypeHandler）
 - **DDD 分层**：domain → application → adapter，依赖方向单向向内；聚合根不可变（`@Builder(toBuilder = true)`），值对象用 `record`
 - **CQRS + ACL 隔离**：命令与查询分离（product/order/payment/message）；跨模块必须通过 Port/ACL 适配，禁止直接依赖领域模型/Mapper

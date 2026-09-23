@@ -9,9 +9,13 @@ import java.util.List;
 /**
  * 商品搜索结果 —— 应用层输出，不依赖 adapter DTO。
  *
- * @param page           分页结果（含 records / total / current / size / pages）
- * @param facets         分面聚合桶（来自 ES 搜索）
- * @param aiEnhancement  AI 搜索结果增强（可选）
+ * @param page                   分页结果（含 records / total / current / size / pages）
+ * @param facets                 分面聚合桶（来自 ES 搜索）
+ * @param aiEnhancement          AI 搜索结果增强（可选）
+ * @param aiEnhancementDegraded  已开启增强但本次失败（degraded），前端据此显示降级提示
  */
 public record ProductSearchResult(
-        PageResult<ProductReadModel> page, List<FacetBucket> facets, AiEnhancement aiEnhancement) {}
+        PageResult<ProductReadModel> page,
+        List<FacetBucket> facets,
+        AiEnhancement aiEnhancement,
+        boolean aiEnhancementDegraded) {}

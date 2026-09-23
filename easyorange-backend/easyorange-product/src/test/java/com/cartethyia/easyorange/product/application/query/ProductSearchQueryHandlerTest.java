@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.product.application.query;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
@@ -16,6 +17,7 @@ import com.cartethyia.easyorange.product.application.query.readmodel.SearchHisto
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -285,6 +287,45 @@ class ProductSearchQueryHandlerTest {
         var result = handler.search(criteria, false);
 
         assertThat(result.page().records()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("增强失败（degraded）时结果带上降级标记，aiEnhancement 为 null")
+    void search_enhanceFailed_shouldFlagDegraded() {
+        var enhancer = mock(AiSearchEnhancerPort.class);
+        when(enhancer.tryEnhance(any(), any())).thenReturn(AiSearchEnhancerPort.EnhanceOutcome.failed());
+        var handler = new ProductSearchQueryHandler(
+                productQueryRepository,
+                provider((ProductSearchQueryPort) null),
+                provider(enhancer),
+                provider((QueryEmbeddingPort) null));
+        var criteria = new ProductSearchCriteria("找便宜手机", null, null, null, null, null, null, null, 1, 20);
+        when(productQueryRepository.searchProducts(any())).thenReturn(PageResult.of(List.of(testProduct), 1, 1, 20));
+
+        ProductSearchResult result = handler.search(criteria, true);
+
+        assertThat(result.aiEnhancement()).isNull();
+        assertThat(result.aiEnhancementDegraded()).isTrue();
+    }
+
+    @Test
+    @DisplayName("增强成功时结果带增强数据，不标降级")
+    void search_enhanceSucceeded_shouldNotFlagDegraded() {
+        var enhancement = new AiEnhancement("想找手机", Map.of(), "均价2000", List.of("哪款耐用？"));
+        var enhancer = mock(AiSearchEnhancerPort.class);
+        when(enhancer.tryEnhance(any(), any())).thenReturn(AiSearchEnhancerPort.EnhanceOutcome.of(enhancement));
+        var handler = new ProductSearchQueryHandler(
+                productQueryRepository,
+                provider((ProductSearchQueryPort) null),
+                provider(enhancer),
+                provider((QueryEmbeddingPort) null));
+        var criteria = new ProductSearchCriteria("找便宜手机", null, null, null, null, null, null, null, 1, 20);
+        when(productQueryRepository.searchProducts(any())).thenReturn(PageResult.of(List.of(testProduct), 1, 1, 20));
+
+        ProductSearchResult result = handler.search(criteria, true);
+
+        assertThat(result.aiEnhancement()).isEqualTo(enhancement);
+        assertThat(result.aiEnhancementDegraded()).isFalse();
     }
 
     /** 按需装配：两个可选出站端口谁在测试里被用到就传谁，传 null 即模拟该 bean 不存在。 */

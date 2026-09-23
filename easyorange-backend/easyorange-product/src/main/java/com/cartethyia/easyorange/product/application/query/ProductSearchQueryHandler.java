@@ -63,13 +63,13 @@ public class ProductSearchQueryHandler {
             readModels = page.records();
         }
 
+        // 未开 AI / 无结果 / 增强器缺失：不尝试 → notApplicable（degraded=false），失败提示只留给真正尝试过又失败的
         var enhancer = aiSearchEnhancer.getIfAvailable();
-        var aiEnhancement = aiEnhanced && enhancer != null && !readModels.isEmpty()
+        var outcome = aiEnhanced && enhancer != null && !readModels.isEmpty()
                 ? enhancer.tryEnhance(criteria.keyword(), takeTop(readModels, 5))
-                        .orElse(null)
-                : null;
+                : AiSearchEnhancerPort.EnhanceOutcome.notApplicable();
 
-        return new ProductSearchResult(page, facets, aiEnhancement);
+        return new ProductSearchResult(page, facets, outcome.enhancement(), outcome.degraded());
     }
 
     @Transactional(readOnly = true)
