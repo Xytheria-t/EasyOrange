@@ -54,6 +54,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     private final SearchToolRegistry toolRegistry;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final int timeoutSeconds;
+    private final boolean forceFail;
     private final MeterRegistry meterRegistry;
 
     private static final long CACHE_TTL_MINUTES = 5;
@@ -65,11 +66,13 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
             SearchToolRegistry toolRegistry,
             ObjectProvider<RedisTemplate<Object, Object>> redisTemplateProvider,
             @Value("${easyorange.ai.search-enhance.timeout-seconds:5}") int timeoutSeconds,
+            @Value("${easyorange.ai.search-enhance.force-fail:false}") boolean forceFail,
             MeterRegistry meterRegistry) {
         this.nlDetector = nlDetector;
         this.toolRegistry = toolRegistry;
         this.redisTemplate = redisTemplateProvider.getIfAvailable();
         this.timeoutSeconds = timeoutSeconds;
+        this.forceFail = forceFail;
         this.meterRegistry = meterRegistry;
     }
 
@@ -91,6 +94,12 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
             // 前置检查不适用（非自然语言 / 无结果）：没尝试过，不算降级
             if (!nlDetector.isNaturalLanguage(keyword) || topProducts == null || topProducts.isEmpty()) {
                 return EnhanceOutcome.notApplicable();
+            }
+            // dev 故障注入（easyorange.ai.search-enhance.force-fail）：恒走降级，真实验证
+            // aiEnhancementDegraded 横幅 / enhance.degraded 计数 / e2e——不用改写响应模拟；生产恒 false
+            if (forceFail) {
+                log.info("action=search_enhance_force_fail, keyword={}", keyword);
+                return EnhanceOutcome.failed();
             }
             AiEnhancement enhancement = doEnhance(keyword, topProducts).orElse(null);
             return enhancement != null ? EnhanceOutcome.of(enhancement) : EnhanceOutcome.failed();

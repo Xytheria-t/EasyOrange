@@ -453,6 +453,8 @@ easyorange:
     search-enhance:        # 搜索增强 — 4 路工具并行的总等待上限（只决定「等多久」，超时即降级为部分结果且不写缓存）
       # 供应商越慢越要调大：免费额度档 flash 模型单次 2.5~8.5s，5s 会让市场分析与建议问题恒定缺席、且因降级不缓存而每次重算
       timeout-seconds: ${AI_SEARCH_ENHANCE_TIMEOUT_SECONDS:5}
+      # dev 故障注入：true 时搜索增强恒降级（真实验证 aiEnhancementDegraded 横幅 / 降级计数 / e2e，无需改写响应）；生产保持 false
+      force-fail: ${AI_SEARCH_ENHANCE_FORCE_FAIL:false}
     semantic-cache:        # 语义缓存 — 相似问题复用历史回答（成本优化）
       enabled: true
       similarity-threshold: 0.92

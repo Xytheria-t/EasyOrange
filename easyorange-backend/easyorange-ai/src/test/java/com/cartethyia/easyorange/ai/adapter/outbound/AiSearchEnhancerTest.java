@@ -67,7 +67,7 @@ class AiSearchEnhancerTest {
         lenient().when(redisTemplateProvider.getIfAvailable()).thenReturn(redisTemplate);
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOps);
         enhancer = new AiSearchEnhancerAdapter(
-                nlDetector, buildRegistry(), redisTemplateProvider, TIMEOUT_SECONDS, meterRegistry);
+                nlDetector, buildRegistry(), redisTemplateProvider, TIMEOUT_SECONDS, false, meterRegistry);
     }
 
     private SearchToolRegistry buildRegistry() {
@@ -191,7 +191,7 @@ class AiSearchEnhancerTest {
         void tryEnhance_noRedisConfigured() {
             when(redisTemplateProvider.getIfAvailable()).thenReturn(null);
             enhancer = new AiSearchEnhancerAdapter(
-                    nlDetector, buildRegistry(), redisTemplateProvider, TIMEOUT_SECONDS, meterRegistry);
+                    nlDetector, buildRegistry(), redisTemplateProvider, TIMEOUT_SECONDS, false, meterRegistry);
             when(nlDetector.isNaturalLanguage("找电脑")).thenReturn(true);
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of()));
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("想找电脑"));
@@ -262,6 +262,42 @@ class AiSearchEnhancerTest {
             assertThat(result.enhancement()).isNull();
             assertThat(result.degraded()).isTrue();
             verify(valueOps, never()).set(anyString(), any(), anyLong(), any());
+        }
+    }
+
+    @Nested
+    @DisplayName("故障注入（easyorange.ai.search-enhance.force-fail）")
+    class ForceFailTests {
+
+        @Test
+        @DisplayName("force-fail=true -> 自然语言查询恒降级：不打模型、降级计数 +1")
+        void forceFail_degradesWithoutTools() {
+            enhancer = new AiSearchEnhancerAdapter(
+                    nlDetector, buildRegistry(), redisTemplateProvider, TIMEOUT_SECONDS, true, meterRegistry);
+            when(nlDetector.isNaturalLanguage("找电脑")).thenReturn(true);
+
+            var result = enhancer.tryEnhance("找电脑", List.of(product("1", "笔记本", BigDecimal.valueOf(4000))));
+
+            assertThat(result.enhancement()).isNull();
+            assertThat(result.degraded()).isTrue();
+            verifyNoInteractions(chatModel, productTagger);
+            var counter =
+                    meterRegistry.find("easyorange.ai.search.enhance.degraded").counter();
+            assertThat(counter).isNotNull();
+            assertThat(counter.count()).isEqualTo(1.0);
+        }
+
+        @Test
+        @DisplayName("force-fail 不越过前置检查：非自然语言仍不适用，不误报降级")
+        void forceFail_respectsPrecondition() {
+            enhancer = new AiSearchEnhancerAdapter(
+                    nlDetector, buildRegistry(), redisTemplateProvider, TIMEOUT_SECONDS, true, meterRegistry);
+            when(nlDetector.isNaturalLanguage("MacBook")).thenReturn(false);
+
+            var result = enhancer.tryEnhance("MacBook", List.of(product("1", "MacBook", BigDecimal.valueOf(8000))));
+
+            assertThat(result.enhancement()).isNull();
+            assertThat(result.degraded()).isFalse();
         }
     }
 
