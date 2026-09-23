@@ -53,8 +53,27 @@ public class ImageProcessingService {
     private static final Set<ImageFormat> SUPPORTED_OUTPUT_FORMATS =
             Set.of(ImageFormat.JPEG, ImageFormat.PNG, ImageFormat.WEBP);
 
+    /**
+     * 运行时探测 webp 编码器（TD-018）：JDK / Thumbnailator 默认不带 webp writer，
+     * 请求 webp 输出会抛 {@code Specified format is not supported: webp} → by-id view/responsive 500。
+     * 启动期探测一次；无 writer 时 webp 请求降级为 JPEG（对齐扩展名与 Content-Type）。
+     */
+    private static final boolean WEBP_WRITER_PRESENT = detectWebpWriter();
+
+    private static boolean detectWebpWriter() {
+        try {
+            return ImageIO.getImageWritersByFormatName("webp").hasNext();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public ProcessedImage processImage(File source, int width, int height, ImageFormat format, float quality)
             throws IOException {
+        if (format == ImageFormat.WEBP && !WEBP_WRITER_PRESENT) {
+            log.debug("webp writer unavailable, degrade output to jpeg");
+            format = ImageFormat.JPEG;
+        }
         var output = createTempFile("processed_", format.extension());
         try {
             var builder = Thumbnails.of(source)

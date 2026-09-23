@@ -43,6 +43,18 @@ class ImageProcessingServiceTest {
     }
 
     @Test
+    void processImage_webp_degradesToJpegWhenWriterMissing() throws Exception {
+        var source = createImage(200, 200, "jpg");
+        var result = service.processImage(source, 100, 100, ImageProcessingService.ImageFormat.WEBP, 0.8f);
+
+        // 无 webp 编码器的环境（JDK/Thumbnailator 默认）必须降级 JPEG 而不是抛 not supported（TD-018）
+        boolean writerPresent = ImageIO.getImageWritersByFormatName("webp").hasNext();
+        assertEquals(writerPresent ? "image/webp" : "image/jpeg", result.mimeType());
+        assertTrue(result.file().exists());
+        assertTrue(result.file().length() > 0);
+    }
+
+    @Test
     void processImage_withInvalidFile_shouldThrow() {
         assertThrows(
                 Exception.class,
