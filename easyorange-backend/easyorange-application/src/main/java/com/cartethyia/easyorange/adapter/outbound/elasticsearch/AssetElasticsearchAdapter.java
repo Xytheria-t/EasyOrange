@@ -26,6 +26,7 @@ import org.springframework.data.elasticsearch.core.query.SourceFilter;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
@@ -122,14 +123,27 @@ public class AssetElasticsearchAdapter implements AssetRetrievalPort {
         }
     }
 
+    /**
+     * kNN 腿：{@code status=ONLINE} 过滤走 {@code knn.filter}（预过滤），<b>不得挂顶层 query</b>。
+     * <p>
+     * 实测（2026-09-23，scripts/repro-td-020-knn-threshold.py 同源探针）：顶层 query 与 kNN 是
+     * <b>纯并集</b>——kNN 候选完全不受 query 过滤（零命中过滤仍返回满额候选），DRAFT/REJECTED 会
+     * 带着向量分进候选池；且一旦给这条腿补 {@code knn.similarity}，顶层 query（match_all+过滤）
+     * 会把阈值整个架空（TD-020 四组对照的 g3：乱码返全库）。商品腿同一形态见
+     * {@link ElasticsearchProductSearchQueryAdapter#knnQuery}。
+     */
     private NativeQuery knnQuery(List<Float> queryEmbedding, int k) {
         return NativeQuery.builder()
                 .withPageable(PageRequest.of(0, k))
-                .withKnnSearches(knn -> knn.field("nameEmbedding")
-                        .queryVector(queryEmbedding)
-                        .k(k)
-                        .numCandidates(NUM_CANDIDATES))
-                .withQuery(Queries.wrapperQueryAsQuery(buildBm25Query(null).toString()))
+                .withKnnSearches(knn -> {
+                    knn.field("nameEmbedding")
+                            .queryVector(queryEmbedding)
+                            .k(k)
+                            .numCandidates(NUM_CANDIDATES)
+                            .filter(Queries.wrapperQueryAsQuery(
+                                    onlineOnlyFilter().toString()));
+                    return knn;
+                })
                 .withSourceFilter(SOURCE_FILTER)
                 .withSort(byScoreDesc())
                 .build();
@@ -149,38 +163,43 @@ public class AssetElasticsearchAdapter implements AssetRetrievalPort {
     }
 
     /**
-     * BM25 子句（{@code query} 为 null 时退化为 match_all，供 kNN 那路只取过滤条件用）。
+     * BM25 子句（{@code query} 非空由调用方保证——{@link #search} 只在关键词非空时发这条腿）。
      * <p>
      * 两条路都带 {@code status = ONLINE} 过滤：只过滤一路会让不过滤的那路把不可售资产带进候选池，
-     * 融合后照样可能出现在推荐里。包级可见，供测试直接断言过滤条件。
+     * 融合后照样可能出现在推荐里（kNN 那路经 {@link #knnQuery} 的 {@code knn.filter} 承载）。
+     * 包级可见，供测试直接断言过滤条件。
      */
     JsonNode buildBm25Query(String query) {
         ObjectNode bool = objectMapper.createObjectNode();
 
         var must = objectMapper.createArrayNode();
-        if (query != null && !query.isBlank()) {
-            var multiMatch = objectMapper.createObjectNode();
-            multiMatch.put("query", query);
-            multiMatch.put("type", "best_fields");
-            multiMatch.put("fuzziness", "AUTO");
-            var fields = multiMatch.putArray("fields");
-            fields.add("name^3");
-            fields.add("description");
-            must.add(objectMapper.createObjectNode().set("multi_match", multiMatch));
-        } else {
-            must.add(objectMapper.createObjectNode().set("match_all", objectMapper.createObjectNode()));
-        }
+        var multiMatch = objectMapper.createObjectNode();
+        multiMatch.put("query", query);
+        multiMatch.put("type", "best_fields");
+        multiMatch.put("fuzziness", "AUTO");
+        var fields = multiMatch.putArray("fields");
+        fields.add("name^3");
+        fields.add("description");
+        must.add(objectMapper.createObjectNode().set("multi_match", multiMatch));
         bool.set("must", must);
-
-        var term = objectMapper.createObjectNode();
-        term.put("status", STATUS_ONLINE);
-        bool.set(
-                "filter",
-                objectMapper
-                        .createArrayNode()
-                        .add(objectMapper.createObjectNode().set("term", term)));
+        bool.set("filter", onlineFilterClauses());
 
         return objectMapper.createObjectNode().set("bool", bool);
+    }
+
+    /** kNN 腿的预过滤体 {@code {"bool":{"filter":[{"term":{"status":"ONLINE"}}]}}}（wrapper 装查询对象，装数组会被 ES 拒收）。 */
+    private JsonNode onlineOnlyFilter() {
+        return objectMapper
+                .createObjectNode()
+                .set("bool", objectMapper.createObjectNode().set("filter", onlineFilterClauses()));
+    }
+
+    /** 两腿共用的 {@code status=ONLINE} 过滤子句 — 定义只此一处，改口径两腿同时生效。 */
+    private ArrayNode onlineFilterClauses() {
+        var term = objectMapper.createObjectNode().put("status", STATUS_ONLINE);
+        return objectMapper
+                .createArrayNode()
+                .add(objectMapper.createObjectNode().set("term", term));
     }
 
     private static AssetHit toHit(ProductDocument doc, double score) {
