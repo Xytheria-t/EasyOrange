@@ -45,7 +45,7 @@ import { useCreateOrder, useProduct, useSimilarProducts } from '@/hooks';
 import { type OrderFormData, orderFormSchema } from '@/schemas/productDetailSchema';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import { formatRelativeTime } from '@/utils';
+import { formatPrice, formatRelativeTime } from '@/utils';
 import { ProductGallery } from './components/ProductGallery';
 
 function ProductDetailPage() {
@@ -450,10 +450,16 @@ function ProductDetailPage() {
                         <div className="pdp-similar-grid" aria-hidden="true">
                             {[0, 1, 2, 3].map(i => (
                                 <div key={i} className="pdp-similar-card pdp-similar-skeleton">
-                                    <div className="pdp-similar-skeleton-image shimmer" />
+                                    <div className="pdp-similar-skeleton-image pdp-shimmer" />
                                     <div className="pdp-similar-content">
-                                        <div className="pdp-similar-skeleton-line shimmer" style={{ width: '85%' }} />
-                                        <div className="pdp-similar-skeleton-line shimmer" style={{ width: '45%' }} />
+                                        <div
+                                            className="pdp-similar-skeleton-line pdp-shimmer"
+                                            style={{ width: '85%' }}
+                                        />
+                                        <div
+                                            className="pdp-similar-skeleton-line pdp-shimmer"
+                                            style={{ width: '45%' }}
+                                        />
                                     </div>
                                 </div>
                             ))}
@@ -504,10 +510,12 @@ function ProductDetailPage() {
                                             <div className="pdp-similar-content">
                                                 <h4 className="pdp-similar-title">{item.title}</h4>
                                                 <div className="pdp-similar-price-row">
-                                                    <span className="pdp-similar-price">¥{item.price.toFixed(0)}</span>
+                                                    <span className="pdp-similar-price">
+                                                        ¥{formatPrice(item.price)}
+                                                    </span>
                                                     {itemHasDiscount ? (
                                                         <span className="pdp-similar-original">
-                                                            ¥{(item.originalPrice as number).toFixed(0)}
+                                                            ¥{formatPrice(item.originalPrice as number)}
                                                         </span>
                                                     ) : null}
                                                 </div>
