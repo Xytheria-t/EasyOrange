@@ -1,4 +1,6 @@
 import {
+    ArrowDownToLine,
+    ArrowUpFromLine,
     CheckCircle,
     ChevronRight,
     Clock,
@@ -15,9 +17,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PaginationBar } from '@/components/PaginationBar';
 import { Button } from '@/components/ui/button';
 import { STATUS_LABEL_MAP } from '@/constants/product';
-import { useMyProducts } from '@/hooks/product/useProducts';
+import { useMyProducts, useToggleProductShelf } from '@/hooks/product/useProducts';
 import { usePagination } from '@/hooks/usePagination';
+import { useUIStore } from '@/store/uiStore';
 import type { Product, ProductStatus } from '@/types';
+import { errorHandler } from '@/utils/errorHandler';
 
 import '../orders/orders-page.css';
 
@@ -94,6 +98,18 @@ function MyProductsPage() {
     }, [activeTab, pageNum, pageSize]);
 
     const { data, isLoading, isError, refetch } = useMyProducts(queryParams);
+    const toggleShelf = useToggleProductShelf();
+    const addToast = useUIStore(s => s.addToast);
+
+    const handleToggleShelf = (id: string, online: boolean) => {
+        toggleShelf.mutate(
+            { id, online },
+            {
+                onSuccess: () => addToast({ type: 'success', message: online ? '已重新上架' : '已下架' }),
+                onError: err => addToast({ type: 'error', message: errorHandler.handle(err as Error, 'unknown') }),
+            }
+        );
+    };
 
     const products = useMemo(() => data?.records ?? [], [data]);
     const totalPages = data?.pages ?? 1;
@@ -188,6 +204,8 @@ function MyProductsPage() {
                                 product={product}
                                 to={`/products/${product.id}`}
                                 onEdit={() => navigate(`/products/${product.id}/edit`)}
+                                onToggleShelf={online => handleToggleShelf(product.id, online)}
+                                toggling={toggleShelf.isPending && toggleShelf.variables?.id === product.id}
                                 index={index}
                             />
                         ))}
@@ -205,10 +223,12 @@ interface MyProductCardProps {
     product: Product;
     to: string;
     onEdit: () => void;
+    onToggleShelf: (online: boolean) => void;
+    toggling: boolean;
     index: number;
 }
 
-function MyProductCard({ product, to, onEdit, index }: MyProductCardProps) {
+function MyProductCard({ product, to, onEdit, onToggleShelf, toggling, index }: MyProductCardProps) {
     const statusKey = product.status;
     const statusLabel = STATUS_LABEL_MAP[statusKey] ?? statusKey;
     const statusStyle = STATUS_STYLE_MAP[statusKey] ?? STATUS_STYLE_MAP.DRAFT;
@@ -265,6 +285,34 @@ function MyProductCard({ product, to, onEdit, index }: MyProductCardProps) {
                     {!['DRAFT', 'REJECTED', 'PENDING_REVIEW'].includes(statusKey) && ''}
                 </span>
                 <fieldset className="order-card-actions-premium" aria-label="商品操作">
+                    {statusKey === 'ONLINE' && (
+                        <Button
+                            variant="outline"
+                            disabled={toggling}
+                            onClick={e => {
+                                e.stopPropagation();
+                                onToggleShelf(false);
+                            }}
+                            className="order-btn-secondary"
+                        >
+                            <ArrowDownToLine size={14} />
+                            {toggling ? '处理中...' : '下架'}
+                        </Button>
+                    )}
+                    {statusKey === 'OFFLINE' && (
+                        <Button
+                            variant="outline"
+                            disabled={toggling}
+                            onClick={e => {
+                                e.stopPropagation();
+                                onToggleShelf(true);
+                            }}
+                            className="order-btn-secondary"
+                        >
+                            <ArrowUpFromLine size={14} />
+                            {toggling ? '处理中...' : '上架'}
+                        </Button>
+                    )}
                     <Button
                         variant="outline"
                         onClick={e => {

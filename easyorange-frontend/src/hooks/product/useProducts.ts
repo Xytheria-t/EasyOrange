@@ -185,3 +185,21 @@ export function useMyProducts(params: { pageNum?: number; pageSize?: number; sta
         staleTime: 2 * 60 * 1000,
     });
 }
+
+/** 上架 / 下架切换（我的发布卡片上的货架开关）——整棵 products 查询树失效，分组计数与详情一并刷新 */
+export function useToggleProductShelf() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, online }: { id: string; online: boolean }) => {
+            if (online) {
+                await productApi.goOnline(id);
+            } else {
+                await productApi.goOffline(id);
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: PRODUCT_KEYS.all });
+        },
+    });
+}
