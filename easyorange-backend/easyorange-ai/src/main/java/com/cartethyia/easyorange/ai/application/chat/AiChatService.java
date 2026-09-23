@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
 import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
+import com.cartethyia.easyorange.ai.domain.port.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
@@ -148,6 +149,11 @@ public class AiChatService {
             handler.onDone(agenticAnswer(request, handler).answer());
         } catch (TokenBudgetExceededException e) {
             handler.onError("今日 AI 调用预算已用尽，请明天再试");
+        } catch (ChatStreamAbortedException e) {
+            // 客户端中途离开（刷新/关页）：正常中断而非模型故障 —— 不打 ERROR、
+            // 不计入 chat.degraded（否则每次刷新都虚高降级率）、不回 onError（事件已无听众）
+            log.debug("action=chat_stream_aborted, question={}", request.question());
+            meterRegistry.counter("easyorange.ai.chat.stream.aborted").increment();
         } catch (Exception e) {
             log.error("action=chat_degraded, reason=unavailable, question={}", request.question(), e);
             degradedCounter("unavailable").increment();

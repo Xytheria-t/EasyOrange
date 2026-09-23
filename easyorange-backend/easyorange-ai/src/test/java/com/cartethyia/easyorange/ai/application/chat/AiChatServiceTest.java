@@ -23,6 +23,7 @@ import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
+import com.cartethyia.easyorange.ai.domain.port.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
@@ -365,6 +366,41 @@ class AiChatServiceTest {
 
         assertThat(error.get()).contains("预算");
         verify(aiModelSupport, never()).callTextStream(any(), any(), anyList(), any());
+    }
+
+    @Test
+    @DisplayName("客户端断流中止 -> 静默收尾：不回 onError、不计入 chat.degraded（刷新不再污染降级率）")
+    void stream_clientAborted_isNotDegraded() {
+        when(agentLoopRunner.run(any(Input.class)))
+                .thenThrow(new ChatStreamAbortedException(new java.io.IOException("broken pipe")));
+
+        AtomicReference<String> error = new AtomicReference<>();
+        AtomicReference<String> done = new AtomicReference<>();
+        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), new ChatStreamHandler() {
+            @Override
+            public void onStep(AgentStepView step) {}
+
+            @Override
+            public void onToken(String token) {}
+
+            @Override
+            public void onSources(List<String> sources) {}
+
+            @Override
+            public void onDone(String fullAnswer) {
+                done.set(fullAnswer);
+            }
+
+            @Override
+            public void onError(String message) {
+                error.set(message);
+            }
+        });
+
+        assertThat(error.get()).isNull();
+        assertThat(done.get()).isNull();
+        assertThat(meterRegistry.counter("easyorange.ai.chat.degraded", "reason", "unavailable").count()).isZero();
+        assertThat(meterRegistry.counter("easyorange.ai.chat.stream.aborted").count()).isEqualTo(1);
     }
 
     @Test

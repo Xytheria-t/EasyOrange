@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.ai.application.chat.AiChatService;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
+import com.cartethyia.easyorange.ai.domain.port.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.result.Result;
@@ -82,7 +83,7 @@ public class AiChatController {
                     completeQuietly(emitter);
                 }
             });
-        } catch (ClientDisconnectedException e) {
+        } catch (ChatStreamAbortedException e) {
             // 客户端断开（含 emitter 已完成：中途刷新/连发竞态）— 静默收尾，不当作服务故障补发 error
             completeQuietly(emitter);
         } catch (Exception e) {
@@ -95,17 +96,17 @@ public class AiChatController {
     /**
      * 发送单个 SSE 事件 — 客户端断开（IOException）与 emitter 已完成
      * （{@code IllegalStateException: ResponseBodyEmitter has already completed}，TD-022：
-     * 中途离开/连发时对已完成 emitter 继续写入）都收敛为 {@link ClientDisconnectedException} 终止流，
-     * 后者只降 debug 不再作为 ERROR 逃逸。
+     * 中途离开/连发时对已完成 emitter 继续写入）都收敛为 {@link ChatStreamAbortedException} 终止流；
+     * 该异常由 ai 侧 {@code streamAnswer} 识别为「客户端离开」静默收尾，不记模型降级。
      */
     static void send(SseEmitter emitter, SseEmitter.SseEventBuilder event) {
         try {
             emitter.send(event);
         } catch (IOException e) {
-            throw new ClientDisconnectedException(e);
+            throw new ChatStreamAbortedException(e);
         } catch (IllegalStateException e) {
             log.debug("sse emitter already completed, abort stream", e);
-            throw new ClientDisconnectedException(e);
+            throw new ChatStreamAbortedException(e);
         }
     }
 
@@ -123,14 +124,6 @@ public class AiChatController {
             emitter.send(SseEmitter.event().name("error").data(ChatAnswer.UNAVAILABLE_TEXT));
         } catch (IOException | IllegalStateException ignored) {
             // 客户端已断开 / emitter 已完成
-        }
-    }
-
-    /** 客户端断开连接或 emitter 已完成 — 用于区分「正常收尾」与「服务端故障」，避免补发无意义的 error 事件。 */
-    static final class ClientDisconnectedException extends RuntimeException {
-
-        ClientDisconnectedException(Throwable cause) {
-            super(cause);
         }
     }
 }

@@ -6,6 +6,9 @@ import java.util.List;
 /**
  * 流式回答回调 — 服务侧与传输侧（SseEmitter）解耦：
  * 服务只向回调推事件，SSE 适配在 Controller 层完成，便于单测。
+ * <p>
+ * 回调实现抛 {@link ChatStreamAbortedException} 表示客户端已离开，服务侧按中断静默收尾
+ *（不当作模型故障，见该异常的说明）。
  */
 public interface ChatStreamHandler {
 
