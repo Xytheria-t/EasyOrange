@@ -399,8 +399,12 @@ class AiChatServiceTest {
 
         assertThat(error.get()).isNull();
         assertThat(done.get()).isNull();
-        assertThat(meterRegistry.counter("easyorange.ai.chat.degraded", "reason", "unavailable").count()).isZero();
-        assertThat(meterRegistry.counter("easyorange.ai.chat.stream.aborted").count()).isEqualTo(1);
+        assertThat(meterRegistry
+                        .counter("easyorange.ai.chat.degraded", "reason", "unavailable")
+                        .count())
+                .isZero();
+        assertThat(meterRegistry.counter("easyorange.ai.chat.stream.aborted").count())
+                .isEqualTo(1);
     }
 
     @Test
