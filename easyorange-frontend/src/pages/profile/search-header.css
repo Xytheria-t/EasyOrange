@@ -184,6 +184,9 @@
 /* ============ PREMIUM SEARCH INPUT ============ */
 .search-form-wrapper {
     flex: 1;
+    /* flex 子项默认 min-width:auto，缩不到内容最小宽度以下；wrapper 又 overflow:hidden，
+       窄屏下表现为右侧 AI/搜索按钮被裁掉而非横向滚动 */
+    min-width: 0;
     position: relative;
 }
 
