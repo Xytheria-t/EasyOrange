@@ -26,17 +26,16 @@ TypeScript · React · React Router · Vite · Tailwind CSS + shadcn/ui · TanSt
 
 | 页面 | 路由 | 说明 | 需登录 |
 |------|------|------|--------|
-| 首页 / 资产列表 / 资产详情 | `/` · `/products` · `/products/:id` | 推荐、分类筛选排序、详情 + 评价 + 收藏 | 否 |
+| 首页 / 资产列表 / 资产详情 | `/` · `/products` · `/products/:id` | 推荐、分类筛选排序、详情 | 否 |
 | 搜索 | `/search` | 关键词搜索 + 筛选 | 否 |
 | 发布 / 编辑资产 | `/publish` · `/products/:id/edit` | 发布表单（含 AI 拍照识别）、编辑已发布资产 | 是 |
-| 订单 | `/orders` · `/orders/:id` | 订单列表 / 详情 | 是 |
-| 收银台 / 支付结果 | `/payment` · `/payment/result` | 在线支付与结果展示 | 是 |
-| 个人中心 / 收藏 | `/profile` · `/favorites` | 资料与密码、收藏管理 | 是 |
+| 订单 | `/orders` · `/orders/:id` | 订单列表 / 详情（支付动作在列表 / 详情内触发，无独立收银台页） | 是 |
+| 个人中心 | `/profile` | 资料与密码 | 是 |
 | 消息中心 / 通知中心 | `/messages` · `/notifications` | 站内信（含 WebSocket 实时聊天）、系统通知 | 是 |
 | 我的发布 | `/my-products` | 已发布资产管理（审核状态、编辑、下架） | 是 |
 | AI 助手 Playground | `/playground` | 多轮对话 + 知识库引用溯源（SSE 流式） | 否 |
 | 登录 / 找回密码 | `/login` · `/forgot-password` | 登录 + 注册 Tab 切换（无独立注册页） | 否 |
-| 管理端 | `/admin/**` | `dashboard` · `users` · `products`（审核）· `orders` · `categories` · `reviews` · `stats` | 是（ADMIN） |
+| 管理端 | `/admin/**` | `stats`（默认页）· `users` · `products`（审核）· `orders` · `categories` · `knowledge` | 是（ADMIN） |
 
 > 管理端路由必须在 `MinimalLayout` **外部**独立渲染（否则 C 端 Header 会出现在管理页）。
 

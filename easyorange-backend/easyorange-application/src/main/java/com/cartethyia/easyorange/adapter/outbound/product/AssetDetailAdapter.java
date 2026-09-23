@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 /**
  * 资产详情适配器 — 实现 ai 模块定义的 {@link AssetDetailPort}：Agent 循环 product_detail
  * 工具按 ID 查在售资产详情。经 product 模块查询仓储读 {@link ProductReadModel}
- * （与 {@code FavoriteProductInfoAdapter} 同向：端口由消费方定义，本模块翻译实现）。
+ * （端口由消费方定义，本模块翻译实现）。
  * <p>
  * 读模型只带 {@code eo_product} 单表字段，所以描述（副表）与卖家名（用户表）在这里**按件补**——
  * 详情是单件工具调用，多两次查询可接受（列表路径不许这么干）。地区按商品详情页同口径脱敏后交给模型：
