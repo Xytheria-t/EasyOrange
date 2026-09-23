@@ -102,7 +102,6 @@ flowchart TB
     APP --> ORD
     APP --> PAY
     APP --> MSG
-    APP --> FAV
     APP --> ADMIN
     APP --> AI
 
@@ -164,7 +163,7 @@ flowchart TB
 
 | 层 | 技术 |
 |---|---|
-| **后端** | Java（容器内显式 G1，非 ZGC）· Spring Boot（虚拟线程默认启用）· MyBatis-Plus（逻辑删除 / 乐观锁 / 分页）· MapStruct · OpenRewrite |
+| **后端** | Java（容器内显式 G1，非 ZGC）· Spring Boot（虚拟线程默认启用）· MyBatis-Plus（逻辑删除 / 乐观锁 / 分页）· MapStruct |
 | **安全** | Spring Security OAuth2 Resource Server · **双 Token**：RSA 签名 Access（30min 无状态）+ Opaque Refresh（Redis SHA-256，HttpOnly Cookie，轮换 + 复用检测）· BCrypt |
 | **前端** | React · TypeScript · Vite · React Router · TanStack Query · Zustand · Tailwind CSS · shadcn/ui · react-hook-form + Zod · Framer Motion · Biome · Playwright |
 | **数据 / 消息** | MySQL（utf8mb4 / InnoDB）· Redis（业务缓存单层，Caffeine 仅用于 stale / 图片处理等专用本地缓存）· RabbitMQ（Topic Exchange + Quorum Queue）· Elasticsearch（dev / prod 默认启用，关掉走 LIKE 兜底；**版本硬锁**见 `infra/elasticsearch/Dockerfile` 注释） |
@@ -233,7 +232,7 @@ easy-orange/
 | [doc/agents/](doc/agents/) | 按需读取参考：架构（错误码 / 依赖边 / 异常 / 可观测）/ 领域 / 常用命令 |
 | [doc/工程指标.md](doc/工程指标.md) | 数字单一事实来源：测试数 / 覆盖率 / 压测（**收口重测后回填**）+ [结构计数](doc/工程指标.md#结构计数) |
 | [doc/DATABASE.md](doc/DATABASE.md) | 数据库全局约定、表清单、Flyway 迁移规范与脚本索引 |
-| [doc/interview/](doc/interview/) | 面试脚本 7 册（[入口](doc/interview/README.md)）：备战清单 / 代码走读 / 模拟题库 / 速答 / 设计题与手撕 / 工程底座 / 怎么说 |
+| [doc/interview/](doc/interview/) | 面试脚本 8 册（[入口](doc/interview/README.md)）：备战清单 / 代码走读 / 模拟题库 / 速答 / 设计题与手撕 / 工程底座 / 怎么说 / 方向与简历策略 |
 
 ## 贡献与许可
 
