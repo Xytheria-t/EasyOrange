@@ -79,8 +79,7 @@ class ProfileAppServiceTest {
             User user = UserTestFixture.normalUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-            profileAppService.updateUserInfo(
-                    USER_ID, new UpdateCommand(null, "new@example.com", null, null, null, null));
+            profileAppService.updateUserInfo(USER_ID, new UpdateCommand(null, "new@example.com", null, null, null));
         }
 
         @Test
@@ -91,7 +90,7 @@ class ProfileAppServiceTest {
             when(userRepository.findByEmail("existing@example.com")).thenReturn(Optional.of(user));
 
             assertThatThrownBy(() -> profileAppService.updateUserInfo(
-                            USER_ID, new UpdateCommand(null, "existing@example.com", null, null, null, null)))
+                            USER_ID, new UpdateCommand(null, "existing@example.com", null, null, null)))
                     .isInstanceOf(BusinessException.class);
         }
 
@@ -103,19 +102,7 @@ class ProfileAppServiceTest {
             when(userRepository.findByPhone("13900000000")).thenReturn(Optional.of(user));
 
             assertThatThrownBy(() -> profileAppService.updateUserInfo(
-                            USER_ID, new UpdateCommand(null, null, "13900000000", null, null, null)))
-                    .isInstanceOf(BusinessException.class);
-        }
-
-        @Test
-        @DisplayName("更新已存在的学号时抛出异常")
-        void studentIdAlreadyExists() {
-            User user = UserTestFixture.normalUser();
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(userRepository.findByStudentId("2022001")).thenReturn(Optional.of(user));
-
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(
-                            USER_ID, new UpdateCommand(null, null, null, null, null, "2022001")))
+                            USER_ID, new UpdateCommand(null, null, "13900000000", null, null)))
                     .isInstanceOf(BusinessException.class);
         }
 
@@ -125,8 +112,8 @@ class ProfileAppServiceTest {
             User user = UserTestFixture.normalUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(
-                            USER_ID, new UpdateCommand(null, null, null, null, null, null)))
+            assertThatThrownBy(() ->
+                            profileAppService.updateUserInfo(USER_ID, new UpdateCommand(null, null, null, null, null)))
                     .isInstanceOf(BusinessException.class);
         }
     }

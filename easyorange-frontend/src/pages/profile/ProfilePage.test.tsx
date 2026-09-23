@@ -57,7 +57,6 @@ const mockUser: User = {
     nickname: 'TestNick',
     email: 'test@example.com',
     phone: '13800138000',
-    studentId: '2024001',
     realName: '张三',
     avatar: null,
     status: 1,

@@ -53,7 +53,6 @@ const validLoginResponse = {
         phone: null,
         avatar: null,
         nickname: 'Test',
-        studentId: null,
         realName: null,
         status: 1,
         userType: '00' as const,

@@ -53,7 +53,6 @@ class AdminUserAdapterTest {
                 "/avatar/test.png",
                 "test@example.com",
                 "13812345678",
-                "2024001",
                 "张三",
                 "01",
                 "普通用户",
@@ -112,7 +111,6 @@ class AdminUserAdapterTest {
             assertThat(result.id()).isEqualTo(USER_ID);
             assertThat(result.username()).isEqualTo("testuser");
             assertThat(result.email()).isEqualTo("test@example.com");
-            assertThat(result.studentId()).isEqualTo("2024001");
             assertThat(result.realName()).isEqualTo("张三");
             assertThat(result.userType()).isEqualTo("01");
             assertThat(result.userTypeDesc()).isEqualTo("普通用户");

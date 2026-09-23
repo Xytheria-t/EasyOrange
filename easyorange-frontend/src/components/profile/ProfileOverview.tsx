@@ -18,7 +18,6 @@ import {
     Calendar,
     Check,
     ChevronRight,
-    GraduationCap,
     Mail,
     MessageSquare,
     Pencil,
@@ -33,7 +32,7 @@ import { Input } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import type { User as UserType } from '@/types';
 
-type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId';
+type EditableField = 'nickname' | 'email' | 'phone' | 'realName';
 
 interface ProfileOverviewProps {
     user: UserType | undefined;
@@ -63,7 +62,6 @@ export function ProfileOverview({
     const editableFields: { key: EditableField; label: string; value?: string | null; icon: typeof User }[] = [
         { key: 'nickname', label: '昵称', value: user?.nickname, icon: Sparkles },
         { key: 'realName', label: '真实姓名', value: user?.realName, icon: User },
-        { key: 'studentId', label: '学号', value: user?.studentId, icon: GraduationCap },
         { key: 'email', label: '邮箱', value: user?.email, icon: Mail },
         { key: 'phone', label: '手机', value: user?.phone, icon: Phone },
     ];

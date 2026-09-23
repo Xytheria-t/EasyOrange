@@ -44,14 +44,7 @@ export const userApi = {
         return request<User>('/users/me');
     },
 
-    updateProfile(data: {
-        nickname?: string;
-        email?: string;
-        phone?: string;
-        gender?: number;
-        realName?: string;
-        studentId?: string;
-    }) {
+    updateProfile(data: { nickname?: string; email?: string; phone?: string; gender?: number; realName?: string }) {
         return request<User>('/users/me', {
             method: 'PUT',
             body: data,

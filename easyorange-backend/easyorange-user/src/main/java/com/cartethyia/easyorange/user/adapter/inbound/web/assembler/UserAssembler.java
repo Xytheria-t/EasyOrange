@@ -61,8 +61,7 @@ public class UserAssembler {
             String email,
             String phone,
             String realName,
-            String avatar,
-            String studentId) {
+            String avatar) {
 
         static CommonData from(UserView view) {
             ContactInfo ci = view.contactInfo();
@@ -78,8 +77,7 @@ public class UserAssembler {
                     MaskUtils.maskEmail(ci != null ? ci.email() : null),
                     MaskUtils.maskPhone(ci != null ? ci.phone() : null),
                     MaskUtils.maskName(pi != null ? pi.realName() : null),
-                    pi != null ? pi.avatar() : null,
-                    pi != null ? pi.studentId() : null);
+                    pi != null ? pi.avatar() : null);
         }
 
         void applyTo(CommonUserFields r) {
@@ -91,7 +89,6 @@ public class UserAssembler {
             r.setPhone(phone);
             r.setRealName(realName);
             r.setAvatar(avatar);
-            r.setStudentId(studentId);
         }
     }
 }

@@ -52,7 +52,6 @@ public interface UserEntityMapper {
                 .realName(safeGet(user.getPersonalInfo(), PersonalInfo::realName))
                 .nickName(safeGet(user.getPersonalInfo(), PersonalInfo::nickName))
                 .sex(safeGet(user.getPersonalInfo(), PersonalInfo::sex))
-                .studentId(safeGet(user.getPersonalInfo(), PersonalInfo::studentId))
                 .avatar(safeGet(user.getPersonalInfo(), PersonalInfo::avatar))
                 .loginIp(safeGet(user.getLoginInfo(), LoginInfo::loginIp))
                 .loginDate(safeGet(user.getLoginInfo(), LoginInfo::loginDate))

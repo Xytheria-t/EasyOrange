@@ -38,8 +38,6 @@ public class UserDO extends BaseDO {
 
     private String phone;
 
-    private String studentId;
-
     private String realName;
 
     private String nickName;

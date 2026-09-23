@@ -156,7 +156,6 @@ public class AdminUserManagementAdapter implements AdminUserManagementPort {
                 user.getAvatar(),
                 user.getEmail(),
                 user.getPhone(),
-                user.getStudentId(),
                 user.getRealName(),
                 user.getUserType() != null ? user.getUserType().getCode() : null,
                 user.getUserType() != null ? user.getUserType().getDescription() : null,

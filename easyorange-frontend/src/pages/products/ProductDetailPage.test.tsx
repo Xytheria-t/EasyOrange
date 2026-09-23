@@ -13,7 +13,6 @@ function createMockUser(overrides: Partial<User> = {}): User {
         nickname: '测试用户',
         email: 'test@example.com',
         phone: null,
-        studentId: null,
         realName: null,
         avatar: null,
         status: 1,

@@ -15,6 +15,4 @@ public record UpdateProfileRequest(
 
         @Pattern(regexp = "^[0-2]$", message = "性别值无效") String gender,
 
-        @Size(max = 50, message = "真实姓名长度不能超过 50 个字符") String realName,
-
-        @Size(max = 50, message = "学号长度不能超过 50 个字符") String studentId) {}
+        @Size(max = 50, message = "真实姓名长度不能超过 50 个字符") String realName) {}

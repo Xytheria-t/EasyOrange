@@ -25,8 +25,7 @@ public class ProfileAppService {
     private final AvatarFilePort avatarFilePort;
     private final ProfileUpdateService profileUpdateService;
 
-    public record UpdateCommand(
-            String nickname, String email, String phone, String gender, String realName, String studentId) {}
+    public record UpdateCommand(String nickname, String email, String phone, String gender, String realName) {}
 
     @Transactional(readOnly = true)
     public UserView getCurrentUser(String userId) {
@@ -38,7 +37,7 @@ public class ProfileAppService {
         User currentUser = findUserOrThrow(userId);
         if (!hasAny(cmd)) throw BusinessException.of("没有需要更新的字段");
 
-        profileUpdateService.validateUniqueContact(cmd.email(), cmd.phone(), cmd.studentId(), currentUser);
+        profileUpdateService.validateUniqueContact(cmd.email(), cmd.phone(), currentUser);
 
         var updated = currentUser
                 .updateContactInfo(new ContactUpdateSpec(cmd.email(), cmd.phone()), currentUser.getId())
@@ -46,8 +45,7 @@ public class ProfileAppService {
                         new PersonalUpdateSpec(
                                 cmd.realName(),
                                 cmd.nickname(),
-                                cmd.gender() != null ? Sex.fromCode(cmd.gender()) : null,
-                                cmd.studentId()),
+                                cmd.gender() != null ? Sex.fromCode(cmd.gender()) : null),
                         currentUser.getId());
 
         userRepository.update(updated);
@@ -81,8 +79,7 @@ public class ProfileAppService {
                 || isPresent(cmd.email())
                 || isPresent(cmd.phone())
                 || cmd.gender() != null
-                || isPresent(cmd.realName())
-                || isPresent(cmd.studentId());
+                || isPresent(cmd.realName());
     }
 
     private User findUserOrThrow(String userId) {

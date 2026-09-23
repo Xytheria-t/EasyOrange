@@ -90,9 +90,6 @@ public class User {
         if (spec.sex() != null) {
             updated = updated.withSex(spec.sex());
         }
-        if (isPresent(spec.studentId())) {
-            updated = updated.withStudentId(spec.studentId());
-        }
 
         return this.toBuilder()
                 .personalInfo(updated)

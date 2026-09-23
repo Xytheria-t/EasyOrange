@@ -66,7 +66,6 @@ const mockUser: User = {
     nickname: 'TestUser',
     email: 'test@example.com',
     phone: '13800138000',
-    studentId: '2021001',
     realName: 'Test',
     avatar: null,
     status: 1,

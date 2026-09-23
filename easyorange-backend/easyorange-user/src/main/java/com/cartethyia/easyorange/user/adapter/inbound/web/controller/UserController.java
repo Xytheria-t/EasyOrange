@@ -33,12 +33,7 @@ public class UserController {
     public Result<UserResponse> updateUserInfo(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody UpdateProfileRequest request) {
         var cmd = new ProfileAppService.UpdateCommand(
-                request.nickname(),
-                request.email(),
-                request.phone(),
-                request.gender(),
-                request.realName(),
-                request.studentId());
+                request.nickname(), request.email(), request.phone(), request.gender(), request.realName());
         return Result.success(userAssembler.toResponse(profileAppService.updateUserInfo(user.userId(), cmd)));
     }
 
