@@ -32,7 +32,12 @@ export function useLogin() {
 
     return useMutation({
         mutationFn: async (data: LoginRequest) => {
-            const response = await userApi.login(data);
+            // 短信登录与密码登录是两个端点：验证码走 sms-login 的 verifyCode 字段，
+            // 混进 /auth/login 当密码用会恒报「账号或密码错误」
+            const response =
+                data.loginMethod === 'sms'
+                    ? await userApi.smsLogin(data.account, data.password)
+                    : await userApi.login(data);
             return response.data;
         },
         onSuccess: data => {
