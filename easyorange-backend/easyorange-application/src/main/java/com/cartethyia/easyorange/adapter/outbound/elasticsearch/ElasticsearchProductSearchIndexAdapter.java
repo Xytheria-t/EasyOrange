@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.cartethyia.easyorange.adapter.outbound.product.ProductSearchIndexAdapter;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
@@ -24,14 +25,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.stereotype.Component;
 
 /**
  * ES 实现的商品搜索索引适配器。
- * 当 easyorange.search.elasticsearch.enabled=true 时激活，替换 MySQL search_text 实现。
+ * 当 easyorange.search.elasticsearch.enabled=true 时激活并接管端口（{@code @Primary}）；
+ * 写 ES 的同时委托 {@link com.cartethyia.easyorange.adapter.outbound.product.ProductSearchIndexAdapter}
+ * 双写 MySQL search_text —— 降级语料始终是热的，任意时刻关 ES 检索照常可用。
  */
 @Slf4j
+@Primary
 @Component
 @ConditionalOnProperty(name = "easyorange.search.elasticsearch.enabled", havingValue = "true")
 @RequiredArgsConstructor
@@ -43,19 +48,23 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
     private final CategoryMapper categoryMapper;
     private final ElasticsearchOperations elasticsearchOperations;
     private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
+    private final ProductSearchIndexAdapter mysqlSearchTextIndex;
 
     @Override
     public void indexProduct(String productId) {
+        mysqlSearchTextIndex.indexProduct(productId);
         saveDocument(productId);
     }
 
     @Override
     public void updateProductIndex(String productId) {
+        mysqlSearchTextIndex.updateProductIndex(productId);
         saveDocument(productId);
     }
 
     @Override
     public void removeProductIndex(String productId) {
+        mysqlSearchTextIndex.removeProductIndex(productId);
         elasticsearchOperations.delete(productId, ProductDocument.class);
         log.debug("Deleted ES document for productId={}", productId);
     }
