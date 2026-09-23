@@ -13,9 +13,9 @@ commands / MCP / hooks / plugins，没有 path 激活的 rules），是纯死重
   1. **只有 3 份 AGENTS.md**：`AGENTS.md`（根，每会话常驻）、`easyorange-backend/AGENTS.md`、
      `easyorange-frontend/AGENTS.md`（懒加载，进对应目录工作时才读）。新增第 4 份即失败 ——
      模块边界由 `ArchitectureRulesTest` 可执行地守卫，不需要每个模块再写一份散文。
-  2. **根 AGENTS.md 是唯一每轮都付费的文件**，预算 6,500 字符。放「违反即返工」的硬约束与
+  2. **根 AGENTS.md 是唯一每轮都付费的文件**，预算 3,000 字符。放「违反即返工」的硬约束与
      参考索引（指向 doc/），不放目录树、类清单、演进叙事 —— 那些属于 README / ADR / doc/。
-  3. 三份合计预算 45,000 字符：懒加载文件可以厚，但不能退化成需要人通读的百科。
+  3. 三份合计预算 18,000 字符：懒加载文件可以厚，但不能退化成需要人通读的百科。
 
 用法：
     python3 .githooks/check-context-budget.py      # 退出码 0=在预算内 / 1=超预算或结构违规
@@ -36,9 +36,9 @@ ALLOWED = (
 )
 
 # 根文件预算：唯一每会话自动注入的文件
-ROOT_BUDGET = 6_500
+ROOT_BUDGET = 3_000
 # 全部文件合计预算
-TOTAL_BUDGET = 45_000
+TOTAL_BUDGET = 18_000
 
 SKIP_DIRS = {".git", "node_modules", "target", "dist", ".venv"}
 
