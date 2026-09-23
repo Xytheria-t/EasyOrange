@@ -30,6 +30,8 @@ easyorange-frontend/build/
 *.ipr
 .vscode/
 .history/
+.project
+.settings/
 
 # ---------- 操作系统 ----------
 .DS_Store
