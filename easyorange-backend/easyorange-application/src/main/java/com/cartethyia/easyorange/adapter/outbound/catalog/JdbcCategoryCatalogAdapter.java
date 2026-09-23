@@ -16,10 +16,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class JdbcCategoryCatalogAdapter implements CategoryCatalogPort {
 
-    /** 只取启用中的类目：禁用类目即便被模型选中，前端也匹配不到 ID，等于白填。 */
+    /**
+     * 只取启用中的<b>一级</b>类目：发布页下拉就是一级清单（{@code getCategoriesByLevel(1)}，6 项），
+     * 喂二级叶子名（如「耳机音箱」）模型选得再准前端也匹配不到 ID、类别回填必空；
+     * 禁用类目同理——被选中也落不到表单上。
+     */
     private static final String SQL = """
             SELECT name FROM eo_category
-            WHERE status = 1 AND del_flag = 0
+            WHERE status = 1 AND del_flag = 0 AND level = 1
             ORDER BY sort_order, name
             """;
 

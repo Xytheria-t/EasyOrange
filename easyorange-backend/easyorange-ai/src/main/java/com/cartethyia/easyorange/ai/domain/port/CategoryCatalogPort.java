@@ -14,6 +14,11 @@ import java.util.List;
  */
 public interface CategoryCatalogPort {
 
-    /** 启用中的类目名称清单（按平台排序）。 */
+    /**
+     * 启用中的一级类目名称清单（按平台排序）。
+     * <p>
+     * 必须与发布页下拉同一口径（一级、6 项）：返回叶子名模型选得再准，
+     * 前端 {@code categories.find(name)} 也匹配不到 ID，类别回填必空。
+     */
     List<String> listAvailableCategoryNames();
 }
