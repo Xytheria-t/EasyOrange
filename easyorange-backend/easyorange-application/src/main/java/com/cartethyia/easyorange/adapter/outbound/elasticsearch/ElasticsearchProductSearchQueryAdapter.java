@@ -279,6 +279,9 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
      * 顶层 query（match_all + 过滤）与 {@code knn.similarity} 并存时，kNN 侧被相似度剪成 0 后
      * ES 仍把 query 侧命中当结果返回（实测乱码查询该腿返 100 条、分值恒为 match_all 的 1.0），
      * 相似度门槛等于没有、任意乱码召回全库；过滤条件搬进 knn.filter 后同样查询 0 命中。
+     * <p>
+     * wrapper 查询装的是<b>查询对象</b> {@code {"bool":{"filter":[…]}}}——直接装子句数组
+     * {@code [{…}]} 会被 ES 以 x_content_parse_exception 拒收，整条 kNN 腿静默退化成单路。
      */
     private NativeQuery knnQuery(ProductSearchQuery query, int k) {
         int numCandidates = Math.max(NUM_CANDIDATES, k * 2);
@@ -292,7 +295,10 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                             .numCandidates(numCandidates)
                             .similarity(KNN_MIN_SIMILARITY);
                     if (filterClauses.size() > 0) {
-                        knn.filter(Queries.wrapperQueryAsQuery(filterClauses.toString()));
+                        var filterQuery = objectMapper
+                                .createObjectNode()
+                                .set("bool", objectMapper.createObjectNode().set("filter", filterClauses));
+                        knn.filter(Queries.wrapperQueryAsQuery(filterQuery.toString()));
                     }
                     return knn;
                 })

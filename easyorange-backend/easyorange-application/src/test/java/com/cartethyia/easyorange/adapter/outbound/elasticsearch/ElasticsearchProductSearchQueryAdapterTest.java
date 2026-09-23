@@ -357,8 +357,12 @@ class ElasticsearchProductSearchQueryAdapterTest {
                 .orElseThrow();
         var knn = knnLeg.getKnnSearches().get(0);
         assertThat(knn.similarity()).isEqualTo(0.5f);
-        assertThat(knn.filter()).isNotEmpty();
         assertThat(knnLeg.getQuery()).isNull();
+        // wrapper 里必须是查询对象 {"bool":…}；装成子句数组 [{…}] 会被 ES 拒收、整条腿静默退化
+        var wrappedFilter = knn.filter().get(0).wrapper().query();
+        var decoded = new String(Base64.getDecoder().decode(wrappedFilter), StandardCharsets.UTF_8);
+        assertThat(decoded).startsWith("{\"bool\"");
+        assertThat(decoded).contains("status");
     }
 
     @Test
