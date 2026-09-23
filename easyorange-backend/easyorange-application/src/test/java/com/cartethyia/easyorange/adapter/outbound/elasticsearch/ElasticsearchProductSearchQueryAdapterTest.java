@@ -10,6 +10,7 @@ import com.cartethyia.easyorange.product.application.port.cache.SellerCachePort;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort.ProductSearchQuery;
 import com.cartethyia.easyorange.product.application.port.query.SearchResult;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -39,11 +40,14 @@ class ElasticsearchProductSearchQueryAdapterTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+
     private ElasticsearchProductSearchQueryAdapter adapter;
 
     @BeforeEach
     void setUp() {
-        adapter = new ElasticsearchProductSearchQueryAdapter(elasticsearchOperations, objectMapper, sellerCachePort);
+        adapter = new ElasticsearchProductSearchQueryAdapter(
+                elasticsearchOperations, objectMapper, sellerCachePort, new SearchLegMetrics(meterRegistry));
     }
 
     @Test
@@ -378,6 +382,35 @@ class ElasticsearchProductSearchQueryAdapterTest {
 
         assertThat(result.total()).isEqualTo(2);
         assertThat(result.records()).extracting(r -> r.id()).containsExactly("A", "B");
+    }
+
+    @Test
+    @DisplayName("腿级打点：失败腿进 failure counter、成功腿进 success counter，各自带耗时——吞掉的腿失败只有指标看得见")
+    void search_recordsLegMetricsOnSuccessAndFailure() {
+        when(elasticsearchOperations.search(any(NativeQuery.class), eq(ProductDocument.class)))
+                .thenAnswer(inv -> {
+                    if (!((NativeQuery) inv.getArgument(0)).getKnnSearches().isEmpty()) {
+                        throw new IllegalStateException("knn leg down");
+                    }
+                    return hits(List.of(hit(doc("1", "商品1"), "1")), 1L);
+                });
+
+        adapter.search(twoLegQuery(null));
+
+        assertThat(meterRegistry
+                        .find("easyorange.search.leg.calls")
+                        .tags("source", "product", "leg", "knn", "outcome", "failure")
+                        .counter())
+                .isNotNull()
+                .satisfies(c -> assertThat(c.count()).isEqualTo(1.0));
+        assertThat(meterRegistry
+                        .find("easyorange.search.leg.calls")
+                        .tags("source", "product", "leg", "bm25", "outcome", "success")
+                        .counter())
+                .isNotNull()
+                .satisfies(c -> assertThat(c.count()).isEqualTo(1.0));
+        assertThat(meterRegistry.find("easyorange.search.leg.duration").timers())
+                .hasSize(2);
     }
 
     private static ProductSearchQuery twoLegQuery(String sort) {
