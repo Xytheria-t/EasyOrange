@@ -312,9 +312,12 @@ function SearchPage() {
                                 size="icon"
                                 className={`search-ai-btn ${aiEnabled ? 'ai-enabled' : ''}`}
                                 title={aiEnabled ? '关闭AI智能搜索' : '开启AI智能搜索'}
+                                aria-label={aiEnabled ? '关闭AI智能搜索' : '开启AI智能搜索'}
+                                aria-pressed={aiEnabled}
                                 onClick={handleAiToggle}
                             >
                                 <Sparkles size={14} />
+                                <span className="search-ai-btn-label">{aiEnabled ? 'AI 开' : 'AI'}</span>
                             </Button>
                             <Button type="submit" className="search-submit-btn">
                                 <Search size={14} />
