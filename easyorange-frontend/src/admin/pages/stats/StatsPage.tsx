@@ -1,6 +1,6 @@
 import { BarChart3, Bell, Package, ShoppingCart, Tag, TrendingUp, Users } from 'lucide-react';
 import { useMemo } from 'react';
-import { ACTIVITY_COLORS, CATEGORY_COLORS, ORDER_SUMMARY_COLORS, STAT_CARD_GRADIENTS } from '../../chartTheme';
+import { ACTIVITY_COLORS, CATEGORY_COLORS, ORDER_SUMMARY_COLORS } from '../../chartTheme';
 import { AdminCard, AdminErrorBanner, AdminPage, AdminPageHeader } from '../../components/AdminPage';
 import { useAdminCategories, useAdminOrderStats, useDashboardStats, useRecentActivity, useTrend } from '../../hooks';
 import { LazyTrendChart } from './charts/lazyCharts';
@@ -37,25 +37,21 @@ export default function StatsPage() {
         {
             label: '总用户数',
             value: stats?.totalUsers ?? 0,
-            gradient: STAT_CARD_GRADIENTS[0],
             Icon: Users,
         },
         {
             label: '总商品数',
             value: stats?.totalProducts ?? 0,
-            gradient: STAT_CARD_GRADIENTS[1],
             Icon: Package,
         },
         {
             label: '总订单数',
             value: stats?.totalOrders ?? 0,
-            gradient: STAT_CARD_GRADIENTS[2],
             Icon: ShoppingCart,
         },
         {
             label: '今日新增用户',
             value: stats?.todayNewUsers ?? 0,
-            gradient: STAT_CARD_GRADIENTS[3],
             Icon: TrendingUp,
         },
     ];
@@ -64,13 +60,17 @@ export default function StatsPage() {
         if (!categories || categories.length === 0) {
             return [];
         }
-        const validCategories = categories.filter(c => (c.productCount ?? 0) > 0);
-        if (validCategories.length === 0) {
+        // 只取一级分类：后端一级计数已把子分类归并上来（每个商品只计一次），
+        // 二级计数是叶子直挂数——两层混排会把同一件商品算两遍，
+        // 分母虚大一倍（线上 106 变 212），所有占比正好减半，还会把
+        // 叶子分类排进「前 6」挤掉真实的一级分类。
+        const level1 = categories.filter(c => c.level === 1 && (c.productCount ?? 0) > 0);
+        if (level1.length === 0) {
             return [];
         }
-        const maxCount = Math.max(...validCategories.map(c => c.productCount ?? 0));
-        const total = validCategories.reduce((sum, c) => sum + (c.productCount ?? 0), 0);
-        return [...validCategories]
+        const maxCount = Math.max(...level1.map(c => c.productCount ?? 0));
+        const total = level1.reduce((sum, c) => sum + (c.productCount ?? 0), 0);
+        return [...level1]
             .sort((a, b) => (b.productCount ?? 0) - (a.productCount ?? 0))
             .slice(0, CATEGORY_COLORS.length)
             .map(c => ({
@@ -120,35 +120,16 @@ export default function StatsPage() {
             />
 
             <div className="admin-stat-grid">
-                {statCards.map(({ label, value, gradient, Icon }) => (
-                    <AdminCard key={label}>
-                        <div
-                            aria-hidden="true"
-                            style={{
-                                position: 'absolute',
-                                top: '-12px',
-                                right: '-12px',
-                                width: 64,
-                                height: 64,
-                                borderRadius: '50%',
-                                background: gradient,
-                                opacity: 0.08,
-                            }}
-                        />
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                marginBottom: '0.75rem',
-                                gap: '0.5rem',
-                            }}
-                        >
-                            <span className="admin-label">{label}</span>
-                            <Icon size={17} aria-hidden="true" style={{ color: 'var(--admin-faint)' }} />
+                {statCards.map(({ label, value, Icon }) => (
+                    // 口径：累计值 vs 今日值在标签里写清楚
+                    <AdminCard key={label} className="admin-stat-card">
+                        <div className="admin-stat-card-top">
+                            <span className="admin-stat-card-label">{label}</span>
+                            <span className="admin-stat-card-icon" aria-hidden="true">
+                                <Icon size={17} />
+                            </span>
                         </div>
-                        {/* 口径：累计值 vs 今日值在标签里写清楚 */}
-                        <span className="admin-accent-number">
+                        <span className="admin-stat-card-value">
                             {isLoading || isError ? '—' : value.toLocaleString()}
                         </span>
                     </AdminCard>
@@ -193,9 +174,11 @@ export default function StatsPage() {
                     <h2 className="admin-section-title" style={{ marginBottom: '0.35rem' }}>
                         月度趋势
                     </h2>
-                    <p className="admin-muted" style={{ marginBottom: '1rem' }}>
-                        单位：条 / 笔，近 6 个月
-                    </p>
+                    {trend && trend.length > 0 ? (
+                        <p className="admin-muted" style={{ marginBottom: '1rem' }}>
+                            单位：条 / 笔，近 {trend.length} 个月（累计）
+                        </p>
+                    ) : null}
                     {trendError ? (
                         <PanelState kind="error" height={280} />
                     ) : (
@@ -213,7 +196,7 @@ export default function StatsPage() {
                         商品分类分布
                     </h2>
                     <p className="admin-muted" style={{ marginBottom: '1rem' }}>
-                        按在架商品数排序，取前 6 个分类
+                        一级分类的在架商品数（含子分类），取前 {CATEGORY_COLORS.length} 个
                     </p>
                     {categoriesLoading ? (
                         <PanelState kind="loading" />

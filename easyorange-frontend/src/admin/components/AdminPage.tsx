@@ -98,11 +98,19 @@ export function AdminErrorBanner({ message, onRetry, retrying = false }: AdminEr
     );
 }
 
-/** 玻璃内容卡。`grow` 用于撑满剩余高度的主表卡。 */
-export function AdminCard({ grow = false, children }: { grow?: boolean; children: ReactNode }) {
+/** 玻璃内容卡。`grow` 用于撑满剩余高度的主表卡；`className` 追加语义变体（如 .admin-stat-card）。 */
+export function AdminCard({
+    grow = false,
+    className,
+    children,
+}: {
+    grow?: boolean;
+    className?: string;
+    children: ReactNode;
+}) {
     return (
         <section
-            className={grow ? 'admin-card admin-card--grow' : 'admin-card'}
+            className={`${grow ? 'admin-card admin-card--grow' : 'admin-card'}${className ? ` ${className}` : ''}`}
             style={{ animation: 'cardIn 0.45s var(--ease-out) both' }}
         >
             {children}
