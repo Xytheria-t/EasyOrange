@@ -292,6 +292,8 @@ function OrderCard({ order, onCancel, onPay, onReceive, to, isCancelling, index 
                             src={firstItem.productImage}
                             alt={firstItem.productName}
                             className="order-card-image-premium"
+                            loading="lazy"
+                            decoding="async"
                         />
                     ) : (
                         <div className="order-card-image-placeholder">

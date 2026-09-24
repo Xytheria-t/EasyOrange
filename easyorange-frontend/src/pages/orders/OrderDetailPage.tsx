@@ -225,6 +225,8 @@ function OrderDetailPage() {
                                         src={item.productImage}
                                         alt={item.productName}
                                         className="order-detail-product-image"
+                                        loading="lazy"
+                                        decoding="async"
                                     />
                                 ) : (
                                     <div className="order-detail-product-image-placeholder">

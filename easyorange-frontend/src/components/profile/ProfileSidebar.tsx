@@ -87,7 +87,13 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
                     >
                         <div className="ps-avatar-ring" />
                         {user?.avatar ? (
-                            <img src={user.avatar} alt="头像" className="ps-avatar-img" />
+                            <img
+                                src={user.avatar}
+                                alt="头像"
+                                className="ps-avatar-img"
+                                loading="lazy"
+                                decoding="async"
+                            />
                         ) : (
                             <div className="ps-avatar-fallback">{user?.username?.charAt(0).toUpperCase() || 'U'}</div>
                         )}
