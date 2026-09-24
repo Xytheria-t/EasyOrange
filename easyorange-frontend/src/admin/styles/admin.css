@@ -726,16 +726,36 @@
     color: var(--admin-accent);
 }
 
-/* 行内文字操作。对比度取 --admin-accent，不用浅橙字 */
+/* 行内文字操作。
+   此前是橙色软底药丸：一列 10 行就有 10 个橙块，和状态徽章、价格抢注意力，
+   整表被染成橙色。降成安静文本钮——默认中性灰，悬停才浮出主题色；
+   危险操作（删除）用 --danger 变体，语义与颜色一致。 */
 .admin-link-button {
-    padding: 0.32rem 0.7rem;
-    background: var(--admin-accent-soft);
-    color: var(--admin-accent);
-    border: 1px solid var(--admin-accent-soft-border);
-    border-radius: var(--admin-radius-control);
+    padding: 0.35rem 0.6rem;
+    background: transparent;
+    color: var(--admin-muted);
+    border: 1px solid transparent;
+    border-radius: var(--admin-radius-icon);
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
+    transition:
+        color 150ms var(--ease-out),
+        background-color 150ms var(--ease-out);
+}
+
+.admin-link-button:hover {
+    color: var(--admin-accent);
+    background: var(--admin-accent-soft);
+}
+
+.admin-link-button--danger {
+    color: var(--admin-danger);
+}
+
+.admin-link-button--danger:hover {
+    background: var(--admin-danger-bg);
+    border-color: var(--admin-danger-border);
 }
 
 /* 32px 见方图标按钮；无障碍名由调用方用 aria-label 给出，不只给 title */

@@ -50,8 +50,8 @@ export function CategoryTreeNode({
                     onClick={() => onToggleExpand(node.categoryId)}
                     className="admin-icon-button"
                     style={{
-                        width: 22,
-                        height: 22,
+                        width: 24,
+                        height: 24,
                         transform: isExpanded ? 'rotate(90deg)' : 'none',
                         transition: 'transform 180ms var(--ease-out)',
                         visibility: hasChildren ? 'visible' : 'hidden',
@@ -117,7 +117,7 @@ export function CategoryTreeNode({
                     {isRowUpdating ? '更新中' : isEnabled ? '启用' : '禁用'}
                 </span>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
                     <Button
                         type="button"
                         variant="ghost"
