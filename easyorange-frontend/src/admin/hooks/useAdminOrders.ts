@@ -1,6 +1,20 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { PageResult } from '@/types';
 import { adminApi } from '../api/adminApi';
-import type { AdminOrderDetail, AdminOrderQuery, OrderInterventionRequest, OrderStatsResponse } from '../types/admin';
+import type {
+    AdminOrder,
+    AdminOrderDetail,
+    AdminOrderQuery,
+    OrderInterventionRequest,
+    OrderStatsResponse,
+} from '../types/admin';
+
+/** 同 useAdminProducts 的 selectList：只留列表页消费的 records / total / current */
+const selectList = (data: PageResult<AdminOrder>) => ({
+    records: data.records,
+    total: data.total,
+    current: data.current,
+});
 
 export const ADMIN_ORDER_KEYS = {
     all: ['admin', 'orders'] as const,
@@ -30,6 +44,7 @@ export function useAdminOrders(params: AdminOrderQuery) {
             const response = await adminApi.getOrders(params);
             return response.data;
         },
+        select: selectList,
         // v5 里 keepPreviousData 改名 placeholderData：翻页 / 换筛选时沿用上一页数据，
         // 否则表格会退回骨架屏再整页重排
         placeholderData: keepPreviousData,
