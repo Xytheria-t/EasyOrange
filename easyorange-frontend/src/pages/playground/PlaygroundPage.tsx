@@ -77,17 +77,18 @@ function StepIcon({ tool }: { tool: string }) {
 }
 
 /**
- * 首屏快捷问题 — 找货与规则各占一半。
+ * 首屏快捷问题 —— 找货 4 条 + 规则 2 条。
  *
- * 欢迎语声称「能帮你在在售资产里找货」，若首屏全是规则问答，用户第一眼看到的
- * 却是 FAQ 助手，找货这条主链路要自己打字才试得出来。找货示例写具体（带预算与场景），
- * 比「找点手机」更能演示召回质量。
+ * /playground 是「对话式找货」的唯一入口（搜索页已无 AI 增强），首屏若全是规则问答，
+ * 用户第一眼看到的却是 FAQ 助手，找货主链路要自己打字才试得出来。找货示例写具体
+ * （带预算、品类、用途），比「找点手机」更能演示召回质量。
  */
 const SUGGESTED_QUESTIONS = [
     '3000 以内适合拍视频的手机有哪些？',
-    '预算 500 的耳机，求推荐',
+    '预算 500 的降噪耳机，通勤用',
+    '8000 左右能跑 3A 大作的游戏本',
+    '校内面交的二手自行车，200 以内',
     '平台交易流程是什么？',
-    '怎么申请退款？',
     '平台能卖烟酒吗？',
 ];
 
@@ -95,7 +96,7 @@ const WELCOME_MESSAGE: ChatMessage = {
     id: 'welcome',
     role: 'assistant',
     content:
-        '你好，我是 EasyOrange AI 助手，可以回答平台交易、退款、运费、禁售品类等规则问题，也能帮你在在售资产里找货。每次回答会标注知识库来源。',
+        '你好，我是 EasyOrange AI 助手。找货直接说预算、品类和用途，我在在售资产里帮你挑；交易、退款、运费、禁售品类这些规则也能问，每次回答会标注来源。',
     sources: [],
     steps: [],
     status: 'done',
@@ -151,7 +152,7 @@ function SourceList({ sources }: { sources: ChatSource[] }) {
                     )}
                     {products?.map((product, index) => (
                         // ProductCard 整体是链接，卡内再套链接会形成嵌套 a
-                        <ProductCard key={product.id} product={product} index={index} />
+                        <ProductCard key={product.id} product={product} index={index} variant="compact" />
                     ))}
                 </section>
             )}
@@ -163,6 +164,9 @@ export default function PlaygroundPage() {
     const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
     const [inputValue, setInputValue] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
+    // 屏幕阅读器播报的唯一出口。消息列表不能挂 aria-live：token 逐字到达会让它
+    // 每个字都重播整条消息。只在这里推「开始生成 / 已完成 / 已停止 / 失败」这类状态变化。
+    const [announcement, setAnnouncement] = useState('');
     const sessionIdRef = useRef<string>(`sess-${crypto.randomUUID()}`);
     const abortRef = useRef<AbortController | null>(null);
     const listEndRef = useRef<HTMLDivElement>(null);
@@ -218,6 +222,7 @@ export default function PlaygroundPage() {
         setMessages(prev => [...prev, userMessage, assistantMessage]);
         setInputValue('');
         setIsStreaming(true);
+        setAnnouncement('正在生成回答');
 
         const controller = new AbortController();
         abortRef.current = controller;
@@ -235,10 +240,12 @@ export default function PlaygroundPage() {
                     break;
                 case 'done':
                     setMessage(assistantMessage.id, { content: event.data, status: 'done' });
+                    setAnnouncement('回答已生成');
                     setIsStreaming(false);
                     break;
                 case 'error':
                     setMessage(assistantMessage.id, { note: event.data, status: 'error' });
+                    setAnnouncement('回答生成失败');
                     setIsStreaming(false);
                     break;
                 default:
@@ -256,12 +263,16 @@ export default function PlaygroundPage() {
             if (isAbortError(e)) {
                 // 用户主动停止：已流出的部分答案保留，只标状态
                 setMessage(assistantMessage.id, { status: 'stopped', note: '已停止生成' });
-            } else if (e instanceof StreamAuthError) {
-                setMessage(assistantMessage.id, { note: e.message, status: 'error' });
-            } else if (e instanceof StreamIdleTimeoutError) {
-                setMessage(assistantMessage.id, { note: e.message, status: 'error' });
+                setAnnouncement('已停止生成');
             } else {
-                setMessage(assistantMessage.id, { note: '连接中断，请重试', status: 'error' });
+                setAnnouncement('回答生成失败');
+                if (e instanceof StreamAuthError) {
+                    setMessage(assistantMessage.id, { note: e.message, status: 'error' });
+                } else if (e instanceof StreamIdleTimeoutError) {
+                    setMessage(assistantMessage.id, { note: e.message, status: 'error' });
+                } else {
+                    setMessage(assistantMessage.id, { note: '连接中断，请重试', status: 'error' });
+                }
             }
             setIsStreaming(false);
         } finally {
@@ -312,8 +323,11 @@ export default function PlaygroundPage() {
             <div className="playground__bg" aria-hidden="true">
                 <span className="playground__orb playground__orb--1" />
                 <span className="playground__orb playground__orb--2" />
-                <div className="playground__mesh" />
             </div>
+            {/* 状态播报区：常驻 DOM，内容变化才播报；token 流本身不进 live region */}
+            <p className="sr-only" role="status">
+                {announcement}
+            </p>
 
             <section className="playground__shell">
                 <header className="playground__header">
@@ -330,7 +344,7 @@ export default function PlaygroundPage() {
                     </span>
                 </header>
 
-                <div className="playground__chat" aria-live="polite">
+                <div className="playground__chat">
                     {messages.map(message => (
                         <div
                             key={message.id}
@@ -381,7 +395,9 @@ export default function PlaygroundPage() {
                                         )
                                     ) : (
                                         message.status === 'streaming' && (
-                                            <span className="playground-typing" role="status" aria-label="思考中">
+                                            // 不再自带 live region：开始生成已由页面级
+                                            // 状态播报区承担，两处播报会叠成两声
+                                            <span className="playground-typing" aria-hidden="true">
                                                 <span className="playground-typing__dot" />
                                                 <span className="playground-typing__dot" />
                                                 <span className="playground-typing__dot" />

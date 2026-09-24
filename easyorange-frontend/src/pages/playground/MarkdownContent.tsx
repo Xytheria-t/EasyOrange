@@ -12,6 +12,12 @@ export function MarkdownContent({ content }: { content: string }) {
                 remarkPlugins={[remarkGfm]}
                 components={{
                     a: props => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                    // 表格套滚动容器：窄气泡里列一多就会把气泡撑破
+                    table: props => (
+                        <div className="playground-md__table-wrap">
+                            <table {...props} />
+                        </div>
+                    ),
                 }}
             >
                 {content}

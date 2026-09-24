@@ -146,6 +146,17 @@
     --glass-blur: blur(24px);
     --glass-blur-heavy: blur(48px);
 
+    /*
+     * 低频 alpha 效果令牌 —— 只给「无法映射到上面任何一档」的柔和底/描边/光晕用，
+     * 不建 alpha 色阶（12 档 rgba 是负担而不是系统）。新页面要这类色先来这里找。
+     */
+    --primary-soft-bg: rgba(249, 115, 22, 0.07);
+    --primary-soft-border: rgba(249, 115, 22, 0.16);
+    --primary-focus-ring: rgba(249, 115, 22, 0.12);
+    --primary-glow: rgba(249, 115, 22, 0.28);
+    --success-soft-border: rgba(16, 185, 129, 0.15);
+    --error-soft-border: rgba(244, 63, 94, 0.18);
+
     /* ============================================================
        GRADIENTS - Orange-Pink Diffusion Theme
        Core: #F97316 → #C39BD3

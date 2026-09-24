@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { HttpResponse, http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { aiApi } from '@/api/aiApi';
@@ -212,7 +212,9 @@ describe('PlaygroundPage (AI 智能助手)', () => {
         });
         // 中止不是故障：半截答案留着，标「已停止」
         expect(screen.getByText('正在想')).toBeInTheDocument();
-        expect(screen.getByText('已停止生成')).toBeInTheDocument();
+        // 「已停止生成」有两处：提示条与状态播报区，这里只关心提示条
+        const note = document.querySelector('.playground-msg__note');
+        expect(within(note as HTMLElement).getByText('已停止生成')).toBeInTheDocument();
     });
 
     it('请求失败 -> 报错并解锁输入，不永久卡在生成中', async () => {
@@ -228,7 +230,7 @@ describe('PlaygroundPage (AI 智能助手)', () => {
         expect(screen.getByRole('button', { name: '发送' })).toBeInTheDocument();
     });
 
-    it('资产来源 -> 渲染可点进商品页的真实商品卡', async () => {
+    it('资产来源 -> 渲染可点进商品页的真实商品卡（紧凑变体）', async () => {
         // AI 侧的召回物只有 id / 标题，商品卡要的真实字段走公开 batch 接口补全
         server.use(
             http.post('/api/products/batch', () =>
@@ -265,6 +267,29 @@ describe('PlaygroundPage (AI 智能助手)', () => {
 
         const link = await screen.findByRole('link', { name: /二手 iPhone 13/ });
         expect(link).toHaveAttribute('href', '/products/p-1');
+        // 聊天气泡里放的是横排紧凑卡，不是列表页的陈列卡
+        expect(link.closest('.product-card-premium--compact')).toBeInTheDocument();
+    });
+
+    it('消息列表不挂 aria-live，状态变化走独立播报区', async () => {
+        mockedChatStream.mockResolvedValue(undefined);
+        const { container } = renderWithProviders(<PlaygroundPage />);
+
+        // token 逐字到达时若整列表是 live region，屏幕阅读器会每个字重播整条消息
+        expect(container.querySelector('.playground__chat')).not.toHaveAttribute('aria-live');
+
+        fireEvent.change(screen.getByLabelText('问题输入'), { target: { value: '3000 以内的手机' } });
+        fireEvent.click(screen.getByRole('button', { name: '发送' }));
+        expect(screen.getByText('正在生成回答')).toBeInTheDocument();
+
+        emit([{ type: 'token', data: '正在找' }]);
+        // token 流本身不进播报区
+        expect(screen.getByText('正在生成回答')).toBeInTheDocument();
+
+        emit([{ type: 'done', data: '找到两台' }]);
+        await waitFor(() => {
+            expect(screen.getByText('回答已生成')).toBeInTheDocument();
+        });
     });
 
     it('赞反馈 -> 调用 feedback 接口', async () => {
