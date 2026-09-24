@@ -8,7 +8,8 @@ export interface User {
     phone: string | null;
     realName: string | null;
     avatar: string | null;
-    status: number;
+    /** 账号状态语义码（后端 UserProfileResponse/UserResponse 均为 String：NORMAL / DISABLED / LOCKED） */
+    status: string;
     userType: UserType;
     createTime: string;
     updateTime: string;

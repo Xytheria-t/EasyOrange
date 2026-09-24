@@ -18,7 +18,7 @@ const mockUser: User = {
     phone: '13800138000',
     avatar: null,
     realName: 'Test',
-    status: 0,
+    status: 'NORMAL',
     userType: '01',
     createTime: '2026-01-01T00:00:00Z',
     updateTime: '2026-01-01T00:00:00Z',
@@ -80,6 +80,17 @@ describe('ProfileOverview', () => {
         const statusElements = screen.getAllByText('账号状态');
         expect(statusElements.length).toBeGreaterThanOrEqual(1);
         expect(screen.getByText('正常')).toBeInTheDocument();
+    });
+
+    // 回归护栏：账号状态取自后端 status 语义码，不是写死「正常」。
+    // 原实现无条件渲染「正常」，被禁用/锁定账号也显示正常——这两条能抓住回退。
+    it.each([
+        ['DISABLED', '已禁用'],
+        ['LOCKED', '已锁定'],
+    ])('renders %s status as %s', (status, label) => {
+        render(<ProfileOverview {...defaultProps} user={{ ...mockUser, status }} />);
+        expect(screen.getByText(label)).toBeInTheDocument();
+        expect(screen.queryByText('正常')).not.toBeInTheDocument();
     });
 
     it('shows edit button for editable fields', () => {

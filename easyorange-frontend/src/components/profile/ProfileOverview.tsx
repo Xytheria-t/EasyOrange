@@ -13,7 +13,6 @@
  */
 
 import {
-    Award,
     BadgeCheck,
     Calendar,
     Check,
@@ -33,6 +32,13 @@ import { Button } from '@/components/ui/button';
 import type { User as UserType } from '@/types';
 
 type EditableField = 'nickname' | 'email' | 'phone' | 'realName';
+
+/** 账号状态语义码 → 展示文案（后端 UserStatus：NORMAL / DISABLED / LOCKED） */
+const USER_STATUS_LABEL: Record<string, string> = {
+    NORMAL: '正常',
+    DISABLED: '已禁用',
+    LOCKED: '已锁定',
+};
 
 interface ProfileOverviewProps {
     user: UserType | undefined;
@@ -209,21 +215,9 @@ export function ProfileOverview({
                                 <Shield size={18} />
                                 账号状态
                             </div>
-                            <span className="status-badge active">正常</span>
-                        </div>
-                        <div className="info-row">
-                            <div className="info-label">
-                                <Award size={18} />
-                                会员等级
-                            </div>
-                            <span className="info-value">黄金会员</span>
-                        </div>
-                        <div className="info-row">
-                            <div className="info-label">
-                                <span style={{ fontSize: 18 }}>🕐</span>
-                                最后登录
-                            </div>
-                            <span className="info-value">刚刚</span>
+                            <span className={`status-badge ${user?.status === 'NORMAL' ? 'active' : ''}`}>
+                                {USER_STATUS_LABEL[user?.status ?? ''] ?? '未知'}
+                            </span>
                         </div>
                     </div>
                 </div>
