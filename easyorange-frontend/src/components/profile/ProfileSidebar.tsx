@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Activity, Camera, List, LogOut, Package, Settings, Shield, ShoppingBag, Sparkles } from 'lucide-react';
+import { Camera, List, LogOut, Package, Shield, ShoppingBag, Sparkles } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { userApi } from '@/api/userApi';
@@ -8,7 +8,7 @@ import { useUIStore } from '@/store/uiStore';
 import type { User } from '@/types';
 import { errorHandler } from '@/utils/errorHandler';
 
-type TabType = 'overview' | 'activity' | 'security' | 'preferences';
+type TabType = 'overview' | 'security';
 
 interface NavItem {
     id: TabType;
@@ -26,9 +26,7 @@ interface ProfileSidebarProps {
 
 const navItems: NavItem[] = [
     { id: 'overview', label: '总览', icon: Sparkles },
-    { id: 'activity', label: '动态', icon: Activity },
     { id: 'security', label: '安全', icon: Shield },
-    { id: 'preferences', label: '偏好', icon: Settings },
 ];
 
 export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animateIn }: ProfileSidebarProps) {

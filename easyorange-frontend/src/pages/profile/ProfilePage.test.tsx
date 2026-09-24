@@ -59,7 +59,7 @@ const mockUser: User = {
     phone: '13800138000',
     realName: '张三',
     avatar: null,
-    status: 1,
+    status: 'NORMAL',
     userType: '00',
     createTime: '2026-01-01T00:00:00Z',
     updateTime: '2026-01-01T00:00:00Z',
@@ -109,11 +109,11 @@ describe('ProfilePage', () => {
         expect(await screen.findByText('42')).toBeInTheDocument();
     });
 
-    it('switches to activity tab', async () => {
+    // 「动态 / 偏好」两 tab 已下线（硬编码假数据 / 无行为的死开关）
+    it('does not offer removed activity/preferences tabs', async () => {
         renderPage();
-        const user = userEvent.setup();
-        await user.click(screen.getByText('动态'));
-        expect(screen.getByText('最近动态')).toBeInTheDocument();
+        expect(screen.queryByText('动态')).not.toBeInTheDocument();
+        expect(screen.queryByText('偏好')).not.toBeInTheDocument();
     });
 
     it('switches to security tab', async () => {
@@ -121,13 +121,6 @@ describe('ProfilePage', () => {
         const user = userEvent.setup();
         await user.click(screen.getByText('安全'));
         expect(screen.getByText('安全中心')).toBeInTheDocument();
-    });
-
-    it('switches to preferences tab', async () => {
-        renderPage();
-        const user = userEvent.setup();
-        await user.click(screen.getByText('偏好'));
-        expect(screen.getByText('偏好设置')).toBeInTheDocument();
     });
 
     it('handles inline editing of nickname', async () => {

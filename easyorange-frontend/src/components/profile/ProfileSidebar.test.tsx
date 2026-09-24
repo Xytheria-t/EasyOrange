@@ -68,7 +68,7 @@ const mockUser: User = {
     phone: '13800138000',
     realName: 'Test',
     avatar: null,
-    status: 1,
+    status: 'NORMAL',
     userType: '00',
     createTime: '2026-01-01T00:00:00Z',
     updateTime: '2026-01-01T00:00:00Z',
@@ -117,12 +117,14 @@ describe('ProfileSidebar', () => {
         expect(img.src).toBe('https://example.com/avatar.jpg');
     });
 
-    it('renders all 4 nav items (总览, 动态, 安全, 偏好)', () => {
+    // 「动态 / 偏好」两 tab 已下线（前者硬编码假数据、后者是点了没反应的死开关）：
+    // 侧栏只保留有真实数据支撑的总览 / 安全
+    it('renders the 2 live nav items (总览, 安全)', () => {
         render(<ProfileSidebar {...defaultProps} />);
         expect(screen.getByText('总览')).toBeInTheDocument();
-        expect(screen.getByText('动态')).toBeInTheDocument();
         expect(screen.getByText('安全')).toBeInTheDocument();
-        expect(screen.getByText('偏好')).toBeInTheDocument();
+        expect(screen.queryByText('动态')).not.toBeInTheDocument();
+        expect(screen.queryByText('偏好')).not.toBeInTheDocument();
     });
 
     it('highlights active tab', () => {
@@ -134,8 +136,8 @@ describe('ProfileSidebar', () => {
     it('calls onTabChange when nav item clicked', () => {
         const onTabChange = vi.fn();
         render(<ProfileSidebar {...defaultProps} onTabChange={onTabChange} />);
-        fireEvent.click(screen.getByText('动态'));
-        expect(onTabChange).toHaveBeenCalledWith('activity');
+        fireEvent.click(screen.getByText('安全'));
+        expect(onTabChange).toHaveBeenCalledWith('security');
     });
 
     it('shows transaction count (42)', () => {

@@ -4,14 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { messageApi } from '@/api/messageApi';
 import { userApi } from '@/api/userApi';
 import { ErrorState } from '@/components/feedback/StateDisplay';
-import {
-    PasswordModal,
-    ProfileActivity,
-    ProfileOverview,
-    ProfilePreferences,
-    ProfileSecurity,
-    ProfileSidebar,
-} from '@/components/profile';
+import { PasswordModal, ProfileOverview, ProfileSecurity, ProfileSidebar } from '@/components/profile';
 import { useCurrentUser, useLogout } from '@/hooks';
 import type { ChangePasswordForm } from '@/schemas/authSchema';
 import { useUIStore } from '@/store/uiStore';
@@ -22,7 +15,7 @@ import './profile-dashboard.css';
 import './profile-modals.css';
 
 type EditableField = 'nickname' | 'email' | 'phone' | 'realName';
-type TabType = 'overview' | 'activity' | 'security' | 'preferences';
+type TabType = 'overview' | 'security';
 
 function ProfilePage() {
     const { data: user, isLoading, isError, error, refetch } = useCurrentUser();
@@ -180,7 +173,6 @@ function ProfilePage() {
                                 onEditValueChange={setEditValue}
                             />
                         )}
-                        {activeTab === 'activity' && <ProfileActivity />}
                         {activeTab === 'security' && (
                             <ProfileSecurity
                                 user={user}
@@ -188,7 +180,6 @@ function ProfilePage() {
                                 onShowPasswordModal={() => setShowPasswordModal(true)}
                             />
                         )}
-                        {activeTab === 'preferences' && <ProfilePreferences />}
                     </main>
                 </div>
             </div>
