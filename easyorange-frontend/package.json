@@ -16,6 +16,7 @@
         "typecheck": "tsc --noEmit",
         "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
         "typecheck:all": "npm run typecheck && npm run typecheck:test",
+        "bench:render": "vitest run --config vitest.bench.config.ts",
         "clean": "rimraf dist",
         "rebuild": "npm run clean && npm run build",
         "test": "vitest run",
