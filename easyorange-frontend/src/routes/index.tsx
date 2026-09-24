@@ -109,7 +109,13 @@ export const router = createBrowserRouter(
                     path="notifications"
                     element={<ProtectedRoute>{withSuspense(NotificationsPage, R.notifications)}</ProtectedRoute>}
                 />
-                <Route path="playground" element={withSuspense(PlaygroundPage, R.playground)} />
+                {/* AI 对话依赖登录身份：长期画像靠它加载、remember_preference 靠它落库，
+                    匿名访问这些能力会静默失效。后端 /api/ai/** 也一直要求 JWT（不在
+                    ignore-paths 里），前端不设守卫只是让未登录用户走到 401 才看到「连接中断」 */}
+                <Route
+                    path="playground"
+                    element={<ProtectedRoute>{withSuspense(PlaygroundPage, R.playground)}</ProtectedRoute>}
+                />
                 <Route path="*" element={withSuspense(NotFoundPage, R.notFound)} />
             </Route>
             <Route path="admin/*" element={withSuspense(AdminRoutes, R.admin)} />

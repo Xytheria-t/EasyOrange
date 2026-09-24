@@ -6,27 +6,38 @@ import {
     CheckCircle2,
     FileSearch,
     GitCompare,
+    Loader2,
+    RefreshCw,
     Search,
     Send,
     Sparkles,
+    Square,
     ThumbsDown,
     ThumbsUp,
     TrendingUp,
     User,
 } from 'lucide-react';
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { aiApi } from '@/api/aiApi';
-import type { AgentStep, ChatStreamEvent } from '@/types/ai';
+import { StreamAuthError, StreamIdleTimeoutError } from '@/api/core/stream';
+import { ProductCard } from '@/components/product/ProductCard';
+import { useProductsByIds } from '@/hooks/product/useProducts';
+import type { AgentStep, ChatSource, ChatStreamEvent } from '@/types/ai';
 import { MarkdownContent } from './MarkdownContent';
 import './playground.css';
+
+/** 消息状态 — stopped 与 error 分开：前者是用户主动中止，不是故障 */
+type MessageStatus = 'streaming' | 'done' | 'error' | 'stopped';
 
 interface ChatMessage {
     id: string;
     role: 'user' | 'assistant';
     content: string;
-    sources: string[];
+    sources: ChatSource[];
     steps: AgentStep[];
-    status: 'streaming' | 'done' | 'error';
+    status: MessageStatus;
+    /** 失败/中止原因 — 与 content 分开存：流已吐出的部分答案要留着，不能被错误文案覆盖 */
+    note?: string;
     feedback: 'helpful' | 'unhelpful' | null;
 }
 
@@ -65,11 +76,18 @@ function StepIcon({ tool }: { tool: string }) {
     }
 }
 
+/**
+ * 首屏快捷问题 — 找货与规则各占一半。
+ *
+ * 欢迎语声称「能帮你在在售资产里找货」，若首屏全是规则问答，用户第一眼看到的
+ * 却是 FAQ 助手，找货这条主链路要自己打字才试得出来。找货示例写具体（带预算与场景），
+ * 比「找点手机」更能演示召回质量。
+ */
 const SUGGESTED_QUESTIONS = [
+    '3000 以内适合拍视频的手机有哪些？',
+    '预算 500 的耳机，求推荐',
     '平台交易流程是什么？',
     '怎么申请退款？',
-    '运费由谁承担？',
-    '签收后还能退吗？',
     '平台能卖烟酒吗？',
 ];
 
@@ -88,6 +106,59 @@ function nextId(): string {
     return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** 主动取消（停止按钮 / 卸载）不算故障 */
+function isAbortError(e: unknown): boolean {
+    return e instanceof DOMException && e.name === 'AbortError';
+}
+
+/**
+ * 引用来源 — 资产渲染成真商品卡，规则渲染成胶囊。
+ *
+ * 此前所有来源都渲染成「来源 · 标题」的灰色胶囊：在售资产被标成「知识库来源」，
+ * 标错了语义，还点不动 —— Agent 找出了货，用户却拿不到货，「对话式找货」断在最后一步。
+ * 现在按 type 分流：资产走公开的 /products/batch 补全真实商品（图片、价格、卖家、
+ * 地点都是真的），规则仍是不可点的引文胶囊。
+ */
+function SourceList({ sources }: { sources: ChatSource[] }) {
+    const rules = sources.filter(source => source.type === 'knowledge');
+    const assetIds = useMemo(
+        () => sources.filter(source => source.type === 'asset').map(source => source.id),
+        [sources]
+    );
+    const { data: products, isPending } = useProductsByIds(assetIds);
+
+    return (
+        <div className="playground-msg__sources-wrap">
+            {rules.length > 0 && (
+                <ul className="playground-msg__sources" aria-label="平台规则引用">
+                    {rules.map(source => (
+                        <li key={`${source.type}-${source.id}`}>
+                            <span className="playground-msg__source" title={`平台规则：${source.title}`}>
+                                <BookOpen size={11} aria-hidden="true" />
+                                规则 · {source.title}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            {assetIds.length > 0 && (
+                <section className="playground-msg__assets" aria-label="推荐商品">
+                    {isPending && (
+                        <p className="playground-msg__assets-hint">
+                            <Loader2 size={12} aria-hidden="true" />
+                            正在加载商品…
+                        </p>
+                    )}
+                    {products?.map((product, index) => (
+                        // ProductCard 整体是链接，卡内再套链接会形成嵌套 a
+                        <ProductCard key={product.id} product={product} index={index} />
+                    ))}
+                </section>
+            )}
+        </div>
+    );
+}
+
 export default function PlaygroundPage() {
     const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
     const [inputValue, setInputValue] = useState('');
@@ -95,12 +166,15 @@ export default function PlaygroundPage() {
     const sessionIdRef = useRef<string>(`sess-${crypto.randomUUID()}`);
     const abortRef = useRef<AbortController | null>(null);
     const listEndRef = useRef<HTMLDivElement>(null);
+    // 消息数而非整个数组：token 逐个到达时数组引用每次都变，用它当依赖会每个字都滚一次，
+    // 用户向上翻历史会被硬拽回底部。messageCount 在 effect 内不被读取、纯粹是触发器，
+    // biome 的 useExhaustiveDependencies 会把它误报为多余依赖 —— 不要按提示删
+    const messageCount = messages.length;
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: messageCount 是触发器，effect 内不读取它
     useEffect(() => {
-        if (messages.length > 0) {
-            listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [messages]);
+        listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messageCount]);
 
     useEffect(() => {
         return () => abortRef.current?.abort();
@@ -164,7 +238,7 @@ export default function PlaygroundPage() {
                     setIsStreaming(false);
                     break;
                 case 'error':
-                    setMessage(assistantMessage.id, { content: event.data, status: 'error' });
+                    setMessage(assistantMessage.id, { note: event.data, status: 'error' });
                     setIsStreaming(false);
                     break;
                 default:
@@ -174,10 +248,30 @@ export default function PlaygroundPage() {
 
         try {
             await aiApi.chatStream({ question: text, sessionId: sessionIdRef.current }, handleEvent, controller.signal);
-        } catch {
-            setMessage(assistantMessage.id, { content: '连接中断，请重试', status: 'error' });
+            // 走到这里说明收到了终止事件（done/error），状态已在 handleEvent 里落定。
+            // streamChat 对「流结束却没有终止事件」会抛错，所以这里不再补设状态 ——
+            // 补设会把上面刚落的 error 覆盖成 done，重试按钮随之消失
             setIsStreaming(false);
+        } catch (e) {
+            if (isAbortError(e)) {
+                // 用户主动停止：已流出的部分答案保留，只标状态
+                setMessage(assistantMessage.id, { status: 'stopped', note: '已停止生成' });
+            } else if (e instanceof StreamAuthError) {
+                setMessage(assistantMessage.id, { note: e.message, status: 'error' });
+            } else if (e instanceof StreamIdleTimeoutError) {
+                setMessage(assistantMessage.id, { note: e.message, status: 'error' });
+            } else {
+                setMessage(assistantMessage.id, { note: '连接中断，请重试', status: 'error' });
+            }
+            setIsStreaming(false);
+        } finally {
+            abortRef.current = null;
         }
+    }
+
+    /** 生成中点发送按钮 = 停止，不新增按钮位（输入区只有一个动作位） */
+    function handleStop() {
+        abortRef.current?.abort();
     }
 
     async function handleFeedback(message: ChatMessage, helpful: boolean) {
@@ -269,40 +363,18 @@ export default function PlaygroundPage() {
                                         ))}
                                     </ul>
                                 )}
-                                {message.sources.length > 0 && (
-                                    <ul className="playground-msg__sources" aria-label="知识库引用来源">
-                                        {message.sources.map(source => (
-                                            <li key={source}>
-                                                <span
-                                                    className="playground-msg__source"
-                                                    title={`知识库来源：${source}`}
-                                                >
-                                                    <BookOpen size={11} aria-hidden="true" />
-                                                    来源 · {source}
-                                                </span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
+                                {message.sources.length > 0 && <SourceList sources={message.sources} />}
                                 <div
                                     className={[
                                         'playground-msg__bubble',
-                                        message.status === 'error' ? 'playground-msg__bubble--error' : '',
                                         message.status === 'streaming' && message.content ? 'is-streaming' : '',
                                     ]
                                         .filter(Boolean)
                                         .join(' ')}
                                 >
-                                    {message.status === 'error' && (
-                                        <AlertCircle
-                                            size={15}
-                                            className="playground-msg__error-icon"
-                                            aria-hidden="true"
-                                        />
-                                    )}
                                     {message.content ? (
-                                        // 用户消息与错误文案保持纯文本；助手回答走 Markdown（不渲染内嵌 HTML）
-                                        message.role === 'assistant' && message.status !== 'error' ? (
+                                        // 用户消息保持纯文本；助手回答走 Markdown（不渲染内嵌 HTML）
+                                        message.role === 'assistant' ? (
                                             <MarkdownContent content={message.content} />
                                         ) : (
                                             message.content
@@ -317,8 +389,24 @@ export default function PlaygroundPage() {
                                         )
                                     )}
                                 </div>
+                                {message.note && (
+                                    <div className="playground-msg__note">
+                                        <AlertCircle size={13} aria-hidden="true" />
+                                        <span>{message.note}</span>
+                                        {(message.status === 'error' || message.status === 'stopped') && (
+                                            <button
+                                                type="button"
+                                                className="playground-msg__retry"
+                                                onClick={() => void handleSend(findQuestion(message.id))}
+                                            >
+                                                <RefreshCw size={12} aria-hidden="true" />
+                                                重试
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                                 {message.role === 'assistant' &&
-                                    message.status === 'done' &&
+                                    (message.status === 'done' || message.status === 'stopped') &&
                                     message.id !== 'welcome' && (
                                         <fieldset className="playground-msg__feedback">
                                             <legend className="sr-only">反馈</legend>
@@ -373,19 +461,32 @@ export default function PlaygroundPage() {
                             className="playground__composer-field"
                             value={inputValue}
                             onChange={e => setInputValue(e.target.value)}
-                            placeholder="输入问题，如：怎么申请退款？"
+                            placeholder="输入问题，如：3000 以内适合拍视频的手机"
                             aria-label="问题输入"
                             autoComplete="off"
                             disabled={isStreaming}
                         />
-                        <button
-                            type="submit"
-                            className="playground__send"
-                            disabled={isStreaming || !inputValue.trim()}
-                            aria-label="发送"
-                        >
-                            <Send size={15} />
-                        </button>
+                        {isStreaming ? (
+                            // 生成中占用发送按钮位：多一个并列按钮会挤窄输入框，
+                            // 而「停止」正是此刻唯一该有的动作
+                            <button
+                                type="button"
+                                className="playground__send playground__send--stop"
+                                onClick={handleStop}
+                                aria-label="停止生成"
+                            >
+                                <Square size={13} fill="currentColor" />
+                            </button>
+                        ) : (
+                            <button
+                                type="submit"
+                                className="playground__send"
+                                disabled={!inputValue.trim()}
+                                aria-label="发送"
+                            >
+                                <Send size={15} />
+                            </button>
+                        )}
                     </div>
                     <p className="playground__disclaimer">回答由 AI 生成，请以平台规则原文为准</p>
                 </form>
