@@ -14,7 +14,7 @@ const ChartFallback = ({ height = 200 }: { height?: number }) => (
         role="img"
         aria-label="图表加载中"
         className="flex items-center justify-center rounded-xl bg-white/40"
-        style={{ height, color: '#B5AEA8', fontSize: '0.85rem' }}
+        style={{ height, color: '#6E6862', fontSize: '0.85rem' }}
     >
         <span className="inline-flex items-center gap-2">
             <span

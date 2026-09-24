@@ -274,7 +274,7 @@ export default function CategoryManagePage() {
                         </div>
                         <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#E11D48' }}>数据加载失败</div>
-                            <div style={{ fontSize: '0.8rem', color: '#9B9590' }}>
+                            <div style={{ fontSize: '0.8rem', color: '#6E6862' }}>
                                 无法连接到服务器，请检查后端服务是否启动
                             </div>
                         </div>
@@ -359,7 +359,7 @@ export default function CategoryManagePage() {
                             <p
                                 style={{
                                     fontSize: '0.88rem',
-                                    color: '#9B9590',
+                                    color: '#6E6862',
                                     marginTop: '0.3rem',
                                     paddingLeft: '36px',
                                 }}
@@ -443,7 +443,7 @@ export default function CategoryManagePage() {
                                 gap: '0.3rem',
                                 fontSize: '0.8rem',
                                 fontWeight: 500,
-                                color: '#9B9590',
+                                color: '#6E6862',
                             }}
                         >
                             <svg
@@ -477,7 +477,7 @@ export default function CategoryManagePage() {
                                 gap: '0.3rem',
                                 fontSize: '0.8rem',
                                 fontWeight: 500,
-                                color: '#9B9590',
+                                color: '#6E6862',
                             }}
                         >
                             <svg
@@ -589,7 +589,7 @@ export default function CategoryManagePage() {
                                 transform: 'translateY(-50%)',
                                 width: 15,
                                 height: 15,
-                                color: '#B5AEA8',
+                                color: '#6E6862',
                                 pointerEvents: 'none',
                             }}
                             viewBox="0 0 24 24"
@@ -608,7 +608,7 @@ export default function CategoryManagePage() {
                     <div style={{ width: 1, height: 20, background: '#E5E0DB', flexShrink: 0 }} />
 
                     {/* Count */}
-                    <span style={{ fontSize: '0.81rem', color: '#9B9590', fontWeight: 500 }}>
+                    <span style={{ fontSize: '0.81rem', color: '#6E6862', fontWeight: 500 }}>
                         共 <strong style={{ color: '#2A2520' }}>{totalCount.toLocaleString()}</strong> 个分类
                     </span>
                 </div>
@@ -639,7 +639,7 @@ export default function CategoryManagePage() {
                                     animation: 'categorySpin 0.7s linear infinite',
                                 }}
                             />
-                            <div style={{ marginTop: '1rem', fontSize: '0.87rem', color: '#9B9590' }}>
+                            <div style={{ marginTop: '1rem', fontSize: '0.87rem', color: '#6E6862' }}>
                                 加载分类数据...
                             </div>
                         </div>
@@ -663,7 +663,7 @@ export default function CategoryManagePage() {
                                     height="28"
                                     viewBox="0 0 24 24"
                                     fill="none"
-                                    stroke="#9B9590"
+                                    stroke="#6E6862"
                                     strokeWidth="1.5"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -683,7 +683,7 @@ export default function CategoryManagePage() {
                             >
                                 暂无分类数据
                             </div>
-                            <p style={{ fontSize: '0.82rem', color: '#B5AEA8' }}>
+                            <p style={{ fontSize: '0.82rem', color: '#6E6862' }}>
                                 {searchInput || statusFilter
                                     ? '尝试调整筛选条件'
                                     : '点击右上角「添加分类」创建第一个分类'}
@@ -807,7 +807,7 @@ export default function CategoryManagePage() {
                                 value={createParentId ?? ''}
                                 onChange={val => setCreateParentId(val || undefined)}
                             />
-                            <p style={{ fontSize: '0.75rem', color: '#B5AEA8', marginTop: '0.25rem' }}>
+                            <p style={{ fontSize: '0.75rem', color: '#6E6862', marginTop: '0.25rem' }}>
                                 不选则为一级分类，最多支持三级分类
                             </p>
                         </div>

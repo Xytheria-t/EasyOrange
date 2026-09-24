@@ -27,10 +27,12 @@ const toastVariants = cva(
         variants: {
             variant: {
                 default: 'border-border bg-white/95 text-foreground backdrop-blur-xl',
-                success: 'border-success/20 bg-success/10 text-success-foreground backdrop-blur-xl',
-                error: 'border-destructive/20 bg-destructive/10 text-destructive-foreground backdrop-blur-xl',
-                info: 'border-info/20 bg-info/10 text-info-foreground backdrop-blur-xl',
-                warning: 'border-warning/20 bg-warning/10 text-warning-foreground backdrop-blur-xl',
+                // 浅底必须配深色文字：白字配 10% 透明底对比度只有 1.1，读不出来。
+                // 这几个深色分别对各自浅底 ≥ 4.99:1（WCAG AA）。
+                success: 'border-success/30 bg-success/10 text-[#047857] backdrop-blur-xl',
+                error: 'border-destructive/30 bg-destructive/10 text-[#be123c] backdrop-blur-xl',
+                info: 'border-info/30 bg-info/10 text-[#1d4ed8] backdrop-blur-xl',
+                warning: 'border-warning/30 bg-warning/10 text-[#92400e] backdrop-blur-xl',
             },
         },
         defaultVariants: {
@@ -69,7 +71,8 @@ const ToastClose = React.forwardRef<
     <ToastPrimitives.Close
         ref={ref}
         className={cn(
-            'absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600',
+            // 关闭按钮跟随各变体的文字色，避免浅底上出现半透明白叉
+            'absolute right-2 top-2 rounded-md p-1 opacity-70 transition-opacity hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100',
             className
         )}
         toast-close=""

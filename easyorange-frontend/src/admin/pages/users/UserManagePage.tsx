@@ -112,7 +112,7 @@ export default function UserManagePage() {
                             {record.username}
                         </span>
                         {record.nickname && (
-                            <span style={{ fontSize: '0.78rem', color: '#9B9590' }}>{record.nickname}</span>
+                            <span style={{ fontSize: '0.78rem', color: '#6E6862' }}>{record.nickname}</span>
                         )}
                     </div>
                 </div>
@@ -148,7 +148,7 @@ export default function UserManagePage() {
             title: '注册时间',
             sortable: true,
             render: value => (
-                <span style={{ color: '#9B9590', fontSize: '0.84rem' }}>{formatDate(value as string, 'date')}</span>
+                <span style={{ color: '#6E6862', fontSize: '0.84rem' }}>{formatDate(value as string, 'date')}</span>
             ),
         },
         {
@@ -278,7 +278,7 @@ export default function UserManagePage() {
                         </div>
                         <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#E11D48' }}>数据加载失败</div>
-                            <div style={{ fontSize: '0.8rem', color: '#9B9590' }}>
+                            <div style={{ fontSize: '0.8rem', color: '#6E6862' }}>
                                 无法连接到服务器，请检查后端服务是否启动
                             </div>
                         </div>
@@ -364,7 +364,7 @@ export default function UserManagePage() {
                             <p
                                 style={{
                                     fontSize: '0.88rem',
-                                    color: '#9B9590',
+                                    color: '#6E6862',
                                     marginTop: '0.3rem',
                                     paddingLeft: '36px',
                                 }}
@@ -414,7 +414,7 @@ export default function UserManagePage() {
                                         transform: 'translateY(-50%)',
                                         width: 17,
                                         height: 17,
-                                        color: '#B5AEA8',
+                                        color: '#6E6862',
                                         pointerEvents: 'none',
                                     }}
                                     viewBox="0 0 24 24"
@@ -491,7 +491,7 @@ export default function UserManagePage() {
                                 gap: '0.3rem',
                                 fontSize: '0.8rem',
                                 fontWeight: 500,
-                                color: '#9B9590',
+                                color: '#6E6862',
                             }}
                         >
                             <svg
@@ -528,7 +528,7 @@ export default function UserManagePage() {
                                 gap: '0.3rem',
                                 fontSize: '0.8rem',
                                 fontWeight: 500,
-                                color: '#9B9590',
+                                color: '#6E6862',
                             }}
                         >
                             <svg
@@ -563,7 +563,7 @@ export default function UserManagePage() {
                     {/* Spacer + count */}
                     <div style={{ flex: 1 }} />
                     {total > 0 && (
-                        <span style={{ fontSize: '0.81rem', color: '#9B9590', fontWeight: 500 }}>
+                        <span style={{ fontSize: '0.81rem', color: '#6E6862', fontWeight: 500 }}>
                             共 <strong style={{ color: '#2A2520' }}>{total.toLocaleString()}</strong> 位用户
                         </span>
                     )}
