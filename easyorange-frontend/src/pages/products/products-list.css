@@ -541,6 +541,7 @@
     flex: 1;
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: 同级 filter-* 类按字母序排布，非级联冲突 */
 .filter-header {
     display: flex;
     align-items: center;
@@ -594,6 +595,7 @@
     height: 18px;
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: 同级 filter-* 类按字母序排布，非级联冲突 */
 .filter-content {
     flex: 1;
     overflow-y: auto;
@@ -840,6 +842,7 @@
 }
 
 /* Filter Footer */
+/* biome-ignore lint/style/noDescendingSpecificity: 同级 filter-* 类按字母序排布，非级联冲突 */
 .filter-footer {
     display: flex;
     gap: 0.75rem;

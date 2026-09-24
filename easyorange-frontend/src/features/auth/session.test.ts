@@ -6,10 +6,12 @@ import { clearSession, refreshAccessToken, restoreSession, setSession } from './
 
 // 刷新前置于非 HttpOnly 标记 has_rt（后端 RefreshCookie 同发）；测试环境默认补上，跳过用例单独清掉
 beforeEach(() => {
+    // biome-ignore lint/suspicious/noDocumentCookie: 测试需直接操纵非 HttpOnly 刷新标记，jsdom 无 cookie 库
     document.cookie = 'has_rt=1';
 });
 
 afterEach(() => {
+    // biome-ignore lint/suspicious/noDocumentCookie: 测试需直接操纵非 HttpOnly 刷新标记，jsdom 无 cookie 库
     document.cookie = 'has_rt=1; max-age=0';
     server.resetHandlers();
     useAuthStore.setState({ user: null, token: null });
@@ -17,6 +19,7 @@ afterEach(() => {
 
 describe('refreshAccessToken', () => {
     it('无 has_rt 标记时跳过刷新：不发起 /auth/refresh（TD-023 冷启动 401 噪音）', async () => {
+        // biome-ignore lint/suspicious/noDocumentCookie: 本用例显式清空刷新标记以覆盖跳过分支
         document.cookie = 'has_rt=1; max-age=0';
         let called = false;
         server.use(

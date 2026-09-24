@@ -179,6 +179,7 @@
     opacity: 1;
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: 装饰层与交互层是不同元素，:hover 规则作用于 .floating-nav__glow 不构成级联覆盖 */
 .floating-nav__ambient {
     position: absolute;
     inset: -40px;
@@ -992,6 +993,7 @@
     }
 
     /* 移动端浮动同样只作用于装饰层，交互容器保持静止 */
+    /* biome-ignore lint/style/noDescendingSpecificity: 响应式覆盖，媒体查询内有意降级动画，与桌面端非级联冲突 */
     .floating-nav__ambient {
         animation:
             navFloatMobile 6s ease-in-out infinite,
@@ -1082,6 +1084,7 @@
     .floating-nav,
     .floating-nav::before,
     .floating-nav__glow,
+    /* biome-ignore lint/style/noDescendingSpecificity: 无障碍降级规则统一关闭多层动画，是有意的全局覆盖 */
     .floating-nav__ambient,
     .floating-nav__brand-name,
     .floating-nav__user-avatar,
