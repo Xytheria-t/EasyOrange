@@ -58,7 +58,7 @@ jwt:
 | 旧组件 | 原参数 | 替换 |
 |--------|--------|------|
 | `domainEventExecutor` | core=5, max=10, queue=1000 | 虚拟线程——`@Async` 用 Spring Boot 自动配置的 `SimpleAsyncTaskExecutor` |
-| `aiSearchExecutor` | core=4, max=8, queue=100 | 虚拟线程——`supplyAsync` 显式传 `SearchTool.VIRTUAL`（无参形式走 commonPool 平台线程） |
+| `aiSearchExecutor` | core=4, max=8, queue=100 | 已随搜索页四路 AI 增强整体下线（唯一用户是它的编排器），代码里无残留调用 |
 | `webSocketInbound/OutboundExecutor` | core=4, max=10, queue=100 | 虚拟线程——删除自定义 channel 配置，用 Spring 默认线程 |
 | `thread-pool.*` | 10 个 YAML 属性 | 已删除（死代码） |
 

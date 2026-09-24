@@ -55,7 +55,7 @@
 | 章 | 主题 | 出关实验 |
 |---|---|---|
 | ① | 自治式工具循环（决策 → 工具 → 观察 / 步数上限 / 三口径降级 / 步级 trace / SSE step 事件） | 本地打流式口跑量，看 `eo_agent_step_trace` 与 `easyorange.ai.chat.loop{outcome}` |
-| ② | 多范式编排对照（Workflow 式 4 路扇出 vs 自治循环；循环控制权为什么不托管给框架） | 对比 `AiSearchEnhancerAdapter` 与 `AgentLoopRunner` 两处编排的控制流 |
+| ② | 编排范式判断（Workflow 固定扇出 vs 自治循环；循环控制权为什么不托管给框架；已删的四路扇出为何不成立） | 读 `AgentLoopRunner` 的循环控制流，对照 [02 §4](02-代码走读.md) 里那套已删实现的三条硬指标 |
 | ③ | RAG 完整链路（摄入 / 分块 / 两路独立召回 / RRF 融合 / 引用溯源 / 三条链路共用同一份融合） | 手改 query 观察两路召回各自排名与融合后排名 |
 | ④ | 评估闭环（金标准集 / Judge 对照 / EvalGate 双门禁 / 反馈飞轮 / 检索指标） | 改一版 prompt 后 dispatch `ai-eval.yml` 看门禁是否卡住 |
 | ⑤ | 成本与延迟治理（限流 / TokenBudget / 语义缓存 / 模型路由 / 上下文裁剪 / 流式） | 读 `GET /api/admin/ai/cost-report` 与预算场景配置 |

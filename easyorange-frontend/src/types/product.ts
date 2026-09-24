@@ -109,17 +109,6 @@ export interface ProductSearchResult {
     size: number;
     pages: number;
     facets: FacetBucket[];
-    aiEnhancement?: AiEnhancement;
-    /** 已开启 AI 增强但本次失败（后端 degraded 标记），UI 据此显示降级提示 */
-    aiEnhancementDegraded?: boolean;
-}
-
-/** AI 智能导购增强数据 */
-export interface AiEnhancement {
-    intentExplanation: string;
-    productTags: Record<string, string[]>;
-    marketAnalysis: string;
-    suggestedQuestions: string[];
 }
 
 /** Product search query parameters for ES search */
@@ -135,5 +124,6 @@ export interface ProductSearchParams {
     sortField?: 'relevance' | 'newest' | 'price_asc' | 'price_desc' | 'popular';
     pageNum?: number;
     pageSize?: number;
+    /** 语义检索开关：打开且按相关度排序时启用 kNN + BM25 + RRF 混合召回 */
     aiEnhanced?: boolean;
 }

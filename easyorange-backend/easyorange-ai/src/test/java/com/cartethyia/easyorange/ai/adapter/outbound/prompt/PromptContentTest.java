@@ -28,12 +28,10 @@ class PromptContentTest {
         registry.init(); // package-private — 触发 classpath:prompts/*.yml 加载
     }
 
-    private static final String[] ALL_PROMPTS = {
-        "ai_chat_system", "ai_chat_tool_system", "auto_listing", "search_intent_system"
-    };
+    private static final String[] ALL_PROMPTS = {"ai_chat_system", "ai_chat_tool_system", "auto_listing"};
 
     @Test
-    @DisplayName("4 个 prompt 模板全部加载成功（发布助手 1 + 对话 2 + 搜索意图识别）")
+    @DisplayName("3 个 prompt 模板全部加载成功（发布助手 1 + 对话 2）")
     void allPromptsLoaded() {
         for (String name : ALL_PROMPTS) {
             assertThat(registry.getLatest(name)).as("prompt '%s' 应加载成功", name).isPresent();
@@ -41,7 +39,7 @@ class PromptContentTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"auto_listing, 智能上架助手", "search_intent_system, AI 导购助手"})
+    @CsvSource({"auto_listing, 智能上架助手"})
     @DisplayName("每个 prompt 模板包含服务特定的关键短语（防内容漂移）")
     void promptContainsKeyPhrase(String promptName, String keyPhrase) {
         var template =
@@ -79,7 +77,7 @@ class PromptContentTest {
     @Test
     @DisplayName("JSON 输出类 prompt 包含 JSON 格式说明")
     void jsonPromptsContainJsonFormatSpec() {
-        // auto_listing 是仅有的 JSON 输出 prompt（search_intent_system 直接吐一句文本）
+        // auto_listing 是仅有的 JSON 输出 prompt
         var listing = registry.getLatest("auto_listing").orElseThrow().template();
 
         assertThat(listing).contains("JSON 格式返回", "title");

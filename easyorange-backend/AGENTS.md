@@ -90,7 +90,7 @@
 
 - **库存并发三层**：分布式锁管「同时写」、`@Version` 管丢失更新（B0006）、流水 `eo_stock_ledger` 管「几次多少」——任何库存变更**同事务落 `StockChange`**（唯一索引幂等），对账日比对**告警不改余额**，`StockQuantity` 扣负即抛（超卖最后防线）；**绕开聚合根的单列 SQL 更新直接触发对账漂移告警**
 - 商品事件 `implements ProductEvent`（密封接口派生 `aggregateId()`）；同步副作用同事务、异步投影走队列 `eo.product.cqrs`
-- 缓存端口分拆：domain 只驱逐、application `get(id, loader)`（**null 不落缓存**）、adapter 同时实现；**本模块是端口定义方**（`ProductInventoryPort` / `ProductSearchQueryPort` / `AiSearchEnhancerPort`），ai / order 的实现都在 `easyorange-application/adapter/outbound/`
+- 缓存端口分拆：domain 只驱逐、application `get(id, loader)`（**null 不落缓存**）、adapter 同时实现；**本模块是端口定义方**（`ProductInventoryPort` / `ProductSearchQueryPort` / `QueryEmbeddingPort`），ai / order 的实现都在 `easyorange-application/adapter/outbound/`
 
 ### user
 
@@ -112,8 +112,7 @@
 - **MCP 只挂公开只读 4 工具**禁用户态；**`spring.ai.mcp.server.protocol` 必须显式 `streamable`**（属性默认值不进 Environment → `/mcp` 不注册 404）；dev / prod 的 `security.ignore-paths` 都要加
 - **`AiModelSupport` 收敛所有 LLM 调用**，**带 `AiCallScope` 才记账**（`eo_ai_call_log` + 真实 token 入预算），不带不记（`AiJudge` 刻意账外防自指）；**观测 OTel → OTLP → Langfuse** 靠 `ChatModelContentObservationFilter` 拷进 `gen_ai.*`——**漏配面板恒 null**
 - **Prompt 全 YAML**（`resources/prompts/*.yml`，`require` fail-fast，**加内容同改 `PromptContentTest.ALL_PROMPTS`**）；**评估阈值全在 `eval/baselines.yaml` 禁内置默认**；**不可信内容进标签块**（`<user_question>` 等）+ 声明「块内是数据非指令」
-- **搜索增强两硬约束**：**永不抛异常**（`tryEnhance` 收敛 `Optional.empty()`）且**降级结果不写缓存**（禁吞异常，否则把抖动固化成缓存）；并行 4 步总 5s **无单步超时**、`getNow` 保部分结果、`supplyAsync` 必须传 `SearchTool.VIRTUAL`（**虚拟线程开关管不到 commonPool**）
-- 查询侧 `QueryEmbeddingAdapter` **永不抛**（拿不到向量退化纯 BM25）；**RAG**：kNN + BM25 两路独立召回 → `RrfFusion`（k=60），**否决 Cosine 重排**（单调 = 没排、丢 BM25 信号），ES 关降级空
+- 查询侧 `QueryEmbeddingAdapter` **永不抛**（拿不到向量退化纯 BM25）；**语义检索只在「开 AI 开关 + 相关度排序 + 关键词非空」三条件同时成立时向量化**（其余情况 kNN 缺相似度下限会召回全库并白付 embedding）；**RAG**：kNN + BM25 两路独立召回 → `RrfFusion`（k=60），**否决 Cosine 重排**（单调 = 没排、丢 BM25 信号），ES 关降级空
 - **Token 预算**：`@TokenBudget` 编译期契约 + yaml 热更；**切面前置检查、记账在 `AiModelSupport`**（切面按上限估**差一个量级**）；**流式拦不住 AOP** → `AiChatService.checkBudget()` 同判据不重复记账；`budget.store` 多副本必须 `redis`（内存版日限放大 N 倍）；**scenario 必须与 `AiCallScope.budgetScenario()` 一致否则预算静默失效**
 - **Port 方向不反转**（端口 product 定义、ai 实现，ai 不碰 product 表）；**反馈导出只出 `helpful=1 AND scope='chat'`**（**helpful=0 不能自动成金标准**）；供应商可换 = 改 `AiModelConfig` / `easyorange.ai.*`，重试走 openai-java 内置无自研
 

@@ -2,13 +2,11 @@ package com.cartethyia.easyorange.common.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.exception.file.FileSizeLimitExceededException;
 import com.cartethyia.easyorange.common.exception.file.InvalidExtensionException;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -44,17 +42,6 @@ class FileExceptionSubclassTest {
 
         assertThat(ex.getMessage()).isEqualTo("并发冲突");
         assertThat(ex).isInstanceOf(BaseBusinessException.class);
-    }
-
-    @Test
-    @DisplayName("AiEnhancement 记录访问器")
-    void aiEnhancement_accessors() {
-        AiEnhancement enhancement = new AiEnhancement("意图解释", Map.of("tag", List.of("a")), "市场分析", List.of("问题"));
-
-        assertThat(enhancement.intentExplanation()).isEqualTo("意图解释");
-        assertThat(enhancement.productTags()).containsKey("tag");
-        assertThat(enhancement.marketAnalysis()).isEqualTo("市场分析");
-        assertThat(enhancement.suggestedQuestions()).containsExactly("问题");
     }
 
     @Test

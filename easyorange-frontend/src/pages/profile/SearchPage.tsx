@@ -22,7 +22,6 @@ import { ErrorState } from '@/components/feedback/StateDisplay';
 import { PaginationBar } from '@/components/PaginationBar';
 import { ProductCard } from '@/components/product/ProductCard';
 import '@/components/product/products-grid.css';
-import { AiSearchPanel } from '@/components/search/AiSearchPanel';
 import FacetFilter from '@/components/search/FacetFilter';
 import SortDropdown, { type SortOption } from '@/components/search/SortDropdown';
 import { Button } from '@/components/ui/button';
@@ -111,8 +110,6 @@ function SearchPage() {
         products,
         total,
         facets,
-        aiEnhancement,
-        aiEnhancementDegraded,
         isLoading: isSearching,
         isError: isSearchError,
         error: searchError,
@@ -317,13 +314,17 @@ function SearchPage() {
                                 variant="ghost"
                                 size="icon"
                                 className={`search-ai-btn ${aiEnabled ? 'ai-enabled' : ''}`}
-                                title={aiEnabled ? '关闭AI智能搜索' : '开启AI智能搜索'}
-                                aria-label={aiEnabled ? '关闭AI智能搜索' : '开启AI智能搜索'}
+                                title={
+                                    aiEnabled
+                                        ? '语义检索已开启：按语义相近度排序，不按关键词字面匹配。点击关闭'
+                                        : '语义检索已关闭：仅按关键词字面匹配。点击开启'
+                                }
+                                aria-label={aiEnabled ? '关闭语义检索' : '开启语义检索'}
                                 aria-pressed={aiEnabled}
                                 onClick={handleAiToggle}
                             >
                                 <Sparkles size={14} />
-                                <span className="search-ai-btn-label">{aiEnabled ? 'AI 开' : 'AI'}</span>
+                                <span className="search-ai-btn-label">{aiEnabled ? '语义' : '字面'}</span>
                             </Button>
                             <Button type="submit" className="search-submit-btn">
                                 <Search size={14} />
@@ -500,17 +501,6 @@ function SearchPage() {
                             <FacetFilter facets={facets} filters={filters} onFilterChange={handleFilterChange} />
                         )}
 
-                        {aiEnhancement && (
-                            <AiSearchPanel enhancement={aiEnhancement} onQuestionClick={handleHotKeywordClick} />
-                        )}
-
-                        {!aiEnhancement && aiEnhancementDegraded && (
-                            <div className="ai-search-degraded" role="status">
-                                <Sparkles size={14} />
-                                <span>AI 分析暂不可用，结果为普通检索</span>
-                            </div>
-                        )}
-
                         {isSearching && (
                             <div className="search-loading">
                                 <div className="search-loading-spinner"></div>
@@ -521,12 +511,7 @@ function SearchPage() {
                         {hasResults && !isSearching && (
                             <div className="search-results-grid products-grid-premium">
                                 {products.map((product, index) => (
-                                    <ProductCard
-                                        key={product.id}
-                                        product={product}
-                                        index={index}
-                                        aiTags={aiEnhancement?.productTags[product.id]}
-                                    />
+                                    <ProductCard key={product.id} product={product} index={index} />
                                 ))}
                             </div>
                         )}

@@ -31,7 +31,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * AI 智能对话（Agent 编排）— 多轮记忆 + 多步工具循环 + 引用溯源 + 语义缓存 + 预算治理；
- * 与 4 路并行编排 {@code AiSearchEnhancerAdapter} 形成「Workflow vs 自治 Agent」对照。
+ * 与搜索页的结构化检索彻底正交：那边是「一次查询定结果」，这里是模型自己决定检索几轮、查什么。
  * <pre>
  * 1. 记忆装配：Redis 会话窗口（短期）+ 用户画像表（长期），历史注入前过 token 预算裁剪（{@link ChatContextTrimmer}）
  * 2. 工具循环：{@link AgentLoopRunner} 逐轮「决策 → 工具 → 观察」，模型判定信息足够（finish）收敛；

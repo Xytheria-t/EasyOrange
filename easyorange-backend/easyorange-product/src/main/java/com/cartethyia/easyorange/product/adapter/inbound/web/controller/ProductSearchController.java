@@ -68,9 +68,7 @@ public class ProductSearchController {
                 result.page().current(),
                 result.page().size(),
                 result.page().pages(),
-                facetResponses,
-                result.aiEnhancement(),
-                result.aiEnhancementDegraded());
+                facetResponses);
         return Result.success(searchResp);
     }
 

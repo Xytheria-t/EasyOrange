@@ -16,9 +16,8 @@ import type {
 import { request } from './core/request';
 
 /**
- * 开了 AI 增强的检索超时：后端 4 路 LLM 增强有独立等待上限
- * （easyorange.ai.search-enhance.timeout-seconds），叠加检索与融合后会长于 10s 默认值，
- * 沿用默认会在增强结果回来前先断在前端、白烧一次 LLM 调用。
+ * 开了语义检索的请求超时：比纯字面检索多一次 embedding 调用 + kNN/BM25 双路召回与 RRF 融合，
+ * 在免费额度档供应商上会长于 10s 默认值，沿用默认会在结果回来前先断在前端、白付一次 embedding。
  */
 const AI_ENHANCED_SEARCH_TIMEOUT = 30000;
 
