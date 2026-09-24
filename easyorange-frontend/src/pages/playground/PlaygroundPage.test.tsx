@@ -314,4 +314,73 @@ describe('PlaygroundPage (AI 智能助手)', () => {
             );
         });
     });
+
+    // ── 滚动行为 ──
+    // jsdom 没有布局，scrollTo / 几何量都要手动替掉才能断言
+    function stubChatScroll(container: HTMLElement) {
+        const chatEl = container.querySelector('.playground__chat') as HTMLElement;
+        const scrollToMock = vi.fn();
+        chatEl.scrollTo = scrollToMock;
+        return { chatEl, scrollToMock };
+    }
+
+    function mockChatGeometry(
+        el: HTMLElement,
+        { scrollTop, scrollHeight, clientHeight }: { scrollTop: number; scrollHeight: number; clientHeight: number }
+    ) {
+        Object.defineProperty(el, 'scrollTop', { value: scrollTop, configurable: true });
+        Object.defineProperty(el, 'scrollHeight', { value: scrollHeight, configurable: true });
+        Object.defineProperty(el, 'clientHeight', { value: clientHeight, configurable: true });
+    }
+
+    it('首屏只有欢迎语时不滚动，发送后才滚到底', () => {
+        mockedChatStream.mockResolvedValue(undefined);
+        const { container } = renderWithProviders(<PlaygroundPage />);
+        const { scrollToMock } = stubChatScroll(container);
+
+        // 挂载阶段零调用：此前 scrollIntoView 会把整个页面拖下去，页头直接出视口
+        expect(scrollToMock).not.toHaveBeenCalled();
+
+        fireEvent.change(screen.getByLabelText('问题输入'), { target: { value: '怎么退款？' } });
+        fireEvent.click(screen.getByRole('button', { name: '发送' }));
+        expect(scrollToMock).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }));
+    });
+
+    it('流式 token 在贴底时跟随滚动', () => {
+        mockedChatStream.mockResolvedValue(undefined);
+        const { container } = renderWithProviders(<PlaygroundPage />);
+        const { chatEl, scrollToMock } = stubChatScroll(container);
+
+        fireEvent.change(screen.getByLabelText('问题输入'), { target: { value: '怎么退款？' } });
+        fireEvent.click(screen.getByRole('button', { name: '发送' }));
+        mockChatGeometry(chatEl, { scrollTop: 600, scrollHeight: 600, clientHeight: 600 });
+        fireEvent.scroll(chatEl);
+        scrollToMock.mockClear();
+
+        emit([{ type: 'token', data: '可以' }]);
+        expect(scrollToMock).toHaveBeenCalledWith({ top: 600 });
+    });
+
+    it('用户上翻读历史时流式 token 不抢滚动位置，翻回底部恢复跟随', () => {
+        mockedChatStream.mockResolvedValue(undefined);
+        const { container } = renderWithProviders(<PlaygroundPage />);
+        const { chatEl, scrollToMock } = stubChatScroll(container);
+
+        fireEvent.change(screen.getByLabelText('问题输入'), { target: { value: '怎么退款？' } });
+        fireEvent.click(screen.getByRole('button', { name: '发送' }));
+
+        // 距底 1500px：不在跟随态
+        mockChatGeometry(chatEl, { scrollTop: 0, scrollHeight: 2000, clientHeight: 500 });
+        fireEvent.scroll(chatEl);
+        scrollToMock.mockClear();
+
+        emit([{ type: 'token', data: '可以' }]);
+        expect(scrollToMock).not.toHaveBeenCalled();
+
+        // 翻回底部：恢复跟随
+        mockChatGeometry(chatEl, { scrollTop: 1500, scrollHeight: 2000, clientHeight: 500 });
+        fireEvent.scroll(chatEl);
+        emit([{ type: 'token', data: '退款' }]);
+        expect(scrollToMock).toHaveBeenCalledWith({ top: 2000 });
+    });
 });
