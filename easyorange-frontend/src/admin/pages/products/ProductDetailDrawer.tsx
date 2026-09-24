@@ -1,5 +1,5 @@
 import { ImageOff, ScrollText } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ImagePreviewOverlay } from '@/admin/components/ImagePreviewOverlay';
 import { ErrorState } from '@/components/feedback/StateDisplay';
 import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, Textarea } from '@/components/ui';
@@ -50,7 +50,30 @@ const AUDIT_ACTION_COLOR: Record<number, string> = {
 
 const REJECT_TAGS = ['信息不完整', '图片模糊', '疑似虚假信息', '价格异常', '违规内容', '其他'];
 
+/**
+ * 抽屉壳：只负责「开 / 关」。
+ *
+ * 面板整体挂在壳里面，抽屉一开就挂载、关上就卸载——查询因此每次打开都会重新发请求，
+ * 本地草稿（选中的图片、审核维度、意见）也随之重置。此前这两件事要靠一个 effect 手动
+ * 同步：本地 state 复位 + refetch()，而 refetch 会和 queryKey 变化触发的请求打架。
+ * 新鲜度改由查询层声明（见 useAdminProductDetail 的 refetchOnMount）。
+ */
 export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: ProductDetailDrawerProps) {
+    if (!open || !productId) {
+        return null;
+    }
+    return <ProductAuditPanel productId={productId} onClose={onClose} onSuccess={onSuccess} />;
+}
+
+function ProductAuditPanel({
+    productId,
+    onClose,
+    onSuccess,
+}: {
+    productId: string;
+    onClose: () => void;
+    onSuccess: () => void;
+}) {
     const [state, setState] = useState(createInitialState);
     const {
         selectedImage,
@@ -62,16 +85,9 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
         showApproveModal,
     } = state;
 
-    const { data: product, isLoading, isError, error, refetch } = useAdminProductDetail(productId ?? '');
+    const { data: product, isLoading, isError, error, refetch } = useAdminProductDetail(productId);
     const updateStatus = useAuditProduct();
     const auditLogs = useAuditLogs(productId);
-
-    useEffect(() => {
-        if (open && productId) {
-            setState(createInitialState());
-            refetch();
-        }
-    }, [open, productId, refetch]);
 
     const handleApproveWithDimensions = async () => {
         if (!product) {
@@ -143,13 +159,9 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
 
     const formatPrice = (price: number) => `¥${price.toFixed(2)}`;
 
-    if (!open) {
-        return null;
-    }
-
     return (
         <Sheet
-            open={open}
+            open
             onOpenChange={isOpen => {
                 if (!isOpen) {
                     onClose();
