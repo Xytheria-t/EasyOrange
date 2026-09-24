@@ -174,7 +174,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         return ChainWrappers.lambdaQueryChain(searchHistoryMapper)
                 .eq(SearchHistoryDO::getUserId, userId)
                 .orderByDesc(SearchHistoryDO::getSearchTime)
-                .page(new Page<>(1, lim))
+                .page(new Page<>(1, lim, false))
                 .getRecords()
                 .stream()
                 .map(h -> new SearchHistoryReadModel(h.getId(), h.getKeyword(), h.getSearchTime()))
@@ -201,7 +201,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
 
         return ChainWrappers.lambdaQueryChain(hotKeywordMapper)
                 .orderByDesc(HotKeywordDO::getSearchCount)
-                .page(new Page<>(1, lim))
+                .page(new Page<>(1, lim, false))
                 .getRecords()
                 .stream()
                 .map(k -> new HotKeywordReadModel(
@@ -229,7 +229,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         return ChainWrappers.lambdaQueryChain(hotKeywordMapper)
                 .like(HotKeywordDO::getKeyword, keyword)
                 .orderByDesc(HotKeywordDO::getSearchCount)
-                .page(new Page<>(1, lim))
+                .page(new Page<>(1, lim, false))
                 .getRecords()
                 .stream()
                 .map(HotKeywordDO::getKeyword)
