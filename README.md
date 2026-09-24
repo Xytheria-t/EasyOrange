@@ -202,11 +202,13 @@ cd easyorange-backend && ./mvnw install -DskipTests && ./mvnw spring-boot:run -p
 cd easyorange-frontend && npm install && npm run dev               # :5173
 
 # 压测 / 多实例 / 可观测（详见 doc/工程指标.md §2.3；fullstack profile 下裸 up -d 不受影响）
+docker compose --profile fullstack up -d --build                           # 一键全栈：后端 + 前端(:80) + ES + 观测栈 + Langfuse(:3001)
 docker compose --profile fullstack up -d --build --scale easyorange-app=2  # 后端多实例（nginx 自动 LB；ES 同 profile 随 app 拉起）
 docker compose up -d prometheus grafana                                    # Prometheus :9090 + Grafana :3000
-docker compose --profile langfuse up -d                                    # Langfuse LLM 可观测（UI :3001，trace 级 prompt/token/成本）
 k6 run --vus 50 --duration 30s load-tests/product-list.js                  # k6 压测（阈值 p95<500ms 内置）
 ```
+
+> 部署形态：本地与演示用 Compose 一条命令起全栈（后端多副本 + 前端 Nginx + 中间件 + 观测），日常热循环仍走 `npm run dev` :5173。生产部署方案（Registry + 编排层扩缩容 + 入口 TLS + 托管中间件 + 集中观测）见 [doc/agents/常用命令.md](doc/agents/常用命令.md#常用命令)。
 
 > 零配置启动：全部变量在 `application*.yaml` / `compose.yaml` 内都有开发默认值，**不建 `.env` 也能启动**；需要覆盖默认值时复制 `.env.example` → `.env`。完整命令（PIT 变异测试、JaCoCo、OWASP、E2E）见 [doc/agents/常用命令.md](doc/agents/常用命令.md)。
 
@@ -219,7 +221,6 @@ easy-orange/
 ├── doc/                    # 技术栈 / ADR / agents 参考 / DATABASE / 面试
 ├── compose.yaml            # MySQL + Redis + RabbitMQ + 后端应用（多实例）+ Prometheus + Grafana + Langfuse
 ├── infra/                  # 基础设施即代码（Prometheus / Grafana provisioning / ES IK 镜像）
-├── k8s/                    # K8s 部署（kustomize，无状态应用层）
 └── load-tests/             # k6 压测脚本
 ```
 

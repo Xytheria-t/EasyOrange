@@ -20,7 +20,7 @@
 约束：
 
 - **约束 1 — DDD 聚合 ID 必须先于持久化存在**：`Order.createOrder(OrderCreateSpec)` 的首参就是 `OrderId`；订单号、`OrderCreatedEvent`、库存流水 `bizId`、支付单 `orderId` 全部要在同一本地事务内基于这个 ID 生成（[OrderCommandHandler.createOrderFlow](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/command/OrderCommandHandler.java)）。数据库自增 ID 在 INSERT 成功前不可得，与之直接冲突。
-- **约束 2 — 多实例零协调**：部署形态为无状态应用层多副本（`k8s/`），无中央发号服务，数据库为单库 MySQL；发号不应引入跨节点协调。
+- **约束 2 — 多实例零协调**：部署形态为无状态应用层多副本（compose `--scale` 已验证，生产按无状态副本部署），无中央发号服务，数据库为单库 MySQL；发号不应引入跨节点协调。
 - **约束 3 — ID 出现在 URL 与前端契约**：自增 ID 可枚举，会泄漏业务总量并放大越权遍历面。
 - **约束 4 — 运维复杂度按人力计费**：单人项目，发号器的 workerId 分配、时钟回拨、号段续租等治理成本需真金白银地维护。
 

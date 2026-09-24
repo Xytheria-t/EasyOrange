@@ -236,8 +236,8 @@ slow-sql:
   metrics-enabled: true
 
 management:
-  # ES 健康指示器基文件关闭：k8s（prod）与默认 compose 三件套都不含 ES，基文件开着会让
-  # /actuator/health 长期 DOWN（readiness 分组不含 elasticsearch，故 k8s 探针不受影响）。
+  # ES 健康指示器基文件关闭：prod 与默认 compose 三件套都不含 ES，基文件开着会让
+  # /actuator/health 长期 DOWN（readiness 分组不含 elasticsearch，故就绪探针不受影响）。
   # 启用 ES 搜索的 profile（dev / it-es）已在各自文件里同步置回 true。
   health:
     elasticsearch:
@@ -274,7 +274,7 @@ management:
   endpoint:
     health:
       show-details: when-authorized
-      # k8s 探针：/actuator/health/readiness + /actuator/health/liveness
+      # 就绪/存活探针：/actuator/health/readiness + /actuator/health/liveness
       probes:
         enabled: true
       group:
