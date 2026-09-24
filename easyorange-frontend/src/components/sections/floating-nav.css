@@ -49,23 +49,26 @@
         box-shadow 0.6s var(--ease-out-expo),
         background 0.4s var(--ease-smooth);
     overflow: visible;
-    animation: navFloat 8s ease-in-out infinite;
     will-change: transform;
 }
+
+/* 浮动动画只挂在装饰层（.floating-nav__ambient）——交互容器带 transform 动画时，
+   里面每个按钮/菜单项每帧都在动，e2e 的可点击性判定会持续报 not stable。
+   动画本体（keyframes）留在下方，移动端变体见 @media (max-width: 768px)。 */
 
 @keyframes navFloat {
     0%,
     100% {
-        transform: translateX(-50%) translateY(0) rotate(0deg);
+        transform: translateY(0);
     }
     25% {
-        transform: translateX(-50%) translateY(-3px) rotate(0.02deg);
+        transform: translateY(-3px);
     }
     50% {
-        transform: translateX(-50%) translateY(-5px) rotate(0deg);
+        transform: translateY(-5px);
     }
     75% {
-        transform: translateX(-50%) translateY(-2px) rotate(-0.02deg);
+        transform: translateY(-2px);
     }
 }
 
@@ -122,7 +125,6 @@
 }
 
 .floating-nav:hover {
-    animation-play-state: paused;
     transform: translateX(-50%) translateY(-8px);
     box-shadow:
         0 0 0 0.5px rgba(249, 115, 22, 0.08),
@@ -132,6 +134,12 @@
         0 32px 64px rgba(249, 115, 22, 0.1),
         inset 0 1px 0 rgba(255, 255, 255, 1),
         inset 0 -1px 0 rgba(249, 115, 22, 0.05);
+}
+
+/* 悬浮 / 滚动时冻结装饰层浮动：交互容器自身不再有常驻动画，暂停的是装饰层 */
+.floating-nav:hover .floating-nav__ambient,
+.floating-nav.scrolled .floating-nav__ambient {
+    animation-play-state: paused;
 }
 
 .floating-nav.scrolled {
@@ -148,7 +156,6 @@
         0 20px 40px rgba(0, 0, 0, 0.05),
         0 32px 64px rgba(249, 115, 22, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 1);
-    animation-play-state: paused;
     transform: translateX(-50%) translateY(-2px);
 }
 
@@ -184,18 +191,19 @@
     );
     pointer-events: none;
     z-index: -2;
-    animation: ambientGlow 10s ease-in-out infinite;
+    /* 两条动画分管不同属性：navFloat 走 transform（浮动），ambientGlow 走 opacity（呼吸） */
+    animation:
+        navFloat 8s ease-in-out infinite,
+        ambientGlow 10s ease-in-out infinite;
 }
 
 @keyframes ambientGlow {
     0%,
     100% {
         opacity: 0.6;
-        transform: scale(1) rotate(0deg);
     }
     50% {
         opacity: 1;
-        transform: scale(1.05) rotate(1deg);
     }
 }
 
@@ -981,16 +989,22 @@
         height: auto;
         min-height: 58px;
         border-radius: 18px;
-        animation: navFloatMobile 6s ease-in-out infinite;
+    }
+
+    /* 移动端浮动同样只作用于装饰层，交互容器保持静止 */
+    .floating-nav__ambient {
+        animation:
+            navFloatMobile 6s ease-in-out infinite,
+            ambientGlow 10s ease-in-out infinite;
     }
 
     @keyframes navFloatMobile {
         0%,
         100% {
-            transform: translateY(0) rotate(0deg);
+            transform: translateY(0);
         }
         50% {
-            transform: translateY(-3px) rotate(0.01deg);
+            transform: translateY(-3px);
         }
     }
 
@@ -999,7 +1013,6 @@
     }
 
     .floating-nav.scrolled {
-        animation-play-state: paused;
         transform: translateY(-1px);
     }
 

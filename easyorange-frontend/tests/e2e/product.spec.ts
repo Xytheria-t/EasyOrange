@@ -67,8 +67,7 @@ test.describe('商品浏览与搜索', () => {
     // 点击搜索图标按钮
     const searchBtn = page.locator('.floating-nav__icon-btn[aria-label="搜索"]').first();
     await expect(searchBtn).toBeVisible();
-    // floating-nav 无限动画 → element is not stable，force 跳过稳定性检查（仍是真实点击）
-    await searchBtn.click({ force: true });
+    await searchBtn.click();
     await expect(page).toHaveURL(/\/search/);
   });
 
@@ -76,8 +75,7 @@ test.describe('商品浏览与搜索', () => {
     await page.goto('/');
     const publishBtn = page.locator('.floating-nav__publish-btn').first();
     await expect(publishBtn).toBeVisible();
-    // floating-nav 无限动画 → element is not stable，force 跳过稳定性检查（仍是真实点击）
-    await publishBtn.click({ force: true });
+    await publishBtn.click();
     // 未登录状态下应跳转到登录页，带 redirect 参数
     const currentUrl = page.url();
     // 可能是 /login 或 /publish（如果已登录）
