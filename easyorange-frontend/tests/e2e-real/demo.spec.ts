@@ -251,11 +251,15 @@ test('T4 管理端：仪表盘有数 + 审核通过/驳回填理由 + 各列表�
     await approveRow.getByRole('button', { name: /审核/ }).click();
     await expect(page.getByRole('button', { name: /通过审核/ })).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: /通过审核/ }).click();
+    // 新版管理端：点击「通过审核」先弹二次确认（ConfirmModal），确认文案「通过并上架」
+    await page.getByRole('button', { name: '通过并上架' }).click();
     await expect(toast(page, /审核已通过/)).toBeVisible({ timeout: 15_000 });
+    // 抽屉/弹窗可能已自动收起，关闭动作做尽力而为（收尾竞态不计入判定）
     const closeBtn = page.getByRole('button', { name: '关闭', exact: true });
     if (await closeBtn.isVisible().catch(() => false)) {
-        await closeBtn.click();
+        await closeBtn.click({ timeout: 3000 }).catch(() => {});
     }
+    await page.keyboard.press('Escape').catch(() => {});
 
     // ── 驳回一件（必填理由）──
     const rejectRow = page.locator('tr', { hasText: rejectName });
@@ -263,7 +267,7 @@ test('T4 管理端：仪表盘有数 + 审核通过/驳回填理由 + 各列表�
     await rejectRow.getByRole('button', { name: /审核/ }).click();
     await expect(page.getByRole('button', { name: /驳回商品/ })).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: /驳回商品/ }).click();
-    await page.getByPlaceholder('请填写驳回原因（必填）...').fill('图片不清晰，请补充实拍图');
+    await page.locator('#reject-reason').fill('图片不清晰，请补充实拍图');
     await page.getByRole('button', { name: '确认驳回' }).click();
     await expect(toast(page, /已驳回/)).toBeVisible({ timeout: 15_000 });
 
