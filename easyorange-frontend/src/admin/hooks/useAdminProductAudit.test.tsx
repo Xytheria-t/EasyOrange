@@ -45,12 +45,13 @@ describe('useAuditProduct', () => {
 
 describe('useBatchAuditProducts', () => {
     it('batch audits products', async () => {
+        // 后端是 POST，用 PUT 打过去只会拿到 405
         server.use(
-            http.put('/api/admin/products/batch-audit', () => {
+            http.post('/api/admin/products/batch-audit', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: null,
+                    data: { total: 2, success: 1, failed: 1, errors: ['2: 图片不合规'] },
                     timestamp: Date.now(),
                 });
             })
@@ -68,6 +69,7 @@ describe('useBatchAuditProducts', () => {
         });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(result.current.data).toEqual({ total: 2, success: 1, failed: 1, errors: ['2: 图片不合规'] });
     });
 });
 

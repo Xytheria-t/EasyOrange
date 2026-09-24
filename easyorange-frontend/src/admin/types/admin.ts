@@ -259,6 +259,14 @@ export interface ProductAuditRequest {
     remark?: string;
 }
 
+/** 批量审核逐条结果：单次上限 50 条，失败原因按条返回，不是全有全无。 */
+export interface BatchAuditResultResponse {
+    total: number;
+    success: number;
+    failed: number;
+    errors: string[];
+}
+
 export interface TrendItem {
     month: string;
     users: number;
