@@ -7,14 +7,19 @@ import { Image } from '@/components/ui/Image';
 import { CONDITION_LABEL_MAP } from '@/constants';
 import type { Product } from '@/types';
 import { formatPrice, formatRelativeTime } from '@/utils';
-import { AiTag } from './AiTag';
 import '../../pages/products/product-card.css';
 
 interface ProductCardProps {
     product: Product;
     style?: React.CSSProperties;
     index?: number;
-    aiTags?: string[];
+    /**
+     * compact = 聊天气泡内的横排摘要卡（72px 缩略图 + 单行标题）。
+     * 完整陈列卡是给 280px 网格设计的，塞进气泡会到 500px 高；紧凑模式从 JSX 层
+     * 直接省略第二张图、徽标、操作按钮等，而不是靠 CSS 藏起来 —— 藏起来的第二张图
+     * 仍会被懒加载预取，也仍会跟着 hover 淡入。
+     */
+    variant?: 'default' | 'compact';
 }
 
 // 3D 倾斜对前庭功能障碍用户不友好，尊重系统的"减少动态效果"设置
@@ -26,7 +31,8 @@ function prefersReducedMotion() {
     );
 }
 
-export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductCardProps) => {
+export const ProductCard = memo(({ product, style, index = 0, variant = 'default' }: ProductCardProps) => {
+    const isCompact = variant === 'compact';
     const navigate = useNavigate();
     const cardRef = useRef<HTMLDivElement>(null);
     const [isHovered, setIsHovered] = useState(false);
@@ -97,28 +103,29 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
     return (
         <div
             ref={cardRef}
-            className="product-card-premium"
+            className={`product-card-premium${isCompact ? ' product-card-premium--compact' : ''}`}
             style={{
                 ...style,
                 animationDelay: `${entranceDelay}ms`,
             }}
         >
             {/* Gradient border glow */}
-            <div className="product-card-border-glow" />
+            {!isCompact && <div className="product-card-border-glow" />}
 
             {/* Floating glow effect */}
-            <div className="product-card-glow" />
+            {!isCompact && <div className="product-card-glow" />}
 
             {/* Shimmer overlay on hover */}
-            <div className={`product-card-shimmer ${isHovered ? 'active' : ''}`} />
+            {!isCompact && <div className={`product-card-shimmer ${isHovered ? 'active' : ''}`} />}
 
             {/* 鼠标效果挂在图片区而非卡片根节点：卡片是静态容器，
-                交互语义由标题链接与操作按钮承担 */}
+                交互语义由标题链接与操作按钮承担。紧凑卡不绑事件 ——
+                聊天里指针在卡与输入框间来回移动，3D 倾斜只会晃 */}
             <figure
                 className="product-image-premium"
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                onMouseEnter={handleMouseEnter}
+                onMouseMove={isCompact ? undefined : handleMouseMove}
+                onMouseLeave={isCompact ? undefined : handleMouseLeave}
+                onMouseEnter={isCompact ? undefined : handleMouseEnter}
             >
                 {/* Image container with 3D depth */}
                 <div className="product-image-3d-container">
@@ -133,7 +140,7 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
                     />
 
                     {/* Secondary image for dual-image crossfade */}
-                    {secondaryImageUrl && (
+                    {secondaryImageUrl && !isCompact && (
                         <Image
                             src={secondaryImageUrl}
                             alt={`${product.title} - 第二张图`}
@@ -145,90 +152,99 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
                     )}
 
                     {/* Image reflection/shine effect */}
-                    <div className={`product-image-shine ${isHovered ? 'active' : ''}`} />
+                    {!isCompact && <div className={`product-image-shine ${isHovered ? 'active' : ''}`} />}
 
                     {/* Depth shadow overlay */}
-                    <div className="product-image-depth" />
+                    {!isCompact && <div className="product-image-depth" />}
                 </div>
 
                 {/* Badges - floating with glass effect */}
-                <div className="product-badges-premium">
-                    <span className="badge-premium badge-condition-premium">
-                        <Sparkles size={11} strokeWidth={2.5} />
-                        {conditionLabel}
-                    </span>
-                    {hasDiscount && <span className="badge-premium badge-discount-premium">-{discountPercent}%</span>}
-                    {isHot && (
-                        <span className="badge-premium badge-hot-premium">
-                            <span className="hot-pulse" />
-                            热门
+                {!isCompact && (
+                    <div className="product-badges-premium">
+                        <span className="badge-premium badge-condition-premium">
+                            <Sparkles size={11} strokeWidth={2.5} />
+                            {conditionLabel}
                         </span>
-                    )}
-                    {aiTags?.map(tag => (
-                        <AiTag key={tag} tag={tag} />
-                    ))}
-                </div>
+                        {hasDiscount && (
+                            <span className="badge-premium badge-discount-premium">-{discountPercent}%</span>
+                        )}
+                        {isHot && (
+                            <span className="badge-premium badge-hot-premium">
+                                <span className="hot-pulse" />
+                                热门
+                            </span>
+                        )}
+                    </div>
+                )}
 
                 {/* Quick meta pills */}
-                <div className="product-quick-meta-premium">
-                    <span className="product-quick-pill-premium">
-                        <MapPin size={12} strokeWidth={2.5} /> {quickLocation}
-                    </span>
-                    {product.createTime && (
+                {!isCompact && (
+                    <div className="product-quick-meta-premium">
                         <span className="product-quick-pill-premium">
-                            <Clock size={12} strokeWidth={2.5} /> {formatRelativeTime(product.createTime)}
+                            <MapPin size={12} strokeWidth={2.5} /> {quickLocation}
                         </span>
-                    )}
-                </div>
+                        {product.createTime && (
+                            <span className="product-quick-pill-premium">
+                                <Clock size={12} strokeWidth={2.5} /> {formatRelativeTime(product.createTime)}
+                            </span>
+                        )}
+                    </div>
+                )}
 
                 {/* Action buttons - slide in from right with magnetic pull */}
-                <div className={`product-actions-premium ${isHovered ? 'visible' : ''}`}>
-                    {product.sellerId && (
+                {!isCompact && (
+                    <div className={`product-actions-premium ${isHovered ? 'visible' : ''}`}>
+                        {product.sellerId && (
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="action-icon-premium contact-btn-premium"
+                                onClick={() => {
+                                    navigate(`/messages/${product.sellerId}`);
+                                }}
+                                onMouseMove={handleButtonMouseMove}
+                                onMouseLeave={handleButtonMouseLeave}
+                                aria-label={`联系卖家：${sellerName}`}
+                            >
+                                <MessageCircle size={17} strokeWidth={2} />
+                            </Button>
+                        )}
                         <Button
                             variant="outline"
                             size="icon"
-                            className="action-icon-premium contact-btn-premium"
-                            onClick={() => {
-                                navigate(`/messages/${product.sellerId}`);
-                            }}
+                            className="action-icon-premium view-btn-premium"
                             onMouseMove={handleButtonMouseMove}
                             onMouseLeave={handleButtonMouseLeave}
-                            aria-label={`联系卖家：${sellerName}`}
+                            aria-label={`查看商品详情：${product.title}`}
                         >
-                            <MessageCircle size={17} strokeWidth={2} />
+                            <Eye size={17} strokeWidth={2} />
                         </Button>
-                    )}
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="action-icon-premium view-btn-premium"
-                        onMouseMove={handleButtonMouseMove}
-                        onMouseLeave={handleButtonMouseLeave}
-                        aria-label={`查看商品详情：${product.title}`}
-                    >
-                        <Eye size={17} strokeWidth={2} />
-                    </Button>
-                </div>
+                    </div>
+                )}
 
                 {/* Price tag floating on image */}
-                <div className={`product-image-price-tag ${isHovered ? 'visible' : ''}`}>
-                    <span className="price-tag-current">¥{formatPrice(product.price)}</span>
-                    {hasDiscount && (
-                        <span className="price-tag-original">¥{formatPrice(product.originalPrice as number)}</span>
-                    )}
-                </div>
+                {!isCompact && (
+                    <div className={`product-image-price-tag ${isHovered ? 'visible' : ''}`}>
+                        <span className="price-tag-current">¥{formatPrice(product.price)}</span>
+                        {hasDiscount && (
+                            <span className="price-tag-original">¥{formatPrice(product.originalPrice as number)}</span>
+                        )}
+                    </div>
+                )}
             </figure>
 
             {/* Product info section */}
             <div className="product-info-premium">
-                <div className="product-eyebrow-premium">
-                    {(product.category || product.categoryName) && (
-                        <span className="product-category-premium">{product.category || product.categoryName}</span>
-                    )}
-                    <span className={`product-signal-premium ${isHot ? 'is-hot' : ''}`}>
-                        {isHot ? 'AI 热度精选' : 'AI 托管中'}
-                    </span>
-                </div>
+                {!isCompact && (
+                    <div className="product-eyebrow-premium">
+                        {(product.category || product.categoryName) && (
+                            <span className="product-category-premium">{product.category || product.categoryName}</span>
+                        )}
+                        <span className={`product-signal-premium ${isHot ? 'is-hot' : ''}`}>
+                            {isHot ? 'AI 热度精选' : 'AI 托管中'}
+                        </span>
+                    </div>
+                )}
 
                 {/* 标题是真链接，伪元素铺满整卡 —— 整卡可点但 DOM 里没有嵌套交互元素。
                     操作按钮 z-index 高于伪元素，保持各自独立可点。 */}
@@ -239,7 +255,7 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
                 </h3>
 
                 {/* Description expand on hover */}
-                {hasDescription && (
+                {hasDescription && !isCompact && (
                     <div className={`product-desc-expand ${isHovered ? 'expanded' : ''}`}>
                         <p>
                             {(product.description as string).slice(0, 60)}
@@ -248,15 +264,17 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
                     </div>
                 )}
 
-                <div className="product-stat-row-premium">
-                    <span className="product-info-chip-premium">
-                        <Eye size={12} strokeWidth={2.5} /> {product.views || 0} 浏览
-                    </span>
-                </div>
+                {!isCompact && (
+                    <div className="product-stat-row-premium">
+                        <span className="product-info-chip-premium">
+                            <Eye size={12} strokeWidth={2.5} /> {product.views || 0} 浏览
+                        </span>
+                    </div>
+                )}
 
                 <div className="product-footer-premium">
                     <div className="product-price-premium">
-                        <div className="price-accent-bar" />
+                        {!isCompact && <div className="price-accent-bar" />}
                         <div className="product-price-row-premium">
                             <span className="price-current-premium">¥{formatPrice(product.price)}</span>
                             {hasDiscount && (
@@ -265,7 +283,7 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
                                 </span>
                             )}
                         </div>
-                        {hasDiscount && (
+                        {hasDiscount && !isCompact && (
                             <span className="price-note-premium price-save-badge">
                                 立省 ¥{formatPrice((product.originalPrice as number) - product.price)}
                             </span>
@@ -277,17 +295,17 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
                             <>
                                 <div className="seller-avatar-premium">
                                     <img src={product.sellerAvatar} alt={sellerName} width="32" height="32" />
-                                    <div className="seller-pulse-ring" />
+                                    {!isCompact && <div className="seller-pulse-ring" />}
                                 </div>
                                 <div className="seller-body-premium">
                                     <span className="seller-name-premium">{sellerName}</span>
-                                    <span className="seller-note-premium">点击咨询</span>
+                                    {!isCompact && <span className="seller-note-premium">点击咨询</span>}
                                 </div>
                             </>
                         ) : (
                             <div className="seller-body-premium">
                                 <span className="seller-name-premium">{sellerName}</span>
-                                <span className="seller-note-premium">匿名用户</span>
+                                {!isCompact && <span className="seller-note-premium">匿名用户</span>}
                             </div>
                         )}
                     </div>

@@ -871,3 +871,139 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* ============================================================
+   COMPACT VARIANT —— 聊天气泡内的横排摘要卡
+   尺度取自订单页 .order-card-image-wrap（72px 缩略图）与消息列表 .message-card
+   （弹性正文 + 12.5px 次级文字 + 单行省略）。静态呈现：hover 只改颜色/边框/背景/
+   阴影，不动高度、不展开任何内容 —— 聊天里指针在卡与输入框间移动，高度跳变很干扰。
+   ============================================================ */
+.product-card-premium--compact {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 0;
+    padding: 0.625rem 0.75rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+    transform-style: flat;
+    will-change: auto;
+    animation: none;
+    transition:
+        border-color var(--transition-fast),
+        background-color var(--transition-fast),
+        box-shadow var(--transition-fast);
+}
+
+.product-card-premium--compact::after {
+    display: none;
+}
+
+.product-card-premium--compact:hover {
+    border-color: var(--primary-200);
+    background: var(--primary-50);
+    box-shadow: var(--shadow-md);
+}
+
+.product-card-premium--compact:has(.product-title-link-premium:focus-visible) {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
+}
+
+.product-card-premium--compact .product-image-premium {
+    flex-shrink: 0;
+    width: 72px;
+    height: 72px;
+    aspect-ratio: auto;
+    border-radius: var(--radius-md);
+}
+
+.product-card-premium--compact .product-image-img.primary-img {
+    transform: none;
+    filter: none;
+    transition: none;
+}
+
+.product-card-premium--compact .product-info-premium {
+    flex: 1;
+    min-width: 0;
+    gap: 0.25rem;
+    padding: 0;
+    background: none;
+    border-top: none;
+}
+
+.product-card-premium--compact .product-title-premium {
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+/* 单行省略，line-clamp 在 link 上生效（外层 h3 保持 2 行 clamp 不动） */
+.product-card-premium--compact .product-title-link-premium {
+    -webkit-line-clamp: 1;
+}
+
+.product-card-premium--compact .product-footer-premium {
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0;
+}
+
+.product-card-premium--compact .product-price-premium {
+    padding-left: 0;
+    gap: 0;
+}
+
+.product-card-premium--compact .price-current-premium {
+    font-size: 1rem;
+    background: none;
+    -webkit-text-fill-color: var(--primary-700);
+    filter: none;
+}
+
+.product-card-premium--compact .price-original-premium {
+    font-size: 0.6875rem;
+}
+
+.product-card-premium--compact .product-seller-premium {
+    max-width: 45%;
+    gap: 0.375rem;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+}
+
+/* 抵消默认变体的 hover 玻璃卡效果：紧凑卡只保留纯文字卖家名 */
+.product-card-premium--compact:hover .product-seller-premium {
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    transform: none;
+}
+
+.product-card-premium--compact .seller-avatar-premium {
+    width: 26px;
+    height: 26px;
+    box-shadow: none;
+}
+
+.product-card-premium--compact .seller-name-premium {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+}
+
+/*
+ * 紧凑卡自带窄屏口径：直接进 /playground 不会加载列表页样式（products-list.css），
+ * 移动端覆盖不能寄望于那套 @media。
+ */
+@media (max-width: 768px) {
+    .product-card-premium--compact {
+        gap: 0.625rem;
+        padding: 0.5rem 0.625rem;
+    }
+}
