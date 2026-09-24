@@ -66,6 +66,7 @@
     --admin-gradient-2: linear-gradient(135deg, #c39bd3, #d8b4fe);
     --admin-gradient-3: linear-gradient(135deg, #10b981, #34d399);
     --admin-gradient-4: linear-gradient(135deg, #fbbf24, #f97316);
+    --admin-gradient-5: linear-gradient(135deg, #c39bd3, #d8b4fe);
 
     --admin-font-title: "Playfair Display", "Noto Serif SC", serif;
     --admin-font-mono: "Fira Code", "Noto Sans Mono", Consolas, monospace;

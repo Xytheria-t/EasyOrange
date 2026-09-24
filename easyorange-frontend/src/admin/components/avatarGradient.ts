@@ -1,9 +1,10 @@
+/** 头像渐变：取值来自 admin.css 的 `--admin-gradient-*`，这里只做引用。 */
 export const AVATAR_GRADIENTS = [
-    'linear-gradient(135deg, #F97316, #FB923C)',
-    'linear-gradient(135deg, #FB7185, #C39BD3)',
-    'linear-gradient(135deg, #34D399, #10B981)',
-    'linear-gradient(135deg, #FBBF24, #F97316)',
-    'linear-gradient(135deg, #C39BD3, #D8B4FE)',
+    'var(--admin-gradient-1)',
+    'var(--admin-gradient-2)',
+    'var(--admin-gradient-3)',
+    'var(--admin-gradient-4)',
+    'var(--admin-gradient-5)',
 ] as const;
 
 /**
