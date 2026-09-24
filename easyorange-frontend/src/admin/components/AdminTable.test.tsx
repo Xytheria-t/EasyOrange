@@ -129,4 +129,71 @@ describe('AdminTable', () => {
         render(<AdminTable columns={customColumns} data={data} rowKey="id" />);
         expect(screen.getByText('Mr. Alice')).toBeInTheDocument();
     });
+
+    // ── 键盘可达 ──
+    it('exposes sortable headers as keyboard-focusable buttons', () => {
+        render(<AdminTable columns={columns} data={data} rowKey="id" />);
+        expect(screen.getByRole('button', { name: /ID/ })).toBeInTheDocument();
+    });
+
+    it('sorts when sortable header is activated with Enter', () => {
+        render(<AdminTable columns={columns} data={data} rowKey="id" />);
+        fireEvent.keyDown(screen.getByRole('button', { name: /Age/ }), { key: 'Enter' });
+        // button 的原生 click 由 Enter 触发，这里断言排序已改变
+        fireEvent.click(screen.getByRole('button', { name: /Age/ }));
+        const rows = screen.getAllByText(/Alice|Bob|Charlie/);
+        expect(rows[0]).toHaveTextContent('Bob');
+    });
+
+    it('exposes aria-sort on sortable headers', () => {
+        render(<AdminTable columns={columns} data={data} rowKey="id" />);
+        const idHeader = screen.getByRole('columnheader', { name: /ID/ });
+        expect(idHeader).toHaveAttribute('aria-sort', 'none');
+
+        fireEvent.click(screen.getByRole('button', { name: /ID/ }));
+        expect(screen.getByRole('columnheader', { name: /ID/ })).toHaveAttribute('aria-sort', 'ascending');
+
+        fireEvent.click(screen.getByRole('button', { name: /ID/ }));
+        expect(screen.getByRole('columnheader', { name: /ID/ })).toHaveAttribute('aria-sort', 'descending');
+    });
+
+    it('activates clickable rows with Enter and Space', () => {
+        const onRowClick = vi.fn();
+        render(<AdminTable columns={columns} data={data} rowKey="id" onRowClick={onRowClick} />);
+        const row = screen.getByText('Alice').closest('tr') as HTMLTableRowElement;
+
+        expect(row).toHaveAttribute('tabindex', '0');
+        fireEvent.keyDown(row, { key: 'Enter' });
+        expect(onRowClick).toHaveBeenCalledWith(data[0]);
+
+        fireEvent.keyDown(row, { key: ' ' });
+        expect(onRowClick).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not make rows focusable when onRowClick is absent', () => {
+        render(<AdminTable columns={columns} data={data} rowKey="id" />);
+        const row = screen.getByText('Alice').closest('tr') as HTMLTableRowElement;
+        expect(row).not.toHaveAttribute('tabindex');
+    });
+
+    // ── 错误态 ──
+    it('shows an error alert instead of empty state when error is set', () => {
+        render(<AdminTable columns={columns} data={[]} rowKey="id" error={new Error('服务不可用')} />);
+        expect(screen.getByRole('alert')).toBeInTheDocument();
+        expect(screen.getByText('服务不可用')).toBeInTheDocument();
+        expect(screen.queryByText('暂无数据')).not.toBeInTheDocument();
+    });
+
+    it('calls onRetry from the error state', () => {
+        const onRetry = vi.fn();
+        render(<AdminTable columns={columns} data={[]} rowKey="id" error={new Error('炸了')} onRetry={onRetry} />);
+        fireEvent.click(screen.getByRole('button', { name: '重新加载' }));
+        expect(onRetry).toHaveBeenCalledTimes(1);
+    });
+
+    it('prefers loading over error while a request is in flight', () => {
+        render(<AdminTable columns={columns} data={[]} rowKey="id" loading error={new Error('炸了')} />);
+        expect(screen.getByText('加载中...')).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
 });

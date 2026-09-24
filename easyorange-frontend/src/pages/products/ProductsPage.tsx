@@ -1,6 +1,7 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ErrorState } from '@/components/feedback/StateDisplay';
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
 import { ProductCard } from '@/components/product/ProductCard';
 import '@/components/product/products-grid.css';
@@ -49,6 +50,9 @@ function ProductsPage() {
     const {
         data: infiniteData,
         isLoading,
+        isError,
+        error,
+        refetch,
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
@@ -181,6 +185,25 @@ function ProductsPage() {
         const { category, hasDiscount, ...next } = filters;
         setUrlState({ filters: next });
     }, [filters, setUrlState]);
+
+    // 首屏就失败且没有任何已渲染数据时，错误态优先于骨架屏
+    if (isError && allProducts.length === 0) {
+        return (
+            <div className="products-page-wrapper">
+                <div className="products-container">
+                    <ErrorState
+                        title="商品加载失败"
+                        description={
+                            error instanceof Error && error.message ? error.message : '服务暂时不可用，请稍后重试。'
+                        }
+                        onRetry={() => {
+                            refetch();
+                        }}
+                    />
+                </div>
+            </div>
+        );
+    }
 
     if (isLoading && allProducts.length === 0) {
         return (
@@ -321,7 +344,17 @@ function ProductsPage() {
 
                 {allProducts.length > 0 && <div ref={sentinelRef} className="scroll-sentinel" />}
 
-                {!isLoading && allProducts.length === 0 && (
+                {/* 已有部分数据但后续翻页失败：就地提示，不清空已渲染内容 */}
+                {isError && allProducts.length > 0 && (
+                    <div role="alert" className="flex items-center justify-center gap-3 py-6 text-sm text-destructive">
+                        <span>加载更多商品失败</span>
+                        <Button variant="outline" size="sm" onClick={() => refetch()}>
+                            重试
+                        </Button>
+                    </div>
+                )}
+
+                {!isLoading && !isError && allProducts.length === 0 && (
                     <div className="no-results-premium">
                         <div className="no-results-icon-premium">
                             <svg

@@ -17,6 +17,9 @@ export interface AdminTableProps<T> {
     data: T[];
     rowKey: keyof T;
     loading?: boolean;
+    /** 列表请求失败。传了 error 就渲染重试出口，不会退化成"暂无数据"。 */
+    error?: Error | null;
+    onRetry?: () => void;
     pagination?: {
         current: number;
         pageSize: number;
@@ -39,6 +42,8 @@ export function AdminTable<T extends object>({
     data,
     rowKey,
     loading = false,
+    error = null,
+    onRetry,
     pagination,
     onRowClick,
     emptyText = '暂无数据',
@@ -149,7 +154,7 @@ export function AdminTable<T extends object>({
     };
 
     const headerBaseClass =
-        'text-left py-[0.85rem] px-5 text-[0.68rem] font-semibold text-[#9B9590] uppercase tracking-[0.06em] ' +
+        'text-left py-[0.85rem] px-5 text-[0.68rem] font-semibold text-[#6E6862] uppercase tracking-[0.06em] ' +
         'bg-[linear-gradient(180deg,rgba(249,115,22,0.04)_0%,transparent_100%)] border-b border-[#EDE8E3] whitespace-nowrap';
 
     const cellBaseClass =
@@ -157,10 +162,17 @@ export function AdminTable<T extends object>({
 
     const pageButtonClass =
         'min-w-[34px] h-[34px] inline-flex items-center justify-center border-[1.5px] border-transparent ' +
-        'rounded-[10px] text-[0.81rem] font-semibold text-[#8B857E] bg-transparent transition-all duration-150 px-2';
+        'rounded-[10px] text-[0.81rem] font-semibold text-[#6E6862] bg-transparent transition-all duration-150 px-2';
 
     const isFirstColumn = (_column: Column<T>, idx: number) => idx === 0;
     const isLastColumn = (_column: Column<T>, idx: number) => idx === columns.length - 1;
+
+    const ariaSortFor = (columnKey: string) => {
+        if (sortState.key !== columnKey || !sortState.direction) {
+            return 'none' as const;
+        }
+        return sortState.direction === 'asc' ? ('ascending' as const) : ('descending' as const);
+    };
 
     return (
         <>
@@ -174,14 +186,23 @@ export function AdminTable<T extends object>({
                                     headerBaseClass,
                                     isFirstColumn(column, idx) && 'rounded-tl-[20px]',
                                     isLastColumn(column, idx) && 'rounded-tr-[20px]',
-                                    column.sortable && 'cursor-pointer select-none'
+                                    column.sortable && 'p-0'
                                 )}
-                                onClick={() => column.sortable && handleSort(String(column.key))}
+                                // aria-sort 挂在 th 上，读屏才能播报当前排序方向
+                                aria-sort={column.sortable ? ariaSortFor(String(column.key)) : undefined}
                             >
-                                <span className="inline-flex items-center">
-                                    {column.title}
-                                    {column.sortable && renderSortIcon(String(column.key))}
-                                </span>
+                                {column.sortable ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSort(String(column.key))}
+                                        className="flex w-full cursor-pointer select-none items-center px-5 py-[0.85rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F97316] focus-visible:ring-inset"
+                                    >
+                                        {column.title}
+                                        {renderSortIcon(String(column.key))}
+                                    </button>
+                                ) : (
+                                    <span className="inline-flex items-center">{column.title}</span>
+                                )}
                             </TableHead>
                         ))}
                     </TableRow>
@@ -190,9 +211,30 @@ export function AdminTable<T extends object>({
                     {loading ? (
                         <TableRow className="border-0 hover:bg-transparent">
                             <TableCell colSpan={columns.length} className={cn(cellBaseClass, 'text-center')}>
-                                <div className="flex flex-col items-center gap-[0.7rem] py-12 px-4">
+                                <div
+                                    className="flex flex-col items-center gap-[0.7rem] py-12 px-4"
+                                    role="status"
+                                    aria-live="polite"
+                                    aria-busy="true"
+                                >
                                     <div className="h-7 w-7 rounded-full border-[2.5px] border-[#E5E0DB] border-t-[#F97316] animate-spin" />
-                                    <span className="text-[0.87rem] text-[#9B9590]">加载中...</span>
+                                    <span className="text-[0.87rem] text-[#6E6862]">加载中...</span>
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ) : error ? (
+                        <TableRow className="border-0 hover:bg-transparent">
+                            <TableCell colSpan={columns.length} className={cn(cellBaseClass, 'text-center')}>
+                                <div className="flex flex-col items-center gap-2 py-14 px-6" role="alert">
+                                    <div className="text-[0.98rem] font-semibold text-[#4A4540]">数据加载失败</div>
+                                    <div className="max-w-md text-[0.84rem] text-[#6E6862]">
+                                        {error.message || '服务暂时不可用，请稍后重试。'}
+                                    </div>
+                                    {onRetry ? (
+                                        <Button variant="outline" size="sm" className="mt-2" onClick={onRetry}>
+                                            重新加载
+                                        </Button>
+                                    ) : null}
                                 </div>
                             </TableCell>
                         </TableRow>
@@ -202,12 +244,12 @@ export function AdminTable<T extends object>({
                                 <div className="py-14 px-6 text-center">
                                     <div className="mb-[0.65rem] text-[2.2rem] opacity-45">📭</div>
                                     <div
-                                        className="text-[0.98rem] font-semibold text-[#8B857E] mb-1"
+                                        className="text-[0.98rem] font-semibold text-[#6E6862] mb-1"
                                         style={{ fontFamily: "'Playfair Display', serif" }}
                                     >
                                         {emptyText}
                                     </div>
-                                    <div className="text-[0.84rem] text-[#B5AEA8]">暂无相关数据</div>
+                                    <div className="text-[0.84rem] text-[#6E6862]">暂无相关数据</div>
                                 </div>
                             </TableCell>
                         </TableRow>
@@ -218,9 +260,23 @@ export function AdminTable<T extends object>({
                                 className={cn(
                                     'border-b border-[#F5F2EE] transition-colors duration-150',
                                     onRowClick && 'cursor-pointer',
-                                    'hover:bg-[rgba(249,115,22,0.025)]'
+                                    'hover:bg-[rgba(249,115,22,0.025)]',
+                                    // 可点击行补键盘可达：Enter / Space 等同点击
+                                    onRowClick &&
+                                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#F97316]'
                                 )}
+                                tabIndex={onRowClick ? 0 : undefined}
+                                role={onRowClick ? 'button' : undefined}
                                 onClick={() => onRowClick?.(record)}
+                                onKeyDown={e => {
+                                    if (!onRowClick) {
+                                        return;
+                                    }
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        onRowClick(record);
+                                    }
+                                }}
                             >
                                 {columns.map(column => {
                                     const cellValue = getValue(record, column.key);
@@ -247,7 +303,7 @@ export function AdminTable<T extends object>({
                         }}
                     />
 
-                    <div className="text-[0.81rem] text-[#B5AEA8]">
+                    <div className="text-[0.81rem] text-[#6E6862]">
                         共 <strong className="text-[#4A4540] font-semibold">{pagination.total.toLocaleString()}</strong>{' '}
                         条记录， 第 <strong className="text-[#4A4540] font-semibold">{pagination.current}</strong> /{' '}
                         <strong className="text-[#4A4540] font-semibold">{totalPages}</strong> 页
@@ -277,7 +333,7 @@ export function AdminTable<T extends object>({
                                             // biome-ignore lint/suspicious/noArrayIndexKey: stable list
                                             key={`e-${index}`}
                                         >
-                                            <PaginationEllipsis className="text-[0.81rem] text-[#B5AEA8]" />
+                                            <PaginationEllipsis className="text-[0.81rem] text-[#6E6862]" />
                                         </PaginationItem>
                                     );
                                 }

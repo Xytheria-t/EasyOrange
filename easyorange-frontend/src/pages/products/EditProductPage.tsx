@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ConfirmModal } from '@/admin/components/ConfirmModal';
+import { ErrorState } from '@/components/feedback/StateDisplay';
 import { Input, Label } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,7 +30,13 @@ import './edit-product.css';
 function EditProductPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { data: product, isLoading: isLoadingProduct } = useProduct(id ?? '');
+    const {
+        data: product,
+        isLoading: isLoadingProduct,
+        isError: isProductError,
+        error: productError,
+        refetch: refetchProduct,
+    } = useProduct(id ?? '');
     const updateProduct = useUpdateProduct(id ?? '');
     const deleteProduct = useDeleteProduct();
     const { data: categories } = useCategories();
@@ -92,6 +99,25 @@ function EditProductPage() {
                     <Loader2 size={32} />
                 </div>
                 <span className="edit-loading-text">加载商品信息...</span>
+            </div>
+        );
+    }
+
+    // 请求失败与"商品真的不存在"是两种状态，不能共用同一个提示
+    if (isProductError) {
+        return (
+            <div className="edit-product-empty">
+                <ErrorState
+                    title="商品信息加载失败"
+                    description={
+                        productError instanceof Error && productError.message
+                            ? productError.message
+                            : '服务暂时不可用，请稍后重试。'
+                    }
+                    onRetry={() => {
+                        refetchProduct();
+                    }}
+                />
             </div>
         );
     }
@@ -167,7 +193,7 @@ function EditProductPage() {
                         <div className="edit-image-grid">
                             {vals.imageUrls.map((url, index) => (
                                 <div key={url} className={`edit-image-item ${index === 0 ? 'is-cover' : ''}`}>
-                                    <img src={url} alt={`商品图片 ${index + 1}`} />
+                                    <img src={url} alt={`商品图片 ${index + 1}`} loading="lazy" decoding="async" />
                                     {index === 0 && <span className="edit-cover-badge">封面</span>}
                                     <Button
                                         type="button"

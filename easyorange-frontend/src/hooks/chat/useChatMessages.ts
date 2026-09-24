@@ -20,6 +20,7 @@ export function useChatMessages(targetUserId: string | null, conversationId: str
         data: baseMessages = EMPTY_MESSAGES,
         isLoading,
         error,
+        refetch,
     } = useQuery({
         queryKey: ['chat', 'messages', targetUserId],
         queryFn: async () => {
@@ -71,15 +72,18 @@ export function useChatMessages(targetUserId: string | null, conversationId: str
             queryClient.setQueryData<ChatMessage[]>(['chat', 'messages', targetUserId], old => {
                 return olderBatch.concat(old ?? []);
             });
-        } catch {
-            // Failed to load older messages
+        } catch (e) {
+            // 向上抛：翻历史失败要让用户看到提示，不能静默吞掉
+            throw e instanceof Error ? e : new Error('加载历史消息失败');
         }
     }, [targetUserId, oldestMessageId, hasMore, queryClient]);
 
     return {
         messages,
         isLoading,
+        isError: !!error,
         error,
+        refetch,
         loadOlder,
         hasMore,
     };

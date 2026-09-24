@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
+import { ErrorState } from '@/components/feedback/StateDisplay';
 import { useAdminCategories, useAdminOrderStats, useDashboardStats, useRecentActivity, useTrend } from '../../hooks';
 import { LazyTrendChart } from './charts/lazyCharts';
 
-const CATEGORY_COLORS = ['#F97316', '#FB7185', '#C39BD3', '#FBBF24', '#10B981', '#8B857E'];
+const CATEGORY_COLORS = ['#F97316', '#FB7185', '#C39BD3', '#FBBF24', '#10B981', '#6E6862'];
 
 const ACTIVITY_COLORS: Record<string, string> = {
     user: '#F97316',
@@ -11,8 +12,8 @@ const ACTIVITY_COLORS: Record<string, string> = {
 };
 
 export default function StatsPage() {
-    const { data: stats, isLoading } = useDashboardStats();
-    const { data: categories, isLoading: categoriesLoading } = useAdminCategories();
+    const { data: stats, isLoading, isError, error, refetch } = useDashboardStats();
+    const { data: categories, isLoading: categoriesLoading, isError: categoriesError } = useAdminCategories();
     const { data: orderStats } = useAdminOrderStats();
     const { data: trend = [] } = useTrend();
     const { data: recentActivity = [] } = useRecentActivity();
@@ -134,10 +135,25 @@ export default function StatsPage() {
                         </span>
                         数据统计
                     </h1>
-                    <p style={{ fontSize: '0.88rem', color: '#9B9590', marginTop: '0.3rem', paddingLeft: '36px' }}>
+                    <p style={{ fontSize: '0.88rem', color: '#6E6862', marginTop: '0.3rem', paddingLeft: '36px' }}>
                         平台运营数据概览与趋势分析
                     </p>
                 </header>
+
+                {/* 统计请求失败：显式报错而不是把 0 当成真实数字展示 */}
+                {isError && (
+                    <div style={{ position: 'relative', zIndex: 1, marginBottom: '1.5rem' }}>
+                        <ErrorState
+                            title="统计数据加载失败"
+                            description={
+                                error instanceof Error && error.message ? error.message : '服务暂时不可用，请稍后重试。'
+                            }
+                            onRetry={() => {
+                                refetch();
+                            }}
+                        />
+                    </div>
+                )}
 
                 {/* Stat cards */}
                 <div
@@ -184,7 +200,7 @@ export default function StatsPage() {
                                     marginBottom: '0.75rem',
                                 }}
                             >
-                                <span style={{ fontSize: '0.82rem', fontWeight: 500, color: '#9B9590' }}>
+                                <span style={{ fontSize: '0.82rem', fontWeight: 500, color: '#6E6862' }}>
                                     {card.label}
                                 </span>
                                 <span style={{ fontSize: '1.1rem' }}>{card.emoji}</span>
@@ -199,7 +215,7 @@ export default function StatsPage() {
                                         lineHeight: 1,
                                     }}
                                 >
-                                    {isLoading ? '—' : card.value.toLocaleString()}
+                                    {isLoading ? '—' : isError ? '—' : card.value.toLocaleString()}
                                 </span>
                             </div>
                         </div>
@@ -245,7 +261,7 @@ export default function StatsPage() {
                                         flexShrink: 0,
                                     }}
                                 />
-                                <span style={{ fontSize: '0.78rem', color: '#9B9590' }}>{item.label}:</span>
+                                <span style={{ fontSize: '0.78rem', color: '#6E6862' }}>{item.label}:</span>
                                 <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#2A2520' }}>
                                     {item.value}
                                 </span>
@@ -336,11 +352,24 @@ export default function StatsPage() {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     height: 140,
-                                    color: '#B5AEA8',
+                                    color: '#6E6862',
                                     fontSize: '0.87rem',
                                 }}
                             >
                                 加载中…
+                            </div>
+                        ) : categoriesError ? (
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: 140,
+                                    color: '#6E6862',
+                                    fontSize: '0.87rem',
+                                }}
+                            >
+                                分类数据加载失败
                             </div>
                         ) : categoryDistribution.length === 0 ? (
                             <div
@@ -349,7 +378,7 @@ export default function StatsPage() {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     height: 140,
-                                    color: '#B5AEA8',
+                                    color: '#6E6862',
                                     fontSize: '0.87rem',
                                 }}
                             >
@@ -369,7 +398,7 @@ export default function StatsPage() {
                                             <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#4A4540' }}>
                                                 {cat.name}
                                             </span>
-                                            <span style={{ fontSize: '0.78rem', color: '#9B9590' }}>
+                                            <span style={{ fontSize: '0.78rem', color: '#6E6862' }}>
                                                 {cat.count} 件 ({Math.round(cat.pct)}%)
                                             </span>
                                         </div>
@@ -429,7 +458,7 @@ export default function StatsPage() {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 height: 100,
-                                color: '#B5AEA8',
+                                color: '#6E6862',
                                 fontSize: '0.87rem',
                             }}
                         >
@@ -468,7 +497,7 @@ export default function StatsPage() {
                                     <span
                                         style={{
                                             fontSize: '0.78rem',
-                                            color: '#B5AEA8',
+                                            color: '#6E6862',
                                             flexShrink: 0,
                                             whiteSpace: 'nowrap',
                                         }}

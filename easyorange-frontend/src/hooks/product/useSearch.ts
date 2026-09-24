@@ -11,7 +11,10 @@ export interface UseProductSearchResult {
     /** 已开启增强但本次失败（尝试过才为 true，短关键词「不适用」不会误报） */
     aiEnhancementDegraded: boolean;
     isLoading: boolean;
+    /** 与 error 配套：页面用它把"请求失败"和"确实无结果"分开渲染 */
+    isError: boolean;
     error: Error | null;
+    refetch: () => Promise<unknown>;
 }
 
 export function useProductSearch(params: ProductSearchParams = {}): UseProductSearchResult {
@@ -33,7 +36,9 @@ export function useProductSearch(params: ProductSearchParams = {}): UseProductSe
         aiEnhancement: query.data?.aiEnhancement,
         aiEnhancementDegraded: query.data?.aiEnhancementDegraded ?? false,
         isLoading: query.isLoading,
+        isError: query.isError,
         error: query.error,
+        refetch: query.refetch,
     };
 }
 

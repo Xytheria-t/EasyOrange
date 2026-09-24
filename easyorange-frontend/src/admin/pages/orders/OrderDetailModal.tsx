@@ -67,7 +67,7 @@ function formatDateTime(dateString: string | null) {
 }
 
 export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalProps) {
-    const { data: order, isLoading } = useAdminOrderDetail(orderId ?? '');
+    const { data: order, isLoading, isError, error, refetch } = useAdminOrderDetail(orderId ?? '');
 
     if (!open || !orderId) {
         return null;
@@ -86,6 +86,10 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
             title="订单详情"
             maxWidth={480}
             loading={isLoading}
+            error={isError ? error : null}
+            onRetry={() => {
+                refetch();
+            }}
             notFound={!orderData}
             notFoundText="订单不存在或已被删除"
             icon={
@@ -126,7 +130,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                             </span>
                         </div>
                         <span
-                            className="shrink-0 text-[0.78rem] font-semibold tracking-[0.03em] text-[#9B9590]"
+                            className="shrink-0 text-[0.78rem] font-semibold tracking-[0.03em] text-[#6E6862]"
                             style={{ fontFamily: "'DM Sans', monospace" }}
                         >
                             {orderData.orderNo}
@@ -144,9 +148,11 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                                             src={item.productImage}
                                             alt=""
                                             className="h-[60px] w-[60px] shrink-0 rounded-xl object-cover"
+                                            loading="lazy"
+                                            decoding="async"
                                         />
                                     ) : (
-                                        <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)] text-[#B5AEA8]">
+                                        <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)] text-[#6E6862]">
                                             <svg
                                                 aria-hidden="true"
                                                 width="22"
@@ -168,10 +174,10 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                                         <p className="overflow-hidden text-ellipsis whitespace-nowrap text-[0.93rem] font-bold leading-tight text-[#2A2520]">
                                             {item.productName || '—'}
                                         </p>
-                                        <p className="mt-0.5 text-[0.81rem] text-[#9B9590]">
+                                        <p className="mt-0.5 text-[0.81rem] text-[#6E6862]">
                                             单价: ¥{item.unitPrice.toFixed(2)}
                                         </p>
-                                        <p className="mt-0.5 text-[0.81rem] text-[#9B9590]">数量: {item.quantity}</p>
+                                        <p className="mt-0.5 text-[0.81rem] text-[#6E6862]">数量: {item.quantity}</p>
                                     </div>
                                 </div>
                             );
@@ -188,9 +194,11 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                                             src={item.productImage}
                                             alt=""
                                             className="h-[60px] w-[60px] shrink-0 rounded-xl object-cover"
+                                            loading="lazy"
+                                            decoding="async"
                                         />
                                     ) : (
-                                        <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)] text-[#B5AEA8]">
+                                        <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)] text-[#6E6862]">
                                             <svg
                                                 aria-hidden="true"
                                                 width="22"
@@ -212,7 +220,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                                         <p className="overflow-hidden text-ellipsis whitespace-nowrap text-[0.93rem] font-bold leading-tight text-[#2A2520]">
                                             {item.productName || '—'}
                                         </p>
-                                        <p className="mt-0.5 text-[0.81rem] text-[#9B9590]">
+                                        <p className="mt-0.5 text-[0.81rem] text-[#6E6862]">
                                             单价: ¥{item.unitPrice.toFixed(2)} × {item.quantity}
                                         </p>
                                     </div>
