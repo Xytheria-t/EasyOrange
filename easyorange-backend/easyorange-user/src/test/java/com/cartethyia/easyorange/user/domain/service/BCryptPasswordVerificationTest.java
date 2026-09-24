@@ -10,48 +10,26 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 class BCryptPasswordVerificationTest {
 
     @Test
-    @DisplayName("验证开发环境密码哈希值")
+    @DisplayName("开发种子 admin 凭据哈希可被验证（回归护栏）")
     void verifyDevPasswordHash() {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
 
         String devHash = "$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK";
 
-        String[] possiblePasswords = {"Password123", "password", "admin", "123456", "test", "Admin123", "PASSWORD123"};
-
-        System.out.println("\n=== 验证开发环境密码哈希 ===");
-        System.out.println("哈希值: " + devHash);
-
-        for (String password : possiblePasswords) {
-            boolean matches = encoder.matches(password, devHash);
-            System.out.println(password + " -> " + matches);
-            if (matches) {
-                System.out.println("✓ 找到匹配的密码: " + password);
-            }
-        }
-
-        String testHash = encoder.encode("Password123");
-        System.out.println("\n'Password123' 的新哈希: " + testHash);
-        assertThat(encoder.matches("Password123", testHash)).isTrue();
+        // 种子 R__seed_dev_test_data.sql 写入的 admin 密码即 Password123，固定哈希必须匹配它
+        assertThat(encoder.matches("Password123", devHash)).isTrue();
+        // 哈希具备 BCrypt 单向性：错误密码不得匹配
+        assertThat(encoder.matches("wrong-password", devHash)).isFalse();
     }
 
     @Test
-    @DisplayName("验证测试环境密码哈希值")
+    @DisplayName("测试环境默认哈希对应 password（回归护栏）")
     void verifyTestPasswordHash() {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
 
         String testHash = "$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG";
 
-        String[] possiblePasswords = {"password", "Password123", "admin", "123456", "test"};
-
-        System.out.println("\n=== 验证测试环境密码哈希 ===");
-        System.out.println("哈希值: " + testHash);
-
-        for (String password : possiblePasswords) {
-            boolean matches = encoder.matches(password, testHash);
-            System.out.println(password + " -> " + matches);
-            if (matches) {
-                System.out.println("✓ 找到匹配的密码: " + password);
-            }
-        }
+        assertThat(encoder.matches("password", testHash)).isTrue();
+        assertThat(encoder.matches("Password123", testHash)).isFalse();
     }
 }
