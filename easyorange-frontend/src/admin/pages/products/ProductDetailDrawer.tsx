@@ -4,10 +4,10 @@ import { ImagePreviewOverlay } from '@/admin/components/ImagePreviewOverlay';
 import { ErrorState } from '@/components/feedback/StateDisplay';
 import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, Textarea } from '@/components/ui';
 import { cn } from '@/lib/utils';
-import { useUIStore } from '@/store/uiStore';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { useAuditLogs, useAuditProduct } from '../../hooks/useAdminProductAudit';
 import { useAdminProductDetail } from '../../hooks/useAdminProducts';
+import { notify } from '../../notify';
 import type { AuditDimension, AuditLogResponse } from '../../types/admin';
 
 interface ProductDetailDrawerProps {
@@ -59,7 +59,6 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
     const { data: product, isLoading, isError, error, refetch } = useAdminProductDetail(productId ?? '');
     const updateStatus = useAuditProduct();
     const auditLogs = useAuditLogs(productId);
-    const addToast = useUIStore(s => s.addToast);
 
     useEffect(() => {
         if (open && productId) {
@@ -79,15 +78,12 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
             });
             // 审核动作要有即时反馈：只关抽屉的话，点完「通过审核」界面几乎无变化，
             // 演示者会以为没点上
-            addToast({ type: 'success', message: '审核已通过，商品已上架' });
+            notify.success('审核已通过，商品已上架');
             setState(prev => ({ ...prev, showApproveModal: false }));
             onSuccess();
             onClose();
         } catch (e) {
-            addToast({
-                type: 'error',
-                message: e instanceof Error ? e.message : '审核失败，请重试',
-            });
+            notify.failure(e, '审核失败，请重试');
         }
     };
 
@@ -106,14 +102,11 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                 },
             });
             setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' }));
-            addToast({ type: 'success', message: '已驳回，理由已记录在审核日志' });
+            notify.success('已驳回，理由已记录在审核日志');
             onSuccess();
             onClose();
         } catch (e) {
-            addToast({
-                type: 'error',
-                message: e instanceof Error ? e.message : '驳回失败，请重试',
-            });
+            notify.failure(e, '驳回失败，请重试');
         }
     };
 

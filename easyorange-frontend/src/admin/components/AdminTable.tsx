@@ -245,13 +245,13 @@ export function AdminTable<T extends object>({
                                 <TableCell colSpan={columns.length} className={cn(cellBaseClass, 'text-center')}>
                                     <div className="py-14 px-6 text-center">
                                         <Inbox className="mx-auto mb-[0.65rem] h-9 w-9 opacity-40" aria-hidden="true" />
+                                        {/* 只渲染 emptyText：再补一句「暂无相关数据」会和页面自带的空态文案重复 */}
                                         <div
-                                            className="text-[0.98rem] font-semibold text-[#6E6862] mb-1"
+                                            className="text-[0.98rem] font-semibold text-[#6E6862]"
                                             style={{ fontFamily: "'Playfair Display', serif" }}
                                         >
                                             {emptyText}
                                         </div>
-                                        <div className="text-[0.84rem] text-[#6E6862]">暂无相关数据</div>
                                     </div>
                                 </TableCell>
                             </TableRow>

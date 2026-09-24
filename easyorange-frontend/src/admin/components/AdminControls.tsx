@@ -16,7 +16,8 @@ export function AdminToolbar({ children }: { children: ReactNode }) {
 interface AdminSearchInputProps {
     value: string;
     onChange: (value: string) => void;
-    onSubmit: () => void;
+    /** 实时筛选（submitOnEnterOnly）可不传：此时 Enter 与提交按钮都没有语义 */
+    onSubmit?: () => void;
     placeholder?: string;
     /** 请求进行中：禁用输入与提交，避免连点打出并发请求 */
     loading?: boolean;
@@ -63,7 +64,7 @@ export function AdminSearchInput({
                         placeholder={placeholder}
                         onChange={e => onChange(e.target.value)}
                         onKeyDown={e => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Enter' && onSubmit) {
                                 e.preventDefault();
                                 onSubmit();
                             }
@@ -72,10 +73,10 @@ export function AdminSearchInput({
                     />
                 </div>
             </div>
-            {submitOnEnterOnly ? null : (
+            {submitOnEnterOnly || !onSubmit ? null : (
                 <Button
                     type="button"
-                    onClick={onSubmit}
+                    onClick={() => onSubmit()}
                     disabled={loading}
                     isLoading={loading}
                     loadingText="搜索中"

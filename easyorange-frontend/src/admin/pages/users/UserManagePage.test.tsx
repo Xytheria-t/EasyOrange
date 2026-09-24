@@ -53,18 +53,22 @@ vi.mock('../../components/AdminTable', () => ({
         columns: _columns,
         data,
         loading,
+        error,
         pagination,
         emptyText,
     }: {
         columns: unknown[];
         data: AdminUser[];
         loading: boolean;
+        error: Error | null;
         pagination: unknown;
         emptyText: string;
     }) => (
         <div data-testid="admin-table">
             {loading ? (
                 <div data-testid="loading-skeleton">Loading...</div>
+            ) : error ? (
+                <div data-testid="error-state">{error.message}</div>
             ) : data.length === 0 ? (
                 <div data-testid="empty-state">{emptyText}</div>
             ) : (
@@ -280,12 +284,14 @@ describe('UserManagePage', () => {
     });
 
     // ── Test 10: Error state ──
-    it('shows error banner when isError', () => {
+    it('hands the list error to the table and hides the count', () => {
         setupMocks({ isError: true, data: undefined });
         renderWithProviders(<UserManagePage />);
 
-        expect(screen.getByText('加载失败')).toBeInTheDocument();
-        expect(screen.getByText('重试')).toBeInTheDocument();
+        // 错误只有表格这一处出口，失败时也不再显示「共 0 位用户」
+        expect(screen.getByTestId('error-state')).toHaveTextContent('Network error');
+        expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument();
+        expect(screen.queryByText(/位用户/)).not.toBeInTheDocument();
     });
 
     // ── Test 11: Detail buttons render for each user ──

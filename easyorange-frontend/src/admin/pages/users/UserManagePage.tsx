@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { usePagination } from '@/hooks/usePagination';
 import { formatDate } from '@/utils/format';
 import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
-import { AdminCard, AdminErrorBanner, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
+import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { linkButton, monoText, mutedText } from '../../components/admin-theme';
 import { pickAvatarGradient } from '../../components/avatarGradient';
@@ -40,7 +40,6 @@ export default function UserManagePage() {
         resetDeps: [keyword, statusFilter, userTypeFilter],
     });
     const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-    const [modalOpen, setModalOpen] = useState(false);
 
     const { data, isLoading, isError, error, refetch } = useAdminUsers({
         pageNum: page,
@@ -59,7 +58,6 @@ export default function UserManagePage() {
 
     const handleViewDetail = useCallback((user: AdminUser) => {
         setSelectedUser(user);
-        setModalOpen(true);
     }, []);
 
     const handleSaveStatus = useCallback(
@@ -73,7 +71,6 @@ export default function UserManagePage() {
                     data: { status },
                 });
                 notify.success(`已更新「${selectedUser.username}」的状态`);
-                setModalOpen(false);
                 setSelectedUser(null);
             } catch (e) {
                 // 不关弹窗：用户看得到失败原因，可以改回原状态重试
@@ -176,12 +173,6 @@ export default function UserManagePage() {
 
     return (
         <AdminPage>
-            <AdminErrorBanner
-                message={isError ? error?.message || '无法连接到服务器，请检查后端服务是否启动' : null}
-                onRetry={() => refetch()}
-                retrying={isLoading}
-            />
-
             <AdminPageHeader
                 icon={<Users size={17} />}
                 title="用户管理"
@@ -218,9 +209,13 @@ export default function UserManagePage() {
                         />
                         <ToolbarDivider />
                         <div style={{ flex: 1 }} />
-                        <span style={mutedText}>
-                            共 <strong style={{ color: 'var(--admin-ink)' }}>{total.toLocaleString()}</strong> 位用户
-                        </span>
+                        {/* 失败时不报「共 0 位」——那会被读成真的没有用户 */}
+                        {isError ? null : (
+                            <span style={mutedText}>
+                                共 <strong style={{ color: 'var(--admin-ink)' }}>{total.toLocaleString()}</strong>{' '}
+                                位用户
+                            </span>
+                        )}
                     </AdminToolbar>
                 </div>
             </AdminCard>
@@ -240,12 +235,11 @@ export default function UserManagePage() {
             </AdminCard>
 
             <UserDetailModal
-                open={modalOpen}
+                // key 绑定用户：切换用户时整棵表单重建，草稿状态不会带着上一位用户的旧选择
+                key={selectedUser?.userId ?? 'closed'}
+                open={selectedUser !== null}
                 user={selectedUser}
-                onClose={() => {
-                    setModalOpen(false);
-                    setSelectedUser(null);
-                }}
+                onClose={() => setSelectedUser(null)}
                 onSave={handleSaveStatus}
                 loading={updateStatusMutation.isPending}
             />

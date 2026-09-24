@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AdminDetailModal } from '@/admin/components/AdminDetailModal';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -65,17 +65,10 @@ function maskEmail(email: string | null) {
 }
 
 export function UserDetailModal({ open, user, onClose, onSave, loading = false }: UserDetailModalProps) {
-    const [selectedStatus, setSelectedStatus] = useState<string>('NORMAL');
+    // 草稿初值取当前用户状态；调用方用 key={userId} 重建本组件，切人即重置，
+    // 不需要 effect 把 props 镜像进 state（那样会先渲染一次上一位用户的旧选择）
+    const [selectedStatus, setSelectedStatus] = useState<string>(user?.status ?? 'NORMAL');
     const [pendingConfirm, setPendingConfirm] = useState(false);
-
-    // 弹窗复用组件实例时切到另一位用户，状态必须跟着重置，否则保存的是上一位的旧状态
-    const userId = user?.userId;
-    const userStatus = user?.status;
-    useEffect(() => {
-        if (userId) {
-            setSelectedStatus(userStatus ?? 'NORMAL');
-        }
-    }, [userId, userStatus]);
 
     if (!open || !user) {
         return null;

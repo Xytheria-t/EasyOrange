@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { AdminField } from '../../components/AdminControls';
-import { AdminCard, AdminErrorBanner, AdminPage, AdminPageHeader } from '../../components/AdminPage';
+import { AdminCard, AdminPage, AdminPageHeader } from '../../components/AdminPage';
 import { AdminTable } from '../../components/AdminTable';
 import { mutedText, statusDot, textInput } from '../../components/admin-theme';
 import { ConfirmModal } from '../../components/ConfirmModal';
@@ -25,10 +25,11 @@ const STATUS_LABEL: Record<string, { text: string; color: string }> = {
     FAILED: { text: '失败', color: 'var(--status-error)' },
 };
 
+const PAGE_SIZE = 10;
+
 export default function KnowledgePage() {
     const [pageNum, setPageNum] = useState(1);
-    const [pageSize] = useState(10);
-    const { data, isLoading, isError, error, refetch } = useAdminKnowledgeDocs(pageNum, pageSize);
+    const { data, isLoading, isError, error, refetch } = useAdminKnowledgeDocs(pageNum, PAGE_SIZE);
     const createMutation = useCreateKnowledgeDoc();
     const deleteMutation = useDeleteKnowledgeDoc();
     const reindexMutation = useReindexKnowledge();
@@ -81,12 +82,6 @@ export default function KnowledgePage() {
 
     return (
         <AdminPage>
-            <AdminErrorBanner
-                message={isError ? error?.message || '知识库列表加载失败' : null}
-                onRetry={() => refetch()}
-                retrying={isLoading}
-            />
-
             <AdminPageHeader
                 icon={<BookOpen size={17} />}
                 title="知识库管理"
@@ -199,7 +194,7 @@ export default function KnowledgePage() {
                     pagination={{
                         current: data?.current ?? 1,
                         // 统一用客户端 pageSize：此前用 data.size，分页容量会随接口返回漂移
-                        pageSize,
+                        pageSize: PAGE_SIZE,
                         total: data?.total ?? 0,
                         onChange: setPageNum,
                     }}

@@ -281,7 +281,6 @@ export default function CategoryManagePage() {
                         <AdminSearchInput
                             value={searchInput}
                             onChange={setSearchInput}
-                            onSubmit={() => {}}
                             placeholder="搜索分类名称"
                             loading={isLoading}
                             submitOnEnterOnly
@@ -318,23 +317,25 @@ export default function CategoryManagePage() {
                         </Button>
                         <ToolbarDivider />
                         <div style={{ flex: 1 }} />
-                        {/* 筛选后报总数会让人以为筛选没生效 */}
-                        <span style={mutedText}>
-                            {hasFilter ? (
-                                <>
-                                    筛选出 <strong style={{ color: 'var(--admin-ink)' }}>{filteredCount}</strong> /{' '}
-                                    {allCategories.length} 个分类
-                                </>
-                            ) : (
-                                <>
-                                    共{' '}
-                                    <strong style={{ color: 'var(--admin-ink)' }}>
-                                        {allCategories.length.toLocaleString()}
-                                    </strong>{' '}
-                                    个分类
-                                </>
-                            )}
-                        </span>
+                        {/* 筛选后报总数会让人以为筛选没生效；请求失败时报「共 0 个」同样会被当成真的没数据 */}
+                        {isError ? null : (
+                            <span style={mutedText}>
+                                {hasFilter ? (
+                                    <>
+                                        筛选出 <strong style={{ color: 'var(--admin-ink)' }}>{filteredCount}</strong> /{' '}
+                                        {allCategories.length} 个分类
+                                    </>
+                                ) : (
+                                    <>
+                                        共{' '}
+                                        <strong style={{ color: 'var(--admin-ink)' }}>
+                                            {allCategories.length.toLocaleString()}
+                                        </strong>{' '}
+                                        个分类
+                                    </>
+                                )}
+                            </span>
+                        )}
                     </AdminToolbar>
                 </div>
             </AdminCard>

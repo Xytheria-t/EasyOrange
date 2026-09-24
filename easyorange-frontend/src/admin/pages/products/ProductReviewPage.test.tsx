@@ -227,7 +227,7 @@ describe('ProductReviewPage', () => {
     });
 
     // ── Test 6: Error state ──
-    it('shows error banner with refresh button when isError is true', () => {
+    it('shows table error state with retry when isError is true', () => {
         mockUseAdminProducts.mockReturnValue({
             data: undefined,
             isLoading: false,
@@ -237,10 +237,12 @@ describe('ProductReviewPage', () => {
         });
 
         renderWithProviders(<ProductReviewPage />);
-        expect(screen.getByText('加载失败')).toBeInTheDocument();
-        // 错误条透传后端 message，而不是一律替换成固定文案
-        expect(screen.getAllByText('Network failure').length).toBeGreaterThan(0);
-        expect(screen.getByText('重试')).toBeInTheDocument();
+        // 错误只有表格这一处出口：页面横幅与表格同时报错会出现两套文案和两个重试按钮
+        expect(screen.getByText('数据加载失败')).toBeInTheDocument();
+        // 错误文案透传后端 message，而不是一律替换成固定文案
+        expect(screen.getByText('Network failure')).toBeInTheDocument();
+        expect(screen.getByText('重新加载')).toBeInTheDocument();
+        expect(screen.queryByText('重试')).not.toBeInTheDocument();
     });
 
     // ── Test 7: Default status filter shows "全部状态" ──

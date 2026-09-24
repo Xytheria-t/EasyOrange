@@ -3,8 +3,9 @@ import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { usePagination } from '@/hooks/usePagination';
 import type { ProductStatus } from '@/types';
+import { formatRelativeTime } from '@/utils/format';
 import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
-import { AdminCard, AdminErrorBanner, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
+import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { linkButton, mutedText, priceText } from '../../components/admin-theme';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -36,7 +37,6 @@ export default function ProductReviewPage() {
         resetDeps: [keyword, statusFilter, categoryFilter],
     });
     const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-    const [drawerOpen, setDrawerOpen] = useState(false);
 
     const { data, isLoading, isError, error, refetch } = useAdminProducts({
         pageNum: page,
@@ -66,28 +66,6 @@ export default function ProductReviewPage() {
 
     const handleViewDetail = (product: AdminProduct) => {
         setSelectedProductId(product.productId || null);
-        setDrawerOpen(true);
-    };
-
-    const formatTime = (timeString: string) => {
-        const date = new Date(timeString);
-        const diff = Date.now() - date.getTime();
-        const minutes = Math.floor(diff / 60000);
-        const hours = Math.floor(diff / 3600000);
-        const days = Math.floor(diff / 86400000);
-        if (minutes < 1) {
-            return '刚刚';
-        }
-        if (minutes < 60) {
-            return `${minutes}分钟前`;
-        }
-        if (hours < 24) {
-            return `${hours}小时前`;
-        }
-        if (days < 7) {
-            return `${days}天前`;
-        }
-        return date.toLocaleDateString('zh-CN');
     };
 
     const columns: Column<AdminProduct>[] = [
@@ -159,7 +137,7 @@ export default function ProductReviewPage() {
             key: 'createTime',
             title: '发布时间',
             sortable: true,
-            render: value => <span style={mutedText}>{formatTime(value as string)}</span>,
+            render: value => <span style={mutedText}>{formatRelativeTime(value as string)}</span>,
         },
         {
             key: 'actions',
@@ -184,12 +162,6 @@ export default function ProductReviewPage() {
 
     return (
         <AdminPage>
-            <AdminErrorBanner
-                message={isError ? error?.message || '无法连接到服务器，请检查后端服务是否启动' : null}
-                onRetry={() => refetch()}
-                retrying={isLoading}
-            />
-
             <AdminPageHeader
                 icon={<ClipboardCheck size={17} />}
                 title="商品审核"
@@ -251,12 +223,9 @@ export default function ProductReviewPage() {
             </AdminCard>
 
             <ProductDetailDrawer
-                open={drawerOpen}
+                open={selectedProductId !== null}
                 productId={selectedProductId}
-                onClose={() => {
-                    setDrawerOpen(false);
-                    setSelectedProductId(null);
-                }}
+                onClose={() => setSelectedProductId(null)}
                 onSuccess={() => refetch()}
             />
         </AdminPage>
