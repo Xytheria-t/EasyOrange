@@ -8,14 +8,17 @@ const buttonVariants = cva(
     {
         variants: {
             variant: {
+                // 底色用 primary-700 而非 500：白字在 #f97316 上只有 2.8:1，
+                // 在 #c2410c 上是 5.18:1，跨过 WCAG AA 正文阈值。
+                // 500 级继续留给边框、光晕等非文字装饰。
                 default:
-                    'bg-primary text-primary-foreground shadow-[0_4px_12px_rgba(249,115,22,0.35)] hover:shadow-[0_8px_20px_rgba(249,115,22,0.45)] hover:-translate-y-0.5',
+                    'bg-primary-700 text-white shadow-[0_4px_12px_rgba(249,115,22,0.35)] hover:bg-primary-700/90 hover:shadow-[0_8px_20px_rgba(249,115,22,0.45)] hover:-translate-y-0.5',
                 destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
                 outline:
-                    'border-2 border-border bg-background text-foreground hover:border-primary-400 hover:text-primary-500 hover:bg-primary-50 hover:-translate-y-0.5',
+                    'border-2 border-border bg-background text-foreground hover:border-primary-400 hover:text-primary-700 hover:bg-primary-50 hover:-translate-y-0.5',
                 secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
                 ghost: 'text-foreground hover:bg-muted hover:text-foreground',
-                link: 'text-primary underline-offset-4 hover:underline',
+                link: 'text-primary-700 underline-offset-4 hover:underline',
             },
             size: {
                 default: 'h-11 px-6 py-2.5',

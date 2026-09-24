@@ -110,7 +110,8 @@
     /* Text colors - Warm tint with orange-pink harmony */
     --text-primary: #1e1a16;
     --text-secondary: #5a524a;
-    --text-tertiary: #8b7e72;
+    /* 原 #8b7e72 在白底只有 3.94:1，正文级文本不达 AA；#6b6058 为 6.11:1 */
+    --text-tertiary: #6b6058;
     --text-inverse: #ffffff;
     --text-heading: #1a1612;
     --text-accent: #c2410c;

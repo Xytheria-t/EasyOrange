@@ -97,7 +97,7 @@ function ForbiddenPage() {
                 >
                     访问受限
                 </h1>
-                <p style={{ fontSize: '0.92rem', color: '#9B9590', marginBottom: '2rem', lineHeight: 1.6 }}>
+                <p style={{ fontSize: '0.92rem', color: '#6E6862', marginBottom: '2rem', lineHeight: 1.6 }}>
                     抱歉，您没有权限访问此页面。
                     <br />
                     如有疑问，请联系管理员。

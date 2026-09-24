@@ -62,7 +62,7 @@ export function CategoryTreeNode({
                         justifyContent: 'center',
                         border: 'none',
                         background: 'transparent',
-                        color: hasChildren ? '#9B9590' : 'transparent',
+                        color: hasChildren ? '#6E6862' : 'transparent',
                         transition: 'transform 0.2s ease',
                         transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
                         visibility: hasChildren ? 'visible' : 'hidden',
@@ -130,7 +130,7 @@ export function CategoryTreeNode({
                     <span
                         style={{
                             fontSize: '0.76rem',
-                            color: '#B5AEA8',
+                            color: '#6E6862',
                             flexShrink: 0,
                             marginRight: '0.25rem',
                         }}
@@ -149,7 +149,7 @@ export function CategoryTreeNode({
                         borderRadius: 20,
                         fontSize: '0.75rem',
                         fontWeight: 600,
-                        color: isEnabled ? '#059669' : '#9B9590',
+                        color: isEnabled ? '#059669' : '#6E6862',
                         background: isEnabled ? 'rgba(5,150,105,0.08)' : 'rgba(155,149,144,0.1)',
                         flexShrink: 0,
                         whiteSpace: 'nowrap',

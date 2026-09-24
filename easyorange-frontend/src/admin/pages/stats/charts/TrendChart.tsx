@@ -30,7 +30,7 @@ export default function TrendChart({ data, isCompact = false, height = 200 }: Tr
                     alignItems: 'center',
                     justifyContent: 'center',
                     height,
-                    color: '#B5AEA8',
+                    color: '#6E6862',
                     fontSize: '0.87rem',
                 }}
             >
@@ -45,13 +45,13 @@ export default function TrendChart({ data, isCompact = false, height = 200 }: Tr
                 {!isCompact && <CartesianGrid strokeDasharray="3 3" stroke="rgba(229,224,219,0.4)" />}
                 <XAxis
                     dataKey="monthLabel"
-                    tick={{ fontSize: isCompact ? 11 : 12, fill: '#9B9590' }}
+                    tick={{ fontSize: isCompact ? 11 : 12, fill: '#6E6862' }}
                     axisLine={{ stroke: 'rgba(229,224,219,0.3)' }}
                     tickLine={false}
                 />
                 {!isCompact && (
                     <YAxis
-                        tick={{ fontSize: 12, fill: '#9B9590' }}
+                        tick={{ fontSize: 12, fill: '#6E6862' }}
                         axisLine={false}
                         tickLine={false}
                         allowDecimals={false}
@@ -71,7 +71,7 @@ export default function TrendChart({ data, isCompact = false, height = 200 }: Tr
                     />
                 )}
                 {!isCompact && (
-                    <Legend wrapperStyle={{ fontSize: '0.78rem', color: '#8B857E', paddingTop: '0.5rem' }} />
+                    <Legend wrapperStyle={{ fontSize: '0.78rem', color: '#6E6862', paddingTop: '0.5rem' }} />
                 )}
                 <Line
                     type="monotone"

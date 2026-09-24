@@ -141,7 +141,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                         <p className="text-[1rem] font-bold leading-tight text-[#2A2520]">
                             {user.nickname || user.username}
                         </p>
-                        <p className="mt-0.5 text-[0.82rem] text-[#9B9590]">@{user.username}</p>
+                        <p className="mt-0.5 text-[0.82rem] text-[#6E6862]">@{user.username}</p>
                     </div>
                     <div
                         className="inline-flex items-center gap-[0.35rem] rounded-[10px] px-[0.7rem] py-[0.3rem] text-[0.78rem] font-semibold"
@@ -169,7 +169,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                             key={item.label}
                             className="rounded-xl border border-[rgba(229,224,219,0.4)] bg-white/60 px-[0.85rem] py-[0.65rem]"
                         >
-                            <p className="mb-0.5 text-[0.72rem] font-medium text-[#9B9590]">{item.label}</p>
+                            <p className="mb-0.5 text-[0.72rem] font-medium text-[#6E6862]">{item.label}</p>
                             <p className="text-[0.87rem] font-semibold text-[#2A2520]">{item.value}</p>
                         </div>
                     ))}
@@ -184,7 +184,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                         >
                             —
                         </p>
-                        <p className="mt-0.5 text-[0.78rem] text-[#9B9590]">商品数</p>
+                        <p className="mt-0.5 text-[0.78rem] text-[#6E6862]">商品数</p>
                     </div>
                     <div className="h-9 w-px bg-[rgba(229,224,219,0.5)]" />
                     <div className="flex-1 text-center">
@@ -194,7 +194,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                         >
                             —
                         </p>
-                        <p className="mt-0.5 text-[0.78rem] text-[#9B9590]">订单数</p>
+                        <p className="mt-0.5 text-[0.78rem] text-[#6E6862]">订单数</p>
                     </div>
                 </div>
 
@@ -218,7 +218,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                                     style={{
                                         borderColor: isActive ? sStyle.dot : '#E5E0DB',
                                         background: isActive ? sStyle.bg : '#fff',
-                                        color: isActive ? sStyle.color : '#8B857E',
+                                        color: isActive ? sStyle.color : '#6E6862',
                                     }}
                                 >
                                     <span className="text-[0.9rem]">{opt.emoji}</span>
