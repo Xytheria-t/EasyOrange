@@ -7,20 +7,10 @@ import { formatDate } from '@/utils/format';
 import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
 import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
-import { StatusBadge } from '../../components/StatusBadge';
+import { StatusBadge, statusFilterOptions } from '../../components/StatusBadge';
 import { useAdminOrders } from '../../hooks';
 import type { AdminOrder } from '../../types/admin';
 import { OrderDetailModal } from './OrderDetailModal';
-
-const STATUS_FILTER_OPTIONS = [
-    { value: '', label: '全部状态' },
-    { value: 'PENDING_PAYMENT', label: '待付款' },
-    { value: 'PAID', label: '待发货' },
-    { value: 'SHIPPED', label: '已发货' },
-    { value: 'COMPLETED', label: '已完成' },
-    { value: 'CANCELLED', label: '已取消' },
-    { value: 'REFUNDED', label: '退款中' },
-];
 
 export default function OrderManagePage() {
     const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
@@ -149,7 +139,7 @@ export default function OrderManagePage() {
                         />
                         <AdminFilterField
                             label="状态"
-                            options={STATUS_FILTER_OPTIONS}
+                            options={statusFilterOptions('order')}
                             value={statusFilter}
                             onChange={val => {
                                 setStatusFilter(val as OrderStatus | '');

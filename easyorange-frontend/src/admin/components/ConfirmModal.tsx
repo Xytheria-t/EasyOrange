@@ -63,10 +63,10 @@ export function ConfirmModal({
                         </div>
                         <div className="flex-1 min-w-0">
                             <DialogHeader className="space-y-2 text-left">
-                                <DialogTitle className="font-serif text-[1.05rem] leading-tight text-[#2A2520]">
+                                <DialogTitle className="admin-modal-title text-[1.05rem] leading-tight">
                                     {title}
                                 </DialogTitle>
-                                <DialogDescription className="text-[0.87rem] leading-relaxed text-[#6B6460]">
+                                <DialogDescription className="admin-muted text-[0.87rem] leading-relaxed">
                                     {content}
                                 </DialogDescription>
                             </DialogHeader>
@@ -74,7 +74,7 @@ export function ConfirmModal({
                     </div>
                 </div>
 
-                <DialogFooter className="flex-row justify-end gap-2.5 border-t border-[rgba(229,224,219,0.4)] bg-gradient-to-b from-[rgba(250,248,245,0.5)] to-[rgba(250,248,245,0.9)] px-6 py-4">
+                <DialogFooter className="admin-footer-bar">
                     <Button
                         variant="outline"
                         size="sm"

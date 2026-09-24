@@ -7,21 +7,11 @@ import { formatRelativeTime } from '@/utils/format';
 import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
 import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
-import { StatusBadge } from '../../components/StatusBadge';
+import { StatusBadge, statusFilterOptions } from '../../components/StatusBadge';
 import { useAdminCategories } from '../../hooks/useAdminCategories';
 import { useAdminProducts } from '../../hooks/useAdminProducts';
 import type { AdminProduct } from '../../types/admin';
 import { ProductDetailDrawer } from './ProductDetailDrawer';
-
-const statusOptions: { value: ProductStatus | ''; label: string }[] = [
-    { value: '', label: '全部状态' },
-    { value: 'PENDING_REVIEW', label: '待审核' },
-    { value: 'REJECTED', label: '已驳回' },
-    { value: 'DRAFT', label: '草稿' },
-    { value: 'ONLINE', label: '上架' },
-    { value: 'SOLD', label: '已售' },
-    { value: 'OFFLINE', label: '下架' },
-];
 
 export default function ProductReviewPage() {
     const [keyword, setKeyword] = useState('');
@@ -81,11 +71,12 @@ export default function ProductReviewPage() {
                             borderRadius: 12,
                             overflow: 'hidden',
                             flexShrink: 0,
-                            background: 'linear-gradient(135deg, #FDF6EC, #FDE8D4)',
+                            background:
+                                'linear-gradient(135deg, color-mix(in srgb, var(--admin-chart-4) 12%, var(--admin-surface-solid)), color-mix(in srgb, var(--admin-chart-4) 22%, var(--admin-surface-solid)))',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            border: '1px solid rgba(249,115,22,0.08)',
+                            border: '1px solid var(--admin-accent-soft-border)',
                         }}
                     >
                         {src ? (
@@ -178,7 +169,7 @@ export default function ProductReviewPage() {
                         />
                         <AdminFilterField
                             label="状态"
-                            options={statusOptions}
+                            options={statusFilterOptions('product')}
                             value={statusFilter}
                             onChange={value => {
                                 setStatusFilter(value as ProductStatus | '');

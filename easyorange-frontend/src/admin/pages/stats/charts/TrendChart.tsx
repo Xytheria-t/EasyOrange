@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { CHART_TEXT, TREND_SERIES_COLORS } from '../../../chartTheme';
 import type { TrendItem } from '../../../types/admin';
 
 interface TrendChartProps {
@@ -7,12 +8,6 @@ interface TrendChartProps {
     isCompact?: boolean;
     height?: number;
 }
-
-const COLORS = {
-    users: '#F97316',
-    products: '#C39BD3',
-    orders: '#10B981',
-};
 
 export default function TrendChart({ data, isCompact = false, height = 200 }: TrendChartProps) {
     const chartData = useMemo(() => {
@@ -30,7 +25,7 @@ export default function TrendChart({ data, isCompact = false, height = 200 }: Tr
                     alignItems: 'center',
                     justifyContent: 'center',
                     height,
-                    color: '#6E6862',
+                    color: CHART_TEXT.axis,
                     fontSize: '0.87rem',
                 }}
             >
@@ -42,16 +37,16 @@ export default function TrendChart({ data, isCompact = false, height = 200 }: Tr
     return (
         <ResponsiveContainer width="100%" height={height}>
             <LineChart data={chartData} margin={{ top: 5, right: 5, left: isCompact ? 0 : 10, bottom: 5 }}>
-                {!isCompact && <CartesianGrid strokeDasharray="3 3" stroke="rgba(229,224,219,0.4)" />}
+                {!isCompact && <CartesianGrid strokeDasharray="3 3" stroke="var(--admin-hairline)" />}
                 <XAxis
                     dataKey="monthLabel"
-                    tick={{ fontSize: isCompact ? 11 : 12, fill: '#6E6862' }}
-                    axisLine={{ stroke: 'rgba(229,224,219,0.3)' }}
+                    tick={{ fontSize: isCompact ? 11 : 12, fill: CHART_TEXT.axis }}
+                    axisLine={{ stroke: 'var(--admin-line)' }}
                     tickLine={false}
                 />
                 {!isCompact && (
                     <YAxis
-                        tick={{ fontSize: 12, fill: '#6E6862' }}
+                        tick={{ fontSize: 12, fill: CHART_TEXT.axis }}
                         axisLine={false}
                         tickLine={false}
                         allowDecimals={false}
@@ -60,44 +55,44 @@ export default function TrendChart({ data, isCompact = false, height = 200 }: Tr
                 {!isCompact && (
                     <Tooltip
                         contentStyle={{
-                            background: 'rgba(255,255,255,0.9)',
+                            background: 'color-mix(in srgb, var(--admin-surface-solid) 90%, transparent)',
                             backdropFilter: 'blur(12px)',
-                            border: '1px solid rgba(229,224,219,0.3)',
+                            border: '1.5px solid var(--admin-control-line)',
                             borderRadius: 12,
                             fontSize: '0.82rem',
-                            boxShadow: '0 8px 24px rgba(42,37,32,0.08)',
+                            boxShadow: 'var(--admin-shadow-soft)',
                         }}
-                        labelStyle={{ fontWeight: 600, color: '#2A2520', marginBottom: '0.25rem' }}
+                        labelStyle={{ fontWeight: 600, color: CHART_TEXT.label, marginBottom: '0.25rem' }}
                     />
                 )}
                 {!isCompact && (
-                    <Legend wrapperStyle={{ fontSize: '0.78rem', color: '#6E6862', paddingTop: '0.5rem' }} />
+                    <Legend wrapperStyle={{ fontSize: '0.78rem', color: CHART_TEXT.legend, paddingTop: '0.5rem' }} />
                 )}
                 <Line
                     type="monotone"
                     dataKey="users"
                     name="用户"
-                    stroke={COLORS.users}
+                    stroke={TREND_SERIES_COLORS.users}
                     strokeWidth={isCompact ? 2 : 2.5}
-                    dot={isCompact ? false : { fill: COLORS.users, r: 3 }}
+                    dot={isCompact ? false : { fill: TREND_SERIES_COLORS.users, r: 3 }}
                     activeDot={{ r: isCompact ? 4 : 5 }}
                 />
                 <Line
                     type="monotone"
                     dataKey="products"
                     name="商品"
-                    stroke={COLORS.products}
+                    stroke={TREND_SERIES_COLORS.products}
                     strokeWidth={isCompact ? 2 : 2.5}
-                    dot={isCompact ? false : { fill: COLORS.products, r: 3 }}
+                    dot={isCompact ? false : { fill: TREND_SERIES_COLORS.products, r: 3 }}
                     activeDot={{ r: isCompact ? 4 : 5 }}
                 />
                 <Line
                     type="monotone"
                     dataKey="orders"
                     name="订单"
-                    stroke={COLORS.orders}
+                    stroke={TREND_SERIES_COLORS.orders}
                     strokeWidth={isCompact ? 2 : 2.5}
-                    dot={isCompact ? false : { fill: COLORS.orders, r: 3 }}
+                    dot={isCompact ? false : { fill: TREND_SERIES_COLORS.orders, r: 3 }}
                     activeDot={{ r: isCompact ? 4 : 5 }}
                 />
             </LineChart>

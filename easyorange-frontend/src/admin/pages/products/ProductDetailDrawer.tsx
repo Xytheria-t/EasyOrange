@@ -42,6 +42,12 @@ const DIMENSIONS: { key: AuditDimension; label: string }[] = [
     { key: 'price', label: '价格合理' },
 ];
 
+/** 审核动作色走共享状态令牌：通过绿 / 驳回玫红 / 其他中性。 */
+const AUDIT_ACTION_COLOR: Record<number, string> = {
+    1: 'var(--status-success-dot)',
+    2: 'var(--status-error-dot)',
+};
+
 const REJECT_TAGS = ['信息不完整', '图片模糊', '疑似虚假信息', '价格异常', '违规内容', '其他'];
 
 export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: ProductDetailDrawerProps) {
@@ -150,25 +156,11 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                 }
             }}
         >
-            <SheetContent
-                side="right"
-                className="[&>button]:hidden flex h-full w-full max-w-[520px] flex-col gap-0 overflow-hidden border-l border-[rgba(229,224,219,0.4)] bg-white/92 p-0 shadow-[-16px_0_48px_rgba(42,37,32,0.12)]"
-                style={{ backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
-            >
+            <SheetContent side="right" className="admin-drawer-panel [&>button]:hidden">
                 {/* Header */}
-                <SheetHeader className="relative flex-row items-center justify-between border-b border-[rgba(229,224,219,0.4)] px-6 py-[1.15rem] text-left">
-                    <div
-                        className="absolute bottom-0 left-6 right-6 h-px"
-                        style={{
-                            background:
-                                'linear-gradient(90deg, rgba(251,113,133,0.12), rgba(195,155,211,0.08), transparent)',
-                        }}
-                    />
-                    <SheetTitle
-                        className="flex items-center gap-2 text-[1.1rem] font-bold text-[#2A2520]"
-                        style={{ fontFamily: "'Playfair Display', 'Noto Serif SC', serif" }}
-                    >
-                        <span className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#FB7185,#C39BD3)] text-white">
+                <SheetHeader className="admin-modal-header admin-drawer-header">
+                    <SheetTitle className="admin-modal-title">
+                        <span className="admin-modal-title-icon admin-drawer-title-icon">
                             <svg
                                 aria-hidden="true"
                                 width="13"
@@ -190,7 +182,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         size="icon"
                         onClick={onClose}
                         disabled={updateStatus.isPending}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white text-[#6E6862] transition-all duration-150 hover:border-[rgba(244,63,94,0.2)] hover:bg-[rgba(244,63,94,0.06)] hover:text-[#E11D48] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="admin-modal-close"
                         aria-label="关闭"
                     >
                         <svg
@@ -210,15 +202,11 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                 </SheetHeader>
 
                 {/* Content */}
-                <div className="min-h-0 flex-1 overflow-y-auto p-6">
+                <div className="admin-modal-body">
                     {isLoading ? (
-                        <div
-                            className="flex flex-col items-center justify-center gap-[0.7rem] py-16 px-4"
-                            role="status"
-                            aria-busy="true"
-                        >
-                            <div className="h-7 w-7 animate-spin rounded-full border-[2.5px] border-[#E5E0DB] border-t-[#F97316]" />
-                            <span className="text-[0.87rem] text-[#6E6862]">加载中...</span>
+                        <div className="admin-modal-state admin-modal-state--loading" role="status" aria-busy="true">
+                            <div className="admin-spinner animate-spin" />
+                            <span>加载中...</span>
                         </div>
                     ) : isError ? (
                         <ErrorState
@@ -234,11 +222,8 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                             <div className="flex flex-col gap-3">
                                 <Button
                                     variant="ghost"
-                                    className="relative w-full overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)]"
-                                    style={{
-                                        aspectRatio: '16/10',
-                                        cursor: product.images[selectedImage] ? 'pointer' : 'default',
-                                    }}
+                                    className="admin-media-frame"
+                                    style={{ cursor: product.images[selectedImage] ? 'pointer' : 'default' }}
                                     // 缩略图/主图此前都没有动作名，读屏只会念出商品名
                                     aria-label={
                                         product.images[selectedImage]
@@ -259,7 +244,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             decoding="async"
                                         />
                                     ) : (
-                                        <div className="flex h-full items-center justify-center text-[#6E6862]">
+                                        <div className="flex h-full items-center justify-center text-(--admin-muted)">
                                             <svg
                                                 aria-hidden="true"
                                                 width="40"
@@ -277,11 +262,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             </svg>
                                         </div>
                                     )}
-                                    {product.images[selectedImage] && (
-                                        <div className="absolute bottom-2 right-2 rounded-lg bg-[rgba(42,37,32,0.55)] px-[0.6rem] py-1 text-[0.72rem] font-medium text-white backdrop-blur-sm">
-                                            点击预览
-                                        </div>
-                                    )}
+                                    {product.images[selectedImage] && <div className="admin-media-hint">点击预览</div>}
                                 </Button>
 
                                 {product.images.length > 1 && (
@@ -294,17 +275,10 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                                 onClick={() => setState(prev => ({ ...prev, selectedImage: index }))}
                                                 aria-label={`查看第 ${index + 1} 张图片`}
                                                 aria-current={selectedImage === index}
-                                                className="shrink-0 overflow-hidden rounded-xl border-2 p-0 transition-all duration-150"
-                                                style={{
-                                                    width: 56,
-                                                    height: 56,
-                                                    minHeight: 'unset',
-                                                    borderColor: selectedImage === index ? '#F97316' : 'transparent',
-                                                    boxShadow:
-                                                        selectedImage === index
-                                                            ? '0 2px 8px rgba(249,115,22,0.2)'
-                                                            : 'none',
-                                                }}
+                                                className={cn(
+                                                    'admin-thumb',
+                                                    selectedImage === index && 'admin-thumb--active'
+                                                )}
                                             >
                                                 <img
                                                     src={img}
@@ -322,29 +296,13 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                             {/* Product info */}
                             <div className="flex flex-col gap-4">
                                 <div>
-                                    <h3
-                                        className="text-[1.25rem] font-bold leading-tight text-[#2A2520]"
-                                        style={{ fontFamily: "'Playfair Display', 'Noto Serif SC', serif" }}
-                                    >
-                                        {product.name}
-                                    </h3>
+                                    <h3 className="admin-detail-title">{product.name}</h3>
                                 </div>
 
                                 <div className="flex items-baseline gap-2">
-                                    <span
-                                        className="text-[1.5rem] font-bold"
-                                        style={{
-                                            fontFamily: "'DM Sans', sans-serif",
-                                            background: 'linear-gradient(135deg, #F97316, #EA580C)',
-                                            WebkitBackgroundClip: 'text',
-                                            WebkitTextFillColor: 'transparent',
-                                            backgroundClip: 'text',
-                                        }}
-                                    >
-                                        {formatPrice(product.price ?? 0)}
-                                    </span>
+                                    <span className="admin-price-gradient">{formatPrice(product.price ?? 0)}</span>
                                     {product.originalPrice && product.originalPrice > (product.price ?? 0) && (
-                                        <span className="text-[0.85rem] text-[#6E6862] line-through">
+                                        <span className="admin-muted line-through">
                                             {formatPrice(product.originalPrice)}
                                         </span>
                                     )}
@@ -361,28 +319,23 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                         { label: '资产方', value: product.sellerName },
                                         { label: '发布时间', value: formatDate(product.createTime ?? '') },
                                     ].map(item => (
-                                        <div
-                                            key={item.label}
-                                            className="rounded-xl border border-[rgba(229,224,219,0.4)] bg-white/60 px-[0.8rem] py-[0.6rem]"
-                                        >
-                                            <p className="mb-0.5 text-[0.72rem] font-medium text-[#6E6862]">
-                                                {item.label}
-                                            </p>
-                                            <p className="text-[0.85rem] font-semibold text-[#2A2520]">{item.value}</p>
+                                        <div key={item.label} className="admin-info-cell">
+                                            <p className="admin-info-label">{item.label}</p>
+                                            <p className="admin-info-value">{item.value}</p>
                                         </div>
                                     ))}
                                 </div>
 
                                 {/* Stats */}
-                                <div className="flex items-center gap-6 border-y border-[rgba(229,224,219,0.4)] py-3">
-                                    <div className="flex items-center gap-[0.4rem] text-[0.84rem] text-[#6E6862]">
+                                <div className="admin-stat-row">
+                                    <div className="flex items-center gap-[0.4rem] text-[0.84rem] text-(--admin-muted)">
                                         <svg
                                             aria-hidden="true"
                                             width="15"
                                             height="15"
                                             viewBox="0 0 24 24"
                                             fill="none"
-                                            stroke="#F97316"
+                                            className="admin-stat-icon"
                                             strokeWidth="2"
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -390,36 +343,31 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                             <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
-                                        <span className="font-semibold text-[#4A4540]">{product.viewCount ?? 0}</span>{' '}
-                                        次浏览
+                                        <span className="admin-stat-value">{product.viewCount ?? 0}</span> 次浏览
                                     </div>
                                 </div>
 
                                 {/* Description */}
                                 {product.description && (
-                                    <div className="rounded-[14px] border border-[rgba(229,224,219,0.35)] bg-[linear-gradient(135deg,rgba(249,115,22,0.03),rgba(195,155,211,0.02))] p-4">
-                                        <h4 className="mb-[0.45rem] text-[0.82rem] font-semibold text-[#6B6460]">
-                                            商品描述
-                                        </h4>
-                                        <p className="whitespace-pre-wrap text-[0.87rem] leading-relaxed text-[#4A4540]">
-                                            {product.description}
-                                        </p>
+                                    <div className="admin-note-panel">
+                                        <h4 className="admin-note-title">商品描述</h4>
+                                        <p className="admin-note-body">{product.description}</p>
                                     </div>
                                 )}
 
                                 {/* 审核记录时间线：加载中 / 失败 / 无记录三态分开，
                                     此前只判 data && length>0，加载中和失败都显示成「没有记录」 */}
-                                <div className="rounded-[14px] border border-[rgba(229,224,219,0.35)] bg-[linear-gradient(135deg,rgba(249,115,22,0.03),rgba(195,155,211,0.02))] p-4">
-                                    <h4 className="mb-[0.65rem] flex items-center gap-[0.35rem] text-[0.82rem] font-semibold text-[#6B6460]">
+                                <div className="admin-note-panel">
+                                    <h4 className="admin-note-title">
                                         <ScrollText size={14} aria-hidden="true" />
                                         审核记录
                                     </h4>
                                     {auditLogs.isLoading ? (
-                                        <p className="text-[0.82rem] text-[#6E6862]" role="status" aria-busy="true">
+                                        <p className="admin-muted" role="status" aria-busy="true">
                                             加载中…
                                         </p>
                                     ) : auditLogs.isError ? (
-                                        <p className="text-[0.82rem] text-[#E11D48]" role="alert">
+                                        <p className="text-[0.82rem] text-(--admin-danger)" role="alert">
                                             审核记录加载失败
                                             <Button
                                                 variant="link"
@@ -431,7 +379,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             </Button>
                                         </p>
                                     ) : !auditLogs.data?.length ? (
-                                        <p className="text-[0.82rem] text-[#6E6862]">该商品还没有审核记录</p>
+                                        <p className="admin-muted">该商品还没有审核记录</p>
                                     ) : (
                                         <div className="flex flex-col gap-[0.7rem]">
                                             {auditLogs.data.map((log: AuditLogResponse) => (
@@ -440,54 +388,43 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                                         className="mt-[5px] h-2 w-2 shrink-0 rounded-full"
                                                         style={{
                                                             background:
-                                                                log.action === 1
-                                                                    ? '#10B981'
-                                                                    : log.action === 2
-                                                                      ? '#F43F5E'
-                                                                      : '#D6CEC5',
-                                                            border: log.action === 3 ? '1.5px solid #D6CEC5' : 'none',
+                                                                AUDIT_ACTION_COLOR[log.action] ??
+                                                                'var(--admin-sort-idle)',
+                                                            border:
+                                                                log.action === 3
+                                                                    ? '1.5px solid var(--admin-sort-idle)'
+                                                                    : 'none',
                                                         }}
                                                     />
                                                     <div className="min-w-0 flex-1">
                                                         <div className="mb-[0.15rem] flex flex-wrap items-center gap-2">
-                                                            <span className="text-[0.78rem] text-[#6E6862]">
+                                                            <span className="admin-muted text-[0.78rem]">
                                                                 {log.createTime?.replace('T', ' ').slice(0, 16)}
                                                             </span>
-                                                            <span className="text-[0.81rem] font-semibold text-[#2A2520]">
+                                                            <span className="text-[0.81rem] font-semibold text-(--admin-ink)">
                                                                 {log.operatorName}
                                                             </span>
                                                             <span
                                                                 className="rounded-md px-[0.45rem] py-[0.1rem] text-[0.75rem] font-semibold"
                                                                 style={{
                                                                     color:
-                                                                        log.action === 1
-                                                                            ? '#059669'
-                                                                            : log.action === 2
-                                                                              ? '#E11D48'
-                                                                              : '#6E6862',
-                                                                    background:
-                                                                        log.action === 1
-                                                                            ? 'rgba(16,185,129,0.08)'
-                                                                            : log.action === 2
-                                                                              ? 'rgba(244,63,94,0.08)'
-                                                                              : 'rgba(139,133,126,0.08)',
+                                                                        AUDIT_ACTION_COLOR[log.action] ??
+                                                                        'var(--admin-muted)',
+                                                                    background: `color-mix(in srgb, ${AUDIT_ACTION_COLOR[log.action] ?? 'var(--admin-muted)'} 8%, transparent)`,
                                                                 }}
                                                             >
                                                                 {log.actionDesc}
                                                             </span>
                                                         </div>
                                                         {log.reason && (
-                                                            <div className="text-[0.82rem] leading-relaxed text-[#4A4540]">
+                                                            <div className="text-[0.82rem] leading-relaxed text-(--admin-ink-soft)">
                                                                 {log.reason}
                                                             </div>
                                                         )}
                                                         {log.dimensions && log.dimensions.length > 0 && (
                                                             <div className="mt-[0.2rem] flex flex-wrap gap-[0.3rem]">
                                                                 {log.dimensions.map(dimension => (
-                                                                    <span
-                                                                        key={dimension}
-                                                                        className="rounded bg-[rgba(249,115,22,0.06)] px-[0.4rem] py-[0.1rem] text-[0.72rem] text-[#C2410C]"
-                                                                    >
+                                                                    <span key={dimension} className="admin-chip">
                                                                         {dimension === 'basic'
                                                                             ? '基本信息'
                                                                             : dimension === 'compliance'
@@ -515,7 +452,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             height="15"
                                             viewBox="0 0 24 24"
                                             fill="none"
-                                            stroke="#F97316"
+                                            className="admin-stat-icon"
                                             strokeWidth="2"
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -523,26 +460,28 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        <span className="text-[#6E6862]">交易地点：</span>
-                                        <span className="font-semibold text-[#2A2520]">{product.location}</span>
+                                        <span className="text-(--admin-muted)">交易地点：</span>
+                                        <span className="font-semibold text-(--admin-ink)">{product.location}</span>
                                     </div>
                                 )}
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center gap-2 py-16 text-[#6E6862]">
+                        <div className="admin-modal-state">
                             <ImageOff size={32} aria-hidden="true" style={{ opacity: 0.4 }} />
-                            <span className="text-[0.9rem]">商品不存在或已被删除</span>
+                            <span>商品不存在或已被删除</span>
                         </div>
                     )}
                 </div>
 
                 {/* Footer actions */}
                 {product && (
-                    <div className="flex flex-col gap-3 border-t border-[rgba(229,224,219,0.4)] bg-[linear-gradient(180deg,rgba(250,248,245,0.5),rgba(250,248,245,0.9))] px-6 py-4">
+                    <div className="admin-drawer-footer">
                         {/* 审核维度 */}
                         <div>
-                            <div className="mb-[0.45rem] text-[0.78rem] font-semibold text-[#6B6460]">审核维度</div>
+                            <div className="mb-[0.45rem] text-[0.78rem] font-semibold text-(--admin-muted)">
+                                审核维度
+                            </div>
                             <div className="flex flex-wrap gap-[0.4rem]">
                                 {DIMENSIONS.map(dim => {
                                     const active = selectedDimensions.includes(dim.key);
@@ -554,10 +493,8 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             onClick={() => toggleDimension(dim.key)}
                                             disabled={updateStatus.isPending}
                                             className={cn(
-                                                'h-auto min-h-0 rounded-lg px-[0.7rem] py-[0.35rem] text-[0.79rem] font-medium transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60',
-                                                active
-                                                    ? 'border-2 border-[#F97316] bg-[rgba(249,115,22,0.08)] text-[#EA580C] hover:bg-[rgba(249,115,22,0.08)] hover:text-[#EA580C]'
-                                                    : 'border-[1.5px] border-[#E5E0DB] bg-white text-[#6E6862] hover:bg-white hover:text-[#6E6862]'
+                                                'admin-chip-toggle disabled:cursor-not-allowed disabled:opacity-60',
+                                                active && 'admin-chip-toggle--active'
                                             )}
                                         >
                                             {active ? '✓ ' : ''}
@@ -572,7 +509,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         <div>
                             <label
                                 htmlFor="audit-remark"
-                                className="mb-[0.45rem] block text-[0.78rem] font-semibold text-[#6B6460]"
+                                className="mb-[0.45rem] block text-[0.78rem] font-semibold text-(--admin-muted)"
                             >
                                 审核意见（选填）
                             </label>
@@ -581,7 +518,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                 placeholder="记录本次审核的判断依据..."
                                 value={auditRemark}
                                 onChange={e => setState(prev => ({ ...prev, auditRemark: e.target.value }))}
-                                className="min-h-[52px] resize-y rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white px-[0.8rem] py-[0.6rem] text-[0.84rem] text-[#2A2520] placeholder:text-[#6E6862] focus-visible:border-[#F97316] focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="admin-textarea focus-visible:ring-0 focus-visible:ring-offset-0"
                             />
                         </div>
 
@@ -590,14 +527,14 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                             <Button
                                 onClick={() => setState(prev => ({ ...prev, showApproveModal: true }))}
                                 disabled={updateStatus.isPending}
-                                className="h-10 rounded-xl border-none bg-[linear-gradient(135deg,#10B981,#059669)] text-[0.87rem] font-semibold text-white shadow-[0_3px_12px_rgba(16,185,129,0.28)] transition-all duration-200 hover:-translate-y-0.5"
+                                className="admin-action-btn admin-action-btn--approve rounded-xl"
                             >
                                 通过审核
                             </Button>
                             <Button
                                 onClick={() => setState(prev => ({ ...prev, showRejectModal: true }))}
                                 disabled={updateStatus.isPending}
-                                className="h-10 rounded-xl border-none bg-[linear-gradient(135deg,#F43F5E,#E11D48)] text-[0.87rem] font-semibold text-white shadow-[0_3px_12px_rgba(244,63,94,0.28)] transition-all duration-200 hover:-translate-y-0.5"
+                                className="admin-action-btn admin-action-btn--reject rounded-xl"
                             >
                                 驳回商品
                             </Button>
@@ -605,7 +542,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                 variant="outline"
                                 onClick={onClose}
                                 disabled={updateStatus.isPending}
-                                className="h-10 rounded-xl border-[1.5px] border-[#E5E0DB] bg-white px-5 text-[0.87rem] font-semibold text-[#6E6862] hover:bg-[rgba(229,224,219,0.3)] hover:text-[#6E6862]"
+                                className="admin-action-btn admin-action-btn--ghost rounded-xl"
                             >
                                 关闭
                             </Button>
@@ -660,7 +597,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => appendRejectTag(tag)}
-                                    className="h-auto min-h-0 rounded-md border-[1.5px] border-[#E5E0DB] bg-white px-[0.55rem] py-[0.28rem] text-[0.76rem] font-medium text-[#6E6862]"
+                                    className="h-auto min-h-0 rounded-md border-[1.5px] border-(--admin-control-line) bg-(--admin-surface-solid) px-[0.55rem] py-[0.28rem] text-[0.76rem] font-medium text-(--admin-muted)"
                                 >
                                     {tag}
                                 </Button>
@@ -669,7 +606,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         <div>
                             <label
                                 htmlFor="reject-reason"
-                                className="mb-1.5 block text-[0.78rem] font-semibold text-[#6B6460]"
+                                className="mb-1.5 block text-[0.78rem] font-semibold text-(--admin-muted)"
                             >
                                 驳回原因（必填）
                             </label>
@@ -680,7 +617,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                 onChange={e => setState(prev => ({ ...prev, rejectReason: e.target.value }))}
                                 rows={3}
                                 aria-invalid={!rejectReason.trim()}
-                                className="min-h-[80px] resize-y rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white px-[0.8rem] py-[0.65rem] text-[0.85rem] text-[#2A2520] placeholder:text-[#6E6862] focus-visible:border-[#F43F5E] focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="admin-textarea min-h-[80px] !py-[0.65rem] text-[0.85rem] focus-visible:border-(--status-error-dot) focus-visible:ring-0 focus-visible:ring-offset-0"
                             />
                         </div>
                     </div>

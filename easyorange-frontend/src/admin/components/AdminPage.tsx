@@ -39,7 +39,7 @@ export function AdminPageHeader({ icon, title, description, actions }: AdminPage
                             height: 34,
                             borderRadius: 11,
                             background: 'var(--admin-primary-bg)',
-                            color: '#fff',
+                            color: 'var(--admin-surface-solid)',
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',

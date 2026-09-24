@@ -348,7 +348,7 @@ export default function CategoryManagePage() {
                                     display: 'inline-block',
                                     width: 32,
                                     height: 32,
-                                    border: '3px solid rgba(249,115,22,0.12)',
+                                    border: '3px solid var(--admin-accent-soft-border)',
                                     borderTopColor: 'var(--primary-500)',
                                     borderRadius: '50%',
                                     animation: 'spin 0.7s linear infinite',
@@ -365,8 +365,8 @@ export default function CategoryManagePage() {
                                 style={{
                                     width: 56,
                                     height: 56,
-                                    borderRadius: 16,
-                                    background: 'rgba(249,115,22,0.06)',
+                                    borderRadius: 'var(--admin-radius-media)',
+                                    background: 'var(--admin-accent-soft)',
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -431,7 +431,7 @@ export default function CategoryManagePage() {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     background: 'var(--admin-primary-bg)',
-                                    color: '#fff',
+                                    color: 'var(--admin-surface-solid)',
                                     flexShrink: 0,
                                 }}
                             >

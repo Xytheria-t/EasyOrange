@@ -1,16 +1,9 @@
 import { BarChart3, Bell, Package, ShoppingCart, Tag, TrendingUp, Users } from 'lucide-react';
 import { useMemo } from 'react';
+import { ACTIVITY_COLORS, CATEGORY_COLORS, ORDER_SUMMARY_COLORS, STAT_CARD_GRADIENTS } from '../../chartTheme';
 import { AdminCard, AdminErrorBanner, AdminPage, AdminPageHeader } from '../../components/AdminPage';
 import { useAdminCategories, useAdminOrderStats, useDashboardStats, useRecentActivity, useTrend } from '../../hooks';
 import { LazyTrendChart } from './charts/lazyCharts';
-
-const CATEGORY_COLORS = ['#F97316', '#FB7185', '#C39BD3', '#FBBF24', '#10B981', '#6E6862'];
-
-const ACTIVITY_COLORS: Record<string, string> = {
-    user: '#F97316',
-    product: '#C39BD3',
-    order: '#10B981',
-};
 
 /** 三态占位：加载 / 失败 / 空，三者不共用「暂无数据」一句话。 */
 function PanelState({ kind, height = 140 }: { kind: 'loading' | 'error' | 'empty'; height?: number }) {
@@ -44,25 +37,25 @@ export default function StatsPage() {
         {
             label: '总用户数',
             value: stats?.totalUsers ?? 0,
-            gradient: 'linear-gradient(135deg, #F97316, #FB923C)',
+            gradient: STAT_CARD_GRADIENTS[0],
             Icon: Users,
         },
         {
             label: '总商品数',
             value: stats?.totalProducts ?? 0,
-            gradient: 'linear-gradient(135deg, #C39BD3, #D8B4FE)',
+            gradient: STAT_CARD_GRADIENTS[1],
             Icon: Package,
         },
         {
             label: '总订单数',
             value: stats?.totalOrders ?? 0,
-            gradient: 'linear-gradient(135deg, #10B981, #34D399)',
+            gradient: STAT_CARD_GRADIENTS[2],
             Icon: ShoppingCart,
         },
         {
             label: '今日新增用户',
             value: stats?.todayNewUsers ?? 0,
-            gradient: 'linear-gradient(135deg, #FBBF24, #F97316)',
+            gradient: STAT_CARD_GRADIENTS[3],
             Icon: TrendingUp,
         },
     ];
@@ -89,14 +82,26 @@ export default function StatsPage() {
     }, [categories]);
 
     const orderSummary = [
-        { label: '今日订单', value: orderStats ? `${orderStats.todayOrders} 笔` : null, color: '#F97316' },
-        { label: '待发货', value: orderStats ? `${orderStats.toShip} 笔` : null, color: '#FBBF24' },
-        { label: '待收货', value: orderStats ? `${orderStats.toReceive} 笔` : null, color: '#10B981' },
-        { label: '已完成', value: orderStats ? `${orderStats.completed} 笔` : null, color: '#C39BD3' },
+        {
+            label: '今日订单',
+            value: orderStats ? `${orderStats.todayOrders} 笔` : null,
+            color: ORDER_SUMMARY_COLORS.today,
+        },
+        { label: '待发货', value: orderStats ? `${orderStats.toShip} 笔` : null, color: ORDER_SUMMARY_COLORS.toShip },
+        {
+            label: '待收货',
+            value: orderStats ? `${orderStats.toReceive} 笔` : null,
+            color: ORDER_SUMMARY_COLORS.toReceive,
+        },
+        {
+            label: '已完成',
+            value: orderStats ? `${orderStats.completed} 笔` : null,
+            color: ORDER_SUMMARY_COLORS.completed,
+        },
         {
             label: '今日营收',
             value: orderStats ? `¥${orderStats.todayRevenue.toLocaleString()}` : null,
-            color: '#FB7185',
+            color: ORDER_SUMMARY_COLORS.revenue,
         },
     ];
 
@@ -244,7 +249,8 @@ export default function StatsPage() {
                                         style={{
                                             height: 8,
                                             borderRadius: 4,
-                                            background: 'rgba(229,224,219,0.3)',
+                                            background:
+                                                'color-mix(in srgb, var(--admin-control-line) 30%, transparent)',
                                             overflow: 'hidden',
                                         }}
                                     >
@@ -299,7 +305,7 @@ export default function StatsPage() {
                             >
                                 <span
                                     className="admin-status-dot"
-                                    style={{ background: ACTIVITY_COLORS[activity.type] ?? '#9B9590' }}
+                                    style={{ background: ACTIVITY_COLORS[activity.type] ?? 'var(--admin-faint)' }}
                                 />
                                 <span style={{ flex: 1, fontSize: '0.87rem', color: 'var(--admin-ink-soft)' }}>
                                     {activity.text}
