@@ -6,10 +6,8 @@ import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.exception.TokenBudgetExceededException;
-import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
-import com.cartethyia.easyorange.ai.domain.model.AssetHit;
+import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
-import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
 import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamAbortedException;
@@ -24,8 +22,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -56,6 +52,14 @@ public class AiChatService {
 
     /** 空问题的提示语：非流式走 {@link ChatAnswer}、流式走 SSE error 事件，同源一处维护。 */
     private static final String EMPTY_QUESTION_TEXT = "请描述你的问题";
+
+    /**
+     * 引用来源下发条数上限。
+     * <p>
+     * 3 条是「够看清依据」与「不淹没回答」之间的取值；{@code product_detail} 的观察物不再单列 ——
+     * 它查的就是 {@code product_search} 已经召回过的那些资产，重复下发只会挤掉新的召回。
+     */
+    private static final int SOURCE_LIMIT = 3;
 
     private final ChatModel chatModel;
     private final PromptRegistry promptRegistry;
@@ -196,15 +200,8 @@ public class AiChatService {
         AgentLoopRunner.Result run = agentLoopRunner.run(
                 new AgentLoopRunner.Input(request.question(), request.sessionId(), userId, history, prefs, handler));
 
-        // 引用来源：知识 / 资产 / 详情三路召回物的标题按出现顺序去重，截断到 3 条
-        List<String> sources = Stream.of(
-                        run.knowledgeHits().stream().map(KnowledgeHit::title),
-                        run.assets().stream().map(AssetHit::title),
-                        run.details().stream().map(AssetDetail::title))
-                .flatMap(Function.identity())
-                .distinct()
-                .limit(3)
-                .toList();
+        // 引用来源：知识 / 资产两路召回物合并成结构化来源（带 type + id），资产优先，截断到 3 条
+        List<ChatSource> sources = ChatSource.merge(run.knowledgeHits(), run.assets(), SOURCE_LIMIT);
         if (handler != null && !sources.isEmpty()) {
             handler.onSources(sources);
         }

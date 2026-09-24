@@ -23,6 +23,7 @@ import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepTrace;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
+import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
@@ -672,7 +673,7 @@ class AgentLoopRunnerTest {
         public void onToken(String token) {}
 
         @Override
-        public void onSources(List<String> sources) {}
+        public void onSources(List<ChatSource> sources) {}
 
         @Override
         public void onDone(String fullAnswer) {}

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Input;
 import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Result;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
+import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
@@ -130,7 +131,8 @@ class AiChatServiceTest {
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
 
         assertThat(answer.answer()).contains("[来源:退款规则]");
-        assertThat(answer.sources()).containsExactly("退款规则");
+        assertThat(answer.sources())
+                .containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-0002", "退款规则"));
         // 一轮对话一次写入（提问 + 回答），不留半轮记忆
         verify(sessionStore).saveTurns("sess-1", List.of(ChatTurn.user("怎么退款？"), ChatTurn.assistant(answer.answer())));
         verify(semanticCache).store(any(), any(), anyString(), anyList(), any());
@@ -158,7 +160,8 @@ class AiChatServiceTest {
 
         ChatAnswer answer = chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false));
 
-        assertThat(answer.sources()).containsExactly("MacBook Air M1");
+        assertThat(answer.sources())
+                .containsExactly(new ChatSource(ChatSource.Type.ASSET, "p-1", "MacBook Air M1"));
 
         // 循环召回的在售资产必须真的进 prompt（块内形状见 ChatPromptAssemblerTest）
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
@@ -214,7 +217,11 @@ class AiChatServiceTest {
 
         ChatAnswer answer = chatService.answer(new ChatRequest("5000 的笔记本有吗？平台怎么保障交易？", "sess-1", false));
 
-        assertThat(answer.sources()).containsExactly("交易规则");
+        // 资产排在前面：找货是主链路，不该被同名的规则来源挤掉
+        assertThat(answer.sources())
+                .containsExactly(
+                        new ChatSource(ChatSource.Type.ASSET, "p-1", "交易规则"),
+                        new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-0007", "交易规则"));
     }
 
     @Test
@@ -238,7 +245,9 @@ class AiChatServiceTest {
 
         ChatAnswer answer = chatService.answer(new ChatRequest("问题", "sess-1", false));
 
-        assertThat(answer.sources()).hasSize(3);
+        assertThat(answer.sources())
+                .extracting(ChatSource::id)
+                .containsExactly("p-1", "p-2", "p-3");
     }
 
     @Test
@@ -303,12 +312,14 @@ class AiChatServiceTest {
     void answer_cacheHit_usesCurrentSessionId() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any()))
-                .thenReturn(Optional.of(new ChatAnswer("缓存回答", List.of("来源A"), "sess-旧", false)));
+                .thenReturn(Optional.of(new ChatAnswer(
+                        "缓存回答", List.of(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-9", "来源A")), "sess-旧", false)));
 
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-新", false));
 
         assertThat(answer.answer()).isEqualTo("缓存回答");
-        assertThat(answer.sources()).containsExactly("来源A");
+        assertThat(answer.sources())
+                .containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-9", "来源A"));
         assertThat(answer.sessionId()).isEqualTo("sess-新");
     }
 
@@ -359,7 +370,7 @@ class AiChatServiceTest {
                 });
 
         var tokens = new StringBuilder();
-        AtomicReference<List<String>> sources = new AtomicReference<>();
+        AtomicReference<List<ChatSource>> sources = new AtomicReference<>();
         AtomicReference<String> done = new AtomicReference<>();
         AtomicReference<String> error = new AtomicReference<>();
         List<AgentStepView> steps = new ArrayList<>();
@@ -376,7 +387,7 @@ class AiChatServiceTest {
             }
 
             @Override
-            public void onSources(List<String> src) {
+            public void onSources(List<ChatSource> src) {
                 sources.set(src);
             }
 
@@ -393,7 +404,8 @@ class AiChatServiceTest {
 
         assertThat(tokens.toString()).isEqualTo("可以退款");
         assertThat(steps).extracting(AgentStepView::tool).containsExactly("knowledge_search");
-        assertThat(sources.get()).containsExactly("退款规则");
+        assertThat(sources.get())
+                .containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-0002", "退款规则"));
         assertThat(done.get()).isEqualTo("可以退款");
         assertThat(error.get()).isNull();
 
@@ -433,7 +445,7 @@ class AiChatServiceTest {
             public void onToken(String token) {}
 
             @Override
-            public void onSources(List<String> sources) {}
+            public void onSources(List<ChatSource> sources) {}
 
             @Override
             public void onDone(String fullAnswer) {}
@@ -464,7 +476,7 @@ class AiChatServiceTest {
             public void onToken(String token) {}
 
             @Override
-            public void onSources(List<String> sources) {}
+            public void onSources(List<ChatSource> sources) {}
 
             @Override
             public void onDone(String fullAnswer) {
@@ -499,7 +511,7 @@ class AiChatServiceTest {
             public void onToken(String token) {}
 
             @Override
-            public void onSources(List<String> sources) {}
+            public void onSources(List<ChatSource> sources) {}
 
             @Override
             public void onDone(String fullAnswer) {}
@@ -626,7 +638,7 @@ class AiChatServiceTest {
         public void onToken(String token) {}
 
         @Override
-        public void onSources(List<String> sources) {}
+        public void onSources(List<ChatSource> sources) {}
 
         @Override
         public void onDone(String fullAnswer) {}
