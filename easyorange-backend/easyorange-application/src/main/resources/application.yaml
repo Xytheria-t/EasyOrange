@@ -394,12 +394,14 @@ easyorange:
         min-entropy-threshold: 0.5
 
   ai:
-    # 三个模型槽位（文本 / 视觉 / Embedding）的 api-key、base-url、model 都可经环境变量覆盖：
+    # 四个模型槽位（决策 / 文本 / 视觉 / Embedding）的 api-key、base-url、model 都可经环境变量覆盖：
     # 各云厂商的 OpenAI 兼容端点（如百炼 compatible-mode）协议一致，换供应商只改环境变量、不动代码
     deepseek:
       api-key: ${DEEPSEEK_API_KEY:}
       base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
       model: ${DEEPSEEK_MODEL:deepseek-chat}
+      # 工具决策专用模型（chat_tool 场景）— 纯路由任务配快模型，生成仍走上面的强模型；留空即同模型
+      router-model: ${DEEPSEEK_ROUTER_MODEL:}
       timeout: 30000
     qwen-vl:
       api-key: ${QWEN_VL_API_KEY:}
@@ -447,7 +449,7 @@ easyorange:
     routing:               # 模型路由 — 场景 → 模型 bean 名（接入新模型只需改配置）
       default-model: chatModel
       scenarios:
-        chat_tool: chatModel      # 工具决策（多步工具循环）— 文本模型
+        chat_tool: decisionChatModel  # 工具决策（多步工具循环）— 快模型，只选工具不写答案
         vision: visionChatModel   # 图片分析（智能上架）— 视觉模型 Qwen-VL
         judge: chatModel          # LLM-as-Judge 评审 — 指向独立评审模型可消除自评偏差（当前只有文本模型）
     search-enhance:        # 搜索增强 — 4 路工具并行的总等待上限（只决定「等多久」，超时即降级为部分结果且不写缓存）

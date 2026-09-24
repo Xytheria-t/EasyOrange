@@ -117,6 +117,8 @@ class ToolCallingWireTest {
         assertThat(request).contains("\"thought\"", "\"query\"", "\"productId\"", "\"preferenceKey\"");
         assertThat(request).contains("\"model\":\"deepseek-chat\"");
         assertThat(request).doesNotContain("response_format");
+        // 决策调用的产物契约是「必须返回一个工具调用」——auto 下模型可能回纯文本，循环只能走决策失败降级
+        assertThat(request).contains("\"tool_choice\":\"required\"");
 
         // 回来的 tool call 经 Spring AI OpenAI 映射层解析后，参数字段与 {@code @ToolParam} 名对齐
         assertThat(calls).hasSize(1);

@@ -27,7 +27,7 @@ public record AiProperties(
         // 嵌套 record 在属性源里完全没有对应键时可能绑成 null，这里补上等价默认值 ——
         // 数值必须与各 record 上的 @DefaultValue 保持一致（改一处要改两处）
         if (deepseek == null) {
-            deepseek = new DeepSeek(null, "https://api.deepseek.com", "deepseek-chat", 30000);
+            deepseek = new DeepSeek(null, "https://api.deepseek.com", "deepseek-chat", "", 30000);
         }
         if (qwenVl == null) {
             qwenVl = new QwenVl(null, "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-vl-max", 60000);
@@ -56,10 +56,19 @@ public record AiProperties(
         }
     }
 
+    /**
+     * 文本模型配置 — 走 OpenAI 兼容托管 API（项目实际用阿里云百炼，DeepSeek / Qwen 系同一端点同一把 key）。
+     *
+     * @param routerModel 工具决策专用模型；留空则与 {@code model} 同模型。
+     *     决策与生成分开配的原因：决策是纯路由任务（工具参数 JSON 只有几十字符），推理模型的思考长度
+     *     在这里纯属浪费 —— 实测同一决策的思考长度在几十到上千字符之间波动，直接决定单轮延迟；
+     *     而最终成品的质量才需要强模型。留空即退回「决策与生成同模型」，不改变既有行为。
+     */
     public record DeepSeek(
             String apiKey,
             @DefaultValue("https://api.deepseek.com") String baseUrl,
             @DefaultValue("deepseek-chat") String model,
+            @DefaultValue("") String routerModel,
             @DefaultValue("30000") int timeout) {}
 
     public record QwenVl(
@@ -124,10 +133,10 @@ public record AiProperties(
     }
 
     /**
-     * 模型路由配置 — 按场景把调用分给不同模型 bean（对话走文本模型 / 图片分析走视觉模型）。
+     * 模型路由配置 — 按场景把调用分给不同模型 bean（决策 / 对话 / 图片分析 / 评审）。
      * <p>
      * 键为场景名（如 chat_tool / vision / judge），值为 Spring bean 名；未配置的场景回退 {@code defaultModel}。
-     * 已接入：chat_tool → chatModel（工具决策）、vision → visionChatModel（图片分析）、
+     * 已接入：chat_tool → decisionChatModel（工具决策）、vision → visionChatModel（图片分析）、
      * judge → chatModel（LLM-as-Judge 评审，指向独立评审模型即可消除自评偏差）。
      * 接入新模型仅需在 {@code easyorange.ai.routing.scenarios} 里把场景指向新 bean 名，代码零改动。
      */

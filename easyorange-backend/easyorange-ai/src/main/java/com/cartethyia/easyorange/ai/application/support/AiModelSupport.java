@@ -57,6 +57,9 @@ import tools.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class AiModelSupport {
 
+    /** OpenAI 兼容协议的工具选择枚举值：{@code required} = 必须从给定工具里选一个（见 {@link #toolOptions}）。 */
+    private static final String TOOL_CHOICE_REQUIRED = "required";
+
     private final AiCallLogPort callLogRecorder;
     private final TokenBudgetStore budgetStore;
     private final AiProperties aiProperties;
@@ -310,8 +313,17 @@ public class AiModelSupport {
         return jsonOptions.build();
     }
 
+    /**
+     * 工具决策调用的请求选项 —— {@code tool_choice} 显式设 {@code required}。
+     * <p>
+     * ReAct 循环每轮的产物契约就是「一个工具调用」，但 {@code auto} 下模型仍可能回纯文本（实测决策模型
+     * 换快模型后出现过一次，循环只能走决策失败降级）。在协议层要求必须返回工具调用，比在循环里判断
+     * 「没拿到 tool call 就当失败」更靠前一步：失败模式从「降级」变成「不可能发生」。
+     */
     private static OpenAiChatOptions toolOptions(ChatModel chatModel, List<ToolCallback> toolCallbacks) {
-        var toolOptions = OpenAiChatOptions.builder().toolCallbacks(toolCallbacks);
+        var toolOptions = OpenAiChatOptions.builder()
+                .toolCallbacks(toolCallbacks)
+                .toolChoice(TOOL_CHOICE_REQUIRED);
         inheritConnection(toolOptions, chatModel);
         return toolOptions.build();
     }
