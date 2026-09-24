@@ -7,6 +7,7 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
  */
 
 const BASE = 'http://localhost:8080';
+const SEED_IMAGE = '/api/file/2026/09/24/d19ed8faa8037ebd7d3ea217f1105b55.jpg';
 const SMS = '307519';
 const stamp = () => String(Date.now()).slice(-9);
 
@@ -22,7 +23,7 @@ async function apiLogin(req: APIRequestContext, identifier: string, password: st
 }
 
 async function apiCreatePendingProduct(req: APIRequestContext, sellerToken: string, name: string): Promise<string> {
-    const image = `${BASE}/api/file/2026/09/24/d19ed8faa8037ebd7d3ea217f1105b55.jpg`;
+    const image = `${BASE}${SEED_IMAGE}`;
     const create = await req.post(`${BASE}/api/products`, {
         headers: { Authorization: `Bearer ${sellerToken}` },
         data: {
@@ -171,8 +172,16 @@ test('T3 发布助手：拍照 AI 填单 → 立即发布 → 我的发布上下
     await uiLogin(page, 'testuser', 'Password123');
 
     // ── 上传图片 → AI 智能识别自动填单 ──
+    // 图片走后端种子图（Canon 单反）的内存 buffer，不依赖 /tmp 临时文件：
+    // WSL2 重启会清空 /tmp，依赖临时文件的套件在别人机器上会直接 ENOENT 失败
+    const seedImg = await request.get(`${BASE}${SEED_IMAGE}`);
+    expect(seedImg.status()).toBe(200);
     await page.goto('/publish');
-    await page.locator('input[type="file"]').setInputFiles('/tmp/demo_camera.jpg');
+    await page.locator('input[type="file"]').setInputFiles({
+        name: 'demo_camera.jpg',
+        mimeType: 'image/jpeg',
+        buffer: await seedImg.body(),
+    });
     const aiBtn = page.locator('.ai-photo-btn');
     await expect(aiBtn).toBeVisible({ timeout: 15_000 });
     const t0 = Date.now();
@@ -302,4 +311,52 @@ test('T4 管理端：仪表盘有数 + 审核通过/驳回填理由 + 各列表�
             headers: { Authorization: `Bearer ${seller}` },
         });
     }
+});
+
+test('T5 AI 智能助手：导航进入 → 问规则 → 流式回答 + 知识库引用 + 赞踩反馈', async ({ page }) => {
+    await uiLogin(page, 'testuser', 'Password123');
+
+    // ── 从用户端顶部导航「AI 助手」进入（验的是真实入口，不是深链）──
+    await page.goto('/');
+    await page.getByRole('navigation', { name: '主导航' })
+        .getByRole('link', { name: 'AI 助手', exact: true }).click();
+    await expect(page).toHaveURL(/\/playground$/, { timeout: 20_000 });
+
+    await expect(page.getByRole('heading', { name: 'AI 智能助手' })).toBeVisible();
+    await expect(page.getByText('多轮 Agent · 知识库溯源 · SSE 流式')).toBeVisible();
+    await expect(page.getByText('Agent 就绪')).toBeVisible();
+
+    // ── 首屏快捷问题：走规则问答（不依赖 ES 召回，结果稳定可断言）──
+    const QUESTION = '平台交易流程是什么？';
+    await page.getByRole('button', { name: QUESTION, exact: true }).click();
+
+    // 发送后立即给反馈：停止按钮出现 + 输入框禁用（不等模型，先证明「不卡死」）
+    const stopBtn = page.getByRole('button', { name: '停止生成' });
+    await expect(stopBtn).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('textbox', { name: '问题输入' })).toBeDisabled();
+
+    const t0 = Date.now();
+    // Agent 执行步骤（模型决策过程实时上屏）
+    const steps = page.getByRole('list', { name: 'Agent 执行步骤' });
+    await expect(steps).toBeVisible({ timeout: 60_000 });
+    // 助手回答开始流式上屏
+    const answer = page.locator('.playground-msg--assistant').last();
+    await expect(answer).not.toBeEmpty({ timeout: 60_000 });
+    const firstPaint = Date.now() - t0;
+    console.log(`[T5] Agent 首步 + 首段回答上屏耗时 ${firstPaint}ms`);
+
+    // 生成完毕：停止按钮消失、输入框恢复可写
+    await expect(stopBtn).toBeHidden({ timeout: 90_000 });
+    await expect(page.getByRole('textbox', { name: '问题输入' })).toBeEnabled();
+    console.log(`[T5] 完整回答耗时 ${Date.now() - t0}ms`);
+
+    // 知识库引用溯源：规则来源胶囊（真后端 knowledge_search 命中才有）
+    const sources = page.getByRole('list', { name: '平台规则引用' });
+    await expect(sources).toBeVisible({ timeout: 20_000 });
+    await expect(sources.getByText('规则 · 平台交易流程')).toBeVisible();
+
+    // 反馈闭环：点「有帮助」→ 落库（POST /api/ai/feedback）→ 按钮选中态
+    const helpful = answer.getByRole('button', { name: '有帮助' });
+    await helpful.click();
+    await expect(helpful).toHaveAttribute('aria-pressed', 'true', { timeout: 15_000 });
 });
