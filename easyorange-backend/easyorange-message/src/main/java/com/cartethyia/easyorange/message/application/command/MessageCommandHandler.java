@@ -106,16 +106,16 @@ public class MessageCommandHandler {
             return;
         }
         BizRequire.requireTrue(!messageIds.contains(null), "消息ID不能为null");
+        // 上限防 IN 子句无限膨胀（一次请求打爆 SQL / 锁表）；50 与批量审核上限同档
+        BizRequire.requireTrue(messageIds.size() <= 50, "单次最多标记 50 条消息");
 
-        for (String messageId : messageIds) {
-            try {
-                Message aggregate = messageRepository.findById(messageId).orElse(null);
-                if (aggregate != null && aggregate.isOwnedBy(userId) && aggregate.isUnread()) {
-                    messageRepository.update(aggregate.read(userId));
-                }
-            } catch (Exception e) {
-                log.warn("action=mark_read_batch_fail messageId={}", messageId, e);
-            }
+        // 谓词（属于该接收者 + 仍为未读）下推为一条批量 UPDATE，避免逐条读+写 2N 次往返；
+        // 非本人 / 不存在 / 已读的 ID 由 SQL 谓词静默跳过，与原逐条语义等价
+        try {
+            messageRepository.markAsReadByIds(userId, messageIds);
+        } catch (Exception e) {
+            log.warn("action=mark_read_batch_fail userId={} count={}", userId, messageIds.size(), e);
+            throw e;
         }
 
         log.info("action=mark_batch_read userId={} count={}", userId, messageIds.size());
