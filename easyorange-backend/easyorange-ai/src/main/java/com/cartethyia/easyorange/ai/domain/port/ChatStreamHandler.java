@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.domain.port;
 
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
+import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import java.util.List;
 
 /**
@@ -18,8 +19,13 @@ public interface ChatStreamHandler {
     /** 生成过程中的每个 token。 */
     void onToken(String token);
 
-    /** 知识库引用来源（在生成开始前推送，前端可先渲染来源区）。 */
-    void onSources(List<String> sources);
+    /**
+     * 引用来源（在生成开始前推送，前端可先渲染来源区）。
+     * <p>
+     * 带类型与 id 而非纯标题：前端据此把商品引用渲染成可点进商品页的卡片、
+     * 规则引用渲染成引文，商品不会再被标成「知识库来源」。
+     */
+    void onSources(List<ChatSource> sources);
 
     /** 流结束，携带完整回答。 */
     void onDone(String fullAnswer);

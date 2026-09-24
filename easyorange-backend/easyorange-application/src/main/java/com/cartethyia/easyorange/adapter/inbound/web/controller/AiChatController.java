@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.ai.application.chat.AiChatService;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
+import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
@@ -100,7 +101,7 @@ public class AiChatController {
                 }
 
                 @Override
-                public void onSources(List<String> sources) {
+                public void onSources(List<ChatSource> sources) {
                     send(emitter, SseEmitter.event().name("sources").data(sources));
                 }
 

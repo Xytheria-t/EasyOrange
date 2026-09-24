@@ -1,15 +1,19 @@
 package com.cartethyia.easyorange.ai.application.dto;
 
+import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * AI 对话回答 — 带引用溯源（来源标题，回答末尾用 [来源:标题] 标注）。
+ * AI 对话回答 — 带引用溯源（结构化来源，回答末尾用 [来源:标题] 标注）。
+ * <p>
+ * {@code sources} 带类型与 id 而非纯标题：前端据此把商品引用渲染成可点进商品页的卡片、
+ * 把规则引用渲染成可展开的引文，两条链各走各的（见 {@link ChatSource}）。
  *
  * @param degraded 本次回答不是模型实时生成的结果（供应商故障时复用 stale 旧回答，或没有旧回答可兜底的降级文案）。
  *                 降级必须对调用方与埋点可见，否则「AI 挂了」会被统计成「AI 答得差」。
  */
-public record ChatAnswer(String answer, List<String> sources, String sessionId, boolean degraded) {
+public record ChatAnswer(String answer, List<ChatSource> sources, String sessionId, boolean degraded) {
 
     /** 供应商故障且无旧回答可兜底时的统一文案（非流式与 SSE error 事件同源，避免两处口径漂移）。 */
     public static final String UNAVAILABLE_TEXT = "AI 服务暂时不可用，请稍后重试";
