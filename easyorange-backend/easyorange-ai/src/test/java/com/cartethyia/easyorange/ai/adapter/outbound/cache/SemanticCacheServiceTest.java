@@ -10,10 +10,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
-import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import java.time.Duration;
 import java.util.List;
@@ -300,10 +300,7 @@ class SemanticCacheServiceTest {
                 .put(eq(CACHE_KEY), anyString(), anyString());
 
         var original = new ChatAnswer(
-                "退款路径是这样的",
-                List.of(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-1", "帮助中心")),
-                "s-9",
-                false);
+                "退款路径是这样的", List.of(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-1", "帮助中心")), "s-9", false);
         cache.store(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, original);
 
         assertThat(written.get()).isNotNull();

@@ -43,7 +43,9 @@ public record ChatSource(Type type, String id, String title) {
      * 去重按 {@code (type, id)} 而非标题 —— 同名资产是两条不同记录，按标题去重会误删。
      */
     public static List<ChatSource> merge(List<KnowledgeHit> hits, List<AssetHit> assets, int limit) {
-        return Stream.of(assets.stream().map(ChatSource::from).toList(), hits.stream().map(ChatSource::from).toList())
+        return Stream.of(
+                        assets.stream().map(ChatSource::from).toList(),
+                        hits.stream().map(ChatSource::from).toList())
                 .flatMap(List::stream)
                 .distinct()
                 .limit(limit)

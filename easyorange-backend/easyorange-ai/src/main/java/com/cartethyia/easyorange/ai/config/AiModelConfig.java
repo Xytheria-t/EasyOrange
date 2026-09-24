@@ -86,7 +86,9 @@ public class AiModelConfig {
         if (hasNoText(deepseek.apiKey())) {
             return new UnconfiguredChatModel("easyorange.ai.deepseek.api-key 为空，请配置 DEEPSEEK_API_KEY");
         }
-        String model = hasNoText(deepseek.routerModel()) ? deepseek.model() : deepseek.routerModel().trim();
+        String model = hasNoText(deepseek.routerModel())
+                ? deepseek.model()
+                : deepseek.routerModel().trim();
         return OpenAiChatModel.builder()
                 .openAiClient(syncClient(deepseek.baseUrl(), deepseek.apiKey(), model, deepseek.timeout(), obs, meters))
                 .options(OpenAiChatOptions.builder()

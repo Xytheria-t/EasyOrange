@@ -63,7 +63,9 @@ class AgentToolsTest {
         void firstHit() {
             when(retrievalService.search(anyString(), anyInt())).thenReturn(List.of(doc("kb-1", "退款规则")));
 
-            assertThat(tools().knowledgeSearch("查退款规则", "退款")).contains("命中 1 条").contains("退款规则");
+            assertThat(tools().knowledgeSearch("查退款规则", "退款"))
+                    .contains("命中 1 条")
+                    .contains("退款规则");
         }
 
         @Test

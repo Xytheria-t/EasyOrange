@@ -77,8 +77,7 @@ public class AgentTools {
      * 观察交回模型，比在循环里硬性拦掉这次调用更合适 —— 拦掉只是少一轮反馈，让模型自己看到
      * 「再查也是重复」才是它该学到的判断。
      */
-    private static final String NO_NEW_HIT_OBSERVATION =
-            "本次检索无新增信息（命中的内容此前已出现过）：请直接调用 finish 基于已有信息作答，不要再换关键词重试";
+    private static final String NO_NEW_HIT_OBSERVATION = "本次检索无新增信息（命中的内容此前已出现过）：请直接调用 finish 基于已有信息作答，不要再换关键词重试";
 
     /**
      * 判为「无新增」的重合比例阈值 —— 本轮命中里此前出现过的条目占比达到此值即收敛。
@@ -131,7 +130,9 @@ public class AgentTools {
         List<KnowledgeHit> found = retrievalService.search(query, RETRIEVAL_TOP_K);
         List<KnowledgeHit> fresh = retainNewKnowledge(found);
         knowledgeHits.addAll(fresh);
-        return isRedundant(found.size() - fresh.size(), found.size()) ? NO_NEW_HIT_OBSERVATION : summarizeKnowledge(found);
+        return isRedundant(found.size() - fresh.size(), found.size())
+                ? NO_NEW_HIT_OBSERVATION
+                : summarizeKnowledge(found);
     }
 
     @Tool(name = TOOL_PRODUCT_SEARCH, description = "检索在售资产（找货 / 比价）", resultConverter = ObservationTextConverter.class)
@@ -272,17 +273,13 @@ public class AgentTools {
      */
     private List<KnowledgeHit> retainNewKnowledge(List<KnowledgeHit> found) {
         Set<String> seen = knowledgeHits.stream().map(AgentTools::knowledgeKey).collect(Collectors.toSet());
-        return found.stream()
-                .filter(hit -> seen.add(knowledgeKey(hit)))
-                .collect(Collectors.toList());
+        return found.stream().filter(hit -> seen.add(knowledgeKey(hit))).collect(Collectors.toList());
     }
 
     /** 同 {@link #retainNewKnowledge}，资产按 productId 判重。 */
     private List<AssetHit> retainNewAssets(List<AssetHit> found) {
         Set<String> seen = assets.stream().map(asset -> assetKey(asset)).collect(Collectors.toSet());
-        return found.stream()
-                .filter(asset -> seen.add(assetKey(asset)))
-                .collect(Collectors.toList());
+        return found.stream().filter(asset -> seen.add(assetKey(asset))).collect(Collectors.toList());
     }
 
     private static String knowledgeKey(KnowledgeHit hit) {
