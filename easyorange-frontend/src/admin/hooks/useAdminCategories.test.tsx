@@ -30,7 +30,7 @@ describe('useAdminCategories', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: [{ id: 1, name: '电子产品', status: 1, sort: 1, parentId: '0' }],
+                    data: [{ categoryId: 'c-1', name: '电子产品', status: 1, sortOrder: 1, parentId: '0' }],
                     timestamp: Date.now(),
                 });
             })
@@ -41,6 +41,9 @@ describe('useAdminCategories', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.data).toHaveLength(1);
         expect(result.current.data?.[0]?.name).toBe('电子产品');
+        // 主键/排序字段是 categoryId / sortOrder（后端 CategoryResponse），不是 id / sort
+        expect(result.current.data?.[0]?.categoryId).toBe('c-1');
+        expect(result.current.data?.[0]?.sortOrder).toBe(1);
     });
 });
 
@@ -51,7 +54,7 @@ describe('useAdminCategoryTree', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: [{ id: 1, name: '电子产品', children: [] }],
+                    data: [{ categoryId: 'c-1', name: '电子产品', children: [] }],
                     timestamp: Date.now(),
                 });
             })

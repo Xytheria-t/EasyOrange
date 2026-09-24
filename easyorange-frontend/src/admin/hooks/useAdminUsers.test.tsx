@@ -25,7 +25,7 @@ describe('useAdminUsers', () => {
                     code: 'A0000',
                     message: 'success',
                     data: {
-                        records: [{ id: 1, username: 'admin', userType: '00', nickname: '管理员' }],
+                        records: [{ userId: 'u-1', username: 'admin', userType: '02', nickname: '管理员' }],
                         total: 1,
                         current: 1,
                         size: 20,
@@ -43,6 +43,8 @@ describe('useAdminUsers', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.data?.records).toHaveLength(1);
         expect(result.current.data?.records[0].username).toBe('admin');
+        // 主键字段是 userId（后端 AdminUserResponse），不是 id——断言它可发现主键漂移
+        expect(result.current.data?.records[0].userId).toBe('u-1');
     });
 });
 
@@ -53,7 +55,7 @@ describe('useAdminUserDetail', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { userId: '1', username: 'admin', email: 'admin@test.com', userType: '00' } as const,
+                    data: { userId: '1', username: 'admin', email: 'admin@test.com', userType: '02' } as const,
                     timestamp: Date.now(),
                 });
             })
