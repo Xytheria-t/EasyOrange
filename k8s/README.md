@@ -7,19 +7,30 @@
 ```
                         ┌─ Ingress (traefik, k3s 内置) ─┐
                         │   easyorange.local              │
-                        └───────┬─────────────┬──────────┘
-                        /api/ /ws/          / (静态站)
-                        │                  │
-               ┌────────▼─────────┐  ┌─────▼──────────────┐
-               │ easyorange-app   │  │ easyorange-frontend│
-               │ (Service 8080)   │  │ nginx (Service 80) │
-               │ Deployment ×2-6  │  │ Deployment ×2      │
-               │ HPA + PDB + 探针 │  │ (静态 + 内部反代)   │
-               └───┬───┬───┬──────┘  └────────────────────┘
-                   │   │   │   └─► 公网 443（LLM/DashScope）
-              mysql│ redis│ rabbitmq│
-          (StatefulSet demo-only，生产换托管服务)
+                        │   仅 / → frontend（不分流）      │
+                        └───────────────┬─────────────────┘
+                                        │
+                            ┌───────────▼──────────────┐
+                            │ easyorange-frontend       │
+                            │ nginx (Service 80)        │
+                            │ Deployment ×2-4 / HPA     │
+                            │ 路由单一来源：             │
+                            │  /api /ws /actuator 反代   │
+                            │  / 及其余 → 静态站         │
+                            └───────────┬──────────────┘
+                                        │ /api /ws
+                        ┌───────────────▼──────────────┐
+                        │ easyorange-app               │
+                        │ (Service 8080)               │
+                        │ Deployment ×2-6 / HPA + PDB  │
+                        │ + 探针三件套                 │
+                        └───┬───┬───┬─────────────────┘
+                    mysql│ redis│ rabbitmq│
+              (StatefulSet demo-only，生产换托管服务)
+                              └──► prometheus 抓 metrics
 ```
+
+> **路由单一来源**：`/api`、`/ws`、`/actuator` 的分流只写在 [easyorange-frontend/nginx.conf](../easyorange-frontend/nginx.conf)，Ingress 不重复声明。Ingress 若把 `/api` 直达后端，会让 nginx 的安全响应头与图片 `proxy_cache` 静默失效——K8s 与 Compose 变成两套行为。
 
 **目录结构**（kustomize：base 可复用 + overlay 按环境差异化）：
 
@@ -30,7 +41,7 @@ k8s/
 │   ├── configmap.yaml       # 非敏感配置（prod profile + 中间件地址）
 │   ├── backend/             # Deployment + Service + HPA + PDB + PVC(uploads)
 │   ├── frontend/            # nginx Deployment + Service
-│   ├── ingress.yaml         # /api /ws → backend；/ → frontend
+│   ├── ingress.yaml         # 仅 / → frontend；细粒度分流在 nginx.conf（路由单一来源）
 │   └── network-policy.yaml  # 零信任：默认拒绝 + 显式放行
 ├── overlays/
 │   └── demo/                # k3s 单机自包含演示（含 infra 中间件）
@@ -51,7 +62,7 @@ k8s/
 | 不可变基础设施 | 只读根文件系统 + emptyDir（logs/tmp）+ PVC（uploads） |
 | 最小权限 | 非 root（backend 1000 / nginx 101）、drop ALL cap、seccomp RuntimeDefault、`automountServiceAccountToken=false` |
 | 配置分层 | 非敏感→ConfigMap；敏感→Secret（kustomize secretGenerator，内容 gitignore）；JWT PEM→Secret 只读挂载 |
-| 零信任网络 | 默认拒绝 + 按组件显式放行（backend→mysql/redis/rabbitmq/443；仅 traefik/prometheus 可进 8080） |
+| 零信任网络 | 默认拒绝 + 按组件显式放行（backend 只收 frontend 与 prometheus 入站；frontend→backend；backend→mysql/redis/rabbitmq/443；出站仅 DNS） |
 | 可观测性 | ServiceMonitor 抓 `/actuator/prometheus` + 3 条业务告警（Down/5xx/P99） |
 | Pod Security | 命名空间 enforce=baseline（infra 以 root 运行），backend/frontend 满足 restricted |
 

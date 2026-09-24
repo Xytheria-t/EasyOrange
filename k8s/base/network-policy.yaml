@@ -4,9 +4,13 @@
 # 注意: k3s 默认 flannel 无 NetworkPolicy 控制器，策略在 demo 上不生效（惰性）;
 #       换用支持策略的 CNI（Cilium/kube-router/canal）后自动启用，详见 README
 # 拓扑:
-#   traefik(kube-system) ──> backend:8080 ──> mysql:3306 / redis:6379 / rabbitmq:5672
-#      └──> frontend:80 ──> backend:8080          └──> 公网 443（LLM/AI 供应商）
+#   traefik(kube-system) ──> frontend:80 ──> backend:8080 ──> mysql:3306 / redis:6379 / rabbitmq:5672
+#                                                │
+#                                                ├──> prometheus(monitoring) 抓 /actuator/prometheus
+#                                                └──> 公网 443（LLM/AI 供应商）
 #   所有 Pod 出站仅 DNS（kube-dns:53）；kubelet 探针来自节点，天然不受 NetworkPolicy 限制
+#   注: traefik 不直连 backend —— /api /ws 统一经前端 nginx 分流（见 ingress.yaml），
+#       故 backend 入站只放行 frontend 与 prometheus。
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -30,14 +34,7 @@ spec:
   policyTypes: [Ingress]
   ingress:
     - from:
-        # Ingress 控制器（k3s traefik 位于 kube-system）
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/name: traefik
-        # 前端 nginx 反代（/api /ws）
+        # 前端 nginx 反代（/api /ws /actuator —— 唯一入口，Ingress 只放行 frontend:80）
         - podSelector:
             matchLabels:
               app.kubernetes.io/component: frontend

@@ -1,5 +1,11 @@
 # 入口网关 — base 使用 traefik（k3s 内置 IngressClass，demo 零额外安装）
-# 生产演进: 换 nginx-ingress/cert-manager + TLS（见 README「上线前清单」），traefik 对 WebSocket 自动升级透传
+# 生产演进: 换 nginx-ingress/cert-manager + TLS（见 README「上线前清单」）
+#
+# 路由单一来源：全部路径交给前端 nginx（easyorange-frontend:80），
+# 由 nginx.conf 按 /api /ws /actuator 分流到 upstream easyorange-app:8080。
+# Ingress 不再重复声明 /api /ws 直达后端——否则两份路由表会漂移，且 Ingress
+# 先命中会让 nginx 的安全响应头与图片 proxy_cache 静默失效（Compose 走 nginx，
+# K8s 直达后端 = 两套行为）。与 compose.yaml 共用同一份 nginx.conf 是刻意的。
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -14,21 +20,6 @@ spec:
     - host: easyorange.local
       http:
         paths:
-          - path: /api/
-            pathType: Prefix
-            backend:
-              service:
-                name: easyorange-app
-                port:
-                  number: 8080
-          - path: /ws/
-            pathType: Prefix
-            backend:
-              service:
-                name: easyorange-app
-                port:
-                  number: 8080
-          # 静态站 + 其余路径 → 前端 nginx（内部再反代 /api /ws）
           - path: /
             pathType: Prefix
             backend:
