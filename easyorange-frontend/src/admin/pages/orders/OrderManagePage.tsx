@@ -33,7 +33,7 @@ export default function OrderManagePage() {
     });
     const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
 
-    const { data, isLoading } = useAdminOrders({
+    const { data, isLoading, isError, error, refetch } = useAdminOrders({
         pageNum: page,
         pageSize,
         orderNo: keyword || undefined,
@@ -140,7 +140,7 @@ export default function OrderManagePage() {
             title: '下单时间',
             sortable: true,
             render: value => (
-                <span style={{ color: '#9B9590', fontSize: '0.84rem' }}>{formatDate(value as string)}</span>
+                <span style={{ color: '#6E6862', fontSize: '0.84rem' }}>{formatDate(value as string)}</span>
             ),
         },
         {
@@ -274,7 +274,7 @@ export default function OrderManagePage() {
                             <p
                                 style={{
                                     fontSize: '0.88rem',
-                                    color: '#9B9590',
+                                    color: '#6E6862',
                                     marginTop: '0.3rem',
                                     paddingLeft: '36px',
                                 }}
@@ -324,7 +324,7 @@ export default function OrderManagePage() {
                                         transform: 'translateY(-50%)',
                                         width: 17,
                                         height: 17,
-                                        color: '#B5AEA8',
+                                        color: '#6E6862',
                                         pointerEvents: 'none',
                                     }}
                                     viewBox="0 0 24 24"
@@ -399,7 +399,7 @@ export default function OrderManagePage() {
                                 gap: '0.3rem',
                                 fontSize: '0.8rem',
                                 fontWeight: 500,
-                                color: '#9B9590',
+                                color: '#6E6862',
                             }}
                         >
                             <svg
@@ -427,7 +427,7 @@ export default function OrderManagePage() {
                         />
                     </div>
                     <div style={{ flex: 1 }} />
-                    <span style={{ fontSize: '0.81rem', color: '#9B9590', fontWeight: 500 }}>
+                    <span style={{ fontSize: '0.81rem', color: '#6E6862', fontWeight: 500 }}>
                         共 <strong style={{ color: '#2A2520' }}>{data?.total ?? 0}</strong> 笔订单
                     </span>
                 </div>
@@ -451,6 +451,10 @@ export default function OrderManagePage() {
                         data={data?.records ?? []}
                         rowKey="orderId"
                         loading={isLoading}
+                        error={isError ? error : null}
+                        onRetry={() => {
+                            refetch();
+                        }}
                         pagination={
                             (data?.total ?? 0) > pageSize
                                 ? { current: data?.current ?? 1, pageSize, total: data?.total ?? 0, onChange: goTo }

@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { messageApi } from '@/api/messageApi';
 import { ChatHeader, ChatInputBar, MessageList } from '@/components/chat';
+import { ErrorState } from '@/components/feedback/StateDisplay';
 import { useChatMessages, useMessageRecall, useStompChat } from '@/hooks/chat';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/chatStore';
+import { useUIStore } from '@/store/uiStore';
 import { WS_MESSAGE_TYPE_CHAT } from '@/types/message';
 import './chat-window.css';
 
@@ -30,8 +32,29 @@ function ChatWindowPage() {
     const typingUsers = useChatStore(s => s.typingUsers);
 
     const { sendMessage, sendTyping, subscribe, unsubscribe } = useStompChat();
-    const { messages, isLoading, loadOlder, hasMore } = useChatMessages(targetUserId ?? null, conversationId);
+    const {
+        messages,
+        isLoading,
+        isError: isMessagesError,
+        error: messagesError,
+        refetch: refetchMessages,
+        loadOlder,
+        hasMore,
+    } = useChatMessages(targetUserId ?? null, conversationId);
     const { canRecall, recallMessage } = useMessageRecall(conversationId);
+    const addToast = useUIStore(s => s.addToast);
+
+    // 翻历史失败由 hook 抛出，这里转成提示；静默吞掉会让用户以为已经到底了
+    const handleLoadOlder = useCallback(async () => {
+        try {
+            await loadOlder();
+        } catch (e) {
+            addToast({
+                type: 'error',
+                message: e instanceof Error ? e.message : '加载历史消息失败',
+            });
+        }
+    }, [loadOlder, addToast]);
 
     useEffect(() => {
         if (!conversationId) {
@@ -90,17 +113,27 @@ function ChatWindowPage() {
 
             <div className="chat-messages-area">
                 {isLoading ? (
-                    <div className="chat-loading">
+                    <div className="chat-loading" role="status" aria-busy="true">
                         <div className="chat-loading-spinner" />
                         <span className="text-sm font-medium">加载消息中...</span>
                     </div>
+                ) : isMessagesError && messages.length === 0 ? (
+                    <ErrorState
+                        title="消息加载失败"
+                        description={
+                            messagesError instanceof Error && messagesError.message ? messagesError.message : undefined
+                        }
+                        onRetry={() => {
+                            refetchMessages();
+                        }}
+                    />
                 ) : (
                     <MessageList
                         messages={messages}
                         currentUserId={currentUserId}
                         targetUserName={targetUserName}
                         isTyping={isTyping}
-                        onLoadMore={loadOlder}
+                        onLoadMore={handleLoadOlder}
                         hasMore={hasMore}
                         onRecall={recallMessage}
                         canRecallFn={msg => canRecall(msg, currentUserId)}

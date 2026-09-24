@@ -28,6 +28,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { messageApi } from '@/api/messageApi';
 import { productApi } from '@/api/productApi';
 import placeholderImage from '@/assets/placeholder.png';
+import { ErrorState } from '@/components/feedback/StateDisplay';
 import {
     Dialog,
     DialogContent,
@@ -51,7 +52,7 @@ import { ProductGallery } from './components/ProductGallery';
 function ProductDetailPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { data: product, isLoading } = useProduct(id ?? '');
+    const { data: product, isLoading, isError, error: productError, refetch } = useProduct(id ?? '');
     const { data: similarProducts, isLoading: similarLoading } = useSimilarProducts(id ?? '');
     const { token, user } = useAuthStore();
     const addToast = useUIStore(s => s.addToast);
@@ -111,6 +112,25 @@ function ProductDetailPage() {
                     <div className="pdp-loading-ring" />
                     <span className="pdp-loading-text">加载商品详情...</span>
                 </div>
+            </div>
+        );
+    }
+
+    // 请求失败与"商品真的不存在"是两种状态，不能共用同一个提示
+    if (isError) {
+        return (
+            <div className="pdp-empty">
+                <ErrorState
+                    title="商品详情加载失败"
+                    description={
+                        productError instanceof Error && productError.message
+                            ? productError.message
+                            : '服务暂时不可用，请稍后重试。'
+                    }
+                    onRetry={() => {
+                        refetch();
+                    }}
+                />
             </div>
         );
     }

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { messageApi } from '@/api/messageApi';
 import { userApi } from '@/api/userApi';
+import { ErrorState } from '@/components/feedback/StateDisplay';
 import {
     PasswordModal,
     ProfileActivity,
@@ -24,7 +25,7 @@ type EditableField = 'nickname' | 'email' | 'phone' | 'realName';
 type TabType = 'overview' | 'activity' | 'security' | 'preferences';
 
 function ProfilePage() {
-    const { data: user, isLoading } = useCurrentUser();
+    const { data: user, isLoading, isError, error, refetch } = useCurrentUser();
     const logout = useLogout();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -51,8 +52,11 @@ function ProfilePage() {
                 const totalUnread = res.data?.reduce((sum, conv) => sum + conv.unreadCount, 0) ?? 0;
                 setUnreadMessageCount(totalUnread);
             })
-            .catch(() => {});
-    }, []);
+            .catch(() => {
+                // 未读数是次要信息，失败不打断页面，但要让用户知道它不可信
+                addToast({ type: 'warning', message: '未读消息数加载失败，暂显示为 0' });
+            });
+    }, [addToast]);
 
     const handleEdit = useCallback((field: EditableField, currentValue: string) => {
         setEditingField(field);
@@ -113,6 +117,22 @@ function ProfilePage() {
         addToast({ type: 'success', message: '已退出登录' });
         navigate('/');
     }, [logout, navigate, addToast]);
+
+    if (isError) {
+        return (
+            <div className="profile-body">
+                <div className="profile-main">
+                    <ErrorState
+                        title="个人资料加载失败"
+                        description={error instanceof Error && error.message ? error.message : undefined}
+                        onRetry={() => {
+                            refetch();
+                        }}
+                    />
+                </div>
+            </div>
+        );
+    }
 
     if (isLoading) {
         return (

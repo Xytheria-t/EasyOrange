@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ImagePreviewOverlay } from '@/admin/components/ImagePreviewOverlay';
+import { ErrorState } from '@/components/feedback/StateDisplay';
 import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, Textarea } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
@@ -44,7 +45,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
     const [state, setState] = useState(createInitialState);
     const { selectedImage, previewImage, selectedDimensions, auditRemark, rejectReason, showRejectModal } = state;
 
-    const { data: product, isLoading, refetch } = useAdminProductDetail(productId ?? '');
+    const { data: product, isLoading, isError, error, refetch } = useAdminProductDetail(productId ?? '');
     const updateStatus = useAuditProduct();
     const auditLogs = useAuditLogs(productId);
     const addToast = useUIStore(s => s.addToast);
@@ -71,6 +72,12 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                 addToast({ type: 'success', message: '审核已通过，商品已上架' });
                 onSuccess();
                 onClose();
+            })
+            .catch(e => {
+                addToast({
+                    type: 'error',
+                    message: e instanceof Error ? e.message : '审核失败，请重试',
+                });
             });
     };
 
@@ -92,8 +99,11 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
             addToast({ type: 'success', message: '已驳回，理由已记录在审核日志' });
             onSuccess();
             onClose();
-        } catch {
-            // reject failed silently - error handled by parent component
+        } catch (e) {
+            addToast({
+                type: 'error',
+                message: e instanceof Error ? e.message : '驳回失败，请重试',
+            });
         }
     };
 
@@ -177,7 +187,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         size="icon"
                         onClick={onClose}
                         disabled={updateStatus.isPending}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white text-[#8B857E] transition-all duration-150 hover:border-[rgba(244,63,94,0.2)] hover:bg-[rgba(244,63,94,0.06)] hover:text-[#E11D48] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white text-[#6E6862] transition-all duration-150 hover:border-[rgba(244,63,94,0.2)] hover:bg-[rgba(244,63,94,0.06)] hover:text-[#E11D48] disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label="关闭"
                     >
                         <svg
@@ -199,10 +209,22 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                 {/* Content */}
                 <div className="min-h-0 flex-1 overflow-y-auto p-6">
                     {isLoading ? (
-                        <div className="flex flex-col items-center justify-center gap-[0.7rem] py-16 px-4">
+                        <div
+                            className="flex flex-col items-center justify-center gap-[0.7rem] py-16 px-4"
+                            role="status"
+                            aria-busy="true"
+                        >
                             <div className="h-7 w-7 animate-spin rounded-full border-[2.5px] border-[#E5E0DB] border-t-[#F97316]" />
-                            <span className="text-[0.87rem] text-[#9B9590]">加载中...</span>
+                            <span className="text-[0.87rem] text-[#6E6862]">加载中...</span>
                         </div>
+                    ) : isError ? (
+                        <ErrorState
+                            title="商品详情加载失败"
+                            description={error?.message}
+                            onRetry={() => {
+                                refetch();
+                            }}
+                        />
                     ) : product ? (
                         <div className="flex flex-col gap-6">
                             {/* Image gallery */}
@@ -224,9 +246,11 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             src={product.images[selectedImage]}
                                             alt={product.name}
                                             className="h-full w-full object-cover"
+                                            loading="lazy"
+                                            decoding="async"
                                         />
                                     ) : (
-                                        <div className="flex h-full items-center justify-center text-[#B5AEA8]">
+                                        <div className="flex h-full items-center justify-center text-[#6E6862]">
                                             <svg
                                                 aria-hidden="true"
                                                 width="40"
@@ -271,7 +295,13 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                                             : 'none',
                                                 }}
                                             >
-                                                <img src={img} alt="" className="h-full w-full object-cover" />
+                                                <img
+                                                    src={img}
+                                                    alt=""
+                                                    className="h-full w-full object-cover"
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                />
                                             </Button>
                                         ))}
                                     </div>
@@ -303,7 +333,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                         {formatPrice(product.price ?? 0)}
                                     </span>
                                     {product.originalPrice && product.originalPrice > (product.price ?? 0) && (
-                                        <span className="text-[0.85rem] text-[#B5AEA8] line-through">
+                                        <span className="text-[0.85rem] text-[#6E6862] line-through">
                                             {formatPrice(product.originalPrice)}
                                         </span>
                                     )}
@@ -324,7 +354,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             key={item.label}
                                             className="rounded-xl border border-[rgba(229,224,219,0.4)] bg-white/60 px-[0.8rem] py-[0.6rem]"
                                         >
-                                            <p className="mb-0.5 text-[0.72rem] font-medium text-[#9B9590]">
+                                            <p className="mb-0.5 text-[0.72rem] font-medium text-[#6E6862]">
                                                 {item.label}
                                             </p>
                                             <p className="text-[0.85rem] font-semibold text-[#2A2520]">{item.value}</p>
@@ -334,7 +364,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
 
                                 {/* Stats */}
                                 <div className="flex items-center gap-6 border-y border-[rgba(229,224,219,0.4)] py-3">
-                                    <div className="flex items-center gap-[0.4rem] text-[0.84rem] text-[#8B857E]">
+                                    <div className="flex items-center gap-[0.4rem] text-[0.84rem] text-[#6E6862]">
                                         <svg
                                             aria-hidden="true"
                                             width="15"
@@ -389,7 +419,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                                     />
                                                     <div className="min-w-0 flex-1">
                                                         <div className="mb-[0.15rem] flex flex-wrap items-center gap-2">
-                                                            <span className="text-[0.78rem] text-[#9B9590]">
+                                                            <span className="text-[0.78rem] text-[#6E6862]">
                                                                 {log.createTime?.replace('T', ' ').slice(0, 16)}
                                                             </span>
                                                             <span className="text-[0.81rem] font-semibold text-[#2A2520]">
@@ -403,7 +433,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                                                             ? '#059669'
                                                                             : log.action === 2
                                                                               ? '#E11D48'
-                                                                              : '#8B857E',
+                                                                              : '#6E6862',
                                                                     background:
                                                                         log.action === 1
                                                                             ? 'rgba(16,185,129,0.08)'
@@ -462,14 +492,14 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        <span className="text-[#9B9590]">交易地点：</span>
+                                        <span className="text-[#6E6862]">交易地点：</span>
                                         <span className="font-semibold text-[#2A2520]">{product.location}</span>
                                     </div>
                                 )}
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center gap-2 py-16 text-[#B5AEA8]">
+                        <div className="flex flex-col items-center justify-center gap-2 py-16 text-[#6E6862]">
                             <span className="text-[2rem] opacity-40">📭</span>
                             <span className="text-[0.9rem]">商品不存在或已被删除</span>
                         </div>
@@ -496,7 +526,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                                 'h-auto min-h-0 rounded-lg px-[0.7rem] py-[0.35rem] text-[0.79rem] font-medium transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60',
                                                 active
                                                     ? 'border-2 border-[#F97316] bg-[rgba(249,115,22,0.08)] text-[#EA580C] hover:bg-[rgba(249,115,22,0.08)] hover:text-[#EA580C]'
-                                                    : 'border-[1.5px] border-[#E5E0DB] bg-white text-[#8B857E] hover:bg-white hover:text-[#8B857E]'
+                                                    : 'border-[1.5px] border-[#E5E0DB] bg-white text-[#6E6862] hover:bg-white hover:text-[#6E6862]'
                                             )}
                                         >
                                             {active ? '✓ ' : ''}
@@ -512,7 +542,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                             placeholder="审核意见（选填）..."
                             value={auditRemark}
                             onChange={e => setState(prev => ({ ...prev, auditRemark: e.target.value }))}
-                            className="min-h-[52px] resize-y rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white px-[0.8rem] py-[0.6rem] text-[0.84rem] text-[#2A2520] placeholder:text-[#B5AEA8] focus-visible:border-[#F97316] focus-visible:ring-0 focus-visible:ring-offset-0"
+                            className="min-h-[52px] resize-y rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white px-[0.8rem] py-[0.6rem] text-[0.84rem] text-[#2A2520] placeholder:text-[#6E6862] focus-visible:border-[#F97316] focus-visible:ring-0 focus-visible:ring-offset-0"
                         />
 
                         {/* 操作按钮行 */}
@@ -572,7 +602,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                     onClick={() =>
                                         setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' }))
                                     }
-                                    className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-lg border-[1.5px] border-[#E5E0DB] bg-white text-[#8B857E] transition-all duration-150 hover:border-[rgba(244,63,94,0.2)] hover:bg-[rgba(244,63,94,0.06)] hover:text-[#E11D48]"
+                                    className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-lg border-[1.5px] border-[#E5E0DB] bg-white text-[#6E6862] transition-all duration-150 hover:border-[rgba(244,63,94,0.2)] hover:bg-[rgba(244,63,94,0.06)] hover:text-[#E11D48]"
                                     aria-label="关闭"
                                 >
                                     ✕
@@ -591,7 +621,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => appendRejectTag(tag)}
-                                        className="h-auto min-h-0 rounded-md border-[1.5px] border-[#E5E0DB] bg-white px-[0.55rem] py-[0.28rem] text-[0.76rem] font-medium text-[#8B857E] transition-all duration-150 hover:border-[#F43F5E] hover:bg-white hover:text-[#E11D48]"
+                                        className="h-auto min-h-0 rounded-md border-[1.5px] border-[#E5E0DB] bg-white px-[0.55rem] py-[0.28rem] text-[0.76rem] font-medium text-[#6E6862] transition-all duration-150 hover:border-[#F43F5E] hover:bg-white hover:text-[#E11D48]"
                                     >
                                         {tag}
                                     </Button>
@@ -604,7 +634,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                 value={rejectReason}
                                 onChange={e => setState(prev => ({ ...prev, rejectReason: e.target.value }))}
                                 rows={3}
-                                className="mb-4 min-h-[80px] resize-y rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white px-[0.8rem] py-[0.65rem] text-[0.85rem] text-[#2A2520] placeholder:text-[#B5AEA8] focus-visible:border-[#F43F5E] focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="mb-4 min-h-[80px] resize-y rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white px-[0.8rem] py-[0.65rem] text-[0.85rem] text-[#2A2520] placeholder:text-[#6E6862] focus-visible:border-[#F43F5E] focus-visible:ring-0 focus-visible:ring-offset-0"
                             />
 
                             <div className="flex justify-end gap-[0.6rem]">

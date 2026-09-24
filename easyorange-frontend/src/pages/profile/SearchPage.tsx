@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ErrorState } from '@/components/feedback/StateDisplay';
 import { PaginationBar } from '@/components/PaginationBar';
 import { ProductCard } from '@/components/product/ProductCard';
 import '@/components/product/products-grid.css';
@@ -113,6 +114,9 @@ function SearchPage() {
         aiEnhancement,
         aiEnhancementDegraded,
         isLoading: isSearching,
+        isError: isSearchError,
+        error: searchError,
+        refetch: refetchSearch,
     } = useProductSearch(searchQueryParams);
     const { data: suggestions } = useSearchSuggestions(debouncedKeyword);
     const { data: hotKeywords } = useHotKeywords(10);
@@ -251,8 +255,10 @@ function SearchPage() {
         [setFilterValue]
     );
 
-    const hasResults = submittedKeyword && products.length > 0;
-    const noResults = submittedKeyword && !isSearching && products.length === 0;
+    // 搜索关键词变更时旧结果已被清除，这里只防"失败却仍挂着上一批数据"
+    const hasResults = submittedKeyword && !isSearchError && products.length > 0;
+    // 失败与"确实无结果"必须分开，否则用户会以为搜不到东西
+    const noResults = submittedKeyword && !isSearching && !isSearchError && products.length === 0;
 
     // total 由后端 Long 序列化为字符串，参与运算前先归一为数字
     const totalPages = Math.max(1, Math.ceil(Number(total) / SEARCH_PAGE_SIZE));
@@ -531,6 +537,20 @@ function SearchPage() {
                                 totalPages={totalPages}
                                 onPageChange={handlePageChange}
                                 className="search-pagination"
+                            />
+                        )}
+
+                        {isSearchError && (
+                            <ErrorState
+                                title="搜索失败"
+                                description={
+                                    searchError instanceof Error && searchError.message
+                                        ? searchError.message
+                                        : '搜索服务暂时不可用，请稍后重试。'
+                                }
+                                onRetry={() => {
+                                    refetchSearch();
+                                }}
                             />
                         )}
 

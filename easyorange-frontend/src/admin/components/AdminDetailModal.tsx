@@ -1,3 +1,4 @@
+import { ErrorState } from '@/components/feedback/StateDisplay';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 
@@ -12,6 +13,9 @@ interface AdminDetailModalProps {
     closeDisabled?: boolean;
     notFound?: boolean;
     notFoundText?: string;
+    /** 详情请求失败。传了会渲染重试出口，而不是伪装成"记录不存在" */
+    error?: Error | null;
+    onRetry?: () => void;
     footer?: React.ReactNode;
     /** 渲染在 footer 之后、DialogContent 内（如全屏图片预览灯箱），避免被滚动容器裁剪 */
     overlay?: React.ReactNode;
@@ -19,7 +23,7 @@ interface AdminDetailModalProps {
 }
 
 /**
- * 管理端详情弹窗壳 — 统一 Dialog 骨架、标题栏、close、loading / 空态。
+ * 管理端详情弹窗壳 — 统一 Dialog 骨架、标题栏、close、loading / 错误 / 空态。
  * 三个详情弹窗（订单/用户/商品）共用，业务内容通过 children 传入。
  */
 export function AdminDetailModal({
@@ -32,6 +36,8 @@ export function AdminDetailModal({
     closeDisabled,
     notFound = false,
     notFoundText = '记录不存在或已被删除',
+    error = null,
+    onRetry,
     footer,
     overlay,
     children,
@@ -73,7 +79,7 @@ export function AdminDetailModal({
                         size="icon"
                         onClick={onClose}
                         disabled={closeBlocked}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white text-[#8B857E] transition-all duration-150 hover:border-[rgba(244,63,94,0.2)] hover:bg-[rgba(244,63,94,0.06)] hover:text-[#E11D48] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white text-[#6E6862] transition-all duration-150 hover:border-[rgba(244,63,94,0.2)] hover:bg-[rgba(244,63,94,0.06)] hover:text-[#E11D48] disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label="关闭"
                     >
                         <svg
@@ -93,7 +99,15 @@ export function AdminDetailModal({
                 </DialogHeader>
 
                 <div className="min-h-0 flex-1 overflow-y-auto p-6">
-                    {loading ? <ModalSpinner /> : notFound ? <ModalEmptyState text={notFoundText} /> : children}
+                    {loading ? (
+                        <ModalSpinner />
+                    ) : error ? (
+                        <ErrorState title="数据加载失败" description={error.message} onRetry={onRetry} />
+                    ) : notFound ? (
+                        <ModalEmptyState text={notFoundText} />
+                    ) : (
+                        children
+                    )}
                 </div>
                 {footer}
                 {overlay}
@@ -107,7 +121,7 @@ export function ModalSpinner() {
     return (
         <div className="flex flex-col items-center justify-center gap-[0.7rem] py-16 px-4">
             <div className="h-7 w-7 animate-spin rounded-full border-[2.5px] border-[#E5E0DB] border-t-[#F97316]" />
-            <span className="text-[0.87rem] text-[#9B9590]">加载中...</span>
+            <span className="text-[0.87rem] text-[#6E6862]">加载中...</span>
         </div>
     );
 }
@@ -115,7 +129,7 @@ export function ModalSpinner() {
 /** 详情弹窗空态。 */
 export function ModalEmptyState({ text }: { text: string }) {
     return (
-        <div className="flex flex-col items-center justify-center gap-2 py-16 text-[#B5AEA8]">
+        <div className="flex flex-col items-center justify-center gap-2 py-16 text-[#6E6862]">
             <span className="text-[2rem] opacity-40">📭</span>
             <span className="text-[0.9rem]">{text}</span>
         </div>
@@ -126,7 +140,7 @@ export function ModalEmptyState({ text }: { text: string }) {
 export function InfoCell({ label, value }: { label: string; value: React.ReactNode }) {
     return (
         <div className="rounded-xl border border-[rgba(229,224,219,0.4)] bg-white/60 px-[0.85rem] py-[0.65rem]">
-            <p className="mb-0.5 text-[0.72rem] font-medium text-[#9B9590]">{label}</p>
+            <p className="mb-0.5 text-[0.72rem] font-medium text-[#6E6862]">{label}</p>
             <p className="text-[0.87rem] font-semibold text-[#2A2520]">{value}</p>
         </div>
     );
