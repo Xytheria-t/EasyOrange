@@ -1,6 +1,14 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { PageResult } from '@/types';
 import { adminApi } from '../api/adminApi';
-import type { CreateKnowledgeDocRequest } from '../types/admin';
+import type { CreateKnowledgeDocRequest, KnowledgeDoc } from '../types/admin';
+
+/** 同 useAdminProducts 的 selectList：只留列表页消费的 records / total / current */
+const selectList = (data: PageResult<KnowledgeDoc>) => ({
+    records: data.records,
+    total: data.total,
+    current: data.current,
+});
 
 export const ADMIN_KNOWLEDGE_KEYS = {
     all: ['admin', 'knowledge'] as const,
@@ -14,6 +22,7 @@ export function useAdminKnowledgeDocs(pageNum: number, pageSize: number) {
             const response = await adminApi.getKnowledgeDocs(pageNum, pageSize);
             return response.data;
         },
+        select: selectList,
         // v5 里 keepPreviousData 改名 placeholderData：翻页 / 换筛选时沿用上一页数据，
         // 否则表格会退回骨架屏再整页重排
         placeholderData: keepPreviousData,

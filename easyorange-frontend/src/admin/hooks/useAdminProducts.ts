@@ -1,6 +1,20 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { PageResult } from '@/types';
 import { adminApi } from '../api/adminApi';
 import type { AdminProduct, AdminProductQuery, UpdateStatusRequest } from '../types/admin';
+
+/**
+ * 只暴露列表页真正消费的三个字段；`size` / `pages` 全仓无人使用，留在返回形状里
+ * 只会让整包数据参与结构共享的深比较。
+ *
+ * 必须定义在模块作用域而非内联：query-core 对「select 引用未变 + data 未变」有
+ * 复用快路径（queryObserver 的 #selectResult），内联会让每次渲染都重跑 select。
+ */
+const selectList = (data: PageResult<AdminProduct>) => ({
+    records: data.records,
+    total: data.total,
+    current: data.current,
+});
 
 export const ADMIN_PRODUCT_KEYS = {
     all: ['admin', 'products'] as const,
@@ -28,6 +42,7 @@ export function useAdminProducts(params: AdminProductQuery) {
             const response = await adminApi.getProducts(params);
             return response.data;
         },
+        select: selectList,
         // v5 里 keepPreviousData 改名 placeholderData：翻页 / 换筛选时沿用上一页数据，
         // 否则表格会退回骨架屏再整页重排
         placeholderData: keepPreviousData,
