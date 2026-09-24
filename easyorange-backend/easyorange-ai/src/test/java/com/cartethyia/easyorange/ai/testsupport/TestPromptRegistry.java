@@ -8,7 +8,7 @@ import java.util.Optional;
  * 测试用 PromptRegistry 桩 — 默认返回以模板名拼成的 stub 正文，避免依赖 classpath YAML 文件。
  * <p>
  * 正文里带上模板名，是为了让「多个 LLM 调用打同一个 mock」的测试能用
- * {@code withSystemContaining("search_intent_system")} 区分调用来自哪个模板；
+ * {@code withSystemContaining("auto_listing")} 区分调用来自哪个模板；
  * 模板内容本身由 {@code PromptContentTest} 单独覆盖。
  * <p>
  * 验「模板缺失」路径用 {@link #empty()}，不要在每个测试里再手写一遍匿名实现。

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import type { Product } from '@/types';
-import type { AiEnhancement, ProductSearchParams } from '@/types/product';
+import type { ProductSearchParams } from '@/types/product';
 import SearchPage from './SearchPage';
 
 function makeProduct(id: string, title: string): Product {
@@ -41,8 +41,6 @@ const mockUseProductSearch = vi.hoisted(() =>
         products: [] as Product[],
         total: 0 as number,
         facets: [] as Array<{ code: string; count: number }>,
-        aiEnhancement: undefined as AiEnhancement | undefined,
-        aiEnhancementDegraded: false as boolean,
         isLoading: false as boolean,
         error: null as Error | null,
     }))
@@ -171,8 +169,6 @@ describe('SearchPage', () => {
             products: mockProducts,
             total: 1,
             facets: [],
-            aiEnhancement: undefined,
-            aiEnhancementDegraded: false,
             isLoading: false,
             error: null,
         });
@@ -195,8 +191,6 @@ describe('SearchPage', () => {
             products: [],
             total: 0,
             facets: [],
-            aiEnhancement: undefined,
-            aiEnhancementDegraded: false,
             isLoading: true,
             error: null,
         });
@@ -215,8 +209,6 @@ describe('SearchPage', () => {
             products: [],
             total: 0,
             facets: [],
-            aiEnhancement: undefined,
-            aiEnhancementDegraded: false,
             isLoading: false,
             error: null,
         });
@@ -252,18 +244,18 @@ describe('SearchPage', () => {
         expect(lastCall?.keyword).toBe('平板');
     });
 
-    it('AI 搜索默认开启，可关闭再开启并透传 aiEnhanced', async () => {
+    it('语义检索默认开启，可关闭再开启并透传 aiEnhanced', async () => {
         renderPage();
         const user = userEvent.setup();
-        // 默认开：按钮初始态即「关闭AI智能搜索」
-        const aiButton = screen.getByTitle('关闭AI智能搜索');
+        // 默认开：按钮初始态即「关闭语义检索」
+        const aiButton = screen.getByTitle(/语义检索已开启/);
         await user.click(aiButton);
 
         const offCall = getLastSearchParams();
         expect(offCall).toBeDefined();
         expect(offCall?.aiEnhanced).toBeFalsy();
 
-        await user.click(screen.getByTitle('开启AI智能搜索'));
+        await user.click(screen.getByTitle(/语义检索已关闭/));
         const onCall = getLastSearchParams();
         expect(onCall).toBeDefined();
         expect(onCall?.aiEnhanced).toBe(true);
@@ -276,8 +268,6 @@ describe('SearchPage', () => {
             // 后端把 Long 序列化成字符串，`total` 落到前端是 "45" 而不是 45
             total: '45' as unknown as number,
             facets: [],
-            aiEnhancement: undefined,
-            aiEnhancementDegraded: false,
             isLoading: false,
             error: null,
         });
@@ -293,50 +283,11 @@ describe('SearchPage', () => {
         expect(getLastSearchParams()?.pageNum).toBe(2);
     });
 
-    it('shows AI degradation notice when enhancement was attempted but failed', () => {
-        mockUseProductSearch.mockReturnValue({
-            products: [makeProduct('p1', '普通商品')],
-            total: 1,
-            facets: [],
-            aiEnhancement: undefined,
-            aiEnhancementDegraded: true,
-            isLoading: false,
-            error: null,
-        });
-        renderWithProviders(<SearchPage />, { initialRoute: '/search?keyword=找便宜手机' });
-
-        expect(screen.getByText('AI 分析暂不可用，结果为普通检索')).toBeInTheDocument();
-        expect(screen.getByTestId('product-card')).toBeInTheDocument();
-    });
-
-    it('renders AI panel instead of degradation notice when enhancement succeeded', () => {
-        mockUseProductSearch.mockReturnValue({
-            products: [makeProduct('p1', '普通商品')],
-            total: 1,
-            facets: [],
-            aiEnhancement: {
-                intentExplanation: '想找便宜手机',
-                productTags: { p1: ['💰超值'] },
-                marketAnalysis: '均价2000',
-                suggestedQuestions: ['哪款耐用？'],
-            },
-            aiEnhancementDegraded: false,
-            isLoading: false,
-            error: null,
-        });
-        renderWithProviders(<SearchPage />, { initialRoute: '/search?keyword=找便宜手机' });
-
-        expect(screen.getByText('AI 智能分析')).toBeInTheDocument();
-        expect(screen.queryByText('AI 分析暂不可用，结果为普通检索')).not.toBeInTheDocument();
-    });
-
     it('hides the pager when all results fit on one page', () => {
         mockUseProductSearch.mockReturnValue({
             products: [makeProduct('p1', '唯一商品')],
             total: 7,
             facets: [],
-            aiEnhancement: undefined,
-            aiEnhancementDegraded: false,
             isLoading: false,
             error: null,
         });

@@ -25,14 +25,6 @@ public enum AiCallScope {
      * 由框架 {@code RateLimitFilter} 统一限流；这一场景实际的治理面是预算与缓存键。
      */
     SEMANTIC(30, "products/search"),
-    /**
-     * 搜索增强 — 4 路工具里唯一打模型的意图识别那一路。
-     * <p>
-     * 与 {@link #SEMANTIC} 同理，入口是商品搜索而非 {@code /api/ai/**}，因此
-     * {@code ratePerMinute} 不由 {@code AiRateLimitInterceptor} 执行，
-     * 该场景实际落地的治理面是预算与调用日志。
-     */
-    SEARCH_ENHANCE(30, "search-enhance"),
     CHAT(20, "chat"),
     KNOWLEDGE(60, "knowledge");
 

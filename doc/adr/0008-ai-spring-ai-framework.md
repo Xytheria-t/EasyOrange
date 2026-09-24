@@ -27,7 +27,9 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 ## 决策（Decision）
 
-**全面框架化**：删除 AI 模块自研的 Port/Adapter/装饰器/自定义 DTO/自定义指标/Python 侧车，业务服务（拍照上架 / 对话与搜索增强 / 知识检索 / 评估）直接注入 Spring AI 的 `ChatModel` / `EmbeddingModel` bean。
+**全面框架化**：删除 AI 模块自研的 Port/Adapter/装饰器/自定义 DTO/自定义指标/Python 侧车，业务服务（拍照上架 / 对话 / 知识检索 / 评估）直接注入 Spring AI 的 `ChatModel` / `EmbeddingModel` bean。
+
+> **2026-09 追记**：决策时列的「搜索增强」链路（`AiSearchEnhancerAdapter` 四路并行）经核查无一具备 Agentic 能力，已整节删除；本 ADR 的其余决策与保留清单不受影响。ADR 记录的是当时的决策，历史口径不因后续删除而改写。
 
 ### 1. 模型 Bean（[AiModelConfig.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/AiModelConfig.java)）
 
@@ -35,7 +37,7 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 | Bean | 端点 | 模型 | 注入处 |
 |------|------|------|--------|
-| `chatModel`（`@Primary`） | DeepSeek `https://api.deepseek.com` | `deepseek-chat` | 发布助手文本生成 / 对话与工具决策 / 搜索意图识别 / LLM-as-Judge 评审 |
+| `chatModel`（`@Primary`） | DeepSeek `https://api.deepseek.com` | `deepseek-chat` | 发布助手文本生成 / 对话与工具决策 / LLM-as-Judge 评审（另：搜索意图识别，2026-09 随搜索增强下线） |
 | `visionChatModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-vl-max` | 拍照上架图片识别 |
 | `embeddingModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | embedding 模型（dimensions=1024） | 语义召回（商品 / 知识库）+ ES 索引写入 |
 
@@ -56,7 +58,7 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 - `@TokenBudget` AOP（预算治理与框架无关，保留；已移除 `AiMetricsService` 依赖）
 - `AiRateLimitInterceptor`（Redis 令牌桶，超限 429，保留；已移除 `AiMetricsService` 依赖）
-- `AiSearchEnhancerAdapter` 的缓存与降级业务逻辑，仅把 LLM 调用点换成 `ChatModel`；查询向量化收敛为 `QueryEmbeddingAdapter`（实现 product 侧 `QueryEmbeddingPort`，不再是独立服务）
+- 查询向量化收敛为 `QueryEmbeddingAdapter`（实现 product 侧 `QueryEmbeddingPort`，不再是独立服务）——**这条仍在**；同段当时的 `AiSearchEnhancerAdapter` 缓存与降级逻辑已于 2026-09 随搜索增强整节删除
 
 ### 5. Embedding 变真实现
 

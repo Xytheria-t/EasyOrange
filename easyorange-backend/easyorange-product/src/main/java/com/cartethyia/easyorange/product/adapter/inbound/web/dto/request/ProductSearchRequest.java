@@ -29,5 +29,6 @@ public class ProductSearchRequest extends PageRequest {
 
     private String location;
 
+    /** 语义检索开关：打开且按相关度排序时向量化查询词，启用 kNN + BM25 + RRF 混合召回 */
     private boolean aiEnhanced;
 }

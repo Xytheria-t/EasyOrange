@@ -44,7 +44,7 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * 多步 Agent 工具循环（ReAct）— 逐轮「决策 → 工具 → 观察」推进，直到模型判定信息足够（finish）。
  * <p>
- * 编排结构（与 4 路并行编排 {@code AiSearchEnhancerAdapter} 形成「Workflow vs 自治 Agent」对照）：
+ * 编排结构（自治循环：调不调、调几次、调什么参数都由模型逐轮决定）：
  * 每轮把 7 个工具的 JSON Schema（{@link AgentTools} 的 {@code @Tool} 注解生成、供应商侧校验）随请求发出，
  * 模型以原生 tool calling 返回「调用哪个工具 + 参数 + 理由」，工具执行结果作为观察进入下一轮决策上下文；
  * 规则类与找货类需求兼有时由模型分两步分别检索，而非一次穷举。

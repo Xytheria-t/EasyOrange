@@ -3,9 +3,7 @@ package com.cartethyia.easyorange.product.application.query;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
 import com.cartethyia.easyorange.product.application.port.query.QueryEmbeddingPort;
@@ -17,7 +15,6 @@ import com.cartethyia.easyorange.product.application.query.readmodel.SearchHisto
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -208,7 +205,7 @@ class ProductSearchQueryHandlerTest {
     }
 
     @Test
-    @DisplayName("开启 AI 智能搜索且按相关性排序时向量化关键词，并把向量交给 ES 走两路召回")
+    @DisplayName("开启语义检索且按相关度排序时向量化关键词，并把向量交给 ES 走两路召回")
     void search_relevanceSort_shouldEmbedKeywordAndEnableTwoLeg() {
         var handler = handlerWith(searchQueryPort, queryEmbeddingPort);
         when(queryEmbeddingPort.embed("手机")).thenReturn(List.of(0.1f, 0.2f));
@@ -244,7 +241,7 @@ class ProductSearchQueryHandlerTest {
     }
 
     @Test
-    @DisplayName("显式排序（价格）不向量化：即使开了 AI 智能搜索，排序语义也压过相关性")
+    @DisplayName("显式排序（价格）不向量化：即使开了语义检索，排序语义也压过相关性")
     void search_explicitSort_shouldNotEmbed() {
         var handler = handlerWith(searchQueryPort, queryEmbeddingPort);
         var criteria = new ProductSearchCriteria("手机", null, null, null, null, null, "price_asc", null, 1, 20);
@@ -290,51 +287,20 @@ class ProductSearchQueryHandlerTest {
     }
 
     @Test
-    @DisplayName("增强失败（degraded）时结果带上降级标记，aiEnhancement 为 null")
-    void search_enhanceFailed_shouldFlagDegraded() {
-        var enhancer = mock(AiSearchEnhancerPort.class);
-        when(enhancer.tryEnhance(any(), any())).thenReturn(AiSearchEnhancerPort.EnhanceOutcome.failed());
-        var handler = new ProductSearchQueryHandler(
-                productQueryRepository,
-                provider((ProductSearchQueryPort) null),
-                provider(enhancer),
-                provider((QueryEmbeddingPort) null));
-        var criteria = new ProductSearchCriteria("找便宜手机", null, null, null, null, null, null, null, 1, 20);
+    @DisplayName("ES 端口缺失时回退 DB 检索，语义开关不影响结果形状")
+    void search_withoutEsPort_shouldFallbackToDb() {
+        var criteria = new ProductSearchCriteria("手机", null, null, null, null, null, null, null, 1, 20);
         when(productQueryRepository.searchProducts(any())).thenReturn(PageResult.of(List.of(testProduct), 1, 1, 20));
 
-        ProductSearchResult result = handler.search(criteria, true);
+        var result = searchQueryHandler.search(criteria, true);
 
-        assertThat(result.aiEnhancement()).isNull();
-        assertThat(result.aiEnhancementDegraded()).isTrue();
-    }
-
-    @Test
-    @DisplayName("增强成功时结果带增强数据，不标降级")
-    void search_enhanceSucceeded_shouldNotFlagDegraded() {
-        var enhancement = new AiEnhancement("想找手机", Map.of(), "均价2000", List.of("哪款耐用？"));
-        var enhancer = mock(AiSearchEnhancerPort.class);
-        when(enhancer.tryEnhance(any(), any())).thenReturn(AiSearchEnhancerPort.EnhanceOutcome.of(enhancement));
-        var handler = new ProductSearchQueryHandler(
-                productQueryRepository,
-                provider((ProductSearchQueryPort) null),
-                provider(enhancer),
-                provider((QueryEmbeddingPort) null));
-        var criteria = new ProductSearchCriteria("找便宜手机", null, null, null, null, null, null, null, 1, 20);
-        when(productQueryRepository.searchProducts(any())).thenReturn(PageResult.of(List.of(testProduct), 1, 1, 20));
-
-        ProductSearchResult result = handler.search(criteria, true);
-
-        assertThat(result.aiEnhancement()).isEqualTo(enhancement);
-        assertThat(result.aiEnhancementDegraded()).isFalse();
+        assertThat(result.page().records()).hasSize(1);
+        assertThat(result.facets()).isEmpty();
     }
 
     /** 按需装配：两个可选出站端口谁在测试里被用到就传谁，传 null 即模拟该 bean 不存在。 */
     private ProductSearchQueryHandler handlerWith(ProductSearchQueryPort esPort, QueryEmbeddingPort embeddingPort) {
-        return new ProductSearchQueryHandler(
-                productQueryRepository,
-                provider(esPort),
-                provider((AiSearchEnhancerPort) null),
-                provider(embeddingPort));
+        return new ProductSearchQueryHandler(productQueryRepository, provider(esPort), provider(embeddingPort));
     }
 
     /** 构造最小 ObjectProvider：bean 为 null 时 getIfAvailable() 返回 null（模拟可选依赖缺失）。 */

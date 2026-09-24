@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.application.port.query.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
@@ -26,24 +25,10 @@ public class ProductSearchQueryHandler {
 
     private final ProductQueryRepository productQueryRepository;
     private final ObjectProvider<ProductSearchQueryPort> searchQueryPort;
-    private final ObjectProvider<AiSearchEnhancerPort> aiSearchEnhancer;
     private final ObjectProvider<QueryEmbeddingPort> queryEmbedding;
 
     @Transactional(readOnly = true)
     public ProductSearchResult search(ProductSearchCriteria criteria, boolean aiEnhanced) {
-        return search(criteria, aiEnhanced, false);
-    }
-
-    /**
-     * 搜索 + 可选强制重算 AI 增强。
-     * <p>
-     * {@code forceEnhanceRefresh} 只给预热用：普通搜索必须按「缓存命中就复用」的口径，
-     * 而预热要的是「每次都重算并重置 TTL」——否则 TTL 长于刷新间隔时会留出
-     * 「上一次写入已过期、下一次刷新还没到」的空窗，录屏撞上就是一次冷首查。
-     */
-    @Transactional(readOnly = true)
-    public ProductSearchResult search(ProductSearchCriteria criteria, boolean aiEnhanced, boolean forceEnhanceRefresh) {
-        List<ProductReadModel> readModels;
         PageResult<ProductReadModel> page;
         List<FacetBucket> facets = List.of();
 
@@ -66,24 +51,14 @@ public class ProductSearchQueryHandler {
                     embedding,
                     !embedding.isEmpty());
             var searchResult = esPort.search(query);
-            readModels = searchResult.records();
             facets = mergeFacetsList(searchResult);
             page = PageResult.of(
                     searchResult.records(), searchResult.total(), searchResult.current(), searchResult.size());
         } else {
             page = productQueryRepository.searchProducts(criteria);
-            readModels = page.records();
         }
 
-        // 未开 AI / 无结果 / 增强器缺失：不尝试 → notApplicable（degraded=false），失败提示只留给真正尝试过又失败的
-        var enhancer = aiSearchEnhancer.getIfAvailable();
-        var outcome = aiEnhanced && enhancer != null && !readModels.isEmpty()
-                ? (forceEnhanceRefresh
-                        ? enhancer.refresh(criteria.keyword(), takeTop(readModels, 5))
-                        : enhancer.tryEnhance(criteria.keyword(), takeTop(readModels, 5)))
-                : AiSearchEnhancerPort.EnhanceOutcome.notApplicable();
-
-        return new ProductSearchResult(page, facets, outcome.enhancement(), outcome.degraded());
+        return new ProductSearchResult(page, facets);
     }
 
     @Transactional(readOnly = true)
@@ -116,7 +91,7 @@ public class ProductSearchQueryHandler {
     /**
      * kNN 那一路的查询向量；返回空列表即关掉该路，检索退化为纯 BM25。
      * <p>
-     * 只在用户显式开启 AI 智能搜索（{@code aiEnhanced}）且按相关性排序时向量化：
+     * 只在用户显式开启语义检索（{@code aiEnhanced}）且按相关性排序时向量化：
      * 词面命中本就精准的关键词搜索没有语义召回的必要 —— kNN 缺相似度下限时在小语料上会召回全库，
      * 融合后把不相关商品顶进结果，还会白付一次 embedding 调用；
      * 用户显式点了价格 / 最新 / 热度同理，排序语义压过相关性，融合排名会和点选的排序打架。
@@ -143,9 +118,5 @@ public class ProductSearchQueryHandler {
                 .forEach(fb -> list.add(new FacetBucket("condition_" + fb.key(), fb.label(), fb.count())));
         result.priceRangeFacets().forEach(fb -> list.add(new FacetBucket("price_" + fb.key(), fb.label(), fb.count())));
         return List.copyOf(list);
-    }
-
-    private static List<ProductReadModel> takeTop(List<ProductReadModel> items, int n) {
-        return items.size() <= n ? items : items.subList(0, n);
     }
 }

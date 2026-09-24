@@ -1,15 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { productApi } from '@/api/productApi';
-import type { AiEnhancement, Product, ProductSearchParams, ProductSearchResult } from '@/types/product';
+import type { Product, ProductSearchParams, ProductSearchResult } from '@/types/product';
 import { normalizeProduct } from '@/utils/product';
 
 export interface UseProductSearchResult {
     products: Product[];
     total: number;
     facets: import('@/types/product').FacetBucket[];
-    aiEnhancement?: AiEnhancement;
-    /** 已开启增强但本次失败（尝试过才为 true，短关键词「不适用」不会误报） */
-    aiEnhancementDegraded: boolean;
     isLoading: boolean;
     /** 与 error 配套：页面用它把"请求失败"和"确实无结果"分开渲染 */
     isError: boolean;
@@ -33,8 +30,6 @@ export function useProductSearch(params: ProductSearchParams = {}): UseProductSe
         products: (query.data?.records ?? []).map(normalizeProduct),
         total: query.data?.total ?? 0,
         facets: query.data?.facets ?? [],
-        aiEnhancement: query.data?.aiEnhancement,
-        aiEnhancementDegraded: query.data?.aiEnhancementDegraded ?? false,
         isLoading: query.isLoading,
         isError: query.isError,
         error: query.error,

@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
-import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -30,7 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * <p>
  * 前端不再逐字段盯这些端点后，封套/字段形状回归会静默潜伏（TD-018 同类）：
  * UI 不调 ≠ 可以烂。这里钉住 SearchPageResponse 的前端消费形状
- * （records/total/current/size/pages/facets/aiEnhancement/aiEnhancementDegraded）与封套 A0000。
+ * （records/total/current/size/pages/facets）与封套 A0000。
  */
 @WebMvcTest(ProductSearchController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -52,10 +51,7 @@ class ProductSearchControllerContractTest {
     void search_garbledKeyword_fullShape() throws Exception {
         when(searchQueryHandler.search(any(), anyBoolean()))
                 .thenReturn(new ProductSearchResult(
-                        PageResult.of(List.of(product()), 1L, 1, 20),
-                        List.of(new FacetBucket("category", "手机", 3)),
-                        null,
-                        false));
+                        PageResult.of(List.of(product()), 1L, 1, 20), List.of(new FacetBucket("category", "手机", 3))));
 
         mockMvc.perform(get("/api/products/search").param("keyword", "乱码%%%查询").param("aiEnhanced", "true"))
                 .andExpect(status().isOk())
@@ -68,24 +64,22 @@ class ProductSearchControllerContractTest {
                 .andExpect(jsonPath("$.data.pages").value(1))
                 .andExpect(jsonPath("$.data.facets[0].code").value("category"))
                 .andExpect(jsonPath("$.data.facets[0].label").value("手机"))
-                .andExpect(jsonPath("$.data.facets[0].count").value(3))
-                .andExpect(jsonPath("$.data.aiEnhancement").value(nullValue()))
-                .andExpect(jsonPath("$.data.aiEnhancementDegraded").value(false));
+                .andExpect(jsonPath("$.data.facets[0].count").value(3));
 
         verify(searchQueryHandler).search(argThat(c -> "乱码%%%查询".equals(c.keyword())), eq(true));
     }
 
     @Test
-    @DisplayName("增强降级标志贯通到响应（降级横幅 aiEnhancementDegraded 的字段契约）")
-    void search_degradedFlag_propagates() throws Exception {
+    @DisplayName("无结果时封套与空分页形状（分页/空态前端消费契约）")
+    void search_noResult_emptyShape() throws Exception {
         when(searchQueryHandler.search(any(), anyBoolean()))
-                .thenReturn(new ProductSearchResult(PageResult.empty(1, 20), List.of(), null, true));
+                .thenReturn(new ProductSearchResult(PageResult.empty(1, 20), List.of()));
 
-        mockMvc.perform(get("/api/products/search").param("keyword", "找个便宜相机").param("aiEnhanced", "true"))
+        mockMvc.perform(get("/api/products/search").param("keyword", "找不到的词").param("aiEnhanced", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("A0000"))
                 .andExpect(jsonPath("$.data.records").isEmpty())
-                .andExpect(jsonPath("$.data.aiEnhancement").value(nullValue()))
-                .andExpect(jsonPath("$.data.aiEnhancementDegraded").value(true));
+                .andExpect(jsonPath("$.data.total").value(0))
+                .andExpect(jsonPath("$.data.facets").isEmpty());
     }
 }
