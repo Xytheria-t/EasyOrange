@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../api/adminApi';
 import type { AdminOrderDetail, AdminOrderQuery, OrderInterventionRequest, OrderStatsResponse } from '../types/admin';
 
@@ -30,6 +30,9 @@ export function useAdminOrders(params: AdminOrderQuery) {
             const response = await adminApi.getOrders(params);
             return response.data;
         },
+        // v5 里 keepPreviousData 改名 placeholderData：翻页 / 换筛选时沿用上一页数据，
+        // 否则表格会退回骨架屏再整页重排
+        placeholderData: keepPreviousData,
         staleTime: 30 * 1000,
         gcTime: 2 * 60 * 1000,
         retry: 1,
