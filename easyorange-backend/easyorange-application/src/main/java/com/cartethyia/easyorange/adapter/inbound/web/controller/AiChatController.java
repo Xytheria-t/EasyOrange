@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
+import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
@@ -36,10 +37,13 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * 流式工作提交到 {@code applicationTaskExecutor}（spring.threads.virtual.enabled=true，虚拟线程），
  * 而非裸 {@code Thread.ofVirtual()}：后者不继承任何 ThreadLocal，SecurityContext / Observation / MDC
  * 全部丢失，长期用户画像与 Langfuse 父 trace 会在唯一的流式路径上静默失效。
+ * {@link SkipRepeatSubmit} 豁免防重：对话非写操作，同一问题 3 秒内二次提交是合法动作
+ * （流式卡住时用户停掉立刻重试是最常见的路径），误拦会以 HTTP 429 打断重试。
  * Controller 只负责事件 → SseEmitter 的适配；客户端断开视为正常收尾，不补发 error。
  */
 @Slf4j
 @SkipRateLimit
+@SkipRepeatSubmit
 @Tag(name = "AI 对话", description = "多轮 Agent 对话（SSE 流式 + 知识库引用溯源）")
 @RestController
 @RequestMapping("/api/ai/chat")

@@ -22,6 +22,21 @@ export class StreamAuthError extends Error {
     }
 }
 
+/**
+ * 服务端返回非 2xx（限流 / 校验失败 / 5xx）。服务端 Result 信封里的 message 是给用户看的
+ * 文案（如「AI 服务繁忙，请稍后重试」），必须透传到界面 —— 笼统报「连接中断」会把
+ * 可自愈的问题（稍后重试即可）伪装成网络故障。
+ */
+export class StreamRequestError extends Error {
+    constructor(
+        message: string,
+        readonly status: number
+    ) {
+        super(message);
+        this.name = 'StreamRequestError';
+    }
+}
+
 /** 无进展超时：与网络故障区分开，前端可提示「响应超时」。 */
 export class StreamIdleTimeoutError extends Error {
     constructor(ms: number) {
@@ -65,7 +80,7 @@ export async function streamChat(
         throw new StreamAuthError();
     }
     if (!response.ok || !response.body) {
-        throw new Error(`stream request failed: HTTP ${response.status}`);
+        throw new StreamRequestError(await responseErrorMessage(response), response.status);
     }
 
     const reader = response.body.getReader();
@@ -153,12 +168,24 @@ export async function streamChat(
     }
 }
 
+/** 非 2xx 时提取用户可读文案：优先 Result 信封的 message，解析不出再退回状态码文案 */
+async function responseErrorMessage(response: Response): Promise<string> {
+    try {
+        const body = (await response.json()) as { message?: unknown };
+        if (body && typeof body.message === 'string' && body.message) {
+            return body.message;
+        }
+    } catch {
+        // 响应体不是 JSON（网关页/空体），走默认文案
+    }
+    return `请求失败（HTTP ${response.status}）`;
+}
+
 /**
  * 解析一帧并派发事件。
  *
  * @returns 该帧是否为终止事件（done / error）—— 流末尾据此判断是否被中途掐断
- */
-function handleFrame(frame: string, onEvent: (event: ChatStreamEvent) => void): boolean {
+ */ function handleFrame(frame: string, onEvent: (event: ChatStreamEvent) => void): boolean {
     let eventName = 'message';
     const dataLines: string[] = [];
     for (const line of frame.split('\n')) {
