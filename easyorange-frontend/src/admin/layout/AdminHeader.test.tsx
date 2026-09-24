@@ -44,19 +44,23 @@ describe('AdminHeader', () => {
             toggleSidebar: vi.fn(),
         });
         mockAuthStore.mockReturnValue({
-            user: { nickname: 'Admin', username: 'admin' },
+            user: { nickname: 'Admin', username: 'admin', userType: '00' },
         });
     });
 
-    it('renders dashboard title by default', () => {
+    // 顶栏不再重复页面标题：标题只有各页页头一处（/admin/stats 深链曾回落成「管理后台」）
+    it('does not render a duplicated page title', () => {
         render(<AdminHeader onOpenMobileNav={vi.fn()} />);
-        expect(screen.getByText('数据统计')).toBeInTheDocument();
+        expect(screen.queryByText('数据统计')).not.toBeInTheDocument();
     });
 
-    it('renders correct title based on pathname', () => {
-        window.location.pathname = '/admin/users';
+    it('shows the real role from userType instead of a hardcoded one', () => {
+        mockAuthStore.mockReturnValue({
+            user: { nickname: 'Admin', username: 'admin', userType: '02' },
+        });
         render(<AdminHeader onOpenMobileNav={vi.fn()} />);
-        expect(screen.getByText('用户管理')).toBeInTheDocument();
+        expect(screen.getByText('管理员')).toBeInTheDocument();
+        expect(screen.queryByText('超级管理员')).not.toBeInTheDocument();
     });
 
     it('shows user name', () => {
@@ -118,11 +122,5 @@ describe('AdminHeader', () => {
         });
         expect(mockLogout).toHaveBeenCalledTimes(1);
         expect(mockAddToast).toHaveBeenCalledWith({ type: 'success', message: '已退出登录' });
-    });
-
-    it('renders unknown path title', () => {
-        window.location.pathname = '/unknown/path';
-        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
-        expect(screen.getByText('管理后台')).toBeInTheDocument();
     });
 });

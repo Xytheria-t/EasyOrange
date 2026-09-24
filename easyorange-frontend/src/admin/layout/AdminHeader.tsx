@@ -4,16 +4,8 @@ import { Button } from '@/components/ui/button';
 import { useLogout, useMediaQuery } from '@/hooks';
 import { useAuthStore } from '@/store';
 import { useUIStore } from '@/store/uiStore';
+import { userTypeLabel } from '../components/StatusBadge';
 import { useAdminStore } from '../store';
-
-const PAGE_TITLES: Record<string, string> = {
-    '/admin': '数据统计',
-    '/admin/users': '用户管理',
-    '/admin/products': '商品审核',
-    '/admin/orders': '订单管理',
-    '/admin/categories': '分类管理',
-    '/admin/knowledge': '知识库管理',
-};
 
 interface AdminHeaderProps {
     onOpenMobileNav: () => void;
@@ -26,9 +18,6 @@ export function AdminHeader({ onOpenMobileNav }: AdminHeaderProps) {
     const logout = useLogout();
     const navigate = useNavigate();
     const isDesktop = useMediaQuery('(min-width: 769px)');
-
-    const pathname = window.location.pathname;
-    const title = PAGE_TITLES[pathname] ?? '管理后台';
 
     const handleBackToSite = () => {
         navigate('/');
@@ -77,19 +66,19 @@ export function AdminHeader({ onOpenMobileNav }: AdminHeaderProps) {
                         </svg>
                     )}
                 </Button>
-                <span className="header-title">{title}</span>
             </div>
 
             <div className="header-right">
                 {/* 两个动作位分开：用户区块只回主站（不结束会话），登出是独立的显式动作 ——
-                    此前一个函数名叫 logout 的按钮只做 navigate('/')，语义割裂，极易误用 */}
+                    此前一个函数名叫 logout 的按钮只做 navigate('/')，语义割裂，极易误用。
+                    角色按真实 userType 显示；此前写死「超级管理员」，管理员（02）看了也是超管 */}
                 <Button variant="ghost" className="header-user" onClick={handleBackToSite} title="返回主站">
                     <div className="header-user-avatar">
                         {user?.nickname?.charAt(0) || user?.username?.charAt(0) || 'A'}
                     </div>
                     <div className="header-user-info">
                         <span className="header-user-name">{user?.nickname || user?.username || '管理员'}</span>
-                        <span className="header-user-role">超级管理员</span>
+                        <span className="header-user-role">{userTypeLabel(user?.userType)}</span>
                     </div>
                 </Button>
                 <Button
