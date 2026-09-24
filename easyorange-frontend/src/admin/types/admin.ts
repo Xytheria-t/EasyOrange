@@ -289,9 +289,10 @@ export interface AuditLogResponse {
     actionDesc: string;
     reason: string | null;
     dimensions: AuditDimension[];
-    beforeStatus: number;
+    /** 商品状态语义码（ProductStatus.code：DRAFT / PENDING_REVIEW / REJECTED / ONLINE / OFFLINE / SOLD），后端 AuditLogResponse 声明为 String */
+    beforeStatus: string;
     beforeStatusDesc: string;
-    afterStatus: number;
+    afterStatus: string;
     afterStatusDesc: string;
     remark: string | null;
     createTime: string;
