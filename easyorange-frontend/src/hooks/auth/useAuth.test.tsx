@@ -110,6 +110,8 @@ describe('useRegister', () => {
         result.current.mutate({
             username: 'newuser',
             password: 'password123',
+            phone: '13800138000',
+            verifyCode: '123456',
         });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));

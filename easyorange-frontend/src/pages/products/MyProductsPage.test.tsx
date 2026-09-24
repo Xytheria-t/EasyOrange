@@ -36,7 +36,6 @@ function createMockProduct(overrides: Partial<Product> = {}): Product {
         images: ['https://example.com/img.jpg'],
         location: '北京',
         views: 50,
-        favorites: 10,
         sellerId: 'user1',
         sellerName: '资产方小明',
         sellerAvatar: null,
