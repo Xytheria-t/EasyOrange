@@ -42,6 +42,11 @@ if (typeof Element.prototype.scrollIntoView !== 'function') {
     Element.prototype.scrollIntoView = () => {};
 }
 
+// jsdom does not implement element scrolling — chat/列表组件用 scrollTo 跟随内容增长
+if (typeof Element.prototype.scrollTo !== 'function') {
+    Element.prototype.scrollTo = () => {};
+}
+
 // jsdom does not implement ResizeObserver — used by Radix Checkbox/Tooltip primitives
 if (typeof globalThis.ResizeObserver === 'undefined') {
     globalThis.ResizeObserver = class ResizeObserver {

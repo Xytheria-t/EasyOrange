@@ -107,6 +107,9 @@ function nextId(): string {
     return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** 贴底判定余量：一次 token 渲染约长高一行，距底这么近都算「在看最新消息」。 */
+const FOLLOW_THRESHOLD = 120;
+
 /** 主动取消（停止按钮 / 卸载）不算故障 */
 function isAbortError(e: unknown): boolean {
     return e instanceof DOMException && e.name === 'AbortError';
@@ -169,16 +172,43 @@ export default function PlaygroundPage() {
     const [announcement, setAnnouncement] = useState('');
     const sessionIdRef = useRef<string>(`sess-${crypto.randomUUID()}`);
     const abortRef = useRef<AbortController | null>(null);
-    const listEndRef = useRef<HTMLDivElement>(null);
-    // 消息数而非整个数组：token 逐个到达时数组引用每次都变，用它当依赖会每个字都滚一次，
-    // 用户向上翻历史会被硬拽回底部。messageCount 在 effect 内不被读取、纯粹是触发器，
-    // biome 的 useExhaustiveDependencies 会把它误报为多余依赖 —— 不要按提示删
-    const messageCount = messages.length;
+    const chatRef = useRef<HTMLDivElement>(null);
+    /** 用户是否贴在消息区底部：贴底 = 流式跟随，上翻读历史 = 停止跟随。 */
+    const isPinnedRef = useRef(true);
+    const prevCountRef = useRef(messages.length);
+    const mountedRef = useRef(false);
 
-    // biome-ignore lint/correctness/useExhaustiveDependencies: messageCount 是触发器，effect 内不读取它
+    // 依赖 messages（引用随 token 到达而变）而不是 messageCount：新消息追加与流式增长要区别对待。
+    // 只依赖 messageCount 的话，流式阶段 effect 根本不跑，长回答会一直长在视口外。
     useEffect(() => {
-        listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messageCount]);
+        const el = chatRef.current;
+        if (!el) {
+            return;
+        }
+        if (!mountedRef.current) {
+            // 首屏只有欢迎语：滚动会连祖先容器一起对齐，把页头拖出视口，第一眼看不到标题
+            mountedRef.current = true;
+            return;
+        }
+        const appended = messages.length !== prevCountRef.current;
+        prevCountRef.current = messages.length;
+        if (appended) {
+            // 发送 / 重试追加新消息：无条件滚到底，用户刚发出的消息必须在视口里
+            el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        } else if (isPinnedRef.current) {
+            // 流式增长：只在贴底时跟随（instant，逐 token 用 smooth 会堆积动画）；
+            // 用户上翻读历史时不抢滚动位置
+            el.scrollTo({ top: el.scrollHeight });
+        }
+    }, [messages]);
+
+    const handleChatScroll = () => {
+        const el = chatRef.current;
+        if (!el) {
+            return;
+        }
+        isPinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < FOLLOW_THRESHOLD;
+    };
 
     useEffect(() => {
         return () => abortRef.current?.abort();
@@ -344,7 +374,7 @@ export default function PlaygroundPage() {
                     </span>
                 </header>
 
-                <div className="playground__chat">
+                <div className="playground__chat" ref={chatRef} onScroll={handleChatScroll}>
                     {messages.map(message => (
                         <div
                             key={message.id}
@@ -449,7 +479,6 @@ export default function PlaygroundPage() {
                             </div>
                         </div>
                     ))}
-                    <div ref={listEndRef} />
                 </div>
 
                 {messages.length === 1 && (
