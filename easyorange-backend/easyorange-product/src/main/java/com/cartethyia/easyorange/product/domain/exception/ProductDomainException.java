@@ -92,16 +92,4 @@ public class ProductDomainException extends BaseBusinessException {
                 message + " (productId=" + (productId != null ? productId.value() : "null") + ", stock="
                         + (currentStock != null ? currentStock.value() : "null") + ")");
     }
-
-    // ==================== 评价 ====================
-
-    /** 评价不存在（B2010）。 */
-    public static ProductDomainException ratingNotFound(String reviewId) {
-        return new ProductDomainException(ProductResultCode.RATING_NOT_FOUND, "评价不存在 (reviewId=" + reviewId + ")");
-    }
-
-    /** 非评价作者（B2011）。 */
-    public static ProductDomainException ratingNotOwner(String reviewId) {
-        return new ProductDomainException(ProductResultCode.RATING_NOT_OWNER, "只能删除自己的评价 (reviewId=" + reviewId + ")");
-    }
 }

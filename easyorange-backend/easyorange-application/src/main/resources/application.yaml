@@ -349,8 +349,6 @@ security:
     - /api/products/search
     - /api/products/search/**
     - /api/products/{id}/similar
-    - /api/products/{id}/reviews
-    - /api/products/{id}/reviews/stats
   static-paths:
     - /static/**
     - /public/**
