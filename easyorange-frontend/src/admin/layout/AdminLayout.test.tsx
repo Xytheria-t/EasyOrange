@@ -14,8 +14,21 @@ vi.mock('@/components/ui/Toast', () => ({
     ToastContainer: () => <div data-testid="toast-container" />,
 }));
 
+vi.mock('@/components/ui/sheet', () => ({
+    Sheet: ({ children }: { children: React.ReactNode }) => <div data-testid="sheet">{children}</div>,
+    SheetContent: ({ children }: { children: React.ReactNode }) => <div data-testid="sheet-content">{children}</div>,
+    SheetHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    SheetTitle: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+    SheetDescription: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+}));
+
+vi.mock('@/hooks', () => ({
+    useMediaQuery: () => false,
+}));
+
 vi.mock('react-router-dom', () => ({
     Outlet: () => <div data-testid="outlet">Page Content</div>,
+    useLocation: () => ({ pathname: '/admin' }),
 }));
 
 const mockAdminStore = vi.fn();
@@ -28,7 +41,7 @@ describe('AdminLayout', () => {
         mockAdminStore.mockReturnValue({ sidebarCollapsed: false });
         render(<AdminLayout />);
 
-        expect(screen.getByTestId('admin-sidebar')).toBeInTheDocument();
+        expect(screen.getAllByTestId('admin-sidebar').length).toBeGreaterThan(0);
         expect(screen.getByTestId('admin-header')).toBeInTheDocument();
         expect(screen.getByTestId('outlet')).toBeInTheDocument();
         expect(screen.getByTestId('toast-container')).toBeInTheDocument();
