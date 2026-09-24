@@ -55,16 +55,6 @@ export {
 } from './sheet';
 export { Switch } from './switch';
 export { ToastContainer } from './Toast';
-export {
-    Table,
-    TableBody,
-    TableCaption,
-    TableCell,
-    TableFooter,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from './table';
 export { Textarea } from './textarea';
 export {
     Toast,

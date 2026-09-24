@@ -190,7 +190,7 @@ describe('ProductReviewPage', () => {
     });
 
     // ── Test 3: Loading state ──
-    it('shows loading spinner when isLoading is true', () => {
+    it('shows a loading skeleton when isLoading is true', () => {
         mockUseAdminProducts.mockReturnValue({
             data: undefined,
             isLoading: true,
@@ -200,7 +200,7 @@ describe('ProductReviewPage', () => {
         });
 
         renderWithProviders(<ProductReviewPage />);
-        expect(screen.getByText('加载中...')).toBeInTheDocument();
+        expect(screen.getByText('加载中')).toBeInTheDocument();
     });
 
     // ── Test 4: Displays products in table ──

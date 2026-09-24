@@ -9,9 +9,9 @@ interface TestItem {
 }
 
 const columns: Column<TestItem>[] = [
-    { key: 'id', title: 'ID', sortable: true },
-    { key: 'name', title: 'Name', sortable: true },
-    { key: 'age', title: 'Age', sortable: true },
+    { key: 'id', title: 'ID' },
+    { key: 'name', title: 'Name' },
+    { key: 'age', title: 'Age' },
 ];
 
 const data: TestItem[] = [
@@ -40,9 +40,10 @@ describe('AdminTable', () => {
         expect(screen.getByText('暂无数据')).toBeInTheDocument();
     });
 
-    it('shows loading state', () => {
+    it('shows a skeleton with an accessible busy status while loading', () => {
         render(<AdminTable columns={columns} data={[]} rowKey="id" loading={true} />);
-        expect(screen.getByText('加载中...')).toBeInTheDocument();
+        expect(screen.getByRole('status')).toHaveAttribute('aria-busy', 'true');
+        expect(screen.getByText('加载中')).toBeInTheDocument();
     });
 
     it('calls onRowClick when row clicked', () => {
@@ -50,35 +51,6 @@ describe('AdminTable', () => {
         render(<AdminTable columns={columns} data={data} rowKey="id" onRowClick={onRowClick} />);
         fireEvent.click(screen.getByText('Alice').closest('td') as HTMLTableCellElement);
         expect(onRowClick).toHaveBeenCalledWith(data[0]);
-    });
-
-    it('sorts ascending on first click', () => {
-        render(<AdminTable columns={columns} data={data} rowKey="id" />);
-        fireEvent.click(screen.getByText('Age'));
-        const rows = screen.getAllByText(/Alice|Bob|Charlie/);
-        // After ascending sort by age: Bob(25), Alice(30), Charlie(35)
-        expect(rows[0]).toHaveTextContent('Bob');
-    });
-
-    it('sorts descending on second click', () => {
-        render(<AdminTable columns={columns} data={data} rowKey="id" />);
-        const ageHeader = screen.getByText('Age');
-        fireEvent.click(ageHeader);
-        fireEvent.click(ageHeader);
-        const rows = screen.getAllByText(/Alice|Bob|Charlie/);
-        // After descending sort by age: Charlie(35), Alice(30), Bob(25)
-        expect(rows[0]).toHaveTextContent('Charlie');
-    });
-
-    it('removes sort on third click', () => {
-        render(<AdminTable columns={columns} data={data} rowKey="id" />);
-        const ageHeader = screen.getByText('Age');
-        fireEvent.click(ageHeader);
-        fireEvent.click(ageHeader);
-        fireEvent.click(ageHeader);
-        const rows = screen.getAllByText(/Alice|Bob|Charlie/);
-        // Back to original order: Alice, Bob, Charlie
-        expect(rows[0]).toHaveTextContent('Alice');
     });
 
     it('shows pagination when pagination prop is provided', () => {
@@ -130,31 +102,12 @@ describe('AdminTable', () => {
         expect(screen.getByText('Mr. Alice')).toBeInTheDocument();
     });
 
-    // ── 键盘可达 ──
-    it('exposes sortable headers as keyboard-focusable buttons', () => {
+    // ── 表头 ──
+    // 客户端排序只作用于当前页，而分页是服务端的——排序结果会被误读成全量有序，砍掉。
+    it('renders plain headers without sort affordances', () => {
         render(<AdminTable columns={columns} data={data} rowKey="id" />);
-        expect(screen.getByRole('button', { name: /ID/ })).toBeInTheDocument();
-    });
-
-    it('sorts when sortable header is activated with Enter', () => {
-        render(<AdminTable columns={columns} data={data} rowKey="id" />);
-        fireEvent.keyDown(screen.getByRole('button', { name: /Age/ }), { key: 'Enter' });
-        // button 的原生 click 由 Enter 触发，这里断言排序已改变
-        fireEvent.click(screen.getByRole('button', { name: /Age/ }));
-        const rows = screen.getAllByText(/Alice|Bob|Charlie/);
-        expect(rows[0]).toHaveTextContent('Bob');
-    });
-
-    it('exposes aria-sort on sortable headers', () => {
-        render(<AdminTable columns={columns} data={data} rowKey="id" />);
-        const idHeader = screen.getByRole('columnheader', { name: /ID/ });
-        expect(idHeader).toHaveAttribute('aria-sort', 'none');
-
-        fireEvent.click(screen.getByRole('button', { name: /ID/ }));
-        expect(screen.getByRole('columnheader', { name: /ID/ })).toHaveAttribute('aria-sort', 'ascending');
-
-        fireEvent.click(screen.getByRole('button', { name: /ID/ }));
-        expect(screen.getByRole('columnheader', { name: /ID/ })).toHaveAttribute('aria-sort', 'descending');
+        expect(screen.getByRole('columnheader', { name: 'Age' })).not.toHaveAttribute('aria-sort');
+        expect(screen.queryByRole('button', { name: /Age/ })).not.toBeInTheDocument();
     });
 
     it('activates clickable rows with Enter and Space', () => {
@@ -193,7 +146,7 @@ describe('AdminTable', () => {
 
     it('prefers loading over error while a request is in flight', () => {
         render(<AdminTable columns={columns} data={[]} rowKey="id" loading error={new Error('炸了')} />);
-        expect(screen.getByText('加载中...')).toBeInTheDocument();
+        expect(screen.getByText('加载中')).toBeInTheDocument();
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 });
