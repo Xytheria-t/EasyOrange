@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { aiApi } from '@/api/aiApi';
-import { StreamAuthError, StreamIdleTimeoutError } from '@/api/core/stream';
+import { StreamAuthError, StreamIdleTimeoutError, StreamRequestError } from '@/api/core/stream';
 import { ProductCard } from '@/components/product/ProductCard';
 import { useProductsByIds } from '@/hooks/product/useProducts';
 import type { AgentStep, ChatSource, ChatStreamEvent } from '@/types/ai';
@@ -253,28 +253,56 @@ export default function PlaygroundPage() {
         setInputValue('');
         setIsStreaming(true);
         setAnnouncement('正在生成回答');
+        await startStream(text, assistantMessage.id);
+    }
 
+    /**
+     * 重试 — 原位重跑该条助手消息：问题不重复入列（重试按钮挂在回答上，问题就在上一条），
+     * 已流出的半截回答与失败说明一并清掉，消息条数保持一问一答。
+     */
+    function handleRetry(messageId: string) {
+        if (isStreaming) {
+            return;
+        }
+        const question = findQuestion(messageId);
+        if (!question) {
+            return;
+        }
+        setMessage(messageId, {
+            content: '',
+            sources: [],
+            steps: [],
+            status: 'streaming',
+            note: undefined,
+            feedback: null,
+        });
+        setIsStreaming(true);
+        setAnnouncement('正在生成回答');
+        void startStream(question, messageId);
+    }
+
+    async function startStream(question: string, assistantId: string) {
         const controller = new AbortController();
         abortRef.current = controller;
 
         const handleEvent = (event: ChatStreamEvent) => {
             switch (event.type) {
                 case 'step':
-                    appendStep(assistantMessage.id, event.data);
+                    appendStep(assistantId, event.data);
                     break;
                 case 'token':
-                    appendToken(assistantMessage.id, event.data);
+                    appendToken(assistantId, event.data);
                     break;
                 case 'sources':
-                    setMessage(assistantMessage.id, { sources: event.data });
+                    setMessage(assistantId, { sources: event.data });
                     break;
                 case 'done':
-                    setMessage(assistantMessage.id, { content: event.data, status: 'done' });
+                    setMessage(assistantId, { content: event.data, status: 'done' });
                     setAnnouncement('回答已生成');
                     setIsStreaming(false);
                     break;
                 case 'error':
-                    setMessage(assistantMessage.id, { note: event.data, status: 'error' });
+                    setMessage(assistantId, { note: event.data, status: 'error' });
                     setAnnouncement('回答生成失败');
                     setIsStreaming(false);
                     break;
@@ -284,7 +312,7 @@ export default function PlaygroundPage() {
         };
 
         try {
-            await aiApi.chatStream({ question: text, sessionId: sessionIdRef.current }, handleEvent, controller.signal);
+            await aiApi.chatStream({ question, sessionId: sessionIdRef.current }, handleEvent, controller.signal);
             // 走到这里说明收到了终止事件（done/error），状态已在 handleEvent 里落定。
             // streamChat 对「流结束却没有终止事件」会抛错，所以这里不再补设状态 ——
             // 补设会把上面刚落的 error 覆盖成 done，重试按钮随之消失
@@ -292,16 +320,19 @@ export default function PlaygroundPage() {
         } catch (e) {
             if (isAbortError(e)) {
                 // 用户主动停止：已流出的部分答案保留，只标状态
-                setMessage(assistantMessage.id, { status: 'stopped', note: '已停止生成' });
+                setMessage(assistantId, { status: 'stopped', note: '已停止生成' });
                 setAnnouncement('已停止生成');
             } else {
                 setAnnouncement('回答生成失败');
                 if (e instanceof StreamAuthError) {
-                    setMessage(assistantMessage.id, { note: e.message, status: 'error' });
+                    setMessage(assistantId, { note: e.message, status: 'error' });
                 } else if (e instanceof StreamIdleTimeoutError) {
-                    setMessage(assistantMessage.id, { note: e.message, status: 'error' });
+                    setMessage(assistantId, { note: e.message, status: 'error' });
+                } else if (e instanceof StreamRequestError) {
+                    // 服务端明确拒绝（限流/校验/5xx）：透传服务端文案，别伪装成「连接中断」
+                    setMessage(assistantId, { note: e.message, status: 'error' });
                 } else {
-                    setMessage(assistantMessage.id, { note: '连接中断，请重试', status: 'error' });
+                    setMessage(assistantId, { note: '连接中断，请重试', status: 'error' });
                 }
             }
             setIsStreaming(false);
@@ -443,7 +474,7 @@ export default function PlaygroundPage() {
                                             <button
                                                 type="button"
                                                 className="playground-msg__retry"
-                                                onClick={() => void handleSend(findQuestion(message.id))}
+                                                onClick={() => handleRetry(message.id)}
                                             >
                                                 <RefreshCw size={12} aria-hidden="true" />
                                                 重试
