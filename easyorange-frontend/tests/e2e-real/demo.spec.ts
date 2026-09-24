@@ -148,25 +148,17 @@ test('T2 描述式搜索 ≤3s 出结果 + 空结果中文引导', async ({ page
     await expect(page.locator('.search-ai-btn-label')).toHaveText('AI 开');
 
     const input = page.getByLabel('搜索商品');
-    // 预热一次（与演示手册一致：外部 LLM 意图识别冷启动 2~3.1s、Redis 增强缓存 TTL 5min，
-    // 演示前搜一次即可让正式演示稳定落在亚秒级；加载期间有「正在搜索中...」反馈兜底）
+    // 冷启动后的第一查即正式计量：后端启动后自动预热搜索增强缓存（AiSearchEnhancementWarmup，
+    // 每 4min 强制刷新 < 5min TTL），录屏不再依赖「先手动搜一次」的人工预热动作。
+    // 门槛 3s 是预热后的新基线；真撞上冷查（预热尚未完成）也由加载中的「正在搜索中...」反馈兜底。
     await input.fill('适合拍夜景的相机');
-    await page.locator('.search-submit-btn').click();
-    await expect
-        .poll(async () => page.locator('.product-card-premium').count(), { timeout: 15_000 })
-        .toBeGreaterThanOrEqual(4);
-
-    // 正式计量：刷新页面重走同一查询（增强缓存已热）
-    await page.reload();
-    await expect(page.getByTitle('关闭AI智能搜索')).toBeVisible({ timeout: 15_000 });
-    await page.getByLabel('搜索商品').fill('适合拍夜景的相机');
     const t0 = Date.now();
     await page.locator('.search-submit-btn').click();
     await expect
         .poll(async () => page.locator('.product-card-premium').count(), { timeout: 15_000 })
         .toBeGreaterThanOrEqual(4);
     const elapsed = Date.now() - t0;
-    console.log(`[T2] 描述式搜索（预热后）出结果耗时 ${elapsed}ms`);
+    console.log(`[T2] 描述式搜索（冷启动首查）出结果耗时 ${elapsed}ms`);
     expect(elapsed, `描述式搜索耗时 ${elapsed}ms`).toBeLessThan(3000);
 
     // AI 意图面板有内容（不是空壳）

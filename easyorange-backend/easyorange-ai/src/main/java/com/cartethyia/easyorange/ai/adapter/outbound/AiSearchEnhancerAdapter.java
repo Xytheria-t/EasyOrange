@@ -82,14 +82,23 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
      */
     @Override
     public EnhanceOutcome tryEnhance(String keyword, List<ProductReadModel> topProducts) {
-        EnhanceOutcome outcome = doTryEnhance(keyword, topProducts);
+        return run(keyword, topProducts, false);
+    }
+
+    @Override
+    public EnhanceOutcome refresh(String keyword, List<ProductReadModel> topProducts) {
+        return run(keyword, topProducts, true);
+    }
+
+    private EnhanceOutcome run(String keyword, List<ProductReadModel> topProducts, boolean forceRefresh) {
+        EnhanceOutcome outcome = doTryEnhance(keyword, topProducts, forceRefresh);
         if (outcome.degraded()) {
             meterRegistry.counter("easyorange.ai.search.enhance.degraded").increment();
         }
         return outcome;
     }
 
-    private EnhanceOutcome doTryEnhance(String keyword, List<ProductReadModel> topProducts) {
+    private EnhanceOutcome doTryEnhance(String keyword, List<ProductReadModel> topProducts, boolean forceRefresh) {
         try {
             // 前置检查不适用（非自然语言 / 无结果）：没尝试过，不算降级
             if (!nlDetector.isNaturalLanguage(keyword) || topProducts == null || topProducts.isEmpty()) {
@@ -101,7 +110,8 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
                 log.info("action=search_enhance_force_fail, keyword={}", keyword);
                 return EnhanceOutcome.failed();
             }
-            AiEnhancement enhancement = doEnhance(keyword, topProducts).orElse(null);
+            AiEnhancement enhancement =
+                    doEnhance(keyword, topProducts, forceRefresh).orElse(null);
             return enhancement != null ? EnhanceOutcome.of(enhancement) : EnhanceOutcome.failed();
         } catch (Exception e) {
             // 契约：异常不越过 Port 边界（调用方无兜底，逃逸即整个检索接口失败）
@@ -110,10 +120,11 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         }
     }
 
-    private Optional<AiEnhancement> doEnhance(String keyword, List<ProductReadModel> topProducts) {
+    private Optional<AiEnhancement> doEnhance(
+            String keyword, List<ProductReadModel> topProducts, boolean forceRefresh) {
         String cacheKey = CACHE_KEY_PREFIX + md5(keyword);
 
-        if (redisTemplate != null) {
+        if (redisTemplate != null && !forceRefresh) {
             try {
                 // 反序列化失败/类型不符时抛异常，由下方 catch 降级重算（原 CacheUtils.cast 语义等价）
                 AiEnhancement cached =
