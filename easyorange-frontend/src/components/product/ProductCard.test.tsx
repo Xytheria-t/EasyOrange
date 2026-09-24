@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { createMockProduct } from '@/testUtils/factories';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
@@ -71,5 +71,45 @@ describe('ProductCard', () => {
     it('shows view count', () => {
         renderWithProviders(<ProductCard product={baseProduct} />);
         expect(screen.getByText(/50 浏览/)).toBeInTheDocument();
+    });
+
+    describe('variant="compact"', () => {
+        const twoImageProduct = createMockProduct({
+            ...baseProduct,
+            images: ['https://example.com/1.jpg', 'https://example.com/2.jpg'],
+            description: '一段商品描述',
+        });
+
+        it('根元素带 compact modifier', () => {
+            const { container } = renderWithProviders(<ProductCard product={baseProduct} variant="compact" />);
+            expect(container.querySelector('.product-card-premium--compact')).toBeInTheDocument();
+        });
+
+        it('保留标题链接与价格', () => {
+            const { container } = renderWithProviders(<ProductCard product={baseProduct} variant="compact" />);
+            const link = screen.getByRole('link', { name: '测试商品标题' });
+            expect(link).toHaveAttribute('href', '/products/1');
+            expect(container.querySelector('.price-current-premium')).toHaveTextContent('¥100');
+            expect(container.querySelector('.price-original-premium')).toHaveTextContent('¥150');
+        });
+
+        it('不渲染第二张图、徽标、操作按钮、图片价格标签、描述、浏览量', () => {
+            const { container } = renderWithProviders(<ProductCard product={twoImageProduct} variant="compact" />);
+            expect(container.querySelector('.secondary-img')).toBeNull();
+            expect(container.querySelector('.product-badges-premium')).toBeNull();
+            expect(container.querySelector('.product-actions-premium')).toBeNull();
+            expect(container.querySelector('.product-image-price-tag')).toBeNull();
+            expect(container.querySelector('.product-desc-expand')).toBeNull();
+            expect(container.querySelector('.product-stat-row-premium')).toBeNull();
+            expect(container.querySelector('.product-card-shimmer')).toBeNull();
+        });
+
+        it('不绑定 3D 倾斜的鼠标事件', () => {
+            const { container } = renderWithProviders(<ProductCard product={baseProduct} variant="compact" />);
+            const figure = container.querySelector('.product-image-premium');
+            expect(figure?.getAttribute('onmousemove')).toBeNull();
+            fireEvent.mouseMove(figure as Element, { clientX: 10, clientY: 10 });
+            expect(container.querySelector('.product-card-premium')).not.toHaveAttribute('data-tilt-active');
+        });
     });
 });
