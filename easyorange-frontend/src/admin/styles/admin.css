@@ -1691,6 +1691,50 @@
     max-width: 100%;
 }
 
+/* 统计卡：卡片自带内边距与结构（标签行 + 大数字）。
+   此前内容直接贴着卡片边缘：标签顶着上沿、数字裁在下沿，
+   右上角还压了一个装饰圆。 */
+.admin-stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 1.05rem 1.15rem 0.95rem;
+}
+
+.admin-stat-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.admin-stat-card-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--admin-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-stat-card-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--admin-faint);
+}
+
+/* 数字用等宽数字变体：多次刷新时各位数宽度稳定，不左右抖 */
+.admin-stat-card-value {
+    font-family: var(--admin-font-price);
+    font-size: 2.1rem;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--admin-ink);
+    font-variant-numeric: tabular-nums;
+}
+
 /* 统计卡网格：按容器宽度自动决定列数，不写死列数 */
 .admin-stat-grid {
     display: grid;

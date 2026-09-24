@@ -56,7 +56,7 @@ const sampleCategories: CategoryResponse[] = [
         name: '电子产品',
         parentId: null,
         parentName: null,
-        level: 0,
+        level: 1,
         sortOrder: 1,
         status: 1,
         productCount: 100,
@@ -68,7 +68,7 @@ const sampleCategories: CategoryResponse[] = [
         name: '图书',
         parentId: null,
         parentName: null,
-        level: 0,
+        level: 1,
         sortOrder: 2,
         status: 1,
         productCount: 50,
@@ -80,10 +80,23 @@ const sampleCategories: CategoryResponse[] = [
         name: '服装',
         parentId: null,
         parentName: null,
-        level: 0,
+        level: 1,
         sortOrder: 3,
         status: 0,
         productCount: 30,
+        createTime: null,
+        updateTime: null,
+    },
+    // 二级分类：一级计数已归并它，进分布图会把同一件商品算两遍
+    {
+        categoryId: '4',
+        name: '手机',
+        parentId: '1',
+        parentName: '电子产品',
+        level: 2,
+        sortOrder: 1,
+        status: 1,
+        productCount: 60,
         createTime: null,
         updateTime: null,
     },
@@ -214,6 +227,8 @@ describe('StatsPage', () => {
 
         expect(screen.getByText(/商品分类分布/)).toBeInTheDocument();
         expect(screen.getByText('电子产品')).toBeInTheDocument();
+        // 二级分类已被一级归并，不得再进分布图（否则同一件商品计两次）
+        expect(screen.queryByText('手机')).not.toBeInTheDocument();
         expect(screen.getByText('图书')).toBeInTheDocument();
         expect(screen.getByText('服装')).toBeInTheDocument();
 
