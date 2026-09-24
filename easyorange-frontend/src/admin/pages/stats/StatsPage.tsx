@@ -1,7 +1,6 @@
 import { BarChart3, Bell, Package, ShoppingCart, Tag, TrendingUp, Users } from 'lucide-react';
 import { useMemo } from 'react';
 import { AdminCard, AdminErrorBanner, AdminPage, AdminPageHeader } from '../../components/AdminPage';
-import { accentNumberText, labelText, mutedText, sectionTitleText, statusDot } from '../../components/admin-theme';
 import { useAdminCategories, useAdminOrderStats, useDashboardStats, useRecentActivity, useTrend } from '../../hooks';
 import { LazyTrendChart } from './charts/lazyCharts';
 
@@ -140,22 +139,26 @@ export default function StatsPage() {
                                 gap: '0.5rem',
                             }}
                         >
-                            <span style={labelText}>{label}</span>
+                            <span className="admin-label">{label}</span>
                             <Icon size={17} aria-hidden="true" style={{ color: 'var(--admin-faint)' }} />
                         </div>
                         {/* 口径：累计值 vs 今日值在标签里写清楚 */}
-                        <span style={accentNumberText}>{isLoading || isError ? '—' : value.toLocaleString()}</span>
+                        <span className="admin-accent-number">
+                            {isLoading || isError ? '—' : value.toLocaleString()}
+                        </span>
                     </AdminCard>
                 ))}
             </div>
 
             <AdminCard>
                 <div className="admin-toolbar" style={{ padding: '0.9rem 1.15rem' }}>
-                    <strong style={{ ...labelText, alignSelf: 'center' }}>订单摘要</strong>
+                    <strong className="admin-label" style={{ alignSelf: 'center' }}>
+                        订单摘要
+                    </strong>
                     {orderError ? (
-                        <span style={mutedText}>订单数据加载失败，刷新页面重试</span>
+                        <span className="admin-muted">订单数据加载失败，刷新页面重试</span>
                     ) : orderLoading ? (
-                        <span style={mutedText}>加载中…</span>
+                        <span className="admin-muted">加载中…</span>
                     ) : (
                         orderSummary.map(
                             item =>
@@ -164,8 +167,10 @@ export default function StatsPage() {
                                         key={item.label}
                                         style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                                     >
-                                        <span style={statusDot(item.color)} />
-                                        <span style={{ ...mutedText, fontSize: '0.78rem' }}>{item.label}</span>
+                                        <span className="admin-status-dot" style={{ background: item.color }} />
+                                        <span className="admin-muted" style={{ fontSize: '0.78rem' }}>
+                                            {item.label}
+                                        </span>
                                         <span
                                             style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--admin-ink)' }}
                                         >
@@ -180,8 +185,12 @@ export default function StatsPage() {
 
             <div className="admin-split">
                 <AdminCard>
-                    <h2 style={{ ...sectionTitleText, marginBottom: '0.35rem' }}>月度趋势</h2>
-                    <p style={{ ...mutedText, marginBottom: '1rem' }}>单位：条 / 笔，近 6 个月</p>
+                    <h2 className="admin-section-title" style={{ marginBottom: '0.35rem' }}>
+                        月度趋势
+                    </h2>
+                    <p className="admin-muted" style={{ marginBottom: '1rem' }}>
+                        单位：条 / 笔，近 6 个月
+                    </p>
                     {trendError ? (
                         <PanelState kind="error" height={280} />
                     ) : (
@@ -192,18 +201,15 @@ export default function StatsPage() {
 
                 <AdminCard>
                     <h2
-                        style={{
-                            ...sectionTitleText,
-                            marginBottom: '0.35rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                        }}
+                        className="admin-section-title"
+                        style={{ marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                     >
                         <Tag size={15} aria-hidden="true" style={{ color: 'var(--admin-faint)' }} />
                         商品分类分布
                     </h2>
-                    <p style={{ ...mutedText, marginBottom: '1rem' }}>按在架商品数排序，取前 6 个分类</p>
+                    <p className="admin-muted" style={{ marginBottom: '1rem' }}>
+                        按在架商品数排序，取前 6 个分类
+                    </p>
                     {categoriesLoading ? (
                         <PanelState kind="loading" />
                     ) : categoriesError ? (
@@ -230,7 +236,7 @@ export default function StatsPage() {
                                         >
                                             {cat.name}
                                         </span>
-                                        <span style={mutedText}>
+                                        <span className="admin-muted">
                                             {cat.count} 件 ({Math.round(cat.pct)}%)
                                         </span>
                                     </div>
@@ -261,18 +267,15 @@ export default function StatsPage() {
 
             <AdminCard>
                 <h2
-                    style={{
-                        ...sectionTitleText,
-                        marginBottom: '0.35rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                    }}
+                    className="admin-section-title"
+                    style={{ marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >
                     <Bell size={15} aria-hidden="true" style={{ color: 'var(--admin-faint)' }} />
                     最近动态
                 </h2>
-                <p style={{ ...mutedText, marginBottom: '0.75rem' }}>用户、商品、订单的最新变更</p>
+                <p className="admin-muted" style={{ marginBottom: '0.75rem' }}>
+                    用户、商品、订单的最新变更
+                </p>
                 {activityLoading ? (
                     <PanelState kind="loading" height={100} />
                 ) : activityError ? (
@@ -294,12 +297,16 @@ export default function StatsPage() {
                                         idx < recentActivity.length - 1 ? '1px solid var(--admin-line-soft)' : 'none',
                                 }}
                             >
-                                <span style={statusDot(ACTIVITY_COLORS[activity.type] ?? '#9B9590')} />
+                                <span
+                                    className="admin-status-dot"
+                                    style={{ background: ACTIVITY_COLORS[activity.type] ?? '#9B9590' }}
+                                />
                                 <span style={{ flex: 1, fontSize: '0.87rem', color: 'var(--admin-ink-soft)' }}>
                                     {activity.text}
                                 </span>
                                 <span
-                                    style={{ ...mutedText, fontSize: '0.78rem', flexShrink: 0, whiteSpace: 'nowrap' }}
+                                    className="admin-muted"
+                                    style={{ fontSize: '0.78rem', flexShrink: 0, whiteSpace: 'nowrap' }}
                                 >
                                     {activity.time}
                                 </span>

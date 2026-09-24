@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { AdminDetailModal } from '@/admin/components/AdminDetailModal';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { insetSurface, labelText, valueText } from '../../components/admin-theme';
 import { pickAvatarGradient } from '../../components/avatarGradient';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -136,8 +135,8 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                 <div>
                     {/* 头像 + 当前状态 */}
                     <div
+                        className="admin-inset"
                         style={{
-                            ...insetSurface(),
                             display: 'flex',
                             alignItems: 'center',
                             gap: '1rem',
@@ -168,7 +167,9 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                             <p style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--admin-ink)' }}>
                                 {user.nickname || user.username}
                             </p>
-                            <p style={{ ...labelText, marginTop: '0.2rem' }}>@{user.username}</p>
+                            <p className="admin-label" style={{ marginTop: '0.2rem' }}>
+                                @{user.username}
+                            </p>
                         </div>
                         <StatusBadge status={user.status ?? ''} type="user" />
                     </div>
@@ -186,10 +187,12 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                             },
                             { label: '注册时间', value: formatDate(user.createTime) },
                         ].map(item => (
-                            <div key={item.label} style={insetSurface()}>
+                            <div key={item.label} className="admin-inset">
                                 <div style={{ padding: '0.65rem 0.85rem' }}>
-                                    <p style={{ ...labelText, marginBottom: '0.2rem' }}>{item.label}</p>
-                                    <p style={valueText}>{item.value}</p>
+                                    <p className="admin-label" style={{ marginBottom: '0.2rem' }}>
+                                        {item.label}
+                                    </p>
+                                    <p className="admin-value">{item.value}</p>
                                 </div>
                             </div>
                         ))}
@@ -197,7 +200,9 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
 
                     {/* 状态选择：与分类编辑共用 Radix RadioGroup，键盘与读屏语义一致 */}
                     <fieldset>
-                        <legend style={{ ...labelText, marginBottom: '0.5rem' }}>调整状态</legend>
+                        <legend className="admin-label" style={{ marginBottom: '0.5rem' }}>
+                            调整状态
+                        </legend>
                         <RadioGroup
                             value={selectedStatus}
                             onValueChange={setSelectedStatus}

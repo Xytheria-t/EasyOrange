@@ -2,7 +2,6 @@ import { Search } from 'lucide-react';
 import { type ReactNode, useId } from 'react';
 import { Button } from '@/components/ui/button';
 import { AdminSelect } from './AdminSelect';
-import { labelText, textInput } from './admin-theme';
 
 /**
  * 工具栏控件 —— 收敛此前 4 个页面逐字复制的搜索框与筛选下拉。
@@ -39,7 +38,7 @@ export function AdminSearchInput({
     return (
         <div className="admin-search">
             <div style={{ flex: 1, minWidth: 0 }}>
-                <label htmlFor={inputId} style={{ ...labelText, display: 'block' }}>
+                <label htmlFor={inputId} className="admin-label" style={{ display: 'block' }}>
                     关键词
                 </label>
                 {/* 图标单独包一层：放在 label 同级会让 50% 居中落到 label+输入框的中点 */}
@@ -69,7 +68,8 @@ export function AdminSearchInput({
                                 onSubmit();
                             }
                         }}
-                        style={{ ...textInput(), paddingLeft: '2.4rem' }}
+                        className="admin-input"
+                        style={{ paddingLeft: '2.4rem' }}
                     />
                 </div>
             </div>
@@ -113,7 +113,7 @@ export function AdminFilterField({
 
     return (
         <div className="admin-filter">
-            <label htmlFor={selectId} style={labelText}>
+            <label htmlFor={selectId} className="admin-label">
                 {label}
             </label>
             <AdminSelect
@@ -144,7 +144,11 @@ export function AdminField({ label, required = false, error, hint, children }: A
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label htmlFor={id} style={{ ...labelText, display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+            <label
+                htmlFor={id}
+                className="admin-label"
+                style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}
+            >
                 {label}
                 {required ? (
                     <span aria-hidden="true" style={{ color: 'var(--admin-danger)' }}>
