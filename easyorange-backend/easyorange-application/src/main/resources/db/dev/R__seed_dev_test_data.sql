@@ -721,7 +721,7 @@ INSERT INTO `eo_message` (
 (7,  NULL, 1, 3, '收到新订单', '你的商品「iPhone 14 Pro Max 256G 暗紫色」有新订单，请尽快处理。订单号：ORD20260101001', 1, NOW() - INTERVAL 60 DAY, 1, NULL, NOW() - INTERVAL 60 DAY, NOW()),
 (8,  NULL, 3, 3, '支付成功', '订单 ORD20260101001 支付成功，资产方将尽快发货。', 1, NOW() - INTERVAL 60 DAY, 1, NULL, NOW() - INTERVAL 60 DAY, NOW()),
 (9,  NULL, 1, 3, '认领方已付款', '订单 ORD20260101001 认领方已付款，请尽快发货。', 1, NOW() - INTERVAL 60 DAY, 1, NULL, NOW() - INTERVAL 60 DAY, NOW()),
-(10, NULL, 3, 3, '订单已完成', '订单 ORD20260101001 已完成，快去评价吧！', 1, NOW() - INTERVAL 58 DAY, 1, NULL, NOW() - INTERVAL 58 DAY, NOW()),
+(10, NULL, 3, 3, '订单已完成', '订单 ORD20260101001 已完成，交易款已结算至你的账户。', 1, NOW() - INTERVAL 58 DAY, 1, NULL, NOW() - INTERVAL 58 DAY, NOW()),
 (11, NULL, 7, 3, '订单创建成功', '你已成功下单「小米14 Ultra 16+512 白色」，请尽快完成支付。订单号：ORD20260202001', 1, NOW() - INTERVAL 2 DAY, 5, NULL, NOW() - INTERVAL 2 DAY, NOW()),
 (12, NULL, 5, 3, '收到新订单', '你的商品「小米14 Ultra 16+512 白色」有新订单，请尽快处理。', 0, NULL, 5, NULL, NOW() - INTERVAL 2 DAY, NOW()),
 -- 私聊消息

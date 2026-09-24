@@ -914,19 +914,6 @@
     margin-bottom: 16px;
 }
 
-.ai-apply-review {
-    width: 100%;
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #ca8a04 0%, #eab308 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    margin-top: 8px;
-}
-
 .confidence {
     margin-left: auto;
     font-size: 12px;

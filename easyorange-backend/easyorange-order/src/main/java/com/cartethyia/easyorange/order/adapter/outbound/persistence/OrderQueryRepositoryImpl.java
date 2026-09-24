@@ -82,29 +82,6 @@ public class OrderQueryRepositoryImpl extends BaseRepository<OrderMapper, OrderD
                 .toList();
     }
 
-    @Override
-    public Optional<String> findCompletedOrderId(String buyerId, String productId) {
-        List<String> orderIds =
-                orderItemMapper
-                        .selectList(new LambdaQueryWrapper<OrderItemDO>().eq(OrderItemDO::getProductId, productId))
-                        .stream()
-                        .map(OrderItemDO::getOrderId)
-                        .distinct()
-                        .toList();
-        if (orderIds.isEmpty()) {
-            return Optional.empty();
-        }
-        return lambdaQuery()
-                .eq(OrderDO::getBuyerId, buyerId)
-                .eq(OrderDO::getStatus, OrderStatus.COMPLETED)
-                .in(OrderDO::getId, orderIds)
-                .orderByDesc(OrderDO::getCreateTime)
-                .list()
-                .stream()
-                .findFirst()
-                .map(OrderDO::getId);
-    }
-
     /**
      * 页内订单一次 IN 查询批量加载行项 — 列表读模型缺行项会导致前端商品名/图恒空。
      */
