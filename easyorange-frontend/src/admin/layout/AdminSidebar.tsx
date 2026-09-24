@@ -129,7 +129,14 @@ const navItems = [
     },
 ];
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+    /** 移动端抽屉里点击导航项后关闭抽屉 */
+    onNavigate?: () => void;
+    /** 抽屉内复用时覆盖定位方式 */
+    className?: string;
+}
+
+export function AdminSidebar({ onNavigate, className = '' }: AdminSidebarProps = {}) {
     const { sidebarCollapsed } = useAdminStore();
     const location = useLocation();
 
@@ -140,8 +147,11 @@ export function AdminSidebar() {
         return location.pathname.startsWith(path);
     };
 
+    // 抽屉内始终展开，不跟随桌面端的折叠态
+    const collapsed = className.includes('admin-sidebar--drawer') ? false : sidebarCollapsed;
+
     return (
-        <aside className={`admin-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <aside className={`admin-sidebar ${collapsed ? 'collapsed' : ''} ${className}`}>
             {/* Logo */}
             <div className="sidebar-logo">
                 <div className="sidebar-logo-icon">
@@ -172,6 +182,7 @@ export function AdminSidebar() {
                                 to={item.path}
                                 className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
                                 title={sidebarCollapsed ? item.label : undefined}
+                                onClick={onNavigate}
                             >
                                 <span className="nav-item-icon">{item.icon}</span>
                                 <span className="nav-item-text">{item.label}</span>
@@ -183,7 +194,12 @@ export function AdminSidebar() {
 
             {/* Footer */}
             <div className="sidebar-footer">
-                <Link to="/" className="sidebar-back-link" title={sidebarCollapsed ? '返回主站' : undefined}>
+                <Link
+                    to="/"
+                    className="sidebar-back-link"
+                    title={sidebarCollapsed ? '返回主站' : undefined}
+                    onClick={onNavigate}
+                >
                     <svg
                         aria-hidden="true"
                         fill="none"

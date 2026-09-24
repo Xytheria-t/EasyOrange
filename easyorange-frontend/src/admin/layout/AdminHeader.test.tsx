@@ -17,9 +17,15 @@ vi.mock('@/store', () => ({
     useAuthStore: () => mockAuthStore(),
 }));
 
+const mockUseMediaQuery = vi.fn(() => true);
+vi.mock('@/hooks', () => ({
+    useMediaQuery: () => mockUseMediaQuery(),
+}));
+
 describe('AdminHeader', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseMediaQuery.mockReturnValue(true);
         // Mock window.location.pathname
         Object.defineProperty(window, 'location', {
             value: { pathname: '/admin' },
@@ -36,23 +42,23 @@ describe('AdminHeader', () => {
     });
 
     it('renders dashboard title by default', () => {
-        render(<AdminHeader />);
+        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
         expect(screen.getByText('数据统计')).toBeInTheDocument();
     });
 
     it('renders correct title based on pathname', () => {
         window.location.pathname = '/admin/users';
-        render(<AdminHeader />);
+        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
         expect(screen.getByText('用户管理')).toBeInTheDocument();
     });
 
     it('shows user name', () => {
-        render(<AdminHeader />);
+        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
         expect(screen.getByText('Admin')).toBeInTheDocument();
     });
 
     it('shows user avatar initial', () => {
-        render(<AdminHeader />);
+        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
         expect(screen.getByText('A')).toBeInTheDocument();
     });
 
@@ -62,7 +68,7 @@ describe('AdminHeader', () => {
             sidebarCollapsed: false,
             toggleSidebar,
         });
-        render(<AdminHeader />);
+        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
         fireEvent.click(screen.getByTitle('收起侧边栏'));
         expect(toggleSidebar).toHaveBeenCalledTimes(1);
     });
@@ -72,19 +78,33 @@ describe('AdminHeader', () => {
             sidebarCollapsed: true,
             toggleSidebar: vi.fn(),
         });
-        render(<AdminHeader />);
+        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
         expect(screen.getByTitle('展开侧边栏')).toBeInTheDocument();
     });
 
+    it('opens mobile nav instead of toggling on narrow viewport', () => {
+        mockUseMediaQuery.mockReturnValue(false);
+        const toggleSidebar = vi.fn();
+        const onOpenMobileNav = vi.fn();
+        mockAdminStore.mockReturnValue({
+            sidebarCollapsed: false,
+            toggleSidebar,
+        });
+        render(<AdminHeader onOpenMobileNav={onOpenMobileNav} />);
+        fireEvent.click(screen.getByTitle('打开导航菜单'));
+        expect(onOpenMobileNav).toHaveBeenCalledTimes(1);
+        expect(toggleSidebar).not.toHaveBeenCalled();
+    });
+
     it('navigates to home when clicking user section', () => {
-        render(<AdminHeader />);
+        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
         fireEvent.click(screen.getByTitle('返回主站'));
         expect(mockNavigate).toHaveBeenCalledWith('/');
     });
 
     it('renders unknown path title', () => {
         window.location.pathname = '/unknown/path';
-        render(<AdminHeader />);
+        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
         expect(screen.getByText('管理后台')).toBeInTheDocument();
     });
 });

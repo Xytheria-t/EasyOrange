@@ -22,4 +22,4 @@ export {
     useSimilarProducts,
     useUpdateProduct,
 } from './product';
-export { useColumnCount, useListUrlState, useScrollReveal } from './ui';
+export { useColumnCount, useListUrlState, useMediaQuery, useScrollReveal } from './ui';

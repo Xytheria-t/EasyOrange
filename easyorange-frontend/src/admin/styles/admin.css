@@ -461,11 +461,6 @@
 }
 
 @media (max-width: 768px) {
-    .admin-sidebar {
-        transform: translateX(-100%);
-        width: var(--admin-sidebar-width);
-    }
-
     .admin-header {
         left: 0;
     }
@@ -478,6 +473,37 @@
     .header-user-info {
         display: none;
     }
+}
+
+/* ============ Mobile Nav Drawer ============ */
+.admin-nav-drawer {
+    width: min(280px, 85vw);
+    padding: 0;
+    background: var(--admin-card-bg);
+}
+
+/* 抽屉内复用侧边栏结构：去掉固定定位与背景装饰，回到展开态 */
+.admin-sidebar--drawer {
+    position: static;
+    width: 100%;
+    height: 100%;
+    background: var(--admin-card-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-right: none;
+}
+
+.admin-sidebar--drawer::before,
+.admin-sidebar--drawer::after {
+    display: none;
+}
+
+/* 抽屉永远是展开态，抵消 1024px 断点里"窄屏即收起文字"的规则 */
+.admin-sidebar--drawer .sidebar-logo-text,
+.admin-sidebar--drawer .nav-section-title,
+.admin-sidebar--drawer .nav-item-text,
+.admin-sidebar--drawer .sidebar-back-link span {
+    opacity: 1;
 }
 
 /* ============ Animation Classes ============ */
