@@ -35,9 +35,8 @@ public class AgentTraceRecorder implements AgentTracePort {
     public void record(AgentStepTrace trace) {
         try {
             // sessionId 契约上可空（首轮 / 直连 API 不带会话），列 NOT NULL：收敛为匿名桶，步骤轨迹不丢
-            String sessionId = trace.sessionId() == null || trace.sessionId().isBlank()
-                    ? "anonymous"
-                    : trace.sessionId();
+            String sessionId =
+                    trace.sessionId() == null || trace.sessionId().isBlank() ? "anonymous" : trace.sessionId();
             jdbcTemplate.update(
                     INSERT_SQL,
                     idGenerator.generateId(),
