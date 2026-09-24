@@ -31,6 +31,18 @@ public class ProductSearchQueryHandler {
 
     @Transactional(readOnly = true)
     public ProductSearchResult search(ProductSearchCriteria criteria, boolean aiEnhanced) {
+        return search(criteria, aiEnhanced, false);
+    }
+
+    /**
+     * 搜索 + 可选强制重算 AI 增强。
+     * <p>
+     * {@code forceEnhanceRefresh} 只给预热用：普通搜索必须按「缓存命中就复用」的口径，
+     * 而预热要的是「每次都重算并重置 TTL」——否则 TTL 长于刷新间隔时会留出
+     * 「上一次写入已过期、下一次刷新还没到」的空窗，录屏撞上就是一次冷首查。
+     */
+    @Transactional(readOnly = true)
+    public ProductSearchResult search(ProductSearchCriteria criteria, boolean aiEnhanced, boolean forceEnhanceRefresh) {
         List<ProductReadModel> readModels;
         PageResult<ProductReadModel> page;
         List<FacetBucket> facets = List.of();
@@ -66,7 +78,9 @@ public class ProductSearchQueryHandler {
         // 未开 AI / 无结果 / 增强器缺失：不尝试 → notApplicable（degraded=false），失败提示只留给真正尝试过又失败的
         var enhancer = aiSearchEnhancer.getIfAvailable();
         var outcome = aiEnhanced && enhancer != null && !readModels.isEmpty()
-                ? enhancer.tryEnhance(criteria.keyword(), takeTop(readModels, 5))
+                ? (forceEnhanceRefresh
+                        ? enhancer.refresh(criteria.keyword(), takeTop(readModels, 5))
+                        : enhancer.tryEnhance(criteria.keyword(), takeTop(readModels, 5)))
                 : AiSearchEnhancerPort.EnhanceOutcome.notApplicable();
 
         return new ProductSearchResult(page, facets, outcome.enhancement(), outcome.degraded());

@@ -18,6 +18,20 @@ public interface AiSearchEnhancerPort {
     EnhanceOutcome tryEnhance(String keyword, List<ProductReadModel> topProducts);
 
     /**
+     * 强制重算并回写缓存（预热用）—— 忽略已有缓存，语义与 {@link #tryEnhance} 一致。
+     * <p>
+     * 命中式预热只在缓存过期时才真正刷新：缓存 TTL 长于刷新间隔时，两次刷新之间会留出
+     * 「上一次写入已过期、下一次刷新还没到」的空窗，录屏撞上就是一次冷首查。
+     * 预热要走本方法，强制每次都算一遍并重置 TTL，空窗才真正消失。
+     * <p>
+     * 同样受「永不抛异常、不写降级结果」的契约约束；默认实现退化为普通增强，
+     * 未实现刷新语义的端口不会因此失效。
+     */
+    default EnhanceOutcome refresh(String keyword, List<ProductReadModel> topProducts) {
+        return tryEnhance(keyword, topProducts);
+    }
+
+    /**
      * 增强结果 + 降级标记。
      *
      * @param enhancement 增强数据；{@code null} 表示本次没有可展示的结果
