@@ -25,7 +25,7 @@ permissions:
   contents: read
 
 jobs:
-  # 前端门禁：lint + 单测 + typecheck + 生产构建 + Playwright E2E。
+  # 前端门禁：lint + 单测 + typecheck（含测试侧）+ 生产构建 + Playwright E2E。
   frontend:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -65,6 +65,12 @@ jobs:
       - name: Typecheck
         if: steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         run: npm run typecheck
+        working-directory: easyorange-frontend
+      # 测试侧单独一道：主 tsconfig 的 exclude 含 src/**/*.test.ts(x)，`typecheck`
+      # 看不到测试文件——存量 5 处报错曾在 develop 上躺到手工跑才发现
+      - name: Typecheck tests
+        if: steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+        run: npm run typecheck:test
         working-directory: easyorange-frontend
       # 生产构建：tsc + vite build（rolldown），验证产物可生成；同时产出 dist 供下方 E2E 使用
       - name: Frontend production build
