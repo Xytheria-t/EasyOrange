@@ -21,7 +21,7 @@
 
 ## 性能与加载
 
-- **体积 > 100KB 的第三方库必须懒加载**（recharts / dayjs / monaco-editor / xlsx / @tiptap/*）：① `manualChunks` 分独立 `vendor-*` chunk ② `React.lazy` + `Suspense` 包装。参考 `src/admin/pages/dashboard/charts/lazyCharts.tsx`
+- **体积 > 100KB 的第三方库必须懒加载**（当前只有 recharts 走这条）：① `manualChunks` 分独立 `vendor-*` chunk ② `React.lazy` + `Suspense` 包装。参考 `src/admin/pages/stats/charts/lazyCharts.tsx`
 - **共享组件（如 `ProductCard`）的样式 CSS 必须在组件文件自身 import**，禁止只靠页面级导入——`React.lazy` 懒加载时页面级 CSS 不随组件 chunk 加载
 
 ## 数据边界
