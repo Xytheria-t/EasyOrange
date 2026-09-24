@@ -520,6 +520,27 @@
     transform: translateX(0);
 }
 
+/* 移动端 Sheet 抽屉：复用筛选面板内容，撑满高度并去掉默认内边距 */
+.filter-sheet {
+    width: min(420px, 92vw);
+    max-width: min(420px, 92vw);
+    padding: 0;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-sheet > .filter-header,
+.filter-sheet > .filter-footer {
+    flex-shrink: 0;
+}
+
+.filter-sheet > .filter-content {
+    flex: 1;
+}
+
 .filter-header {
     display: flex;
     align-items: center;

@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, http } from 'msw';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { server } from '@/testUtils/mocks/server';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import { FilterSidebar } from './FilterSidebar';
@@ -11,26 +11,44 @@ const mockCategories = [
     { id: '2', name: '书籍', productCount: 5 },
 ];
 
-afterEach(() => {
-    server.resetHandlers();
+// 筛选面板在桌面端是常驻侧栏、移动端是 Sheet 抽屉，两种形态的关闭方式不同
+const mockUseMediaQuery = vi.fn(() => true);
+vi.mock('@/hooks', async () => {
+    const actual = await vi.importActual<typeof import('@/hooks')>('@/hooks');
+    return {
+        ...actual,
+        useMediaQuery: () => mockUseMediaQuery(),
+    };
 });
 
-describe('FilterSidebar', () => {
+function mockCategoriesEndpoint() {
+    server.use(
+        http.get('/api/products/categories', () => {
+            return HttpResponse.json({
+                code: 'A0000',
+                message: 'success',
+                data: mockCategories,
+                timestamp: Date.now(),
+            });
+        })
+    );
+}
+
+beforeEach(() => {
+    mockUseMediaQuery.mockReturnValue(true);
+});
+
+afterEach(() => {
+    server.resetHandlers();
+    vi.clearAllMocks();
+});
+
+describe('FilterSidebar (桌面端侧栏)', () => {
     it('renders close button and overlay when open', () => {
-        server.use(
-            http.get('/api/products/categories', () => {
-                return HttpResponse.json({
-                    code: 'A0000',
-                    message: 'success',
-                    data: mockCategories,
-                    timestamp: Date.now(),
-                });
-            })
-        );
+        mockCategoriesEndpoint();
 
         renderWithProviders(<FilterSidebar isOpen={true} onClose={vi.fn()} />);
 
-        // Both the overlay and close button share the label, but the overlay is a div
         const closeButtons = screen.getAllByLabelText('关闭筛选面板');
         expect(closeButtons.length).toBe(2);
         expect(screen.getByText('筛选条件')).toBeInTheDocument();
@@ -44,40 +62,19 @@ describe('FilterSidebar', () => {
 
     it('calls onClose when overlay is clicked', async () => {
         const onClose = vi.fn();
-
-        server.use(
-            http.get('/api/products/categories', () => {
-                return HttpResponse.json({
-                    code: 'A0000',
-                    message: 'success',
-                    data: mockCategories,
-                    timestamp: Date.now(),
-                });
-            })
-        );
+        mockCategoriesEndpoint();
 
         renderWithProviders(<FilterSidebar isOpen={true} onClose={onClose} />);
 
-        // Click the overlay (the first element with the label)
         const overlays = screen.getAllByLabelText('关闭筛选面板');
         await userEvent.click(overlays[0]);
 
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('resets filters when reset button is clicked', async () => {
+    it('resets filters when reset button is clicked', () => {
         const onReset = vi.fn();
-
-        server.use(
-            http.get('/api/products/categories', () => {
-                return HttpResponse.json({
-                    code: 'A0000',
-                    message: 'success',
-                    data: mockCategories,
-                    timestamp: Date.now(),
-                });
-            })
-        );
+        mockCategoriesEndpoint();
 
         renderWithProviders(<FilterSidebar isOpen={true} onClose={vi.fn()} onResetFilters={onReset} />);
 
@@ -85,24 +82,13 @@ describe('FilterSidebar', () => {
         expect(onReset).toHaveBeenCalledTimes(1);
     });
 
-    it('applies filters with correct values on submit', async () => {
+    it('applies filters with correct values on submit', () => {
         const onApply = vi.fn();
         const onClose = vi.fn();
-
-        server.use(
-            http.get('/api/products/categories', () => {
-                return HttpResponse.json({
-                    code: 'A0000',
-                    message: 'success',
-                    data: mockCategories,
-                    timestamp: Date.now(),
-                });
-            })
-        );
+        mockCategoriesEndpoint();
 
         renderWithProviders(<FilterSidebar isOpen={true} onClose={onClose} onApplyFilters={onApply} />);
 
-        // Submit with default values
         screen.getByText('应用筛选').click();
 
         expect(onApply).toHaveBeenCalledWith({
@@ -111,6 +97,52 @@ describe('FilterSidebar', () => {
             priceMin: undefined,
             priceMax: undefined,
         });
+        expect(onClose).toHaveBeenCalled();
+    });
+});
+
+describe('FilterSidebar (移动端抽屉)', () => {
+    beforeEach(() => {
+        mockUseMediaQuery.mockReturnValue(false);
+    });
+
+    it('renders as a dialog so focus is trapped', async () => {
+        mockCategoriesEndpoint();
+
+        renderWithProviders(<FilterSidebar isOpen={true} onClose={vi.fn()} />);
+
+        const dialog = await screen.findByRole('dialog');
+        // 视觉标题在面板里，读屏标题由 SheetTitle 提供，两者文案一致
+        expect(dialog).toHaveAccessibleName('筛选条件');
+        expect(screen.getAllByText('筛选条件').length).toBeGreaterThan(0);
+    });
+
+    it('does not render the desktop overlay', () => {
+        mockCategoriesEndpoint();
+
+        const { container } = renderWithProviders(<FilterSidebar isOpen={true} onClose={vi.fn()} />);
+
+        expect(container.querySelector('.filter-overlay')).toBeNull();
+    });
+
+    it('does not render the duplicate desktop close button', () => {
+        mockCategoriesEndpoint();
+
+        renderWithProviders(<FilterSidebar isOpen={true} onClose={vi.fn()} />);
+
+        expect(screen.queryByLabelText('关闭筛选面板')).not.toBeInTheDocument();
+    });
+
+    it('still applies filters and closes', () => {
+        const onApply = vi.fn();
+        const onClose = vi.fn();
+        mockCategoriesEndpoint();
+
+        renderWithProviders(<FilterSidebar isOpen={true} onClose={onClose} onApplyFilters={onApply} />);
+
+        screen.getByText('应用筛选').click();
+
+        expect(onApply).toHaveBeenCalled();
         expect(onClose).toHaveBeenCalled();
     });
 });

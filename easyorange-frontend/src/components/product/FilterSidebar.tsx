@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { useCategories } from '@/hooks';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useCategories, useMediaQuery } from '@/hooks';
 
 interface FilterSidebarProps {
     isOpen: boolean;
@@ -27,6 +28,9 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
         max: initialFilters?.priceMax?.toString() ?? '',
     });
     const [selectedConditions, setSelectedConditions] = useState<number[]>(initialFilters?.conditions ?? []);
+    // 桌面端常驻侧栏，移动端才是抽屉：两种形态的键盘语义不同
+    const isDesktop = useMediaQuery('(min-width: 769px)');
+
     const handleCategoryToggle = (categoryId: string) => {
         setSelectedCategories(prev =>
             prev.includes(categoryId) ? prev.filter(id => id !== categoryId) : [...prev, categoryId]
@@ -56,21 +60,12 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
         onResetFilters?.();
     };
 
-    return (
+    const panel = (
         <>
-            {isOpen && (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    className="filter-overlay block border-0 bg-transparent p-0 hover:bg-transparent"
-                    onClick={onClose}
-                    aria-label="关闭筛选面板"
-                />
-            )}
-
-            <aside className={`filter-sidebar ${isOpen ? 'open' : ''}`}>
-                <div className="filter-header">
-                    <h3>筛选条件</h3>
+            <div className="filter-header">
+                <h3>筛选条件</h3>
+                {/* 移动端 Sheet 自带关闭按钮，只在桌面侧栏形态下显示这个 */}
+                {isDesktop && (
                     <Button
                         variant="ghost"
                         size="icon"
@@ -83,188 +78,200 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
                             <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
                     </Button>
+                )}
+            </div>
+
+            <div className="filter-content">
+                <div className="filter-section">
+                    <h4 className="filter-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                        </svg>
+                        商品分类
+                    </h4>
+                    <div className="filter-options">
+                        {categories?.map(category => (
+                            <div key={category.id} className="filter-checkbox">
+                                <Checkbox
+                                    id={`cat-${category.id}`}
+                                    checked={selectedCategories.includes(category.id)}
+                                    onCheckedChange={() => handleCategoryToggle(category.id)}
+                                />
+                                <label htmlFor={`cat-${category.id}`} className="checkbox-label">
+                                    {category.name}
+                                </label>
+                                {(category.productCount ?? 0) > 0 && (
+                                    <span className="condition-icon condition-count">({category.productCount})</span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="filter-content">
-                    <div className="filter-section">
-                        <h4 className="filter-title">
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                aria-hidden="true"
-                            >
-                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                            </svg>
-                            商品分类
-                        </h4>
-                        <div className="filter-options">
-                            {categories?.map(category => (
-                                <div key={category.id} className="filter-checkbox">
-                                    <Checkbox
-                                        id={`cat-${category.id}`}
-                                        checked={selectedCategories.includes(category.id)}
-                                        onCheckedChange={() => handleCategoryToggle(category.id)}
-                                    />
-                                    <label htmlFor={`cat-${category.id}`} className="checkbox-label">
-                                        {category.name}
-                                    </label>
-                                    {(category.productCount ?? 0) > 0 && (
-                                        <span className="condition-icon condition-count">
-                                            ({category.productCount})
-                                        </span>
-                                    )}
-                                </div>
-                            ))}
+                <div className="filter-section">
+                    <h4 className="filter-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <line x1="12" y1="1" x2="12" y2="23" />
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                        </svg>
+                        价格区间
+                    </h4>
+                    <div className="price-range">
+                        <div className="price-inputs">
+                            <Input
+                                type="number"
+                                name="priceMin"
+                                className="price-input"
+                                placeholder="最低价"
+                                min="0"
+                                value={priceRange.min}
+                                onChange={e => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
+                            />
+                            <span className="price-separator">-</span>
+                            <Input
+                                type="number"
+                                name="priceMax"
+                                className="price-input"
+                                placeholder="最高价"
+                                min="0"
+                                value={priceRange.max}
+                                onChange={e => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
+                            />
                         </div>
-                    </div>
-
-                    <div className="filter-section">
-                        <h4 className="filter-title">
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                aria-hidden="true"
+                        <div className="price-presets">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="preset-btn"
+                                onClick={() => setPriceRange({ min: '0', max: '50' })}
                             >
-                                <line x1="12" y1="1" x2="12" y2="23" />
-                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                            </svg>
-                            价格区间
-                        </h4>
-                        <div className="price-range">
-                            <div className="price-inputs">
-                                <Input
-                                    type="number"
-                                    name="priceMin"
-                                    className="price-input"
-                                    placeholder="最低价"
-                                    min="0"
-                                    value={priceRange.min}
-                                    onChange={e => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                                />
-                                <span className="price-separator">-</span>
-                                <Input
-                                    type="number"
-                                    name="priceMax"
-                                    className="price-input"
-                                    placeholder="最高价"
-                                    min="0"
-                                    value={priceRange.max}
-                                    onChange={e => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                                />
-                            </div>
-                            <div className="price-presets">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="preset-btn"
-                                    onClick={() => setPriceRange({ min: '0', max: '50' })}
-                                >
-                                    ¥50 以下
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="preset-btn"
-                                    onClick={() => setPriceRange({ min: '50', max: '200' })}
-                                >
-                                    ¥50-200
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="preset-btn"
-                                    onClick={() => setPriceRange({ min: '200', max: '500' })}
-                                >
-                                    ¥200-500
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="preset-btn"
-                                    onClick={() => setPriceRange({ min: '500', max: '' })}
-                                >
-                                    ¥500 以上
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="filter-section">
-                        <h4 className="filter-title">
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                aria-hidden="true"
+                                ¥50 以下
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="preset-btn"
+                                onClick={() => setPriceRange({ min: '50', max: '200' })}
                             >
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="M12 6v6l4 2" />
-                            </svg>
-                            新旧程度
-                        </h4>
-                        <div className="filter-options condition-options">
-                            <div className="filter-checkbox">
-                                <Checkbox
-                                    id="cond-1"
-                                    checked={selectedConditions.includes(1)}
-                                    onCheckedChange={() => handleConditionToggle(1)}
-                                />
-                                <label htmlFor="cond-1" className="checkbox-label">
-                                    全新
-                                </label>
-                                <span className="condition-icon">✨</span>
-                            </div>
-                            <div className="filter-checkbox">
-                                <Checkbox
-                                    id="cond-2"
-                                    checked={selectedConditions.includes(2)}
-                                    onCheckedChange={() => handleConditionToggle(2)}
-                                />
-                                <label htmlFor="cond-2" className="checkbox-label">
-                                    几乎全新
-                                </label>
-                                <span className="condition-icon">🌟</span>
-                            </div>
-                            <div className="filter-checkbox">
-                                <Checkbox
-                                    id="cond-3"
-                                    checked={selectedConditions.includes(3)}
-                                    onCheckedChange={() => handleConditionToggle(3)}
-                                />
-                                <label htmlFor="cond-3" className="checkbox-label">
-                                    轻微使用痕迹
-                                </label>
-                                <span className="condition-icon">💫</span>
-                            </div>
-                            <div className="filter-checkbox">
-                                <Checkbox
-                                    id="cond-4"
-                                    checked={selectedConditions.includes(4)}
-                                    onCheckedChange={() => handleConditionToggle(4)}
-                                />
-                                <label htmlFor="cond-4" className="checkbox-label">
-                                    明显使用痕迹
-                                </label>
-                                <span className="condition-icon">⭐</span>
-                            </div>
+                                ¥50-200
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="preset-btn"
+                                onClick={() => setPriceRange({ min: '200', max: '500' })}
+                            >
+                                ¥200-500
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="preset-btn"
+                                onClick={() => setPriceRange({ min: '500', max: '' })}
+                            >
+                                ¥500 以上
+                            </Button>
                         </div>
                     </div>
                 </div>
 
-                <div className="filter-footer">
-                    <Button variant="ghost" onClick={handleResetFilters}>
-                        重置
-                    </Button>
-                    <Button variant="outline" onClick={handleApplyFilters}>
-                        应用筛选
-                    </Button>
+                <div className="filter-section">
+                    <h4 className="filter-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 6v6l4 2" />
+                        </svg>
+                        新旧程度
+                    </h4>
+                    <div className="filter-options condition-options">
+                        <div className="filter-checkbox">
+                            <Checkbox
+                                id="cond-1"
+                                checked={selectedConditions.includes(1)}
+                                onCheckedChange={() => handleConditionToggle(1)}
+                            />
+                            <label htmlFor="cond-1" className="checkbox-label">
+                                全新
+                            </label>
+                            <span className="condition-icon">✨</span>
+                        </div>
+                        <div className="filter-checkbox">
+                            <Checkbox
+                                id="cond-2"
+                                checked={selectedConditions.includes(2)}
+                                onCheckedChange={() => handleConditionToggle(2)}
+                            />
+                            <label htmlFor="cond-2" className="checkbox-label">
+                                几乎全新
+                            </label>
+                            <span className="condition-icon">🌟</span>
+                        </div>
+                        <div className="filter-checkbox">
+                            <Checkbox
+                                id="cond-3"
+                                checked={selectedConditions.includes(3)}
+                                onCheckedChange={() => handleConditionToggle(3)}
+                            />
+                            <label htmlFor="cond-3" className="checkbox-label">
+                                轻微使用痕迹
+                            </label>
+                            <span className="condition-icon">💫</span>
+                        </div>
+                        <div className="filter-checkbox">
+                            <Checkbox
+                                id="cond-4"
+                                checked={selectedConditions.includes(4)}
+                                onCheckedChange={() => handleConditionToggle(4)}
+                            />
+                            <label htmlFor="cond-4" className="checkbox-label">
+                                明显使用痕迹
+                            </label>
+                            <span className="condition-icon">⭐</span>
+                        </div>
+                    </div>
                 </div>
-            </aside>
+            </div>
+
+            <div className="filter-footer">
+                <Button variant="ghost" onClick={handleResetFilters}>
+                    重置
+                </Button>
+                <Button variant="outline" onClick={handleApplyFilters}>
+                    应用筛选
+                </Button>
+            </div>
         </>
+    );
+
+    if (isDesktop) {
+        return (
+            <>
+                {isOpen && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        className="filter-overlay block border-0 bg-transparent p-0 hover:bg-transparent"
+                        onClick={onClose}
+                        aria-label="关闭筛选面板"
+                    />
+                )}
+                <aside className={`filter-sidebar ${isOpen ? 'open' : ''}`} aria-label="商品筛选">
+                    {panel}
+                </aside>
+            </>
+        );
+    }
+
+    // 移动端用 Sheet：Esc 关闭、焦点陷阱、关闭后焦点还原都由 Radix 保证
+    return (
+        <Sheet open={isOpen} onOpenChange={open => !open && onClose()}>
+            <SheetContent side="right" className="filter-sheet p-0">
+                <SheetHeader className="sr-only">
+                    <SheetTitle>筛选条件</SheetTitle>
+                    <SheetDescription>按分类、价格与新旧程度筛选商品</SheetDescription>
+                </SheetHeader>
+                {panel}
+            </SheetContent>
+        </Sheet>
     );
 }

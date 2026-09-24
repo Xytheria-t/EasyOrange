@@ -1,6 +1,6 @@
 import { Clock, Eye, MapPin, MessageCircle, Sparkles } from 'lucide-react';
 import { memo, useCallback, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import placeholderImage from '@/assets/placeholder.png';
 import { Button } from '@/components/ui/button';
 import { Image } from '@/components/ui/Image';
@@ -15,6 +15,15 @@ interface ProductCardProps {
     style?: React.CSSProperties;
     index?: number;
     aiTags?: string[];
+}
+
+// 3D 倾斜对前庭功能障碍用户不友好，尊重系统的"减少动态效果"设置
+function prefersReducedMotion() {
+    return (
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
 }
 
 export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductCardProps) => {
@@ -33,8 +42,8 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
     const sellerName = product.sellerName || '匿名用户';
     const hasDescription = !!product.description && product.description.trim().length > 0;
 
-    const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-        if (!cardRef.current) {
+    const handleMouseMove = useCallback((e: React.MouseEvent<HTMLElement>) => {
+        if (!cardRef.current || prefersReducedMotion()) {
             return;
         }
 
@@ -85,21 +94,7 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
     // Staggered entrance animation delay
     const entranceDelay = index * 80;
 
-    const handleCardClick = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest('button')) {
-            return;
-        }
-        navigate(`/products/${product.id}`);
-    };
-
-    const handleCardKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !(e.target as HTMLElement).closest('button')) {
-            navigate(`/products/${product.id}`);
-        }
-    };
-
     return (
-        // biome-ignore lint/a11y/useSemanticElements: card wrapper contains nested interactive buttons
         <div
             ref={cardRef}
             className="product-card-premium"
@@ -107,14 +102,6 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
                 ...style,
                 animationDelay: `${entranceDelay}ms`,
             }}
-            onClick={handleCardClick}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            onMouseEnter={handleMouseEnter}
-            role="button"
-            tabIndex={0}
-            onKeyDown={handleCardKeyDown}
-            aria-label={`商品：${product.title}`}
         >
             {/* Gradient border glow */}
             <div className="product-card-border-glow" />
@@ -125,7 +112,14 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
             {/* Shimmer overlay on hover */}
             <div className={`product-card-shimmer ${isHovered ? 'active' : ''}`} />
 
-            <figure className="product-image-premium">
+            {/* 鼠标效果挂在图片区而非卡片根节点：卡片是静态容器，
+                交互语义由标题链接与操作按钮承担 */}
+            <figure
+                className="product-image-premium"
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                onMouseEnter={handleMouseEnter}
+            >
                 {/* Image container with 3D depth */}
                 <div className="product-image-3d-container">
                     <Image
@@ -194,12 +188,12 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
                             variant="outline"
                             size="icon"
                             className="action-icon-premium contact-btn-premium"
-                            onClick={e => {
-                                e.stopPropagation();
+                            onClick={() => {
+                                navigate(`/messages/${product.sellerId}`);
                             }}
                             onMouseMove={handleButtonMouseMove}
                             onMouseLeave={handleButtonMouseLeave}
-                            aria-label="联系资产方"
+                            aria-label={`联系卖家：${sellerName}`}
                         >
                             <MessageCircle size={17} strokeWidth={2} />
                         </Button>
@@ -208,13 +202,9 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
                         variant="outline"
                         size="icon"
                         className="action-icon-premium view-btn-premium"
-                        onClick={e => {
-                            e.stopPropagation();
-                            navigate(`/products/${product.id}`);
-                        }}
                         onMouseMove={handleButtonMouseMove}
                         onMouseLeave={handleButtonMouseLeave}
-                        aria-label="查看详情"
+                        aria-label={`查看商品详情：${product.title}`}
                     >
                         <Eye size={17} strokeWidth={2} />
                     </Button>
@@ -240,7 +230,13 @@ export const ProductCard = memo(({ product, style, index = 0, aiTags }: ProductC
                     </span>
                 </div>
 
-                <h3 className="product-title-premium">{product.title}</h3>
+                {/* 标题是真链接，伪元素铺满整卡 —— 整卡可点但 DOM 里没有嵌套交互元素。
+                    操作按钮 z-index 高于伪元素，保持各自独立可点。 */}
+                <h3 className="product-title-premium">
+                    <Link to={`/products/${product.id}`} className="product-title-link-premium">
+                        {product.title}
+                    </Link>
+                </h3>
 
                 {/* Description expand on hover */}
                 {hasDescription && (

@@ -1,5 +1,4 @@
 import { screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { createMockProduct } from '@/testUtils/factories';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
@@ -56,11 +55,17 @@ describe('ProductCard', () => {
         expect(screen.getByText(/-33%/)).toBeInTheDocument();
     });
 
-    it('navigates to product detail on card click', async () => {
+    it('renders the title as a link to the product detail', () => {
         renderWithProviders(<ProductCard product={baseProduct} />);
-        const card = screen.getByLabelText('商品：测试商品标题');
-        await userEvent.click(card);
-        expect(mockNavigate).toHaveBeenCalledWith('/products/1');
+        const link = screen.getByRole('link', { name: '测试商品标题' });
+        expect(link).toHaveAttribute('href', '/products/1');
+    });
+
+    it('does not nest interactive elements inside a button role', () => {
+        const { container } = renderWithProviders(<ProductCard product={baseProduct} />);
+        const card = container.querySelector('.product-card-premium');
+        expect(card).not.toHaveAttribute('role', 'button');
+        expect(card).not.toHaveAttribute('tabindex');
     });
 
     it('shows view count', () => {

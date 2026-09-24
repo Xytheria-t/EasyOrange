@@ -608,12 +608,34 @@
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1.34;
+    letter-spacing: -0.018em;
+    transition: color 0.3s ease;
+}
+
+/* 标题本身不裁剪，裁剪交给内部 span —— 链接要能撑开成整卡可点区域 */
+.product-title-link-premium {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    letter-spacing: -0.018em;
-    transition: color 0.3s ease;
+    color: inherit;
+    text-decoration: none;
+}
+
+/* stretched link：伪元素铺满整张卡，键盘 Tab 只落在标题链接上，
+   不产生 role=button 套 button 的嵌套语义冲突 */
+.product-title-link-premium::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+}
+
+.product-title-link-premium:focus-visible {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
 }
 
 .product-card-premium:hover .product-title-premium {
