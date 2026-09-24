@@ -34,7 +34,7 @@ const sampleProduct: AdminProduct = {
     stock: 10,
     status: 'PENDING_REVIEW',
     statusDesc: '待审核',
-    conditionLevel: 9,
+    conditionLevel: 2,
     location: '北京',
     contactMethod: '微信',
     images: ['https://example.com/img1.jpg'],
@@ -59,9 +59,9 @@ const auditLogs: AuditLogResponse[] = [
         actionDesc: '驳回',
         reason: '信息不完整',
         dimensions: ['basic'],
-        beforeStatus: 4,
+        beforeStatus: 'PENDING_REVIEW',
         beforeStatusDesc: '待审核',
-        afterStatus: 5,
+        afterStatus: 'REJECTED',
         afterStatusDesc: '已驳回',
         remark: null,
         createTime: '2026-05-16T08:00:00',
@@ -141,6 +141,9 @@ describe('ProductDetailDrawer', () => {
         expect(screen.getByText('¥150.00')).toBeInTheDocument();
         expect(screen.getByText('电子产品')).toBeInTheDocument();
         expect(screen.getByText('资产方A')).toBeInTheDocument();
+        // 成色走 CONDITION_LABEL_MAP（后端 ConditionLevel 码 1-4）：夹具 conditionLevel=2 -> 「几乎全新」。
+        // 这条断言是旧码表（10/9/8/7/6）残留的护栏——映射错就会退回「未知」而被它抓住。
+        expect(screen.getByText('几乎全新')).toBeInTheDocument();
     });
 
     // ── Test 6: Renders 4 audit dimension buttons ──

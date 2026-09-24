@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ImagePreviewOverlay } from '@/admin/components/ImagePreviewOverlay';
 import { ErrorState } from '@/components/feedback/StateDisplay';
 import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, Textarea } from '@/components/ui';
+import { CONDITION_LABEL_MAP } from '@/constants';
 import { cn } from '@/lib/utils';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { useAuditLogs, useAuditProduct } from '../../hooks/useAdminProductAudit';
@@ -16,14 +17,6 @@ interface ProductDetailDrawerProps {
     onClose: () => void;
     onSuccess: () => void;
 }
-
-const conditionLabels: Record<number, string> = {
-    10: '全新',
-    9: '9成新',
-    8: '8成新',
-    7: '7成新',
-    6: '6成新及以下',
-};
 
 const createInitialState = () => ({
     selectedImage: 0,
@@ -325,7 +318,7 @@ function ProductAuditPanel({
                                     {[
                                         {
                                             label: '新旧程度',
-                                            value: conditionLabels[product.conditionLevel || 8] || '未知',
+                                            value: CONDITION_LABEL_MAP[product.conditionLevel ?? 0] ?? '未知',
                                         },
                                         { label: '分类', value: product.categoryName },
                                         { label: '资产方', value: product.sellerName },
