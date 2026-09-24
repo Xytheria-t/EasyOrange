@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminHeader } from './AdminHeader';
 
@@ -17,9 +17,16 @@ vi.mock('@/store', () => ({
     useAuthStore: () => mockAuthStore(),
 }));
 
+const mockAddToast = vi.fn();
+vi.mock('@/store/uiStore', () => ({
+    useUIStore: (selector: (s: { addToast: typeof mockAddToast }) => unknown) => selector({ addToast: mockAddToast }),
+}));
+
 const mockUseMediaQuery = vi.fn(() => true);
+const mockLogout = vi.fn(async () => {});
 vi.mock('@/hooks', () => ({
     useMediaQuery: () => mockUseMediaQuery(),
+    useLogout: () => mockLogout,
 }));
 
 describe('AdminHeader', () => {
@@ -96,10 +103,21 @@ describe('AdminHeader', () => {
         expect(toggleSidebar).not.toHaveBeenCalled();
     });
 
-    it('navigates to home when clicking user section', () => {
+    it('点击用户区块回到主站，但不结束会话', () => {
         render(<AdminHeader onOpenMobileNav={vi.fn()} />);
         fireEvent.click(screen.getByTitle('返回主站'));
         expect(mockNavigate).toHaveBeenCalledWith('/');
+        expect(mockLogout).not.toHaveBeenCalled();
+    });
+
+    it('点击退出登录 -> 登出、提示、落登录页', async () => {
+        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
+        fireEvent.click(screen.getByTitle('退出登录'));
+        await waitFor(() => {
+            expect(mockNavigate).toHaveBeenCalledWith('/login');
+        });
+        expect(mockLogout).toHaveBeenCalledTimes(1);
+        expect(mockAddToast).toHaveBeenCalledWith({ type: 'success', message: '已退出登录' });
     });
 
     it('renders unknown path title', () => {
