@@ -1,7 +1,6 @@
 import { ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
 
@@ -9,7 +8,17 @@ export interface Column<T> {
     key: keyof T | string;
     title: string;
     render?: (value: unknown, record: T) => React.ReactNode;
-    sortable?: boolean;
+}
+
+export interface AdminTableSelection<T> {
+    /** 已勾选行的 rowKey 字符串集合 */
+    selectedKeys: ReadonlySet<string>;
+    onChange: (keys: string[]) => void;
+    /** 只让这些行可选（如仅「待审核」可批量审核）；不传则本页全可选 */
+    isSelectable?: (record: T) => boolean;
+    /** 复选框可访问名的主体，如「商品」→「选择商品 <名称>」 */
+    noun: string;
+    labelOf: (record: T) => string;
 }
 
 export interface AdminTableProps<T> {
@@ -27,14 +36,9 @@ export interface AdminTableProps<T> {
         onChange: (page: number) => void;
     };
     onRowClick?: (record: T) => void;
+    /** 批量操作的行勾选。传了才出现勾选列。 */
+    selection?: AdminTableSelection<T>;
     emptyText?: string;
-}
-
-type SortDirection = 'asc' | 'desc' | null;
-
-interface SortState {
-    key: string | null;
-    direction: SortDirection;
 }
 
 /**
@@ -66,6 +70,17 @@ function buildPageNumbers(current: number, pageSize: number, total: number): (nu
     return pages;
 }
 
+/**
+ * 数据表。
+ *
+ * 两处刻意的取舍：
+ * 1. 不再内建排序。此前表头排序只作用于当前页数据，而分页是服务端的——点「注册时间」
+ *    排的是这 10 条，不是全量，视觉上却像已经按时间排好，比没有排序更容易误导。
+ *    要真排序得先让后端支持 sort 参数，届时从这里接。
+ * 2. 不再套一层滚动容器。共享的 shadcn `Table` 自带 `overflow-auto + border + rounded`，
+ *    外面又包 `.admin-table-scroll`，窄屏会出现双滚动条、卡片里套一层多余的边框圆角。
+ *    现在只有 `.admin-table-scroll` 一个滚动容器，卡片本身就是唯一表面。
+ */
 export function AdminTable<T extends object>({
     columns,
     data,
@@ -75,43 +90,9 @@ export function AdminTable<T extends object>({
     onRetry,
     pagination,
     onRowClick,
+    selection,
     emptyText = '暂无数据',
 }: AdminTableProps<T>) {
-    const [sortState, setSortState] = useState<SortState>({ key: null, direction: null });
-
-    const handleSort = (columnKey: string) => {
-        setSortState(prev => {
-            if (prev.key !== columnKey) {
-                return { key: columnKey, direction: 'asc' };
-            }
-            if (prev.direction === 'asc') {
-                return { key: columnKey, direction: 'desc' };
-            }
-            return { key: null, direction: null };
-        });
-    };
-
-    const sortedData = useMemo(() => {
-        if (!sortState.key || !sortState.direction) {
-            return data;
-        }
-        return [...data].sort((a, b) => {
-            const aValue = a[sortState.key as keyof T];
-            const bValue = b[sortState.key as keyof T];
-            if (aValue === bValue) {
-                return 0;
-            }
-            if (aValue == null) {
-                return 1;
-            }
-            if (bValue == null) {
-                return -1;
-            }
-            const comparison = aValue < bValue ? -1 : 1;
-            return sortState.direction === 'asc' ? comparison : -comparison;
-        });
-    }, [data, sortState]);
-
     const getValue = (record: T, key: keyof T | string): unknown => {
         if (typeof key === 'string' && key.includes('.')) {
             let value: unknown = record;
@@ -123,102 +104,97 @@ export function AdminTable<T extends object>({
         return record[key as keyof T];
     };
 
+    const keyOf = (record: T): string => String(record[rowKey]);
+
+    const selectableRecords = selection
+        ? data.filter(record => (selection.isSelectable ? selection.isSelectable(record) : true))
+        : [];
+    const selectedOnPage = selectableRecords.filter(record => selection?.selectedKeys.has(keyOf(record)));
+    const allSelected = selectableRecords.length > 0 && selectedOnPage.length === selectableRecords.length;
+    const someSelected = selectedOnPage.length > 0 && !allSelected;
+
+    /** 本页全选只增删本页可选行的 key，跨页已选的不会被清掉。 */
+    const toggleAllOnPage = () => {
+        if (!selection) {
+            return;
+        }
+        const next = new Set(selection.selectedKeys);
+        if (allSelected) {
+            for (const record of selectableRecords) {
+                next.delete(keyOf(record));
+            }
+        } else {
+            for (const record of selectableRecords) {
+                next.add(keyOf(record));
+            }
+        }
+        selection.onChange([...next]);
+    };
+
+    const toggleRow = (record: T) => {
+        if (!selection) {
+            return;
+        }
+        const key = keyOf(record);
+        const next = new Set(selection.selectedKeys);
+        if (next.has(key)) {
+            next.delete(key);
+        } else {
+            next.add(key);
+        }
+        selection.onChange([...next]);
+    };
+
     const totalPages = pagination ? Math.ceil(pagination.total / pagination.pageSize) : 0;
     const pageNumbers = pagination ? buildPageNumbers(pagination.current, pagination.pageSize, pagination.total) : [];
-
-    const renderSortIcon = (columnKey: string) => {
-        const isActive = sortState.key === columnKey;
-        return (
-            <span className="admin-sort-icon">
-                <svg
-                    aria-hidden="true"
-                    className={cn(
-                        'mb-[-2px] h-2.5 w-2.5',
-                        isActive && sortState.direction === 'asc' ? 'admin-sort-icon--active' : 'admin-sort-icon--idle'
-                    )}
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path d="M7 14l5-5 5 5z" />
-                </svg>
-                <svg
-                    aria-hidden="true"
-                    className={cn(
-                        'h-2.5 w-2.5',
-                        isActive && sortState.direction === 'desc' ? 'admin-sort-icon--active' : 'admin-sort-icon--idle'
-                    )}
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path d="M7 10l5 5 5-5z" />
-                </svg>
-            </span>
-        );
-    };
-
-    const isFirstColumn = (_column: Column<T>, idx: number) => idx === 0;
-    const isLastColumn = (_column: Column<T>, idx: number) => idx === columns.length - 1;
-
-    const ariaSortFor = (columnKey: string) => {
-        if (sortState.key !== columnKey || !sortState.direction) {
-            return 'none' as const;
-        }
-        return sortState.direction === 'asc' ? ('ascending' as const) : ('descending' as const);
-    };
+    const columnCount = columns.length + (selection ? 1 : 0);
 
     return (
         <>
             {/* 窄屏横向滚动：列宽由内容撑开，不把订单号/金额压成两行 */}
             <div className="admin-table-scroll">
-                <Table>
-                    <TableHeader>
-                        <TableRow className="border-0 hover:bg-transparent">
-                            {columns.map((column, idx) => (
-                                <TableHead
-                                    key={String(column.key)}
-                                    className={cn(
-                                        'admin-table-head',
-                                        isFirstColumn(column, idx) && 'admin-table-head--first',
-                                        isLastColumn(column, idx) && 'admin-table-head--last',
-                                        column.sortable && 'admin-table-head--sortable'
-                                    )}
-                                    // aria-sort 挂在 th 上，读屏才能播报当前排序方向
-                                    aria-sort={column.sortable ? ariaSortFor(String(column.key)) : undefined}
-                                >
-                                    {column.sortable ? (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleSort(String(column.key))}
-                                            className="admin-table-head-sort focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--admin-accent-bright) focus-visible:ring-inset"
-                                        >
-                                            {column.title}
-                                            {renderSortIcon(String(column.key))}
-                                        </button>
-                                    ) : (
-                                        <span className="inline-flex items-center">{column.title}</span>
-                                    )}
-                                </TableHead>
+                <table className="admin-table">
+                    <thead>
+                        <tr>
+                            {selection ? (
+                                <th className="admin-table-head admin-table-head--check" scope="col">
+                                    <Checkbox
+                                        checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                                        onCheckedChange={toggleAllOnPage}
+                                        disabled={selectableRecords.length === 0}
+                                        aria-label={`全选本页可操作的${selection.noun}`}
+                                        className="admin-checkbox"
+                                    />
+                                </th>
+                            ) : null}
+                            {columns.map(column => (
+                                <th key={String(column.key)} className="admin-table-head" scope="col">
+                                    {column.title}
+                                </th>
                             ))}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                        </tr>
+                    </thead>
+                    <tbody>
                         {loading ? (
-                            <TableRow className="border-0 hover:bg-transparent">
-                                <TableCell colSpan={columns.length} className="admin-table-cell">
-                                    <div
-                                        className="admin-table-state admin-table-state--loading"
-                                        role="status"
-                                        aria-live="polite"
-                                        aria-busy="true"
-                                    >
-                                        <div className="admin-spinner animate-spin" />
-                                        <span className="admin-table-state-message">加载中...</span>
+                            <tr>
+                                <td colSpan={columnCount} className="admin-table-cell">
+                                    {/* 骨架行：占住与真实行相同的行高，数据到达时不跳版 */}
+                                    <div className="admin-skeleton" role="status" aria-busy="true">
+                                        <span className="sr-only">加载中</span>
+                                        {Array.from({ length: 6 }, (_, i) => (
+                                            // biome-ignore lint/suspicious/noArrayIndexKey: 静态占位，无状态
+                                            <div key={i} className="admin-skeleton-row" aria-hidden="true">
+                                                <span className="admin-skeleton-bar" style={{ width: '28%' }} />
+                                                <span className="admin-skeleton-bar" style={{ width: '18%' }} />
+                                                <span className="admin-skeleton-bar" style={{ width: '14%' }} />
+                                            </div>
+                                        ))}
                                     </div>
-                                </TableCell>
-                            </TableRow>
+                                </td>
+                            </tr>
                         ) : error ? (
-                            <TableRow className="border-0 hover:bg-transparent">
-                                <TableCell colSpan={columns.length} className="admin-table-cell">
+                            <tr>
+                                <td colSpan={columnCount} className="admin-table-cell">
                                     <div className="admin-table-state admin-table-state--error" role="alert">
                                         <div className="admin-table-state-title admin-table-state-title--error">
                                             数据加载失败
@@ -232,55 +208,73 @@ export function AdminTable<T extends object>({
                                             </Button>
                                         ) : null}
                                     </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : sortedData.length === 0 ? (
-                            <TableRow className="border-0 hover:bg-transparent">
-                                <TableCell colSpan={columns.length} className="admin-table-cell">
+                                </td>
+                            </tr>
+                        ) : data.length === 0 ? (
+                            <tr>
+                                <td colSpan={columnCount} className="admin-table-cell">
                                     <div className="admin-table-state">
                                         <Inbox className="mx-auto mb-[0.65rem] h-9 w-9 opacity-40" aria-hidden="true" />
                                         {/* 只渲染 emptyText：再补一句「暂无相关数据」会和页面自带的空态文案重复 */}
                                         <div className="admin-table-state-title">{emptyText}</div>
                                     </div>
-                                </TableCell>
-                            </TableRow>
+                                </td>
+                            </tr>
                         ) : (
-                            sortedData.map(record => (
-                                <TableRow
-                                    key={String(record[rowKey])}
-                                    className={cn(
-                                        'admin-table-row',
-                                        // 可点击行补键盘可达：Enter / Space 等同点击
-                                        onRowClick && 'admin-table-row--clickable focus-visible:outline-none'
-                                    )}
-                                    tabIndex={onRowClick ? 0 : undefined}
-                                    role={onRowClick ? 'button' : undefined}
-                                    onClick={() => onRowClick?.(record)}
-                                    onKeyDown={e => {
-                                        if (!onRowClick) {
-                                            return;
+                            data.map(record => {
+                                const selectable = selection ? (selection.isSelectable?.(record) ?? true) : false;
+                                return (
+                                    <tr
+                                        key={keyOf(record)}
+                                        className={cn(
+                                            'admin-table-row',
+                                            onRowClick && 'admin-table-row--clickable',
+                                            selection?.selectedKeys.has(keyOf(record)) && 'admin-table-row--selected'
+                                        )}
+                                        tabIndex={onRowClick ? 0 : undefined}
+                                        aria-selected={
+                                            selection ? selection.selectedKeys.has(keyOf(record)) : undefined
                                         }
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            onRowClick(record);
-                                        }
-                                    }}
-                                >
-                                    {columns.map(column => {
-                                        const cellValue = getValue(record, column.key);
-                                        return (
-                                            <TableCell key={String(column.key)} className="admin-table-cell">
+                                        onClick={() => onRowClick?.(record)}
+                                        onKeyDown={e => {
+                                            if (!onRowClick) {
+                                                return;
+                                            }
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                onRowClick(record);
+                                            }
+                                        }}
+                                    >
+                                        {selection ? (
+                                            <td className="admin-table-cell admin-table-cell--check">
+                                                <Checkbox
+                                                    checked={selection.selectedKeys.has(keyOf(record))}
+                                                    onCheckedChange={() => toggleRow(record)}
+                                                    disabled={!selectable}
+                                                    onClick={e => e.stopPropagation()}
+                                                    aria-label={
+                                                        selectable
+                                                            ? `选择${selection.noun} ${selection.labelOf(record)}`
+                                                            : `${selection.noun} ${selection.labelOf(record)} 当前不可操作`
+                                                    }
+                                                    className="admin-checkbox"
+                                                />
+                                            </td>
+                                        ) : null}
+                                        {columns.map(column => (
+                                            <td key={String(column.key)} className="admin-table-cell">
                                                 {column.render
-                                                    ? column.render(cellValue, record)
-                                                    : (cellValue as React.ReactNode)}
-                                            </TableCell>
-                                        );
-                                    })}
-                                </TableRow>
-                            ))
+                                                    ? column.render(getValue(record, column.key), record)
+                                                    : (getValue(record, column.key) as React.ReactNode)}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                );
+                            })
                         )}
-                    </TableBody>
-                </Table>
+                    </tbody>
+                </table>
             </div>
 
             {pagination && totalPages > 1 && (

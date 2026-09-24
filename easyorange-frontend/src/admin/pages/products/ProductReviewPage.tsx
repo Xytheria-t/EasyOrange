@@ -1,6 +1,15 @@
 import { ClipboardCheck, Eye, Package } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { usePagination } from '@/hooks/usePagination';
 import type { ProductStatus } from '@/types';
 import { formatRelativeTime } from '@/utils/format';
@@ -9,9 +18,16 @@ import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../com
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { StatusBadge, statusFilterOptions } from '../../components/StatusBadge';
 import { useAdminCategories } from '../../hooks/useAdminCategories';
+import { useBatchAuditProducts } from '../../hooks/useAdminProductAudit';
 import { useAdminProducts } from '../../hooks/useAdminProducts';
+import { notify } from '../../notify';
 import type { AdminProduct } from '../../types/admin';
+import { BatchAuditBar } from './BatchAuditBar';
 import { ProductDetailDrawer } from './ProductDetailDrawer';
+
+/** 后端审核动作：1 通过 / 2 驳回（BatchAuditRequest.AuditItem.action） */
+const AUDIT_APPROVE = 1 as const;
+const AUDIT_REJECT = 2 as const;
 
 export default function ProductReviewPage() {
     const [keyword, setKeyword] = useState('');
@@ -27,6 +43,11 @@ export default function ProductReviewPage() {
     });
     const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
+    // 批量勾选：跨筛选/翻页后残留的勾选没有意义，翻页与改筛选时统一清空
+    const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
+    const [rejectOpen, setRejectOpen] = useState(false);
+    const [rejectReason, setRejectReason] = useState('');
+
     const { data, isLoading, isError, error, refetch } = useAdminProducts({
         pageNum: page,
         pageSize,
@@ -34,6 +55,8 @@ export default function ProductReviewPage() {
         status: statusFilter || undefined,
         categoryId: categoryFilter || undefined,
     });
+
+    const batchAudit = useBatchAuditProducts();
 
     // 分类选项取真实分类树：此前写死 7 个英文 ID，分类改名 / 新增后筛选直接失效
     const { data: categories } = useAdminCategories();
@@ -50,11 +73,39 @@ export default function ProductReviewPage() {
 
     const handleSearch = () => {
         setKeyword(searchInput);
+        setSelectedIds(new Set());
         goTo(1);
+    };
+
+    /** 翻页同时清空勾选：批量审核针对「当前看到的这批」，翻页即换一批 */
+    const handlePageChange = (nextPage: number) => {
+        setSelectedIds(new Set());
+        goTo(nextPage);
     };
 
     const handleViewDetail = (product: AdminProduct) => {
         setSelectedProductId(product.productId || null);
+    };
+
+    /** 逐条提交（后端非全有全无），返回体带每条成败；完成即清空勾选，列表由 hook 自动失效重取 */
+    const runBatch = async (action: typeof AUDIT_APPROVE | typeof AUDIT_REJECT, reason?: string) => {
+        const items = [...selectedIds].map(productId => ({ productId, action, reason }));
+        try {
+            const res = await batchAudit.mutateAsync({ items });
+            if (res.failed === 0) {
+                notify.success(`已${action === AUDIT_APPROVE ? '通过' : '驳回'} ${res.success} 件商品`);
+            } else {
+                notify.error(
+                    `批量审核完成：成功 ${res.success} 件，失败 ${res.failed} 件${res.errors[0] ? `。${res.errors[0]}` : ''}`
+                );
+            }
+            setSelectedIds(new Set());
+            setRejectOpen(false);
+            setRejectReason('');
+        } catch (e) {
+            // 整体请求失败（网络/鉴权）：勾选保留，用户可直接重试
+            notify.failure(e, '批量审核失败，请稍后重试');
+        }
     };
 
     const columns: Column<AdminProduct>[] = [
@@ -126,7 +177,6 @@ export default function ProductReviewPage() {
         {
             key: 'createTime',
             title: '发布时间',
-            sortable: true,
             render: value => <span className="admin-muted">{formatRelativeTime(value as string)}</span>,
         },
         {
@@ -173,6 +223,7 @@ export default function ProductReviewPage() {
                             value={statusFilter}
                             onChange={value => {
                                 setStatusFilter(value as ProductStatus | '');
+                                setSelectedIds(new Set());
                                 goTo(1);
                             }}
                         />
@@ -182,6 +233,7 @@ export default function ProductReviewPage() {
                             value={categoryFilter}
                             onChange={value => {
                                 setCategoryFilter(value);
+                                setSelectedIds(new Set());
                                 goTo(1);
                             }}
                         />
@@ -205,17 +257,76 @@ export default function ProductReviewPage() {
                     loading={isLoading}
                     error={isError ? error : null}
                     onRetry={() => refetch()}
-                    pagination={total > pageSize ? { current: page, pageSize, total, onChange: goTo } : undefined}
+                    pagination={
+                        total > pageSize ? { current: page, pageSize, total, onChange: handlePageChange } : undefined
+                    }
                     onRowClick={handleViewDetail}
+                    selection={{
+                        selectedKeys: selectedIds,
+                        onChange: keys => setSelectedIds(new Set(keys)),
+                        // 只有待审核的商品能批量操作：对已上架商品「通过」是无效动作
+                        isSelectable: record => record.status === 'PENDING_REVIEW',
+                        noun: '商品',
+                        labelOf: record => record.name ?? '',
+                    }}
                     emptyText="暂无商品数据"
                 />
             </AdminCard>
+
+            <BatchAuditBar
+                count={selectedIds.size}
+                submitting={batchAudit.isPending}
+                onApprove={() => void runBatch(AUDIT_APPROVE)}
+                onReject={() => setRejectOpen(true)}
+                onClear={() => setSelectedIds(new Set())}
+            />
+
+            <Dialog
+                open={rejectOpen}
+                onOpenChange={open => {
+                    if (!open && !batchAudit.isPending) {
+                        setRejectOpen(false);
+                    }
+                }}
+            >
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>批量驳回 {selectedIds.size} 件商品</DialogTitle>
+                        <DialogDescription>驳回原因会写入审核日志，卖家在商品详情里能看到</DialogDescription>
+                    </DialogHeader>
+                    <Textarea
+                        value={rejectReason}
+                        onChange={e => setRejectReason(e.target.value)}
+                        placeholder="如：图片与实物不符 / 类目放错 / 描述含违禁词"
+                        rows={4}
+                        maxLength={500}
+                        disabled={batchAudit.isPending}
+                    />
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={batchAudit.isPending}>
+                            取消
+                        </Button>
+                        <Button
+                            onClick={() => void runBatch(AUDIT_REJECT, rejectReason.trim() || undefined)}
+                            isLoading={batchAudit.isPending}
+                            loadingText="驳回中"
+                            className="admin-action-btn admin-action-btn--reject"
+                        >
+                            确认驳回
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <ProductDetailDrawer
                 open={selectedProductId !== null}
                 productId={selectedProductId}
                 onClose={() => setSelectedProductId(null)}
-                onSuccess={() => refetch()}
+                onSuccess={() => {
+                    // 单件审核也会让勾选集过期（刚通过的还在集合里），一并清掉
+                    setSelectedIds(new Set());
+                    refetch();
+                }}
             />
         </AdminPage>
     );

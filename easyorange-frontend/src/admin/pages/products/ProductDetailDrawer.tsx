@@ -399,12 +399,12 @@ function ProductAuditPanel({
                                                     <div
                                                         className="mt-[5px] h-2 w-2 shrink-0 rounded-full"
                                                         style={{
+                                                            // action 3 = 撤销/作废：用中性灰，不占状态色
                                                             background:
-                                                                AUDIT_ACTION_COLOR[log.action] ??
-                                                                'var(--admin-sort-idle)',
+                                                                AUDIT_ACTION_COLOR[log.action] ?? 'var(--admin-faint)',
                                                             border:
                                                                 log.action === 3
-                                                                    ? '1.5px solid var(--admin-sort-idle)'
+                                                                    ? '1.5px solid var(--admin-control-line)'
                                                                     : 'none',
                                                         }}
                                                     />

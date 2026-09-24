@@ -32,7 +32,6 @@
 
     --admin-control-border: 1.5px solid #e5e0db;
     --admin-control-line: #e5e0db; /* 控件描边色（需要单独取色时用） */
-    --admin-sort-idle: #d6cec5; /* 未激活的排序三角 */
     --admin-line: #ede8e3;
     --admin-line-soft: #f5f2ee;
     --admin-hairline: rgba(229, 224, 219, 0.4); /* 卡片内的细分隔线 */
@@ -819,49 +818,46 @@
 }
 
 /* ============ 表格 ============ */
+/* 卡片就是唯一表面：这里只管表内秩序，滚动交给外层 .admin-table-scroll 一个容器。
+   行密度对齐数据台（10 行一页落进首屏）：padding 从 0.85rem 收到 0.6rem。 */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
 .admin-table-head {
-    padding: 0.85rem 1.25rem;
+    padding: 0.6rem 1.1rem;
     text-align: left;
-    font-size: 0.68rem;
+    /* 12px 是可读下限；0.68rem 的 10.9px 中文表头读起来费力。
+       text-transform: uppercase 对中文无效，对混排的字母数字反而变形，去掉。 */
+    font-size: 0.75rem;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     white-space: nowrap;
     color: var(--admin-muted);
-    background: linear-gradient(180deg, rgba(249, 115, 22, 0.04) 0%, transparent 100%);
+    background: var(--admin-line-soft);
     border-bottom: 1px solid var(--admin-line);
 }
 
-/* 可排序表头由内层按钮承载 padding，单元格本身不再给内边距 */
-.admin-table-head--sortable {
-    padding: 0;
+/* 勾选列：窄到只包住复选框，不跟数据列抢宽度 */
+.admin-table-head--check,
+.admin-table-cell--check {
+    width: 44px;
+    padding-right: 0;
+    text-align: center;
 }
 
-.admin-table-head--first {
-    border-top-left-radius: var(--admin-radius-card);
+.admin-checkbox {
+    margin: 0 auto;
 }
 
-.admin-table-head--last {
-    border-top-right-radius: var(--admin-radius-card);
-}
-
-.admin-table-head-sort {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    padding: 0.85rem 1.25rem;
-    text-align: left;
-    cursor: pointer;
-    user-select: none;
-}
-
+/* 数据行 */
 .admin-table-cell {
-    padding: 0.85rem 1.25rem;
-    font-size: 0.87rem;
+    padding: 0.6rem 1.1rem;
+    font-size: 0.86rem;
     color: var(--admin-ink-soft);
     vertical-align: middle;
     border-bottom: 1px solid var(--admin-line-soft);
-    transition: color 150ms var(--ease-out);
 }
 
 .admin-table-row {
@@ -869,12 +865,16 @@
     transition: background-color 150ms var(--ease-out);
 }
 
-.admin-table-row--clickable {
-    cursor: pointer;
+.admin-table-row:hover {
+    background: var(--admin-accent-soft);
 }
 
-.admin-table-row--clickable:hover {
-    background: rgba(249, 115, 22, 0.025);
+.admin-table-row--selected {
+    background: var(--admin-primary-focus-ring);
+}
+
+.admin-table-row--clickable {
+    cursor: pointer;
 }
 
 /* 键盘可达：Tab 到可点击行时焦点框与 hover 同一视觉重量 */
@@ -884,21 +884,34 @@
     border-radius: 6px;
 }
 
-/* 排序三角：形状 + aria-sort 双编码，颜色只做辅助 */
-.admin-sort-icon {
-    display: inline-flex;
+/* 骨架行：占住与真实行相近的行高，数据到达时不跳版 */
+.admin-skeleton {
+    display: flex;
     flex-direction: column;
-    margin-left: 0.25rem;
-    line-height: 0;
-    transition: color 150ms var(--ease-out);
+    gap: 0.25rem;
 }
 
-.admin-sort-icon--active {
-    color: var(--admin-accent-bright);
+.admin-skeleton-row {
+    display: flex;
+    gap: 1rem;
+    padding: 0.55rem 0;
 }
 
-.admin-sort-icon--idle {
-    color: var(--admin-sort-idle);
+.admin-skeleton-bar {
+    height: 0.85rem;
+    border-radius: var(--admin-radius-xs);
+    background: linear-gradient(90deg, var(--admin-line-soft) 25%, var(--admin-line) 45%, var(--admin-line-soft) 65%);
+    background-size: 200% 100%;
+    animation: adminSkeleton 1.2s ease-in-out infinite;
+}
+
+@keyframes adminSkeleton {
+    from {
+        background-position: 200% 0;
+    }
+    to {
+        background-position: -200% 0;
+    }
 }
 
 /* 加载 / 失败 / 空三态容器 */
@@ -1008,6 +1021,62 @@
 .admin-page-ellipsis {
     font-size: 0.81rem;
     color: var(--admin-muted);
+}
+
+/* ============ 批量审核操作条 ============ */
+/* Portal 到 body 后这里才是唯一样式来源；底部 6rem 给居中的 Toast 让位 */
+.admin-batch-bar {
+    position: fixed;
+    bottom: 6rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 0.6rem 0.75rem 0.6rem 1.15rem;
+    background: var(--admin-surface-bg-heavy, var(--admin-surface-solid));
+    border: 1px solid var(--admin-surface-border);
+    border-radius: var(--admin-radius-control);
+    box-shadow: var(--admin-shadow-lg);
+    backdrop-filter: var(--admin-blur);
+    -webkit-backdrop-filter: var(--admin-blur);
+    z-index: 70;
+    animation: batchBarIn 0.25s var(--ease-out) both;
+}
+
+.admin-batch-bar-count {
+    font-size: 0.85rem;
+    color: var(--admin-ink-soft);
+    white-space: nowrap;
+}
+
+.admin-batch-bar-count strong {
+    color: var(--admin-accent-deep);
+}
+
+.admin-batch-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+@keyframes batchBarIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-batch-bar {
+        width: calc(100% - 2rem);
+        flex-wrap: wrap;
+        justify-content: center;
+    }
 }
 
 /* ============ 详情弹窗 ============ */

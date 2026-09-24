@@ -135,7 +135,6 @@ export default function UserManagePage() {
         {
             key: 'createTime',
             title: '注册时间',
-            sortable: true,
             render: value => <span className="admin-muted">{formatDate(value as string, 'date')}</span>,
         },
         {

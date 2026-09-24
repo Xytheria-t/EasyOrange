@@ -99,7 +99,6 @@ export default function OrderManagePage() {
         {
             key: 'createTime',
             title: '下单时间',
-            sortable: true,
             render: value => <span className="admin-muted">{formatDate(value as string, 'date')}</span>,
         },
         {
