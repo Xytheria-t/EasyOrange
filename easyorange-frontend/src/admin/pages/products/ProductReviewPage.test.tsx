@@ -12,10 +12,16 @@ beforeAll(() => {
 
 // ─── Hook mocks ───
 const mockUseAdminProducts = vi.fn();
+const mockUseAdminCategories = vi.fn();
 
 vi.mock('../../hooks/useAdminProducts', () => ({
     useAdminProducts: (...args: unknown[]) => mockUseAdminProducts(...args),
     useAdminProductDetail: vi.fn(),
+}));
+
+// 分类筛选项取自真实分类树（此前写死 7 个英文 ID，分类改名即失效），测试需可注入
+vi.mock('../../hooks/useAdminCategories', () => ({
+    useAdminCategories: () => mockUseAdminCategories(),
 }));
 
 // Mock the drawer component
@@ -136,6 +142,23 @@ function setupDefaultMocks() {
         refetch: vi.fn(),
     });
 
+    mockUseAdminCategories.mockReturnValue({
+        data: [
+            {
+                categoryId: 'electronics',
+                name: '电子产品',
+                parentId: null,
+                parentName: null,
+                level: 1,
+                sortOrder: 1,
+                status: 1,
+                productCount: 3,
+                createTime: null,
+                updateTime: null,
+            },
+        ],
+    });
+
     mockDrawerOpen = false;
     mockDrawerProductId = null;
 }
@@ -162,7 +185,7 @@ describe('ProductReviewPage', () => {
     // ── Test 2: Search input and search button ──
     it('renders search input and search button', () => {
         renderWithProviders(<ProductReviewPage />);
-        expect(screen.getByPlaceholderText('搜索商品名称...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('搜索商品名称')).toBeInTheDocument();
         expect(screen.getByText('搜索')).toBeInTheDocument();
     });
 
@@ -214,9 +237,10 @@ describe('ProductReviewPage', () => {
         });
 
         renderWithProviders(<ProductReviewPage />);
-        expect(screen.getByText('数据加载失败')).toBeInTheDocument();
-        expect(screen.getByText('无法连接到服务器，请检查后端服务是否启动')).toBeInTheDocument();
-        expect(screen.getByText('刷新')).toBeInTheDocument();
+        expect(screen.getByText('加载失败')).toBeInTheDocument();
+        // 错误条透传后端 message，而不是一律替换成固定文案
+        expect(screen.getAllByText('Network failure').length).toBeGreaterThan(0);
+        expect(screen.getByText('重试')).toBeInTheDocument();
     });
 
     // ── Test 7: Default status filter shows "全部状态" ──
@@ -225,15 +249,16 @@ describe('ProductReviewPage', () => {
         expect(screen.getByText('全部状态')).toBeInTheDocument();
     });
 
-    // ── Test 8: Status filter, category, sort sections exist ──
-    it('renders filter sections', () => {
+    // ── Test 8: 筛选区只保留真正生效的筛选项 ──
+    it('renders filter sections bound to the real category tree', () => {
         renderWithProviders(<ProductReviewPage />);
-        // The filter toolbar has filter labels rendered as spans
-        // "状态" may appear in both the label and the AdminSelect button text
         const statusElements = screen.getAllByText('状态');
         expect(statusElements.length).toBeGreaterThanOrEqual(1);
         expect(screen.getByText('分类')).toBeInTheDocument();
-        expect(screen.getByText('排序')).toBeInTheDocument();
+        // 分类选项来自接口而不是写死的英文 ID（下拉展开后才渲染 option，这里断言取数发生）
+        expect(mockUseAdminCategories).toHaveBeenCalled();
+        // 「排序」下拉此前不参与请求（API 无 sort 参数），与表头排序重复，已删除
+        expect(screen.queryByText('排序')).not.toBeInTheDocument();
     });
 
     // ── Test 9: "审核" buttons render for each product ──
@@ -271,7 +296,7 @@ describe('ProductReviewPage', () => {
     // ── Test 13: Search input Enter key triggers search ──
     it('triggers search on Enter key press', () => {
         renderWithProviders(<ProductReviewPage />);
-        const input = screen.getByPlaceholderText('搜索商品名称...');
+        const input = screen.getByPlaceholderText('搜索商品名称');
         fireEvent.change(input, { target: { value: '手机' } });
         fireEvent.keyDown(input, { key: 'Enter' });
 
@@ -282,7 +307,7 @@ describe('ProductReviewPage', () => {
     // ── Test 14: Search button triggers search ──
     it('triggers search on search button click', () => {
         renderWithProviders(<ProductReviewPage />);
-        const input = screen.getByPlaceholderText('搜索商品名称...');
+        const input = screen.getByPlaceholderText('搜索商品名称');
         fireEvent.change(input, { target: { value: '电脑' } });
         fireEvent.click(screen.getByText('搜索'));
 

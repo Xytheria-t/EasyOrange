@@ -17,10 +17,10 @@ describe('ForbiddenPage', () => {
     });
 
     // ── Test 3: Renders description about no permission ──
-    it('renders permission description', () => {
+    it('renders permission description with an actionable next step', () => {
         renderWithProviders(<ForbiddenPage />);
         expect(screen.getByText(/抱歉，您没有权限访问此页面/)).toBeInTheDocument();
-        expect(screen.getByText(/如有疑问，请联系管理员/)).toBeInTheDocument();
+        expect(screen.getByText(/请改用管理员账号登录/)).toBeInTheDocument();
     });
 
     // ── Test 4: Renders "返回主站" link ──
@@ -29,6 +29,13 @@ describe('ForbiddenPage', () => {
         const link = screen.getByText('返回主站');
         expect(link).toBeInTheDocument();
         expect(link.closest('a')).toHaveAttribute('href', '/');
+    });
+
+    // ── Test 5: 权限被拒时必须给出第二条出路，而不是只让用户干等 ──
+    it('offers a re-login path to "/login"', () => {
+        renderWithProviders(<ForbiddenPage />);
+        const link = screen.getByText('换个账号登录');
+        expect(link.closest('a')).toHaveAttribute('href', '/login');
     });
 
     // ── Test 5: Renders shield icon (SVG) ──

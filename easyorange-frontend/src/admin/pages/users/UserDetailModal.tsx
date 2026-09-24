@@ -1,7 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AdminDetailModal } from '@/admin/components/AdminDetailModal';
 import { Button } from '@/components/ui/button';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { insetSurface, labelText, valueText } from '../../components/admin-theme';
 import { pickAvatarGradient } from '../../components/avatarGradient';
+import { ConfirmModal } from '../../components/ConfirmModal';
+import { StatusBadge } from '../../components/StatusBadge';
 import type { AdminUser } from '../../types/admin';
 
 export interface UserDetailModalProps {
@@ -12,223 +16,255 @@ export interface UserDetailModalProps {
     loading?: boolean;
 }
 
-const statusOptions: { value: string; label: string; emoji: string }[] = [
-    { value: 'NORMAL', label: '正常', emoji: '✅' },
-    { value: 'DISABLED', label: '禁用', emoji: '🚫' },
-    { value: 'LOCKED', label: '锁定', emoji: '🔒' },
+const statusOptions = [
+    { value: 'NORMAL', label: '正常', dot: 'var(--status-success-dot)' },
+    { value: 'DISABLED', label: '禁用', dot: 'var(--status-error-dot)' },
+    { value: 'LOCKED', label: '锁定', dot: 'var(--status-warning-dot)' },
 ];
 
-const STATUS_STYLES: Record<string, { bg: string; color: string; dot: string; label: string }> = {
-    NORMAL: {
-        bg: 'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(52,211,153,0.06))',
-        color: '#059669',
-        dot: '#10B981',
-        label: '正常',
-    },
-    DISABLED: {
-        bg: 'linear-gradient(135deg, rgba(244,63,94,0.10), rgba(251,113,133,0.06))',
-        color: '#E11D48',
-        dot: '#F43F5E',
-        label: '禁用',
-    },
-    LOCKED: {
-        bg: 'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(251,191,36,0.06))',
-        color: '#D97706',
-        dot: '#F59E0B',
-        label: '锁定',
-    },
+/** 改成非正常态会影响该用户的登录能力，保存前要明确确认。 */
+const DESTRUCTIVE_STATUS: Record<string, string> = {
+    DISABLED: '禁用后该用户将无法登录、发布或下单',
+    LOCKED: '锁定后该用户将无法登录，直到管理员解除锁定',
 };
 
+function formatDate(dateString: string | null | undefined) {
+    if (!dateString) {
+        return '—';
+    }
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) {
+        return '—';
+    }
+    return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+function maskPhone(phone: string | null) {
+    if (!phone) {
+        return '未绑定';
+    }
+    return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+}
+
+function maskEmail(email: string | null) {
+    if (!email) {
+        return '未绑定';
+    }
+    const [name, domain] = email.split('@');
+    if (!domain) {
+        return email;
+    }
+    const maskedName = name.length > 2 ? `${name[0]}***${name[name.length - 1]}` : name;
+    return `${maskedName}@${domain}`;
+}
+
 export function UserDetailModal({ open, user, onClose, onSave, loading = false }: UserDetailModalProps) {
-    const [selectedStatus, setSelectedStatus] = useState<string>(user?.status ?? 'NORMAL');
+    const [selectedStatus, setSelectedStatus] = useState<string>('NORMAL');
+    const [pendingConfirm, setPendingConfirm] = useState(false);
+
+    // 弹窗复用组件实例时切到另一位用户，状态必须跟着重置，否则保存的是上一位的旧状态
+    const userId = user?.userId;
+    const userStatus = user?.status;
+    useEffect(() => {
+        if (userId) {
+            setSelectedStatus(userStatus ?? 'NORMAL');
+        }
+    }, [userId, userStatus]);
 
     if (!open || !user) {
         return null;
     }
 
-    const handleSave = async () => {
+    const isDirty = selectedStatus !== user.status;
+    const needsConfirm = Boolean(DESTRUCTIVE_STATUS[selectedStatus]) && isDirty;
+
+    const commitSave = async () => {
         await onSave(selectedStatus);
+        setPendingConfirm(false);
     };
 
-    const formatDate = (dateString: string) =>
-        new Date(dateString).toLocaleString('zh-CN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        });
-
-    const maskPhone = (phone: string | null) => {
-        if (!phone) {
-            return '未绑定';
+    const handleSaveClick = () => {
+        if (needsConfirm) {
+            setPendingConfirm(true);
+            return;
         }
-        return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
-    };
-
-    const maskEmail = (email: string) => {
-        const [name, domain] = email.split('@');
-        const maskedName = name.length > 2 ? `${name[0]}***${name[name.length - 1]}` : name;
-        return `${maskedName}@${domain}`;
+        void commitSave();
     };
 
     const avatarGradient = pickAvatarGradient(user.userId ?? '');
-    const currentStatusStyle = STATUS_STYLES[selectedStatus] ?? STATUS_STYLES.NORMAL;
 
     return (
-        <AdminDetailModal
-            open={open}
-            onClose={onClose}
-            title="用户详情"
-            maxWidth={440}
-            loading={loading}
-            closeDisabled={loading}
-            notFound={!user}
-            notFoundText="用户不存在或已被删除"
-            icon={
-                <svg
-                    aria-hidden="true"
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                >
-                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                </svg>
-            }
-            footer={
-                <div className="flex-row justify-end gap-[0.65rem] border-t border-[rgba(229,224,219,0.4)] bg-[linear-gradient(180deg,rgba(250,248,245,0.5),rgba(250,248,245,0.9))] px-6 py-4">
-                    <Button
-                        variant="outline"
-                        onClick={onClose}
-                        disabled={loading}
-                        className="h-10 rounded-xl border-[1.5px] border-[#E5E0DB] bg-white px-5 text-[0.87rem] font-semibold text-[#6B6460] hover:bg-[rgba(229,224,219,0.3)] hover:text-[#6B6460]"
+        <>
+            <AdminDetailModal
+                open={open}
+                onClose={onClose}
+                title="用户详情"
+                maxWidth={440}
+                loading={loading}
+                closeDisabled={loading}
+                icon={
+                    <svg
+                        aria-hidden="true"
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                     >
-                        取消
-                    </Button>
-                    <Button
-                        onClick={handleSave}
-                        disabled={loading || selectedStatus === user.status}
-                        isLoading={loading}
-                        loadingText="保存中..."
-                        className="h-10 rounded-xl border-none bg-[linear-gradient(135deg,#F97316,#EA580C)] px-6 text-[0.87rem] font-semibold text-white shadow-[0_3px_12px_rgba(249,115,22,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_18px_rgba(249,115,22,0.4)] disabled:translate-y-0 disabled:bg-[#D6CEC5] disabled:shadow-none"
-                    >
-                        保存修改
-                    </Button>
-                </div>
-            }
-        >
-            <div>
-                {/* User profile card */}
-                <div className="mb-5 flex items-center gap-4 rounded-2xl border border-[rgba(249,115,22,0.06)] bg-[linear-gradient(135deg,rgba(249,115,22,0.04),rgba(195,155,211,0.03))] p-4">
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg>
+                }
+                footer={
+                    <div className="admin-footer-actions justify-end border-t border-[rgba(229,224,219,0.4)] px-6 py-4">
+                        <Button variant="outline" onClick={onClose} disabled={loading}>
+                            取消
+                        </Button>
+                        <Button
+                            onClick={handleSaveClick}
+                            disabled={loading || !isDirty}
+                            isLoading={loading}
+                            loadingText="保存中"
+                        >
+                            保存修改
+                        </Button>
+                    </div>
+                }
+            >
+                <div>
+                    {/* 头像 + 当前状态 */}
                     <div
-                        className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl text-[1.25rem] font-bold text-white"
                         style={{
-                            fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
-                            background: avatarGradient,
-                            boxShadow: '0 4px 12px rgba(249,115,22,0.18)',
+                            ...insetSurface(),
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '1rem',
+                            padding: '1rem',
+                            marginBottom: '1.25rem',
                         }}
                     >
-                        {(user.nickname || user.username || '?').charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                        <p className="text-[1rem] font-bold leading-tight text-[#2A2520]">
-                            {user.nickname || user.username}
-                        </p>
-                        <p className="mt-0.5 text-[0.82rem] text-[#6E6862]">@{user.username}</p>
-                    </div>
-                    <div
-                        className="inline-flex items-center gap-[0.35rem] rounded-[10px] px-[0.7rem] py-[0.3rem] text-[0.78rem] font-semibold"
-                        style={{ background: currentStatusStyle.bg, color: currentStatusStyle.color }}
-                    >
-                        <span
-                            className="h-1.5 w-1.5 shrink-0 rounded-full"
-                            style={{ background: currentStatusStyle.dot }}
-                        />
-                        {currentStatusStyle.label}
-                    </div>
-                </div>
-
-                {/* Info grid */}
-                <div className="mb-5 grid grid-cols-2 gap-[0.85rem]">
-                    {[
-                        { label: '用户名', value: user.username },
-                        { label: '昵称', value: user.nickname || '未设置' },
-                        { label: '邮箱', value: maskEmail(user.email ?? '') },
-                        { label: '手机', value: maskPhone(user.phone) },
-                        { label: '用户类型', value: user.userType === '01' ? '🎓 学生' : '👨‍🏫 教师' },
-                        { label: '注册时间', value: formatDate(user.createTime ?? '') },
-                    ].map(item => (
                         <div
-                            key={item.label}
-                            className="rounded-xl border border-[rgba(229,224,219,0.4)] bg-white/60 px-[0.85rem] py-[0.65rem]"
+                            aria-hidden="true"
+                            style={{
+                                height: 52,
+                                width: 52,
+                                flexShrink: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: 16,
+                                fontSize: '1.25rem',
+                                fontWeight: 700,
+                                color: '#fff',
+                                fontFamily: 'var(--admin-font-title)',
+                                background: avatarGradient,
+                            }}
                         >
-                            <p className="mb-0.5 text-[0.72rem] font-medium text-[#6E6862]">{item.label}</p>
-                            <p className="text-[0.87rem] font-semibold text-[#2A2520]">{item.value}</p>
+                            {(user.nickname || user.username || '?').charAt(0).toUpperCase()}
                         </div>
-                    ))}
-                </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                            <p style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--admin-ink)' }}>
+                                {user.nickname || user.username}
+                            </p>
+                            <p style={{ ...labelText, marginTop: '0.2rem' }}>@{user.username}</p>
+                        </div>
+                        <StatusBadge status={user.status ?? ''} type="user" />
+                    </div>
 
-                {/* Stats row */}
-                <div className="mb-5 flex items-center gap-0 border-y border-[rgba(229,224,219,0.4)] py-[0.85rem]">
-                    <div className="flex-1 text-center">
-                        <p
-                            className="text-[1.5rem] font-bold leading-tight text-[#F97316]"
-                            style={{ fontFamily: "'DM Sans', sans-serif" }}
-                        >
-                            —
-                        </p>
-                        <p className="mt-0.5 text-[0.78rem] text-[#6E6862]">商品数</p>
+                    {/* 信息格：窄屏单列 */}
+                    <div className="admin-field-grid" style={{ marginBottom: '1.25rem' }}>
+                        {[
+                            { label: '用户名', value: user.username },
+                            { label: '昵称', value: user.nickname || '未设置' },
+                            { label: '邮箱', value: maskEmail(user.email) },
+                            { label: '手机', value: maskPhone(user.phone) },
+                            {
+                                label: '用户类型',
+                                value: user.userTypeDesc || (user.userType === '01' ? '学生' : '教师'),
+                            },
+                            { label: '注册时间', value: formatDate(user.createTime) },
+                        ].map(item => (
+                            <div key={item.label} style={insetSurface()}>
+                                <div style={{ padding: '0.65rem 0.85rem' }}>
+                                    <p style={{ ...labelText, marginBottom: '0.2rem' }}>{item.label}</p>
+                                    <p style={valueText}>{item.value}</p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                    <div className="h-9 w-px bg-[rgba(229,224,219,0.5)]" />
-                    <div className="flex-1 text-center">
-                        <p
-                            className="text-[1.5rem] font-bold leading-tight text-[#C39BD3]"
-                            style={{ fontFamily: "'DM Sans', sans-serif" }}
-                        >
-                            —
-                        </p>
-                        <p className="mt-0.5 text-[0.78rem] text-[#6E6862]">订单数</p>
-                    </div>
-                </div>
 
-                {/* Status selector */}
-                <div>
-                    <label htmlFor="status-select" className="mb-2 block text-[0.82rem] font-semibold text-[#6B6460]">
-                        调整状态
-                    </label>
-                    <div className="flex gap-2" id="status-select" role="radiogroup">
-                        {statusOptions.map(opt => {
-                            const isActive = selectedStatus === opt.value;
-                            const sStyle = STATUS_STYLES[opt.value];
-                            return (
-                                <Button
-                                    key={opt.value}
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setSelectedStatus(opt.value)}
-                                    disabled={loading}
-                                    className="flex flex-1 items-center justify-center gap-[0.35rem] rounded-xl border-[1.5px] px-2 py-[0.6rem] text-[0.84rem] font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60"
-                                    style={{
-                                        borderColor: isActive ? sStyle.dot : '#E5E0DB',
-                                        background: isActive ? sStyle.bg : '#fff',
-                                        color: isActive ? sStyle.color : '#6E6862',
-                                    }}
-                                >
-                                    <span className="text-[0.9rem]">{opt.emoji}</span>
-                                    {opt.label}
-                                </Button>
-                            );
-                        })}
-                    </div>
+                    {/* 状态选择：与分类编辑共用 Radix RadioGroup，键盘与读屏语义一致 */}
+                    <fieldset>
+                        <legend style={{ ...labelText, marginBottom: '0.5rem' }}>调整状态</legend>
+                        <RadioGroup
+                            value={selectedStatus}
+                            onValueChange={setSelectedStatus}
+                            disabled={loading}
+                            className="admin-field-grid"
+                        >
+                            {statusOptions.map(opt => {
+                                const isActive = selectedStatus === opt.value;
+                                return (
+                                    <label
+                                        key={opt.value}
+                                        htmlFor={`user-status-${opt.value}`}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.4rem',
+                                            padding: '0.6rem',
+                                            borderRadius: 'var(--admin-radius-control)',
+                                            border: `1.5px solid ${isActive ? opt.dot : 'var(--admin-control-border)'}`,
+                                            background: isActive ? 'var(--admin-accent-soft)' : '#fff',
+                                            color: isActive ? 'var(--admin-accent)' : 'var(--admin-muted)',
+                                            fontSize: '0.84rem',
+                                            fontWeight: 600,
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        <RadioGroupItem
+                                            value={opt.value}
+                                            id={`user-status-${opt.value}`}
+                                            className="sr-only"
+                                        />
+                                        <span
+                                            aria-hidden="true"
+                                            style={{
+                                                width: 7,
+                                                height: 7,
+                                                borderRadius: 'var(--admin-radius-pill)',
+                                                background: opt.dot,
+                                            }}
+                                        />
+                                        {opt.label}
+                                    </label>
+                                );
+                            })}
+                        </RadioGroup>
+                    </fieldset>
                 </div>
-            </div>
-        </AdminDetailModal>
+            </AdminDetailModal>
+
+            <ConfirmModal
+                isOpen={pendingConfirm}
+                title={`确认${statusOptions.find(o => o.value === selectedStatus)?.label ?? '变更'}用户`}
+                content={`将「${user.username}」调整为「${statusOptions.find(o => o.value === selectedStatus)?.label}」。${DESTRUCTIVE_STATUS[selectedStatus]}。`}
+                confirmText="确认变更"
+                variant="warning"
+                isLoading={loading}
+                onConfirm={commitSave}
+                onCancel={() => setPendingConfirm(false)}
+            />
+        </>
     );
 }

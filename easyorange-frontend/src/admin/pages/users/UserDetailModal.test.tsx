@@ -55,12 +55,23 @@ describe('UserDetailModal', () => {
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('calls onSave with selected status when save clicked', async () => {
+    it('calls onSave with selected status after confirming a destructive change', async () => {
         const onSave = vi.fn().mockResolvedValue(undefined);
         render(<UserDetailModal {...defaultProps} onSave={onSave} />);
         fireEvent.click(screen.getByText('禁用'));
         fireEvent.click(screen.getByText('保存修改'));
+        // 禁用/锁定会切断用户登录能力，不能一点就生效
+        expect(onSave).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByText('确认变更'));
         await waitFor(() => expect(onSave).toHaveBeenCalledWith('DISABLED'));
+    });
+
+    it('applies a non-destructive status change without confirmation', async () => {
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        render(<UserDetailModal {...defaultProps} user={{ ...mockUser, status: 'LOCKED' }} onSave={onSave} />);
+        fireEvent.click(screen.getByText('正常'));
+        fireEvent.click(screen.getByText('保存修改'));
+        await waitFor(() => expect(onSave).toHaveBeenCalledWith('NORMAL'));
     });
 
     it('disables save button when status unchanged', () => {
@@ -71,7 +82,7 @@ describe('UserDetailModal', () => {
 
     it('disables buttons and shows loading state', () => {
         render(<UserDetailModal {...defaultProps} loading={true} />);
-        expect(screen.getByText('保存中...')).toBeInTheDocument();
+        expect(screen.getByText('保存中')).toBeInTheDocument();
         expect(screen.getByText('取消').closest('button')).toBeDisabled();
     });
 

@@ -11,6 +11,42 @@
     --admin-content-bg: #faf8f5;
     --admin-card-bg: #ffffff;
     --admin-border: rgba(229, 224, 219, 0.5);
+
+    /* ---- 设计令牌：管理端唯一来源 ----
+       页面样式仍内联 style={{}}，但只允许引用这里的 var()，不再写裸 hex / 裸 px 圆角。
+       收敛前同一概念在 6 个页面里有 3 套圆角、3 套玻璃模糊、2 种中性灰。 */
+    --admin-radius-card: 20px; /* 内容表面 */
+    --admin-radius-control: 14px; /* 输入框 / 按钮 */
+    --admin-radius-pill: 9999px; /* 状态标签 */
+
+    --admin-surface-bg: rgba(255, 255, 255, 0.72);
+    --admin-surface-bg-soft: rgba(255, 255, 255, 0.6);
+    --admin-surface-border: rgba(255, 255, 255, 0.65);
+    --admin-surface-shadow: 0 8px 32px rgba(42, 37, 32, 0.06);
+    --admin-blur: blur(20px);
+
+    --admin-control-border: 1.5px solid #e5e0db;
+    --admin-line: #ede8e3;
+    --admin-line-soft: #f5f2ee;
+
+    --admin-ink: #2a2520; /* 标题 */
+    --admin-ink-soft: #4a4540; /* 正文 */
+    --admin-muted: #6e6862; /* 次要文字，6.6:1 */
+    --admin-faint: #9b9590; /* 占位 / 装饰 */
+
+    --admin-accent: #ea580c;
+    --admin-primary-bg: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    --admin-primary-shadow: 0 3px 12px rgba(249, 115, 22, 0.28);
+    --admin-danger: #e11d48;
+    --admin-danger-bg: rgba(244, 63, 94, 0.08);
+    --admin-danger-border: rgba(244, 63, 94, 0.2);
+    --admin-accent-soft: rgba(249, 115, 22, 0.07);
+    --admin-accent-soft-border: rgba(249, 115, 22, 0.2);
+    --admin-disabled-bg: #ece7e1;
+    --admin-disabled-ink: #8a837c;
+
+    --admin-font-title: "Playfair Display", "Noto Serif SC", serif;
+    --admin-font-mono: "Fira Code", "Noto Sans Mono", Consolas, monospace;
 }
 
 /* ============ Admin Root Container ============ */
@@ -568,5 +604,171 @@
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
+    }
+}
+
+/* ============================================================
+   响应式 / 可访问性骨架
+   内联 style 无法写媒体查询，所以「断点行为」走 className，
+   「视觉取值」仍走内联 var(--admin-*)——两者职责不重叠。
+   ============================================================ */
+
+/* 页面骨架 */
+.admin-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+}
+
+/* 页头：标题在左、操作在右，窄屏自动堆叠 */
+.admin-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.admin-page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+/* 工具栏：控件多时可换行，分隔线随之隐藏 */
+.admin-toolbar {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+}
+
+.admin-toolbar-divider {
+    width: 1px;
+    align-self: stretch;
+    margin: 0.2rem 0.15rem;
+    background: var(--admin-line);
+}
+
+.admin-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.admin-search {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+    width: 300px;
+    max-width: 100%;
+}
+
+/* 统计卡网格：按容器宽度自动决定列数，不写死列数 */
+.admin-stat-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+/* 图表 / 双栏区：窄屏收成单列 */
+.admin-split {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 1024px) {
+    .admin-split {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 弹窗 / 详情内的两列信息格 */
+.admin-field-grid {
+    display: grid;
+    gap: 0.7rem;
+    grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 560px) {
+    .admin-field-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 详情弹窗底部操作条：窄屏允许换行，避免三按钮挤成一行 */
+.admin-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.admin-footer-actions > * {
+    flex: 1 1 8rem;
+}
+
+/* 表格：窄屏横向滚动，列宽由内容撑开而不是被压扁 */
+.admin-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.admin-table-scroll table {
+    min-width: 720px;
+}
+
+/* 分类树：深层级缩进不撑破容器 */
+.admin-tree-scroll {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.admin-tree-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: max-content;
+}
+
+/* 窄屏收敛次要元素 */
+@media (max-width: 768px) {
+    .admin-search {
+        width: 100%;
+    }
+
+    .admin-toolbar-divider {
+        display: none;
+    }
+
+    .admin-page-header-actions {
+        width: 100%;
+    }
+}
+
+/* 键盘可达：管理端此前只写 :hover，Tab 过去看不见焦点 */
+.admin-root :focus-visible {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+/* 尊重系统「减弱动态效果」设置。
+   !important 是刻意的：这里必须压过组件自带的高优先级动效声明，
+   否则用户开了减弱动效仍会看到过渡。 */
+@media (prefers-reduced-motion: reduce) {
+    .admin-root *,
+    .admin-root *::before,
+    .admin-root *::after {
+        /* biome-ignore lint/complexity/noImportantStyles: 用户偏好优先级高于组件默认动效 */
+        animation-duration: 0.01ms !important;
+        /* biome-ignore lint/complexity/noImportantStyles: 同上 */
+        animation-iteration-count: 1 !important;
+        /* biome-ignore lint/complexity/noImportantStyles: 同上 */
+        transition-duration: 0.01ms !important;
     }
 }

@@ -221,7 +221,7 @@ describe('UserManagePage', () => {
     it('searches by keyword', () => {
         renderWithProviders(<UserManagePage />);
 
-        const searchInput = screen.getByPlaceholderText('搜索用户名/邮箱...');
+        const searchInput = screen.getByPlaceholderText('搜索用户名 / 邮箱');
         fireEvent.change(searchInput, { target: { value: 'alice' } });
         fireEvent.click(screen.getByText('搜索'));
 
@@ -232,9 +232,9 @@ describe('UserManagePage', () => {
     it('triggers search on Enter key press', () => {
         renderWithProviders(<UserManagePage />);
 
-        const searchInput = screen.getByPlaceholderText('搜索用户名/邮箱...');
+        const searchInput = screen.getByPlaceholderText('搜索用户名 / 邮箱');
         fireEvent.change(searchInput, { target: { value: 'test' } });
-        fireEvent.keyPress(searchInput, { key: 'Enter' });
+        fireEvent.keyDown(searchInput, { key: 'Enter' });
 
         expect(mockUseAdminUsers).toHaveBeenCalled();
     });
@@ -284,8 +284,8 @@ describe('UserManagePage', () => {
         setupMocks({ isError: true, data: undefined });
         renderWithProviders(<UserManagePage />);
 
-        expect(screen.getByText('数据加载失败')).toBeInTheDocument();
-        expect(screen.getByText('刷新')).toBeInTheDocument();
+        expect(screen.getByText('加载失败')).toBeInTheDocument();
+        expect(screen.getByText('重试')).toBeInTheDocument();
     });
 
     // ── Test 11: Detail buttons render for each user ──
@@ -332,14 +332,15 @@ describe('UserManagePage', () => {
         expect(mockUseAdminUsers).toHaveBeenCalled();
     });
 
-    // ── Test 13: No count text when total is 0 ──
-    it('does not show count when total is 0', () => {
+    // ── Test 13: 空结果也报总数 ──
+    // 此前 total=0 时整段计数不渲染，"没有数据"和"计数坏掉"看起来一模一样
+    it('shows count as 0 when there are no users', () => {
         setupMocks({
             data: { records: [], total: 0, current: 1, size: 10, pages: 0 },
         });
         renderWithProviders(<UserManagePage />);
 
-        expect(screen.queryByText(/位用户/)).not.toBeInTheDocument();
+        expect(screen.getByText(/位用户/)).toHaveTextContent('共 0 位用户');
     });
 
     // ── Test 14: Email display ──
