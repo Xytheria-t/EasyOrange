@@ -176,13 +176,7 @@ export default function KnowledgePage() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => setDeleteTarget(record)}
-                                    className="h-auto min-h-0"
-                                    style={{
-                                        color: 'var(--admin-danger)',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 600,
-                                        padding: '0.32rem 0.7rem',
-                                    }}
+                                    className="h-auto min-h-0 admin-link-button admin-link-button--danger"
                                 >
                                     删除
                                 </Button>
