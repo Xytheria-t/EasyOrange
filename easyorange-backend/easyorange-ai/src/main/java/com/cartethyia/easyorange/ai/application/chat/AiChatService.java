@@ -18,6 +18,7 @@ import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.micrometer.core.instrument.Counter;
@@ -83,6 +84,15 @@ public class AiChatService {
      */
     @TokenBudget(scenario = "chat", maxTokensPerCall = 1500, dailyTokenLimit = 300_000)
     public ChatAnswer answer(ChatRequest request) {
+        return answer(request, currentUserId());
+    }
+
+    /**
+     * 非流式回答，调用方显式给定用户身份 —— SSE 那条路径工作在另一个线程，读不到本线程的
+     * {@code SecurityContextHolder}（见 {@code streamAnswer}）。两条路径共用同一份实现，
+     * 身份从入参拿而不是各自去读 ThreadLocal。
+     */
+    ChatAnswer answer(ChatRequest request, String userId) {
         if (request.question() == null || request.question().isBlank()) {
             return new ChatAnswer(EMPTY_QUESTION_TEXT, List.of(), request.sessionId(), false);
         }
@@ -91,22 +101,22 @@ public class AiChatService {
             List<Float> queryEmbedding =
                     request.forceFresh() ? List.of() : semanticCache.embedQuery(request.question());
             if (!queryEmbedding.isEmpty()) {
-                var cached =
-                        semanticCache.lookUp(AiCallScope.CHAT, request.question(), queryEmbedding, ChatAnswer.class);
+                var cached = semanticCache.lookUp(
+                        AiCallScope.CHAT, userId, request.question(), queryEmbedding, ChatAnswer.class);
                 if (cached.isPresent()) {
                     return cached.get().withSessionId(request.sessionId());
                 }
             }
-            ChatAnswer answer = agenticAnswer(request, null);
+            ChatAnswer answer = agenticAnswer(request, userId, null);
             if (!queryEmbedding.isEmpty()) {
-                semanticCache.store(AiCallScope.CHAT, request.question(), queryEmbedding, answer);
+                semanticCache.store(AiCallScope.CHAT, userId, request.question(), queryEmbedding, answer);
             }
-            staleCache.put(staleKey(request.question()), answer);
+            staleCache.put(staleKey(userId, request.question()), answer);
             return answer;
         } catch (BaseBusinessException e) {
             throw e;
         } catch (Exception e) {
-            ChatAnswer stale = staleCache.getIfPresent(staleKey(request.question()));
+            ChatAnswer stale = staleCache.getIfPresent(staleKey(userId, request.question()));
             if (stale != null) {
                 log.warn(
                         "action=chat_degraded, reason=stale, question={}, cause={}",
@@ -125,8 +135,17 @@ public class AiChatService {
         return meterRegistry.counter("easyorange.ai.chat.degraded", "reason", reason);
     }
 
-    private static String staleKey(String question) {
-        return AiCallScope.CHAT.cacheKeyPrefix() + question;
+    /**
+     * stale 缓存键 —— 与语义缓存同一分桶口径（{@link SemanticCachePort#cacheUserKey}），
+     * 否则「供应商故障时兜底」会把一个人的旧回答返给另一个人。
+     */
+    private static String staleKey(String userId, String question) {
+        return AiCallScope.CHAT.cacheKeyPrefix() + SemanticCachePort.cacheUserKey(userId) + ':' + question;
+    }
+
+    /** 调用线程上的登录身份 —— 非流式路径与 Controller 同线程，直接读安全上下文。 */
+    static String currentUserId() {
+        return SecurityContextUtil.getCurrentUserId().orElse(AgentLoopRunner.ANONYMOUS_USER);
     }
 
     /**
@@ -134,19 +153,25 @@ public class AiChatService {
      * <p>
      * 预算记账不在这里做：{@link AiModelSupport} 拿到流末帧的用量分片后按场景记账，入口只做前置检查
      * （本方法不带 {@link TokenBudget} 注解，AOP 拦不住，若两边都记会重复计数）。
+     * <p>
+     * <b>身份由调用方传入而非在这里读安全上下文</b>：流式工作跑在 Controller 提交的另一个线程上，
+     * {@code SecurityContextHolder} 的 ThreadLocal 不会跟着过去（Controller 在 servlet 线程上
+     * 已把身份取出来传进来）。在这里读会恒为 anonymous —— 长期画像不加载、
+     * {@code remember_preference} 写不进库、trace 的 userId 为空，而这条路径是前端唯一调用的路径。
      */
-    public void streamAnswer(ChatRequest request, ChatStreamHandler handler) {
+    public void streamAnswer(ChatRequest request, @Nullable AuthUser authUser, ChatStreamHandler handler) {
         if (request.question() == null || request.question().isBlank()) {
             handler.onError(EMPTY_QUESTION_TEXT);
             return;
         }
+        String userId = authUser != null ? authUser.userId() : AgentLoopRunner.ANONYMOUS_USER;
         try {
             // 流式链路绕过 @TokenBudget 切面，这里手动前置检查；判定与循环中途共用 AgentLoopRunner 同一方法
             if (agentLoopRunner.chatBudgetExhausted()) {
                 log.warn("action=token_budget_exceeded, scenario={}", AiCallScope.CHAT.budgetScenario());
                 throw new TokenBudgetExceededException();
             }
-            handler.onDone(agenticAnswer(request, handler).answer());
+            handler.onDone(agenticAnswer(request, userId, handler).answer());
         } catch (TokenBudgetExceededException e) {
             handler.onError("今日 AI 调用预算已用尽，请明天再试");
         } catch (ChatStreamAbortedException e) {
@@ -161,8 +186,7 @@ public class AiChatService {
         }
     }
 
-    private ChatAnswer agenticAnswer(ChatRequest request, @Nullable ChatStreamHandler handler) {
-        String userId = SecurityContextUtil.getCurrentUserId().orElse(AgentLoopRunner.ANONYMOUS_USER);
+    private ChatAnswer agenticAnswer(ChatRequest request, String userId, @Nullable ChatStreamHandler handler) {
         // token 级上下文治理：轮数窗口（存储侧）之上再按 token 预算裁注入窗口，一处裁、决策与生成两处生效
         List<ChatTurn> history = contextTrimmer.trim(sessionStore.loadRecent(request.sessionId()));
         List<UserPreference> prefs =

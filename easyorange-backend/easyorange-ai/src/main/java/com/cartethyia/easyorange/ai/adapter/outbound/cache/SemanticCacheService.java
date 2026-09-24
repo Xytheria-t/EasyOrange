@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Primary;
@@ -27,8 +28,12 @@ import tools.jackson.databind.ObjectMapper;
  * 语义缓存 — 相似问题复用历史回答（成本优化的核心落地）。
  * <p>
  * 命中判定：查询先向量化，与缓存条目的 embedding 做余弦相似度，超过阈值即命中，
- * 相同/近似问题不再调 LLM。写入走 Redis Hash（{@code eo:ai:semantic:<scope>}），
+ * 相同/近似问题不再调 LLM。写入走 Redis Hash（{@code eo:ai:semantic:<scope>:<用户桶>}），
  * 条目数超上限淘汰最旧；Redis / embedding 任一不可用都 fail-open（不命中不阻塞）。
+ * <p>
+ * <b>按用户分桶</b>：条目存的是注入了该用户长期画像与会话历史的回答，共享桶会把一个人的
+ * 偏好返给另一个人。登录用户各一个桶，匿名会话收敛到单一桶（不注入画像，共享安全）。
+ * 代价是跨用户的近似问题不再互相命中 —— 这是修正确性，不是牺牲命中率换调优。
  * <p>
  * <b>向量按 base64 的 float32 存</b>，不用 JSON 数字数组：1024 维按 JSON 数组存约 10KB，
  * 而每次查询都要把整个 Hash 拉回来逐条算余弦（O(n) 扫描），base64 把单条压到约 4KB、
@@ -82,9 +87,17 @@ public class SemanticCacheService implements SemanticCachePort {
 
     /**
      * 语义命中则返回缓存响应，否则 empty。
+     * <p>
+     * 命中只在<b>同一用户桶内</b>比较：Redis key 带 userId，跨用户的条目连读都读不到。
+     * 共享桶会把 A 的个性化答案（注入过 A 的画像与历史）返给 B，既是质量问题也是信息泄露。
      */
     @Override
-    public <T> Optional<T> lookUp(AiCallScope scope, String query, List<Float> queryEmbedding, Class<T> type) {
+    public <T> Optional<T> lookUp(
+            AiCallScope scope,
+            @Nullable String userId,
+            String query,
+            List<Float> queryEmbedding,
+            Class<T> type) {
         if (queryEmbedding == null || queryEmbedding.isEmpty()) {
             return Optional.empty();
         }
@@ -94,7 +107,7 @@ public class SemanticCacheService implements SemanticCachePort {
         }
         try {
             double threshold = aiProperties.semanticCache().similarityThreshold();
-            Map<Object, Object> entries = redis.opsForHash().entries(key(scope));
+            Map<Object, Object> entries = redis.opsForHash().entries(key(scope, userId));
             String bestResponse = null;
             double bestSimilarity = threshold;
             for (Object raw : entries.values()) {
@@ -119,9 +132,12 @@ public class SemanticCacheService implements SemanticCachePort {
 
     /**
      * 写入缓存：存 (queryEmbedding, response)；超出 maxEntries 淘汰最旧条目。
+     * <p>
+     * 淘汰上限<b>按用户桶各算各的</b>：一个高频用户的桶满了不该把其他用户的条目挤掉。
      */
     @Override
-    public void store(AiCallScope scope, String query, List<Float> queryEmbedding, Object response) {
+    public void store(
+            AiCallScope scope, @Nullable String userId, String query, List<Float> queryEmbedding, Object response) {
         if (queryEmbedding == null || queryEmbedding.isEmpty()) {
             return;
         }
@@ -135,7 +151,7 @@ public class SemanticCacheService implements SemanticCachePort {
                     encodeVector(queryEmbedding),
                     objectMapper.writeValueAsString(response),
                     System.currentTimeMillis()));
-            String key = key(scope);
+            String key = key(scope, userId);
             Long size = redis.opsForHash().size(key);
             if (size != null && size >= aiProperties.semanticCache().maxEntries()) {
                 evictOldest(redis, key);
@@ -195,8 +211,17 @@ public class SemanticCacheService implements SemanticCachePort {
         return vector;
     }
 
-    private static String key(AiCallScope scope) {
-        return KEY_PREFIX + scope.name().toLowerCase();
+    /**
+     * Redis key = 前缀 + scope + <b>用户桶</b>。
+     * <p>
+     * 用户桶是正确性要求而非调优项：条目里存的是注入了该用户画像与历史的回答，
+     * 放进共享桶等于把一个人的偏好返给另一个人。分桶后跨用户的条目连读都读不到。
+     * <p>
+     * 加桶前的旧 key（{@code eo:ai:semantic:<scope>}）不会被读到，随 TTL 自然过期 ——
+     * 缓存是易失数据，不做格式迁移。
+     */
+    private static String key(AiCallScope scope, @Nullable String userId) {
+        return KEY_PREFIX + scope.name().toLowerCase() + ':' + SemanticCachePort.cacheUserKey(userId);
     }
 
     private static String md5(String input) {

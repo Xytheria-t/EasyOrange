@@ -14,9 +14,11 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Input;
 import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Result;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
@@ -58,6 +60,9 @@ class AiChatServiceTest {
 
     /** 语义缓存的查询向量桩值 — 非空即表示「缓存可用」。 */
     private static final List<Float> QUERY_EMBEDDING = List.of(0.1f, 0.2f);
+
+    /** 流式路径的登录身份桩值：Controller 在 servlet 线程捕获后显式传进来。 */
+    private static final AuthUser AUTH_USER = new AuthUser("user-42", "tester");
 
     @Mock
     private ChatModel chatModel;
@@ -112,7 +117,7 @@ class AiChatServiceTest {
     @DisplayName("知识类问题 -> 循环产出知识命中 -> 回答带引用来源")
     void answer_withKnowledgeRetrieval() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(agentLoopRunner.run(any()))
                 .thenReturn(new Result(
                         List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)),
@@ -128,7 +133,7 @@ class AiChatServiceTest {
         assertThat(answer.sources()).containsExactly("退款规则");
         // 一轮对话一次写入（提问 + 回答），不留半轮记忆
         verify(sessionStore).saveTurns("sess-1", List.of(ChatTurn.user("怎么退款？"), ChatTurn.assistant(answer.answer())));
-        verify(semanticCache).store(any(), anyString(), anyList(), any());
+        verify(semanticCache).store(any(), any(), anyString(), anyList(), any());
         // 循环输入：问题与会话 ID 透传
         ArgumentCaptor<Input> input = ArgumentCaptor.forClass(Input.class);
         verify(agentLoopRunner).run(input.capture());
@@ -141,7 +146,7 @@ class AiChatServiceTest {
     @SuppressWarnings("unchecked")
     void answer_withAssetSourcing() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(agentLoopRunner.run(any()))
                 .thenReturn(new Result(
                         List.of(),
@@ -166,7 +171,7 @@ class AiChatServiceTest {
     @SuppressWarnings("unchecked")
     void answer_injectsAssetDetails() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(agentLoopRunner.run(any()))
                 .thenReturn(new Result(
                         List.of(),
@@ -194,10 +199,10 @@ class AiChatServiceTest {
     }
 
     @Test
-    @DisplayName("多来源合并 -> 知识与资产标题去重后进 sources")
+    @DisplayName("多来源合并 -> 资产优先，同名的知识与资产各占一条（按标题去重会误删其一）")
     void answer_mergesSourcesFromLoopResult() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(agentLoopRunner.run(any()))
                 .thenReturn(new Result(
                         List.of(new KnowledgeHit("kb-0007", "交易规则", "平台担保交易…", 0.9)),
@@ -213,10 +218,34 @@ class AiChatServiceTest {
     }
 
     @Test
+    @DisplayName("来源截断到 3 条，资产优先占位（规则来源挤不掉主链路候选）")
+    void answer_limitsSourcesWithAssetsFirst() {
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(agentLoopRunner.run(any()))
+                .thenReturn(new Result(
+                        List.of(
+                                new KnowledgeHit("kb-1", "规则一", "…", 0.9),
+                                new KnowledgeHit("kb-2", "规则二", "…", 0.8)),
+                        List.of(
+                                new AssetHit("p-1", "资产一", null, null, null, 0.7),
+                                new AssetHit("p-2", "资产二", null, null, null, 0.6),
+                                new AssetHit("p-3", "资产三", null, null, null, 0.5)),
+                        List.of(),
+                        AgentLoopRunner.OUTCOME_FINISHED,
+                        4));
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
+
+        ChatAnswer answer = chatService.answer(new ChatRequest("问题", "sess-1", false));
+
+        assertThat(answer.sources()).hasSize(3);
+    }
+
+    @Test
     @DisplayName("闲聊 -> 循环无召回，直接回答")
     void answer_noTool() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("在的，有什么可以帮你？");
 
         ChatAnswer answer = chatService.answer(new ChatRequest("在吗？", "sess-1", false));
@@ -230,21 +259,50 @@ class AiChatServiceTest {
     void answer_cacheHit() {
         ChatAnswer cached = new ChatAnswer("缓存回答", List.of(), "sess-1", false);
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.of(cached));
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.of(cached));
 
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
 
         assertThat(answer).isEqualTo(cached);
         verify(aiModelSupport, never()).callText(any(), any(), anyList());
         verify(agentLoopRunner, never()).run(any());
-        verify(semanticCache, never()).store(any(), anyString(), anyList(), any());
+        verify(semanticCache, never()).store(any(), any(), anyString(), anyList(), any());
+    }
+
+    @Test
+    @DisplayName("缓存读写都按当前用户分桶（回答注入了该用户的画像，跨桶命中即串号）")
+    void answer_cacheUsesUserBucket() {
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
+
+        chatService.answer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId());
+
+        verify(semanticCache).lookUp(eq(AiCallScope.CHAT), eq(AUTH_USER.userId()), anyString(), anyList(), any());
+        verify(semanticCache).store(eq(AiCallScope.CHAT), eq(AUTH_USER.userId()), anyString(), anyList(), any());
+    }
+
+    @Test
+    @DisplayName("stale 兜底也按用户分桶（A 的旧回答不会被返给 B）")
+    void answer_staleFallbackIsUserScoped() {
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("A 的回答");
+
+        // A 成功一次（写入 stale），B 同样问一遍并让模型故障 -> B 拿不到 A 的旧回答
+        chatService.answer(new ChatRequest("问题", "sess-1", false), "user-a");
+        when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(new RuntimeException("供应商超时"));
+        ChatAnswer degraded = chatService.answer(new ChatRequest("问题", "sess-2", false), "user-b");
+
+        assertThat(degraded.degraded()).isTrue();
+        assertThat(degraded.answer()).isEqualTo(ChatAnswer.UNAVAILABLE_TEXT);
     }
 
     @Test
     @DisplayName("语义缓存命中 -> sessionId 换成本次请求的（缓存的是回答内容，不是会话身份）")
     void answer_cacheHit_usesCurrentSessionId() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any()))
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any()))
                 .thenReturn(Optional.of(new ChatAnswer("缓存回答", List.of("来源A"), "sess-旧", false)));
 
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-新", false));
@@ -258,13 +316,13 @@ class AiChatServiceTest {
     @DisplayName("未命中 -> 命中查找与写入共用同一次向量化（不重复 embedding）")
     void answer_cacheMiss_embedsOnce() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
 
         chatService.answer(new ChatRequest("问题", "sess-1", false));
 
         verify(semanticCache, times(1)).embedQuery(anyString());
-        verify(semanticCache).store(any(), anyString(), eq(QUERY_EMBEDDING), any());
+        verify(semanticCache).store(any(), any(), anyString(), eq(QUERY_EMBEDDING), any());
     }
 
     @Test
@@ -275,8 +333,8 @@ class AiChatServiceTest {
         chatService.answer(new ChatRequest("问题", "sess-1", true));
 
         verify(semanticCache, never()).embedQuery(anyString());
-        verify(semanticCache, never()).lookUp(any(), anyString(), anyList(), any());
-        verify(semanticCache, never()).store(any(), anyString(), anyList(), any());
+        verify(semanticCache, never()).lookUp(any(), any(), anyString(), anyList(), any());
+        verify(semanticCache, never()).store(any(), any(), anyString(), anyList(), any());
     }
 
     @Test
@@ -305,7 +363,8 @@ class AiChatServiceTest {
         AtomicReference<String> done = new AtomicReference<>();
         AtomicReference<String> error = new AtomicReference<>();
         List<AgentStepView> steps = new ArrayList<>();
-        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-1", false), new ChatStreamHandler() {
+        chatService.streamAnswer(
+                new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER, new ChatStreamHandler() {
             @Override
             public void onStep(AgentStepView step) {
                 steps.add(step);
@@ -337,6 +396,27 @@ class AiChatServiceTest {
         assertThat(sources.get()).containsExactly("退款规则");
         assertThat(done.get()).isEqualTo("可以退款");
         assertThat(error.get()).isNull();
+
+        // 流式工作在另一个线程上跑，身份只能靠入参带进来：这条断言锁住「Controller 传了 -> 循环用上了」，
+        // 否则长期画像不加载、remember_preference 写不进库、trace 的 userId 为空
+        ArgumentCaptor<Input> input = ArgumentCaptor.forClass(Input.class);
+        verify(agentLoopRunner).run(input.capture());
+        assertThat(input.getValue().userId()).isEqualTo(AUTH_USER.userId());
+        verify(preferenceRepository).findByUserId(AUTH_USER.userId());
+    }
+
+    @Test
+    @DisplayName("流式回答且无登录身份 -> 循环按匿名跑，不查用户画像")
+    void stream_anonymousSkipsPreferences() {
+        when(agentLoopRunner.run(any())).thenReturn(new Result(List.of(), List.of(), List.of(), AgentLoopRunner.OUTCOME_FINISHED, 1));
+        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class))).thenReturn("回答");
+
+        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), null, new StreamHandlerStub());
+
+        ArgumentCaptor<Input> input = ArgumentCaptor.forClass(Input.class);
+        verify(agentLoopRunner).run(input.capture());
+        assertThat(input.getValue().userId()).isEqualTo(AgentLoopRunner.ANONYMOUS_USER);
+        verify(preferenceRepository, never()).findByUserId(anyString());
     }
 
     @Test
@@ -345,7 +425,7 @@ class AiChatServiceTest {
         when(agentLoopRunner.chatBudgetExhausted()).thenReturn(true);
 
         AtomicReference<String> error = new AtomicReference<>();
-        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), new ChatStreamHandler() {
+        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), null, new ChatStreamHandler() {
             @Override
             public void onStep(AgentStepView step) {}
 
@@ -376,7 +456,7 @@ class AiChatServiceTest {
 
         AtomicReference<String> error = new AtomicReference<>();
         AtomicReference<String> done = new AtomicReference<>();
-        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), new ChatStreamHandler() {
+        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), null, new ChatStreamHandler() {
             @Override
             public void onStep(AgentStepView step) {}
 
@@ -411,7 +491,7 @@ class AiChatServiceTest {
     @DisplayName("空问题 -> onError 提示")
     void stream_blankQuestion() {
         AtomicReference<String> error = new AtomicReference<>();
-        chatService.streamAnswer(new ChatRequest("  ", "sess-1", false), new ChatStreamHandler() {
+        chatService.streamAnswer(new ChatRequest("  ", "sess-1", false), null, new ChatStreamHandler() {
             @Override
             public void onStep(AgentStepView step) {}
 
@@ -437,7 +517,7 @@ class AiChatServiceTest {
     @DisplayName("LLM 故障且有缓存旧回答 -> 降级返回旧结果并标记 degraded")
     void answer_llmFailureFallsBackToStale() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callText(any(), any(), anyList()))
                 .thenReturn("正常回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
@@ -456,7 +536,7 @@ class AiChatServiceTest {
     @DisplayName("stale 降级 -> sessionId 换成本次请求的，不带出旧会话的 id")
     void answer_staleFallbackUsesCurrentSessionId() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callText(any(), any(), anyList()))
                 .thenReturn("正常回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
@@ -473,7 +553,7 @@ class AiChatServiceTest {
     @DisplayName("LLM 故障且无缓存 -> 返回降级文案 + degraded 标记（不抛异常，避免落 500）")
     void answer_llmFailureWithoutStaleDegrades() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(new RuntimeException("DeepSeek 超时"));
 
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
@@ -488,7 +568,7 @@ class AiChatServiceTest {
     @DisplayName("业务异常（如预算超限）-> 照常上抛，不伪装成降级回答")
     void answer_businessExceptionPropagates() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(BusinessException.of("AI 调用预算已用尽"));
 
         Assertions.assertThatThrownBy(() -> chatService.answer(new ChatRequest("怎么退款？", "sess-1", false)))
@@ -515,7 +595,7 @@ class AiChatServiceTest {
     @DisplayName("历史记忆注入 -> 按角色分发为历史消息，不压平进当前 user 消息")
     void answer_injectsHistory() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
-        when(semanticCache.lookUp(any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(sessionStore.loadRecent("sess-1"))
                 .thenReturn(List.of(ChatTurn.user("上一轮问题"), ChatTurn.assistant("上一轮回答")));
         when(aiModelSupport.callText(any(), any(), anyList())).thenAnswer(invocation -> {
@@ -535,5 +615,23 @@ class AiChatServiceTest {
         ChatAnswer answer = chatService.answer(new ChatRequest("继续", "sess-1", false));
 
         assertThat(answer.answer()).isEqualTo("记住了");
+    }
+
+    /** 只关心「循环收到什么身份」的用例用的空回调 —— 事件内容在各自用例里断言。 */
+    private static final class StreamHandlerStub implements ChatStreamHandler {
+        @Override
+        public void onStep(AgentStepView step) {}
+
+        @Override
+        public void onToken(String token) {}
+
+        @Override
+        public void onSources(List<String> sources) {}
+
+        @Override
+        public void onDone(String fullAnswer) {}
+
+        @Override
+        public void onError(String message) {}
     }
 }
