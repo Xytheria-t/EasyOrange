@@ -321,9 +321,8 @@ public class AiModelSupport {
      * 「没拿到 tool call 就当失败」更靠前一步：失败模式从「降级」变成「不可能发生」。
      */
     private static OpenAiChatOptions toolOptions(ChatModel chatModel, List<ToolCallback> toolCallbacks) {
-        var toolOptions = OpenAiChatOptions.builder()
-                .toolCallbacks(toolCallbacks)
-                .toolChoice(TOOL_CHOICE_REQUIRED);
+        var toolOptions =
+                OpenAiChatOptions.builder().toolCallbacks(toolCallbacks).toolChoice(TOOL_CHOICE_REQUIRED);
         inheritConnection(toolOptions, chatModel);
         return toolOptions.build();
     }

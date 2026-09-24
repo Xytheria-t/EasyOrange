@@ -14,8 +14,6 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Input;
 import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Result;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
-import com.cartethyia.easyorange.ai.domain.model.ChatSource;
-import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
@@ -23,6 +21,7 @@ import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
+import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
@@ -34,6 +33,7 @@ import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -131,8 +131,7 @@ class AiChatServiceTest {
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
 
         assertThat(answer.answer()).contains("[来源:退款规则]");
-        assertThat(answer.sources())
-                .containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-0002", "退款规则"));
+        assertThat(answer.sources()).containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-0002", "退款规则"));
         // 一轮对话一次写入（提问 + 回答），不留半轮记忆
         verify(sessionStore).saveTurns("sess-1", List.of(ChatTurn.user("怎么退款？"), ChatTurn.assistant(answer.answer())));
         verify(semanticCache).store(any(), any(), anyString(), anyList(), any());
@@ -160,8 +159,7 @@ class AiChatServiceTest {
 
         ChatAnswer answer = chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false));
 
-        assertThat(answer.sources())
-                .containsExactly(new ChatSource(ChatSource.Type.ASSET, "p-1", "MacBook Air M1"));
+        assertThat(answer.sources()).containsExactly(new ChatSource(ChatSource.Type.ASSET, "p-1", "MacBook Air M1"));
 
         // 循环召回的在售资产必须真的进 prompt（块内形状见 ChatPromptAssemblerTest）
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
@@ -231,9 +229,7 @@ class AiChatServiceTest {
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(agentLoopRunner.run(any()))
                 .thenReturn(new Result(
-                        List.of(
-                                new KnowledgeHit("kb-1", "规则一", "…", 0.9),
-                                new KnowledgeHit("kb-2", "规则二", "…", 0.8)),
+                        List.of(new KnowledgeHit("kb-1", "规则一", "…", 0.9), new KnowledgeHit("kb-2", "规则二", "…", 0.8)),
                         List.of(
                                 new AssetHit("p-1", "资产一", null, null, null, 0.7),
                                 new AssetHit("p-2", "资产二", null, null, null, 0.6),
@@ -245,9 +241,7 @@ class AiChatServiceTest {
 
         ChatAnswer answer = chatService.answer(new ChatRequest("问题", "sess-1", false));
 
-        assertThat(answer.sources())
-                .extracting(ChatSource::id)
-                .containsExactly("p-1", "p-2", "p-3");
+        assertThat(answer.sources()).extracting(ChatSource::id).containsExactly("p-1", "p-2", "p-3");
     }
 
     @Test
@@ -318,8 +312,7 @@ class AiChatServiceTest {
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-新", false));
 
         assertThat(answer.answer()).isEqualTo("缓存回答");
-        assertThat(answer.sources())
-                .containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-9", "来源A"));
+        assertThat(answer.sources()).containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-9", "来源A"));
         assertThat(answer.sessionId()).isEqualTo("sess-新");
     }
 
@@ -374,8 +367,7 @@ class AiChatServiceTest {
         AtomicReference<String> done = new AtomicReference<>();
         AtomicReference<String> error = new AtomicReference<>();
         List<AgentStepView> steps = new ArrayList<>();
-        chatService.streamAnswer(
-                new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER, new ChatStreamHandler() {
+        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER, new ChatStreamHandler() {
             @Override
             public void onStep(AgentStepView step) {
                 steps.add(step);
@@ -404,8 +396,7 @@ class AiChatServiceTest {
 
         assertThat(tokens.toString()).isEqualTo("可以退款");
         assertThat(steps).extracting(AgentStepView::tool).containsExactly("knowledge_search");
-        assertThat(sources.get())
-                .containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-0002", "退款规则"));
+        assertThat(sources.get()).containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-0002", "退款规则"));
         assertThat(done.get()).isEqualTo("可以退款");
         assertThat(error.get()).isNull();
 
@@ -420,8 +411,10 @@ class AiChatServiceTest {
     @Test
     @DisplayName("流式回答且无登录身份 -> 循环按匿名跑，不查用户画像")
     void stream_anonymousSkipsPreferences() {
-        when(agentLoopRunner.run(any())).thenReturn(new Result(List.of(), List.of(), List.of(), AgentLoopRunner.OUTCOME_FINISHED, 1));
-        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class))).thenReturn("回答");
+        when(agentLoopRunner.run(any()))
+                .thenReturn(new Result(List.of(), List.of(), List.of(), AgentLoopRunner.OUTCOME_FINISHED, 1));
+        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
+                .thenReturn("回答");
 
         chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), null, new StreamHandlerStub());
 

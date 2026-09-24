@@ -93,11 +93,7 @@ public class SemanticCacheService implements SemanticCachePort {
      */
     @Override
     public <T> Optional<T> lookUp(
-            AiCallScope scope,
-            @Nullable String userId,
-            String query,
-            List<Float> queryEmbedding,
-            Class<T> type) {
+            AiCallScope scope, @Nullable String userId, String query, List<Float> queryEmbedding, Class<T> type) {
         if (queryEmbedding == null || queryEmbedding.isEmpty()) {
             return Optional.empty();
         }
