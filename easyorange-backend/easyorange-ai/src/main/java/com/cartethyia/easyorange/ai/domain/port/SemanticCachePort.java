@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.domain.port;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 语义缓存端口 — 按 scope + 查询文本缓存 AI 响应，近似问题命中即跳过模型调用。
@@ -27,16 +28,32 @@ public interface SemanticCachePort {
 
     /**
      * 按余弦相似度查最近的历史回答。
+     * <p>
+     * <b>{@code userId} 是缓存键的一部分，不是过滤条件</b>：回答里注入了该用户的长期画像与会话历史，
+     * 不带用户维度的共享桶会把 A 的个性化答案返给 B。匿名会话统一落到同一个字面量桶 ——
+     * 它们不注入任何画像，共享安全。
      *
+     * @param userId        调用方身份；{@code null} 表示匿名（按单一匿名桶缓存）
      * @param queryEmbedding {@link #embedQuery} 的返回值，空列表直接未命中
      * @return 相似度超过阈值的缓存回答，否则 {@link Optional#empty()}
      */
-    <T> Optional<T> lookUp(AiCallScope scope, String query, List<Float> queryEmbedding, Class<T> type);
+    <T> Optional<T> lookUp(
+            AiCallScope scope, @Nullable String userId, String query, List<Float> queryEmbedding, Class<T> type);
 
     /**
      * 写入缓存，条目超上限时淘汰最旧一条。
      *
+     * @param userId        调用方身份；{@code null} 表示匿名（与 {@link #lookUp} 同一分桶口径）
      * @param queryEmbedding {@link #embedQuery} 的返回值，空列表直接跳过
      */
-    void store(AiCallScope scope, String query, List<Float> queryEmbedding, Object response);
+    void store(AiCallScope scope, @Nullable String userId, String query, List<Float> queryEmbedding, Object response);
+
+    /**
+     * 缓存分桶键 —— 登录用户用其 id，匿名收敛到单一字面量。
+     * <p>
+     * 供调用方拼 stale 缓存等自建缓存键时复用，保证与语义缓存同一分桶口径。
+     */
+    static String cacheUserKey(@Nullable String userId) {
+        return userId == null || userId.isBlank() ? "anon" : userId;
+    }
 }

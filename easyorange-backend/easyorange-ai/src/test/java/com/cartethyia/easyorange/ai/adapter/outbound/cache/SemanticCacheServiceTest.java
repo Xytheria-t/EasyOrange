@@ -40,6 +40,12 @@ class SemanticCacheServiceTest {
 
     private static final List<Float> QUERY_VECTOR = List.of(1f, 0f, 0f);
 
+    /** 被测调用的调用方身份：缓存 key 按它分桶（key 里不再只有 scope）。 */
+    private static final String USER = "user-1";
+
+    /** USER 对应的 Redis key —— 分桶后的实际 key，断言直接比对字面量。 */
+    private static final String CACHE_KEY = "eo:ai:semantic:chat:" + USER;
+
     private static final String CACHED_JSON = cachedEntry(List.of(0.99f, 0.1f, 0f), "缓存回答", 1);
 
     @Mock
@@ -128,9 +134,9 @@ class SemanticCacheServiceTest {
         void lookUp_hitOnSimilarQuery() {
             when(redisProvider.getIfAvailable()).thenReturn(redis);
             when(redis.opsForHash()).thenReturn(hashOps);
-            when(hashOps.entries("eo:ai:semantic:chat")).thenReturn(Map.of("f1", CACHED_JSON));
+            when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of("f1", CACHED_JSON));
 
-            Optional<ChatAnswer> result = cache.lookUp(AiCallScope.CHAT, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
+            Optional<ChatAnswer> result = cache.lookUp(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
 
             assertThat(result).isPresent();
             assertThat(result.get().answer()).isEqualTo("缓存回答");
@@ -142,9 +148,9 @@ class SemanticCacheServiceTest {
             when(redisProvider.getIfAvailable()).thenReturn(redis);
             when(redis.opsForHash()).thenReturn(hashOps);
             String dissimilar = cachedEntry(List.of(0f, 1f, 0f), "缓存回答", 1);
-            when(hashOps.entries("eo:ai:semantic:chat")).thenReturn(Map.of("f1", dissimilar));
+            when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of("f1", dissimilar));
 
-            assertThat(cache.lookUp(AiCallScope.CHAT, "怎么退款？", QUERY_VECTOR, ChatAnswer.class))
+            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, ChatAnswer.class))
                     .isEmpty();
         }
 
@@ -158,10 +164,10 @@ class SemanticCacheServiceTest {
                     {"embedding":[1.0,0.0,0.0],"response":"{}","timestamp":1}
                     """;
             String brokenVector = "{\"vector\":\"!!!not-base64!!!\",\"response\":\"{}\",\"timestamp\":2}";
-            when(hashOps.entries("eo:ai:semantic:chat"))
+            when(hashOps.entries(CACHE_KEY))
                     .thenReturn(Map.of("legacy", legacy, "broken", brokenVector, "good", CACHED_JSON));
 
-            Optional<ChatAnswer> result = cache.lookUp(AiCallScope.CHAT, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
+            Optional<ChatAnswer> result = cache.lookUp(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
 
             assertThat(result).as("一条脏数据不应把整次查询变成未命中").isPresent();
             assertThat(result.get().answer()).isEqualTo("缓存回答");
@@ -170,7 +176,7 @@ class SemanticCacheServiceTest {
         @Test
         @DisplayName("空查询向量（缓存不可用）-> 未命中，不访问 Redis")
         void lookUp_emptyEmbedding() {
-            assertThat(cache.lookUp(AiCallScope.CHAT, "问题", List.of(), ChatAnswer.class))
+            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", List.of(), ChatAnswer.class))
                     .isEmpty();
             verify(redisProvider, never()).getIfAvailable();
         }
@@ -180,8 +186,60 @@ class SemanticCacheServiceTest {
         void lookUp_noRedis() {
             when(redisProvider.getIfAvailable()).thenReturn(null);
 
-            assertThat(cache.lookUp(AiCallScope.CHAT, "问题", QUERY_VECTOR, ChatAnswer.class))
+            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
                     .isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("用户隔离 — 缓存按身份分桶")
+    class UserIsolationTests {
+
+        @Test
+        @DisplayName("同一问题不同用户 -> 读各自的桶，A 的答案不会命中 B")
+        void lookUp_doesNotCrossUsers() {
+            when(redisProvider.getIfAvailable()).thenReturn(redis);
+            when(redis.opsForHash()).thenReturn(hashOps);
+            // A 的桶里有高度相似的条目；B 的桶是空的
+            when(hashOps.entries("eo:ai:semantic:chat:user-a")).thenReturn(Map.of("f1", CACHED_JSON));
+            when(hashOps.entries("eo:ai:semantic:chat:user-b")).thenReturn(Map.of());
+
+            assertThat(cache.lookUp(AiCallScope.CHAT, "user-a", "怎么退款？", QUERY_VECTOR, ChatAnswer.class))
+                    .isPresent();
+            assertThat(cache.lookUp(AiCallScope.CHAT, "user-b", "怎么退款？", QUERY_VECTOR, ChatAnswer.class))
+                    .as("回答里注入了用户画像，跨用户命中就是信息泄露")
+                    .isEmpty();
+        }
+
+        @Test
+        @DisplayName("匿名用户（userId 为 null / 空白）-> 收敛到同一个 anon 桶")
+        void anonymousUsersShareOneBucket() {
+            when(redisProvider.getIfAvailable()).thenReturn(redis);
+            when(redis.opsForHash()).thenReturn(hashOps);
+            when(hashOps.entries("eo:ai:semantic:chat:anon")).thenReturn(Map.of("f1", CACHED_JSON));
+            when(hashOps.size("eo:ai:semantic:chat:anon")).thenReturn(0L);
+
+            // 匿名不注入画像（AiChatService 返 List.of()），共享是安全的
+            assertThat(cache.lookUp(AiCallScope.CHAT, null, "问题", QUERY_VECTOR, ChatAnswer.class))
+                    .isPresent();
+            assertThat(cache.lookUp(AiCallScope.CHAT, "  ", "问题", QUERY_VECTOR, ChatAnswer.class))
+                    .as("空白身份与 null 同义，不能开出新桶")
+                    .isPresent();
+
+            cache.store(AiCallScope.CHAT, null, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
+            verify(hashOps).put(eq("eo:ai:semantic:chat:anon"), anyString(), anyString());
+        }
+
+        @Test
+        @DisplayName("分桶后不再读 scope 级旧 key（旧数据自然过期，不做迁移）")
+        void doesNotReadLegacyScopeOnlyKey() {
+            when(redisProvider.getIfAvailable()).thenReturn(redis);
+            when(redis.opsForHash()).thenReturn(hashOps);
+            when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of());
+
+            cache.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class);
+
+            verify(hashOps, never()).entries("eo:ai:semantic:chat");
         }
     }
 
@@ -194,12 +252,12 @@ class SemanticCacheServiceTest {
         void store_ok() {
             when(redisProvider.getIfAvailable()).thenReturn(redis);
             when(redis.opsForHash()).thenReturn(hashOps);
-            when(hashOps.size("eo:ai:semantic:chat")).thenReturn(0L);
+            when(hashOps.size(CACHE_KEY)).thenReturn(0L);
 
-            cache.store(AiCallScope.CHAT, "怎么退款？", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
+            cache.store(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
 
-            verify(hashOps).put(eq("eo:ai:semantic:chat"), anyString(), anyString());
-            verify(redis).expire("eo:ai:semantic:chat", Duration.ofHours(24));
+            verify(hashOps).put(eq(CACHE_KEY), anyString(), anyString());
+            verify(redis).expire(CACHE_KEY, Duration.ofHours(24));
         }
 
         @Test
@@ -207,20 +265,20 @@ class SemanticCacheServiceTest {
         void store_evictsOldest() {
             when(redisProvider.getIfAvailable()).thenReturn(redis);
             when(redis.opsForHash()).thenReturn(hashOps);
-            when(hashOps.size("eo:ai:semantic:chat")).thenReturn(200L);
+            when(hashOps.size(CACHE_KEY)).thenReturn(200L);
             String oldEntry = cachedEntry(QUERY_VECTOR, "旧", 100);
             String newEntry = cachedEntry(QUERY_VECTOR, "新", 200);
-            when(hashOps.entries("eo:ai:semantic:chat")).thenReturn(Map.of("old", oldEntry, "new", newEntry));
+            when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of("old", oldEntry, "new", newEntry));
 
-            cache.store(AiCallScope.CHAT, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
+            cache.store(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
 
-            verify(hashOps).delete("eo:ai:semantic:chat", "old");
+            verify(hashOps).delete(CACHE_KEY, "old");
         }
 
         @Test
         @DisplayName("空查询向量（缓存不可用）-> 跳过写入，不访问 Redis")
         void store_emptyEmbedding() {
-            cache.store(AiCallScope.CHAT, "问题", List.of(), new ChatAnswer("回答", List.of(), "s", false));
+            cache.store(AiCallScope.CHAT, USER, "问题", List.of(), new ChatAnswer("回答", List.of(), "s", false));
 
             verify(redisProvider, never()).getIfAvailable();
         }
@@ -231,21 +289,21 @@ class SemanticCacheServiceTest {
     void store_thenLookUp_roundtrip() {
         when(redisProvider.getIfAvailable()).thenReturn(redis);
         when(redis.opsForHash()).thenReturn(hashOps);
-        when(hashOps.size("eo:ai:semantic:chat")).thenReturn(0L);
+        when(hashOps.size(CACHE_KEY)).thenReturn(0L);
         var written = new java.util.concurrent.atomic.AtomicReference<String>();
         org.mockito.Mockito.doAnswer(inv -> {
                     written.set(inv.getArgument(2));
                     return null;
                 })
                 .when(hashOps)
-                .put(eq("eo:ai:semantic:chat"), anyString(), anyString());
+                .put(eq(CACHE_KEY), anyString(), anyString());
 
         var original = new ChatAnswer("退款路径是这样的", List.of("帮助中心"), "s-9", false);
-        cache.store(AiCallScope.CHAT, "怎么退款？", QUERY_VECTOR, original);
+        cache.store(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, original);
 
         assertThat(written.get()).isNotNull();
-        when(hashOps.entries("eo:ai:semantic:chat")).thenReturn(Map.of("f", written.get()));
-        var result = cache.lookUp(AiCallScope.CHAT, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
+        when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of("f", written.get()));
+        var result = cache.lookUp(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
 
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(original);
@@ -261,9 +319,9 @@ class SemanticCacheServiceTest {
                 PropertyBindings.bind(AiProperties.class),
                 new ObjectMapper());
 
-        assertThat(cacheNoRedis.lookUp(AiCallScope.CHAT, "问题", QUERY_VECTOR, ChatAnswer.class))
+        assertThat(cacheNoRedis.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
                 .isEmpty();
-        cacheNoRedis.store(AiCallScope.CHAT, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
+        cacheNoRedis.store(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
     }
 
     /** 构造一条缓存条目 JSON：向量按 base64 float32 存（与生产写入格式一致）。 */
