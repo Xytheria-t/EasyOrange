@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react';
-import { afterAll, afterEach, beforeAll, describe, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useScrollReveal } from './useScrollReveal';
 
 class MockIntersectionObserver {
@@ -10,6 +10,10 @@ class MockIntersectionObserver {
     disconnect = vi.fn();
     unobserve = vi.fn();
     takeRecords = vi.fn();
+    static instances: MockIntersectionObserver[] = [];
+    constructor() {
+        MockIntersectionObserver.instances.push(this);
+    }
 }
 
 let originalIO: typeof IntersectionObserver;
@@ -21,6 +25,10 @@ beforeAll(() => {
 
 afterAll(() => {
     globalThis.IntersectionObserver = originalIO;
+});
+
+beforeEach(() => {
+    MockIntersectionObserver.instances = [];
 });
 
 afterEach(() => {
@@ -37,12 +45,21 @@ describe('useScrollReveal', () => {
 
         const { unmount } = renderHook(() => useScrollReveal());
 
-        // After mount, the hook should have created observers
+        // 挂载后每个 reveal 元素都应被 observe（3 个元素 → 至少 3 次 observe）
+        const observedCount = MockIntersectionObserver.instances.reduce((n, o) => n + o.observe.mock.calls.length, 0);
+        expect(observedCount).toBeGreaterThanOrEqual(3);
+
         unmount();
+
+        // 卸载后每个 observer 都应 disconnect
+        for (const o of MockIntersectionObserver.instances) {
+            expect(o.disconnect).toHaveBeenCalled();
+        }
     });
 
     it('handles no reveal elements gracefully', () => {
         const { unmount } = renderHook(() => useScrollReveal());
-        unmount();
+        // 无 reveal 元素时不应崩溃；不强制创建 observer（实现可提前返回）
+        expect(() => unmount()).not.toThrow();
     });
 });
