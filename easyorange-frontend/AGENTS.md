@@ -6,12 +6,14 @@
 
 ## 管理端渲染（`src/admin/`）
 
-- **弹窗 / 抽屉 / 确认框必须 `createPortal(..., document.body)`**：`.admin-sidebar` / `.admin-header` 的 `backdrop-filter: blur()` 会创建新包含块，`position: fixed` 的定位基准会错乱。居中统一 `position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%)`
+- **弹窗 / 抽屉 / 确认框必须走 Radix 的 `Dialog` / `Sheet`**（内部已 `Portal` 到 `document.body`）：`.admin-sidebar` / `.admin-header` 的 `backdrop-filter: blur()` 会创建新包含块，手搓的 `position: fixed` 定位基准会错乱
 - **Portal 容器必须处理溢出**：`maxHeight: 'calc(100vh - 2rem)'` + `display: flex; flexDirection: column; overflow: hidden`，内容区 `flex: 1; overflowY: auto; minHeight: 0`
 - **`AdminTable` 的 render 签名是 `(value, record)`**——第一个参数是单元格值，第二个才是整行。只写 `(record) => ...` 会拿到 `undefined`
 - **所有 `<select>` 必须用 `AdminSelect` 组件**（Portal 渲染面板，解决 fixed 定位失效）；`handleClickOutside` 必须**同时排除触发按钮 ref 和列表 `listRef`**，否则点选项会立即关闭
-- **样式必须内联 `style={{}}`**，禁止依赖外部 CSS（唯一例外 `src/admin/styles/admin.css`）
-- **页面布局是三层结构**：根 `position: relative, minHeight: 'calc(100vh - 80px)'`；背景层 `position: absolute, inset: 0, borderRadius: 20`（**禁 fixed**）；内容层 `position: relative, zIndex: 1, display: flex, flexDirection: column`
+- **视觉取值只有一个来源：`styles/admin.css`**。tsx / ts 里禁裸 `#hex`、裸 `rgb()/rgba()`、Tailwind 任意色值（`text-[#6E6862]`）；要令牌用 `var(--admin-*)` 或 Tailwind 变量简写 `text-(--admin-muted)`。`.githooks/check-admin-style-drift.py` 会在 pre-commit 拦（也会查未定义的 `--admin-*` 令牌，那类 bug 静默失效不报错）
+- **`style={{}}` 只留给按数据算出来的值**（头像渐变、状态点颜色、计算位置）；静态视觉与断点都上提成 `.admin-*` 类——内联样式写不了媒体查询，断点留在 tsx 里等于没有响应式
+- **页面布局走 `<AdminPage>` 三层结构**（根 / 背景层 / 内容层，背景层 `position: absolute` **禁 fixed**），不要在页面里重写这三层
+- **状态标签只认 `StatusBadge` 的配置出口**：`statusVisual(type, status)` 取配色、`statusFilterOptions(type)` 派生筛选选项；页面不要再抄一份状态→标签映射
 - **`admin/*` 路由必须在 `MinimalLayout` 外部独立渲染**，否则 C 端 Header 会出现在管理页
 
 ## 状态（Zustand）

@@ -92,6 +92,24 @@ else
   hook_log "No frontend TS changes, skipping biome check"
 fi
 
+# 3.5 管理端样式漂移：tsx / ts 里出现裸 hex、裸 rgba()、Tailwind 任意色值，
+#      或引用未定义的 --admin-* 令牌 → 视觉取值只能来自 styles/admin.css。
+#      规则写进 AGENTS.md 没人记得，机器拦才有约束力（清过一次散落：181 处裸 hex + 92 处任意色值）
+if echo "$files" | grep -qE '^easyorange-frontend/src/admin/.*\.(ts|tsx)$'; then
+  if command -v python3 >/dev/null 2>&1; then
+    hook_log "管理端文件变更 → 校验样式取值是否走 admin.css 令牌..."
+    if python3 "$SCRIPT_DIR/check-admin-style-drift.py" --staged; then
+      hook_ok "admin style drift check"
+    else
+      hook_fail "管理端出现裸色值 / 任意色值 / 未定义令牌（见上方输出；SKIP=git-hooks 可跳过）"
+    fi
+  else
+    hook_warn "python3 not found, skipping admin style drift check"
+  fi
+else
+  hook_log "No admin TS changes, skipping admin style drift check"
+fi
+
 # 4. 测试口径漂移：文档对「集成测试是否存在」的声明 vs 代码事实（*IT 文件 + pom 的 failsafe 绑定）
 tier_files=$(echo "$files" \
   | grep -E '\.md$|^easyorange-backend/pom\.xml$' \
