@@ -7,18 +7,11 @@ import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../componen
 import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { pickAvatarGradient } from '../../components/avatarGradient';
-import { StatusBadge } from '../../components/StatusBadge';
+import { StatusBadge, statusFilterOptions } from '../../components/StatusBadge';
 import { useAdminUsers, useUpdateUserStatus } from '../../hooks';
 import { notify } from '../../notify';
 import type { AdminUser } from '../../types/admin';
 import { UserDetailModal } from './UserDetailModal';
-
-const STATUS_FILTER_OPTIONS = [
-    { value: '', label: '全部状态' },
-    { value: 'NORMAL', label: '正常' },
-    { value: 'DISABLED', label: '禁用' },
-    { value: 'LOCKED', label: '锁定' },
-];
 
 const USER_TYPE_FILTER_OPTIONS = [
     { value: '', label: '全部类型' },
@@ -97,7 +90,7 @@ export default function UserManagePage() {
                             justifyContent: 'center',
                             fontSize: '0.85rem',
                             fontWeight: 700,
-                            color: '#fff',
+                            color: 'var(--admin-surface-solid)',
                             fontFamily: 'var(--admin-font-title)',
                             background: pickAvatarGradient(record.userId ?? ''),
                             flexShrink: 0,
@@ -189,7 +182,7 @@ export default function UserManagePage() {
                         />
                         <AdminFilterField
                             label="状态"
-                            options={STATUS_FILTER_OPTIONS}
+                            options={statusFilterOptions('user')}
                             value={statusFilter}
                             onChange={val => {
                                 setStatusFilter(val);

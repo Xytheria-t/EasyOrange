@@ -7,9 +7,9 @@ import type { CategoryTreeResponse } from '../../types/admin';
 const LEVEL_LABELS = ['一级', '二级', '三级', '更深'];
 
 const LEVEL_TONES = [
-    { color: 'var(--admin-accent)', background: 'rgba(249,115,22,0.08)' },
-    { color: 'var(--status-info)', background: 'rgba(37,99,235,0.08)' },
-    { color: 'var(--plum-600)', background: 'rgba(147,51,234,0.08)' },
+    { color: 'var(--admin-accent)', background: 'color-mix(in srgb, var(--admin-accent-bright) 8%, transparent)' },
+    { color: 'var(--status-info)', background: 'color-mix(in srgb, var(--status-info) 8%, transparent)' },
+    { color: 'var(--plum-600)', background: 'color-mix(in srgb, var(--plum-600) 8%, transparent)' },
 ];
 
 interface CategoryTreeNodeProps {

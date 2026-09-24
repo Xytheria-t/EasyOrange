@@ -126,13 +126,13 @@ export function AdminTable<T extends object>({
     const renderSortIcon = (columnKey: string) => {
         const isActive = sortState.key === columnKey;
         return (
-            <span className="ml-1 inline-flex flex-col leading-none">
+            <span className="admin-sort-icon">
                 <svg
                     aria-hidden="true"
-                    className="mb-[-2px] h-2.5 w-2.5 transition-colors duration-150"
-                    style={{
-                        color: isActive && sortState.direction === 'asc' ? '#F97316' : '#D6CEC5',
-                    }}
+                    className={cn(
+                        'mb-[-2px] h-2.5 w-2.5',
+                        isActive && sortState.direction === 'asc' ? 'admin-sort-icon--active' : 'admin-sort-icon--idle'
+                    )}
                     fill="currentColor"
                     viewBox="0 0 24 24"
                 >
@@ -140,10 +140,10 @@ export function AdminTable<T extends object>({
                 </svg>
                 <svg
                     aria-hidden="true"
-                    className="h-2.5 w-2.5 transition-colors duration-150"
-                    style={{
-                        color: isActive && sortState.direction === 'desc' ? '#F97316' : '#D6CEC5',
-                    }}
+                    className={cn(
+                        'h-2.5 w-2.5',
+                        isActive && sortState.direction === 'desc' ? 'admin-sort-icon--active' : 'admin-sort-icon--idle'
+                    )}
                     fill="currentColor"
                     viewBox="0 0 24 24"
                 >
@@ -152,17 +152,6 @@ export function AdminTable<T extends object>({
             </span>
         );
     };
-
-    const headerBaseClass =
-        'text-left py-[0.85rem] px-5 text-[0.68rem] font-semibold text-[#6E6862] uppercase tracking-[0.06em] ' +
-        'bg-[linear-gradient(180deg,rgba(249,115,22,0.04)_0%,transparent_100%)] border-b border-[#EDE8E3] whitespace-nowrap';
-
-    const cellBaseClass =
-        'py-[0.85rem] px-5 text-[0.87rem] text-[#4A4540] border-b border-[#F5F2EE] align-middle transition-colors duration-150';
-
-    const pageButtonClass =
-        'min-w-[34px] h-[34px] inline-flex items-center justify-center border-[1.5px] border-transparent ' +
-        'rounded-[10px] text-[0.81rem] font-semibold text-[#6E6862] bg-transparent transition-all duration-150 px-2';
 
     const isFirstColumn = (_column: Column<T>, idx: number) => idx === 0;
     const isLastColumn = (_column: Column<T>, idx: number) => idx === columns.length - 1;
@@ -185,10 +174,10 @@ export function AdminTable<T extends object>({
                                 <TableHead
                                     key={String(column.key)}
                                     className={cn(
-                                        headerBaseClass,
-                                        isFirstColumn(column, idx) && 'rounded-tl-[20px]',
-                                        isLastColumn(column, idx) && 'rounded-tr-[20px]',
-                                        column.sortable && 'p-0'
+                                        'admin-table-head',
+                                        isFirstColumn(column, idx) && 'admin-table-head--first',
+                                        isLastColumn(column, idx) && 'admin-table-head--last',
+                                        column.sortable && 'admin-table-head--sortable'
                                     )}
                                     // aria-sort 挂在 th 上，读屏才能播报当前排序方向
                                     aria-sort={column.sortable ? ariaSortFor(String(column.key)) : undefined}
@@ -197,7 +186,7 @@ export function AdminTable<T extends object>({
                                         <button
                                             type="button"
                                             onClick={() => handleSort(String(column.key))}
-                                            className="flex w-full cursor-pointer select-none items-center px-5 py-[0.85rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F97316] focus-visible:ring-inset"
+                                            className="admin-table-head-sort focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--admin-accent-bright) focus-visible:ring-inset"
                                         >
                                             {column.title}
                                             {renderSortIcon(String(column.key))}
@@ -212,24 +201,26 @@ export function AdminTable<T extends object>({
                     <TableBody>
                         {loading ? (
                             <TableRow className="border-0 hover:bg-transparent">
-                                <TableCell colSpan={columns.length} className={cn(cellBaseClass, 'text-center')}>
+                                <TableCell colSpan={columns.length} className="admin-table-cell">
                                     <div
-                                        className="flex flex-col items-center gap-[0.7rem] py-12 px-4"
+                                        className="admin-table-state admin-table-state--loading"
                                         role="status"
                                         aria-live="polite"
                                         aria-busy="true"
                                     >
-                                        <div className="h-7 w-7 rounded-full border-[2.5px] border-[#E5E0DB] border-t-[#F97316] animate-spin" />
-                                        <span className="text-[0.87rem] text-[#6E6862]">加载中...</span>
+                                        <div className="admin-spinner animate-spin" />
+                                        <span className="admin-table-state-message">加载中...</span>
                                     </div>
                                 </TableCell>
                             </TableRow>
                         ) : error ? (
                             <TableRow className="border-0 hover:bg-transparent">
-                                <TableCell colSpan={columns.length} className={cn(cellBaseClass, 'text-center')}>
-                                    <div className="flex flex-col items-center gap-2 py-14 px-6" role="alert">
-                                        <div className="text-[0.98rem] font-semibold text-[#4A4540]">数据加载失败</div>
-                                        <div className="max-w-md text-[0.84rem] text-[#6E6862]">
+                                <TableCell colSpan={columns.length} className="admin-table-cell">
+                                    <div className="admin-table-state admin-table-state--error" role="alert">
+                                        <div className="admin-table-state-title admin-table-state-title--error">
+                                            数据加载失败
+                                        </div>
+                                        <div className="admin-table-state-message">
                                             {error.message || '服务暂时不可用，请稍后重试。'}
                                         </div>
                                         {onRetry ? (
@@ -242,16 +233,11 @@ export function AdminTable<T extends object>({
                             </TableRow>
                         ) : sortedData.length === 0 ? (
                             <TableRow className="border-0 hover:bg-transparent">
-                                <TableCell colSpan={columns.length} className={cn(cellBaseClass, 'text-center')}>
-                                    <div className="py-14 px-6 text-center">
+                                <TableCell colSpan={columns.length} className="admin-table-cell">
+                                    <div className="admin-table-state">
                                         <Inbox className="mx-auto mb-[0.65rem] h-9 w-9 opacity-40" aria-hidden="true" />
                                         {/* 只渲染 emptyText：再补一句「暂无相关数据」会和页面自带的空态文案重复 */}
-                                        <div
-                                            className="text-[0.98rem] font-semibold text-[#6E6862]"
-                                            style={{ fontFamily: "'Playfair Display', serif" }}
-                                        >
-                                            {emptyText}
-                                        </div>
+                                        <div className="admin-table-state-title">{emptyText}</div>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -260,12 +246,9 @@ export function AdminTable<T extends object>({
                                 <TableRow
                                     key={String(record[rowKey])}
                                     className={cn(
-                                        'border-b border-[#F5F2EE] transition-colors duration-150',
-                                        onRowClick && 'cursor-pointer',
-                                        'hover:bg-[rgba(249,115,22,0.025)]',
+                                        'admin-table-row',
                                         // 可点击行补键盘可达：Enter / Space 等同点击
-                                        onRowClick &&
-                                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#F97316]'
+                                        onRowClick && 'admin-table-row--clickable focus-visible:outline-none'
                                     )}
                                     tabIndex={onRowClick ? 0 : undefined}
                                     role={onRowClick ? 'button' : undefined}
@@ -283,7 +266,7 @@ export function AdminTable<T extends object>({
                                     {columns.map(column => {
                                         const cellValue = getValue(record, column.key);
                                         return (
-                                            <TableCell key={String(column.key)} className={cellBaseClass}>
+                                            <TableCell key={String(column.key)} className="admin-table-cell">
                                                 {column.render
                                                     ? column.render(cellValue, record)
                                                     : (cellValue as React.ReactNode)}
@@ -298,21 +281,10 @@ export function AdminTable<T extends object>({
             </div>
 
             {pagination && totalPages > 1 && (
-                <nav
-                    className="relative flex flex-wrap items-center justify-between gap-3 px-5 py-[0.9rem] border-t border-[#EDE8E3]"
-                    aria-label="分页导航"
-                >
-                    <div
-                        className="absolute top-0 left-5 right-5 h-px"
-                        style={{
-                            background: 'linear-gradient(90deg, transparent, rgba(249,115,22,0.08), transparent)',
-                        }}
-                    />
-
-                    <div className="text-[0.81rem] text-[#6E6862]">
-                        共 <strong className="text-[#4A4540] font-semibold">{pagination.total.toLocaleString()}</strong>{' '}
-                        条记录， 第 <strong className="text-[#4A4540] font-semibold">{pagination.current}</strong> /{' '}
-                        <strong className="text-[#4A4540] font-semibold">{totalPages}</strong> 页
+                <nav className="admin-pagination" aria-label="分页导航">
+                    <div className="admin-pagination-summary">
+                        共 <strong>{pagination.total.toLocaleString()}</strong> 条记录， 第{' '}
+                        <strong>{pagination.current}</strong> / <strong>{totalPages}</strong> 页
                     </div>
 
                     <Pagination className="w-auto">
@@ -325,10 +297,7 @@ export function AdminTable<T extends object>({
                                     onClick={() => pagination.onChange(pagination.current - 1)}
                                     aria-label="上一页"
                                     title="上一页"
-                                    className={cn(
-                                        pageButtonClass,
-                                        pagination.current <= 1 && 'opacity-40 cursor-not-allowed'
-                                    )}
+                                    className="admin-page-btn"
                                 >
                                     <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                                 </Button>
@@ -341,7 +310,7 @@ export function AdminTable<T extends object>({
                                             // biome-ignore lint/suspicious/noArrayIndexKey: stable list
                                             key={`e-${index}`}
                                         >
-                                            <PaginationEllipsis className="text-[0.81rem] text-[#6E6862]" />
+                                            <PaginationEllipsis className="admin-page-ellipsis" />
                                         </PaginationItem>
                                     );
                                 }
@@ -354,9 +323,8 @@ export function AdminTable<T extends object>({
                                             aria-label={`第 ${page} 页`}
                                             aria-current={page === pagination.current ? 'page' : undefined}
                                             className={cn(
-                                                pageButtonClass,
-                                                page === pagination.current &&
-                                                    'text-white bg-[linear-gradient(135deg,#F97316,#EA580C)] shadow-[0_2px_8px_rgba(249,115,22,0.28)]'
+                                                'admin-page-btn',
+                                                page === pagination.current && 'admin-page-btn--active'
                                             )}
                                         >
                                             {page}
@@ -373,10 +341,7 @@ export function AdminTable<T extends object>({
                                     onClick={() => pagination.onChange(pagination.current + 1)}
                                     aria-label="下一页"
                                     title="下一页"
-                                    className={cn(
-                                        pageButtonClass,
-                                        pagination.current >= totalPages && 'opacity-40 cursor-not-allowed'
-                                    )}
+                                    className="admin-page-btn"
                                 >
                                     <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
                                 </Button>

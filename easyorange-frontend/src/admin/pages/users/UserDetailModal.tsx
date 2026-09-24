@@ -117,7 +117,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                     </svg>
                 }
                 footer={
-                    <div className="admin-footer-actions justify-end border-t border-[rgba(229,224,219,0.4)] px-6 py-4">
+                    <div className="admin-footer-actions admin-footer-bar justify-end">
                         <Button variant="outline" onClick={onClose} disabled={loading}>
                             取消
                         </Button>
@@ -156,7 +156,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                                 borderRadius: 16,
                                 fontSize: '1.25rem',
                                 fontWeight: 700,
-                                color: '#fff',
+                                color: 'var(--admin-surface-solid)',
                                 fontFamily: 'var(--admin-font-title)',
                                 background: avatarGradient,
                             }}
@@ -223,7 +223,9 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                                             padding: '0.6rem',
                                             borderRadius: 'var(--admin-radius-control)',
                                             border: `1.5px solid ${isActive ? opt.dot : 'var(--admin-control-border)'}`,
-                                            background: isActive ? 'var(--admin-accent-soft)' : '#fff',
+                                            background: isActive
+                                                ? 'var(--admin-accent-soft)'
+                                                : 'var(--admin-surface-solid)',
                                             color: isActive ? 'var(--admin-accent)' : 'var(--admin-muted)',
                                             fontSize: '0.84rem',
                                             fontWeight: 600,

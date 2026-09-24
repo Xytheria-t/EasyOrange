@@ -50,6 +50,7 @@ describe('ForbiddenPage', () => {
     it('renders within a full-height container', () => {
         const { container } = renderWithProviders(<ForbiddenPage />);
         const mainDiv = container.firstElementChild as HTMLElement;
-        expect(mainDiv.style.minHeight).toBe('100vh');
+        // 满屏高度已挪进 .admin-forbidden-page 类，这里断言类名而不是内联样式
+        expect(mainDiv.className).toContain('admin-forbidden-page');
     });
 });

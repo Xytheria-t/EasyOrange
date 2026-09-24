@@ -1,4 +1,5 @@
 import { AdminDetailModal, InfoCell } from '@/admin/components/AdminDetailModal';
+import { statusVisual } from '@/admin/components/StatusBadge';
 import { useAdminOrderDetail } from '../../hooks';
 import type { AdminOrderDetail } from '../../types/admin';
 
@@ -7,45 +8,6 @@ export interface OrderDetailModalProps {
     orderId: string | null;
     onClose: () => void;
 }
-
-const STATUS_CONFIG: Record<string, { bg: string; color: string; dot: string; label: string }> = {
-    PENDING_PAYMENT: {
-        bg: 'linear-gradient(135deg, rgba(249,158,11,0.10), rgba(251,191,36,0.06))',
-        color: '#D97706',
-        dot: '#F59E0B',
-        label: '待付款',
-    },
-    PAID: {
-        bg: 'linear-gradient(135deg, rgba(59,130,246,0.10), rgba(96,165,250,0.06))',
-        color: '#2563EB',
-        dot: '#3B82F6',
-        label: '待发货',
-    },
-    SHIPPED: {
-        bg: 'linear-gradient(135deg, rgba(139,92,246,0.10), rgba(167,139,250,0.06))',
-        color: '#7C3AED',
-        dot: '#8B5CF6',
-        label: '已发货',
-    },
-    COMPLETED: {
-        bg: 'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(52,211,153,0.06))',
-        color: '#059669',
-        dot: '#10B981',
-        label: '已完成',
-    },
-    CANCELLED: {
-        bg: 'linear-gradient(135deg, rgba(156,163,175,0.10), rgba(209,213,219,0.06))',
-        color: '#6B7280',
-        dot: '#9CA3AF',
-        label: '已取消',
-    },
-    REFUNDED: {
-        bg: 'linear-gradient(135deg, rgba(244,63,94,0.10), rgba(251,113,133,0.06))',
-        color: '#E11D48',
-        dot: '#F43F5E',
-        label: '退款中',
-    },
-};
 
 const PAYMENT_STATUS: Record<string, string> = {
     UNPAID: '未支付',
@@ -74,7 +36,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
     }
 
     const orderData = order as AdminOrderDetail | undefined;
-    const statusCfg = STATUS_CONFIG[orderData?.status ?? 'PENDING_PAYMENT'] ?? STATUS_CONFIG.PENDING_PAYMENT;
+    const statusCfg = statusVisual('order', orderData?.status);
     const isRefunded = orderData?.status === 'REFUNDED';
     // 只有真正取消 / 退款的订单才有这两个字段；此前对所有订单都读 cancelTime，
     // 未取消的订单会显示一个空的「取消时间」，让人以为订单被关过
@@ -125,27 +87,17 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
             {orderData ? (
                 <div className="flex flex-col gap-5">
                     {/* Status & amount bar */}
-                    <div className="flex items-center gap-4 rounded-2xl border border-[rgba(251,191,36,0.08)] bg-[linear-gradient(135deg,rgba(251,191,36,0.05),rgba(249,115,22,0.03))] p-4">
+                    <div className="admin-order-bar">
                         <div
-                            className="shrink-0 whitespace-nowrap rounded-[10px] px-3 py-[0.35rem] text-[0.82rem] font-bold"
+                            className="admin-order-status"
                             style={{ background: statusCfg.bg, color: statusCfg.color }}
                         >
                             {statusCfg.label}
                         </div>
                         <div className="min-w-0 flex-1">
-                            <span
-                                className="text-[1.35rem] font-bold text-[#EA580C]"
-                                style={{ fontFamily: "'DM Sans', sans-serif" }}
-                            >
-                                ¥{orderData.totalAmount.toFixed(2)}
-                            </span>
+                            <span className="admin-order-amount">¥{orderData.totalAmount.toFixed(2)}</span>
                         </div>
-                        <span
-                            className="shrink-0 text-[0.78rem] font-semibold tracking-[0.03em] text-[#6E6862]"
-                            style={{ fontFamily: "'DM Sans', monospace" }}
-                        >
-                            {orderData.orderNo}
-                        </span>
+                        <span className="admin-order-no">{orderData.orderNo}</span>
                     </div>
 
                     {/* Product info */}
@@ -153,17 +105,17 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                         (() => {
                             const item = orderData.items[0];
                             return (
-                                <div className="flex gap-[0.85rem] rounded-[14px] border border-[rgba(229,224,219,0.4)] bg-white/60 p-[0.85rem]">
+                                <div className="admin-item-row">
                                     {item.productImage ? (
                                         <img
                                             src={item.productImage}
                                             alt=""
-                                            className="h-[60px] w-[60px] shrink-0 rounded-xl object-cover"
+                                            className="admin-item-thumb"
                                             loading="lazy"
                                             decoding="async"
                                         />
                                     ) : (
-                                        <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)] text-[#6E6862]">
+                                        <div className="admin-item-thumb admin-item-thumb--empty">
                                             <svg
                                                 aria-hidden="true"
                                                 width="22"
@@ -182,39 +134,30 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                                         </div>
                                     )}
                                     <div className="flex min-w-0 flex-1 flex-col justify-center">
-                                        <p className="overflow-hidden text-ellipsis whitespace-nowrap text-[0.93rem] font-bold leading-tight text-[#2A2520]">
-                                            {item.productName || '—'}
-                                        </p>
-                                        <p className="mt-0.5 text-[0.81rem] text-[#6E6862]">
-                                            单价: ¥{item.unitPrice.toFixed(2)}
-                                        </p>
-                                        <p className="mt-0.5 text-[0.81rem] text-[#6E6862]">数量: {item.quantity}</p>
+                                        <p className="admin-item-name">{item.productName || '—'}</p>
+                                        <p className="admin-item-meta">单价: ¥{item.unitPrice.toFixed(2)}</p>
+                                        <p className="admin-item-meta">数量: {item.quantity}</p>
                                     </div>
                                 </div>
                             );
                         })()
                     ) : !orderData.items?.length ? (
                         // 此前空数组会走进 map 分支渲染出空白区，看不出是「无商品」还是「没加载出来」
-                        <div className="rounded-[14px] border border-dashed border-[rgba(229,224,219,0.6)] px-4 py-6 text-center text-[0.85rem] text-[#6E6862]">
-                            该订单没有商品明细
-                        </div>
+                        <div className="admin-empty-hint">该订单没有商品明细</div>
                     ) : (
                         <div className="flex flex-col gap-2">
                             {orderData.items?.map(item => (
-                                <div
-                                    key={item.itemId}
-                                    className="flex gap-[0.85rem] rounded-[14px] border border-[rgba(229,224,219,0.4)] bg-white/60 p-[0.85rem]"
-                                >
+                                <div key={item.itemId} className="admin-item-row">
                                     {item.productImage ? (
                                         <img
                                             src={item.productImage}
                                             alt=""
-                                            className="h-[60px] w-[60px] shrink-0 rounded-xl object-cover"
+                                            className="admin-item-thumb"
                                             loading="lazy"
                                             decoding="async"
                                         />
                                     ) : (
-                                        <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)] text-[#6E6862]">
+                                        <div className="admin-item-thumb admin-item-thumb--empty">
                                             <svg
                                                 aria-hidden="true"
                                                 width="22"
@@ -233,10 +176,8 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                                         </div>
                                     )}
                                     <div className="flex min-w-0 flex-1 flex-col justify-center">
-                                        <p className="overflow-hidden text-ellipsis whitespace-nowrap text-[0.93rem] font-bold leading-tight text-[#2A2520]">
-                                            {item.productName || '—'}
-                                        </p>
-                                        <p className="mt-0.5 text-[0.81rem] text-[#6E6862]">
+                                        <p className="admin-item-name">{item.productName || '—'}</p>
+                                        <p className="admin-item-meta">
                                             单价: ¥{item.unitPrice.toFixed(2)} × {item.quantity}
                                         </p>
                                     </div>
@@ -283,15 +224,15 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
 
                     {/* Shipping address */}
                     {orderData.shippingAddress && (
-                        <div className="rounded-[14px] border border-[rgba(229,224,219,0.35)] bg-[linear-gradient(135deg,rgba(251,191,36,0.03),rgba(195,155,211,0.02))] px-4 py-[0.85rem]">
-                            <p className="mb-[0.45rem] flex items-center gap-[0.35rem] text-[0.78rem] font-semibold text-[#6B6460]">
+                        <div className="admin-address-panel">
+                            <p className="admin-note-title mb-[0.45rem]">
                                 <svg
                                     aria-hidden="true"
                                     width="14"
                                     height="14"
                                     fill="none"
                                     viewBox="0 0 24 24"
-                                    stroke="#F97316"
+                                    className="admin-stat-icon"
                                     strokeWidth="2"
                                 >
                                     <path
@@ -307,7 +248,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                                 </svg>
                                 收货地址
                             </p>
-                            <p className="text-[0.87rem] leading-relaxed text-[#2A2520]">
+                            <p className="admin-address-body">
                                 {orderData.shippingAddress.receiverName} {orderData.shippingAddress.phone}
                                 <br />
                                 {orderData.shippingAddress.detailAddress}
@@ -317,21 +258,15 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
 
                     {/* Remark / Cancel reason */}
                     {orderData.remark && (
-                        <div className="rounded-[14px] border border-[rgba(229,224,219,0.4)] bg-white/60 px-4 py-[0.85rem]">
-                            <p className="mb-[0.35rem] text-[0.78rem] font-semibold text-[#6B6460]">备注</p>
-                            <p className="whitespace-pre-wrap text-[0.87rem] leading-relaxed text-[#4A4540]">
-                                {orderData.remark}
-                            </p>
+                        <div className="admin-remark-panel">
+                            <p className="admin-remark-title">备注</p>
+                            <p className="admin-danger-body">{orderData.remark}</p>
                         </div>
                     )}
                     {closeReason && (
-                        <div className="rounded-[14px] border border-[rgba(244,63,94,0.15)] bg-[linear-gradient(135deg,rgba(244,63,94,0.04),rgba(251,113,133,0.02))] px-4 py-[0.85rem]">
-                            <p className="mb-[0.35rem] text-[0.78rem] font-semibold text-[#E11D48]">
-                                {isRefunded ? '退款原因' : '取消原因'}
-                            </p>
-                            <p className="whitespace-pre-wrap text-[0.87rem] leading-relaxed text-[#4A4540]">
-                                {closeReason}
-                            </p>
+                        <div className="admin-danger-panel">
+                            <p className="admin-danger-title">{isRefunded ? '退款原因' : '取消原因'}</p>
+                            <p className="admin-danger-body">{closeReason}</p>
                         </div>
                     )}
                 </div>

@@ -85,6 +85,12 @@ vi.mock('../../components/AdminTable', () => ({
 
 vi.mock('../../components/StatusBadge', () => ({
     StatusBadge: ({ status }: { status: number | string }) => <span data-testid="status-badge">{status}</span>,
+    // 页面现在从状态配置派生筛选选项，mock 要提供同一出口
+    statusFilterOptions: (_type: string) => [
+        { value: '', label: '全部状态' },
+        { value: 'PENDING_PAYMENT', label: '待付款' },
+        { value: 'PAID', label: '待发货' },
+    ],
 }));
 
 vi.mock('../../components/AdminSelect', () => ({

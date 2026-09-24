@@ -101,6 +101,13 @@ vi.mock('../../components/AdminTable', () => ({
 
 vi.mock('../../components/StatusBadge', () => ({
     StatusBadge: ({ status }: { status: string | number }) => <span data-testid="status-badge">{status}</span>,
+    // 页面现在从状态配置派生筛选选项，mock 要提供同一出口
+    statusFilterOptions: (_type: string) => [
+        { value: '', label: '全部状态' },
+        { value: 'NORMAL', label: '正常' },
+        { value: 'DISABLED', label: '禁用' },
+        { value: 'LOCKED', label: '锁定' },
+    ],
 }));
 
 vi.mock('../../components/AdminSelect', () => ({
