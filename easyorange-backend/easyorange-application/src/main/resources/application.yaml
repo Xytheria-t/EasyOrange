@@ -9,6 +9,15 @@ spring:
     virtual:
       enabled: true
 
+  task:
+    execution:
+      # force — ThreadPoolConfig 的 taskScheduler 是 Executor 类型 bean，缺省条件下 Boot 的
+      # applicationTaskExecutor 会整体退让不装配；而 AiChatController 的 SSE 流式工作依赖它，
+      # getIfAvailable() 拿到 null 时整条流回退内联跑在 servlet 线程上：emitter 迟迟不返回，
+      # 全部事件积压进 earlySendAttempts，等响应完成才一次性回放 —— 打字机效果与步骤可视化全废。
+      # force = 即使存在自定义 Executor bean 也强制装配 applicationTaskExecutor（虚拟线程版）。
+      mode: force
+
   jackson:
     date-format: yyyy-MM-dd'T'HH:mm:ss
     time-zone: Asia/Shanghai

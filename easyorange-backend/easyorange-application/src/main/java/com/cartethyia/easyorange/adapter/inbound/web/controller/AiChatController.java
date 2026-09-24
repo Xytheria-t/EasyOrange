@@ -78,7 +78,8 @@ public class AiChatController {
         Optional<AuthUser> authUser = SecurityContextUtil.getUserContext();
         Runnable task = () -> runStream(emitter, request, authUser.orElse(null));
         var executor = taskExecutors.getIfAvailable();
-        // 取不到执行器（极简上下文）时退回当前线程：执行器缺失只影响 trace 关联，不该让对话不可用
+        // 取不到执行器（极简上下文/手工构造）才退回当前线程 —— 正式装配下绝不能走这条分支：
+        // 内联执行会让 emitter 拖到流结束才返回，全部事件积压成一次性回放，SSE 退化成同步接口
         if (executor == null) {
             task.run();
         } else {
