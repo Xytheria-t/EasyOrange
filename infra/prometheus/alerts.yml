@@ -1,6 +1,6 @@
 # =============================================================================
-# 业务告警规则（compose 侧）— 与 k8s/observability/prometheus-rule.yaml 同源，
-# 差异：compose 抓取无 namespace 标签，按 job="easyorange" 过滤
+# 业务告警规则（compose 侧）— 按 job="easyorange" 过滤
+# 部署到生产监控栈时按实际 service/job 标签调整匹配式即可
 # =============================================================================
 groups:
   - name: easyorange.rules
