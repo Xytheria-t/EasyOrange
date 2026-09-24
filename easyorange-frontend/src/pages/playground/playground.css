@@ -748,8 +748,53 @@
     padding-left: 1.4em;
 }
 
+/* 列表标记 — Tailwind preflight 清掉了 ul/ol 的 list-style，markdown 的数字列表
+   会渲染成无序号的缩进段落；气泡内按 markdown 语义恢复 */
+.playground-md ul {
+    list-style: disc outside;
+}
+
+.playground-md ol {
+    list-style: decimal outside;
+}
+
 .playground-md li {
     margin: 0.15em 0;
+}
+
+/* 松散列表（条目间空行）时每项会包一层 <p>，条目间距翻倍，收敛到与紧凑列表一致 */
+.playground-md li > p {
+    margin: 0.15em 0;
+}
+
+/* 标题层级 — 不设的话 h1/h2 走浏览器默认字号，直接撑爆气泡 */
+.playground-md h1,
+.playground-md h2,
+.playground-md h3,
+.playground-md h4,
+.playground-md h5,
+.playground-md h6 {
+    margin: 0.7em 0 0.35em;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+.playground-md h1 {
+    font-size: 1.15em;
+}
+
+.playground-md h2 {
+    font-size: 1.1em;
+}
+
+.playground-md h3 {
+    font-size: 1.05em;
+}
+
+.playground-md h4,
+.playground-md h5,
+.playground-md h6 {
+    font-size: 1em;
 }
 
 /* 窄气泡里多列表格会撑破气泡，滚动交给包裹层而不是气泡本身 */
