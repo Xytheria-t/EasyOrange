@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
@@ -43,6 +44,19 @@ public class MessageRepositoryImpl extends BaseRepository<MessageMapper, Message
         lambdaUpdate()
                 .eq(MessageDO::getReceiverId, receiverId)
                 .eq(MessageDO::getType, type)
+                .eq(MessageDO::getIsRead, ReadStatus.UNREAD)
+                .set(MessageDO::getIsRead, ReadStatus.READ)
+                .update();
+    }
+
+    @Override
+    public void markAsReadByIds(String receiverId, List<String> messageIds) {
+        if (messageIds == null || messageIds.isEmpty()) {
+            return;
+        }
+        lambdaUpdate()
+                .eq(MessageDO::getReceiverId, receiverId)
+                .in(MessageDO::getId, messageIds)
                 .eq(MessageDO::getIsRead, ReadStatus.UNREAD)
                 .set(MessageDO::getIsRead, ReadStatus.READ)
                 .update();

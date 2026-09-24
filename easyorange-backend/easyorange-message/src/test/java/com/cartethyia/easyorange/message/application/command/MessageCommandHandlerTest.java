@@ -281,60 +281,26 @@ class MessageCommandHandlerTest {
     class MarkAsReadBatchTests {
 
         @Test
-        @DisplayName("批量标记已读成功")
+        @DisplayName("批量标记已读：谓词下推为一次 markAsReadByIds，不再逐条读+写")
         void markAsReadBatch_success() {
             MarkAsReadBatchCommand command =
                     new MarkAsReadBatchCommand(new ArrayList<>(List.of(MESSAGE_ID, "101", "102")));
 
-            Message msg1 = createTestMessage();
-            Message msg2 = Message.fromRaw(
-                    "101",
-                    USER_ID,
-                    RECEIVER_ID,
-                    MessageType.CHAT,
-                    "标题",
-                    "hello",
-                    ReadStatus.UNREAD,
-                    null,
-                    null,
-                    MessageStatus.SENT,
-                    null,
-                    LocalDateTime.now());
-            Message msg3 = Message.fromRaw(
-                    "102",
-                    USER_ID,
-                    RECEIVER_ID,
-                    MessageType.CHAT,
-                    "标题",
-                    "hello",
-                    ReadStatus.UNREAD,
-                    null,
-                    null,
-                    MessageStatus.SENT,
-                    null,
-                    LocalDateTime.now());
-
-            when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(msg1));
-            when(messageRepository.findById("101")).thenReturn(Optional.of(msg2));
-            when(messageRepository.findById("102")).thenReturn(Optional.of(msg3));
-
             commandHandler.markAsReadBatch(RECEIVER_ID, command);
 
-            verify(messageRepository, times(3)).update(any(Message.class));
+            // 关键回归点：N 条消息只发一次批量更新，而非 N 次 findById + N 次 update
+            verify(messageRepository).markAsReadByIds(RECEIVER_ID, List.of(MESSAGE_ID, "101", "102"));
+            verify(messageRepository, never()).update(any(Message.class));
         }
 
         @Test
-        @DisplayName("批量标记时跳过不存在的消息")
+        @DisplayName("批量标记：不存在 / 非本人的 ID 由 SQL 谓词跳过，整批仍只发一次")
         void markAsReadBatch_skipNotFound() {
             MarkAsReadBatchCommand command = new MarkAsReadBatchCommand(new ArrayList<>(List.of(MESSAGE_ID, "999")));
 
-            Message msg1 = createTestMessage();
-            when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(msg1));
-            when(messageRepository.findById("999")).thenReturn(Optional.empty());
-
             commandHandler.markAsReadBatch(RECEIVER_ID, command);
 
-            verify(messageRepository, times(1)).update(any(Message.class));
+            verify(messageRepository).markAsReadByIds(RECEIVER_ID, List.of(MESSAGE_ID, "999"));
         }
 
         @Test
