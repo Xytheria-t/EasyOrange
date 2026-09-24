@@ -75,11 +75,13 @@ public class PaymentRepositoryImpl extends BaseRepository<PaymentMapper, Payment
 
     @Override
     public List<Payment> findByUserIdAndStatus(String userId, PaymentStatus status, int pageNum, int pageSize) {
+        // searchCount=false：本方法只返回 records，总数由调用方另走 countByUserIdAndStatus，
+        // 不关掉会让分页查询额外多打一次全表 COUNT
         Page<PaymentDO> page = lambdaQuery()
                 .eq(userId != null, PaymentDO::getUserId, userId)
                 .eq(status != null, PaymentDO::getStatus, status)
                 .orderByDesc(PaymentDO::getCreateTime)
-                .page(new Page<>(pageNum, pageSize));
+                .page(new Page<>(pageNum, pageSize, false));
         return page.getRecords().stream().map(paymentDataMapper::toAggregate).toList();
     }
 
