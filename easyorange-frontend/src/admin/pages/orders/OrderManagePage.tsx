@@ -7,7 +7,6 @@ import { formatDate } from '@/utils/format';
 import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
 import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
-import { linkButton, monoText, mutedText, priceText } from '../../components/admin-theme';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAdminOrders } from '../../hooks';
 import type { AdminOrder } from '../../types/admin';
@@ -55,7 +54,9 @@ export default function OrderManagePage() {
             key: 'orderNo',
             title: '订单号',
             render: value => (
-                <span style={{ ...monoText, fontWeight: 600, color: 'var(--admin-ink)' }}>{value as string}</span>
+                <span className="admin-mono" style={{ fontWeight: 600, color: 'var(--admin-ink)' }}>
+                    {value as string}
+                </span>
             ),
         },
         {
@@ -88,17 +89,17 @@ export default function OrderManagePage() {
         {
             key: 'buyerName',
             title: '认领方',
-            render: value => <span style={mutedText}>{value as string}</span>,
+            render: value => <span className="admin-muted">{value as string}</span>,
         },
         {
             key: 'sellerName',
             title: '资产方',
-            render: value => <span style={mutedText}>{value as string}</span>,
+            render: value => <span className="admin-muted">{value as string}</span>,
         },
         {
             key: 'totalAmount',
             title: '金额',
-            render: value => <span style={priceText}>¥{Number(value ?? 0).toFixed(2)}</span>,
+            render: value => <span className="admin-price">¥{Number(value ?? 0).toFixed(2)}</span>,
         },
         {
             key: 'status',
@@ -109,7 +110,7 @@ export default function OrderManagePage() {
             key: 'createTime',
             title: '下单时间',
             sortable: true,
-            render: value => <span style={mutedText}>{formatDate(value as string, 'date')}</span>,
+            render: value => <span className="admin-muted">{formatDate(value as string, 'date')}</span>,
         },
         {
             key: 'actions',
@@ -119,8 +120,7 @@ export default function OrderManagePage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setDetailOrderId(record.orderId)}
-                    className="h-auto min-h-0"
-                    style={linkButton()}
+                    className="h-auto min-h-0 admin-link-button"
                 >
                     <Eye size={14} aria-hidden="true" />
                     详情
@@ -160,7 +160,7 @@ export default function OrderManagePage() {
                         <div style={{ flex: 1 }} />
                         {/* 失败时不报「共 0 笔」——那会被读成真的没有订单 */}
                         {isError ? null : (
-                            <span style={mutedText}>
+                            <span className="admin-muted">
                                 共 <strong style={{ color: 'var(--admin-ink)' }}>{total.toLocaleString()}</strong>{' '}
                                 笔订单
                             </span>

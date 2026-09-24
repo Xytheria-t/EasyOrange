@@ -7,7 +7,6 @@ import { formatRelativeTime } from '@/utils/format';
 import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
 import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
-import { linkButton, mutedText, priceText } from '../../components/admin-theme';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAdminCategories } from '../../hooks/useAdminCategories';
 import { useAdminProducts } from '../../hooks/useAdminProducts';
@@ -119,12 +118,12 @@ export default function ProductReviewPage() {
         {
             key: 'price',
             title: '价格',
-            render: value => <span style={priceText}>¥{Number(value ?? 0).toFixed(2)}</span>,
+            render: value => <span className="admin-price">¥{Number(value ?? 0).toFixed(2)}</span>,
         },
         {
             key: 'sellerName',
             title: '资产方',
-            render: value => <span style={mutedText}>{value as string}</span>,
+            render: value => <span className="admin-muted">{value as string}</span>,
         },
         {
             key: 'status',
@@ -137,7 +136,7 @@ export default function ProductReviewPage() {
             key: 'createTime',
             title: '发布时间',
             sortable: true,
-            render: value => <span style={mutedText}>{formatRelativeTime(value as string)}</span>,
+            render: value => <span className="admin-muted">{formatRelativeTime(value as string)}</span>,
         },
         {
             key: 'actions',
@@ -150,8 +149,7 @@ export default function ProductReviewPage() {
                         e.stopPropagation();
                         handleViewDetail(record);
                     }}
-                    className="h-auto min-h-0"
-                    style={linkButton()}
+                    className="h-auto min-h-0 admin-link-button"
                 >
                     <Eye size={14} aria-hidden="true" />
                     审核
@@ -199,7 +197,7 @@ export default function ProductReviewPage() {
                         <ToolbarDivider />
                         <div style={{ flex: 1 }} />
                         {isError ? null : (
-                            <span style={mutedText}>
+                            <span className="admin-muted">
                                 共 <strong style={{ color: 'var(--admin-ink)' }}>{total.toLocaleString()}</strong>{' '}
                                 件商品
                             </span>

@@ -6,7 +6,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AdminField, AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
 import { AdminCard, AdminErrorBanner, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
 import { AdminSelect } from '../../components/AdminSelect';
-import { labelText, mutedText, textInput } from '../../components/admin-theme';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import {
     useAdminCategoryTree,
@@ -319,7 +318,7 @@ export default function CategoryManagePage() {
                         <div style={{ flex: 1 }} />
                         {/* 筛选后报总数会让人以为筛选没生效；请求失败时报「共 0 个」同样会被当成真的没数据 */}
                         {isError ? null : (
-                            <span style={mutedText}>
+                            <span className="admin-muted">
                                 {hasFilter ? (
                                     <>
                                         筛选出 <strong style={{ color: 'var(--admin-ink)' }}>{filteredCount}</strong> /{' '}
@@ -355,7 +354,9 @@ export default function CategoryManagePage() {
                                     animation: 'spin 0.7s linear infinite',
                                 }}
                             />
-                            <div style={{ ...mutedText, marginTop: '1rem' }}>加载分类数据…</div>
+                            <div className="admin-muted" style={{ marginTop: '1rem' }}>
+                                加载分类数据…
+                            </div>
                         </div>
                     ) : isError ? null : filteredTree.length === 0 ? (
                         <div style={{ padding: '3rem', textAlign: 'center' }}>
@@ -384,7 +385,7 @@ export default function CategoryManagePage() {
                             >
                                 暂无分类数据
                             </div>
-                            <p style={mutedText}>
+                            <p className="admin-muted">
                                 {hasFilter ? '尝试调整筛选条件' : '点击右上角「添加分类」创建第一个分类'}
                             </p>
                         </div>
@@ -451,7 +452,7 @@ export default function CategoryManagePage() {
                                     placeholder="请输入分类名称"
                                     maxLength={20}
                                     disabled={createMutation.isPending}
-                                    style={textInput()}
+                                    className="admin-input"
                                 />
                             )}
                         </AdminField>
@@ -480,7 +481,7 @@ export default function CategoryManagePage() {
                                     min={0}
                                     max={9999}
                                     disabled={createMutation.isPending}
-                                    style={textInput()}
+                                    className="admin-input"
                                 />
                             )}
                         </AdminField>
@@ -533,7 +534,7 @@ export default function CategoryManagePage() {
                                     placeholder="请输入分类名称"
                                     maxLength={20}
                                     disabled={updateMutation.isPending}
-                                    style={textInput()}
+                                    className="admin-input"
                                 />
                             )}
                         </AdminField>
@@ -562,13 +563,15 @@ export default function CategoryManagePage() {
                                     min={0}
                                     max={9999}
                                     disabled={updateMutation.isPending}
-                                    style={textInput()}
+                                    className="admin-input"
                                 />
                             )}
                         </AdminField>
 
                         <div>
-                            <p style={{ ...labelText, marginBottom: '0.4rem' }}>状态</p>
+                            <p className="admin-label" style={{ marginBottom: '0.4rem' }}>
+                                状态
+                            </p>
                             <RadioGroup
                                 value={String(editStatus)}
                                 onValueChange={value => setEditStatus(Number(value))}

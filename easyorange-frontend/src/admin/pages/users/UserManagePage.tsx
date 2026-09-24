@@ -6,7 +6,6 @@ import { formatDate } from '@/utils/format';
 import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
 import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
-import { linkButton, monoText, mutedText } from '../../components/admin-theme';
 import { pickAvatarGradient } from '../../components/avatarGradient';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAdminUsers, useUpdateUserStatus } from '../../hooks';
@@ -110,7 +109,7 @@ export default function UserManagePage() {
                         <span style={{ fontWeight: 600, color: 'var(--admin-ink)', fontSize: '0.875rem' }}>
                             {record.username}
                         </span>
-                        {record.nickname ? <span style={mutedText}>{record.nickname}</span> : null}
+                        {record.nickname ? <span className="admin-muted">{record.nickname}</span> : null}
                     </div>
                 </div>
             ),
@@ -118,7 +117,7 @@ export default function UserManagePage() {
         {
             key: 'email',
             title: '邮箱',
-            render: value => <span style={monoText}>{(value as string) || '未绑定'}</span>,
+            render: value => <span className="admin-mono">{(value as string) || '未绑定'}</span>,
         },
         {
             key: 'userType',
@@ -145,7 +144,7 @@ export default function UserManagePage() {
             key: 'createTime',
             title: '注册时间',
             sortable: true,
-            render: value => <span style={mutedText}>{formatDate(value as string, 'date')}</span>,
+            render: value => <span className="admin-muted">{formatDate(value as string, 'date')}</span>,
         },
         {
             key: 'actions',
@@ -158,8 +157,7 @@ export default function UserManagePage() {
                         e.stopPropagation();
                         handleViewDetail(record);
                     }}
-                    className="h-auto min-h-0"
-                    style={linkButton()}
+                    className="h-auto min-h-0 admin-link-button"
                 >
                     <Eye size={14} aria-hidden="true" />
                     详情
@@ -211,7 +209,7 @@ export default function UserManagePage() {
                         <div style={{ flex: 1 }} />
                         {/* 失败时不报「共 0 位」——那会被读成真的没有用户 */}
                         {isError ? null : (
-                            <span style={mutedText}>
+                            <span className="admin-muted">
                                 共 <strong style={{ color: 'var(--admin-ink)' }}>{total.toLocaleString()}</strong>{' '}
                                 位用户
                             </span>

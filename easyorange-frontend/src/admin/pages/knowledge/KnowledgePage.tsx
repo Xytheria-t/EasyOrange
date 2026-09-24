@@ -13,7 +13,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { AdminField } from '../../components/AdminControls';
 import { AdminCard, AdminPage, AdminPageHeader } from '../../components/AdminPage';
 import { AdminTable } from '../../components/AdminTable';
-import { mutedText, statusDot, textInput } from '../../components/admin-theme';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { useAdminKnowledgeDocs, useCreateKnowledgeDoc, useDeleteKnowledgeDoc, useReindexKnowledge } from '../../hooks';
 import { notify } from '../../notify';
@@ -124,7 +123,7 @@ export default function KnowledgePage() {
                         {
                             key: 'source',
                             title: '来源',
-                            render: value => <span style={mutedText}>{(value as string) || '—'}</span>,
+                            render: value => <span className="admin-muted">{(value as string) || '—'}</span>,
                         },
                         {
                             key: 'status',
@@ -149,7 +148,7 @@ export default function KnowledgePage() {
                                                 : 'var(--status-default-bg)',
                                         }}
                                     >
-                                        <span style={statusDot(dotColor)} />
+                                        <span className="admin-status-dot" style={{ background: dotColor }} />
                                         {status?.text ?? String(record.status ?? '未知')}
                                     </span>
                                 );
@@ -158,12 +157,12 @@ export default function KnowledgePage() {
                         {
                             key: 'chunkCount',
                             title: '分块数',
-                            render: value => <span style={mutedText}>{Number(value ?? 0)} 块</span>,
+                            render: value => <span className="admin-muted">{Number(value ?? 0)} 块</span>,
                         },
                         {
                             key: 'createTime',
                             title: '创建时间',
-                            render: value => <span style={mutedText}>{value as string}</span>,
+                            render: value => <span className="admin-muted">{value as string}</span>,
                         },
                         {
                             key: 'actions',
@@ -226,7 +225,7 @@ export default function KnowledgePage() {
                                     onChange={e => setTitle(e.target.value)}
                                     placeholder="如：平台交易流程"
                                     disabled={createMutation.isPending}
-                                    style={textInput()}
+                                    className="admin-input"
                                 />
                             )}
                         </AdminField>
@@ -239,7 +238,7 @@ export default function KnowledgePage() {
                                     onChange={e => setSource(e.target.value)}
                                     placeholder="如：平台规则"
                                     disabled={createMutation.isPending}
-                                    style={textInput()}
+                                    className="admin-input"
                                 />
                             )}
                         </AdminField>

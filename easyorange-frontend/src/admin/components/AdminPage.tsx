@@ -1,7 +1,6 @@
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { card, errorBannerStyle, pageBackdrop, pageContent, pageRoot, subtitleText, titleText } from './admin-theme';
 
 /**
  * 管理端页面外壳 —— 唯一入口。
@@ -11,9 +10,9 @@ import { card, errorBannerStyle, pageBackdrop, pageContent, pageRoot, subtitleTe
  */
 export function AdminPage({ children }: { children: ReactNode }) {
     return (
-        <div style={pageRoot}>
-            <div style={pageBackdrop} aria-hidden="true" />
-            <div className="admin-page" style={{ ...pageContent, animation: 'pageIn 0.5s var(--ease-out) both' }}>
+        <div className="admin-page-root">
+            <div className="admin-page-backdrop" aria-hidden="true" />
+            <div className="admin-page admin-page-body" style={{ animation: 'pageIn 0.5s var(--ease-out) both' }}>
                 {children}
             </div>
         </div>
@@ -52,8 +51,12 @@ export function AdminPageHeader({ icon, title, description, actions }: AdminPage
                     </span>
                 ) : null}
                 <div style={{ minWidth: 0 }}>
-                    <h1 style={titleText}>{title}</h1>
-                    {description ? <p style={{ ...subtitleText, marginTop: '0.35rem' }}>{description}</p> : null}
+                    <h1 className="admin-title">{title}</h1>
+                    {description ? (
+                        <p className="admin-subtitle" style={{ marginTop: '0.35rem' }}>
+                            {description}
+                        </p>
+                    ) : null}
                 </div>
             </div>
             {actions ? <div className="admin-page-header-actions">{actions}</div> : null}
@@ -73,7 +76,7 @@ export function AdminErrorBanner({ message, onRetry, retrying = false }: AdminEr
         return null;
     }
     return (
-        <div style={errorBannerStyle()} role="alert">
+        <div className="admin-error-banner" role="alert">
             <AlertTriangle
                 size={17}
                 aria-hidden="true"
@@ -97,7 +100,14 @@ export function AdminErrorBanner({ message, onRetry, retrying = false }: AdminEr
 
 /** 玻璃内容卡。`grow` 用于撑满剩余高度的主表卡。 */
 export function AdminCard({ grow = false, children }: { grow?: boolean; children: ReactNode }) {
-    return <section style={{ ...card(grow), animation: 'cardIn 0.45s var(--ease-out) both' }}>{children}</section>;
+    return (
+        <section
+            className={grow ? 'admin-card admin-card--grow' : 'admin-card'}
+            style={{ animation: 'cardIn 0.45s var(--ease-out) both' }}
+        >
+            {children}
+        </section>
+    );
 }
 
 /** 工具栏内的分隔线，窄屏隐藏。 */

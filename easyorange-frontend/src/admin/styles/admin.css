@@ -13,14 +13,18 @@
     --admin-border: rgba(229, 224, 219, 0.5);
 
     /* ---- 设计令牌：管理端唯一来源 ----
-       页面样式仍内联 style={{}}，但只允许引用这里的 var()，不再写裸 hex / 裸 px 圆角。
+       视觉取值只在这里定义一次；组件用本文件的 `.admin-*` 类或引用 var()，
+       不再在 tsx 里写裸 hex / 裸 px 圆角。
        收敛前同一概念在 6 个页面里有 3 套圆角、3 套玻璃模糊、2 种中性灰。 */
     --admin-radius-card: 20px; /* 内容表面 */
     --admin-radius-control: 14px; /* 输入框 / 按钮 */
+    --admin-radius-icon: 10px; /* 32px 图标按钮 */
+    --admin-radius-media: 16px; /* 缩略图 / 头像 */
     --admin-radius-pill: 9999px; /* 状态标签 */
 
     --admin-surface-bg: rgba(255, 255, 255, 0.72);
     --admin-surface-bg-soft: rgba(255, 255, 255, 0.6);
+    --admin-surface-solid: #ffffff;
     --admin-surface-border: rgba(255, 255, 255, 0.65);
     --admin-surface-shadow: 0 8px 32px rgba(42, 37, 32, 0.06);
     --admin-blur: blur(20px);
@@ -28,6 +32,7 @@
     --admin-control-border: 1.5px solid #e5e0db;
     --admin-line: #ede8e3;
     --admin-line-soft: #f5f2ee;
+    --admin-hairline: rgba(229, 224, 219, 0.4); /* 卡片内的细分隔线 */
 
     --admin-ink: #2a2520; /* 标题 */
     --admin-ink-soft: #4a4540; /* 正文 */
@@ -35,6 +40,7 @@
     --admin-faint: #9b9590; /* 占位 / 装饰 */
 
     --admin-accent: #ea580c;
+    --admin-accent-bright: #f97316; /* 渐变 / 图标用的亮橙，文字不可用 */
     --admin-primary-bg: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
     --admin-primary-shadow: 0 3px 12px rgba(249, 115, 22, 0.28);
     --admin-danger: #e11d48;
@@ -45,8 +51,18 @@
     --admin-disabled-bg: #ece7e1;
     --admin-disabled-ink: #8a837c;
 
+    /* 暖橙系图表分类色：图表色要彼此可区分，属于数据编码，不与 UI 令牌混用 */
+    --admin-chart-1: #f97316;
+    --admin-chart-2: #fb7185;
+    --admin-chart-3: #c39bd3;
+    --admin-chart-4: #fbbf24;
+    --admin-chart-5: #10b981;
+    --admin-chart-6: #6e6862;
+
     --admin-font-title: "Playfair Display", "Noto Serif SC", serif;
     --admin-font-mono: "Fira Code", "Noto Sans Mono", Consolas, monospace;
+    /* 价格与大号数字此前引用了这个令牌但从未定义，声明一直是失效的 */
+    --admin-font-price: var(--admin-font-title);
 }
 
 /* ============ Admin Root Container ============ */
@@ -608,9 +624,194 @@
 }
 
 /* ============================================================
+   管理端表面 / 文字 / 控件
+   CSS-first：静态视觉全部落在类上，tsx 不再内联 style 对象。
+   只有真正按数据算出来的值（头像渐变、状态点颜色、计算位置）才留内联 style。
+   ============================================================ */
+
+/* 页面三层结构：根容器 / 背景层 / 内容层。背景层必须 absolute——fixed 会被侧边栏的
+   backdrop-filter 创建的包含块带偏。 */
+.admin-page-root {
+    position: relative;
+    min-height: calc(100vh - var(--admin-header-height));
+    isolation: isolate;
+}
+
+.admin-page-backdrop {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--admin-radius-card);
+    background: var(--gradient-mesh-1), var(--gradient-mesh-2), var(--gradient-mesh-3);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.admin-page-body {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+/* 玻璃内容表面。卡片要承载绝对定位的装饰层，并裁掉子元素（直角表头 / 分页条）的溢出。 */
+.admin-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--admin-surface-bg);
+    backdrop-filter: var(--admin-blur);
+    -webkit-backdrop-filter: var(--admin-blur);
+    border: 1px solid var(--admin-surface-border);
+    border-radius: var(--admin-radius-card);
+    box-shadow: var(--admin-surface-shadow);
+}
+
+/* 撑满剩余高度的主表卡 */
+.admin-card--grow {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* 更轻的次级表面（信息格、内嵌块），与主卡拉开层次但不换一套参数 */
+.admin-inset {
+    background: var(--admin-surface-bg-soft);
+    border: 1px solid var(--admin-hairline);
+    border-radius: var(--admin-radius-control);
+}
+
+.admin-title {
+    margin: 0;
+    font-family: var(--admin-font-title);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--admin-ink);
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+}
+
+.admin-subtitle {
+    margin: 0;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    color: var(--admin-muted);
+}
+
+.admin-section-title {
+    margin: 0;
+    font-family: var(--admin-font-title);
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: var(--admin-ink);
+}
+
+.admin-value {
+    margin: 0;
+    font-size: 0.87rem;
+    font-weight: 600;
+    color: var(--admin-ink);
+}
+
+.admin-muted {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--admin-muted);
+}
+
+.admin-label {
+    margin: 0;
+    font-size: 0.73rem;
+    font-weight: 600;
+    color: var(--admin-muted);
+}
+
+.admin-mono {
+    font-family: var(--admin-font-mono);
+    font-size: 0.8rem;
+    color: var(--admin-ink-soft);
+}
+
+.admin-accent-number {
+    font-family: var(--admin-font-price);
+    font-size: 1.9rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--admin-ink);
+}
+
+.admin-price {
+    font-family: var(--admin-font-price);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--admin-accent);
+}
+
+/* 行内文字操作。对比度取 --admin-accent，不用浅橙字 */
+.admin-link-button {
+    padding: 0.32rem 0.7rem;
+    background: var(--admin-accent-soft);
+    color: var(--admin-accent);
+    border: 1px solid var(--admin-accent-soft-border);
+    border-radius: var(--admin-radius-control);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* 32px 见方图标按钮；无障碍名由调用方用 aria-label 给出，不只给 title */
+.admin-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    color: var(--admin-muted);
+    border: 1px solid transparent;
+    border-radius: var(--admin-radius-icon);
+    cursor: pointer;
+    transition:
+        background 150ms var(--ease-out),
+        color 150ms var(--ease-out);
+}
+
+.admin-input {
+    width: 100%;
+    padding: 0.68rem 1rem;
+    background: var(--admin-surface-solid);
+    border: var(--admin-control-border);
+    border-radius: var(--admin-radius-control);
+    font-size: 0.87rem;
+    color: var(--admin-ink);
+    outline: none;
+    transition:
+        border-color 150ms var(--ease-out),
+        box-shadow 150ms var(--ease-out);
+}
+
+.admin-error-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    padding: 0.9rem 1.1rem;
+    background: var(--admin-danger-bg);
+    border: 1px solid var(--admin-danger-border);
+    border-radius: var(--admin-radius-control);
+}
+
+/* 状态点：形状 + 文字双编码，不靠颜色单独传达状态。颜色按数据算，内联给。 */
+.admin-status-dot {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: var(--admin-radius-pill);
+}
+
+/* ============================================================
    响应式 / 可访问性骨架
-   内联 style 无法写媒体查询，所以「断点行为」走 className，
-   「视觉取值」仍走内联 var(--admin-*)——两者职责不重叠。
+   断点行为同样走 className——静态视觉已整体上移到上面的类。
    ============================================================ */
 
 /* 页面骨架 */

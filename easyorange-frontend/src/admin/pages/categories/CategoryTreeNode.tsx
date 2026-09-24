@@ -1,6 +1,5 @@
 import { ChevronRight, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { iconButton, mutedText, statusDot, valueText } from '../../components/admin-theme';
 import type { CategoryTreeResponse } from '../../types/admin';
 
 // 索引按 depth 取：depth=0 是一级。
@@ -49,8 +48,8 @@ export function CategoryTreeNode({
                     variant="ghost"
                     size="icon"
                     onClick={() => onToggleExpand(node.categoryId)}
+                    className="admin-icon-button"
                     style={{
-                        ...iconButton(),
                         width: 22,
                         height: 22,
                         transform: isExpanded ? 'rotate(90deg)' : 'none',
@@ -83,19 +82,17 @@ export function CategoryTreeNode({
                 </span>
 
                 <span
-                    style={{
-                        ...valueText,
-                        flex: 1,
-                        minWidth: 0,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                    }}
+                    className="admin-value"
+                    style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                 >
                     {node.name}
                 </span>
 
-                {node.sortOrder > 0 ? <span style={{ ...mutedText, flexShrink: 0 }}>排序 {node.sortOrder}</span> : null}
+                {node.sortOrder > 0 ? (
+                    <span className="admin-muted" style={{ flexShrink: 0 }}>
+                        排序 {node.sortOrder}
+                    </span>
+                ) : null}
 
                 {/* 状态：圆点 + 文字双编码，不靠颜色单独传达 */}
                 <span
@@ -113,7 +110,10 @@ export function CategoryTreeNode({
                         whiteSpace: 'nowrap',
                     }}
                 >
-                    <span style={statusDot(isEnabled ? 'var(--status-success-dot)' : 'var(--status-default-dot)')} />
+                    <span
+                        className="admin-status-dot"
+                        style={{ background: isEnabled ? 'var(--status-success-dot)' : 'var(--status-default-dot)' }}
+                    />
                     {isRowUpdating ? '更新中' : isEnabled ? '启用' : '禁用'}
                 </span>
 
@@ -124,8 +124,8 @@ export function CategoryTreeNode({
                         size="icon"
                         onClick={() => onToggleStatus(node.categoryId, node.status)}
                         disabled={isRowUpdating}
-                        className="h-auto min-h-0"
-                        style={iconButton(isEnabled ? 'var(--warning)' : 'var(--status-success)')}
+                        className="admin-icon-button h-auto min-h-0"
+                        style={{ color: isEnabled ? 'var(--warning)' : 'var(--status-success)' }}
                         aria-label={isEnabled ? `禁用分类 ${node.name}` : `启用分类 ${node.name}`}
                         title={isEnabled ? '禁用' : '启用'}
                     >
@@ -137,8 +137,8 @@ export function CategoryTreeNode({
                         variant="ghost"
                         size="icon"
                         onClick={() => onEdit(node)}
-                        className="h-auto min-h-0"
-                        style={iconButton()}
+                        className="h-auto min-h-0 admin-icon-button"
+                        admin-icon-button
                         aria-label={`编辑分类 ${node.name}`}
                         title="编辑"
                     >
@@ -150,8 +150,8 @@ export function CategoryTreeNode({
                         variant="ghost"
                         size="icon"
                         onClick={() => onDelete(node)}
-                        className="h-auto min-h-0"
-                        style={iconButton('var(--admin-danger)')}
+                        className="admin-icon-button h-auto min-h-0"
+                        style={{ color: 'var(--admin-danger)' }}
                         aria-label={`删除分类 ${node.name}`}
                         title="删除"
                     >
