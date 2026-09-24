@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import type { Product } from '@/types';
-import type { ProductSearchParams } from '@/types/product';
+import type { AiEnhancement, ProductSearchParams } from '@/types/product';
 import SearchPage from './SearchPage';
 
 function makeProduct(id: string, title: string): Product {
@@ -23,7 +23,6 @@ function makeProduct(id: string, title: string): Product {
         originalPrice: null,
         categoryId: '1',
         conditionLevel: 1,
-        favorites: 0,
         sellerId: 's1',
         sellerAvatar: null,
         sellerRating: 0,
@@ -42,7 +41,7 @@ const mockUseProductSearch = vi.hoisted(() =>
         products: [] as Product[],
         total: 0 as number,
         facets: [] as Array<{ code: string; count: number }>,
-        aiEnhancement: undefined,
+        aiEnhancement: undefined as AiEnhancement | undefined,
         aiEnhancementDegraded: false as boolean,
         isLoading: false as boolean,
         error: null as Error | null,
@@ -162,7 +161,6 @@ describe('SearchPage', () => {
                 originalPrice: null,
                 categoryId: '1',
                 conditionLevel: 1,
-                favorites: 0,
                 sellerId: 's1',
                 sellerAvatar: null,
                 sellerRating: 0,
