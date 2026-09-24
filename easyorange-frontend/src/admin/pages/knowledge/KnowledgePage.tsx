@@ -10,6 +10,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { formatDate } from '@/utils/format';
 import { AdminField } from '../../components/AdminControls';
 import { AdminCard, AdminPage, AdminPageHeader } from '../../components/AdminPage';
 import { AdminTable } from '../../components/AdminTable';
@@ -162,7 +163,10 @@ export default function KnowledgePage() {
                         {
                             key: 'createTime',
                             title: '创建时间',
-                            render: value => <span className="admin-muted">{value as string}</span>,
+                            // 此前直出后端 ISO 串（2026-09-23T20:02:21），与其它页的 2026/09/23 20:02 不一致
+                            render: value => (
+                                <span className="admin-muted">{formatDate(value as string, 'datetime')}</span>
+                            ),
                         },
                         {
                             key: 'actions',

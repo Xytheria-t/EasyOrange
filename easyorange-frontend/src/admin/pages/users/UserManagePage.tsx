@@ -7,17 +7,17 @@ import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../componen
 import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { pickAvatarGradient } from '../../components/avatarGradient';
-import { StatusBadge, statusFilterOptions } from '../../components/StatusBadge';
+import {
+    StatusBadge,
+    statusFilterOptions,
+    userTypeColor,
+    userTypeFilterOptions,
+    userTypeLabel,
+} from '../../components/StatusBadge';
 import { useAdminUsers, useUpdateUserStatus } from '../../hooks';
 import { notify } from '../../notify';
 import type { AdminUser } from '../../types/admin';
 import { UserDetailModal } from './UserDetailModal';
-
-const USER_TYPE_FILTER_OPTIONS = [
-    { value: '', label: '全部类型' },
-    { value: '01', label: '学生' },
-    { value: '02', label: '教师' },
-];
 
 export default function UserManagePage() {
     const [keyword, setKeyword] = useState('');
@@ -115,16 +115,15 @@ export default function UserManagePage() {
         {
             key: 'userType',
             title: '类型',
-            // 此前 fallback 带 emoji、有描述时又不带，同一列随数据完整度换表现形式
             render: (_value, record) => (
                 <span
                     style={{
                         fontWeight: 600,
                         fontSize: '0.82rem',
-                        color: record.userType === '01' ? 'var(--status-info)' : 'var(--plum-600)',
+                        color: userTypeColor(record.userType),
                     }}
                 >
-                    {record.userTypeDesc || (record.userType === '01' ? '学生' : '教师')}
+                    {userTypeLabel(record.userType, record.userTypeDesc)}
                 </span>
             ),
         },
@@ -191,7 +190,7 @@ export default function UserManagePage() {
                         />
                         <AdminFilterField
                             label="类型"
-                            options={USER_TYPE_FILTER_OPTIONS}
+                            options={userTypeFilterOptions()}
                             value={userTypeFilter}
                             onChange={val => {
                                 setUserTypeFilter(val);

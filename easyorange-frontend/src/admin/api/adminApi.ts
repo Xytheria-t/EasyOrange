@@ -1,5 +1,5 @@
 import { request } from '@/api/core/request';
-import type { PageResult } from '@/types';
+import type { PageResult, Result } from '@/types';
 import type {
     ActivityItem,
     AdminOrder,
@@ -11,6 +11,7 @@ import type {
     AdminUserQuery,
     AuditLogResponse,
     BatchAuditRequest,
+    BatchAuditResultResponse,
     CategoryCreateRequest,
     CategoryResponse,
     CategoryTreeResponse,
@@ -31,23 +32,59 @@ import type {
 
 const ADMIN_API_PREFIX = '/admin';
 
+/**
+ * 后端 `JacksonConfig` 给 `Long` 全局注册了 `ToStringSerializer`：DTO 里声明成包装类型
+ * `Long` 的计数字段，线上到的是 `"24"` 而不是 `24`，但前端类型标注是 `number`。
+ * 不收敛就会在算术处悄悄退化成字符串拼接——统计页分类占比恒显示 0% 就是这么来的
+ * （`0 + "40" + "24"` 得到天文数字，再拿 40 去除，四舍五入后还是 0）。
+ * 声明为数字的计数字段，一律在 API 层收敛。
+ */
+function coerceCounts<T>(row: T, keys: readonly (keyof T)[]): T {
+    const next = { ...row };
+    for (const key of keys) {
+        if (next[key] != null) {
+            next[key] = Number(next[key]) as T[keyof T];
+        }
+    }
+    return next;
+}
+
+/** `PageResult.total` 是 `long`，同样是字符串；收敛后大数才有千位分隔。 */
+function coercePageTotal<T>(res: Result<PageResult<T>>): Result<PageResult<T>> {
+    return { ...res, data: { ...res.data, total: Number(res.data.total ?? 0) } };
+}
+
 export const adminApi = {
-    getDashboardStats() {
-        return request<DashboardStats>(`${ADMIN_API_PREFIX}/dashboard/stats`);
+    async getDashboardStats() {
+        const res = await request<DashboardStats>(`${ADMIN_API_PREFIX}/dashboard/stats`);
+        return {
+            ...res,
+            data: coerceCounts(res.data, [
+                'totalUsers',
+                'todayNewUsers',
+                'totalProducts',
+                'pendingProducts',
+                'totalOrders',
+                'todayOrders',
+            ]),
+        };
     },
 
-    getTrend() {
-        return request<TrendItem[]>(`${ADMIN_API_PREFIX}/dashboard/trend`);
+    async getTrend() {
+        const res = await request<TrendItem[]>(`${ADMIN_API_PREFIX}/dashboard/trend`);
+        return { ...res, data: (res.data ?? []).map(row => coerceCounts(row, ['users', 'products', 'orders'])) };
     },
 
     getActivity() {
         return request<ActivityItem[]>(`${ADMIN_API_PREFIX}/dashboard/activity`);
     },
 
-    getUsers(params: AdminUserQuery) {
-        return request<PageResult<AdminUser>>(`${ADMIN_API_PREFIX}/users`, {
-            params: { ...params },
-        });
+    async getUsers(params: AdminUserQuery) {
+        return coercePageTotal(
+            await request<PageResult<AdminUser>>(`${ADMIN_API_PREFIX}/users`, {
+                params: { ...params },
+            })
+        );
     },
 
     getUserById(id: string) {
@@ -82,10 +119,12 @@ export const adminApi = {
         });
     },
 
-    getProducts(params: AdminProductQuery) {
-        return request<PageResult<AdminProduct>>(`${ADMIN_API_PREFIX}/products`, {
-            params: { ...params },
-        });
+    async getProducts(params: AdminProductQuery) {
+        return coercePageTotal(
+            await request<PageResult<AdminProduct>>(`${ADMIN_API_PREFIX}/products`, {
+                params: { ...params },
+            })
+        );
     },
 
     getProductById(id: string) {
@@ -107,8 +146,9 @@ export const adminApi = {
     },
 
     batchAuditProducts(data: BatchAuditRequest) {
-        return request<void>(`${ADMIN_API_PREFIX}/products/batch-audit`, {
-            method: 'PUT',
+        // 后端是 @PostMapping：写成 PUT 会 405，且返回体是逐条结果而非 void
+        return request<BatchAuditResultResponse>(`${ADMIN_API_PREFIX}/products/batch-audit`, {
+            method: 'POST',
             body: data,
         });
     },
@@ -117,10 +157,12 @@ export const adminApi = {
         return request<AuditLogResponse[]>(`${ADMIN_API_PREFIX}/products/${id}/audit-logs`);
     },
 
-    getOrders(params: AdminOrderQuery) {
-        return request<PageResult<AdminOrder>>(`${ADMIN_API_PREFIX}/orders`, {
-            params: { ...params },
-        });
+    async getOrders(params: AdminOrderQuery) {
+        return coercePageTotal(
+            await request<PageResult<AdminOrder>>(`${ADMIN_API_PREFIX}/orders`, {
+                params: { ...params },
+            })
+        );
     },
 
     getOrderById(id: string) {
@@ -152,8 +194,10 @@ export const adminApi = {
         });
     },
 
-    getCategories() {
-        return request<CategoryResponse[]>(`${ADMIN_API_PREFIX}/categories`);
+    async getCategories() {
+        // productCount 是 Long，不收敛会让统计页的占比算成字符串拼接
+        const res = await request<CategoryResponse[]>(`${ADMIN_API_PREFIX}/categories`);
+        return { ...res, data: (res.data ?? []).map(row => coerceCounts(row, ['productCount'])) };
     },
 
     getCategoryTree() {
@@ -187,10 +231,12 @@ export const adminApi = {
         });
     },
 
-    getKnowledgeDocs(pageNum = 1, pageSize = 10) {
-        return request<PageResult<KnowledgeDoc>>(`${ADMIN_API_PREFIX}/knowledge`, {
-            params: { pageNum, pageSize },
-        });
+    async getKnowledgeDocs(pageNum = 1, pageSize = 10) {
+        return coercePageTotal(
+            await request<PageResult<KnowledgeDoc>>(`${ADMIN_API_PREFIX}/knowledge`, {
+                params: { pageNum, pageSize },
+            })
+        );
     },
 
     createKnowledgeDoc(data: CreateKnowledgeDocRequest) {

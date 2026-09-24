@@ -95,6 +95,37 @@ export function statusFilterOptions(type: StatusBadgeProps['type'], allLabel = '
     ];
 }
 
+/**
+ * 用户类型 —— 非状态枚举，但同属「后端 code → 中文」的唯一出口，放一起才不会有人再抄一份。
+ * code 与后端 `UserType` 一致：00 超级管理员 / 01 普通用户 / 02 管理员。
+ * 此前这里写的是「01 学生 / 02 教师」，与后端毫无关系，筛选下拉选出来的条件永远命不中数据。
+ */
+const USER_TYPES: Record<string, { label: string; color: string }> = {
+    '00': { label: '超级管理员', color: 'var(--admin-accent-deep)' },
+    '01': { label: '普通用户', color: 'var(--status-info)' },
+    '02': { label: '管理员', color: 'var(--plum-600)' },
+};
+
+/** 取用户类型标签。desc 缺失时按 code 兜底，未知 code 原样回显而不是编一个类型。 */
+export function userTypeLabel(userType: string | null | undefined, userTypeDesc?: string | null): string {
+    if (userTypeDesc) {
+        return userTypeDesc;
+    }
+    const key = String(userType ?? '');
+    return USER_TYPES[key]?.label ?? (key.trim() ? key : '未知');
+}
+
+export function userTypeColor(userType: string | null | undefined): string {
+    return USER_TYPES[String(userType ?? '')]?.color ?? 'var(--admin-muted)';
+}
+
+export function userTypeFilterOptions(allLabel = '全部类型') {
+    return [
+        { value: '', label: allLabel },
+        ...Object.entries(USER_TYPES).map(([value, t]) => ({ value, label: t.label })),
+    ];
+}
+
 export function StatusBadge({ status, type, className }: StatusBadgeProps) {
     const config = configMap[type][String(status)];
     const fallbackLabel = typeof status === 'string' && status.trim() ? status : '未知';

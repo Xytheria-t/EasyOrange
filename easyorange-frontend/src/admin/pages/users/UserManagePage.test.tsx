@@ -108,6 +108,14 @@ vi.mock('../../components/StatusBadge', () => ({
         { value: 'DISABLED', label: '禁用' },
         { value: 'LOCKED', label: '锁定' },
     ],
+    userTypeFilterOptions: () => [
+        { value: '', label: '全部类型' },
+        { value: '00', label: '超级管理员' },
+        { value: '01', label: '普通用户' },
+        { value: '02', label: '管理员' },
+    ],
+    userTypeLabel: (userType: string | null, userTypeDesc?: string | null) => userTypeDesc || userType || '未知',
+    userTypeColor: () => 'var(--admin-muted)',
 }));
 
 vi.mock('../../components/AdminSelect', () => ({
@@ -141,7 +149,7 @@ const sampleUsers: AdminUser[] = [
         phone: '13800138001',
         realName: null,
         userType: '01',
-        userTypeDesc: '学生',
+        userTypeDesc: '普通用户',
         status: 'NORMAL',
         statusDesc: '正常',
         loginIp: null,
@@ -158,7 +166,7 @@ const sampleUsers: AdminUser[] = [
         phone: '13900139002',
         realName: null,
         userType: '02',
-        userTypeDesc: '教师',
+        userTypeDesc: '管理员',
         status: 'DISABLED',
         statusDesc: '禁用',
         loginIp: null,
@@ -320,7 +328,7 @@ describe('UserManagePage', () => {
             phone: null,
             realName: null,
             userType: '01',
-            userTypeDesc: '学生',
+            userTypeDesc: '普通用户',
             status: 'NORMAL',
             statusDesc: '正常',
             loginIp: null,

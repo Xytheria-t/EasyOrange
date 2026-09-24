@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { pickAvatarGradient } from '../../components/avatarGradient';
 import { ConfirmModal } from '../../components/ConfirmModal';
-import { StatusBadge } from '../../components/StatusBadge';
+import { StatusBadge, userTypeLabel } from '../../components/StatusBadge';
 import type { AdminUser } from '../../types/admin';
 
 export interface UserDetailModalProps {
@@ -183,7 +183,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                             { label: '手机', value: maskPhone(user.phone) },
                             {
                                 label: '用户类型',
-                                value: user.userTypeDesc || (user.userType === '01' ? '学生' : '教师'),
+                                value: userTypeLabel(user.userType, user.userTypeDesc),
                             },
                             { label: '注册时间', value: formatDate(user.createTime) },
                         ].map(item => (

@@ -138,7 +138,6 @@ export function CategoryTreeNode({
                         size="icon"
                         onClick={() => onEdit(node)}
                         className="h-auto min-h-0 admin-icon-button"
-                        admin-icon-button
                         aria-label={`编辑分类 ${node.name}`}
                         title="编辑"
                     >
