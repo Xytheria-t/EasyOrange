@@ -15,7 +15,7 @@ function createMockUser(overrides: Partial<User> = {}): User {
         phone: null,
         realName: null,
         avatar: null,
-        status: 1,
+        status: 'NORMAL',
         userType: '01',
         createTime: '2026-01-01T00:00:00Z',
         updateTime: '2026-01-01T00:00:00Z',
