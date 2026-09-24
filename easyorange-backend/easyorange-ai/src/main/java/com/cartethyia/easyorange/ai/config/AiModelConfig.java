@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 /**
- * Spring AI 模型装配 — 三个模型 bean 全手动创建。
+ * Spring AI 模型装配 — 四个模型 bean 全手动创建（决策 / 文本 / 视觉 / Embedding）。
  * <p>
  * 项目同时使用两个 OpenAI 兼容供应商（DeepSeek 文本 / DashScope 视觉 + Embedding），
  * base-url 与 api-key 均不同，无法用单一 {@code spring.ai.openai.*} 自动配置表达，
@@ -64,6 +64,35 @@ public class AiModelConfig {
                         .model(deepseek.model())
                         // 流式默认不带用量分片，打开后末帧回报 token 用量 —— 流式对话的预算记账依赖它
                         .streamUsage(true)
+                        .build())
+                .observationRegistry(obs)
+                .build();
+    }
+
+    /**
+     * 工具决策模型 — Agent 循环每轮「选哪个工具」，由 {@code chat_tool} 场景路由到这里。
+     * <p>
+     * 与生成模型分开的理由：决策的产物只是一段几十字符的工具参数 JSON，是纯路由任务；而推理模型在
+     * 这种短决策上仍会产出长度不定的思考内容，实测同一决策的思考长度在几十到上千字符之间波动，直接
+     * 决定单轮延迟（同一问题 3.8s ~ 13.5s）。循环每轮串行一次决策，N 轮就是 N 倍开销，所以这里配
+     * 快模型、把强模型留给最终生成。{@code easyorange.ai.deepseek.router-model} 留空时与生成同模型，
+     * 不改变既有行为。
+     * <p>
+     * 非 {@code @Primary}：业务服务默认注入的仍是 {@link #chatModel}（最终生成）。
+     */
+    @Bean
+    public ChatModel decisionChatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
+        var deepseek = props.deepseek();
+        if (hasNoText(deepseek.apiKey())) {
+            return new UnconfiguredChatModel("easyorange.ai.deepseek.api-key 为空，请配置 DEEPSEEK_API_KEY");
+        }
+        String model = hasNoText(deepseek.routerModel()) ? deepseek.model() : deepseek.routerModel().trim();
+        return OpenAiChatModel.builder()
+                .openAiClient(syncClient(deepseek.baseUrl(), deepseek.apiKey(), model, deepseek.timeout(), obs, meters))
+                .options(OpenAiChatOptions.builder()
+                        .baseUrl(deepseek.baseUrl())
+                        .apiKey(deepseek.apiKey())
+                        .model(model)
                         .build())
                 .observationRegistry(obs)
                 .build();

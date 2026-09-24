@@ -13,6 +13,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -68,6 +69,26 @@ public class AgentTools {
     /** 观察里列举的命中条数上限 —— 观察是给下一轮决策的摘要，召回多少条都只列举这么多。 */
     private static final int OBSERVATION_SUMMARY_LIMIT = 3;
 
+    /**
+     * 检索无新增时的观察文案 —— 收敛判据本身（见 {@link #knowledgeSearch} / {@link #productSearch}）。
+     * <p>
+     * 判据是「本轮命中的条目有多少此前已经出现过」：换关键词检索回来还是同一批文档，对回答没有增量，
+     * 而模型不会自己看出这一点（每次观察都写着「命中 N 条」，看上去总有进展）。把这件事作为一条明确
+     * 观察交回模型，比在循环里硬性拦掉这次调用更合适 —— 拦掉只是少一轮反馈，让模型自己看到
+     * 「再查也是重复」才是它该学到的判断。
+     */
+    private static final String NO_NEW_HIT_OBSERVATION =
+            "本次检索无新增信息（命中的内容此前已出现过）：请直接调用 finish 基于已有信息作答，不要再换关键词重试";
+
+    /**
+     * 判为「无新增」的重合比例阈值 —— 本轮命中里此前出现过的条目占比达到此值即收敛。
+     * <p>
+     * 只认「完全重复」不够用：检索是 topK 截断的，换个关键词常返回与上次高度重叠但不完全相同的一批
+     * （每轮夹带一两个新条目），逐条判重会让模型无限换词直到撞步数上限 —— 实测正是如此，7 步里 5 步是
+     * 换词重搜。阈值取 0.6：首次检索重合率为 0，而一次检索能带进 3 条以上新内容时（约 40% 重合）不算冗余。
+     */
+    private static final double REDUNDANT_OVERLAP_RATIO = 0.6;
+
     /** 详情描述进观察前截断的字数 —— 描述是自由文本，长度不可控。 */
     private static final int DETAIL_DESC_MAX_CHARS = 80;
 
@@ -108,8 +129,9 @@ public class AgentTools {
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "改写后的检索关键词，3-10 字") String query) {
         List<KnowledgeHit> found = retrievalService.search(query, RETRIEVAL_TOP_K);
-        knowledgeHits.addAll(found);
-        return summarizeKnowledge(found);
+        List<KnowledgeHit> fresh = retainNewKnowledge(found);
+        knowledgeHits.addAll(fresh);
+        return isRedundant(found.size() - fresh.size(), found.size()) ? NO_NEW_HIT_OBSERVATION : summarizeKnowledge(found);
     }
 
     @Tool(name = TOOL_PRODUCT_SEARCH, description = "检索在售资产（找货 / 比价）", resultConverter = ObservationTextConverter.class)
@@ -117,8 +139,9 @@ public class AgentTools {
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "改写后的找货关键词，3-10 字，保留品类与硬约束（预算 / 成色）") String query) {
         List<AssetHit> found = assetSourcingService.search(query, ASSET_TOP_K);
-        assets.addAll(found);
-        return summarizeAssets(found);
+        List<AssetHit> fresh = retainNewAssets(found);
+        assets.addAll(fresh);
+        return isRedundant(found.size() - fresh.size(), found.size()) ? NO_NEW_HIT_OBSERVATION : summarizeAssets(found);
     }
 
     @Tool(
@@ -233,6 +256,41 @@ public class AgentTools {
         } catch (Exception e) {
             throw new IllegalStateException("资产详情查询失败: " + reasonOf(e), e);
         }
+    }
+
+    /**
+     * 本轮检索是否已无新增信息 —— 「此前出现过的条目数 / 本轮命中数」达到阈值即判冗余。
+     * 完全没召回到（{@code foundCount == 0}）不算冗余：那是「换个关键词还能试」的空结果，不是重复。
+     */
+    private static boolean isRedundant(int seenCount, int foundCount) {
+        return foundCount > 0 && (double) seenCount / foundCount >= REDUNDANT_OVERLAP_RATIO;
+    }
+
+    /**
+     * 保留本轮新增的文档 —— 已在累加器里的（此前轮次召回过）不再重复计入，判据取 docId，
+     * 缺失时退回标题（ES 命中必有 docId，兜底只为 LIKE 降级路径不因 null 误判成「全新增」）。
+     */
+    private List<KnowledgeHit> retainNewKnowledge(List<KnowledgeHit> found) {
+        Set<String> seen = knowledgeHits.stream().map(AgentTools::knowledgeKey).collect(Collectors.toSet());
+        return found.stream()
+                .filter(hit -> seen.add(knowledgeKey(hit)))
+                .collect(Collectors.toList());
+    }
+
+    /** 同 {@link #retainNewKnowledge}，资产按 productId 判重。 */
+    private List<AssetHit> retainNewAssets(List<AssetHit> found) {
+        Set<String> seen = assets.stream().map(asset -> assetKey(asset)).collect(Collectors.toSet());
+        return found.stream()
+                .filter(asset -> seen.add(assetKey(asset)))
+                .collect(Collectors.toList());
+    }
+
+    private static String knowledgeKey(KnowledgeHit hit) {
+        return isBlank(hit.docId()) ? String.valueOf(hit.title()) : hit.docId();
+    }
+
+    private static String assetKey(AssetHit asset) {
+        return isBlank(asset.productId()) ? String.valueOf(asset.title()) : asset.productId();
     }
 
     private static String summarizeKnowledge(List<KnowledgeHit> found) {
