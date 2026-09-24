@@ -214,18 +214,9 @@ ON DUPLICATE KEY UPDATE
 
 -- ===================================================================
 -- 3. 商品图片数据（与商品一一对应，部分商品多图）
---     先收敛历史脏数据：旧版种子曾用 UUID() 当图片 id，与后来的固定 id 行并存成两张主图，
---     而上架会重校验图片集（主图 >1 直接 B0002 拒绝），演示的「下架位重新上架」就会红。
---     只删「同商品已有另一张主图时的那条 UUID 行」——UI 建出的商品主图本身就是 UUID，不能误伤。
+--     脏数据收敛放在本段 INSERT 之后（见下）：重复主图正是本 INSERT 插出来的，
+--     放在前面清等于清了个寂寞，重跑一次就又坏一次。
 -- ===================================================================
-DELETE i1 FROM `eo_product_image` i1
-JOIN `eo_product_image` i2
-    ON i1.`product_id` = i2.`product_id`
-   AND i1.`is_main` = 1
-   AND i2.`is_main` = 1
-   AND i1.`id` <> i2.`id`
-   AND i1.`id` REGEXP '^[0-9a-f]{8}-';
-
 INSERT INTO `eo_product_image` (
     `id`, `product_id`, `image_url`, `sort_order`, `is_main`, `create_time`, `update_time`
 ) VALUES
@@ -453,6 +444,18 @@ ON DUPLICATE KEY UPDATE
     `sort_order` = new.`sort_order`,
     `is_main` = new.`is_main`,
     `update_time` = new.`update_time`;
+
+-- 收敛历史脏数据：旧版种子曾用 UUID() 当图片 id，与后来的固定 id 行并存成两张主图，
+-- 而上架会重校验图片集（主图 >1 直接 B0002 拒绝），演示的「下架位重新上架」就会红。
+-- 必须在本 INSERT 之后执行：放在前面等于清了个寂寞，本 INSERT 自己就会再插出第二张主图。
+-- 只删「同商品已有另一张主图时的那条 UUID 行」——UI 建出的商品主图本身就是 UUID，不能误伤。
+DELETE i1 FROM `eo_product_image` i1
+JOIN `eo_product_image` i2
+    ON i1.`product_id` = i2.`product_id`
+   AND i1.`is_main` = 1
+   AND i2.`is_main` = 1
+   AND i1.`id` <> i2.`id`
+   AND i1.`id` REGEXP '^[0-9a-f]{8}-';
 
 -- ===================================================================
 -- 4. 商品详情数据（与商品一一对应）
