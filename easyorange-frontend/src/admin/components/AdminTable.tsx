@@ -37,6 +37,35 @@ interface SortState {
     direction: SortDirection;
 }
 
+/**
+ * 页码序列：≤7 页全列，两侧溢出用省略号。
+ *
+ * 这里原先包了一层 `useMemo([pagination])`，但分页对象是调用方内联的字面量，
+ * 引用每次渲染都变——那个 memo 从未命中。算几条页码是纳秒级，直接算即可。
+ */
+function buildPageNumbers(current: number, pageSize: number, total: number): (number | 'ellipsis')[] {
+    const totalPages = Math.ceil(total / pageSize);
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) {
+            pages.push(i);
+        }
+        return pages;
+    }
+    pages.push(1);
+    if (current > 3) {
+        pages.push('ellipsis');
+    }
+    for (let i = Math.max(2, current - 1); i <= Math.min(totalPages - 1, current + 1); i++) {
+        pages.push(i);
+    }
+    if (current < totalPages - 2) {
+        pages.push('ellipsis');
+    }
+    pages.push(totalPages);
+    return pages;
+}
+
 export function AdminTable<T extends object>({
     columns,
     data,
@@ -95,33 +124,7 @@ export function AdminTable<T extends object>({
     };
 
     const totalPages = pagination ? Math.ceil(pagination.total / pagination.pageSize) : 0;
-
-    const pageNumbers = useMemo(() => {
-        if (!pagination) {
-            return [];
-        }
-        const pages: (number | 'ellipsis')[] = [];
-        const { current, pageSize, total } = pagination;
-        const totalP = Math.ceil(total / pageSize);
-        if (totalP <= 7) {
-            for (let i = 1; i <= totalP; i++) {
-                pages.push(i);
-            }
-        } else {
-            pages.push(1);
-            if (current > 3) {
-                pages.push('ellipsis');
-            }
-            for (let i = Math.max(2, current - 1); i <= Math.min(totalP - 1, current + 1); i++) {
-                pages.push(i);
-            }
-            if (current < totalP - 2) {
-                pages.push('ellipsis');
-            }
-            pages.push(totalP);
-        }
-        return pages;
-    }, [pagination]);
+    const pageNumbers = pagination ? buildPageNumbers(pagination.current, pagination.pageSize, pagination.total) : [];
 
     const renderSortIcon = (columnKey: string) => {
         const isActive = sortState.key === columnKey;
