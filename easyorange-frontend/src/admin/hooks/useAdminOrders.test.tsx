@@ -32,7 +32,7 @@ describe('useAdminOrders', () => {
                     code: 'A0000',
                     message: 'success',
                     data: {
-                        records: [{ id: 1, orderNo: 'ORD001', status: 'PAID' }],
+                        records: [{ orderId: 'o-1', orderNo: 'ORD001', status: 'PAID' }],
                         total: 1,
                         current: 1,
                         size: 20,
@@ -50,6 +50,8 @@ describe('useAdminOrders', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.data?.records).toHaveLength(1);
         expect(result.current.data?.records[0].orderNo).toBe('ORD001');
+        // 主键是 orderId（后端 AdminOrderResponse），不是 id——断言它可发现主键漂移
+        expect(result.current.data?.records[0].orderId).toBe('o-1');
     });
 });
 
@@ -60,7 +62,7 @@ describe('useAdminOrderDetail', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { id: 1, orderNo: 'ORD001', status: 'PAID' },
+                    data: { orderId: 'o-1', orderNo: 'ORD001', status: 'PAID' },
                     timestamp: Date.now(),
                 });
             })
@@ -72,6 +74,7 @@ describe('useAdminOrderDetail', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.data?.orderNo).toBe('ORD001');
+        expect(result.current.data?.orderId).toBe('o-1');
     });
 });
 
