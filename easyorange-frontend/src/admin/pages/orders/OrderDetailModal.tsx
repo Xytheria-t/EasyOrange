@@ -76,8 +76,19 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
     const orderData = order as AdminOrderDetail | undefined;
     const statusCfg = STATUS_CONFIG[orderData?.status ?? 'PENDING_PAYMENT'] ?? STATUS_CONFIG.PENDING_PAYMENT;
     const isRefunded = orderData?.status === 'REFUNDED';
-    const closeReason = orderData ? (isRefunded ? orderData.refundReason : orderData.cancelReason) : null;
-    const closeTime = formatDateTime(orderData ? (isRefunded ? orderData.refundTime : orderData.cancelTime) : null);
+    // 只有真正取消 / 退款的订单才有这两个字段；此前对所有订单都读 cancelTime，
+    // 未取消的订单会显示一个空的「取消时间」，让人以为订单被关过
+    const isCancelled = orderData?.status === 'CANCELLED';
+    const closeReason =
+        orderData && (isRefunded || isCancelled)
+            ? isRefunded
+                ? orderData.refundReason
+                : orderData.cancelReason
+            : null;
+    const closeTime =
+        orderData && (isRefunded || isCancelled)
+            ? formatDateTime(isRefunded ? orderData.refundTime : orderData.cancelTime)
+            : null;
 
     return (
         <AdminDetailModal
@@ -182,6 +193,11 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                                 </div>
                             );
                         })()
+                    ) : !orderData.items?.length ? (
+                        // 此前空数组会走进 map 分支渲染出空白区，看不出是「无商品」还是「没加载出来」
+                        <div className="rounded-[14px] border border-dashed border-[rgba(229,224,219,0.6)] px-4 py-6 text-center text-[0.85rem] text-[#6E6862]">
+                            该订单没有商品明细
+                        </div>
                     ) : (
                         <div className="flex flex-col gap-2">
                             {orderData.items?.map(item => (
@@ -230,7 +246,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                     )}
 
                     {/* Info grid - row 1 */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="admin-field-grid">
                         <InfoCell label="认领方" value={orderData.buyer?.nickname || '—'} />
                         <InfoCell label="资产方" value={orderData.seller?.nickname || '—'} />
                         <InfoCell label="支付状态" value={PAYMENT_STATUS[orderData.paymentStatus] ?? '未知'} />
@@ -240,12 +256,14 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                         />
                     </div>
 
-                    {/* Time info */}
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* 时间信息：取消 / 退款时间只在对应状态下出现 */}
+                    <div className="admin-field-grid">
                         <InfoCell label="下单时间" value={formatDateTime(orderData.createTime)} />
                         <InfoCell label="支付时间" value={formatDateTime(orderData.payTime)} />
                         <InfoCell label="更新时间" value={formatDateTime(orderData.updateTime)} />
-                        <InfoCell label={isRefunded ? '退款时间' : '取消时间'} value={closeTime} />
+                        {isRefunded || isCancelled ? (
+                            <InfoCell label={isRefunded ? '退款时间' : '取消时间'} value={closeTime} />
+                        ) : null}
                     </div>
 
                     {/* Payment No */}

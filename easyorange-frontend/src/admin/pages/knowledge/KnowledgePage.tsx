@@ -1,5 +1,5 @@
+import { BookOpen, Plus, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
-import { ErrorState } from '@/components/feedback/StateDisplay';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -9,19 +9,20 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useUIStore } from '@/store';
+import { AdminField } from '../../components/AdminControls';
+import { AdminCard, AdminErrorBanner, AdminPage, AdminPageHeader } from '../../components/AdminPage';
 import { AdminTable } from '../../components/AdminTable';
+import { mutedText, statusDot, textInput } from '../../components/admin-theme';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { useAdminKnowledgeDocs, useCreateKnowledgeDoc, useDeleteKnowledgeDoc, useReindexKnowledge } from '../../hooks';
+import { notify } from '../../notify';
 import type { KnowledgeDoc } from '../../types/admin';
 
-const STATUS_LABEL: Record<KnowledgeDoc['status'], { text: string; tone: string }> = {
-    PENDING: { text: '待索引', tone: 'bg-amber-100 text-amber-700' },
-    INDEXED: { text: '已索引', tone: 'bg-emerald-100 text-emerald-700' },
-    FAILED: { text: '失败', tone: 'bg-rose-100 text-rose-700' },
+const STATUS_LABEL: Record<string, { text: string; color: string }> = {
+    PENDING: { text: '待索引', color: 'var(--status-warning)' },
+    INDEXED: { text: '已索引', color: 'var(--status-success)' },
+    FAILED: { text: '失败', color: 'var(--status-error)' },
 };
 
 export default function KnowledgePage() {
@@ -31,7 +32,6 @@ export default function KnowledgePage() {
     const createMutation = useCreateKnowledgeDoc();
     const deleteMutation = useDeleteKnowledgeDoc();
     const reindexMutation = useReindexKnowledge();
-    const addToast = useUIStore(s => s.addToast);
 
     const [createOpen, setCreateOpen] = useState(false);
     const [title, setTitle] = useState('');
@@ -47,79 +47,129 @@ export default function KnowledgePage() {
             { title: title.trim(), content: content.trim(), source: source.trim() || '运营' },
             {
                 onSuccess: () => {
+                    notify.success('文档已提交，正在分块并写入索引');
                     setCreateOpen(false);
                     setTitle('');
                     setContent('');
                     setSource('');
                 },
-                onError: e => {
-                    addToast({
-                        type: 'error',
-                        message: e instanceof Error ? e.message : '文档摄入失败，请重试',
-                    });
-                },
+                onError: e => notify.failure(e, '文档摄入失败，请重试'),
             }
         );
     }
 
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-lg font-semibold">知识库管理</h2>
-                    <p className="text-sm text-muted-foreground">
-                        RAG 文档摄入管线：新增文档自动分块 → Embedding → ES 索引，聊天引用溯源的数据源
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() =>
-                            reindexMutation.mutate(undefined, {
-                                onError: e =>
-                                    addToast({
-                                        type: 'error',
-                                        message: e instanceof Error ? e.message : '补索引失败，请重试',
-                                    }),
-                            })
-                        }
-                        disabled={reindexMutation.isPending}
-                    >
-                        {reindexMutation.isPending ? '补索引中…' : '补索引'}
-                    </Button>
-                    <Button onClick={() => setCreateOpen(true)}>新增文档</Button>
-                </div>
-            </div>
+    function handleReindex() {
+        reindexMutation.mutate(undefined, {
+            onSuccess: () => notify.success('补索引任务已提交'),
+            onError: e => notify.failure(e, '补索引失败，请重试'),
+        });
+    }
 
-            {isError ? (
-                <ErrorState
-                    title="知识库列表加载失败"
-                    description={error instanceof Error && error.message ? error.message : undefined}
-                    onRetry={() => {
-                        refetch();
-                    }}
-                />
-            ) : (
+    async function handleDelete() {
+        if (!deleteTarget) {
+            return;
+        }
+        try {
+            await deleteMutation.mutateAsync(deleteTarget.id);
+            notify.success(`已删除「${deleteTarget.title}」`);
+            setDeleteTarget(null);
+        } catch (e) {
+            // 确认框保留，让用户看到后端拒绝的原因
+            notify.failure(e, '删除失败，请重试');
+        }
+    }
+
+    return (
+        <AdminPage>
+            <AdminErrorBanner
+                message={isError ? error?.message || '知识库列表加载失败' : null}
+                onRetry={() => refetch()}
+                retrying={isLoading}
+            />
+
+            <AdminPageHeader
+                icon={<BookOpen size={17} />}
+                title="知识库管理"
+                description="RAG 文档摄入管线：新增文档自动分块 → Embedding → ES 索引，聊天引用溯源的数据源"
+                actions={
+                    <>
+                        <Button
+                            variant="outline"
+                            onClick={handleReindex}
+                            disabled={reindexMutation.isPending}
+                            isLoading={reindexMutation.isPending}
+                            loadingText="补索引中"
+                        >
+                            {!reindexMutation.isPending ? <RefreshCw size={15} aria-hidden="true" /> : null}
+                            补索引
+                        </Button>
+                        <Button onClick={() => setCreateOpen(true)}>
+                            <Plus size={15} aria-hidden="true" />
+                            新增文档
+                        </Button>
+                    </>
+                }
+            />
+
+            <AdminCard grow>
                 <AdminTable<KnowledgeDoc>
                     columns={[
-                        { key: 'title', title: '标题' },
-                        { key: 'source', title: '来源' },
+                        {
+                            key: 'title',
+                            title: '标题',
+                            render: value => (
+                                <span
+                                    className="truncate block"
+                                    style={{ fontWeight: 600, color: 'var(--admin-ink)', maxWidth: 280 }}
+                                >
+                                    {(value as string) || '（无标题）'}
+                                </span>
+                            ),
+                        },
+                        {
+                            key: 'source',
+                            title: '来源',
+                            render: value => <span style={mutedText}>{(value as string) || '—'}</span>,
+                        },
                         {
                             key: 'status',
                             title: '状态',
-                            render: (_, record) => {
-                                const status = STATUS_LABEL[record.status] ?? STATUS_LABEL.PENDING;
+                            render: (_value, record) => {
+                                // 此前未知状态回落到「待索引」，把后端新状态伪装成排队中
+                                const status = STATUS_LABEL[String(record.status)];
+                                const dotColor = status?.color ?? 'var(--status-default)';
                                 return (
                                     <span
-                                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${status.tone}`}
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '0.35rem',
+                                            padding: '0.22rem 0.6rem',
+                                            borderRadius: 'var(--admin-radius-pill)',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 600,
+                                            color: dotColor,
+                                            background: status
+                                                ? `color-mix(in srgb, ${dotColor} 10%, transparent)`
+                                                : 'var(--status-default-bg)',
+                                        }}
                                     >
-                                        {status.text}
+                                        <span style={statusDot(dotColor)} />
+                                        {status?.text ?? String(record.status ?? '未知')}
                                     </span>
                                 );
                             },
                         },
-                        { key: 'chunkCount', title: '分块数' },
-                        { key: 'createTime', title: '创建时间' },
+                        {
+                            key: 'chunkCount',
+                            title: '分块数',
+                            render: value => <span style={mutedText}>{Number(value ?? 0)} 块</span>,
+                        },
+                        {
+                            key: 'createTime',
+                            title: '创建时间',
+                            render: value => <span style={mutedText}>{value as string}</span>,
+                        },
                         {
                             key: 'actions',
                             title: '操作',
@@ -127,8 +177,14 @@ export default function KnowledgePage() {
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-rose-600"
                                     onClick={() => setDeleteTarget(record)}
+                                    className="h-auto min-h-0"
+                                    style={{
+                                        color: 'var(--admin-danger)',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 600,
+                                        padding: '0.32rem 0.7rem',
+                                    }}
                                 >
                                     删除
                                 </Button>
@@ -138,60 +194,86 @@ export default function KnowledgePage() {
                     data={data?.records ?? []}
                     rowKey="id"
                     loading={isLoading}
+                    error={isError ? error : null}
+                    onRetry={() => refetch()}
                     pagination={{
                         current: data?.current ?? 1,
-                        pageSize: data?.size ?? pageSize,
+                        // 统一用客户端 pageSize：此前用 data.size，分页容量会随接口返回漂移
+                        pageSize,
                         total: data?.total ?? 0,
                         onChange: setPageNum,
                     }}
+                    emptyText="暂无知识库文档"
                 />
-            )}
+            </AdminCard>
 
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <Dialog
+                open={createOpen}
+                onOpenChange={open => {
+                    // 摄入中不允许关弹窗，否则用户看不到结果
+                    if (!open && !createMutation.isPending) {
+                        setCreateOpen(false);
+                    }
+                }}
+            >
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
                         <DialogTitle>新增知识库文档</DialogTitle>
                         <DialogDescription>保存后系统自动分块、向量化并写入 ES 索引</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
-                        <div className="space-y-1.5">
-                            <Label htmlFor="kb-title">标题</Label>
-                            <Input
-                                id="kb-title"
-                                value={title}
-                                onChange={e => setTitle(e.target.value)}
-                                placeholder="如：平台交易流程"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="kb-source">来源</Label>
-                            <Input
-                                id="kb-source"
-                                value={source}
-                                onChange={e => setSource(e.target.value)}
-                                placeholder="如：平台规则"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="kb-content">正文（Markdown / 纯文本）</Label>
-                            <Textarea
-                                id="kb-content"
-                                value={content}
-                                onChange={e => setContent(e.target.value)}
-                                rows={8}
-                                placeholder="输入文档正文，系统会自动分块并向量化…"
-                            />
-                        </div>
+                        <AdminField label="标题" required>
+                            {props => (
+                                <input
+                                    {...props}
+                                    type="text"
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    placeholder="如：平台交易流程"
+                                    disabled={createMutation.isPending}
+                                    style={textInput()}
+                                />
+                            )}
+                        </AdminField>
+                        <AdminField label="来源" hint="留空默认记为「运营」">
+                            {props => (
+                                <input
+                                    {...props}
+                                    type="text"
+                                    value={source}
+                                    onChange={e => setSource(e.target.value)}
+                                    placeholder="如：平台规则"
+                                    disabled={createMutation.isPending}
+                                    style={textInput()}
+                                />
+                            )}
+                        </AdminField>
+                        <AdminField label="正文（Markdown / 纯文本）" required>
+                            {props => (
+                                <Textarea
+                                    {...props}
+                                    value={content}
+                                    onChange={e => setContent(e.target.value)}
+                                    rows={8}
+                                />
+                            )}
+                        </AdminField>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setCreateOpen(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setCreateOpen(false)}
+                            disabled={createMutation.isPending}
+                        >
                             取消
                         </Button>
                         <Button
                             onClick={handleCreate}
                             disabled={!title.trim() || !content.trim() || createMutation.isPending}
+                            isLoading={createMutation.isPending}
+                            loadingText="摄入中"
                         >
-                            {createMutation.isPending ? '摄入中…' : '保存并摄入'}
+                            保存并摄入
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -202,20 +284,10 @@ export default function KnowledgePage() {
                 title="删除知识库文档"
                 content={`确认删除「${deleteTarget?.title ?? ''}」？将同步移除 ES 索引中的分块。`}
                 confirmText="删除"
-                onConfirm={() => {
-                    if (deleteTarget) {
-                        deleteMutation.mutate(deleteTarget.id, {
-                            onError: e =>
-                                addToast({
-                                    type: 'error',
-                                    message: e instanceof Error ? e.message : '删除失败，请重试',
-                                }),
-                        });
-                    }
-                    setDeleteTarget(null);
-                }}
+                isLoading={deleteMutation.isPending}
+                onConfirm={handleDelete}
                 onCancel={() => setDeleteTarget(null)}
             />
-        </div>
+        </AdminPage>
     );
 }

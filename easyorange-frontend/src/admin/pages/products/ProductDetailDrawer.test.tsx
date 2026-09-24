@@ -175,17 +175,17 @@ describe('ProductDetailDrawer', () => {
     // ── Test 9: "通过审核" button exists ──
     it('renders "通过审核" approve button', () => {
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
-        expect(screen.getByText('✅ 通过审核')).toBeInTheDocument();
+        expect(screen.getByText('通过审核')).toBeInTheDocument();
     });
 
     // ── Test 10: "驳回商品" button exists ──
     it('renders "驳回商品" reject button', () => {
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
-        expect(screen.getByText('🚫 驳回商品')).toBeInTheDocument();
+        expect(screen.getByText('驳回商品')).toBeInTheDocument();
     });
 
     // ── Test 11: Clicking "通过审核" calls approve mutation ──
-    it('calls audit mutateAsync with action=1 when "通过审核" is clicked', () => {
+    it('calls audit mutateAsync with action=1 after approving through the confirmation', () => {
         const mutateAsync = vi.fn().mockResolvedValue({});
         mockUseAuditProduct.mockReturnValue({
             mutateAsync,
@@ -193,7 +193,10 @@ describe('ProductDetailDrawer', () => {
         });
 
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
-        fireEvent.click(screen.getByText('✅ 通过审核'));
+        fireEvent.click(screen.getByText('通过审核'));
+        // 通过审核 = 直接上架，先要一道确认
+        expect(mutateAsync).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByText('通过并上架'));
         expect(mutateAsync).toHaveBeenCalledWith({
             id: '1',
             data: { action: 1, dimensions: [], remark: undefined },
@@ -203,7 +206,7 @@ describe('ProductDetailDrawer', () => {
     // ── Test 12: Clicking "驳回商品" opens reject modal ──
     it('opens reject confirmation modal when "驳回商品" is clicked', () => {
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
-        fireEvent.click(screen.getByText('🚫 驳回商品'));
+        fireEvent.click(screen.getByText('驳回商品'));
         // The h3 text includes emoji "⚠️ 确认驳回商品" — use a partial text matcher
         expect(screen.getByText(content => content.includes('确认驳回商品'))).toBeInTheDocument();
         expect(screen.getByText('确认驳回')).toBeInTheDocument();
@@ -213,7 +216,7 @@ describe('ProductDetailDrawer', () => {
     it('closes reject modal when cancel is clicked', () => {
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         // Open reject modal
-        fireEvent.click(screen.getByText('🚫 驳回商品'));
+        fireEvent.click(screen.getByText('驳回商品'));
         expect(screen.getByText(content => content.includes('确认驳回商品'))).toBeInTheDocument();
 
         // Cancel
@@ -224,7 +227,7 @@ describe('ProductDetailDrawer', () => {
     // ── Test 14: "确认驳回" is disabled when reason is empty ──
     it('disables confirm reject button when reason is empty', () => {
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
-        fireEvent.click(screen.getByText('🚫 驳回商品'));
+        fireEvent.click(screen.getByText('驳回商品'));
         const confirmBtn = screen.getByText('确认驳回');
         expect(confirmBtn).toBeDisabled();
     });
@@ -232,10 +235,10 @@ describe('ProductDetailDrawer', () => {
     // ── Test 15: Adding reason enables confirm reject ──
     it('enables confirm reject button when reason is typed', () => {
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
-        fireEvent.click(screen.getByText('🚫 驳回商品'));
+        fireEvent.click(screen.getByText('驳回商品'));
 
         // Type a reason
-        const textarea = screen.getByPlaceholderText('请填写驳回原因（必填）...');
+        const textarea = screen.getByPlaceholderText('说明不通过的原因，资产方会看到这段文字');
         fireEvent.change(textarea, { target: { value: '信息不完整' } });
 
         const confirmBtn = screen.getByText('确认驳回');
@@ -251,9 +254,9 @@ describe('ProductDetailDrawer', () => {
         });
 
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
-        fireEvent.click(screen.getByText('🚫 驳回商品'));
+        fireEvent.click(screen.getByText('驳回商品'));
 
-        const textarea = screen.getByPlaceholderText('请填写驳回原因（必填）...');
+        const textarea = screen.getByPlaceholderText('说明不通过的原因，资产方会看到这段文字');
         fireEvent.change(textarea, { target: { value: '信息不完整' } });
 
         fireEvent.click(screen.getByText('确认驳回'));
@@ -267,7 +270,7 @@ describe('ProductDetailDrawer', () => {
     // ── Test 17: Quick reject reason tags ──
     it('renders quick reject reason tags', () => {
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
-        fireEvent.click(screen.getByText('🚫 驳回商品'));
+        fireEvent.click(screen.getByText('驳回商品'));
 
         // "信息不完整" appears both in audit log and reject tags, use getAllByText
         const infoElements = screen.getAllByText('信息不完整');
@@ -282,7 +285,7 @@ describe('ProductDetailDrawer', () => {
     // ── Test 18: Clicking quick reason tag fills reason ──
     it('appends quick reason tag text to reject reason', () => {
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
-        fireEvent.click(screen.getByText('🚫 驳回商品'));
+        fireEvent.click(screen.getByText('驳回商品'));
 
         // Use getAllByText since "信息不完整" appears in both audit log and reject tags
         const infoTags = screen.getAllByText('信息不完整');
@@ -290,7 +293,7 @@ describe('ProductDetailDrawer', () => {
         const rejectTag = infoTags.find(el => el.tagName === 'BUTTON');
         expect(rejectTag).toBeTruthy();
         fireEvent.click(rejectTag as HTMLElement);
-        const textarea = screen.getByPlaceholderText('请填写驳回原因（必填）...') as HTMLTextAreaElement;
+        const textarea = screen.getByPlaceholderText('说明不通过的原因，资产方会看到这段文字') as HTMLTextAreaElement;
         expect(textarea.value).toContain('信息不完整');
     });
 
@@ -315,7 +318,7 @@ describe('ProductDetailDrawer', () => {
     // ── Test 21: Audit logs display ──
     it('renders audit log timeline entries', () => {
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
-        expect(screen.getByText('📜 审核记录')).toBeInTheDocument();
+        expect(screen.getByText('审核记录')).toBeInTheDocument();
         expect(screen.getByText('管理员')).toBeInTheDocument();
         expect(screen.getByText('信息不完整')).toBeInTheDocument();
         expect(screen.getByText('驳回')).toBeInTheDocument();
@@ -328,15 +331,16 @@ describe('ProductDetailDrawer', () => {
         expect(screen.getByText('基本信息')).toBeInTheDocument();
     });
 
-    // ── Test 23: Audit logs are hidden when empty ──
-    it('does not show audit log section when no logs exist', () => {
+    // ── Test 23: 无审核记录时给出明确空态，而不是整块消失 ──
+    it('shows an empty state when no logs exist', () => {
         mockUseAuditLogs.mockReturnValue({
             data: [],
             isLoading: false,
+            isError: false,
         });
 
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
-        expect(screen.queryByText('📜 审核记录')).not.toBeInTheDocument();
+        expect(screen.getByText('该商品还没有审核记录')).toBeInTheDocument();
     });
 
     // ── Test 24: View count display ──
@@ -349,7 +353,7 @@ describe('ProductDetailDrawer', () => {
     // ── Test 25: "审核意见" textarea exists ──
     it('renders audit remark textarea', () => {
         renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
-        expect(screen.getByPlaceholderText('审核意见（选填）...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('记录本次审核的判断依据...')).toBeInTheDocument();
     });
 
     // ── Test 26: Options for the "点击预览" label ──
@@ -385,7 +389,8 @@ describe('ProductDetailDrawer', () => {
         fireEvent.click(screen.getByText('基本信息合规'));
         fireEvent.click(screen.getByText('内容无违规'));
 
-        fireEvent.click(screen.getByText('✅ 通过审核'));
+        fireEvent.click(screen.getByText('通过审核'));
+        fireEvent.click(screen.getByText('通过并上架'));
 
         expect(mutateAsync).toHaveBeenCalledWith({
             id: '1',

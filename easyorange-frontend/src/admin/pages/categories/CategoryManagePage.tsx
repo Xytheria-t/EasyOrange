@@ -1,9 +1,12 @@
+import { ArrowDownUp, FolderTree, Plus } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { AdminField, AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
+import { AdminCard, AdminErrorBanner, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
 import { AdminSelect } from '../../components/AdminSelect';
+import { labelText, mutedText, textInput } from '../../components/admin-theme';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import {
     useAdminCategoryTree,
@@ -12,6 +15,7 @@ import {
     useUpdateCategory,
     useUpdateCategoryStatus,
 } from '../../hooks';
+import { notify } from '../../notify';
 import type { CategoryCreateRequest, CategoryTreeResponse, CategoryUpdateRequest } from '../../types/admin';
 import { CategoryTreeNode } from './CategoryTreeNode';
 
@@ -24,8 +28,32 @@ const STATUS_FILTER_OPTIONS = [
     { value: '0', label: '禁用' },
 ];
 
+const SORT_FIELD_OPTIONS = [
+    { value: 'sortOrder', label: '按排序值' },
+    { value: 'name', label: '按名称' },
+];
+
+/** 压平分类树，同时记下每个节点的父级 id。 */
+function flatten(nodes: CategoryTreeResponse[]) {
+    const flat: CategoryTreeResponse[] = [];
+    const parentIdById = new Map<string, string | null>();
+
+    const walk = (list: CategoryTreeResponse[], parentId: string | null) => {
+        for (const node of list) {
+            flat.push(node);
+            parentIdById.set(node.categoryId, parentId);
+            if (node.children?.length) {
+                walk(node.children, node.categoryId);
+            }
+        }
+    };
+
+    walk(nodes, null);
+    return { flat, parentIdById };
+}
+
 export default function CategoryManagePage() {
-    const { data: treeData, isLoading, isError } = useAdminCategoryTree();
+    const { data: treeData, isLoading, isError, error, refetch } = useAdminCategoryTree();
     const createMutation = useCreateCategory();
     const updateMutation = useUpdateCategory();
     const updateStatusMutation = useUpdateCategoryStatus();
@@ -36,6 +64,7 @@ export default function CategoryManagePage() {
     const [sortField, setSortField] = useState<SortField>('sortOrder');
     const [sortDir, setSortDir] = useState<SortDir>('asc');
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+    const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
     // Create modal
     const [createOpen, setCreateOpen] = useState(false);
@@ -54,7 +83,6 @@ export default function CategoryManagePage() {
     // Delete confirm
     const [deleteTarget, setDeleteTarget] = useState<CategoryTreeResponse | null>(null);
 
-    // Toggle expand/collapse
     const toggleExpand = useCallback((id: string) => {
         setExpandedIds(prev => {
             const next = new Set(prev);
@@ -67,25 +95,8 @@ export default function CategoryManagePage() {
         });
     }, []);
 
-    // Note: expand/collapse state defaults to empty (all collapsed).
-    // Users can click the chevron to expand categories as needed.
+    const { flat: allCategories, parentIdById } = useMemo(() => flatten(treeData ?? []), [treeData]);
 
-    // Collect flat list for parent dropdown
-    const allCategories = useMemo(() => {
-        const flatten = (nodes: CategoryTreeResponse[]): CategoryTreeResponse[] => {
-            const result: CategoryTreeResponse[] = [];
-            for (const node of nodes) {
-                result.push(node);
-                if (node.children && node.children.length > 0) {
-                    result.push(...flatten(node.children));
-                }
-            }
-            return result;
-        };
-        return treeData ? flatten(treeData) : [];
-    }, [treeData]);
-
-    // Filter and sort tree
     const filteredTree = useMemo(() => {
         if (!treeData) {
             return [];
@@ -96,10 +107,8 @@ export default function CategoryManagePage() {
             const matchSearch = !searchInput || node.name.toLowerCase().includes(searchInput.toLowerCase());
             const selfMatch = matchStatus && matchSearch;
 
-            let filteredChildren: CategoryTreeResponse[] = [];
-            if (node.children && node.children.length > 0) {
-                filteredChildren = node.children.map(filterNode).filter((n): n is CategoryTreeResponse => n !== null);
-            }
+            const filteredChildren =
+                node.children?.map(filterNode).filter((n): n is CategoryTreeResponse => n !== null) ?? [];
 
             if (!selfMatch && filteredChildren.length === 0) {
                 return null;
@@ -107,42 +116,52 @@ export default function CategoryManagePage() {
             return { ...node, children: filteredChildren };
         };
 
-        const sortNodes = (nodes: CategoryTreeResponse[]): CategoryTreeResponse[] => {
-            const sorted = [...nodes].sort((a, b) => {
-                let cmp: number;
-                if (sortField === 'name') {
-                    cmp = a.name.localeCompare(b.name);
-                } else {
-                    cmp = a.sortOrder - b.sortOrder;
-                }
-                return sortDir === 'asc' ? cmp : -cmp;
-            });
-            return sorted.map(n => ({ ...n, children: n.children ? sortNodes(n.children) : [] }));
-        };
+        const sortNodes = (nodes: CategoryTreeResponse[]): CategoryTreeResponse[] =>
+            [...nodes]
+                .sort((a, b) => {
+                    const cmp = sortField === 'name' ? a.name.localeCompare(b.name) : a.sortOrder - b.sortOrder;
+                    return sortDir === 'asc' ? cmp : -cmp;
+                })
+                .map(n => ({ ...n, children: n.children ? sortNodes(n.children) : [] }));
 
         return sortNodes(treeData.map(filterNode).filter((n): n is CategoryTreeResponse => n !== null));
     }, [treeData, statusFilter, searchInput, sortField, sortDir]);
 
-    // Create handler
+    const filteredCount = useMemo(() => {
+        let count = 0;
+        const walk = (nodes: CategoryTreeResponse[]) => {
+            for (const node of nodes) {
+                count += 1;
+                if (node.children?.length) {
+                    walk(node.children);
+                }
+            }
+        };
+        walk(filteredTree);
+        return count;
+    }, [filteredTree]);
+
     const handleCreate = useCallback(async () => {
         if (!createName.trim()) {
             return;
         }
-        const data: CategoryCreateRequest = {
-            name: createName.trim(),
-            sortOrder: createSortOrder,
-        };
+        const data: CategoryCreateRequest = { name: createName.trim(), sortOrder: createSortOrder };
         if (createParentId) {
             data.parentId = createParentId;
         }
-        await createMutation.mutateAsync(data);
-        setCreateOpen(false);
-        setCreateName('');
-        setCreateParentId(undefined);
-        setCreateSortOrder(0);
+        try {
+            await createMutation.mutateAsync(data);
+            notify.success(`已创建分类「${createName.trim()}」`);
+            setCreateOpen(false);
+            setCreateName('');
+            setCreateParentId(undefined);
+            setCreateSortOrder(0);
+        } catch (e) {
+            // 不关弹窗：输入还在，用户改个名字就能重试
+            notify.failure(e, '创建分类失败，请稍后重试');
+        }
     }, [createName, createParentId, createSortOrder, createMutation]);
 
-    // Edit handler
     const handleEdit = useCallback(async () => {
         if (!editId || !editName.trim()) {
             return;
@@ -151,501 +170,196 @@ export default function CategoryManagePage() {
             name: editName.trim(),
             sortOrder: editSortOrder,
             status: editStatus,
+            parentId: editParentId,
         };
-        if (editParentId) {
-            data.parentId = editParentId;
-        } else {
-            data.parentId = undefined;
+        try {
+            await updateMutation.mutateAsync({ id: editId, data });
+            notify.success(`已更新分类「${editName.trim()}」`);
+            setEditOpen(false);
+            setEditId(null);
+        } catch (e) {
+            notify.failure(e, '保存分类失败，请稍后重试');
         }
-        await updateMutation.mutateAsync({ id: editId, data });
-        setEditOpen(false);
-        setEditId(null);
     }, [editId, editName, editParentId, editSortOrder, editStatus, updateMutation]);
 
-    // Status toggle
     const handleToggleStatus = useCallback(
         async (id: string, currentStatus: number) => {
-            await updateStatusMutation.mutateAsync({ id, status: currentStatus === 1 ? 0 : 1 });
+            setUpdatingStatusId(id);
+            try {
+                await updateStatusMutation.mutateAsync({ id, status: currentStatus === 1 ? 0 : 1 });
+            } catch (e) {
+                notify.failure(e, '状态更新失败，请稍后重试');
+            } finally {
+                setUpdatingStatusId(null);
+            }
         },
         [updateStatusMutation]
     );
 
-    // Delete handler
     const handleDelete = useCallback(async () => {
         if (!deleteTarget) {
             return;
         }
-        await deleteMutation.mutateAsync(deleteTarget.categoryId);
-        setDeleteTarget(null);
+        try {
+            await deleteMutation.mutateAsync(deleteTarget.categoryId);
+            notify.success(`已删除分类「${deleteTarget.name}」`);
+            setDeleteTarget(null);
+        } catch (e) {
+            // 保留确认框，让用户看到后端拒绝的原因
+            notify.failure(e, '删除分类失败，请稍后重试');
+        }
     }, [deleteTarget, deleteMutation]);
 
-    // Open edit modal
-    const openEdit = useCallback((node: CategoryTreeResponse) => {
-        setEditId(node.categoryId);
-        setEditName(node.name);
-        setEditSortOrder(node.sortOrder);
-        setEditStatus(node.status);
-        // Find parent ID from flattened list
-        // Since CategoryTreeResponse doesn't have parentId, we use the flat list
-        setEditParentId(undefined);
-        setEditOpen(true);
-    }, []);
+    const openEdit = useCallback(
+        (node: CategoryTreeResponse) => {
+            setEditId(node.categoryId);
+            setEditName(node.name);
+            setEditSortOrder(node.sortOrder);
+            setEditStatus(node.status);
+            // 此前固定写 undefined：编辑任何子分类都会被当成一级分类保存
+            setEditParentId(parentIdById.get(node.categoryId) ?? undefined);
+            setEditOpen(true);
+        },
+        [parentIdById]
+    );
 
-    // Count total categories
-    const totalCount = allCategories.length;
-
-    // Parent options for create/edit
-    const parentOptions = useMemo(() => {
-        const options: { value: string; label: string }[] = [{ value: '', label: '无（一级分类）' }];
-        for (const cat of allCategories) {
-            const indent = '— '.repeat(cat.level || 0);
-            options.push({
+    const createParentOptions = useMemo(
+        () => [
+            { value: '', label: '无（一级分类）' },
+            ...allCategories.map(cat => ({
                 value: String(cat.categoryId),
-                label: `${indent}${cat.name}`,
-            });
+                label: `${'— '.repeat(cat.level || 0)}${cat.name}`,
+            })),
+        ],
+        [allCategories]
+    );
+
+    // 编辑时排除自己与自己的后代，否则能把父级挂到子级下面形成环
+    const editParentOptions = useMemo(() => {
+        if (!editId) {
+            return createParentOptions;
         }
-        return options;
-    }, [allCategories]);
+        const excluded = new Set<string>([editId]);
+        let grew = true;
+        while (grew) {
+            grew = false;
+            for (const [childId, parentId] of parentIdById) {
+                if (parentId && excluded.has(parentId) && !excluded.has(childId)) {
+                    excluded.add(childId);
+                    grew = true;
+                }
+            }
+        }
+        return createParentOptions.filter(opt => !excluded.has(opt.value));
+    }, [createParentOptions, editId, parentIdById]);
+
+    const hasFilter = Boolean(searchInput || statusFilter);
 
     return (
-        <div
-            style={{
-                position: 'relative',
-                minHeight: 'calc(100vh - 80px)',
-                animation: 'pageIn 0.5s ease-out both',
-            }}
-        >
-            {/* Background atmosphere */}
-            <div
-                style={{
-                    position: 'absolute',
-                    inset: 0,
-                    zIndex: 0,
-                    pointerEvents: 'none',
-                    borderRadius: 20,
-                    background: `
-            radial-gradient(ellipse 55% 35% at 8% 12%, rgba(249,115,22,0.035) 0%, transparent 50%),
-            radial-gradient(ellipse 40% 45% at 92% 85%, rgba(195,155,211,0.03) 0%, transparent 48%),
-            linear-gradient(180deg, #FAF8F5 0%, #FDF9F6 40%, #FAF8F5 100%)
-          `,
-                }}
+        <AdminPage>
+            <AdminErrorBanner
+                message={isError ? error?.message || '无法连接到服务器，请检查后端服务是否启动' : null}
+                onRetry={() => refetch()}
+                retrying={isLoading}
             />
 
-            {/* Content */}
-            <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
-                {isError && (
-                    <div
-                        style={{
-                            background: 'linear-gradient(135deg, rgba(244,63,94,0.06), rgba(244,63,94,0.02))',
-                            border: '1px solid rgba(244,63,94,0.12)',
-                            borderRadius: 16,
-                            padding: '1rem 1.25rem',
-                            marginBottom: '1.5rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.75rem',
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 10,
-                                background: 'linear-gradient(135deg, rgba(244,63,94,0.12), rgba(244,63,94,0.06))',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                            }}
-                        >
-                            <svg
-                                aria-hidden="true"
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="#E11D48"
-                                strokeWidth="2"
-                            >
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="8" x2="12" y2="12" />
-                                <line x1="12" y1="16" x2="12.01" y2="16" />
-                            </svg>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#E11D48' }}>数据加载失败</div>
-                            <div style={{ fontSize: '0.8rem', color: '#6E6862' }}>
-                                无法连接到服务器，请检查后端服务是否启动
-                            </div>
-                        </div>
-                        <Button
-                            onClick={() => window.location.reload()}
-                            variant="default"
-                            size="sm"
-                            style={{
-                                padding: '0.45rem 1rem',
-                                borderRadius: 10,
-                                background: 'linear-gradient(135deg, #F43F5E, #E11D48)',
-                                color: '#fff',
-                                fontSize: '0.8rem',
-                                fontWeight: 600,
-                                border: 'none',
-                                boxShadow: '0 2px 8px rgba(244,63,94,0.25)',
-                                height: 'auto',
-                                minHeight: 'unset',
-                            }}
-                        >
-                            刷新
-                        </Button>
-                    </div>
-                )}
+            <AdminPageHeader
+                icon={<FolderTree size={17} />}
+                title="分类管理"
+                description="管理商品分类结构，支持添加、编辑、删除操作"
+                actions={
+                    <Button type="button" onClick={() => setCreateOpen(true)}>
+                        <Plus size={16} aria-hidden="true" />
+                        添加分类
+                    </Button>
+                }
+            />
 
-                {/* ===== Header ===== */}
-                <header style={{ marginBottom: '1.75rem', animation: 'headerSlide 0.6s ease-out both' }}>
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'flex-end',
-                            justifyContent: 'space-between',
-                            gap: '1rem',
-                            flexWrap: 'wrap',
-                        }}
-                    >
-                        <div>
-                            <h1
-                                style={{
-                                    fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
-                                    fontSize: 'clamp(1.5rem, 2.5vw, 1.875rem)',
-                                    fontWeight: 700,
-                                    color: '#2A2520',
-                                    letterSpacing: '-0.03em',
-                                    lineHeight: 1.2,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.65rem',
-                                }}
-                            >
-                                <span
-                                    style={{
-                                        width: 30,
-                                        height: 30,
-                                        borderRadius: 10,
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        background: 'linear-gradient(135deg, #F97316, #FB923C)',
-                                        color: '#fff',
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    <svg
-                                        aria-hidden="true"
-                                        width="15"
-                                        height="15"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <path d="M4 7V4h16v3" />
-                                        <path d="M9 20h6" />
-                                        <path d="M12 4v16" />
-                                    </svg>
-                                </span>
-                                分类管理
-                            </h1>
-                            <p
-                                style={{
-                                    fontSize: '0.88rem',
-                                    color: '#6E6862',
-                                    marginTop: '0.3rem',
-                                    paddingLeft: '36px',
-                                }}
-                            >
-                                管理商品分类结构，支持添加、编辑、删除操作
-                            </p>
-                        </div>
-
-                        {/* Add button */}
-                        <Button
-                            type="button"
-                            variant="default"
-                            onClick={() => setCreateOpen(true)}
-                            style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                padding: '0.68rem 1.2rem',
-                                border: 'none',
-                                borderRadius: 14,
-                                background: 'linear-gradient(135deg, #F97316, #EA580C)',
-                                color: '#fff',
-                                fontSize: '0.87rem',
-                                fontWeight: 600,
-                                transition: 'all 0.2s ease',
-                                boxShadow: '0 2px 8px rgba(249,115,22,0.28)',
-                                whiteSpace: 'nowrap',
-                                letterSpacing: '0.01em',
-                            }}
-                            onMouseEnter={e => {
-                                e.currentTarget.style.transform = 'translateY(-1px)';
-                                e.currentTarget.style.boxShadow = '0 4px 14px rgba(249,115,22,0.38)';
-                            }}
-                            onMouseLeave={e => {
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(249,115,22,0.28)';
-                            }}
-                        >
-                            <svg
-                                aria-hidden="true"
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <line x1="12" y1="5" x2="12" y2="19" />
-                                <line x1="5" y1="12" x2="19" y2="12" />
-                            </svg>
-                            添加分类
-                        </Button>
-                    </div>
-                </header>
-
-                {/* ===== Filter Toolbar ===== */}
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: '0.75rem',
-                        padding: '1rem 1.25rem',
-                        background: 'rgba(255,255,255,0.72)',
-                        backdropFilter: 'blur(16px)',
-                        WebkitBackdropFilter: 'blur(16px)',
-                        border: '1px solid rgba(255,255,255,0.6)',
-                        borderRadius: 16,
-                        marginBottom: '1.25rem',
-                        animation: 'toolbarIn 0.5s ease-out 0.08s both',
-                    }}
-                >
-                    {/* Status filter */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                        <span
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.3rem',
-                                fontSize: '0.8rem',
-                                fontWeight: 500,
-                                color: '#6E6862',
-                            }}
-                        >
-                            <svg
-                                aria-hidden="true"
-                                width="13"
-                                height="13"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                            </svg>
-                            状态
-                        </span>
-                        <AdminSelect
+            <AdminCard>
+                <div style={{ padding: '0.9rem 1.15rem' }}>
+                    <AdminToolbar>
+                        <AdminSearchInput
+                            value={searchInput}
+                            onChange={setSearchInput}
+                            onSubmit={() => {}}
+                            placeholder="搜索分类名称"
+                            loading={isLoading}
+                            submitOnEnterOnly
+                        />
+                        <AdminFilterField
+                            label="状态"
                             options={STATUS_FILTER_OPTIONS}
                             value={statusFilter}
-                            onChange={val => setStatusFilter(val)}
+                            onChange={setStatusFilter}
+                            minWidth={120}
                         />
-                    </div>
-
-                    {/* Sort */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                        <span
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.3rem',
-                                fontSize: '0.8rem',
-                                fontWeight: 500,
-                                color: '#6E6862',
-                            }}
-                        >
-                            <svg
-                                aria-hidden="true"
-                                width="13"
-                                height="13"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <line x1="12" y1="5" x2="12" y2="19" />
-                                <polyline points="19 12 12 19 5 12" />
-                            </svg>
-                            排序
-                        </span>
-                        <AdminSelect
-                            options={[
-                                { value: 'sortOrder', label: '按排序值' },
-                                { value: 'name', label: '按名称' },
-                            ]}
+                        <AdminFilterField
+                            label="排序"
+                            options={SORT_FIELD_OPTIONS}
                             value={sortField}
                             onChange={val => setSortField(val as SortField)}
+                            minWidth={130}
                         />
                         <Button
                             type="button"
                             variant="outline"
-                            size="icon"
+                            size="sm"
                             onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+                            className="self-end"
+                            aria-label={sortDir === 'asc' ? '当前升序，切换为降序' : '当前降序，切换为升序'}
                             title={sortDir === 'asc' ? '升序' : '降序'}
-                            style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: 30,
-                                height: 30,
-                                borderRadius: 8,
-                                border: '1.5px solid #E5E0DB',
-                                background: '#fff',
-                                color: '#6B6460',
-                                transition: 'all 0.15s ease',
-                            }}
-                            onMouseEnter={e => {
-                                e.currentTarget.style.borderColor = '#F97316';
-                                e.currentTarget.style.color = '#EA580C';
-                            }}
-                            onMouseLeave={e => {
-                                e.currentTarget.style.borderColor = '#E5E0DB';
-                                e.currentTarget.style.color = '#6B6460';
-                            }}
                         >
-                            <svg
+                            <ArrowDownUp
+                                size={14}
                                 aria-hidden="true"
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                style={{
-                                    transform: sortDir === 'desc' ? 'rotate(180deg)' : 'none',
-                                    transition: 'transform 0.2s ease',
-                                }}
-                            >
-                                <polyline points="18 15 12 9 6 15" />
-                            </svg>
+                                style={{ transform: sortDir === 'desc' ? 'rotate(180deg)' : 'none' }}
+                            />
+                            {sortDir === 'asc' ? '升序' : '降序'}
                         </Button>
-                    </div>
-
-                    {/* Search */}
-                    <div style={{ position: 'relative', width: 200 }}>
-                        <Input
-                            type="text"
-                            value={searchInput}
-                            onChange={e => setSearchInput(e.target.value)}
-                            placeholder="搜索分类名称..."
-                            className="h-auto"
-                            style={{
-                                width: '100%',
-                                padding: '0.5rem 0.85rem 0.5rem 2.2rem',
-                                border: '1.5px solid #E5E0DB',
-                                borderRadius: 12,
-                                background: '#fff',
-                                fontSize: '0.82rem',
-                                color: '#2A2520',
-                                outline: 'none',
-                                boxShadow: '0 1px 3px rgba(42,37,32,0.04)',
-                                transition: 'all 0.2s ease',
-                            }}
-                            onFocus={e => {
-                                e.currentTarget.style.borderColor = '#F97316';
-                                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)';
-                            }}
-                            onBlur={e => {
-                                e.currentTarget.style.borderColor = '#E5E0DB';
-                                e.currentTarget.style.boxShadow = '0 1px 3px rgba(42,37,32,0.04)';
-                            }}
-                        />
-                        <svg
-                            aria-hidden="true"
-                            style={{
-                                position: 'absolute',
-                                left: '0.7rem',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                width: 15,
-                                height: 15,
-                                color: '#6E6862',
-                                pointerEvents: 'none',
-                            }}
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        >
-                            <circle cx="11" cy="11" r="8" />
-                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                    </div>
-
-                    {/* Divider */}
-                    <div style={{ width: 1, height: 20, background: '#E5E0DB', flexShrink: 0 }} />
-
-                    {/* Count */}
-                    <span style={{ fontSize: '0.81rem', color: '#6E6862', fontWeight: 500 }}>
-                        共 <strong style={{ color: '#2A2520' }}>{totalCount.toLocaleString()}</strong> 个分类
-                    </span>
+                        <ToolbarDivider />
+                        <div style={{ flex: 1 }} />
+                        {/* 筛选后报总数会让人以为筛选没生效 */}
+                        <span style={mutedText}>
+                            {hasFilter ? (
+                                <>
+                                    筛选出 <strong style={{ color: 'var(--admin-ink)' }}>{filteredCount}</strong> /{' '}
+                                    {allCategories.length} 个分类
+                                </>
+                            ) : (
+                                <>
+                                    共{' '}
+                                    <strong style={{ color: 'var(--admin-ink)' }}>
+                                        {allCategories.length.toLocaleString()}
+                                    </strong>{' '}
+                                    个分类
+                                </>
+                            )}
+                        </span>
+                    </AdminToolbar>
                 </div>
+            </AdminCard>
 
-                {/* ===== Tree Content ===== */}
-                <div
-                    style={{
-                        background: 'rgba(255,255,255,0.72)',
-                        backdropFilter: 'blur(20px)',
-                        WebkitBackdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255,255,255,0.65)',
-                        borderRadius: 20,
-                        overflow: 'hidden',
-                        transition: 'all 0.35s ease',
-                        animation: 'cardIn 0.5s ease-out 0.15s both',
-                    }}
-                >
+            <AdminCard grow>
+                <div className="admin-tree-scroll">
                     {isLoading ? (
-                        <div style={{ padding: '3rem', textAlign: 'center' }}>
+                        <div style={{ padding: '3rem', textAlign: 'center' }} role="status" aria-busy="true">
                             <div
                                 style={{
                                     display: 'inline-block',
                                     width: 32,
                                     height: 32,
                                     border: '3px solid rgba(249,115,22,0.12)',
-                                    borderTopColor: '#F97316',
+                                    borderTopColor: 'var(--primary-500)',
                                     borderRadius: '50%',
-                                    animation: 'categorySpin 0.7s linear infinite',
+                                    animation: 'spin 0.7s linear infinite',
                                 }}
                             />
-                            <div style={{ marginTop: '1rem', fontSize: '0.87rem', color: '#6E6862' }}>
-                                加载分类数据...
-                            </div>
+                            <div style={{ ...mutedText, marginTop: '1rem' }}>加载分类数据…</div>
                         </div>
-                    ) : filteredTree.length === 0 ? (
+                    ) : isError ? null : filteredTree.length === 0 ? (
                         <div style={{ padding: '3rem', textAlign: 'center' }}>
                             <div
+                                aria-hidden="true"
                                 style={{
                                     width: 56,
                                     height: 56,
@@ -657,36 +371,20 @@ export default function CategoryManagePage() {
                                     marginBottom: '1rem',
                                 }}
                             >
-                                <svg
-                                    aria-hidden="true"
-                                    width="28"
-                                    height="28"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="#6E6862"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                >
-                                    <path d="M4 7V4h16v3" />
-                                    <path d="M9 20h6" />
-                                    <path d="M12 4v16" />
-                                </svg>
+                                <FolderTree size={28} />
                             </div>
                             <div
                                 style={{
                                     fontSize: '0.95rem',
                                     fontWeight: 600,
-                                    color: '#6B6460',
+                                    color: 'var(--admin-ink)',
                                     marginBottom: '0.3rem',
                                 }}
                             >
                                 暂无分类数据
                             </div>
-                            <p style={{ fontSize: '0.82rem', color: '#6E6862' }}>
-                                {searchInput || statusFilter
-                                    ? '尝试调整筛选条件'
-                                    : '点击右上角「添加分类」创建第一个分类'}
+                            <p style={mutedText}>
+                                {hasFilter ? '尝试调整筛选条件' : '点击右上角「添加分类」创建第一个分类'}
                             </p>
                         </div>
                     ) : (
@@ -701,20 +399,28 @@ export default function CategoryManagePage() {
                                     onEdit={openEdit}
                                     onToggleStatus={handleToggleStatus}
                                     onDelete={setDeleteTarget}
-                                    isUpdatingStatus={updateStatusMutation.isPending}
+                                    updatingStatusId={updatingStatusId}
                                 />
                             ))}
                         </div>
                     )}
                 </div>
-            </div>
+            </AdminCard>
 
             {/* ===== Create Modal ===== */}
-            <Dialog open={createOpen} onOpenChange={open => !open && !createMutation.isPending && setCreateOpen(false)}>
+            <Dialog
+                open={createOpen}
+                onOpenChange={open => {
+                    if (!open && !createMutation.isPending) {
+                        setCreateOpen(false);
+                    }
+                }}
+            >
                 <DialogContent className="sm:max-w-[480px] gap-0 p-0 overflow-hidden rounded-3xl">
                     <DialogHeader className="p-6 pb-0">
                         <DialogTitle className="flex items-center gap-2">
                             <span
+                                aria-hidden="true"
                                 style={{
                                     width: 28,
                                     height: 28,
@@ -722,184 +428,80 @@ export default function CategoryManagePage() {
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    background: 'linear-gradient(135deg, #F97316, #FB923C)',
+                                    background: 'var(--admin-primary-bg)',
                                     color: '#fff',
                                     flexShrink: 0,
                                 }}
                             >
-                                <svg
-                                    aria-hidden="true"
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2.5"
-                                >
-                                    <line x1="12" y1="5" x2="12" y2="19" />
-                                    <line x1="5" y1="12" x2="19" y2="12" />
-                                </svg>
+                                <Plus size={14} />
                             </span>
                             添加分类
                         </DialogTitle>
                     </DialogHeader>
 
-                    {/* Body */}
-                    <div className="p-6">
-                        {/* Name */}
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label
-                                htmlFor="create-category-name"
-                                style={{
-                                    display: 'block',
-                                    fontSize: '0.82rem',
-                                    fontWeight: 600,
-                                    color: '#2A2520',
-                                    marginBottom: '0.4rem',
-                                }}
-                            >
-                                分类名称 <span style={{ color: '#E11D48' }}>*</span>
-                            </label>
-                            <Input
-                                id="create-category-name"
-                                type="text"
-                                value={createName}
-                                onChange={e => setCreateName(e.target.value)}
-                                placeholder="请输入分类名称"
-                                maxLength={20}
-                                className="h-auto"
-                                style={{
-                                    width: '100%',
-                                    padding: '0.65rem 0.85rem',
-                                    border: '1.5px solid #E5E0DB',
-                                    borderRadius: 12,
-                                    fontSize: '0.87rem',
-                                    color: '#2A2520',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease',
-                                }}
-                                onFocus={e => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)';
-                                }}
-                                onBlur={e => {
-                                    e.currentTarget.style.borderColor = '#E5E0DB';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
+                    <div className="p-6" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <AdminField label="分类名称" required>
+                            {props => (
+                                <input
+                                    {...props}
+                                    type="text"
+                                    value={createName}
+                                    onChange={e => setCreateName(e.target.value)}
+                                    placeholder="请输入分类名称"
+                                    maxLength={20}
+                                    disabled={createMutation.isPending}
+                                    style={textInput()}
+                                />
+                            )}
+                        </AdminField>
 
-                        {/* Parent */}
-                        <div style={{ marginBottom: '1rem' }}>
-                            <span
-                                style={{
-                                    display: 'block',
-                                    fontSize: '0.82rem',
-                                    fontWeight: 600,
-                                    color: '#2A2520',
-                                    marginBottom: '0.4rem',
-                                }}
-                            >
-                                父级分类
-                            </span>
-                            <AdminSelect
-                                options={parentOptions}
-                                value={createParentId ?? ''}
-                                onChange={val => setCreateParentId(val || undefined)}
-                            />
-                            <p style={{ fontSize: '0.75rem', color: '#6E6862', marginTop: '0.25rem' }}>
-                                不选则为一级分类，最多支持三级分类
-                            </p>
-                        </div>
+                        <AdminField label="父级分类" hint="不选则为一级分类，最多支持三级分类">
+                            {props => (
+                                <AdminSelect
+                                    id={props.id}
+                                    aria-describedby={props['aria-describedby']}
+                                    aria-invalid={props['aria-invalid']}
+                                    options={createParentOptions}
+                                    value={createParentId ?? ''}
+                                    onChange={val => setCreateParentId(val || undefined)}
+                                    disabled={createMutation.isPending}
+                                />
+                            )}
+                        </AdminField>
 
-                        {/* Sort order */}
-                        <div style={{ marginBottom: '0.5rem' }}>
-                            <label
-                                htmlFor="create-category-sort"
-                                style={{
-                                    display: 'block',
-                                    fontSize: '0.82rem',
-                                    fontWeight: 600,
-                                    color: '#2A2520',
-                                    marginBottom: '0.4rem',
-                                }}
-                            >
-                                排序值
-                            </label>
-                            <Input
-                                id="create-category-sort"
-                                type="number"
-                                value={createSortOrder}
-                                onChange={e => setCreateSortOrder(Number(e.target.value))}
-                                min={0}
-                                max={9999}
-                                className="h-auto"
-                                style={{
-                                    width: '100%',
-                                    padding: '0.65rem 0.85rem',
-                                    border: '1.5px solid #E5E0DB',
-                                    borderRadius: 12,
-                                    fontSize: '0.87rem',
-                                    color: '#2A2520',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease',
-                                }}
-                                onFocus={e => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)';
-                                }}
-                                onBlur={e => {
-                                    e.currentTarget.style.borderColor = '#E5E0DB';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
+                        <AdminField label="排序值" hint="数值越小越靠前">
+                            {props => (
+                                <input
+                                    {...props}
+                                    type="number"
+                                    value={createSortOrder}
+                                    onChange={e => setCreateSortOrder(Number(e.target.value))}
+                                    min={0}
+                                    max={9999}
+                                    disabled={createMutation.isPending}
+                                    style={textInput()}
+                                />
+                            )}
+                        </AdminField>
                     </div>
 
-                    <DialogFooter className="flex-row justify-end gap-2.5 p-4 border-t border-border/40 bg-gradient-to-b from-background/50 to-background/90">
+                    <DialogFooter className="flex-row justify-end gap-2.5 p-4 border-t border-border/40">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => setCreateOpen(false)}
                             disabled={createMutation.isPending}
-                            style={{
-                                padding: '0.6rem 1.2rem',
-                                borderRadius: 12,
-                                border: '1.5px solid #E5E0DB',
-                                background: '#fff',
-                                fontSize: '0.87rem',
-                                fontWeight: 600,
-                                color: '#6B6460',
-                                transition: 'all 0.15s ease',
-                            }}
                         >
                             取消
                         </Button>
                         <Button
                             type="button"
-                            variant="default"
                             onClick={handleCreate}
                             disabled={createMutation.isPending || !createName.trim()}
-                            style={{
-                                padding: '0.6rem 1.5rem',
-                                borderRadius: 12,
-                                border: 'none',
-                                background:
-                                    createMutation.isPending || !createName.trim()
-                                        ? '#D6CEC5'
-                                        : 'linear-gradient(135deg, #F97316, #EA580C)',
-                                fontSize: '0.87rem',
-                                fontWeight: 600,
-                                color: '#fff',
-                                cursor: createMutation.isPending || !createName.trim() ? 'not-allowed' : 'pointer',
-                                transition: 'all 0.2s ease',
-                                boxShadow:
-                                    createMutation.isPending || !createName.trim()
-                                        ? 'none'
-                                        : '0 3px 12px rgba(249,115,22,0.28)',
-                            }}
+                            isLoading={createMutation.isPending}
+                            loadingText="创建中"
                         >
-                            {createMutation.isPending ? '创建中...' : '确认创建'}
+                            确认创建
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -908,162 +510,64 @@ export default function CategoryManagePage() {
             {/* ===== Edit Modal ===== */}
             <Dialog
                 open={editOpen && !!editId}
-                onOpenChange={open => !open && !updateMutation.isPending && setEditOpen(false)}
+                onOpenChange={open => {
+                    if (!open && !updateMutation.isPending) {
+                        setEditOpen(false);
+                    }
+                }}
             >
                 <DialogContent className="sm:max-w-[480px] gap-0 p-0 overflow-hidden rounded-3xl">
                     <DialogHeader className="p-6 pb-0">
-                        <DialogTitle className="flex items-center gap-2">
-                            <span
-                                style={{
-                                    width: 28,
-                                    height: 28,
-                                    borderRadius: 10,
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
-                                    color: '#fff',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                <svg
-                                    aria-hidden="true"
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2.5"
-                                >
-                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                </svg>
-                            </span>
-                            编辑分类
-                        </DialogTitle>
+                        <DialogTitle>编辑分类</DialogTitle>
                     </DialogHeader>
 
-                    {/* Body */}
-                    <div className="p-6">
-                        {/* Name */}
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label
-                                htmlFor="edit-category-name"
-                                style={{
-                                    display: 'block',
-                                    fontSize: '0.82rem',
-                                    fontWeight: 600,
-                                    color: '#2A2520',
-                                    marginBottom: '0.4rem',
-                                }}
-                            >
-                                分类名称 <span style={{ color: '#E11D48' }}>*</span>
-                            </label>
-                            <Input
-                                id="edit-category-name"
-                                type="text"
-                                value={editName}
-                                onChange={e => setEditName(e.target.value)}
-                                placeholder="请输入分类名称"
-                                maxLength={20}
-                                className="h-auto"
-                                style={{
-                                    width: '100%',
-                                    padding: '0.65rem 0.85rem',
-                                    border: '1.5px solid #E5E0DB',
-                                    borderRadius: 12,
-                                    fontSize: '0.87rem',
-                                    color: '#2A2520',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease',
-                                }}
-                                onFocus={e => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)';
-                                }}
-                                onBlur={e => {
-                                    e.currentTarget.style.borderColor = '#E5E0DB';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
+                    <div className="p-6" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <AdminField label="分类名称" required>
+                            {props => (
+                                <input
+                                    {...props}
+                                    type="text"
+                                    value={editName}
+                                    onChange={e => setEditName(e.target.value)}
+                                    placeholder="请输入分类名称"
+                                    maxLength={20}
+                                    disabled={updateMutation.isPending}
+                                    style={textInput()}
+                                />
+                            )}
+                        </AdminField>
 
-                        {/* Parent */}
-                        <div style={{ marginBottom: '1rem' }}>
-                            <span
-                                style={{
-                                    display: 'block',
-                                    fontSize: '0.82rem',
-                                    fontWeight: 600,
-                                    color: '#2A2520',
-                                    marginBottom: '0.4rem',
-                                }}
-                            >
-                                父级分类
-                            </span>
-                            <AdminSelect
-                                options={parentOptions}
-                                value={editParentId ?? ''}
-                                onChange={val => setEditParentId(val || undefined)}
-                            />
-                        </div>
+                        <AdminField label="父级分类" hint="已排除自身及其下级，避免形成循环">
+                            {props => (
+                                <AdminSelect
+                                    id={props.id}
+                                    aria-describedby={props['aria-describedby']}
+                                    aria-invalid={props['aria-invalid']}
+                                    options={editParentOptions}
+                                    value={editParentId ?? ''}
+                                    onChange={val => setEditParentId(val || undefined)}
+                                    disabled={updateMutation.isPending}
+                                />
+                            )}
+                        </AdminField>
 
-                        {/* Sort order */}
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label
-                                htmlFor="edit-category-sort"
-                                style={{
-                                    display: 'block',
-                                    fontSize: '0.82rem',
-                                    fontWeight: 600,
-                                    color: '#2A2520',
-                                    marginBottom: '0.4rem',
-                                }}
-                            >
-                                排序值
-                            </label>
-                            <Input
-                                id="edit-category-sort"
-                                type="number"
-                                value={editSortOrder}
-                                onChange={e => setEditSortOrder(Number(e.target.value))}
-                                min={0}
-                                max={9999}
-                                className="h-auto"
-                                style={{
-                                    width: '100%',
-                                    padding: '0.65rem 0.85rem',
-                                    border: '1.5px solid #E5E0DB',
-                                    borderRadius: 12,
-                                    fontSize: '0.87rem',
-                                    color: '#2A2520',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease',
-                                }}
-                                onFocus={e => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)';
-                                }}
-                                onBlur={e => {
-                                    e.currentTarget.style.borderColor = '#E5E0DB';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
+                        <AdminField label="排序值" hint="数值越小越靠前">
+                            {props => (
+                                <input
+                                    {...props}
+                                    type="number"
+                                    value={editSortOrder}
+                                    onChange={e => setEditSortOrder(Number(e.target.value))}
+                                    min={0}
+                                    max={9999}
+                                    disabled={updateMutation.isPending}
+                                    style={textInput()}
+                                />
+                            )}
+                        </AdminField>
 
-                        {/* Status */}
                         <div>
-                            <span
-                                style={{
-                                    display: 'block',
-                                    fontSize: '0.82rem',
-                                    fontWeight: 600,
-                                    color: '#2A2520',
-                                    marginBottom: '0.4rem',
-                                }}
-                            >
-                                状态
-                            </span>
+                            <p style={{ ...labelText, marginBottom: '0.4rem' }}>状态</p>
                             <RadioGroup
                                 value={String(editStatus)}
                                 onValueChange={value => setEditStatus(Number(value))}
@@ -1071,22 +575,22 @@ export default function CategoryManagePage() {
                             >
                                 <label
                                     htmlFor="status-enabled"
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 1 ? 'border-emerald-500 bg-emerald-50' : 'border-[#E5E0DB] bg-white'}`}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 1 ? 'border-emerald-500 bg-emerald-50' : 'border-border bg-white'}`}
                                 >
                                     <RadioGroupItem value="1" id="status-enabled" />
                                     <span
-                                        className={`text-sm font-medium ${editStatus === 1 ? 'text-emerald-600' : 'text-[#6B6460]'}`}
+                                        className={`text-sm font-medium ${editStatus === 1 ? 'text-emerald-600' : 'text-muted-foreground'}`}
                                     >
                                         启用
                                     </span>
                                 </label>
                                 <label
                                     htmlFor="status-disabled"
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 0 ? 'border-rose-500 bg-rose-50' : 'border-[#E5E0DB] bg-white'}`}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 0 ? 'border-rose-500 bg-rose-50' : 'border-border bg-white'}`}
                                 >
                                     <RadioGroupItem value="0" id="status-disabled" />
                                     <span
-                                        className={`text-sm font-medium ${editStatus === 0 ? 'text-rose-600' : 'text-[#6B6460]'}`}
+                                        className={`text-sm font-medium ${editStatus === 0 ? 'text-rose-600' : 'text-muted-foreground'}`}
                                     >
                                         禁用
                                     </span>
@@ -1095,56 +599,28 @@ export default function CategoryManagePage() {
                         </div>
                     </div>
 
-                    <DialogFooter className="flex-row justify-end gap-2.5 p-4 border-t border-border/40 bg-gradient-to-b from-background/50 to-background/90">
+                    <DialogFooter className="flex-row justify-end gap-2.5 p-4 border-t border-border/40">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => setEditOpen(false)}
                             disabled={updateMutation.isPending}
-                            style={{
-                                padding: '0.6rem 1.2rem',
-                                borderRadius: 12,
-                                border: '1.5px solid #E5E0DB',
-                                background: '#fff',
-                                fontSize: '0.87rem',
-                                fontWeight: 600,
-                                color: '#6B6460',
-                                transition: 'all 0.15s ease',
-                            }}
                         >
                             取消
                         </Button>
                         <Button
                             type="button"
-                            variant="default"
                             onClick={handleEdit}
                             disabled={updateMutation.isPending || !editName.trim()}
-                            style={{
-                                padding: '0.6rem 1.5rem',
-                                borderRadius: 12,
-                                border: 'none',
-                                background:
-                                    updateMutation.isPending || !editName.trim()
-                                        ? '#D6CEC5'
-                                        : 'linear-gradient(135deg, #3B82F6, #2563EB)',
-                                fontSize: '0.87rem',
-                                fontWeight: 600,
-                                color: '#fff',
-                                cursor: updateMutation.isPending || !editName.trim() ? 'not-allowed' : 'pointer',
-                                transition: 'all 0.2s ease',
-                                boxShadow:
-                                    updateMutation.isPending || !editName.trim()
-                                        ? 'none'
-                                        : '0 3px 12px rgba(59,130,246,0.28)',
-                            }}
+                            isLoading={updateMutation.isPending}
+                            loadingText="保存中"
                         >
-                            {updateMutation.isPending ? '保存中...' : '保存修改'}
+                            保存修改
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* ===== Delete Confirm ===== */}
             <ConfirmModal
                 isOpen={deleteTarget !== null}
                 title="删除分类"
@@ -1160,11 +636,6 @@ export default function CategoryManagePage() {
                 onConfirm={handleDelete}
                 onCancel={() => setDeleteTarget(null)}
             />
-
-            {/* Animations */}
-            <style>{`
-        @keyframes categorySpin { to { transform: rotate(360deg); } }
-      `}</style>
-        </div>
+        </AdminPage>
     );
 }

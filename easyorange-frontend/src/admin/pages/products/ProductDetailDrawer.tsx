@@ -1,9 +1,11 @@
+import { ImageOff, ScrollText } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { ImagePreviewOverlay } from '@/admin/components/ImagePreviewOverlay';
 import { ErrorState } from '@/components/feedback/StateDisplay';
 import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, Textarea } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
+import { ConfirmModal } from '../../components/ConfirmModal';
 import { useAuditLogs, useAuditProduct } from '../../hooks/useAdminProductAudit';
 import { useAdminProductDetail } from '../../hooks/useAdminProducts';
 import type { AuditDimension, AuditLogResponse } from '../../types/admin';
@@ -30,6 +32,7 @@ const createInitialState = () => ({
     auditRemark: '',
     rejectReason: '',
     showRejectModal: false,
+    showApproveModal: false,
 });
 
 const DIMENSIONS: { key: AuditDimension; label: string }[] = [
@@ -43,7 +46,15 @@ const REJECT_TAGS = ['信息不完整', '图片模糊', '疑似虚假信息', '�
 
 export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: ProductDetailDrawerProps) {
     const [state, setState] = useState(createInitialState);
-    const { selectedImage, previewImage, selectedDimensions, auditRemark, rejectReason, showRejectModal } = state;
+    const {
+        selectedImage,
+        previewImage,
+        selectedDimensions,
+        auditRemark,
+        rejectReason,
+        showRejectModal,
+        showApproveModal,
+    } = state;
 
     const { data: product, isLoading, isError, error, refetch } = useAdminProductDetail(productId ?? '');
     const updateStatus = useAuditProduct();
@@ -57,28 +68,27 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
         }
     }, [open, productId, refetch]);
 
-    const handleApproveWithDimensions = () => {
+    const handleApproveWithDimensions = async () => {
         if (!product) {
             return;
         }
-        updateStatus
-            .mutateAsync({
+        try {
+            await updateStatus.mutateAsync({
                 id: product.productId,
                 data: { action: 1, dimensions: selectedDimensions, remark: auditRemark || undefined },
-            })
-            .then(() => {
-                // 审核动作要有即时反馈：只关抽屉的话，点完「通过审核」界面几乎无变化，
-                // 演示者会以为没点上
-                addToast({ type: 'success', message: '审核已通过，商品已上架' });
-                onSuccess();
-                onClose();
-            })
-            .catch(e => {
-                addToast({
-                    type: 'error',
-                    message: e instanceof Error ? e.message : '审核失败，请重试',
-                });
             });
+            // 审核动作要有即时反馈：只关抽屉的话，点完「通过审核」界面几乎无变化，
+            // 演示者会以为没点上
+            addToast({ type: 'success', message: '审核已通过，商品已上架' });
+            setState(prev => ({ ...prev, showApproveModal: false }));
+            onSuccess();
+            onClose();
+        } catch (e) {
+            addToast({
+                type: 'error',
+                message: e instanceof Error ? e.message : '审核失败，请重试',
+            });
+        }
     };
 
     const handleRejectWithReason = async () => {
@@ -236,6 +246,12 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                         aspectRatio: '16/10',
                                         cursor: product.images[selectedImage] ? 'pointer' : 'default',
                                     }}
+                                    // 缩略图/主图此前都没有动作名，读屏只会念出商品名
+                                    aria-label={
+                                        product.images[selectedImage]
+                                            ? `放大预览第 ${selectedImage + 1} 张图片`
+                                            : undefined
+                                    }
                                     onClick={() =>
                                         product.images[selectedImage] &&
                                         setState(prev => ({ ...prev, previewImage: product.images[selectedImage] }))
@@ -283,6 +299,8 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => setState(prev => ({ ...prev, selectedImage: index }))}
+                                                aria-label={`查看第 ${index + 1} 张图片`}
+                                                aria-current={selectedImage === index}
                                                 className="shrink-0 overflow-hidden rounded-xl border-2 p-0 transition-all duration-150"
                                                 style={{
                                                     width: 56,
@@ -340,7 +358,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                 </div>
 
                                 {/* Detail grid */}
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="admin-field-grid">
                                     {[
                                         {
                                             label: '新旧程度',
@@ -396,12 +414,32 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                     </div>
                                 )}
 
-                                {/* 审核记录时间线 */}
-                                {auditLogs.data && auditLogs.data.length > 0 && (
-                                    <div className="rounded-[14px] border border-[rgba(229,224,219,0.35)] bg-[linear-gradient(135deg,rgba(249,115,22,0.03),rgba(195,155,211,0.02))] p-4">
-                                        <h4 className="mb-[0.65rem] flex items-center gap-[0.35rem] text-[0.82rem] font-semibold text-[#6B6460]">
-                                            📜 审核记录
-                                        </h4>
+                                {/* 审核记录时间线：加载中 / 失败 / 无记录三态分开，
+                                    此前只判 data && length>0，加载中和失败都显示成「没有记录」 */}
+                                <div className="rounded-[14px] border border-[rgba(229,224,219,0.35)] bg-[linear-gradient(135deg,rgba(249,115,22,0.03),rgba(195,155,211,0.02))] p-4">
+                                    <h4 className="mb-[0.65rem] flex items-center gap-[0.35rem] text-[0.82rem] font-semibold text-[#6B6460]">
+                                        <ScrollText size={14} aria-hidden="true" />
+                                        审核记录
+                                    </h4>
+                                    {auditLogs.isLoading ? (
+                                        <p className="text-[0.82rem] text-[#6E6862]" role="status" aria-busy="true">
+                                            加载中…
+                                        </p>
+                                    ) : auditLogs.isError ? (
+                                        <p className="text-[0.82rem] text-[#E11D48]" role="alert">
+                                            审核记录加载失败
+                                            <Button
+                                                variant="link"
+                                                size="sm"
+                                                className="ml-2 h-auto min-h-0 p-0 text-[0.82rem]"
+                                                onClick={() => auditLogs.refetch()}
+                                            >
+                                                重试
+                                            </Button>
+                                        </p>
+                                    ) : !auditLogs.data?.length ? (
+                                        <p className="text-[0.82rem] text-[#6E6862]">该商品还没有审核记录</p>
+                                    ) : (
                                         <div className="flex flex-col gap-[0.7rem]">
                                             {auditLogs.data.map((log: AuditLogResponse) => (
                                                 <div key={log.id} className="flex items-start gap-[0.6rem]">
@@ -472,8 +510,8 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                                 </div>
                                             ))}
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
 
                                 {/* Location */}
                                 {product.location && (
@@ -500,7 +538,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center gap-2 py-16 text-[#6E6862]">
-                            <span className="text-[2rem] opacity-40">📭</span>
+                            <ImageOff size={32} aria-hidden="true" style={{ opacity: 0.4 }} />
                             <span className="text-[0.9rem]">商品不存在或已被删除</span>
                         </div>
                     )}
@@ -538,35 +576,43 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         </div>
 
                         {/* 审核意见 */}
-                        <Textarea
-                            placeholder="审核意见（选填）..."
-                            value={auditRemark}
-                            onChange={e => setState(prev => ({ ...prev, auditRemark: e.target.value }))}
-                            className="min-h-[52px] resize-y rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white px-[0.8rem] py-[0.6rem] text-[0.84rem] text-[#2A2520] placeholder:text-[#6E6862] focus-visible:border-[#F97316] focus-visible:ring-0 focus-visible:ring-offset-0"
-                        />
-
-                        {/* 操作按钮行 */}
-                        <div className="flex gap-[0.65rem]">
-                            <Button
-                                onClick={handleApproveWithDimensions}
-                                disabled={updateStatus.isPending}
-                                isLoading={updateStatus.isPending}
-                                className="h-10 flex-1 rounded-xl border-none bg-[linear-gradient(135deg,#10B981,#059669)] text-[0.87rem] font-semibold text-white shadow-[0_3px_12px_rgba(16,185,129,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_18px_rgba(16,185,129,0.38)]"
+                        <div>
+                            <label
+                                htmlFor="audit-remark"
+                                className="mb-[0.45rem] block text-[0.78rem] font-semibold text-[#6B6460]"
                             >
-                                ✅ 通过审核
+                                审核意见（选填）
+                            </label>
+                            <Textarea
+                                id="audit-remark"
+                                placeholder="记录本次审核的判断依据..."
+                                value={auditRemark}
+                                onChange={e => setState(prev => ({ ...prev, auditRemark: e.target.value }))}
+                                className="min-h-[52px] resize-y rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white px-[0.8rem] py-[0.6rem] text-[0.84rem] text-[#2A2520] placeholder:text-[#6E6862] focus-visible:border-[#F97316] focus-visible:ring-0 focus-visible:ring-offset-0"
+                            />
+                        </div>
+
+                        {/* 操作按钮行：窄屏由 .admin-footer-actions 换行 */}
+                        <div className="admin-footer-actions">
+                            <Button
+                                onClick={() => setState(prev => ({ ...prev, showApproveModal: true }))}
+                                disabled={updateStatus.isPending}
+                                className="h-10 rounded-xl border-none bg-[linear-gradient(135deg,#10B981,#059669)] text-[0.87rem] font-semibold text-white shadow-[0_3px_12px_rgba(16,185,129,0.28)] transition-all duration-200 hover:-translate-y-0.5"
+                            >
+                                通过审核
                             </Button>
                             <Button
                                 onClick={() => setState(prev => ({ ...prev, showRejectModal: true }))}
                                 disabled={updateStatus.isPending}
-                                className="h-10 flex-1 rounded-xl border-none bg-[linear-gradient(135deg,#F43F5E,#E11D48)] text-[0.87rem] font-semibold text-white shadow-[0_3px_12px_rgba(244,63,94,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_18px_rgba(244,63,94,0.38)]"
+                                className="h-10 rounded-xl border-none bg-[linear-gradient(135deg,#F43F5E,#E11D48)] text-[0.87rem] font-semibold text-white shadow-[0_3px_12px_rgba(244,63,94,0.28)] transition-all duration-200 hover:-translate-y-0.5"
                             >
-                                🚫 驳回商品
+                                驳回商品
                             </Button>
                             <Button
                                 variant="outline"
                                 onClick={onClose}
                                 disabled={updateStatus.isPending}
-                                className="h-10 rounded-xl border-[1.5px] border-[#E5E0DB] bg-white px-5 text-[0.87rem] font-semibold text-[#6B6460] hover:bg-[rgba(229,224,219,0.3)] hover:text-[#6B6460]"
+                                className="h-10 rounded-xl border-[1.5px] border-[#E5E0DB] bg-white px-5 text-[0.87rem] font-semibold text-[#6E6862] hover:bg-[rgba(229,224,219,0.3)] hover:text-[#6E6862]"
                             >
                                 关闭
                             </Button>
@@ -581,85 +627,72 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         onClose={() => setState(prev => ({ ...prev, previewImage: null }))}
                     />
                 )}
+            </SheetContent>
 
-                {/* 驳回弹窗 */}
-                {showRejectModal && (
-                    <div
-                        className="fixed inset-0 z-50 bg-[rgba(42,37,32,0.5)]"
-                        style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
-                    >
-                        <div
-                            className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-[20px] border border-[rgba(229,224,219,0.4)] bg-white/96 p-6 shadow-[0_20px_60px_rgba(42,37,32,0.15)]"
-                            style={{ backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
-                        >
-                            <div className="mb-4 flex items-center justify-between">
-                                <h3 className="flex items-center gap-[0.45rem] text-[1.05rem] font-bold text-[#E11D48]">
-                                    ⚠️ 确认驳回商品
-                                </h3>
+            {/* 通过审核 = 直接上架，此前没有任何确认，驳回反而有确认，危险度与确认强度倒挂 */}
+            <ConfirmModal
+                isOpen={showApproveModal}
+                title="确认通过审核"
+                variant="info"
+                confirmText="通过并上架"
+                content={
+                    <span>
+                        「{product?.name}」通过后将<b>立即上架</b>，所有买家可见。
+                        {selectedDimensions.length > 0
+                            ? `已勾选审核维度：${selectedDimensions.length} 项。`
+                            : '尚未勾选任何审核维度。'}
+                    </span>
+                }
+                isLoading={updateStatus.isPending}
+                onConfirm={handleApproveWithDimensions}
+                onCancel={() => setState(prev => ({ ...prev, showApproveModal: false }))}
+            />
+
+            {/* 驳回：手写 fixed 遮罩替换为 ConfirmModal，走 Radix 焦点陷阱与 Esc 关闭 */}
+            <ConfirmModal
+                isOpen={showRejectModal}
+                title="确认驳回商品"
+                confirmText="确认驳回"
+                isLoading={updateStatus.isPending}
+                confirmDisabled={!rejectReason.trim()}
+                onConfirm={handleRejectWithReason}
+                onCancel={() => setState(prev => ({ ...prev, showRejectModal: false }))}
+                content={
+                    <div className="flex flex-col gap-3">
+                        <p style={{ margin: 0 }}>确定要驳回该资产吗？驳回后资产方可修改并重新提交。</p>
+                        <div className="flex flex-wrap gap-[0.35rem]">
+                            {REJECT_TAGS.map(tag => (
                                 <Button
+                                    key={tag}
                                     variant="ghost"
-                                    size="icon"
-                                    onClick={() =>
-                                        setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' }))
-                                    }
-                                    className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-lg border-[1.5px] border-[#E5E0DB] bg-white text-[#6E6862] transition-all duration-150 hover:border-[rgba(244,63,94,0.2)] hover:bg-[rgba(244,63,94,0.06)] hover:text-[#E11D48]"
-                                    aria-label="关闭"
+                                    size="sm"
+                                    onClick={() => appendRejectTag(tag)}
+                                    className="h-auto min-h-0 rounded-md border-[1.5px] border-[#E5E0DB] bg-white px-[0.55rem] py-[0.28rem] text-[0.76rem] font-medium text-[#6E6862]"
                                 >
-                                    ✕
+                                    {tag}
                                 </Button>
-                            </div>
-
-                            <p className="mb-[0.85rem] text-[0.85rem] leading-relaxed text-[#6B6460]">
-                                确定要驳回该资产吗？驳回后资产方可修改并重新提交。
-                            </p>
-
-                            {/* 快捷理由选项 */}
-                            <div className="mb-[0.75rem] flex flex-wrap gap-[0.35rem]">
-                                {REJECT_TAGS.map(tag => (
-                                    <Button
-                                        key={tag}
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => appendRejectTag(tag)}
-                                        className="h-auto min-h-0 rounded-md border-[1.5px] border-[#E5E0DB] bg-white px-[0.55rem] py-[0.28rem] text-[0.76rem] font-medium text-[#6E6862] transition-all duration-150 hover:border-[#F43F5E] hover:bg-white hover:text-[#E11D48]"
-                                    >
-                                        {tag}
-                                    </Button>
-                                ))}
-                            </div>
-
-                            {/* 原因输入框 */}
+                            ))}
+                        </div>
+                        <div>
+                            <label
+                                htmlFor="reject-reason"
+                                className="mb-1.5 block text-[0.78rem] font-semibold text-[#6B6460]"
+                            >
+                                驳回原因（必填）
+                            </label>
                             <Textarea
-                                placeholder="请填写驳回原因（必填）..."
+                                id="reject-reason"
+                                placeholder="说明不通过的原因，资产方会看到这段文字"
                                 value={rejectReason}
                                 onChange={e => setState(prev => ({ ...prev, rejectReason: e.target.value }))}
                                 rows={3}
-                                className="mb-4 min-h-[80px] resize-y rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white px-[0.8rem] py-[0.65rem] text-[0.85rem] text-[#2A2520] placeholder:text-[#6E6862] focus-visible:border-[#F43F5E] focus-visible:ring-0 focus-visible:ring-offset-0"
+                                aria-invalid={!rejectReason.trim()}
+                                className="min-h-[80px] resize-y rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white px-[0.8rem] py-[0.65rem] text-[0.85rem] text-[#2A2520] placeholder:text-[#6E6862] focus-visible:border-[#F43F5E] focus-visible:ring-0 focus-visible:ring-offset-0"
                             />
-
-                            <div className="flex justify-end gap-[0.6rem]">
-                                <Button
-                                    variant="outline"
-                                    onClick={() =>
-                                        setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' }))
-                                    }
-                                    className="h-9 rounded-xl border-[1.5px] border-[#E5E0DB] bg-white px-[1.1rem] text-[0.84rem] font-semibold text-[#6B6460] hover:bg-[rgba(229,224,219,0.3)] hover:text-[#6B6460]"
-                                >
-                                    取消
-                                </Button>
-                                <Button
-                                    onClick={handleRejectWithReason}
-                                    disabled={!rejectReason.trim() || updateStatus.isPending}
-                                    isLoading={updateStatus.isPending}
-                                    className="h-9 rounded-xl border-none bg-[linear-gradient(135deg,#F43F5E,#E11D48)] px-[1.3rem] text-[0.84rem] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 disabled:translate-y-0 disabled:bg-[#D6CEC5]"
-                                >
-                                    确认驳回
-                                </Button>
-                            </div>
                         </div>
                     </div>
-                )}
-            </SheetContent>
+                }
+            />
         </Sheet>
     );
 }

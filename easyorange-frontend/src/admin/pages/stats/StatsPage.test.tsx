@@ -106,8 +106,12 @@ function setupMocks(
         categories: CategoryResponse[] | undefined;
         categoriesLoading: boolean;
         orderStats: OrderStatsResponse | undefined;
+        orderStatsLoading: boolean;
+        orderStatsError: boolean;
         trend: TrendItem[];
+        trendError: boolean;
         activity: ActivityItem[];
+        activityError: boolean;
     }> = {}
 ) {
     const {
@@ -115,16 +119,29 @@ function setupMocks(
         statsLoading = false,
         categories = sampleCategories,
         categoriesLoading = false,
-        orderStats = sampleOrderStats,
+        // 显式传 undefined 表示「后端没返回」，不能被默认值顶掉
+        orderStats = 'orderStats' in overrides ? overrides.orderStats : sampleOrderStats,
+        orderStatsLoading = false,
+        orderStatsError = false,
         trend = sampleTrend,
+        trendError = false,
         activity = sampleActivity,
+        activityError = false,
     } = overrides;
 
     mockUseDashboardStats.mockReturnValue({ data: stats, isLoading: statsLoading });
-    mockUseAdminCategories.mockReturnValue({ data: categories, isLoading: categoriesLoading });
-    mockUseAdminOrderStats.mockReturnValue({ data: orderStats });
-    mockUseTrend.mockReturnValue({ data: trend });
-    mockUseRecentActivity.mockReturnValue({ data: activity });
+    mockUseAdminCategories.mockReturnValue({
+        data: categories,
+        isLoading: categoriesLoading,
+        isError: false,
+    });
+    mockUseAdminOrderStats.mockReturnValue({
+        data: orderStats,
+        isLoading: orderStatsLoading,
+        isError: orderStatsError,
+    });
+    mockUseTrend.mockReturnValue({ data: trend, isLoading: false, isError: trendError });
+    mockUseRecentActivity.mockReturnValue({ data: activity, isLoading: false, isError: activityError });
 }
 
 describe('StatsPage', () => {
@@ -137,7 +154,7 @@ describe('StatsPage', () => {
     it('renders page title "数据统计"', () => {
         renderWithProviders(<StatsPage />);
         expect(screen.getByText('数据统计')).toBeInTheDocument();
-        expect(screen.getByText('平台运营数据概览与趋势分析')).toBeInTheDocument();
+        expect(screen.getByText(/平台运营数据概览与趋势分析/)).toBeInTheDocument();
     });
 
     // ── Test 2: Shows stat cards with data ──
@@ -176,11 +193,11 @@ describe('StatsPage', () => {
         expect(screen.getByText(/已完成/)).toBeInTheDocument();
         expect(screen.getByText(/今日营收/)).toBeInTheDocument();
 
-        // Values
-        expect(screen.getByText('15')).toBeInTheDocument(); // todayOrders
-        expect(screen.getByText('10')).toBeInTheDocument(); // toShip
-        expect(screen.getByText('8')).toBeInTheDocument(); // toReceive
-        expect(screen.getByText('250')).toBeInTheDocument(); // completed
+        // 值带单位，避免"15"到底是笔数还是件数说不清
+        expect(screen.getByText('15 笔')).toBeInTheDocument();
+        expect(screen.getByText('10 笔')).toBeInTheDocument();
+        expect(screen.getByText('8 笔')).toBeInTheDocument();
+        expect(screen.getByText('250 笔')).toBeInTheDocument();
     });
 
     // ── Test 5: Trend chart section ──
@@ -219,7 +236,7 @@ describe('StatsPage', () => {
         setupMocks({ categories: [] });
         renderWithProviders(<StatsPage />);
 
-        expect(screen.getByText('暂无分类数据')).toBeInTheDocument();
+        expect(screen.getAllByText('暂无数据').length).toBeGreaterThan(0);
     });
 
     // ── Test 9: Recent activity section ──
@@ -238,7 +255,7 @@ describe('StatsPage', () => {
         setupMocks({ activity: [] });
         renderWithProviders(<StatsPage />);
 
-        expect(screen.getByText('暂无动态')).toBeInTheDocument();
+        expect(screen.getAllByText('暂无数据').length).toBeGreaterThan(0);
     });
 
     // ── Test 11: Order stats null/undefined ──
@@ -248,5 +265,16 @@ describe('StatsPage', () => {
 
         expect(screen.queryByText('今日订单')).not.toBeInTheDocument();
         expect(screen.queryByText('待发货')).not.toBeInTheDocument();
+    });
+
+    // ── Test 12: 失败不能伪装成空数据 ──
+    it('shows a failure state instead of empty data for order summary and activity', () => {
+        setupMocks({ orderStatsError: true, activityError: true, trendError: true });
+        renderWithProviders(<StatsPage />);
+
+        expect(screen.getByText(/订单数据加载失败/)).toBeInTheDocument();
+        expect(screen.getAllByText('加载失败，请刷新重试').length).toBeGreaterThan(0);
+        // 失败时不能同时声称「暂无数据」
+        expect(screen.queryByText('暂无数据')).not.toBeInTheDocument();
     });
 });

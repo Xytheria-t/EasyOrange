@@ -154,11 +154,12 @@ describe('CategoryManagePage', () => {
         expect(screen.getByText('电子产品')).toBeInTheDocument();
         expect(screen.getByText('图书')).toBeInTheDocument();
         // Child is hidden until expanded — expand the parent first
-        fireEvent.click(screen.getAllByLabelText('展开')[0]);
+        fireEvent.click(screen.getAllByLabelText(/^展开/)[0]);
         expect(screen.getByText('手机')).toBeInTheDocument();
-        // Level badges — root (depth=0) shows 'L1' (falsy '' fallback), child (depth=1) shows '一级'
-        expect(screen.getAllByText('L1').length).toBeGreaterThan(0);
-        expect(screen.getByText('一级')).toBeInTheDocument();
+        // 层级标签按 depth 取：root = 一级，child = 二级。
+        // 此前数组以 '' 开头再取 [depth]，整体错位一级（一级显示成 L1）
+        expect(screen.getAllByText('一级').length).toBeGreaterThan(0);
+        expect(screen.getByText('二级')).toBeInTheDocument();
         // Count
         const countText = screen.getByText(/共/);
         expect(countText).toHaveTextContent('共 3 个分类');
@@ -169,16 +170,16 @@ describe('CategoryManagePage', () => {
         renderWithProviders(<CategoryManagePage />);
 
         // Initially child should be hidden (parent not expanded)
-        const expandBtn = screen.getAllByLabelText('展开')[0];
+        const expandBtn = screen.getAllByLabelText(/^展开/)[0];
         expect(expandBtn).toBeInTheDocument();
 
         // Click to expand
         fireEvent.click(expandBtn);
-        expect(screen.getByLabelText('折叠')).toBeInTheDocument();
+        expect(screen.getByLabelText(/^折叠/)).toBeInTheDocument();
 
         // Click to collapse
-        fireEvent.click(screen.getByLabelText('折叠'));
-        expect(screen.getAllByLabelText('展开')[0]).toBeInTheDocument();
+        fireEvent.click(screen.getByLabelText(/^折叠/));
+        expect(screen.getAllByLabelText(/^展开/)[0]).toBeInTheDocument();
     });
 
     // ── Test 4: Add category modal ──
@@ -266,7 +267,7 @@ describe('CategoryManagePage', () => {
     it('filters by search input', () => {
         renderWithProviders(<CategoryManagePage />);
 
-        const searchInput = screen.getByPlaceholderText('搜索分类名称...');
+        const searchInput = screen.getByPlaceholderText('搜索分类名称');
         fireEvent.change(searchInput, { target: { value: '电子' } });
 
         expect(screen.getByText('电子产品')).toBeInTheDocument();
@@ -278,7 +279,7 @@ describe('CategoryManagePage', () => {
         setupMocks({ isLoading: true, tree: undefined as unknown as CategoryTreeResponse[] });
         renderWithProviders(<CategoryManagePage />);
 
-        expect(screen.getByText('加载分类数据...')).toBeInTheDocument();
+        expect(screen.getByText('加载分类数据…')).toBeInTheDocument();
         expect(screen.queryByText('电子产品')).not.toBeInTheDocument();
     });
 
@@ -295,8 +296,8 @@ describe('CategoryManagePage', () => {
         setupMocks({ isError: true, tree: undefined as unknown as CategoryTreeResponse[] });
         renderWithProviders(<CategoryManagePage />);
 
-        expect(screen.getByText('数据加载失败')).toBeInTheDocument();
-        expect(screen.getByText('刷新')).toBeInTheDocument();
+        expect(screen.getByText('加载失败')).toBeInTheDocument();
+        expect(screen.getByText('重试')).toBeInTheDocument();
     });
 
     // ── Test 13: Sort direction toggle ──
