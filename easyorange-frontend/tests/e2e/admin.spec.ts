@@ -47,7 +47,9 @@ test.describe('管理后台', () => {
         await expect(page.locator('[data-testid="btn-user-menu"]')).toBeVisible({ timeout: 20000 });
 
         const userMenuBtn = page.locator('[data-testid="btn-user-menu"]');
-        await userMenuBtn.click({ force: true });
+        await userMenuBtn.click();
+        // 先等菜单容器展开，再断言菜单项：菜单项的可见性依赖父级 .active，顺序对了才不会偶发超时
+        await expect(page.locator('.floating-nav__user-menu')).toBeVisible();
 
         const adminMenuItem = page.locator('.floating-nav__menu-item').filter({ hasText: '后台管理' });
         await expect(adminMenuItem).toBeVisible({ timeout: 10000 });
@@ -59,7 +61,8 @@ test.describe('管理后台', () => {
         await expect(page.locator('[data-testid="btn-user-menu"]')).toBeVisible({ timeout: 20000 });
 
         const userMenuBtn = page.locator('[data-testid="btn-user-menu"]');
-        await userMenuBtn.click({ force: true });
+        await userMenuBtn.click();
+        await expect(page.locator('.floating-nav__user-menu')).toBeVisible();
 
         const adminMenuItem = page.locator('.floating-nav__menu-item').filter({ hasText: '后台管理' });
         await expect(adminMenuItem).toHaveCount(0);

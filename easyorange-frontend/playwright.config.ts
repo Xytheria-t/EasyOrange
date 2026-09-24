@@ -18,6 +18,8 @@ export default defineConfig({
   ],
   use: {
     baseURL: 'http://localhost:5173',
+    // 双保险：CSS 动画即使漏改到交互元素，reduce 下也不跑，元素不再每帧位移
+    reducedMotion: 'reduce',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
