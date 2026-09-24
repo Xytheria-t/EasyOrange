@@ -3,8 +3,9 @@ import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { usePagination } from '@/hooks/usePagination';
 import type { OrderStatus } from '@/types';
+import { formatDate } from '@/utils/format';
 import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
-import { AdminCard, AdminErrorBanner, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
+import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { linkButton, monoText, mutedText, priceText } from '../../components/admin-theme';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -46,9 +47,6 @@ export default function OrderManagePage() {
         setKeyword(searchInput);
         goTo(1);
     }, [searchInput, goTo]);
-
-    const formatDate = (dateString: string) =>
-        new Date(dateString).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
     const total = data?.total ?? 0;
 
@@ -111,7 +109,7 @@ export default function OrderManagePage() {
             key: 'createTime',
             title: '下单时间',
             sortable: true,
-            render: value => <span style={mutedText}>{formatDate(value as string)}</span>,
+            render: value => <span style={mutedText}>{formatDate(value as string, 'date')}</span>,
         },
         {
             key: 'actions',
@@ -133,12 +131,6 @@ export default function OrderManagePage() {
 
     return (
         <AdminPage>
-            <AdminErrorBanner
-                message={isError ? error?.message || '无法连接到服务器，请检查后端服务是否启动' : null}
-                onRetry={() => refetch()}
-                retrying={isLoading}
-            />
-
             <AdminPageHeader
                 icon={<ReceiptText size={17} />}
                 title="订单管理"

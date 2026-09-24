@@ -283,8 +283,8 @@ export default function StatsPage() {
                     <div>
                         {recentActivity.map((activity, idx) => (
                             <div
-                                // biome-ignore lint/suspicious/noArrayIndexKey: stable list
-                                key={idx}
+                                // 动态列表会往头部插入新项，下标做 key 会让刷新后复用错位的 DOM
+                                key={`${activity.time}-${activity.type}-${activity.text}`}
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
