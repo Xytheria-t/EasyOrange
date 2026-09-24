@@ -480,3 +480,29 @@
         transform: translateY(0);
     }
 }
+
+/* ============ Responsive ============ */
+@media (max-width: 768px) {
+    .search-page-content {
+        padding: 0 0.875rem;
+    }
+
+    .search-header-bar {
+        gap: 0.625rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* 装饰光球尺寸远大于窄屏 */
+    .search-bg-orb-1,
+    .search-bg-orb-2,
+    .search-bg-orb-3 {
+        filter: blur(60px);
+        opacity: 0.1;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-page-content {
+        padding: 0 0.625rem;
+    }
+}

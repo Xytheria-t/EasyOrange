@@ -259,7 +259,13 @@ function MyProductCard({ product, to, onEdit, onToggleShelf, toggling, index }: 
                 <div className="order-card-image-wrap">
                     <div className="order-card-image-glow" />
                     {product.images?.[0] ? (
-                        <img src={product.images[0]} alt={product.title} className="order-card-image-premium" />
+                        <img
+                            src={product.images[0]}
+                            alt={product.title}
+                            className="order-card-image-premium"
+                            loading="lazy"
+                            decoding="async"
+                        />
                     ) : (
                         <div className="order-card-image-placeholder">
                             <Package size={24} />

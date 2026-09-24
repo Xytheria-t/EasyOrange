@@ -701,3 +701,30 @@
     cursor: not-allowed;
     transform: none;
 }
+
+/* ============ Responsive ============ */
+@media (max-width: 768px) {
+    .orders-page-premium {
+        padding: 0 0.875rem 4rem;
+    }
+
+    .orders-hero {
+        padding: 1.25rem 0 1rem;
+    }
+
+    .order-card-image-wrap {
+        width: 60px;
+        height: 60px;
+    }
+}
+
+@media (max-width: 480px) {
+    .orders-page-premium {
+        padding: 0 0.625rem 3rem;
+    }
+
+    .order-card-image-wrap {
+        width: 52px;
+        height: 52px;
+    }
+}

@@ -29,6 +29,8 @@ function ChatHeader({ targetUser, onBack }: ChatHeaderProps) {
                                         src={targetUser.avatar}
                                         alt={targetUser.name}
                                         className="w-full h-full object-cover"
+                                        loading="lazy"
+                                        decoding="async"
                                     />
                                 ) : (
                                     <span className="chat-avatar-text">{targetUser.name.charAt(0)}</span>

@@ -130,12 +130,16 @@ export default function ProductReviewPage() {
                                 src={record.mainImage}
                                 alt=""
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                loading="lazy"
+                                decoding="async"
                             />
                         ) : record.images?.[0] ? (
                             <img
                                 src={record.images[0]}
                                 alt=""
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                loading="lazy"
+                                decoding="async"
                             />
                         ) : (
                             <span style={{ fontSize: '1.15rem' }}>📦</span>
@@ -202,7 +206,7 @@ export default function ProductReviewPage() {
                 sortable: true,
                 render: value => {
                     const time = value as string;
-                    return <span style={{ color: '#9B9590', fontSize: '0.82rem' }}>{formatTime(time)}</span>;
+                    return <span style={{ color: '#6E6862', fontSize: '0.82rem' }}>{formatTime(time)}</span>;
                 },
             },
             {
@@ -326,7 +330,7 @@ export default function ProductReviewPage() {
                         </div>
                         <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#E11D48' }}>数据加载失败</div>
-                            <div style={{ fontSize: '0.8rem', color: '#9B9590' }}>
+                            <div style={{ fontSize: '0.8rem', color: '#6E6862' }}>
                                 无法连接到服务器，请检查后端服务是否启动
                             </div>
                         </div>
@@ -411,7 +415,7 @@ export default function ProductReviewPage() {
                             <p
                                 style={{
                                     fontSize: '0.88rem',
-                                    color: '#9B9590',
+                                    color: '#6E6862',
                                     marginTop: '0.3rem',
                                     paddingLeft: '36px',
                                 }}
@@ -461,7 +465,7 @@ export default function ProductReviewPage() {
                                         transform: 'translateY(-50%)',
                                         width: 17,
                                         height: 17,
-                                        color: '#B5AEA8',
+                                        color: '#6E6862',
                                         pointerEvents: 'none',
                                     }}
                                     viewBox="0 0 24 24"
@@ -538,7 +542,7 @@ export default function ProductReviewPage() {
                                 gap: '0.3rem',
                                 fontSize: '0.8rem',
                                 fontWeight: 500,
-                                color: '#9B9590',
+                                color: '#6E6862',
                             }}
                         >
                             <svg
@@ -575,7 +579,7 @@ export default function ProductReviewPage() {
                                 gap: '0.3rem',
                                 fontSize: '0.8rem',
                                 fontWeight: 500,
-                                color: '#9B9590',
+                                color: '#6E6862',
                             }}
                         >
                             <svg
@@ -616,7 +620,7 @@ export default function ProductReviewPage() {
                                 gap: '0.3rem',
                                 fontSize: '0.8rem',
                                 fontWeight: 500,
-                                color: '#9B9590',
+                                color: '#6E6862',
                             }}
                         >
                             <svg
@@ -648,7 +652,7 @@ export default function ProductReviewPage() {
                     {/* Spacer + count */}
                     <div style={{ flex: 1 }} />
                     {total > 0 && (
-                        <span style={{ fontSize: '0.81rem', color: '#9B9590', fontWeight: 500 }}>
+                        <span style={{ fontSize: '0.81rem', color: '#6E6862', fontWeight: 500 }}>
                             共 <strong style={{ color: '#2A2520' }}>{total.toLocaleString()}</strong> 件商品
                         </span>
                     )}

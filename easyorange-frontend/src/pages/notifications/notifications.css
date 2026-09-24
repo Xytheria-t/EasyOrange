@@ -448,3 +448,44 @@
 .notification-card:not(.unread) .notification-card-link {
     color: var(--text-tertiary, #9ca3af);
 }
+
+/* ============ Responsive ============ */
+@media (max-width: 768px) {
+    .notifications-page {
+        padding: 32px 16px 40px;
+    }
+
+    /* 装饰光球尺寸远大于窄屏，缩小并降低模糊开销 */
+    .notifications-orb-1 {
+        width: 280px;
+        height: 280px;
+        top: -60px;
+        right: -80px;
+    }
+
+    .notifications-orb-2 {
+        width: 220px;
+        height: 220px;
+        left: -90px;
+    }
+
+    .notifications-orb-3 {
+        width: 180px;
+        height: 180px;
+    }
+
+    .notification-card {
+        gap: 12px;
+        padding: 14px 14px 14px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .notifications-page {
+        padding: 24px 12px 32px;
+    }
+
+    .notifications-header {
+        flex-wrap: wrap;
+    }
+}

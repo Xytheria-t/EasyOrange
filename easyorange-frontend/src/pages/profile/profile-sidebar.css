@@ -657,3 +657,22 @@
         transform: translateX(0);
     }
 }
+
+/* ============ Responsive ============ */
+@media (max-width: 1024px) {
+    .profile-grid {
+        grid-template-columns: 240px minmax(0, 1fr);
+        gap: 1rem;
+    }
+}
+
+/* 窄屏下侧栏与内容改为单列堆叠，侧栏不再固定 280px */
+@media (max-width: 768px) {
+    .profile-main {
+        padding: 0.75rem 0.875rem 2rem;
+    }
+
+    .profile-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

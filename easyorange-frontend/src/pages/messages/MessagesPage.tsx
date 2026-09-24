@@ -183,6 +183,8 @@ function MessagesPage() {
                                                     className="message-avatar"
                                                     width="44"
                                                     height="44"
+                                                    loading="lazy"
+                                                    decoding="async"
                                                 />
                                             ) : (
                                                 <div className="message-avatar-fallback">

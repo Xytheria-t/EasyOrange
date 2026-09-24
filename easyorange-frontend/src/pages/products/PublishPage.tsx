@@ -363,7 +363,14 @@ function PublishPage() {
                                                 onDrop={e => handleDrop(e, index)}
                                                 onDragEnd={handleDragEnd}
                                             >
-                                                <img src={url} alt={`资产图片 ${index + 1}`} width="120" height="120" />
+                                                <img
+                                                    src={url}
+                                                    alt={`资产图片 ${index + 1}`}
+                                                    width="120"
+                                                    height="120"
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                />
                                                 {index === 0 && (
                                                     <div className="cover-badge-v2">
                                                         <span>封面</span>
