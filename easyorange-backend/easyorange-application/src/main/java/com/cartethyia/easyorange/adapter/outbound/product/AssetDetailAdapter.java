@@ -5,9 +5,13 @@ import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
 import com.cartethyia.easyorange.common.util.MaskUtils;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +36,43 @@ public class AssetDetailAdapter implements AssetDetailPort {
                 .map(this::toDetail);
     }
 
+    /**
+     * 批量查详情 — compare_assets 一次对比多件候选，逐个 findDetail 会放大成 3N 次查询
+     * （每件再分查描述与卖家）。这里先把入参一次性取回商品，描述与卖家各走一次批量，
+     * 固定 3 次查询，与候选数量无关。
+     */
+    @Override
+    public List<AssetDetail> findDetails(List<String> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return List.of();
+        }
+        List<ProductReadModel> models = productQueryRepository.findProductsByIds(productIds);
+        if (models.isEmpty()) {
+            return List.of();
+        }
+        Map<String, String> descriptions =
+                productQueryRepository
+                        .findDetailsByProductIds(
+                                models.stream().map(ProductReadModel::id).toList())
+                        .stream()
+                        .collect(Collectors.toMap(
+                                ProductQueryRepository.ProductDetailInfo::productId,
+                                ProductQueryRepository.ProductDetailInfo::description));
+        Map<String, String> sellerNames = productQueryRepository
+                .findSellersByIds(models.stream()
+                        .map(ProductReadModel::sellerId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet()))
+                .stream()
+                .collect(Collectors.toMap(
+                        SellerReadModel::id,
+                        seller -> seller.nickName() != null ? seller.nickName() : seller.username(),
+                        (a, b) -> a));
+        return models.stream()
+                .map(model -> toDetail(model, descriptions, sellerNames))
+                .toList();
+    }
+
     private AssetDetail toDetail(ProductReadModel model) {
         return new AssetDetail(
                 model.id(),
@@ -42,6 +83,20 @@ public class AssetDetailAdapter implements AssetDetailPort {
                 model.conditionDesc(),
                 MaskUtils.maskAddress(model.location(), 6),
                 findSellerName(model.sellerId()),
+                model.status());
+    }
+
+    private AssetDetail toDetail(
+            ProductReadModel model, Map<String, String> descriptions, Map<String, String> sellerNames) {
+        return new AssetDetail(
+                model.id(),
+                model.title(),
+                descriptions.get(model.id()),
+                model.price(),
+                model.categoryName(),
+                model.conditionDesc(),
+                MaskUtils.maskAddress(model.location(), 6),
+                model.sellerId() == null ? null : sellerNames.get(model.sellerId()),
                 model.status());
     }
 

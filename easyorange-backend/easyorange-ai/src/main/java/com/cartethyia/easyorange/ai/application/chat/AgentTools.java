@@ -11,7 +11,9 @@ import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -197,11 +199,16 @@ public class AgentTools {
                 : requested;
         List<AssetDetail> found = new ArrayList<>();
         List<String> missing = new ArrayList<>();
+        // 走批量端口：一次 3 条查询取回全部候选，与数量无关（逐个 findDetail 会放大成 3N）
+        Map<String, AssetDetail> byId = new HashMap<>();
+        for (AssetDetail detail : findDetails(targets)) {
+            byId.put(detail.productId(), detail);
+        }
         for (String id : targets) {
-            Optional<AssetDetail> detail = findDetail(id);
-            if (detail.isPresent()) {
-                found.add(detail.get());
-                details.add(detail.get());
+            AssetDetail detail = byId.get(id);
+            if (detail != null) {
+                found.add(detail);
+                details.add(detail);
             } else {
                 missing.add(id);
             }
@@ -254,6 +261,15 @@ public class AgentTools {
     private Optional<AssetDetail> findDetail(String productId) {
         try {
             return assetDetailPort.findDetail(productId);
+        } catch (Exception e) {
+            throw new IllegalStateException("资产详情查询失败: " + reasonOf(e), e);
+        }
+    }
+
+    /** compare_assets 的批量通道，失败语义与 {@link #findDetail} 一致（抛 = 本步失败）。 */
+    private List<AssetDetail> findDetails(List<String> productIds) {
+        try {
+            return assetDetailPort.findDetails(productIds);
         } catch (Exception e) {
             throw new IllegalStateException("资产详情查询失败: " + reasonOf(e), e);
         }

@@ -309,10 +309,11 @@ class AgentLoopRunnerTest {
                         new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "轻微使用痕迹", 0.83),
                         new AssetHit("p-2", "ThinkPad X1", BigDecimal.valueOf(4800), "数码", "几乎全新", 0.79)));
         // 便宜的那件成色差一档、贵的那件成色好——两维各自给出胜出方（不是同一件包揽）
-        when(assetDetailPort.findDetail("p-1"))
-                .thenReturn(Optional.of(detail("p-1", BigDecimal.valueOf(4200), "轻微使用痕迹")));
-        when(assetDetailPort.findDetail("p-2"))
-                .thenReturn(Optional.of(detail("p-2", BigDecimal.valueOf(4800), "几乎全新")));
+        // compare_assets 走批量端口（一次查回多件，避免逐件 N+1）
+        when(assetDetailPort.findDetails(List.of("p-1", "p-2")))
+                .thenReturn(List.of(
+                        detail("p-1", BigDecimal.valueOf(4200), "轻微使用痕迹"),
+                        detail("p-2", BigDecimal.valueOf(4800), "几乎全新")));
         var steps = new RecordingHandler();
 
         Result result = run("预算 5000 想买笔记本，帮我挑一台", "user-1", steps);
