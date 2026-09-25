@@ -68,6 +68,9 @@ public class AgentTools {
 
     static final int ASSET_TOP_K = 5;
 
+    /** remember_preference 的偏好类别白名单 —— 取值与 schema 描述 / prompt yml 同源，落库前的代码层硬校验。 */
+    private static final Set<String> PREFERENCE_KEYS = Set.of("condition", "price_range", "style", "location");
+
     /** 观察里列举的命中条数上限 —— 观察是给下一轮决策的摘要，召回多少条都只列举这么多。 */
     private static final int OBSERVATION_SUMMARY_LIMIT = 3;
 
@@ -237,6 +240,12 @@ public class AgentTools {
             return "匿名会话不落长期画像，已跳过记录；直接继续回答即可";
         }
         String key = preferenceKey.trim();
+        if (!PREFERENCE_KEYS.contains(key)) {
+            // 白名单是代码层的硬校验：schema 描述与 prompt yml 只是对模型的指令，提示注入可让
+            // 模型带任意 key 进来（含标签形态的越界负载），落库前以本集合为准。
+            // 拒绝理由回给模型（可改用合法类别重试或放弃），不当故障处理
+            return "偏好类别仅支持 condition / price_range / style / location，已跳过记录；直接继续回答即可";
+        }
         String value = preferenceValue.trim();
         try {
             preferenceRepository.record(userId, key, value);
