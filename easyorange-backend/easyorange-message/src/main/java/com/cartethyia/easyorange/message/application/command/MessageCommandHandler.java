@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -53,8 +55,7 @@ public class MessageCommandHandler {
                 filteredContent,
                 command.businessId()));
 
-        boolean online = messageNotifier.isUserOnline(saved.receiverId());
-        offlineMessageStoreService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);
+        notifyAfterCommit(saved, false);
 
         log.info(
                 "action=send_message messageId={} senderId={} receiverId={} type={}",
@@ -73,14 +74,44 @@ public class MessageCommandHandler {
                 command.content(),
                 command.businessId()));
 
-        boolean online = messageNotifier.isUserOnline(saved.receiverId());
-        offlineMessageStoreService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);
-
-        if (online) {
-            messageNotifier.sendNotification(saved.receiverId(), SystemNotificationPayload.toMap(saved));
-        }
+        notifyAfterCommit(saved, true);
 
         log.info("action=send_system_message messageId={} receiverId={}", saved.id(), command.receiverId());
+    }
+
+    /**
+     * 实时投递注册到 afterCommit —— 在线检查（Redis）、离线兜底、STOMP 推送全是事务外副作用：
+     * 事务回滚后推送出去的消息收不回，离线收件箱也会留下指向不存在消息的幻影记录。
+     * 推送失败在提交后只告警不打回请求（DB 行已落库，离线兜底才是可靠路径）。
+     * 无事务上下文（单元测试 / 非事务调用方）时立即投递，行为与从前一致。
+     */
+    private void notifyAfterCommit(Message saved, boolean pushNotification) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            deliverRealtime(saved, pushNotification);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                deliverRealtime(saved, pushNotification);
+            }
+        });
+    }
+
+    private void deliverRealtime(Message saved, boolean pushNotification) {
+        try {
+            boolean online = messageNotifier.isUserOnline(saved.receiverId());
+            offlineMessageStoreService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);
+            if (online && pushNotification) {
+                messageNotifier.sendNotification(saved.receiverId(), SystemNotificationPayload.toMap(saved));
+            }
+        } catch (Exception e) {
+            log.warn(
+                    "action=message_realtime_delivery_failed messageId={} receiverId={}",
+                    saved.id(),
+                    saved.receiverId(),
+                    e);
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)
