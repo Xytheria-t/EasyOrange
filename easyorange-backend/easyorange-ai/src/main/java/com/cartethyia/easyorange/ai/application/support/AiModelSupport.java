@@ -81,8 +81,9 @@ public class AiModelSupport {
                 scope,
                 chatModel,
                 systemPrompt + userMessage,
-                () -> chatOutcome(chatModel.call(
-                        new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage))))));
+                () -> chatOutcome(chatModel.call(new Prompt(
+                        List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)),
+                        scopedOptions(chatModel, scope)))));
     }
 
     /**
@@ -93,7 +94,10 @@ public class AiModelSupport {
      */
     public String callText(ChatModel chatModel, AiCallScope scope, List<Message> messages) {
         return recordCall(
-                scope, chatModel, joinTexts(messages), () -> chatOutcome(chatModel.call(new Prompt(messages))));
+                scope,
+                chatModel,
+                joinTexts(messages),
+                () -> chatOutcome(chatModel.call(new Prompt(messages, scopedOptions(chatModel, scope)))));
     }
 
     /**
@@ -133,7 +137,7 @@ public class AiModelSupport {
         return recordCall(scope, chatModel, systemPrompt + userMessage, () -> {
             ChatResponse response = chatModel.call(new Prompt(
                     List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)),
-                    toolOptions(chatModel, toolCallbacks)));
+                    toolOptions(chatModel, toolCallbacks, maxTokensOf(scope))));
             return new CallOutcome<>(toolCallsOf(response), reportedUsage(response));
         });
     }
@@ -166,7 +170,7 @@ public class AiModelSupport {
         return recordCall(scope, chatModel, joinTexts(messages), () -> {
             var sb = new StringBuilder();
             var usage = new UsageAccumulator();
-            chatModel.stream(new Prompt(messages))
+            chatModel.stream(new Prompt(messages, scopedOptions(chatModel, scope)))
                     .doOnNext(response -> {
                         usage.accept(response);
                         String token = outputText(response);
@@ -229,7 +233,9 @@ public class AiModelSupport {
                 chatModel,
                 systemPrompt + userText,
                 () -> chatOutcome(chatModel.call(
-                        new Prompt(List.of(new SystemMessage(systemPrompt), userMessage), jsonOptions(chatModel)))));
+                        new Prompt(
+                                List.of(new SystemMessage(systemPrompt), userMessage),
+                                jsonOptions(chatModel, maxTokensOf(scope))))));
         return parseJson(scope, json, responseType);
     }
 
@@ -304,11 +310,14 @@ public class AiModelSupport {
         return result != null ? result.getOutput().getText() : "";
     }
 
-    private static OpenAiChatOptions jsonOptions(ChatModel chatModel) {
+    private static OpenAiChatOptions jsonOptions(ChatModel chatModel, @Nullable Integer maxTokens) {
         var jsonOptions = OpenAiChatOptions.builder()
                 .responseFormat(OpenAiChatModel.ResponseFormat.builder()
                         .type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
                         .build());
+        if (maxTokens != null) {
+            jsonOptions.maxTokens(maxTokens);
+        }
         inheritConnection(jsonOptions, chatModel);
         return jsonOptions.build();
     }
@@ -320,11 +329,36 @@ public class AiModelSupport {
      * 换快模型后出现过一次，循环只能走决策失败降级）。在协议层要求必须返回工具调用，比在循环里判断
      * 「没拿到 tool call 就当失败」更靠前一步：失败模式从「降级」变成「不可能发生」。
      */
-    private static OpenAiChatOptions toolOptions(ChatModel chatModel, List<ToolCallback> toolCallbacks) {
+    private static OpenAiChatOptions toolOptions(
+            ChatModel chatModel, List<ToolCallback> toolCallbacks, @Nullable Integer maxTokens) {
         var toolOptions =
                 OpenAiChatOptions.builder().toolCallbacks(toolCallbacks).toolChoice(TOOL_CHOICE_REQUIRED);
+        if (maxTokens != null) {
+            toolOptions.maxTokens(maxTokens);
+        }
         inheritConnection(toolOptions, chatModel);
         return toolOptions.build();
+    }
+
+    /**
+     * scoped 调用的 per-request options — 输出上限按场景预算配置真下发（{@code max_tokens}），
+     * 与预算前置检查 / 记账共用同一份 {@code maxTokensPerCall}：供应商侧截断输出，最坏单次成本
+     * 由此封顶，而不只是记账估算。无场景配置返回 null（不带 options，行为与无 scope 重载一致）。
+     */
+    private @Nullable OpenAiChatOptions scopedOptions(ChatModel chatModel, AiCallScope scope) {
+        Integer maxTokens = maxTokensOf(scope);
+        if (maxTokens == null) {
+            return null;
+        }
+        var builder = OpenAiChatOptions.builder().maxTokens(maxTokens);
+        inheritConnection(builder, chatModel);
+        return builder.build();
+    }
+
+    /** 场景的单次调用输出上限；无场景配置或值非正返回 null（不下发，保持供应商默认）。 */
+    private @Nullable Integer maxTokensOf(AiCallScope scope) {
+        var configured = aiProperties.budget().resolve(scope.budgetScenario());
+        return configured != null && configured.maxTokensPerCall() > 0 ? configured.maxTokensPerCall() : null;
     }
 
     /**
