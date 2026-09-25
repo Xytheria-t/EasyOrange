@@ -26,7 +26,7 @@ ADR-0001 决定订单创建采用 Saga 编排 + 反向补偿，ADR-0007 初版�
 2. **并发控制 = 分布式锁**。`DistributedLockPort` / [DistributedRedissonLockAdapter.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/lock/DistributedRedissonLockAdapter.java)（Redisson，key=`eo:order:lock:product:{productId}`，按 `productId` 排序防死锁，10s 获取超时，leaseTime=`-1` 由 watchdog 续期，锁在事务提交后释放）负责同商品下单**排队串行**；库存扣减由 `ProductRepository` 乐观锁版本检查**兜底防超卖**（并发时抛 `ConcurrentUpdateException` 使订单回滚）。
 3. **副作用 = Outbox 事件**。库存/支付为同事务直写；下游状态变更（取消/退款恢复库存、完成标记售出）由 `OrderLifecycleEventConsumer` 消费订单生命周期事件异步触发。
 
-已删除的 Saga 代码（`git rm`）：`CreateOrderSaga`、`SagaCoordinator`、`SagaTimeoutScheduler`、`SagaException`、`SagaRepository`、`SagaState`、`SagaStatus`、`SagaDO`、`SagaMapper`、`SagaRepositoryImpl`、`OrderCompensationService`。`eo_saga` 表由 `V2__drop_order_saga_table.sql` 删除（`DROP TABLE eo_saga_status`）。
+已删除的 Saga 代码（`git rm`）：`CreateOrderSaga`、`SagaCoordinator`、`SagaTimeoutScheduler`、`SagaException`、`SagaRepository`、`SagaState`、`SagaStatus`、`SagaDO`、`SagaMapper`、`SagaRepositoryImpl`、`OrderCompensationService`。`eo_saga` / `eo_saga_status` 表不进 `V1__init_schema.sql`（迁移收口为 V1 单文件完整初始 DDL，删除的表不留 DDL）。
 
 关键实现：
 
