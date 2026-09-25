@@ -6,7 +6,6 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
@@ -36,7 +35,6 @@ public class AdminProductAuditAdapter implements AdminProductAuditPort {
 
     private static final TypeReference<List<String>> DIMENSIONS_TYPE = new TypeReference<>() {};
 
-    private final ProductMapper productMapper;
     private final ProductRepository productRepository;
     private final ProductAuditLogRepository productAuditLogRepository;
     private final DomainEventPublisher domainEventPublisher;

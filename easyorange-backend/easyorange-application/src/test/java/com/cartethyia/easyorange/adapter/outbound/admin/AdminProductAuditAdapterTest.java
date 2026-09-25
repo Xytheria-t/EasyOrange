@@ -11,7 +11,6 @@ import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
@@ -46,9 +45,6 @@ import tools.jackson.databind.ObjectMapper;
 class AdminProductAuditAdapterTest {
 
     @Mock
-    private ProductMapper productMapper;
-
-    @Mock
     private ProductRepository productRepository;
 
     @Mock
@@ -66,7 +62,7 @@ class AdminProductAuditAdapterTest {
     @BeforeEach
     void setUp() {
         adapter = new AdminProductAuditAdapter(
-                productMapper, productRepository, productAuditLogRepository, domainEventPublisher, new ObjectMapper());
+                productRepository, productAuditLogRepository, domainEventPublisher, new ObjectMapper());
     }
 
     private Product createProductWithStatus(ProductStatus status) {
