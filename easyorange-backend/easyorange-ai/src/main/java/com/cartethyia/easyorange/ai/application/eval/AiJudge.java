@@ -26,7 +26,7 @@ public class AiJudge {
     public static final String JUDGE_SCENARIO = "judge";
 
     private static final String JUDGE_SYSTEM_PROMPT = """
-            你是 AI 输出质量评审员（Judge）。请对下面的 AI 助手回答打分。
+            你是 AI 输出质量评审员（Judge）。请对下面的 AI 找货助手回答打分。
             评分标准（1-5 分）：
             5 = 完全满足用户需求，信息准确完整，格式规范
             4 = 基本满足需求，小瑕疵可忽略
