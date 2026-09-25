@@ -56,7 +56,7 @@ describe('PlaygroundPage (AI 智能助手)', () => {
     });
 
     // 后端 AgentTools 的工具面（单一来源：easyorange-backend 的 AgentTools.TOOL_* 常量）。
-    // 后端加工具必须同步 PlaygroundPage 的 STEP_LABELS，否则该步渲染成裸工具名 —— 本用例就是这条同步的断言。
+    // 后端加工具必须同步 ThinkingProcess 的 STEP_LABELS，否则该步渲染成裸工具名 —— 本用例就是这条同步的断言。
     const BACKEND_TOOLS: Record<string, string> = {
         knowledge_search: '查规则',
         product_search: '找资产',
@@ -88,6 +88,78 @@ describe('PlaygroundPage (AI 智能助手)', () => {
                 expect(screen.queryByText(tool)).not.toBeInTheDocument();
             }
         });
+    });
+
+    it('思考面板：步骤流入时自动展开，展示决策理由与观察，末尾带进行中提示', () => {
+        mockedChatStream.mockResolvedValue(undefined);
+        renderWithProviders(<PlaygroundPage />);
+
+        fireEvent.change(screen.getByLabelText('问题输入'), { target: { value: '平台交易流程是什么？' } });
+        fireEvent.click(screen.getByRole('button', { name: '发送' }));
+        emit([
+            {
+                type: 'step',
+                data: {
+                    step: 1,
+                    tool: 'knowledge_search',
+                    thought: '查询平台交易流程规则',
+                    observation: '命中 5 条：平台交易流程…',
+                },
+            },
+            { type: 'step', data: { step: 2, tool: 'finish', thought: '知识库已检索，无新信息' } },
+        ]);
+
+        const panel = screen.getByRole('region', { name: 'Agent 思考过程' });
+        expect(within(panel).getByRole('button')).toHaveAttribute('aria-expanded', 'true');
+        expect(within(panel).getByText('查询平台交易流程规则')).toBeInTheDocument();
+        expect(within(panel).getByText(/命中 5 条/)).toBeInTheDocument();
+        expect(within(panel).getByText('正在决定下一步…')).toBeInTheDocument();
+    });
+
+    it('思考面板：正文开始后自动收起为摘要，点击头部可展开回看', () => {
+        mockedChatStream.mockResolvedValue(undefined);
+        renderWithProviders(<PlaygroundPage />);
+
+        fireEvent.change(screen.getByLabelText('问题输入'), { target: { value: '怎么退款？' } });
+        fireEvent.click(screen.getByRole('button', { name: '发送' }));
+        emit([
+            {
+                type: 'step',
+                data: { step: 1, tool: 'knowledge_search', thought: '查退款规则', observation: '命中 3 条' },
+            },
+            { type: 'token', data: '可以' },
+        ]);
+
+        const panel = screen.getByRole('region', { name: 'Agent 思考过程' });
+        const toggle = within(panel).getByRole('button');
+        // 正文 token 一到，思考面板让位给回答：自动收起
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        expect(within(panel).queryByText('查退款规则')).not.toBeInTheDocument();
+        expect(within(panel).getByText('已思考')).toBeInTheDocument();
+        expect(within(panel).getByText('1 步')).toBeInTheDocument();
+
+        fireEvent.click(toggle);
+        expect(within(panel).getByText('查退款规则')).toBeInTheDocument();
+        expect(within(panel).getByText('命中 3 条')).toBeInTheDocument();
+    });
+
+    it('思考面板：手动收起后不被后续步骤自动展开', () => {
+        mockedChatStream.mockResolvedValue(undefined);
+        renderWithProviders(<PlaygroundPage />);
+
+        fireEvent.change(screen.getByLabelText('问题输入'), { target: { value: '怎么退款？' } });
+        fireEvent.click(screen.getByRole('button', { name: '发送' }));
+        emit([{ type: 'step', data: { step: 1, tool: 'knowledge_search', thought: '查退款规则' } }]);
+
+        const panel = screen.getByRole('region', { name: 'Agent 思考过程' });
+        const toggle = within(panel).getByRole('button');
+        fireEvent.click(toggle);
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+        // 手动选择优先于自动策略：思考仍在进行，后续步骤到达也不展开
+        emit([{ type: 'step', data: { step: 2, tool: 'finish', thought: '信息足够' } }]);
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        expect(within(panel).getByText('2 步')).toBeInTheDocument();
     });
 
     it('发送问题 -> 流式 token 逐字渲染 + 知识库来源 + done 收口', async () => {
