@@ -52,7 +52,7 @@ public record AiProperties(
             semanticCache = new SemanticCache(true, 0.92, 200, 24);
         }
         if (chat == null) {
-            chat = new Chat(24, 6, 5, 2000);
+            chat = new Chat(24, 6, 7, 2000, 90);
         }
     }
 
@@ -178,10 +178,14 @@ public record AiProperties(
      *     留余量避免工具变多反而更容易撞上限降级
      * @param maxHistoryTokens 历史注入 prompt 的 token 预算（估算口径见 TokenEstimator），
      *     轮数窗口之上的第二道裁剪；&lt;=0 关闭。超限只裁历史、不影响生成（生成侧由 maxTokensPerCall 兜底）
+     * @param sessionLockWaitSeconds 同会话串行锁的获取等待上限（秒）。同会话的 load→loop→save 非原子，
+     *     并发请求会互相串写历史，per-session 分布式锁把后到请求排队到前一轮完整落盘之后；
+     *     上限需覆盖最坏 7 轮富轨迹的端到端耗时（实测 62s），超时按「会话处理中」业务提示返回
      */
     public record Chat(
             @DefaultValue("24") int sessionTtlHours,
             @DefaultValue("6") int historyLimit,
             @Min(1) @Max(10) @DefaultValue("7") int maxSteps,
-            @DefaultValue("2000") int maxHistoryTokens) {}
+            @DefaultValue("2000") int maxHistoryTokens,
+            @DefaultValue("90") int sessionLockWaitSeconds) {}
 }
