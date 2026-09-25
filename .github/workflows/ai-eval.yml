@@ -1,10 +1,11 @@
-name: AI eval gate (on-demand)
+name: AI eval gate
 
-# 金标准评测门禁（GoldenSetRegressionIT）—— 需要真实 AI key（产生 API 费用且慢），
-# **按需手动触发**，不进 PR 路径（同 security-scan / pit-mutation 分工）。
+# 金标准评测门禁（GoldenSetRegressionIT）—— 需要真实 AI key（产生 API 费用且慢）。
+# 触发两类：develop push（paths 限定 AI 面：easyorange-ai 模块，prompt / 语料 / 评测集改动
+# 即随之回归）+ 按需手动 dispatch；不进 PR 路径（同 security-scan / pit-mutation 分工）。
 # 为什么不定时：单次评测约 60 次真实模型调用（5–8 万 token），而代码不变时重复评测同一份代码
-# 是纯开销 —— 从 nightly 收到 weekly 之后仍是一笔固定支出，改为「要出数字时才跑」。
-# 什么时候跑：改 prompt / 换模型 / 调检索参数（分块、topK、RRF 的 k）/ 更新语料后跑一次，
+# 是纯开销 —— 从 nightly 收到 weekly 之后仍是一笔固定支出，改为「AI 面有变更或要出数字时才跑」。
+# 什么时候手动跑：换模型 / 调检索参数（分块、topK、RRF 的 k）等 paths 过滤不覆盖的口径变更，
 # 结果是质量回归的直接证据；需要重新变成定期回归时把下面注释掉的 schedule 加回来即可。
 # 判定两条：Judge 均分不得低于「基线 4.0 - 容忍 0.3」，且评审覆盖率必须 ≥ 80%
 # （覆盖率不达标说明多数用例没跑成功，均分是「幸存者平均」，不构成质量结论）。
@@ -20,6 +21,10 @@ on:
   #   schedule:
   #     - cron: '30 3 * * 1'
   workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - 'easyorange-backend/easyorange-ai/**'
 
 permissions:
   contents: read
@@ -87,6 +92,8 @@ jobs:
       # ProdSearchGuardTest 的「prod 下属性缺失必须启动失败」用例会因此看到该属性而假失败
       # （2026-09-25 本地实测；surefire 的 skip 参数吃不到 -Dsurefire.skip，只能用空匹配绕）。
       # 单测由 backend-ci 全量覆盖，门禁只认 failsafe 的金标准回归。
+      # ⚠️ 不得向下面命令追加任何 CLI -D 属性：-D 会透传进 surefire fork，令 ProdSearchGuardTest
+      # 的「prod 属性缺失必须启动失败」用例假失败（见上）。要传属性给 IT，改 application-it.yaml。
       - name: Golden set regression gate
         env:
           SPRING_DOCKER_COMPOSE_SKIP_IN_TESTS: "false"
