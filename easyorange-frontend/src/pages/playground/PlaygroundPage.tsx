@@ -1,20 +1,14 @@
 import {
     AlertCircle,
     ArrowUpRight,
-    Bookmark,
     BookOpen,
-    CheckCircle2,
-    FileSearch,
-    GitCompare,
     Loader2,
     RefreshCw,
-    Search,
     Send,
     Sparkles,
     Square,
     ThumbsDown,
     ThumbsUp,
-    TrendingUp,
     User,
 } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -24,6 +18,7 @@ import { ProductCard } from '@/components/product/ProductCard';
 import { useProductsByIds } from '@/hooks/product/useProducts';
 import type { AgentStep, ChatSource, ChatStreamEvent } from '@/types/ai';
 import { MarkdownContent } from './MarkdownContent';
+import { ThinkingProcess } from './ThinkingProcess';
 import './playground.css';
 
 /** 消息状态 — stopped 与 error 分开：前者是用户主动中止，不是故障 */
@@ -39,41 +34,6 @@ interface ChatMessage {
     /** 失败/中止原因 — 与 content 分开存：流已吐出的部分答案要留着，不能被错误文案覆盖 */
     note?: string;
     feedback: 'helpful' | 'unhelpful' | null;
-}
-
-/**
- * Agent 工具循环各步骤的展示文案（与后端 AgentLoopRunner 工具面对齐）。
- * 后端加工具必须同步这里，否则该步在前端渲染成裸工具名——`PlaygroundPage.test.tsx` 有断言兜底。
- */
-const STEP_LABELS: Record<string, string> = {
-    knowledge_search: '查规则',
-    product_search: '找资产',
-    product_detail: '看详情',
-    market_price_stats: '看行情',
-    compare_assets: '比候选',
-    remember_preference: '记偏好',
-    finish: '生成回答',
-};
-
-function StepIcon({ tool }: { tool: string }) {
-    switch (tool) {
-        case 'knowledge_search':
-            return <BookOpen size={11} aria-hidden="true" />;
-        case 'product_search':
-            return <Search size={11} aria-hidden="true" />;
-        case 'product_detail':
-            return <FileSearch size={11} aria-hidden="true" />;
-        case 'market_price_stats':
-            return <TrendingUp size={11} aria-hidden="true" />;
-        case 'compare_assets':
-            return <GitCompare size={11} aria-hidden="true" />;
-        case 'remember_preference':
-            return <Bookmark size={11} aria-hidden="true" />;
-        case 'finish':
-            return <CheckCircle2 size={11} aria-hidden="true" />;
-        default:
-            return <Sparkles size={11} aria-hidden="true" />;
-    }
 }
 
 /**
@@ -422,21 +382,10 @@ export default function PlaygroundPage() {
                             </div>
                             <div className="playground-msg__body">
                                 {message.steps.length > 0 && (
-                                    <ul className="playground-msg__steps" aria-label="Agent 执行步骤">
-                                        {message.steps.map((step, index) => (
-                                            <li
-                                                key={`${step.step}-${step.tool}`}
-                                                className="playground-msg__step"
-                                                style={{ animationDelay: `${index * 70}ms` }}
-                                                title={step.observation ?? undefined}
-                                            >
-                                                <span className="playground-msg__step-icon" aria-hidden="true">
-                                                    <StepIcon tool={step.tool} />
-                                                </span>
-                                                {step.thought ?? STEP_LABELS[step.tool] ?? step.tool}
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    <ThinkingProcess
+                                        steps={message.steps}
+                                        thinking={message.status === 'streaming' && !message.content}
+                                    />
                                 )}
                                 {message.sources.length > 0 && <SourceList sources={message.sources} />}
                                 <div
