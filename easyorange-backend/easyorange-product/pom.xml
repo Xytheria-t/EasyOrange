@@ -30,13 +30,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.cartethyia</groupId>
-            <artifactId>easyorange-user</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-
-        <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
             <scope>provided</scope>
