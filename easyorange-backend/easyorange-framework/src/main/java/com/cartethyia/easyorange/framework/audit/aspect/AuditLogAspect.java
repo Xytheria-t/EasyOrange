@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.framework.audit.event.AuditLogEvent;
 import com.cartethyia.easyorange.framework.audit.service.AuditLogService;
 import com.cartethyia.easyorange.framework.config.properties.AuditLogProperties;
 import com.cartethyia.easyorange.framework.util.AuditLogUtil;
+import com.cartethyia.easyorange.framework.util.Jsons;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,7 +30,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.multipart.MultipartFile;
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -198,12 +198,12 @@ public class AuditLogAspect {
         }
 
         if (auditLogProperties.saveResponseData() && jsonResult != null) {
-            try {
+            String json = Jsons.writeQuietly(objectMapper, jsonResult);
+            if (json != null) {
                 // 与请求参数一致，响应数据同样做敏感字段掩码
-                String json = maskSensitiveFields(objectMapper.writeValueAsString(jsonResult));
-                builder.responseData(AuditLogUtil.truncate(json, 2000));
-            } catch (JacksonException ex) {
-                log.warn("Failed to serialize response data for audit log", ex);
+                builder.responseData(AuditLogUtil.truncate(maskSensitiveFields(json), 2000));
+            } else {
+                log.warn("Failed to serialize response data for audit log");
             }
         }
 
@@ -254,13 +254,11 @@ public class AuditLogAspect {
         for (Object value : paramsArray) {
             if (value == null || isFilterObject(value)) continue;
 
-            try {
-                String json = objectMapper.writeValueAsString(value);
-                String maskedJson = maskSensitiveFields(json);
-                params.append(maskedJson).append(" ");
-            } catch (JacksonException ignored) {
-                // skip un-serializable arguments
+            String json = Jsons.writeQuietly(objectMapper, value);
+            if (json == null) {
+                continue; // skip un-serializable arguments
             }
+            params.append(maskSensitiveFields(json)).append(" ");
         }
         return params.toString().trim();
     }

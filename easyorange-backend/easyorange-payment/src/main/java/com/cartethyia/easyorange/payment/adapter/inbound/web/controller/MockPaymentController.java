@@ -32,7 +32,7 @@ public class MockPaymentController {
     private final PaymentCommandHandler paymentCommandHandler;
 
     @PostMapping("/create")
-    @Transactional(rollbackFor = Exception.class)
+    // 不加 @Transactional：单条 insert 自成事务，控制器层的事务只会把连接占用拉长（演示端点）
     public Result<PaymentResponse> createMockPayment(
             @RequestParam String orderId, @RequestParam String paymentMethod, @RequestParam BigDecimal amount) {
         String paymentId = idGenerator.generateId();
