@@ -33,10 +33,10 @@ import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
 import com.cartethyia.easyorange.framework.lock.DistributedLockPort.LockOperation;
 import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
-import com.cartethyia.easyorange.common.security.AuthUser;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -654,7 +654,8 @@ class AiChatServiceTest {
         ChatAnswer answer = chatService.answer(new ChatRequest("继续", "sess-1", false));
 
         assertThat(answer.answer()).isEqualTo("上一条消息还在处理中，请稍候再试");
-        assertThat(meterRegistry.counter("easyorange.ai.chat.session.busy").count()).isEqualTo(1.0);
+        assertThat(meterRegistry.counter("easyorange.ai.chat.session.busy").count())
+                .isEqualTo(1.0);
     }
 
     @Test
