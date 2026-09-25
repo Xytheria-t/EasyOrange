@@ -59,7 +59,7 @@ const R = {
     myProducts: { title: '我的发布' },
     editProduct: { title: '编辑商品' },
     notifications: { title: '通知中心' },
-    playground: { title: 'AI 智能助手', description: '多轮 Agent 对话 · SSE 流式 · 知识库引用溯源' },
+    playground: { title: 'AI 找货', description: '多轮 Agent 对话 · SSE 流式 · 知识库引用溯源' },
     notFound: { title: '404' },
     admin: { title: '管理后台', description: 'EasyOrange 管理控制台' },
 } as const;

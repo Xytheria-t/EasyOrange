@@ -56,7 +56,7 @@ const WELCOME_MESSAGE: ChatMessage = {
     id: 'welcome',
     role: 'assistant',
     content:
-        '你好，我是 EasyOrange AI 助手。找货直接说预算、品类和用途，我在在售资产里帮你挑；交易、退款、运费、禁售品类这些规则也能问，每次回答会标注来源。',
+        '你好，我是 EasyOrange AI 找货助手。找货直接说预算、品类和用途，我在在售资产里帮你挑；交易、退款、运费、禁售品类这些规则也能问，每次回答会标注来源。',
     sources: [],
     steps: [],
     status: 'done',
@@ -356,7 +356,7 @@ export default function PlaygroundPage() {
                         <Sparkles size={18} />
                     </div>
                     <div>
-                        <h1 className="playground__title">AI 智能助手</h1>
+                        <h1 className="playground__title">AI 找货</h1>
                         <p className="playground__subtitle">多轮 Agent · 知识库溯源 · SSE 流式</p>
                     </div>
                     <span className="playground__status">

@@ -58,11 +58,11 @@ cases:
   - id: chat-011
     scope: chat
     question: 你好，你是谁？
-    reference_answer: 我是 EasyOrange 平台 AI 助手，可以回答平台交易、退款、运费等规则问题。
+    reference_answer: 我是 EasyOrange 平台 AI 找货助手，可以帮你在在售资产里找货，也能回答平台交易、退款、运费等规则问题。
   - id: chat-012
     scope: chat
     question: 你能做什么？
-    reference_answer: 我可以解答平台规则问题（交易流程、退款、运费、禁售品类），也能陪你闲聊。
+    reference_answer: 我可以帮你在在售资产里找货（说预算、品类、用途），解答平台规则问题（交易流程、退款、运费、禁售品类），也能陪你闲聊。
   - id: chat-013
     scope: chat
     question: 谢谢你的帮助

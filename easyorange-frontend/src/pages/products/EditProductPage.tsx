@@ -1,14 +1,12 @@
 import {
     AlertTriangle,
     ArrowLeft,
-    Brain,
     Camera,
     FileText,
     Loader2,
     MapPin,
     Package,
     Settings,
-    Sparkles,
     Tag,
     Trash2,
     X,
@@ -169,14 +167,6 @@ function EditProductPage() {
                         <h2>修改商品信息</h2>
                         <p>更新商品详情后点击保存</p>
                     </div>
-                </div>
-
-                <div className="edit-ai-tip">
-                    <div className="edit-ai-tip-icon">
-                        <Brain size={16} />
-                    </div>
-                    <span>AI智能助手：完善商品信息可获得更多曝光</span>
-                    <Sparkles size={14} className="edit-ai-sparkle" />
                 </div>
 
                 <div className="edit-form-card">
