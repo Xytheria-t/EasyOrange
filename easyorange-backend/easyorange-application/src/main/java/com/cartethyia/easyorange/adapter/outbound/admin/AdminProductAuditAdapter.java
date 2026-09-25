@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.framework.util.Jsons;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
@@ -18,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -136,23 +136,22 @@ public class AdminProductAuditAdapter implements AdminProductAuditPort {
         if (dimensions == null || dimensions.isEmpty()) {
             return null;
         }
-        try {
-            return objectMapper.writeValueAsString(dimensions);
-        } catch (JacksonException e) {
-            log.warn("Failed to serialize audit dimensions to JSON", e);
-            return null;
+        String json = Jsons.writeQuietly(objectMapper, dimensions);
+        if (json == null) {
+            log.warn("Failed to serialize audit dimensions to JSON");
         }
+        return json;
     }
 
     private List<String> parseDimensions(String json) {
         if (json == null || json.isBlank()) {
             return List.of();
         }
-        try {
-            return objectMapper.readValue(json, DIMENSIONS_TYPE);
-        } catch (JacksonException e) {
-            log.warn("Failed to parse audit dimensions from JSON: {}", json, e);
-            return List.of();
+        List<String> parsed = Jsons.readQuietly(objectMapper, json, DIMENSIONS_TYPE);
+        if (parsed != null) {
+            return parsed;
         }
+        log.warn("Failed to parse audit dimensions from JSON: {}", json);
+        return List.of();
     }
 }

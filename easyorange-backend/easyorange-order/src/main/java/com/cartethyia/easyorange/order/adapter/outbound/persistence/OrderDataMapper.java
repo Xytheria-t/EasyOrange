@@ -2,8 +2,7 @@ package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
-import com.cartethyia.easyorange.common.enums.ResultCode;
-import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.framework.util.Jsons;
 import com.cartethyia.easyorange.order.application.query.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
@@ -18,7 +17,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.valueobject.Version;
 import java.util.List;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 @Component
@@ -160,18 +158,11 @@ public class OrderDataMapper {
     }
 
     private String toJson(OrderItemSnapshot snapshot) {
-        try {
-            return objectMapper.writeValueAsString(snapshot);
-        } catch (JacksonException e) {
-            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "Failed to serialize OrderItemSnapshot", e);
-        }
+        return Jsons.writeRequired(objectMapper, snapshot, "Failed to serialize OrderItemSnapshot");
     }
 
     private OrderItemSnapshot fromJson(String json) {
-        try {
-            return objectMapper.readValue(json, OrderItemSnapshot.class);
-        } catch (JacksonException e) {
-            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "Failed to deserialize OrderItemSnapshot", e);
-        }
+        return Jsons.readRequired(
+                objectMapper, json, OrderItemSnapshot.class, "Failed to deserialize OrderItemSnapshot");
     }
 }

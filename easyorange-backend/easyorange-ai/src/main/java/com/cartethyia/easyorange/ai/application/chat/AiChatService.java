@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.constant.AiResultCode;
 import com.cartethyia.easyorange.ai.domain.exception.TokenBudgetExceededException;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
@@ -17,6 +18,7 @@ import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
 import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
@@ -249,7 +251,8 @@ public class AiChatService {
                 ? aiModelSupport.callTextStream(chatModel, AiCallScope.CHAT, messages, handler::onToken)
                 : aiModelSupport.callText(chatModel, AiCallScope.CHAT, messages);
         if (answer == null || answer.isBlank()) {
-            throw new IllegalStateException("AI returned empty answer");
+            // 显式业务码而非裸 IllegalStateException（曾落 500）：空回答 = 模型没给出可用结果
+            throw BusinessException.of(AiResultCode.AI_UNAVAILABLE, "模型返回空回答");
         }
 
         // 一轮对话一次写入（提问 + 回答），存储侧一次落盘也不会留下半轮记忆

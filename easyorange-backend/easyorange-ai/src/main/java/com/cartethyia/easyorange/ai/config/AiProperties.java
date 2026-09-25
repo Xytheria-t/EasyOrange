@@ -25,7 +25,7 @@ public record AiProperties(
 
     public AiProperties {
         // 嵌套 record 在属性源里完全没有对应键时可能绑成 null，这里补上等价默认值 ——
-        // 数值必须与各 record 上的 @DefaultValue 保持一致（改一处要改两处）
+        // 数值须与 application.yaml 的 easyorange.ai 各值保持一致（yaml 是唯一主源，此处仅兜底）
         if (deepseek == null) {
             deepseek = new DeepSeek(null, "https://api.deepseek.com", "deepseek-chat", "", 30000);
         }
@@ -63,22 +63,13 @@ public record AiProperties(
      *     决策与生成分开配的原因：决策是纯路由任务（工具参数 JSON 只有几十字符），推理模型的思考长度
      *     在这里纯属浪费 —— 实测同一决策的思考长度在几十到上千字符之间波动，直接决定单轮延迟；
      *     而最终成品的质量才需要强模型。留空即退回「决策与生成同模型」，不改变既有行为。
+     * <p>
+     * 端点 / 模型 / 超时的单一来源是 application.yaml（含环境变量覆盖钩子）；构造器兜底仅防
+     * 属性源整段缺失（测试裸绑场景），不再另设 @DefaultValue——同一默认值写两处必然漂移。
      */
-    public record DeepSeek(
-            String apiKey,
-            @DefaultValue("https://api.deepseek.com") String baseUrl,
-            @DefaultValue("deepseek-chat") String model,
-            @DefaultValue("") String routerModel,
-            @DefaultValue("30000") int timeout) {}
+    public record DeepSeek(String apiKey, String baseUrl, String model, String routerModel, int timeout) {}
 
-    public record QwenVl(
-            String apiKey,
-
-            @DefaultValue("https://dashscope.aliyuncs.com/compatible-mode/v1")
-            String baseUrl,
-
-            @DefaultValue("qwen-vl-max") String model,
-            @DefaultValue("60000") int timeout) {}
+    public record QwenVl(String apiKey, String baseUrl, String model, int timeout) {}
 
     /**
      * Embedding 模型配置 — 走 OpenAI 兼容托管 API（DashScope text-embedding-v3）。
@@ -86,15 +77,7 @@ public record AiProperties(
      * 维度（dimensions=1024）必须与 ES 索引 {@code dense_vector} 映射维度一致，
      * 否则语义搜索 kNN 查询会因维度不匹配失败。
      */
-    public record Embedding(
-            String apiKey,
-
-            @DefaultValue("https://dashscope.aliyuncs.com/compatible-mode/v1")
-            String baseUrl,
-
-            @DefaultValue("text-embedding-v3") String model,
-            @Min(1) @DefaultValue("1024") int dimensions,
-            @DefaultValue("30000") int timeout) {}
+    public record Embedding(String apiKey, String baseUrl, String model, int dimensions, int timeout) {}
 
     /**
      * LLM 故障降级缓存（本地 Caffeine）— 成功回答写入，LLM 调用失败时返回旧结果兜底。
