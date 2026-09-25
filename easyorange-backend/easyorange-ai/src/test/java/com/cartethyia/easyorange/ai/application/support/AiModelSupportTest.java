@@ -34,6 +34,7 @@ import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
+import org.springframework.ai.openai.OpenAiChatOptions;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiModelSupport 调用去重工具测试")
@@ -342,6 +343,43 @@ class AiModelSupportTest {
             assertThat(AiCallScope.AUTO_LISTING.budgetScenario()).isEqualTo("auto_listing");
             assertThat(AiCallScope.SEMANTIC.budgetScenario()).isEqualTo("semantic");
             assertThat(AiCallScope.KNOWLEDGE.budgetScenario()).isEqualTo("knowledge");
+        }
+    }
+
+    @Nested
+    @DisplayName("输出上限下发")
+    class MaxTokensTests {
+
+        private final InMemoryTokenBudgetStore budgetStore = new InMemoryTokenBudgetStore();
+
+        @Test
+        @DisplayName("scoped 调用把场景 maxTokensPerCall 真下发进 per-request options（生成长度有硬约束）")
+        void scopedCall_sendsScenarioMaxTokens() {
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("回答"));
+            var props =
+                    PropertyBindings.bind(AiProperties.class, "budget.scenarios.chat.max-tokens-per-call", "1500");
+            var support = TestAiModelSupport.create(callLogRecorder, budgetStore, props);
+
+            support.callText(chatModel, AiCallScope.CHAT, "system", "user");
+
+            var captor = ArgumentCaptor.forClass(Prompt.class);
+            verify(chatModel).call(captor.capture());
+            assertThat(captor.getValue().getOptions())
+                    .isInstanceOfSatisfying(
+                            OpenAiChatOptions.class,
+                            options -> assertThat(options.getMaxTokens()).isEqualTo(1500));
+        }
+
+        @Test
+        @DisplayName("场景无预算配置不下发 max_tokens（评测 Judge 等无 scope 重载行为不变）")
+        void scopedCallWithoutConfig_leavesMaxTokensUnset() {
+            when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("回答"));
+
+            aiModelSupport.callText(chatModel, AiCallScope.CHAT, "system", "user");
+
+            var captor = ArgumentCaptor.forClass(Prompt.class);
+            verify(chatModel).call(captor.capture());
+            assertThat(captor.getValue().getOptions()).isNull();
         }
     }
 
