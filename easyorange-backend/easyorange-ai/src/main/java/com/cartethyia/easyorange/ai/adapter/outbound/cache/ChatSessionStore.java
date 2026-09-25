@@ -40,10 +40,10 @@ public class ChatSessionStore implements ChatSessionPort {
     private final ObjectMapper objectMapper;
     private final AiProperties aiProperties;
 
-    /** 保存一轮对话（提问 + 回答），裁剪到最近 N 轮 + 刷新 TTL。 */
+    /** 保存一轮对话（提问 + 回答），裁剪到最近 N 轮 + 刷新 TTL。键绑定 userId（归属即校验）。 */
     @Override
-    public void saveTurns(String sessionId, List<ChatTurn> turns) {
-        if (sessionId == null || sessionId.isBlank() || turns == null || turns.isEmpty()) {
+    public void saveTurns(String userId, String sessionId, List<ChatTurn> turns) {
+        if (isBlank(userId) || isBlank(sessionId) || turns == null || turns.isEmpty()) {
             return;
         }
         var redis = redisProvider.getIfAvailable();
@@ -51,7 +51,7 @@ public class ChatSessionStore implements ChatSessionPort {
             return;
         }
         try {
-            String key = KEY_PREFIX + sessionId;
+            String key = sessionKey(userId, sessionId);
             List<String> payloads =
                     turns.stream().map(objectMapper::writeValueAsString).toList();
             redis.opsForList().rightPushAll(key, payloads);
@@ -62,10 +62,10 @@ public class ChatSessionStore implements ChatSessionPort {
         }
     }
 
-    /** 读取最近 N 轮对话（不含当前问题）。 */
+    /** 读取最近 N 轮对话（不含当前问题）。键绑定 userId，他人 sessionId 在请求方名下查无记忆。 */
     @Override
-    public List<ChatTurn> loadRecent(String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) {
+    public List<ChatTurn> loadRecent(String userId, String sessionId) {
+        if (isBlank(userId) || isBlank(sessionId)) {
             return List.of();
         }
         var redis = redisProvider.getIfAvailable();
@@ -74,7 +74,7 @@ public class ChatSessionStore implements ChatSessionPort {
         }
         List<String> raw;
         try {
-            raw = redis.opsForList().range(KEY_PREFIX + sessionId, -entries(), -1);
+            raw = redis.opsForList().range(sessionKey(userId, sessionId), -entries(), -1);
         } catch (Exception e) {
             log.warn("action=chat_session_load_failed, sessionId={}", sessionId, e);
             return List.of();
@@ -94,6 +94,15 @@ public class ChatSessionStore implements ChatSessionPort {
             }
         }
         return turns;
+    }
+
+    /** 归属即校验：键绑定 userId，伪造的 sessionId 在请求方名下映射不到他人的记忆。 */
+    private static String sessionKey(String userId, String sessionId) {
+        return KEY_PREFIX + userId + ":" + sessionId;
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     /** 轮数窗口 → Redis List 元素数（存储按条，配置按轮），读写同一份 {@code historyLimit}。 */
