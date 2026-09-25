@@ -33,6 +33,9 @@ import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
+import com.cartethyia.easyorange.framework.lock.DistributedLockPort.LockOperation;
+import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -96,18 +99,12 @@ class AiChatServiceTest {
         aiProperties = PropertyBindings.bind(AiProperties.class);
         staleCache = Caffeine.newBuilder().build();
         meterRegistry = new SimpleMeterRegistry();
-        chatService = new AiChatService(
-                chatModel,
-                promptRegistry,
-                aiModelSupport,
-                semanticCache,
-                sessionStore,
-                preferenceRepository,
-                agentLoopRunner,
-                // 真实实例：默认预算 2000 token，测试历史远小于预算，行为等同直通
-                new ChatContextTrimmer(aiProperties, meterRegistry),
-                staleCache,
-                meterRegistry);
+        chatService = newChatService(new DistributedLockPort() {
+            @Override
+            public <T> T executeWithLocks(List<String> lockKeys, long waitTimeoutSeconds, LockOperation<T> operation) {
+                return operation.execute();
+            }
+        });
         // 部分用例（空问题/预算超限/缓存命中）不会走到循环，runner 的默认行为允许不被消费
         lenient()
                 .when(agentLoopRunner.run(any(Input.class)))
@@ -620,6 +617,72 @@ class AiChatServiceTest {
         ChatAnswer answer = chatService.answer(new ChatRequest("继续", "sess-1", false));
 
         assertThat(answer.answer()).isEqualTo("记住了");
+    }
+
+    /** 锁端口可替换装配 —— 常规用例直通，busy 用例注入「等待超时」桩。 */
+    private AiChatService newChatService(DistributedLockPort lockPort) {
+        return new AiChatService(
+                chatModel,
+                promptRegistry,
+                aiModelSupport,
+                semanticCache,
+                sessionStore,
+                preferenceRepository,
+                agentLoopRunner,
+                // 真实实例：默认预算 2000 token，测试历史远小于预算，行为等同直通
+                new ChatContextTrimmer(aiProperties, meterRegistry),
+                lockPort,
+                aiProperties,
+                staleCache,
+                meterRegistry);
+    }
+
+    private static DistributedLockPort lockTimeoutPort() {
+        return new DistributedLockPort() {
+            @Override
+            public <T> T executeWithLocks(List<String> lockKeys, long waitTimeoutSeconds, LockOperation<T> operation) {
+                throw new LockAcquisitionException("无法在 " + waitTimeoutSeconds + " 秒内获取分布式锁: " + lockKeys);
+            }
+        };
+    }
+
+    @Test
+    @DisplayName("同会话锁等待超时 -> 非流式返回会话忙提示（业务冲突，不伪装成模型降级）")
+    void answer_whenLockTimeout_returnsBusyNotice() {
+        chatService = newChatService(lockTimeoutPort());
+
+        ChatAnswer answer = chatService.answer(new ChatRequest("继续", "sess-1", false));
+
+        assertThat(answer.answer()).isEqualTo("上一条消息还在处理中，请稍候再试");
+        assertThat(meterRegistry.counter("easyorange.ai.chat.session.busy").count()).isEqualTo(1.0);
+    }
+
+    @Test
+    @DisplayName("同会话锁等待超时 -> 流式走 error 事件")
+    void stream_whenLockTimeout_reportsError() {
+        chatService = newChatService(lockTimeoutPort());
+
+        AtomicReference<String> error = new AtomicReference<>();
+        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), null, new ChatStreamHandler() {
+            @Override
+            public void onStep(AgentStepView step) {}
+
+            @Override
+            public void onToken(String token) {}
+
+            @Override
+            public void onSources(List<ChatSource> sources) {}
+
+            @Override
+            public void onDone(String fullAnswer) {}
+
+            @Override
+            public void onError(String message) {
+                error.set(message);
+            }
+        });
+
+        assertThat(error.get()).isEqualTo("上一条消息还在处理中，请稍候再试");
     }
 
     /** 只关心「循环收到什么身份」的用例用的空回调 —— 事件内容在各自用例里断言。 */

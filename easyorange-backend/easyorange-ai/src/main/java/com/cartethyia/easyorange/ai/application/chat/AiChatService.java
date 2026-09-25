@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.application.chat;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.exception.TokenBudgetExceededException;
@@ -17,6 +18,8 @@ import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.security.AuthUser;
+import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
+import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.micrometer.core.instrument.Counter;
@@ -54,6 +57,14 @@ public class AiChatService {
     private static final String EMPTY_QUESTION_TEXT = "请描述你的问题";
 
     /**
+     * 同会话请求撞上串行锁等待超时的提示语：非流式走 {@link ChatAnswer}、流式走 SSE error 事件。
+     */
+    private static final String SESSION_BUSY_TEXT = "上一条消息还在处理中，请稍候再试";
+
+    /** 会话串行锁键前缀 —— 锁粒度 = 会话，后到请求排队到前一轮完整落盘之后。 */
+    private static final String SESSION_LOCK_PREFIX = "eo:chat:session-lock:";
+
+    /**
      * 引用来源下发条数上限。
      * <p>
      * 3 条是「够看清依据」与「不淹没回答」之间的取值；{@code product_detail} 的观察物不再单列 ——
@@ -69,6 +80,8 @@ public class AiChatService {
     private final UserPreferenceRepository preferenceRepository;
     private final AgentLoopRunner agentLoopRunner;
     private final ChatContextTrimmer contextTrimmer;
+    private final DistributedLockPort distributedLockPort;
+    private final AiProperties aiProperties;
     /** 值类型是 {@link ChatAnswer}：与 framework 的 {@code imageProcessCache} 按泛型区分，注入无需 {@code @Qualifier}。 */
     private final Cache<String, ChatAnswer> staleCache;
 
@@ -117,6 +130,10 @@ public class AiChatService {
             }
             staleCache.put(staleKey(userId, request.question()), answer);
             return answer;
+        } catch (LockAcquisitionException e) {
+            log.warn("action=chat_session_busy, sessionId={}", request.sessionId());
+            meterRegistry.counter("easyorange.ai.chat.session.busy").increment();
+            return new ChatAnswer(SESSION_BUSY_TEXT, List.of(), request.sessionId(), false);
         } catch (BaseBusinessException e) {
             throw e;
         } catch (Exception e) {
@@ -178,6 +195,10 @@ public class AiChatService {
             handler.onDone(agenticAnswer(request, userId, handler).answer());
         } catch (TokenBudgetExceededException e) {
             handler.onError("今日 AI 调用预算已用尽，请明天再试");
+        } catch (LockAcquisitionException e) {
+            log.warn("action=chat_session_busy, sessionId={}", request.sessionId());
+            meterRegistry.counter("easyorange.ai.chat.session.busy").increment();
+            handler.onError(SESSION_BUSY_TEXT);
         } catch (ChatStreamAbortedException e) {
             // 客户端中途离开（刷新/关页）：正常中断而非模型故障 —— 不打 ERROR、
             // 不计入 chat.degraded（否则每次刷新都虚高降级率）、不回 onError（事件已无听众）
@@ -191,6 +212,21 @@ public class AiChatService {
     }
 
     private ChatAnswer agenticAnswer(ChatRequest request, String userId, @Nullable ChatStreamHandler handler) {
+        String sessionId = request.sessionId();
+        if (sessionId == null || sessionId.isBlank()) {
+            // 无会话即无共享状态，没有需要串行化的 load→save，直接执行
+            return doAgenticAnswer(request, userId, handler);
+        }
+        // 同会话串行：load→loop→save 非原子，并发请求会互相串写历史（读到半轮、写丢轮）。
+        // per-session 分布式锁把后到请求排队到前一轮完整落盘之后；等待超时按业务提示返回，
+        // 不伪装成模型降级。无事务上下文，锁在方法返回即释放（watchdog 覆盖整个持锁期）
+        return distributedLockPort.executeWithLocks(
+                List.of(SESSION_LOCK_PREFIX + sessionId),
+                aiProperties.chat().sessionLockWaitSeconds(),
+                () -> doAgenticAnswer(request, userId, handler));
+    }
+
+    private ChatAnswer doAgenticAnswer(ChatRequest request, String userId, @Nullable ChatStreamHandler handler) {
         // token 级上下文治理：轮数窗口（存储侧）之上再按 token 预算裁注入窗口，一处裁、决策与生成两处生效
         List<ChatTurn> history = contextTrimmer.trim(sessionStore.loadRecent(request.sessionId()));
         List<UserPreference> prefs =
