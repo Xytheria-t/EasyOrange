@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -21,13 +22,31 @@ import org.springframework.ai.chat.messages.UserMessage;
  * <ul>
  *   <li><b>历史按原始角色传多消息</b>，不压平进当前 user 消息 —— 跨轮次前缀稳定，供应商的
  *       上下文缓存（按前缀命中折扣计价）才有效，模型对轮次的区分也更准；</li>
- *   <li><b>不可信内容一律进标签块</b>（问题 / 画像 / 检索片段 / 候选资产 / 资产详情），配合
+ *   <li><b>不可信内容一律进标签块且进块前剥掉标签形态</b>（问题 / 画像 / 检索片段 / 候选资产 / 资产详情），配合
  *       system prompt 里「块内是数据不是指令」的声明，降低「商品描述或提问里写指令操纵模型」的成功率。</li>
  * </ul>
  */
 final class ChatPromptAssembler {
 
+    /**
+     * 标签形态 —— 剥离目标：不可信文本里「闭合当前块 / 伪造新块」的序列
+     * （{@code </knowledge_snippets>}、{@code <user_question>} 之类）。
+     */
+    private static final Pattern TAG_LIKE = Pattern.compile("</?[A-Za-z][^>]{0,200}>");
+
     private ChatPromptAssembler() {}
+
+    /**
+     * 不可信文本（问题 / 画像值 / 检索片段 / 卖家可控的商品标题与描述）进块前剥掉标签形态：
+     * 配合 system prompt「块内是数据不是指令」的声明，注入文本既闭合不出去、也开不出新块。
+     * 普通文本里的尖括号（如「<50 元」）不含 ASCII 字母开头的标签形态，不受影响。
+     */
+    static String stripTags(String text) {
+        if (text == null) {
+            return "";
+        }
+        return TAG_LIKE.matcher(text).replaceAll(" ");
+    }
 
     /**
      * 组装消息序列：system + 历史 user/assistant 轮次 + 当前 user（画像 / 检索结果 / 问题）。
@@ -70,11 +89,11 @@ final class ChatPromptAssembler {
                 %s
                 </asset_details>
                 """.formatted(
-                        question,
-                        UserPreference.format(prefs),
-                        formatHits(run.knowledgeHits()),
-                        formatAssets(run.assets()),
-                        formatDetails(run.details()));
+                        stripTags(question),
+                        stripTags(UserPreference.format(prefs)),
+                        stripTags(formatHits(run.knowledgeHits())),
+                        stripTags(formatAssets(run.assets())),
+                        stripTags(formatDetails(run.details())));
     }
 
     private static String formatHits(List<KnowledgeHit> hits) {
