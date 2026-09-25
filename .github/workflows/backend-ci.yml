@@ -57,6 +57,7 @@ jobs:
       - name: Backend verify (11 modules, JaCoCo + Spotless gates)
         # -DskipITs=true：仅跳过 failsafe（*IT），IT 需要本地 docker compose dev 栈
         # （MySQL/Redis/RabbitMQ），CI runner 上没有。surefire 单测 + JaCoCo/Spotless 门禁照跑。
+        # -Djacoco.haltOnFailure=true：启用 JaCoCo 80%/60% 阈值阻断（pom 注释声明的契约；本地默认不阻断）。
         if: steps.filter.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
-        run: ./mvnw verify -B -Pci -DskipITs=true
+        run: ./mvnw verify -B -Pci -DskipITs=true -Djacoco.haltOnFailure=true
         working-directory: easyorange-backend

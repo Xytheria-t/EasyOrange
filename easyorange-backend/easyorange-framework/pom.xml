@@ -11,6 +11,13 @@
 
     <artifactId>easyorange-framework</artifactId>
 
+    <!-- JaCoCo 非回归下限：2026-09-25 实测留余量校准（默认 0.80/0.60 对本模块的
+         adapter/config 基建不可达，口径见 doc/工程指标.md §2.1）；上调后收回默认 -->
+    <properties>
+        <jacoco.min.line>0.55</jacoco.min.line>
+        <jacoco.min.branch>0.45</jacoco.min.branch>
+    </properties>
+
     <description>
         Framework 框架核心模块 - 框架集成和基础设施
     </description>

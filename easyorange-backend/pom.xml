@@ -59,8 +59,15 @@
         <swagger-annotations.version>2.2.53</swagger-annotations.version>
         <spring-ai.version>2.0.0</spring-ai.version>
 
-        <!-- JaCoCo 覆盖率门禁：本地默认不阻断，CI 用 -Djacoco.haltOnFailure=true 启用 -->
+        <!-- JaCoCo 覆盖率门禁：本地默认不阻断，CI 用 -Djacoco.haltOnFailure=true 启用。
+             阈值按模块校准（2026-09-25 全模块实测，数字见 doc/工程指标.md §2.1）：
+             默认 0.80/0.60 是 domain 逻辑为主模块的现役水位；application / framework /
+             message / product / user 的 adapter/config 基建按测试策略不追行覆盖
+             （ArchUnit 守卫 + IT 承担），子 pom 覆写为「实测值留余量」的非回归下限，
+             覆盖率上去后应同步上调直至收回默认值 -->
         <jacoco.haltOnFailure>false</jacoco.haltOnFailure>
+        <jacoco.min.line>0.80</jacoco.min.line>
+        <jacoco.min.branch>0.60</jacoco.min.branch>
 
         <!-- PIT 变异测试（1.25.8 修复 Java 25 BigDecimal/BigInteger mutator） -->
         <pitest.version>1.25.9</pitest.version>
@@ -465,12 +472,12 @@
                                 <limit>
                                     <counter>LINE</counter>
                                     <value>COVEREDRATIO</value>
-                                    <minimum>0.80</minimum>
+                                    <minimum>${jacoco.min.line}</minimum>
                                 </limit>
                                 <limit>
                                     <counter>BRANCH</counter>
                                     <value>COVEREDRATIO</value>
-                                    <minimum>0.60</minimum>
+                                    <minimum>${jacoco.min.branch}</minimum>
                                 </limit>
                             </limits>
                         </rule>
@@ -602,7 +609,7 @@
                     <plugin>
                         <groupId>org.jacoco</groupId>
                         <artifactId>jacoco-maven-plugin</artifactId>
-                        <version>0.8.14</version>
+                        <version>0.8.15</version>
                         <executions>
                             <execution>
                                 <id>coverage-check</id>
