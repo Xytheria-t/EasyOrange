@@ -39,7 +39,7 @@ class PromptContentTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"auto_listing, 发布助手", "ai_chat_system, AI 找货助手"})
+    @CsvSource({"auto_listing, 发布助手", "ai_chat_system, AI 找货助手", "ai_chat_tool_system, AI 找货助手"})
     @DisplayName("每个 prompt 模板包含服务特定的关键短语（防内容漂移）")
     void promptContainsKeyPhrase(String promptName, String keyPhrase) {
         var template =
@@ -65,9 +65,9 @@ class PromptContentTest {
         // 已升版的 prompt 单列：ai_chat_tool_system 随原生 tool calling 迁移（P0-1）升 v3.0.0；
         // 随工具面扩到 7 个（新增计算类工具 market_price_stats / compare_assets 与独立 remember_preference）升 v4.0.0；
         // 随检索冗余判据（工具侧返回「无新增信息」观察）补收敛规则升 v4.1.0；
-        // ai_chat_system / auto_listing 随「AI 找货 / 发布助手」自称统一与发布意图边界升 v1.1.0
+        // 随「AI 找货助手」自称统一升 v4.2.0（ai_chat_system / auto_listing 同轮升 v1.1.0）
         var bumpedVersions = java.util.Map.of(
-                "ai_chat_tool_system", "v4.1.0",
+                "ai_chat_tool_system", "v4.2.0",
                 "ai_chat_system", "v1.1.0",
                 "auto_listing", "v1.1.0");
         for (String name : ALL_PROMPTS) {
