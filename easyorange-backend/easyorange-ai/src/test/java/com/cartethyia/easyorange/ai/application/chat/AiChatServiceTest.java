@@ -130,7 +130,8 @@ class AiChatServiceTest {
         assertThat(answer.answer()).contains("[来源:退款规则]");
         assertThat(answer.sources()).containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-0002", "退款规则"));
         // 一轮对话一次写入（提问 + 回答），不留半轮记忆
-        verify(sessionStore).saveTurns("sess-1", List.of(ChatTurn.user("怎么退款？"), ChatTurn.assistant(answer.answer())));
+        verify(sessionStore)
+                .saveTurns("anonymous", "sess-1", List.of(ChatTurn.user("怎么退款？"), ChatTurn.assistant(answer.answer())));
         verify(semanticCache).store(any(), any(), anyString(), anyList(), any());
         // 循环输入：问题与会话 ID 透传
         ArgumentCaptor<Input> input = ArgumentCaptor.forClass(Input.class);
@@ -598,7 +599,7 @@ class AiChatServiceTest {
     void answer_injectsHistory() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(sessionStore.loadRecent("sess-1"))
+        when(sessionStore.loadRecent("anonymous", "sess-1"))
                 .thenReturn(List.of(ChatTurn.user("上一轮问题"), ChatTurn.assistant("上一轮回答")));
         when(aiModelSupport.callText(any(), any(), anyList())).thenAnswer(invocation -> {
             List<Message> messages = invocation.getArgument(2);

@@ -218,17 +218,17 @@ public class AiChatService {
             return doAgenticAnswer(request, userId, handler);
         }
         // 同会话串行：load→loop→save 非原子，并发请求会互相串写历史（读到半轮、写丢轮）。
-        // per-session 分布式锁把后到请求排队到前一轮完整落盘之后；等待超时按业务提示返回，
-        // 不伪装成模型降级。无事务上下文，锁在方法返回即释放（watchdog 覆盖整个持锁期）
+        // per-session 分布式锁（键带 userId，与记忆键同一归属口径）把后到请求排队到前一轮完整落盘之后；
+        // 等待超时按业务提示返回，不伪装成模型降级。无事务上下文，锁在方法返回即释放（watchdog 覆盖整个持锁期）
         return distributedLockPort.executeWithLocks(
-                List.of(SESSION_LOCK_PREFIX + sessionId),
+                List.of(SESSION_LOCK_PREFIX + userId + ":" + sessionId),
                 aiProperties.chat().sessionLockWaitSeconds(),
                 () -> doAgenticAnswer(request, userId, handler));
     }
 
     private ChatAnswer doAgenticAnswer(ChatRequest request, String userId, @Nullable ChatStreamHandler handler) {
         // token 级上下文治理：轮数窗口（存储侧）之上再按 token 预算裁注入窗口，一处裁、决策与生成两处生效
-        List<ChatTurn> history = contextTrimmer.trim(sessionStore.loadRecent(request.sessionId()));
+        List<ChatTurn> history = contextTrimmer.trim(sessionStore.loadRecent(userId, request.sessionId()));
         List<UserPreference> prefs =
                 AgentLoopRunner.ANONYMOUS_USER.equals(userId) ? List.of() : preferenceRepository.findByUserId(userId);
 
@@ -254,7 +254,7 @@ public class AiChatService {
 
         // 一轮对话一次写入（提问 + 回答），存储侧一次落盘也不会留下半轮记忆
         sessionStore.saveTurns(
-                request.sessionId(), List.of(ChatTurn.user(request.question()), ChatTurn.assistant(answer)));
+                userId, request.sessionId(), List.of(ChatTurn.user(request.question()), ChatTurn.assistant(answer)));
         return new ChatAnswer(answer, sources, request.sessionId(), false);
     }
 }
