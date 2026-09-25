@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @Service
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminProductAuditService {
 
     private final AdminProductAuditPort adminProductAuditPort;
+    private final TransactionTemplate transactionTemplate;
 
     @Transactional(rollbackFor = Exception.class)
     public void auditProduct(AuthUser operator, String id, ProductAuditRequest request) {
@@ -33,21 +35,28 @@ public class AdminProductAuditService {
                 operator.username());
     }
 
-    @Transactional(rollbackFor = Exception.class)
+    /**
+     * 批量审核 — 逐条独立事务提交（REQUIRES_NEW 语义用 {@link TransactionTemplate} 表达）：
+     * 单条失败不影响已成功条目，「部分成功 + 失败明细」是明确语义。
+     * <p>
+     * 不用「整体一个事务 + 循环 catch」：那条路依赖「内层永远没有自己的事务」这一巧合——
+     * 内层一旦加 {@code @Transactional}，单条失败会把外层事务标记 rollback-only，
+     * 全部已成功条目陪葬回滚，响应却仍是部分成功（假成功）。批量条目间无原子性需求。
+     */
     public BatchAuditResultResponse batchAudit(AuthUser operator, BatchAuditRequest request) {
         List<String> errors = new ArrayList<>();
         int successCount = 0;
 
         for (BatchAuditRequest.AuditItem item : request.items()) {
             try {
-                adminProductAuditPort.auditProduct(
+                transactionTemplate.executeWithoutResult(status -> adminProductAuditPort.auditProduct(
                         item.productId(),
                         item.action(),
                         item.reason(),
                         null,
                         item.dimensions(),
                         operator.userId(),
-                        operator.username());
+                        operator.username()));
                 successCount++;
             } catch (Exception e) {
                 errors.add("商品ID " + item.productId() + ": " + e.getMessage());
