@@ -123,7 +123,7 @@ export function Header() {
                         className={`floating-nav__link ${location.pathname === '/playground' ? 'active' : ''}`}
                         aria-current={location.pathname === '/playground' ? 'page' : undefined}
                     >
-                        <span className="floating-nav__link-text">AI 助手</span>
+                        <span className="floating-nav__link-text">AI 找货</span>
                     </Link>
                 </nav>
 

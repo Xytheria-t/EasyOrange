@@ -313,16 +313,16 @@ test('T4 管理端：仪表盘有数 + 审核通过/驳回填理由 + 各列表�
     }
 });
 
-test('T5 AI 智能助手：导航进入 → 问规则 → 流式回答 + 知识库引用 + 赞踩反馈', async ({ page }) => {
+test('T5 AI 找货：导航进入 → 问规则 → 流式回答 + 知识库引用 + 赞踩反馈', async ({ page }) => {
     await uiLogin(page, 'testuser', 'Password123');
 
-    // ── 从用户端顶部导航「AI 助手」进入（验的是真实入口，不是深链）──
+    // ── 从用户端顶部导航「AI 找货」进入（验的是真实入口，不是深链）──
     await page.goto('/');
     await page.getByRole('navigation', { name: '主导航' })
-        .getByRole('link', { name: 'AI 助手', exact: true }).click();
+        .getByRole('link', { name: 'AI 找货', exact: true }).click();
     await expect(page).toHaveURL(/\/playground$/, { timeout: 20_000 });
 
-    await expect(page.getByRole('heading', { name: 'AI 智能助手' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'AI 找货' })).toBeVisible();
     await expect(page.getByText('多轮 Agent · 知识库溯源 · SSE 流式')).toBeVisible();
     await expect(page.getByText('Agent 就绪')).toBeVisible();
 

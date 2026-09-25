@@ -39,7 +39,7 @@ function emit(events: ChatStreamEvent[]) {
     });
 }
 
-describe('PlaygroundPage (AI 智能助手)', () => {
+describe('PlaygroundPage (AI 找货)', () => {
     // 默认成功收口；个别用例自行覆盖实现。不重置的话，上一条用例的
     // mockRejectedValue / 挂起实现会漏到下一条，断言互相干扰
     beforeEach(() => {
@@ -50,7 +50,7 @@ describe('PlaygroundPage (AI 智能助手)', () => {
     it('渲染欢迎语与建议问题', () => {
         renderWithProviders(<PlaygroundPage />);
 
-        expect(screen.getByText(/EasyOrange AI 助手/)).toBeInTheDocument();
+        expect(screen.getByText(/EasyOrange AI 找货助手/)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '3000 以内适合拍视频的手机有哪些？' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '平台交易流程是什么？' })).toBeInTheDocument();
     });

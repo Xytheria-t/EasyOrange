@@ -156,54 +156,6 @@
     font-family: var(--font-accent);
 }
 
-.edit-ai-tip {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.875rem 1.25rem;
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(251, 113, 133, 0.06) 100%);
-    border: 1px solid rgba(249, 115, 22, 0.12);
-    border-radius: var(--radius-xl);
-    margin-bottom: 1.5rem;
-    animation: slideUpEdit 0.6s var(--ease-out) 0.1s both;
-}
-
-.edit-ai-tip-icon {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, var(--primary-500), var(--rose-400));
-    color: white;
-}
-
-.edit-ai-tip span {
-    flex: 1;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.edit-ai-sparkle {
-    color: var(--primary-400);
-    animation: sparkleRotateEdit 3s ease-in-out infinite;
-}
-
-@keyframes sparkleRotateEdit {
-    0%,
-    100% {
-        transform: rotate(0deg);
-    }
-    25% {
-        transform: rotate(15deg);
-    }
-    75% {
-        transform: rotate(-15deg);
-    }
-}
-
 .edit-form-card {
     background: var(--glass-bg-heavy);
     backdrop-filter: var(--glass-blur);

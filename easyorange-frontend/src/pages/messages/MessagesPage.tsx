@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Brain, MessageCircle, RefreshCw, Send, Sparkles, Zap } from 'lucide-react';
+import { MessageCircle, RefreshCw } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { messageApi } from '@/api/messageApi';
@@ -130,41 +130,6 @@ function MessagesPage() {
             <div className="messages-body">
                 {/* LEFT: Conversation panel */}
                 <div className="messages-conversations-panel">
-                    {/* AI Smart Card - compact */}
-                    <div className="messages-ai-compact">
-                        <div className="messages-ai-compact-inner">
-                            <div className="messages-ai-compact-icon">
-                                <Brain size={16} />
-                            </div>
-                            <div className="messages-ai-compact-body">
-                                <div className="messages-ai-compact-body-header">
-                                    <h3>AI智能助手</h3>
-                                    <span className="messages-ai-compact-badge">
-                                        <Zap size={8} />
-                                        智能回复
-                                    </span>
-                                </div>
-                                <p className="messages-ai-compact-desc">
-                                    AI可以根据对话内容，为你推荐合适的回复建议，让沟通更高效
-                                </p>
-                            </div>
-                        </div>
-                        <div className="messages-ai-compact-features">
-                            <span className="ai-compact-feature">
-                                <Sparkles />
-                                智能回复建议
-                            </span>
-                            <span className="ai-compact-feature">
-                                <Send />
-                                一键发送
-                            </span>
-                            <span className="ai-compact-feature">
-                                <MessageCircle />
-                                多场景适配
-                            </span>
-                        </div>
-                    </div>
-
                     {/* Conversation list */}
                     <div className="messages-list-container">
                         <div className="messages-list">
@@ -230,51 +195,18 @@ function MessagesPage() {
                     </div>
                 </div>
 
-                {/* RIGHT: Welcome panel - features + notification */}
+                {/* RIGHT: Welcome panel */}
                 <div className="messages-welcome-panel">
                     <div className="messages-welcome-content">
-                        {hasConversations && (
-                            <div className="messages-empty">
-                                <div className="empty-visual">
-                                    <div className="empty-orbit" />
-                                    <div className="empty-icon-wrap">
-                                        <MessageCircle size={32} />
-                                    </div>
-                                </div>
-                                <h3>选择对话</h3>
-                                <p>从左侧选择一个会话开始聊天</p>
-                            </div>
-                        )}
-
-                        {/* AI features */}
-                        <div className="messages-welcome-features">
-                            <div className="welcome-feature-item">
-                                <div className="welcome-feature-icon">
-                                    <Sparkles size={18} />
-                                </div>
-                                <div className="welcome-feature-text">
-                                    <strong>智能回复建议</strong>
-                                    <span>AI 根据对话内容推荐合适的回复</span>
+                        <div className="messages-empty">
+                            <div className="empty-visual">
+                                <div className="empty-orbit" />
+                                <div className="empty-icon-wrap">
+                                    <MessageCircle size={32} />
                                 </div>
                             </div>
-                            <div className="welcome-feature-item">
-                                <div className="welcome-feature-icon">
-                                    <Send size={18} />
-                                </div>
-                                <div className="welcome-feature-text">
-                                    <strong>一键发送</strong>
-                                    <span>快速回复，让沟通更高效</span>
-                                </div>
-                            </div>
-                            <div className="welcome-feature-item">
-                                <div className="welcome-feature-icon">
-                                    <MessageCircle size={18} />
-                                </div>
-                                <div className="welcome-feature-text">
-                                    <strong>多场景适配</strong>
-                                    <span>聊天、咨询、售后全覆盖</span>
-                                </div>
-                            </div>
+                            <h3>选择对话</h3>
+                            <p>从左侧选择一个会话开始聊天</p>
                         </div>
                     </div>
                 </div>

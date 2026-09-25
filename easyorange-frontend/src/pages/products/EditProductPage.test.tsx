@@ -327,10 +327,10 @@ describe('EditProductPage', () => {
         expect(screen.getByText('删除商品后数据将无法恢复，请谨慎操作')).toBeInTheDocument();
     });
 
-    it('renders AI tip section', () => {
+    it('does not render the fake AI tip', () => {
         renderPage();
 
-        expect(screen.getByText('AI智能助手：完善商品信息可获得更多曝光')).toBeInTheDocument();
+        expect(screen.queryByText('AI智能助手：完善商品信息可获得更多曝光')).not.toBeInTheDocument();
     });
 
     it('renders category select with options', async () => {
