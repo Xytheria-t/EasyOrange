@@ -9,7 +9,7 @@
 #   gold_doc_ids    期望命中的知识库文档 ID（scope: retrieval 必须有，引用 R__seed_knowledge_docs.sql）
 # 维护：新增/修改用例走 PR，分数回归对比见 eval/baselines.yaml
 # 注意：id 是稳定标识，删除用例后不重编号（重编号会让历史评测结果对不上），因此 id 允许有洞
-# 注意：检索用例的 gold 文档必须与同域干扰文档（kb-0006~kb-0025）可区分 ——
+# 注意：检索用例的 gold 文档必须与同域干扰文档（kb-0006~kb-0035）可区分 ——
 #      语料与 topK 同量级时 hit@5 恒为 100%，指标就成了装饰。
 # ===================================================================
 cases:
@@ -105,6 +105,16 @@ cases:
     question: 一件商品最多能传几张图片？
     reference_answer: 单件商品最多上传 9 张图片，首图须为商品主体实拍，图片不得含水印、二维码或联系方式；另可上传 1 段不超过 60 秒的展示视频。
     gold_doc_ids: [kb-0020]
+  - id: chat-023
+    scope: chat
+    question: 预算 3000 买二手 iPhone，我该怎么验机？
+    reference_answer: 按验机清单来：对照描述核对成色与外观，纯色背景下查屏幕坏点，查看电池健康度，检查进水标颜色；通话、Wi-Fi、蓝牙、面容、摄像头逐项实测，最后用序列号在官网核对型号与维修记录。
+    gold_doc_ids: [kb-0031]
+  - id: chat-024
+    scope: chat
+    question: 线下面交怎么防止被骗？
+    reference_answer: 面交也走平台下单付款，担保到确认收货才放款；约在白天公共场所当面验货后再确认收货；拒绝脱离平台私下转账与站外联系，警惕索要验证码、要求屏幕共享的假客服。
+    gold_doc_ids: [kb-0026]
   # ---- 检索质量（hit@5 / MRR，无生成）----
   - id: retr-001
     scope: retrieval
@@ -166,3 +176,27 @@ cases:
     scope: retrieval
     question: 下单后多久不付款会取消
     gold_doc_ids: [kb-0018]
+  - id: retr-019
+    scope: retrieval
+    question: 当面验机要查哪些地方
+    gold_doc_ids: [kb-0031]
+  - id: retr-020
+    scope: retrieval
+    question: 线下面交注意什么
+    gold_doc_ids: [kb-0026]
+  - id: retr-021
+    scope: retrieval
+    question: 私下转账有保障吗
+    gold_doc_ids: [kb-0028]
+  - id: retr-022
+    scope: retrieval
+    question: 常见骗局有哪些
+    gold_doc_ids: [kb-0027]
+  - id: retr-023
+    scope: retrieval
+    question: 二手游戏本怎么验
+    gold_doc_ids: [kb-0032]
+  - id: retr-024
+    scope: retrieval
+    question: 二手书品相怎么判断
+    gold_doc_ids: [kb-0033]
