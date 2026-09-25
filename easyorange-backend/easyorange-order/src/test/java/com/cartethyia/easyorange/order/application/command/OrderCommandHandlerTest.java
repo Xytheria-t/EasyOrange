@@ -4,6 +4,7 @@ import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
@@ -23,6 +24,8 @@ import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import java.util.Optional;
+import java.util.function.Consumer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(MockitoExtension.class)
@@ -122,6 +126,19 @@ class OrderCommandHandlerTest {
     @Nested
     @DisplayName("onPaymentSucceeded（支付成功事件桥接）")
     class PaymentSucceededTests {
+
+        @BeforeEach
+        void runTxCallbackForReal() {
+            // TransactionTemplate 直通：executeWithoutResult 真实执行回调（事务边界由 Spring 集成测试覆盖）
+            lenient()
+                    .doAnswer(invocation -> {
+                        Consumer<TransactionStatus> callback = invocation.getArgument(0);
+                        callback.accept(null);
+                        return null;
+                    })
+                    .when(transactionTemplate)
+                    .executeWithoutResult(any());
+        }
 
         @Test
         @DisplayName("待付款订单置为已支付并发布事件")

@@ -182,8 +182,11 @@ public class OrderCommandHandler {
      * 管理端强制取消）时支付款已扣但订单不再流转，触发自动退款补偿（库存已在取消时恢复，
      * 订单保持取消态不再更新）；其余非法状态由 {@link Order#pay} 守卫抛 {@code ORDER_STATUS_ERROR}，
      * 消费失败进 DLQ/terminal 人工介入。
+     * <p>
+     * 不整体开事务：退款分支是纯网关动作（无 DB 写），网关调用必须在事务外（支付两阶段不变量，
+     * 与支付侧 PaymentPhaseExecutor 同口径）；置 PAID 分支才用 {@link TransactionTemplate} 显式开边界，
+     * 并在事务内重读订单，让 {@link Order#pay} 的状态守卫以事务内快照为准。
      */
-    @Transactional(rollbackFor = Exception.class)
     public void onPaymentSucceeded(String orderId) {
         var aggregate = findOrder(orderId);
         if (aggregate.status() == OrderStatus.PAID) {
@@ -191,13 +194,17 @@ public class OrderCommandHandler {
             return;
         }
         if (aggregate.status() == OrderStatus.CANCELLED) {
-            // 支付已成功但订单已取消：仅补偿退款，不改订单状态；退款失败仍走容器重试/DLQ 人工兜底
+            // 支付已成功但订单已取消：仅补偿退款，不改订单状态；退款失败仍走容器重试/DLQ 人工兜底。
+            // 无 DB 写，纯网关调用——留在事务里会让外部 HTTP 挂住 DB 连接，回滚也撤不回已发生的退款
             log.info("支付成功但订单已取消，自动退款: orderId={}", orderId);
             paymentGatewayPort.refundPayment(orderId, OrderConstant.AUTO_REFUND_REASON);
             return;
         }
-        var result = aggregate.pay(LocalDateTime.now());
-        persistAndPublish(aggregate, result);
+        transactionTemplate.executeWithoutResult(status -> {
+            var fresh = findOrder(orderId);
+            var result = fresh.pay(LocalDateTime.now());
+            persistAndPublish(fresh, result);
+        });
     }
 
     @Transactional(rollbackFor = Exception.class)
