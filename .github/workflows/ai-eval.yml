@@ -83,11 +83,14 @@ jobs:
       # 必须走 verify 生命周期而非直接调 failsafe 目标：surefire/failsafe 的 argLine 里含
       # @{argLine} 晚绑定占位符，由 jacoco:prepare-agent（绑定 initialize）赋值；
       # 直接调 failsafe:integration-test 时该占位符不解析，JVM 以「could not open '{argLine}'」启动失败。
-      # 本模块单测规模小，跑完整 verify 的代价可接受。
+      # 单测必须让 surefire 空转：门禁的 -D 开关会作为系统属性透传进 surefire fork，
+      # ProdSearchGuardTest 的「prod 下属性缺失必须启动失败」用例会因此看到该属性而假失败
+      # （2026-09-25 本地实测；surefire 的 skip 参数吃不到 -Dsurefire.skip，只能用空匹配绕）。
+      # 单测由 backend-ci 全量覆盖，门禁只认 failsafe 的金标准回归。
       - name: Golden set regression gate
         env:
           SPRING_DOCKER_COMPOSE_SKIP_IN_TESTS: "false"
-        run: ./mvnw -pl easyorange-application verify -Dit.test=GoldenSetRegressionIT -Deasyorange.search.elasticsearch.enabled=true -B
+        run: ./mvnw -pl easyorange-application verify -Dtest=__NoMatchingUnitTests__ -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=GoldenSetRegressionIT -Deasyorange.search.elasticsearch.enabled=true -B
         working-directory: easyorange-backend
 
       # 门禁红时把判定依据捞出来：Judge 分、评审覆盖率、hit@5/MRR、逐用例结果都在失败报告里，
