@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""结构计数漂移校验与单点校准 — 校验「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板 / N 前端测试文件 / N 条金标准集」与代码事实。
+"""结构计数漂移校验与单点校准 — 校验「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板 / N 前端测试文件 / N 条金标准集 / N 篇语料」与代码事实。
 
 背景：这几类计数随代码频繁变动、靠人肉同步，已经漂移过一整轮 —— README 写 11 条 ADR（实际 12）、
 根 AGENTS.md 写 11 个（实际 12）、面试文档写 10 个消费者（实际 12）、mermaid 写 32 表（实际 33）、
@@ -64,6 +64,21 @@ def _cell(label: str) -> str:
 TOLERANT_PATTERNS: dict[str, tuple[re.Pattern[str], str]] = {
     "modules": (re.compile(rf"{_B}(\d+){_B}\s*个?\s*模块"), "pom.xml 的 <module> 数"),
     "tables": (re.compile(rf"{_B}(\d+){_B}\s*(?:张)?表"), "全部 V*.sql 的 CREATE TABLE − DROP TABLE"),
+}
+
+# 语料篇数：与上面两类不同，散落处（工程指标正文 / ADR-0012 / ADR 索引）是**有意保留的引用位**
+# （审计定过口径：这些地方写具体数字），防再犯靠「值校验」而非「禁落点」——写的数 ≠ 种子 SQL
+# 实际篇数即失败。历史口径（「扩充前基线（23 篇语料 …）」这类 N 篇语料倒装、以及决策过程叙事
+# 「共 20 篇」）不在模式内，不会被误伤。曾因漏管漂移过一轮：工程指标写 23 篇而种子 SQL 是 33 篇。
+VALUE_PATTERNS: dict[str, tuple[re.Pattern[str], str]] = {
+    "knowledge_docs": (
+        re.compile(
+            rf"语料扩到\s*{_B}(\d+){_B}\s*篇"
+            rf"|语料定稿\s*{_B}(\d+){_B}\s*篇"
+            rf"|语料\s*（?\s*{_B}(\d+){_B}\s*篇"
+        ),
+        "R__seed_knowledge_docs.sql 的 INSERT 行数",
+    ),
 }
 
 # 中文数字（`十一模块` / `二十七张表`）：与阿拉伯数字同标准，同样由「按值判定」兜住子集口径
@@ -175,6 +190,9 @@ CLAIM_PATTERNS: dict[str, tuple[re.Pattern[str], str]] = {
     ),
 }
 
+# 单点区块的键全集（= CLAIM_PATTERNS + VALUE_PATTERNS，顺序即回写顺序）
+BLOCK_KEYS = [*CLAIM_PATTERNS, *VALUE_PATTERNS]
+
 
 def _java_sources() -> list[Path]:
     return [
@@ -233,6 +251,14 @@ def code_facts() -> dict[str, int]:
         else 0
     )
 
+    # 语料篇数 = 种子 SQL 的 INSERT 行（每篇一行 tuple，正文转义在行内不换行）
+    seed_sql = MIGRATION / "R__seed_knowledge_docs.sql"
+    facts["knowledge_docs"] = (
+        len(re.findall(r"^\('kb-", seed_sql.read_text(encoding="utf-8"), re.MULTILINE))
+        if seed_sql.exists()
+        else 0
+    )
+
     return facts
 
 
@@ -282,23 +308,23 @@ def read_block_facts() -> dict[str, int] | None:
 
 
 def render_block(facts: dict[str, int]) -> str:
-    """单点区块里 code block 的规范内容（键序即 CLAIM_PATTERNS 的定义顺序，保证 --fix 幂等）。"""
-    return "\n".join(f"{key}: {facts[key]}" for key in CLAIM_PATTERNS)
+    """单点区块里 code block 的规范内容（键序即 BLOCK_KEYS 的定义顺序，保证 --fix 幂等）。"""
+    return "\n".join(f"{key}: {facts[key]}" for key in BLOCK_KEYS)
 
 
 def render_inline(facts: dict[str, int]) -> str:
     """一行式计数摘要（日志用）。"""
-    return " / ".join(f"{key}={facts[key]}" for key in CLAIM_PATTERNS)
+    return " / ".join(f"{key}={facts[key]}" for key in BLOCK_KEYS)
 
 
-def scan_claims() -> tuple[list[tuple[str, int, str, str, str, bool]], int]:
-    """扫描全仓 md 的结构计数写法，返回 ([(相对路径, 行号, 名称, 数字, 命中文本, 按值判定)], 检查处数)。
+def scan_claims() -> tuple[list[tuple[str, int, str, str, str, str]], int]:
+    """扫描全仓 md 的结构计数写法，返回 ([(相对路径, 行号, 名称, 数字, 命中文本, 判定模式)], 检查处数)。
 
     单点区块自身与豁免文件跳过 —— 区块是唯一允许出现这些数字的地方，其余位置由调用方判违规。
-    末位 `按值判定` 为真时（裸写「N 模块」/「N 张表」与中文数字写法），命中值等于总数才算违规，
-    小于总数当子集口径放过。
+    判定模式：`any` = 命中即重复落点；`total` = 按值判定，命中值等于总数才算重复落点（子集口径放过）；
+    `value` = 值校验，散落处允许引用但写的数必须等于代码事实（语料篇数专用，见 VALUE_PATTERNS）。
     """
-    hits: list[tuple[str, int, str, str, str, bool]] = []
+    hits: list[tuple[str, int, str, str, str, str]] = []
     checked = 0
     for path in sorted(ROOT.rglob("*.md")):
         rel = path.relative_to(ROOT)
@@ -311,13 +337,18 @@ def scan_claims() -> tuple[list[tuple[str, int, str, str, str, bool]], int]:
             if lineno - 1 in skip:
                 continue
             found = [
-                (key, match, key in TOLERANT_PATTERNS)
+                (key, match, "total" if key in TOLERANT_PATTERNS else "any")
                 for key, (pattern, _source) in CLAIM_PATTERNS.items()
                 for match in pattern.finditer(line)
             ]
             found += [
-                (key, match, True)
+                (key, match, "total")
                 for key, (pattern, _source) in TOLERANT_PATTERNS.items()
+                for match in pattern.finditer(line)
+            ]
+            found += [
+                (key, match, "value")
+                for key, (pattern, _source) in VALUE_PATTERNS.items()
                 for match in pattern.finditer(line)
             ]
             # 中文数字写法单独扫（不归一，避免与上面漏报/重复）：值按 cn_number 解析后同样按值判定
@@ -330,14 +361,14 @@ def scan_claims() -> tuple[list[tuple[str, int, str, str, str, bool]], int]:
                     if tail is None:
                         continue
                     checked += 1
-                    hits.append((str(rel), lineno, key, str(value), cn.group(0) + tail.group(0), True))
+                    hits.append((str(rel), lineno, key, str(value), cn.group(0) + tail.group(0), "total"))
                     break
-            for key, match, tolerant in found:
+            for key, match, mode in found:
                 raw = next((g for g in match.groups() if g), None)
                 if raw is None:
                     continue
                 checked += 1
-                hits.append((str(rel), lineno, key, raw.replace(",", ""), match.group(0).strip(), tolerant))
+                hits.append((str(rel), lineno, key, raw.replace(",", ""), match.group(0).strip(), mode))
     return hits, checked
 
 
@@ -380,7 +411,7 @@ def main() -> int:
     if block is None:
         drift.append(
             f"  {SSOT.relative_to(ROOT)} 找不到「{BLOCK_HEADING}」区块（或区块内缺 fenced code block）"
-            f" —— 这 9 类结构计数的唯一落点就是它；修：{FIX_CMD}"
+            f" —— 这 10 类结构计数的唯一落点就是它；修：{FIX_CMD}"
         )
     else:
         for key, value in facts.items():
@@ -392,9 +423,12 @@ def main() -> int:
                 )
 
     hits, checked = scan_claims()
-    for rel, lineno, key, raw, text, tolerant in hits:
-        if tolerant and int(raw) != facts[key]:
+    for rel, lineno, key, raw, text, mode in hits:
+        if mode == "total" and int(raw) != facts[key]:
             # 子集口径（`4 模块` CQRS 作用域 / `8 模块 domain`）：只在等于总数时才算重复落点
+            continue
+        if mode == "value" and int(raw) == facts[key]:
+            # 语料篇数的散落引用位：值与代码事实一致即放行，不一致（曾漂移成 23 vs 33）才报
             continue
         scattered.append(
             f"  {rel}:{lineno} 出现 {key} 计数「{text}」"
