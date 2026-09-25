@@ -32,22 +32,6 @@ const ClipboardCheckIcon = (): ReactElement => (
     </svg>
 );
 
-const SparklesIcon = (): ReactElement => (
-    <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-    >
-        <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
-        <path d="M20 3v4" />
-        <path d="M22 5h-4" />
-    </svg>
-);
-
 const SearchIcon = (): ReactElement => (
     <svg
         viewBox="0 0 24 24"
@@ -110,17 +94,8 @@ const PIPELINE_STEPS: PipelineStep[] = [
         detail: 'AI 建议价随商品落库,采纳率与偏离分布可量化,不靠 LLM 判分',
     },
     {
-        id: 'enhance',
-        index: 3,
-        side: 'buyer',
-        icon: <SparklesIcon />,
-        title: '搜索增强',
-        subtitle: '4 路并行 Tool Calling',
-        detail: '标签 / 市场分析 / 建议问题走本地规则,仅意图识别打模型,超时降级不阻塞',
-    },
-    {
         id: 'rag',
-        index: 4,
+        index: 3,
         side: 'buyer',
         icon: <SearchIcon />,
         title: '对话式检索',
@@ -129,7 +104,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
     },
     {
         id: 'chat',
-        index: 5,
+        index: 4,
         side: 'buyer',
         icon: <MessageIcon />,
         title: '流式商品问答',
@@ -345,10 +320,10 @@ function AIFeaturesSection() {
                         发布路径 <strong>1</strong> 次模型调用
                     </span>
                     <span className="metric-chip">
-                        <strong>4</strong> 路并行编排
+                        Agent 工具循环 <strong>7</strong> 步上限
                     </span>
                     <span className="metric-chip">
-                        金标准 <strong>35</strong> 条进 CI
+                        金标准 <strong>43</strong> 条进 CI
                     </span>
                 </p>
             </div>

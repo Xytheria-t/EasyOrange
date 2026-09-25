@@ -36,10 +36,10 @@ describe('AIFeaturesSection', () => {
         expect(screen.getByText('对话式找货')).toBeInTheDocument();
     });
 
-    it('renders five steps across both sides', () => {
+    it('renders four steps across both sides', () => {
         render(<AIFeaturesSection />);
 
-        expect(screen.getAllByTestId(/^pipeline-step-/)).toHaveLength(5);
+        expect(screen.getAllByTestId(/^pipeline-step-/)).toHaveLength(4);
     });
 
     it('renders only citable stats in the footnote', () => {
@@ -48,8 +48,8 @@ describe('AIFeaturesSection', () => {
         const metrics = container.querySelector('.pipeline-metrics');
         expect(metrics?.textContent).toContain('2 条主线链路');
         expect(metrics?.textContent).toContain('发布路径 1 次模型调用');
-        expect(metrics?.textContent).toContain('4 路并行编排');
-        expect(metrics?.textContent).toContain('金标准 35 条进 CI');
+        expect(metrics?.textContent).toContain('Agent 工具循环 7 步上限');
+        expect(metrics?.textContent).toContain('金标准 43 条进 CI');
         expect(container.querySelectorAll('.metric-chip')).toHaveLength(4);
     });
 });
