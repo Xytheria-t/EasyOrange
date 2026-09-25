@@ -356,8 +356,7 @@ class AiModelSupportTest {
         @DisplayName("scoped 调用把场景 maxTokensPerCall 真下发进 per-request options（生成长度有硬约束）")
         void scopedCall_sendsScenarioMaxTokens() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("回答"));
-            var props =
-                    PropertyBindings.bind(AiProperties.class, "budget.scenarios.chat.max-tokens-per-call", "1500");
+            var props = PropertyBindings.bind(AiProperties.class, "budget.scenarios.chat.max-tokens-per-call", "1500");
             var support = TestAiModelSupport.create(callLogRecorder, budgetStore, props);
 
             support.callText(chatModel, AiCallScope.CHAT, "system", "user");

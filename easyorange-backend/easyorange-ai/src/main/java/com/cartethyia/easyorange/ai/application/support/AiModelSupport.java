@@ -232,10 +232,9 @@ public class AiModelSupport {
                 scope,
                 chatModel,
                 systemPrompt + userText,
-                () -> chatOutcome(chatModel.call(
-                        new Prompt(
-                                List.of(new SystemMessage(systemPrompt), userMessage),
-                                jsonOptions(chatModel, maxTokensOf(scope))))));
+                () -> chatOutcome(chatModel.call(new Prompt(
+                        List.of(new SystemMessage(systemPrompt), userMessage),
+                        jsonOptions(chatModel, maxTokensOf(scope))))));
         return parseJson(scope, json, responseType);
     }
 
