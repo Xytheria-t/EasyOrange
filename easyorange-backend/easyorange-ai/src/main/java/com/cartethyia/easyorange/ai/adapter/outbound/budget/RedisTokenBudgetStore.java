@@ -1,9 +1,11 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.budget;
 
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +20,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
  * {@code AgentLoopRunner}，本类只负责存取。key 名自带日期，跨天自然从零开始，TTL 只做回收。
  * <p>
  * <b>fail-open</b>：Redis 不可用（含未装配）或读写异常时，读返回 empty、写只告警——记账失败不该让对话
- * 不可用；代价是这段时间的预算判定按「今日未用量」放行，与限流器 fail-open 同取向。
+ * 不可用；代价是这段时间的预算判定按「今日未用量」放行，与限流器 fail-open 同取向。fail-open 只 log
+ * 会隐身，读写失败计数（meter 构造期按 op 全集一次注册）是这段时间「按未用量放行」的唯一统计面。
  * <p>
  * 用 {@link StringRedisTemplate} 而不是 {@code RedisTemplate<Object, Object>}：{@code HINCRBY} 要的是
  * 纯数字字符串，JSON 序列化器会把增量写成带类型信息的 JSON（限流器曾因序列化器让 Lua ARGV 变二进制）。
@@ -28,19 +31,45 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 @Slf4j
 public class RedisTokenBudgetStore implements TokenBudgetStore {
 
+    /**
+     * fail-open 操作维度 — {@link #FAIL_OPEN_METRIC} 的封闭 tag 集，构造期按全集注册计数器（新增操作自动带上）。
+     * tag 值是时序契约：改枚举名不改 tag。
+     */
+    private enum FailOpenOp {
+        /** 读失败 —— 预算判定按「今日未用量」放行。 */
+        READ("read"),
+        /** 写失败 —— 本次调用不计入预算。 */
+        WRITE("write");
+
+        private final String tag;
+
+        FailOpenOp(String tag) {
+            this.tag = tag;
+        }
+
+        String tag() {
+            return tag;
+        }
+    }
+
     static final String KEY_PREFIX = "eo:ai:budget:";
     static final String FIELD_INPUT = "input";
     static final String FIELD_OUTPUT = "output";
+    private static final String FAIL_OPEN_METRIC = "easyorange.ai.budget.failopen";
     /** 只做回收：key 名带日期，跨天不再读取；当天最后一次写入后 48h 由 Redis 自动清理。 */
     private static final Duration KEY_TTL = Duration.ofHours(48);
 
     private final ObjectProvider<StringRedisTemplate> redisProvider;
-    /** fail-open 只 log 会隐身：读写失败计数是这段时间预算判定「按未用量放行」的唯一统计面。 */
-    private final MeterRegistry meterRegistry;
+
+    /** fail-open 计数 —— 按 op 全集注册，读 / 写失败共用同一组计数器。 */
+    private final Map<FailOpenOp, Counter> failOpenCounters;
 
     public RedisTokenBudgetStore(ObjectProvider<StringRedisTemplate> redisProvider, MeterRegistry meterRegistry) {
         this.redisProvider = redisProvider;
-        this.meterRegistry = meterRegistry;
+        this.failOpenCounters = new EnumMap<>(FailOpenOp.class);
+        for (FailOpenOp op : FailOpenOp.values()) {
+            failOpenCounters.put(op, meterRegistry.counter(FAIL_OPEN_METRIC, "op", op.tag()));
+        }
         log.info("TokenBudgetStore: 使用 Redis 版存储（日预算跨实例共享）");
     }
 
@@ -61,7 +90,7 @@ public class RedisTokenBudgetStore implements TokenBudgetStore {
                     System.currentTimeMillis()));
         } catch (Exception e) {
             log.warn("Read today's token usage failed, budget check proceeds as unused: {}", e.getMessage());
-            meterRegistry.counter("easyorange.ai.budget.failopen", "op", "read").increment();
+            failOpenCounters.get(FailOpenOp.READ).increment();
             return Optional.empty();
         }
     }
@@ -83,9 +112,7 @@ public class RedisTokenBudgetStore implements TokenBudgetStore {
             redis.expire(key, KEY_TTL);
         } catch (Exception e) {
             log.warn("Record token usage failed, this call is not counted: {}", e.getMessage());
-            meterRegistry
-                    .counter("easyorange.ai.budget.failopen", "op", "write")
-                    .increment();
+            failOpenCounters.get(FailOpenOp.WRITE).increment();
         }
     }
 
