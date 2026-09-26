@@ -7,8 +7,11 @@ import com.cartethyia.easyorange.ai.domain.model.CategorySummary;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
 import com.cartethyia.easyorange.ai.domain.port.CategoryListPort;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.mcp.annotation.McpTool;
@@ -28,7 +31,6 @@ import org.springframework.stereotype.Component;
  * 每次调用计 {@code easyorange.mcp.tool{name}} 指标，与 Agent 循环指标同面板观测。
  */
 @Component
-@RequiredArgsConstructor
 public class PlatformMcpTools {
 
     static final String TOOL_SEARCH_PRODUCTS = "search_products";
@@ -40,11 +42,50 @@ public class PlatformMcpTools {
     private static final int MAX_PRODUCT_TOP_K = 20;
     private static final int MAX_KNOWLEDGE_TOP_K = 10;
 
+    /**
+     * 工具指标 tag 封闭集 — 4 个公开只读工具名（与 {@code @McpTool(name=...)} 同源常量）。
+     * 构造期按全集注册，调用点传枚举，热路径零查找；新增工具只加枚举常量，计数器自动带上。
+     */
+    private enum McpToolTag {
+        SEARCH_PRODUCTS(TOOL_SEARCH_PRODUCTS),
+        GET_PRODUCT_DETAIL(TOOL_GET_PRODUCT_DETAIL),
+        LIST_CATEGORIES(TOOL_LIST_CATEGORIES),
+        SEARCH_KNOWLEDGE(TOOL_SEARCH_KNOWLEDGE);
+
+        private final String tag;
+
+        McpToolTag(String tag) {
+            this.tag = tag;
+        }
+
+        String tag() {
+            return tag;
+        }
+    }
+
     private final AssetSourcingService assetSourcingService;
     private final AssetDetailPort assetDetailPort;
     private final KnowledgeRetrievalService knowledgeRetrievalService;
     private final CategoryListPort categoryListPort;
-    private final MeterRegistry meterRegistry;
+
+    /** 工具调用计数 —— 按 {@link McpToolTag} 全集构造期注册。 */
+    private final Map<McpToolTag, Counter> callCounters;
+
+    public PlatformMcpTools(
+            AssetSourcingService assetSourcingService,
+            AssetDetailPort assetDetailPort,
+            KnowledgeRetrievalService knowledgeRetrievalService,
+            CategoryListPort categoryListPort,
+            MeterRegistry meterRegistry) {
+        this.assetSourcingService = assetSourcingService;
+        this.assetDetailPort = assetDetailPort;
+        this.knowledgeRetrievalService = knowledgeRetrievalService;
+        this.categoryListPort = categoryListPort;
+        this.callCounters = new EnumMap<>(McpToolTag.class);
+        for (McpToolTag tool : McpToolTag.values()) {
+            callCounters.put(tool, meterRegistry.counter("easyorange.mcp.tool", "name", tool.tag()));
+        }
+    }
 
     @McpTool(
             name = TOOL_SEARCH_PRODUCTS,
@@ -53,7 +94,7 @@ public class PlatformMcpTools {
     public List<AssetHit> searchProducts(
             @McpToolParam(description = "检索关键词，支持中文自然语言") String query,
             @McpToolParam(description = "返回数量上限，默认 5，最大 20", required = false) @Nullable Integer topK) {
-        recordCall(TOOL_SEARCH_PRODUCTS);
+        recordCall(McpToolTag.SEARCH_PRODUCTS);
         return assetSourcingService.search(query, clampTopK(topK, MAX_PRODUCT_TOP_K));
     }
 
@@ -61,7 +102,7 @@ public class PlatformMcpTools {
             name = TOOL_GET_PRODUCT_DETAIL,
             description = "按资产 ID 查询在售资产详情（描述、成色、所在地、卖家、在售状态）。" + "found=false 表示资产不存在或已下架。")
     public ProductDetailResult getProductDetail(@McpToolParam(description = "资产 ID（36 位 UUID）") String productId) {
-        recordCall(TOOL_GET_PRODUCT_DETAIL);
+        recordCall(McpToolTag.GET_PRODUCT_DETAIL);
         if (productId == null || productId.isBlank()) {
             return new ProductDetailResult(false, null);
         }
@@ -76,7 +117,7 @@ public class PlatformMcpTools {
             description = "浏览平台资产类目。不传 parentId 返回一级类目列表（含各类目在售资产数）；" + "传 parentId 返回其直接子类目。")
     public List<CategorySummary> listCategories(
             @McpToolParam(description = "父类目 ID；省略时返回一级类目", required = false) @Nullable String parentId) {
-        recordCall(TOOL_LIST_CATEGORIES);
+        recordCall(McpToolTag.LIST_CATEGORIES);
         return categoryListPort.list(parentId);
     }
 
@@ -86,12 +127,12 @@ public class PlatformMcpTools {
     public List<KnowledgeHit> searchPlatformKnowledge(
             @McpToolParam(description = "检索关键词，支持中文自然语言") String query,
             @McpToolParam(description = "返回条数上限，默认 5，最大 10", required = false) @Nullable Integer topK) {
-        recordCall(TOOL_SEARCH_KNOWLEDGE);
+        recordCall(McpToolTag.SEARCH_KNOWLEDGE);
         return knowledgeRetrievalService.search(query, clampTopK(topK, MAX_KNOWLEDGE_TOP_K));
     }
 
-    private void recordCall(String tool) {
-        meterRegistry.counter("easyorange.mcp.tool", "name", tool).increment();
+    private void recordCall(McpToolTag tool) {
+        callCounters.get(tool).increment();
     }
 
     private static int clampTopK(@Nullable Integer topK, int max) {

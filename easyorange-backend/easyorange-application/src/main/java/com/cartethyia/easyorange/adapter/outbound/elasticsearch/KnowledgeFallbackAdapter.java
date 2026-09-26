@@ -4,10 +4,10 @@ import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeMatch;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -26,11 +26,16 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "easyorange.search.elasticsearch.enabled", havingValue = "false", matchIfMissing = true)
-@RequiredArgsConstructor
 public class KnowledgeFallbackAdapter implements KnowledgeIndexPort {
 
     private final KnowledgeRepository repository;
-    private final MeterRegistry meterRegistry;
+    /** 降级调用计数 —— 构造期一次注册（op 只有 search 一个值），热路径直接增。 */
+    private final Counter degradedSearchCounter;
+
+    public KnowledgeFallbackAdapter(KnowledgeRepository repository, MeterRegistry meterRegistry) {
+        this.repository = repository;
+        this.degradedSearchCounter = meterRegistry.counter("easyorange.ai.rag.degraded", "op", "search");
+    }
 
     @PostConstruct
     void warnDegradedPath() {
@@ -52,7 +57,7 @@ public class KnowledgeFallbackAdapter implements KnowledgeIndexPort {
 
     @Override
     public List<KnowledgeMatch> search(String query, List<Float> queryEmbedding, int topK) {
-        meterRegistry.counter("easyorange.ai.rag.degraded", "op", "search").increment();
+        degradedSearchCounter.increment();
         return repository.searchByContent(query, topK).stream()
                 .map(doc -> new KnowledgeMatch(doc.id(), 0, doc.title(), doc.content(), 0))
                 .toList();
