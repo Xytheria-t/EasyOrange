@@ -80,6 +80,9 @@ public class AiChatService {
      */
     private static final int SOURCE_LIMIT = 3;
 
+    /** 缓存命中回放的 token 事件块大小（字符）—— 不补人为延迟，缓存命中的价值就是快。 */
+    private static final int CACHE_REPLAY_CHUNK_CHARS = 8;
+
     private final ChatModel chatModel;
     private final PromptRegistry promptRegistry;
     private final AiModelSupport aiModelSupport;
@@ -237,10 +240,16 @@ public class AiChatService {
     /**
      * 流式回答（SSE）：step（Agent 步骤）→ token 逐段回调；错误统一走 {@link ChatStreamHandler#onError}。
      * <p>
+     * 语义缓存与非流式同一模式（embed 一次、命中回放、未命中写回）：命中把缓存的回答按固定块回放成
+     * token 事件并重放 sources 事件（不进循环，无 step 事件），前端协议不变；未命中照常流式生成，
+     * 成功后把完整 {@link ChatAnswer}（含 sources）写回缓存。缓存命中路径不碰会话记忆（与非流式命中
+     * 一致），也不进会话锁——没有需要串行化的共享状态。
+     * <p>
      * 预算记账不在这里做：{@link AiModelSupport} 拿到流末帧的用量分片后按场景记账，切面只前置检查，
      * 两条路径记账口径一致。前置检查手动做而不挂 {@link TokenBudget} 注解——不是 AOP 拦不住（注解同样
      * 会被切面拦截），而是切面在代理边界抛 {@link TokenBudgetExceededException}，本方法内部把预算异常
-     * 转成「预算已用尽」提示的路由接不到它（详见类注释）。
+     * 转成「预算已用尽」提示的路由接不到它（详见类注释）。预算检查在缓存查找之前：与非流式的
+     * 切面位置同位，预算是入口闸门，超限用户与非流式一样收到预算提示而非缓存回答。
      * <p>
      * <b>身份由调用方传入而非在这里读安全上下文</b>：流式工作跑在 Controller 提交的另一个线程上，
      * {@code SecurityContextHolder} 的 ThreadLocal 不会跟着过去（Controller 在 servlet 线程上
@@ -259,7 +268,22 @@ public class AiChatService {
                 log.warn("action=token_budget_exceeded, scenario={}", AiCallScope.CHAT.budgetScenario());
                 throw new TokenBudgetExceededException();
             }
-            handler.onDone(agenticAnswer(request, userId, handler).answer());
+            // 语义缓存：与非流式同一 embed-once 模式（空向量 = 缓存关闭 / embedding 不可用，直接跳过）
+            List<Float> queryEmbedding =
+                    request.forceFresh() ? List.of() : semanticCache.embedQuery(request.question());
+            if (!queryEmbedding.isEmpty()) {
+                var cached = semanticCache.lookUp(
+                        AiCallScope.CHAT, userId, request.question(), queryEmbedding, ChatAnswer.class);
+                if (cached.isPresent()) {
+                    replayCached(cached.get(), handler);
+                    return;
+                }
+            }
+            ChatAnswer answer = agenticAnswer(request, userId, handler);
+            if (!queryEmbedding.isEmpty()) {
+                semanticCache.store(AiCallScope.CHAT, userId, request.question(), queryEmbedding, answer);
+            }
+            handler.onDone(answer.answer());
         } catch (TokenBudgetExceededException e) {
             handler.onError("今日 AI 调用预算已用尽，请明天再试");
         } catch (LockAcquisitionException e) {
@@ -276,6 +300,22 @@ public class AiChatService {
             degradedCounters.get(DegradationReason.UNAVAILABLE).increment();
             handler.onError(ChatAnswer.UNAVAILABLE_TEXT);
         }
+    }
+
+    /**
+     * 缓存命中回放 — 把缓存的完整回答切成固定块推成 token 事件，sources 先行（与实时生成的事件
+     * 顺序一致：来源区先渲染，token 随后）。不补人为延迟：缓存命中的价值就是快，打字机观感由
+     * 前端渲染节奏决定。
+     */
+    private void replayCached(ChatAnswer cached, ChatStreamHandler handler) {
+        if (!cached.sources().isEmpty()) {
+            handler.onSources(cached.sources());
+        }
+        String answer = cached.answer();
+        for (int i = 0; i < answer.length(); i += CACHE_REPLAY_CHUNK_CHARS) {
+            handler.onToken(answer.substring(i, Math.min(i + CACHE_REPLAY_CHUNK_CHARS, answer.length())));
+        }
+        handler.onDone(answer);
     }
 
     private ChatAnswer agenticAnswer(ChatRequest request, String userId, @Nullable ChatStreamHandler handler) {
