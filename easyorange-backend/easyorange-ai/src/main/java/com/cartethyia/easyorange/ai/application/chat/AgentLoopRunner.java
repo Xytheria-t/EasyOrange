@@ -116,11 +116,52 @@ public class AgentLoopRunner {
     private final IdGenerator idGenerator;
     private final MeterRegistry meterRegistry;
 
+    /**
+     * 工具指标 tag 封闭集 — 名单即 {@link AgentTools} 的 7 个 {@code @Tool} 名；模型返回名单外的
+     * 工具名一律记 {@code unknown}。tag 若直接取模型输出（开集），一次提示注入就能把时序基数撑爆
+     * ——任意字符串都会成为 meter tag；封闭后「模型乱报工具名」只体现在 unknown 一格里。
+     * finish 收敛轮在执行前被拦截（不产生执行与耗时），保留常量只为全集封闭——该格恒为零数据点。
+     */
+    private enum TrackedTool {
+        KNOWLEDGE_SEARCH(AgentTools.TOOL_KNOWLEDGE_SEARCH),
+        PRODUCT_SEARCH(AgentTools.TOOL_PRODUCT_SEARCH),
+        PRODUCT_DETAIL(AgentTools.TOOL_PRODUCT_DETAIL),
+        MARKET_PRICE_STATS(AgentTools.TOOL_MARKET_PRICE_STATS),
+        COMPARE_ASSETS(AgentTools.TOOL_COMPARE_ASSETS),
+        REMEMBER_PREFERENCE(AgentTools.TOOL_REMEMBER_PREFERENCE),
+        FINISH(AgentTools.TOOL_FINISH),
+        UNKNOWN("unknown");
+
+        private final String tag;
+
+        TrackedTool(String tag) {
+            this.tag = tag;
+        }
+
+        String tag() {
+            return tag;
+        }
+
+        static TrackedTool fromName(String tool) {
+            for (TrackedTool tracked : values()) {
+                if (tracked.tag.equals(tool)) {
+                    return tracked;
+                }
+            }
+            return UNKNOWN;
+        }
+    }
+
     /** 循环结局计数 —— 按枚举全集注册（新增结局自动带上计数器，不会漏），构造期一次注册，热路径零查找。 */
     private final Map<LoopOutcome, Counter> loopCounters;
 
     /** 每请求决策轮数分布 —— 口径同样封闭，构造期注册（避免每请求 builder 分配）。 */
     private final DistributionSummary stepsSummary;
+
+    /** 工具调用计数 / 步级耗时 —— 按 {@link TrackedTool} 全集构造期注册（tag 键与取值是时序契约）。 */
+    private final Map<TrackedTool, Counter> toolCounters;
+
+    private final Map<TrackedTool, Timer> stepTimers;
 
     public AgentLoopRunner(
             AiModelSupport aiModelSupport,
@@ -157,6 +198,17 @@ public class AgentLoopRunner {
                 .description("每次对话请求的 Agent 决策轮数（含 finish 轮）")
                 .publishPercentiles(0.5, 0.95)
                 .register(meterRegistry);
+        this.toolCounters = new EnumMap<>(TrackedTool.class);
+        this.stepTimers = new EnumMap<>(TrackedTool.class);
+        for (TrackedTool tracked : TrackedTool.values()) {
+            toolCounters.put(tracked, meterRegistry.counter(TOOL_METRIC, "name", tracked.tag()));
+            stepTimers.put(
+                    tracked,
+                    Timer.builder(STEP_DURATION_METRIC)
+                            .tag("tool", tracked.tag())
+                            .publishPercentiles(0.95)
+                            .register(meterRegistry));
+        }
     }
 
     /**
@@ -328,12 +380,13 @@ public class AgentLoopRunner {
             ToolFace toolFace,
             DecisionConversation conversation) {
         AgentStepDecision decision = step.decision();
-        toolCounter(decision.tool()).increment();
+        TrackedTool tracked = TrackedTool.fromName(decision.tool());
+        toolCounters.get(tracked).increment();
 
         long start = System.nanoTime();
         ToolOutcome outcome = toolFace.invoke(decision);
         long latencyMs = (System.nanoTime() - start) / 1_000_000;
-        stepTimer(decision.tool()).record(latencyMs, TimeUnit.MILLISECONDS);
+        stepTimers.get(tracked).record(latencyMs, TimeUnit.MILLISECONDS);
 
         recordStep(input, traceId, round, decision, toolInputOf(decision), outcome, latencyMs);
         conversation.appendStep(step.toolCall(), outcome.observation());
@@ -457,17 +510,6 @@ public class AgentLoopRunner {
                             toolCall.id(), toolCall.name(), observation)))
                     .build());
         }
-    }
-
-    private Counter toolCounter(String tool) {
-        return meterRegistry.counter(TOOL_METRIC, "name", tool);
-    }
-
-    private Timer stepTimer(String tool) {
-        return Timer.builder(STEP_DURATION_METRIC)
-                .tag("tool", tool)
-                .publishPercentiles(0.95)
-                .register(meterRegistry);
     }
 
     /**
