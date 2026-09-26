@@ -44,8 +44,8 @@ import tools.jackson.databind.ObjectMapper;
  *   <li>{@link AiCallLogPort} — 记一条 eo_ai_call_log（LLM-as-Judge 离线评估数据源）；</li>
  *   <li>{@link TokenBudgetStore} — 记本次调用的真实 token 用量（场景键 = scope 小写），
  *       供 {@code TokenBudgetAspect} / 流式链路的预算前置检查累计。供应商未回报用量时
- *       （部分兼容端点忽略 stream_options）退化为按场景上限估算，
- *       宁可高估也不让预算静默失效。</li>
+ *       （部分兼容端点忽略 stream_options）退化为按场景上限估算，宁可高估也不让预算静默失效；
+ *       失败调用不记账 —— 没有用量可依据，估算会让故障期虚烧日预算、恢复后把场景锁死。</li>
  * </ul>
  * <p>
  * 需要按角色分隔多轮消息（system / 历史 user+assistant / 当前 user）的调用走
@@ -66,24 +66,10 @@ public class AiModelSupport {
     private final ObjectMapper objectMapper;
 
     /**
-     * 普通文本生成：system + user 双消息。
-     */
-    public String callText(ChatModel chatModel, String systemPrompt, String userMessage) {
-        return outputText(
-                chatModel.call(new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)))));
-    }
-
-    /**
-     * 普通文本生成（带调用日志与预算记账）：system + user 双消息，成功后记录 scope/model/耗时/用量。
+     * 普通文本生成（带调用日志与预算记账）：system + user 双消息，委托多消息重载。
      */
     public String callText(ChatModel chatModel, AiCallScope scope, String systemPrompt, String userMessage) {
-        return recordCall(
-                scope,
-                chatModel,
-                systemPrompt + userMessage,
-                () -> chatOutcome(chatModel.call(new Prompt(
-                        List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)),
-                        scopedOptions(chatModel, scope)))));
+        return callText(chatModel, scope, List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)));
     }
 
     /**
@@ -109,13 +95,9 @@ public class AiModelSupport {
      * 走本方法的所有 AI 决策点与 LLM-as-Judge 会整体静默降级。
      */
     public String callJson(ChatModel chatModel, String systemPrompt, String userMessage) {
-        var jsonOptions = OpenAiChatOptions.builder()
-                .responseFormat(OpenAiChatModel.ResponseFormat.builder()
-                        .type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
-                        .build());
-        inheritConnection(jsonOptions, chatModel);
         return outputText(chatModel.call(new Prompt(
-                List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)), jsonOptions.build())));
+                List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)),
+                jsonOptions(chatModel, null))));
     }
 
     /**
@@ -186,14 +168,8 @@ public class AiModelSupport {
     }
 
     /**
-     * 文本向量化：{@code float[]} 转 {@code List<Float>}（ES kNN 查询需要的形态）。
-     */
-    public List<Float> embed(EmbeddingModel embeddingModel, String text) {
-        return toFloatList(embeddingModel.embed(text));
-    }
-
-    /**
-     * 文本向量化（带调用日志与预算记账）：同 {@link #embed}，响应不落库只记成功与否。
+     * 文本向量化（带调用日志与预算记账）：{@code float[]} 转 {@code List<Float>}
+     * （ES kNN 查询需要的形态），响应不落库只记成功与否。
      * <p>
      * 走 {@code embedForResponse} 拿响应本体：{@code embed(String)} 会把 {@link EmbeddingResponse}
      * 的 metadata 丢在中间层，供应商回报的 usage 取不到，成本报表里 embedding 一行就永远是 0。
@@ -466,9 +442,14 @@ public class AiModelSupport {
      * <p>
      * 有真实用量就用真实值；供应商未回报用量（embedding / 流式未带 usage）时退化为场景配置的单次上限，
      * 保证日预算仍能累计 —— 估算值偏高，但比「预算永远为 0、限流静默失效」安全。
+     * <b>失败调用不记账</b>：异常路径没有用量可依据，按上限估算会让故障期虚烧日预算
+     * （chat 口径下约 100 个失败请求烧穿 30 万日限），故障恢复后整个场景被前置检查锁死。
      */
     private void recordBudgetUsage(AiCallScope scope, @Nullable CallOutcome<?> outcome) {
         if (!aiProperties.budget().enabled()) {
+            return;
+        }
+        if (outcome == null) {
             return;
         }
         try {
