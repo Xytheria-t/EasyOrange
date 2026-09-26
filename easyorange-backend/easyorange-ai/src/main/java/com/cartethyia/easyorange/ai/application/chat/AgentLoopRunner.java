@@ -290,7 +290,7 @@ public class AgentLoopRunner {
     }
 
     /**
-     * chat 场景日预算前置检查 — 流式入口（AiChatService.checkBudget）与循环中途共用同一判定，
+     * chat 场景日预算前置检查 — 流式入口（{@code AiChatService#streamAnswer}）与循环中途共用同一判定，
      * 判据单处维护两处生效（used + maxPerCall > dailyLimit，与 TokenBudgetAspect 同式）。
      */
     public boolean chatBudgetExhausted() {
