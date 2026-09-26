@@ -105,7 +105,7 @@ class ToolCallingWireTest {
                 new InMemoryTokenBudgetStore(),
                 PropertyBindings.bind(AiProperties.class),
                 new ObjectMapper());
-        var tools = new AgentTools(List.of(), List.of(), List.of(), null, null, null, null, null);
+        var tools = new AgentTools(null, null, null, null, null);
 
         List<AssistantMessage.ToolCall> calls = support.callWithTools(
                 chatModel,
@@ -146,7 +146,7 @@ class ToolCallingWireTest {
                 new InMemoryTokenBudgetStore(),
                 PropertyBindings.bind(AiProperties.class),
                 new ObjectMapper());
-        var tools = new AgentTools(List.of(), List.of(), List.of(), null, null, null, null, null);
+        var tools = new AgentTools(null, null, null, null, null);
         var historyCall = new AssistantMessage.ToolCall(
                 "call-9", "function", AgentTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
 

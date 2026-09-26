@@ -28,7 +28,8 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
  * 生成供应商侧校验的 JSON Schema，方法体即「执行 + 观察格式化」。
  * <p>
  * 每次循环实例化一份：召回物累加器是单次请求内的可变状态（跨轮累加，供最终生成做引用溯源），
- * 换一次请求就换一个实例。框架不执行这些工具 —— Spring AI 2.0 的 {@code ChatModel.call} 只把 tool
+ * 由实例独占持有，换一次请求就换一个实例；编排器经只读快照方法读取，不共享可变引用。
+ * 框架不执行这些工具 —— Spring AI 2.0 的 {@code ChatModel.call} 只把 tool
  * 定义发给供应商、原样返回 tool call，执行与循环控制权都在 {@link AgentLoopRunner}
  * （步数上限 / 预算 / 降级在那边，这里只管单个工具的语义）。
  * <p>
@@ -96,9 +97,10 @@ public class AgentTools {
     /** 详情描述进观察前截断的字数 —— 描述是自由文本，长度不可控。 */
     private static final int DETAIL_DESC_MAX_CHARS = 80;
 
-    private final List<KnowledgeHit> knowledgeHits;
-    private final List<AssetHit> assets;
-    private final List<AssetDetail> details;
+    /** 各轮召回物累加器 — 请求内可变状态，实例独占持有；读取走只读快照方法，不交出可变引用。 */
+    private final List<KnowledgeHit> knowledgeHits = new ArrayList<>();
+    private final List<AssetHit> assets = new ArrayList<>();
+    private final List<AssetDetail> details = new ArrayList<>();
     private final KnowledgeRetrievalService retrievalService;
     private final AssetSourcingService assetSourcingService;
     private final AssetDetailPort assetDetailPort;
@@ -107,22 +109,31 @@ public class AgentTools {
     private final String userId;
 
     AgentTools(
-            List<KnowledgeHit> knowledgeHits,
-            List<AssetHit> assets,
-            List<AssetDetail> details,
             KnowledgeRetrievalService retrievalService,
             AssetSourcingService assetSourcingService,
             AssetDetailPort assetDetailPort,
             UserPreferenceRepository preferenceRepository,
             String userId) {
-        this.knowledgeHits = knowledgeHits;
-        this.assets = assets;
-        this.details = details;
         this.retrievalService = retrievalService;
         this.assetSourcingService = assetSourcingService;
         this.assetDetailPort = assetDetailPort;
         this.preferenceRepository = preferenceRepository;
         this.userId = userId;
+    }
+
+    /** 已累加的知识库命中（只读快照，供循环出口装配 Result）。 */
+    List<KnowledgeHit> knowledgeHits() {
+        return List.copyOf(knowledgeHits);
+    }
+
+    /** 已累加的在售资产命中（只读快照）。 */
+    List<AssetHit> assets() {
+        return List.copyOf(assets);
+    }
+
+    /** 查得的资产详情（只读快照）。 */
+    List<AssetDetail> details() {
+        return List.copyOf(details);
     }
 
     @Tool(
@@ -261,6 +272,14 @@ public class AgentTools {
         // 方法体不会被执行：收敛轮由 runner 在执行前按名称拦截（finish 不产生 observation 与耗时），
         // 这里的存在意义是让 finish 出现在发给供应商的工具 schema 里
         return TOOL_FINISH;
+    }
+
+    /**
+     * 决策失败降级的补检索 — 按原始问题检索一次并入累加器，判重口径与 {@link #knowledgeSearch} 一致：
+     * 此前轮次已召回过的文档不再计入，降级路径不会把 Result 撑出重复来源。
+     */
+    void recallKnowledgeFallback(String question) {
+        knowledgeHits.addAll(retainNewKnowledge(retrievalService.search(question, RETRIEVAL_TOP_K)));
     }
 
     /**
