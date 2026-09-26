@@ -65,14 +65,16 @@ class AiModelSupportTest {
     class CallTextTests {
 
         @Test
-        @DisplayName("system + user 双消息文本生成")
+        @DisplayName("system + user 双消息文本生成（委托多消息重载，消息形状不变）")
         void callText_success() {
             when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("你好"));
 
-            String result = aiModelSupport.callText(chatModel, "system", "user");
+            String result = aiModelSupport.callText(chatModel, AiCallScope.CHAT, "system", "user");
 
             assertThat(result).isEqualTo("你好");
-            verify(chatModel).call(any(Prompt.class));
+            var captor = ArgumentCaptor.forClass(Prompt.class);
+            verify(chatModel).call(captor.capture());
+            assertThat(captor.getValue().getInstructions()).hasSize(2);
         }
 
         @Test
@@ -160,14 +162,14 @@ class AiModelSupportTest {
     class EmbedTests {
 
         @Test
-        @DisplayName("float[] 向量转 List<Float>")
+        @DisplayName("float[] 向量转 List<Float>（ES kNN 查询需要的形态）")
         void embed_convertsArray() {
-            when(embeddingModel.embed("iPhone 14")).thenReturn(new float[] {1.0f, 2.5f, -3.0f});
+            when(embeddingModel.embedForResponse(List.of("iPhone 14")))
+                    .thenReturn(new EmbeddingResponse(List.of(new Embedding(new float[] {1.0f, 2.5f, -3.0f}, 0))));
 
-            List<Float> result = aiModelSupport.embed(embeddingModel, "iPhone 14");
+            List<Float> result = aiModelSupport.embed(embeddingModel, AiCallScope.SEMANTIC, "iPhone 14");
 
             assertThat(result).containsExactly(1.0f, 2.5f, -3.0f);
-            verify(embeddingModel).embed("iPhone 14");
         }
     }
 
@@ -325,8 +327,10 @@ class AiModelSupportTest {
         }
 
         @Test
-        @DisplayName("调用失败不记账（只在成功且有用量可依据时累计）")
+        @DisplayName("调用失败不记账 —— 即使场景配置了上限估算也不计（故障期虚烧预算会把恢复后的场景锁死）")
         void failure_recordsNothing() {
+            var props = PropertyBindings.bind(AiProperties.class, "budget.scenarios.chat.max-tokens-per-call", "1500");
+            support = TestAiModelSupport.create(callLogRecorder, budgetStore, props);
             when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("provider down"));
 
             assertThatThrownBy(() -> support.callText(chatModel, AiCallScope.CHAT, "system", "user"))
