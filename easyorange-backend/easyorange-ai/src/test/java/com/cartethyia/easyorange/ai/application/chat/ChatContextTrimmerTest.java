@@ -86,7 +86,7 @@ class ChatContextTrimmerTest {
     }
 
     @Test
-    @DisplayName("预算 <=0 -> 关闭裁剪,不产口径")
+    @DisplayName("预算 <=0 -> 关闭裁剪,不记数据点")
     void trim_disabled() {
         List<ChatTurn> history = List.of(asciiTurn(ChatTurn.Role.USER, 100), asciiTurn(ChatTurn.Role.ASSISTANT, 100));
         trimmer = new ChatContextTrimmer(
@@ -94,8 +94,11 @@ class ChatContextTrimmerTest {
 
         List<ChatTurn> kept = trimmer.trim(history);
 
+        // meter 构造期已注册，关闭锁的是生产行为「零数据点」而非零 meter 对象
         assertThat(kept).isSameAs(history);
-        assertThat(meterRegistry.getMeters()).isEmpty();
+        assertThat(trimCount("within")).isZero();
+        assertThat(trimCount("trimmed")).isZero();
+        assertThat(recordedTokens()).isZero();
     }
 
     @Test
