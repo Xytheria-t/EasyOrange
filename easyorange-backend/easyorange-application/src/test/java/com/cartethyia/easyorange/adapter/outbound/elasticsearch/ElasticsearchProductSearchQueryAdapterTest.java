@@ -409,8 +409,18 @@ class ElasticsearchProductSearchQueryAdapterTest {
                         .counter())
                 .isNotNull()
                 .satisfies(c -> assertThat(c.count()).isEqualTo(1.0));
-        assertThat(meterRegistry.find("easyorange.search.leg.duration").timers())
-                .hasSize(2);
+        assertThat(meterRegistry
+                        .find("easyorange.search.leg.duration")
+                        .tags("source", "product", "leg", "knn", "outcome", "failure")
+                        .timer())
+                .isNotNull()
+                .satisfies(t -> assertThat(t.count()).isEqualTo(1L));
+        assertThat(meterRegistry
+                        .find("easyorange.search.leg.duration")
+                        .tags("source", "product", "leg", "bm25", "outcome", "success")
+                        .timer())
+                .isNotNull()
+                .satisfies(t -> assertThat(t.count()).isEqualTo(1L));
     }
 
     @Test

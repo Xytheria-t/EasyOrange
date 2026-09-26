@@ -110,12 +110,12 @@ public class KnowledgeElasticsearchAdapter implements KnowledgeIndexPort {
         var rankedLists = new ArrayList<List<String>>();
 
         if (queryEmbedding != null && !queryEmbedding.isEmpty()) {
-            var knnLeg = runLeg("knn", knnQuery(queryEmbedding, candidateK));
+            var knnLeg = runLeg(SearchLegMetrics.Leg.KNN, knnQuery(queryEmbedding, candidateK));
             docsById.putAll(knnLeg.docs());
             rankedLists.add(knnLeg.ids());
         }
         if (query != null && !query.isBlank()) {
-            var bm25Leg = runLeg("bm25", bm25Query(query, candidateK));
+            var bm25Leg = runLeg(SearchLegMetrics.Leg.BM25, bm25Query(query, candidateK));
             docsById.putAll(bm25Leg.docs());
             rankedLists.add(bm25Leg.ids());
         }
@@ -138,7 +138,7 @@ public class KnowledgeElasticsearchAdapter implements KnowledgeIndexPort {
     /** 单路召回结果：有序 ID 列表 + id → 文档（融合后按 id 回捞正文）。 */
     private record Leg(List<String> ids, Map<String, KnowledgeChunkDocument> docs) {}
 
-    private Leg runLeg(String leg, NativeQuery esQuery) {
+    private Leg runLeg(SearchLegMetrics.Leg leg, NativeQuery esQuery) {
         long start = System.nanoTime();
         try {
             var hits = elasticsearchOperations.search(esQuery, KnowledgeChunkDocument.class);
@@ -148,12 +148,14 @@ public class KnowledgeElasticsearchAdapter implements KnowledgeIndexPort {
                 ids.add(hit.getId());
                 docs.put(hit.getId(), hit.getContent());
             }
-            legMetrics.record("knowledge", leg, Duration.ofNanos(System.nanoTime() - start), true);
+            legMetrics.record(
+                    SearchLegMetrics.Source.KNOWLEDGE, leg, Duration.ofNanos(System.nanoTime() - start), true);
             return new Leg(ids, docs);
         } catch (Exception e) {
             // 单路失败不影响另一路：退化为单路召回（语义检索优先于零结果）
             log.warn("Knowledge retrieval leg failed, falling back to single-leg ranking", e);
-            legMetrics.record("knowledge", leg, Duration.ofNanos(System.nanoTime() - start), false);
+            legMetrics.record(
+                    SearchLegMetrics.Source.KNOWLEDGE, leg, Duration.ofNanos(System.nanoTime() - start), false);
             return new Leg(List.of(), Map.of());
         }
     }

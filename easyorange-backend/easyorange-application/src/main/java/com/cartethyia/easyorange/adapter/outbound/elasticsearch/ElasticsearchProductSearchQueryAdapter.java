@@ -150,8 +150,8 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
     /** 两路召回 + RRF 融合：候选池按需增长，融合后按页切片（顺序由排名决定，不由 ES 分页决定）。 */
     private SearchResult fusedSearch(ProductSearchQuery query, int page, int size) {
         int candidateK = Math.max(MIN_CANDIDATES, page * size * 2);
-        var knnLeg = runLeg("knn", knnQuery(query, candidateK));
-        var bm25Leg = runLeg("bm25", bm25Query(query, candidateK));
+        var knnLeg = runLeg(SearchLegMetrics.Leg.KNN, knnQuery(query, candidateK));
+        var bm25Leg = runLeg(SearchLegMetrics.Leg.BM25, bm25Query(query, candidateK));
 
         var docsById = new LinkedHashMap<String, ProductDocument>();
         var rankedLists = new ArrayList<List<String>>();
@@ -259,7 +259,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
     private record Leg(
             List<String> ids, Map<String, ProductDocument> docs, long total, SearchHits<ProductDocument> hits) {}
 
-    private Leg runLeg(String leg, NativeQuery esQuery) {
+    private Leg runLeg(SearchLegMetrics.Leg leg, NativeQuery esQuery) {
         long start = System.nanoTime();
         try {
             var hits = elasticsearchOperations.search(esQuery, ProductDocument.class);
@@ -269,12 +269,12 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 ids.add(hit.getId());
                 docs.put(hit.getId(), hit.getContent());
             }
-            legMetrics.record("product", leg, Duration.ofNanos(System.nanoTime() - start), true);
+            legMetrics.record(SearchLegMetrics.Source.PRODUCT, leg, Duration.ofNanos(System.nanoTime() - start), true);
             return new Leg(ids, docs, hits.getTotalHits(), hits);
         } catch (Exception e) {
             // 单路失败不影响另一路：退化为单路排名，而不是把整个检索打成 500
             log.warn("Product search leg failed, falling back to single-leg ranking", e);
-            legMetrics.record("product", leg, Duration.ofNanos(System.nanoTime() - start), false);
+            legMetrics.record(SearchLegMetrics.Source.PRODUCT, leg, Duration.ofNanos(System.nanoTime() - start), false);
             return new Leg(List.of(), Map.of(), 0L, null);
         }
     }
