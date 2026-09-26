@@ -22,6 +22,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -33,13 +36,15 @@ import tools.jackson.databind.ObjectMapper;
  * 原生 tool calling 的 wire 契约测试 — 用 JDK 自带 {@link HttpServer} 当供应商桩，校验经
  * {@link AiModelSupport#callWithTools} 发出的**真实请求体**与回来的 tool call 解析。
  * <p>
- * 覆盖三件会「静默失效」的事（都不是单元测试能看出来的）：
+ * 覆盖四件会「静默失效」的事（都不是单元测试能看出来的）：
  * <ol>
  *   <li>工具定义确实进了请求体 {@code tools}（丢了 = 模型永不调工具，整条对话降级成单步检索）；</li>
  *   <li>per-request options 继承了模型名（缺 {@code model} 时 openai-java 回退 SDK 默认模型名，
  *       对非 OpenAI 供应商直接 404）；</li>
  *   <li>工具轮不带 {@code response_format}（JSON 模式与 tools 同发在部分供应商会冲突），
- *       且响应里的 tool call 经 Spring AI 的 OpenAI 映射层能被正确解析出来。</li>
+ *       且响应里的 tool call 经 Spring AI 的 OpenAI 映射层能被正确解析出来；</li>
+ *   <li>历史轮的 assistant tool_calls + role=tool 消息能序列化成供应商接受的请求体
+ *       （循环轮间的 wire 形态，{@code tool_call_id} 关联不上 = 第二轮起整条链路 400）。</li>
  * </ol>
  */
 @DisplayName("原生 tool calling wire 契约（HTTP 桩）-> 测试")
@@ -103,7 +108,10 @@ class ToolCallingWireTest {
         var tools = new AgentTools(List.of(), List.of(), List.of(), null, null, null, null, null);
 
         List<AssistantMessage.ToolCall> calls = support.callWithTools(
-                chatModel, AiCallScope.CHAT, "你是多步工具决策器", "用户问题：怎么退款？", List.of(ToolCallbacks.from(tools)));
+                chatModel,
+                AiCallScope.CHAT,
+                List.of(new SystemMessage("你是多步工具决策器"), new UserMessage("用户问题：怎么退款？")),
+                List.of(ToolCallbacks.from(tools)));
 
         String request = capturedBody.get();
         assertThat(request).contains("\"tools\"");
@@ -126,6 +134,42 @@ class ToolCallingWireTest {
         AgentStepDecision parsed = new ObjectMapper().readValue(calls.getFirst().arguments(), AgentStepDecision.class);
         assertThat(parsed.thought()).isEqualTo("查退款规则");
         assertThat(parsed.query()).isEqualTo("退款");
+    }
+
+    @Test
+    @DisplayName("历史轮按协议回填：assistant tool_calls 与 role=tool 观察进请求体（循环轮间的 wire 形态）")
+    void callWithTools_toolHistoryWireContract() throws Exception {
+        String baseUrl = "http://localhost:" + server.getAddress().getPort();
+        ChatModel chatModel = stubChatModel(baseUrl);
+        var support = new AiModelSupport(
+                noopCallLog(),
+                new InMemoryTokenBudgetStore(),
+                PropertyBindings.bind(AiProperties.class),
+                new ObjectMapper());
+        var tools = new AgentTools(List.of(), List.of(), List.of(), null, null, null, null, null);
+        var historyCall = new AssistantMessage.ToolCall(
+                "call-9", "function", AgentTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
+
+        List<AssistantMessage.ToolCall> calls = support.callWithTools(
+                chatModel,
+                AiCallScope.CHAT,
+                List.of(
+                        new SystemMessage("你是多步工具决策器"),
+                        new UserMessage("用户问题：怎么退款？"),
+                        AssistantMessage.builder().content("").toolCalls(List.of(historyCall)).build(),
+                        ToolResponseMessage.builder()
+                                .responses(List.of(new ToolResponseMessage.ToolResponse(
+                                        "call-9", AgentTools.TOOL_KNOWLEDGE_SEARCH, "命中 1 条：退款规则")))
+                                .build()),
+                List.of(ToolCallbacks.from(tools)));
+
+        // 循环轮间的消息序列能被 openai-java 正确序列化：assistant 带 tool_calls，观察走 role=tool
+        // （tool_call_id 关联不上 = 供应商 400，整条对话链路在第二轮起全挂——单元测试看不出来的 wire 事实）
+        String request = capturedBody.get();
+        assertThat(request).contains("\"tool_calls\"", "\"role\":\"tool\"", "\"tool_call_id\":\"call-9\"");
+        assertThat(request).contains("\"tools\"", "\"tool_choice\":\"required\"");
+        assertThat(calls).hasSize(1);
+        assertThat(calls.getFirst().name()).isEqualTo(AgentTools.TOOL_KNOWLEDGE_SEARCH);
     }
 
     private static ChatModel stubChatModel(String baseUrl) {

@@ -122,8 +122,11 @@ public class AiModelSupport {
      * 原生 tool calling 调用（带调用日志与预算记账）：把工具 schema 发给供应商侧校验，返回模型请求的
      * 工具调用（空列表 = 模型没调工具，由调用方按决策失败处理）。
      * <p>
+     * 消息序列由调用方组装并跨轮累积（[system, user, assistant tool_call, tool 观察, …]）：
+     * 历史按协议原样进上下文，轮间前缀稳定命中供应商 KV cache 折扣。
+     * <p>
      * 只发请求、不执行工具：Spring AI 2.0 的 {@code ChatModel.call} 原样返回 tool call（自动工具执行
-     * 已收进 ChatClient 的 ToolCallingAdvisor），执行与循环控制权因此留在调用方。
+     * 已收进 ChatClient 的 ToolCallingAdvisor），执行与循环控制权留在调用方。
      * <p>
      * 与 {@link #callJson} 同规矩：per-request options 必须继承模型的连接与模型名（只设 toolCallbacks
      * 时 {@code model} 为 null，openai-java 会回退 SDK 默认模型名，对非 OpenAI 供应商直接 404）。
@@ -131,13 +134,11 @@ public class AiModelSupport {
     public List<AssistantMessage.ToolCall> callWithTools(
             ChatModel chatModel,
             AiCallScope scope,
-            String systemPrompt,
-            String userMessage,
+            List<Message> messages,
             List<ToolCallback> toolCallbacks) {
-        return recordCall(scope, chatModel, systemPrompt + userMessage, () -> {
-            ChatResponse response = chatModel.call(new Prompt(
-                    List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)),
-                    toolOptions(chatModel, toolCallbacks, maxTokensOf(scope))));
+        return recordCall(scope, chatModel, joinTexts(messages), () -> {
+            ChatResponse response = chatModel.call(
+                    new Prompt(messages, toolOptions(chatModel, toolCallbacks, maxTokensOf(scope))));
             return new CallOutcome<>(toolCallsOf(response), reportedUsage(response));
         });
     }
