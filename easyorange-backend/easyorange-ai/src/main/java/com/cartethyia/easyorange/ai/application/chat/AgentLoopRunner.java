@@ -50,9 +50,9 @@ import tools.jackson.databind.ObjectMapper;
  * 编排结构（自治循环：调不调、调几次、调什么参数都由模型逐轮决定）：
  * 每轮把 7 个工具的 JSON Schema（{@link AgentTools} 的 {@code @Tool} 注解生成、供应商侧校验）随请求发出，
  * 模型以原生 tool calling 返回「调用哪个工具 + 参数 + 理由」；工具执行结果按对话协议原样回填进决策
- * 消息序列（assistant 的 tool_call 消息 + role=tool 的观察消息），逐轮累积 —— 首两条（system +
- * 首条 user）固定不变，轮间前缀稳定命中供应商 KV cache 折扣，与生成路径同一成本口径。
- * 规则类与找货类需求兼有时由模型分两步分别检索，而非一次穷举。
+ * 消息序列（assistant 的 tool_call 消息 + role=tool 的观察消息，见 {@link DecisionConversation}），
+ * 逐轮累积 —— 首两条（system + 首条 user）固定不变，轮间前缀稳定命中供应商 KV cache 折扣，
+ * 与生成路径同一成本口径。规则类与找货类需求兼有时由模型分两步分别检索，而非一次穷举。
  * <b>手写循环 + 原生模型接口</b>：工具只负责 schema 与「执行 + 观察格式」，调不调、调几次由本类决定
  * —— Spring AI 2.0 的 {@code ChatModel.call} 不自动执行工具（自动执行已收进 ChatClient 的
  * ToolCallingAdvisor），步数 / 预算 / 降级这些循环控制权都留在本类。
@@ -218,6 +218,77 @@ public class AgentLoopRunner {
         }
     }
 
+    /**
+     * 一次请求的工具面 — {@link AgentTools} 实例与它的两种框架形态（schema 下发用的回调列表、
+     * 按名执行用的回调表）绑在同一处，循环体不直接接触装配细节。
+     */
+    private record ToolFace(AgentTools tools, List<ToolCallback> callbacks, Map<String, ToolCallback> byName) {
+
+        static ToolFace of(AgentTools tools) {
+            List<ToolCallback> callbacks = List.of(ToolCallbacks.from(tools));
+            var byName = callbacks.stream()
+                    .collect(Collectors.toMap(
+                            callback -> callback.getToolDefinition().name(), Function.identity()));
+            return new ToolFace(tools, callbacks, byName);
+        }
+
+        /**
+         * 按名称分发执行 — 未知工具与执行异常（参数不合 schema / 工具内部故障）都收敛成失败观察：
+         * 模型据此换参数重试或收敛，不把整轮对话打成不可用。
+         */
+        ToolOutcome invoke(AgentStepDecision decision) {
+            String tool = decision.tool() == null ? "" : decision.tool();
+            ToolCallback callback = byName.get(tool);
+            if (callback == null) {
+                return new ToolOutcome(false, "未知工具 %s，请改用 %s".formatted(tool, TOOL_MENU));
+            }
+            try {
+                return new ToolOutcome(true, callback.call(decision.arguments()));
+            } catch (Exception e) {
+                // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
+                String reason = reasonOf(e.getCause() != null ? e.getCause() : e);
+                log.warn(
+                        "action=agent_tool_failed, tool={}, input={}, reason={}",
+                        tool,
+                        toolInputOf(decision),
+                        reason);
+                return new ToolOutcome(false, reason);
+            }
+        }
+    }
+
+    /**
+     * 决策对话 — 按对话协议逐轮累积的消息序列：首两条（system + 首条 user）每请求固定，
+     * 每执行一步按「assistant tool_call + role=tool 观察」回填，轮间前缀稳定命中供应商 KV cache 折扣。
+     */
+    private static final class DecisionConversation {
+
+        private final List<Message> messages;
+
+        DecisionConversation(String systemPrompt, String firstUserMessage) {
+            this.messages = new ArrayList<>();
+            messages.add(new SystemMessage(systemPrompt));
+            messages.add(new UserMessage(firstUserMessage));
+        }
+
+        /** 当轮的不可变消息序列（供决策调用下发）：循环后续追加的步骤对已发出的调用不可见。 */
+        List<Message> snapshot() {
+            return List.copyOf(messages);
+        }
+
+        /** 回填一步：assistant 消息携带原生 tool call，观察以 role=tool 消息原样进入下一轮上下文。 */
+        void appendStep(AssistantMessage.ToolCall toolCall, String observation) {
+            messages.add(AssistantMessage.builder()
+                    .content("")
+                    .toolCalls(List.of(toolCall))
+                    .build());
+            messages.add(ToolResponseMessage.builder()
+                    .responses(List.of(new ToolResponseMessage.ToolResponse(
+                            toolCall.id(), toolCall.name(), observation)))
+                    .build());
+        }
+    }
+
     public Result run(Input input) {
         try {
             Result result = executeLoop(input);
@@ -247,74 +318,62 @@ public class AgentLoopRunner {
 
     private Result executeLoop(Input input) {
         String traceId = idGenerator.generateId();
-        List<KnowledgeHit> hits = new ArrayList<>();
-        List<AssetHit> assets = new ArrayList<>();
-        List<AssetDetail> details = new ArrayList<>();
-        // 决策消息按对话协议逐轮累积：[system, user(问题/历史/画像), assistant(tool_call), tool(观察), …]
-        // 首两条每请求固定，轮间前缀稳定 → 供应商 KV cache 折扣可命中（与生成路径同一成本口径）
-        List<Message> decisionMessages = new ArrayList<>();
-        decisionMessages.add(new SystemMessage(promptRegistry.require(TOOL_PROMPT)));
-        decisionMessages.add(new UserMessage(baseStepUserMessage(input)));
-        // 工具实例与回调表按请求构建一次：召回物累加器跨轮复用，工具 schema 每轮随决策调用发出
-        var tools = new AgentTools(
-                hits,
-                assets,
-                details,
-                retrievalService,
-                assetSourcingService,
-                assetDetailPort,
-                preferenceRepository,
-                subjectUserId(input));
-        List<ToolCallback> toolCallbacks = List.of(ToolCallbacks.from(tools));
-        Map<String, ToolCallback> callbacksByName = toolCallbacks.stream()
-                .collect(Collectors.toMap(
-                        callback -> callback.getToolDefinition().name(), Function.identity()));
-        int maxSteps = aiProperties.chat().maxSteps();
+        var tools = agentToolsFor(input);
+        var toolFace = ToolFace.of(tools);
+        var conversation =
+                new DecisionConversation(promptRegistry.require(TOOL_PROMPT), baseStepUserMessage(input));
         int rounds = 0;
 
-        for (int round = 1; round <= maxSteps; round++) {
+        for (int round = 1; round <= aiProperties.chat().maxSteps(); round++) {
             if (round > 1 && chatBudgetExhausted()) {
                 log.warn(
                         "action=agent_loop_degraded, reason=budget, sessionId={}, rounds={}",
                         input.sessionId(),
                         rounds);
-                return snapshot(hits, assets, details, OUTCOME_BUDGET, rounds);
+                return snapshot(tools, OUTCOME_BUDGET, rounds);
             }
-            Optional<StepDecision> decided = decideStep(input, decisionMessages, toolCallbacks);
+            Optional<StepDecision> decided = decideStep(input, conversation.snapshot(), toolFace.callbacks());
             if (decided.isEmpty()) {
                 // 决策失败降级：按原始问题补一次知识库检索（规则类问题走检索是常态，
                 // 识别不出来最坏是多几条不相关片段进 prompt，好过把检索链路失效伪装成「无需检索」）。
                 // 补检索自身故障不外抛：以已有召回物继续生成（与工具步「查不到就如实说」同语义），
                 // 不让对话死在降级路径上
                 try {
-                    hits.addAll(retrievalService.search(input.question(), AgentTools.RETRIEVAL_TOP_K));
+                    tools.recallKnowledgeFallback(input.question());
                 } catch (Exception e) {
                     log.warn(
                             "action=agent_fallback_search_failed, sessionId={}, reason={}",
                             input.sessionId(),
                             reasonOf(e));
                 }
-                return snapshot(hits, assets, details, OUTCOME_DECISION_FAILED, rounds);
+                return snapshot(tools, OUTCOME_DECISION_FAILED, rounds);
             }
             rounds = round;
             StepDecision step = decided.get();
 
             if (AgentTools.TOOL_FINISH.equals(step.decision().tool())) {
                 recordStep(input, traceId, round, step.decision(), null, null, 0);
-                return snapshot(hits, assets, details, OUTCOME_FINISHED, rounds);
+                return snapshot(tools, OUTCOME_FINISHED, rounds);
             }
-            executeToolStep(input, traceId, round, step, callbacksByName, decisionMessages);
+            executeToolStep(input, traceId, round, step, toolFace, conversation);
         }
-        return snapshot(hits, assets, details, OUTCOME_STEP_LIMIT, rounds);
+        return snapshot(tools, OUTCOME_STEP_LIMIT, rounds);
     }
 
     /**
-     * 退出快照 — 四条出口（finish / 步数超限 / 预算耗尽 / 决策失败）共用同一口径：召回物拷贝成不可变
-     * （循环内的累加器仍被工具实例持有，不把可变引用交出去），outcome 与轮数供指标与降级归因。
+     * 按请求装配工具实例 — 召回累加器随实例隔离（所有权在 {@link AgentTools}，出口经只读快照收取）。
      */
-    private static Result snapshot(
-            List<KnowledgeHit> hits, List<AssetHit> assets, List<AssetDetail> details, String outcome, int rounds) {
-        return new Result(List.copyOf(hits), List.copyOf(assets), List.copyOf(details), outcome, rounds);
+    private AgentTools agentToolsFor(Input input) {
+        return new AgentTools(
+                retrievalService, assetSourcingService, assetDetailPort, preferenceRepository, subjectUserId(input));
+    }
+
+    /**
+     * 退出快照 — 四条出口（finish / 步数超限 / 预算耗尽 / 决策失败）共用同一口径：从工具实例收
+     * 只读快照（累加器由工具实例独占持有，可变引用不出去），outcome 与轮数供指标与降级归因。
+     */
+    private static Result snapshot(AgentTools tools, String outcome, int rounds) {
+        return new Result(tools.knowledgeHits(), tools.assets(), tools.details(), outcome, rounds);
     }
 
     /**
@@ -326,11 +385,7 @@ public class AgentLoopRunner {
             Input input, List<Message> decisionMessages, List<ToolCallback> toolCallbacks) {
         try {
             List<AssistantMessage.ToolCall> toolCalls = aiModelSupport.callWithTools(
-                    modelRouter.choose("chat_tool"),
-                    AiCallScope.CHAT,
-                    // 快照而非可变引用：供应商调用收到当轮的不可变序列，调用后循环继续追加互不可见
-                    List.copyOf(decisionMessages),
-                    toolCallbacks);
+                    modelRouter.choose("chat_tool"), AiCallScope.CHAT, decisionMessages, toolCallbacks);
             if (toolCalls.isEmpty()) {
                 log.warn(
                         "action=agent_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",
@@ -359,54 +414,25 @@ public class AgentLoopRunner {
     /**
      * 执行一步工具，并把该步落成观测副产物：trace 落库（{@link AgentTracePort}）、SSE step 事件
      * （流式回调）、步级指标（调用计数 + 耗时）；再按对话协议把本步回填进决策消息序列
-     * （assistant tool_call + role=tool 观察，失败观察原样回填，模型据此修复）。
+     * （{@link DecisionConversation#appendStep}，失败观察原样回填，模型据此修复）。
      */
     private void executeToolStep(
             Input input,
             String traceId,
             int round,
             StepDecision step,
-            Map<String, ToolCallback> callbacksByName,
-            List<Message> decisionMessages) {
+            ToolFace toolFace,
+            DecisionConversation conversation) {
         AgentStepDecision decision = step.decision();
         toolCounter(decision.tool()).increment();
 
         long start = System.nanoTime();
-        ToolOutcome outcome = invokeTool(decision, callbacksByName);
+        ToolOutcome outcome = toolFace.invoke(decision);
         long latencyMs = (System.nanoTime() - start) / 1_000_000;
         stepTimer(decision.tool()).record(latencyMs, TimeUnit.MILLISECONDS);
 
-        String toolInput = toolInputOf(decision);
-        recordStep(input, traceId, round, decision, toolInput, outcome, latencyMs);
-        decisionMessages.add(AssistantMessage.builder()
-                .content("")
-                .toolCalls(List.of(step.toolCall()))
-                .build());
-        decisionMessages.add(ToolResponseMessage.builder()
-                .responses(List.of(new ToolResponseMessage.ToolResponse(
-                        step.toolCall().id(), step.toolCall().name(), outcome.observation())))
-                .build());
-    }
-
-    /**
-     * 按名称分发到 {@link AgentTools} 的 {@code @Tool} 回调（工具语义不在循环里实现）。
-     * 未知工具与工具抛异常（参数不合 schema / 工具内部故障）都收敛成失败观察：模型据此换参数重试或收敛，
-     * 不把整轮对话打成不可用。
-     */
-    private ToolOutcome invokeTool(AgentStepDecision decision, Map<String, ToolCallback> callbacksByName) {
-        String tool = decision.tool() == null ? "" : decision.tool();
-        ToolCallback callback = callbacksByName.get(tool);
-        if (callback == null) {
-            return new ToolOutcome(false, "未知工具 %s，请改用 %s".formatted(tool, TOOL_MENU));
-        }
-        try {
-            return new ToolOutcome(true, callback.call(decision.arguments()));
-        } catch (Exception e) {
-            // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
-            String reason = reasonOf(e.getCause() != null ? e.getCause() : e);
-            log.warn("action=agent_tool_failed, tool={}, input={}, reason={}", tool, toolInputOf(decision), reason);
-            return new ToolOutcome(false, reason);
-        }
+        recordStep(input, traceId, round, decision, toolInputOf(decision), outcome, latencyMs);
+        conversation.appendStep(step.toolCall(), outcome.observation());
     }
 
     /**

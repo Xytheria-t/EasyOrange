@@ -504,6 +504,23 @@ class AgentLoopRunnerTest {
     }
 
     @Test
+    @DisplayName("降级补检索与工具步同口径判重 —— 此前轮次已召回过的文档不再重复进 Result")
+    void run_fallbackSearchDeduplicatesAgainstAccumulated() {
+        stubDecisions(
+                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, "这不是 JSON"));
+        when(retrievalService.search("退款", 5))
+                .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)));
+        when(retrievalService.search("怎么退款？", 5))
+                .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)));
+
+        Result result = run("怎么退款？");
+
+        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_DECISION_FAILED);
+        assertThat(result.knowledgeHits()).hasSize(1);
+    }
+
+    @Test
     @DisplayName("基础设施故障穿透循环 -> 记 error 哨兵结局后原样上抛（循环结局口径不漏请求）")
     void run_infrastructureFailureCountsErrorOutcome() {
         // 循环中途预算检查打到 Redis：round 1 跳过检查，round 2 检查时存储故障穿透
