@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -418,6 +419,128 @@ class AiChatServiceTest {
         verify(agentLoopRunner).run(input.capture());
         assertThat(input.getValue().userId()).isEqualTo(AUTH_USER.userId());
         verify(preferenceRepository).findByUserId(AUTH_USER.userId());
+    }
+
+    @Test
+    @DisplayName("流式语义缓存命中 -> 不进循环，按固定块回放 token 并重放 sources（事件顺序与实时生成一致）")
+    void stream_cacheHit_replays() {
+        var cached = new ChatAnswer(
+                "缓存回答内容",
+                List.of(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-1", "来源A")),
+                "sess-旧",
+                false);
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.of(cached));
+
+        List<String> events = new ArrayList<>();
+        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-新", false), AUTH_USER, new ChatStreamHandler() {
+            @Override
+            public void onStep(AgentStepView step) {
+                events.add("step");
+            }
+
+            @Override
+            public void onToken(String token) {
+                events.add("token:" + token);
+            }
+
+            @Override
+            public void onSources(List<ChatSource> sources) {
+                events.add("sources");
+            }
+
+            @Override
+            public void onDone(String fullAnswer) {
+                events.add("done");
+            }
+
+            @Override
+            public void onError(String message) {
+                events.add("error:" + message);
+            }
+        });
+
+        // 命中即回放：不进循环、不再调模型、不写会话记忆、不再写回缓存（与非流式命中同口径）
+        verify(agentLoopRunner, never()).run(any());
+        verify(aiModelSupport, never()).callTextStream(any(), any(), anyList(), any());
+        verify(sessionStore, never()).saveTurns(anyString(), anyString(), anyList());
+        verify(semanticCache, never()).store(any(), any(), anyString(), anyList(), any());
+        // 查找走同一分桶与类型契约（缓存按用户分桶，回答注入了该用户的画像）
+        verify(semanticCache)
+                .lookUp(eq(AiCallScope.CHAT), eq(AUTH_USER.userId()), eq("怎么退款？"), eq(QUERY_EMBEDDING), eq(ChatAnswer.class));
+        // 事件序列：sources 先行，token 随后拼回完整回答，done 收尾；无 step（没进循环）、无 error
+        assertThat(events.getFirst()).isEqualTo("sources");
+        assertThat(events.get(1)).startsWith("token:");
+        assertThat(events.getLast()).isEqualTo("done");
+        assertThat(events).noneMatch("step"::equals);
+        assertThat(events).noneMatch(e -> e.startsWith("error"));
+        String tokens = events.stream()
+                .filter(e -> e.startsWith("token:"))
+                .map(e -> e.substring("token:".length()))
+                .collect(Collectors.joining());
+        assertThat(tokens).isEqualTo("缓存回答内容");
+    }
+
+    @Test
+    @DisplayName("流式语义缓存未命中 -> 照常流式生成，成功后把完整回答（含 sources）写回缓存")
+    void stream_cacheMiss_storesAfterGeneration() {
+        when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
+        when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
+        when(agentLoopRunner.run(any()))
+                .thenReturn(new Result(
+                        List.of(new KnowledgeHit("kb-2", "规则B", "内容B", 0.9)),
+                        List.of(),
+                        List.of(),
+                        LoopOutcome.FINISHED,
+                        1));
+        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class))).thenReturn("生成的回答");
+
+        AtomicReference<String> done = new AtomicReference<>();
+        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER, new ChatStreamHandler() {
+            @Override
+            public void onStep(AgentStepView step) {}
+
+            @Override
+            public void onToken(String token) {}
+
+            @Override
+            public void onSources(List<ChatSource> sources) {}
+
+            @Override
+            public void onDone(String fullAnswer) {
+                done.set(fullAnswer);
+            }
+
+            @Override
+            public void onError(String message) {}
+        });
+
+        assertThat(done.get()).isEqualTo("生成的回答");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<ChatAnswer> stored = ArgumentCaptor.forClass(ChatAnswer.class);
+        verify(semanticCache)
+                .store(
+                        eq(AiCallScope.CHAT),
+                        eq(AUTH_USER.userId()),
+                        eq("怎么退款？"),
+                        eq(QUERY_EMBEDDING),
+                        stored.capture());
+        assertThat(stored.getValue().answer()).isEqualTo("生成的回答");
+        assertThat(stored.getValue().sources())
+                .containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-2", "规则B"));
+        assertThat(stored.getValue().degraded()).isFalse();
+    }
+
+    @Test
+    @DisplayName("流式 forceFresh -> 跳过语义缓存读写，连向量化都不做（与非流式同口径）")
+    void stream_forceFresh_skipsCache() {
+        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class))).thenReturn("回答");
+
+        chatService.streamAnswer(new ChatRequest("问题", "sess-1", true), AUTH_USER, new StreamHandlerStub());
+
+        verify(semanticCache, never()).embedQuery(anyString());
+        verify(semanticCache, never()).lookUp(any(), any(), anyString(), anyList(), any());
+        verify(semanticCache, never()).store(any(), any(), anyString(), anyList(), any());
     }
 
     @Test
