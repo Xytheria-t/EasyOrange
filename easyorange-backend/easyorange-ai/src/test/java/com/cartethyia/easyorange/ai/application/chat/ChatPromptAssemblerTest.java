@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.application.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.cartethyia.easyorange.ai.domain.constant.LoopOutcome;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
@@ -30,7 +31,7 @@ class ChatPromptAssemblerTest {
                 question,
                 history,
                 List.of(new UserPreference("condition", "九五新以上")),
-                new AgentLoopRunner.Result(hits, assets, details, AgentLoopRunner.OUTCOME_FINISHED, 1));
+                new AgentLoopRunner.Result(hits, assets, details, LoopOutcome.FINISHED, 1));
     }
 
     private static String currentUserMessage(List<Message> messages) {

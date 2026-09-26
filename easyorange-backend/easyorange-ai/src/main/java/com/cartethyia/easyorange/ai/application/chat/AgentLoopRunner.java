@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.constant.LoopOutcome;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepDecision;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepTrace;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
@@ -26,6 +27,7 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,13 +77,6 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 public class AgentLoopRunner {
 
-    static final String OUTCOME_FINISHED = "finished";
-    static final String OUTCOME_STEP_LIMIT = "step_limit";
-    static final String OUTCOME_BUDGET = "budget";
-    static final String OUTCOME_DECISION_FAILED = "decision_failed";
-    /** 基础设施故障穿透的哨兵结局（正常应为零）：决策 / 工具失败都已在循环内收敛成降级。 */
-    static final String OUTCOME_ERROR = "error";
-
     private static final String TOOL_PROMPT = "ai_chat_tool_system";
     private static final String LOOP_METRIC = "easyorange.ai.chat.loop";
     private static final String TOOL_METRIC = "easyorange.ai.chat.tool";
@@ -121,8 +116,8 @@ public class AgentLoopRunner {
     private final IdGenerator idGenerator;
     private final MeterRegistry meterRegistry;
 
-    /** 循环结局计数 —— 结局集合封闭（四条出口 + error 哨兵），构造期一次注册，热路径零查找。 */
-    private final Map<String, Counter> loopCounters;
+    /** 循环结局计数 —— 按枚举全集注册（新增结局自动带上计数器，不会漏），构造期一次注册，热路径零查找。 */
+    private final Map<LoopOutcome, Counter> loopCounters;
 
     /** 每请求决策轮数分布 —— 口径同样封闭，构造期注册（避免每请求 builder 分配）。 */
     private final DistributionSummary stepsSummary;
@@ -154,17 +149,10 @@ public class AgentLoopRunner {
         this.objectMapper = objectMapper;
         this.idGenerator = idGenerator;
         this.meterRegistry = meterRegistry;
-        this.loopCounters = Map.of(
-                OUTCOME_FINISHED,
-                meterRegistry.counter(LOOP_METRIC, "outcome", OUTCOME_FINISHED),
-                OUTCOME_STEP_LIMIT,
-                meterRegistry.counter(LOOP_METRIC, "outcome", OUTCOME_STEP_LIMIT),
-                OUTCOME_BUDGET,
-                meterRegistry.counter(LOOP_METRIC, "outcome", OUTCOME_BUDGET),
-                OUTCOME_DECISION_FAILED,
-                meterRegistry.counter(LOOP_METRIC, "outcome", OUTCOME_DECISION_FAILED),
-                OUTCOME_ERROR,
-                meterRegistry.counter(LOOP_METRIC, "outcome", OUTCOME_ERROR));
+        this.loopCounters = new EnumMap<>(LoopOutcome.class);
+        for (LoopOutcome outcome : LoopOutcome.values()) {
+            loopCounters.put(outcome, meterRegistry.counter(LOOP_METRIC, "outcome", outcome.getTag()));
+        }
         this.stepsSummary = DistributionSummary.builder("easyorange.ai.chat.steps")
                 .description("每次对话请求的 Agent 决策轮数（含 finish 轮）")
                 .publishPercentiles(0.5, 0.95)
@@ -195,14 +183,14 @@ public class AgentLoopRunner {
      * @param knowledgeHits 全部轮次累加的知识库命中
      * @param assets        全部轮次累加的在售资产命中
      * @param details       product_detail 查得的资产详情
-     * @param outcome       finished / step_limit / budget / decision_failed / error
+     * @param outcome       循环结局（{@link LoopOutcome}）
      * @param rounds        已完成的决策轮数（含 finish 轮；决策失败轮不计，那一轮没有决策）
      */
     public record Result(
             List<KnowledgeHit> knowledgeHits,
             List<AssetHit> assets,
             List<AssetDetail> details,
-            String outcome,
+            LoopOutcome outcome,
             int rounds) {}
 
     /** 一步决策 — 解析后的决策视图 + 原生 tool call（回填消息序列用：id / name / arguments 都从这来）。 */
@@ -296,7 +284,7 @@ public class AgentLoopRunner {
             stepsSummary.record(result.rounds());
             return result;
         } catch (RuntimeException e) {
-            loopCounters.get(OUTCOME_ERROR).increment();
+            loopCounters.get(LoopOutcome.ERROR).increment();
             throw e;
         }
     }
@@ -330,7 +318,7 @@ public class AgentLoopRunner {
                         "action=agent_loop_degraded, reason=budget, sessionId={}, rounds={}",
                         input.sessionId(),
                         rounds);
-                return snapshot(tools, OUTCOME_BUDGET, rounds);
+                return snapshot(tools, LoopOutcome.BUDGET, rounds);
             }
             Optional<StepDecision> decided = decideStep(input, conversation.snapshot(), toolFace.callbacks());
             if (decided.isEmpty()) {
@@ -346,18 +334,18 @@ public class AgentLoopRunner {
                             input.sessionId(),
                             reasonOf(e));
                 }
-                return snapshot(tools, OUTCOME_DECISION_FAILED, rounds);
+                return snapshot(tools, LoopOutcome.DECISION_FAILED, rounds);
             }
             rounds = round;
             StepDecision step = decided.get();
 
             if (AgentTools.TOOL_FINISH.equals(step.decision().tool())) {
                 recordStep(input, traceId, round, step.decision(), null, null, 0);
-                return snapshot(tools, OUTCOME_FINISHED, rounds);
+                return snapshot(tools, LoopOutcome.FINISHED, rounds);
             }
             executeToolStep(input, traceId, round, step, toolFace, conversation);
         }
-        return snapshot(tools, OUTCOME_STEP_LIMIT, rounds);
+        return snapshot(tools, LoopOutcome.STEP_LIMIT, rounds);
     }
 
     /**
@@ -372,7 +360,7 @@ public class AgentLoopRunner {
      * 退出快照 — 四条出口（finish / 步数超限 / 预算耗尽 / 决策失败）共用同一口径：从工具实例收
      * 只读快照（累加器由工具实例独占持有，可变引用不出去），outcome 与轮数供指标与降级归因。
      */
-    private static Result snapshot(AgentTools tools, String outcome, int rounds) {
+    private static Result snapshot(AgentTools tools, LoopOutcome outcome, int rounds) {
         return new Result(tools.knowledgeHits(), tools.assets(), tools.details(), outcome, rounds);
     }
 

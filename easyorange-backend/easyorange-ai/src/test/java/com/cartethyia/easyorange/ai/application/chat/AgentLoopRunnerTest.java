@@ -22,6 +22,7 @@ import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalServ
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.domain.constant.LoopOutcome;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepTrace;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
@@ -183,7 +184,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("在吗？", "anonymous", steps);
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(1);
         assertThat(result.knowledgeHits()).isEmpty();
         verifyNoInteractions(retrievalService, assetSourcingService);
@@ -249,7 +250,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
         assertThat(result.knowledgeHits()).hasSize(1);
         verify(retrievalService).search("退款", 5);
@@ -292,7 +293,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("预算 5000 想买笔记本", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(3);
         assertThat(result.assets()).hasSize(1);
         assertThat(result.details()).hasSize(1);
@@ -342,7 +343,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("预算 5000 想买笔记本，帮我挑一台", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         // 一次 compare_assets 拿到两件详情（等价于两次 product_detail）但只花一步
         assertThat(result.details()).hasSize(2);
         assertThat(steps.steps)
@@ -372,7 +373,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("比一下", "user-1", null);
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         verifyNoInteractions(assetDetailPort);
     }
 
@@ -391,7 +392,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("预算 5000 想买笔记本", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         assertThat(steps.steps.get(1).tool()).isEqualTo(AgentTools.TOOL_MARKET_PRICE_STATS);
         assertThat(steps.steps.get(1).observation()).isEqualTo("当前 2 件在售，均价 ¥4500，价格区间 ¥4200-¥4800");
         // 行情统计只吃已召回资产，不额外读详情
@@ -421,7 +422,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("反复问规则");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_STEP_LIMIT);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.STEP_LIMIT);
         assertThat(result.rounds()).isEqualTo(2);
         verify(aiModelSupport, times(2)).callWithTools(any(), any(), anyList(), anyList());
         assertThat(meterRegistry
@@ -442,7 +443,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_BUDGET);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.BUDGET);
         assertThat(result.rounds()).isEqualTo(1);
         verify(aiModelSupport, times(1)).callWithTools(any(), any(), anyList(), anyList());
     }
@@ -457,7 +458,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
         assertThat(result.knowledgeHits()).hasSize(1);
         verify(retrievalService).search("怎么退款？", 5);
         verify(tracePort, never()).record(any());
@@ -475,7 +476,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
         verify(retrievalService).search("怎么退款？", 5);
     }
 
@@ -487,7 +488,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
         verify(retrievalService).search("怎么退款？", 5);
     }
 
@@ -499,7 +500,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
         assertThat(result.knowledgeHits()).isEmpty();
     }
 
@@ -516,7 +517,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
         assertThat(result.knowledgeHits()).hasSize(1);
     }
 
@@ -555,7 +556,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         verify(retrievalService).search("退款", 5);
         verifyNoInteractions(assetSourcingService);
     }
@@ -570,7 +571,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("看看 p-404");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         assertThat(result.details()).isEmpty();
         verify(tracePort, times(2))
                 .record(argThat(trace -> trace.stepIndex() != 1
@@ -587,7 +588,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("看看 p-1");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
         verify(tracePort, times(2))
                 .record(argThat(trace -> trace.stepIndex() != 1
@@ -604,7 +605,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
         verify(tracePort, times(2)).record(any(AgentStepTrace.class));
         verify(tracePort)
@@ -620,7 +621,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("随便看看");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
         verify(tracePort)
                 .record(argThat(trace -> "web_browse".equals(trace.tool())
@@ -675,7 +676,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("我想买台九成新的相机", "user-1", null);
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         verify(preferenceRepository, never()).record(anyString(), anyString(), anyString());
     }
 
@@ -691,7 +692,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("我喜欢复古风格的东西", "user-1", null);
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
     }
 
     @Test
@@ -711,7 +712,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("在吗？");
 
-        assertThat(result.outcome()).isEqualTo(AgentLoopRunner.OUTCOME_FINISHED);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         verify(tracePort).record(any(AgentStepTrace.class));
     }
 
