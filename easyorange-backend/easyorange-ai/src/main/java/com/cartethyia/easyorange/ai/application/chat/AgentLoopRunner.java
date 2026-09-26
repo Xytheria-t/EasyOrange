@@ -193,90 +193,6 @@ public class AgentLoopRunner {
             LoopOutcome outcome,
             int rounds) {}
 
-    /** 一步决策 — 解析后的决策视图 + 原生 tool call（回填消息序列用：id / name / arguments 都从这来）。 */
-    private record StepDecision(AgentStepDecision decision, AssistantMessage.ToolCall toolCall) {}
-
-    /** 工具执行结果 — success=false 时 observation 即失败原因（模型据此决定重试或收敛）。 */
-    private record ToolOutcome(boolean success, String observation) {
-
-        /** 失败步的错误原因与交回模型的那段观察文本同源；成功步为 null（trace 不落 errorMsg）。 */
-        @Nullable
-        String errorMsg() {
-            return success ? null : observation;
-        }
-    }
-
-    /**
-     * 一次请求的工具面 — {@link AgentTools} 实例与它的两种框架形态（schema 下发用的回调列表、
-     * 按名执行用的回调表）绑在同一处，循环体不直接接触装配细节。
-     */
-    private record ToolFace(AgentTools tools, List<ToolCallback> callbacks, Map<String, ToolCallback> byName) {
-
-        static ToolFace of(AgentTools tools) {
-            List<ToolCallback> callbacks = List.of(ToolCallbacks.from(tools));
-            var byName = callbacks.stream()
-                    .collect(Collectors.toMap(
-                            callback -> callback.getToolDefinition().name(), Function.identity()));
-            return new ToolFace(tools, callbacks, byName);
-        }
-
-        /**
-         * 按名称分发执行 — 未知工具与执行异常（参数不合 schema / 工具内部故障）都收敛成失败观察：
-         * 模型据此换参数重试或收敛，不把整轮对话打成不可用。
-         */
-        ToolOutcome invoke(AgentStepDecision decision) {
-            String tool = decision.tool() == null ? "" : decision.tool();
-            ToolCallback callback = byName.get(tool);
-            if (callback == null) {
-                return new ToolOutcome(false, "未知工具 %s，请改用 %s".formatted(tool, TOOL_MENU));
-            }
-            try {
-                return new ToolOutcome(true, callback.call(decision.arguments()));
-            } catch (Exception e) {
-                // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
-                String reason = reasonOf(e.getCause() != null ? e.getCause() : e);
-                log.warn(
-                        "action=agent_tool_failed, tool={}, input={}, reason={}",
-                        tool,
-                        toolInputOf(decision),
-                        reason);
-                return new ToolOutcome(false, reason);
-            }
-        }
-    }
-
-    /**
-     * 决策对话 — 按对话协议逐轮累积的消息序列：首两条（system + 首条 user）每请求固定，
-     * 每执行一步按「assistant tool_call + role=tool 观察」回填，轮间前缀稳定命中供应商 KV cache 折扣。
-     */
-    private static final class DecisionConversation {
-
-        private final List<Message> messages;
-
-        DecisionConversation(String systemPrompt, String firstUserMessage) {
-            this.messages = new ArrayList<>();
-            messages.add(new SystemMessage(systemPrompt));
-            messages.add(new UserMessage(firstUserMessage));
-        }
-
-        /** 当轮的不可变消息序列（供决策调用下发）：循环后续追加的步骤对已发出的调用不可见。 */
-        List<Message> snapshot() {
-            return List.copyOf(messages);
-        }
-
-        /** 回填一步：assistant 消息携带原生 tool call，观察以 role=tool 消息原样进入下一轮上下文。 */
-        void appendStep(AssistantMessage.ToolCall toolCall, String observation) {
-            messages.add(AssistantMessage.builder()
-                    .content("")
-                    .toolCalls(List.of(toolCall))
-                    .build());
-            messages.add(ToolResponseMessage.builder()
-                    .responses(List.of(new ToolResponseMessage.ToolResponse(
-                            toolCall.id(), toolCall.name(), observation)))
-                    .build());
-        }
-    }
-
     public Result run(Input input) {
         try {
             Result result = executeLoop(input);
@@ -456,6 +372,90 @@ public class AgentLoopRunner {
                     decision.tool(),
                     decision.thought(),
                     outcome == null ? null : outcome.observation()));
+        }
+    }
+
+    /** 一步决策 — 解析后的决策视图 + 原生 tool call（回填消息序列用：id / name / arguments 都从这来）。 */
+    private record StepDecision(AgentStepDecision decision, AssistantMessage.ToolCall toolCall) {}
+
+    /** 工具执行结果 — success=false 时 observation 即失败原因（模型据此决定重试或收敛）。 */
+    private record ToolOutcome(boolean success, String observation) {
+
+        /** 失败步的错误原因与交回模型的那段观察文本同源；成功步为 null（trace 不落 errorMsg）。 */
+        @Nullable
+        String errorMsg() {
+            return success ? null : observation;
+        }
+    }
+
+    /**
+     * 一次请求的工具面 — {@link AgentTools} 实例与它的两种框架形态（schema 下发用的回调列表、
+     * 按名执行用的回调表）绑在同一处，循环体不直接接触装配细节。
+     */
+    private record ToolFace(AgentTools tools, List<ToolCallback> callbacks, Map<String, ToolCallback> byName) {
+
+        static ToolFace of(AgentTools tools) {
+            List<ToolCallback> callbacks = List.of(ToolCallbacks.from(tools));
+            var byName = callbacks.stream()
+                    .collect(Collectors.toMap(
+                            callback -> callback.getToolDefinition().name(), Function.identity()));
+            return new ToolFace(tools, callbacks, byName);
+        }
+
+        /**
+         * 按名称分发执行 — 未知工具与执行异常（参数不合 schema / 工具内部故障）都收敛成失败观察：
+         * 模型据此换参数重试或收敛，不把整轮对话打成不可用。
+         */
+        ToolOutcome invoke(AgentStepDecision decision) {
+            String tool = decision.tool() == null ? "" : decision.tool();
+            ToolCallback callback = byName.get(tool);
+            if (callback == null) {
+                return new ToolOutcome(false, "未知工具 %s，请改用 %s".formatted(tool, TOOL_MENU));
+            }
+            try {
+                return new ToolOutcome(true, callback.call(decision.arguments()));
+            } catch (Exception e) {
+                // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
+                String reason = reasonOf(e.getCause() != null ? e.getCause() : e);
+                log.warn(
+                        "action=agent_tool_failed, tool={}, input={}, reason={}",
+                        tool,
+                        toolInputOf(decision),
+                        reason);
+                return new ToolOutcome(false, reason);
+            }
+        }
+    }
+
+    /**
+     * 决策对话 — 按对话协议逐轮累积的消息序列：首两条（system + 首条 user）每请求固定，
+     * 每执行一步按「assistant tool_call + role=tool 观察」回填，轮间前缀稳定命中供应商 KV cache 折扣。
+     */
+    private static final class DecisionConversation {
+
+        private final List<Message> messages;
+
+        DecisionConversation(String systemPrompt, String firstUserMessage) {
+            this.messages = new ArrayList<>();
+            messages.add(new SystemMessage(systemPrompt));
+            messages.add(new UserMessage(firstUserMessage));
+        }
+
+        /** 当轮的不可变消息序列（供决策调用下发）：循环后续追加的步骤对已发出的调用不可见。 */
+        List<Message> snapshot() {
+            return List.copyOf(messages);
+        }
+
+        /** 回填一步：assistant 消息携带原生 tool call，观察以 role=tool 消息原样进入下一轮上下文。 */
+        void appendStep(AssistantMessage.ToolCall toolCall, String observation) {
+            messages.add(AssistantMessage.builder()
+                    .content("")
+                    .toolCalls(List.of(toolCall))
+                    .build());
+            messages.add(ToolResponseMessage.builder()
+                    .responses(List.of(new ToolResponseMessage.ToolResponse(
+                            toolCall.id(), toolCall.name(), observation)))
+                    .build());
         }
     }
 

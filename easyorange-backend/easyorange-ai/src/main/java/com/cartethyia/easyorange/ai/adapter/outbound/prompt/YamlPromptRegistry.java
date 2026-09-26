@@ -60,15 +60,23 @@ public class YamlPromptRegistry implements PromptRegistry {
         }
     }
 
+    @Override
+    public Optional<PromptTemplate> getLatest(String name) {
+        return templatesByName.getOrDefault(name, List.of()).stream()
+                .max(Comparator.comparing(PromptTemplate::version, YamlPromptRegistry::compareVersions));
+    }
+
     private void load() {
         var yaml = new Yaml();
         var loaded = new HashMap<String, List<PromptTemplate>>();
 
-        try (Stream<Path> files = classpathMode ? Stream.empty() : Files.list(directory)) {
+        try {
             if (classpathMode) {
                 loadFromClasspath(yaml, loaded);
             } else {
-                loadFromDirectory(yaml, loaded, files);
+                try (Stream<Path> files = Files.list(directory)) {
+                    loadFromDirectory(yaml, loaded, files);
+                }
             }
         } catch (IOException e) {
             log.error("加载 Prompt 模板失败", e);
@@ -76,7 +84,7 @@ public class YamlPromptRegistry implements PromptRegistry {
 
         var immutable = new HashMap<String, List<PromptTemplate>>();
         loaded.forEach((name, list) -> immutable.put(name, List.copyOf(list)));
-        this.templatesByName = Map.copyOf(immutable);
+        this.templatesByName = Collections.unmodifiableMap(immutable);
 
         logTemplates();
     }
@@ -146,12 +154,6 @@ public class YamlPromptRegistry implements PromptRegistry {
         templatesByName.forEach((name, list) ->
                 details.add(name + list.stream().map(PromptTemplate::version).toList()));
         log.info("已加载 {} 个 Prompt 模板: {}", total, details);
-    }
-
-    @Override
-    public Optional<PromptTemplate> getLatest(String name) {
-        return templatesByName.getOrDefault(name, List.of()).stream()
-                .max(Comparator.comparing(PromptTemplate::version, YamlPromptRegistry::compareVersions));
     }
 
     /**
