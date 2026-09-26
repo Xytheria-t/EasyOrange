@@ -113,6 +113,19 @@ class AiChatServiceTest {
     }
 
     @Test
+    @DisplayName("指标构造期注册 —— degraded 按原因全集、busy/aborted 一次性建齐（热路径零查找）")
+    void meters_registeredAtConstruction() {
+        assertThat(meterRegistry.get("easyorange.ai.chat.degraded").tag("reason", "stale").counter().count())
+                .isZero();
+        assertThat(meterRegistry.get("easyorange.ai.chat.degraded").tag("reason", "unavailable").counter().count())
+                .isZero();
+        assertThat(meterRegistry.get("easyorange.ai.chat.session.busy").counter().count())
+                .isZero();
+        assertThat(meterRegistry.get("easyorange.ai.chat.stream.aborted").counter().count())
+                .isZero();
+    }
+
+    @Test
     @DisplayName("知识类问题 -> 循环产出知识命中 -> 回答带引用来源")
     void answer_withKnowledgeRetrieval() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);

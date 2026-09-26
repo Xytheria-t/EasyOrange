@@ -26,8 +26,9 @@ import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.EnumMap;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.messages.Message;
@@ -44,16 +45,21 @@ import org.springframework.stereotype.Service;
  * 3. 生成回答：消息形状在 {@link ChatPromptAssembler}（system 注入画像/历史/知识/资产/详情），
  *    回答末尾 [来源:标题] 引用溯源
  * </pre>
- * 流式路径（SSE）在方法返回前完成不了 AOP 预算记账，由 {@link #streamAnswer} 手动执行与
- * {@link TokenBudget} 相同的前置检查（判定与循环中途共用 {@link AgentLoopRunner#chatBudgetExhausted()}，
- * 口径单处维护）。
+ * 流式路径的预算前置检查不挂 {@link TokenBudget} 注解，由 {@link #streamAnswer} 手动执行（判定与循环中途
+ * 共用 {@link AgentLoopRunner#chatBudgetExhausted()}，口径单处维护）。不是 AOP 拦不住——注解同样会被
+ * 切面拦截——而是切面在<b>代理边界</b>抛 {@link TokenBudgetExceededException}，发生在方法体之前：
+ * streamAnswer 内部把预算异常转成「预算已用尽」error 事件的路由接不到它，异常会落到 Controller 的
+ * 通用兜底，用户看到的预算提示变成通用降级文案。
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AiChatService {
 
     private static final String CHAT_PROMPT = "ai_chat_system";
+
+    private static final String DEGRADED_METRIC = "easyorange.ai.chat.degraded";
+    private static final String SESSION_BUSY_METRIC = "easyorange.ai.chat.session.busy";
+    private static final String STREAM_ABORTED_METRIC = "easyorange.ai.chat.stream.aborted";
 
     /** 空问题的提示语：非流式走 {@link ChatAnswer}、流式走 SSE error 事件，同源一处维护。 */
     private static final String EMPTY_QUESTION_TEXT = "请描述你的问题";
@@ -88,6 +94,67 @@ public class AiChatService {
     private final Cache<String, ChatAnswer> staleCache;
 
     private final MeterRegistry meterRegistry;
+
+    /**
+     * 降级原因 — {@link #DEGRADED_METRIC} 的封闭 tag 集，构造期按全集注册计数器（新增原因自动带上，
+     * 热路径零查找）；对外 tag 值是时序契约，固化在字段上，改枚举名不改 tag。
+     */
+    private enum DegradationReason {
+        /** 供应商故障，复用 stale 旧回答兜底。 */
+        STALE("stale"),
+        /** 供应商故障且无旧回答可兜底，返回统一降级文案。 */
+        UNAVAILABLE("unavailable");
+
+        private final String tag;
+
+        DegradationReason(String tag) {
+            this.tag = tag;
+        }
+
+        String tag() {
+            return tag;
+        }
+    }
+
+    /** 降级计数 —— 按原因全集注册，两条路径（非流式 / 流式）共用同一组计数器。 */
+    private final Map<DegradationReason, Counter> degradedCounters;
+
+    private final Counter sessionBusyCounter;
+
+    private final Counter streamAbortedCounter;
+
+    public AiChatService(
+            ChatModel chatModel,
+            PromptRegistry promptRegistry,
+            AiModelSupport aiModelSupport,
+            SemanticCachePort semanticCache,
+            ChatSessionPort sessionStore,
+            UserPreferenceRepository preferenceRepository,
+            AgentLoopRunner agentLoopRunner,
+            ChatContextTrimmer contextTrimmer,
+            DistributedLockPort distributedLockPort,
+            AiProperties aiProperties,
+            Cache<String, ChatAnswer> staleCache,
+            MeterRegistry meterRegistry) {
+        this.chatModel = chatModel;
+        this.promptRegistry = promptRegistry;
+        this.aiModelSupport = aiModelSupport;
+        this.semanticCache = semanticCache;
+        this.sessionStore = sessionStore;
+        this.preferenceRepository = preferenceRepository;
+        this.agentLoopRunner = agentLoopRunner;
+        this.contextTrimmer = contextTrimmer;
+        this.distributedLockPort = distributedLockPort;
+        this.aiProperties = aiProperties;
+        this.staleCache = staleCache;
+        this.meterRegistry = meterRegistry;
+        this.degradedCounters = new EnumMap<>(DegradationReason.class);
+        for (DegradationReason reason : DegradationReason.values()) {
+            degradedCounters.put(reason, meterRegistry.counter(DEGRADED_METRIC, "reason", reason.tag()));
+        }
+        this.sessionBusyCounter = meterRegistry.counter(SESSION_BUSY_METRIC);
+        this.streamAbortedCounter = meterRegistry.counter(STREAM_ABORTED_METRIC);
+    }
 
     /**
      * 非流式回答（语义缓存 + 预算 AOP + 故障降级）。
@@ -134,7 +201,7 @@ public class AiChatService {
             return answer;
         } catch (LockAcquisitionException e) {
             log.warn("action=chat_session_busy, sessionId={}", request.sessionId());
-            meterRegistry.counter("easyorange.ai.chat.session.busy").increment();
+            sessionBusyCounter.increment();
             return new ChatAnswer(SESSION_BUSY_TEXT, List.of(), request.sessionId(), false);
         } catch (BaseBusinessException e) {
             throw e;
@@ -145,17 +212,13 @@ public class AiChatService {
                         "action=chat_degraded, reason=stale, question={}, cause={}",
                         request.question(),
                         e.getMessage());
-                degradedCounter("stale").increment();
+                degradedCounters.get(DegradationReason.STALE).increment();
                 return stale.asDegraded().withSessionId(request.sessionId());
             }
             log.error("action=chat_degraded, reason=unavailable, question={}", request.question(), e);
-            degradedCounter("unavailable").increment();
+            degradedCounters.get(DegradationReason.UNAVAILABLE).increment();
             return ChatAnswer.unavailable(request.sessionId());
         }
-    }
-
-    private Counter degradedCounter(String reason) {
-        return meterRegistry.counter("easyorange.ai.chat.degraded", "reason", reason);
     }
 
     /**
@@ -174,8 +237,10 @@ public class AiChatService {
     /**
      * 流式回答（SSE）：step（Agent 步骤）→ token 逐段回调；错误统一走 {@link ChatStreamHandler#onError}。
      * <p>
-     * 预算记账不在这里做：{@link AiModelSupport} 拿到流末帧的用量分片后按场景记账，入口只做前置检查
-     * （本方法不带 {@link TokenBudget} 注解，AOP 拦不住，若两边都记会重复计数）。
+     * 预算记账不在这里做：{@link AiModelSupport} 拿到流末帧的用量分片后按场景记账，切面只前置检查，
+     * 两条路径记账口径一致。前置检查手动做而不挂 {@link TokenBudget} 注解——不是 AOP 拦不住（注解同样
+     * 会被切面拦截），而是切面在代理边界抛 {@link TokenBudgetExceededException}，本方法内部把预算异常
+     * 转成「预算已用尽」提示的路由接不到它（详见类注释）。
      * <p>
      * <b>身份由调用方传入而非在这里读安全上下文</b>：流式工作跑在 Controller 提交的另一个线程上，
      * {@code SecurityContextHolder} 的 ThreadLocal 不会跟着过去（Controller 在 servlet 线程上
@@ -199,16 +264,16 @@ public class AiChatService {
             handler.onError("今日 AI 调用预算已用尽，请明天再试");
         } catch (LockAcquisitionException e) {
             log.warn("action=chat_session_busy, sessionId={}", request.sessionId());
-            meterRegistry.counter("easyorange.ai.chat.session.busy").increment();
+            sessionBusyCounter.increment();
             handler.onError(SESSION_BUSY_TEXT);
         } catch (ChatStreamAbortedException e) {
             // 客户端中途离开（刷新/关页）：正常中断而非模型故障 —— 不打 ERROR、
             // 不计入 chat.degraded（否则每次刷新都虚高降级率）、不回 onError（事件已无听众）
             log.debug("action=chat_stream_aborted, question={}", request.question());
-            meterRegistry.counter("easyorange.ai.chat.stream.aborted").increment();
+            streamAbortedCounter.increment();
         } catch (Exception e) {
             log.error("action=chat_degraded, reason=unavailable, question={}", request.question(), e);
-            degradedCounter("unavailable").increment();
+            degradedCounters.get(DegradationReason.UNAVAILABLE).increment();
             handler.onError(ChatAnswer.UNAVAILABLE_TEXT);
         }
     }
