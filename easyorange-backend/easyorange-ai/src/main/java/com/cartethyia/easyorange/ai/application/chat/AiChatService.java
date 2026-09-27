@@ -202,16 +202,6 @@ public class AiChatService {
         }
     }
 
-    /** stale 缓存键 — 与语义缓存同一分桶口径（{@link SemanticCachePort#cacheUserKey}），否则故障兜底会把一个人的旧回答返给另一个人。 */
-    private static String staleKey(String userId, String question) {
-        return AiCallScope.CHAT.cacheKeyPrefix() + SemanticCachePort.cacheUserKey(userId) + ':' + question;
-    }
-
-    /** 调用线程上的登录身份 —— 非流式路径与 Controller 同线程，直接读安全上下文。 */
-    static String currentUserId() {
-        return SecurityContextUtil.getCurrentUserId().orElse(AgentLoopRunner.ANONYMOUS_USER);
-    }
-
     /**
      * 流式回答（SSE）：step → token 逐段回调，错误统一走 {@link ChatStreamHandler#onError}。
      * 语义缓存与非流式同一模式（embed 一次、命中回放、未命中写回）：命中把缓存回答按固定块回放成
@@ -264,6 +254,16 @@ public class AiChatService {
             recordUnavailableDegradation(request.question(), e);
             handler.onError(ChatAnswer.UNAVAILABLE_TEXT);
         }
+    }
+
+    /** stale 缓存键 — 与语义缓存同一分桶口径（{@link SemanticCachePort#cacheUserKey}），否则故障兜底会把一个人的旧回答返给另一个人。 */
+    private static String staleKey(String userId, String question) {
+        return AiCallScope.CHAT.cacheKeyPrefix() + SemanticCachePort.cacheUserKey(userId) + ':' + question;
+    }
+
+    /** 调用线程上的登录身份 —— 非流式路径与 Controller 同线程，直接读安全上下文。 */
+    static String currentUserId() {
+        return SecurityContextUtil.getCurrentUserId().orElse(AgentLoopRunner.ANONYMOUS_USER);
     }
 
     /** 缓存命中回放 — sources 先行（与实时生成的事件顺序一致），按固定块推 token；不补人为延迟，缓存命中的价值就是快。 */

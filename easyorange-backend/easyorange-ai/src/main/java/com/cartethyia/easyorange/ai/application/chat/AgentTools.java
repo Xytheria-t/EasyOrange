@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -262,17 +263,18 @@ public class AgentTools {
 
     /** 按 ID 查详情 — product_detail 与 compare_assets 共用：端口抛出（DB 故障）按工具失败上报，empty（查无此资产）是正常结果。 */
     private Optional<AssetDetail> findDetail(String productId) {
-        try {
-            return assetDetailPort.findDetail(productId);
-        } catch (Exception e) {
-            throw new IllegalStateException("资产详情查询失败: " + reasonOf(e), e);
-        }
+        return detailQuery(() -> assetDetailPort.findDetail(productId));
     }
 
     /** compare_assets 的批量通道，失败语义与 {@link #findDetail} 一致（抛 = 本步失败）。 */
     private List<AssetDetail> findDetails(List<String> productIds) {
+        return detailQuery(() -> assetDetailPort.findDetails(productIds));
+    }
+
+    /** 详情端口调用的统一失败口径：端口异常（DB 故障）包成 {@code IllegalStateException} 上报为该步失败。 */
+    private <T> T detailQuery(Supplier<T> query) {
         try {
-            return assetDetailPort.findDetails(productIds);
+            return query.get();
         } catch (Exception e) {
             throw new IllegalStateException("资产详情查询失败: " + reasonOf(e), e);
         }
@@ -294,7 +296,7 @@ public class AgentTools {
 
     /** 同 {@link #retainNewKnowledge}，资产按 productId 判重。 */
     private List<AssetHit> retainNewAssets(List<AssetHit> found) {
-        Set<String> seen = assets.stream().map(asset -> assetKey(asset)).collect(Collectors.toSet());
+        Set<String> seen = assets.stream().map(AgentTools::assetKey).collect(Collectors.toSet());
         return found.stream().filter(asset -> seen.add(assetKey(asset))).collect(Collectors.toList());
     }
 

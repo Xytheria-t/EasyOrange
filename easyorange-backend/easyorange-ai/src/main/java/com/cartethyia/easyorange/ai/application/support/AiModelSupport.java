@@ -404,7 +404,7 @@ public class AiModelSupport {
         }
         try {
             String scenario = scope.budgetScenario();
-            Usage usage = outcome != null ? outcome.usage() : null;
+            Usage usage = outcome.usage();
             int inputTokens = usage != null && usage.getPromptTokens() != null ? usage.getPromptTokens() : 0;
             int outputTokens = usage != null && usage.getCompletionTokens() != null ? usage.getCompletionTokens() : 0;
             if (inputTokens + outputTokens > 0) {
