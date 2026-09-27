@@ -14,9 +14,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
- * Redisson 分布式锁适配器 — {@link DistributedLockPort} 的统一实现，
- * 收敛了原 order / payment 模块各自的 Redisson 适配器（原 order 批量+watchdog+提交后释放，
- * original payment 固定租约+立即释放双份语义）。
+ * Redisson 分布式锁适配器 — {@link DistributedLockPort} 的统一实现。
  * <p>
  * 行为契约：
  * <ul>
@@ -57,7 +55,8 @@ public class DistributedRedissonLockAdapter implements DistributedLockPort {
     }
 
     /**
-     * 批量获取锁 — 任一把失败即抛异常，由调用方 finally 逆序释放已获取锁。
+     * 批量获取锁 — 任一把失败即抛 {@link LockAcquisitionException}，已获取的由 finally 里的
+     * {@link #releaseLocks} 回退。
      */
     private void acquireLocks(List<String> lockKeys, long timeout, List<RLock> acquiredLocks) {
         for (String lockKey : lockKeys) {

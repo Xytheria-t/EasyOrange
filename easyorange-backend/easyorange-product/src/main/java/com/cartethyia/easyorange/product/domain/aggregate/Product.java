@@ -111,9 +111,7 @@ public class Product {
     // 所有转换的合法性统一由 transitionTo(target) 通过 ProductStatus 状态机表裁决。
 
     public Transition<Product, ProductSubmittedForReviewEvent> submitForReview(String userId) {
-        if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw ProductDomainException.notOwner(id, "只能提交自己的资产审核");
-        }
+        requireOwner(userId, "只能提交自己的资产审核");
         return new Transition<>(
                 transitionTo(ProductStatus.PENDING_REVIEW),
                 new ProductSubmittedForReviewEvent(
@@ -160,9 +158,7 @@ public class Product {
     }
 
     public Transition<Product, ProductPutOnlineEvent> putOnline(String userId) {
-        if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw ProductDomainException.notOwner(id, "只能上架自己的资产");
-        }
+        requireOwner(userId, "只能上架自己的资产");
         return putOnline();
     }
 
@@ -173,9 +169,7 @@ public class Product {
     }
 
     public Transition<Product, ProductTakeOfflineEvent> takeOffline(String userId) {
-        if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw ProductDomainException.notOwner(id, "只能下架自己的资产");
-        }
+        requireOwner(userId, "只能下架自己的资产");
         return takeOffline();
     }
 
@@ -204,12 +198,17 @@ public class Product {
         BizRequire.requireTrue(hasStock(), "资产库存不足，无法上架");
     }
 
+    /** 归属守卫 — 各写路径先过这里再谈状态转换，非资产方一律 notOwner。 */
+    private void requireOwner(String userId, String action) {
+        if (!this.sellerId.equals(SellerId.of(userId))) {
+            throw ProductDomainException.notOwner(id, action);
+        }
+    }
+
     // ==================== Mutations ====================
 
     public Transition<Product, ProductUpdatedEvent> update(String userId, ProductUpdateSpec spec) {
-        if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw ProductDomainException.notOwner(id, "只能修改自己的资产");
-        }
+        requireOwner(userId, "只能修改自己的资产");
         var builder = toBuilder();
         if (spec.categoryId() != null) builder.categoryId(spec.categoryId());
         if (spec.title() != null && !spec.title().value().isBlank()) builder.title(spec.title());
@@ -230,9 +229,7 @@ public class Product {
     }
 
     public Transition<Product, ProductDeletedEvent> delete(String userId) {
-        if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw ProductDomainException.notOwner(id, "无权删除此资产");
-        }
+        requireOwner(userId, "无权删除此资产");
         if (!status.canDelete()) {
             throw ProductDomainException.invalidStatus("不允许删除", id, status);
         }
