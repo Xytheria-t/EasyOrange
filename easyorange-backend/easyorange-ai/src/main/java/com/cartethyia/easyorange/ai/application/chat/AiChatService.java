@@ -96,8 +96,6 @@ public class AiChatService {
     /** 值类型是 {@link ChatAnswer}：与 framework 的 {@code imageProcessCache} 按泛型区分，注入无需 {@code @Qualifier}。 */
     private final Cache<String, ChatAnswer> staleCache;
 
-    private final MeterRegistry meterRegistry;
-
     /**
      * 降级原因 — {@link #DEGRADED_METRIC} 的封闭 tag 集，构造期按全集注册计数器（新增原因自动带上，
      * 热路径零查找）；对外 tag 值是时序契约，固化在字段上，改枚举名不改 tag。
@@ -150,7 +148,6 @@ public class AiChatService {
         this.distributedLockPort = distributedLockPort;
         this.aiProperties = aiProperties;
         this.staleCache = staleCache;
-        this.meterRegistry = meterRegistry;
         this.degradedCounters = new EnumMap<>(DegradationReason.class);
         for (DegradationReason reason : DegradationReason.values()) {
             degradedCounters.put(reason, meterRegistry.counter(DEGRADED_METRIC, "reason", reason.tag()));
