@@ -42,10 +42,7 @@ public class PlatformMcpTools {
     private static final int MAX_PRODUCT_TOP_K = 20;
     private static final int MAX_KNOWLEDGE_TOP_K = 10;
 
-    /**
-     * 工具指标 tag 封闭集 — 4 个公开只读工具名（与 {@code @McpTool(name=...)} 同源常量）。
-     * 构造期按全集注册，调用点传枚举，热路径零查找；新增工具只加枚举常量，计数器自动带上。
-     */
+    /** 工具指标 tag 封闭集 — 4 个公开只读工具名（与 {@code @McpTool(name=...)} 同源常量），构造期按全集注册；新增工具只加枚举常量。 */
     private enum McpToolTag {
         SEARCH_PRODUCTS(TOOL_SEARCH_PRODUCTS),
         GET_PRODUCT_DETAIL(TOOL_GET_PRODUCT_DETAIL),
@@ -68,7 +65,6 @@ public class PlatformMcpTools {
     private final KnowledgeRetrievalService knowledgeRetrievalService;
     private final CategoryListPort categoryListPort;
 
-    /** 工具调用计数 —— 按 {@link McpToolTag} 全集构造期注册。 */
     private final Map<McpToolTag, Counter> callCounters;
 
     public PlatformMcpTools(

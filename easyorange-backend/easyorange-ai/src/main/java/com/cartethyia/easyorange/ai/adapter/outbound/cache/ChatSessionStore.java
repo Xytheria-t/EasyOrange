@@ -15,12 +15,10 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 多轮对话短期记忆 — Redis List 会话窗口（TTL 24h，最近 N 轮），
- * 与 {@link com.cartethyia.easyorange.ai.application.chat.AiChatService} 的「最近 N 轮 + 工具结果」注入配合。
- * <p>
- * 一轮对话（提问 + 回答）一次 {@code RPUSH} + 一次裁剪 + 一次续期：两次单条写入会把 Redis 往返翻倍，
- * 且中间失败会留下只有提问没有回答的半轮记忆。读写共用 {@code historyLimit} 一个轮数旋钮
- * （{@link ChatSessionPort} 契约：调用方不指定轮数）。
+ * 多轮对话短期记忆 — Redis List 会话窗口（TTL 24h，最近 N 轮），与「最近 N 轮 + 工具结果」的
+ * prompt 注入配合。一轮对话（提问 + 回答）一次 {@code RPUSH} + 一次裁剪 + 一次续期：两次单条写入
+ * 会把 Redis 往返翻倍，且中间失败会留下只有提问没有回答的半轮记忆；读写共用 {@code historyLimit}
+ * 一个轮数旋钮（{@link ChatSessionPort} 契约：调用方不指定轮数）。
  * <p>
  * Redis 不可用 / 会话为空时返回空列表（fail-open：丢记忆不阻塞回答）；单条记录读不出来只跳过该条
  * —— 一条脏数据不该让整段对话记忆作废。

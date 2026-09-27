@@ -11,13 +11,10 @@ import org.yaml.snakeyaml.Yaml;
 
 /**
  * 金标准评测集加载器 — 从 classpath 读取 {@code eval/golden-set.yaml} 与 {@code eval/baselines.yaml}。
+ * 评测集是 YAML（版本化、可评审 diff）不落库，与 Prompt YAML 同一套「配置即代码」思路。
  * <p>
- * 评测集是 YAML（版本化、可评审 diff），不落库 — 与 Prompt YAML 同一套「配置即代码」思路。
- * <p>
- * <b>加载即校验</b>：scope 只认 {@code chat} / {@code retrieval}，且 chat 必须有参考回答、
- * retrieval 必须有 gold_doc_ids。此前 scope 全写成 chat，两类用例在过滤时互相串门
- * （检索用例被当生成用例打分、生成用例被算进 hit@5），指标照样算得出来，问题不会暴露 ——
- * 这类错误必须在加载期炸掉，而不是等指标悄悄失真。
+ * <b>加载即校验</b>：scope 只认 {@code chat} / {@code retrieval}，且 chat 必须有参考回答、retrieval
+ * 必须有 gold_doc_ids —— scope 串了指标照样算得出来但悄悄失真，这类错误必须在加载期炸掉。
  */
 @Slf4j
 @Component
@@ -48,9 +45,7 @@ public class GoldenSetLoader {
         }
     }
 
-    /**
-     * 用例自洽性校验：scope 合法 + 该 scope 必需的字段齐全。包可见静态便于单测直接覆盖。
-     */
+    /** 用例自洽性校验：scope 合法 + 该 scope 必需的字段齐全。包可见静态便于单测直接覆盖。 */
     static void validate(GoldenSetCase testCase) {
         String id = testCase.id() == null ? "(缺少 id)" : testCase.id();
         if (SCOPE_CHAT.equals(testCase.scope())) {
@@ -70,9 +65,7 @@ public class GoldenSetLoader {
 
     /**
      * 评估门禁阈值（baselines.yaml）— 分数基线、容忍度、覆盖率下限、hit@5 下限。
-     * <p>
-     * 键缺失即抛异常：门禁阈值静默回落成内置默认值，等于门禁悄悄放松（改了 yaml 的键名却照旧跑绿），
-     * 与其那样不如加载期炸掉。
+     * 键缺失即抛异常：门禁阈值静默回落成内置默认值，等于门禁悄悄放松（改了 yaml 的键名却照旧跑绿）。
      */
     public EvalBaselines loadBaselines() {
         try (var in = new ClassPathResource(BASELINES_PATH).getInputStream()) {

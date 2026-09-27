@@ -14,31 +14,24 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 
 /**
  * Redis 版 Token 预算存储 — 多实例部署下的日预算口径（内存版每实例各记各的，日限会被放大 N 倍）。
+ * key 按「场景 + 本地日期」隔离，{@code HINCRBY} 原子累加；判定式 {@code used + maxPerCall > dailyLimit}
+ * 在 {@code TokenBudgetAspect} / {@code AgentLoopRunner}，本类只负责存取。key 名自带日期，跨天自然
+ * 从零开始，TTL 只做回收。
  * <p>
- * 口径与内存版一致：key 按「场景 + 本地日期」隔离，{@code HINCRBY} 原子累加输入 / 输出两个计数；
- * 判定式仍是 {@code used + maxPerCall > dailyLimit}，判定在 {@code TokenBudgetAspect} /
- * {@code AgentLoopRunner}，本类只负责存取。key 名自带日期，跨天自然从零开始，TTL 只做回收。
+ * <b>fail-open</b>：Redis 不可用或读写异常时读返回 empty、写只告警 —— 记账失败不该让对话不可用，
+ * 代价是这段时间按「今日未用量」放行；fail-open 只 log 会隐身，失败计数（meter 构造期按 op 全集
+ * 一次注册）是「按未用量放行」的唯一统计面。
  * <p>
- * <b>fail-open</b>：Redis 不可用（含未装配）或读写异常时，读返回 empty、写只告警——记账失败不该让对话
- * 不可用；代价是这段时间的预算判定按「今日未用量」放行，与限流器 fail-open 同取向。fail-open 只 log
- * 会隐身，读写失败计数（meter 构造期按 op 全集一次注册）是这段时间「按未用量放行」的唯一统计面。
- * <p>
- * 用 {@link StringRedisTemplate} 而不是 {@code RedisTemplate<Object, Object>}：{@code HINCRBY} 要的是
- * 纯数字字符串，JSON 序列化器会把增量写成带类型信息的 JSON（限流器曾因序列化器让 Lua ARGV 变二进制）。
- * <p>
- * 由 {@code AiConfig} 在 {@code easyorange.ai.budget.store=redis} 时注册（默认内存版）。
+ * 用 {@link StringRedisTemplate}：{@code HINCRBY} 要纯数字字符串，JSON 序列化器会把增量写成带类型
+ * 信息的 JSON（限流器曾因序列化器让 Lua ARGV 变二进制）。由 {@code AiConfig} 在
+ * {@code easyorange.ai.budget.store=redis} 时注册（默认内存版）。
  */
 @Slf4j
 public class RedisTokenBudgetStore implements TokenBudgetStore {
 
-    /**
-     * fail-open 操作维度 — {@link #FAIL_OPEN_METRIC} 的封闭 tag 集，构造期按全集注册计数器（新增操作自动带上）。
-     * tag 值是时序契约：改枚举名不改 tag。
-     */
+    /** fail-open 操作维度 — {@link #FAIL_OPEN_METRIC} 的封闭 tag 集（构造期全集注册），tag 值是时序契约：改枚举名不改 tag。 */
     private enum FailOpenOp {
-        /** 读失败 —— 预算判定按「今日未用量」放行。 */
         READ("read"),
-        /** 写失败 —— 本次调用不计入预算。 */
         WRITE("write");
 
         private final String tag;
@@ -61,7 +54,6 @@ public class RedisTokenBudgetStore implements TokenBudgetStore {
 
     private final ObjectProvider<StringRedisTemplate> redisProvider;
 
-    /** fail-open 计数 —— 按 op 全集注册，读 / 写失败共用同一组计数器。 */
     private final Map<FailOpenOp, Counter> failOpenCounters;
 
     public RedisTokenBudgetStore(ObjectProvider<StringRedisTemplate> redisProvider, MeterRegistry meterRegistry) {

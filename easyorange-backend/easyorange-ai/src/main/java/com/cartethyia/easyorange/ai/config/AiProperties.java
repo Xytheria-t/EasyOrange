@@ -24,8 +24,7 @@ public record AiProperties(
         @Valid Chat chat) {
 
     public AiProperties {
-        // 嵌套 record 在属性源里完全没有对应键时可能绑成 null，这里补上等价默认值 ——
-        // 数值须与 application.yaml 的 easyorange.ai 各值保持一致（yaml 是唯一主源，此处仅兜底）
+        // 嵌套 record 在属性源里完全没有对应键时可能绑成 null，补等价默认值；数值须与 application.yaml 保持一致（yaml 是唯一主源，此处仅兜底）
         if (deepseek == null) {
             deepseek = new DeepSeek(null, "https://api.deepseek.com", "deepseek-chat", "", 30000);
         }
@@ -57,31 +56,22 @@ public record AiProperties(
     }
 
     /**
-     * 文本模型配置 — 走 OpenAI 兼容托管 API（项目实际用阿里云百炼，DeepSeek / Qwen 系同一端点同一把 key）。
+     * 文本模型配置 — OpenAI 兼容托管 API（项目实际用阿里云百炼，DeepSeek / Qwen 系同一端点同一把 key）。
      *
-     * @param routerModel 工具决策专用模型；留空则与 {@code model} 同模型。
-     *     决策与生成分开配的原因：决策是纯路由任务（工具参数 JSON 只有几十字符），推理模型的思考长度
-     *     在这里纯属浪费 —— 实测同一决策的思考长度在几十到上千字符之间波动，直接决定单轮延迟；
-     *     而最终成品的质量才需要强模型。留空即退回「决策与生成同模型」，不改变既有行为。
+     * @param routerModel 工具决策专用模型，留空与 {@code model} 同模型；决策与生成为什么分开配
+     *     见 {@link AiModelConfig#decisionChatModel}
      * <p>
-     * 端点 / 模型 / 超时的单一来源是 application.yaml（含环境变量覆盖钩子）；构造器兜底仅防
-     * 属性源整段缺失（测试裸绑场景），不再另设 @DefaultValue——同一默认值写两处必然漂移。
+     * 端点 / 模型 / 超时的单一来源是 application.yaml；构造器兜底仅防属性源整段缺失（测试裸绑场景），
+     * 不另设 @DefaultValue——同一默认值写两处必然漂移。
      */
     public record DeepSeek(String apiKey, String baseUrl, String model, String routerModel, int timeout) {}
 
     public record QwenVl(String apiKey, String baseUrl, String model, int timeout) {}
 
-    /**
-     * Embedding 模型配置 — 走 OpenAI 兼容托管 API（DashScope text-embedding-v3）。
-     * <p>
-     * 维度（dimensions=1024）必须与 ES 索引 {@code dense_vector} 映射维度一致，
-     * 否则语义搜索 kNN 查询会因维度不匹配失败。
-     */
+    /** Embedding 模型配置 — dimensions 必须与 ES 索引 {@code dense_vector} 映射维度一致，否则语义检索 kNN 查询维度不匹配失败。 */
     public record Embedding(String apiKey, String baseUrl, String model, int dimensions, int timeout) {}
 
-    /**
-     * LLM 故障降级缓存（本地 Caffeine）— 成功回答写入，LLM 调用失败时返回旧结果兜底。
-     */
+    /** LLM 故障降级缓存（本地 Caffeine）— 成功回答写入，LLM 调用失败时返回旧结果兜底。 */
     public record Cache(
             @DefaultValue("5000") int staleMaxSize,
             @DefaultValue("24") int staleExpireHours) {}
@@ -92,9 +82,8 @@ public record AiProperties(
 
     /**
      * Token 预算治理配置 — 按场景限制单次调用 token 上限 + 日预算上限。
-     * <p>
-     * 场景键与 {@link com.cartethyia.easyorange.ai.domain.constant.AiCallScope} 枚举名对齐。
-     * 注解 {@code @TokenBudget} 上的字段为默认兜底值，配置文件可覆盖。
+     * 场景键与 {@link com.cartethyia.easyorange.ai.domain.constant.AiCallScope} 枚举名对齐；
+     * {@code @TokenBudget} 注解上的字段为默认兜底值，配置文件可覆盖。
      */
     public record Budget(
             @DefaultValue("true") boolean enabled, @Valid Map<String, ScenarioBudget> scenarios) {
@@ -103,9 +92,7 @@ public record AiProperties(
             scenarios = Map.copyOf(scenarios == null ? Map.of() : scenarios);
         }
 
-        /**
-         * 查找场景预算配置，不存在返回 null（调用方应回退到注解默认值）。
-         */
+        /** 查找场景预算配置，不存在返回 null（调用方应回退到注解默认值）。 */
         public ScenarioBudget resolve(String scenario) {
             return scenarios.get(scenario);
         }
@@ -116,12 +103,9 @@ public record AiProperties(
     }
 
     /**
-     * 模型路由配置 — 按场景把调用分给不同模型 bean（决策 / 对话 / 图片分析 / 评审）。
-     * <p>
-     * 键为场景名（如 chat_tool / vision / judge），值为 Spring bean 名；未配置的场景回退 {@code defaultModel}。
-     * 已接入：chat_tool → decisionChatModel（工具决策）、vision → visionChatModel（图片分析）、
-     * judge → chatModel（LLM-as-Judge 评审，指向独立评审模型即可消除自评偏差）。
-     * 接入新模型仅需在 {@code easyorange.ai.routing.scenarios} 里把场景指向新 bean 名，代码零改动。
+     * 模型路由配置 — 键为场景名（chat_tool / vision / judge），值为 Spring bean 名，
+     * 未配置的场景回退 {@code defaultModel}；接入新模型只改配置代码零改动，
+     * judge 指向独立评审模型即可消除自评偏差。
      */
     public record Routing(@DefaultValue("chatModel") String defaultModel, Map<String, String> scenarios) {
 
@@ -131,16 +115,11 @@ public record AiProperties(
     }
 
     /**
-     * 语义缓存配置 — Embedding 相似度命中即复用历史回答（跨用户、近似问题共享），
-     * 同时是「成本优化」的落地：相同意图的问题不再重复调 LLM。
+     * 语义缓存配置 — Embedding 相似度命中即复用历史回答（跨用户、近似问题共享，相同意图不再重复调 LLM）。
      *
-     * @param enabled 是否启用语义缓存
-     * @param similarityThreshold 余弦相似度命中阈值（0.92 表示高度近义问题命中）
-     * @param maxEntries 每个 scope 最多缓存的条目数，超出淘汰最旧条目。
-     *     命中判定要遍历全部条目（Redis Hash 全量拉取 + 逐条算余弦），所以这个数直接决定
-     *     未命中时的查询开销：500 条 ≈ 每次拉回 2MB 数据。200 是「够用又不拖慢未命中」的折中；
-     *     若确实需要更大容量，应换成向量索引（ES kNN）而不是继续加大 Hash。
-     * @param ttlHours 缓存条目 TTL（小时）
+     * @param maxEntries 每个 scope 最多缓存的条目数：命中判定要遍历全部条目（Redis Hash 全量拉取 +
+     *     逐条算余弦），这个数直接决定未命中时的查询开销（500 条 ≈ 每次拉回 2MB），需更大容量应换
+     *     向量索引（ES kNN）而不是继续加大 Hash
      */
     public record SemanticCache(
             @DefaultValue("true") boolean enabled,
@@ -152,18 +131,15 @@ public record AiProperties(
             @DefaultValue("24") int ttlHours) {}
 
     /**
-     * 多轮对话记忆与 Agent 循环配置 — Redis 会话窗口（短期记忆）+ 画像注入（长期记忆）+ 多步工具循环上限。
+     * 多轮对话记忆与 Agent 循环配置 — Redis 会话窗口（短期记忆）+ 画像注入（长期记忆）+ 循环上限。
      *
-     * @param sessionTtlHours 会话 TTL（小时），过期即遗忘短期记忆
-     * @param historyLimit 注入 prompt 的历史轮数（最近 N 轮）
-     * @param maxSteps 多步 ReAct 循环的单次上限（含 finish 轮；达到上限未收敛则用已积累观察强制生成）。
-     *     工具面扩到 5 个后由 5 上调至 7：典型轨迹 search → 计算/详情 → remember → finish 需 4~5 步，
-     *     留余量避免工具变多反而更容易撞上限降级
-     * @param maxHistoryTokens 历史注入 prompt 的 token 预算（估算口径见 TokenEstimator），
-     *     轮数窗口之上的第二道裁剪；&lt;=0 关闭。超限只裁历史、不影响生成（生成侧由 maxTokensPerCall 兜底）
-     * @param sessionLockWaitSeconds 同会话串行锁的获取等待上限（秒）。同会话的 load→loop→save 非原子，
-     *     并发请求会互相串写历史，per-session 分布式锁把后到请求排队到前一轮完整落盘之后；
-     *     上限需覆盖最坏 7 轮富轨迹的端到端耗时（实测 62s），超时按「会话处理中」业务提示返回
+     * @param maxSteps 多步 ReAct 循环单次上限（含 finish 轮）：典型轨迹 search → 计算/详情 → remember
+     *     → finish 需 4~5 步，工具面扩到 5 个后由 5 上调至 7 留余量，避免工具变多反而更容易撞上限降级
+     * @param maxHistoryTokens 历史注入 prompt 的 token 预算（估算口径见 TokenEstimator），轮数窗口
+     *     之上的第二道裁剪；&lt;=0 关闭。超限只裁历史、不影响生成（生成侧由 maxTokensPerCall 兜底）
+     * @param sessionLockWaitSeconds 同会话串行锁的获取等待上限（秒）：同会话 load→loop→save 非原子，
+     *     并发请求会互相串写历史；上限需覆盖最坏 7 轮富轨迹的端到端耗时（实测 62s），超时按
+     *     「会话处理中」业务提示返回
      */
     public record Chat(
             @DefaultValue("24") int sessionTtlHours,

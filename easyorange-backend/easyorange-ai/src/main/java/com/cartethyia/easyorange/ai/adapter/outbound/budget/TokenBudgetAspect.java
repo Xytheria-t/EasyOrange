@@ -13,19 +13,16 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Token 预算切面 — 拦截标注 {@link TokenBudget} 的方法，调用前检查日预算是否超限。
+ * Token 预算切面 — 拦截标注 {@link TokenBudget} 的方法，调用前检查日预算：
+ * {@code dailyTokenLimit > 0} 且 累计用量 + 本次预估 &gt; dailyTokenLimit 时抛
+ * {@link TokenBudgetExceededException}，目标方法不执行。
  * <p>
- * <b>配置优先级</b>：{@code easyorange.ai.budget.scenarios.<scenario>} 覆盖注解默认值，
- * 缺失时回退到注解声明的 {@code maxTokensPerCall} / {@code dailyTokenLimit}。
- * 这样注解提供编译期可见的兜底契约，运维可通过配置热更新限额而无需发版。
+ * <b>配置优先</b>：{@code easyorange.ai.budget.scenarios.<scenario>} 覆盖注解默认值 —— 注解提供
+ * 编译期可见的兜底契约，运维通过配置热更新限额而无需发版。
  * <p>
- * <b>只做前置检查，不做记账</b>：真实用量在 {@code AiModelSupport} 拿到 {@code ChatResponse}
- * 的地方记（供应商回报的 prompt/completion tokens），本切面只看累计值是否已顶到日预算。
- * 记账曾放在这里，但服务方法返回业务 DTO，只能把 {@code maxTokensPerCall} 当用量累加 ——
- * 数字与真实消耗差一个量级，大盘和限流都不准。
- * <p>
- * <b>调用前</b>：若 {@code dailyTokenLimit > 0} 且 累计用量 + 本次预估 &gt; dailyTokenLimit，
- * 抛 {@link TokenBudgetExceededException}，目标方法不执行。
+ * <b>只做前置检查，不做记账</b>：真实用量在 {@code AiModelSupport} 拿到供应商回报 tokens 的地方记。
+ * 记账不能放这里：服务方法返回业务 DTO，只能把 {@code maxTokensPerCall} 当用量累加，
+ * 数字与真实消耗差一个量级。
  */
 @Slf4j
 @Aspect
@@ -63,12 +60,7 @@ public class TokenBudgetAspect {
         return pjp.proceed();
     }
 
-    /**
-     * 解析场景预算：配置优先，注解兜底。
-     * <p>
-     * 配置中存在 scenario 条目时用配置值，否则用注解声明的默认值。
-     * 这让注解成为编译期契约，配置成为运行期调优旋钮。
-     */
+    /** 解析场景预算：配置优先，注解兜底 —— 注解是编译期契约，配置是运行期调优旋钮。 */
     private ResolvedBudget resolveBudget(String scenario, TokenBudget annotation) {
         var scenarioConfig = aiProperties.budget().resolve(scenario);
         if (scenarioConfig != null) {
