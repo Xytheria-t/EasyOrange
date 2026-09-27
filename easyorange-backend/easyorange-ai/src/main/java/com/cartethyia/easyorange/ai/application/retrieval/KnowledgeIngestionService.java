@@ -37,11 +37,7 @@ public class KnowledgeIngestionService {
     private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
     private final AiModelSupport aiModelSupport;
 
-    /**
-     * 摄入一篇文档：落库 → 分块 → 逐块 embed → 批量写 ES 索引 → 回填状态。
-     *
-     * @return 文档 ID
-     */
+    /** 摄入一篇文档：落库 → 分块 → 逐块 embed → 批量写 ES 索引 → 回填状态。 */
     public String ingest(String title, String content, String source) {
         String id = repository.save(
                 new KnowledgeDocEntity(null, title, content, source, KnowledgeDocStatus.PENDING, 0, null));
@@ -49,9 +45,7 @@ public class KnowledgeIngestionService {
         return id;
     }
 
-    /**
-     * 重新摄入已存在的文档（启动补索引用）— 保持文档 ID 稳定（金标准集引用同一批 ID）。
-     */
+    /** 重新摄入已存在的文档（启动补索引用）— 保持文档 ID 稳定（金标准集引用同一批 ID）。 */
     public void reindexPending(String id) {
         var doc = repository.findById(id).orElse(null);
         if (doc == null || doc.status() != KnowledgeDocStatus.PENDING) {
@@ -60,11 +54,7 @@ public class KnowledgeIngestionService {
         indexChunks(id, doc.title(), doc.content());
     }
 
-    /**
-     * 全量补索引：把所有 PENDING 文档重试一遍（管理端 /api/admin/knowledge/reindex 入口）。
-     *
-     * @return 重试的文档数
-     */
+    /** 全量补索引：把所有 PENDING 文档重试一遍（管理端 reindex 入口），返回重试的文档数。 */
     public int reindexAllPending() {
         int page = 1;
         int total = 0;
@@ -109,9 +99,7 @@ public class KnowledgeIngestionService {
         }
     }
 
-    /**
-     * 删除文档：逻辑删除 + 同步移除 ES 分块。
-     */
+    /** 删除文档：逻辑删除 + 同步移除 ES 分块。 */
     public void delete(String id) {
         repository.deleteById(id);
         var port = indexPortProvider.getIfAvailable();
@@ -124,10 +112,7 @@ public class KnowledgeIngestionService {
         }
     }
 
-    /**
-     * 分块算法：固定 chunk size + overlap，切点优先落在换行处（避免切断句子）。
-     * 纯静态便于单测覆盖。
-     */
+    /** 分块算法：固定 chunk size + overlap，切点优先落在换行处；纯静态便于单测覆盖。 */
     static List<String> chunkContent(String content) {
         if (content == null || content.isBlank()) {
             return List.of();

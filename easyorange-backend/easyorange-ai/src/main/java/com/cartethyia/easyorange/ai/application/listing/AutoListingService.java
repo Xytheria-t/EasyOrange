@@ -16,10 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * 拍照识别（发布助手）— 一次多模态调用产出上架表单要的全部字段（标题 / 描述 / 建议价 / 类目 / 成色 / 所在地）。
- * <p>
- * 图片与「要哪些字段」在同一次请求里交给视觉模型，不再有第二次文本调用：先前那种「视觉模型写自由文本、
- * 文本模型再转 JSON」的两段式，第二次调用看不到图片，只是做格式转换 —— 白付一次调用的钱与延迟。
+ * 拍照识别（发布助手）— 一次多模态调用产出上架表单要的全部字段（标题 / 描述 / 建议价 / 类目 / 成色 / 所在地）；
+ * 图片与「要哪些字段」在同一次请求交给视觉模型，两段式的浪费见 {@link AiModelSupport#callJsonAsWithImages}。
  * <p>
  * 失败一律显式报错（{@link AiResultCode#AI_UNAVAILABLE}）：这里没有「部分可用」的结果，
  * 静默返回 null 只会让用户点了按钮、等一会儿、零反馈。

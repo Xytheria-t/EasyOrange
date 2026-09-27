@@ -25,26 +25,15 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
 
 /**
  * Agent 循环的内部工具面 — 7 个工具的 schema 与执行都在这里：{@code @Tool} / {@code @ToolParam} 注解
- * 生成供应商侧校验的 JSON Schema，方法体即「执行 + 观察格式化」。
+ * 生成供应商侧校验的 JSON Schema，方法体即「执行 + 观察格式化」。每次循环实例化一份：召回物累加器是
+ * 单次请求内的可变状态，由实例独占持有，编排器经只读快照读取；框架不执行这些工具，执行与循环控制权
+ * 都在 {@link AgentLoopRunner}。
  * <p>
- * 每次循环实例化一份：召回物累加器是单次请求内的可变状态（跨轮累加，供最终生成做引用溯源），
- * 由实例独占持有，换一次请求就换一个实例；编排器经只读快照方法读取，不共享可变引用。
- * 框架不执行这些工具 —— Spring AI 2.0 的 {@code ChatModel.call} 只把 tool
- * 定义发给供应商、原样返回 tool call，执行与循环控制权都在 {@link AgentLoopRunner}
- * （步数上限 / 预算 / 降级在那边，这里只管单个工具的语义）。
- * <p>
- * 四点非显而易见的约定：
- * <ul>
- *   <li><b>thought 是每个工具的必填参数</b> —— 原生 tool calling 没有独立的「决策理由」通道，理由只能
- *       随参数带回；工具方法不消费它，由 runner 取出落 trace / 推 SSE。</li>
- *   <li><b>抛异常 = 该步失败</b> —— runner 把异常收敛成失败观察交回模型（带错误反馈的修复轮），
- *       所以「查无此资产」这类<b>有效</b>结果必须返回观察文本而不是抛异常。</li>
- *   <li><b>finish 只有 schema 没有执行</b> —— 收敛轮由 runner 在执行前按名称拦截，方法体不会被调用。</li>
- *   <li><b>remember_preference 是唯一的写路径</b> —— 长期画像 upsert，按 (userId, key) 唯一键幂等。
- *       它从 finish 的参数副作用提升为独立工具，是为了让「写入长期记忆」成为模型自主决策的一步，
- *       并且不再依赖收敛成功：原先只在 finish 轮提取，步数超限 / 预算耗尽 / 决策失败三条降级路径下
- *       偏好会静默丢失。</li>
- * </ul>
+ * 约定：thought 是每个工具的必填参数（原生 tool calling 没有独立的「决策理由」通道，工具方法不消费，
+ * 由 runner 取出落 trace / SSE）；抛异常 = 该步失败（runner 收敛成失败观察交回模型修复），「查无此资产」
+ * 这类有效结果必须返回观察文本而不是抛异常；finish 只有 schema 没有执行（runner 在执行前按名称拦截）；
+ * remember_preference 是唯一的写路径（按 userId + key 幂等 upsert，作为独立工具让「写入长期记忆」成为
+ * 模型自主决策的一步，步数超限 / 预算耗尽 / 决策失败三条降级路径下偏好不再静默丢失）。
  */
 @SuppressWarnings("unused") // thought 只进工具 schema，方法体不消费（见类注释）
 public class AgentTools {
@@ -76,21 +65,17 @@ public class AgentTools {
     private static final int OBSERVATION_SUMMARY_LIMIT = 3;
 
     /**
-     * 检索无新增时的观察文案 —— 收敛判据本身（见 {@link #knowledgeSearch} / {@link #productSearch}）。
-     * <p>
-     * 判据是「本轮命中的条目有多少此前已经出现过」：换关键词检索回来还是同一批文档，对回答没有增量，
-     * 而模型不会自己看出这一点（每次观察都写着「命中 N 条」，看上去总有进展）。把这件事作为一条明确
-     * 观察交回模型，比在循环里硬性拦掉这次调用更合适 —— 拦掉只是少一轮反馈，让模型自己看到
-     * 「再查也是重复」才是它该学到的判断。
+     * 检索无新增时的观察文案 —— 收敛判据本身（见 {@link #knowledgeSearch} / {@link #productSearch}）：
+     * 判据是「本轮命中的条目有多少此前已出现过」，模型不会自己看出「再查也是重复」，把这件事作为一条
+     * 明确观察交回，比在循环里硬性拦掉更合适。
      */
     private static final String NO_NEW_HIT_OBSERVATION = "本次检索无新增信息（命中的内容此前已出现过）：请直接调用 finish 基于已有信息作答，不要再换关键词重试";
 
     /**
      * 判为「无新增」的重合比例阈值 —— 本轮命中里此前出现过的条目占比达到此值即收敛。
-     * <p>
-     * 只认「完全重复」不够用：检索是 topK 截断的，换个关键词常返回与上次高度重叠但不完全相同的一批
-     * （每轮夹带一两个新条目），逐条判重会让模型无限换词直到撞步数上限 —— 实测正是如此，7 步里 5 步是
-     * 换词重搜。阈值取 0.6：首次检索重合率为 0，而一次检索能带进 3 条以上新内容时（约 40% 重合）不算冗余。
+     * 只认「完全重复」不够：检索是 topK 截断的，换关键词常返回高度重叠但不完全相同的一批，
+     * 逐条判重会让模型无限换词直到撞步数上限（实测 7 步里 5 步换词重搜）。取 0.6：首次检索重合率为 0，
+     * 一次检索能带进 3 条以上新内容时（约 40% 重合）不算冗余。
      */
     private static final double REDUNDANT_OVERLAP_RATIO = 0.6;
 
@@ -121,17 +106,15 @@ public class AgentTools {
         this.userId = userId;
     }
 
-    /** 已累加的知识库命中（只读快照，供循环出口装配 Result）。 */
+    /** 已累加的召回物（只读快照，供循环出口装配 Result）。 */
     List<KnowledgeHit> knowledgeHits() {
         return List.copyOf(knowledgeHits);
     }
 
-    /** 已累加的在售资产命中（只读快照）。 */
     List<AssetHit> assets() {
         return List.copyOf(assets);
     }
 
-    /** 查得的资产详情（只读快照）。 */
     List<AssetDetail> details() {
         return List.copyOf(details);
     }
@@ -252,9 +235,8 @@ public class AgentTools {
         }
         String key = preferenceKey.trim();
         if (!PREFERENCE_KEYS.contains(key)) {
-            // 白名单是代码层的硬校验：schema 描述与 prompt yml 只是对模型的指令，提示注入可让
-            // 模型带任意 key 进来（含标签形态的越界负载），落库前以本集合为准。
-            // 拒绝理由回给模型（可改用合法类别重试或放弃），不当故障处理
+            // 白名单是代码层的硬校验：schema 描述与 prompt yml 只是对模型的指令，提示注入可让模型
+            // 带任意 key 进来，落库前以本集合为准；拒绝理由回给模型，不当故障处理
             return "偏好类别仅支持 condition / price_range / style / location，已跳过记录；直接继续回答即可";
         }
         String value = preferenceValue.trim();
@@ -269,23 +251,16 @@ public class AgentTools {
 
     @Tool(name = TOOL_FINISH, description = "信息已足够回答，或无需检索（寒暄 / 闲聊），不再调用任何工具")
     public String finish(@ToolParam(description = "收敛理由，不超过 20 字的中文概括") String thought) {
-        // 方法体不会被执行：收敛轮由 runner 在执行前按名称拦截（finish 不产生 observation 与耗时），
-        // 这里的存在意义是让 finish 出现在发给供应商的工具 schema 里
+        // 方法体不会被执行：runner 在执行前按名称拦截，这里只为让 finish 出现在发给供应商的工具 schema 里
         return TOOL_FINISH;
     }
 
-    /**
-     * 决策失败降级的补检索 — 按原始问题检索一次并入累加器，判重口径与 {@link #knowledgeSearch} 一致：
-     * 此前轮次已召回过的文档不再计入，降级路径不会把 Result 撑出重复来源。
-     */
+    /** 决策失败降级的补检索 — 判重口径与 {@link #knowledgeSearch} 一致，降级路径不会把 Result 撑出重复来源。 */
     void recallKnowledgeFallback(String question) {
         knowledgeHits.addAll(retainNewKnowledge(retrievalService.search(question, RETRIEVAL_TOP_K)));
     }
 
-    /**
-     * 按 ID 查资产详情 — product_detail 与 compare_assets 共用同一条通道与同一种失败语义：
-     * 端口抛出（DB 故障）按工具失败上报（模型可换目标重试），empty（查无此资产）是正常结果。
-     */
+    /** 按 ID 查详情 — product_detail 与 compare_assets 共用：端口抛出（DB 故障）按工具失败上报，empty（查无此资产）是正常结果。 */
     private Optional<AssetDetail> findDetail(String productId) {
         try {
             return assetDetailPort.findDetail(productId);
@@ -303,17 +278,14 @@ public class AgentTools {
         }
     }
 
-    /**
-     * 本轮检索是否已无新增信息 —— 「此前出现过的条目数 / 本轮命中数」达到阈值即判冗余。
-     * 完全没召回到（{@code foundCount == 0}）不算冗余：那是「换个关键词还能试」的空结果，不是重复。
-     */
+    /** 本轮检索是否已无新增信息 —— 完全没召回到（{@code foundCount == 0}）不算冗余：那是空结果，不是重复。 */
     private static boolean isRedundant(int seenCount, int foundCount) {
         return foundCount > 0 && (double) seenCount / foundCount >= REDUNDANT_OVERLAP_RATIO;
     }
 
     /**
-     * 保留本轮新增的文档 —— 已在累加器里的（此前轮次召回过）不再重复计入，判据取 docId，
-     * 缺失时退回标题（ES 命中必有 docId，兜底只为 LIKE 降级路径不因 null 误判成「全新增」）。
+     * 保留本轮新增的召回物 —— 判据取 docId（资产按 productId），缺失时退回标题：
+     * ES 命中必有 docId，兜底只为 LIKE 降级路径不因 null 误判成「全新增」。
      */
     private List<KnowledgeHit> retainNewKnowledge(List<KnowledgeHit> found) {
         Set<String> seen = knowledgeHits.stream().map(AgentTools::knowledgeKey).collect(Collectors.toSet());
@@ -389,11 +361,7 @@ public class AgentTools {
         return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
     }
 
-    /**
-     * 观察文本原样返回 — 默认的 {@code DefaultToolCallResultConverter} 会把返回值 JSON 序列化，
-     * String 结果因此多一层引号（观察变成 {@code "命中 1 条：…"}）；本工具面的观察是进下一轮 prompt
-     * 的纯文本，不需要引号。finish 无执行体、不需要该转换器。
-     */
+    /** 观察文本原样返回 — 默认转换器会把 String 返回值 JSON 序列化（观察多一层引号），本工具面的观察是进下一轮 prompt 的纯文本。finish 无执行体、不需要该转换器。 */
     @NullMarked
     public static final class ObservationTextConverter implements ToolCallResultConverter {
 

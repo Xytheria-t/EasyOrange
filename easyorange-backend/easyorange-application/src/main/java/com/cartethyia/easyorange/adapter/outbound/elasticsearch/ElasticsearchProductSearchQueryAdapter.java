@@ -66,39 +66,23 @@ import tools.jackson.databind.node.ObjectNode;
 public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQueryPort {
 
     /**
-     * 两路召回各取的候选条数 —— <b>固定值</b>，不随页码增长。
-     * <p>
-     * 融合会把候选池重新排序，池子大小随页码变化会让「同一查询翻到第 2 页时，第 1 页的顺序也变了」
-     * （原本排在池子外的文档在更大的池子里融合分变高）。固定池子换来翻页稳定，代价是超过
-     * {@code 候选池 / pageSize} 页之后不再有新的语义候选 —— 搜索页深度翻页本就很少，这个取舍划算。
-     */
-    /**
-     * 两路召回各取的候选条数下限（≈5 页 @20 条）。
-     * <p>
-     * 实际池子取 {@code max(下限, page * size * 2)}：下限保证了前几页的融合顺序稳定
-     * （池子大小不变 ⇒ 同一查询的前几页排序不会因为翻页而重排），
-     * 随页码增长则保证**请求的那一页永远落在池内** —— 固定池子在深翻页时会返回空记录，
-     * 而总数仍报着 BM25 的完整计数，前后端就对不上了。
+     * 两路召回各取的候选条数 = {@code max(100, page * size * 2)}：池子随页码增长保证请求的那一页
+     * 永远落在池内（固定池子在深翻页时返回空记录，而总数仍报 BM25 完整计数，前后端对不上）；
+     * 下限保证前几页融合顺序稳定 —— 池子大小变化会让「翻到第 2 页时第 1 页的顺序也变了」。
      */
     private static final int MIN_CANDIDATES = 100;
 
     /**
-     * kNN 的 {@code num_candidates} 下限：ES 先按 ANN 取这么多候选再精确打分（远大于 k 才有效果）。
-     * <p>
-     * 必须 ≥ {@code k} —— 否则 ES 直接拒收整个请求（{@code illegal_argument_exception:
-     * [num_candidates] cannot be less than [k]}）。候选池取 200 时用固定的 100 会踩这个坑，
-     * 所以这里取下限与 {@code 2k} 的较大者。
+     * kNN 的 {@code num_candidates} 下限：ES 先按 ANN 取这么多候选再精确打分（远大于 k 才有效果）；
+     * 必须 ≥ {@code k} 否则 ES 直接拒收整个请求，候池增长时固定 100 会踩坑，故取 {@code max(100, 2k)}。
      */
     private static final int NUM_CANDIDATES = 100;
 
     /**
-     * kNN 路的余弦相似度下限：低于该值的文档不进候选池，按 0 命中处理。
-     * <p>
-     * 纯 kNN 召回没有相关性门槛 —— 小语料下 ANN 会把全库都凑满 {@code k} 条，
-     * 融合后不相关商品被顶进结果页。实测（2026-09-23，106 文档 / text-embedding-v3 + bbq_hnsw）：
-     * 乱码查询 0 命中、「相机」4 条、自然语言查询 7 条 —— 门槛按 ANN 图上的估计分剪枝，
-     * 报告的 {@code _score} 是 rescore 后的值，0.5 参数对应报告分约 0.75 的有效切点。
-     * 只影响语义路，BM25 词面命中不受限。
+     * kNN 路的余弦相似度下限：纯 kNN 召回没有相关性门槛，小语料下 ANN 会把全库凑满 {@code k} 条，
+     * 不相关商品会被顶进结果页。实测（2026-09-23，106 文档 / text-embedding-v3 + bbq_hnsw）：乱码查询
+     * 0 命中、「相机」4 条、自然语言查询 7 条 —— 门槛按 ANN 图上的估计分剪枝（报告的 {@code _score}
+     * 是 rescore 后的值，0.5 对应报告分约 0.75 的有效切点）。只影响语义路，BM25 词面命中不受限。
      */
     private static final float KNN_MIN_SIMILARITY = 0.5f;
 
@@ -170,10 +154,8 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
             return singleLegSearch(query, page, size);
         }
 
-        // total 取 BM25 路的总命中：它是「过滤条件 + 关键词词面匹配」的完整计数，也是唯一有全量语义的口径
+        // total 取 BM25 路的总命中：它是「过滤 + 词面匹配」的完整计数，唯一有全量语义的口径
         // （kNN 只返回候选池条数，不是匹配总数）；BM25 路挂掉时退化为候选池大小。
-        // 与融合后记录数取 max：语义路在词面命中之外补进来的召回也承诺给了用户（就记录在当前候选池里），
-        // 只报 BM25 数会出现「共找到 4 件」却列出 10 张卡的口径裂缝。
         long bm25Total = bm25Leg.hits() != null ? bm25Leg.total() : 0L;
 
         var fused = RrfFusion.fuse(RrfFusion.DEFAULT_K, rankedLists);
@@ -185,8 +167,8 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 .map(this::toReadModel)
                 .toList());
 
-        // 词面命中为 0、但语义路召回到了结果时必须改报候选池大小：
-        // 报 0 会让前端显示「共找到 0 件商品」却列着 N 张卡，同时翻页控件也消失
+        // 与融合后记录数取 max：语义路在词面命中之外补进的召回也承诺给了用户（只报 BM25 数会出现
+        // 「共找到 0 件」却列着 N 张卡、翻页控件消失的口径裂缝）
         long total = Math.max(bm25Total, fused.size());
 
         // facets 来自 BM25 那路的聚合：聚合是「过滤条件命中的语料」上的统计量，
@@ -280,13 +262,11 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
     }
 
     /**
-     * kNN 腿：过滤条件放 {@code knn.filter}（预过滤），<b>不得挂顶层 query</b> ——
-     * 顶层 query（match_all + 过滤）与 {@code knn.similarity} 并存时，kNN 侧被相似度剪成 0 后
-     * ES 仍把 query 侧命中当结果返回（实测乱码查询该腿返 100 条、分值恒为 match_all 的 1.0），
-     * 相似度门槛等于没有、任意乱码召回全库；过滤条件搬进 knn.filter 后同样查询 0 命中。
-     * <p>
-     * wrapper 查询装的是<b>查询对象</b> {@code {"bool":{"filter":[…]}}}——直接装子句数组
-     * {@code [{…}]} 会被 ES 以 x_content_parse_exception 拒收，整条 kNN 腿静默退化成单路。
+     * kNN 腿：过滤条件放 {@code knn.filter}（预过滤），<b>不得挂顶层 query</b> —— 顶层 query
+     * （match_all + 过滤）与 {@code knn.similarity} 并存时，kNN 侧被相似度剪成 0 后 ES 仍把 query
+     * 侧命中当结果返回（实测乱码查询该腿返 100 条、分值恒为 match_all 的 1.0），相似度门槛等于没有；
+     * 过滤搬进 knn.filter 后同样查询 0 命中。wrapper 查询装的是<b>查询对象</b> {@code {"bool":…}}，
+     * 直接装子句数组会被 ES 以 x_content_parse_exception 拒收，整条腿静默退化成单路。
      */
     private NativeQuery knnQuery(ProductSearchQuery query, int k) {
         int numCandidates = Math.max(NUM_CANDIDATES, k * 2);
@@ -360,12 +340,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         return objectMapper.createObjectNode().set("bool", bool);
     }
 
-    /**
-     * 过滤子句（status/categoryId/conditionLevel/price），两路召回共用。
-     * <p>
-     * <b>两路都必须带</b>：只过滤一路的话，不过滤的那路会把被过滤掉的商品带进候选池，
-     * 融合后照样可能出现在结果里。kNN 路以 {@code knn.filter} 承载（见 {@link #knnQuery}）。
-     */
+    /** 过滤子句（status/categoryId/conditionLevel/price），两路召回共用且都必须带 —— 只过滤一路会让另一路把被过滤的商品带进候选池（见类注释）。 */
     private ArrayNode buildFilterClauses(ProductSearchQuery query) {
         ArrayNode filter = objectMapper.createArrayNode();
         if (query.status() != null) {

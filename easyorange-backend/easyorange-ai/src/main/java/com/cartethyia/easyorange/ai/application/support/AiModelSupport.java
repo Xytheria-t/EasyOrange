@@ -39,18 +39,15 @@ import tools.jackson.databind.ObjectMapper;
  * Spring AI 调用小工具 — 收敛 system+user 双消息、JSON 结构化输出、原生 tool calling、Embedding、
  * 多模态结构化输出这几类重复调用模式，避免每个服务重复组装 {@link Prompt}。
  * <p>
- * 带 {@link AiCallScope} 的重载在调用前后做两件横切记账（两者都是「调用副产物」，失败绝不影响业务）：
- * <ul>
- *   <li>{@link AiCallLogPort} — 记一条 eo_ai_call_log（LLM-as-Judge 离线评估数据源）；</li>
- *   <li>{@link TokenBudgetStore} — 记本次调用的真实 token 用量（场景键 = scope 小写），
- *       供 {@code TokenBudgetAspect} / 流式链路的预算前置检查累计。供应商未回报用量时
- *       （部分兼容端点忽略 stream_options）退化为按场景上限估算，宁可高估也不让预算静默失效；
- *       失败调用不记账 —— 没有用量可依据，估算会让故障期虚烧日预算、恢复后把场景锁死。</li>
- * </ul>
+ * 带 {@link AiCallScope} 的重载在调用前后做两件横切记账（都是「调用副产物」，失败绝不影响业务）：
+ * {@link AiCallLogPort} 记一条 eo_ai_call_log（LLM-as-Judge 离线评估数据源）；{@link TokenBudgetStore}
+ * 记本次调用的真实 token 用量（场景键 = scope 小写），供预算前置检查累计。供应商未回报用量时退化为按
+ * 场景上限估算，宁可高估也不让预算静默失效；失败调用不记账 —— 没有用量可依据，估算会让故障期虚烧
+ * 日预算、恢复后把场景锁死。
  * <p>
  * 需要按角色分隔多轮消息（system / 历史 user+assistant / 当前 user）的调用走
- * {@link #callText(ChatModel, AiCallScope, List)} 重载 —— 历史不进单条 user 消息，
- * 前缀稳定才能命中供应商的上下文缓存（KV cache 折扣计价）。
+ * {@link #callText(ChatModel, AiCallScope, List)} 重载 —— 历史不进单条 user 消息，前缀稳定才能命中
+ * 供应商的上下文缓存（KV cache 折扣计价）。
  */
 @Slf4j
 @Component
@@ -65,19 +62,12 @@ public class AiModelSupport {
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
 
-    /**
-     * 普通文本生成（带调用日志与预算记账）：system + user 双消息，委托多消息重载。
-     */
+    /** 普通文本生成（system + user 双消息，带调用日志与预算记账），委托多消息重载。 */
     public String callText(ChatModel chatModel, AiCallScope scope, String systemPrompt, String userMessage) {
         return callText(chatModel, scope, List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)));
     }
 
-    /**
-     * 普通文本生成（多角色消息，带调用日志与预算记账）— 多轮对话专用。
-     * <p>
-     * 调用方按 [system, 历史 user/assistant …, 当前 user] 组装；历史不再拼进当前 user 消息，
-     * 使跨轮次前缀保持稳定（供应商上下文缓存按前缀命中计价）。
-     */
+    /** 多角色消息版（多轮对话专用）— 历史不拼进当前 user 消息使前缀稳定的原因见类注释。 */
     public String callText(ChatModel chatModel, AiCallScope scope, List<Message> messages) {
         return recordCall(
                 scope,
@@ -87,12 +77,9 @@ public class AiModelSupport {
     }
 
     /**
-     * JSON 结构化输出：在 system + user 双消息之上追加 {@code response_format=json_object}，
-     * 提示模型返回合法 JSON（解析与降级仍由调用方 ObjectMapper + try/catch 承担）。
-     * <p>
-     * per-request options 必须继承模型的连接与模型名：只设 {@code responseFormat} 时 {@code model} 为 null，
-     * openai-java 客户端会回退到 SDK 默认模型名（{@code gpt-5-mini}），对非 OpenAI 供应商直接 404 ——
-     * 走本方法的所有 AI 决策点与 LLM-as-Judge 会整体静默降级。
+     * JSON 结构化输出：追加 {@code response_format=json_object}，提示模型返回合法 JSON
+     * （解析与降级仍由调用方 ObjectMapper + try/catch 承担）。per-request options 必须继承模型的
+     * 连接与模型名，原因见 {@link #inheritConnection}。
      */
     public String callJson(ChatModel chatModel, String systemPrompt, String userMessage) {
         return outputText(chatModel.call(new Prompt(
@@ -101,17 +88,11 @@ public class AiModelSupport {
     }
 
     /**
-     * 原生 tool calling 调用（带调用日志与预算记账）：把工具 schema 发给供应商侧校验，返回模型请求的
-     * 工具调用（空列表 = 模型没调工具，由调用方按决策失败处理）。
-     * <p>
-     * 消息序列由调用方组装并跨轮累积（[system, user, assistant tool_call, tool 观察, …]）：
-     * 历史按协议原样进上下文，轮间前缀稳定命中供应商 KV cache 折扣。
-     * <p>
-     * 只发请求、不执行工具：Spring AI 2.0 的 {@code ChatModel.call} 原样返回 tool call（自动工具执行
-     * 已收进 ChatClient 的 ToolCallingAdvisor），执行与循环控制权留在调用方。
-     * <p>
-     * 与 {@link #callJson} 同规矩：per-request options 必须继承模型的连接与模型名（只设 toolCallbacks
-     * 时 {@code model} 为 null，openai-java 会回退 SDK 默认模型名，对非 OpenAI 供应商直接 404）。
+     * 原生 tool calling（带记账）：工具 schema 发给供应商侧校验，返回模型请求的工具调用
+     * （空列表 = 模型没调工具，由调用方按决策失败处理）。消息序列由调用方组装并跨轮累积，
+     * 轮间前缀稳定命中供应商 KV cache 折扣。只发请求、不执行工具 —— Spring AI 2.0 的
+     * {@code ChatModel.call} 原样返回 tool call，执行与循环控制权留在调用方。
+     * options 必须继承连接与模型名的坑同 {@link #inheritConnection}。
      */
     public List<AssistantMessage.ToolCall> callWithTools(
             ChatModel chatModel,
@@ -125,12 +106,7 @@ public class AiModelSupport {
         });
     }
 
-    /**
-     * 流式文本生成（带调用日志与预算记账）：逐 token 回调 {@code tokenConsumer}，阻塞至流结束返回完整文本。
-     * <p>
-     * 供 SSE 场景使用（AiChatService 把 token 回调接到 SseEmitter）；调用日志/耗时/用量统计
-     * 与 {@link #callText} 一致，落库的 response_text 是完整拼接结果（Judge 数据源不缺流式调用）。
-     */
+    /** 流式文本生成：逐 token 回调，阻塞至流结束返回完整文本；记账口径与 {@link #callText} 一致（Judge 数据源不缺流式调用）。 */
     public String callTextStream(
             ChatModel chatModel,
             AiCallScope scope,
@@ -144,10 +120,7 @@ public class AiModelSupport {
                 tokenConsumer);
     }
 
-    /**
-     * 流式文本生成（多角色消息）：同 {@link #callText(ChatModel, AiCallScope, List)}，
-     * 逐 token 回调并把整段回答返回给调用方。
-     */
+    /** 多角色消息版流式文本生成，逐 token 回调并把整段回答返回给调用方。 */
     public String callTextStream(
             ChatModel chatModel, AiCallScope scope, List<Message> messages, Consumer<String> tokenConsumer) {
         return recordCall(scope, chatModel, joinTexts(messages), () -> {
@@ -168,11 +141,9 @@ public class AiModelSupport {
     }
 
     /**
-     * 文本向量化（带调用日志与预算记账）：{@code float[]} 转 {@code List<Float>}
-     * （ES kNN 查询需要的形态），响应不落库只记成功与否。
-     * <p>
-     * 走 {@code embedForResponse} 拿响应本体：{@code embed(String)} 会把 {@link EmbeddingResponse}
-     * 的 metadata 丢在中间层，供应商回报的 usage 取不到，成本报表里 embedding 一行就永远是 0。
+     * 文本向量化（{@code float[]} 转 {@code List<Float>}，ES kNN 需要的形态），响应不落库只记成功与否。
+     * 走 {@code embedForResponse} 拿响应本体：{@code embed(String)} 会把 metadata 丢在中间层，
+     * 供应商回报的 usage 取不到，成本报表里 embedding 一行就永远是 0。
      */
     public List<Float> embed(EmbeddingModel embeddingModel, AiCallScope scope, String text) {
         return recordCall(scope, embeddingModel, "embed" + text, () -> {
@@ -190,11 +161,9 @@ public class AiModelSupport {
     }
 
     /**
-     * 多模态结构化输出一步到位：图片随提示词交给视觉模型 + 要求 JSON 输出 + 反序列化。
-     * <p>
-     * 刻意做成**一次调用**：图与「要哪些字段」在同一次请求里给到模型。先前「视觉模型写自由文本、
-     * 文本模型再把文字转成 JSON」的两段式里，第二次调用看不到图片，只是对第一次的产出做格式转换 ——
-     * 多付一次调用的钱与延迟，还会丢掉没写进文字的画面细节。
+     * 多模态结构化输出一步到位：图片与「要哪些字段」在同一次请求给到视觉模型。
+     * 刻意不做「视觉模型写自由文本、文本模型再转 JSON」的两段式 —— 第二次调用看不到图片，
+     * 只是对第一次的产出做格式转换，多付一次调用的钱与延迟，还丢掉没写进文字的画面细节。
      */
     public <T> Optional<T> callJsonAsWithImages(
             ChatModel chatModel,
@@ -215,12 +184,7 @@ public class AiModelSupport {
         return parseJson(scope, json, responseType);
     }
 
-    /**
-     * 解析模型返回的 JSON；空内容或解析失败返回 empty（调用方据此降级，不抛出去打断业务链路）。
-     * <p>
-     * 不合 schema（字段缺失、数字带单位）与「模型不可用」在这里是同一个结果 ——
-     * 需要区分两者的场景应直接用 {@link #callJson} 自行解析。
-     */
+    /** 解析模型返回的 JSON；空内容或解析失败返回 empty（调用方据此降级，不抛出去打断业务链路）。不合 schema 与「模型不可用」在这里是同一个结果，需要区分的场景用 {@link #callJson} 自行解析。 */
     private <T> Optional<T> parseJson(AiCallScope scope, @Nullable String json, Class<T> responseType) {
         try {
             if (json == null || json.isBlank()) {
@@ -234,10 +198,7 @@ public class AiModelSupport {
         }
     }
 
-    /**
-     * 图片以 {@link Media}（URL）承载，MIME 类型按 URL 后缀推断；
-     * {@code data:} URL（服务端取图转 base64 后的内联形态）从 mime 头直接解析。
-     */
+    /** 图片以 {@link Media}（URL）承载，MIME 按 URL 后缀推断；{@code data:} URL 从 mime 头直接解析。 */
     private static List<Media> mediaOf(List<String> imageUrls) {
         return imageUrls.stream()
                 .map(url -> Media.builder()
@@ -247,10 +208,7 @@ public class AiModelSupport {
                 .toList();
     }
 
-    /**
-     * 推断图片 MIME 类型 — 一律标 JPEG 会让 PNG/WebP 被供应商按错误类型解码，
-     * 图片类型与声明的 MIME 不符时部分模型直接拒答。认不出来时回退 JPEG。
-     */
+    /** 推断图片 MIME — 一律标 JPEG 会让 PNG/WebP 被供应商按错误类型解码（部分模型直接拒答）；认不出来时回退 JPEG。 */
     private static MimeType mimeTypeOf(String url) {
         if (url.startsWith("data:")) {
             int headerEnd = url.indexOf(',', "data:".length());
@@ -278,9 +236,7 @@ public class AiModelSupport {
         };
     }
 
-    /**
-     * 提取模型文本输出；模型可能不返回结果（返回空串），避免 NPE。
-     */
+    /** 提取模型文本输出；模型可能不返回结果（避免 NPE，返回空串）。 */
     private static String outputText(ChatResponse response) {
         var result = response.getResult();
         return result != null ? result.getOutput().getText() : "";
@@ -299,11 +255,10 @@ public class AiModelSupport {
     }
 
     /**
-     * 工具决策调用的请求选项 —— {@code tool_choice} 显式设 {@code required}。
-     * <p>
-     * ReAct 循环每轮的产物契约就是「一个工具调用」，但 {@code auto} 下模型仍可能回纯文本（实测决策模型
-     * 换快模型后出现过一次，循环只能走决策失败降级）。在协议层要求必须返回工具调用，比在循环里判断
-     * 「没拿到 tool call 就当失败」更靠前一步：失败模式从「降级」变成「不可能发生」。
+     * 工具决策调用的请求选项 —— {@code tool_choice} 显式设 {@code required}：ReAct 每轮的产物契约
+     * 就是「一个工具调用」，但 {@code auto} 下模型仍可能回纯文本（实测决策模型换快模型后出现过一次）。
+     * 在协议层要求必须返回工具调用，比循环里判断「没拿到 tool call 就当失败」更靠前一步：
+     * 失败模式从「降级」变成「不可能发生」。
      */
     private static OpenAiChatOptions toolOptions(
             ChatModel chatModel, List<ToolCallback> toolCallbacks, @Nullable Integer maxTokens) {
@@ -316,11 +271,7 @@ public class AiModelSupport {
         return toolOptions.build();
     }
 
-    /**
-     * scoped 调用的 per-request options — 输出上限按场景预算配置真下发（{@code max_tokens}），
-     * 与预算前置检查 / 记账共用同一份 {@code maxTokensPerCall}：供应商侧截断输出，最坏单次成本
-     * 由此封顶，而不只是记账估算。无场景配置返回 null（不带 options，行为与无 scope 重载一致）。
-     */
+    /** scoped 调用的 per-request options — 输出上限按场景预算配置真下发（{@code max_tokens}），与预算前置检查 / 记账共用同一份配置：供应商侧截断输出，最坏单次成本由此封顶；无场景配置返回 null。 */
     private @Nullable OpenAiChatOptions scopedOptions(ChatModel chatModel, AiCallScope scope) {
         Integer maxTokens = maxTokensOf(scope);
         if (maxTokens == null) {
@@ -338,8 +289,9 @@ public class AiModelSupport {
     }
 
     /**
-     * per-request options 继承模型的连接与模型名（缺 model 时 openai-java 会回退 SDK 默认模型，
-     * 对非 OpenAI 供应商直接 404 —— 见 {@link #callJson}）。
+     * per-request options 继承模型的连接与模型名 —— 只设业务字段时 {@code model} 为 null，
+     * openai-java 客户端会回退到 SDK 默认模型名（{@code gpt-5-mini}），对非 OpenAI 供应商直接 404，
+     * 走到这条路径的所有 AI 决策点会整体静默降级。
      */
     private static void inheritConnection(OpenAiChatOptions.Builder builder, ChatModel chatModel) {
         if (chatModel instanceof OpenAiChatModel openAiModel
@@ -439,10 +391,8 @@ public class AiModelSupport {
 
     /**
      * 记录本次调用的 token 用量（场景键与 {@code @TokenBudget(scenario=...)} 对齐）。
-     * <p>
-     * 有真实用量就用真实值；供应商未回报用量（embedding / 流式未带 usage）时退化为场景配置的单次上限，
-     * 保证日预算仍能累计 —— 估算值偏高，但比「预算永远为 0、限流静默失效」安全。
-     * <b>失败调用不记账</b>：异常路径没有用量可依据，按上限估算会让故障期虚烧日预算
+     * 有真实用量就用真实值；供应商未回报用量时退化为场景配置的单次上限（偏高，但比「预算永远为 0、
+     * 限流静默失效」安全）。<b>失败调用不记账</b>：异常路径按上限估算会让故障期虚烧日预算
      * （chat 口径下约 100 个失败请求烧穿 30 万日限），故障恢复后整个场景被前置检查锁死。
      */
     private void recordBudgetUsage(AiCallScope scope, @Nullable CallOutcome<?> outcome) {

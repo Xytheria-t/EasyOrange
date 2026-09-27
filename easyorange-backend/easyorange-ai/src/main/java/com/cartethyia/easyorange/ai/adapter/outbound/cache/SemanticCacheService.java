@@ -25,27 +25,20 @@ import org.springframework.util.DigestUtils;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 语义缓存 — 相似问题复用历史回答（成本优化的核心落地）。
+ * 语义缓存 — 相似问题复用历史回答（成本优化的核心落地）：查询向量化后与缓存条目算余弦，
+ * 超阈值即命中。写入走 Redis Hash（{@code eo:ai:semantic:<scope>:<用户桶>}），条目超上限淘汰最旧；
+ * Redis / embedding 任一不可用都 fail-open（不命中不阻塞）。
  * <p>
- * 命中判定：查询先向量化，与缓存条目的 embedding 做余弦相似度，超过阈值即命中，
- * 相同/近似问题不再调 LLM。写入走 Redis Hash（{@code eo:ai:semantic:<scope>:<用户桶>}），
- * 条目数超上限淘汰最旧；Redis / embedding 任一不可用都 fail-open（不命中不阻塞）。
+ * <b>按用户分桶</b>（正确性要求而非调优项）：条目存的是注入了该用户长期画像与会话历史的回答，
+ * 共享桶会把一个人的偏好返给另一个人；匿名会话收敛到单一桶（不注入画像，共享安全），代价是
+ * 跨用户的近似问题不再互相命中 —— 这是修正确性，不是牺牲命中率换调优。
  * <p>
- * <b>按用户分桶</b>：条目存的是注入了该用户长期画像与会话历史的回答，共享桶会把一个人的
- * 偏好返给另一个人。登录用户各一个桶，匿名会话收敛到单一桶（不注入画像，共享安全）。
- * 代价是跨用户的近似问题不再互相命中 —— 这是修正确性，不是牺牲命中率换调优。
+ * <b>向量按 base64 float32 存</b>，不用 JSON 数字数组：1024 维按 JSON 数组约 10KB，而每次查询都要
+ * 把整个 Hash 拉回逐条算余弦（O(n) 扫描），base64 压到约 4KB 且不走浮点文本解析；容量默认 200 同理
+ * —— 真到了需要更大容量的量级，应换向量索引（ES kNN）而不是继续加大这个 Hash。
  * <p>
- * <b>向量按 base64 的 float32 存</b>，不用 JSON 数字数组：1024 维按 JSON 数组存约 10KB，
- * 而每次查询都要把整个 Hash 拉回来逐条算余弦（O(n) 扫描），base64 把单条压到约 4KB、
- * 且解码不再走浮点文本解析。容量默认 200 也是同一原因 —— 条目越多，命中率越高但每次
- * 未命中的代价越大。真到了需要更大容量的量级，应换成向量索引（ES kNN）而不是继续加大这个 Hash。
- * <p>
- * <b>单条脏数据不影响整次查询</b>：格式不符（例如旧字段结构的残留条目）或向量解码失败的条目
- * 直接跳过，不让一条坏数据把「本可以命中」的查询变成未命中。旧格式条目自然过期淘汰，不做迁移。
- * <p>
- * <b>一次查询只算一次向量</b>：调用方先取 {@link #embedQuery}，把结果同时传给 {@link #lookUp}
- * 与 {@link #store}。未命中的路径原本要向量化两遍（查一遍、写一遍），而向量化是供应商调用，
- * 按次计费且有秒级延迟。
+ * <b>单条脏数据不影响整次查询</b>：格式不符或向量解码失败的条目直接跳过，旧格式条目随 TTL /
+ * 淘汰自然过期，不做迁移。一次查询只算一次向量的调用约定见 {@link SemanticCachePort}。
  */
 @Slf4j
 @Primary
@@ -61,13 +54,7 @@ public class SemanticCacheService implements SemanticCachePort {
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
 
-    /**
-     * 查询向量化 — 命中查找与写入共用这一次调用的结果。
-     * <p>
-     * 按 {@link AiCallScope#CHAT} 记账（缓存的读写键也是 CHAT）：命中一次就是一次真实的供应商调用，
-     * 不落日志不计预算就永远是账外项。原先不传 scope 的理由是「embedding 不回报 usage，
-     * 只能按场景上限估算，会把日预算虚高打满」—— 用量改取供应商真实回报后该理由已不成立（见 TD-015）。
-     */
+    /** 查询向量化 — 按 {@link AiCallScope#CHAT} 记账：命中一次就是一次真实供应商调用，不落日志不计预算就永远是账外项。 */
     @Override
     public List<Float> embedQuery(String query) {
         if (!aiProperties.semanticCache().enabled() || query == null || query.isBlank()) {
@@ -85,12 +72,7 @@ public class SemanticCacheService implements SemanticCachePort {
         }
     }
 
-    /**
-     * 语义命中则返回缓存响应，否则 empty。
-     * <p>
-     * 命中只在<b>同一用户桶内</b>比较：Redis key 带 userId，跨用户的条目连读都读不到。
-     * 共享桶会把 A 的个性化答案（注入过 A 的画像与历史）返给 B，既是质量问题也是信息泄露。
-     */
+    /** 语义命中则返回缓存响应，否则 empty（命中只在同一用户桶内比较，分桶口径见 {@link SemanticCachePort#lookUp}）。 */
     @Override
     public <T> Optional<T> lookUp(
             AiCallScope scope, @Nullable String userId, String query, List<Float> queryEmbedding, Class<T> type) {
@@ -126,11 +108,7 @@ public class SemanticCacheService implements SemanticCachePort {
         }
     }
 
-    /**
-     * 写入缓存：存 (queryEmbedding, response)；超出 maxEntries 淘汰最旧条目。
-     * <p>
-     * 淘汰上限<b>按用户桶各算各的</b>：一个高频用户的桶满了不该把其他用户的条目挤掉。
-     */
+    /** 写入缓存 (queryEmbedding, response)；淘汰上限按用户桶各算各的 —— 高频用户的桶满了不该把其他用户的条目挤掉。 */
     @Override
     public void store(
             AiCallScope scope, @Nullable String userId, String query, List<Float> queryEmbedding, Object response) {
@@ -207,15 +185,7 @@ public class SemanticCacheService implements SemanticCachePort {
         return vector;
     }
 
-    /**
-     * Redis key = 前缀 + scope + <b>用户桶</b>。
-     * <p>
-     * 用户桶是正确性要求而非调优项：条目里存的是注入了该用户画像与历史的回答，
-     * 放进共享桶等于把一个人的偏好返给另一个人。分桶后跨用户的条目连读都读不到。
-     * <p>
-     * 加桶前的旧 key（{@code eo:ai:semantic:<scope>}）不会被读到，随 TTL 自然过期 ——
-     * 缓存是易失数据，不做格式迁移。
-     */
+    /** Redis key = 前缀 + scope + <b>用户桶</b>（正确性要求，见类注释）；加桶前的旧 key 随 TTL 自然过期，不做迁移。 */
     private static String key(AiCallScope scope, @Nullable String userId) {
         return KEY_PREFIX + scope.name().toLowerCase() + ':' + SemanticCachePort.cacheUserKey(userId);
     }
@@ -224,11 +194,6 @@ public class SemanticCacheService implements SemanticCachePort {
         return DigestUtils.md5DigestAsHex(input.getBytes(StandardCharsets.UTF_8));
     }
 
-    /**
-     * Redis Hash 中的缓存条目：查询向量（base64 float32）+ 序列化后的响应 + 写入时间戳。
-     * <p>
-     * 字段名 {@code vector} 与旧版 {@code embedding}（JSON 数组）不同：旧条目解析后向量为空、
-     * 解码失败被跳过，随 TTL/淘汰自然消失 —— 缓存是易失数据，不做格式迁移。
-     */
+    /** Redis Hash 条目：查询向量（base64 float32）+ 序列化响应 + 时间戳。字段名 vector 与旧版 embedding 不同，旧条目解析失败即被跳过、自然过期，不做迁移。 */
     private record CachedEntry(String vector, String response, long timestamp) {}
 }

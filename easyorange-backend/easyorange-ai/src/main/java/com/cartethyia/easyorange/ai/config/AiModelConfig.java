@@ -20,20 +20,14 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 /**
- * Spring AI 模型装配 — 四个模型 bean 全手动创建（决策 / 文本 / 视觉 / Embedding）。
+ * Spring AI 模型装配 — 四个模型 bean 全手动创建（决策 / 文本 / 视觉 / Embedding）：
+ * 两个 OpenAI 兼容供应商（DeepSeek 文本 / DashScope 视觉 + Embedding）的 base-url 与 api-key 不同，
+ * 单一 {@code spring.ai.openai.*} 自动配置表达不了，统一经 {@link OpenAiSetup#setupSyncClient} 手动
+ * 构造 {@link OpenAIClient}；定义 bean 后自动配置的 {@code @ConditionalOnMissingBean} 自动退让，
+ * 不会产生重复 bean。重试与并发隔离由 openai-java 客户端内置（{@code maxRetries} / 连接池）承担。
  * <p>
- * 项目同时使用两个 OpenAI 兼容供应商（DeepSeek 文本 / DashScope 视觉 + Embedding），
- * base-url 与 api-key 均不同，无法用单一 {@code spring.ai.openai.*} 自动配置表达，
- * 因此统一经由 {@link OpenAiSetup#setupSyncClient} 手动构造 {@link OpenAIClient}。
- * 定义 {@code OpenAiChatModel}/{@code OpenAiEmbeddingModel} bean 后，
- * OpenAI 自动配置的 {@code @ConditionalOnMissingBean} 会自动退让，不会产生重复 bean。
- * <p>
- * 重试由 openai-java 客户端内置（{@code maxRetries}）承担，替代原 Resilience4j Retry；
- * 并发隔离由 openai-java 客户端内置连接池承担，替代原 Bulkhead。
- * <p>
- * <b>可选功能降级装配</b>：key 缺失时装配 {@link UnconfiguredChatModel}/{@link UnconfiguredEmbeddingModel}
- * 占位 bean（调用即抛「AI 模型未配置」异常），由服务层现有 try/catch 降级为 null——
- * 应用无需任何 AI key 即可启动，与 AGENTS.md「AI 密钥可选、不影响应用启动」的契约一致。
+ * key 缺失时装配 {@link UnconfiguredChatModel} / {@link UnconfiguredEmbeddingModel} 占位 bean
+ * （调用即抛「AI 模型未配置」，服务层现有 try/catch 降级）——应用无需任何 AI key 即可启动。
  */
 @Configuration
 public class AiModelConfig {
@@ -42,11 +36,9 @@ public class AiModelConfig {
 
     /**
      * 文本模型 — DeepSeek，业务服务默认注入的 {@code ChatModel}。
-     * <p>
-     * options 必须同时带上 baseUrl / apiKey：{@code OpenAiChatModel.Builder.build()} 需要同步与异步两个
-     * 客户端，项目只注入同步的 {@code openAiClient}，异步的由 Builder 用 options 里的连接参数自行装配。
-     * options 缺 baseUrl/apiKey 时异步客户端装配会因「无凭据」抛 IllegalStateException，
-     * 导致 key 非空即上下文启动失败（key 为空走 {@link UnconfiguredChatModel} 分支，恰好掩盖该问题）。
+     * options 必须同时带 baseUrl / apiKey：Builder 需要同步与异步两个客户端，异步的由 options 里的
+     * 连接参数自行装配，缺凭据会抛 IllegalStateException 导致 key 非空时上下文启动失败
+     * （key 为空走占位 bean 分支，恰好掩盖该问题）。
      */
     @Bean
     @Primary
@@ -71,14 +63,11 @@ public class AiModelConfig {
 
     /**
      * 工具决策模型 — Agent 循环每轮「选哪个工具」，由 {@code chat_tool} 场景路由到这里。
-     * <p>
-     * 与生成模型分开的理由：决策的产物只是一段几十字符的工具参数 JSON，是纯路由任务；而推理模型在
-     * 这种短决策上仍会产出长度不定的思考内容，实测同一决策的思考长度在几十到上千字符之间波动，直接
-     * 决定单轮延迟（同一问题 3.8s ~ 13.5s）。循环每轮串行一次决策，N 轮就是 N 倍开销，所以这里配
-     * 快模型、把强模型留给最终生成。{@code easyorange.ai.deepseek.router-model} 留空时与生成同模型，
-     * 不改变既有行为。
-     * <p>
-     * 非 {@code @Primary}：业务服务默认注入的仍是 {@link #chatModel}（最终生成）。
+     * 与生成模型分开配的理由：决策的产物只是几十字符的工具参数 JSON，纯路由任务，而推理模型在这种
+     * 短决策上仍会产出长度不定的思考内容（实测同一决策在几十到上千字符间波动，直接决定单轮延迟，
+     * 同一问题 3.8s ~ 13.5s）；循环每轮串行一次决策，N 轮就是 N 倍开销 —— 这里配快模型，强模型留给
+     * 最终生成。{@code router-model} 留空时与生成同模型，不改变既有行为。
+     * 非 {@code @Primary}：业务服务默认注入的仍是 {@link #chatModel}。
      */
     @Bean
     public ChatModel decisionChatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
@@ -100,11 +89,7 @@ public class AiModelConfig {
                 .build();
     }
 
-    /**
-     * 视觉模型 — Qwen-VL（DashScope OpenAI 兼容端点），拍照上架图片识别专用。
-     * <p>
-     * options 带 baseUrl / apiKey 的理由同 {@link #chatModel}。
-     */
+    /** 视觉模型 — Qwen-VL（DashScope OpenAI 兼容端点），拍照上架图片识别专用；options 带 baseUrl / apiKey 的理由同 {@link #chatModel}。 */
     @Bean
     public ChatModel visionChatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
         var qwenVl = props.qwenVl();
@@ -123,9 +108,7 @@ public class AiModelConfig {
                 .build();
     }
 
-    /**
-     * Embedding 模型 — DashScope text-embedding-v3（OpenAI 兼容端点）。
-     */
+    /** Embedding 模型 — DashScope text-embedding-v3（OpenAI 兼容端点），维度对齐约束见 {@link AiProperties#embedding()}。 */
     @Bean
     public EmbeddingModel embeddingModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
         var embedding = props.embedding();
@@ -147,10 +130,7 @@ public class AiModelConfig {
         return value == null || value.isBlank();
     }
 
-    /**
-     * OpenAI 兼容供应商的统一同步客户端装配。非本项目使用的 Azure/stubbing/自定义头等
-     * 能力传空值即可——两个供应商（DeepSeek / DashScope）均走 apiKey + base-url 直连。
-     */
+    /** OpenAI 兼容供应商的统一同步客户端装配 — 非本项目使用的 Azure/stubbing/自定义头等能力传空值（两个供应商均走 apiKey + base-url 直连）。 */
     private static OpenAIClient syncClient(
             String baseUrl,
             String apiKey,

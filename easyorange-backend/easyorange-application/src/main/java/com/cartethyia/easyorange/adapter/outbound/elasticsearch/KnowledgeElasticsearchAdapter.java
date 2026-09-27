@@ -32,20 +32,15 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * 知识库向量索引（ES 适配器）— 实现 {@link KnowledgeIndexPort}。
+ * 知识库向量索引（ES 适配器）— 实现 {@link KnowledgeIndexPort}。写入 best-effort
+ * （try-catch 只告警，索引失败不阻塞主链路，与商品索引同一语义）。
  * <p>
- * 写入 best-effort（try-catch 只告警，索引失败不阻塞主链路，与商品索引同一语义）。
- * <p>
- * <b>检索 = 两路独立召回 + RRF 融合</b>：kNN（dense_vector，返回语义近邻排名）与
- * BM25（multi_match title^2/content，返回词面匹配排名）各查一次，再用 {@link RrfFusion}
- * 按排名融合。之所以是两次查询而不是一次「knn + query 同请求」：
- * <ul>
- *   <li>ES 同请求会把两路分数按内部规则合成一个分值，拿不到各自排名，无法做真正的排名融合；</li>
- *   <li>真正的融合要用排名而非分数 —— 余弦相似度与 BM25 分值量纲不可比。</li>
- * </ul>
- * 代价是两倍 ES 往返（小索引上是毫秒级），换来的是 BM25 的贡献能真正进最终排序，
- * 而不是只影响「谁进候选池」（此前 Java 侧按余弦重排会把 BM25 的排序信号整体丢掉，
- * 且重排用的还是同一 embedding 的同一余弦，对稠密那一路等价于没排）。
+ * <b>检索 = 两路独立召回 + RRF 融合</b>：kNN（dense_vector 语义近邻排名）与 BM25
+ * （multi_match title^2/content 词面排名）各查一次，再用 {@link RrfFusion} 按排名融合。
+ * 两次查询而非一次「knn + query 同请求」：ES 同请求会把两路分数按内部规则合成一个分值，
+ * 拿不到各自排名；而余弦相似度与 BM25 分值量纲不可比，只有排名能融（ADR-0012）——
+ * 回 Java 侧按余弦重排是对稠密路的单调变换（等于没排）还丢掉 BM25 信号。代价是两倍
+ * ES 往返（小索引毫秒级），换来 BM25 的贡献真正进最终排序。
  * <p>
  * <b>不回传向量</b>：命中走 {@code _source} 排除 embedding（1024 维 float ≈ 每条 10KB），
  * 向量只在 ES 内部参与 kNN 打分。

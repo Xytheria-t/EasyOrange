@@ -9,21 +9,16 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * 反馈 → 金标准评测集导出 — 把可用的用户反馈渲染成 golden-set.yaml 用例片段，
- * 导出即标记 exported=1；人工审核后合入 {@code eval/golden-set.yaml}，实现「反馈飞轮自动扩充评测集」。
+ * 反馈 → 金标准评测集导出 — 把可用的用户反馈渲染成 golden-set.yaml 用例片段，导出即标记 exported=1；
+ * 人工审核后合入 {@code eval/golden-set.yaml}，实现「反馈飞轮自动扩充评测集」。
  * <p>
- * <b>只导「能自动成用例」的反馈</b>（{@link #EXPORTABLE}）：金标准集加载即校验
- * （{@code GoldenSetLoader.validate}），chat 用例必须有非空 reference_answer、retrieval 用例必须有
- * gold_doc_ids —— 从反馈里能自动拿到的只有前者，因此：
- * <ul>
- *   <li><b>helpful = 0（点踩）不能自动成用例</b>：反馈里存的 response_text 正是被用户嫌弃的那条回答，
- *       拿它当 reference_answer 等于把错答案钉成标准，下一轮评测会把「答得对」判成回归。
- *       负样本必须先由人工补一条正确回答，故只统计不导出。</li>
- *   <li><b>scope != chat</b>：反馈里没有 gold_doc_ids，导出的片段必然过不了加载校验。</li>
- *   <li><b>问题或回答为空</b>：导出的用例缺字段，加载期就会炸。</li>
- * </ul>
- * 不能自动成用例的行<b>不标 exported</b>：标了就等于「已产出用例」，下次导出不再提示，这条信号就丢了。
- * 它们只在片段头部按条数汇总提示人工处理，并保持 exported = 0 —— 与幂等处理同一个原则：宁可反复提示，不可漏处理。
+ * <b>只导「能自动成用例」的反馈</b>（{@link #EXPORTABLE}，加载校验要求 chat 用例必须有非空
+ * reference_answer）：helpful = 0 不能自动成用例 —— 反馈里的 response_text 正是被用户嫌弃的那条回答，
+ * 拿它当 reference_answer 等于把错答案钉成标准，下一轮评测会把「答得对」判成回归（负样本必须先由
+ * 人工补一条正确回答）；scope != chat 缺 gold_doc_ids、问题或回答为空，导出的片段也过不了加载校验。
+ * <p>
+ * 不能自动成用例的行<b>不标 exported</b>：标了就等于「已产出用例」，下次导出不再提示，这条信号就丢了
+ * —— 只在片段头部按条数汇总提示人工处理。宁可反复提示，不可漏处理。
  */
 @Slf4j
 @Component
@@ -100,12 +95,7 @@ public class GoldenSetExportService implements GoldenSetExportPort {
         return id.substring(0, Math.min(8, id.length()));
     }
 
-    /**
-     * YAML 双引号标量 —— 一律加引号，避免问题/回答里的 {@code ": "}、前导特殊字符把片段变成非法 YAML。
-     * <p>
-     * 反斜杠必须<b>最先</b>转义：先转 {@code \"} 再转 {@code \\} 会把刚插入的转义符二次转义，
-     * 解析出来会多一个反斜杠。换行统一收敛成 {@code \n}（片段里一条用例占一行，便于人工 diff）。
-     */
+    /** YAML 双引号标量（一律加引号，避免 ": " / 前导特殊字符把片段变成非法 YAML）；反斜杠必须<b>最先</b>转义，否则刚插入的转义符会被二次转义。 */
     private static String quote(Object value) {
         String text =
                 value == null ? "" : String.valueOf(value).replace("\r\n", "\n").replace('\r', '\n');

@@ -125,12 +125,10 @@ public class AssetElasticsearchAdapter implements AssetRetrievalPort {
 
     /**
      * kNN 腿：{@code status=ONLINE} 过滤走 {@code knn.filter}（预过滤），<b>不得挂顶层 query</b>。
-     * <p>
-     * 实测（2026-09-23，scripts/repro-td-020-knn-threshold.py 同源探针）：顶层 query 与 kNN 是
-     * <b>纯并集</b>——kNN 候选完全不受 query 过滤（零命中过滤仍返回满额候选），DRAFT/REJECTED 会
-     * 带着向量分进候选池；且一旦给这条腿补 {@code knn.similarity}，顶层 query（match_all+过滤）
-     * 会把阈值整个架空（TD-020 四组对照的 g3：乱码返全库）。商品腿同一形态见
-     * {@link ElasticsearchProductSearchQueryAdapter#knnQuery}。
+     * 实测（2026-09-23，scripts/repro-td-020-knn-threshold.py 同源探针）：顶层 query 与 kNN 是纯并集
+     * ——kNN 候选完全不受 query 过滤，DRAFT/REJECTED 会带着向量分进候选池；且一旦补
+     * {@code knn.similarity}，顶层 query 会把阈值整个架空（TD-020 g3：乱码返全库）。
+     * 商品腿同一形态见 {@link ElasticsearchProductSearchQueryAdapter#knnQuery}。
      */
     private NativeQuery knnQuery(List<Float> queryEmbedding, int k) {
         return NativeQuery.builder()
@@ -162,13 +160,7 @@ public class AssetElasticsearchAdapter implements AssetRetrievalPort {
         return List.of(SortOptions.of(so -> so.score(s -> s.order(SortOrder.Desc))));
     }
 
-    /**
-     * BM25 子句（{@code query} 非空由调用方保证——{@link #search} 只在关键词非空时发这条腿）。
-     * <p>
-     * 两条路都带 {@code status = ONLINE} 过滤：只过滤一路会让不过滤的那路把不可售资产带进候选池，
-     * 融合后照样可能出现在推荐里（kNN 那路经 {@link #knnQuery} 的 {@code knn.filter} 承载）。
-     * 包级可见，供测试直接断言过滤条件。
-     */
+    /** BM25 子句（query 非空由 {@link #search} 保证）；两条路都带 {@code status=ONLINE} 过滤（理由见类注释）。包级可见，供测试直接断言过滤条件。 */
     JsonNode buildBm25Query(String query) {
         ObjectNode bool = objectMapper.createObjectNode();
 

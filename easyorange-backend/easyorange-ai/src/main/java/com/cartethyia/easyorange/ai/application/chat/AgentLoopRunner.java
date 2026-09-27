@@ -49,29 +49,15 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * 多步 Agent 工具循环（ReAct）— 逐轮「决策 → 工具 → 观察」推进，直到模型判定信息足够（finish）。
  * <p>
- * 编排结构（自治循环：调不调、调几次、调什么参数都由模型逐轮决定）：
- * 每轮把 7 个工具的 JSON Schema（{@link AgentTools} 的 {@code @Tool} 注解生成、供应商侧校验）随请求发出，
- * 模型以原生 tool calling 返回「调用哪个工具 + 参数 + 理由」；工具执行结果按对话协议原样回填进决策
- * 消息序列（assistant 的 tool_call 消息 + role=tool 的观察消息，见 {@link DecisionConversation}），
- * 逐轮累积 —— 首两条（system + 首条 user）固定不变，轮间前缀稳定命中供应商 KV cache 折扣，
- * 与生成路径同一成本口径。规则类与找货类需求兼有时由模型分两步分别检索，而非一次穷举。
- * <b>手写循环 + 原生模型接口</b>：工具只负责 schema 与「执行 + 观察格式」，调不调、调几次由本类决定
- * —— Spring AI 2.0 的 {@code ChatModel.call} 不自动执行工具（自动执行已收进 ChatClient 的
- * ToolCallingAdvisor），步数 / 预算 / 降级这些循环控制权都留在本类。
+ * 手写循环 + 原生 tool calling：每轮把 7 个工具的 JSON Schema（{@link AgentTools} 的 {@code @Tool}
+ * 注解生成）随请求下发，模型返回「调哪个工具 + 参数 + 理由」。调不调、调几次、调什么由本类决定
+ * —— Spring AI 2.0 的 {@code ChatModel.call} 不自动执行工具，步数 / 预算 / 降级的循环控制权留在本类。
  * <p>
- * 降级口径（自治循环被切断，退回确定性的单次生成，已积累的观察不丢弃）：
- * <ul>
- *   <li><b>步数超限</b> — 上限内未 finish：不再发第 N+1 次决策调用，直接用已积累观察生成；</li>
- *   <li><b>预算超限</b> — 循环中途日预算余量不足（与流式入口 {@link #chatBudgetExhausted} 同一判定）：
- *       同上强制生成，最坏超发被 maxTokensPerCall 兜住；</li>
- *   <li><b>决策失败</b> — 决策调用故障 / 未返回工具调用 / 参数 JSON 不可解析：按原始问题补一次知识库检索后
- *       直接生成（规则类问题走检索是常态，识别不出来最坏是多几条不相关片段进 prompt，好过把检索链路失效
- *       伪装成「无需检索」）；补检索自身故障不再外抛，以已有召回物继续生成，不让对话死在降级路径上。</li>
- * </ul>
- * 工具执行失败（参数不合 schema / 工具内部故障）不算决策失败：收敛成失败观察交回模型（带错误反馈的
- * 修复轮），与「查无此资产」同属正常观察，不打断对话。
- * 每轮 trace 落库（{@link AgentTracePort}）、每步向流式回调推 step 事件（前端步骤可视化）、
- * 每次循环计指标（步数分布 / 步级延迟 / 循环结局）—— 三者都是观测副产物，失败绝不影响主链路。
+ * 降级口径（自治循环被切断，退回确定性单次生成，已积累的观察不丢弃）：步数超限 / 预算超限
+ * （与 {@link #chatBudgetExhausted} 同一判定）→ 用已积累观察直接生成；决策失败 → 按原始问题补一次
+ * 检索后直接生成。工具执行失败不算决策失败：收敛成失败观察交回模型修复，不打断对话。
+ * <p>
+ * 每轮 trace 落库、每步推 SSE step 事件、每次循环计指标 —— 三者都是观测副产物，失败绝不影响主链路。
  */
 @Slf4j
 @Component
@@ -116,10 +102,9 @@ public class AgentLoopRunner {
     private final IdGenerator idGenerator;
 
     /**
-     * 工具指标 tag 封闭集 — 名单即 {@link AgentTools} 的 7 个 {@code @Tool} 名；模型返回名单外的
-     * 工具名一律记 {@code unknown}。tag 若直接取模型输出（开集），一次提示注入就能把时序基数撑爆
-     * ——任意字符串都会成为 meter tag；封闭后「模型乱报工具名」只体现在 unknown 一格里。
-     * finish 收敛轮在执行前被拦截（不产生执行与耗时），保留常量只为全集封闭——该格恒为零数据点。
+     * 工具指标 tag 封闭集 — 名单即 {@link AgentTools} 的 7 个 {@code @Tool} 名，模型输出名单外一律记
+     * {@code unknown}（tag 直接取模型输出的开集，一次提示注入就能撑爆时序基数）。finish 收敛轮在执行前
+     * 被拦截，保留仅为全集封闭 —— 该格恒为零数据点。
      */
     private enum TrackedTool {
         KNOWLEDGE_SEARCH(AgentTools.TOOL_KNOWLEDGE_SEARCH),
@@ -151,15 +136,10 @@ public class AgentLoopRunner {
         }
     }
 
-    /** 循环结局计数 —— 按枚举全集注册（新增结局自动带上计数器，不会漏），构造期一次注册，热路径零查找。 */
+    /** 循环结局 / 决策轮数 / 工具调用与步级耗时四组指标 —— 全部按枚举全集构造期注册（tag 键与取值是时序契约），热路径零查找。 */
     private final Map<LoopOutcome, Counter> loopCounters;
-
-    /** 每请求决策轮数分布 —— 口径同样封闭，构造期注册（避免每请求 builder 分配）。 */
     private final DistributionSummary stepsSummary;
-
-    /** 工具调用计数 / 步级耗时 —— 按 {@link TrackedTool} 全集构造期注册（tag 键与取值是时序契约）。 */
     private final Map<TrackedTool, Counter> toolCounters;
-
     private final Map<TrackedTool, Timer> stepTimers;
 
     public AgentLoopRunner(
@@ -212,12 +192,8 @@ public class AgentLoopRunner {
     /**
      * 一次循环的输入 — 记忆（历史 / 画像）由调用方装配，循环只管「决策 → 工具 → 观察」。
      *
-     * @param question  用户问题
-     * @param sessionId 会话 ID（trace 归属）
-     * @param userId    用户 ID（匿名时为 "anonymous"，画像不落库）
-     * @param history   会话历史（决策上下文）
-     * @param prefs     用户画像（决策上下文）
-     * @param handler   流式回调（可空：非流式路径不推 step 事件，trace / 指标照常）
+     * @param userId  匿名时为 {@link #ANONYMOUS_USER}（画像不落库）
+     * @param handler 流式回调，可空：非流式路径不推 step 事件，trace / 指标照常
      */
     public record Input(
             String question,
@@ -229,12 +205,7 @@ public class AgentLoopRunner {
 
     /**
      * 循环结果 — 召回物供最终生成装配 prompt 与引用溯源；outcome / rounds 供指标与降级归因。
-     *
-     * @param knowledgeHits 全部轮次累加的知识库命中
-     * @param assets        全部轮次累加的在售资产命中
-     * @param details       product_detail 查得的资产详情
-     * @param outcome       循环结局（{@link LoopOutcome}）
-     * @param rounds        已完成的决策轮数（含 finish 轮；决策失败轮不计，那一轮没有决策）
+     * rounds 含 finish 轮，决策失败轮不计（那一轮没有决策）。
      */
     public record Result(
             List<KnowledgeHit> knowledgeHits,
@@ -255,10 +226,7 @@ public class AgentLoopRunner {
         }
     }
 
-    /**
-     * chat 场景日预算前置检查 — 流式入口（{@code AiChatService#streamAnswer}）与循环中途共用同一判定，
-     * 判据单处维护两处生效（used + maxPerCall > dailyLimit，与 TokenBudgetAspect 同式）。
-     */
+    /** chat 场景日预算前置检查 — 流式入口与循环中途共用同一判定（与 TokenBudgetAspect 同式），判据单处维护两处生效。 */
     public boolean chatBudgetExhausted() {
         int used = budgetStore
                 .getTodayUsage(CHAT_SCENARIO)
@@ -288,10 +256,8 @@ public class AgentLoopRunner {
             }
             Optional<StepDecision> decided = decideStep(input, conversation.snapshot(), toolFace.callbacks());
             if (decided.isEmpty()) {
-                // 决策失败降级：按原始问题补一次知识库检索（规则类问题走检索是常态，
-                // 识别不出来最坏是多几条不相关片段进 prompt，好过把检索链路失效伪装成「无需检索」）。
-                // 补检索自身故障不外抛：以已有召回物继续生成（与工具步「查不到就如实说」同语义），
-                // 不让对话死在降级路径上
+                // 决策失败降级：按原始问题补一次检索（识别不出检索需求，最坏是多几条不相关片段进 prompt，
+                // 好过把检索链路失效伪装成「无需检索」）；补检索故障不外抛，不让对话死在降级路径上
                 try {
                     tools.recallKnowledgeFallback(input.question());
                 } catch (Exception e) {
@@ -314,26 +280,20 @@ public class AgentLoopRunner {
         return snapshot(tools, LoopOutcome.STEP_LIMIT, rounds);
     }
 
-    /**
-     * 按请求装配工具实例 — 召回累加器随实例隔离（所有权在 {@link AgentTools}，出口经只读快照收取）。
-     */
+    /** 按请求装配工具实例 — 召回累加器随实例隔离（所有权在 {@link AgentTools}），出口经只读快照收取。 */
     private AgentTools agentToolsFor(Input input) {
         return new AgentTools(
                 retrievalService, assetSourcingService, assetDetailPort, preferenceRepository, subjectUserId(input));
     }
 
-    /**
-     * 退出快照 — 四条出口（finish / 步数超限 / 预算耗尽 / 决策失败）共用同一口径：从工具实例收
-     * 只读快照（累加器由工具实例独占持有，可变引用不出去），outcome 与轮数供指标与降级归因。
-     */
     private static Result snapshot(AgentTools tools, LoopOutcome outcome, int rounds) {
         return new Result(tools.knowledgeHits(), tools.assets(), tools.details(), outcome, rounds);
     }
 
     /**
-     * 步骤决策：工具 schema 随请求下发，模型以原生 tool calling 返回「调用哪个工具 + 参数」。
+     * 一步决策：工具 schema 随请求下发，模型以原生 tool calling 返回「调用哪个工具 + 参数」。
      * 决策失败（调用故障 / 未返回工具调用 / 参数 JSON 不可解析）返回 empty，由调用方走单步降级
-     * —— 不在循环里重试，一次请求最多一次决策故障。
+     * —— 循环内不重试，一次请求最多一次决策故障。
      */
     private Optional<StepDecision> decideStep(
             Input input, List<Message> decisionMessages, List<ToolCallback> toolCallbacks) {
@@ -365,11 +325,7 @@ public class AgentLoopRunner {
         }
     }
 
-    /**
-     * 执行一步工具，并把该步落成观测副产物：trace 落库（{@link AgentTracePort}）、SSE step 事件
-     * （流式回调）、步级指标（调用计数 + 耗时）；再按对话协议把本步回填进决策消息序列
-     * （{@link DecisionConversation#appendStep}，失败观察原样回填，模型据此修复）。
-     */
+    /** 执行一步工具并落成观测副产物（trace 落库 / SSE step 事件 / 步级指标），再按对话协议回填决策消息序列。 */
     private void executeToolStep(
             Input input,
             String traceId,
@@ -391,10 +347,8 @@ public class AgentLoopRunner {
     }
 
     /**
-     * 落一步 trace 并向流式回调推 step 事件 —— 前端步骤可视化与「平均步数 / 降级率 / 步级延迟」
-     * 三个口径的数据来源，两处都是观测副产物（端口实现内部兜底，不打挂主链路）。
-     * <p>
-     * finish 收敛轮无执行体：toolInput / outcome 均为 null（trace 记 success、零耗时、无观察）。
+     * 落一步 trace 并推 SSE step 事件 —— 前端步骤可视化与「平均步数 / 降级率 / 步级延迟」口径的数据
+     * 来源，端口实现内部兜底不打挂主链路。finish 收敛轮无执行体：toolInput / outcome 均为 null。
      */
     private void recordStep(
             Input input,
@@ -426,23 +380,19 @@ public class AgentLoopRunner {
         }
     }
 
-    /** 一步决策 — 解析后的决策视图 + 原生 tool call（回填消息序列用：id / name / arguments 都从这来）。 */
+    /** 一步决策 — 解析后的决策视图 + 原生 tool call（id / name / arguments 都从这来回填消息序列）。 */
     private record StepDecision(AgentStepDecision decision, AssistantMessage.ToolCall toolCall) {}
 
-    /** 工具执行结果 — success=false 时 observation 即失败原因（模型据此决定重试或收敛）。 */
+    /** 工具执行结果 — success=false 时 observation 即失败原因（模型据此重试或收敛）；成功步 errorMsg 为 null（trace 不落）。 */
     private record ToolOutcome(boolean success, String observation) {
 
-        /** 失败步的错误原因与交回模型的那段观察文本同源；成功步为 null（trace 不落 errorMsg）。 */
         @Nullable
         String errorMsg() {
             return success ? null : observation;
         }
     }
 
-    /**
-     * 一次请求的工具面 — {@link AgentTools} 实例与它的两种框架形态（schema 下发用的回调列表、
-     * 按名执行用的回调表）绑在同一处，循环体不直接接触装配细节。
-     */
+    /** 一次请求的工具面 — {@link AgentTools} 实例与两种框架形态（schema 下发的回调列表、按名执行的回调表）绑在一处。 */
     private record ToolFace(AgentTools tools, List<ToolCallback> callbacks, Map<String, ToolCallback> byName) {
 
         static ToolFace of(AgentTools tools) {
@@ -453,10 +403,7 @@ public class AgentLoopRunner {
             return new ToolFace(tools, callbacks, byName);
         }
 
-        /**
-         * 按名称分发执行 — 未知工具与执行异常（参数不合 schema / 工具内部故障）都收敛成失败观察：
-         * 模型据此换参数重试或收敛，不把整轮对话打成不可用。
-         */
+        /** 按名称分发执行 — 未知工具与执行异常（参数不合 schema / 工具内部故障）都收敛成失败观察：模型据此重试或收敛，不把整轮对话打死。 */
         ToolOutcome invoke(AgentStepDecision decision) {
             String tool = decision.tool() == null ? "" : decision.tool();
             ToolCallback callback = byName.get(tool);
@@ -479,8 +426,8 @@ public class AgentLoopRunner {
     }
 
     /**
-     * 决策对话 — 按对话协议逐轮累积的消息序列：首两条（system + 首条 user）每请求固定，
-     * 每执行一步按「assistant tool_call + role=tool 观察」回填，轮间前缀稳定命中供应商 KV cache 折扣。
+     * 决策对话 — 首两条（system + 首条 user）每请求固定，每执行一步按「assistant tool_call +
+     * role=tool 观察」逐轮回填，轮间前缀稳定命中供应商 KV cache 折扣。
      */
     private static final class DecisionConversation {
 
@@ -492,12 +439,11 @@ public class AgentLoopRunner {
             messages.add(new UserMessage(firstUserMessage));
         }
 
-        /** 当轮的不可变消息序列（供决策调用下发）：循环后续追加的步骤对已发出的调用不可见。 */
+        /** 当轮的不可变消息序列（循环后续追加对已发出的调用不可见）。 */
         List<Message> snapshot() {
             return List.copyOf(messages);
         }
 
-        /** 回填一步：assistant 消息携带原生 tool call，观察以 role=tool 消息原样进入下一轮上下文。 */
         void appendStep(AssistantMessage.ToolCall toolCall, String observation) {
             messages.add(AssistantMessage.builder()
                     .content("")
@@ -510,21 +456,12 @@ public class AgentLoopRunner {
         }
     }
 
-    /**
-     * 画像归属用户 — 匿名会话返回 null（长期记忆不落库），与 trace 的 subject 口径一致。
-     * <p>
-     * 偏好提取本身已移入 {@link AgentTools#rememberPreference}（独立工具、模型自主决定何时写），
-     * 不再由本类按 finish 轮旁路落库——原先只在收敛轮提取，步数超限 / 预算耗尽 / 决策失败三条降级
-     * 路径下偏好会静默丢失。
-     */
+    /** 画像归属用户 — 匿名会话返回 null（长期记忆不落库），与 trace 的 subject 口径一致。 */
     private static String subjectUserId(Input input) {
         return ANONYMOUS_USER.equals(input.userId()) ? null : input.userId();
     }
 
-    /**
-     * 首条 user 消息 — 问题 / 历史 / 画像，每请求固定不变（观察不拼在这里，而是按协议以 role=tool
-     * 消息逐轮回填）：它是全部轮次共享的前缀，改一个字节这轮的 KV cache 就全部作废。
-     */
+    /** 首条 user 消息（问题 / 历史 / 画像）— 每请求固定不变，是全部轮次共享的前缀：改一个字节这轮的 KV cache 就全部作废。 */
     private static String baseStepUserMessage(Input input) {
         return """
                 用户问题：
@@ -549,7 +486,7 @@ public class AgentLoopRunner {
                 .collect(Collectors.joining("\n"));
     }
 
-    /** 工具入参摘要（trace 落库与失败日志用）—— 每个工具取自有字段，其余轮次即检索词。 */
+    /** 工具入参摘要（trace 落库与失败日志用）。 */
     private static String toolInputOf(AgentStepDecision decision) {
         return switch (decision.tool() == null ? "" : decision.tool()) {
             case AgentTools.TOOL_PRODUCT_DETAIL -> decision.productId();

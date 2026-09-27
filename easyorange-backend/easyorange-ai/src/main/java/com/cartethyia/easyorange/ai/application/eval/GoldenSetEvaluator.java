@@ -17,17 +17,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 金标准集回归评估器 — 两条评估线，按用例 scope 分流（{@code chat} / {@code retrieval}）：
- * <ul>
- *   <li><b>生成质量</b>（LLM-as-Judge）：对每个 chat 用例调 {@link AiChatService#answer}（forceFresh 跳过缓存），
- *       对照参考回答打分，聚合 avg score。</li>
- *   <li><b>检索质量</b>（hit@5 / MRR）：对每个 retrieval 用例跑知识库检索，算命中率与平均倒数排名，
- *       逐条采样落 eo_retrieval_metric（回答「RAG 检索层好不好」的量化数据）。</li>
- * </ul>
- * 供定时任务（RetrievalEvalScheduler / 每日回归）与 CI 门禁（GoldenSetRegressionIT）复用。
+ * 金标准集回归评估器 — 两条评估线按用例 scope 分流（{@code chat} / {@code retrieval}）：
+ * 生成质量（LLM-as-Judge）对每个 chat 用例调 {@link AiChatService#answer}（forceFresh 跳过缓存）
+ * 对照参考回答打分、聚合 avg score；检索质量对每个 retrieval 用例跑知识库检索算 hit@5 / MRR，
+ * 逐条采样落 eo_retrieval_metric。供定时任务（RetrievalEvalScheduler / 每日回归）与 CI 门禁
+ * （GoldenSetRegressionIT）复用。
  * <p>
- * 分流依据是 scope 字段本身（{@link GoldenSetLoader} 加载时已校验），不再用「有没有 gold_doc_ids」
- * 这类派生特征判断 —— 那会让带 gold_doc_ids 的生成用例同时被算进检索分母。
+ * 分流依据是 scope 字段本身（{@link GoldenSetLoader} 加载时已校验），不用「有没有 gold_doc_ids」
+ * 这类派生特征 —— 那会让带 gold_doc_ids 的生成用例同时被算进检索分母。
  */
 @Slf4j
 @Component
@@ -43,9 +40,7 @@ public class GoldenSetEvaluator {
     private final RetrievalMetricPort metricRecorder;
     private final IdGenerator idGenerator;
 
-    /**
-     * 生成质量回归：全部 chat 用例 Judge 打分，返回平均分。
-     */
+    /** 生成质量回归：全部 chat 用例 Judge 打分，返回平均分。 */
     public GenerationReport evaluateGeneration() {
         var cases = loader.load().cases().stream()
                 .filter(c -> GoldenSetLoader.SCOPE_CHAT.equals(c.scope()))
@@ -74,9 +69,7 @@ public class GoldenSetEvaluator {
         return new GenerationReport(cases.size(), scores.size(), avg);
     }
 
-    /**
-     * 检索质量回归：对全部 retrieval 用例跑检索，计算 hit@5 / MRR 并逐条落库。
-     */
+    /** 检索质量回归：对全部 retrieval 用例跑检索，计算 hit@5 / MRR 并逐条落库。 */
     public RetrievalReport evaluateRetrieval() {
         var cases = loader.load().cases().stream()
                 .filter(c -> GoldenSetLoader.SCOPE_RETRIEVAL.equals(c.scope()))
@@ -105,9 +98,7 @@ public class GoldenSetEvaluator {
         return new RetrievalReport(cases.size(), hits, hitRate, mrr);
     }
 
-    /**
-     * MRR 分量：第一个命中的期望文档若在第 i 位（1 起），得 1/i，未命中为 0。
-     */
+    /** MRR 分量：第一个命中的期望文档在第 i 位（1 起）得 1/i，未命中为 0。 */
     static double computeReciprocalRank(List<String> goldDocIds, List<String> hitIds) {
         for (int i = 0; i < hitIds.size(); i++) {
             if (goldDocIds.contains(hitIds.get(i))) {

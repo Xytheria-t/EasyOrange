@@ -5,24 +5,18 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * AI 调用场景 — 一次模型调用属于哪条业务链路，是限流、预算、缓存键三处的共同命名基准。
- * <p>
- * 场景名（枚举名小写）在三处必须一致，否则治理会各算各的：
- * <ul>
- *   <li>{@link #budgetScenario()} → {@code easyorange.ai.budget.scenarios} 的键 + {@code @TokenBudget(scenario=...)}</li>
- *   <li>{@link #rateLimitKeyPrefix()} → 令牌桶 key</li>
- *   <li>{@link #uriSuffix} → HTTP 入口到场景的映射（{@link #fromUri}）</li>
- * </ul>
+ * 场景名（枚举名小写）在三处必须一致，否则治理会各算各的：{@link #budgetScenario()} →
+ * {@code easyorange.ai.budget.scenarios} 的键与 {@code @TokenBudget(scenario=...)}；
+ * {@link #rateLimitKeyPrefix()} → 令牌桶 key；{@code uriSuffix} → HTTP 入口到场景的映射（{@link #fromUri}）。
  */
 @Getter
 @RequiredArgsConstructor
 public enum AiCallScope {
     AUTO_LISTING(5, "auto-listing"),
     /**
-     * 语义召回 — 检索词的 embedding 调用。入口是商品搜索 {@code /api/products/search}
-     * （两路召回里的 kNN 那一路），已无独立的 {@code /api/ai/semantic-search}。
-     * <p>
-     * 该路径不在 {@code AiRateLimitInterceptor} 的 {@code /api/ai/**} 范围内，
-     * 由框架 {@code RateLimitFilter} 统一限流；这一场景实际的治理面是预算与缓存键。
+     * 语义召回 — 商品搜索 {@code /api/products/search}（两路召回的 kNN 路）的检索词 embedding。
+     * 该路径不在 {@code AiRateLimitInterceptor} 的 {@code /api/ai/**} 范围内，由框架
+     * {@code RateLimitFilter} 统一限流；这一场景实际的治理面是预算与缓存键。
      */
     SEMANTIC(30, "products/search"),
     CHAT(20, "chat"),
@@ -42,11 +36,7 @@ public enum AiCallScope {
         return CHAT;
     }
 
-    /**
-     * 供应商故障时 stale 旧回答缓存的 key 前缀（{@code AiChatService} 的本地 Caffeine 缓存）。
-     * <p>
-     * 与语义缓存（Redis {@code eo:ai:semantic:*}）是两个独立的缓存，别名不同以免看混。
-     */
+    /** 供应商故障时 stale 旧回答缓存的 key 前缀（本地 Caffeine）—— 与语义缓存（Redis）是两个独立缓存，别名不同以免看混。 */
     public String cacheKeyPrefix() {
         return "ai:stale:" + name().toLowerCase() + ":";
     }
