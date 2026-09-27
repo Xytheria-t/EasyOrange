@@ -114,7 +114,6 @@ public class AgentLoopRunner {
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
     private final IdGenerator idGenerator;
-    private final MeterRegistry meterRegistry;
 
     /**
      * 工具指标 tag 封闭集 — 名单即 {@link AgentTools} 的 7 个 {@code @Tool} 名；模型返回名单外的
@@ -189,7 +188,6 @@ public class AgentLoopRunner {
         this.aiProperties = aiProperties;
         this.objectMapper = objectMapper;
         this.idGenerator = idGenerator;
-        this.meterRegistry = meterRegistry;
         this.loopCounters = new EnumMap<>(LoopOutcome.class);
         for (LoopOutcome outcome : LoopOutcome.values()) {
             loopCounters.put(outcome, meterRegistry.counter(LOOP_METRIC, "outcome", outcome.getTag()));
