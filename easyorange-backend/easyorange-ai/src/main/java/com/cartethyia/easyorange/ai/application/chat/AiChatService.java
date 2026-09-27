@@ -183,8 +183,7 @@ public class AiChatService {
             staleCache.put(staleKey(userId, request.question()), answer);
             return answer;
         } catch (LockAcquisitionException e) {
-            log.warn("action=chat_session_busy, sessionId={}", request.sessionId());
-            sessionBusyCounter.increment();
+            recordSessionBusy(request.sessionId());
             return new ChatAnswer(SESSION_BUSY_TEXT, List.of(), request.sessionId(), false);
         } catch (BaseBusinessException e) {
             throw e;
@@ -198,8 +197,7 @@ public class AiChatService {
                 degradedCounters.get(DegradationReason.STALE).increment();
                 return stale.asDegraded().withSessionId(request.sessionId());
             }
-            log.error("action=chat_degraded, reason=unavailable, question={}", request.question(), e);
-            degradedCounters.get(DegradationReason.UNAVAILABLE).increment();
+            recordUnavailableDegradation(request.question(), e);
             return ChatAnswer.unavailable(request.sessionId());
         }
     }
@@ -255,8 +253,7 @@ public class AiChatService {
         } catch (TokenBudgetExceededException e) {
             handler.onError("今日 AI 调用预算已用尽，请明天再试");
         } catch (LockAcquisitionException e) {
-            log.warn("action=chat_session_busy, sessionId={}", request.sessionId());
-            sessionBusyCounter.increment();
+            recordSessionBusy(request.sessionId());
             handler.onError(SESSION_BUSY_TEXT);
         } catch (ChatStreamAbortedException e) {
             // 客户端中途离开（刷新/关页）是正常中断而非模型故障：不打 ERROR、不计入 chat.degraded
@@ -264,8 +261,7 @@ public class AiChatService {
             log.debug("action=chat_stream_aborted, question={}", request.question());
             streamAbortedCounter.increment();
         } catch (Exception e) {
-            log.error("action=chat_degraded, reason=unavailable, question={}", request.question(), e);
-            degradedCounters.get(DegradationReason.UNAVAILABLE).increment();
+            recordUnavailableDegradation(request.question(), e);
             handler.onError(ChatAnswer.UNAVAILABLE_TEXT);
         }
     }
@@ -280,6 +276,18 @@ public class AiChatService {
             handler.onToken(answer.substring(i, Math.min(i + CACHE_REPLAY_CHUNK_CHARS, answer.length())));
         }
         handler.onDone(answer);
+    }
+
+    /** 会话锁忙的日志与计数 — 非流式 / 流式两条路径共用一处，消息单点维护。 */
+    private void recordSessionBusy(String sessionId) {
+        log.warn("action=chat_session_busy, sessionId={}", sessionId);
+        sessionBusyCounter.increment();
+    }
+
+    /** 不可用降级的日志与计数 — 同样两条路径共用，日志字段（question + 堆栈）只在此一处改。 */
+    private void recordUnavailableDegradation(String question, Exception cause) {
+        log.error("action=chat_degraded, reason=unavailable, question={}", question, cause);
+        degradedCounters.get(DegradationReason.UNAVAILABLE).increment();
     }
 
     private ChatAnswer agenticAnswer(ChatRequest request, String userId, @Nullable ChatStreamHandler handler) {
