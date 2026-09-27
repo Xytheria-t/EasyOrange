@@ -7,7 +7,7 @@
     padding: 60px 24px 60px;
     position: relative;
     overflow: hidden;
-    background: var(--surface-bg, #fafaf9);
+    background: var(--gray-50);
 }
 
 /* Ambient Orbs */
@@ -28,7 +28,7 @@
 .notifications-orb-1 {
     width: 500px;
     height: 500px;
-    background: radial-gradient(circle, #f97316, transparent);
+    background: radial-gradient(circle, var(--primary-500), transparent);
     top: -100px;
     right: -100px;
 }
@@ -44,7 +44,7 @@
 .notifications-orb-3 {
     width: 300px;
     height: 300px;
-    background: radial-gradient(circle, #3b82f6, transparent);
+    background: radial-gradient(circle, var(--info), transparent);
     bottom: -50px;
     right: 20%;
 }
@@ -93,18 +93,22 @@
     border: 1px solid rgba(0, 0, 0, 0.06);
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(8px);
-    border-radius: 10px;
-    color: var(--text-secondary, #6b7280);
-    transition: all 0.2s ease;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
     flex-shrink: 0;
     margin-top: 2px;
 }
 
 .notifications-back-btn:hover {
     background: rgba(255, 255, 255, 0.95);
-    color: var(--text-primary, #1f2937);
+    color: var(--text-primary);
     transform: translateX(-2px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.notifications-back-btn:active {
+    transform: translateX(-1px);
 }
 
 .notifications-kicker {
@@ -112,11 +116,11 @@
     align-items: center;
     gap: 5px;
     padding: 2px 10px;
-    border-radius: 4px;
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(251, 113, 133, 0.08));
+    border-radius: var(--radius-xs);
+    background: linear-gradient(135deg, var(--primary-alpha-2), var(--rose-alpha-1));
     font-size: 11px;
     font-weight: 600;
-    color: #f97316;
+    color: var(--primary-500);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -125,27 +129,27 @@
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f97316, #fb7185);
+    background: linear-gradient(135deg, var(--primary-500), var(--rose-400));
     flex-shrink: 0;
 }
 
 .notifications-title {
     font-size: 24px;
     font-weight: 700;
-    color: var(--text-primary, #1f2937);
+    color: var(--text-primary);
     margin: 0;
     line-height: 1.2;
 }
 
 .notifications-subtitle {
     font-size: 13px;
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
 }
 
 /* Divider */
 .notifications-divider {
     height: 1px;
-    background: linear-gradient(90deg, rgba(249, 115, 22, 0.2), rgba(251, 113, 133, 0.08), transparent);
+    background: linear-gradient(90deg, var(--primary-alpha-4), var(--rose-alpha-1), transparent);
     margin: 16px 0 20px;
 }
 
@@ -156,12 +160,12 @@
     gap: 5px;
     padding: 7px 14px;
     border: none;
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(251, 113, 133, 0.08));
-    border-radius: 8px;
-    color: #f97316;
+    background: linear-gradient(135deg, var(--primary-alpha-2), var(--rose-alpha-1));
+    border-radius: var(--radius-sm);
+    color: var(--primary-500);
     font-size: 12px;
     font-weight: 600;
-    transition: all 0.2s ease;
+    transition: all var(--transition-fast);
     white-space: nowrap;
     margin-top: 4px;
     flex-shrink: 0;
@@ -170,9 +174,13 @@
 }
 
 .notifications-mark-all-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.18), rgba(251, 113, 133, 0.14));
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.18), var(--rose-alpha-2));
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.1);
+    box-shadow: 0 2px 8px var(--primary-alpha-2);
+}
+
+.notifications-mark-all-btn:active:not(:disabled) {
+    transform: translateY(1px);
 }
 
 .notifications-mark-all-btn:disabled {
@@ -187,7 +195,7 @@
     align-items: center;
     gap: 16px;
     padding: 80px 0;
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
 }
 
 /* Empty State */
@@ -201,7 +209,7 @@
 }
 
 .notifications-empty-icon {
-    color: var(--text-tertiary, #d1d5db);
+    color: var(--text-tertiary);
     margin-bottom: 16px;
 }
 
@@ -220,7 +228,7 @@
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    border: 2px solid rgba(249, 115, 22, 0.15);
+    border: 2px solid var(--primary-alpha-3);
     animation: spin 8s linear infinite;
 }
 
@@ -233,7 +241,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f97316, #fb7185);
+    background: linear-gradient(135deg, var(--primary-500), var(--rose-400));
 }
 
 @keyframes spin {
@@ -246,42 +254,46 @@
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(251, 113, 133, 0.1));
+    background: linear-gradient(135deg, var(--primary-alpha-2), var(--rose-alpha-2));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #f97316;
+    color: var(--primary-500);
 }
 
 .notifications-empty h3 {
     font-size: 18px;
     font-weight: 600;
-    color: var(--text-primary, #1f2937);
+    color: var(--text-primary);
     margin: 0 0 8px;
 }
 
 .notifications-empty p {
     font-size: 14px;
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
     margin: 0;
 }
 
 .notifications-retry-btn {
     margin-top: 16px;
     padding: 8px 20px;
-    border: 1px solid rgba(249, 115, 22, 0.3);
-    background: rgba(249, 115, 22, 0.08);
-    border-radius: 10px;
-    color: #f97316;
+    border: 1px solid var(--primary-alpha-5);
+    background: var(--primary-alpha-2);
+    border-radius: var(--radius-md);
+    color: var(--primary-500);
     font-size: 13px;
     font-weight: 600;
-    transition: all 0.2s ease;
+    transition: all var(--transition-fast);
     height: auto;
     min-height: unset;
 }
 
 .notifications-retry-btn:hover {
-    background: rgba(249, 115, 22, 0.15);
+    background: var(--primary-alpha-3);
+}
+
+.notifications-retry-btn:active {
+    transform: scale(0.98);
 }
 
 /* Notification List */
@@ -299,7 +311,7 @@
     backdrop-filter: blur(12px);
     border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 14px;
-    transition: all 0.25s ease;
+    transition: all var(--transition-normal);
     text-align: left;
     width: 100%;
     font-family: inherit;
@@ -312,25 +324,29 @@
 
 .notification-card:hover {
     background: rgba(255, 255, 255, 0.94);
-    border-color: rgba(249, 115, 22, 0.15);
+    border-color: var(--primary-alpha-3);
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.notification-card:active {
+    transform: translateY(1px);
 }
 
 /* Unread card — accent line + enhanced visual */
 .notification-card.unread {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.88));
-    border-color: rgba(249, 115, 22, 0.15);
+    border-color: var(--primary-alpha-3);
     box-shadow:
-        0 2px 8px rgba(249, 115, 22, 0.06),
-        0 0 0 1px rgba(249, 115, 22, 0.06);
+        0 2px 8px var(--primary-alpha-1),
+        0 0 0 1px var(--primary-alpha-1);
 }
 
 .notification-card.unread:hover {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.91));
     box-shadow:
-        0 4px 16px rgba(249, 115, 22, 0.1),
-        0 0 0 1px rgba(249, 115, 22, 0.08);
+        0 4px 16px var(--primary-alpha-2),
+        0 0 0 1px var(--primary-alpha-2);
 }
 
 .notification-card-accent {
@@ -340,21 +356,21 @@
     width: 3px;
     height: 36px;
     border-radius: 0 3px 3px 0;
-    background: linear-gradient(180deg, #f97316, #fb7185);
+    background: linear-gradient(180deg, var(--primary-500), var(--rose-400));
     pointer-events: none;
 }
 
 .notification-card-icon {
     width: 40px;
     height: 40px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     margin-top: 2px;
     border: 1px solid transparent;
-    transition: transform 0.2s ease;
+    transition: transform var(--transition-fast);
 }
 
 .notification-card:hover .notification-card-icon {
@@ -377,7 +393,7 @@
 .notification-card-title {
     font-size: 14px;
     font-weight: 600;
-    color: var(--text-primary, #1f2937);
+    color: var(--text-primary);
     margin: 0;
     display: flex;
     align-items: center;
@@ -386,36 +402,36 @@
 }
 
 .notification-card.unread .notification-card-title {
-    color: var(--text-primary, #1f2937);
+    color: var(--text-primary);
 }
 
 .notification-card:not(.unread) .notification-card-title {
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
 }
 
 .notification-unread-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #f97316;
+    background: var(--primary-500);
     flex-shrink: 0;
     display: inline-block;
 }
 
 .notification-card-time {
     font-size: 11px;
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
     white-space: nowrap;
     flex-shrink: 0;
     margin-top: 2px;
     padding: 1px 6px;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     background: rgba(0, 0, 0, 0.03);
 }
 
 .notification-card-content {
     font-size: 13px;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
     margin: 0;
     line-height: 1.5;
     display: -webkit-box;
@@ -425,7 +441,7 @@
 }
 
 .notification-card:not(.unread) .notification-card-content {
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
 }
 
 .notification-card-link {
@@ -434,9 +450,9 @@
     gap: 3px;
     font-size: 11px;
     font-weight: 600;
-    color: #f97316;
+    color: var(--primary-500);
     margin-top: 8px;
-    transition: gap 0.2s ease;
+    transition: gap var(--transition-fast);
     opacity: 0.9;
 }
 
@@ -445,8 +461,12 @@
     opacity: 1;
 }
 
+.notification-card-link:active {
+    transform: scale(0.98);
+}
+
 .notification-card:not(.unread) .notification-card-link {
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
 }
 
 /* ============ Responsive ============ */

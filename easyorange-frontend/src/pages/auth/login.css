@@ -23,7 +23,7 @@
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(ellipse at 25% 15%, rgba(249, 115, 22, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 25% 15%, var(--primary-alpha-2) 0%, transparent 50%),
         radial-gradient(ellipse at 75% 85%, rgba(244, 63, 94, 0.08) 0%, transparent 50%),
         radial-gradient(ellipse at 50% 50%, rgba(251, 191, 36, 0.05) 0%, transparent 40%);
 }
@@ -36,7 +36,7 @@
 .orb {
     position: absolute;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--primary-alpha-3) 0%, transparent 70%);
     animation: floatOrb 20s ease-in-out infinite;
 }
 
@@ -116,8 +116,8 @@
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(circle at 15% 85%, rgba(249, 115, 22, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 85% 15%, rgba(251, 113, 133, 0.08) 0%, transparent 40%);
+        radial-gradient(circle at 15% 85%, var(--primary-alpha-2) 0%, transparent 40%),
+        radial-gradient(circle at 85% 15%, var(--rose-alpha-1) 0%, transparent 40%);
     animation: auroraShift 15s ease-in-out infinite;
 }
 
@@ -138,9 +138,9 @@
     grid-template-columns: 1fr 1fr;
     width: min(960px, 92vw);
     max-height: 92vh;
-    border-radius: var(--radius-4xl, 2rem);
+    border-radius: var(--radius-4xl);
     overflow: hidden;
-    box-shadow: var(--shadow-2xl, 0 25px 50px -12px rgba(0, 0, 0, 0.25));
+    box-shadow: var(--shadow-2xl);
     transform: scale(0.94) translateY(25px);
     animation: authPageEntrance 0.5s ease-out forwards;
     z-index: 1;
@@ -161,7 +161,7 @@
     align-items: center;
     justify-content: center;
     padding: 3.5rem;
-    background: linear-gradient(135deg, #f97316 0%, #fb7185 50%, #c39bd3 100%);
+    background: var(--gradient-primary);
     color: var(--white);
     overflow: hidden;
 }
@@ -265,7 +265,7 @@
 }
 
 .auth-page-brand-title {
-    font-family: var(--font-display, "Playfair Display", serif);
+    font-family: var(--font-display);
     font-size: 2.25rem;
     font-weight: 900;
     margin-bottom: 0.75rem;
@@ -292,7 +292,7 @@
     opacity: 0.9;
     background: rgba(255, 255, 255, 0.1);
     padding: 0.875rem 1.25rem;
-    border-radius: var(--radius-xl, 1.25rem);
+    border-radius: var(--radius-xl);
     backdrop-filter: blur(8px);
 }
 
@@ -305,7 +305,7 @@
 /* 右侧表单面板 */
 .auth-page-form-panel {
     position: relative;
-    background: var(--white, #ffffff);
+    background: var(--white);
     padding: 3rem 3.5rem;
     display: flex;
     flex-direction: column;
@@ -325,9 +325,9 @@
     gap: 0;
     margin-bottom: 2rem;
     position: relative;
-    background: var(--gray-100, #f3f4f6);
+    background: var(--gray-100);
     padding: 0.375rem;
-    border-radius: var(--radius-full, 9999px);
+    border-radius: var(--radius-full);
     width: 100%;
     max-width: 320px;
     align-self: center;
@@ -342,20 +342,28 @@
     padding: 0.875rem 0;
     font-size: 1rem;
     font-weight: 700;
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
     position: relative;
-    transition: all var(--transition-fast, 0.15s);
+    transition: all var(--transition-fast);
     cursor: pointer;
-    border-radius: var(--radius-full, 9999px);
+    border-radius: var(--radius-full);
     border: none;
     background: transparent;
     min-width: 80px;
 }
 
+.auth-page-tab:hover:not(.auth-page-tab--active) {
+    color: var(--text-secondary);
+}
+
+.auth-page-tab:active {
+    transform: scale(0.98);
+}
+
 .auth-page-tab--active {
-    color: var(--text-primary, #111827);
-    background: var(--white, #ffffff);
-    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+    color: var(--text-primary);
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
 }
 
 /* 表单头部 */
@@ -369,7 +377,7 @@
 .auth-page-header h3 {
     font-size: 1.625rem;
     font-weight: 900;
-    color: var(--text-heading, #111827);
+    color: var(--text-heading);
     margin-bottom: 0.5rem;
     letter-spacing: -0.02em;
     display: flex;
@@ -387,7 +395,7 @@
 
 .auth-page-header p {
     font-size: 0.9375rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
 }
 
 /* 输入框组 */
@@ -399,7 +407,7 @@
 
 .auth-page-input-hint {
     font-size: 0.75rem;
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
     margin-top: 0.375rem;
     padding-left: 0.25rem;
     line-height: 1.4;
@@ -414,31 +422,31 @@
     align-items: center;
     gap: 0.5rem;
     padding: 1rem 1.125rem;
-    background: var(--gray-50, #f9fafb);
-    border: 1.5px solid var(--border-light, #e5e7eb);
-    border-radius: var(--radius-xl, 1.25rem);
-    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    background: var(--gray-50);
+    border: 1.5px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    transition: all var(--transition-fast);
 }
 
 .glass-input:focus-within {
     transform: scale(1.01);
-    background: var(--white, #ffffff);
-    border-color: var(--primary-400, #fb923c);
+    background: var(--white);
+    border-color: var(--primary-400);
     box-shadow:
-        0 0 0 4px rgba(249, 115, 22, 0.1),
-        0 4px 12px rgba(249, 115, 22, 0.08);
+        0 0 0 4px var(--primary-alpha-2),
+        0 4px 12px var(--primary-alpha-2);
 }
 
 .auth-page-input-icon {
     width: 22px;
     height: 22px;
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
     flex-shrink: 0;
-    transition: color var(--transition-fast, 0.15s);
+    transition: color var(--transition-fast);
 }
 
 .glass-input:focus-within .auth-page-input-icon {
-    color: var(--primary-500, #f97316);
+    color: var(--primary-500);
 }
 
 .glass-input input {
@@ -449,11 +457,11 @@
     outline: none;
     background: transparent;
     font-size: 0.9375rem;
-    color: var(--text-primary, #111827);
+    color: var(--text-primary);
 }
 
 .glass-input input::placeholder {
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
 }
 
 /* 表单选项 */
@@ -472,7 +480,7 @@
     align-items: center;
     gap: 0.625rem;
     cursor: pointer;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
     font-size: 0.8125rem;
 }
 
@@ -483,17 +491,17 @@
 .auth-page-checkbox-custom {
     width: 20px;
     height: 20px;
-    border: 1.5px solid var(--border-medium, #d1d5db);
-    border-radius: var(--radius-sm, 0.25rem);
+    border: 1.5px solid var(--border-medium);
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--transition-fast, 0.15s);
+    transition: all var(--transition-fast);
     flex-shrink: 0;
 }
 
 .auth-page-checkbox-label input:checked + .auth-page-checkbox-custom {
-    background: linear-gradient(135deg, #f97316 0%, #fb7185 100%);
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--rose-400) 100%);
     border-color: transparent;
 }
 
@@ -507,23 +515,23 @@
 }
 
 .auth-page-forgot-link {
-    color: var(--primary-500, #f97316);
+    color: var(--primary-500);
     font-weight: 600;
-    transition: color var(--transition-fast, 0.15s);
+    transition: color var(--transition-fast);
     text-decoration: none;
 }
 
 .auth-page-forgot-link:hover {
-    color: var(--primary-600, #ea580c);
+    color: var(--primary-600);
 }
 
 /* 错误消息 */
 .auth-page-error-message {
-    background: var(--error-bg, #fef2f2);
-    border: 1px solid var(--error-border, #fecaca);
-    color: var(--error, #ef4444);
+    background: var(--error-light);
+    border: 1px solid var(--error-soft-border);
+    color: var(--error);
     padding: 0.875rem 1rem;
-    border-radius: var(--radius-lg, 0.5rem);
+    border-radius: var(--radius-lg);
     font-size: 0.875rem;
     margin-bottom: 1.125rem;
     width: 100%;
@@ -536,18 +544,18 @@
     align-items: center;
     justify-content: center;
     padding: 1rem 2rem;
-    border-radius: var(--radius-xl, 1.25rem);
+    border-radius: var(--radius-xl);
     font-size: 1.0625rem;
     font-weight: 700;
-    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all var(--transition-normal);
     position: relative;
     overflow: hidden;
     margin-top: 1.5rem;
     margin-bottom: 0.5rem;
     border: none;
-    background: linear-gradient(135deg, #f97316 0%, #fb7185 100%);
-    color: var(--white, #ffffff);
-    box-shadow: 0 8px 20px rgba(249, 115, 22, 0.35);
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--rose-400) 100%);
+    color: var(--white);
+    box-shadow: 0 8px 20px var(--primary-alpha-5);
     width: 100%;
     max-width: 280px;
     align-self: center;
@@ -558,13 +566,13 @@
 .auth-page-btn:hover:not(:disabled) {
     transform: translateY(-3px) scale(1.02);
     box-shadow:
-        0 12px 28px rgba(249, 115, 22, 0.45),
-        0 4px 12px rgba(249, 115, 22, 0.2);
+        0 12px 28px var(--primary-alpha-5),
+        0 4px 12px var(--primary-alpha-4);
 }
 
 .auth-page-btn:active:not(:disabled) {
     transform: translateY(-1px) scale(0.98);
-    box-shadow: 0 6px 16px rgba(249, 115, 22, 0.3);
+    box-shadow: 0 6px 16px var(--primary-alpha-5);
 }
 
 .auth-page-btn:disabled {
@@ -588,7 +596,7 @@
     align-items: center;
     text-align: center;
     margin: 1.5rem 0;
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
     font-size: 0.875rem;
     width: 100%;
     max-width: 320px;
@@ -598,7 +606,7 @@
 .auth-page-divider::after {
     content: "";
     flex: 1;
-    border-bottom: 1px solid var(--border-light, #e5e7eb);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .auth-page-divider span {
@@ -620,15 +628,19 @@
     justify-content: center;
     width: 48px;
     height: 48px;
-    border-radius: var(--radius-xl, 1.25rem);
-    border: 1.5px solid var(--border-light, #e5e7eb);
-    background: var(--white, #ffffff);
-    transition: all var(--transition-fast, 0.15s);
+    border-radius: var(--radius-xl);
+    border: 1.5px solid var(--border-light);
+    background: var(--white);
+    transition: all var(--transition-fast);
 }
 
 .auth-page-social-btn:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    box-shadow: var(--shadow-md);
+}
+
+.auth-page-social-btn:active {
+    transform: translateY(1px);
 }
 
 .social-btn--wechat:hover {
@@ -662,22 +674,22 @@
 .auth-page-form-footer {
     text-align: center;
     font-size: 0.875rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
     margin-top: 1rem;
     width: 100%;
 }
 
 .auth-page-switch-link {
-    color: var(--primary-500, #f97316);
+    color: var(--primary-500);
     font-weight: 700;
     background: none;
     border: none;
     text-decoration: underline;
-    transition: color var(--transition-fast, 0.15s);
+    transition: color var(--transition-fast);
 }
 
 .auth-page-switch-link:hover {
-    color: var(--primary-600, #ea580c);
+    color: var(--primary-600);
 }
 
 /* 注册条款复选框 */
@@ -688,13 +700,13 @@
 }
 
 .auth-page-terms-checkbox a {
-    color: var(--primary-500, #f97316);
+    color: var(--primary-500);
     text-decoration: underline;
-    transition: color var(--transition-fast, 0.15s);
+    transition: color var(--transition-fast);
 }
 
 .auth-page-terms-checkbox a:hover {
-    color: var(--primary-600, #ea580c);
+    color: var(--primary-600);
 }
 
 /* 响应式设计 */
@@ -752,24 +764,28 @@
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 50%;
-    color: var(--text-primary, #111827);
-    transition: all var(--transition-fast, 0.15s);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
     z-index: 10;
     padding: 0;
 }
 
 .auth-page-close-btn:hover {
-    background: var(--white, #ffffff);
+    background: var(--white);
     transform: rotate(90deg);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    color: var(--primary-500, #f97316);
+    box-shadow: var(--shadow-md);
+    color: var(--primary-500);
+}
+
+.auth-page-close-btn:active {
+    transform: rotate(90deg) scale(0.95);
 }
 
 .auth-page-close-btn svg {
     width: 22px;
     height: 22px;
-    transition: transform var(--transition-fast, 0.15s);
+    transition: transform var(--transition-fast);
 }
 
 @media (max-width: 768px) {
@@ -790,9 +806,9 @@
     display: flex;
     gap: 0;
     margin-bottom: 1.125rem;
-    background: var(--gray-100, #f3f4f6);
+    background: var(--gray-100);
     padding: 0.25rem;
-    border-radius: var(--radius-lg, 0.5rem);
+    border-radius: var(--radius-lg);
     width: 100%;
     max-width: 320px;
 }
@@ -806,22 +822,26 @@
     padding: 0.5rem 0.75rem;
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
     border: none;
     background: transparent;
-    border-radius: calc(var(--radius-lg, 0.5rem) - 2px);
+    border-radius: calc(var(--radius-lg) - 2px);
     cursor: pointer;
-    transition: all var(--transition-fast, 0.15s);
+    transition: all var(--transition-fast);
 }
 
 .auth-page-method-btn--active {
-    color: var(--text-primary, #111827);
-    background: var(--white, #ffffff);
-    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+    color: var(--text-primary);
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
 }
 
 .auth-page-method-btn:hover:not(.auth-page-method-btn--active) {
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
+}
+
+.auth-page-method-btn:active {
+    transform: scale(0.98);
 }
 
 .auth-page-sms-btn {
@@ -829,22 +849,26 @@
     padding: 0.5rem 0.625rem;
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--primary-500, #f97316);
+    color: var(--primary-500);
     background: none;
     border: none;
-    border-left: 1.5px solid var(--border-light, #e5e7eb);
+    border-left: 1.5px solid var(--border-light);
     cursor: pointer;
     white-space: nowrap;
-    transition: color var(--transition-fast, 0.15s);
+    transition: color var(--transition-fast);
     letter-spacing: 0.02em;
 }
 
 .auth-page-sms-btn:hover:not(:disabled) {
-    color: var(--primary-600, #ea580c);
+    color: var(--primary-600);
+}
+
+.auth-page-sms-btn:active:not(:disabled) {
+    transform: scale(0.98);
 }
 
 .auth-page-sms-btn:disabled {
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
     cursor: not-allowed;
 }
 
@@ -859,20 +883,24 @@
     padding: 0;
     background: none;
     border: none;
-    color: var(--text-tertiary, #9ca3af);
+    color: var(--text-tertiary);
     cursor: pointer;
-    border-radius: var(--radius-sm, 0.25rem);
-    transition: color var(--transition-fast, 0.15s);
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast);
 }
 
 .auth-page-password-toggle:hover {
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
+}
+
+.auth-page-password-toggle:active {
+    transform: scale(0.98);
 }
 
 /* 大写锁定警告 */
 .caps-lock-warning {
     font-size: 0.75rem;
-    color: var(--warning, #f59e0b);
+    color: var(--warning);
     margin-top: 0.375rem;
     padding-left: 0.25rem;
     line-height: 1.4;
@@ -979,8 +1007,8 @@
 .auth-page-btn.btn-loading {
     transform: scale(0.97);
     transition:
-        transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
-        opacity 0.2s ease;
+        transform var(--transition-fast),
+        opacity var(--transition-fast);
 }
 
 /* 精调加载动画 - 更流畅 */
@@ -1001,16 +1029,16 @@
 
 /* Tab 指示器动画 */
 .auth-page-tab {
-    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all var(--transition-fast);
 }
 
 .auth-page-tab--active {
-    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all var(--transition-fast);
 }
 
 /* 登录方法切换按钮 */
 .auth-page-method-btn {
-    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all var(--transition-fast);
 }
 
 /* 登录方式切换整体容器入场 */
@@ -1067,7 +1095,7 @@
 
 /* 复选框勾选动画 */
 .auth-page-checkbox-custom {
-    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all var(--transition-fast);
 }
 
 .auth-page-checkbox-label input:checked + .auth-page-checkbox-custom {

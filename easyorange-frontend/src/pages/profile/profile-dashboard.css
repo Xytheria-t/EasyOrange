@@ -39,7 +39,7 @@
     gap: 0.875rem;
     margin-bottom: 1.25rem;
     padding: 1rem 1.25rem;
-    border-radius: 20px;
+    border-radius: var(--radius-xl);
     border: 1px solid var(--profile-border);
     background: rgba(255, 255, 255, 0.66);
     backdrop-filter: blur(18px);
@@ -73,7 +73,7 @@
     padding: 0.5rem 0.875rem;
     background: rgba(255, 255, 255, 0.74);
     border: 1px solid rgba(23, 32, 51, 0.08);
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--profile-ink);
@@ -87,6 +87,10 @@
     border-color: rgba(239, 125, 35, 0.18);
     color: var(--profile-accent-deep);
     transform: translateY(-2px);
+}
+
+.btn-ghost:active {
+    transform: translateY(1px);
 }
 
 .btn-ghost svg {
@@ -196,18 +200,18 @@
 }
 
 .metric-icon.blue {
-    background: var(--blue-50, #eff6ff);
-    color: var(--blue-500, #3b82f6);
+    background: var(--blue-50);
+    color: var(--blue-500);
 }
 
 .metric-icon.purple {
-    background: var(--purple-50, #f5f3ff);
-    color: var(--purple-500, #8b5cf6);
+    background: var(--purple-50);
+    color: var(--purple-500);
 }
 
 .metric-icon.orange {
-    background: var(--orange-50, #fff7ed);
-    color: var(--orange-500, #f97316);
+    background: var(--primary-50);
+    color: var(--primary-500);
 }
 
 .metric-data {
@@ -297,7 +301,7 @@
     border: 1px solid var(--profile-border);
     border-radius: var(--radius-xl);
     box-shadow: var(--profile-shadow-soft);
-    transition: all var(--transition-fast);
+    transition: all var(--transition-normal);
     text-decoration: none;
     color: var(--profile-ink);
     overflow: hidden;
@@ -319,6 +323,10 @@
     border-color: rgba(239, 125, 35, 0.16);
 }
 
+.action-card:active {
+    transform: translateY(1px);
+}
+
 .action-icon {
     width: 40px;
     height: 40px;
@@ -335,18 +343,18 @@
 }
 
 .action-icon.blue {
-    background: var(--blue-50, #eff6ff);
-    color: var(--blue-500, #3b82f6);
+    background: var(--blue-50);
+    color: var(--blue-500);
 }
 
 .action-icon.orange {
-    background: var(--orange-50, #fff7ed);
-    color: var(--orange-500, #f97316);
+    background: var(--primary-50);
+    color: var(--primary-500);
 }
 
 .action-icon.pink {
-    background: var(--pink-50, #fdf2f8);
-    color: var(--pink-500, #ec4899);
+    background: var(--pink-50);
+    color: var(--pink-500);
 }
 
 .action-content {
@@ -440,28 +448,28 @@
 }
 
 .activity-icon.blue {
-    background: var(--blue-50, #eff6ff);
-    color: var(--blue-500, #3b82f6);
+    background: var(--blue-50);
+    color: var(--blue-500);
 }
 
 .activity-icon.orange {
-    background: var(--orange-50, #fff7ed);
-    color: var(--orange-500, #f97316);
+    background: var(--primary-50);
+    color: var(--primary-500);
 }
 
 .activity-icon.purple {
-    background: var(--purple-50, #f5f3ff);
-    color: var(--purple-500, #8b5cf6);
+    background: var(--purple-50);
+    color: var(--purple-500);
 }
 
 .activity-icon.pink {
-    background: var(--pink-50, #fdf2f8);
-    color: var(--pink-500, #ec4899);
+    background: var(--pink-50);
+    color: var(--pink-500);
 }
 
 .activity-icon.cyan {
-    background: var(--cyan-50, #ecfeff);
-    color: var(--cyan-500, #06b6d4);
+    background: var(--cyan-50);
+    color: var(--cyan-500);
 }
 
 .activity-content {
@@ -700,7 +708,7 @@
     border-radius: var(--radius-lg);
     border: 1px solid var(--profile-border);
     box-shadow: var(--profile-shadow-soft);
-    transition: all var(--transition-fast);
+    transition: all var(--transition-normal);
 }
 
 .setting-item:hover {
@@ -750,7 +758,7 @@
     padding: 0.5rem 0.875rem;
     background: rgba(255, 255, 255, 0.8);
     border: 1px solid rgba(23, 32, 51, 0.12);
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--profile-ink);
@@ -763,6 +771,10 @@
     background: rgba(255, 247, 239, 0.96);
     color: var(--profile-accent-deep);
     transform: translateY(-2px);
+}
+
+.btn-outline:active {
+    transform: translateY(1px);
 }
 
 /* ============ PREFERENCES ============ */
@@ -808,6 +820,10 @@
 
 .pref-item:hover {
     background: rgba(239, 125, 35, 0.07);
+}
+
+.pref-item:active {
+    transform: scale(0.98);
 }
 
 .pref-info {

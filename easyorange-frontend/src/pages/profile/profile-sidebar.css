@@ -112,17 +112,17 @@
     padding: 1.5rem 1.25rem;
     box-shadow:
         0 6px 18px rgba(42, 37, 32, 0.06),
-        0 1px 4px rgba(249, 115, 22, 0.04),
+        0 1px 4px var(--primary-alpha-1),
         inset 0 1px 0 rgba(255, 255, 255, 0.9);
     border: 1px solid var(--glass-border);
     overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all var(--transition-normal);
 }
 
 .user-profile-card:hover {
     box-shadow:
         0 12px 32px rgba(42, 37, 32, 0.1),
-        0 3px 8px rgba(249, 115, 22, 0.08),
+        0 3px 8px var(--primary-alpha-2),
         inset 0 1px 0 rgba(255, 255, 255, 0.95);
     transform: translateY(-3px);
 }
@@ -133,9 +133,9 @@
     right: -12%;
     width: 68%;
     height: 56%;
-    background: radial-gradient(circle, rgba(249, 115, 22, 0.2) 0%, transparent 72%);
+    background: radial-gradient(circle, var(--primary-alpha-4) 0%, transparent 72%);
     pointer-events: none;
-    transition: transform 0.6s var(--ease-out);
+    transition: transform var(--transition-normal);
 }
 
 .user-profile-card:hover .card-glow {
@@ -168,7 +168,7 @@
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    transition: all 0.35s var(--ease-out);
+    transition: all var(--transition-fast);
     min-height: unset;
 }
 
@@ -180,7 +180,7 @@
     position: absolute;
     inset: -3px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f97316, #fb7185, #c39bd3);
+    background: linear-gradient(135deg, var(--primary-500), var(--rose-400), var(--purple-400));
     z-index: 0;
     animation: psRingRotate 4s linear infinite;
 }
@@ -207,11 +207,11 @@
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--white);
     font-size: 1.35rem;
     font-weight: 700;
     font-family: var(--font-display);
@@ -228,9 +228,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--white);
     opacity: 0;
-    transition: opacity 0.2s var(--ease-out);
+    transition: opacity var(--transition-fast);
     gap: 0.15rem;
 }
 
@@ -265,8 +265,8 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f59e0b, #f97316);
-    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+    background: linear-gradient(135deg, var(--gold-500), var(--primary-500));
+    box-shadow: 0 0 0 3px var(--primary-alpha-3);
 }
 
 .ps-name {
@@ -325,8 +325,8 @@
 }
 
 .ps-badge-accent {
-    background: rgba(249, 115, 22, 0.1);
-    border-color: rgba(249, 115, 22, 0.15);
+    background: var(--primary-alpha-2);
+    border-color: var(--primary-alpha-3);
     color: var(--primary-600);
 }
 
@@ -373,20 +373,20 @@
 
 .ps-stat-bar {
     height: 5px;
-    border-radius: 99px;
+    border-radius: var(--radius-full);
     background: rgba(42, 37, 32, 0.06);
     overflow: hidden;
 }
 
 .ps-stat-fill {
     height: 100%;
-    border-radius: 99px;
-    background: linear-gradient(90deg, #f97316, #fb7185);
+    border-radius: var(--radius-full);
+    background: linear-gradient(90deg, var(--primary-500), var(--rose-400));
     transition: width 0.6s var(--ease-out);
 }
 
 .ps-stat-fill-rose {
-    background: linear-gradient(90deg, #fb7185, #c39bd3);
+    background: linear-gradient(90deg, var(--rose-400), var(--purple-400));
 }
 
 /* ─── ACTION BUTTONS ─── */
@@ -407,11 +407,11 @@
     height: auto;
     min-height: unset;
     padding: 0.85rem 1rem;
-    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
     border: none;
     border-radius: var(--radius-lg);
-    color: white;
-    transition: all 0.35s var(--ease-out);
+    color: var(--white);
+    transition: all var(--transition-fast);
     box-shadow: 0 8px 24px -12px rgba(217, 92, 7, 0.5);
     position: relative;
     overflow: hidden;
@@ -424,7 +424,7 @@
     inset: 0;
     background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.15) 50%, transparent 70%);
     opacity: 0;
-    transition: opacity 0.4s var(--ease-out);
+    transition: opacity var(--transition-fast);
 }
 
 .ps-btn-primary:hover::before {
@@ -455,7 +455,7 @@
     height: 14px;
     flex-shrink: 0;
     opacity: 0.7;
-    transition: transform 0.3s var(--ease-out);
+    transition: transform var(--transition-fast);
 }
 
 .ps-btn-primary:hover .ps-btn-arrow {
@@ -483,13 +483,13 @@
     border: 1px solid rgba(255, 255, 255, 0.7);
     border-radius: var(--radius-lg);
     color: var(--text-secondary);
-    transition: all 0.3s var(--ease-out);
+    transition: all var(--transition-fast);
     box-shadow: 0 2px 8px rgba(42, 37, 32, 0.04);
 }
 
 .ps-btn-secondary:hover {
     background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(249, 115, 22, 0.2);
+    border-color: var(--primary-alpha-4);
     color: var(--primary-600);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(42, 37, 32, 0.08);
@@ -498,7 +498,7 @@
 .ps-btn-secondary svg {
     width: 20px;
     height: 20px;
-    transition: transform 0.3s var(--ease-out);
+    transition: transform var(--transition-fast);
 }
 
 .ps-btn-secondary:hover svg {
@@ -526,7 +526,7 @@
     color: var(--text-tertiary);
     font-size: 0.82rem;
     font-weight: 600;
-    transition: all 0.3s var(--ease-out);
+    transition: all var(--transition-fast);
 }
 
 .ps-btn-logout:hover {
@@ -564,7 +564,7 @@
     color: var(--text-tertiary);
     font-size: 0.85rem;
     font-weight: 500;
-    transition: all 0.25s var(--ease-out);
+    transition: all var(--transition-fast);
     position: relative;
     margin-bottom: 0.25rem;
 }
@@ -584,7 +584,7 @@
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 247, 239, 0.9));
     color: var(--text-primary);
     font-weight: 600;
-    border-color: rgba(249, 115, 22, 0.12);
+    border-color: var(--primary-alpha-3);
     box-shadow: 0 4px 12px rgba(42, 37, 32, 0.06);
 }
 
@@ -596,7 +596,7 @@
     justify-content: center;
     color: var(--primary-500);
     flex-shrink: 0;
-    transition: transform 0.25s var(--ease-out);
+    transition: transform var(--transition-fast);
 }
 
 .ps-nav-item:hover .ps-nav-icon {
@@ -616,10 +616,10 @@
 .ps-nav-active-bar {
     width: 3px;
     height: 18px;
-    border-radius: 99px;
-    background: linear-gradient(180deg, #f97316, #fb7185);
+    border-radius: var(--radius-full);
+    background: linear-gradient(180deg, var(--primary-500), var(--rose-400));
     opacity: 0;
-    transition: opacity 0.25s var(--ease-out);
+    transition: opacity var(--transition-fast);
     flex-shrink: 0;
 }
 

@@ -17,7 +17,7 @@
     inset: 0;
     z-index: 0;
     overflow: hidden;
-    background: linear-gradient(180deg, #fff8f0 0%, #fff0e4 15%, #faf8f5 40%, #ffffff 100%);
+    background: linear-gradient(180deg, #fff8f0 0%, #fff0e4 15%, var(--gray-50) 40%, var(--white) 100%);
 }
 
 .search-bg-orb {
@@ -33,7 +33,7 @@
     height: 500px;
     top: -150px;
     right: -100px;
-    background: radial-gradient(circle, rgba(249, 115, 22, 0.2) 0%, rgba(251, 146, 60, 0.1) 50%, transparent 70%);
+    background: radial-gradient(circle, var(--primary-alpha-4) 0%, rgba(251, 146, 60, 0.1) 50%, transparent 70%);
     animation: searchOrbFloat 14s ease-in-out infinite;
 }
 
@@ -53,7 +53,7 @@
     top: 40%;
     left: 50%;
     transform: translateX(-50%);
-    background: radial-gradient(circle, rgba(251, 113, 133, 0.12) 0%, transparent 60%);
+    background: radial-gradient(circle, var(--rose-alpha-2) 0%, transparent 60%);
     animation: searchOrbFloat 16s ease-in-out infinite;
     animation-delay: -8s;
 }
@@ -76,8 +76,8 @@
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(ellipse 80% 50% at 20% 40%, rgba(249, 115, 22, 0.04) 0%, transparent 50%),
-        radial-gradient(ellipse 60% 40% at 80% 60%, rgba(251, 113, 133, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse 80% 50% at 20% 40%, var(--primary-alpha-1) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 80% 60%, var(--rose-alpha-1) 0%, transparent 50%),
         radial-gradient(ellipse 50% 60% at 50% 80%, rgba(195, 155, 211, 0.03) 0%, transparent 50%);
     pointer-events: none;
 }
@@ -95,7 +95,7 @@
     width: 3px;
     height: 3px;
     border-radius: 50%;
-    background: rgba(249, 115, 22, 0.3);
+    background: var(--primary-alpha-5);
     animation: particleFloat linear infinite;
 }
 
@@ -162,7 +162,7 @@
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.6);
     color: var(--text-secondary);
-    transition: all var(--transition-normal);
+    transition: all var(--transition-fast);
     box-shadow:
         0 4px 12px rgba(42, 37, 32, 0.06),
         inset 0 1px 0 rgba(255, 255, 255, 0.8);
@@ -174,7 +174,7 @@
     transform: translateY(-2px);
     box-shadow:
         0 8px 20px rgba(42, 37, 32, 0.1),
-        0 0 0 1px rgba(249, 115, 22, 0.08);
+        0 0 0 1px var(--primary-alpha-2);
 }
 
 .search-back-btn:active {
@@ -198,13 +198,13 @@
     background: rgba(255, 255, 255, 0.88);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
-    border: 1.5px solid rgba(249, 115, 22, 0.1);
+    border: 1.5px solid var(--primary-alpha-2);
     border-radius: var(--radius-2xl);
     box-shadow:
-        0 8px 32px rgba(249, 115, 22, 0.08),
+        0 8px 32px var(--primary-alpha-2),
         0 2px 8px rgba(0, 0, 0, 0.04),
         inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    transition: all var(--transition-normal);
+    transition: all var(--transition-fast);
     overflow: hidden;
     position: relative;
 }
@@ -216,20 +216,20 @@
     border-radius: inherit;
     background: linear-gradient(
         135deg,
-        rgba(249, 115, 22, 0.15) 0%,
-        rgba(251, 113, 133, 0.1) 40%,
+        var(--primary-alpha-3) 0%,
+        var(--rose-alpha-2) 40%,
         rgba(195, 155, 211, 0.08) 100%
     );
     opacity: 0;
-    transition: opacity var(--transition-normal);
+    transition: opacity var(--transition-fast);
     z-index: -1;
 }
 
 .search-input-premium:focus-within {
-    border-color: rgba(249, 115, 22, 0.25);
+    border-color: var(--primary-alpha-4);
     box-shadow:
-        0 12px 40px rgba(249, 115, 22, 0.12),
-        0 0 0 4px rgba(249, 115, 22, 0.06),
+        0 12px 40px var(--primary-alpha-3),
+        0 0 0 4px var(--primary-alpha-1),
         inset 0 1px 0 rgba(255, 255, 255, 0.95);
     transform: translateY(-1px);
 }
@@ -282,7 +282,7 @@
     height: 28px;
     flex-shrink: 0;
     border-radius: 50%;
-    background: rgba(249, 115, 22, 0.08);
+    background: var(--primary-alpha-2);
     border: none;
     color: var(--text-tertiary);
     transition: all var(--transition-fast);
@@ -290,9 +290,13 @@
 }
 
 .search-clear-btn:hover {
-    background: rgba(249, 115, 22, 0.15);
+    background: var(--primary-alpha-3);
     color: var(--primary-500);
     transform: scale(1.1);
+}
+
+.search-clear-btn:active {
+    transform: scale(0.95);
 }
 
 /* Submit button */
@@ -310,9 +314,9 @@
     font-size: 0.875rem;
     font-weight: 600;
     font-family: var(--font-sans);
-    transition: all var(--transition-normal);
+    transition: all var(--transition-fast);
     box-shadow:
-        0 4px 12px rgba(249, 115, 22, 0.3),
+        0 4px 12px var(--primary-alpha-5),
         0 1px 2px rgba(0, 0, 0, 0.05),
         inset 0 1px 0 rgba(255, 255, 255, 0.15);
     position: relative;
@@ -333,7 +337,7 @@
 .search-submit-btn:hover {
     transform: translateY(-2px);
     box-shadow:
-        0 8px 24px rgba(249, 115, 22, 0.4),
+        0 8px 24px var(--primary-alpha-5),
         0 2px 4px rgba(0, 0, 0, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
@@ -428,8 +432,12 @@
 }
 
 .suggestion-item:hover {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.06) 0%, rgba(251, 113, 133, 0.04) 100%);
+    background: linear-gradient(135deg, var(--primary-alpha-1) 0%, var(--rose-alpha-1) 100%);
     transform: translateX(4px);
+}
+
+.suggestion-item:active {
+    transform: translateX(2px);
 }
 
 .suggestion-icon {
