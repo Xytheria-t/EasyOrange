@@ -160,8 +160,8 @@
     height: 36px;
     padding: 0 0.625rem;
     border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(195, 155, 211, 0.08) 100%);
-    border: 1px solid rgba(249, 115, 22, 0.15);
+    background: linear-gradient(135deg, var(--primary-alpha-2) 0%, rgba(195, 155, 211, 0.08) 100%);
+    border: 1px solid var(--primary-alpha-3);
     color: var(--primary-500);
     transition: all var(--transition-fast);
     margin-right: 0.25rem;
@@ -176,9 +176,13 @@
 }
 
 .search-ai-btn:hover {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(195, 155, 211, 0.12) 100%);
-    border-color: rgba(249, 115, 22, 0.25);
+    background: linear-gradient(135deg, var(--primary-alpha-3) 0%, rgba(195, 155, 211, 0.12) 100%);
+    border-color: var(--primary-alpha-4);
     transform: scale(1.05);
+}
+
+.search-ai-btn:active {
+    transform: scale(0.97);
 }
 
 .search-ai-btn svg {
@@ -198,10 +202,10 @@
 }
 
 .search-ai-btn.ai-enabled {
-    background: linear-gradient(135deg, var(--primary-500) 0%, #c39bd3 100%);
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--purple-400) 100%);
     border-color: var(--primary-400);
-    color: white;
-    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+    color: var(--white);
+    box-shadow: 0 2px 8px var(--primary-alpha-5);
 }
 
 .search-ai-btn.ai-enabled svg {

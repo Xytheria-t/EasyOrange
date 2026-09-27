@@ -21,14 +21,17 @@
     --admin-radius-icon: 10px; /* 32px 图标按钮 */
     --admin-radius-media: 16px; /* 缩略图 / 头像 */
     --admin-radius-pill: 9999px; /* 状态标签 */
+    --admin-radius-xs: 6px; /* 骨架条等细小组件 */
 
     --admin-surface-bg: rgba(255, 255, 255, 0.72);
     --admin-surface-bg-soft: rgba(255, 255, 255, 0.6);
+    --admin-surface-bg-heavy: var(--admin-surface-solid);
     --admin-surface-solid: #ffffff;
     --admin-surface-border: rgba(255, 255, 255, 0.65);
     --admin-surface-shadow: 0 8px 32px rgba(42, 37, 32, 0.06);
     --admin-blur: blur(20px);
     --admin-shadow-soft: 0 8px 24px rgba(42, 37, 32, 0.08);
+    --admin-shadow-lg: var(--shadow-lg); /* 浮动批量条等重阴影，取全局暖黑阶梯 */
 
     --admin-control-border: 1.5px solid #e5e0db;
     --admin-control-line: #e5e0db; /* 控件描边色（需要单独取色时用） */
@@ -51,6 +54,7 @@
     --admin-danger-border: rgba(244, 63, 94, 0.2);
     --admin-accent-soft: rgba(249, 115, 22, 0.07);
     --admin-accent-soft-border: rgba(249, 115, 22, 0.2);
+    --admin-primary-focus-ring: rgba(249, 115, 22, 0.08); /* 表格选中行 / 聚焦底 */
     --admin-disabled-bg: #ece7e1;
     --admin-disabled-ink: #8a837c;
 
@@ -234,7 +238,7 @@
     margin: 0.2rem 0;
     border-radius: 10px;
     color: #6b6460;
-    transition: all 250ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all var(--transition-normal);
     position: relative;
     overflow: hidden;
     text-decoration: none;
@@ -310,7 +314,7 @@
     padding: 0.75rem 1rem;
     border-radius: 12px;
     color: #9b9590;
-    transition: all 250ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all var(--transition-normal);
     text-decoration: none;
 }
 
@@ -390,7 +394,7 @@
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.5);
     color: #8b857e;
-    transition: all 250ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all var(--transition-normal);
 }
 
 .collapse-btn:hover {
@@ -424,7 +428,7 @@
     border-radius: 14px;
     background: rgba(249, 115, 22, 0.04);
     border: 1px solid rgba(249, 115, 22, 0.08);
-    transition: all 250ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: all var(--transition-normal);
 }
 
 .header-user:hover {
@@ -552,7 +556,7 @@
 /* ============ Category Tree Node ============ */
 .category-tree-node-row {
     background: transparent;
-    transition: background 0.15s ease;
+    transition: background 150ms var(--ease-out);
 }
 
 .category-tree-node-row:hover {
@@ -1620,11 +1624,16 @@
     font-weight: 600;
     color: #fff;
     border: none;
-    transition: transform 200ms var(--ease-out);
+    transition: transform 150ms var(--ease-out);
 }
 
 .admin-action-btn:hover:not(:disabled) {
     transform: translateY(-2px);
+}
+
+/* 按压反馈：复用基础类的 transform 过渡通道 */
+.admin-action-btn:active:not(:disabled) {
+    transform: scale(0.98);
 }
 
 .admin-action-btn--approve {

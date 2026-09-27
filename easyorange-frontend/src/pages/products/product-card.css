@@ -9,28 +9,28 @@
     display: flex;
     flex-direction: column;
     min-height: 100%;
-    border-radius: 24px;
+    border-radius: var(--radius-2xl);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.82);
     background: linear-gradient(
         180deg,
         rgba(255, 255, 255, 0.985) 0%,
-        rgba(249, 250, 253, 0.98) 50%,
-        rgba(247, 247, 252, 0.97) 100%
+        rgba(250, 248, 245, 0.98) 50%,
+        rgba(248, 246, 243, 0.97) 100%
     );
     box-shadow:
-        0 24px 48px -20px rgba(17, 24, 39, 0.28),
-        0 12px 22px -14px rgba(17, 24, 39, 0.12),
-        0 4px 8px -4px rgba(249, 115, 22, 0.06),
+        0 24px 48px -20px rgba(42, 37, 32, 0.28),
+        0 12px 22px -14px rgba(42, 37, 32, 0.12),
+        0 4px 8px -4px var(--primary-alpha-1),
         inset 0 1px 0 rgba(255, 255, 255, 0.78),
-        inset 0 -1px 0 rgba(17, 24, 39, 0.02);
+        inset 0 -1px 0 rgba(42, 37, 32, 0.02);
     cursor: pointer;
     isolation: isolate;
     transform-style: preserve-3d;
     will-change: transform;
     transition:
         transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-        box-shadow 0.4s ease;
+        box-shadow var(--transition-normal);
     animation: cardReveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-fill-mode: both;
 }
@@ -42,9 +42,9 @@
     left: 10%;
     right: 10%;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.2), rgba(251, 113, 133, 0.15), transparent);
+    background: linear-gradient(90deg, transparent, var(--primary-alpha-4), var(--rose-alpha-2), transparent);
     opacity: 0;
-    transition: opacity 0.4s ease;
+    transition: opacity var(--transition-normal);
     pointer-events: none;
 }
 
@@ -60,17 +60,17 @@
 .product-card-border-glow {
     position: absolute;
     inset: -1px;
-    border-radius: 25px;
+    border-radius: var(--radius-2xl);
     background: linear-gradient(
         135deg,
-        rgba(249, 115, 22, 0.18) 0%,
-        rgba(251, 113, 133, 0.08) 35%,
+        var(--primary-alpha-4) 0%,
+        var(--rose-alpha-1) 35%,
         rgba(195, 155, 211, 0.12) 65%,
-        rgba(249, 115, 22, 0.06) 100%
+        var(--primary-alpha-1) 100%
     );
     z-index: -1;
     opacity: 0;
-    transition: opacity 0.5s ease;
+    transition: opacity var(--transition-normal);
     pointer-events: none;
 }
 
@@ -93,16 +93,16 @@
 .product-card-glow {
     position: absolute;
     inset: -3px;
-    border-radius: 27px;
+    border-radius: var(--radius-2xl);
     background: linear-gradient(
         135deg,
-        rgba(249, 115, 22, 0.18) 0%,
-        rgba(251, 113, 133, 0.14) 60%,
+        var(--primary-alpha-4) 0%,
+        var(--rose-alpha-2) 60%,
         rgba(195, 155, 211, 0.08) 100%
     );
     opacity: 0;
     filter: blur(28px);
-    transition: opacity 0.5s ease;
+    transition: opacity var(--transition-normal);
     z-index: -2;
     pointer-events: none;
 }
@@ -115,7 +115,7 @@
 .product-card-shimmer {
     position: absolute;
     inset: 0;
-    border-radius: 24px;
+    border-radius: var(--radius-2xl);
     background: linear-gradient(
         105deg,
         transparent 38%,
@@ -127,7 +127,7 @@
     background-size: 200% 100%;
     background-position: 100% 0;
     opacity: 0;
-    transition: opacity 0.25s ease;
+    transition: opacity var(--transition-fast);
     pointer-events: none;
     z-index: 10;
 }
@@ -152,8 +152,8 @@
     aspect-ratio: 4 / 5;
     overflow: hidden;
     background:
-        linear-gradient(145deg, rgba(21, 30, 52, 0.12), rgba(21, 30, 52, 0.03)),
-        linear-gradient(180deg, rgba(245, 246, 248, 0.96), rgba(231, 233, 237, 0.88));
+        linear-gradient(145deg, rgba(42, 37, 32, 0.12), rgba(42, 37, 32, 0.03)),
+        linear-gradient(180deg, rgba(245, 243, 240, 0.96), rgba(232, 228, 224, 0.88));
 }
 
 .product-image-3d-container {
@@ -233,7 +233,7 @@
     background-size: 200% 100%;
     background-position: 100% 0;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--transition-normal);
     pointer-events: none;
     z-index: 3;
 }
@@ -264,9 +264,9 @@
     pointer-events: none;
     z-index: 4;
     background:
-        linear-gradient(180deg, rgba(17, 24, 39, 0.26) 0%, rgba(17, 24, 39, 0.08) 22%, transparent 48%),
-        linear-gradient(180deg, transparent 52%, rgba(11, 15, 27, 0.14) 72%, rgba(11, 15, 27, 0.62) 100%);
-    transition: opacity 0.4s ease;
+        linear-gradient(180deg, rgba(42, 37, 32, 0.26) 0%, rgba(42, 37, 32, 0.08) 22%, transparent 48%),
+        linear-gradient(180deg, transparent 52%, rgba(26, 22, 18, 0.14) 72%, rgba(26, 22, 18, 0.62) 100%);
+    transition: opacity var(--transition-normal);
 }
 
 .product-card-premium:hover .product-image-depth {
@@ -297,7 +297,7 @@
     backdrop-filter: blur(18px) saturate(190%);
     -webkit-backdrop-filter: blur(18px) saturate(190%);
     box-shadow:
-        0 12px 24px -16px rgba(15, 23, 42, 0.42),
+        0 12px 24px -16px rgba(26, 22, 18, 0.42),
         inset 0 1px 0 rgba(255, 255, 255, 0.28);
     text-transform: uppercase;
     letter-spacing: 0.09em;
@@ -325,7 +325,7 @@
 }
 
 .badge-discount-premium {
-    background: linear-gradient(135deg, rgba(244, 63, 94, 0.94), rgba(225, 29, 72, 0.9));
+    background: linear-gradient(135deg, var(--rose-500), var(--rose-600));
     color: var(--white);
     box-shadow:
         0 4px 12px rgba(244, 63, 94, 0.28),
@@ -333,7 +333,7 @@
 }
 
 .badge-hot-premium {
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.88));
+    background: linear-gradient(135deg, var(--gold-400), var(--warning));
     color: #fff8e7;
     position: relative;
     overflow: hidden;
@@ -369,8 +369,8 @@
     gap: 0.38rem;
     z-index: 6;
     transition:
-        transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-        opacity 0.3s ease;
+        transform var(--transition-normal),
+        opacity var(--transition-normal);
 }
 
 .product-card-premium:hover .product-quick-meta-premium {
@@ -386,11 +386,11 @@
     font-size: 0.68rem;
     line-height: 1;
     color: rgba(255, 255, 255, 0.95);
-    background: rgba(17, 24, 39, 0.52);
+    background: rgba(42, 37, 32, 0.52);
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 18px 32px -22px rgba(17, 24, 39, 0.84);
+    box-shadow: 0 18px 32px -22px rgba(42, 37, 32, 0.84);
 }
 
 /* ============ ACTION BUTTONS - SLIDE IN + MAGNETIC v2 ============ */
@@ -428,10 +428,10 @@
     border: 1px solid rgba(255, 255, 255, 0.48);
     transition:
         transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
-        background 0.2s ease,
-        box-shadow 0.2s ease,
-        color 0.2s ease;
-    box-shadow: 0 16px 28px -18px rgba(17, 24, 39, 0.5);
+        background var(--transition-fast),
+        box-shadow var(--transition-fast),
+        color var(--transition-fast);
+    box-shadow: 0 16px 28px -18px rgba(42, 37, 32, 0.5);
     color: var(--gray-700);
     opacity: 0;
     transform: translateX(18px);
@@ -488,7 +488,7 @@
 }
 
 .action-icon-premium.contact-btn-premium:hover {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--success) 0%, var(--status-success) 100%);
     border-color: transparent;
     color: var(--white);
     box-shadow: 0 6px 20px rgba(16, 185, 129, 0.32);
@@ -571,8 +571,8 @@
     max-width: 100%;
     padding: 0.3rem 0.62rem;
     border-radius: var(--radius-full);
-    background: rgba(249, 115, 22, 0.07);
-    border: 1px solid rgba(249, 115, 22, 0.11);
+    background: var(--primary-soft-bg);
+    border: 1px solid var(--primary-alpha-3);
     color: var(--primary-700);
     font-size: 0.66rem;
     font-weight: 700;
@@ -589,7 +589,7 @@
     justify-content: center;
     padding: 0.3rem 0.62rem;
     border-radius: var(--radius-full);
-    background: rgba(17, 24, 39, 0.04);
+    background: rgba(42, 37, 32, 0.04);
     color: var(--gray-500);
     font-size: 0.66rem;
     font-weight: 700;
@@ -609,7 +609,7 @@
     color: var(--text-primary);
     line-height: 1.34;
     letter-spacing: -0.018em;
-    transition: color 0.3s ease;
+    transition: color var(--transition-normal);
 }
 
 /* 标题本身不裁剪，裁剪交给内部 span —— 链接要能撑开成整卡可点区域 */
@@ -666,7 +666,7 @@
     line-height: 1.58;
     margin: 0;
     padding-left: 0.65rem;
-    border-left: 2px solid rgba(249, 115, 22, 0.15);
+    border-left: 2px solid var(--primary-alpha-3);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -687,8 +687,8 @@
     padding: 0.38rem 0.6rem;
     border-radius: var(--radius-full);
     font-size: 0.68rem;
-    background: rgba(17, 24, 39, 0.035);
-    border: 1px solid rgba(17, 24, 39, 0.055);
+    background: rgba(42, 37, 32, 0.035);
+    border: 1px solid rgba(42, 37, 32, 0.055);
     color: var(--gray-500);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
 }
@@ -721,7 +721,7 @@
     background: var(--gradient-primary);
     border-radius: 2px;
     opacity: 0.75;
-    box-shadow: 0 0 8px rgba(249, 115, 22, 0.25);
+    box-shadow: 0 0 8px var(--primary-alpha-4);
 }
 
 .product-price-row-premium {
@@ -740,7 +740,7 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
     line-height: 1;
-    filter: drop-shadow(0 1px 2px rgba(249, 115, 22, 0.08));
+    filter: drop-shadow(0 1px 2px var(--primary-alpha-2));
 }
 
 .price-original-premium {
@@ -764,7 +764,7 @@
     background: rgba(239, 68, 68, 0.07);
     border: 1px solid rgba(239, 68, 68, 0.12);
     border-radius: var(--radius-full);
-    color: #dc2626;
+    color: var(--status-error);
     font-size: 0.65rem;
     font-weight: 700;
     letter-spacing: 0.02em;
@@ -827,23 +827,23 @@
     min-width: 0;
     max-width: 52%;
     padding: 0.5rem 0.65rem;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background: rgba(255, 255, 255, 0.65);
-    border: 1px solid rgba(17, 24, 39, 0.05);
-    box-shadow: 0 14px 28px -26px rgba(17, 24, 39, 0.38);
+    border: 1px solid rgba(42, 37, 32, 0.05);
+    box-shadow: 0 14px 28px -26px rgba(42, 37, 32, 0.38);
     transition:
-        background 0.28s ease,
-        border-color 0.28s ease,
-        transform 0.28s ease,
-        box-shadow 0.28s ease;
+        background var(--transition-normal),
+        border-color var(--transition-normal),
+        transform var(--transition-normal),
+        box-shadow var(--transition-normal);
 }
 
 .product-card-premium:hover .product-seller-premium {
     background: rgba(255, 255, 255, 0.92);
-    border-color: rgba(249, 115, 22, 0.14);
-    border-left: 2px solid rgba(249, 115, 22, 0.25);
+    border-color: var(--primary-alpha-3);
+    border-left: 2px solid var(--primary-alpha-4);
     transform: translateY(-1px);
-    box-shadow: 0 16px 32px -24px rgba(17, 24, 39, 0.18);
+    box-shadow: 0 16px 32px -24px rgba(42, 37, 32, 0.18);
 }
 
 .seller-body-premium {

@@ -7,7 +7,7 @@
     padding: 2rem;
     position: relative;
     overflow: hidden;
-    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 50%, #fff7ed 100%);
+    background: linear-gradient(135deg, var(--rose-50) 0%, var(--rose-100) 50%, var(--primary-50) 100%);
 }
 
 .error-boundary-bg {
@@ -35,7 +35,7 @@
     width: 500px;
     height: 500px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(249, 115, 22, 0.08) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--primary-alpha-2) 0%, transparent 70%);
     bottom: -150px;
     right: -100px;
     animation: error-float 15s ease-in-out infinite reverse;
@@ -72,7 +72,7 @@
     width: 100px;
     height: 100px;
     border-radius: var(--radius-3xl);
-    background: linear-gradient(135deg, rgba(244, 63, 94, 0.1) 0%, rgba(251, 113, 133, 0.08) 100%);
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.1) 0%, var(--rose-alpha-1) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -195,9 +195,13 @@
     min-height: unset;
 }
 
+.error-boundary-btn:active {
+    transform: translateY(1px);
+}
+
 .error-boundary-btn-primary {
     background: linear-gradient(135deg, var(--rose-500) 0%, var(--rose-400) 100%);
-    color: white;
+    color: var(--white);
     box-shadow: 0 4px 16px rgba(244, 63, 94, 0.3);
 }
 

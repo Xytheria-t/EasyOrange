@@ -105,6 +105,35 @@ body {
     }
 }
 
+/* ============ FOCUS & MOTION BASELINE ============ */
+/* 键盘可达性基线：Tab 聚焦一律可见（页面自有 :focus-visible 样式特异性更高，自然覆盖） */
+:focus-visible {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
+}
+
+/* 鼠标/触摸点击不画焦点环 */
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        /* biome-ignore lint/complexity/noImportantStyles: 无障碍兜底必须压过所有特异性的动画声明 */
+        animation-duration: 0.01ms !important;
+        /* biome-ignore lint/complexity/noImportantStyles: 同上 */
+        animation-iteration-count: 1 !important;
+        /* biome-ignore lint/complexity/noImportantStyles: 同上 */
+        transition-duration: 0.01ms !important;
+    }
+}
+
 /* ============ SCROLL PROGRESS BAR ============ */
 .scroll-progress-container {
     --progress: 0%;

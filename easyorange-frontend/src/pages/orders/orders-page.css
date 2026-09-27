@@ -22,9 +22,9 @@
     position: absolute;
     inset: -2rem;
     background:
-        radial-gradient(ellipse 80% 60% at 20% 30%, rgba(249, 115, 22, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 80% 60% at 20% 30%, var(--primary-alpha-2) 0%, transparent 60%),
         radial-gradient(ellipse 60% 80% at 80% 70%, rgba(195, 155, 211, 0.06) 0%, transparent 55%),
-        radial-gradient(ellipse 50% 50% at 50% 50%, rgba(251, 113, 133, 0.04) 0%, transparent 60%);
+        radial-gradient(ellipse 50% 50% at 50% 50%, var(--rose-alpha-1) 0%, transparent 60%);
     pointer-events: none;
     animation: heroBgFloat 12s ease-in-out infinite;
 }
@@ -124,7 +124,7 @@
     color: var(--text-tertiary);
     background: transparent;
     border: none;
-    transition: all 0.35s var(--ease-spring);
+    transition: all var(--transition-fast);
     position: relative;
     white-space: nowrap;
     font-family: var(--font-sans);
@@ -132,7 +132,11 @@
 
 .orders-tab-item:hover {
     color: var(--text-secondary);
-    background: rgba(249, 115, 22, 0.04);
+    background: var(--primary-alpha-1);
+}
+
+.orders-tab-item:active {
+    transform: scale(0.98);
 }
 
 .orders-tab-active {
@@ -141,7 +145,7 @@
     font-weight: 600;
     box-shadow:
         var(--shadow-md),
-        0 0 0 1px rgba(249, 115, 22, 0.08);
+        0 0 0 1px var(--primary-alpha-2);
 }
 
 .orders-tab-active:hover {
@@ -151,7 +155,7 @@
 
 .orders-tab-icon {
     opacity: 0.6;
-    transition: opacity 0.3s;
+    transition: opacity var(--transition-fast);
 }
 
 .orders-tab-active .orders-tab-icon {
@@ -253,15 +257,19 @@
     font-weight: 600;
     font-size: 0.875rem;
     border: none;
-    transition: all var(--transition-normal);
-    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 12px var(--primary-alpha-5);
     height: auto;
     min-height: unset;
 }
 
 .orders-error-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(249, 115, 22, 0.4);
+    box-shadow: 0 8px 20px var(--primary-alpha-5);
+}
+
+.orders-error-btn:active {
+    transform: translateY(1px);
 }
 
 /* Empty State - Premium */
@@ -291,7 +299,7 @@
 .orders-empty-orb-1 {
     width: 100px;
     height: 100px;
-    background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--primary-alpha-3) 0%, transparent 70%);
     top: 0;
     left: 0;
 }
@@ -351,8 +359,8 @@
     font-weight: 600;
     font-size: 0.9375rem;
     border: none;
-    transition: all var(--transition-normal);
-    box-shadow: 0 4px 16px rgba(249, 115, 22, 0.35);
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 16px var(--primary-alpha-5);
     position: relative;
     overflow: hidden;
     height: auto;
@@ -377,6 +385,10 @@
     box-shadow: 0 8px 24px rgba(249, 115, 22, 0.45);
 }
 
+.orders-empty-cta:active {
+    transform: translateY(1px);
+}
+
 /* Order List */
 .orders-list-premium {
     display: flex;
@@ -395,7 +407,7 @@
     box-shadow: var(--shadow-sm);
     padding: 1.125rem 1.25rem;
     cursor: pointer;
-    transition: all 0.4s var(--ease-out);
+    transition: all var(--transition-normal);
     overflow: hidden;
     animation: cardSlideIn 0.6s var(--ease-out) both;
 }
@@ -415,7 +427,7 @@
     transform: translateY(-4px);
     box-shadow:
         var(--shadow-lg),
-        0 0 0 1px rgba(249, 115, 22, 0.06);
+        0 0 0 1px var(--primary-alpha-1);
     border-color: rgba(255, 255, 255, 0.9);
 }
 
@@ -467,7 +479,7 @@
     font-weight: 600;
     border: 1px solid;
     letter-spacing: 0.02em;
-    transition: all 0.3s var(--ease-out);
+    transition: all var(--transition-fast);
 }
 
 .order-card-status-dot {
@@ -511,7 +523,7 @@
     border-radius: calc(var(--radius-lg) + 4px);
     background: var(--gradient-warm);
     opacity: 0;
-    transition: opacity 0.4s;
+    transition: opacity var(--transition-normal);
     z-index: 0;
 }
 
@@ -526,7 +538,7 @@
     height: 100%;
     object-fit: cover;
     border-radius: var(--radius-lg);
-    transition: transform 0.5s var(--ease-out);
+    transition: transform var(--transition-normal);
 }
 
 .order-card-premium:hover .order-card-image-premium {
@@ -597,7 +609,7 @@
 .order-card-arrow-premium {
     color: var(--gray-300);
     flex-shrink: 0;
-    transition: all 0.3s var(--ease-out);
+    transition: all var(--transition-fast);
 }
 
 .order-card-premium:hover .order-card-arrow-premium {
@@ -636,8 +648,8 @@
     font-size: 0.75rem;
     font-weight: 600;
     border: none;
-    transition: all 0.35s var(--ease-spring);
-    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+    transition: all var(--transition-fast);
+    box-shadow: 0 2px 8px var(--primary-alpha-5);
     position: relative;
     overflow: hidden;
     height: auto;
@@ -659,7 +671,7 @@
 
 .order-btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4);
+    box-shadow: 0 4px 14px var(--primary-alpha-5);
 }
 
 .order-btn-primary:active {
@@ -681,7 +693,7 @@
     font-size: 0.75rem;
     font-weight: 500;
     border: 1px solid var(--border-medium);
-    transition: all 0.3s var(--ease-out);
+    transition: all var(--transition-fast);
     height: auto;
     min-height: unset;
 }

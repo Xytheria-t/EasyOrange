@@ -248,11 +248,15 @@
     font-weight: 600;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: background 0.15s var(--ease-out);
+    transition: background var(--transition-fast);
 }
 
 .playground-think__head:hover {
     background: var(--primary-soft-bg);
+}
+
+.playground-think__head:active {
+    transform: scale(0.98);
 }
 
 .playground-think__head:focus-visible {
@@ -267,7 +271,7 @@
 
 .playground-think__chevron {
     margin-left: auto;
-    transition: transform 0.2s var(--ease-out);
+    transition: transform var(--transition-fast);
 }
 
 .playground-think__head[aria-expanded="true"] .playground-think__chevron {
@@ -416,7 +420,7 @@
 .playground-msg--assistant .playground-msg__bubble {
     background: var(--glass-bg-heavy);
     border: 1px solid var(--border-light);
-    border-top-left-radius: 4px;
+    border-top-left-radius: var(--radius-xs);
     box-shadow: var(--shadow-xs);
 }
 
@@ -424,7 +428,7 @@
 .playground-msg--user .playground-msg__bubble {
     background: var(--primary-700);
     color: var(--white);
-    border-top-right-radius: 4px;
+    border-top-right-radius: var(--radius-xs);
     box-shadow: 0 6px 18px var(--primary-glow);
 }
 
@@ -460,7 +464,7 @@
     gap: 0.4rem;
     margin-top: 0.5rem;
     padding: 0.45rem 0.6rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--error-soft-border);
     background: var(--status-error-bg);
     color: var(--status-error);
@@ -479,16 +483,20 @@
     margin-left: auto;
     padding: 0.2rem 0.5rem;
     border: 1px solid currentColor;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: inherit;
     font-size: 0.75rem;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background var(--transition-fast);
 }
 
 .playground-msg__retry:hover {
     background: var(--status-error-bg);
+}
+
+.playground-msg__retry:active {
+    transform: scale(0.98);
 }
 
 .playground-msg__retry:focus-visible {
@@ -570,6 +578,10 @@
     transform: translateY(-1px);
 }
 
+.playground-msg__feedback-btn:active {
+    transform: translateY(1px);
+}
+
 .playground-msg__feedback-btn.is-active {
     color: var(--primary-600);
     background: var(--primary-soft-bg);
@@ -617,6 +629,10 @@
     color: var(--primary-600);
     background: var(--glass-bg-heavy);
     box-shadow: var(--shadow-lg);
+}
+
+.playground__suggestion:active {
+    transform: translateY(1px);
 }
 
 .playground__suggestion:hover svg {

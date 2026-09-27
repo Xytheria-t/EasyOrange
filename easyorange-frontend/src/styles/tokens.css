@@ -50,6 +50,14 @@
     /* Matcha Green for freshness */
     --emerald-400: #34d399;
     --emerald-500: #10b981;
+    --emerald-600: var(--status-success);
+
+    /* AI 功能区 / 特色卡装饰色（低频，按需取用） */
+    --indigo-500: #6366f1;
+    --pink-50: #fdf2f8;
+    --pink-500: #ec4899;
+    --cyan-50: #ecfeff;
+    --cyan-500: #06b6d4;
 
     /* Plum Purple - Unified with purple palette */
     --plum-400: var(--purple-400);
@@ -147,8 +155,8 @@
     --glass-blur-heavy: blur(48px);
 
     /*
-     * 低频 alpha 效果令牌 —— 只给「无法映射到上面任何一档」的柔和底/描边/光晕用，
-     * 不建 alpha 色阶（12 档 rgba 是负担而不是系统）。新页面要这类色先来这里找。
+     * 低频 alpha 效果令牌 —— 只给「能说清用途」的柔和底/描边/光晕用。
+     * 新页面要这类色先来这里找。
      */
     --primary-soft-bg: rgba(249, 115, 22, 0.07);
     --primary-soft-border: rgba(249, 115, 22, 0.16);
@@ -156,6 +164,18 @@
     --primary-glow: rgba(249, 115, 22, 0.28);
     --success-soft-border: rgba(16, 185, 129, 0.15);
     --error-soft-border: rgba(244, 63, 94, 0.18);
+
+    /*
+     * 品牌色 alpha 收敛档 —— 散落的 rgba(249,115,22,x) / rgba(251,113,133,x)
+     * 一律就近映射到这里，不再散写 rgba。档内差 ≤0.03 不可辨。
+     */
+    --primary-alpha-1: rgba(249, 115, 22, 0.05);
+    --primary-alpha-2: rgba(249, 115, 22, 0.08);
+    --primary-alpha-3: rgba(249, 115, 22, 0.13);
+    --primary-alpha-4: rgba(249, 115, 22, 0.2);
+    --primary-alpha-5: rgba(249, 115, 22, 0.32);
+    --rose-alpha-1: rgba(251, 113, 133, 0.08);
+    --rose-alpha-2: rgba(251, 113, 133, 0.16);
 
     /* ============================================================
        GRADIENTS - Orange-Pink Diffusion Theme
