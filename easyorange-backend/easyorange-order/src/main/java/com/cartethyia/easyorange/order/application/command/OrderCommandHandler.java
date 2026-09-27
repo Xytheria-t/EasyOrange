@@ -23,6 +23,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.BiPredicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -105,7 +106,6 @@ public class OrderCommandHandler {
         // 准备订单项数据（含资产存在/在线/库存/同资产方校验）
         OrderItemPreparer.PreparationResult preparation = itemPreparer.prepareOrderItems(command.items());
 
-        // 创建订单聚合根（通过 spec record 收敛 7 个参数）
         Transition<Order, OrderCreatedEvent> result = Order.createOrder(new OrderCreateSpec(
                 OrderId.of(idGenerator.generateId()),
                 UserId.of(buyerId),
@@ -115,16 +115,14 @@ public class OrderCommandHandler {
                 Phone.of(command.phone()),
                 command.remark()));
 
-        // 保存并发布事件
         orderRepository.save(result.aggregate());
         domainEventPublisher.publish(result.event());
 
-        // 同步扣减库存（同一事务，失败时随事务整体回滚）；订单 ID 即库存流水的幂等键
+        // 订单 ID 即库存流水的幂等键：事件重投 / 重试不会二次扣减
         for (var item : command.items()) {
             productInventoryPort.decreaseStock(result.event().orderId(), item.productId(), item.quantity());
         }
 
-        // 创建支付（同一事务，失败时随事务整体回滚）
         createPayment(result.event(), command);
         // 买家/卖家订单列表缓存提交后再失效，避免提交前失效被并发读以旧数据重新填充
         orderCacheEvictor.evictOrderCacheAfterCommit(result.aggregate());
@@ -133,9 +131,6 @@ public class OrderCommandHandler {
                 result.aggregate().id().value(), result.aggregate().orderNo().value());
     }
 
-    /**
-     * 解析地址：如果未指定则返回默认值。
-     */
     private static String resolveAddress(CreateOrderCommand command) {
         return StringUtils.hasText(command.address()) ? command.address() : OrderConstant.DEFAULT_ADDRESS;
     }
@@ -171,7 +166,7 @@ public class OrderCommandHandler {
      * 保证订单状态与支付单状态联动一致。本方法无本地写，不开事务，避免事务跨支付流程。
      */
     public void payOrder(String userId, PayOrderCommand command) {
-        var aggregate = validateBuyer(userId, command.orderId());
+        var aggregate = validateParticipant(userId, command.orderId(), Order::isBuyer);
         BizRequire.requireTrue(aggregate.canPay(), OrderResultCode.ORDER_STATUS_ERROR);
         paymentGatewayPort.pay(command.orderId());
     }
@@ -209,28 +204,28 @@ public class OrderCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void cancelOrder(String userId, CancelOrderCommand command) {
-        var aggregate = validateBuyer(userId, command.orderId());
+        var aggregate = validateParticipant(userId, command.orderId(), Order::isBuyer);
         var result = aggregate.cancel(command.reason(), LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void shipOrder(String userId, ShipOrderCommand command) {
-        var aggregate = validateSeller(userId, command.orderId());
+        var aggregate = validateParticipant(userId, command.orderId(), Order::isSeller);
         var result = aggregate.ship(LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void confirmReceipt(String userId, ConfirmReceiptCommand command) {
-        var aggregate = validateBuyer(userId, command.orderId());
+        var aggregate = validateParticipant(userId, command.orderId(), Order::isBuyer);
         var result = aggregate.confirmReceipt(LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void refundOrder(String userId, RefundOrderCommand command) {
-        var aggregate = validateBuyer(userId, command.orderId());
+        var aggregate = validateParticipant(userId, command.orderId(), Order::isBuyer);
         var result = aggregate.refund(command.reason(), LocalDateTime.now());
         persistAndPublish(aggregate, result);
     }
@@ -241,15 +236,10 @@ public class OrderCommandHandler {
         orderCacheEvictor.evictOrderCacheAfterCommit(oldAggregate);
     }
 
-    private Order validateBuyer(String userId, String orderId) {
+    /** 买家 / 卖家身份校验同走这一道守卫，只差角色谓词；越权一律 ORDER_NOT_OWNER 不泄露他人订单存在性。 */
+    private Order validateParticipant(String userId, String orderId, BiPredicate<Order, String> isRole) {
         var aggregate = findOrder(orderId);
-        BizRequire.requireTrue(aggregate.isBuyer(userId), OrderResultCode.ORDER_NOT_OWNER);
-        return aggregate;
-    }
-
-    private Order validateSeller(String userId, String orderId) {
-        var aggregate = findOrder(orderId);
-        BizRequire.requireTrue(aggregate.isSeller(userId), OrderResultCode.ORDER_NOT_OWNER);
+        BizRequire.requireTrue(isRole.test(aggregate, userId), OrderResultCode.ORDER_NOT_OWNER);
         return aggregate;
     }
 

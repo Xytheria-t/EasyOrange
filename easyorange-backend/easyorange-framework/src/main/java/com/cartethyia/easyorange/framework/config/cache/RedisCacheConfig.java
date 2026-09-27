@@ -22,7 +22,7 @@ import org.springframework.data.redis.serializer.RedisSerializationContext.Seria
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
- * Redis 缓存配置 — Spring Cache 注解式 + Redis 单层（替代已移除的手写多级缓存）。
+ * Redis 缓存配置 — Spring Cache 注解式 + Redis 单层。
  * 进程内本地缓存（如图片处理）见 {@link ImageProcessCacheConfig}。
  * <p>
  * 设计要点：
@@ -74,7 +74,7 @@ public class RedisCacheConfig implements CachingConfigurer {
 
     /**
      * 缓存故障 fail-open — Redis 异常统一吞掉并降级（读 → 直查 DB；写 → 放弃本次缓存），
-     * 与旧 {@code MultiLevelCache} 的逐点 try-catch 语义一致，但集中一处、注解侧零改动。
+     * 集中一处、注解侧零改动。
      */
     @Override
     public CacheErrorHandler errorHandler() {
