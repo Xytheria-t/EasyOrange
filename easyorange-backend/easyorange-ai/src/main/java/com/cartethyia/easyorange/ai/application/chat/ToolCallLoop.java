@@ -1,12 +1,7 @@
 package com.cartethyia.easyorange.ai.application.chat;
 
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
-import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
-import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
-import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepTrace;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
@@ -15,10 +10,8 @@ import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
 import com.cartethyia.easyorange.ai.domain.port.AgentTracePort;
-import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
-import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,12 +21,9 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * 多步工具调用循环（ReAct）— 逐轮「决策 → 工具 → 观察」推进，直到模型判定信息足够（finish）。
@@ -83,45 +73,30 @@ public class ToolCallLoop {
      */
     public static final String MACHINE_SUBJECT = "machine";
 
-    private final AiModelSupport aiModelSupport;
-    private final AiModelRouter modelRouter;
     private final PromptRegistry promptRegistry;
-    private final KnowledgeRetrievalAppService retrievalService;
-    private final AssetSourcingAppService assetSourcingService;
-    private final AssetDetailPort assetDetailPort;
+    private final AgentToolsFactory toolsFactory;
+    private final ToolCallDecider decider;
     private final AgentTracePort tracePort;
-    private final UserPreferenceRepository preferenceRepository;
     private final ChatBudgetGuard budgetGuard;
     private final AiProperties aiProperties;
-    private final ObjectMapper objectMapper;
     private final IdGenerator idGenerator;
     private final ToolCallLoopMetrics metrics;
 
     public ToolCallLoop(
-            AiModelSupport aiModelSupport,
-            AiModelRouter modelRouter,
             PromptRegistry promptRegistry,
-            KnowledgeRetrievalAppService retrievalService,
-            AssetSourcingAppService assetSourcingService,
-            AssetDetailPort assetDetailPort,
+            AgentToolsFactory toolsFactory,
+            ToolCallDecider decider,
             AgentTracePort tracePort,
-            UserPreferenceRepository preferenceRepository,
             ChatBudgetGuard budgetGuard,
             AiProperties aiProperties,
-            ObjectMapper objectMapper,
             IdGenerator idGenerator,
             ToolCallLoopMetrics metrics) {
-        this.aiModelSupport = aiModelSupport;
-        this.modelRouter = modelRouter;
         this.promptRegistry = promptRegistry;
-        this.retrievalService = retrievalService;
-        this.assetSourcingService = assetSourcingService;
-        this.assetDetailPort = assetDetailPort;
+        this.toolsFactory = toolsFactory;
+        this.decider = decider;
         this.tracePort = tracePort;
-        this.preferenceRepository = preferenceRepository;
         this.budgetGuard = budgetGuard;
         this.aiProperties = aiProperties;
-        this.objectMapper = objectMapper;
         this.idGenerator = idGenerator;
         this.metrics = metrics;
     }
@@ -169,7 +144,7 @@ public class ToolCallLoop {
 
     private Result executeLoop(Input input) {
         String traceId = idGenerator.generateId();
-        var tools = agentToolsFor(input);
+        var tools = toolsFactory.create(attributedUserId(input));
         var dispatcher = ToolDispatcher.of(tools);
         var messages = new DecisionMessages(promptRegistry.require(CHAT_TOOL_PROMPT), firstUserMessage(input));
         var toolPath = new ArrayList<String>();
@@ -184,7 +159,8 @@ public class ToolCallLoop {
                         rounds);
                 return toResult(tools, ToolCallLoopOutcome.BUDGET, rounds, toolPath);
             }
-            List<ToolCallDecision> decisions = decideToolCalls(input, messages.snapshot(), dispatcher.callbacks());
+            List<ToolCallDecision> decisions =
+                    decider.decide(input.sessionId(), messages.snapshot(), dispatcher.callbacks());
             if (decisions.isEmpty()) {
                 // 识别不出检索需求时仍补一次：最坏是多几条不相关片段，好过把检索链路失效伪装成「无需检索」
                 try {
@@ -213,12 +189,6 @@ public class ToolCallLoop {
         return toResult(tools, ToolCallLoopOutcome.STEP_LIMIT, rounds, toolPath);
     }
 
-    /** 按请求装配工具实例 — 召回累加器随实例隔离（所有权在 {@link AgentTools}），出口经只读快照收取。 */
-    private AgentTools agentToolsFor(Input input) {
-        return new AgentTools(
-                retrievalService, assetSourcingService, assetDetailPort, preferenceRepository, attributedUserId(input));
-    }
-
     /** 出循环时一次性定稿：结局 + 轮数 + 工具路径 + 工具实例上已积累的召回物。 */
     private static Result toResult(AgentTools tools, ToolCallLoopOutcome outcome, int rounds, List<String> toolPath) {
         return new Result(
@@ -226,47 +196,8 @@ public class ToolCallLoop {
     }
 
     /**
-     * 取一轮的工具调用决策：工具 schema 随请求下发，模型以原生 tool calling 返回「调用哪个工具 + 参数」。
-     * 一轮可以带回多个调用，全部返回 —— 供应商侧的并行发起（规则 + 找货同问最常见）在这里省掉一整轮往返。
-     * 决策失败（调用故障 / 未返回工具调用 / 任一调用参数 JSON 不可解析）返回空列表，由调用方走单步降级
-     * —— 循环内不重试，一次请求最多一次决策故障；同轮有一个调用解析不了就整轮作废，
-     * 半执行一轮会让回填的 assistant tool_calls 与 role=tool 观察对不上（协议不合法）。
-     */
-    private List<ToolCallDecision> decideToolCalls(
-            Input input, List<Message> decisionMessages, List<ToolCallback> toolCallbacks) {
-        try {
-            List<AssistantMessage.ToolCall> toolCalls = aiModelSupport.callWithTools(
-                    modelRouter.choose("chat_tool"), AiCallScope.CHAT, decisionMessages, toolCallbacks);
-            if (toolCalls.isEmpty()) {
-                log.warn(
-                        "action=agent_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",
-                        input.sessionId());
-                return List.of();
-            }
-            var decisions = new ArrayList<ToolCallDecision>(toolCalls.size());
-            for (AssistantMessage.ToolCall toolCall : toolCalls) {
-                decisions.add(ToolCallDecision.of(
-                        objectMapper.readValue(orEmpty(toolCall.arguments()), ToolCallArguments.class), toolCall));
-            }
-            if (decisions.size() > 1) {
-                log.info(
-                        "action=agent_parallel_tool_calls, sessionId={}, count={}",
-                        input.sessionId(),
-                        decisions.size());
-            }
-            return List.copyOf(decisions);
-        } catch (Exception e) {
-            log.warn(
-                    "action=agent_decision_failed, fallback=single_step, sessionId={}, reason={}",
-                    input.sessionId(),
-                    failureReason(e));
-            return List.of();
-        }
-    }
-
-    /**
      * 执行一轮里的全部工具调用并落成观测副产物（trace 落库 / SSE step 事件 / 步级指标），再按对话协议回填。
-     * 与 {@link #decideToolCalls} 同以「这批工具调用」为宾语：轮是循环级单位（{@code round} 循环变量与
+     * 与 {@link ToolCallDecider#decide} 同以「这批工具调用」为宾语：轮是循环级单位（{@code round} 循环变量与
      * {@link RoundResult} 归它），不写进方法名 —— 否则与 {@code recordToolStep} 的「步」在名字上分不开。
      * 步序跨轮连续（{@code firstStepIndex} 进、{@link RoundResult#nextStepIndex()} 出）：一轮内的并行调用是同一个决策
      * 动作的多个工具，挤进同一个 stepIndex 会让 trace 里两个动作看起来是同一步。
@@ -342,7 +273,7 @@ public class ToolCallLoop {
                 stepIndex,
                 decision.tool(),
                 toolInput,
-                decision.args().thought(),
+                decision.parsedArguments().thought(),
                 result.observation(),
                 latencyMs,
                 result.succeeded(),
@@ -363,7 +294,7 @@ public class ToolCallLoop {
                 stepIndex,
                 finish.tool(),
                 null,
-                finish.args().thought(),
+                finish.parsedArguments().thought(),
                 null,
                 0,
                 true,
@@ -375,27 +306,7 @@ public class ToolCallLoop {
         ChatStreamHandler handler = input.handler();
         if (handler != null) {
             handler.onStep(new AgentStepView(
-                    stepIndex, decision.tool(), decision.args().thought(), observation));
-        }
-    }
-
-    /**
-     * 一次工具调用决策 — 解析出的参数视图 + 原生 tool call 的工具名与 arguments 原始串，一个来源。
-     * <p>
-     * 两个串在构造期归一化成非空：Spring AI 的 {@code chat.messages} 包标了 {@code @NullMarked}，
-     * 其 {@code ToolCall} record 的访问器在类型系统里是非空 {@code String}，但它是裸 record、不校验
-     * null，供应商回 {@code {"name": null}} 时 Jackson 照样绑进来 —— 声明非空而运行期可空，这个缺口
-     * 得我们自己收。收敛成空串而不是把 {@code @Nullable} 往下传，是为了让下游的 switch 分发、
-     * 回调表查名、trace 落库都不必各写一次判空，也免得空名在某一环被当成「合法工具名」继续流下去。
-     */
-    private record ToolCallDecision(ToolCallArguments args, String tool, String arguments, ToolCall rawToolCall) {
-
-        static ToolCallDecision of(ToolCallArguments args, ToolCall toolCall) {
-            return new ToolCallDecision(args, orEmpty(toolCall.name()), orEmpty(toolCall.arguments()), toolCall);
-        }
-
-        boolean isFinish() {
-            return AgentTools.TOOL_FINISH.equals(tool);
+                    stepIndex, decision.tool(), decision.parsedArguments().thought(), observation));
         }
     }
 
@@ -435,7 +346,7 @@ public class ToolCallLoop {
                 return new ToolResult(false, "未知工具 %s，请改用 %s".formatted(tool, TOOL_NAME_LIST));
             }
             try {
-                return new ToolResult(true, callback.call(decision.arguments()));
+                return new ToolResult(true, callback.call(decision.rawArguments()));
             } catch (Exception e) {
                 // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
                 String reason = failureReason(e.getCause() != null ? e.getCause() : e);
@@ -482,14 +393,14 @@ public class ToolCallLoop {
      * 不必再判空，否则等于让同一件事在两层各防一次。
      */
     private static String toolInputOf(ToolCallDecision decision) {
-        ToolCallArguments args = decision.args();
+        ToolCallArguments parsed = decision.parsedArguments();
         return switch (decision.tool()) {
-            case AgentTools.TOOL_PRODUCT_DETAIL -> args.productId();
+            case AgentTools.TOOL_PRODUCT_DETAIL -> parsed.productId();
             case AgentTools.TOOL_COMPARE_ASSETS ->
-                args.productIds() == null ? null : String.join("、", args.productIds());
+                parsed.productIds() == null ? null : String.join("、", parsed.productIds());
             case AgentTools.TOOL_REMEMBER_PREFERENCE ->
-                orEmpty(args.preferenceKey()) + "=" + orEmpty(args.preferenceValue());
-            default -> args.query();
+                orEmpty(parsed.preferenceKey()) + "=" + orEmpty(parsed.preferenceValue());
+            default -> parsed.query();
         };
     }
 

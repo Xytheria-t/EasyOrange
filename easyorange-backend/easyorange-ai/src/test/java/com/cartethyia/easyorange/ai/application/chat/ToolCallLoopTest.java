@@ -818,17 +818,12 @@ class ToolCallLoopTest {
 
     private ToolCallLoop newToolCallLoop() {
         return new ToolCallLoop(
-                aiModelSupport,
-                modelRouter,
                 promptRegistry,
-                retrievalService,
-                assetSourcingService,
-                assetDetailPort,
+                new AgentToolsFactory(retrievalService, assetSourcingService, assetDetailPort, preferenceRepository),
+                new ToolCallDecider(aiModelSupport, modelRouter, new ObjectMapper()),
                 tracePort,
-                preferenceRepository,
                 budgetGuard,
                 aiProperties,
-                new ObjectMapper(),
                 idGenerator,
                 new ToolCallLoopMetrics(meterRegistry));
     }
