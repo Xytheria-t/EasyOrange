@@ -7,13 +7,19 @@
 #   3. merge 冲突标记残留
 #   4. 大文件（默认 >2MB 阻断）
 #   5. 前端：仅当 src/tests 下 ts/tsx 变更时跑 biome check
-#   6. 测试口径漂移：文档/pom 变更时校验「集成测试是否存在」的声明与代码事实（*IT + failsafe 绑定）一致
-#   7. 结构计数漂移：文档/pom/迁移/源码变更时校验「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」与代码事实一致
-#   8. 上下文预算：AGENTS.md 变更时校验份数（≤3）与字符预算（根 3000 / 合计 18000）
-#   9. 跨层级重复注释：源码变更时校验「方法/行内注释没有在复述本类的类注释」
+#   6. 后端：仅当 staged 有 .java 变更时跑 spotless:check（格式门禁，实测全后端 ~2s）
+#   7. 测试口径漂移：文档/pom 变更时校验「集成测试是否存在」的声明与代码事实（*IT + failsafe 绑定）一致
+#   8. 结构计数漂移：文档/pom/迁移/源码变更时校验「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」与代码事实一致
+#   9. 上下文预算：AGENTS.md 变更时校验份数（≤3）与字符预算（根 3000 / 合计 18000）
+#  10. 跨层级重复注释：源码变更时校验「方法/行内注释没有在复述本类的类注释」
+#  11. 文档链接：*.md 变更时校验仓库内相对链接与锚点可解析
 #
 # 已摘除：版本漂移（check-version-drift.py）—— 文档不再复刻版本号，权威源只有 pom / compose；
 # 回填 doc/技术栈.md 版本表时再挂回。
+#
+# 格式门禁（spotless）原先只挂 pre-push，攒到推送才爆 —— 一批提交集中返工，且提交与推送
+# 之间的历史里已经留下不合规的中间态。palantir 格式化全后端实测 ~2s，仍在秒级快检量级内，
+# 提前到提交时付掉；pre-push 留一份兜住 SKIP 绕过与合并带进来的格式问题。
 #
 # 重门禁（构建 + 测试）在 pre-push，提交时不挡路。
 #
@@ -38,6 +44,7 @@ fi
 
 ROOT="$(git rev-parse --show-toplevel)"
 FRONTEND_DIR="$ROOT/easyorange-frontend"
+BACKEND_DIR="$ROOT/easyorange-backend"
 files=$(staged_files)
 
 # 1. 密钥扫描：gitleaks 硬门禁；未安装则 grep 仅警告（CI 仍兜底）
@@ -129,7 +136,26 @@ else
   hook_log "No frontend CSS changes, skipping frontend style drift check"
 fi
 
-# 4. 测试口径漂移：文档对「集成测试是否存在」的声明 vs 代码事实（*IT 文件 + pom 的 failsafe 绑定）
+# 4. 后端格式：staged 有 .java 变更时跑 spotless:check。唯一需要起 JVM 的检查，
+#    但格式化全后端秒级完成；spotless 只在 -Pci profile 声明，与 CI 同源，不会本地过 CI 红。
+#    例外口径：其余快检都只看 staged 内容，spotless 扫的是工作区源码 ——
+#    工作区里未暂存的格式问题同样会被报出来，报错文案已写明，不算误判。
+if echo "$files" | grep -qE '^easyorange-backend/.*\.java$'; then
+  if [[ ! -x "$BACKEND_DIR/mvnw" ]]; then
+    hook_warn "mvnw not found in $BACKEND_DIR, skipping backend format gate"
+  else
+    hook_log "后端 Java 变更 → spotless:check（格式门禁）..."
+    if (cd "$BACKEND_DIR" && ./mvnw -Pci spotless:check -q -B -ntp); then
+      hook_ok "spotless:check"
+    else
+      hook_fail "spotless:check failed — 运行 'cd easyorange-backend && ./mvnw -Pci spotless:apply' 规范化格式后重新暂存"
+    fi
+  fi
+else
+  hook_log "No backend Java changes, skipping spotless:check"
+fi
+
+# 5. 测试口径漂移：文档对「集成测试是否存在」的声明 vs 代码事实（*IT 文件 + pom 的 failsafe 绑定）
 tier_files=$(echo "$files" \
   | grep -E '\.md$|^easyorange-backend/pom\.xml$' \
   || true)
@@ -149,7 +175,7 @@ else
   hook_log "No doc/pom changes, skipping test tier drift check"
 fi
 
-# 5. 结构计数漂移：文档 / pom / 迁移脚本 / 源码变更时校验「N 模块 / N Port / N ADR /
+# 6. 结构计数漂移：文档 / pom / 迁移脚本 / 源码变更时校验「N 模块 / N Port / N ADR /
 #    N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」与代码事实一致（这几类数字无单一来源，靠人肉同步漂移过一整轮）
 if [[ -n "$tier_files" ]] || echo "$files" | grep -qE '^easyorange-backend/.*(pom\.xml|\.sql|\.java)$'; then
   if command -v python3 >/dev/null 2>&1; then
@@ -166,7 +192,7 @@ else
   hook_log "No doc/pom/migration/source changes, skipping metrics drift check"
 fi
 
-# 6. 上下文预算：AGENTS.md 变更时校验「份数 + 字符预算」——根文件每会话常驻，
+# 7. 上下文预算：AGENTS.md 变更时校验「份数 + 字符预算」——根文件每会话常驻，
 #    模块级副本不会被自动加载（ZCode 只解析工作目录向上的一个），两份都不该再长回来
 if echo "$files" | grep -qE '(^|/)AGENTS\.md$'; then
   if command -v python3 >/dev/null 2>&1; then
@@ -183,7 +209,7 @@ else
   hook_log "No AGENTS.md changes, skipping context budget check"
 fi
 
-# 7. 跨层级重复注释：源码变更时校验「方法/行内注释没有在复述本类的类注释」。
+# 8. 跨层级重复注释：源码变更时校验「方法/行内注释没有在复述本类的类注释」。
 #    AGENTS.md「注释」一节写了这条，但写进文档没人记得——比「不复述代码」隐蔽，
 #    单看行内注释通顺，只对照类注释才发现是第二遍。规则靠机器才有约束力。
 if echo "$files" | grep -qE '^easyorange-backend/.*\.java$'; then
@@ -201,7 +227,7 @@ else
   hook_log "No backend Java changes, skipping comment dup check"
 fi
 
-# 8. 文档链接：*.md 变更时校验仓库内相对链接与锚点可解析——手册间互引很密（节号
+# 9. 文档链接：*.md 变更时校验仓库内相对链接与锚点可解析——手册间互引很密（节号
 #    `NN §x` 靠人肉同步，文件名与锚点这半边可以断言），改册名 / 拆册 / 重排章号时最容易静默失效
 if echo "$files" | grep -qE '\.md$'; then
   if command -v python3 >/dev/null 2>&1; then

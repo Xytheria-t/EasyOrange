@@ -10,7 +10,10 @@
 #     src/test/resources/logback-test.xml、Flyway 迁移 SQL、.mvn/maven.config、
 #     vitest.config.ts 等同样能改变测试结果的变更，门禁会随文件类型增加而静默失效
 #   - 变更范围 = 远端基线 sha..本地 sha；新分支（远端 sha 全 0）无基线 → 全量跑
-#   - pre-commit 保持轻量，构建/测试只在推送时付一次
+#   - spotless:check 在 pre-commit 已有一份，这里保留作兜底，接住两类漏网：
+#     用 SKIP=git-hooks 绕过提交钩子、以及合并他人分支带进来的格式问题。
+#     仍排在 test 前：格式问题秒级失败，不必等完整测试跑完
+#   - pre-commit 保持轻量（编译 + 测试只在推送时付一次）
 #   - 失败统一 hook_fail 收口（含 SKIP 提示）
 #
 # 跳过方式：SKIP=git-hooks git push
