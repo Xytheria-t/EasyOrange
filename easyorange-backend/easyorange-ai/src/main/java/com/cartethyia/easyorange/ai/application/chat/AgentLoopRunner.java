@@ -206,6 +206,11 @@ public class AgentLoopRunner {
                 return toResult(tools, LoopOutcome.FINISHED, rounds, toolPath);
             }
         }
+        log.warn(
+                "action=agent_loop_degraded, reason=step_limit, sessionId={}, rounds={}, toolPath={}",
+                input.sessionId(),
+                rounds,
+                String.join(",", toolPath));
         return toResult(tools, LoopOutcome.STEP_LIMIT, rounds, toolPath);
     }
 
