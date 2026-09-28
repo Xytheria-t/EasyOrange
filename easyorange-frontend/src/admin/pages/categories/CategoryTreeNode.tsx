@@ -1,6 +1,6 @@
 import { ChevronRight, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { CategoryTreeResponse } from '../../types/admin';
+import type { CategoryResponse } from '../../types/admin';
 
 // 索引按 depth 取：depth=0 是一级。
 // 此前写成 ['', '一级', ...] 再用 levelLabels[depth]，一级落到 L1、二级显示「一级」，整体错位一级。
@@ -13,13 +13,13 @@ const LEVEL_TONES = [
 ];
 
 interface CategoryTreeNodeProps {
-    node: CategoryTreeResponse;
+    node: CategoryResponse;
     depth: number;
     expandedIds: Set<string>;
     onToggleExpand: (id: string) => void;
-    onEdit: (node: CategoryTreeResponse) => void;
+    onEdit: (node: CategoryResponse) => void;
     onToggleStatus: (id: string, currentStatus: number) => void;
-    onDelete: (node: CategoryTreeResponse) => void;
+    onDelete: (node: CategoryResponse) => void;
     /** 正在切换状态的分类 id。全局 pending 会让整棵树一起变灰，改为按行反馈。 */
     updatingStatusId: string | null;
 }
@@ -35,9 +35,9 @@ export function CategoryTreeNode({
     updatingStatusId,
 }: CategoryTreeNodeProps) {
     const hasChildren = Boolean(node.children?.length);
-    const isExpanded = expandedIds.has(node.categoryId);
+    const isExpanded = expandedIds.has(node.id);
     const isEnabled = node.status === 1;
-    const isRowUpdating = updatingStatusId === node.categoryId;
+    const isRowUpdating = updatingStatusId === node.id;
     const tone = LEVEL_TONES[Math.min(depth, LEVEL_TONES.length - 1)];
 
     return (
@@ -47,7 +47,7 @@ export function CategoryTreeNode({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    onClick={() => onToggleExpand(node.categoryId)}
+                    onClick={() => onToggleExpand(node.id)}
                     className="admin-icon-button"
                     style={{
                         width: 24,
@@ -122,7 +122,7 @@ export function CategoryTreeNode({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        onClick={() => onToggleStatus(node.categoryId, node.status)}
+                        onClick={() => onToggleStatus(node.id, node.status)}
                         disabled={isRowUpdating}
                         className="admin-icon-button h-auto min-h-0"
                         style={{ color: isEnabled ? 'var(--warning)' : 'var(--status-success)' }}
@@ -163,7 +163,7 @@ export function CategoryTreeNode({
                 <div>
                     {node.children?.map(child => (
                         <CategoryTreeNode
-                            key={child.categoryId}
+                            key={child.id}
                             node={child}
                             depth={depth + 1}
                             expandedIds={expandedIds}

@@ -15,7 +15,7 @@ import {
     useUpdateCategoryStatus,
 } from '../../hooks';
 import { notify } from '../../notify';
-import type { CategoryCreateRequest, CategoryTreeResponse, CategoryUpdateRequest } from '../../types/admin';
+import type { CategoryCreateRequest, CategoryResponse, CategoryUpdateRequest } from '../../types/admin';
 import { CategoryTreeNode } from './CategoryTreeNode';
 
 type SortField = 'name' | 'sortOrder';
@@ -33,16 +33,16 @@ const SORT_FIELD_OPTIONS = [
 ];
 
 /** 压平分类树，同时记下每个节点的父级 id。 */
-function flatten(nodes: CategoryTreeResponse[]) {
-    const flat: CategoryTreeResponse[] = [];
+function flatten(nodes: CategoryResponse[]) {
+    const flat: CategoryResponse[] = [];
     const parentIdById = new Map<string, string | null>();
 
-    const walk = (list: CategoryTreeResponse[], parentId: string | null) => {
+    const walk = (list: CategoryResponse[], parentId: string | null) => {
         for (const node of list) {
             flat.push(node);
-            parentIdById.set(node.categoryId, parentId);
+            parentIdById.set(node.id, parentId);
             if (node.children?.length) {
-                walk(node.children, node.categoryId);
+                walk(node.children, node.id);
             }
         }
     };
@@ -80,7 +80,7 @@ export default function CategoryManagePage() {
     const [editStatus, setEditStatus] = useState(1);
 
     // Delete confirm
-    const [deleteTarget, setDeleteTarget] = useState<CategoryTreeResponse | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<CategoryResponse | null>(null);
 
     const toggleExpand = useCallback((id: string) => {
         setExpandedIds(prev => {
@@ -101,13 +101,13 @@ export default function CategoryManagePage() {
             return [];
         }
 
-        const filterNode = (node: CategoryTreeResponse): CategoryTreeResponse | null => {
+        const filterNode = (node: CategoryResponse): CategoryResponse | null => {
             const matchStatus = !statusFilter || node.status === Number(statusFilter);
             const matchSearch = !searchInput || node.name.toLowerCase().includes(searchInput.toLowerCase());
             const selfMatch = matchStatus && matchSearch;
 
             const filteredChildren =
-                node.children?.map(filterNode).filter((n): n is CategoryTreeResponse => n !== null) ?? [];
+                node.children?.map(filterNode).filter((n): n is CategoryResponse => n !== null) ?? [];
 
             if (!selfMatch && filteredChildren.length === 0) {
                 return null;
@@ -115,7 +115,7 @@ export default function CategoryManagePage() {
             return { ...node, children: filteredChildren };
         };
 
-        const sortNodes = (nodes: CategoryTreeResponse[]): CategoryTreeResponse[] =>
+        const sortNodes = (nodes: CategoryResponse[]): CategoryResponse[] =>
             [...nodes]
                 .sort((a, b) => {
                     const cmp = sortField === 'name' ? a.name.localeCompare(b.name) : a.sortOrder - b.sortOrder;
@@ -123,12 +123,12 @@ export default function CategoryManagePage() {
                 })
                 .map(n => ({ ...n, children: n.children ? sortNodes(n.children) : [] }));
 
-        return sortNodes(treeData.map(filterNode).filter((n): n is CategoryTreeResponse => n !== null));
+        return sortNodes(treeData.map(filterNode).filter((n): n is CategoryResponse => n !== null));
     }, [treeData, statusFilter, searchInput, sortField, sortDir]);
 
     const filteredCount = useMemo(() => {
         let count = 0;
-        const walk = (nodes: CategoryTreeResponse[]) => {
+        const walk = (nodes: CategoryResponse[]) => {
             for (const node of nodes) {
                 count += 1;
                 if (node.children?.length) {
@@ -200,7 +200,7 @@ export default function CategoryManagePage() {
             return;
         }
         try {
-            await deleteMutation.mutateAsync(deleteTarget.categoryId);
+            await deleteMutation.mutateAsync(deleteTarget.id);
             notify.success(`已删除分类「${deleteTarget.name}」`);
             setDeleteTarget(null);
         } catch (e) {
@@ -210,13 +210,13 @@ export default function CategoryManagePage() {
     }, [deleteTarget, deleteMutation]);
 
     const openEdit = useCallback(
-        (node: CategoryTreeResponse) => {
-            setEditId(node.categoryId);
+        (node: CategoryResponse) => {
+            setEditId(node.id);
             setEditName(node.name);
             setEditSortOrder(node.sortOrder);
             setEditStatus(node.status);
             // 此前固定写 undefined：编辑任何子分类都会被当成一级分类保存
-            setEditParentId(parentIdById.get(node.categoryId) ?? undefined);
+            setEditParentId(parentIdById.get(node.id) ?? undefined);
             setEditOpen(true);
         },
         [parentIdById]
@@ -226,7 +226,7 @@ export default function CategoryManagePage() {
         () => [
             { value: '', label: '无（一级分类）' },
             ...allCategories.map(cat => ({
-                value: String(cat.categoryId),
+                value: String(cat.id),
                 label: `${'— '.repeat(cat.level || 0)}${cat.name}`,
             })),
         ],
@@ -393,7 +393,7 @@ export default function CategoryManagePage() {
                         <div>
                             {filteredTree.map(node => (
                                 <CategoryTreeNode
-                                    key={node.categoryId}
+                                    key={node.id}
                                     node={node}
                                     depth={0}
                                     expandedIds={expandedIds}

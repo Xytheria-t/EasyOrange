@@ -14,7 +14,6 @@ import type {
     BatchAuditResultResponse,
     CategoryCreateRequest,
     CategoryResponse,
-    CategoryTreeResponse,
     CategoryUpdateRequest,
     CreateKnowledgeDocRequest,
     DashboardStats,
@@ -200,8 +199,9 @@ export const adminApi = {
         return { ...res, data: (res.data ?? []).map(row => coerceCounts(row, ['productCount'])) };
     },
 
+    /** 树与列表同一个 DTO，只有 children 不同 */
     getCategoryTree() {
-        return request<CategoryTreeResponse[]>(`${ADMIN_API_PREFIX}/categories/tree`);
+        return request<CategoryResponse[]>(`${ADMIN_API_PREFIX}/categories/tree`);
     },
 
     createCategory(data: CategoryCreateRequest) {
