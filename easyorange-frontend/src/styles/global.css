@@ -177,7 +177,7 @@ body {
     left: 0;
     height: 100%;
     width: 100%;
-    background: linear-gradient(90deg, #f97316 0%, #fb7185 50%, #c39bd3 100%);
+    background: linear-gradient(90deg, var(--primary-500) 0%, var(--rose-400) 50%, var(--purple-400) 100%);
     border-radius: 0 2px 2px 0;
     transform: scaleX(calc(var(--progress) / 100));
     transform-origin: left;
@@ -222,7 +222,7 @@ body {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f97316, #fb7185);
+    background: linear-gradient(135deg, var(--primary-500), var(--rose-400));
     box-shadow:
         0 0 8px rgba(249, 115, 22, 0.5),
         0 0 20px rgba(249, 115, 22, 0.2);

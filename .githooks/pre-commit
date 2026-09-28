@@ -110,6 +110,24 @@ else
   hook_log "No admin TS changes, skipping admin style drift check"
 fi
 
+# 3.6 C 端样式漂移：页面 CSS 出现白名单外的裸色值，或引用未定义且无 fallback 的
+#      CSS 变量（悬空 var() 静默失效，不报错）——视觉取值走 styles/tokens.css 令牌。
+#      2026-09 全站收口约 600 处裸色值 + 10 处悬空引用后上锁；admin 侧归 check-admin-style-drift.py
+if echo "$files" | grep -qE '^easyorange-frontend/src/.*\.css$'; then
+  if command -v python3 >/dev/null 2>&1; then
+    hook_log "前端 CSS 变更 → 校验样式取值是否走 tokens.css 令牌..."
+    if python3 "$SCRIPT_DIR/check-frontend-style-drift.py" --staged; then
+      hook_ok "frontend style drift check"
+    else
+      hook_fail "C 端出现白名单外裸色值 / 悬空变量引用（见上方输出；SKIP=git-hooks 可跳过）"
+    fi
+  else
+    hook_warn "python3 not found, skipping frontend style drift check"
+  fi
+else
+  hook_log "No frontend CSS changes, skipping frontend style drift check"
+fi
+
 # 4. 测试口径漂移：文档对「集成测试是否存在」的声明 vs 代码事实（*IT 文件 + pom 的 failsafe 绑定）
 tier_files=$(echo "$files" \
   | grep -E '\.md$|^easyorange-backend/pom\.xml$' \
