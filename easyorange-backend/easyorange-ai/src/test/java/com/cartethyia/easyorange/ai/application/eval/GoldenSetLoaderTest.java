@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.cartethyia.easyorange.ai.application.chat.AgentTools;
+import com.cartethyia.easyorange.ai.application.chat.ChatTools;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSet;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSetCase;
 import java.util.List;
@@ -121,7 +121,7 @@ class GoldenSetLoaderTest {
                 .toList();
         assertThat(annotated).as("路由评估要有足够的标注用例才量得准").hasSizeGreaterThanOrEqualTo(15);
         for (GoldenSetCase c : annotated) {
-            assertThat(c.expectedTools()).allMatch(AgentTools.TOOL_NAMES::contains);
+            assertThat(c.expectedTools()).allMatch(ChatTools.TOOL_NAMES::contains);
             assertThat(GoldenSetLoader.SCOPE_CHAT).as("只有 chat 用例会跑工具循环").isEqualTo(c.scope());
         }
     }
@@ -134,11 +134,11 @@ class GoldenSetLoaderTest {
         var annotated = goldenSet.cases().stream()
                 .filter(c -> !c.expectedTools().isEmpty())
                 .toList();
-        assertThat(annotated).anyMatch(c -> c.expectedTools().contains(AgentTools.TOOL_FINISH));
-        assertThat(annotated).anyMatch(c -> c.expectedTools().contains(AgentTools.TOOL_KNOWLEDGE_SEARCH));
+        assertThat(annotated).anyMatch(c -> c.expectedTools().contains(ChatTools.TOOL_FINISH));
+        assertThat(annotated).anyMatch(c -> c.expectedTools().contains(ChatTools.TOOL_KNOWLEDGE_SEARCH));
         // 只标一种路由的评测集量不出「该不该检索」这个判断 —— 那正是最容易错的一步
         assertThat(annotated)
-                .filteredOn(c -> c.expectedTools().equals(List.of(AgentTools.TOOL_FINISH)))
+                .filteredOn(c -> c.expectedTools().equals(List.of(ChatTools.TOOL_FINISH)))
                 .hasSizeGreaterThanOrEqualTo(5);
     }
 

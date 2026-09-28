@@ -6,8 +6,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.chat.AgentTools;
 import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
+import com.cartethyia.easyorange.ai.application.chat.ChatTools;
 import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop;
 import com.cartethyia.easyorange.ai.application.chat.ToolCallLoopOutcome;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
@@ -156,10 +156,10 @@ class GoldenSetEvaluatorTest {
         when(loader.load())
                 .thenReturn(new GoldenSet(List.of(
                         new GoldenSetCase(
-                                "chat-001", "chat", "怎么退款", "参考", List.of(), List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH)),
-                        new GoldenSetCase("chat-011", "chat", "在吗", "参考", List.of(), List.of(AgentTools.TOOL_FINISH)),
+                                "chat-001", "chat", "怎么退款", "参考", List.of(), List.of(ChatTools.TOOL_KNOWLEDGE_SEARCH)),
+                        new GoldenSetCase("chat-011", "chat", "在吗", "参考", List.of(), List.of(ChatTools.TOOL_FINISH)),
                         new GoldenSetCase("chat-016", "chat", "推荐什么数码", "参考", List.of(), List.of()))));
-        when(toolCallLoop.run(any())).thenReturn(loopResult(AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_FINISH));
+        when(toolCallLoop.run(any())).thenReturn(loopResult(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_FINISH));
 
         RoutingReport report = evaluator.evaluateRouting();
 
@@ -176,10 +176,9 @@ class GoldenSetEvaluatorTest {
         when(loader.load())
                 .thenReturn(new GoldenSet(List.of(
                         new GoldenSetCase(
-                                "chat-001", "chat", "怎么退款", "参考", List.of(), List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH)),
-                        new GoldenSetCase(
-                                "chat-011", "chat", "在吗", "参考", List.of(), List.of(AgentTools.TOOL_FINISH)))));
-        when(toolCallLoop.run(any())).thenReturn(loopResult(AgentTools.TOOL_PRODUCT_SEARCH, AgentTools.TOOL_FINISH));
+                                "chat-001", "chat", "怎么退款", "参考", List.of(), List.of(ChatTools.TOOL_KNOWLEDGE_SEARCH)),
+                        new GoldenSetCase("chat-011", "chat", "在吗", "参考", List.of(), List.of(ChatTools.TOOL_FINISH)))));
+        when(toolCallLoop.run(any())).thenReturn(loopResult(ChatTools.TOOL_PRODUCT_SEARCH, ChatTools.TOOL_FINISH));
 
         RoutingReport report = evaluator.evaluateRouting();
 
@@ -194,7 +193,7 @@ class GoldenSetEvaluatorTest {
         setUp();
         when(loader.load())
                 .thenReturn(new GoldenSet(List.of(new GoldenSetCase(
-                        "chat-001", "chat", "怎么退款", "参考", List.of(), List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH)))));
+                        "chat-001", "chat", "怎么退款", "参考", List.of(), List.of(ChatTools.TOOL_KNOWLEDGE_SEARCH)))));
         when(toolCallLoop.run(any())).thenThrow(new RuntimeException("decision down"));
 
         RoutingReport report = evaluator.evaluateRouting();
@@ -208,19 +207,16 @@ class GoldenSetEvaluatorTest {
     @DisplayName("路由命中判据：只看期望工具在不在路径里，不比顺序与次数（多查一步不算走错）")
     void routeMatches_ignoresOrderAndCount() {
         assertThat(GoldenSetEvaluator.routeMatches(
-                        List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH),
-                        List.of(
-                                AgentTools.TOOL_PRODUCT_SEARCH,
-                                AgentTools.TOOL_KNOWLEDGE_SEARCH,
-                                AgentTools.TOOL_FINISH)))
+                        List.of(ChatTools.TOOL_KNOWLEDGE_SEARCH),
+                        List.of(ChatTools.TOOL_PRODUCT_SEARCH, ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_FINISH)))
                 .isTrue();
-        assertThat(GoldenSetEvaluator.routeMatches(List.of(AgentTools.TOOL_FINISH), List.of(AgentTools.TOOL_FINISH)))
+        assertThat(GoldenSetEvaluator.routeMatches(List.of(ChatTools.TOOL_FINISH), List.of(ChatTools.TOOL_FINISH)))
                 .isTrue();
         assertThat(GoldenSetEvaluator.routeMatches(
-                        List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH), List.of(AgentTools.TOOL_FINISH)))
+                        List.of(ChatTools.TOOL_KNOWLEDGE_SEARCH), List.of(ChatTools.TOOL_FINISH)))
                 .isFalse();
         // 决策失败降级由代码补检索，不进 toolPath —— 期望检索的用例据此判未命中
-        assertThat(GoldenSetEvaluator.routeMatches(List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH), List.of()))
+        assertThat(GoldenSetEvaluator.routeMatches(List.of(ChatTools.TOOL_KNOWLEDGE_SEARCH), List.of()))
                 .isFalse();
     }
 

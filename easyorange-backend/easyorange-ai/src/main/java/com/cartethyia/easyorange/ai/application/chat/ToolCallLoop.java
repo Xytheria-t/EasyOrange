@@ -2,16 +2,16 @@ package com.cartethyia.easyorange.ai.application.chat;
 
 import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.model.AgentStepTrace;
-import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
+import com.cartethyia.easyorange.ai.domain.model.ToolCallStepTrace;
+import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
-import com.cartethyia.easyorange.ai.domain.port.AgentTracePort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
+import com.cartethyia.easyorange.ai.domain.port.ToolCallStepTracePort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,14 +28,14 @@ import org.springframework.stereotype.Component;
 /**
  * 多步工具调用循环（ReAct）— 逐轮「决策 → 工具 → 观察」推进，直到模型判定信息足够（finish）。
  * <p>
- * 手写循环 + 原生 tool calling：每轮把 7 个工具的 JSON Schema（{@link AgentTools} 的 {@code @Tool}
+ * 手写循环 + 原生 tool calling：每轮把 7 个工具的 JSON Schema（{@link ChatTools} 的 {@code @Tool}
  * 注解生成）随请求下发，模型返回「调哪个工具 + 参数 + 理由」。调不调、调几次、调什么由本类决定
  * —— Spring AI 2.0 的 {@code ChatModel.call} 不自动执行工具，步数与降级的循环控制权留在本类
  * （预算余量问 {@link ChatBudgetGuard}，本类只决定何时因它切断）。
  * <p>
  * 一轮可以带多个工具调用：供应商侧并行发起（典型是「规则 + 找货」兼有的问题同时要规则知识与在售资产）
  * 时同轮全部执行，省掉一整轮决策往返 —— 决策调用比工具调用贵一个量级，砍往返比并发执行工具划算得多。
- * 同轮多个调用按模型给出的顺序逐个执行（召回累加器是实例独占的可变状态，见 {@link AgentTools}）。
+ * 同轮多个调用按模型给出的顺序逐个执行（召回累加器是实例独占的可变状态，见 {@link ChatTools}）。
  * finish 与其它调用同现时以 finish 收敛：同轮非 finish 调用照常执行（模型确实要了这份信息），
  * finish 记在最后一个；收敛后不回填消息（本轮序列就此丢弃）。
  * <p>
@@ -53,20 +53,20 @@ public class ToolCallLoop {
 
     /** 决策对话的 system prompt 键（与 {@code prompts/ai_chat_tool.yml} 的 name 同名）。 */
     private static final String CHAT_TOOL_PROMPT = "ai_chat_tool_system";
-    /** 未知工具观察里的工具名清单（与 {@link AgentTools} 的常量同源，不重写字面量）。 */
+    /** 未知工具观察里的工具名清单（与 {@link ChatTools} 的常量同源，不重写字面量）。 */
     private static final String TOOL_NAME_LIST = String.join(
             " / ",
-            AgentTools.TOOL_KNOWLEDGE_SEARCH,
-            AgentTools.TOOL_PRODUCT_SEARCH,
-            AgentTools.TOOL_PRODUCT_DETAIL,
-            AgentTools.TOOL_MARKET_PRICE_STATS,
-            AgentTools.TOOL_COMPARE_ASSETS,
-            AgentTools.TOOL_REMEMBER_PREFERENCE,
-            AgentTools.TOOL_FINISH);
+            ChatTools.TOOL_KNOWLEDGE_SEARCH,
+            ChatTools.TOOL_PRODUCT_SEARCH,
+            ChatTools.TOOL_PRODUCT_DETAIL,
+            ChatTools.TOOL_MARKET_PRICE_STATS,
+            ChatTools.TOOL_COMPARE_ASSETS,
+            ChatTools.TOOL_REMEMBER_PREFERENCE,
+            ChatTools.TOOL_FINISH);
 
     /**
      * 机器主体的统一标识 —— 唯一非登录调用方是评估跑批（{@code GoldenSetEvaluator} 定时回归 / CI 门禁）：
-     * 会话 / 缓存键照常按此主体隔离，但画像不落库（{@code AgentTools} 拒写）、trace 的 user_id 为空
+     * 会话 / 缓存键照常按此主体隔离，但画像不落库（{@code ChatTools} 拒写）、trace 的 user_id 为空
      * （{@link #attributedUserId} 收敛）。对话的 HTTP 入口不存在匿名路径 —— 身份缺失即 401，
      * 所以「机器主体」不等于「匿名用户」。哨兵值定义在本类（唯一判定画像是否落库的地方），
      * 调用方只负责把该主体传进来。
@@ -74,9 +74,9 @@ public class ToolCallLoop {
     public static final String MACHINE_SUBJECT = "machine";
 
     private final PromptRegistry promptRegistry;
-    private final AgentToolsFactory toolsFactory;
+    private final ChatToolsFactory toolsFactory;
     private final ToolCallDecider decider;
-    private final AgentTracePort tracePort;
+    private final ToolCallStepTracePort tracePort;
     private final ChatBudgetGuard budgetGuard;
     private final AiProperties aiProperties;
     private final IdGenerator idGenerator;
@@ -84,9 +84,9 @@ public class ToolCallLoop {
 
     public ToolCallLoop(
             PromptRegistry promptRegistry,
-            AgentToolsFactory toolsFactory,
+            ChatToolsFactory toolsFactory,
             ToolCallDecider decider,
-            AgentTracePort tracePort,
+            ToolCallStepTracePort tracePort,
             ChatBudgetGuard budgetGuard,
             AiProperties aiProperties,
             IdGenerator idGenerator,
@@ -154,7 +154,7 @@ public class ToolCallLoop {
         for (int round = 1; round <= aiProperties.chat().maxSteps(); round++) {
             if (round > 1 && budgetGuard.exhausted()) {
                 log.warn(
-                        "action=agent_loop_degraded, reason=budget, sessionId={}, rounds={}",
+                        "action=tool_call_loop_degraded, reason=budget, sessionId={}, rounds={}",
                         input.sessionId(),
                         rounds);
                 return toResult(tools, ToolCallLoopOutcome.BUDGET, rounds, toolPath);
@@ -167,7 +167,7 @@ public class ToolCallLoop {
                     tools.searchKnowledgeForFallback(input.question());
                 } catch (Exception e) {
                     log.warn(
-                            "action=agent_fallback_search_failed, sessionId={}, reason={}",
+                            "action=tool_call_fallback_search_failed, sessionId={}, reason={}",
                             input.sessionId(),
                             failureReason(e));
                 }
@@ -182,7 +182,7 @@ public class ToolCallLoop {
             }
         }
         log.warn(
-                "action=agent_loop_degraded, reason=step_limit, sessionId={}, rounds={}, toolPath={}",
+                "action=tool_call_loop_degraded, reason=step_limit, sessionId={}, rounds={}, toolPath={}",
                 input.sessionId(),
                 rounds,
                 String.join(",", toolPath));
@@ -190,7 +190,7 @@ public class ToolCallLoop {
     }
 
     /** 出循环时一次性定稿：结局 + 轮数 + 工具路径 + 工具实例上已积累的召回物。 */
-    private static Result toResult(AgentTools tools, ToolCallLoopOutcome outcome, int rounds, List<String> toolPath) {
+    private static Result toResult(ChatTools tools, ToolCallLoopOutcome outcome, int rounds, List<String> toolPath) {
         return new Result(
                 tools.knowledgeHits(), tools.assetHits(), tools.details(), outcome, rounds, List.copyOf(toolPath));
     }
@@ -231,7 +231,7 @@ public class ToolCallLoop {
         }
         if (finish != null) {
             recordFinishStep(input, traceId, stepIndex, finish);
-            toolPath.add(AgentTools.TOOL_FINISH);
+            toolPath.add(ChatTools.TOOL_FINISH);
             return new RoundResult(stepIndex + 1, toolPath, true);
         }
         messages.appendRound(rawToolCallsOf(executableCalls), observations);
@@ -266,7 +266,7 @@ public class ToolCallLoop {
             String toolInput,
             ToolResult result,
             long latencyMs) {
-        tracePort.record(new AgentStepTrace(
+        tracePort.record(new ToolCallStepTrace(
                 traceId,
                 input.sessionId(),
                 attributedUserId(input),
@@ -287,7 +287,7 @@ public class ToolCallLoop {
      * 而把结果类型收成非空，真正需要这个判断的只有调用点本身。
      */
     private void recordFinishStep(Input input, String traceId, int stepIndex, ToolCallDecision finish) {
-        tracePort.record(new AgentStepTrace(
+        tracePort.record(new ToolCallStepTrace(
                 traceId,
                 input.sessionId(),
                 attributedUserId(input),
@@ -305,7 +305,7 @@ public class ToolCallLoop {
     private void emitStep(Input input, int stepIndex, ToolCallDecision decision, @Nullable String observation) {
         ChatStreamHandler handler = input.handler();
         if (handler != null) {
-            handler.onStep(new AgentStepView(
+            handler.onStep(new ToolCallStepView(
                     stepIndex, decision.tool(), decision.parsedArguments().thought(), observation));
         }
     }
@@ -327,10 +327,10 @@ public class ToolCallLoop {
         }
     }
 
-    /** 工具面（一次请求内） — 两种框架形态（schema 下发的回调列表、按名执行的回调表）绑在一处并按名分发；召回累加器归 {@link AgentTools} 实例，不进这里。 */
+    /** 工具面（一次请求内） — 两种框架形态（schema 下发的回调列表、按名执行的回调表）绑在一处并按名分发；召回累加器归 {@link ChatTools} 实例，不进这里。 */
     private record ToolDispatcher(List<ToolCallback> callbacks, Map<String, ToolCallback> byName) {
 
-        static ToolDispatcher of(AgentTools tools) {
+        static ToolDispatcher of(ChatTools tools) {
             List<ToolCallback> callbacks = List.of(ToolCallbacks.from(tools));
             var byName = callbacks.stream()
                     .collect(Collectors.toMap(
@@ -350,7 +350,7 @@ public class ToolCallLoop {
             } catch (Exception e) {
                 // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
                 String reason = failureReason(e.getCause() != null ? e.getCause() : e);
-                log.warn("action=agent_tool_failed, tool={}, input={}, reason={}", tool, toolInputOf(decision), reason);
+                log.warn("action=tool_call_failed, tool={}, input={}, reason={}", tool, toolInputOf(decision), reason);
                 return new ToolResult(false, reason);
             }
         }
@@ -395,10 +395,10 @@ public class ToolCallLoop {
     private static String toolInputOf(ToolCallDecision decision) {
         ToolCallArguments parsed = decision.parsedArguments();
         return switch (decision.tool()) {
-            case AgentTools.TOOL_PRODUCT_DETAIL -> parsed.productId();
-            case AgentTools.TOOL_COMPARE_ASSETS ->
+            case ChatTools.TOOL_PRODUCT_DETAIL -> parsed.productId();
+            case ChatTools.TOOL_COMPARE_ASSETS ->
                 parsed.productIds() == null ? null : String.join("、", parsed.productIds());
-            case AgentTools.TOOL_REMEMBER_PREFERENCE ->
+            case ChatTools.TOOL_REMEMBER_PREFERENCE ->
                 orEmpty(parsed.preferenceKey()) + "=" + orEmpty(parsed.preferenceValue());
             default -> parsed.query();
         };

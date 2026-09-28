@@ -23,17 +23,17 @@ import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.model.AgentStepTrace;
-import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
-import com.cartethyia.easyorange.ai.domain.port.AgentTracePort;
+import com.cartethyia.easyorange.ai.domain.model.ToolCallStepTrace;
+import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
 import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import com.cartethyia.easyorange.ai.domain.port.ToolCallStepTracePort;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
@@ -88,7 +88,7 @@ class ToolCallLoopTest {
     private AssetDetailPort assetDetailPort;
 
     @Mock
-    private AgentTracePort tracePort;
+    private ToolCallStepTracePort tracePort;
 
     @Mock
     private UserPreferenceRepository preferenceRepository;
@@ -182,7 +182,7 @@ class ToolCallLoopTest {
     @DisplayName("首轮 finish（寒暄）-> 不调任何工具，trace 落 finish 行，step 事件推送")
     void run_finishOnFirstRound() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_FINISH, "{\"thought\":\"闲聊无需检索\",\"query\":\"\",\"productId\":null}"));
+                toolCallResponse(ChatTools.TOOL_FINISH, "{\"thought\":\"闲聊无需检索\",\"query\":\"\",\"productId\":null}"));
         var steps = new RecordingHandler();
 
         Result result = run("在吗？", "user-1", steps);
@@ -192,11 +192,11 @@ class ToolCallLoopTest {
         assertThat(result.knowledgeHits()).isEmpty();
         verifyNoInteractions(retrievalService, assetSourcingService);
         verify(tracePort)
-                .record(argThat(trace -> AgentTools.TOOL_FINISH.equals(trace.tool())
+                .record(argThat(trace -> ChatTools.TOOL_FINISH.equals(trace.tool())
                         && trace.stepIndex() == 1
                         && "trace-1".equals(trace.traceId())));
         assertThat(steps.steps).hasSize(1);
-        assertThat(steps.steps.getFirst().tool()).isEqualTo(AgentTools.TOOL_FINISH);
+        assertThat(steps.steps.getFirst().tool()).isEqualTo(ChatTools.TOOL_FINISH);
         assertThat(steps.steps.getFirst().thought()).isEqualTo("闲聊无需检索");
         assertThat(meterRegistry
                         .counter("easyorange.ai.chat.loop", "outcome", "finished")
@@ -209,7 +209,7 @@ class ToolCallLoopTest {
     @Test
     @DisplayName("决策把 7 个工具的 schema（@Tool 注解生成）随请求下发 —— 供供应商侧校验与参数名锚定")
     void run_passesToolSchemasToModel() {
-        stubDecisions(toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+        stubDecisions(toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
 
         run("在吗？");
 
@@ -223,31 +223,31 @@ class ToolCallLoopTest {
 
         assertThat(schemas)
                 .containsOnlyKeys(
-                        AgentTools.TOOL_KNOWLEDGE_SEARCH,
-                        AgentTools.TOOL_PRODUCT_SEARCH,
-                        AgentTools.TOOL_PRODUCT_DETAIL,
-                        AgentTools.TOOL_MARKET_PRICE_STATS,
-                        AgentTools.TOOL_COMPARE_ASSETS,
-                        AgentTools.TOOL_REMEMBER_PREFERENCE,
-                        AgentTools.TOOL_FINISH);
+                        ChatTools.TOOL_KNOWLEDGE_SEARCH,
+                        ChatTools.TOOL_PRODUCT_SEARCH,
+                        ChatTools.TOOL_PRODUCT_DETAIL,
+                        ChatTools.TOOL_MARKET_PRICE_STATS,
+                        ChatTools.TOOL_COMPARE_ASSETS,
+                        ChatTools.TOOL_REMEMBER_PREFERENCE,
+                        ChatTools.TOOL_FINISH);
         // 参数名来自编译期 -parameters（缺失会退化成 arg0/arg1，模型填不对参数）
-        assertThat(schemas.get(AgentTools.TOOL_KNOWLEDGE_SEARCH)).contains("thought", "query");
-        assertThat(schemas.get(AgentTools.TOOL_PRODUCT_SEARCH)).contains("thought", "query");
-        assertThat(schemas.get(AgentTools.TOOL_PRODUCT_DETAIL)).contains("thought", "productId");
-        assertThat(schemas.get(AgentTools.TOOL_MARKET_PRICE_STATS)).contains("thought");
-        assertThat(schemas.get(AgentTools.TOOL_COMPARE_ASSETS)).contains("thought", "productIds");
-        assertThat(schemas.get(AgentTools.TOOL_REMEMBER_PREFERENCE))
+        assertThat(schemas.get(ChatTools.TOOL_KNOWLEDGE_SEARCH)).contains("thought", "query");
+        assertThat(schemas.get(ChatTools.TOOL_PRODUCT_SEARCH)).contains("thought", "query");
+        assertThat(schemas.get(ChatTools.TOOL_PRODUCT_DETAIL)).contains("thought", "productId");
+        assertThat(schemas.get(ChatTools.TOOL_MARKET_PRICE_STATS)).contains("thought");
+        assertThat(schemas.get(ChatTools.TOOL_COMPARE_ASSETS)).contains("thought", "productIds");
+        assertThat(schemas.get(ChatTools.TOOL_REMEMBER_PREFERENCE))
                 .contains("thought", "preferenceKey", "preferenceValue");
         // 偏好已从 finish 的参数副作用拆成独立工具，finish 不再带偏好字段（拆分的回归守卫）
-        assertThat(schemas.get(AgentTools.TOOL_FINISH)).contains("thought").doesNotContain("preferenceKey");
+        assertThat(schemas.get(ChatTools.TOOL_FINISH)).contains("thought").doesNotContain("preferenceKey");
     }
 
     @Test
     @DisplayName("两步循环：知识检索 -> finish -> 检索执行一次，观察进入下一轮决策上下文")
     void run_twoRoundsWithKnowledgeSearch() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
         when(retrievalService.search("退款", 5))
                 .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)));
 
@@ -257,7 +257,7 @@ class ToolCallLoopTest {
         assertThat(result.rounds()).isEqualTo(2);
         assertThat(result.knowledgeHits()).hasSize(1);
         verify(retrievalService).search("退款", 5);
-        verify(tracePort, times(2)).record(any(AgentStepTrace.class));
+        verify(tracePort, times(2)).record(any(ToolCallStepTrace.class));
 
         // 第二轮决策的上下文带着第一步观察（role=tool 消息，ReAct 的核心：观察驱动下一步）
         @SuppressWarnings("unchecked")
@@ -275,9 +275,9 @@ class ToolCallLoopTest {
     @DisplayName("三步循环：product_search -> product_detail -> finish，观察带资产 ID、详情进 Result")
     void run_productDetailFlow() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_PRODUCT_SEARCH, searchArgs("5000 笔记本")),
-                toolCallResponse(AgentTools.TOOL_PRODUCT_DETAIL, detailArgs("p-1")),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_PRODUCT_SEARCH, searchArgs("5000 笔记本")),
+                toolCallResponse(ChatTools.TOOL_PRODUCT_DETAIL, detailArgs("p-1")),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
         when(assetSourcingService.search("5000 笔记本", 5))
                 .thenReturn(
                         List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)));
@@ -304,9 +304,8 @@ class ToolCallLoopTest {
 
         // 步骤事件序列完整（前端步骤可视化的数据源）
         assertThat(steps.steps)
-                .extracting(AgentStepView::tool)
-                .containsExactly(
-                        AgentTools.TOOL_PRODUCT_SEARCH, AgentTools.TOOL_PRODUCT_DETAIL, AgentTools.TOOL_FINISH);
+                .extracting(ToolCallStepView::tool)
+                .containsExactly(ChatTools.TOOL_PRODUCT_SEARCH, ChatTools.TOOL_PRODUCT_DETAIL, ChatTools.TOOL_FINISH);
 
         // 召回观察带 [资产 ID]（product_detail 的 productId 取值锚点）与价格，按协议回填进后续轮次
         @SuppressWarnings("unchecked")
@@ -321,16 +320,16 @@ class ToolCallLoopTest {
         // 详情步骤的 trace 带入参 productId
         verify(tracePort, times(3))
                 .record(argThat(trace ->
-                        !AgentTools.TOOL_PRODUCT_DETAIL.equals(trace.tool()) || "p-1".equals(trace.toolInput())));
+                        !ChatTools.TOOL_PRODUCT_DETAIL.equals(trace.tool()) || "p-1".equals(trace.toolInput())));
     }
 
     @Test
     @DisplayName("compare_assets：一次比对多件候选（替代逐件 product_detail），确定性结论进下一轮决策")
     void run_compareAssetsFlow() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_PRODUCT_SEARCH, searchArgs("5000 笔记本")),
-                toolCallResponse(AgentTools.TOOL_COMPARE_ASSETS, compareArgs(List.of("p-1", "p-2"))),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_PRODUCT_SEARCH, searchArgs("5000 笔记本")),
+                toolCallResponse(ChatTools.TOOL_COMPARE_ASSETS, compareArgs(List.of("p-1", "p-2"))),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
         when(assetSourcingService.search("5000 笔记本", 5))
                 .thenReturn(List.of(
                         new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "轻微使用痕迹", 0.83),
@@ -349,9 +348,8 @@ class ToolCallLoopTest {
         // 一次 compare_assets 拿到两件详情（等价于两次 product_detail）但只花一步
         assertThat(result.details()).hasSize(2);
         assertThat(steps.steps)
-                .extracting(AgentStepView::tool)
-                .containsExactly(
-                        AgentTools.TOOL_PRODUCT_SEARCH, AgentTools.TOOL_COMPARE_ASSETS, AgentTools.TOOL_FINISH);
+                .extracting(ToolCallStepView::tool)
+                .containsExactly(ChatTools.TOOL_PRODUCT_SEARCH, ChatTools.TOOL_COMPARE_ASSETS, ChatTools.TOOL_FINISH);
 
         // 比对结论是代码算的，按协议回填进下一轮决策上下文（模型据此取舍，不用自己心算）
         @SuppressWarnings("unchecked")
@@ -364,15 +362,15 @@ class ToolCallLoopTest {
         // compare_assets 的 trace 带入参 ID 列表
         verify(tracePort, times(3))
                 .record(argThat(trace ->
-                        !AgentTools.TOOL_COMPARE_ASSETS.equals(trace.tool()) || "p-1、p-2".equals(trace.toolInput())));
+                        !ChatTools.TOOL_COMPARE_ASSETS.equals(trace.tool()) || "p-1、p-2".equals(trace.toolInput())));
     }
 
     @Test
     @DisplayName("compare_assets 少于 2 个 ID -> 回观察文本而非失败，模型可换 ID 重试")
     void run_compareAssetsTooFewIds() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_COMPARE_ASSETS, compareArgs(List.of("p-1"))),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_COMPARE_ASSETS, compareArgs(List.of("p-1"))),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
 
         Result result = run("比一下", "user-1", null);
 
@@ -384,9 +382,9 @@ class ToolCallLoopTest {
     @DisplayName("market_price_stats：对已召回资产出行情统计（零模型计算），口径与 MarketAnalysisTool 一致")
     void run_marketPriceStatsFlow() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_PRODUCT_SEARCH, searchArgs("5000 笔记本")),
-                toolCallResponse(AgentTools.TOOL_MARKET_PRICE_STATS, "{\"thought\":\"看行情\"}"),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_PRODUCT_SEARCH, searchArgs("5000 笔记本")),
+                toolCallResponse(ChatTools.TOOL_MARKET_PRICE_STATS, "{\"thought\":\"看行情\"}"),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
         when(assetSourcingService.search("5000 笔记本", 5))
                 .thenReturn(List.of(
                         new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83),
@@ -396,7 +394,7 @@ class ToolCallLoopTest {
         Result result = run("预算 5000 想买笔记本", "user-1", steps);
 
         assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
-        assertThat(steps.steps.get(1).tool()).isEqualTo(AgentTools.TOOL_MARKET_PRICE_STATS);
+        assertThat(steps.steps.get(1).tool()).isEqualTo(ChatTools.TOOL_MARKET_PRICE_STATS);
         assertThat(steps.steps.get(1).observation()).isEqualTo("当前 2 件在售，均价 ¥4500，价格区间 ¥4200-¥4800");
         // 行情统计只吃已召回资产，不额外读详情
         verifyNoInteractions(assetDetailPort);
@@ -418,9 +416,9 @@ class ToolCallLoopTest {
         aiProperties = PropertyBindings.bind(AiProperties.class, "chat.max-steps", "2");
         toolCallLoop = newToolCallLoop();
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
-                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退货")),
-                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("换货")));
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退货")),
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("换货")));
         when(retrievalService.search(anyString(), anyInt())).thenReturn(List.of());
 
         Result result = run("反复问规则");
@@ -440,8 +438,8 @@ class ToolCallLoopTest {
         // 循环只在第 2 轮起做预算检查；首轮已执行一次工具，第 2 轮检查时余量已耗尽
         when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(500_000, 0, 0)));
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
-                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退货")));
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退货")));
         when(retrievalService.search(anyString(), anyInt())).thenReturn(List.of());
 
         Result result = run("怎么退款？");
@@ -486,7 +484,7 @@ class ToolCallLoopTest {
     @Test
     @DisplayName("工具调用参数 JSON 不可解析 -> 同样走单步降级（不把决策故障伪装成无需检索）")
     void run_unparsableToolArgumentsFallBackToSingleStep() {
-        stubDecisions(toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, "这不是 JSON"));
+        stubDecisions(toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, "这不是 JSON"));
         when(retrievalService.search("怎么退款？", 5)).thenReturn(List.of());
 
         Result result = run("怎么退款？");
@@ -501,14 +499,14 @@ class ToolCallLoopTest {
         // ToolCall 是裸 record、@NullMarked 下声明非空，运行期却能绑进 null —— 供应商漏字段的原生形态
         stubDecisions(
                 toolCallResponse(null, "{\"thought\":\"不知道调啥\"}"),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
 
         Result result = run("怎么退款？");
 
         // 缺名不是决策失败（决策本身成功了，模型确实要了个工具）：走完一轮后由 finish 正常收敛
         assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         // 归一化后的空串照常进 toolPath（它就是「模型选了什么」的真实记录），finish 轮同口径计入
-        assertThat(result.toolPath()).containsExactly("", AgentTools.TOOL_FINISH);
+        assertThat(result.toolPath()).containsExactly("", ChatTools.TOOL_FINISH);
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
@@ -533,8 +531,8 @@ class ToolCallLoopTest {
     @DisplayName("降级补检索与工具步同口径判重 —— 此前轮次已召回过的文档不再重复进 Result")
     void run_fallbackSearchDeduplicatesAgainstAccumulated() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
-                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, "这不是 JSON"));
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, "这不是 JSON"));
         when(retrievalService.search("退款", 5))
                 .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)));
         when(retrievalService.search("怎么退款？", 5))
@@ -552,8 +550,8 @@ class ToolCallLoopTest {
         // 循环中途预算检查打到 Redis：round 1 跳过检查，round 2 检查时存储故障穿透
         when(budgetStore.getTodayUsage("chat")).thenThrow(new RuntimeException("redis down"));
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
-                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退货")));
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退货")));
         when(retrievalService.search(anyString(), anyInt())).thenReturn(List.of());
 
         assertThatThrownBy(() -> run("怎么退款？")).isInstanceOf(RuntimeException.class);
@@ -568,9 +566,9 @@ class ToolCallLoopTest {
     void run_parallelToolCallsExecuteAllInOneRound() {
         stubDecisions(
                 parallelResponse(
-                        parallelCall("call-1", AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
-                        parallelCall("call-2", AgentTools.TOOL_PRODUCT_SEARCH, searchArgs("笔记本"))),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                        parallelCall("call-1", ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                        parallelCall("call-2", ChatTools.TOOL_PRODUCT_SEARCH, searchArgs("笔记本"))),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
         when(retrievalService.search("退款", 5))
                 .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)));
         when(assetSourcingService.search("笔记本", 5))
@@ -584,13 +582,11 @@ class ToolCallLoopTest {
         assertThat(result.knowledgeHits()).hasSize(1);
         assertThat(result.assetHits()).hasSize(1);
         assertThat(result.toolPath())
-                .containsExactly(
-                        AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_PRODUCT_SEARCH, AgentTools.TOOL_FINISH);
+                .containsExactly(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_PRODUCT_SEARCH, ChatTools.TOOL_FINISH);
         verify(aiModelSupport, times(2)).callWithTools(any(), any(), anyList(), anyList());
         assertThat(steps.steps)
-                .extracting(AgentStepView::tool)
-                .containsExactly(
-                        AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_PRODUCT_SEARCH, AgentTools.TOOL_FINISH);
+                .extracting(ToolCallStepView::tool)
+                .containsExactly(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_PRODUCT_SEARCH, ChatTools.TOOL_FINISH);
 
         // 协议回填：一条 assistant 带两个 tool_calls + 一条 tool 消息带两份观察，tool_call_id 逐条对上
         @SuppressWarnings("unchecked")
@@ -612,8 +608,8 @@ class ToolCallLoopTest {
     @DisplayName("并行调用里混入 finish -> 同轮非 finish 调用照常执行，finish 记在最后一个并收敛")
     void run_parallelCallWithFinishExecutesSiblingsFirst() {
         stubDecisions(parallelResponse(
-                parallelCall("call-1", AgentTools.TOOL_FINISH, finishArgs()),
-                parallelCall("call-2", AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款"))));
+                parallelCall("call-1", ChatTools.TOOL_FINISH, finishArgs()),
+                parallelCall("call-2", ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款"))));
         when(retrievalService.search("退款", 5))
                 .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)));
         var steps = new RecordingHandler();
@@ -625,17 +621,17 @@ class ToolCallLoopTest {
         verify(retrievalService).search("退款", 5);
         assertThat(result.knowledgeHits()).hasSize(1);
         assertThat(steps.steps)
-                .extracting(AgentStepView::tool)
-                .containsExactly(AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_FINISH);
-        assertThat(result.toolPath()).containsExactly(AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_FINISH);
+                .extracting(ToolCallStepView::tool)
+                .containsExactly(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_FINISH);
+        assertThat(result.toolPath()).containsExactly(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_FINISH);
     }
 
     @Test
     @DisplayName("并行调用里有一个参数不可解析 -> 整轮判决策失败降级（半执行会让回填的工具调用与观察对不上）")
     void run_parallelCallWithUnparsableArgumentsDegrades() {
         stubDecisions(parallelResponse(
-                parallelCall("call-1", AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
-                parallelCall("call-2", AgentTools.TOOL_PRODUCT_SEARCH, "这不是 JSON")));
+                parallelCall("call-1", ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                parallelCall("call-2", ChatTools.TOOL_PRODUCT_SEARCH, "这不是 JSON")));
 
         Result result = run("怎么退款？");
 
@@ -649,16 +645,16 @@ class ToolCallLoopTest {
     void run_stepIndexIsContinuousAcrossParallelCalls() {
         stubDecisions(
                 parallelResponse(
-                        parallelCall("call-1", AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
-                        parallelCall("call-2", AgentTools.TOOL_PRODUCT_SEARCH, searchArgs("笔记本"))),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                        parallelCall("call-1", ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                        parallelCall("call-2", ChatTools.TOOL_PRODUCT_SEARCH, searchArgs("笔记本"))),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
         when(retrievalService.search(anyString(), anyInt())).thenReturn(List.of());
         when(assetSourcingService.search(anyString(), anyInt())).thenReturn(List.of());
         var steps = new RecordingHandler();
 
         run("怎么退款？", "user-1", steps);
 
-        assertThat(steps.steps).extracting(AgentStepView::step).containsExactly(1, 2, 3);
+        assertThat(steps.steps).extracting(ToolCallStepView::step).containsExactly(1, 2, 3);
     }
 
     private static AssistantMessage.ToolCall parallelCall(String id, String tool, String arguments) {
@@ -675,8 +671,8 @@ class ToolCallLoopTest {
     @DisplayName("product_detail 查无此资产 -> 有效观察不中断循环（模型可换目标）")
     void run_detailNotFoundIsAnObservation() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_PRODUCT_DETAIL, detailArgs("p-404")),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_PRODUCT_DETAIL, detailArgs("p-404")),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
         when(assetDetailPort.findDetail("p-404")).thenReturn(Optional.empty());
 
         Result result = run("看看 p-404");
@@ -692,8 +688,8 @@ class ToolCallLoopTest {
     @DisplayName("product_detail 端口故障 -> 该步标记失败但循环继续到 finish（工具失败不打断对话）")
     void run_detailPortFailureDoesNotKillLoop() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_PRODUCT_DETAIL, detailArgs("p-1")),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_PRODUCT_DETAIL, detailArgs("p-1")),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
         when(assetDetailPort.findDetail("p-1")).thenThrow(new RuntimeException("DB connection lost"));
 
         Result result = run("看看 p-1");
@@ -709,15 +705,15 @@ class ToolCallLoopTest {
     @DisplayName("检索工具内部故障 -> 收敛成失败观察交回模型（带错误反馈的修复轮），循环不断")
     void run_toolFailureBecomesObservation() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
         when(retrievalService.search("退款", 5)).thenThrow(new RuntimeException("embedding provider down"));
 
         Result result = run("怎么退款？");
 
         assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
-        verify(tracePort, times(2)).record(any(AgentStepTrace.class));
+        verify(tracePort, times(2)).record(any(ToolCallStepTrace.class));
         verify(tracePort)
                 .record(argThat(trace -> trace.stepIndex() == 1
                         && !trace.success()
@@ -727,7 +723,7 @@ class ToolCallLoopTest {
     @Test
     @DisplayName("未知工具名 -> 观察提示纠正，循环继续到 finish")
     void run_unknownToolGetsCorrectionObservation() {
-        stubDecisions(toolCallResponse("web_browse", "{}"), toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+        stubDecisions(toolCallResponse("web_browse", "{}"), toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
 
         Result result = run("随便看看");
 
@@ -743,8 +739,8 @@ class ToolCallLoopTest {
     @DisplayName("remember_preference -> 写入用户画像（长期记忆，模型自主决定的一步）")
     void run_extractsPreference() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
 
         run("我喜欢复古风格的东西", "user-1", null);
 
@@ -755,13 +751,13 @@ class ToolCallLoopTest {
     @DisplayName("remember_preference 的观察与其余执行类工具同一种：纯文本，不带默认转换器的 JSON 引号")
     void run_preferenceObservationIsPlainText() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
 
         run("我喜欢复古风格的东西", "user-1", null);
 
         verify(tracePort)
-                .record(argThat(trace -> AgentTools.TOOL_REMEMBER_PREFERENCE.equals(trace.tool())
+                .record(argThat(trace -> ChatTools.TOOL_REMEMBER_PREFERENCE.equals(trace.tool())
                         && "已记录偏好：style = 复古".equals(trace.observation())));
     }
 
@@ -769,8 +765,8 @@ class ToolCallLoopTest {
     @DisplayName("机器主体（评估跑批）-> 即便模型调了 remember_preference 也不落画像（写侧拒收，画像归属为 null）")
     void run_machineSubjectSkipsPreference() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
 
         run("我喜欢复古风格的东西", ToolCallLoop.MACHINE_SUBJECT, null);
 
@@ -781,8 +777,8 @@ class ToolCallLoopTest {
     @DisplayName("remember_preference 收到空值 -> 跳过落库并回观察文本，对话照常收敛")
     void run_blankPreferenceSkipped() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("", "")),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("", "")),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
 
         Result result = run("我想买台九成新的相机", "user-1", null);
 
@@ -794,8 +790,8 @@ class ToolCallLoopTest {
     @DisplayName("画像落库失败 -> 收敛成失败观察交回模型，对话照常收敛（旁路存储不打挂主链路）")
     void run_preferenceRecordFailureNotFatal() {
         stubDecisions(
-                toolCallResponse(AgentTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
-                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+                toolCallResponse(ChatTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
         doThrow(new RuntimeException("db down"))
                 .when(preferenceRepository)
                 .record(anyString(), anyString(), anyString());
@@ -808,18 +804,18 @@ class ToolCallLoopTest {
     @Test
     @DisplayName("非流式路径（handler 为空）-> trace 照常落库，无 step 事件")
     void run_nonStreamStillTraces() {
-        stubDecisions(toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+        stubDecisions(toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
 
         Result result = run("在吗？");
 
         assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
-        verify(tracePort).record(any(AgentStepTrace.class));
+        verify(tracePort).record(any(ToolCallStepTrace.class));
     }
 
     private ToolCallLoop newToolCallLoop() {
         return new ToolCallLoop(
                 promptRegistry,
-                new AgentToolsFactory(retrievalService, assetSourcingService, assetDetailPort, preferenceRepository),
+                new ChatToolsFactory(retrievalService, assetSourcingService, assetDetailPort, preferenceRepository),
                 new ToolCallDecider(aiModelSupport, modelRouter, new ObjectMapper()),
                 tracePort,
                 budgetGuard,
@@ -831,10 +827,10 @@ class ToolCallLoopTest {
     /** 记录 step 事件的回调桩。 */
     private static final class RecordingHandler implements ChatStreamHandler {
 
-        private final List<AgentStepView> steps = new ArrayList<>();
+        private final List<ToolCallStepView> steps = new ArrayList<>();
 
         @Override
-        public void onStep(AgentStepView step) {
+        public void onStep(ToolCallStepView step) {
             steps.add(step);
         }
 

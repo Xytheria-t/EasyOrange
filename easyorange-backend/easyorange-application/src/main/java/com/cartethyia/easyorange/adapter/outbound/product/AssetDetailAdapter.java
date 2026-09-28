@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 资产详情适配器 — 实现 ai 模块定义的 {@link AssetDetailPort}：Agent 循环 product_detail
+ * 资产详情适配器 — 实现 ai 模块定义的 {@link AssetDetailPort}：工具调用循环 product_detail
  * 工具按 ID 查在售资产详情。经 product 模块查询仓储读 {@link ProductReadModel}
  * （端口由消费方定义，本模块翻译实现）。
  * <p>

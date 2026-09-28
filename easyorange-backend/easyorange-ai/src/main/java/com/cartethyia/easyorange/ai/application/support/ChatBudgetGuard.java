@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  * <b>代理边界</b>抛 {@code TokenBudgetExceededException}，发生在方法体之前，{@code streamAnswer}
  * 内部把预算异常转成 error 事件的路由接不到它，预算提示会落成 Controller 的通用降级文案。
  * <p>
- * 为什么判定不放在 Agent 循环里：预算是「这次调用还能不能发出去」的治理决策，属于 chat 特性而不属于
+ * 为什么判定不放在 工具调用循环里：预算是「这次调用还能不能发出去」的治理决策，属于 chat 特性而不属于
  * 循环执行器 —— 循环只是多轮中的一个消费方，入口预检是另一个。放这里两个调用点都只调 {@link #exhausted()}。
  * <p>
  * <b>配置优先、注解兜底</b>：与 {@code TokenBudgetAspect} 同一口径（配置热更新、注解提供编译期可见的

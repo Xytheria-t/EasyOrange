@@ -66,7 +66,7 @@ public final class AssetComparison {
         return dimensions;
     }
 
-    /** 进下一轮 prompt 的观察文本：紧凑纯文本，不带 JSON 引号（同 AgentTools 的观察约定）。 */
+    /** 进下一轮 prompt 的观察文本：紧凑纯文本，不带 JSON 引号（同 ChatTools 的观察约定）。 */
     public String observation() {
         return observation;
     }

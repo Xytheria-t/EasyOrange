@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.application.eval;
 
-import com.cartethyia.easyorange.ai.application.chat.AgentTools;
+import com.cartethyia.easyorange.ai.application.chat.ChatTools;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSet;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSetCase;
 import java.util.List;
@@ -16,7 +16,7 @@ import org.yaml.snakeyaml.Yaml;
  * <p>
  * <b>加载即校验</b>：scope 只认 {@code chat} / {@code retrieval}，chat 必须有参考回答、retrieval
  * 必须有 gold_doc_ids 且不得标路由 —— scope 串了指标照样算得出来但悄悄失真，这类错误必须在加载期炸掉。
- * {@code expected_tools} 的取值同样在加载期对 {@link AgentTools} 的工具名强校验。
+ * {@code expected_tools} 的取值同样在加载期对 {@link ChatTools} 的工具名强校验。
  */
 @Slf4j
 @Component
@@ -70,12 +70,12 @@ public class GoldenSetLoader {
         throw new IllegalStateException("金标准用例 " + id + " 的 scope 非法：" + testCase.scope() + "（只允许 chat / retrieval）");
     }
 
-    /** 期望工具名必须取自 {@link AgentTools} —— 工具改名后 yaml 里的旧名字会在加载期炸，而不是静默评成路由走错。 */
+    /** 期望工具名必须取自 {@link ChatTools} —— 工具改名后 yaml 里的旧名字会在加载期炸，而不是静默评成路由走错。 */
     private static void validateExpectedTools(String id, List<String> expectedTools) {
         for (String tool : expectedTools) {
-            if (!AgentTools.TOOL_NAMES.contains(tool)) {
+            if (!ChatTools.TOOL_NAMES.contains(tool)) {
                 throw new IllegalStateException(
-                        "金标准用例 %s 的 expected_tools 含未知工具 %s（合法值：%s）".formatted(id, tool, AgentTools.TOOL_NAMES));
+                        "金标准用例 %s 的 expected_tools 含未知工具 %s（合法值：%s）".formatted(id, tool, ChatTools.TOOL_NAMES));
             }
         }
     }

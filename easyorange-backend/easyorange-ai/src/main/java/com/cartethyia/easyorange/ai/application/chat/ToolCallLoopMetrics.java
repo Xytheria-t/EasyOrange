@@ -32,19 +32,19 @@ public class ToolCallLoopMetrics {
     private static final String TOOL_DURATION_METRIC = "easyorange.ai.chat.tool.duration";
 
     /**
-     * 工具指标 tag 封闭集 — 名单即 {@link AgentTools} 的 6 个可执行 {@code @Tool} 名，模型输出名单外一律记
+     * 工具指标 tag 封闭集 — 名单即 {@link ChatTools} 的 6 个可执行 {@code @Tool} 名，模型输出名单外一律记
      * {@code unknown}（tag 直接取模型输出的开集，一次提示注入就能撑爆时序基数）。
      * <p>
      * 收敛工具 {@code finish} <b>不在名单里</b>：它没有执行体（收敛轮在执行前被拦截），计入工具调用数
      * 只会多出一条恒为零的序列，而它的分布已由 {@code chat.loop{outcome=finished}} 精确计数。
      */
     private enum TrackedTool {
-        KNOWLEDGE_SEARCH(AgentTools.TOOL_KNOWLEDGE_SEARCH),
-        PRODUCT_SEARCH(AgentTools.TOOL_PRODUCT_SEARCH),
-        PRODUCT_DETAIL(AgentTools.TOOL_PRODUCT_DETAIL),
-        MARKET_PRICE_STATS(AgentTools.TOOL_MARKET_PRICE_STATS),
-        COMPARE_ASSETS(AgentTools.TOOL_COMPARE_ASSETS),
-        REMEMBER_PREFERENCE(AgentTools.TOOL_REMEMBER_PREFERENCE),
+        KNOWLEDGE_SEARCH(ChatTools.TOOL_KNOWLEDGE_SEARCH),
+        PRODUCT_SEARCH(ChatTools.TOOL_PRODUCT_SEARCH),
+        PRODUCT_DETAIL(ChatTools.TOOL_PRODUCT_DETAIL),
+        MARKET_PRICE_STATS(ChatTools.TOOL_MARKET_PRICE_STATS),
+        COMPARE_ASSETS(ChatTools.TOOL_COMPARE_ASSETS),
+        REMEMBER_PREFERENCE(ChatTools.TOOL_REMEMBER_PREFERENCE),
         UNKNOWN("unknown");
 
         private final String tag;

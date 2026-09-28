@@ -48,7 +48,7 @@ public class ToolCallDecider {
                     modelRouter.choose("chat_tool"), AiCallScope.CHAT, decisionMessages, toolCallbacks);
             if (toolCalls.isEmpty()) {
                 log.warn(
-                        "action=agent_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",
+                        "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",
                         sessionId);
                 return List.of();
             }
@@ -57,12 +57,12 @@ public class ToolCallDecider {
                 decisions.add(ToolCallDecision.of(parseArgs(toolCall), toolCall));
             }
             if (decisions.size() > 1) {
-                log.info("action=agent_parallel_tool_calls, sessionId={}, count={}", sessionId, decisions.size());
+                log.info("action=tool_call_parallel, sessionId={}, count={}", sessionId, decisions.size());
             }
             return List.copyOf(decisions);
         } catch (Exception e) {
             log.warn(
-                    "action=agent_decision_failed, fallback=single_step, sessionId={}, reason={}",
+                    "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason={}",
                     sessionId,
                     failureReason(e));
             return List.of();

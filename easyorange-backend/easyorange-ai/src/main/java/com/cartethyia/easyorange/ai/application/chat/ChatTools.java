@@ -25,7 +25,7 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 
 /**
- * Agent 循环的内部工具面 — 7 个工具的 schema 与执行都在这里：{@code @Tool} / {@code @ToolParam} 注解
+ * 多步工具循环的内部工具面 — 7 个工具的 schema 与执行都在这里：{@code @Tool} / {@code @ToolParam} 注解
  * 生成供应商侧校验的 JSON Schema，方法体即「执行 + 观察格式化」。每次循环实例化一份：召回物累加器是
  * 单次请求内的可变状态，由实例独占持有，编排器经只读快照读取；框架不执行这些工具，执行与循环控制权
  * 都在 {@link ToolCallLoop}。
@@ -37,7 +37,7 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
  * 模型自主决策的一步，步数超限 / 预算耗尽 / 决策失败三条降级路径下偏好不再静默丢失）。
  */
 @SuppressWarnings("unused") // thought 只进工具 schema，方法体不消费（见类注释）
-public class AgentTools {
+public class ChatTools {
 
     /**
      * 工具名与 {@code @Tool(name = ...)} 同源，编排器引用常量而不是重写字面量。
@@ -110,7 +110,7 @@ public class AgentTools {
     @Nullable
     private final String userId;
 
-    AgentTools(
+    ChatTools(
             KnowledgeRetrievalAppService retrievalService,
             AssetSourcingAppService assetSourcingService,
             AssetDetailPort assetDetailPort,
@@ -308,14 +308,13 @@ public class AgentTools {
      * ES 命中必有 docId，兜底只为 LIKE 降级路径不因 null 误判成「全新增」。
      */
     private List<KnowledgeHit> newKnowledgeHits(List<KnowledgeHit> found) {
-        Set<String> seen =
-                knowledgeHits.stream().map(AgentTools::knowledgeHitId).collect(Collectors.toSet());
+        Set<String> seen = knowledgeHits.stream().map(ChatTools::knowledgeHitId).collect(Collectors.toSet());
         return found.stream().filter(hit -> seen.add(knowledgeHitId(hit))).collect(Collectors.toList());
     }
 
     /** 同 {@link #newKnowledgeHits}，资产按 productId 判重。 */
     private List<AssetHit> newAssetHits(List<AssetHit> found) {
-        Set<String> seen = assetHits.stream().map(AgentTools::assetHitId).collect(Collectors.toSet());
+        Set<String> seen = assetHits.stream().map(ChatTools::assetHitId).collect(Collectors.toSet());
         return found.stream().filter(asset -> seen.add(assetHitId(asset))).collect(Collectors.toList());
     }
 

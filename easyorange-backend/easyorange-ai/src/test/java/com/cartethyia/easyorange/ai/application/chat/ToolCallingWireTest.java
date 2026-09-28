@@ -124,7 +124,7 @@ class ToolCallingWireTest {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
         var support = support();
-        var tools = new AgentTools(null, null, null, null, null);
+        var tools = new ChatTools(null, null, null, null, null);
 
         List<AssistantMessage.ToolCall> calls = support.callWithTools(
                 chatModel,
@@ -136,11 +136,11 @@ class ToolCallingWireTest {
         assertThat(request).contains("\"tools\"");
         assertThat(request)
                 .contains(
-                        AgentTools.TOOL_KNOWLEDGE_SEARCH,
-                        AgentTools.TOOL_PRODUCT_SEARCH,
-                        AgentTools.TOOL_PRODUCT_DETAIL,
-                        AgentTools.TOOL_REMEMBER_PREFERENCE,
-                        AgentTools.TOOL_FINISH);
+                        ChatTools.TOOL_KNOWLEDGE_SEARCH,
+                        ChatTools.TOOL_PRODUCT_SEARCH,
+                        ChatTools.TOOL_PRODUCT_DETAIL,
+                        ChatTools.TOOL_REMEMBER_PREFERENCE,
+                        ChatTools.TOOL_FINISH);
         assertThat(request).contains("\"thought\"", "\"query\"", "\"productId\"", "\"preferenceKey\"");
         assertThat(request).contains("\"model\":\"deepseek-chat\"");
         assertThat(request).doesNotContain("response_format");
@@ -149,7 +149,7 @@ class ToolCallingWireTest {
 
         // 回来的 tool call 经 Spring AI OpenAI 映射层解析后，参数字段与 {@code @ToolParam} 名对齐
         assertThat(calls).hasSize(1);
-        assertThat(calls.getFirst().name()).isEqualTo(AgentTools.TOOL_KNOWLEDGE_SEARCH);
+        assertThat(calls.getFirst().name()).isEqualTo(ChatTools.TOOL_KNOWLEDGE_SEARCH);
         ToolCallArguments parsed = new ObjectMapper().readValue(calls.getFirst().arguments(), ToolCallArguments.class);
         assertThat(parsed.thought()).isEqualTo("查退款规则");
         assertThat(parsed.query()).isEqualTo("退款");
@@ -161,9 +161,9 @@ class ToolCallingWireTest {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
         var support = support();
-        var tools = new AgentTools(null, null, null, null, null);
+        var tools = new ChatTools(null, null, null, null, null);
         var historyCall = new AssistantMessage.ToolCall(
-                "call-9", "function", AgentTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
+                "call-9", "function", ChatTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
 
         List<AssistantMessage.ToolCall> calls = support.callWithTools(
                 chatModel,
@@ -177,7 +177,7 @@ class ToolCallingWireTest {
                                 .build(),
                         ToolResponseMessage.builder()
                                 .responses(List.of(new ToolResponseMessage.ToolResponse(
-                                        "call-9", AgentTools.TOOL_KNOWLEDGE_SEARCH, "命中 1 条：退款规则")))
+                                        "call-9", ChatTools.TOOL_KNOWLEDGE_SEARCH, "命中 1 条：退款规则")))
                                 .build()),
                 List.of(ToolCallbacks.from(tools)));
 
@@ -187,7 +187,7 @@ class ToolCallingWireTest {
         assertThat(request).contains("\"tool_calls\"", "\"role\":\"tool\"", "\"tool_call_id\":\"call-9\"");
         assertThat(request).contains("\"tools\"", "\"tool_choice\":\"required\"");
         assertThat(calls).hasSize(1);
-        assertThat(calls.getFirst().name()).isEqualTo(AgentTools.TOOL_KNOWLEDGE_SEARCH);
+        assertThat(calls.getFirst().name()).isEqualTo(ChatTools.TOOL_KNOWLEDGE_SEARCH);
     }
 
     @Test
@@ -197,11 +197,11 @@ class ToolCallingWireTest {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
         var support = support();
-        var tools = new AgentTools(null, null, null, null, null);
+        var tools = new ChatTools(null, null, null, null, null);
         var knowledgeCall = new AssistantMessage.ToolCall(
-                "call-1", "function", AgentTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
+                "call-1", "function", ChatTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
         var productCall = new AssistantMessage.ToolCall(
-                "call-2", "function", AgentTools.TOOL_PRODUCT_SEARCH, "{\"thought\":\"找笔记本\",\"query\":\"笔记本\"}");
+                "call-2", "function", ChatTools.TOOL_PRODUCT_SEARCH, "{\"thought\":\"找笔记本\",\"query\":\"笔记本\"}");
 
         List<AssistantMessage.ToolCall> calls = support.callWithTools(
                 chatModel,
@@ -216,10 +216,10 @@ class ToolCallingWireTest {
                         ToolResponseMessage.builder()
                                 .responses(List.of(
                                         new ToolResponseMessage.ToolResponse(
-                                                "call-1", AgentTools.TOOL_KNOWLEDGE_SEARCH, "命中 1 条：退款规则"),
+                                                "call-1", ChatTools.TOOL_KNOWLEDGE_SEARCH, "命中 1 条：退款规则"),
                                         new ToolResponseMessage.ToolResponse(
                                                 "call-2",
-                                                AgentTools.TOOL_PRODUCT_SEARCH,
+                                                ChatTools.TOOL_PRODUCT_SEARCH,
                                                 "召回 1 件：[p-1] ThinkPad X1 ¥4800")))
                                 .build()),
                 List.of(ToolCallbacks.from(tools)));
@@ -230,7 +230,7 @@ class ToolCallingWireTest {
         assertThat(request).contains("命中 1 条：退款规则", "召回 1 件：[p-1] ThinkPad X1 ¥4800");
         assertThat(calls)
                 .extracting(AssistantMessage.ToolCall::name)
-                .containsExactly(AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_PRODUCT_SEARCH);
+                .containsExactly(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_PRODUCT_SEARCH);
     }
 
     private static ChatModel stubChatModel(String baseUrl) {
