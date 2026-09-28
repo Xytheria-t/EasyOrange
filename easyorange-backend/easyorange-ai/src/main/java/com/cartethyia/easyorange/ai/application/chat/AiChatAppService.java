@@ -29,6 +29,7 @@ import io.micrometer.core.instrument.Timer;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -180,20 +181,12 @@ public class AiChatAppService {
             return new ChatAnswer(EMPTY_QUESTION_TEXT, List.of(), request.sessionId(), false);
         }
         try {
-            // 查询向量只算一次：命中查找与未命中后的写入共用（空列表 = 缓存开关关闭 / embedding 不可用）
-            List<Float> queryEmbedding =
-                    request.forceFresh() ? List.of() : semanticCache.embedQuery(request.question());
-            if (!queryEmbedding.isEmpty()) {
-                var cached = semanticCache.lookUp(
-                        AiCallScope.CHAT, userId, request.question(), queryEmbedding, ChatAnswer.class);
-                if (cached.isPresent()) {
-                    return cached.get().withSessionId(request.sessionId());
-                }
+            SemanticCacheProbe probe = probeSemanticCache(request, userId);
+            if (probe.hit().isPresent()) {
+                return probe.hit().get().withSessionId(request.sessionId());
             }
             ChatAnswer answer = agenticAnswer(request, userId, null);
-            if (!queryEmbedding.isEmpty()) {
-                semanticCache.store(AiCallScope.CHAT, userId, request.question(), queryEmbedding, answer);
-            }
+            storeInSemanticCache(request, userId, probe, answer);
             staleCache.put(staleKey(userId, request.question()), answer);
             return answer;
         } catch (LockAcquisitionException e) {
@@ -239,21 +232,13 @@ public class AiChatAppService {
                 log.warn("action=token_budget_exceeded, scenario={}", AiCallScope.CHAT.budgetScenario());
                 throw new TokenBudgetExceededException();
             }
-            // 语义缓存：与非流式同一 embed-once 模式（空向量 = 缓存关闭 / embedding 不可用，直接跳过）
-            List<Float> queryEmbedding =
-                    request.forceFresh() ? List.of() : semanticCache.embedQuery(request.question());
-            if (!queryEmbedding.isEmpty()) {
-                var cached = semanticCache.lookUp(
-                        AiCallScope.CHAT, userId, request.question(), queryEmbedding, ChatAnswer.class);
-                if (cached.isPresent()) {
-                    replayCached(cached.get(), handler);
-                    return;
-                }
+            SemanticCacheProbe probe = probeSemanticCache(request, userId);
+            if (probe.hit().isPresent()) {
+                replayCached(probe.hit().get(), handler);
+                return;
             }
             ChatAnswer answer = agenticAnswer(request, userId, handler);
-            if (!queryEmbedding.isEmpty()) {
-                semanticCache.store(AiCallScope.CHAT, userId, request.question(), queryEmbedding, answer);
-            }
+            storeInSemanticCache(request, userId, probe, answer);
             handler.onDone(answer.answer());
         } catch (TokenBudgetExceededException e) {
             handler.onError("今日 AI 调用预算已用尽，请明天再试");
@@ -268,6 +253,35 @@ public class AiChatAppService {
         } catch (Exception e) {
             recordUnavailableDegradation(request.question(), e);
             handler.onError(ChatAnswer.UNAVAILABLE_TEXT);
+        }
+    }
+
+    /**
+     * 语义缓存的一次探查 — 查询向量与命中结果打在一起返回：非流式 / 流式两条路径同一模式
+     * （向量只算一次，未命中后的写回复用同一个向量），三段「算向量 → 查 → 写」因此只有这一份实现。
+     * <p>
+     * {@code queryEmbedding} 为空同时覆盖两件事：{@code forceFresh} 绕过语义缓存，以及 embedding 不可用
+     * ——两条路径都让查找与写入一起跳过，命中恒为空、也不会把不可用写成脏缓存。
+     */
+    private record SemanticCacheProbe(List<Float> queryEmbedding, Optional<ChatAnswer> hit) {}
+
+    private SemanticCacheProbe probeSemanticCache(ChatRequest request, String userId) {
+        if (request.forceFresh()) {
+            return new SemanticCacheProbe(List.of(), Optional.empty());
+        }
+        List<Float> queryEmbedding = semanticCache.embedQuery(request.question());
+        if (queryEmbedding.isEmpty()) {
+            return new SemanticCacheProbe(List.of(), Optional.empty());
+        }
+        return new SemanticCacheProbe(
+                queryEmbedding,
+                semanticCache.lookUp(AiCallScope.CHAT, userId, request.question(), queryEmbedding, ChatAnswer.class));
+    }
+
+    /** 未命中后的写回 — 跳过判据与 {@link #probeSemanticCache} 同源（空向量即不写），不做第二次向量化。 */
+    private void storeInSemanticCache(ChatRequest request, String userId, SemanticCacheProbe probe, ChatAnswer answer) {
+        if (!probe.queryEmbedding().isEmpty()) {
+            semanticCache.store(AiCallScope.CHAT, userId, request.question(), probe.queryEmbedding(), answer);
         }
     }
 
@@ -327,7 +341,7 @@ public class AiChatAppService {
                     new ToolCallLoop.Input(request.question(), request.sessionId(), userId, history, prefs, handler));
 
             // 引用来源：知识 / 资产两路召回物合并成结构化来源（带 type + id），资产优先，截断到 3 条
-            List<ChatSource> sources = ChatSource.merge(run.knowledgeHits(), run.assets(), SOURCE_LIMIT);
+            List<ChatSource> sources = ChatSource.merge(run.knowledgeHits(), run.assetHits(), SOURCE_LIMIT);
             if (handler != null && !sources.isEmpty()) {
                 handler.onSources(sources);
             }
