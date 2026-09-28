@@ -274,22 +274,23 @@ public class AgentLoopRunner {
             DecisionConversation conversation,
             List<ToolCallDecision> decisions,
             int firstStepIndex) {
-        var toolPath = new ArrayList<String>(decisions.size());
-        var observations = new ArrayList<String>(decisions.size());
-        int stepIndex = firstStepIndex;
+        // finish 先摘出去：执行体里就没有「跳过它」的分支，回填的 tool_calls 与观察也天然等长。
+        // 一趟分完而不是两趟 filter：同一份 decisions 只走一次；多个 finish 取最后一个，与摘出前的行为一致
         ToolCallDecision finish = null;
+        var executableCalls = new ArrayList<ToolCallDecision>(decisions.size());
         for (ToolCallDecision decision : decisions) {
             if (decision.isFinish()) {
                 finish = decision;
-                continue;
+            } else {
+                executableCalls.add(decision);
             }
-            long start = System.nanoTime();
-            ToolResult result = dispatcher.dispatch(decision);
-            long latencyMs = (System.nanoTime() - start) / 1_000_000;
-            metrics.recordTool(decision.tool(), latencyMs);
+        }
 
-            recordToolStep(input, traceId, stepIndex, decision, toolInputOf(decision), result, latencyMs);
-            stepIndex++;
+        var toolPath = new ArrayList<String>(executableCalls.size() + 1);
+        var observations = new ArrayList<String>(executableCalls.size());
+        int stepIndex = firstStepIndex;
+        for (ToolCallDecision decision : executableCalls) {
+            ToolResult result = executeOneTool(input, traceId, stepIndex++, dispatcher, decision);
             toolPath.add(decision.tool());
             observations.add(result.observation());
         }
@@ -298,8 +299,19 @@ public class AgentLoopRunner {
             toolPath.add(AgentTools.TOOL_FINISH);
             return new RoundResult(stepIndex + 1, toolPath, true);
         }
-        conversation.appendRound(rawToolCallsOf(decisions), observations);
+        conversation.appendRound(rawToolCallsOf(executableCalls), observations);
         return new RoundResult(stepIndex, toolPath, false);
+    }
+
+    /** 执行一步工具调用，顺带把这步的观测副产物记全（步级延迟指标 / trace / SSE step 事件）—— 循环里只留骨架。 */
+    private ToolResult executeOneTool(
+            Input input, String traceId, int stepIndex, ToolDispatcher dispatcher, ToolCallDecision decision) {
+        long start = System.nanoTime();
+        ToolResult result = dispatcher.dispatch(decision);
+        long latencyMs = (System.nanoTime() - start) / 1_000_000;
+        metrics.recordTool(decision.tool(), latencyMs);
+        recordToolStep(input, traceId, stepIndex, decision, toolInputOf(decision), result, latencyMs);
+        return result;
     }
 
     /** 本轮全部 tool call 的原始对象（按模型给出的顺序）—— 回填时 assistant 与 role=tool 两侧同序。 */
