@@ -82,7 +82,7 @@ final class ChatPromptAssembler {
                         stripTags(question),
                         stripTags(UserPreference.format(prefs)),
                         stripTags(formatKnowledgeHits(run.knowledgeHits())),
-                        stripTags(formatAssetHits(run.assets())),
+                        stripTags(formatAssetHits(run.assetHits())),
                         stripTags(formatAssetDetails(run.details())));
     }
 
@@ -99,12 +99,12 @@ final class ChatPromptAssembler {
     }
 
     /** 资产块带 id 与价格：提示词已硬约束不得编造资产与数字，这里把可核对的 id 显式给到，让约束有据可依。 */
-    private static String formatAssetHits(List<AssetHit> assets) {
-        if (assets.isEmpty()) {
+    private static String formatAssetHits(List<AssetHit> assetHits) {
+        if (assetHits.isEmpty()) {
             return "(无可推荐资产)";
         }
         var sb = new StringBuilder();
-        for (AssetHit asset : assets) {
+        for (AssetHit asset : assetHits) {
             sb.append("[%s] %s | ¥%s | %s | %s\n"
                     .formatted(
                             asset.productId(),

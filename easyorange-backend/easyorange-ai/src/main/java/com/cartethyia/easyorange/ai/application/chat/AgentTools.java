@@ -100,7 +100,7 @@ public class AgentTools {
     /** 各轮召回物累加器 — 请求内可变状态，实例独占持有；读取走只读快照方法，不交出可变引用。 */
     private final List<KnowledgeHit> knowledgeHits = new ArrayList<>();
 
-    private final List<AssetHit> assets = new ArrayList<>();
+    private final List<AssetHit> assetHits = new ArrayList<>();
     private final List<AssetDetail> details = new ArrayList<>();
     private final KnowledgeRetrievalAppService retrievalService;
     private final AssetSourcingAppService assetSourcingService;
@@ -128,8 +128,8 @@ public class AgentTools {
         return List.copyOf(knowledgeHits);
     }
 
-    List<AssetHit> assets() {
-        return List.copyOf(assets);
+    List<AssetHit> assetHits() {
+        return List.copyOf(assetHits);
     }
 
     List<AssetDetail> details() {
@@ -157,7 +157,7 @@ public class AgentTools {
             @ToolParam(description = "改写后的找货关键词，3-10 字，保留品类与硬约束（预算 / 成色）") String query) {
         List<AssetHit> found = assetSourcingService.search(query, ASSET_TOP_K);
         List<AssetHit> fresh = newAssetHits(found);
-        assets.addAll(fresh);
+        assetHits.addAll(fresh);
         return isRedundant(found.size() - fresh.size(), found.size())
                 ? NO_NEW_HIT_OBSERVATION
                 : formatAssetObservation(found);
@@ -187,7 +187,7 @@ public class AgentTools {
             description = "对已召回的资产算行情（在售件数 / 均价 / 价格区间），用于判断某件值不值得买；零模型计算",
             resultConverter = ObservationTextConverter.class)
     public String summarizeMarketPrice(@ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought) {
-        return PriceStats.of(assets)
+        return PriceStats.of(assetHits)
                 .map(PriceStats::observation)
                 .orElse("暂无可统计的在售资产（尚未召回，或召回项均无有效价格），先调用 product_search 召回候选");
     }
@@ -315,7 +315,7 @@ public class AgentTools {
 
     /** 同 {@link #newKnowledgeHits}，资产按 productId 判重。 */
     private List<AssetHit> newAssetHits(List<AssetHit> found) {
-        Set<String> seen = assets.stream().map(AgentTools::assetHitId).collect(Collectors.toSet());
+        Set<String> seen = assetHits.stream().map(AgentTools::assetHitId).collect(Collectors.toSet());
         return found.stream().filter(asset -> seen.add(assetHitId(asset))).collect(Collectors.toList());
     }
 
