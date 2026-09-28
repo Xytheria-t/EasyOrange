@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 浏览量计数端口 — 浏览计数先落 Redis hash 缓冲，由 {@code ViewCountBatchProcessor} 定时批量落库。
+ * 浏览量计数端口 — 浏览计数先落 Redis hash 缓冲，由 {@code ViewCountFlushAppService} 定时批量落库。
  * 与 {@link ProductCachePort}（商品信息读缓存）职责分离。
  */
 public interface ViewCountPort {

@@ -3,7 +3,9 @@ package com.cartethyia.easyorange.product.domain.aggregate;
 import static org.assertj.core.api.Assertions.*;
 
 import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
@@ -15,7 +17,9 @@ import com.cartethyia.easyorange.product.domain.event.ProductTakeOfflineEvent;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
 import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
-import com.cartethyia.easyorange.product.domain.valueobject.*;
+import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
+import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -67,7 +71,19 @@ class ProductTest {
     void decrementStock_whenNoStock_shouldThrow() {
         var p = Product.create(ProductTestFixture.aProduct().stock(0).build()).aggregate();
 
-        assertThatThrownBy(p::decrementStock).isInstanceOf(ProductDomainException.class);
+        assertThatThrownBy(() -> p.decrementStock(1)).isInstanceOf(ProductDomainException.class);
+    }
+
+    @Test
+    @DisplayName("扣减量超过库存时与「库存为 0」走同一错误码（超卖守卫只在聚合根判定一次）")
+    void decrementStock_whenQuantityExceedsStock_shouldThrowSameCodeAsEmptyStock() {
+        var p = Product.create(ProductTestFixture.aProduct().stock(1).build()).aggregate();
+
+        assertThatThrownBy(() -> p.decrementStock(2))
+                .isInstanceOf(ProductDomainException.class)
+                .isInstanceOfSatisfying(
+                        BaseBusinessException.class,
+                        ex -> assertThat(ex.getCode()).isEqualTo(ProductResultCode.PRODUCT_OUT_OF_STOCK.getCode()));
     }
 
     @Test
@@ -75,7 +91,7 @@ class ProductTest {
     void decrementStock_shouldDecreaseAndEmitEvent() {
         var p = ProductTestFixture.defaultProduct();
 
-        var t = p.decrementStock();
+        var t = p.decrementStock(1);
 
         assertThat(t.aggregate().getStock().value()).isEqualTo(9);
         assertThat(t.event()).isInstanceOf(StockDecreasedEvent.class);
@@ -86,7 +102,7 @@ class ProductTest {
     void restoreStock_shouldIncreaseAndEmitEvent() {
         var p = ProductTestFixture.defaultProduct();
 
-        var t = p.restoreStock();
+        var t = p.restoreStock(1);
 
         assertThat(t.aggregate().getStock().value()).isEqualTo(11);
         assertThat(t.event()).isInstanceOf(StockRestoredEvent.class);
@@ -365,7 +381,7 @@ class ProductTest {
         var p = ProductTestFixture.onlineProduct();
         var sold = p.markAsSold().orElseThrow().aggregate();
 
-        assertThatThrownBy(sold::restoreStock).isInstanceOf(ProductDomainException.class);
+        assertThatThrownBy(() -> sold.restoreStock(1)).isInstanceOf(ProductDomainException.class);
     }
 
     @Test
@@ -374,7 +390,7 @@ class ProductTest {
         var p = ProductTestFixture.onlineProduct();
         var offline = p.takeOffline().aggregate();
 
-        assertThatThrownBy(offline::restoreStock).isInstanceOf(ProductDomainException.class);
+        assertThatThrownBy(() -> offline.restoreStock(1)).isInstanceOf(ProductDomainException.class);
     }
 
     // ==================== predicates ====================

@@ -12,7 +12,8 @@ public interface ProductCachePort {
     /**
      * @param productId 商品 ID（null 直接返回 null，不触缓存）
      * @param loader    缓存未命中时的回源逻辑
-     * @return 缓存的商品 VO；商品不存在或 loader 返回 null 时为 null（null 不落缓存）
+     * @return 缓存的商品 VO；商品不存在或 loader 返回 null 时为 null
+     *         （null **会**落缓存 —— 防穿透靠的就是它，写路径事件负责 evict，见 {@code ProductCacheAdapter}）
      */
     ProductVO getProductCache(String productId, Supplier<ProductVO> loader);
 }

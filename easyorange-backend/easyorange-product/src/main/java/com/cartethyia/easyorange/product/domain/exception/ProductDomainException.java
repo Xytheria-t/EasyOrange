@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 
 /**
- * 资产域业务异常 — 模块唯一领域异常类，构造走 {@link #of} 与具名工厂（不新增叶子类）。
+ * 资产域业务异常 — 模块唯一领域异常类，只由具名工厂构造（不新增叶子类、无裸 {@code of} 出口）。
  * <p>
  * 资产与分类共用这一个根类：分类是资产域的概念（商品挂在分类上），若为它单开
  * {@code CategoryDomainException} 就成了「第二套异常层级」，catch 本类会漏掉它
@@ -19,37 +19,13 @@ import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
  */
 public class ProductDomainException extends BaseBusinessException {
 
-    protected ProductDomainException(String message) {
-        super(message);
-    }
-
-    protected ProductDomainException(IResultCode resultCode) {
-        super(resultCode);
-    }
-
     protected ProductDomainException(IResultCode resultCode, String message) {
         super(resultCode, message);
-    }
-
-    protected ProductDomainException(String message, Throwable cause) {
-        super(message, cause);
     }
 
     @Override
     protected String defaultCode() {
         return ProductResultCode.PRODUCT_ERROR.getCode();
-    }
-
-    public static ProductDomainException of(String message) {
-        return new ProductDomainException(message);
-    }
-
-    public static ProductDomainException of(IResultCode resultCode) {
-        return new ProductDomainException(resultCode);
-    }
-
-    public static ProductDomainException of(IResultCode resultCode, String message) {
-        return new ProductDomainException(resultCode, message);
     }
 
     // ── 资产 ──
@@ -79,13 +55,6 @@ public class ProductDomainException extends BaseBusinessException {
                 ProductResultCode.PRODUCT_STATUS_INVALID,
                 message + " (productId=" + (productId != null ? productId.value() : "null") + ", currentStatus="
                         + (currentStatus != null ? currentStatus : "null") + ")");
-    }
-
-    /** 资产状态不合法（B2009）— 无 productId 时的重载。 */
-    public static ProductDomainException invalidStatus(String message, ProductStatus currentStatus) {
-        return new ProductDomainException(
-                ProductResultCode.PRODUCT_STATUS_INVALID,
-                message + " (currentStatus=" + (currentStatus != null ? currentStatus : "null") + ")");
     }
 
     /** 资产库存不足（B2003）— 携带当前库存辅助判断超卖边界。 */

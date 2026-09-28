@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.category;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
@@ -34,18 +33,6 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
     }
 
     @Override
-    public List<CategoryReadModel> findEnabledByLevel(Integer level) {
-        return lambdaQuery()
-                .eq(CategoryDO::getLevel, level)
-                .eq(CategoryDO::getStatus, CategoryStatus.ENABLED)
-                .orderByAsc(CategoryDO::getSortOrder)
-                .list()
-                .stream()
-                .map(this::toReadModel)
-                .toList();
-    }
-
-    @Override
     public List<CategoryReadModel> findByIds(List<String> ids) {
         if (ids == null || ids.isEmpty()) {
             return List.of();
@@ -67,14 +54,6 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
             return Map.of();
         }
         return toCountMap(mapper.countOnlineProductsByCategoryIdsWithChildren(categoryIds));
-    }
-
-    @Override
-    public boolean existsById(String categoryId) {
-        if (categoryId == null || categoryId.isBlank()) {
-            return false;
-        }
-        return mapper.selectCount(Wrappers.<CategoryDO>lambdaQuery().eq(CategoryDO::getId, categoryId)) > 0;
     }
 
     private Map<String, Long> toCountMap(List<CategoryProductCount> counts) {

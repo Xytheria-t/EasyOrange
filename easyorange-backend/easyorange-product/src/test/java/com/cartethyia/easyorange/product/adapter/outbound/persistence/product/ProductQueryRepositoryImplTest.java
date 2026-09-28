@@ -1,7 +1,9 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.product;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -9,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.HotKeywordBufferAdapter;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.HotKeywordMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryMapper;
 import com.cartethyia.easyorange.product.application.service.SearchHistoryBufferAppService;
@@ -27,6 +30,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 
 @ExtendWith(MockitoExtension.class)
@@ -61,7 +65,13 @@ class ProductQueryRepositoryImplTest {
     private HotKeywordMapper hotKeywordMapper;
 
     @Mock
+    private HotKeywordBufferAdapter hotKeywordBuffer;
+
+    @Mock
     private RedisTemplate<Object, Object> redisTemplate;
+
+    @Mock
+    private ListOperations<Object, Object> opsForList;
 
     @Mock
     private SearchHistoryBufferAppService searchHistoryBufferService;
@@ -80,6 +90,7 @@ class ProductQueryRepositoryImplTest {
                 categoryMapper,
                 searchHistoryMapper,
                 hotKeywordMapper,
+                hotKeywordBuffer,
                 redisTemplate,
                 searchHistoryBufferService,
                 categoryRepository);
@@ -177,5 +188,27 @@ class ProductQueryRepositoryImplTest {
 
         verify(productMapper).selectCount(countWrapperCaptor.capture());
         assertThat(countWrapperCaptor.getValue().getSqlSegment()).contains("status");
+    }
+
+    @Test
+    @DisplayName("记录搜索时顺带记热词：榜单读的就是这份计数")
+    void saveSearchHistory_recordsHotKeyword() {
+        when(redisTemplate.opsForList()).thenReturn(opsForList);
+
+        repository.saveSearchHistory("u1", "手机");
+
+        verify(hotKeywordBuffer).record("手机");
+        verify(searchHistoryBufferService).addToBuffer("u1", "手机");
+    }
+
+    @Test
+    @DisplayName("热词写入抛异常时搜索历史仍要落——非关键路径不能拖垮记录本身")
+    void saveSearchHistory_hotKeywordFails_stillRecordsHistory() {
+        when(redisTemplate.opsForList()).thenReturn(opsForList);
+        doThrow(new RuntimeException("hot keyword boom")).when(hotKeywordBuffer).record(any());
+
+        assertThatCode(() -> repository.saveSearchHistory("u1", "手机")).doesNotThrowAnyException();
+
+        verify(searchHistoryBufferService).addToBuffer("u1", "手机");
     }
 }

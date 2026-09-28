@@ -11,6 +11,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+/**
+ * 搜索历史写入缓冲 — 记录搜索是高频小写入，逐条落库会把 {@code eo_search_history} 打成写热点，
+ * 故先进内存队列、由定时任务批量 upsert。
+ * <p>
+ * 已知技术债：本类直接 import adapter 的 {@code SearchHistoryDO} / {@code SearchHistoryMapper}，
+ * 属「application 反向依赖 adapter」，已被 ArchUnit 规则 7 冻结在快照里，不做重构。
+ * 热词计数那条链路刻意没跟进本类（见 {@code HotKeywordBufferAdapter}）—— 再往这里加一个
+ * adapter 依赖只会让冻结快照多一条违规，且热词本身是可丢的统计量、不值得复制这套缓冲。
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.outbound.scheduler;
 
-import com.cartethyia.easyorange.product.application.service.ViewCountBatchProcessor;
+import com.cartethyia.easyorange.product.application.service.ViewCountFlushAppService;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class ViewCountFlushScheduler {
 
     private final RedisTemplate<Object, Object> redisTemplate;
-    private final ViewCountBatchProcessor batchProcessor;
+    private final ViewCountFlushAppService viewCountFlushService;
 
     private static final String VIEW_COUNT_LOCK = "eo:product:views:lock";
 
@@ -24,9 +24,9 @@ public class ViewCountFlushScheduler {
         if (!Boolean.TRUE.equals(locked)) return;
 
         try {
-            batchProcessor.flush();
+            viewCountFlushService.flush();
         } catch (Exception e) {
-            log.error("批量更新浏览量失败", e);
+            log.error("action=flushViewCountFailed", e);
         } finally {
             redisTemplate.delete(VIEW_COUNT_LOCK);
         }

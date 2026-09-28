@@ -3,7 +3,17 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.product;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.valueobject.*;
+import com.cartethyia.easyorange.product.domain.valueobject.AiSuggestion;
+import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
+import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
+import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
+import com.cartethyia.easyorange.product.domain.valueobject.ImageUrl;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
+import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
+import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
+import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
+import com.cartethyia.easyorange.product.domain.valueobject.Version;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,7 +99,6 @@ public class ProductDataMapper {
                 .contactMethod(ContactMethod.of(productDO.getContactMethod()))
                 .description(detailDO != null ? ProductDescription.of(detailDO.getDescription()) : null)
                 .images(toImageSet(imageDOs))
-                .tags(TagSet.empty())
                 .searchText(productDO.getSearchText())
                 .priceUpdateTime(productDO.getPriceUpdateTime())
                 .createTime(productDO.getCreateTime())

@@ -49,9 +49,6 @@ public class ProductController {
 
     // ── 写端点 ──
 
-    /**
-     * Resource CRUD
-     */
     @PostMapping
     public Result<String> createProduct(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody ProductCreateRequest request) {
@@ -111,9 +108,6 @@ public class ProductController {
         return Result.success();
     }
 
-    /**
-     * Product state transitions (lifecycle order)
-     */
     @PutMapping("/{id}/submit")
     public Result<Void> submitForReview(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
         commandHandler.submitForReview(user.userId(), id);
@@ -134,9 +128,6 @@ public class ProductController {
         return Result.success();
     }
 
-    /**
-     * View count tracking
-     */
     @SkipRepeatSubmit
     @PostMapping("/{id}/view")
     public Result<Void> incrementViewCount(@PathVariable String id) {
@@ -152,17 +143,11 @@ public class ProductController {
 
     // ── 读端点 ──
 
-    /**
-     * Single resource lookup
-     */
     @GetMapping("/{id}")
     public Result<ProductVO> getProduct(@PathVariable String id) {
         return Result.success(queryHandler.getProductById(id));
     }
 
-    /**
-     * Product listing and filtered queries
-     */
     @GetMapping
     public Result<PageResult<ProductVO>> listProducts(@Valid ProductQueryRequest request) {
         var criteria = new ProductSearchCriteria(

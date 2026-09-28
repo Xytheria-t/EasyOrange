@@ -15,9 +15,6 @@ public interface CategoryQueryRepository {
      */
     List<CategoryReadModel> findEnabledByParentId(String parentId);
 
-    /** 查某层级的**启用中**分类（当前只用于取一级分类）。 */
-    List<CategoryReadModel> findEnabledByLevel(Integer level);
-
     /** 按 id 批量查（不过滤 status：删除前的存在性校验需要看到禁用节点）。 */
     List<CategoryReadModel> findByIds(List<String> ids);
 
@@ -31,7 +28,4 @@ public interface CategoryQueryRepository {
 
     /** 统计各分类下在售商品数（含子分类，任意深度聚合）。 */
     Map<String, Long> countOnlineProductsByCategoryIdsWithChildren(List<String> categoryIds);
-
-    /** 分类 id 是否存在且未删除。 */
-    boolean existsById(String categoryId);
 }
