@@ -172,8 +172,7 @@ public class AgentLoopRunner {
             }
             Optional<StepDecision> decided = decideStep(input, conversation.snapshot(), toolFace.callbacks());
             if (decided.isEmpty()) {
-                // 决策失败降级：按原始问题补一次检索（识别不出检索需求，最坏是多几条不相关片段进 prompt，
-                // 好过把检索链路失效伪装成「无需检索」）；补检索故障不外抛，不让对话死在降级路径上
+                // 识别不出检索需求时仍补一次：最坏是多几条不相关片段，好过把检索链路失效伪装成「无需检索」
                 try {
                     tools.recallKnowledgeFallback(input.question());
                 } catch (Exception e) {
