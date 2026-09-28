@@ -23,6 +23,8 @@
 |------|------|
 | `V1__init_schema.sql` | 单文件完整 DDL（当前完整结构；开发阶段收口为单文件，项目未发版无生产历史，上线后禁止改、只增 V2+） |
 | `R__seed_*.sql` | 可重复执行种子：分类、RAG 知识库文档 |
+| `db/dev/R__seed_dev_test_data.sql` | dev / it profile 额外加载的演示数据集（用户 / 商品 / 订单 / 库存流水 / 消息等），是演示库数据的唯一事实来源；刷新全库跑 `scripts/db-reset.sh` 后重启应用重放，不单独补数据 |
+| `db/dev/R__seed_zz_ai_demo.sql` | AI 建议采纳率演示数据（`ai_suggestion` 快照三档口径），按名称字典序排在最后，此时类目与商品已入库 |
 
 ## Flyway 迁移规范
 

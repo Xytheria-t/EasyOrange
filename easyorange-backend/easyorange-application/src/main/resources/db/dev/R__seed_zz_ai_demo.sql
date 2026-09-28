@@ -11,6 +11,8 @@
 -- 建议值是构造值，不代表模型真实输出；三条 UPDATE 幂等且只命中种子商品
 -- （比较值加引号的原因：id 是 VARCHAR，裸数字比较会在脏库上报 1292；
 --   应用内真实发布的商品是 UUID v7 主键，不会落在这些 ID 上）。
+-- 引用的商品 ID 段与 R__seed_dev_test_data.sql 的商品段一一对应：
+-- 改商品数据集时，这三组 ID 要同步换（校验方式见文件末尾注释给出的断言）。
 -- Database: MySQL 8.0
 -- ===================================================================
 
@@ -25,7 +27,7 @@ SET p.ai_suggestion = JSON_OBJECT(
         'categoryName', (SELECT c.name FROM `eo_category` c WHERE c.id = p.category_id AND c.del_flag = 0),
         'conditionLevel', p.condition_level,
         'location', COALESCE(p.location, ''))
-WHERE p.id IN ('1', '5', '11', '15', '23', '33', '50', '65');
+WHERE p.id IN ('1', '9', '13', '20', '24', '32', '40', '52');
 
 -- ①B 采纳但改价 ≤10%：只有价格与建议不同
 UPDATE `eo_product` p
@@ -36,7 +38,7 @@ SET p.ai_suggestion = JSON_OBJECT(
         'categoryName', (SELECT c.name FROM `eo_category` c WHERE c.id = p.category_id AND c.del_flag = 0),
         'conditionLevel', p.condition_level,
         'location', COALESCE(p.location, ''))
-WHERE p.id IN ('3', '8', '16', '24', '30', '37', '58', '66');
+WHERE p.id IN ('3', '8', '14', '18', '25', '31', '36', '57');
 
 -- ①C 偏离 >30%：价格大改，且标题被资产方重写
 UPDATE `eo_product` p
@@ -47,6 +49,6 @@ SET p.ai_suggestion = JSON_OBJECT(
         'categoryName', (SELECT c.name FROM `eo_category` c WHERE c.id = p.category_id AND c.del_flag = 0),
         'conditionLevel', p.condition_level,
         'location', COALESCE(p.location, ''))
-WHERE p.id IN ('2', '9', '12', '26', '36', '54', '64', '96');
+WHERE p.id IN ('2', '6', '10', '21', '26', '33', '45', '55');
 
 COMMIT;
