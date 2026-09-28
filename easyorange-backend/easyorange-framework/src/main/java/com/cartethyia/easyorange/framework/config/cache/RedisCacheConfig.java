@@ -72,10 +72,6 @@ public class RedisCacheConfig implements CachingConfigurer {
                 .build();
     }
 
-    /**
-     * 缓存故障 fail-open — Redis 异常统一吞掉并降级（读 → 直查 DB；写 → 放弃本次缓存），
-     * 集中一处、注解侧零改动。
-     */
     @Override
     public CacheErrorHandler errorHandler() {
         return new CacheErrorHandler() {

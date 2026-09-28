@@ -46,8 +46,6 @@ public class OfflineMessageStoreService {
     }
 
     /**
-     * 上线补推：把该用户待推送（PENDING）的离线系统通知推到 /queue/notification 并标记 PUSHED。
-     * <p>
      * 只补推系统通知——聊天消息的会话数据已在 eo_message，客户端上线后自行拉取会话列表，
      * 无需补推实时帧；原消息已被归档/删除时跳过（离线行保持 PENDING，不误标成功）。
      */

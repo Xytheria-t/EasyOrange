@@ -75,10 +75,6 @@ public class DistributedRedissonLockAdapter implements DistributedLockPort {
         }
     }
 
-    /**
-     * 事务提交后再释放锁。若在事务内过早释放，后一个请求会在前一个事务尚未提交时读到旧快照。
-     * 无事务（如定时任务、非事务编排）时立即释放。
-     */
     private void releaseAfterCommit(List<RLock> acquiredLocks) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

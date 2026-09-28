@@ -246,7 +246,7 @@ public class AgentTools {
         try {
             preferenceRepository.record(userId, key, value);
         } catch (Exception e) {
-            // DB 故障是真实故障，按「抛异常 = 该步失败」上报（runner 收敛成失败观察，模型可重试或忽略）
+            // DB 故障是真实故障（区别于「查无此资产」那类有效结果），按抛异常 = 该步失败上报
             throw new IllegalStateException("偏好记录失败: " + reasonOf(e), e);
         }
         return "已记录偏好：%s = %s".formatted(key, value);
@@ -254,7 +254,7 @@ public class AgentTools {
 
     @Tool(name = TOOL_FINISH, description = "信息已足够回答，或无需检索（寒暄 / 闲聊），不再调用任何工具")
     public String finish(@ToolParam(description = "收敛理由，不超过 20 字的中文概括") String thought) {
-        // 方法体不会被执行：runner 在执行前按名称拦截，这里只为让 finish 出现在发给供应商的工具 schema 里
+        // 方法体永不执行，这里只为让 finish 出现在发给供应商的工具 schema 里
         return TOOL_FINISH;
     }
 

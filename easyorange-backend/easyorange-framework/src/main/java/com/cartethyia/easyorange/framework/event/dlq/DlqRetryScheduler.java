@@ -200,7 +200,7 @@ public class DlqRetryScheduler {
         return System.currentTimeMillis() >= deathMillis + delayMillis;
     }
 
-    // ───────────────────────── Republish helpers ─────────────────────────
+    // ── 重投辅助方法 ──
 
     private void republishToMainExchange(
             Message message, String routingKey, int currentRetryCount, String originalQueue) {
@@ -216,7 +216,7 @@ public class DlqRetryScheduler {
         rabbitTemplate.send(RabbitMQConfig.TERMINAL_QUEUE, message);
     }
 
-    // ───────────────────────── Header extraction ─────────────────────────
+    // ── Header 提取 ──
 
     @SuppressWarnings("unchecked")
     private String extractOriginalRoutingKey(Message message) {

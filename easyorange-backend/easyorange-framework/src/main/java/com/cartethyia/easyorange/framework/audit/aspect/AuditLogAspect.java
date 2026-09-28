@@ -76,7 +76,7 @@ public class AuditLogAspect {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
-    // ───────────────────────── Constants ─────────────────────────
+    // ── 常量 ──
 
     /** 操作状态：正常（对齐 {@link AuditLog#getStatus()} 注释） */
     private static final int STATUS_SUCCESS = 0;
@@ -89,12 +89,12 @@ public class AuditLogAspect {
     /** 操作类别：未登录 */
     private static final int OPERATOR_ANONYMOUS = 0;
 
-    // ───────────────────────── Pointcut ─────────────────────────
+    // ── 切点 ──
 
     @Pointcut("within(@org.springframework.web.bind.annotation.RestController *)")
     public void restControllerPointcut() {}
 
-    // ───────────────────────── Around advice ─────────────────────────
+    // ── 环绕通知 ──
 
     @Around("restControllerPointcut()")
     public Object aroundLog(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -132,7 +132,7 @@ public class AuditLogAspect {
         }
     }
 
-    // ───────────────────────── Read operation detection ─────────────────────────
+    // ── 读操作识别 ──
 
     private boolean isReadOperation(String methodName) {
         if (methodName == null || methodName.isEmpty()) return false;
@@ -142,13 +142,10 @@ public class AuditLogAspect {
         return false;
     }
 
-    // ───────────────────────── Event publishing (Outbox) ─────────────────────────
+    // ── 事件发布（Outbox） ──
 
     /**
-     * 通过 Spring Modulith Outbox 发布审计日志事件。
-     * <p>
-     * 事件在独立短事务中发布 → Modulith 写入 {@code EVENT_PUBLICATION} 表 →
-     * 提交后异步投递 RabbitMQ → 消费者写库。若发布失败，降级为直接入库。
+     * 事件在独立短事务中发布（不并入切面所处事务，否则审计写库会拖长业务事务）。
      */
     private void publishAuditLog(AuditLog auditLog) {
         try {
@@ -159,7 +156,7 @@ public class AuditLogAspect {
         }
     }
 
-    // ───────────────────────── AuditLog builder ─────────────────────────
+    // ── AuditLog 构造 ──
 
     private AuditLog buildAuditLog(
             ProceedingJoinPoint joinPoint,
@@ -210,7 +207,7 @@ public class AuditLogAspect {
         return builder.build();
     }
 
-    // ───────────────────────── Convention helpers ─────────────────────────
+    // ── 约定辅助方法 ──
 
     private String deriveModuleName(String className) {
         if (className == null || className.isEmpty()) return className;
@@ -243,7 +240,7 @@ public class AuditLogAspect {
                 : OPERATOR_USER;
     }
 
-    // ───────────────────────── Request param handling ─────────────────────────
+    // ── 请求参数处理 ──
 
     private String argsArrayToString(Object[] paramsArray) {
         if (paramsArray == null || paramsArray.length == 0) {
@@ -275,7 +272,7 @@ public class AuditLogAspect {
                 || obj instanceof BindingResult;
     }
 
-    // ───────────────────────── Sensitive field masking ─────────────────────────
+    // ── 敏感字段脱敏 ──
 
     private String maskSensitiveFields(String json) {
         if (json == null || json.isEmpty()) return json;

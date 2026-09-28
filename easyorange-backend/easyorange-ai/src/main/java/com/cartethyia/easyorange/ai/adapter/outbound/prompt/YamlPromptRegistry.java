@@ -34,9 +34,6 @@ public class YamlPromptRegistry implements PromptRegistry {
 
     private Map<String, List<PromptTemplate>> templatesByName = Map.of();
 
-    /**
-     * 生产构造器 — 从 classpath:prompts/*.yml 加载。
-     */
     public YamlPromptRegistry() {
         this.directory = null;
         this.classpathMode = true;
