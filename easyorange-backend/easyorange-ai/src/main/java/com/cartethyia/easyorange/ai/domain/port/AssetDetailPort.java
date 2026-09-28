@@ -16,7 +16,7 @@ public interface AssetDetailPort {
     Optional<AssetDetail> findDetail(String productId);
 
     /**
-     * 批量查资产详情（compare_assets 工具的通道）— 返回入参中**存在**的那些，
+     * 批量查资产详情（compare_assets 工具的通道）— 返回入参中<b>存在</b>的那些，
      * 调用方按 id 自行对齐缺失项。不存在的 ID 直接不出现在结果里，不抛异常。
      * <p>
      * 默认实现退化为逐个 {@link #findDetail}，正确但带 N+1；适配器应覆写为

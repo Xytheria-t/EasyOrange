@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.prompt;
 
 import com.cartethyia.easyorange.ai.domain.model.PromptTemplate;
-import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
+import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,13 +27,13 @@ import org.yaml.snakeyaml.Yaml;
  * 模板全部外置到 {@code resources/prompts/*.yml}，改 Prompt 不必改 Java、不必发版；同名多版本按语义化
  * 版本号取最新，启动日志逐条打出「名称 + 版本列表」，加载错了肉眼可辨。
  * <p>
- * 目录解析失败只告警不抛 —— 拿不到模板时 {@link PromptRegistry#require} 会以缺模板的具体名字 fail-fast，
+ * 目录解析失败只告警不抛 —— 拿不到模板时 {@link PromptRegistryPort#require} 会以缺模板的具体名字 fail-fast，
  * 比在装配期抛一个无上下文的 IO 异常好定位。文件内容缺必需字段（name / version / template）则直接抛：
  * 那是作者写错了，不该带病上线。
  */
 @Slf4j
 @Component
-public class YamlPromptRegistry implements PromptRegistry {
+public class YamlPromptRegistry implements PromptRegistryPort {
 
     private static final String CLASSPATH_PATTERN = "classpath:prompts/*.yml";
 

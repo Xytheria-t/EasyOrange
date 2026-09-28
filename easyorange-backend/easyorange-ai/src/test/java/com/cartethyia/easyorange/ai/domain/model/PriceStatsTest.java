@@ -33,8 +33,8 @@ class PriceStatsTest {
     }
 
     @Test
-    @DisplayName("多件：均价 HALF_UP 取整到整数，区间文案与 MarketAnalysisTool 一致")
-    void of_matchesMarketAnalysisToolWording() {
+    @DisplayName("多件：均价 HALF_UP 取整到整数，区间文案按件数列全")
+    void of_roundsAverageToInteger() {
         var stats = PriceStats.of(List.of(hit("p1", "3000"), hit("p2", "4200"), hit("p3", "5000")))
                 .orElseThrow();
 

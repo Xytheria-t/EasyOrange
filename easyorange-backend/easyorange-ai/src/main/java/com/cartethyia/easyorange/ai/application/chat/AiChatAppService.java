@@ -8,14 +8,14 @@ import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
+import com.cartethyia.easyorange.ai.domain.exception.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.exception.TokenBudgetExceededException;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
 import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
-import com.cartethyia.easyorange.ai.domain.port.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
-import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
+import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
 import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
@@ -45,10 +45,7 @@ import org.springframework.stereotype.Service;
  * 工具循环（{@link ToolCallLoop}，步数 / 预算超限降级为用已积累观察直接生成，决策失败降级为按原始
  * 问题检索一次）→ 生成回答（消息形状在 {@link ChatPromptAssembler}，回答末尾 [来源:标题] 引用溯源）。
  * <p>
- * 流式路径的预算前置检查手动做而不挂 {@link TokenBudget} 注解（原因见 {@link ChatBudgetGuard}）：
- * 不是 AOP 拦不住——注解同样会被切面拦截——而是切面在<b>代理边界</b>抛
- * {@link TokenBudgetExceededException}，发生在方法体之前，streamAnswer 内部把预算异常转成 error
- * 事件的路由接不到它，预算提示会落成 Controller 的通用降级文案。
+ * 流式路径的预算前置检查手动做而不挂 {@link TokenBudget} 注解，原因见 {@link ChatBudgetGuard} 的类注释。
  */
 @Slf4j
 @Service
@@ -80,7 +77,7 @@ public class AiChatAppService {
     private static final int CACHE_REPLAY_CHUNK_CHARS = 8;
 
     private final ChatModel chatModel;
-    private final PromptRegistry promptRegistry;
+    private final PromptRegistryPort promptRegistry;
     private final AiModelSupport aiModelSupport;
     private final SemanticCachePort semanticCache;
     private final ChatSessionPort sessionStore;
@@ -125,7 +122,7 @@ public class AiChatAppService {
 
     public AiChatAppService(
             ChatModel chatModel,
-            PromptRegistry promptRegistry,
+            PromptRegistryPort promptRegistry,
             AiModelSupport aiModelSupport,
             SemanticCachePort semanticCache,
             ChatSessionPort sessionStore,
@@ -219,7 +216,7 @@ public class AiChatAppService {
      * {@code SecurityContextHolder} 的 ThreadLocal 不会跟着过去，在这里读会恒为空 ——
      * 长期画像不加载、偏好写不进库、trace 的 userId 为空。Controller 在 servlet 线程解析登录态后
      * 传入，缺失即 401（身份是硬前置，不静默降级）。对话链路没有匿名调用方，另一个主体是评估跑批
-     * （{@link ToolCallLoop#MACHINE_SUBJECT}）。预算前置检查不挂注解的原因见类注释。
+     * （{@link ToolCallLoop#MACHINE_SUBJECT}）。
      */
     public void streamAnswer(ChatRequest request, String userId, ChatStreamHandler handler) {
         if (request.question() == null || request.question().isBlank()) {

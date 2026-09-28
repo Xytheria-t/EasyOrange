@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.budget;
 
-import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -32,7 +32,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
  * {@code easyorange.ai.budget.store=redis} 时注册（默认内存版）。
  */
 @Slf4j
-public class RedisTokenBudgetStore implements TokenBudgetStore {
+public class RedisTokenBudgetStore implements TokenBudgetStorePort {
 
     /** fail-open 操作维度 — {@link #FAIL_OPEN_METRIC} 的封闭 tag 集（构造期全集注册），tag 值是时序契约：改枚举名不改 tag。 */
     private enum FailOpenOp {
@@ -67,7 +67,7 @@ public class RedisTokenBudgetStore implements TokenBudgetStore {
         for (FailOpenOp op : FailOpenOp.values()) {
             failOpenCounters.put(op, meterRegistry.counter(FAIL_OPEN_METRIC, "op", op.tag()));
         }
-        log.info("TokenBudgetStore: 使用 Redis 版存储（日预算跨实例共享）");
+        log.info("TokenBudgetStorePort: 使用 Redis 版存储（日预算跨实例共享）");
     }
 
     @Override

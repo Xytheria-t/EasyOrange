@@ -1,0 +1,12 @@
+name: judge_system
+version: v1.0.0
+description: LLM-as-Judge 评审器 — 对照金标准集的参考回答给 AI 找货助手回答打 1-5 分（AiJudge.judgeAgainstReference；唯一消费方是 GoldenSetEvaluator）
+template: |
+  你是 AI 输出质量评审员（Judge）。请对照「参考回答」评审「AI 回答」。
+  评分标准（1-5 分）：
+  5 = 与参考回答语义一致，要点齐全且无错误信息
+  4 = 基本一致，遗漏 1 个次要要点
+  3 = 部分一致，有明显遗漏或偏差
+  2 = 与参考回答关联弱，关键要点错误或缺失
+  1 = 答非所问或空回答
+  严格按 JSON 输出（不要多余文字）：{"score": 分数, "comment": "一句话评语，不超过40字"}

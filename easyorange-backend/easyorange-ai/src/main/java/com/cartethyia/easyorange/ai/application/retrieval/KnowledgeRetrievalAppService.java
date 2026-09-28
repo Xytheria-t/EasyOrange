@@ -18,6 +18,10 @@ import org.springframework.stereotype.Service;
  * 在这里按余弦相似度重排是对稠密路同一向量的单调变换（等于没排），还会把 BM25 的排序信号整体丢掉，不做。
  * <p>
  * 索引不可用（ES 关闭）时降级到 MySQL 标题/正文 LIKE 检索：仅保证可用，不保证召回质量。
+ * <p>
+ * <b>查询向量化失败同样不放弃检索</b>：空向量直接传给端口，只跑 BM25 一路 —— 与
+ * {@link AssetSourcingAppService} 同一口径。两条链路都只服务对话主链路，向量化的失败方（供应商抖动 /
+ * key 未配置）在资产侧会让整个找货功能静默失效，在这里也会让规则问答整条空掉；少一路召回好过没有召回。
  */
 @Slf4j
 @Service
@@ -45,15 +49,25 @@ public class KnowledgeRetrievalAppService {
             return List.of();
         }
 
-        List<Float> queryEmbedding;
+        return toHits(port.search(query, embedOrEmpty(embeddingModel, query), topK));
+    }
+
+    /**
+     * 查询向量化 —— 失败退化为空向量（端口只跑 BM25 一路），不把异常抛出去中断检索：
+     * 对话侧要等工具失败被收敛成失败观察，比「整条规则问答答不出」好得多。
+     * key 未配置时装配的占位模型也是调用即抛，这条降级路径同时承担「AI 密钥可选、不影响启动」的契约。
+     */
+    private List<Float> embedOrEmpty(EmbeddingModel embeddingModel, String query) {
         try {
-            queryEmbedding = aiModelSupport.embed(embeddingModel, AiCallScope.KNOWLEDGE, query);
+            List<Float> embedding = aiModelSupport.embed(embeddingModel, AiCallScope.KNOWLEDGE, query);
+            if (embedding.isEmpty()) {
+                log.warn("Empty embedding for knowledge query, falling back to BM25-only retrieval, query={}", query);
+            }
+            return embedding;
         } catch (Exception e) {
-            log.warn("Query embed failed, knowledge search returns empty: {}", e.getMessage());
+            log.warn("Query embed failed, knowledge search falls back to BM25-only retrieval, query={}", query, e);
             return List.of();
         }
-
-        return toHits(port.search(query, queryEmbedding, topK));
     }
 
     private static List<KnowledgeHit> toHits(List<KnowledgeMatch> matches) {

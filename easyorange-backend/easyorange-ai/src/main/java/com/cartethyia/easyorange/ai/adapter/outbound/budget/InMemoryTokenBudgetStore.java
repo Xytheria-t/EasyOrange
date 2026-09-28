@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.budget;
 
-import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
@@ -21,12 +21,12 @@ import lombok.extern.slf4j.Slf4j;
  * 通过 {@link com.cartethyia.easyorange.ai.config.AiConfig#tokenBudgetStore()} 注册为 Bean。
  */
 @Slf4j
-public class InMemoryTokenBudgetStore implements TokenBudgetStore {
+public class InMemoryTokenBudgetStore implements TokenBudgetStorePort {
 
     private final Map<String, AtomicReference<TokenUsage>> store = new ConcurrentHashMap<>();
 
     public InMemoryTokenBudgetStore() {
-        log.info("TokenBudgetStore: 使用内存版存储（开发模式，重启清空）——多副本部署须切 redis，否则日限被放大 N 倍");
+        log.info("TokenBudgetStorePort: 使用内存版存储（开发模式，重启清空）——多副本部署须切 redis，否则日限被放大 N 倍");
     }
 
     @Override

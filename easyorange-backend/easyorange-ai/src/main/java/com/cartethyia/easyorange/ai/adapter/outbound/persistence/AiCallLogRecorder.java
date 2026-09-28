@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * AI 调用日志记录器 — 每次 LLM/Embedding 调用落一条 {@code eo_ai_call_log}，
- * 作为**成本报表**的数据源。
+ * 作为<b>成本报表</b>的数据源。
  * <p>
  * 记录失败只告警不抛出：AI 调用日志是观测副产物，绝不能影响主链路。
  * <p>

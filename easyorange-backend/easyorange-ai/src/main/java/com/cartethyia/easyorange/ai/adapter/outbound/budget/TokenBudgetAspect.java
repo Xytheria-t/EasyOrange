@@ -3,7 +3,8 @@ package com.cartethyia.easyorange.ai.adapter.outbound.budget;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.exception.TokenBudgetExceededException;
-import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import com.cartethyia.easyorange.ai.domain.model.TokenBudgetPolicy;
+import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -14,8 +15,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Token 预算切面 — 拦截标注 {@link TokenBudget} 的方法，调用前检查日预算：
- * {@code dailyTokenLimit > 0} 且 累计用量 + 本次预估 &gt; dailyTokenLimit 时抛
- * {@link TokenBudgetExceededException}，目标方法不执行。
+ * 累计用量 + 本次预估越过日限时抛 {@link TokenBudgetExceededException}，目标方法不执行
+ * （判定式见 {@link TokenBudgetPolicy}，与流式预检 / 循环降级共用同一份）。
  * <p>
  * <b>配置优先</b>：{@code easyorange.ai.budget.scenarios.<scenario>} 覆盖注解默认值 —— 注解提供
  * 编译期可见的兜底契约，运维通过配置热更新限额而无需发版。
@@ -32,7 +33,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "easyorange.ai.budget.enabled", matchIfMissing = true)
 public class TokenBudgetAspect {
 
-    private final TokenBudgetStore budgetStore;
+    private final TokenBudgetStorePort budgetStore;
     private final AiProperties aiProperties;
 
     @Around("@annotation(tokenBudget)")
@@ -44,10 +45,10 @@ public class TokenBudgetAspect {
 
         var used = budgetStore
                 .getTodayUsage(scenario)
-                .map(TokenBudgetStore.TokenUsage::total)
+                .map(TokenBudgetStorePort.TokenUsage::total)
                 .orElse(0);
 
-        if (dailyLimit > 0 && used + maxPerCall > dailyLimit) {
+        if (TokenBudgetPolicy.exhausted(used, maxPerCall, dailyLimit)) {
             log.warn(
                     "action=token_budget_exceeded, scenario={}, used={}, maxPerCall={}, limit={}",
                     scenario,

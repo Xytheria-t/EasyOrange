@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.domain.port;
+package com.cartethyia.easyorange.ai.domain.exception;
 
 /**
  * 客户端已离开流式回答（刷新 / 关页 / emitter 已完成）— 由 {@link ChatStreamHandler} 的回调实现抛出，

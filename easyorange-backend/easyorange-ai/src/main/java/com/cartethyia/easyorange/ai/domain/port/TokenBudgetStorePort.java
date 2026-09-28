@@ -5,7 +5,7 @@ import java.util.Optional;
 /**
  * Token 预算存储接口 — 记录和查询按场景隔离的每日 token 用量。
  */
-public interface TokenBudgetStore {
+public interface TokenBudgetStorePort {
 
     record TokenUsage(int inputTokens, int outputTokens, long timestamp) {
         public int total() {

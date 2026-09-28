@@ -30,7 +30,7 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * 原生 tool calling 的 wire 契约测试 — 用 JDK 自带 {@link HttpServer} 当供应商桩，校验经
- * {@link AiModelSupport#callWithTools} 发出的**真实请求体**与回来的 tool call 解析。
+ * {@link AiModelSupport#callWithTools} 发出的<b>真实请求体</b>与回来的 tool call 解析。
  * <p>
  * 覆盖四件会「静默失效」的事（都不是单元测试能看出来的）：
  * <ol>

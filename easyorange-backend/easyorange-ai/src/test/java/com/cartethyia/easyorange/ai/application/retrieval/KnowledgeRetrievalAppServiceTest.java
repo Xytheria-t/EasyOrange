@@ -90,6 +90,24 @@ class KnowledgeRetrievalAppServiceTest {
     }
 
     @Test
+    @DisplayName("查询向量化失败 -> 退化为 BM25 单路召回（与资产侧同口径，不整条返回空）")
+    void search_embedFailureFallsBackToBm25() {
+        setUpRetrieval();
+        when(indexPortProvider.getIfAvailable()).thenReturn(indexPort);
+        when(indexPort.isAvailable()).thenReturn(true);
+        when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
+        when(embeddingModel.embedForResponse(anyList())).thenThrow(new RuntimeException("embedding provider down"));
+        when(indexPort.search("退款", List.of(), 2))
+                .thenReturn(List.of(new KnowledgeMatch("kb-0002", 0, "退款规则", "7 天无理由", 0.5)));
+
+        List<KnowledgeHit> hits = retrievalService.search("退款", 2);
+
+        assertThat(hits).hasSize(1);
+        assertThat(hits.getFirst().docId()).isEqualTo("kb-0002");
+        verify(indexPort).search("退款", List.of(), 2);
+    }
+
+    @Test
     @DisplayName("空关键词 -> 空结果")
     void search_blank() {
         setUpRetrieval();

@@ -9,7 +9,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
@@ -29,7 +28,6 @@ import tools.jackson.databind.ObjectMapper;
  * 端口层再加一把只会让锁的边界与业务边界脱节。新增不经过该服务的调用方时，必须自带同粒度锁。
  */
 @Slf4j
-@Primary
 @Component
 @RequiredArgsConstructor
 public class ChatSessionStore implements ChatSessionPort {

@@ -75,7 +75,7 @@ public final class AssetComparison {
     public record Dimension(String name, String winnerProductId, String note) {}
 
     /**
-     * 价格：胜出方 = 最低价。非正价是脏数据，按 MarketAnalysisTool 口径静默剔除；
+     * 价格：胜出方 = 最低价。非正价是脏数据，静默剔除；
      * 只有一件有有效价格（其余面议或价格缺失）时也不判定——单件不构成「更便宜」。
      */
     private static Optional<Dimension> priceDimension(List<AssetDetail> candidates) {
