@@ -51,7 +51,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     private final SearchHistoryBufferAppService searchHistoryBufferService;
     private final CategoryRepository categoryRepository;
 
-    // ===================== 商品查询 =====================
+    // ── 商品查询 ──
 
     @Override
     public PageResult<ProductReadModel> searchProducts(ProductSearchCriteria criteria) {
@@ -117,7 +117,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         return product != null ? convertToReadModel(product) : null;
     }
 
-    // ===================== 关联数据查询 =====================
+    // ── 关联数据查询 ──
 
     @Override
     public List<CategoryInfo> findCategoriesByIds(List<String> categoryIds) {
@@ -154,7 +154,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         return productMapper.selectSellersByIds(sellerIds);
     }
 
-    // ===================== 搜索历史与热词 =====================
+    // ── 搜索历史与热词 ──
 
     @Override
     public List<SearchHistoryReadModel> findSearchHistoryByUserId(String userId, Integer limit) {
@@ -236,7 +236,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 .toList();
     }
 
-    // ===================== 搜索历史写入 =====================
+    // ── 搜索历史写入 ──
 
     @Override
     public void saveSearchHistory(String userId, String keyword) {
@@ -266,7 +266,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 .remove();
     }
 
-    // ===================== 统计 =====================
+    // ── 统计 ──
 
     @Override
     public long countByStatus(String status) {
@@ -276,7 +276,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 .count();
     }
 
-    // ===================== 私有辅助方法 =====================
+    // ── 私有辅助方法 ──
 
     private PageResult<ProductReadModel> convertToReadModelPage(Page<ProductDO> productPage) {
         var records =

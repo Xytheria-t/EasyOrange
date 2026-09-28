@@ -113,7 +113,7 @@ public class Order {
         this.version = version;
     }
 
-    // ==================== Factory ====================
+    // ── 工厂方法 ──
 
     /**
      * 创建新订单。
@@ -168,7 +168,7 @@ public class Order {
         return new Transition<>(aggregate, event);
     }
 
-    // ==================== Reconstruction ====================
+    // ── 重建 ──
 
     /**
      * 从持久层重建聚合根（统一入口，含列表查询无行项场景）。
@@ -195,7 +195,7 @@ public class Order {
                 spec.version());
     }
 
-    // ==================== Identity Queries ====================
+    // ── 身份判定 ──
 
     /** 是否为本订单的认领方（买家） */
     public boolean isBuyer(String userId) {
@@ -207,7 +207,7 @@ public class Order {
         return Objects.equals(sellerId.value(), userId);
     }
 
-    // ==================== Status Queries ====================
+    // ── 状态判定 ──
     // 仅保留有生产调用方的谓词；其余能力查询（canPay/canShip/...）在需要时由
     // OrderAction.X.canApply(status, paymentStatus) 直接裁决，无需在聚合根上重复暴露。
 
@@ -226,7 +226,7 @@ public class Order {
         return OrderAction.CONFIRM_RECEIPT.canApply(status, paymentStatus);
     }
 
-    // ==================== State Transitions ====================
+    // ── 状态迁移 ──
 
     /** 支付订单 */
     public Transition<Order, OrderPaidEvent> pay(LocalDateTime now) {
@@ -282,7 +282,7 @@ public class Order {
                         UuidV7.generateId(), id.value(), buyerId().value(), extractItems(), reason));
     }
 
-    // ==================== State Machine Guard ====================
+    // ── 状态机守卫 ──
 
     /**
      * 状态机守卫 — 所有转换的唯一入口。
@@ -308,7 +308,7 @@ public class Order {
         return builder.build();
     }
 
-    // ==================== Internal Helpers ====================
+    // ── 内部辅助方法 ──
 
     private List<String> extractProductIds() {
         return items.stream().map(i -> i.productId().value()).toList();

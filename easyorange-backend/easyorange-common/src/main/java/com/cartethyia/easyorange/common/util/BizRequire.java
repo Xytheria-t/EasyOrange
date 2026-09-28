@@ -9,7 +9,7 @@ public class BizRequire {
 
     private BizRequire() {}
 
-    // --- notNull ---
+    // ── notNull ──
 
     // 校验通过时返回入参（Guava/Objects.requireNonNull 式赋值）；契约供 Qodana/IDE 推断 null-after-call
     @Contract(value = "null, _ -> fail")
@@ -24,7 +24,7 @@ public class BizRequire {
         return obj;
     }
 
-    // --- notBlank ---
+    // ── notBlank ──
 
     // 校验通过时返回入参
     @Contract(value = "null, _ -> fail")
@@ -33,7 +33,7 @@ public class BizRequire {
         return str;
     }
 
-    // --- notEmpty ---
+    // ── notEmpty ──
 
     // 校验通过时返回原集合并保持具体类型（List/Set...），供赋值/链式调用
     @Contract(value = "null, _ -> fail")
@@ -42,7 +42,7 @@ public class BizRequire {
         return collection;
     }
 
-    // --- requireTrue ---
+    // ── requireTrue ──
 
     @Contract(value = "false, _ -> fail")
     public static void requireTrue(boolean condition, String message) {
@@ -54,7 +54,7 @@ public class BizRequire {
         if (!condition) fail(resultCode);
     }
 
-    // --- private helpers ---
+    // ── 私有辅助方法 ──
 
     private static void fail(String message) {
         throw BusinessException.of(message);

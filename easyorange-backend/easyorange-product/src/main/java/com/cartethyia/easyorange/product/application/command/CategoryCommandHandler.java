@@ -33,7 +33,7 @@ public class CategoryCommandHandler {
     private final CategoryCachePort categoryCachePort;
     private final IdGenerator idGenerator;
 
-    // ==================== 写操作 ====================
+    // ── 写操作 ──
 
     /**
      * 新建分类 — 层级由父分类推导，同级重名在此拦截。
@@ -152,7 +152,7 @@ public class CategoryCommandHandler {
         categoryCachePort.evictAll();
     }
 
-    // ==================== 私有 ====================
+    // ── 私有 ──
 
     private Category resolveParent(String parentId) {
         if (parentId == null || parentId.isBlank()) {

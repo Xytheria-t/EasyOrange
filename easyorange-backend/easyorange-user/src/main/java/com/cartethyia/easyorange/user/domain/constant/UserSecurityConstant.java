@@ -7,12 +7,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class UserSecurityConstant {
 
-    // ========== 登录锁定 ==========
+    // ── 登录锁定 ──
 
     public static final int MAX_LOGIN_ATTEMPTS = 5;
     public static final Duration LOCK_DURATION = Duration.ofMinutes(30);
 
-    // ========== 短信验证码 ==========
+    // ── 短信验证码 ──
 
     /** 验证码有效期 */
     public static final Duration SMS_CODE_TTL = Duration.ofMinutes(5);

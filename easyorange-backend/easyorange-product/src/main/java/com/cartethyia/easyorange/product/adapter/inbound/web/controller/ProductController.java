@@ -47,7 +47,7 @@ public class ProductController {
     private final CategoryQueryHandler categoryQueryHandler;
     private final CategoryAssembler categoryAssembler;
 
-    // ==================== Commands ====================
+    // ── 写端点 ──
 
     /**
      * Resource CRUD
@@ -150,7 +150,7 @@ public class ProductController {
         return Result.success();
     }
 
-    // ==================== Queries ====================
+    // ── 读端点 ──
 
     /**
      * Single resource lookup

@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface UserRepository {
 
-    // ========== Query methods ==========
+    // ── 查询 ──
 
     Optional<User> findById(String id);
 
@@ -22,13 +22,13 @@ public interface UserRepository {
 
     Optional<User> findByLoginIdentifier(String identifier);
 
-    // ========== Write methods ==========
+    // ── 写入 ──
 
     User save(User user);
 
     void update(User user);
 
-    // ========== Aggregate methods ==========
+    // ── 聚合统计 ──
 
     long count();
 

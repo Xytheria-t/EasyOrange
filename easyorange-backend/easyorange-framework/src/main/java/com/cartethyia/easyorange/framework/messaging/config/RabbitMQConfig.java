@@ -32,7 +32,7 @@ public class RabbitMQConfig {
     public static final String QUEUE_MESSAGE_WEBSOCKET = "eo.message.websocket";
     public static final String QUEUE_PAYMENT_METRICS = "eo.payment.metrics";
 
-    // === Exchanges ===
+    // ── 交换机 ──
 
     @Bean
     public TopicExchange domainEventExchange() {
@@ -44,7 +44,8 @@ public class RabbitMQConfig {
         return new TopicExchange(DLQ_EXCHANGE_NAME, true, false);
     }
 
-    // === Topology: queues, DLQs, and bindings (single Declarables eliminates ~40 individual @Bean methods) ===
+    // ── 队列拓扑 ──
+    // 队列 / 死信队列 / 绑定关系收敛到一个 Declarables，省掉约 40 个 @Bean 方法
 
     @Bean
     public Declarables domainEventTopology(TopicExchange domainEventExchange, TopicExchange dlqExchange) {
@@ -89,7 +90,7 @@ public class RabbitMQConfig {
         return new Declarables(declarables);
     }
 
-    // === Infrastructure Beans ===
+    // ── 基础设施 Bean ──
 
     /**
      * 消费端转换器：复用全局 Jackson 3 {@code JsonMapper}（与投递侧 Modulith 转换器同一实例，

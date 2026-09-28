@@ -35,7 +35,7 @@ public record Message(
         LocalDateTime recalledAt,
         LocalDateTime createTime) {
 
-    // ==================== Factory ====================
+    // ── 工厂方法 ──
 
     /**
      * 创建普通消息。
@@ -86,7 +86,7 @@ public record Message(
                 LocalDateTime.now());
     }
 
-    // ==================== Reconstruction ====================
+    // ── 重建 ──
 
     /**
      * 从持久层原始数据重建聚合根
@@ -119,7 +119,7 @@ public record Message(
                 createTime);
     }
 
-    // ==================== Predicates ====================
+    // ── 状态判定 ──
 
     public boolean isUnread() {
         return ReadStatus.UNREAD == this.isRead;
@@ -133,7 +133,7 @@ public record Message(
         return this.senderId != null && this.senderId.equals(userId);
     }
 
-    // ==================== State Transitions ====================
+    // ── 状态迁移 ──
 
     /**
      * 标记消息为已读（幂等：已读返回自身）。
@@ -199,7 +199,7 @@ public record Message(
                 updated, new MessageRecalledEvent(UuidV7.generateId(), this.id, conversationId, operatorId, now));
     }
 
-    // ==================== Result Record ====================
+    // ── 返回结果 ──
 
     public record MessageRecallResult(Message aggregate, MessageRecalledEvent event) {}
 }

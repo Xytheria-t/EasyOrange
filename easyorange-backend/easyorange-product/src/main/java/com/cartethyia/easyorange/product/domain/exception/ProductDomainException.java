@@ -52,7 +52,7 @@ public class ProductDomainException extends BaseBusinessException {
         return new ProductDomainException(resultCode, message);
     }
 
-    // ==================== 资产 ====================
+    // ── 资产 ──
 
     /** 资产不存在（B2001）— 消息带 id 便于定位。 */
     public static ProductDomainException notFound(ProductId id) {
@@ -97,7 +97,7 @@ public class ProductDomainException extends BaseBusinessException {
                         + (currentStock != null ? currentStock.value() : "null") + ")");
     }
 
-    // ==================== 分类 ====================
+    // ── 分类 ──
 
     /** 分类不存在（B2020）— 消息带 id 便于定位。 */
     public static ProductDomainException categoryNotFound(String categoryId) {

@@ -33,7 +33,7 @@ public enum ProductResultCode implements IResultCode {
     INVALID_CONDITION_LEVEL("B2012", "成色等级不合法"),
     PRODUCT_ERROR("B2019", "资产业务异常"),
 
-    // ==================== 分类（B2020 起） ====================
+    // ── 分类（B2020 起） ──
     // 分类原先由 admin 模块用裸中文串抛 BusinessException，既无错误码也无法聚合观测；
     // 归入本枚举后前端与 Langfuse 观测都能按码聚合。
     CATEGORY_NOT_FOUND("B2020", "分类不存在"),

@@ -10,7 +10,7 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface MessageDataMapper {
 
-    // ==================== Message ====================
+    // ── Message ──
 
     default MessageDO toEntity(Message aggregate) {
         if (aggregate == null) {
@@ -57,7 +57,7 @@ public interface MessageDataMapper {
         return entities.stream().map(this::toAggregate).toList();
     }
 
-    // ==================== OfflineMessage ====================
+    // ── OfflineMessage ──
 
     default OfflineMessageDO toEntity(OfflineMessage aggregate) {
         if (aggregate == null) {
@@ -95,7 +95,7 @@ public interface MessageDataMapper {
         return entities.stream().map(this::toAggregate).toList();
     }
 
-    // ==================== Enum ↔ TINYINT 转换（DB 列存 int，domain 用语义枚举） ====================
+    // ── Enum ↔ TINYINT 转换（DB 列存 int，domain 用语义枚举） ──
 
     private static Integer typeCode(MessageType type) {
         return type == null ? null : Integer.valueOf(type.getCode());

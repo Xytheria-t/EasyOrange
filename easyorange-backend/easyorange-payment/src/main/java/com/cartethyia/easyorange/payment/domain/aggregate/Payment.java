@@ -86,7 +86,7 @@ public class Payment {
         this.version = version;
     }
 
-    // ==================== Factory ====================
+    // ── 工厂方法 ──
 
     /**
      * 创建新支付。
@@ -134,7 +134,7 @@ public class Payment {
         return new Transition<>(aggregate, event);
     }
 
-    // ==================== Reconstruction ====================
+    // ── 重建 ──
 
     /**
      * 从持久层重建聚合根（统一入口）。
@@ -160,7 +160,7 @@ public class Payment {
                 spec.version() != null ? spec.version() : 0);
     }
 
-    // ==================== Guard Methods ====================
+    // ── 前置校验 ──
 
     public boolean canPay() {
         return PaymentStatusGuard.canPay(this.status);
@@ -186,7 +186,7 @@ public class Payment {
         return PaymentStatusGuard.canConfirmRefund(this.status);
     }
 
-    // ==================== State Transitions ====================
+    // ── 状态迁移 ──
 
     /**
      * 准备支付：将状态变为 PAYING（中间态，不发事件）。
@@ -313,7 +313,7 @@ public class Payment {
         return new Transition<>(updated, new PaymentClosedEvent(UuidV7.generateId(), this.id));
     }
 
-    // ==================== Internal Helpers ====================
+    // ── 内部辅助方法 ──
 
     private Payment withStatus(PaymentStatus newStatus, int newVersion) {
         return new Payment(
@@ -388,7 +388,7 @@ public class Payment {
         return version + 1;
     }
 
-    // ==================== Getters ====================
+    // ── 只读访问 ──
 
     public String id() {
         return id;

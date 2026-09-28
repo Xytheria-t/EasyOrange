@@ -94,7 +94,7 @@ public class AuthController {
         return Result.success(new TokenRefreshResult(result.accessToken()));
     }
 
-    // ==== SMS Code ====
+    // ── 短信验证码 ──
 
     @PostMapping("/sms-code")
     public Result<Void> sendSmsCode(
@@ -113,7 +113,7 @@ public class AuthController {
         return Result.success();
     }
 
-    // ==== Password Management ====
+    // ── 密码管理 ──
 
     @PostMapping("/password/reset")
     public Result<Void> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
@@ -128,7 +128,7 @@ public class AuthController {
         return Result.success();
     }
 
-    // ==================== Helpers ====================
+    // ── 辅助方法 ──
 
     private String readRefreshTokenCookie(HttpServletRequest request) {
         var cookies = request.getCookies();

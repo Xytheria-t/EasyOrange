@@ -142,7 +142,7 @@ public class PaymentCommandHandler {
         domainEventPublisher.publish(result.event());
     }
 
-    // ==================== 订单侧入口（以 orderId 为键） ====================
+    // ── 订单侧入口（以 orderId 为键） ──
 
     /**
      * 按订单 ID 发起支付 — 订单模块的 {@code PaymentGatewayPort.pay(orderId)} 以订单 ID 为键，

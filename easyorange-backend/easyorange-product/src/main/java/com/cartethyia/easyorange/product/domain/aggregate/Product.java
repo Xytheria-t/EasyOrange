@@ -74,7 +74,7 @@ public class Product {
     private final LocalDateTime createTime;
     private final LocalDateTime updateTime;
 
-    // ==================== Static Factory ====================
+    // ── 静态工厂 ──
 
     public static Transition<Product, ProductCreatedEvent> create(ProductCreateSpec spec) {
         BizRequire.notNull(spec.title(), "资产名称不能为空");
@@ -106,7 +106,7 @@ public class Product {
         return new Transition<>(p, new ProductCreatedEvent(UuidV7.generateId(), ProductEvent.Data.from(p)));
     }
 
-    // ==================== State Transitions ====================
+    // ── 状态迁移 ──
     // Lifecycle: DRAFT → PENDING_REVIEW → ONLINE ⇄ OFFLINE → SOLD（终端），REJECTED 可循环提交审核。
     // 所有转换的合法性统一由 transitionTo(target) 通过 ProductStatus 状态机表裁决。
 
@@ -205,7 +205,7 @@ public class Product {
         }
     }
 
-    // ==================== Mutations ====================
+    // ── 变更 ──
 
     public Transition<Product, ProductUpdatedEvent> update(String userId, ProductUpdateSpec spec) {
         requireOwner(userId, "只能修改自己的资产");
@@ -238,7 +238,7 @@ public class Product {
                 new ProductDeletedEvent(UuidV7.generateId(), id.value(), userId));
     }
 
-    // ==================== Utility ====================
+    // ── 标识赋值 ──
 
     public Product assignId(String id) {
         if (this.id != null && this.id.value() != null) {
@@ -247,7 +247,7 @@ public class Product {
         return toBuilder().id(ProductId.of(id)).build();
     }
 
-    // ==================== Stock Operations ====================
+    // ── 库存操作 ──
 
     public Transition<Product, StockDecreasedEvent> decrementStock() {
         return decrementStock(1);
@@ -281,7 +281,7 @@ public class Product {
                 StockRestoredEvent.of(id.value(), quantity));
     }
 
-    // ==================== Query / Predicate ====================
+    // ── 查询与判定 ──
 
     public boolean isComplete() {
         return title != null && !title.value().isBlank() && price != null && conditionLevel != null;

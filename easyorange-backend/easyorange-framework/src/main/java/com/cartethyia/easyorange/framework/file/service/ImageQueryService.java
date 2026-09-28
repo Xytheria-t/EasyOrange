@@ -93,7 +93,7 @@ public class ImageQueryService {
         imageProcessCache.put(cacheKey, entry);
     }
 
-    // ===== Internal =====
+    // ── 内部实现 ──
 
     private record FileEntry(Path path, Resource resource, String mimeType) {}
 

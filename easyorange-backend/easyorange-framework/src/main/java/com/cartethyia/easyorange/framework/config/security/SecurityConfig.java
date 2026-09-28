@@ -63,14 +63,14 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    // ========== Constants ==========
+    // ── 常量 ──
 
     private static final long CORS_MAX_AGE_SECONDS = 3600L;
     private static final long HSTS_MAX_AGE_SECONDS = 31536000L;
     private static final String[] CORS_ALLOWED_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"};
     private static final String[] CORS_EXPOSED_HEADERS = {"Authorization", "Content-Disposition"};
 
-    // ========== Dependencies ==========
+    // ── 依赖注入 ──
 
     private final IdempotencyKeyFilter idempotencyKeyFilter;
     private final RateLimitFilter rateLimitFilter;
@@ -79,7 +79,7 @@ public class SecurityConfig {
     private final SecurityProperties securityProperties;
     private final ErrorResponseWriter errorResponseWriter;
 
-    // ========== Security Filter Chain ==========
+    // ── 安全过滤链 ──
 
     @Bean
     @Order(1)
@@ -129,7 +129,7 @@ public class SecurityConfig {
                 .build();
     }
 
-    // ========== JWT Key & Codec ==========
+    // ── JWT 密钥与编解码 ──
 
     @Bean
     public KeyPair rsaKeyPair(JwtProperties properties) {
@@ -180,7 +180,7 @@ public class SecurityConfig {
         return new NimbusJwtEncoder(new ImmutableJWKSet<>(new JWKSet(jwk)));
     }
 
-    // ========== CORS ==========
+    // ── CORS 跨域 ──
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -201,14 +201,14 @@ public class SecurityConfig {
         return source;
     }
 
-    // ========== Password Encoding ==========
+    // ── 密码编码 ──
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(securityProperties.passwordEncoderStrength());
     }
 
-    // ========== Private Helpers ==========
+    // ── 私有辅助方法 ──
 
     /**
      * 认证失败 → 业务错误码：JWT 过期（Spring {@code BadJwtException("JWT expired at ...")}

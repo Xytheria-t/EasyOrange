@@ -66,7 +66,7 @@ public class OrderCommandHandler {
     private final IdGenerator idGenerator;
     private final TransactionTemplate transactionTemplate;
 
-    // ==================== 订单创建 ====================
+    // ── 订单创建 ──
 
     /**
      * 执行订单创建 — 分布式锁在事务外获取、提交后释放，创建流程在事务内执行。
@@ -158,7 +158,7 @@ public class OrderCommandHandler {
         }
     }
 
-    // ==================== 状态转换 ====================
+    // ── 状态转换 ──
 
     /**
      * 发起支付 — 校验买家身份与订单可支付状态后，委托支付模块执行「准备 → 网关 → 确认」两阶段；

@@ -44,7 +44,7 @@ public class Category {
     private final LocalDateTime createTime;
     private final LocalDateTime updateTime;
 
-    // ==================== 工厂 ====================
+    // ── 工厂 ──
 
     /**
      * 新建分类 — 层级由父分类决定（无父即 1 级），调用方需先校验重名。
@@ -72,7 +72,7 @@ public class Category {
                 .build();
     }
 
-    // ==================== 变更 ====================
+    // ── 变更 ──
 
     /**
      * 移动挂载点 — 环检测与深度校验都在这里，调用方只管传齐上下文。

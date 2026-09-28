@@ -26,7 +26,7 @@ public enum ProductStatus implements BaseCodeEnum {
 
     private final String desc;
 
-    // === 状态机：单一事实来源 ===
+    // ── 状态机：单一事实来源 ──
     // 键为当前状态，值为允许到达的目标状态；各转换的触发动作见行内注释。
     private static final Map<ProductStatus, Set<ProductStatus>> ALLOWED_TRANSITIONS = Map.of(
             DRAFT, Set.of(PENDING_REVIEW, ONLINE), // 提交审核 submitForReview / 管理员直接上架 putOnline（绕过审核）

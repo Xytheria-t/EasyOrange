@@ -25,7 +25,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
         this.idGenerator = idGenerator;
     }
 
-    // ========== Query methods ==========
+    // ── 查询 ──
 
     @Override
     public Optional<User> findById(String id) {
@@ -66,7 +66,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
         return findByUsername(trimmed).or(() -> findByEmail(trimmed)).or(() -> findByPhone(trimmed));
     }
 
-    // ========== Write methods ==========
+    // ── 写入 ──
 
     @Override
     public User save(User user) {
@@ -87,7 +87,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
         }
     }
 
-    // ========== Aggregate methods ==========
+    // ── 聚合统计 ──
 
     @Override
     public long count() {

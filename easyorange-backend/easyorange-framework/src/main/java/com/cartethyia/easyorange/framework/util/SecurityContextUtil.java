@@ -19,7 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @UtilityClass
 public class SecurityContextUtil {
 
-    // ==================== Current User ID (High-level API) ====================
+    // ── 当前用户 ID（便捷入口） ──
 
     /**
      * 获取当前用户ID，未登录时返回 empty。
@@ -28,7 +28,7 @@ public class SecurityContextUtil {
         return getUserContext().map(AuthUser::userId);
     }
 
-    // ==================== User Context (Core API) ====================
+    // ── 用户上下文（核心入口） ──
 
     /**
      * 获取当前登录用户上下文，未登录时返回 empty。
@@ -44,7 +44,7 @@ public class SecurityContextUtil {
         return getUserContext().orElseThrow(() -> BusinessException.of(ResultCode.UNAUTHORIZED, "用户未登录"));
     }
 
-    // ==================== Context Management ====================
+    // ── 上下文管理 ──
 
     /**
      * 清除当前线程的安全上下文（通常在请求结束或测试清理时调用）。
@@ -53,7 +53,7 @@ public class SecurityContextUtil {
         SecurityContextHolder.clearContext();
     }
 
-    // ==================== Private Helpers (Foundation) ====================
+    // ── 私有辅助方法（底层） ──
 
     /**
      * 获取当前有效的 Authentication。
