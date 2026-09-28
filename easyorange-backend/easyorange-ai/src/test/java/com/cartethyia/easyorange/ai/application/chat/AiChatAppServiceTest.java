@@ -199,7 +199,7 @@ class AiChatAppServiceTest {
         // 循环召回的在售资产必须真的进 prompt（块内形状见 ChatPromptAssemblerTest）
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
         verify(aiModelSupport).callText(any(), any(), captor.capture());
-        assertThat(captor.getValue().getLast().getText()).contains("<candidate_assets>", "[p-1]");
+        assertThat(captor.getValue().getLast().getText()).contains("<asset_hits>", "[p-1]");
     }
 
     @Test
