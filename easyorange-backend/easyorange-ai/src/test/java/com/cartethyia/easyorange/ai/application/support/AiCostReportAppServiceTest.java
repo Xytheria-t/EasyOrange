@@ -10,7 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("AiCostReportAppService -> 测试")
-class AiCostReportServiceTest {
+class AiCostReportAppServiceTest {
 
     @Test
     @DisplayName("时间窗 -> 非法值兜底 24h，超上限收敛到 30 天")
