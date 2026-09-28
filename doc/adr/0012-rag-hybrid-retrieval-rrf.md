@@ -36,7 +36,7 @@
 
 - 融合：[RrfFusion.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/domain/model/RrfFusion.java)
 - 索引侧两路召回：[KnowledgeElasticsearchAdapter.java](../../easyorange-backend/easyorange-application/src/main/java/com/cartethyia/easyorange/adapter/outbound/elasticsearch/KnowledgeElasticsearchAdapter.java)
-- 检索服务：[KnowledgeRetrievalService.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/retrieval/KnowledgeRetrievalService.java)
+- 检索服务：[KnowledgeRetrievalAppService.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/retrieval/KnowledgeRetrievalAppService.java)
 - 语料与评测集：[R__seed_knowledge_docs.sql](../../easyorange-backend/easyorange-application/src/main/resources/db/migration/R__seed_knowledge_docs.sql)、[golden-set.yaml](../../easyorange-backend/easyorange-ai/src/main/resources/eval/golden-set.yaml)
 
 ## 后果（Consequences）
@@ -73,6 +73,6 @@
 
 - 相关 ADR：Related to [ADR-0008](0008-ai-spring-ai-framework.md)（Spring AI 框架化）、ADR-0004（Token 预算仍现役；记录见[已替代决策.md](已替代决策.md)）
 - 相关文档：[easyorange-backend/AGENTS.md](../../easyorange-backend/AGENTS.md)「模块要点 → ai」（RAG 检索）、[doc/工程指标.md](../工程指标.md)（AI 能力表）
-- 相关代码：`RrfFusion` / `KnowledgeElasticsearchAdapter` / `KnowledgeMatch` / `KnowledgeRetrievalService`
+- 相关代码：`RrfFusion` / `KnowledgeElasticsearchAdapter` / `KnowledgeMatch` / `KnowledgeRetrievalAppService`
 - 后续演进触发条件：语料分块数超过 ES `num_candidates`（100）的量级，或 hit@5 触顶而 MRR 停滞时，重新评估重排模型与独立向量库
 - 决策回顾周期：下次 `ai-eval.yml` 回归给出新口径数字后回看（按需 `workflow_dispatch` 触发，单次约 60 次真实模型调用）

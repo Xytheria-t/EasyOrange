@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
-import com.cartethyia.easyorange.ai.application.listing.AutoListingService;
+import com.cartethyia.easyorange.ai.application.listing.AutoListingAppService;
 import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
@@ -25,7 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AiListingControllerTest {
 
     @Mock
-    private AutoListingService autoListingService;
+    private AutoListingAppService autoListingService;
 
     private AiListingController controller;
 

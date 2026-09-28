@@ -61,7 +61,7 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.model.ChatModel;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AiChatService (Agent 编排) -> 测试")
+@DisplayName("AiChatAppService (Agent 编排) -> 测试")
 class AiChatServiceTest {
 
     /** 语义缓存的查询向量桩值 — 非空即表示「缓存可用」。 */
@@ -97,7 +97,7 @@ class AiChatServiceTest {
     private AiProperties aiProperties;
     private Cache<String, ChatAnswer> staleCache;
     private SimpleMeterRegistry meterRegistry;
-    private AiChatService chatService;
+    private AiChatAppService chatService;
 
     @BeforeEach
     void setUp() {
@@ -794,8 +794,8 @@ class AiChatServiceTest {
     }
 
     /** 锁端口可替换装配 —— 常规用例直通，busy 用例注入「等待超时」桩。 */
-    private AiChatService newChatService(DistributedLockPort lockPort) {
-        return new AiChatService(
+    private AiChatAppService newChatService(DistributedLockPort lockPort) {
+        return new AiChatAppService(
                 chatModel,
                 promptRegistry,
                 aiModelSupport,

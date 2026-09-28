@@ -10,10 +10,14 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 知识库文档仓储（MyBatis-Plus）— 实现 {@link KnowledgeRepository}，
  * 端口隔离保证领域侧不直接依赖 mapper。
+ * <p>
+ * 读方法挂 {@code readOnly}、写方法挂 {@code rollbackFor} 而非整类统一：本类读写混装，
+ * 类级注解会让写方法也走只读连接（MySQL 会拒写），或让读方法多拿一次事务开销。
  */
 @Repository
 public class KnowledgeRepositoryImpl extends BaseRepository<KnowledgeDocMapper, KnowledgeDocDO>
@@ -27,6 +31,7 @@ public class KnowledgeRepositoryImpl extends BaseRepository<KnowledgeDocMapper, 
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String save(KnowledgeDocEntity doc) {
         var entity = new KnowledgeDocDO();
         entity.setId(doc.id() != null ? doc.id() : idGenerator.generateId());
@@ -40,6 +45,7 @@ public class KnowledgeRepositoryImpl extends BaseRepository<KnowledgeDocMapper, 
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateStatus(String id, KnowledgeDocStatus status, int chunkCount) {
         lambdaUpdate()
                 .eq(KnowledgeDocDO::getId, id)
@@ -49,11 +55,13 @@ public class KnowledgeRepositoryImpl extends BaseRepository<KnowledgeDocMapper, 
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<KnowledgeDocEntity> findById(String id) {
         return findBy(KnowledgeDocDO::getId, id).map(KnowledgeRepositoryImpl::toEntity);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResult<KnowledgeDocEntity> page(int pageNum, int pageSize) {
         var result = lambdaQuery().orderByDesc(KnowledgeDocDO::getCreateTime).page(new Page<>(pageNum, pageSize));
         return PageResult.of(
@@ -66,11 +74,13 @@ public class KnowledgeRepositoryImpl extends BaseRepository<KnowledgeDocMapper, 
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteById(String id) {
         lambdaUpdate().eq(KnowledgeDocDO::getId, id).remove();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<KnowledgeDocEntity> searchByContent(String keyword, int limit) {
         return lambdaQuery()
                 .like(KnowledgeDocDO::getTitle, keyword)

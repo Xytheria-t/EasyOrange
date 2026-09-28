@@ -51,7 +51,7 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
-public class AiChatService {
+public class AiChatAppService {
 
     private static final String CHAT_PROMPT = "ai_chat_system";
 
@@ -76,7 +76,6 @@ public class AiChatService {
     /** 引用来源下发条数上限 — product_detail 的观察物不单列：它查的就是 product_search 已召回的资产，重复下发挤掉新召回。 */
     private static final int SOURCE_LIMIT = 3;
 
-    /** 缓存命中回放的 token 事件块大小（字符）—— 不补人为延迟，缓存命中的价值就是快。 */
     private static final int CACHE_REPLAY_CHUNK_CHARS = 8;
 
     private final ChatModel chatModel;
@@ -114,7 +113,7 @@ public class AiChatService {
         }
     }
 
-    /** 降级计数 —— 按原因全集注册，两条路径（非流式 / 流式）共用同一组计数器。 */
+    /** 按原因全集注册，两条路径（非流式 / 流式）共用同一组计数器。 */
     private final Map<DegradationReason, Counter> degradedCounters;
 
     private final Counter sessionBusyCounter;
@@ -123,7 +122,7 @@ public class AiChatService {
 
     private final Timer turnTimer;
 
-    public AiChatService(
+    public AiChatAppService(
             ChatModel chatModel,
             PromptRegistry promptRegistry,
             AiModelSupport aiModelSupport,

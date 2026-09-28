@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.ai.application.eval;
 
 import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner;
-import com.cartethyia.easyorange.ai.application.chat.AiChatService;
+import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
-import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.RetrievalReport;
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
  * 金标准集回归评估器 — 三条评估线：生成质量（LLM-as-Judge）、检索质量（hit@5 / MRR）、路由质量
  * （期望工具路径命中率）。三条线读同一份用例集，各按自己的口径取子集。
  * <p>
- * 生成质量对每个 chat 用例调 {@link AiChatService#answer}（forceFresh 跳过缓存；评估跑批没有登录态，
+ * 生成质量对每个 chat 用例调 {@link AiChatAppService#answer}（forceFresh 跳过缓存；评估跑批没有登录态，
  * 显式传机器主体 {@link AgentLoopRunner#MACHINE_SUBJECT}——画像不落库，评估不被历史偏好污染）对照参考回答
  * 打分、聚合 avg score；检索质量对每个 retrieval 用例跑知识库检索算 hit@5 / MRR，逐条采样落
  * eo_retrieval_metric；路由质量对标了 {@code expected_tools} 的 chat 用例跑一次工具循环，看模型实际选了哪些
@@ -42,9 +42,9 @@ public class GoldenSetEvaluator {
     private static final int RETRIEVAL_TOP_K = 5;
 
     private final GoldenSetLoader loader;
-    private final AiChatService chatService;
+    private final AiChatAppService chatService;
     private final AiJudge aiJudge;
-    private final KnowledgeRetrievalService retrievalService;
+    private final KnowledgeRetrievalAppService retrievalService;
     private final RetrievalMetricPort metricRecorder;
     private final IdGenerator idGenerator;
     private final AgentLoopRunner agentLoopRunner;
@@ -68,6 +68,9 @@ public class GoldenSetEvaluator {
                 log.warn("golden case {} generation eval failed: {}", c.id(), e.getMessage());
             }
         }
+        // 均值分母是「成功评分的用例数」而非 cases.size()：判分失败的用例不参与平均，
+        // 它们的流失由 GenerationReport 的 judgedCount 对比 sampleCount 单独暴露 ——
+        // 拿全量当分母会把「模型答不出」算成「模型答得差」，两者在门禁上要分开看。
         double avg = scores.isEmpty()
                 ? 0
                 : scores.stream().mapToInt(CaseScore::score).average().orElse(0);
@@ -79,7 +82,12 @@ public class GoldenSetEvaluator {
         return new GenerationReport(cases.size(), scores.size(), avg);
     }
 
-    /** 检索质量回归：对全部 retrieval 用例跑检索，计算 hit@5 / MRR 并逐条落库。 */
+    /**
+     * 检索质量回归：对全部 retrieval 用例跑检索，计算 hit@5 / MRR 并逐条落库。
+     * <p>
+     * 分母是全量 {@code cases.size()}，与生成分的「成功评分数」口径相反：检索是纯本地计算，
+     * 没有「判分失败」这一态，每条用例都出得了 hit 与 rr，所以漏掉的只能是真实未命中。
+     */
     public RetrievalReport evaluateRetrieval() {
         var cases = loader.load().cases().stream()
                 .filter(c -> GoldenSetLoader.SCOPE_RETRIEVAL.equals(c.scope()))

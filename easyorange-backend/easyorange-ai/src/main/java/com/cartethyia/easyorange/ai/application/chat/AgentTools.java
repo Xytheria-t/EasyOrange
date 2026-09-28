@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.application.chat;
 
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingService;
-import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.model.AssetComparison;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
@@ -102,8 +102,8 @@ public class AgentTools {
 
     private final List<AssetHit> assets = new ArrayList<>();
     private final List<AssetDetail> details = new ArrayList<>();
-    private final KnowledgeRetrievalService retrievalService;
-    private final AssetSourcingService assetSourcingService;
+    private final KnowledgeRetrievalAppService retrievalService;
+    private final AssetSourcingAppService assetSourcingService;
     private final AssetDetailPort assetDetailPort;
     private final UserPreferenceRepository preferenceRepository;
     /** 画像归属用户；机器主体（评估跑批）为 null（长期记忆不落库）。 */
@@ -111,8 +111,8 @@ public class AgentTools {
     private final String userId;
 
     AgentTools(
-            KnowledgeRetrievalService retrievalService,
-            AssetSourcingService assetSourcingService,
+            KnowledgeRetrievalAppService retrievalService,
+            AssetSourcingAppService assetSourcingService,
             AssetDetailPort assetDetailPort,
             UserPreferenceRepository preferenceRepository,
             @Nullable String userId) {

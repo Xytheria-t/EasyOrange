@@ -11,9 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 内存版 Token 预算存储 — 开发模式使用，重启后清空。
  * <p>
- * 使用 {@link ConcurrentHashMap} + {@link AtomicReference} 保证线程安全，
- * key 为 {@code scenario + ":" + LocalDate.now()} 实现每日隔离。
- * 不做 TTL 清理（YAGNI，重启即清空）。
+ * 记账用 {@code computeIfAbsent} + {@code updateAndGet}：{@code updateAndGet} 内部是 CAS 重试循环，
+ * 同 key 并发累加不会互相丢增量 —— 但只在单进程内成立。<b>多副本部署必须切
+ * {@code easyorange.ai.budget.store=redis}</b>，否则 N 个实例各记各的，日限被放大 N 倍
+ * （构造日志打的就是这条运维判据）。
+ * <p>
+ * key 为 {@code scenario + ":" + LocalDate.now()} 实现每日隔离。不做 TTL 清理（YAGNI，重启即清空）。
  * <p>
  * 通过 {@link com.cartethyia.easyorange.ai.config.AiConfig#tokenBudgetStore()} 注册为 Bean。
  */
@@ -23,7 +26,7 @@ public class InMemoryTokenBudgetStore implements TokenBudgetStore {
     private final Map<String, AtomicReference<TokenUsage>> store = new ConcurrentHashMap<>();
 
     public InMemoryTokenBudgetStore() {
-        log.info("TokenBudgetStore: 使用内存版存储（开发模式，重启清空）");
+        log.info("TokenBudgetStore: 使用内存版存储（开发模式，重启清空）——多副本部署须切 redis，否则日限被放大 N 倍");
     }
 
     @Override

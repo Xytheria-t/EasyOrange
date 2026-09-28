@@ -70,7 +70,6 @@ public final class PriceStats {
         return min;
     }
 
-    /** 最高有效价，保留入参精度（比较用 compareTo，展示走 {@link #observation()}）。 */
     public BigDecimal max() {
         return max;
     }

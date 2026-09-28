@@ -48,8 +48,8 @@ class KnowledgeServiceTest {
     @Mock
     private EmbeddingModel embeddingModel;
 
-    private KnowledgeIngestionService ingestionService;
-    private KnowledgeRetrievalService retrievalService;
+    private KnowledgeIngestionAppService ingestionService;
+    private KnowledgeRetrievalAppService retrievalService;
 
     /** embedding 响应夹具：向量化走 embedForResponse（拿得到响应本体，记账才取得到 usage）。 */
     private static EmbeddingResponse embeddingResponse(float[] vector) {
@@ -57,13 +57,13 @@ class KnowledgeServiceTest {
     }
 
     private void setUpIngestion() {
-        ingestionService = new KnowledgeIngestionService(
+        ingestionService = new KnowledgeIngestionAppService(
                 repository, indexPortProvider, embeddingModelProvider, TestAiModelSupport.create());
     }
 
     private void setUpRetrieval() {
-        retrievalService =
-                new KnowledgeRetrievalService(indexPortProvider, embeddingModelProvider, TestAiModelSupport.create());
+        retrievalService = new KnowledgeRetrievalAppService(
+                indexPortProvider, embeddingModelProvider, TestAiModelSupport.create());
     }
 
     // ---------- 分块算法 ----------
@@ -73,7 +73,7 @@ class KnowledgeServiceTest {
     void chunk_contentSplitsWithOverlap() {
         String content = "块".repeat(1200);
 
-        List<String> chunks = KnowledgeIngestionService.chunkContent(content);
+        List<String> chunks = KnowledgeIngestionAppService.chunkContent(content);
 
         assertThat(chunks).hasSize(3);
         assertThat(chunks.get(0)).hasSize(500);
@@ -88,7 +88,7 @@ class KnowledgeServiceTest {
     void chunk_prefersNewlineBoundary() {
         String content = "句".repeat(400) + "\n" + "句".repeat(200);
 
-        List<String> chunks = KnowledgeIngestionService.chunkContent(content);
+        List<String> chunks = KnowledgeIngestionAppService.chunkContent(content);
 
         assertThat(chunks).hasSize(2);
         // 切点落在 400 处（换行位置），第一块不含换行后的内容
@@ -99,8 +99,8 @@ class KnowledgeServiceTest {
     @Test
     @DisplayName("分块：空文本 -> 空列表")
     void chunk_blank() {
-        assertThat(KnowledgeIngestionService.chunkContent(null)).isEmpty();
-        assertThat(KnowledgeIngestionService.chunkContent("  ")).isEmpty();
+        assertThat(KnowledgeIngestionAppService.chunkContent(null)).isEmpty();
+        assertThat(KnowledgeIngestionAppService.chunkContent("  ")).isEmpty();
     }
 
     // ---------- 摄入管线 ----------

@@ -62,7 +62,7 @@ class GoldenSetCorpusTest {
     @Test
     @DisplayName("所有种子文档都是单块（正文长度 < 分块阈值，语料规模 = 篇数）")
     void seedDocsAreSingleChunk() {
-        // 分块阈值 500 字（KnowledgeIngestionService.CHUNK_SIZE）：正文超阈值会切多块，
+        // 分块阈值 500 字（KnowledgeIngestionAppService.CHUNK_SIZE）：正文超阈值会切多块，
         // 语义上等同于「同一文档占据多个 topK 名额」，前面的规模判断会失真。
         assertThat(longestContentLength()).isLessThan(500);
     }

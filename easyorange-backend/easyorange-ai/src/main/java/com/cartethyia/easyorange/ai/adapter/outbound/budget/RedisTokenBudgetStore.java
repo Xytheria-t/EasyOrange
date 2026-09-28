@@ -22,6 +22,11 @@ import org.springframework.data.redis.core.StringRedisTemplate;
  * 代价是这段时间按「今日未用量」放行；fail-open 只 log 会隐身，失败计数（meter 构造期按 op 全集
  * 一次注册）是「按未用量放行」的唯一统计面。
  * <p>
+ * 记账是 input / output 两次 {@code HINCRBY} 后跟一次 {@code expire}，<b>刻意不包进事务</b>：
+ * 崩在两次 HINCRBY 之间会留下「input 记了、output 没记」的半笔账（日预算少计，
+ * 方向是少拦不是多拦）。为这点精度给每次 LLM 调用付一次 MULTI/EXEC 的往返不划算 ——
+ * 日预算的用途是兜住量级，不是计费对账（计费对账看 {@code eo_ai_call_log}）。
+ * <p>
  * 用 {@link StringRedisTemplate}：{@code HINCRBY} 要纯数字字符串，JSON 序列化器会把增量写成带类型
  * 信息的 JSON（限流器曾因序列化器让 Lua ARGV 变二进制）。由 {@code AiConfig} 在
  * {@code easyorange.ai.budget.store=redis} 时注册（默认内存版）。

@@ -20,16 +20,12 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum LoopOutcome {
-    /** 模型判定信息足够（finish 轮），正常收敛。 */
     FINISHED("finished"),
 
-    /** 步数上限内未 finish。 */
     STEP_LIMIT("step_limit"),
 
-    /** 循环中途日预算余量不足。 */
     BUDGET("budget"),
 
-    /** 决策调用故障 / 未返回工具调用 / 参数不可解析 — 按原始问题补一次检索。 */
     DECISION_FAILED("decision_failed"),
 
     /** 基础设施故障穿透的哨兵（非循环出口，正常应为零；轮数不可知，故不进步数分布）。 */

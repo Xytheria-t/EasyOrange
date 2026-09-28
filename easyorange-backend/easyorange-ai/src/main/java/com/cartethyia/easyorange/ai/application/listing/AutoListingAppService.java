@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AutoListingService {
+public class AutoListingAppService {
 
     private static final String PROMPT_NAME = "auto_listing";
 

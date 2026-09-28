@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 /**
  * 检索指标采样落库 — 每条金标准检索用例一行 eo_retrieval_metric，
  * 按 run_id 聚合即可产出 hit@5 / MRR 趋势（AI dashboard 的 Judge 均分同源数据）。
+ * <p>
+ * 失败只告警不抛：调用方 {@code GoldenSetEvaluator} 在逐条用例的循环里调本方法，一条写失败
+ * 抛出就会中断整轮回归、丢掉后面所有用例的采样。少一行趋势数据远好过没有这一轮数据。
  */
 @Slf4j
 @Component

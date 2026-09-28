@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class KnowledgeIngestionService {
+public class KnowledgeIngestionAppService {
 
     /** 单块字符数 — 平台规则类短文档（标题级知识库）500 字足够，无需过细粒度。 */
     static final int CHUNK_SIZE = 500;
@@ -112,7 +112,13 @@ public class KnowledgeIngestionService {
         }
     }
 
-    /** 分块算法：固定 chunk size + overlap，切点优先落在换行处；纯静态便于单测覆盖。 */
+    /**
+     * 分块算法：固定 chunk size + overlap，切点优先落在换行处；纯静态便于单测覆盖。
+     * <p>
+     * 前进量的下界是 {@code start + 1} 而不是 {@code start}：切点回退到换行处时
+     * {@code end - CHUNK_OVERLAP} 可能不大于 {@code start}（超长单行文档的换行落在窗口之外），
+     * 少了这个钳位 while 会在同一位置空转。
+     */
     static List<String> chunkContent(String content) {
         if (content == null || content.isBlank()) {
             return List.of();

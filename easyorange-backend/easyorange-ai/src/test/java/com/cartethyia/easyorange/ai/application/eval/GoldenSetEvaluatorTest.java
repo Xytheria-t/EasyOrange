@@ -8,11 +8,11 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner;
 import com.cartethyia.easyorange.ai.application.chat.AgentTools;
-import com.cartethyia.easyorange.ai.application.chat.AiChatService;
+import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
 import com.cartethyia.easyorange.ai.application.chat.LoopOutcome;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
-import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSet;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSetCase;
@@ -37,13 +37,13 @@ class GoldenSetEvaluatorTest {
     private GoldenSetLoader loader;
 
     @Mock
-    private AiChatService chatService;
+    private AiChatAppService chatService;
 
     @Mock
     private AiJudge aiJudge;
 
     @Mock
-    private KnowledgeRetrievalService retrievalService;
+    private KnowledgeRetrievalAppService retrievalService;
 
     @Mock
     private RetrievalMetricPort metricRecorder;

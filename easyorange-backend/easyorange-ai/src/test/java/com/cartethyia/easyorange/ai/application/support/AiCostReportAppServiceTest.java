@@ -9,16 +9,16 @@ import java.sql.ResultSet;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("AiCostReportService -> 测试")
+@DisplayName("AiCostReportAppService -> 测试")
 class AiCostReportServiceTest {
 
     @Test
     @DisplayName("时间窗 -> 非法值兜底 24h，超上限收敛到 30 天")
     void clampWindow() {
-        assertThat(AiCostReportService.clampWindow(0)).isEqualTo(24);
-        assertThat(AiCostReportService.clampWindow(-5)).isEqualTo(24);
-        assertThat(AiCostReportService.clampWindow(6)).isEqualTo(6);
-        assertThat(AiCostReportService.clampWindow(24 * 365)).isEqualTo(AiCostReportService.MAX_WINDOW_HOURS);
+        assertThat(AiCostReportAppService.clampWindow(0)).isEqualTo(24);
+        assertThat(AiCostReportAppService.clampWindow(-5)).isEqualTo(24);
+        assertThat(AiCostReportAppService.clampWindow(6)).isEqualTo(6);
+        assertThat(AiCostReportAppService.clampWindow(24 * 365)).isEqualTo(AiCostReportAppService.MAX_WINDOW_HOURS);
     }
 
     @Test
@@ -32,7 +32,7 @@ class AiCostReportServiceTest {
         when(rs.getLong("avg_latency_ms")).thenReturn(1500L);
         when(rs.getLong("failures")).thenReturn(1L);
 
-        AiCostReportRow row = AiCostReportService.rowMapper().mapRow(rs, 0);
+        AiCostReportRow row = AiCostReportAppService.rowMapper().mapRow(rs, 0);
 
         assertThat(row.scope()).isEqualTo("PRICING");
         assertThat(row.calls()).isEqualTo(12);

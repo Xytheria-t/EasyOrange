@@ -40,7 +40,7 @@ class FeedbackLoopTest {
         @DisplayName("8 参 INSERT（含用户 ID）")
         void recordFeedback() {
             when(idGenerator.generateId()).thenReturn("fb-1");
-            AiFeedbackService service = new AiFeedbackService(jdbcTemplate, idGenerator);
+            AiFeedbackAppService service = new AiFeedbackAppService(jdbcTemplate, idGenerator);
 
             service.record("chat", "怎么退款？", "7 天无理由", true, "很实用", "log-1");
 
@@ -63,7 +63,7 @@ class FeedbackLoopTest {
             when(idGenerator.generateId()).thenReturn("fb-1");
             when(jdbcTemplate.update(anyString(), org.mockito.ArgumentMatchers.<Object>any()))
                     .thenThrow(new RuntimeException("db down"));
-            AiFeedbackService service = new AiFeedbackService(jdbcTemplate, idGenerator);
+            AiFeedbackAppService service = new AiFeedbackAppService(jdbcTemplate, idGenerator);
 
             service.record("chat", "问题", "回答", false, null, null);
         }

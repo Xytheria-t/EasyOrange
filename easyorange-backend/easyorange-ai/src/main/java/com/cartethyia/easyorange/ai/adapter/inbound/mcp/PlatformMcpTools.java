@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.mcp;
 
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingService;
-import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.CategorySummary;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
@@ -59,17 +59,17 @@ public class PlatformMcpTools {
         }
     }
 
-    private final AssetSourcingService assetSourcingService;
+    private final AssetSourcingAppService assetSourcingService;
     private final AssetDetailPort assetDetailPort;
-    private final KnowledgeRetrievalService knowledgeRetrievalService;
+    private final KnowledgeRetrievalAppService knowledgeRetrievalService;
     private final CategoryListPort categoryListPort;
 
     private final Map<McpToolTag, Counter> callCounters;
 
     public PlatformMcpTools(
-            AssetSourcingService assetSourcingService,
+            AssetSourcingAppService assetSourcingService,
             AssetDetailPort assetDetailPort,
-            KnowledgeRetrievalService knowledgeRetrievalService,
+            KnowledgeRetrievalAppService knowledgeRetrievalService,
             CategoryListPort categoryListPort,
             MeterRegistry meterRegistry) {
         this.assetSourcingService = assetSourcingService;

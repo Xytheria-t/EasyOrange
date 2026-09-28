@@ -24,7 +24,7 @@ import org.springframework.beans.factory.ObjectProvider;
  * 找货召回的降级口径 —— 三种失败（无适配器 / 向量化失败 / 检索抛异常）都收敛成「少一次推荐」，
  * 不把异常抛给对话循环与 MCP 工具面。
  */
-@DisplayName("AssetSourcingService -> 降级口径测试")
+@DisplayName("AssetSourcingAppService -> 降级口径测试")
 class AssetSourcingServiceTest {
 
     private static final String QUERY = "5000 以内的笔记本";
@@ -35,7 +35,7 @@ class AssetSourcingServiceTest {
     private ObjectProvider<AssetRetrievalPort> retrievalPortProvider;
     private AssetRetrievalPort port;
     private AiModelSupport aiModelSupport;
-    private AssetSourcingService service;
+    private AssetSourcingAppService service;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -44,7 +44,7 @@ class AssetSourcingServiceTest {
         retrievalPortProvider = mock(ObjectProvider.class);
         port = mock(AssetRetrievalPort.class);
         aiModelSupport = mock(AiModelSupport.class);
-        service = new AssetSourcingService(embeddingModel, retrievalPortProvider, aiModelSupport);
+        service = new AssetSourcingAppService(embeddingModel, retrievalPortProvider, aiModelSupport);
     }
 
     @Test

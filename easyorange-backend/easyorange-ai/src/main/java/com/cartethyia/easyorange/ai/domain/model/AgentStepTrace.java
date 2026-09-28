@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
  */
 public record AgentStepTrace(
         String traceId,
-        String sessionId,
+        @Nullable String sessionId,
         @Nullable String userId,
         int stepIndex,
         String tool,

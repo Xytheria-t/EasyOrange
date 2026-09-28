@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.ai.application.dto.ChatFeedbackRequest;
-import com.cartethyia.easyorange.ai.application.eval.AiFeedbackService;
+import com.cartethyia.easyorange.ai.application.eval.AiFeedbackAppService;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AiFeedbackController {
 
-    private final AiFeedbackService feedbackService;
+    private final AiFeedbackAppService feedbackService;
 
     @PostMapping
     public Result<Void> feedback(@RequestBody ChatFeedbackRequest request) {

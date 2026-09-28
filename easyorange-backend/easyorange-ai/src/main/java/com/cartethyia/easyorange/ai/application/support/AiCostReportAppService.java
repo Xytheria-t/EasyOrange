@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class AiCostReportService {
+public class AiCostReportAppService {
 
     /** 时间窗上限 30 天：再宽的窗口在单表上就是全表扫描，且超出「近况」的语义。 */
     static final int MAX_WINDOW_HOURS = 24 * 30;
