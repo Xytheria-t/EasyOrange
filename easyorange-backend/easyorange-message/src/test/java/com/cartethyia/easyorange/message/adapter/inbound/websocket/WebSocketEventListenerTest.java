@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.message.adapter.inbound.websocket;
 
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
+import com.cartethyia.easyorange.message.application.service.OfflineMessageAppService;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,7 +23,7 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 class WebSocketEventListenerTest {
 
     @Mock
-    private OfflineMessageStoreService offlineMessageStoreService;
+    private OfflineMessageAppService offlineMessageStoreService;
 
     @InjectMocks
     private WebSocketEventListener eventListener;

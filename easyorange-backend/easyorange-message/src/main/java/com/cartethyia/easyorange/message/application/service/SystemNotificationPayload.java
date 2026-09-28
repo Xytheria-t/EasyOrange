@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * /queue/notification 站内信通知帧 — 与前端订阅协议约定的字段形状。
  * <p>
- * 在线即时推送（{@code MessageCommandHandler}）与离线上线补推（{@code OfflineMessageStoreService}）
+ * 在线即时推送（{@code MessageCommandHandler}）与离线上线补推（{@code OfflineMessageAppService}）
  * 共用同一形状，保证两条路径的客户端解析一致。
  */
 public final class SystemNotificationPayload {

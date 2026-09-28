@@ -46,18 +46,12 @@ class MessageTypeTest {
     }
 
     @Test
-    @DisplayName("getDescByCode 返回正确描述")
-    void getDescByCode_validCode_returnsDesc() {
-        assertThat(MessageType.getDescByCode("1")).isEqualTo("系统通知");
-        assertThat(MessageType.getDescByCode("2")).isEqualTo("聊天消息");
-        assertThat(MessageType.getDescByCode("3")).isEqualTo("订单消息");
-        assertThat(MessageType.getDescByCode("4")).isEqualTo("支付消息");
-        assertThat(MessageType.getDescByCode("5")).isEqualTo("活动通知");
-    }
-
-    @Test
-    @DisplayName("getDescByCode 返回未知类型")
-    void getDescByCode_unknownCode_returnsUnknown() {
-        assertThat(MessageType.getDescByCode("999")).isEqualTo("未知类型");
+    @DisplayName("getDesc 返回正确描述")
+    void getDesc_returnsDesc() {
+        assertThat(MessageType.SYSTEM.getDesc()).isEqualTo("系统通知");
+        assertThat(MessageType.CHAT.getDesc()).isEqualTo("聊天消息");
+        assertThat(MessageType.ORDER.getDesc()).isEqualTo("订单消息");
+        assertThat(MessageType.PAYMENT.getDesc()).isEqualTo("支付消息");
+        assertThat(MessageType.ACTIVITY.getDesc()).isEqualTo("活动通知");
     }
 }

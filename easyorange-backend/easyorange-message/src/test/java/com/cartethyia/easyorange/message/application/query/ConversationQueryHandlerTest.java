@@ -54,6 +54,7 @@ class ConversationQueryHandlerTest {
                 ReadStatus.UNREAD,
                 null,
                 null,
+                "conv_1_2",
                 MessageStatus.SENT,
                 null,
                 LocalDateTime.now());
@@ -140,6 +141,7 @@ class ConversationQueryHandlerTest {
                     "系统通知",
                     "订单已支付",
                     ReadStatus.UNREAD,
+                    null,
                     null,
                     null,
                     null,

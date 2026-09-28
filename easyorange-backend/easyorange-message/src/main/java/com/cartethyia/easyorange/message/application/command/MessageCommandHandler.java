@@ -4,11 +4,10 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
-import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
+import com.cartethyia.easyorange.message.application.service.OfflineMessageAppService;
 import com.cartethyia.easyorange.message.application.service.SystemNotificationPayload;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageRecallResult;
-import com.cartethyia.easyorange.message.domain.enums.MessageResultCode;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
@@ -31,14 +30,19 @@ public class MessageCommandHandler {
 
     private final MessageRepository messageRepository;
     private final DomainEventPublisher domainEventPublisher;
-    private final OfflineMessageStoreService offlineMessageStoreService;
+    private final OfflineMessageAppService offlineMessageAppService;
     private final DistributedRateLimiter distributedRateLimiter;
     private final SensitiveWordFilterService sensitiveWordFilterService;
     private final MessageNotifierPort messageNotifier;
     private final IdGenerator idGenerator;
 
+    /**
+     * 发送消息 —— REST 与 WebSocket 唯一的发送入口，也是限流与敏感词过滤的唯一裁决点。
+     *
+     * @return 落库后的消息聚合根；WS 侧据此广播与落库一致的帧（客户端原始入参未经过滤，不能直接回显）
+     */
     @Transactional(rollbackFor = Exception.class)
-    public void sendMessage(String senderId, SendMessageCommand command) {
+    public Message sendMessage(String senderId, SendMessageCommand command) {
         if (!allowSendMessage(senderId)) {
             throw MessageDomainException.of("发送过于频繁，请稍后再试");
         }
@@ -63,6 +67,8 @@ public class MessageCommandHandler {
                 senderId,
                 command.receiverId(),
                 saved.type());
+
+        return saved;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -83,7 +89,7 @@ public class MessageCommandHandler {
      * 实时投递注册到 afterCommit —— 在线检查（Redis）、离线兜底、STOMP 推送全是事务外副作用：
      * 事务回滚后推送出去的消息收不回，离线收件箱也会留下指向不存在消息的幻影记录。
      * 推送失败在提交后只告警不打回请求（DB 行已落库，离线兜底才是可靠路径）。
-     * 无事务上下文（单元测试 / 非事务调用方）时立即投递，行为与从前一致。
+     * 无事务上下文（单元测试 / 非事务调用方）时立即投递。
      */
     private void notifyAfterCommit(Message saved, boolean pushNotification) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
@@ -101,7 +107,7 @@ public class MessageCommandHandler {
     private void deliverRealtime(Message saved, boolean pushNotification) {
         try {
             boolean online = messageNotifier.isUserOnline(saved.receiverId());
-            offlineMessageStoreService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);
+            offlineMessageAppService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);
             if (online && pushNotification) {
                 messageNotifier.sendNotification(saved.receiverId(), SystemNotificationPayload.toMap(saved));
             }
@@ -120,8 +126,7 @@ public class MessageCommandHandler {
                 .findById(command.messageId())
                 .orElseThrow(() -> MessageDomainException.notFound(command.messageId()));
 
-        BizRequire.requireTrue(aggregate.isOwnedBy(userId), MessageResultCode.MESSAGE_NOT_OWNER);
-
+        // 归属校验由聚合根 read(userId) 承担（同一不变量的唯一实现）
         if (aggregate.isUnread()) {
             messageRepository.update(aggregate.read(userId));
         }
@@ -131,8 +136,7 @@ public class MessageCommandHandler {
     public void markAsReadBatch(String userId, MarkAsReadBatchCommand command) {
         var messageIds = command.messageIds();
         if (messageIds == null || messageIds.isEmpty()) {
-            // 空列表 = 无可标记：no-op 成功（TD-026）—— 原 notEmpty 回 B0002 会把前端
-            // 竞态下清空的入参误伤成 400，而语义上「没有要标记的」本就该是成功
+            // 空列表 = 无可标记：no-op 成功（前端竞态下清空入参不该被误伤成 400）
             log.debug("action=mark_batch_read_skip reason=empty userId={}", userId);
             return;
         }
@@ -142,12 +146,7 @@ public class MessageCommandHandler {
 
         // 谓词（属于该接收者 + 仍为未读）下推为一条批量 UPDATE，避免逐条读+写 2N 次往返；
         // 非本人 / 不存在 / 已读的 ID 由 SQL 谓词静默跳过，与原逐条语义等价
-        try {
-            messageRepository.markAsReadByIds(userId, messageIds);
-        } catch (Exception e) {
-            log.warn("action=mark_read_batch_fail userId={} count={}", userId, messageIds.size(), e);
-            throw e;
-        }
+        messageRepository.markAsReadByIds(userId, messageIds);
 
         log.info("action=mark_batch_read userId={} count={}", userId, messageIds.size());
     }
@@ -164,11 +163,8 @@ public class MessageCommandHandler {
                 .findById(command.messageId())
                 .orElseThrow(() -> MessageDomainException.notFound(command.messageId()));
 
-        // 非发送者（含 senderId 为 null 的系统消息）在构造 conversationId 前快速失败，避免 "conv__"。
-        BizRequire.requireTrue(aggregate.isSender(userId), MessageResultCode.MESSAGE_NOT_OWNER);
-
-        String conversationId = buildConversationId(aggregate.senderId(), aggregate.receiverId());
-        MessageRecallResult recallResult = aggregate.recall(userId, conversationId);
+        // senderId 为 null 的系统消息在此快速失败，避免事件里带出空会话
+        MessageRecallResult recallResult = aggregate.recall(userId);
         messageRepository.update(recallResult.aggregate());
         domainEventPublisher.publish(recallResult.event());
 
@@ -203,15 +199,5 @@ public class MessageCommandHandler {
         } catch (IllegalArgumentException e) {
             return MessageType.CHAT;
         }
-    }
-
-    /** 会话 ID：排序双 ID {@code conv_{min}_{max}}，保证 A→B 与 B→A 一致。 */
-    private static String buildConversationId(String senderId, String receiverId) {
-        if (senderId == null || receiverId == null) {
-            return null;
-        }
-        return senderId.compareTo(receiverId) < 0
-                ? "conv_" + senderId + "_" + receiverId
-                : "conv_" + receiverId + "_" + senderId;
     }
 }

@@ -13,30 +13,26 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class MessageRepositoryImpl extends BaseRepository<MessageMapper, MessageDO> implements MessageRepository {
 
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-    private final MessageDataMapper messageDataMapper;
-
-    public MessageRepositoryImpl(MessageMapper messageMapper, MessageDataMapper messageDataMapper) {
+    public MessageRepositoryImpl(MessageMapper messageMapper) {
         super(messageMapper);
-        this.messageDataMapper = messageDataMapper;
     }
 
     @Override
     public Optional<Message> findById(String id) {
         MessageDO entity = mapper.selectById(id);
-        return Optional.ofNullable(messageDataMapper.toAggregate(entity));
+        return Optional.ofNullable(MessageDataMapper.toAggregate(entity));
     }
 
     @Override
     public Message save(Message message) {
-        MessageDO entity = messageDataMapper.toEntity(message);
+        MessageDO entity = MessageDataMapper.toEntity(message);
         mapper.insert(entity);
-        return messageDataMapper.toAggregate(entity);
+        return MessageDataMapper.toAggregate(entity);
     }
 
     @Override
     public void update(Message message) {
-        mapper.updateById(messageDataMapper.toEntity(message));
+        mapper.updateById(MessageDataMapper.toEntity(message));
     }
 
     @Override

@@ -24,17 +24,13 @@ import org.springframework.stereotype.Repository;
 public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, MessageDO>
         implements MessageQueryRepository {
 
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-    private final MessageDataMapper messageDataMapper;
-
-    public MessageQueryRepositoryImpl(MessageMapper messageMapper, MessageDataMapper messageDataMapper) {
+    public MessageQueryRepositoryImpl(MessageMapper messageMapper) {
         super(messageMapper);
-        this.messageDataMapper = messageDataMapper;
     }
 
     @Override
     public Message findById(String id) {
-        return messageDataMapper.toAggregate(mapper.selectById(id));
+        return MessageDataMapper.toAggregate(mapper.selectById(id));
     }
 
     @Override
@@ -101,14 +97,14 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
                 .orderByDesc(MessageDO::getCreateTime)
                 .page(new Page<>(1, CONVERSATION_HISTORY_LIMIT, false))
                 .getRecords();
-        List<Message> chronological = new java.util.ArrayList<>(messageDataMapper.toAggregateList(recent));
+        List<Message> chronological = new java.util.ArrayList<>(MessageDataMapper.toAggregateList(recent));
         java.util.Collections.reverse(chronological);
         return chronological;
     }
 
     @Override
     public List<Message> findLatestPerConversation(String userId) {
-        return messageDataMapper.toAggregateList(mapper.selectLatestPerConversation(userId));
+        return MessageDataMapper.toAggregateList(mapper.selectLatestPerConversation(userId));
     }
 
     @Override
@@ -121,7 +117,7 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
     }
 
     private PageResult<Message> toAggregatePageResult(Page<MessageDO> messagePage) {
-        List<Message> records = messageDataMapper.toAggregateList(messagePage.getRecords());
+        List<Message> records = MessageDataMapper.toAggregateList(messagePage.getRecords());
         return PageResult.of(
                 records, messagePage.getTotal(), (int) messagePage.getCurrent(), (int) messagePage.getSize());
     }

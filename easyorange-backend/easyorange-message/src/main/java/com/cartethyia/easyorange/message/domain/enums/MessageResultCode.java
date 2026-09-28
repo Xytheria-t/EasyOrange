@@ -14,7 +14,6 @@ import lombok.Getter;
  * 五个模板类错误的码，但 message 模块从未实现模板功能，从未被引用，已删除。已删除的码值不再复用。
  * </p>
  *
- * @author cartethyia
  * @see IResultCode
  */
 @Getter

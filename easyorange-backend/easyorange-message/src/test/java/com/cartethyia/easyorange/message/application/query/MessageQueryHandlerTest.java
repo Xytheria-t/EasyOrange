@@ -56,6 +56,7 @@ class MessageQueryHandlerTest {
                 ReadStatus.UNREAD,
                 null,
                 null,
+                "conv_1_2",
                 MessageStatus.SENT,
                 null,
                 LocalDateTime.now());

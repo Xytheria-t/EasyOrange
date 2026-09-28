@@ -19,12 +19,10 @@ class OfflineMessageRepositoryImplTest {
     @Mock
     private OfflineMessageMapper mapper;
 
-    private final MessageDataMapper messageDataMapper = new MessageDataMapper() {};
-
     @Test
     @DisplayName("主键不存在时插入（离线落库）")
     void save_insertsWhenAbsent() {
-        var repository = new OfflineMessageRepositoryImpl(mapper, messageDataMapper);
+        var repository = new OfflineMessageRepositoryImpl(mapper);
         var offline = OfflineMessage.create("of-1", "u1", "m1", "/queue/notification");
         when(mapper.selectById("of-1")).thenReturn(null);
 
@@ -37,7 +35,7 @@ class OfflineMessageRepositoryImplTest {
     @Test
     @DisplayName("主键已存在时更新（markAsPushed 重推落状态），避免重复 INSERT 撞主键")
     void save_updatesWhenPresent() {
-        var repository = new OfflineMessageRepositoryImpl(mapper, messageDataMapper);
+        var repository = new OfflineMessageRepositoryImpl(mapper);
         var offline = OfflineMessage.create("of-1", "u1", "m1", "/queue/notification");
         when(mapper.selectById("of-1"))
                 .thenReturn(OfflineMessageDO.builder().id("of-1").build());

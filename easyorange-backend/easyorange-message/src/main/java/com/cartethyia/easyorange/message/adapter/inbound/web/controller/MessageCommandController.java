@@ -2,11 +2,12 @@ package com.cartethyia.easyorange.message.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
+import com.cartethyia.easyorange.message.adapter.inbound.web.assembler.MessageAssembler;
+import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.SendMessageRequest;
 import com.cartethyia.easyorange.message.application.command.MarkAsReadBatchCommand;
 import com.cartethyia.easyorange.message.application.command.MarkAsReadCommand;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.RecallMessageCommand;
-import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -22,11 +23,12 @@ import org.springframework.web.bind.annotation.*;
 public class MessageCommandController {
 
     private final MessageCommandHandler commandHandler;
+    private final MessageAssembler assembler;
 
     @PostMapping
     public Result<Void> sendMessage(
-            @AuthenticationPrincipal AuthUser user, @Valid @RequestBody SendMessageCommand command) {
-        commandHandler.sendMessage(user.userId(), command);
+            @AuthenticationPrincipal AuthUser user, @Valid @RequestBody SendMessageRequest request) {
+        commandHandler.sendMessage(user.userId(), assembler.toSendCommand(request));
         return Result.success();
     }
 

@@ -12,9 +12,15 @@ import java.time.LocalDateTime;
 /**
  * 消息聚合根 —— 不可变 record
  * <p>
+ * 取舍：会话 ID（{@code conversation_id}）由聚合根按「排序双 ID」规则算出而非由调用方传入——
+ * 它是收发双方的纯函数，客户端可控的入参只会让同一房间被命名成两个值。
+ * <p>
+ * 边界降级：系统消息（senderId 为 null）无会话概念，conversationId 恒 null；老数据（列接入前写入的行）
+ * 也为 null，只影响按会话查询，不影响按收发方的读路径。
+ * <p>
  * 核心不变量：
  * <ul>
- *   <li>只有接收者可以标记已读、删除消息</li>
+ *   <li>只有接收者可以标记已读</li>
  *   <li>只有发送者可以撤回消息</li>
  *   <li>撤回必须在 2 分钟内完成</li>
  *   <li>已撤回的消息不能再次撤回</li>
@@ -31,6 +37,7 @@ public record Message(
         ReadStatus isRead,
         LocalDateTime readTime,
         String businessId,
+        String conversationId,
         MessageStatus msgStatus,
         LocalDateTime recalledAt,
         LocalDateTime createTime) {
@@ -60,6 +67,7 @@ public record Message(
                 ReadStatus.UNREAD,
                 null,
                 businessId,
+                conversationIdOf(senderId, receiverId),
                 MessageStatus.SENT,
                 null,
                 LocalDateTime.now());
@@ -81,6 +89,7 @@ public record Message(
                 ReadStatus.UNREAD,
                 null,
                 businessId,
+                null,
                 MessageStatus.SENT,
                 null,
                 LocalDateTime.now());
@@ -101,6 +110,7 @@ public record Message(
             ReadStatus isRead,
             LocalDateTime readTime,
             String businessId,
+            String conversationId,
             MessageStatus msgStatus,
             LocalDateTime recalledAt,
             LocalDateTime createTime) {
@@ -114,6 +124,7 @@ public record Message(
                 isRead,
                 readTime,
                 businessId,
+                conversationId,
                 msgStatus,
                 recalledAt,
                 createTime);
@@ -158,6 +169,7 @@ public record Message(
                 ReadStatus.READ,
                 LocalDateTime.now(),
                 this.businessId,
+                this.conversationId,
                 this.msgStatus,
                 this.recalledAt,
                 this.createTime);
@@ -166,11 +178,11 @@ public record Message(
     /**
      * 撤回消息
      *
-     * @return 包含更新后聚合根和领域事件的结果
+     * @return 包含更新后聚合根和领域事件的结果；事件自带本消息的 conversationId，订阅方据此定向广播
      * @throws MessageDomainException 如果 operatorId 不是发送者
      * @throws MessageDomainException         如果消息已撤回或超过 2 分钟
      */
-    public MessageRecallResult recall(String operatorId, String conversationId) {
+    public MessageRecallResult recall(String operatorId) {
         if (!isSender(operatorId)) {
             throw MessageDomainException.notOwner("不能撤回他人的消息");
         }
@@ -192,11 +204,24 @@ public record Message(
                 this.isRead,
                 this.readTime,
                 this.businessId,
+                this.conversationId,
                 MessageStatus.RECALLED,
                 now,
                 this.createTime);
         return new MessageRecallResult(
-                updated, new MessageRecalledEvent(UuidV7.generateId(), this.id, conversationId, operatorId, now));
+                updated, new MessageRecalledEvent(UuidV7.generateId(), this.id, this.conversationId, operatorId, now));
+    }
+
+    // ── 内部规则 ──
+
+    /** 会话 ID：排序双 ID {@code conv_{min}_{max}}，保证 A→B 与 B→A 一致。 */
+    private static String conversationIdOf(String senderId, String receiverId) {
+        if (senderId == null || receiverId == null) {
+            return null;
+        }
+        return senderId.compareTo(receiverId) < 0
+                ? "conv_" + senderId + "_" + receiverId
+                : "conv_" + receiverId + "_" + senderId;
     }
 
     // ── 返回结果 ──

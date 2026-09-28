@@ -7,10 +7,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 消息 VO
- *
- * @author cartethyia
- * @date 2026/03/06
+ * 消息列表响应项 —— 与 {@code ConversationVO} 同形状（收发方 id / 昵称 / 头像齐全），
+ * 前端两个页面可共用一套渲染。
+ * <p>
+ * 不含 updateTime：聚合根不承载该字段（消息只有创建与已读 / 撤回这几个时间点），
+ * 响应里挂一个恒为 null 的字段只会让人以为有更新时间。
  */
 @Data
 @Builder
@@ -30,6 +31,8 @@ public class MessageVO {
 
     private String receiverName;
 
+    private String receiverAvatar;
+
     private Integer type;
 
     private String typeDesc;
@@ -45,6 +48,4 @@ public class MessageVO {
     private String businessId;
 
     private LocalDateTime createTime;
-
-    private LocalDateTime updateTime;
 }

@@ -9,16 +9,17 @@ import lombok.Getter;
 /**
  * 消息状态枚举 —— 对应 {@code eo_message.msg_status} 列（VARCHAR(20) 语义串）。
  * <p>
- * 统一使用语义串 code（与列存值 SENT/DELIVERED/READ/RECALLED 对齐），
- * 不再混用 Integer/String。
+ * 只保留实际写入的两个状态：SENT（落库即已发送）→ RECALLED（2 分钟内撤回）。
+ * 「未读 / 已读」不由本列承载，而是 {@code is_read} 列 + {@link ReadStatus}；
+ * 「已送达」没有采集点（站内信送达与否由客户端拉列表体现），故不列在此。
+ * <p>
+ * 边界：V1 的 CHECK 仍允许五个取值（含已删的三个），属 DDL 与代码的已知差异；
+ * 收口收表时再由迁移收紧约束，不在本模块改已执行脚本。
  */
 @Getter
 @AllArgsConstructor
 public enum MessageStatus implements BaseCodeEnum {
-    UNREAD("UNREAD", "未读"),
-    READ("READ", "已读"),
     SENT("SENT", "已发送"),
-    DELIVERED("DELIVERED", "已送达"),
     RECALLED("RECALLED", "已撤回");
 
     @EnumValue
@@ -29,13 +30,5 @@ public enum MessageStatus implements BaseCodeEnum {
 
     public static MessageStatus fromCode(String code) {
         return BaseCodeEnum.fromCode(MessageStatus.class, code);
-    }
-
-    public static String getDescByCode(String code) {
-        try {
-            return fromCode(code).getDesc();
-        } catch (IllegalArgumentException e) {
-            return "未知状态";
-        }
     }
 }

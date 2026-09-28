@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.adapter.inbound.websocket;
 
-import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
+import com.cartethyia.easyorange.message.application.service.OfflineMessageAppService;
 import java.security.Principal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,7 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 @RequiredArgsConstructor
 public class WebSocketEventListener {
 
-    private final OfflineMessageStoreService offlineMessageStoreService;
+    private final OfflineMessageAppService offlineMessageAppService;
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {
@@ -27,7 +27,7 @@ public class WebSocketEventListener {
         Principal user = headerAccessor.getUser();
         if (user != null && user.getName() != null) {
             try {
-                offlineMessageStoreService.replayPending(user.getName());
+                offlineMessageAppService.replayPending(user.getName());
             } catch (Exception e) {
                 log.warn("action=offline_message_replay_failed userId={}", user.getName(), e);
             }
