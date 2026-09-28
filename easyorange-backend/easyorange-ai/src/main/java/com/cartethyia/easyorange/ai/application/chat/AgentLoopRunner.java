@@ -430,6 +430,7 @@ public class AgentLoopRunner {
     }
 
     /** 画像归属用户 — 机器主体返回 null（长期记忆不落库），与 trace 的 user_id 口径一致。 */
+    @Nullable
     private static String attributedUserId(Input input) {
         return MACHINE_SUBJECT.equals(input.userId()) ? null : input.userId();
     }
