@@ -22,6 +22,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 认证应用服务 — 注册 / 登录 / 登出 / 刷新 / 验证码下发 的用例编排。
+ * <p>
+ * 取舍：注册走「<b>先查重再消费验证码</b>」——用户名或手机号已存在时用户只改字段重试，
+ * 不必为一次必然失败的注册再取一次码；代价是多一次用户名校验查询，换来失败路径上省掉短信费用与等待。
+ * 登录成功后同事务补记登录痕迹（IP + 时间），角色由 userType 直接映射，不重算。
+ * <p>
+ * 边界：刷新令牌经框架完成 refresh 轮换与复用检测；轮换后重验用户状态，账号已删除或禁用即
+ * <b>吊销该用户全部会话</b>并抛 401（凭据已作废，不能只让这一次刷新失败）；
+ * 登出 access / refresh 各自吊销，缺失的令牌静默跳过（登出必须幂等）。
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthAppService {
