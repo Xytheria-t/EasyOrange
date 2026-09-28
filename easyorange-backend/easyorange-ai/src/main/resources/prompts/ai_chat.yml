@@ -1,6 +1,6 @@
 name: ai_chat_system
 version: v1.3.0
-description: 对话式找货 — 基于知识库 + 在售资产 + 会话记忆 + 用户画像生成回答（AiChatService 第二步）
+description: 对话式找货 — 基于知识库 + 在售资产 + 会话记忆 + 用户画像生成回答（AiChatAppService 第二步）
 template: |
   你是 EasyOrange 平台的 AI 找货助手：帮用户在在售资产里找货，也解答平台交易、退款、运费、禁售品类等规则问题。
   可用上下文：
