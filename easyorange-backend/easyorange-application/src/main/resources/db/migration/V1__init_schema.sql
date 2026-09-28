@@ -49,13 +49,17 @@ CREATE TABLE `eo_user` (
 -- ===================================================================
 
 CREATE TABLE `eo_category` (
-    `id` VARCHAR(36) NOT NULL COMMENT '主键 ID',
+    `id` VARCHAR(36) NOT NULL COMMENT '主键 ID（UUID v7）',
     `name` VARCHAR(50) NOT NULL COMMENT '分类名称',
-    `parent_id` VARCHAR(36) NOT NULL DEFAULT '0' COMMENT '父分类 ID',
-    `level` TINYINT NOT NULL DEFAULT 1 COMMENT '分类层级',
+    -- 一级分类为 NULL：与领域侧 Category.parentId == null 同一口径。
+    -- 旧写法 NOT NULL DEFAULT '0' 会让"根"在库里是字符串 '0'、在代码里是 null，
+    -- 两套表示导致「一级重名校验恒不命中」（existing.parentId() == null 永远为假）。
+    `parent_id` VARCHAR(36) DEFAULT NULL COMMENT '父分类 ID，一级分类为 NULL',
+    `level` TINYINT NOT NULL DEFAULT 1 COMMENT '分类层级（1~3，由领域层 Category 保证）',
     `icon` VARCHAR(255) DEFAULT NULL COMMENT '分类图标',
     `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序',
-    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态（0 禁用 1 启用）',
+    -- 与 condition_level 同一约定：domain 枚举经 @EnumValue 落库，故用 VARCHAR 而非 TINYINT
+    `status` VARCHAR(2) NOT NULL DEFAULT '1' COMMENT '状态（0 禁用 1 启用）',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `create_by` VARCHAR(36) DEFAULT NULL COMMENT '创建者',
@@ -65,7 +69,8 @@ CREATE TABLE `eo_category` (
     PRIMARY KEY (`id`),
     KEY `idx_eo_category_parent_id` (`parent_id`),
     KEY `idx_eo_category_status_sort` (`status`, `del_flag`, `sort_order`),
-    CONSTRAINT `chk_eo_category_status` CHECK (`status` IN (0, 1))
+    CONSTRAINT `chk_eo_category_status` CHECK (`status` IN ('0', '1')),
+    CONSTRAINT `chk_eo_category_level` CHECK (`level` BETWEEN 1 AND 3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品分类表';
 
 CREATE TABLE `eo_product` (
