@@ -17,6 +17,7 @@ git config core.hooksPath .githooks
 | `check-metrics-drift.py` | 结构计数（模块/Port/ADR/消费者/表/ArchUnit 规则/Prompt 模板/前端测试文件/金标准集）单点区块 vs 代码事实；区块外出现计数即失败（`--fix` 自动回写） | <100ms |
 | `check-context-budget.py` | AGENTS.md 份数（≤3）与字符预算（根 3000 / 合计 18000） | <100ms |
 | `check-doc-links.py` | 仓库内 `*.md` 的相对链接与锚点可解析（文件改名 / 拆册 / 重排章号后的静默 404） | <100ms |
+| `check-comment-dup.py` | 跨层级重复注释：方法 / 行内注释是否在复述本类的类注释（AGENTS.md「注释」一节的机器门禁）。语义例外收在 `comment-dup-allowlist.txt`，必填理由 | <150ms |
 | `_lib.sh` | 共享工具（颜色、日志、SKIP、staged 文件、密钥扫描、快检函数） | — |
 
 **职责分层**：`pre-commit` 只放秒级快检，构建/测试的重活放 `pre-push`，避免每次提交付全量编译成本。
@@ -45,6 +46,7 @@ SKIP=1        git commit -m "..."   # 任何非空值都视为跳过
 | `**/*.md` / `easyorange-backend/pom.xml` | 测试口径漂移校验（文档声明 vs 代码事实） | `python3 check-test-tier-drift.py` |
 | `**/*.md` / `pom.xml` / `*.sql` / `*.java` | 结构计数漂移校验（单点区块 vs 代码事实 + 区块外不得出现） | `python3 check-metrics-drift.py` |
 | `**/AGENTS.md` | 上下文预算校验（份数 + 字符预算） | `python3 check-context-budget.py` |
+| `**/*.java`（后端主源码） | 跨层级重复注释校验（方法 / 行内注释未复述类注释） | `python3 check-comment-dup.py` |
 | 纯文档/Markdown/YAML | 跳过（仅过密钥扫描 + 口径校验） | — |
 
 > 文档不复刻版本号（权威源只有 `pom.xml` / `package.json` / `compose.yaml`），因此**没有版本漂移校验**。

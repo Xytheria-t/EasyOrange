@@ -10,6 +10,7 @@
 #   6. 测试口径漂移：文档/pom 变更时校验「集成测试是否存在」的声明与代码事实（*IT + failsafe 绑定）一致
 #   7. 结构计数漂移：文档/pom/迁移/源码变更时校验「N 模块 / N Port / N ADR / N 消费者 / N 表 / N 条 ArchUnit 规则 / N 个 Prompt 模板」与代码事实一致
 #   8. 上下文预算：AGENTS.md 变更时校验份数（≤3）与字符预算（根 3000 / 合计 18000）
+#   9. 跨层级重复注释：源码变更时校验「方法/行内注释没有在复述本类的类注释」
 #
 # 已摘除：版本漂移（check-version-drift.py）—— 文档不再复刻版本号，权威源只有 pom / compose；
 # 回填 doc/技术栈.md 版本表时再挂回。
@@ -182,7 +183,25 @@ else
   hook_log "No AGENTS.md changes, skipping context budget check"
 fi
 
-# 7. 文档链接：*.md 变更时校验仓库内相对链接与锚点可解析——手册间互引很密（节号
+# 7. 跨层级重复注释：源码变更时校验「方法/行内注释没有在复述本类的类注释」。
+#    AGENTS.md「注释」一节写了这条，但写进文档没人记得——比「不复述代码」隐蔽，
+#    单看行内注释通顺，只对照类注释才发现是第二遍。规则靠机器才有约束力。
+if echo "$files" | grep -qE '^easyorange-backend/.*\.java$'; then
+  if command -v python3 >/dev/null 2>&1; then
+    hook_log "源码变更 → 校验方法注释未复述类注释..."
+    if python3 "$SCRIPT_DIR/check-comment-dup.py"; then
+      hook_ok "comment dup check"
+    else
+      hook_fail "方法/行内注释在复述类注释（见上方输出；SKIP=git-hooks 可跳过）"
+    fi
+  else
+    hook_warn "python3 not found, skipping comment dup check"
+  fi
+else
+  hook_log "No backend Java changes, skipping comment dup check"
+fi
+
+# 8. 文档链接：*.md 变更时校验仓库内相对链接与锚点可解析——手册间互引很密（节号
 #    `NN §x` 靠人肉同步，文件名与锚点这半边可以断言），改册名 / 拆册 / 重排章号时最容易静默失效
 if echo "$files" | grep -qE '\.md$'; then
   if command -v python3 >/dev/null 2>&1; then
