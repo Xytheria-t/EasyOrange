@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.cartethyia.easyorange.product.application.command.CategoryCommandHandler;
 import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
+import com.cartethyia.easyorange.product.application.query.CategoryQueryHandler;
+import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import com.cartethyia.easyorange.product.domain.enums.CategoryStatus;
 import com.cartethyia.easyorange.product.domain.exception.ProductDomainException;
 import java.util.List;
@@ -41,20 +43,29 @@ class CategoryWritePathIT {
     private CategoryQueryRepository queryRepository;
 
     @Autowired
+    private CategoryQueryHandler queryHandler;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     private String rootId;
     private String childId;
     private String grandChildId;
+    private String rootName;
+    private String childName;
+    private String grandChildName;
 
     @BeforeEach
     void setUp() {
         // 每个用例建一棵独立的三级树，跑完按根删干净
-        var root = commandHandler.createCategory("IT-根-" + suffix(), null, null, 1);
+        rootName = "IT-根-" + suffix();
+        childName = "IT-子-" + suffix();
+        grandChildName = "IT-孙-" + suffix();
+        var root = commandHandler.createCategory(rootName, null, null, 1);
         rootId = root.getId().value();
-        var child = commandHandler.createCategory("IT-子-" + suffix(), rootId, null, 1);
+        var child = commandHandler.createCategory(childName, rootId, null, 1);
         childId = child.getId().value();
-        var grandChild = commandHandler.createCategory("IT-孙-" + suffix(), childId, null, 1);
+        var grandChild = commandHandler.createCategory(grandChildName, childId, null, 1);
         grandChildId = grandChild.getId().value();
     }
 
@@ -232,6 +243,54 @@ class CategoryWritePathIT {
             jdbcTemplate.update("DELETE FROM eo_product WHERE category_id = ?", grandChildId);
             jdbcTemplate.update("DELETE FROM eo_user WHERE user_id = ?", userId);
         }
+    }
+
+    @Test
+    @DisplayName("读路径：一级分类查得到（parentId 走 isNull，eq(col,null) 恒不成立）")
+    void readRootCategories_returnsRows() {
+        List<String> names = queryRepository.findEnabledByParentId(null).stream()
+                .map(CategoryReadModel::name)
+                .toList();
+
+        assertThat(names).contains(rootName);
+    }
+
+    @Test
+    @DisplayName("读路径：一级分类的商品数是整棵子树的在售聚合（不是恒 0）")
+    void readRootCategories_aggregatesSubtreeCount() {
+        String userId = insertUser();
+        try {
+            jdbcTemplate.update(
+                    "INSERT INTO eo_product (id, user_id, category_id, name, price, stock, status, del_flag)"
+                            + " VALUES (?, ?, ?, ?, 100, 1, 'ONLINE', 0)",
+                    "it-cat-agg-" + suffix(), userId, grandChildId, "在售商品");
+
+            // 走 CategoryQueryHandler 而不是查询仓储：缓存里存的是**未富化**的原始列表
+            // （productCount 恒 0），商品计数是在 handler 里事后聚合的 —— 直接断言仓储的
+            // productCount 会误判成「聚合失效」。
+            Integer count = queryHandler.getCategories(null).stream()
+                    .filter(c -> rootId.equals(c.id()))
+                    .findFirst()
+                    .orElseThrow()
+                    .productCount();
+
+            // 商品挂在 3 级孙节点上，单层 JOIN 的旧 SQL 在一级分类行上会返回 0
+            assertThat(count).isEqualTo(1);
+        } finally {
+            jdbcTemplate.update("DELETE FROM eo_product WHERE category_id = ?", grandChildId);
+            jdbcTemplate.update("DELETE FROM eo_user WHERE user_id = ?", userId);
+        }
+    }
+
+    @Test
+    @DisplayName("读路径：查子分类只返回该父下的，不串到别的父")
+    void readChildCategories_scopedToParent() {
+        List<String> names = queryRepository.findEnabledByParentId(rootId).stream()
+                .map(CategoryReadModel::name)
+                .toList();
+
+        assertThat(names).contains(childName);
+        assertThat(names).doesNotContain(grandChildName);
     }
 
     private String insertUser() {
