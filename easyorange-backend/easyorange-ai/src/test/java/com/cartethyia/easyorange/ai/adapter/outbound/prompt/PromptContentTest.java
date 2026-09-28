@@ -67,10 +67,12 @@ class PromptContentTest {
         // 随检索冗余判据（工具侧返回「无新增信息」观察）补收敛规则升 v4.1.0；
         // 随「AI 找货助手」自称统一升 v4.2.0（ai_chat_system / auto_listing 同轮升 v1.1.0）；
         // 随决策观察改按协议回填为 tool 消息（轮间前缀稳定吃 KV cache）升 v4.3.0；
+        // 随「每步只调一个工具」改成「相互独立的工具同轮并行、参数有依赖的才分轮」升 v4.4.0 ——
+        // 旧措辞与编排器的一轮多工具并行调用相悖，等于把模型按回串行、并行能力白建；
         // 随标签块名对齐领域类型（knowledge_hits / asset_hits / asset_details）升 v1.2.0；
         // 随 asset_details 块补进上下文清单与不可信声明升 v1.3.0
         var bumpedVersions = java.util.Map.of(
-                "ai_chat_tool_system", "v4.3.0",
+                "ai_chat_tool_system", "v4.4.0",
                 "ai_chat_system", "v1.3.0",
                 "auto_listing", "v1.1.0");
         for (String name : ALL_PROMPTS) {
