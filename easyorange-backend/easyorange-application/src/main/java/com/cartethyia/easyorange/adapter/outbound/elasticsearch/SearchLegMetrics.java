@@ -83,11 +83,13 @@ public class SearchLegMetrics {
         for (Source source : Source.values()) {
             var byLeg = new EnumMap<Leg, LegMeters>(Leg.class);
             for (Leg leg : Leg.values()) {
-                byLeg.put(leg, new LegMeters(
-                        counter(meterRegistry, source, leg, Outcome.SUCCESS),
-                        counter(meterRegistry, source, leg, Outcome.FAILURE),
-                        timer(meterRegistry, source, leg, Outcome.SUCCESS),
-                        timer(meterRegistry, source, leg, Outcome.FAILURE)));
+                byLeg.put(
+                        leg,
+                        new LegMeters(
+                                counter(meterRegistry, source, leg, Outcome.SUCCESS),
+                                counter(meterRegistry, source, leg, Outcome.FAILURE),
+                                timer(meterRegistry, source, leg, Outcome.SUCCESS),
+                                timer(meterRegistry, source, leg, Outcome.FAILURE)));
             }
             metersBySource.put(source, byLeg);
         }

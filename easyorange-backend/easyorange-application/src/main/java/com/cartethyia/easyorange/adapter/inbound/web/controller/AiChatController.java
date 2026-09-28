@@ -60,7 +60,8 @@ public class AiChatController {
 
     @PostMapping
     public Result<ChatAnswer> chat(@Valid @RequestBody ChatRequest request) {
-        return Result.success(chatService.answer(request, SecurityContextUtil.getUserContextOrThrow().userId()));
+        return Result.success(chatService.answer(
+                request, SecurityContextUtil.getUserContextOrThrow().userId()));
     }
 
     @PostMapping("/stream")

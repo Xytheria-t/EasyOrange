@@ -44,6 +44,14 @@ class CategoryListAdapterTest {
 
     private CategoryReadModel readModel(String id, String name, Integer level, int productCount) {
         return new CategoryReadModel(
-                id, name, null, level, "icon", 1, CategoryStatus.ENABLED, LocalDateTime.of(2026, 1, 1, 0, 0), productCount);
+                id,
+                name,
+                null,
+                level,
+                "icon",
+                1,
+                CategoryStatus.ENABLED,
+                LocalDateTime.of(2026, 1, 1, 0, 0),
+                productCount);
     }
 }

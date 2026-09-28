@@ -58,8 +58,7 @@ class AdminCategoryControllerTest {
 
     @Test
     void listCategories_withParentId_shouldFilterByParent() throws Exception {
-        var categories =
-                List.of(new CategoryResponse("3", "手机", "1", "电子产品", 2, null, null, null, null, List.of()));
+        var categories = List.of(new CategoryResponse("3", "手机", "1", "电子产品", 2, null, null, null, null, List.of()));
         when(adminCategoryService.listCategories("1")).thenReturn(categories);
 
         mockMvc.perform(get("/api/admin/categories?parentId=1"))

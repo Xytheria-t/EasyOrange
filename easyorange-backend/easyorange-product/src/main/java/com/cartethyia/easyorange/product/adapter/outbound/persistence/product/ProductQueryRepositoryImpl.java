@@ -24,7 +24,6 @@ import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.repository.CategoryRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

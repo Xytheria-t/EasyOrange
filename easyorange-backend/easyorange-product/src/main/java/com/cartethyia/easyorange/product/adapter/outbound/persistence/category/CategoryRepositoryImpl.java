@@ -44,12 +44,16 @@ public class CategoryRepositoryImpl extends BaseRepository<CategoryMapper, Categ
         var wrapper = Wrappers.<CategoryDO>lambdaUpdate()
                 .eq(CategoryDO::getId, category.getId().value())
                 .set(CategoryDO::getName, category.getName().value())
-                .set(CategoryDO::getParentId, category.getParentId() != null ? category.getParentId().value() : null)
+                .set(
+                        CategoryDO::getParentId,
+                        category.getParentId() != null ? category.getParentId().value() : null)
                 .set(CategoryDO::getLevel, category.getLevel())
                 .set(CategoryDO::getIcon, category.getIcon())
                 .set(CategoryDO::getSortOrder, category.getSortOrder())
                 .set(CategoryDO::getStatus, category.getStatus())
-                .set(CategoryDO::getUpdateTime, category.getUpdateTime() != null ? category.getUpdateTime() : LocalDateTime.now());
+                .set(
+                        CategoryDO::getUpdateTime,
+                        category.getUpdateTime() != null ? category.getUpdateTime() : LocalDateTime.now());
         mapper.update(null, wrapper);
         return category;
     }
@@ -92,8 +96,7 @@ public class CategoryRepositoryImpl extends BaseRepository<CategoryMapper, Categ
     @Override
     public List<CategoryId> findSubtreeIds(CategoryId root) {
         if (root == null) {
-            return lambdaQuery().orderByAsc(CategoryDO::getLevel).orderByAsc(CategoryDO::getSortOrder)
-                    .list().stream()
+            return lambdaQuery().orderByAsc(CategoryDO::getLevel).orderByAsc(CategoryDO::getSortOrder).list().stream()
                     .map(CategoryDO::getId)
                     .map(CategoryId::of)
                     .toList();
@@ -122,10 +125,7 @@ public class CategoryRepositoryImpl extends BaseRepository<CategoryMapper, Categ
 
     @Override
     public List<Category> findAll() {
-        return lambdaQuery()
-                .orderByAsc(CategoryDO::getSortOrder)
-                .list()
-                .stream()
+        return lambdaQuery().orderByAsc(CategoryDO::getSortOrder).list().stream()
                 .map(categoryDataMapper::toAggregate)
                 .toList();
     }

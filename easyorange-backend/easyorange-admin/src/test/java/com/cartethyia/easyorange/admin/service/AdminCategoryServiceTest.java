@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -163,8 +162,7 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("创建：透传名称与父分类")
         void create_passesThrough() {
-            when(categoryWritePort.createCategory("手机", "1", null, 0))
-                    .thenReturn(writeResult("9", "手机", "1", 2));
+            when(categoryWritePort.createCategory("手机", "1", null, 0)).thenReturn(writeResult("9", "手机", "1", 2));
 
             var result = categoryService.createCategory(new CategoryCreateRequest("手机", "1", null, 0));
 

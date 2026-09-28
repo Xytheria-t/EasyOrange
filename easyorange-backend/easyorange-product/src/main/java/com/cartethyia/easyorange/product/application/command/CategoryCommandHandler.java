@@ -64,7 +64,8 @@ public class CategoryCommandHandler {
         Category updated = findOrThrow(id);
 
         if (name != null && !name.equals(updated.getName().value())) {
-            String parentId = updated.getParentId() != null ? updated.getParentId().value() : null;
+            String parentId =
+                    updated.getParentId() != null ? updated.getParentId().value() : null;
             requireUniqueName(name, parentId, id);
             updated = updated.rename(CategoryName.of(name));
         }
