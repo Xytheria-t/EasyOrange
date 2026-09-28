@@ -13,9 +13,10 @@ import org.springframework.stereotype.Component;
 /**
  * 分类缓存适配器 — Spring Cache 注解式（纯 Redis 单层，见 framework {@code RedisCacheConfig}）。
  * <p>
- * 缓存的是「未做商品计数富化」的原始分类列表（富化在 {@code CategoryQueryHandler} 完成），
- * 避免计数变化触发缓存失效风暴。写路径失效由 admin 侧 {@code evictByLevel}/{@code evictByParentId}
- * 显式触发。Redis 故障由框架级 {@code CacheErrorHandler} fail-open，降级直查 DB。
+ * 只缓存「未做商品计数富化」的分类列表（富化在 {@code CategoryQueryHandler} 完成），
+ * 避免商品上下架触发分类缓存失效。Redis 故障由框架级 {@code CacheErrorHandler} fail-open，降级直查 DB。
+ * <p>
+ * 缓存的是**启用中**分类 —— 禁用即不出现，是「禁用」在读路径上的唯一语义落点。
  */
 @Component
 @RequiredArgsConstructor
@@ -26,36 +27,14 @@ public class CategoryCacheAdapter implements CategoryCachePort {
     @Override
     @Cacheable(
             cacheNames = ProductCacheConstant.CATEGORY_LIST_CACHE,
-            key = "'level:' + #level",
-            condition = "#level != null")
-    public List<CategoryReadModel> getCategoriesByLevel(Integer level) {
-        return orEmpty(categoryQueryRepository.findByLevel(level));
-    }
-
-    @Override
-    @Cacheable(
-            cacheNames = ProductCacheConstant.CATEGORY_LIST_CACHE,
-            key = "'parent:' + #parentId",
-            condition = "#parentId != null")
+            key = "#parentId == null ? 'root' : #parentId")
     public List<CategoryReadModel> getCategoriesByParentId(String parentId) {
-        return orEmpty(categoryQueryRepository.findByParentId(parentId));
+        return orEmpty(categoryQueryRepository.findEnabledByParentId(parentId));
     }
 
     @Override
-    @CacheEvict(
-            cacheNames = ProductCacheConstant.CATEGORY_LIST_CACHE,
-            key = "'level:' + #level",
-            condition = "#level != null")
-    public void evictByLevel(Integer level) {
-        // 失效由 @CacheEvict 代理执行，空实现仅满足端口契约
-    }
-
-    @Override
-    @CacheEvict(
-            cacheNames = ProductCacheConstant.CATEGORY_LIST_CACHE,
-            key = "'parent:' + #parentId",
-            condition = "#parentId != null")
-    public void evictByParentId(String parentId) {
+    @CacheEvict(cacheNames = ProductCacheConstant.CATEGORY_LIST_CACHE, allEntries = true)
+    public void evictAll() {
         // 失效由 @CacheEvict 代理执行，空实现仅满足端口契约
     }
 

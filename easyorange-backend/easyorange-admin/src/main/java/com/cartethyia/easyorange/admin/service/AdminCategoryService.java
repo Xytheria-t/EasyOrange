@@ -3,242 +3,126 @@ package com.cartethyia.easyorange.admin.service;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryCreateRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryUpdateRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryTreeResponse;
+import com.cartethyia.easyorange.admin.domain.model.CategoryView;
 import com.cartethyia.easyorange.admin.domain.port.AdminCategoryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminCategoryPort.CategoryRecord;
+import com.cartethyia.easyorange.admin.domain.port.CategoryWritePort;
+import com.cartethyia.easyorange.admin.domain.port.CategoryWritePort.CategoryWriteResult;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 后台分类管理 — **薄适配层**，不含任何分类业务规则。
+ * <p>
+ * 分类是资产域的概念（商品挂在分类上），它的层级 / 环 / 重名 / 删除约束全部在
+ * product 模块的 {@code Category} 聚合与 {@code CategoryCommandHandler} 里。
+ * 本类只做三件事：DTO → 端口入参、端口结果 → DTO、事务边界。
+ * <p>
+ * 早先这里是规则的实际落点（裸中文串 {@code BusinessException}、{@code MAX_CATEGORY_LEVEL} 常量、
+ * 递归建树），导致「分类」在代码里读起来像后台的配置功能而不是领域对象。
+ */
 @Service
 @RequiredArgsConstructor
 public class AdminCategoryService {
 
     private final AdminCategoryPort adminCategoryPort;
+    private final CategoryWritePort categoryWritePort;
 
-    private static final int MAX_CATEGORY_LEVEL = 3;
+    // ==================== 查询 ====================
 
+    /** 分类列表（含禁用，后台要能看到并恢复禁用项）。 */
     public List<CategoryResponse> listCategories(String parentId) {
-        List<CategoryRecord> entities = adminCategoryPort.listCategories(parentId);
-
-        Map<String, Long> productCountMap = countProductMaps(entities);
-        Map<String, String> parentNameMap = buildParentNameMap(entities);
-
-        return entities.stream()
-                .map(cat -> toCategoryResponse(cat, productCountMap, parentNameMap))
-                .collect(Collectors.toList());
-    }
-
-    public List<CategoryTreeResponse> categoryTree() {
-        Map<String, List<CategoryRecord>> groupedByParent = adminCategoryPort.listCategories(null).stream()
-                .filter(cat -> Objects.equals(cat.status(), 1))
-                .collect(Collectors.groupingBy(
-                        cat -> cat.parentId() != null ? cat.parentId() : "0", LinkedHashMap::new, Collectors.toList()));
-        return buildChildren(groupedByParent, "0");
-    }
-
-    private List<CategoryTreeResponse> buildChildren(
-            Map<String, List<CategoryRecord>> groupedByParent, String parentId) {
-        return groupedByParent.getOrDefault(parentId, List.of()).stream()
-                .map(cat -> new CategoryTreeResponse(
-                        cat.id(),
-                        cat.name(),
-                        cat.level(),
-                        cat.sortOrder(),
-                        cat.status(),
-                        buildChildren(groupedByParent, cat.id())))
+        return adminCategoryPort.listCategories(parentId, true).stream()
+                .map(this::toResponse)
                 .toList();
     }
 
-    @Transactional(rollbackFor = Exception.class)
-    public CategoryResponse createCategory(CategoryCreateRequest request) {
-        int level = 1;
-        if (request.parentId() != null) {
-            CategoryRecord parent = adminCategoryPort.getCategory(request.parentId());
-            if (parent == null) {
-                throw BusinessException.of("父分类不存在");
-            }
-            level = parent.level() + 1;
-            if (level > MAX_CATEGORY_LEVEL) {
-                throw BusinessException.of("分类层级不能超过" + MAX_CATEGORY_LEVEL + "级");
-            }
-            checkDuplicateName(request.name(), request.parentId());
-        } else {
-            checkDuplicateNameAtRoot(request.name());
-        }
-
-        CategoryRecord created =
-                adminCategoryPort.createCategory(request.name(), request.parentId(), request.sortOrder(), level);
-
-        return toCategoryResponse(created, Map.of(), Map.of());
+    /** 整棵分类树（仅启用中）。 */
+    public List<CategoryResponse> categoryTree() {
+        return adminCategoryPort.categoryTree().stream().map(this::toResponse).toList();
     }
 
+    // ==================== 写操作 ====================
+
+    @Transactional(rollbackFor = Exception.class)
+    public CategoryResponse createCategory(CategoryCreateRequest request) {
+        CategoryWriteResult result = categoryWritePort.createCategory(
+                request.name(), request.parentId(), request.icon(), request.sortOrder());
+        return new CategoryResponse(
+                result.categoryId(),
+                result.name(),
+                result.parentId(),
+                null,
+                result.level(),
+                result.sortOrder(),
+                result.status(),
+                result.productCount(),
+                result.createTime(),
+                List.of());
+    }
+
+    /**
+     * 更新分类 — 挂载点变化先走移动路径，再走属性更新路径。
+     * <p>
+     * 两条路径分开是刻意的：移动要写 {@code parent_id = NULL} 并平移整棵子树的 level，
+     * 与「改个名字」是完全不同的操作，混在一起正是旧实现静默丢失 parent_id 更新的根因。
+     */
     @Transactional(rollbackFor = Exception.class)
     public CategoryResponse updateCategory(String id, CategoryUpdateRequest request) {
-        CategoryRecord entity = adminCategoryPort.getCategory(id);
-        if (entity == null) {
-            throw BusinessException.of("分类不存在");
+        CategoryView existing = adminCategoryPort
+                .getCategory(id)
+                .orElseThrow(() -> BusinessException.of("分类不存在: id=" + id));
+        // 一级分类的 parentId 就是 null，所以「是否找到」不能靠 map(parentId) 判断 ——
+        // Optional.map 遇 null 会退化成 empty，根分类会被误判成不存在。
+        String currentParentId = existing.parentId();
+        boolean parentChanged =
+                request.parentId() != null ? !request.parentId().equals(currentParentId) : currentParentId != null;
+
+        if (parentChanged) {
+            categoryWritePort.moveCategory(id, request.parentId());
         }
-
-        String parentId = entity.parentId();
-        Integer level = entity.level();
-
-        if (request.parentId() != null && !Objects.equals(request.parentId(), entity.parentId())) {
-            CategoryRecord parent = adminCategoryPort.getCategory(request.parentId());
-            if (parent == null) {
-                throw BusinessException.of("父分类不存在");
-            }
-            int newLevel = parent.level() + 1;
-            if (newLevel > MAX_CATEGORY_LEVEL) {
-                throw BusinessException.of("移动后分类层级不能超过" + MAX_CATEGORY_LEVEL + "级");
-            }
-            level = newLevel;
-            parentId = request.parentId();
-        } else if (request.parentId() == null) {
-            parentId = null;
-            level = 1;
-        }
-
-        String name = entity.name();
-        if (!Objects.equals(request.name(), entity.name())) {
-            if (parentId != null) {
-                checkDuplicateName(request.name(), parentId);
-            } else {
-                checkDuplicateNameAtRoot(request.name());
-            }
-            name = request.name();
-        }
-
-        CategoryRecord updated = new CategoryRecord(
-                entity.id(),
-                name,
-                parentId,
-                level,
-                entity.icon(),
-                request.sortOrder() != null ? request.sortOrder() : entity.sortOrder(),
-                entity.status(),
-                entity.createTime());
-
-        adminCategoryPort.updateCategory(updated);
-
-        Map<String, Long> productCountMap = countProductMaps(List.of(updated));
-        return toCategoryResponse(updated, productCountMap, Map.of());
+        CategoryWriteResult result =
+                categoryWritePort.updateCategory(id, request.name(), request.sortOrder(), request.icon(), request.status());
+        return new CategoryResponse(
+                result.categoryId(),
+                result.name(),
+                result.parentId(),
+                null,
+                result.level(),
+                result.sortOrder(),
+                result.status(),
+                result.productCount(),
+                result.createTime(),
+                List.of());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void updateStatus(String id, Integer status) {
-        CategoryRecord entity = adminCategoryPort.getCategory(id);
-        if (entity == null) {
-            throw BusinessException.of("分类不存在");
-        }
-        adminCategoryPort.updateCategory(new CategoryRecord(
-                entity.id(),
-                entity.name(),
-                entity.parentId(),
-                entity.level(),
-                entity.icon(),
-                entity.sortOrder(),
-                status,
-                entity.createTime()));
+        categoryWritePort.updateCategoryStatus(id, status);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteCategory(String id) {
-        CategoryRecord entity = adminCategoryPort.getCategory(id);
-        if (entity == null) {
-            throw BusinessException.of("分类不存在");
-        }
-
-        if (adminCategoryPort.countCategoryChildren(id) > 0) {
-            throw BusinessException.of("该分类下存在子分类，无法删除");
-        }
-
-        if (countProductsByCategoryId(id) > 0) {
-            throw BusinessException.of("该分类下存在关联商品，无法删除");
-        }
-
-        adminCategoryPort.deleteCategory(id);
+        categoryWritePort.deleteCategory(id);
     }
 
-    private void checkDuplicateName(String name, String parentId) {
-        CategoryRecord existing = adminCategoryPort.findCategoryByName(name);
-        if (existing != null && Objects.equals(existing.parentId(), parentId)) {
-            throw BusinessException.of("同级下已存在同名分类");
-        }
-    }
+    // ==================== 私有 ====================
 
-    private void checkDuplicateNameAtRoot(String name) {
-        CategoryRecord existing = adminCategoryPort.findCategoryByName(name);
-        if (existing != null && existing.parentId() == null) {
-            throw BusinessException.of("已存在同名的一级分类");
-        }
-    }
-
-    /**
-     * 一级分类聚合子树商品数、其余按直接挂载计数（TD-028）——商品挂在叶子上，
-     * 顶级行用直接挂载口径恒为 0 被过滤；混合列表按 level 拆两批各查再合并。
-     */
-    private Map<String, Long> countProductMaps(List<CategoryRecord> categories) {
-        if (categories == null || categories.isEmpty()) {
-            return Map.of();
-        }
-        Map<String, Long> counts = new LinkedHashMap<>();
-        List<String> topLevelIds = categories.stream()
-                .filter(c -> c.level() != null && c.level() == 1)
-                .map(CategoryRecord::id)
-                .collect(Collectors.toList());
-        List<String> leafIds = categories.stream()
-                .filter(c -> c.level() == null || c.level() != 1)
-                .map(CategoryRecord::id)
-                .collect(Collectors.toList());
-        if (!topLevelIds.isEmpty()) {
-            counts.putAll(adminCategoryPort.countProductsByCategoryIdsWithChildren(topLevelIds));
-        }
-        if (!leafIds.isEmpty()) {
-            counts.putAll(adminCategoryPort.countProductsByCategoryIds(leafIds));
-        }
-        return counts;
-    }
-
-    private Long countProductsByCategoryId(String categoryId) {
-        Map<String, Long> result = adminCategoryPort.countProductsByCategoryIds(List.of(categoryId));
-        return result.getOrDefault(categoryId, 0L);
-    }
-
-    private Map<String, String> buildParentNameMap(List<CategoryRecord> categories) {
-        Set<String> parentIds = categories.stream()
-                .map(CategoryRecord::parentId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        if (parentIds.isEmpty()) {
-            return Map.of();
-        }
-
-        List<CategoryRecord> parents =
-                adminCategoryPort.getCategoriesByIds(parentIds.stream().toList());
-        return parents.stream().collect(Collectors.toMap(CategoryRecord::id, CategoryRecord::name, (a, b) -> a));
-    }
-
-    private CategoryResponse toCategoryResponse(
-            CategoryRecord cat, Map<String, Long> productCountMap, Map<String, String> parentNameMap) {
+    private CategoryResponse toResponse(CategoryView view) {
         return new CategoryResponse(
-                cat.id(),
-                cat.name(),
-                cat.parentId(),
-                cat.parentId() != null ? parentNameMap.get(cat.parentId()) : null,
-                cat.level(),
-                cat.sortOrder(),
-                cat.status(),
-                productCountMap.getOrDefault(cat.id(), 0L),
-                cat.createTime(),
-                null);
+                view.id(),
+                view.name(),
+                view.parentId(),
+                view.parentName(),
+                view.level(),
+                view.sortOrder(),
+                view.status(),
+                view.productCount(),
+                view.createTime(),
+                view.children() == null
+                        ? List.of()
+                        : view.children().stream().map(this::toResponse).toList());
     }
 }

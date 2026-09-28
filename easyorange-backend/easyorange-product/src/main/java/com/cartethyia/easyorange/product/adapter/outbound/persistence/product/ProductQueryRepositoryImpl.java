@@ -11,10 +11,8 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.Hot
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.HotKeywordMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryMapper;
-import com.cartethyia.easyorange.product.application.port.cache.CategoryCachePort;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
-import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
@@ -23,6 +21,8 @@ import com.cartethyia.easyorange.product.application.service.SearchHistoryBuffer
 import com.cartethyia.easyorange.product.domain.constant.ProductConstant;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import com.cartethyia.easyorange.product.domain.repository.CategoryRepository;
+import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +49,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     private final HotKeywordMapper hotKeywordMapper;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final SearchHistoryBufferAppService searchHistoryBufferService;
-    private final CategoryCachePort categoryCachePort;
+    private final CategoryRepository categoryRepository;
 
     // ===================== 商品查询 =====================
 
@@ -334,14 +334,16 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         }
     }
 
+    /**
+     * 展开分类子树为 id 列表 — 按分类筛选商品时，一级分类应包含其下所有叶子分类的商品。
+     * <p>
+     * 用仓储的递归 CTE（{@code selectSubtreeIds}）而非「自身 + 直接子级」：
+     * 后者在 3 级树上会漏掉孙子分类的商品（与商品计数的旧 bug 同一个根因）。
+     */
     private List<String> resolveCategoryIdsWithChildren(String categoryId) {
-        var ids = new ArrayList<String>();
-        ids.add(categoryId);
-        categoryCachePort.getCategoriesByParentId(categoryId).stream()
-                .filter(c -> c.status() != null && c.status() == 1)
-                .map(CategoryReadModel::id)
-                .forEach(ids::add);
-        return ids;
+        return categoryRepository.findSubtreeIds(CategoryId.of(categoryId)).stream()
+                .map(CategoryId::value)
+                .toList();
     }
 
     private static Integer calculateHotLevel(int searchCount) {

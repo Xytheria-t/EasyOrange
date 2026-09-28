@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.ai.domain.model.CategorySummary;
 import com.cartethyia.easyorange.product.application.query.CategoryQueryHandler;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
+import com.cartethyia.easyorange.product.domain.enums.CategoryStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +44,6 @@ class CategoryListAdapterTest {
 
     private CategoryReadModel readModel(String id, String name, Integer level, int productCount) {
         return new CategoryReadModel(
-                id, name, null, level, "icon", 1, 1, LocalDateTime.of(2026, 1, 1, 0, 0), productCount);
+                id, name, null, level, "icon", 1, CategoryStatus.ENABLED, LocalDateTime.of(2026, 1, 1, 0, 0), productCount);
     }
 }

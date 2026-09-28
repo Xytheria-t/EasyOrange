@@ -1,8 +1,10 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.category;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
+import com.cartethyia.easyorange.product.domain.enums.CategoryStatus;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,23 +19,27 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
     }
 
     @Override
-    public List<CategoryReadModel> findByParentId(String parentId) {
-        return lambdaQuery().eq(CategoryDO::getParentId, parentId).orderByAsc(CategoryDO::getSortOrder).list().stream()
+    public List<CategoryReadModel> findEnabledByParentId(String parentId) {
+        return lambdaQuery()
+                .eq(CategoryDO::getParentId, parentId)
+                .eq(CategoryDO::getStatus, CategoryStatus.ENABLED)
+                .orderByAsc(CategoryDO::getSortOrder)
+                .list()
+                .stream()
                 .map(this::toReadModel)
                 .toList();
     }
 
     @Override
-    public List<CategoryReadModel> findByLevel(Integer level) {
-        return lambdaQuery().eq(CategoryDO::getLevel, level).orderByAsc(CategoryDO::getSortOrder).list().stream()
+    public List<CategoryReadModel> findEnabledByLevel(Integer level) {
+        return lambdaQuery()
+                .eq(CategoryDO::getLevel, level)
+                .eq(CategoryDO::getStatus, CategoryStatus.ENABLED)
+                .orderByAsc(CategoryDO::getSortOrder)
+                .list()
+                .stream()
                 .map(this::toReadModel)
                 .toList();
-    }
-
-    @Override
-    public CategoryReadModel findByName(String name) {
-        CategoryDO category = lambdaQuery().eq(CategoryDO::getName, name).one();
-        return category != null ? toReadModel(category) : null;
     }
 
     @Override
@@ -45,22 +51,30 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
     }
 
     @Override
-    public Map<String, Long> countProductsByCategoryIds(List<String> categoryIds) {
-        return doCount(categoryIds, false);
-    }
-
-    @Override
-    public Map<String, Long> countProductsByCategoryIdsWithChildren(List<String> categoryIds) {
-        return doCount(categoryIds, true);
-    }
-
-    private Map<String, Long> doCount(List<String> categoryIds, boolean withChildren) {
+    public Map<String, Long> countAllProductsByCategoryIds(List<String> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return Map.of();
         }
-        List<CategoryProductCount> counts = withChildren
-                ? mapper.countProductsByCategoryIdsWithChildren(categoryIds)
-                : mapper.countProductsByCategoryIds(categoryIds);
+        return toCountMap(mapper.countAllProductsByCategoryIds(categoryIds));
+    }
+
+    @Override
+    public Map<String, Long> countOnlineProductsByCategoryIdsWithChildren(List<String> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return Map.of();
+        }
+        return toCountMap(mapper.countOnlineProductsByCategoryIdsWithChildren(categoryIds));
+    }
+
+    @Override
+    public boolean existsById(String categoryId) {
+        if (categoryId == null || categoryId.isBlank()) {
+            return false;
+        }
+        return mapper.selectCount(Wrappers.<CategoryDO>lambdaQuery().eq(CategoryDO::getId, categoryId)) > 0;
+    }
+
+    private Map<String, Long> toCountMap(List<CategoryProductCount> counts) {
         Map<String, Long> result = new HashMap<>(counts.size());
         for (CategoryProductCount row : counts) {
             if (row.getCategoryId() != null && row.getProductCount() != null) {

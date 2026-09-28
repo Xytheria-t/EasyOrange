@@ -1,166 +1,145 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
-import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.cartethyia.easyorange.admin.domain.model.CategoryView;
 import com.cartethyia.easyorange.admin.domain.port.AdminCategoryPort;
-import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
-import com.cartethyia.easyorange.product.application.port.cache.CategoryCachePort;
 import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
-import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
+import com.cartethyia.easyorange.product.domain.aggregate.Category;
+import com.cartethyia.easyorange.product.domain.enums.CategoryStatus;
+import com.cartethyia.easyorange.product.domain.repository.CategoryRepository;
+import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 /**
- * Admin 分类查询/操作适配器
+ * Admin 分类查询适配器 — 实现 {@link AdminCategoryPort}。
  * <p>
- * 实现 {@link AdminCategoryPort}，通过 Category Mapper / Repository 访问分类数据并转换为 Admin 模块需要的格式。
+ * 读 product 模块的仓储与查询端口，翻译成 admin 侧只含 JDK 类型的 {@link CategoryView}（ACL 边界）。
+ * <p>
+ * 商品计数统一走「含子分类」口径：递归 CTE 下叶子分类的结果与直接挂载一致，
+ * 一级分类则拿到整棵子树的聚合数 —— 不再按 level 拆两批分别查（那是单层 JOIN 时代的补偿）。
  */
 @Primary
 @Component
 @RequiredArgsConstructor
 public class AdminCategoryAdapter implements AdminCategoryPort {
 
-    private final CategoryMapper categoryMapper;
+    private final CategoryRepository categoryRepository;
     private final CategoryQueryRepository categoryQueryRepository;
-    private final CategoryCachePort categoryCachePort;
 
     @Override
-    public CategoryRecord getCategory(String categoryId) {
-        CategoryDO category = categoryMapper.selectById(categoryId);
-        if (category == null || category.getDelFlag() != 0) {
-            return null;
+    public java.util.Optional<CategoryView> getCategory(String categoryId) {
+        if (categoryId == null || categoryId.isBlank()) {
+            return java.util.Optional.empty();
         }
-        return toCategoryRecord(category);
+        return categoryRepository.findById(CategoryId.of(categoryId)).map(this::toView);
     }
 
     @Override
-    public List<CategoryRecord> listCategories(String parentId) {
-        if (parentId == null) {
-            return ChainWrappers.lambdaQueryChain(categoryMapper)
-                    .eq(CategoryDO::getDelFlag, 0)
-                    .orderByAsc(CategoryDO::getSortOrder)
-                    .list()
-                    .stream()
-                    .map(this::toCategoryRecord)
-                    .toList();
-        }
-        return categoryQueryRepository.findByParentId(parentId).stream()
-                .map(this::toCategoryRecord)
+    public List<CategoryView> listCategories(String parentId, boolean includeDisabled) {
+        String normalized = (parentId == null || parentId.isBlank()) ? null : parentId;
+        List<Category> rows = categoryRepository.findChildren(
+                        normalized != null ? CategoryId.of(normalized) : null)
+                .stream()
+                .filter(category -> includeDisabled || category.getStatus().isEnabled())
+                .toList();
+        return enrich(rows);
+    }
+
+    @Override
+    public List<CategoryView> categoryTree() {
+        List<CategoryView> all = enrich(categoryRepository.findAll().stream()
+                .filter(category -> category.getStatus().isEnabled())
+                .toList());
+
+        Map<String, List<CategoryView>> childrenByParent = all.stream()
+                .filter(view -> view.parentId() != null)
+                .collect(Collectors.groupingBy(CategoryView::parentId, LinkedHashMap::new, Collectors.toList()));
+        // 一级分类的 parentId 是 null，单独挑出来当根 —— 直接用 null 做 map key 虽可行但语义不清
+        List<CategoryView> roots = all.stream().filter(view -> view.parentId() == null).toList();
+        return attachChildren(roots, childrenByParent);
+    }
+
+    private List<CategoryView> enrich(List<Category> rows) {
+        List<String> ids = rows.stream().map(c -> c.getId().value()).toList();
+        Map<String, Long> productCounts = categoryQueryRepository.countOnlineProductsByCategoryIdsWithChildren(ids);
+        Map<String, String> parentNames = parentNameMap(rows);
+        return rows.stream()
+                .map(row -> toViewWithNames(row, productCounts, parentNames))
                 .toList();
     }
 
-    @Override
-    public List<CategoryRecord> getCategoriesByIds(List<String> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return List.of();
+    private Map<String, String> parentNameMap(List<Category> rows) {
+        List<String> parentIds = rows.stream()
+                .map(Category::getParentId)
+                .filter(Objects::nonNull)
+                .map(CategoryId::value)
+                .distinct()
+                .toList();
+        if (parentIds.isEmpty()) {
+            return Map.of();
         }
-        return categoryQueryRepository.findByIds(ids).stream()
-                .map(this::toCategoryRecord)
+        return categoryRepository.findByIds(parentIds.stream().map(CategoryId::of).toList()).stream()
+                .collect(Collectors.toMap(
+                        parent -> parent.getId().value(), parent -> parent.getName().value(), (a, b) -> a));
+    }
+
+    /**
+     * 递归挂上子节点。
+     * <p>
+     * 环检测在写侧已保证（{@code Category.moveTo}），故这里无需防环；
+     * 若分组里存在孤儿节点（父分类被禁用或被删），它不会出现在任何 children 里 ——
+     * 后台看到的是「少了一条」，比死循环安全。
+     */
+    private List<CategoryView> attachChildren(List<CategoryView> nodes, Map<String, List<CategoryView>> childrenByParent) {
+        return nodes.stream()
+                .map(node -> withChildren(node, childrenByParent))
                 .toList();
     }
 
-    @Override
-    public CategoryRecord findCategoryByName(String name) {
-        CategoryReadModel existing = categoryQueryRepository.findByName(name);
-        return existing != null ? toCategoryRecord(existing) : null;
+    private CategoryView withChildren(CategoryView node, Map<String, List<CategoryView>> childrenByParent) {
+        List<CategoryView> children = attachChildren(
+                childrenByParent.getOrDefault(node.id(), List.of()), childrenByParent);
+        return new CategoryView(
+                node.id(),
+                node.name(),
+                node.parentId(),
+                node.parentName(),
+                node.level(),
+                node.sortOrder(),
+                node.status(),
+                node.productCount(),
+                node.createTime(),
+                children);
     }
 
-    @Override
-    public CategoryRecord createCategory(String name, String parentId, Integer sortOrder, Integer level) {
-        CategoryDO entity = CategoryDO.builder()
-                .name(name)
-                .parentId(parentId)
-                .level(level)
-                .sortOrder(sortOrder)
-                .status(1)
-                .build();
-
-        categoryMapper.insert(entity);
-        categoryCachePort.evictByLevel(level);
-        categoryCachePort.evictByParentId(parentId);
-        return toCategoryRecord(entity);
+    private CategoryView toView(Category category) {
+        return toViewWithNames(category, Map.of(), Map.of());
     }
 
-    @Override
-    public void updateCategory(CategoryRecord category) {
-        CategoryDO entity = categoryMapper.selectById(category.id());
-        if (entity == null || entity.getDelFlag() != 0) {
-            throw BusinessException.of("分类不存在");
-        }
-        Integer oldLevel = entity.getLevel();
-        String oldParentId = entity.getParentId();
-        entity.setName(category.name());
-        entity.setParentId(category.parentId());
-        entity.setLevel(category.level());
-        entity.setSortOrder(category.sortOrder());
-        entity.setStatus(category.status());
-        categoryMapper.updateById(entity);
-        categoryCachePort.evictByLevel(oldLevel);
-        categoryCachePort.evictByLevel(category.level());
-        categoryCachePort.evictByParentId(oldParentId);
-        categoryCachePort.evictByParentId(category.parentId());
-    }
-
-    @Override
-    public void deleteCategory(String categoryId) {
-        CategoryDO entity = categoryMapper.selectById(categoryId);
-        if (entity == null || entity.getDelFlag() != 0) {
-            throw BusinessException.of("分类不存在");
-        }
-        categoryMapper.deleteById(categoryId);
-        categoryCachePort.evictByLevel(entity.getLevel());
-        categoryCachePort.evictByParentId(entity.getParentId());
-    }
-
-    @Override
-    public long countCategoryChildren(String categoryId) {
-        return ChainWrappers.lambdaQueryChain(categoryMapper)
-                .eq(CategoryDO::getParentId, categoryId)
-                .eq(CategoryDO::getDelFlag, 0)
-                .count();
-    }
-
-    @Override
-    public Map<String, Long> countProductsByCategoryIds(List<String> categoryIds) {
-        if (categoryIds == null || categoryIds.isEmpty()) {
-            return Map.of();
-        }
-        return categoryQueryRepository.countProductsByCategoryIds(categoryIds);
-    }
-
-    @Override
-    public Map<String, Long> countProductsByCategoryIdsWithChildren(List<String> categoryIds) {
-        if (categoryIds == null || categoryIds.isEmpty()) {
-            return Map.of();
-        }
-        return categoryQueryRepository.countProductsByCategoryIdsWithChildren(categoryIds);
-    }
-
-    private CategoryRecord toCategoryRecord(CategoryDO category) {
-        return new CategoryRecord(
-                category.getId(),
-                category.getName(),
-                category.getParentId(),
+    private CategoryView toViewWithNames(
+            Category category, Map<String, Long> productCounts, Map<String, String> parentNames) {
+        String parentId = category.getParentId() != null ? category.getParentId().value() : null;
+        return new CategoryView(
+                category.getId().value(),
+                category.getName().value(),
+                parentId,
+                parentId != null ? parentNames.get(parentId) : null,
                 category.getLevel(),
-                category.getIcon(),
                 category.getSortOrder(),
-                category.getStatus(),
-                category.getCreateTime());
+                statusCode(category.getStatus()),
+                productCounts.getOrDefault(category.getId().value(), 0L),
+                category.getCreateTime(),
+                List.of());
     }
 
-    private CategoryRecord toCategoryRecord(CategoryReadModel model) {
-        return new CategoryRecord(
-                model.id(),
-                model.name(),
-                model.parentId(),
-                model.level(),
-                model.icon(),
-                model.sortOrder(),
-                model.status(),
-                model.createTime());
+    /** domain 枚举 → admin 视图的数字状态（0/1），保持与既有前端契约一致。 */
+    private static Integer statusCode(CategoryStatus status) {
+        return status != null && status.isEnabled() ? 1 : 0;
     }
 }

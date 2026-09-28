@@ -3,19 +3,21 @@ package com.cartethyia.easyorange.admin.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryCreateRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryUpdateRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryTreeResponse;
+import com.cartethyia.easyorange.admin.domain.model.CategoryView;
 import com.cartethyia.easyorange.admin.domain.port.AdminCategoryPort;
-import com.cartethyia.easyorange.admin.domain.port.AdminCategoryPort.CategoryRecord;
+import com.cartethyia.easyorange.admin.domain.port.CategoryWritePort;
+import com.cartethyia.easyorange.admin.domain.port.CategoryWritePort.CategoryWriteResult;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * 后台分类服务测试 — 只测**编排**（DTO 转换 + 何时走移动路径）。
+ * <p>
+ * 分类的业务规则（层级 / 环 / 重名 / 删除前置条件）已下沉到 product 模块的
+ * {@code Category} 聚合与 {@code CategoryCommandHandler}，其测试在 product 模块；
+ * 这里再测一遍规则等于测两遍。
+ */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminCategoryService 单元测试")
 class AdminCategoryServiceTest {
@@ -31,227 +40,152 @@ class AdminCategoryServiceTest {
     @Mock
     private AdminCategoryPort adminCategoryPort;
 
+    @Mock
+    private CategoryWritePort categoryWritePort;
+
     @InjectMocks
     private AdminCategoryService categoryService;
 
-    private static final String CATEGORY_ID = "1";
-    private static final String PARENT_ID = "10";
+    private static CategoryView view(String id, String name, String parentId, Integer level) {
+        return new CategoryView(id, name, parentId, null, level, 0, 1, 0L, null, List.of());
+    }
 
-    private CategoryRecord createCategory(String id, String name, String parentId, Integer level) {
-        return new CategoryRecord(id, name, parentId, level, null, 0, 1, LocalDateTime.now());
+    private static CategoryWriteResult writeResult(String id, String name, String parentId, Integer level) {
+        return new CategoryWriteResult(id, name, parentId, level, 0, 1, 0L, null);
     }
 
     @Nested
-    @DisplayName("categoryTree")
-    class CategoryTreeTests {
+    @DisplayName("查询")
+    class QueryTests {
 
         @Test
-        @DisplayName("获取分类树结构")
-        void categoryTree_returnsTree() {
-            CategoryRecord parent = createCategory(CATEGORY_ID, "电子数码", null, 1);
-            CategoryRecord child = createCategory(PARENT_ID, "手机", CATEGORY_ID, 2);
+        @DisplayName("列表含禁用：后台要能看到并恢复禁用项")
+        void listCategories_includesDisabled() {
+            when(adminCategoryPort.listCategories(null, true)).thenReturn(List.of(view("1", "电子数码", null, 1)));
 
-            when(adminCategoryPort.listCategories(null)).thenReturn(List.of(parent, child));
+            var result = categoryService.listCategories(null);
 
-            List<CategoryTreeResponse> tree = categoryService.categoryTree();
-
-            assertThat(tree).hasSize(1);
-            assertThat(tree.get(0).name()).isEqualTo("电子数码");
-            assertThat(tree.get(0).children()).hasSize(1);
-            assertThat(tree.get(0).children().get(0).name()).isEqualTo("手机");
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).id()).isEqualTo("1");
+            verify(adminCategoryPort).listCategories(null, true);
         }
 
         @Test
-        @DisplayName("没有分类时返回空列表")
-        void categoryTree_empty_returnsEmpty() {
-            when(adminCategoryPort.listCategories(null)).thenReturn(List.of());
+        @DisplayName("树：children 递归转成同构 DTO")
+        void categoryTree_mapsChildrenRecursively() {
+            CategoryView child = new CategoryView("2", "手机", "1", "电子数码", 2, 1, 1, 3L, null, List.of());
+            CategoryView root = new CategoryView("1", "电子数码", null, null, 1, 1, 1, 3L, null, List.of(child));
+            when(adminCategoryPort.categoryTree()).thenReturn(List.of(root));
 
-            List<CategoryTreeResponse> tree = categoryService.categoryTree();
+            var result = categoryService.categoryTree();
 
-            assertThat(tree).isEmpty();
-        }
-
-        @Test
-        @DisplayName("禁用的分类不进入树")
-        void categoryTree_disabledFiltered() {
-            CategoryRecord enabled = createCategory(CATEGORY_ID, "电子数码", null, 1);
-            CategoryRecord disabled = new CategoryRecord(PARENT_ID, "已禁用", null, 1, null, 0, 0, LocalDateTime.now());
-
-            when(adminCategoryPort.listCategories(null)).thenReturn(List.of(enabled, disabled));
-
-            List<CategoryTreeResponse> tree = categoryService.categoryTree();
-
-            assertThat(tree).hasSize(1);
-            assertThat(tree.get(0).name()).isEqualTo("电子数码");
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).children()).hasSize(1);
+            assertThat(result.get(0).children().get(0).name()).isEqualTo("手机");
+            assertThat(result.get(0).children().get(0).parentName()).isEqualTo("电子数码");
         }
     }
 
     @Nested
-    @DisplayName("createCategory")
-    class CreateCategoryTests {
+    @DisplayName("更新：挂载点变化的判定")
+    class UpdateRoutingTests {
 
         @Test
-        @DisplayName("创建一级分类成功")
-        void createCategory_root_success() {
-            when(adminCategoryPort.findCategoryByName("新分类")).thenReturn(null);
-            when(adminCategoryPort.createCategory("新分类", null, 1, 1)).thenReturn(createCategory("99", "新分类", null, 1));
+        @DisplayName("parentId 与当前相同 -> 只走属性更新，不触发移动")
+        void sameParent_skipsMove() {
+            when(adminCategoryPort.getCategory("2")).thenReturn(Optional.of(view("2", "手机", "1", 2)));
+            when(categoryWritePort.updateCategory(eq("2"), any(), any(), any(), any()))
+                    .thenReturn(writeResult("2", "手机", "1", 2));
 
-            CategoryCreateRequest request = new CategoryCreateRequest("新分类", null, 1);
+            categoryService.updateCategory("2", new CategoryUpdateRequest("手机", "1", null, 1, null));
 
-            categoryService.createCategory(request);
-
-            verify(adminCategoryPort).createCategory("新分类", null, 1, 1);
+            verify(categoryWritePort, never()).moveCategory(any(), any());
+            verify(categoryWritePort).updateCategory("2", "手机", 1, null, null);
         }
 
         @Test
-        @DisplayName("创建子分类成功")
-        void createCategory_child_success() {
-            when(adminCategoryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "电子数码", null, 1));
-            when(adminCategoryPort.findCategoryByName("手机")).thenReturn(null);
-            when(adminCategoryPort.createCategory("手机", CATEGORY_ID, 0, 2))
-                    .thenReturn(createCategory("99", "手机", CATEGORY_ID, 2));
+        @DisplayName("parentId 变成另一个值 -> 先移动再更新属性")
+        void changedParent_movesFirst() {
+            when(adminCategoryPort.getCategory("2")).thenReturn(Optional.of(view("2", "手机", "1", 2)));
+            when(categoryWritePort.moveCategory("2", "3")).thenReturn(writeResult("2", "手机", "3", 2));
+            when(categoryWritePort.updateCategory(eq("2"), any(), any(), any(), any()))
+                    .thenReturn(writeResult("2", "手机", "3", 2));
 
-            CategoryCreateRequest request = new CategoryCreateRequest("手机", CATEGORY_ID, null);
+            categoryService.updateCategory("2", new CategoryUpdateRequest("手机", "3", null, 1, null));
 
-            categoryService.createCategory(request);
-
-            verify(adminCategoryPort).createCategory("手机", CATEGORY_ID, 0, 2);
+            verify(categoryWritePort).moveCategory("2", "3");
+            verify(categoryWritePort).updateCategory("2", "手机", 1, null, null);
         }
 
         @Test
-        @DisplayName("父分类不存在抛出异常")
-        void createCategory_parentNotFound_throws() {
-            when(adminCategoryPort.getCategory(CATEGORY_ID)).thenReturn(null);
+        @DisplayName("当前是二级、请求不传 parentId -> 视为移到一级，触发移动")
+        void nullParentOnChild_movesToRoot() {
+            when(adminCategoryPort.getCategory("2")).thenReturn(Optional.of(view("2", "手机", "1", 2)));
+            when(categoryWritePort.moveCategory("2", null)).thenReturn(writeResult("2", "手机", null, 1));
+            when(categoryWritePort.updateCategory(eq("2"), any(), any(), any(), any()))
+                    .thenReturn(writeResult("2", "手机", null, 1));
 
-            CategoryCreateRequest request = new CategoryCreateRequest("新分类", CATEGORY_ID, null);
+            categoryService.updateCategory("2", new CategoryUpdateRequest("手机", null, null, 1, null));
 
-            assertThatThrownBy(() -> categoryService.createCategory(request))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("父分类不存在");
+            verify(categoryWritePort).moveCategory("2", null);
         }
 
         @Test
-        @DisplayName("同名一级分类抛出异常")
-        void createCategory_duplicateName_throws() {
-            when(adminCategoryPort.findCategoryByName("已存在")).thenReturn(createCategory(CATEGORY_ID, "已存在", null, 1));
+        @DisplayName("当前是一级、请求不传 parentId -> 位置没变，不触发移动")
+        void nullParentOnRoot_skipsMove() {
+            when(adminCategoryPort.getCategory("1")).thenReturn(Optional.of(view("1", "电子数码", null, 1)));
+            when(categoryWritePort.updateCategory(eq("1"), any(), any(), any(), any()))
+                    .thenReturn(writeResult("1", "电子数码", null, 1));
 
-            CategoryCreateRequest request = new CategoryCreateRequest("已存在", null, null);
+            categoryService.updateCategory("1", new CategoryUpdateRequest("电子数码", null, null, 1, null));
 
-            assertThatThrownBy(() -> categoryService.createCategory(request))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("同名");
-        }
-    }
-
-    @Nested
-    @DisplayName("updateCategory")
-    class UpdateCategoryTests {
-
-        @Test
-        @DisplayName("更新分类成功（一级分类计数走子树聚合口径，TD-028）")
-        void updateCategory_success() {
-            when(adminCategoryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "旧名称", null, 1));
-            when(adminCategoryPort.findCategoryByName("新名称")).thenReturn(null);
-            when(adminCategoryPort.countProductsByCategoryIdsWithChildren(anyList()))
-                    .thenReturn(Map.of(CATEGORY_ID, 0L));
-
-            CategoryUpdateRequest request = new CategoryUpdateRequest("新名称", null, 2);
-
-            categoryService.updateCategory(CATEGORY_ID, request);
-
-            verify(adminCategoryPort).updateCategory(any(CategoryRecord.class));
-            verify(adminCategoryPort).countProductsByCategoryIdsWithChildren(List.of(CATEGORY_ID));
+            verify(categoryWritePort, never()).moveCategory(any(), any());
         }
 
         @Test
-        @DisplayName("叶子分类计数仍按直接挂载（TD-028 口径拆分）")
-        void updateCategory_leafLevel_countsDirectly() {
-            when(adminCategoryPort.getCategory(PARENT_ID)).thenReturn(createCategory(PARENT_ID, "手机", CATEGORY_ID, 2));
-            when(adminCategoryPort.countProductsByCategoryIds(anyList())).thenReturn(Map.of(PARENT_ID, 5L));
+        @DisplayName("分类不存在 -> 拒绝，不下发任何写命令")
+        void missingCategory_rejected() {
+            when(adminCategoryPort.getCategory("404")).thenReturn(Optional.empty());
 
-            // parentId 带原值保持在叶子层（null 会被服务移到根、重算 level=1 走子树口径）
-            CategoryUpdateRequest request = new CategoryUpdateRequest("手机2", CATEGORY_ID, null);
-            categoryService.updateCategory(PARENT_ID, request);
+            assertThatThrownBy(() ->
+                            categoryService.updateCategory("404", new CategoryUpdateRequest("x", "1", null, 1, null)))
+                    .isInstanceOf(BusinessException.class);
 
-            verify(adminCategoryPort).countProductsByCategoryIds(List.of(PARENT_ID));
-            verify(adminCategoryPort, org.mockito.Mockito.never()).countProductsByCategoryIdsWithChildren(anyList());
-        }
-
-        @Test
-        @DisplayName("更新不存在的分类抛出异常")
-        void updateCategory_notFound_throws() {
-            when(adminCategoryPort.getCategory(CATEGORY_ID)).thenReturn(null);
-
-            CategoryUpdateRequest request = new CategoryUpdateRequest("新名称", null, null);
-
-            assertThatThrownBy(() -> categoryService.updateCategory(CATEGORY_ID, request))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("分类不存在");
+            verify(categoryWritePort, never()).updateCategory(any(), any(), any(), any(), any());
+            verify(categoryWritePort, never()).moveCategory(any(), any());
         }
     }
 
     @Nested
-    @DisplayName("deleteCategory")
-    class DeleteCategoryTests {
+    @DisplayName("创建 / 状态 / 删除")
+    class WriteTests {
 
         @Test
-        @DisplayName("删除空分类成功")
-        void deleteCategory_noChildren_success() {
-            when(adminCategoryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "测试分类", null, 1));
-            when(adminCategoryPort.countCategoryChildren(CATEGORY_ID)).thenReturn(0L);
-            when(adminCategoryPort.countProductsByCategoryIds(anyList())).thenReturn(Map.of(CATEGORY_ID, 0L));
+        @DisplayName("创建：透传名称与父分类")
+        void create_passesThrough() {
+            when(categoryWritePort.createCategory("手机", "1", null, 0))
+                    .thenReturn(writeResult("9", "手机", "1", 2));
 
-            categoryService.deleteCategory(CATEGORY_ID);
+            var result = categoryService.createCategory(new CategoryCreateRequest("手机", "1", null, 0));
 
-            verify(adminCategoryPort).deleteCategory(CATEGORY_ID);
+            assertThat(result.id()).isEqualTo("9");
+            assertThat(result.level()).isEqualTo(2);
         }
 
         @Test
-        @DisplayName("有子分类时无法删除")
-        void deleteCategory_hasChildren_throws() {
-            when(adminCategoryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "测试分类", null, 1));
-            when(adminCategoryPort.countCategoryChildren(CATEGORY_ID)).thenReturn(2L);
+        @DisplayName("更新状态：走 status 专用端口")
+        void updateStatus_delegates() {
+            categoryService.updateStatus("1", 0);
 
-            assertThatThrownBy(() -> categoryService.deleteCategory(CATEGORY_ID))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("子分类");
+            verify(categoryWritePort).updateCategoryStatus("1", 0);
         }
 
         @Test
-        @DisplayName("有商品关联时无法删除")
-        void deleteCategory_hasProducts_throws() {
-            when(adminCategoryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "测试分类", null, 1));
-            when(adminCategoryPort.countCategoryChildren(CATEGORY_ID)).thenReturn(0L);
-            when(adminCategoryPort.countProductsByCategoryIds(anyList())).thenReturn(Map.of(CATEGORY_ID, 3L));
+        @DisplayName("删除：走写端口，前置校验在 product 侧")
+        void delete_delegates() {
+            categoryService.deleteCategory("1");
 
-            assertThatThrownBy(() -> categoryService.deleteCategory(CATEGORY_ID))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("关联商品");
-        }
-    }
-
-    @Nested
-    @DisplayName("updateStatus")
-    class UpdateStatusTests {
-
-        @Test
-        @DisplayName("更新分类状态成功")
-        void updateStatus_success() {
-            when(adminCategoryPort.getCategory(CATEGORY_ID)).thenReturn(createCategory(CATEGORY_ID, "测试", null, 1));
-
-            categoryService.updateStatus(CATEGORY_ID, 0);
-
-            verify(adminCategoryPort).updateCategory(any(CategoryRecord.class));
-        }
-
-        @Test
-        @DisplayName("更新不存在的分类状态抛出异常")
-        void updateStatus_notFound_throws() {
-            when(adminCategoryPort.getCategory(CATEGORY_ID)).thenReturn(null);
-
-            assertThatThrownBy(() -> categoryService.updateStatus(CATEGORY_ID, 0))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("分类不存在");
+            verify(categoryWritePort).deleteCategory("1");
         }
     }
 }

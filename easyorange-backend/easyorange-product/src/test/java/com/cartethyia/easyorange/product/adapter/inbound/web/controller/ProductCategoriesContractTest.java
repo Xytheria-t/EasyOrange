@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.product.application.port.cache.ViewCountPort;
 import com.cartethyia.easyorange.product.application.query.CategoryQueryHandler;
 import com.cartethyia.easyorange.product.application.query.ProductQueryHandler;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
+import com.cartethyia.easyorange.product.domain.enums.CategoryStatus;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ class ProductCategoriesContractTest {
     @DisplayName("根分类列表 -> 200 + 封套 A0000 + 数组形状与映射字段")
     void categories_root_returnsListShape() throws Exception {
         when(categoryQueryHandler.getCategories(null))
-                .thenReturn(List.of(new CategoryReadModel("c-1", "手机数码", null, 1, null, 10, 1, null, 42)));
+                .thenReturn(List.of(new CategoryReadModel("c-1", "手机数码", null, 1, null, 10, CategoryStatus.ENABLED, null, 42)));
 
         mockMvc.perform(get("/api/products/categories"))
                 .andExpect(status().isOk())
