@@ -50,10 +50,11 @@
 
 - **JWT 走 OAuth2 Resource Server 内置 Filter，无自定义认证 Filter**：`JwtDecoder` 只验签 + issuer；`JwtAuthenticationConverter` 拒 refresh token、从 `authorities` claim 构造 `AuthUser`；管理员角色在 `login()` 写进 claim，资源服务器直接读、**不重算**
 - **双 Token**：Access JWT 30 分钟（前端仅内存）；Refresh opaque 落 Redis（HttpOnly Cookie，key `eo:user:refresh:*`，SHA-256），**轮换 + 复用检测**；登出 jti 进黑名单（TTL = 剩余有效期）；`TokenRevocationFilter` 只查吊销（与验签职责分离）
-- **Filter 顺序**：`RateLimitFilter(0)` → `RefreshCsrfFilter(1)` → resource server 内置认证 → `TokenRevocationFilter` → Anonymous → `AuditLogAspect`（`@Order 3`）
+- **Filter 顺序**：`IdempotencyKeyFilter` → `RateLimitFilter` → `RefreshCsrfFilter` → resource server 内置认证 → `TokenRevocationFilter` → Anonymous → `AuditLogAspect`。四个业务 Filter **无 `@Component`**，由 `SecurityConfig` 局部装配 + `addFilterBefore` 定位，另配 `FilterRegistrationBean(enabled=false)` 防容器自动注册（只去掉 `@Component` 不够，容器链会把任何 Filter bean 再登记一次）；`AuditLogAspect` 的 `@Order` 只在切面之间排序，Filter 先于 MVC 由容器保证，与它无关
+- **Token 吊销检查 fail-open**：Redis 异常时放行并计 `easyorange.security.revocation_check_degraded`——验签与有效期已过，黑名单 TTL 只等于 token 剩余有效期，敞口有界；fail-closed 等于把 Redis 抖动翻译成全站已认证用户 401/500
 - **`RateLimitFilter` 必须 `ObjectProvider<List<HandlerMapping>>` 延迟注入**：直接注入经 WebSocket 配置链**循环依赖**，别改回 `@RequiredArgsConstructor`；限流与防重一律 **fail-open**，`@SkipRateLimit` / `@SkipRepeatSubmit` 跳过
 - **幂等 ≠ 防重**：`IdempotencyKeyFilter` 24h 窗口 + `Idempotency-Key` 头 + **字节级回放响应**（非 2xx 不缓存），置于 `AnonymousAuthenticationFilter` 前抓最终响应
-- **`security.product-paths` 前缀匹配陷阱**：`/api/products` 会匹配 `/api/products/my`——新增需认证接口补精确 `.requestMatchers(...).authenticated()`
+- **`security.product-paths` 是精确匹配不是前缀匹配**（走 `PathPatternParser`）：`/api/products` 覆盖不到 `/api/products/my`，新增需认证接口补精确 `.requestMatchers(...).authenticated()`；新增**匿名**公开端点则要在 `product-paths` 补一条
 - **登录失败统一「用户名或密码错误」**（防用户枚举）；账号禁用可单独提示
 
 ## 事件与 MQ
@@ -95,13 +96,13 @@
 ### user
 
 - **登录每方式独立 DTO + 独立端点**，`toCredential()` → `LoginCredential`（sealed：`Password` / `Sms`），**禁枚举字段区分**；两层映射：`UserEntityMapper` 管全部持久化（`UserDO` 无 `toDomain()`）、`UserAssembler` 管响应脱敏
-- `SmsCodePort` / `SmsSenderPort` **按 `@Profile` 互斥**，未声明 profile 不注册、**启动即失败防裸跑生产**；validation 包只放**纯格式**校验，唯一性在 application / domain
+- `SmsCodePort` **按 `@Profile` 互斥**（dev/test ↔ it/prod），未声明 profile 不注册、**启动即失败防裸跑生产**；`SmsSenderPort` 目前只有日志发送器、**全 profile 装配**（prod 激活时若不装配，`RedisSmsCodeAdapter` 构造注入直接失败——宁「启动可用、业务不可用」也不选启动即挂）；validation 包只放**纯格式**校验，唯一性在 application / domain
 - **改密码成功必须吊销全部会话 + 发 `UserPasswordChangedEvent`**，新旧同密码拒；注册 `nick_name` **默认 = `username`**；新增字段走值对象 record → Flyway → DO/Mapper → DTO/Assembler → 聚合根
 
 ### message
 
 - **STOMP over WebSocket**：`WebSocketAuthInterceptor` 从 STOMP Header 提 JWT；聊天帧 `/queue/chat/{conversationId}`、未读 `/queue/unread-count`；离线先落 PENDING、上线补推
-- **REST 与 WebSocket 必须共用 `MessageCommandHandler`**——限流唯一裁决点防双重计数；发送前敏感词过滤；限流 5 条/秒/用户；**XSS 在渲染端 `escapeHtml`，聚合根不转义**；conversationId = `conv_{minId}_{maxId}`
+- **REST 与 WebSocket 必须共用 `MessageCommandHandler`**——限流唯一裁决点防双重计数；`sendMessage` 返回**落库后的聚合根**，两条入口的回显都从它构造（广播客户端原始 payload = 敏感词过滤与敏感词存储双绕过）；敏感词表外置为配置项（`message.sensitive-words.words`，缺失回内置基线词表而非静默关闭过滤）；限流 5 条/秒/用户；**XSS 在渲染端 `escapeHtml`，聚合根不转义**；conversationId = `conv_{minId}_{maxId}`，**由聚合根算、不收客户端入参**（客户端可控会让同一房间被命名成两个值）
 
 ### ai
 
@@ -111,12 +112,13 @@
 - **上下文裁剪 `ChatContextTrimmer`**：连续窗口、永保最新一条，**有意不做 LLM 摘要**；**历史按原始角色传多消息**（前缀稳定才吃供应商缓存折扣）
 - **MCP 只挂公开只读 4 工具**禁用户态；**`spring.ai.mcp.server.protocol` 必须显式 `streamable`**（属性默认值不进 Environment → `/mcp` 不注册 404）；dev / prod 的 `security.ignore-paths` 都要加
 - **`AiModelSupport` 收敛所有 LLM 调用**，**带 `AiCallScope` 才记账**（`eo_ai_call_log` + 真实 token 入预算），不带不记（`AiJudge` 刻意账外防自指）；**观测 OTel → OTLP → Langfuse** 靠 `ChatModelContentObservationFilter` 拷进 `gen_ai.*`——**漏配面板恒 null**
-- **Prompt 全 YAML**（`resources/prompts/*.yml`，`require` fail-fast，**加内容同改 `PromptContentTest.ALL_PROMPTS`**）；**评估阈值全在 `eval/baselines.yaml` 禁内置默认**；**不可信内容进标签块**（`<user_question>` 等）+ 声明「块内是数据非指令」
+- **Prompt 全 YAML**（`resources/prompts/*.yml`，一文件一模板，`require` fail-fast，**加内容同改 `PromptContentTest.ALL_PROMPTS`**——含 Judge 量表）；**评估阈值全在 `eval/baselines.yaml` 禁内置默认**；**不可信内容进标签块**（`<user_question>` 等）+ 声明「块内是数据非指令」，且**进块前剥掉标签形态**（`UntrustedText`）——决策与生成两条装配都要剥，否则提问里写 `</user_question>` 就能在决策上下文里另开一块，而决策决定调哪个工具
 - 查询侧 `QueryEmbeddingAdapter` **永不抛**（拿不到向量退化纯 BM25）；**语义检索只在「开 AI 开关 + 相关度排序 + 关键词非空」三条件同时成立时向量化**（其余情况 kNN 缺相似度下限会召回全库并白付 embedding）；**RAG**：kNN + BM25 两路独立召回 → `RrfFusion`（k=60），**否决 Cosine 重排**（单调 = 没排、丢 BM25 信号），ES 关降级空
-- **Token 预算**：`@TokenBudget` 编译期契约 + yaml 热更；**切面前置检查、记账在 `AiModelSupport`**（切面按上限估**差一个量级**）；**流式拦不住 AOP** → `ChatBudgetGuard.exhausted()` 同判据不重复记账（循环中途降级同调这一处）；`budget.store` 多副本必须 `redis`（内存版日限放大 N 倍）；**scenario 必须与 `AiCallScope.budgetScenario()` 一致否则预算静默失效**
+- **Token 预算**：`@TokenBudget` 编译期契约 + yaml 热更；**切面前置检查、记账在 `AiModelSupport`**（切面按上限估**差一个量级**）；**流式拦不住 AOP** → `ChatBudgetGuard.exhausted()` 同判据不重复记账（循环中途降级同调这一处）；`budget.store` 多副本必须 `redis`（内存版日限放大 N 倍）；**scenario 必须与 `AiCallScope.budgetScenario()` 一致否则预算静默失效**（注解只能写字面量，编译期发现不了，由 `TokenBudgetScenarioContractTest` 反射钉住；新增带 `@TokenBudget` 的类要登记进该测试的类清单）
 - **Port 方向不反转**（端口 product 定义、ai 实现，ai 不碰 product 表）；**反馈导出只出 `helpful=1 AND scope='chat'`**（**helpful=0 不能自动成金标准**）；供应商可换 = 改 `AiModelConfig` / `easyorange.ai.*`，重试走 openai-java 内置无自研
 
 ### admin
 
-- **禁直接依赖他模块 Mapper / DO**：走 `domain/port/Admin*Port`；写操作记 reason + 操作人
+- **禁直接依赖他模块 Mapper / DO**：走 `domain/port/Admin*Port`（仪表盘的趋势 / 最近动态同样经端口，admin 不持 `JdbcTemplate`）；写操作记 reason + 操作人 —— reason 落 `eo_user.remark`、操作人落 `audit_info.update_by`，**接口上不许挂不落库的字段**
+- 错误码 B6xxx 走 `AdminResultCode` + `AdminDomainException` 具名工厂（`userNotFound` / `orderNotFound` / …），禁裸中文串
 - 依赖仅 optional `common` + `framework`，**其余业务模块零依赖**

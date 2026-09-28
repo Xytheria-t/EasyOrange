@@ -52,7 +52,7 @@
 ### 正向后果
 
 - 模块可独立编译/测试/演进，跨模块依赖面收敛为接口签名
-- 替换实现零成本：锁实现（Redis/Mem）、支付网关、短信供应商、ES 开关全部只改 adapter（`@ConditionalOnProperty` 已用于 RabbitMQ/ES/TokenBudgetStore）
+- 替换实现零成本：锁实现（Redis/Mem）、支付网关、短信供应商、ES 开关全部只改 adapter（`@ConditionalOnProperty` 已用于 RabbitMQ/ES/TokenBudgetStorePort）
 - Port 目录成为「模块边界地图」，新人看 Port 目录即理解模块协作面
 - optional 依赖 + ArchUnit 无白名单，CI 阻断任何越界依赖
 

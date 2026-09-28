@@ -61,7 +61,7 @@ EasyOrange 后端是 Maven 多模块工程（见 `README.md` 与 `easyorange-bac
 - 边界由 ArchUnit 守卫，新人加代码时「该往 command 还是 query」一目了然
 - order 写链路在 command 侧，查询不影响写事务
 
-> **两种深度（别把 4 个模块说成同一深度）**：product / order 是完整 CQRS——`ReadModel` + 独立查询仓储；payment / message 只到 **Command/Query Handler 级分离**（`*CommandHandler` / `*QueryHandler` 分文件 + 独立查询仓储），查询侧与写侧差异不大就不再造 ReadModel。核验方式：全仓 `*ReadModel.java` 只存在于 product(5) / order(2)。
+> **两种深度（别把 4 个模块说成同一深度）**：product / order 是完整 CQRS——`ReadModel` + 独立查询仓储；payment 只到 **Command/Query Handler 级分离**（`*CommandHandler` / `*QueryHandler` 分文件，查询侧直接复用写仓储——单表单状态机，再造一个同形状的查询仓储只是转发）；message 是 Handler 级分离 + 独立查询仓储（会话列表 / 未读数与写路径形状不同）。核验方式：全仓 `*ReadModel.java` 只存在于 product(5) / order(2)。
 
 ### 负向后果
 
