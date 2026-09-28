@@ -16,7 +16,6 @@ public interface ChatStreamHandler {
     /** Agent 工具循环的每一步（决策理由 + 观察摘要），生成开始前推送，前端步骤可视化。 */
     void onStep(AgentStepView step);
 
-    /** 生成过程中的每个 token。 */
     void onToken(String token);
 
     /**
@@ -27,7 +26,6 @@ public interface ChatStreamHandler {
      */
     void onSources(List<ChatSource> sources);
 
-    /** 流结束，携带完整回答。 */
     void onDone(String fullAnswer);
 
     /** 出错（预算超限 / 模型异常等），携带给用户的兜底文案。 */

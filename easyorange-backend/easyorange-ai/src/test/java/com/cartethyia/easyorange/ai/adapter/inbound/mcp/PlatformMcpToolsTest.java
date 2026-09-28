@@ -5,8 +5,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingService;
-import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.CategorySummary;
@@ -28,13 +28,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PlatformMcpToolsTest {
 
     @Mock
-    private AssetSourcingService assetSourcingService;
+    private AssetSourcingAppService assetSourcingService;
 
     @Mock
     private AssetDetailPort assetDetailPort;
 
     @Mock
-    private KnowledgeRetrievalService knowledgeRetrievalService;
+    private KnowledgeRetrievalAppService knowledgeRetrievalService;
 
     @Mock
     private CategoryListPort categoryListPort;

@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class KnowledgeRetrievalService {
+public class KnowledgeRetrievalAppService {
 
     private final ObjectProvider<KnowledgeIndexPort> indexPortProvider;
     private final ObjectProvider<EmbeddingModel> embeddingModelProvider;

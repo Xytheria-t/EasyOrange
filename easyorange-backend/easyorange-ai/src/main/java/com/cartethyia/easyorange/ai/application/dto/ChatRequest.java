@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.application.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.jspecify.annotations.Nullable;
 
 /**
  * AI 对话请求 — 多轮会话靠 sessionId 关联（短期记忆在 Redis，TTL 24h）。
@@ -17,5 +18,5 @@ public record ChatRequest(
         @NotBlank(message = "问题不能为空") @Size(max = 2000, message = "问题长度不能超过 2000 字")
         String question,
 
-        String sessionId,
+        @Nullable String sessionId,
         boolean forceFresh) {}

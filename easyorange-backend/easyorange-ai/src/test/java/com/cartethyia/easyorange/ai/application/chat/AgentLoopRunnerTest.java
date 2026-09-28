@@ -17,8 +17,8 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Input;
 import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Result;
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingService;
-import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
@@ -79,10 +79,10 @@ class AgentLoopRunnerTest {
     private final PromptRegistry promptRegistry = new TestPromptRegistry();
 
     @Mock
-    private KnowledgeRetrievalService retrievalService;
+    private KnowledgeRetrievalAppService retrievalService;
 
     @Mock
-    private AssetSourcingService assetSourcingService;
+    private AssetSourcingAppService assetSourcingService;
 
     @Mock
     private AssetDetailPort assetDetailPort;
@@ -493,6 +493,28 @@ class AgentLoopRunnerTest {
 
         assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
         verify(retrievalService).search("怎么退款？", 5);
+    }
+
+    @Test
+    @DisplayName("畸形 tool call 缺工具名 -> 收敛成未知工具的失败观察交回模型，不让 switch 抛 NPE 打死整轮")
+    void run_missingToolNameDegradesToFailureObservation() {
+        // ToolCall 是裸 record、@NullMarked 下声明非空，运行期却能绑进 null —— 供应商漏字段的原生形态
+        stubDecisions(
+                toolCallResponse(null, "{\"thought\":\"不知道调啥\"}"),
+                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+
+        Result result = run("怎么退款？");
+
+        // 缺名不是决策失败（决策本身成功了，模型确实要了个工具）：走完一轮后由 finish 正常收敛
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        // 归一化后的空串照常进 toolPath（它就是「模型选了什么」的真实记录），finish 轮同口径计入
+        assertThat(result.toolPath()).containsExactly("", AgentTools.TOOL_FINISH);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
+        verify(aiModelSupport, times(2)).callWithTools(any(), any(), decisionMessages.capture(), anyList());
+        assertThat(observationTexts(decisionMessages.getAllValues().get(1)))
+                .anySatisfy(text -> assertThat(text).contains("未知工具"));
     }
 
     @Test

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AiFeedbackService {
+public class AiFeedbackAppService {
 
     private static final String INSERT_SQL = """
             INSERT INTO eo_ai_feedback (id, scope, query_text, response_text, helpful, comment, call_log_id, user_id)

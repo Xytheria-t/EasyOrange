@@ -30,7 +30,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AutoListingService 测试")
+@DisplayName("AutoListingAppService 测试")
 class AutoListingServiceTest {
 
     @Mock
@@ -45,7 +45,7 @@ class AutoListingServiceTest {
     @Mock
     private VisionImageLoader visionImageLoader;
 
-    private AutoListingService service;
+    private AutoListingAppService service;
 
     @BeforeEach
     void setUp() {
@@ -53,7 +53,7 @@ class AutoListingServiceTest {
         lenient().when(categoryCatalogPort.listAvailableCategoryNames()).thenReturn(List.of("手机数码", "图书教材"));
         // 取图转 data URL 是 I/O 边界，单测直通透传（取图行为由 VisionImageLoaderTest 覆盖）
         lenient().when(visionImageLoader.toDataUrls(any())).thenAnswer(inv -> inv.getArgument(0));
-        service = new AutoListingService(
+        service = new AutoListingAppService(
                 modelRouter,
                 new TestPromptRegistry(),
                 TestAiModelSupport.create(),
@@ -142,7 +142,7 @@ class AutoListingServiceTest {
         @Test
         @DisplayName("Prompt 模板缺失时抛 IllegalStateException（配置错误 fail-fast，不伪装成 AI 不可用）")
         void analyzeImages_missingPrompt() {
-            service = new AutoListingService(
+            service = new AutoListingAppService(
                     modelRouter,
                     TestPromptRegistry.empty(),
                     TestAiModelSupport.create(),

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.job;
 
-import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeIngestionService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeIngestionAppService;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class KnowledgeBootstrapIndexer implements ApplicationRunner {
 
-    private final KnowledgeIngestionService ingestionService;
+    private final KnowledgeIngestionAppService ingestionService;
     private final ObjectProvider<KnowledgeIndexPort> indexPortProvider;
 
     @Override

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.application.chat.AiChatService;
+import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
@@ -48,11 +48,11 @@ public class AiChatController {
 
     private static final long STREAM_TIMEOUT_MS = 120_000;
 
-    private final AiChatService chatService;
+    private final AiChatAppService chatService;
     private final ObjectProvider<TaskExecutor> taskExecutors;
 
     public AiChatController(
-            AiChatService chatService,
+            AiChatAppService chatService,
             @Qualifier("applicationTaskExecutor") ObjectProvider<TaskExecutor> taskExecutors) {
         this.chatService = chatService;
         this.taskExecutors = taskExecutors;

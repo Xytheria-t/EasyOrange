@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
-import com.cartethyia.easyorange.ai.application.listing.AutoListingService;
+import com.cartethyia.easyorange.ai.application.listing.AutoListingAppService;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.result.Result;
@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AiListingController {
 
-    private final AutoListingService autoListingService;
+    private final AutoListingAppService autoListingService;
 
     // 只读识别调用，无状态可重复提交风险；防重 3s 会把「再次识别」误拦成 429（连点/连跑不一致），
     // 频控由 AI 限流（auto-listing 5 次/分）与 token 预算承担

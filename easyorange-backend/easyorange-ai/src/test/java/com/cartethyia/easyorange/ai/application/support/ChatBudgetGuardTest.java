@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.ai.application.support;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.chat.AiChatService;
+import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
@@ -72,7 +72,7 @@ class ChatBudgetGuardTest {
     @Test
     @DisplayName("兜底常量 == @TokenBudget(scenario=chat) 注解默认值（改一边必须改另一边）")
     void fallbackMatchesAnnotationContract() throws NoSuchMethodException {
-        TokenBudget limits = AiChatService.class
+        TokenBudget limits = AiChatAppService.class
                 .getDeclaredMethod("answer", ChatRequest.class, String.class)
                 .getAnnotation(TokenBudget.class);
 

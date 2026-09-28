@@ -15,7 +15,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 
 /**
  * 生成回答前的 prompt 装配 — 纯函数（无状态、无依赖）：把 system 模板、会话历史、当前问题连同画像与
- * 循环召回物装配成消息序列；与 {@link AiChatService} 的编排分开（那边管「什么时候生成、拿什么生成」，
+ * 循环召回物装配成消息序列；与 {@link AiChatAppService} 的编排分开（那边管「什么时候生成、拿什么生成」，
  * 这里管「生成时消息长什么样」）。
  * <p>
  * 两条装配约定（改这里等于改模型看到的全部输入）：历史按原始角色传多消息、不压平进当前 user 消息

@@ -25,6 +25,9 @@ public record AiProperties(
 
     public AiProperties {
         // 嵌套 record 在属性源里完全没有对应键时可能绑成 null，补等价默认值；数值须与 application.yaml 保持一致（yaml 是唯一主源，此处仅兜底）
+        // 两边失同步的症状不报错、也不打日志：单测用 PropertyBindings 裸绑（不加载 application.yaml）时会静默吃这里的旧值，
+        // 表现为「本地测试全绿、起服行为不同」。embedding 的 dimensions 尤其致命 —— 与 ES dense_vector 不一致时
+        // kNN 全库召回，表现为「语义检索能跑但结果很烂」，排查成本极高。
         if (deepseek == null) {
             deepseek = new DeepSeek(null, "https://api.deepseek.com", "deepseek-chat", "", 30000);
         }

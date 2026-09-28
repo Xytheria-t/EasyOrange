@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.application.chat;
 
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingService;
-import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
@@ -84,8 +85,8 @@ public class AgentLoopRunner {
     private final AiModelSupport aiModelSupport;
     private final AiModelRouter modelRouter;
     private final PromptRegistry promptRegistry;
-    private final KnowledgeRetrievalService retrievalService;
-    private final AssetSourcingService assetSourcingService;
+    private final KnowledgeRetrievalAppService retrievalService;
+    private final AssetSourcingAppService assetSourcingService;
     private final AssetDetailPort assetDetailPort;
     private final AgentTracePort tracePort;
     private final UserPreferenceRepository preferenceRepository;
@@ -99,8 +100,8 @@ public class AgentLoopRunner {
             AiModelSupport aiModelSupport,
             AiModelRouter modelRouter,
             PromptRegistry promptRegistry,
-            KnowledgeRetrievalService retrievalService,
-            AssetSourcingService assetSourcingService,
+            KnowledgeRetrievalAppService retrievalService,
+            AssetSourcingAppService assetSourcingService,
             AssetDetailPort assetDetailPort,
             AgentTracePort tracePort,
             UserPreferenceRepository preferenceRepository,
@@ -127,12 +128,14 @@ public class AgentLoopRunner {
     /**
      * 一次循环的输入 — 记忆（历史 / 画像）由调用方装配，循环只管「决策 → 工具 → 观察」。
      *
-     * @param userId  登录用户 ID；评估跑批（非登录调用方）传 {@link #MACHINE_SUBJECT}，画像不落库
-     * @param handler 流式回调，可空：非流式路径不推 step 事件，trace / 指标照常
+     * @param sessionId 会话 ID，可空：请求不带会话时为 null。两处消费方各自兜底（trace 落 anonymous
+     *                 桶、会话记忆按无会话 fail-open），本类只把它带进日志与 trace
+     * @param userId    登录用户 ID；评估跑批（非登录调用方）传 {@link #MACHINE_SUBJECT}，画像不落库
+     * @param handler   流式回调，可空：非流式路径不推 step 事件，trace / 指标照常
      */
     public record Input(
             String question,
-            String sessionId,
+            @Nullable String sessionId,
             String userId,
             List<ChatTurn> history,
             List<UserPreference> prefs,
@@ -235,7 +238,8 @@ public class AgentLoopRunner {
             }
             var steps = new ArrayList<StepDecision>(toolCalls.size());
             for (AssistantMessage.ToolCall toolCall : toolCalls) {
-                steps.add(new StepDecision(objectMapper.readValue(toolCall.arguments(), ToolCallArgs.class), toolCall));
+                steps.add(StepDecision.of(
+                        objectMapper.readValue(orEmpty(toolCall.arguments()), ToolCallArgs.class), toolCall));
             }
             if (steps.size() > 1) {
                 log.info("action=agent_parallel_tool_calls, sessionId={}, count={}", input.sessionId(), steps.size());
@@ -293,7 +297,7 @@ public class AgentLoopRunner {
 
     /** 本轮全部 tool call 的原始对象（按模型给出的顺序）—— 回填时 assistant 与 role=tool 两侧同序。 */
     private static List<AssistantMessage.ToolCall> toolCallsOf(List<StepDecision> steps) {
-        return steps.stream().map(StepDecision::toolCall).toList();
+        return steps.stream().map(StepDecision::rawToolCall).toList();
     }
 
     /**
@@ -308,7 +312,7 @@ public class AgentLoopRunner {
             @Nullable String toolInput,
             @Nullable ToolOutcome outcome,
             long latencyMs) {
-        @Nullable String thought = decision.args().thought();
+        String thought = decision.args().thought();
         tracePort.record(new AgentStepTrace(
                 traceId,
                 input.sessionId(),
@@ -328,19 +332,23 @@ public class AgentLoopRunner {
         }
     }
 
-    /** 一步决策 — 解析出的参数视图 + 原生 tool call：工具名与 arguments 原始串只从 tool call 取，一个来源。 */
-    private record StepDecision(ToolCallArgs args, AssistantMessage.ToolCall toolCall) {
+    /**
+     * 一步决策 — 解析出的参数视图 + 原生 tool call 的工具名与 arguments 原始串，一个来源。
+     * <p>
+     * 两个串在构造期归一化成非空：Spring AI 的 {@code chat.messages} 包标了 {@code @NullMarked}，
+     * 其 {@code ToolCall} record 的访问器在类型系统里是非空 {@code String}，但它是裸 record、不校验
+     * null，供应商回 {@code {"name": null}} 时 Jackson 照样绑进来 —— 声明非空而运行期可空，这个缺口
+     * 得我们自己收。收敛成空串而不是把 {@code @Nullable} 往下传，是为了让下游的 switch 分发、
+     * 回调表查名、trace 落库都不必各写一次判空，也免得空名在某一环被当成「合法工具名」继续流下去。
+     */
+    private record StepDecision(ToolCallArgs args, String tool, String arguments, ToolCall rawToolCall) {
 
-        String tool() {
-            return toolCall.name();
-        }
-
-        String arguments() {
-            return toolCall.arguments();
+        static StepDecision of(ToolCallArgs args, ToolCall toolCall) {
+            return new StepDecision(args, orEmpty(toolCall.name()), orEmpty(toolCall.arguments()), toolCall);
         }
 
         boolean isFinish() {
-            return AgentTools.TOOL_FINISH.equals(tool());
+            return AgentTools.TOOL_FINISH.equals(tool);
         }
     }
 
@@ -421,13 +429,12 @@ public class AgentLoopRunner {
 
     /**
      * 工具入参摘要（trace 落库与失败日志用）—— 按工具名取对应分量，其余工具的分量为 null 是常态。
-     * 工具名取自供应商响应，畸形响应可能不带 name：收敛成空串走 default，而不是让 switch 抛 NPE
-     * 把「未知工具」那条失败观察升级成整轮崩溃。
+     * 工具名缺失时已在 {@link StepDecision} 构造期收敛成空串，这里走 default 分支即可 ——
+     * 不必再判空，否则等于让同一件事在两层各防一次。
      */
     private static String toolInputOf(StepDecision step) {
         ToolCallArgs args = step.args();
-        String tool = step.tool();
-        return switch (tool == null ? "" : tool) {
+        return switch (step.tool()) {
             case AgentTools.TOOL_PRODUCT_DETAIL -> args.productId();
             case AgentTools.TOOL_COMPARE_ASSETS ->
                 args.productIds() == null ? null : String.join("、", args.productIds());

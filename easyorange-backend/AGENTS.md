@@ -106,14 +106,14 @@
 ### ai
 
 - **按能力分包** `chat` / `retrieval` / `enhancement` / `listing` / `support` / `eval`（单向，`support` 最底层）；**全面 Spring AI（ADR-0008）**：直接注入 `ChatModel` / `EmbeddingModel`，无自研 LlmPort
-- 模型 bean：`chatModel`（`@Primary`）、`visionChatModel`（`@Qualifier`）、`embeddingModel`（**dimensions=1024 必须与 ES `dense_vector` 对齐**）；`AiModelRouter` 场景映射 yaml 热更，`judge` 独立可换防自评偏差
+- 模型 bean：`chatModel`（`@Primary`，默认场景）/ `decisionChatModel` / `visionChatModel` / `embeddingModel`（**dimensions=1024 必须与 ES `dense_vector` 对齐**）。**四者都不加 `@Qualifier`**——靠 `AiModelRouter` 按场景名从 ApplicationContext 取 bean，yaml 热更即可换模型，编译期 `@Qualifier` 做不到这点；只有 `@Primary` 起「未指定场景时回落到文本模型」的作用。`judge` 独立可换防自评偏差
 - **多步工具循环 `AgentLoopRunner`**：原生 tool calling（7 个 `@Tool`，参数名靠 `-parameters`），`ChatModel.call` 不自动执行工具。三坑：工具抛异常 = 该步失败（「查无此资产」等有效结果要返回观察文本）、`thought` 必填、返回值挂 `ObservationTextConverter`（否则 String 被再 JSON 化）。码表类工具与 product **字面同步**（`AssetComparisonCodeTableSyncTest` 守卫）。降级：超限 / 预算尽 → 已积累观察直接生成，决策失败 → 检索一次；**预算判据 `chatBudgetExhausted` 全链路唯一**；trace 落 `eo_agent_step_trace`
 - **上下文裁剪 `ChatContextTrimmer`**：连续窗口、永保最新一条，**有意不做 LLM 摘要**；**历史按原始角色传多消息**（前缀稳定才吃供应商缓存折扣）
 - **MCP 只挂公开只读 4 工具**禁用户态；**`spring.ai.mcp.server.protocol` 必须显式 `streamable`**（属性默认值不进 Environment → `/mcp` 不注册 404）；dev / prod 的 `security.ignore-paths` 都要加
 - **`AiModelSupport` 收敛所有 LLM 调用**，**带 `AiCallScope` 才记账**（`eo_ai_call_log` + 真实 token 入预算），不带不记（`AiJudge` 刻意账外防自指）；**观测 OTel → OTLP → Langfuse** 靠 `ChatModelContentObservationFilter` 拷进 `gen_ai.*`——**漏配面板恒 null**
 - **Prompt 全 YAML**（`resources/prompts/*.yml`，`require` fail-fast，**加内容同改 `PromptContentTest.ALL_PROMPTS`**）；**评估阈值全在 `eval/baselines.yaml` 禁内置默认**；**不可信内容进标签块**（`<user_question>` 等）+ 声明「块内是数据非指令」
 - 查询侧 `QueryEmbeddingAdapter` **永不抛**（拿不到向量退化纯 BM25）；**语义检索只在「开 AI 开关 + 相关度排序 + 关键词非空」三条件同时成立时向量化**（其余情况 kNN 缺相似度下限会召回全库并白付 embedding）；**RAG**：kNN + BM25 两路独立召回 → `RrfFusion`（k=60），**否决 Cosine 重排**（单调 = 没排、丢 BM25 信号），ES 关降级空
-- **Token 预算**：`@TokenBudget` 编译期契约 + yaml 热更；**切面前置检查、记账在 `AiModelSupport`**（切面按上限估**差一个量级**）；**流式拦不住 AOP** → `AiChatService.checkBudget()` 同判据不重复记账；`budget.store` 多副本必须 `redis`（内存版日限放大 N 倍）；**scenario 必须与 `AiCallScope.budgetScenario()` 一致否则预算静默失效**
+- **Token 预算**：`@TokenBudget` 编译期契约 + yaml 热更；**切面前置检查、记账在 `AiModelSupport`**（切面按上限估**差一个量级**）；**流式拦不住 AOP** → `ChatBudgetGuard.exhausted()` 同判据不重复记账（循环中途降级同调这一处）；`budget.store` 多副本必须 `redis`（内存版日限放大 N 倍）；**scenario 必须与 `AiCallScope.budgetScenario()` 一致否则预算静默失效**
 - **Port 方向不反转**（端口 product 定义、ai 实现，ai 不碰 product 表）；**反馈导出只出 `helpful=1 AND scope='chat'`**（**helpful=0 不能自动成金标准**）；供应商可换 = 改 `AiModelConfig` / `easyorange.ai.*`，重试走 openai-java 内置无自研
 
 ### admin

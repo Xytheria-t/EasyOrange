@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.application.dto;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * AI 对话回答 — 带引用溯源（结构化来源，回答末尾用 [来源:标题] 标注）。
@@ -13,13 +14,14 @@ import java.util.Objects;
  * @param degraded 本次回答不是模型实时生成的结果（供应商故障时复用 stale 旧回答，或没有旧回答可兜底的降级文案）。
  *                 降级必须对调用方与埋点可见，否则「AI 挂了」会被统计成「AI 答得差」。
  */
-public record ChatAnswer(String answer, List<ChatSource> sources, String sessionId, boolean degraded) {
+public record ChatAnswer(
+        String answer, List<ChatSource> sources, @Nullable String sessionId, boolean degraded) {
 
     /** 供应商故障且无旧回答可兜底时的统一文案（非流式与 SSE error 事件同源，避免两处口径漂移）。 */
     public static final String UNAVAILABLE_TEXT = "AI 服务暂时不可用，请稍后重试";
 
     /** 降级回答：模型不可用且没有旧回答可复用。 */
-    public static ChatAnswer unavailable(String sessionId) {
+    public static ChatAnswer unavailable(@Nullable String sessionId) {
         return new ChatAnswer(UNAVAILABLE_TEXT, List.of(), sessionId, true);
     }
 
@@ -35,7 +37,7 @@ public record ChatAnswer(String answer, List<ChatSource> sources, String session
      * 复用旧回答时会把第一次那个请求的 id 一起带出来（同一问题换个会话再问，响应里的 id 仍是旧会话的）。
      * 缓存命中处一律用它改成当前请求的 id，响应语义才是「这次请求的回答」。
      */
-    public ChatAnswer withSessionId(String sessionId) {
+    public ChatAnswer withSessionId(@Nullable String sessionId) {
         return Objects.equals(sessionId, this.sessionId) ? this : new ChatAnswer(answer, sources, sessionId, degraded);
     }
 }

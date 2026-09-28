@@ -7,7 +7,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.StringJoiner;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -18,10 +24,12 @@ import org.yaml.snakeyaml.Yaml;
 /**
  * 基于 YAML 文件的 Prompt 模板注册中心。
  * <p>
- * 生产环境从 classpath:prompts/*.yml 加载所有模板；
- * 测试环境可通过 {@link #YamlPromptRegistry(Path)} 指定文件系统目录。
+ * 模板全部外置到 {@code resources/prompts/*.yml}，改 Prompt 不必改 Java、不必发版；同名多版本按语义化
+ * 版本号取最新，启动日志逐条打出「名称 + 版本列表」，加载错了肉眼可辨。
  * <p>
- * 启动时打印已加载的 Prompt 数量和版本号。
+ * 目录解析失败只告警不抛 —— 拿不到模板时 {@link PromptRegistry#require} 会以缺模板的具体名字 fail-fast，
+ * 比在装配期抛一个无上下文的 IO 异常好定位。文件内容缺必需字段（name / version / template）则直接抛：
+ * 那是作者写错了，不该带病上线。
  */
 @Slf4j
 @Component
@@ -79,9 +87,8 @@ public class YamlPromptRegistry implements PromptRegistry {
             log.error("加载 Prompt 模板失败", e);
         }
 
-        var immutable = new HashMap<String, List<PromptTemplate>>();
-        loaded.forEach((name, list) -> immutable.put(name, List.copyOf(list)));
-        this.templatesByName = Collections.unmodifiableMap(immutable);
+        loaded.replaceAll((name, list) -> List.copyOf(list));
+        this.templatesByName = Map.copyOf(loaded);
 
         logTemplates();
     }

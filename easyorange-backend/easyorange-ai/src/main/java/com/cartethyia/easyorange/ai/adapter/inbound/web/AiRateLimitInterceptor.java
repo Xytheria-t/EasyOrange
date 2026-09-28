@@ -18,7 +18,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * AI 模块限流拦截器 — scope 粒度令牌桶（如对话 20 次/分/用户）。
  * <p>
  * 降级分工：限流超限返回 429（fail-open 容忍 Redis 故障）；
- * LLM 供应商故障的旧回答兜底在 {@code AiChatService} 服务层（stale-while-error），
+ * LLM 供应商故障的旧回答兜底在 {@code AiChatAppService} 服务层（stale-while-error），
  * 拦截器不再承担缓存职责（历史设计因请求体字节依赖不可靠而移除）。
  */
 @Slf4j

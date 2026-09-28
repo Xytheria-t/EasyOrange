@@ -4,18 +4,20 @@ import com.cartethyia.easyorange.ai.adapter.outbound.budget.InMemoryTokenBudgetS
 import com.cartethyia.easyorange.ai.adapter.outbound.budget.RedisTokenBudgetStore;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
 import io.micrometer.core.instrument.MeterRegistry;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+/**
+ * AI 预算存储的装配 — {@code easyorange.ai.budget.store} 选实现，缺省落内存版。
+ * <p>
+ * {@link AiProperties} 不在这里 {@code @EnableConfigurationProperties}：业务模块的属性绑定统一由
+ * 启动类的 {@code @ConfigurationPropertiesScan} 负责，两处都挂会重复注册。
+ */
 @Configuration
-@EnableConfigurationProperties(AiProperties.class)
-@RequiredArgsConstructor
 public class AiConfig {
 
     /**

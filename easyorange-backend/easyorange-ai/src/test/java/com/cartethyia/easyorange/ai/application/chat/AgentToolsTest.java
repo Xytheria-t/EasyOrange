@@ -8,8 +8,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingService;
-import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
+import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Agent 工具面 -> 检索冗余判据测试")
 class AgentToolsTest {
 
-    private final KnowledgeRetrievalService retrievalService = mock(KnowledgeRetrievalService.class);
-    private final AssetSourcingService assetSourcingService = mock(AssetSourcingService.class);
+    private final KnowledgeRetrievalAppService retrievalService = mock(KnowledgeRetrievalAppService.class);
+    private final AssetSourcingAppService assetSourcingService = mock(AssetSourcingAppService.class);
 
     /** 单实例跨调用复用 — 召回累加器是实例内私有状态，「重复召回判重」正依赖同一实例。 */
     private AgentTools tools;

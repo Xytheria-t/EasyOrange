@@ -15,7 +15,6 @@ import java.util.Optional;
  */
 public interface SemanticCachePort {
 
-    /** 查询向量化；缓存不可用或向量化失败时返回空列表（调用方据此跳过缓存）。 */
     List<Float> embedQuery(String query);
 
     /**

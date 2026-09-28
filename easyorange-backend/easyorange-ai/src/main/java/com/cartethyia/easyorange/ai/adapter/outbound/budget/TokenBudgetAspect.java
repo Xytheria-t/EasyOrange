@@ -47,7 +47,6 @@ public class TokenBudgetAspect {
                 .map(TokenBudgetStore.TokenUsage::total)
                 .orElse(0);
 
-        // 预算检查（dailyTokenLimit=0 表示不限）
         if (dailyLimit > 0 && used + maxPerCall > dailyLimit) {
             log.warn(
                     "action=token_budget_exceeded, scenario={}, used={}, maxPerCall={}, limit={}",

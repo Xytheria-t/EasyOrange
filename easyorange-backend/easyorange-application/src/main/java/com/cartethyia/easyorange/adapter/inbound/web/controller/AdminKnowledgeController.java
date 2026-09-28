@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.adapter.inbound.web.assembler.KnowledgeDocAssembler;
 import com.cartethyia.easyorange.adapter.inbound.web.request.CreateKnowledgeDocRequest;
 import com.cartethyia.easyorange.adapter.inbound.web.response.KnowledgeDocVO;
-import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeIngestionService;
+import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeIngestionAppService;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AdminKnowledgeController {
 
-    private final KnowledgeIngestionService ingestionService;
+    private final KnowledgeIngestionAppService ingestionService;
     private final KnowledgeRepository repository;
 
     /** 新增文档并摄入：解析 → 分块 → embed → ES 索引（best-effort）。 */

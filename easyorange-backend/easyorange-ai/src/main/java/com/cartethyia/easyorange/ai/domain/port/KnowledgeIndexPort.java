@@ -15,7 +15,6 @@ public interface KnowledgeIndexPort {
     /** 批量写入分块（best-effort：失败由调用方记录状态，不阻塞主链路）。 */
     void ingestChunks(List<KnowledgeChunk> chunks);
 
-    /** 移除某文档的全部分块（文档删除时同步调用）。 */
     void removeDoc(String docId);
 
     /**

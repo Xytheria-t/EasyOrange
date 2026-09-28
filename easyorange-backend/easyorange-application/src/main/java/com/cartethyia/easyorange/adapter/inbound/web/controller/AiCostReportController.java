@@ -1,8 +1,9 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
+import com.cartethyia.easyorange.adapter.inbound.web.assembler.AiListingAdoptionAssembler;
+import com.cartethyia.easyorange.adapter.inbound.web.response.AiListingAdoptionVO;
 import com.cartethyia.easyorange.ai.application.dto.AiCostReportRow;
-import com.cartethyia.easyorange.ai.application.support.AiCostReportService;
-import com.cartethyia.easyorange.ai.domain.model.AiListingAdoptionReport;
+import com.cartethyia.easyorange.ai.application.support.AiCostReportAppService;
 import com.cartethyia.easyorange.ai.domain.port.AiListingAdoptionPort;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AiCostReportController {
 
-    private final AiCostReportService costReportService;
+    private final AiCostReportAppService costReportService;
     private final AiListingAdoptionPort listingAdoptionPort;
 
     @GetMapping("/cost-report")
@@ -35,7 +36,7 @@ public class AiCostReportController {
     }
 
     @GetMapping("/listing-adoption")
-    public Result<AiListingAdoptionReport> listingAdoption() {
-        return Result.success(listingAdoptionPort.report());
+    public Result<AiListingAdoptionVO> listingAdoption() {
+        return Result.success(AiListingAdoptionAssembler.toVO(listingAdoptionPort.report()));
     }
 }

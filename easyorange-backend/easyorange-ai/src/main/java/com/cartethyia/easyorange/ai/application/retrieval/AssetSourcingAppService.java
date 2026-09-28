@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * 资产召回服务 — 对话式找货的检索侧：查询向量化 → 两路独立召回（kNN + BM25）→ RRF 排名融合 → 资产命中。
- * 与 {@code KnowledgeRetrievalService} 同一形态、不同语料（RAG 链路复用，检索对象从规则文档换成在售资产）。
+ * 与 {@code KnowledgeRetrievalAppService} 同一形态、不同语料（RAG 链路复用，检索对象从规则文档换成在售资产）。
  * <p>
  * 向量化失败<b>不放弃检索</b>：空向量直接传给端口，只跑 BM25 一路 —— 少一路召回好过整个找货功能因
  * embedding 供应商抖动而静默失效。检索失败返回空列表而不抛异常：调用方是对话主链路，召回为空只是少
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AssetSourcingService {
+public class AssetSourcingAppService {
 
     private final EmbeddingModel embeddingModel;
     private final ObjectProvider<AssetRetrievalPort> retrievalPort;
