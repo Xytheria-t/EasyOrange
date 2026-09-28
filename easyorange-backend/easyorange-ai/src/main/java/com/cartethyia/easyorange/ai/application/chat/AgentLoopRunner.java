@@ -77,7 +77,7 @@ public class AgentLoopRunner {
     /**
      * 机器主体的统一标识 —— 唯一非登录调用方是评估跑批（{@code GoldenSetEvaluator} 定时回归 / CI 门禁）：
      * 会话 / 缓存键照常按此主体隔离，但画像不落库（{@code AgentTools} 拒写）、trace 的 user_id 为空
-     * （{@link #subjectUserId} 收敛）。对话的 HTTP 入口不存在匿名路径 —— 身份缺失即 401，
+     * （{@link #attributedUserId} 收敛）。对话的 HTTP 入口不存在匿名路径 —— 身份缺失即 401，
      * 所以「机器主体」不等于「匿名用户」。哨兵值定义在本类（唯一判定画像是否落库的地方），
      * 调用方只负责把该主体传进来。
      */
@@ -193,12 +193,13 @@ public class AgentLoopRunner {
                     log.warn(
                             "action=agent_fallback_search_failed, sessionId={}, reason={}",
                             input.sessionId(),
-                            reasonOf(e));
+                            failureReason(e));
                 }
                 return toResult(tools, LoopOutcome.DECISION_FAILED, rounds, toolPath);
             }
             rounds = round;
-            RoundResult roundResult = executeToolCalls(input, traceId, dispatcher, conversation, decisions, nextStepIndex);
+            RoundResult roundResult =
+                    executeToolCalls(input, traceId, dispatcher, conversation, decisions, nextStepIndex);
             nextStepIndex = roundResult.nextStepIndex();
             toolPath.addAll(roundResult.toolPath());
             if (roundResult.finished()) {
@@ -211,7 +212,7 @@ public class AgentLoopRunner {
     /** 按请求装配工具实例 — 召回累加器随实例隔离（所有权在 {@link AgentTools}），出口经只读快照收取。 */
     private AgentTools agentToolsFor(Input input) {
         return new AgentTools(
-                retrievalService, assetSourcingService, assetDetailPort, preferenceRepository, subjectUserId(input));
+                retrievalService, assetSourcingService, assetDetailPort, preferenceRepository, attributedUserId(input));
     }
 
     /** 出循环时一次性定稿：结局 + 轮数 + 工具路径 + 工具实例上已积累的召回物。 */
@@ -254,7 +255,7 @@ public class AgentLoopRunner {
             log.warn(
                     "action=agent_decision_failed, fallback=single_step, sessionId={}, reason={}",
                     input.sessionId(),
-                    reasonOf(e));
+                    failureReason(e));
             return List.of();
         }
     }
@@ -321,7 +322,7 @@ public class AgentLoopRunner {
         tracePort.record(new AgentStepTrace(
                 traceId,
                 input.sessionId(),
-                subjectUserId(input),
+                attributedUserId(input),
                 stepIndex,
                 decision.tool(),
                 toolInput,
@@ -330,7 +331,7 @@ public class AgentLoopRunner {
                 latencyMs,
                 result.succeeded(),
                 result.errorMsg()));
-        pushStep(input, stepIndex, decision, result.observation());
+        emitStep(input, stepIndex, decision, result.observation());
     }
 
     /**
@@ -342,7 +343,7 @@ public class AgentLoopRunner {
         tracePort.record(new AgentStepTrace(
                 traceId,
                 input.sessionId(),
-                subjectUserId(input),
+                attributedUserId(input),
                 stepIndex,
                 finish.tool(),
                 null,
@@ -351,10 +352,10 @@ public class AgentLoopRunner {
                 0,
                 true,
                 null));
-        pushStep(input, stepIndex, finish, null);
+        emitStep(input, stepIndex, finish, null);
     }
 
-    private void pushStep(Input input, int stepIndex, ToolCallDecision decision, @Nullable String observation) {
+    private void emitStep(Input input, int stepIndex, ToolCallDecision decision, @Nullable String observation) {
         ChatStreamHandler handler = input.handler();
         if (handler != null) {
             handler.onStep(new AgentStepView(
@@ -421,7 +422,7 @@ public class AgentLoopRunner {
                 return new ToolResult(true, callback.call(decision.arguments()));
             } catch (Exception e) {
                 // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
-                String reason = reasonOf(e.getCause() != null ? e.getCause() : e);
+                String reason = failureReason(e.getCause() != null ? e.getCause() : e);
                 log.warn("action=agent_tool_failed, tool={}, input={}, reason={}", tool, toolInputOf(decision), reason);
                 return new ToolResult(false, reason);
             }
@@ -429,7 +430,7 @@ public class AgentLoopRunner {
     }
 
     /** 画像归属用户 — 机器主体返回 null（长期记忆不落库），与 trace 的 user_id 口径一致。 */
-    private static String subjectUserId(Input input) {
+    private static String attributedUserId(Input input) {
         return MACHINE_SUBJECT.equals(input.userId()) ? null : input.userId();
     }
 
@@ -479,7 +480,7 @@ public class AgentLoopRunner {
         return value == null ? "" : value;
     }
 
-    private static String reasonOf(Throwable e) {
+    private static String failureReason(Throwable e) {
         return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
     }
 }
