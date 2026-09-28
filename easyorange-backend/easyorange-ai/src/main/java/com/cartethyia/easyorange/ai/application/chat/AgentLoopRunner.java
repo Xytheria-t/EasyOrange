@@ -85,8 +85,12 @@ public class AgentLoopRunner {
 
     private static final int DEFAULT_DAILY_LIMIT = 300_000;
 
-    /** 匿名会话的用户标识 —— {@link Input#userId()} 的契约值，入口 {@code AiChatService} 与本类共用这一份。 */
-    static final String ANONYMOUS_USER = "anonymous";
+    /**
+     * 机器调用主体的统一标识 —— 无登录态的调用方（评估跑批等）经 {@link Input#userId()} 传入：
+     * 会话 / 缓存键照常按此主体隔离，但画像不落库（{@code AgentTools} 拒写）、trace 的 user_id 为空
+     * （{@link #subjectUserId} 收敛）。身份与主体口径由入口单点维护，循环只认这一份。
+     */
+    public static final String MACHINE_SUBJECT = "machine";
 
     private final AiModelSupport aiModelSupport;
     private final AiModelRouter modelRouter;
@@ -192,7 +196,7 @@ public class AgentLoopRunner {
     /**
      * 一次循环的输入 — 记忆（历史 / 画像）由调用方装配，循环只管「决策 → 工具 → 观察」。
      *
-     * @param userId  匿名时为 {@link #ANONYMOUS_USER}（画像不落库）
+     * @param userId  登录用户 ID；无登录态的机器调用方传 {@link #MACHINE_SUBJECT}（画像不落库）
      * @param handler 流式回调，可空：非流式路径不推 step 事件，trace / 指标照常
      */
     public record Input(
@@ -456,9 +460,9 @@ public class AgentLoopRunner {
         }
     }
 
-    /** 画像归属用户 — 匿名会话返回 null（长期记忆不落库），与 trace 的 subject 口径一致。 */
+    /** 画像归属用户 — 机器主体返回 null（长期记忆不落库），与 trace 的 user_id 口径一致。 */
     private static String subjectUserId(Input input) {
-        return ANONYMOUS_USER.equals(input.userId()) ? null : input.userId();
+        return MACHINE_SUBJECT.equals(input.userId()) ? null : input.userId();
     }
 
     /** 首条 user 消息（问题 / 历史 / 画像）— 每请求固定不变，是全部轮次共享的前缀：改一个字节这轮的 KV cache 就全部作废。 */

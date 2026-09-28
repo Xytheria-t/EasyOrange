@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.ai.application.eval;
 
+import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner;
 import com.cartethyia.easyorange.ai.application.chat.AiChatService;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
@@ -18,7 +19,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * 金标准集回归评估器 — 两条评估线按用例 scope 分流（{@code chat} / {@code retrieval}）：
- * 生成质量（LLM-as-Judge）对每个 chat 用例调 {@link AiChatService#answer}（forceFresh 跳过缓存）
+ * 生成质量（LLM-as-Judge）对每个 chat 用例调 {@link AiChatService#answer}（forceFresh 跳过缓存；
+ * 无登录态，显式传机器主体 {@link AgentLoopRunner#MACHINE_SUBJECT}——画像不落库，评估不被历史偏好污染）
  * 对照参考回答打分、聚合 avg score；检索质量对每个 retrieval 用例跑知识库检索算 hit@5 / MRR，
  * 逐条采样落 eo_retrieval_metric。供定时任务（RetrievalEvalScheduler / 每日回归）与 CI 门禁
  * （GoldenSetRegressionIT）复用。
@@ -48,7 +50,8 @@ public class GoldenSetEvaluator {
         var scores = new ArrayList<CaseScore>();
         for (var c : cases) {
             try {
-                ChatAnswer answer = chatService.answer(new ChatRequest(c.question(), "eval-" + c.id(), true));
+                ChatAnswer answer = chatService.answer(
+                        new ChatRequest(c.question(), "eval-" + c.id(), true), AgentLoopRunner.MACHINE_SUBJECT);
                 Optional<AiJudge.Judgement> judgement =
                         (c.referenceAnswer() != null && !c.referenceAnswer().isBlank())
                                 ? aiJudge.judgeAgainstReference(c.referenceAnswer(), answer.answer())

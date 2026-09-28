@@ -172,7 +172,7 @@ class AgentLoopRunnerTest {
     }
 
     private Result run(String question) {
-        return run(question, "anonymous", null);
+        return run(question, "user-1", null);
     }
 
     @Test
@@ -182,7 +182,7 @@ class AgentLoopRunnerTest {
                 toolCallResponse(AgentTools.TOOL_FINISH, "{\"thought\":\"闲聊无需检索\",\"query\":\"\",\"productId\":null}"));
         var steps = new RecordingHandler();
 
-        Result result = run("在吗？", "anonymous", steps);
+        Result result = run("在吗？", "user-1", steps);
 
         assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(1);
@@ -656,13 +656,13 @@ class AgentLoopRunnerTest {
     }
 
     @Test
-    @DisplayName("匿名对话 -> 即便模型调了 remember_preference 也不落画像")
-    void run_anonymousSkipsPreference() {
+    @DisplayName("机器主体（评估跑批）-> 即便模型调了 remember_preference 也不落画像（写侧拒收，画像归属为 null）")
+    void run_machineSubjectSkipsPreference() {
         stubDecisions(
                 toolCallResponse(AgentTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
                 toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
 
-        run("我喜欢复古风格的东西", "anonymous", null);
+        run("我喜欢复古风格的东西", AgentLoopRunner.MACHINE_SUBJECT, null);
 
         verifyNoInteractions(preferenceRepository);
     }

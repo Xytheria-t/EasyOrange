@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Primary;
@@ -30,8 +29,7 @@ import tools.jackson.databind.ObjectMapper;
  * Redis / embedding 任一不可用都 fail-open（不命中不阻塞）。
  * <p>
  * <b>按用户分桶</b>（正确性要求而非调优项）：条目存的是注入了该用户长期画像与会话历史的回答，
- * 共享桶会把一个人的偏好返给另一个人；匿名会话收敛到单一桶（不注入画像，共享安全），代价是
- * 跨用户的近似问题不再互相命中 —— 这是修正确性，不是牺牲命中率换调优。
+ * 共享桶会把一个人的偏好返给另一个人 —— 按用户分桶是修正确性，不是牺牲命中率换调优。
  * <p>
  * <b>向量按 base64 float32 存</b>，不用 JSON 数字数组：1024 维按 JSON 数组约 10KB，而每次查询都要
  * 把整个 Hash 拉回逐条算余弦（O(n) 扫描），base64 压到约 4KB 且不走浮点文本解析；容量默认 200 同理
@@ -75,7 +73,7 @@ public class SemanticCacheService implements SemanticCachePort {
     /** 语义命中则返回缓存响应，否则 empty（命中只在同一用户桶内比较，分桶口径见 {@link SemanticCachePort#lookUp}）。 */
     @Override
     public <T> Optional<T> lookUp(
-            AiCallScope scope, @Nullable String userId, String query, List<Float> queryEmbedding, Class<T> type) {
+            AiCallScope scope, String userId, String query, List<Float> queryEmbedding, Class<T> type) {
         if (queryEmbedding == null || queryEmbedding.isEmpty()) {
             return Optional.empty();
         }
@@ -111,7 +109,7 @@ public class SemanticCacheService implements SemanticCachePort {
     /** 写入缓存 (queryEmbedding, response)；淘汰上限按用户桶各算各的 —— 高频用户的桶满了不该把其他用户的条目挤掉。 */
     @Override
     public void store(
-            AiCallScope scope, @Nullable String userId, String query, List<Float> queryEmbedding, Object response) {
+            AiCallScope scope, String userId, String query, List<Float> queryEmbedding, Object response) {
         if (queryEmbedding == null || queryEmbedding.isEmpty()) {
             return;
         }
@@ -186,8 +184,8 @@ public class SemanticCacheService implements SemanticCachePort {
     }
 
     /** Redis key = 前缀 + scope + <b>用户桶</b>（正确性要求，见类注释）；加桶前的旧 key 随 TTL 自然过期，不做迁移。 */
-    private static String key(AiCallScope scope, @Nullable String userId) {
-        return KEY_PREFIX + scope.name().toLowerCase() + ':' + SemanticCachePort.cacheUserKey(userId);
+    private static String key(AiCallScope scope, String userId) {
+        return KEY_PREFIX + scope.name().toLowerCase() + ':' + userId;
     }
 
     private static String md5(String input) {
