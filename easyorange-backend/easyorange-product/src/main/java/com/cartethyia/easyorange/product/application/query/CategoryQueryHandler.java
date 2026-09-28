@@ -20,14 +20,15 @@ public class CategoryQueryHandler {
     private final CategoryCachePort categoryCachePort;
     private final CategoryQueryRepository categoryQueryRepository;
 
+    /**
+     * 取某父分类下的启用中子分类（含商品计数）。
+     *
+     * @param parentId 父分类 id；null / 空表示一级分类
+     */
     @Transactional(readOnly = true)
     public List<CategoryReadModel> getCategories(String parentId) {
-        List<CategoryReadModel> categories;
-        if (parentId != null) {
-            categories = categoryCachePort.getCategoriesByParentId(parentId);
-        } else {
-            categories = categoryCachePort.getCategoriesByLevel(1);
-        }
+        String normalizedParentId = (parentId == null || parentId.isBlank()) ? null : parentId;
+        List<CategoryReadModel> categories = categoryCachePort.getCategoriesByParentId(normalizedParentId);
 
         if (categories == null || categories.isEmpty()) {
             return List.of();
@@ -38,14 +39,11 @@ public class CategoryQueryHandler {
                 .filter(Objects::nonNull)
                 .toList();
 
-        Map<String, Long> productCountMap;
-        if (parentId == null) {
-            // 一级分类：聚合子分类的商品计数
-            productCountMap = categoryQueryRepository.countProductsByCategoryIdsWithChildren(categoryIds);
-        } else {
-            // 子分类：仅统计直接挂在该分类下的商品
-            productCountMap = categoryQueryRepository.countProductsByCategoryIds(categoryIds);
-        }
+        // 统一用「含子分类」口径：递归 CTE 下叶子分类的结果与直接挂载计数相同（无子分类可聚合），
+        // 一级分类则拿到整棵子树的聚合数。旧实现在这里按 parentId 是否为空分两个方法，
+        // 差别只来自单层 JOIN 的能力限制，CTE 之后没有区别了。
+        Map<String, Long> productCountMap =
+                categoryQueryRepository.countOnlineProductsByCategoryIdsWithChildren(categoryIds);
 
         return categories.stream()
                 .map(cat -> new CategoryReadModel(

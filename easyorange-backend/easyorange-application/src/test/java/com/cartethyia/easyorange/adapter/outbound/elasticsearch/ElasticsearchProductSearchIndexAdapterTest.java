@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.adapter.outbound.product.ProductSearchIndexAdapter;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
+import com.cartethyia.easyorange.product.domain.enums.CategoryStatus;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailDO;
@@ -97,11 +98,10 @@ class ElasticsearchProductSearchIndexAdapterTest {
 
         CategoryDO category = CategoryDO.builder()
                 .name("手机")
-                .parentId("0")
                 .level(1)
                 .icon("icon.png")
                 .sortOrder(1)
-                .status(1)
+                .status(CategoryStatus.ENABLED)
                 .build();
         when(categoryMapper.selectById("300")).thenReturn(category);
 

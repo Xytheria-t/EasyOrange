@@ -1,76 +1,32 @@
 package com.cartethyia.easyorange.admin.domain.port;
 
-import java.time.LocalDateTime;
+import com.cartethyia.easyorange.admin.domain.model.CategoryView;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Admin 模块的分类查询/操作端口
- * 用于跨模块查询与操作分类信息，遵循防腐层原则
+ * Admin 侧分类端口 — 防腐层：admin 只看见 {@link CategoryView}，看不见分类聚合、DO 或 Mapper。
+ * <p>
+ * 写侧的层级 / 环 / 重名 / 删除校验**不在这里实现**（那是 product 模块 {@code Category} 聚合与
+ * {@code CategoryCommandHandler} 的职责）。本端口存在的意义只是让 admin 的 Controller 有个
+ * 不依赖 product 内部结构的入口，实现类在 application 模块做一次薄转发。
  */
 public interface AdminCategoryPort {
 
     /**
-     * 查询分类，不存在或已删除时返回 null
+     * 查单个分类。
+     *
+     * @return 不存在时为空
      */
-    CategoryRecord getCategory(String categoryId);
+    java.util.Optional<CategoryView> getCategory(String categoryId);
 
     /**
-     * 查询分类列表（parentId 为 null 时返回全部分类，否则返回子分类），按 sortOrder 升序
+     * 分类列表。
+     *
+     * @param parentId 父分类 id；null 表示查一级分类
+     * @param includeDisabled 是否包含禁用分类（后台管理要看得见，C 端不要）
      */
-    List<CategoryRecord> listCategories(String parentId);
+    List<CategoryView> listCategories(String parentId, boolean includeDisabled);
 
-    /**
-     * 按 ID 列表批量查询分类
-     */
-    List<CategoryRecord> getCategoriesByIds(List<String> ids);
-
-    /**
-     * 按名称查询分类（第一个匹配），不存在时返回 null
-     */
-    CategoryRecord findCategoryByName(String name);
-
-    /**
-     * 创建分类并返回带 ID 的分类记录
-     */
-    CategoryRecord createCategory(String name, String parentId, Integer sortOrder, Integer level);
-
-    /**
-     * 更新分类（全字段）
-     */
-    void updateCategory(CategoryRecord category);
-
-    /**
-     * 删除分类（逻辑删除），子分类/关联商品校验由调用方负责
-     */
-    void deleteCategory(String categoryId);
-
-    /**
-     * 统计分类的直接子分类数量
-     */
-    long countCategoryChildren(String categoryId);
-
-    /**
-     * 按分类 ID 列表统计关联商品数
-     */
-    Map<String, Long> countProductsByCategoryIds(List<String> categoryIds);
-
-    /**
-     * 按分类 ID 列表统计关联商品数（含子分类聚合）——一级分类行的展示口径：
-     * 商品挂在叶子上，直接挂载计数会让顶级行恒为 0（TD-028）
-     */
-    Map<String, Long> countProductsByCategoryIdsWithChildren(List<String> categoryIds);
-
-    /**
-     * 分类记录
-     */
-    record CategoryRecord(
-            String id,
-            String name,
-            String parentId,
-            Integer level,
-            String icon,
-            Integer sortOrder,
-            Integer status,
-            LocalDateTime createTime) {}
+    /** 整棵分类树（仅启用中，后台建树用）。 */
+    List<CategoryView> categoryTree();
 }

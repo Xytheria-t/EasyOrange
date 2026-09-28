@@ -11,7 +11,7 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.HotKeywordMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryMapper;
-import com.cartethyia.easyorange.product.application.port.cache.CategoryCachePort;
+import com.cartethyia.easyorange.product.domain.repository.CategoryRepository;
 import com.cartethyia.easyorange.product.application.service.SearchHistoryBufferAppService;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -67,7 +67,7 @@ class ProductQueryRepositoryImplTest {
     private SearchHistoryBufferAppService searchHistoryBufferService;
 
     @Mock
-    private CategoryCachePort categoryCachePort;
+    private CategoryRepository categoryRepository;
 
     private ProductQueryRepositoryImpl repository;
 
@@ -82,7 +82,7 @@ class ProductQueryRepositoryImplTest {
                 hotKeywordMapper,
                 redisTemplate,
                 searchHistoryBufferService,
-                categoryCachePort);
+                categoryRepository);
     }
 
     @Test
