@@ -4,6 +4,10 @@
 > **本文件只写「不按这个写就出 bug」的约定**——这些坑的共同特征是：代码看起来完全正常，但运行结果是错的或会无限循环。
 > 全局硬约束（`Result<T>` / UUID v7 string ID / `Long → String`）见[根 AGENTS.md](../AGENTS.md)。
 
+## C 端样式（`src/` 除 `src/admin/`）
+
+- **视觉取值走 `styles/tokens.css` 令牌**：裸 hex/rgba 只允许 `.githooks/check-frontend-style-drift.py` 白名单内的既有例外（第三方品牌色 / Canvas / SVG stop / 设计色）；新颜色先进 tokens.css，品牌橙 alpha 用 `--primary-alpha-1~5` 档。悬空 `var()` 引用（无 fallback）会被拦——拼错令牌不报错，只会静默丢样式
+
 ## 管理端渲染（`src/admin/`）
 
 - **弹窗 / 抽屉 / 确认框必须走 Radix 的 `Dialog` / `Sheet`**（内部已 `Portal` 到 `document.body`）：`.admin-sidebar` / `.admin-header` 的 `backdrop-filter: blur()` 会创建新包含块，手搓的 `position: fixed` 定位基准会错乱
