@@ -17,6 +17,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 资料应用服务 — 个人信息与头像的读写编排。
+ * <p>
+ * 取舍：更新走「读改写」整聚合落库（不逐列 update），用户表窄、并发低，换取聚合规则单点；
+ * 空字段视为「不改」而非「清空」，故先经 {@code hasAny} 判定无事可做直接拒绝。
+ * 头像走「<b>先删旧文件再传新文件</b>」：旧头像地址一旦失效必须同步清理，否则会留下
+ * 用户已放弃的孤儿文件；代价是传新失败时头像为空，DB 事务回滚也救不回已删的旧文件。
+ * <p>
+ * 边界：头像大小在 {@link Avatar#validate(byte[])} 内、落盘前拦截（无副作用）；
+ * 落盘 / 落库任一步异常统一转为「头像上传失败」，不回抛存储层异常；
+ * 邮箱 / 手机号唯一性由 {@code ProfileUpdateService} 校验，格式由值对象兜底。
+ */
 @Service
 @RequiredArgsConstructor
 public class ProfileAppService {
