@@ -5,9 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * product 模块错误码
+ * product 模块错误码 — 资产（B2001~）与分类（B2020~）共用本枚举。
  * <p>
  * 错误码范围：B2001-B2999。HTTP 状态映射见 {@link IResultCode#resolveStatus(String)}。
+ * </p>
+ * <p>
+ * **一个模块一个码枚举**（其余模块亦然）。分类是资产域的概念（商品挂在分类上），
+ * 所以不另开 {@code CategoryResultCode}——模块内多个领域概念靠码值段区分，
+ * 异常侧同样只留一个根类 {@code ProductDomainException}（见 ArchUnit 规则 11）。
  * </p>
  * <p>
  * 码值空洞（B2002 / B2004 / B2006 / B2007 / B2008 / B2010 / B2011 / B2013 / B2014 / B2015 / B2016 / B2017 / B2018）是刻意的：
@@ -26,7 +31,19 @@ public enum ProductResultCode implements IResultCode {
     PRODUCT_NOT_OWNER("B2005", "非资产所有者"),
     PRODUCT_STATUS_INVALID("B2009", "资产状态不合法"),
     INVALID_CONDITION_LEVEL("B2012", "成色等级不合法"),
-    PRODUCT_ERROR("B2019", "资产业务异常");
+    PRODUCT_ERROR("B2019", "资产业务异常"),
+
+    // ==================== 分类（B2020 起） ====================
+    // 分类原先由 admin 模块用裸中文串抛 BusinessException，既无错误码也无法聚合观测；
+    // 归入本枚举后前端与 Langfuse 观测都能按码聚合。
+    CATEGORY_NOT_FOUND("B2020", "分类不存在"),
+    CATEGORY_PARENT_NOT_FOUND("B2021", "父分类不存在"),
+    CATEGORY_NAME_DUPLICATED("B2022", "同级下已存在同名分类"),
+    CATEGORY_LEVEL_EXCEEDED("B2023", "分类层级超过上限"),
+    CATEGORY_CYCLE_DETECTED("B2024", "不能把分类挂到它自己的子分类下"),
+    CATEGORY_HAS_CHILDREN("B2025", "该分类下存在子分类，无法删除"),
+    CATEGORY_HAS_PRODUCTS("B2026", "该分类下存在关联商品，无法删除"),
+    CATEGORY_ERROR("B2027", "分类业务异常");
 
     private final String code;
     private final String message;
