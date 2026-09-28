@@ -20,13 +20,13 @@ public class OrderCommandAssembler {
 
     /**
      * 创建订单请求 → 创建订单命令。
-     * paymentMethod 不来自前端请求，由 OrderCommandHandler 在创建支付时使用默认值。
+     * 支付方式不在请求里：下单链路统一走 {@code OrderConstant.DEFAULT_PAYMENT_METHOD}。
      */
     public CreateOrderCommand toCreateCommand(CreateOrderRequest request) {
         var items = request.items().stream()
                 .map(i -> new CreateOrderCommand.CreateOrderItem(i.productId(), i.quantity()))
                 .toList();
-        return new CreateOrderCommand(items, request.address(), request.phone(), request.remark(), null);
+        return new CreateOrderCommand(items, request.address(), request.phone(), request.remark());
     }
 
     /**

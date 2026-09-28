@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
 import java.math.BigDecimal;

@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -32,6 +33,7 @@ public class OrderQueryHandler {
     private final OrderReadModelAssembler readModelAssembler;
     private final UserInfoPort userInfoPort;
 
+    @Transactional(readOnly = true)
     public OrderVO getOrderDetailForOwner(String userId, String orderId) {
         OrderReadModel order = orderReadRepository
                 .findById(OrderId.of(orderId))
@@ -48,6 +50,7 @@ public class OrderQueryHandler {
     /**
      * 我的订单（认领方视角） — buyerId 自动填充为当前登录用户。
      */
+    @Transactional(readOnly = true)
     public PageResult<OrderVO> getMyOrders(String userId, OrderListQuery query) {
         return queryOrdersWithCache(userId, null, query);
     }
@@ -55,6 +58,7 @@ public class OrderQueryHandler {
     /**
      * 我售出的订单（资产方视角） — sellerId 自动填充为当前登录用户。
      */
+    @Transactional(readOnly = true)
     public PageResult<OrderVO> getSoldOrders(String userId, OrderListQuery query) {
         return queryOrdersWithCache(null, userId, query);
     }

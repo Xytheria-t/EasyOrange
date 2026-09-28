@@ -18,16 +18,4 @@ public class PaymentResult {
     public static PaymentResult failure(String errorMessage) {
         return new PaymentResult(false, null, errorMessage);
     }
-
-    public boolean isSuccess() {
-        return success;
-    }
-
-    public String getTransactionId() {
-        return transactionId;
-    }
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
 }

@@ -8,10 +8,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
@@ -20,9 +20,9 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderItemRef;
-import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -83,8 +83,8 @@ class OrderRepositoryImplTest {
         orderRepository.update(order);
 
         verify(orderMapper).updateById(any(OrderDO.class));
-        verify(orderItemMapper, never()).deleteByOrderId(anyString());
         verify(orderItemMapper, never()).batchInsert(anyList());
+        verifyNoMoreInteractions(orderItemMapper);
     }
 
     @Test

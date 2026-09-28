@@ -8,14 +8,15 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentViewAssembler;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.MockPaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
 import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -40,11 +41,13 @@ class MockPaymentControllerTest {
     @Mock
     private PaymentCommandHandler paymentCommandHandler;
 
+    private final PaymentViewAssembler assembler = new PaymentViewAssembler();
+
     private MockPaymentController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new MockPaymentController(paymentRepository, idGenerator, paymentCommandHandler);
+        controller = new MockPaymentController(paymentRepository, idGenerator, paymentCommandHandler, assembler);
     }
 
     private Payment aggregate(PaymentStatus status) {
@@ -89,22 +92,19 @@ class MockPaymentControllerTest {
     class ProcessMockTests {
 
         @Test
-        @DisplayName("成功标记 - 经 PaymentCommandHandler 走两阶段支付")
+        @DisplayName("成功标记 - 经 PaymentCommandHandler 走两阶段支付（交易号由网关生成，不入命令）")
         void processMockPayment_success_confirms() {
             when(paymentRepository.findById("1001"))
                     .thenReturn(
                             Optional.of(aggregate(PaymentStatus.PENDING)),
                             Optional.of(aggregate(PaymentStatus.SUCCESS)));
 
-            Result<PaymentResponse> result =
-                    controller.processMockPayment(new MockPaymentRequest("1001", null, null, null, true));
+            Result<PaymentResponse> result = controller.processMockPayment(new MockPaymentRequest("1001", true));
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().getStatus()).isEqualTo("SUCCESS");
             verify(paymentCommandHandler)
-                    .pay(argThat((PayCommand cmd) -> cmd.paymentNo().equals("PAY123")
-                            && cmd.transactionId() != null
-                            && cmd.transactionId().startsWith("MOCK_TXN_")));
+                    .pay(argThat((PayCommand cmd) -> cmd.paymentNo().equals("PAY123")));
         }
 
         @Test
@@ -115,8 +115,7 @@ class MockPaymentControllerTest {
                             Optional.of(aggregate(PaymentStatus.PENDING)),
                             Optional.of(aggregate(PaymentStatus.FAILED)));
 
-            Result<PaymentResponse> result =
-                    controller.processMockPayment(new MockPaymentRequest("1001", null, null, null, false));
+            Result<PaymentResponse> result = controller.processMockPayment(new MockPaymentRequest("1001", false));
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().getStatus()).isEqualTo("FAILED");
@@ -139,9 +138,7 @@ class MockPaymentControllerTest {
 
             assertThat(result.data().getStatus()).isEqualTo("SUCCESS");
             verify(paymentCommandHandler)
-                    .pay(argThat((PayCommand cmd) -> cmd.paymentNo().equals("PAY123")
-                            && cmd.transactionId() != null
-                            && cmd.transactionId().startsWith("MOCK_TXN_")));
+                    .pay(argThat((PayCommand cmd) -> cmd.paymentNo().equals("PAY123")));
         }
 
         @Test

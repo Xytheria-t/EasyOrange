@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.application.port.query.OrderQueryRepository;
 import com.cartethyia.easyorange.order.application.query.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import java.time.LocalDateTime;
@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public class OrderQueryRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> implements OrderQueryRepository {
@@ -32,6 +33,7 @@ public class OrderQueryRepositoryImpl extends BaseRepository<OrderMapper, OrderD
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<OrderReadModel> findById(OrderId id) {
         OrderDO orderDO = mapper.selectById(id.value());
         if (orderDO == null) {
@@ -42,6 +44,7 @@ public class OrderQueryRepositoryImpl extends BaseRepository<OrderMapper, OrderD
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResult<OrderReadModel> findPage(OrderQueryCondition condition) {
         Page<OrderDO> page = new Page<>(condition.pageNum(), condition.pageSize());
         var wrapper = lambdaQuery();
@@ -61,6 +64,7 @@ public class OrderQueryRepositoryImpl extends BaseRepository<OrderMapper, OrderD
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long countByStatus(OrderStatus status) {
         if (status == null) {
             return lambdaQuery().count();
@@ -69,12 +73,12 @@ public class OrderQueryRepositoryImpl extends BaseRepository<OrderMapper, OrderD
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long countByCreatedAfter(LocalDateTime since) {
         return lambdaQuery().ge(OrderDO::getCreateTime, since).count();
     }
 
-    @Override
-    public List<OrderItemReadModel> findItemsByOrderId(String orderId) {
+    private List<OrderItemReadModel> findItemsByOrderId(String orderId) {
         return orderItemMapper
                 .selectList(new LambdaQueryWrapper<OrderItemDO>().eq(OrderItemDO::getOrderId, orderId))
                 .stream()

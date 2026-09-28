@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.aggregate;
 
-import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentStatus;
 
 /**
  * 支付状态守卫 —— 支付状态机的合法转换谓词。

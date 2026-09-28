@@ -11,9 +11,4 @@
         </foreach>
     </insert>
 
-    <delete id="deleteByOrderId">
-        DELETE FROM eo_order_item
-        WHERE order_id = #{orderId}
-    </delete>
-
 </mapper>

@@ -22,9 +22,9 @@ import com.cartethyia.easyorange.payment.application.command.PaymentPhaseExecuto
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
@@ -86,7 +86,7 @@ class PaymentCommandHandlerTest {
                 .when(lockPort)
                 .executeWithLock(anyString(), anyLong(), any(Runnable.class));
 
-        assertThatThrownBy(() -> commandHandler.pay(new PayCommand("PAY123", null, null)))
+        assertThatThrownBy(() -> commandHandler.pay(new PayCommand("PAY123")))
                 .isInstanceOf(PaymentDomainException.class)
                 .satisfies(e -> assertThat(((PaymentDomainException) e).getCode())
                         .isEqualTo(PaymentResultCode.PAYMENT_BUSY.getCode()));
@@ -104,8 +104,7 @@ class PaymentCommandHandlerTest {
         @Test
         @DisplayName("创建支付成功")
         void createPayment_success() {
-            CreatePaymentCommand command =
-                    new CreatePaymentCommand("2001", new BigDecimal("100.00"), "WECHAT", null, "test");
+            CreatePaymentCommand command = new CreatePaymentCommand("2001", new BigDecimal("100.00"), "WECHAT", "test");
 
             when(idGenerator.generateId()).thenReturn("1001");
 
@@ -139,7 +138,7 @@ class PaymentCommandHandlerTest {
             when(phaseExecutor.preparePayPhase1("PAY123")).thenReturn("1001");
             when(phaseExecutor.invokePayGateway("1001")).thenReturn(PaymentResult.success("TXN_123"));
 
-            commandHandler.pay(new PayCommand("PAY123", null, null));
+            commandHandler.pay(new PayCommand("PAY123"));
 
             verify(phaseExecutor).confirmPayPhase2(eq("1001"), any(PaymentResult.class));
             verify(phaseExecutor, never()).rollbackPayStatus(anyString());
@@ -164,7 +163,7 @@ class PaymentCommandHandlerTest {
             when(phaseExecutor.preparePayPhase1("PAY123")).thenReturn("1001");
             when(phaseExecutor.invokePayGateway("1001")).thenReturn(PaymentResult.failure("网关拒绝"));
 
-            commandHandler.pay(new PayCommand("PAY123", null, null));
+            commandHandler.pay(new PayCommand("PAY123"));
 
             verify(phaseExecutor).rollbackPayStatus("1001");
             verify(phaseExecutor, never()).confirmPayPhase2(anyString(), any());

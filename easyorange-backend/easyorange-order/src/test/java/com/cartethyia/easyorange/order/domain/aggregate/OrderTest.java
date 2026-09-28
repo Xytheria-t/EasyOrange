@@ -6,9 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderItemRef;
-import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Version;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -119,7 +119,6 @@ class OrderTest {
             var result = aggregate.pay(NOW);
 
             assertThat(result.event().orderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.event().paymentStatus()).isEqualTo(PaymentStatus.PAID.getCode());
             assertThat(result.aggregate().paymentStatus()).isEqualTo(PaymentStatus.PAID);
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.PAID);
         }

@@ -27,12 +27,11 @@ class PaymentCommandMapperTest {
         void toCreateCommand_mapsRequest() {
             CreatePaymentRequest request = new CreatePaymentRequest("2001", new BigDecimal("100.00"), "WECHAT");
 
-            CreatePaymentCommand command = PaymentCommandMapper.toCreateCommand(request, null);
+            CreatePaymentCommand command = PaymentCommandMapper.toCreateCommand(request);
 
             assertThat(command.orderId()).isEqualTo("2001");
             assertThat(command.amount()).isEqualByComparingTo("100.00");
             assertThat(command.paymentMethod()).isEqualTo("WECHAT");
-            assertThat(command.payPassword()).isNull();
         }
     }
 

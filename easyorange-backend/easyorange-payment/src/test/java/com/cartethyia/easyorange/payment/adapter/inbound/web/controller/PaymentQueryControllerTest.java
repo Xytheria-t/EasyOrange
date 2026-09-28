@@ -9,14 +9,15 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentViewAssembler;
+import com.cartethyia.easyorange.payment.adapter.inbound.web.dto.response.PaymentStatusResponse;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.QueryPaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
 import com.cartethyia.easyorange.payment.application.query.PaymentListQuery;
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentStatus;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,7 +110,7 @@ class PaymentQueryControllerTest {
         void getStatus_returnsStatus() {
             when(queryHandler.getPaymentById("1001", USER_ID)).thenReturn(aggregate());
 
-            Result<PaymentQueryController.PaymentStatusResponse> result = controller.getStatus(currentUser(), "1001");
+            Result<PaymentStatusResponse> result = controller.getStatus(currentUser(), "1001");
 
             assertThat(result.data().status()).isEqualTo("已支付");
             assertThat(result.data().paymentMethod()).isNotBlank();

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.application.query;
 
-import static com.cartethyia.easyorange.order.domain.constant.OrderStatus.PENDING_PAYMENT;
-import static com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus.UNPAID;
+import static com.cartethyia.easyorange.order.domain.enums.OrderStatus.PENDING_PAYMENT;
+import static com.cartethyia.easyorange.order.domain.enums.PaymentStatus.UNPAID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;

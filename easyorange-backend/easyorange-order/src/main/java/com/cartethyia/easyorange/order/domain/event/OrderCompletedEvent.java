@@ -12,9 +12,4 @@ public record OrderCompletedEvent(
     public OrderCompletedEvent {
         productIds = List.copyOf(productIds);
     }
-
-    @Override
-    public String orderId() {
-        return orderId;
-    }
 }

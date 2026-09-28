@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
+import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentViewAssembler;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.CreatePaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.PaymentCallback;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.RefundRequest;
@@ -38,6 +39,8 @@ class PaymentCommandControllerTest {
     @Mock
     private CallbackSignatureVerifierPort signatureVerifier;
 
+    private final PaymentViewAssembler assembler = new PaymentViewAssembler();
+
     private PaymentCommandController controller;
 
     private static final String USER_ID = "3001";
@@ -48,7 +51,7 @@ class PaymentCommandControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new PaymentCommandController(commandHandler, signatureVerifier);
+        controller = new PaymentCommandController(commandHandler, signatureVerifier, assembler);
     }
 
     @Nested

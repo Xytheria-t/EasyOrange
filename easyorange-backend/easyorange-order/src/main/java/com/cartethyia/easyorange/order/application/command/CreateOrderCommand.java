@@ -19,8 +19,7 @@ public record CreateOrderCommand(
 
         String address,
         String phone,
-        String remark,
-        String paymentMethod) {
+        String remark) {
 
     public record CreateOrderItem(
             @NotBlank(message = "资产 ID 不能为空") String productId,

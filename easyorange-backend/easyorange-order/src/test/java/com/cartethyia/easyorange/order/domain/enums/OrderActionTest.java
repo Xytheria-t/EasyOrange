@@ -1,8 +1,8 @@
-package com.cartethyia.easyorange.order.domain.constant;
+package com.cartethyia.easyorange.order.domain.enums;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
+import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;

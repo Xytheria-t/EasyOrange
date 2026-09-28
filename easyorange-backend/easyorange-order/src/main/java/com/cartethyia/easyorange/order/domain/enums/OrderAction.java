@@ -1,6 +1,6 @@
-package com.cartethyia.easyorange.order.domain.constant;
+package com.cartethyia.easyorange.order.domain.enums;
 
-import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
+import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import java.util.Set;
 import java.util.function.Predicate;
 import lombok.AllArgsConstructor;
@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
  * 每个动作声明：前置状态集合（sources）、目标状态（target）、目标支付状态（targetPaymentStatus，
  * null 表示不变）、关闭归因类型（closureKind，NONE 无需原因 / CANCEL 记入取消字段 / REFUND 记入退款字段）、
  * 非法时的错误码，以及额外的支付前置条件（paymentGuard）。
- * {@link OrderStatus#canTransitionTo(OrderStatus)} 由此派生，聚合根统一经
+ * 是否可触发只由 {@link #canApply} 裁决，聚合根统一经
  * {@code Order#transitionTo(OrderAction, String, LocalDateTime)} 守卫。
  * <pre>
  * PENDING_PAYMENT ──PAY──→ PAID ──SHIP──→ SHIPPED ──CONFIRM_RECEIPT──→ COMPLETED

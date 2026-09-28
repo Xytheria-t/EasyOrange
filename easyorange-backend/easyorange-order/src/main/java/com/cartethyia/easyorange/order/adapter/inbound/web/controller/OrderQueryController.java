@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.QueryOrde
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.OrderListQuery;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

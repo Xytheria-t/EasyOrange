@@ -8,13 +8,13 @@ import com.cartethyia.easyorange.order.application.query.readmodel.OrderItemRead
 import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItemSnapshot;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
-import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.valueobject.Version;
@@ -146,7 +146,7 @@ class OrderDataMapperTest {
         void toAggregate_shouldReconstructFullAggregate() {
             OrderDO orderDO = createOrderDO();
 
-            Order aggregate = mapper.toAggregate(orderDO);
+            Order aggregate = mapper.toAggregate(orderDO, List.of());
 
             assertThat(aggregate).isNotNull();
             assertThat(aggregate.id().value()).isEqualTo(ID);
@@ -185,7 +185,7 @@ class OrderDataMapperTest {
         void toReadModel_shouldMapToReadModel() {
             OrderDO orderDO = createOrderDO();
 
-            OrderReadModel readModel = mapper.toReadModel(orderDO);
+            OrderReadModel readModel = mapper.toReadModel(orderDO, List.of());
 
             assertThat(readModel).isNotNull();
             assertThat(readModel.id()).isEqualTo(ID);
@@ -223,7 +223,7 @@ class OrderDataMapperTest {
             OrderDO orderDO = createOrderDO();
             orderDO.setStatus(OrderStatus.CANCELLED);
 
-            OrderReadModel readModel = mapper.toReadModel(orderDO);
+            OrderReadModel readModel = mapper.toReadModel(orderDO, List.of());
 
             assertThat(readModel.statusDesc()).isEqualTo("已取消");
         }
@@ -313,7 +313,7 @@ class OrderDataMapperTest {
             Order original = createAggregate();
 
             OrderDO orderDO = mapper.toDataObject(original);
-            Order restored = mapper.toAggregate(orderDO);
+            Order restored = mapper.toAggregate(orderDO, List.of());
 
             assertThat(restored.id().value()).isEqualTo(original.id().value());
             assertThat(restored.orderNo().value()).isEqualTo(original.orderNo().value());
@@ -338,7 +338,7 @@ class OrderDataMapperTest {
         void roundtrip_fromDO_shouldPreserveAllData() {
             OrderDO original = createOrderDO();
 
-            Order aggregate = mapper.toAggregate(original);
+            Order aggregate = mapper.toAggregate(original, List.of());
             OrderDO converted = mapper.toDataObject(aggregate);
 
             assertThat(converted.getId()).isEqualTo(original.getId());

@@ -18,16 +18,4 @@ public class RefundResult {
     public static RefundResult failure(String errorMessage) {
         return new RefundResult(false, null, errorMessage);
     }
-
-    public boolean isSuccess() {
-        return success;
-    }
-
-    public String getRefundNo() {
-        return refundNo;
-    }
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
 }

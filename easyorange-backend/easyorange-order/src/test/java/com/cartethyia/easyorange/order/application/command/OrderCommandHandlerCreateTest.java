@@ -115,7 +115,7 @@ class OrderCommandHandlerCreateTest {
     @DisplayName("正常创建订单")
     void createOrder_normalFlow_succeeds() {
         CreateOrderCommand command =
-                new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", "备注", null);
+                new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", "备注");
 
         ProductSnapshot snapshot = new ProductSnapshot(
                 "100", SELLER_ID, new BigDecimal("99.99"), true, 10, "iPhone 15", "img1", "描述", "A");
@@ -139,7 +139,7 @@ class OrderCommandHandlerCreateTest {
     @DisplayName("支付失败时抛出订单域异常（单事务回滚兜底，无需反向补偿）")
     void createOrder_paymentFails_throws() {
         CreateOrderCommand command =
-                new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", null, null);
+                new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", null);
 
         ProductSnapshot snapshot = new ProductSnapshot(
                 "100", SELLER_ID, new BigDecimal("99.99"), true, 10, "iPhone 15", "img1", "描述", "A");
@@ -158,7 +158,7 @@ class OrderCommandHandlerCreateTest {
     @DisplayName("资产不存在时下单失败")
     void createOrder_productNotFound_throws() {
         CreateOrderCommand command =
-                new CreateOrderCommand(List.of(new CreateOrderItem("999", 1)), "北京市朝阳区", "13800138000", null, null);
+                new CreateOrderCommand(List.of(new CreateOrderItem("999", 1)), "北京市朝阳区", "13800138000", null);
 
         when(productInventoryPort.getSnapshots(any())).thenReturn(List.of());
 
@@ -174,7 +174,7 @@ class OrderCommandHandlerCreateTest {
         doThrow(new LockAcquisitionException("busy")).when(lockPort).executeWithLocks(anyList(), anyLong(), any());
 
         CreateOrderCommand command =
-                new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", null, null);
+                new CreateOrderCommand(List.of(new CreateOrderItem("100", 1)), "北京市朝阳区", "13800138000", null);
 
         assertThatThrownBy(() -> commandHandler.createOrder(BUYER_ID, command))
                 .isInstanceOf(OrderDomainException.class)

@@ -12,5 +12,4 @@ public record CreatePaymentCommand(
         BigDecimal amount,
 
         @NotBlank(message = "支付方式不能为空") String paymentMethod,
-        String payPassword,
         String attach) {}

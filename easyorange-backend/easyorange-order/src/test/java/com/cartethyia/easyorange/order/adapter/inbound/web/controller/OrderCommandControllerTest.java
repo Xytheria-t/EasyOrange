@@ -78,7 +78,7 @@ class OrderCommandControllerTest {
         void createOrder_withValidRequest_shouldReturnOrderId() throws Exception {
             CreateOrderResult createResult = new CreateOrderResult(ORDER_ID, ORDER_NO);
             var items = List.of(new CreateOrderCommand.CreateOrderItem("200", 1));
-            var command = new CreateOrderCommand(items, "北京市朝阳区", "13800138000", "尽快发货", null);
+            var command = new CreateOrderCommand(items, "北京市朝阳区", "13800138000", "尽快发货");
             when(assembler.toCreateCommand(any())).thenReturn(command);
             when(commandHandler.createOrder(USER_ID, command)).thenReturn(createResult);
 

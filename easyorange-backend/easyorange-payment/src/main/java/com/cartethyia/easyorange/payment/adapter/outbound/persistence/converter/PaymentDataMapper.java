@@ -4,12 +4,18 @@ import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import java.math.BigDecimal;
-import org.mapstruct.Mapper;
 
-@Mapper(componentModel = "spring")
-public interface PaymentDataMapper {
+/**
+ * 领域聚合 ↔ 数据对象的手写转换（静态工具类，无 Spring Bean）。
+ * <p>
+ * 取舍：不用 MapStruct——这里每个方法本就是手写实现，注解处理器无可生成，
+ * 只会多编译出一个空的 {@code PaymentDataMapperImpl} Bean 并让注入点显得有意义。
+ */
+public final class PaymentDataMapper {
 
-    default Payment toAggregate(PaymentDO po) {
+    private PaymentDataMapper() {}
+
+    public static Payment toAggregate(PaymentDO po) {
         if (po == null) {
             return null;
         }
@@ -32,7 +38,7 @@ public interface PaymentDataMapper {
         return Payment.from(spec);
     }
 
-    default PaymentDO toPO(Payment aggregate) {
+    public static PaymentDO toPO(Payment aggregate) {
         if (aggregate == null) {
             return null;
         }

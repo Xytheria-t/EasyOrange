@@ -4,9 +4,10 @@ import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.order.domain.constant.ClosureKind;
-import com.cartethyia.easyorange.order.domain.constant.OrderAction;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.ClosureKind;
+import com.cartethyia.easyorange.order.domain.enums.OrderAction;
+import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
@@ -18,7 +19,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
-import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.valueobject.Version;
@@ -208,7 +208,7 @@ public class Order {
     }
 
     // ── 状态判定 ──
-    // 仅保留有生产调用方的谓词；其余能力查询（canPay/canShip/...）在需要时由
+    // 能力谓词只保留有生产调用方的；新增前先确认调用方，否则由
     // OrderAction.X.canApply(status, paymentStatus) 直接裁决，无需在聚合根上重复暴露。
 
     /** 是否可取消（买家取消仅限待付款状态；已付款订单取消走 {@link #forceCancel}） */
@@ -228,14 +228,12 @@ public class Order {
 
     // ── 状态迁移 ──
 
-    /** 支付订单 */
     public Transition<Order, OrderPaidEvent> pay(LocalDateTime now) {
         return new Transition<>(
                 transitionTo(OrderAction.PAY, null, now),
-                new OrderPaidEvent(UuidV7.generateId(), id.value(), buyerId().value(), PaymentStatus.PAID.getCode()));
+                new OrderPaidEvent(UuidV7.generateId(), id.value(), buyerId().value()));
     }
 
-    /** 取消订单（买家路径，仅限待付款） */
     public Transition<Order, OrderCancelledEvent> cancel(String reason, LocalDateTime now) {
         return new Transition<>(
                 transitionTo(OrderAction.CANCEL, reason, now),
@@ -255,14 +253,12 @@ public class Order {
                         UuidV7.generateId(), id.value(), buyerId().value(), extractItems(), reason));
     }
 
-    /** 发货 */
     public Transition<Order, OrderShippedEvent> ship(LocalDateTime now) {
         return new Transition<>(
                 transitionTo(OrderAction.SHIP, null, now),
                 new OrderShippedEvent(UuidV7.generateId(), id.value(), buyerId().value()));
     }
 
-    /** 确认收货 */
     public Transition<Order, OrderCompletedEvent> confirmReceipt(LocalDateTime now) {
         return new Transition<>(
                 transitionTo(OrderAction.CONFIRM_RECEIPT, null, now),
@@ -274,7 +270,6 @@ public class Order {
                         extractProductIds()));
     }
 
-    /** 退款 */
     public Transition<Order, OrderRefundedEvent> refund(String reason, LocalDateTime now) {
         return new Transition<>(
                 transitionTo(OrderAction.REFUND, reason, now),

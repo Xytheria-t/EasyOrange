@@ -1,17 +1,16 @@
-package com.cartethyia.easyorange.order.domain.constant;
+package com.cartethyia.easyorange.order.domain.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
-import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
  * 订单状态枚举 — code 为有意义字符串，DB 列 VARCHAR(20)，经 {@code @EnumValue} 持久化。
  * <p>
- * 状态机合法转换的**唯一事实来源**是 {@link OrderAction}，本枚举仅声明状态本身；
- * {@link #canTransitionTo(OrderStatus)} 由动作定义派生，避免两份状态机定义漂移。
+ * 本枚举只声明状态本身，不含任何转换判定：合法转换一律问 {@link OrderAction#canApply}，
+ * 避免「只看状态可达」与「状态 + 支付维度同时满足」两份判定漂移。
  *
  * @author cartethyia
  * @date 2026/03/06
@@ -36,19 +35,5 @@ public enum OrderStatus implements BaseCodeEnum {
 
     public static OrderStatus fromCode(String code) {
         return BaseCodeEnum.fromCode(OrderStatus.class, code);
-    }
-
-    /**
-     * 仅按状态维度判断转换是否可达 —— 由 {@link OrderAction} 派生：存在任一动作以本状态为前置、
-     * 以目标为去向即为合法。
-     * <p>
-     * 注意这是**状态子集投影**：忽略支付维度（paymentGuard）。需要含支付约束的完整判定请用
-     * {@link OrderAction#canApply(OrderStatus, com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus)}，
-     * 二者可能给出不同结论
-     * （如 UNPAID 订单在状态维度可达 REFUNDED，但 canApply 会拒绝）。
-     */
-    public boolean canTransitionTo(OrderStatus target) {
-        return Arrays.stream(OrderAction.values())
-                .anyMatch(action -> action.sources().contains(this) && action.target() == target);
     }
 }

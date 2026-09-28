@@ -4,15 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.payment.application.port.query.PaymentQueryRepository;
 import com.cartethyia.easyorange.payment.application.query.PaymentListQuery;
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PaymentQueryHandlerTest {
 
     @Mock
-    private PaymentQueryRepository paymentQueryRepository;
+    private PaymentRepository paymentRepository;
 
     @InjectMocks
     private PaymentQueryHandler queryHandler;
@@ -64,7 +64,7 @@ class PaymentQueryHandlerTest {
         @DisplayName("查询本人支付记录成功")
         void getById_found() {
             Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.SUCCESS);
-            when(paymentQueryRepository.findAggregateById("1001")).thenReturn(Optional.of(aggregate));
+            when(paymentRepository.findById("1001")).thenReturn(Optional.of(aggregate));
 
             Payment result = queryHandler.getPaymentById("1001", USER_ID);
 
@@ -76,7 +76,7 @@ class PaymentQueryHandlerTest {
         @Test
         @DisplayName("支付记录不存在抛出异常")
         void getById_notFound() {
-            when(paymentQueryRepository.findAggregateById("9999")).thenReturn(Optional.empty());
+            when(paymentRepository.findById("9999")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> queryHandler.getPaymentById("9999", USER_ID))
                     .isInstanceOf(PaymentDomainException.class);
@@ -86,7 +86,7 @@ class PaymentQueryHandlerTest {
         @DisplayName("越权查询他人支付单 - 按记录不存在拒绝")
         void getById_ownershipMismatch_rejected() {
             Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.SUCCESS);
-            when(paymentQueryRepository.findAggregateById("1001")).thenReturn(Optional.of(aggregate));
+            when(paymentRepository.findById("1001")).thenReturn(Optional.of(aggregate));
 
             assertThatThrownBy(() -> queryHandler.getPaymentById("1001", "9999"))
                     .isInstanceOf(PaymentDomainException.class)
@@ -103,7 +103,7 @@ class PaymentQueryHandlerTest {
         @DisplayName("按订单ID查询本人支付记录成功")
         void getByOrderId_found() {
             Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.PENDING);
-            when(paymentQueryRepository.findAggregateByOrderId("2001")).thenReturn(Optional.of(aggregate));
+            when(paymentRepository.findByOrderId("2001")).thenReturn(Optional.of(aggregate));
 
             Payment result = queryHandler.getPaymentByOrderId("2001", USER_ID);
 
@@ -114,7 +114,7 @@ class PaymentQueryHandlerTest {
         @DisplayName("越权按订单ID查询他人支付单 - 按记录不存在拒绝")
         void getByOrderId_ownershipMismatch_rejected() {
             Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.PENDING);
-            when(paymentQueryRepository.findAggregateByOrderId("2001")).thenReturn(Optional.of(aggregate));
+            when(paymentRepository.findByOrderId("2001")).thenReturn(Optional.of(aggregate));
 
             assertThatThrownBy(() -> queryHandler.getPaymentByOrderId("2001", "9999"))
                     .isInstanceOf(PaymentDomainException.class);
@@ -129,9 +129,8 @@ class PaymentQueryHandlerTest {
         @DisplayName("自动填充当前登录用户")
         void getMyPayments_usesCurrentUser() {
             Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.SUCCESS);
-            when(paymentQueryRepository.findByUserIdAndStatus("3001", null, 1, 20))
-                    .thenReturn(List.of(aggregate));
-            when(paymentQueryRepository.countByUserIdAndStatus("3001", null)).thenReturn(1L);
+            when(paymentRepository.findByUserIdAndStatus("3001", null, 1, 20)).thenReturn(List.of(aggregate));
+            when(paymentRepository.countByUserIdAndStatus("3001", null)).thenReturn(1L);
 
             var result = queryHandler.getMyPayments(USER_ID, new PaymentListQuery(null, null, null, null));
 
@@ -150,9 +149,9 @@ class PaymentQueryHandlerTest {
         @DisplayName("按用户与状态过滤")
         void queryPayments_filtersByUserAndStatus() {
             Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.REFUNDED);
-            when(paymentQueryRepository.findByUserIdAndStatus("3001", PaymentStatus.REFUNDED, 2, 10))
+            when(paymentRepository.findByUserIdAndStatus("3001", PaymentStatus.REFUNDED, 2, 10))
                     .thenReturn(List.of(aggregate));
-            when(paymentQueryRepository.countByUserIdAndStatus("3001", PaymentStatus.REFUNDED))
+            when(paymentRepository.countByUserIdAndStatus("3001", PaymentStatus.REFUNDED))
                     .thenReturn(5L);
 
             var result = queryHandler.queryPayments(new PaymentListQuery("3001", PaymentStatus.REFUNDED, 2, 10));
