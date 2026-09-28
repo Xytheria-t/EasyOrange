@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalServ
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.RetrievalReport;
+import com.cartethyia.easyorange.ai.domain.model.RoutingReport;
 import com.cartethyia.easyorange.ai.domain.port.RetrievalMetricPort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.ArrayList;
@@ -18,14 +19,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 金标准集回归评估器 — 两条评估线按用例 scope 分流（{@code chat} / {@code retrieval}）：
- * 生成质量（LLM-as-Judge）对每个 chat 用例调 {@link AiChatService#answer}（forceFresh 跳过缓存；
- * 评估跑批没有登录态，显式传机器主体 {@link AgentLoopRunner#MACHINE_SUBJECT}——画像不落库，评估不被历史偏好污染）
- * 对照参考回答打分、聚合 avg score；检索质量对每个 retrieval 用例跑知识库检索算 hit@5 / MRR，
- * 逐条采样落 eo_retrieval_metric。供定时任务（RetrievalEvalScheduler / 每日回归）与 CI 门禁
- * （GoldenSetRegressionIT）复用。
+ * 金标准集回归评估器 — 三条评估线：生成质量（LLM-as-Judge）、检索质量（hit@5 / MRR）、路由质量
+ * （期望工具路径命中率）。三条线读同一份用例集，各按自己的口径取子集。
  * <p>
- * 分流依据是 scope 字段本身（{@link GoldenSetLoader} 加载时已校验），不用「有没有 gold_doc_ids」
+ * 生成质量对每个 chat 用例调 {@link AiChatService#answer}（forceFresh 跳过缓存；评估跑批没有登录态，
+ * 显式传机器主体 {@link AgentLoopRunner#MACHINE_SUBJECT}——画像不落库，评估不被历史偏好污染）对照参考回答
+ * 打分、聚合 avg score；检索质量对每个 retrieval 用例跑知识库检索算 hit@5 / MRR，逐条采样落
+ * eo_retrieval_metric；路由质量对标了 {@code expected_tools} 的 chat 用例跑一次工具循环，看模型实际选了哪些
+ * 工具。供定时任务（RetrievalEvalScheduler / 每日回归）与 CI 门禁（GoldenSetRegressionIT）复用。
+ * <p>
+ * <b>路由线只跑循环不跑生成</b>：它量的是选路，生成那一步的结论属于生成分；少一次生成调用，
+ * 这条线才是「为路由单独付的钱」而不是把生成分重跑一遍。
+ * <p>
+ * 生成 / 检索两条线按 scope 字段分流（{@link GoldenSetLoader} 加载时已校验），不用「有没有 gold_doc_ids」
  * 这类派生特征 —— 那会让带 gold_doc_ids 的生成用例同时被算进检索分母。
  */
 @Slf4j
@@ -41,6 +47,7 @@ public class GoldenSetEvaluator {
     private final KnowledgeRetrievalService retrievalService;
     private final RetrievalMetricPort metricRecorder;
     private final IdGenerator idGenerator;
+    private final AgentLoopRunner agentLoopRunner;
 
     /** 生成质量回归：全部 chat 用例 Judge 打分，返回平均分。 */
     public GenerationReport evaluateGeneration() {
@@ -99,6 +106,59 @@ public class GoldenSetEvaluator {
                 "%.2f%%".formatted(hitRate * 100),
                 "%.4f".formatted(mrr));
         return new RetrievalReport(cases.size(), hits, hitRate, mrr);
+    }
+
+    /**
+     * 跑失败 / 降级（{@code decision_failed}、{@code step_limit}）算未命中且仍计入分母 ——
+     * 决策失败正是「模型没选出该选的工具」的一种形态，把它排除掉等于把最该看的失败藏起来。
+     */
+    public RoutingReport evaluateRouting() {
+        var cases = loader.load().cases().stream()
+                .filter(c -> GoldenSetLoader.SCOPE_CHAT.equals(c.scope())
+                        && !c.expectedTools().isEmpty())
+                .toList();
+        int correct = 0;
+        for (var c : cases) {
+            List<String> actual;
+            try {
+                actual = agentLoopRunner
+                        .run(new AgentLoopRunner.Input(
+                                c.question(),
+                                "eval-" + c.id(),
+                                AgentLoopRunner.MACHINE_SUBJECT,
+                                List.of(),
+                                List.of(),
+                                null))
+                        .toolPath();
+            } catch (Exception e) {
+                log.warn("golden case {} routing eval failed: {}", c.id(), e.getMessage());
+                actual = List.of();
+            }
+            if (routeMatches(c.expectedTools(), actual)) {
+                correct++;
+            } else {
+                log.info(
+                        "golden case {} route miss: expected={}, actual={}",
+                        c.id(),
+                        String.join(",", c.expectedTools()),
+                        actual.isEmpty() ? "(无)" : String.join(",", actual));
+            }
+        }
+        double accuracy = cases.isEmpty() ? 0 : correct * 1.0 / cases.size();
+        log.info(
+                "Golden set routing eval: hit {}/{} cases, accuracy = {}",
+                correct,
+                cases.size(),
+                "%.2f%%".formatted(accuracy * 100));
+        return new RoutingReport(cases.size(), correct, accuracy);
+    }
+
+    /**
+     * 路由命中判据：期望工具是否都出现在实际路径里（不比顺序与次数）。
+     * 只看「有没有」而不是「先不先」：模型为稳妥多查一步仍然拿到了该查的信息，判错会让指标惩罚正确行为。
+     */
+    static boolean routeMatches(List<String> expectedTools, List<String> actualToolPath) {
+        return expectedTools.stream().allMatch(actualToolPath::contains);
     }
 
     /** MRR 分量：第一个命中的期望文档在第 i 位（1 起）得 1/i，未命中为 0。 */

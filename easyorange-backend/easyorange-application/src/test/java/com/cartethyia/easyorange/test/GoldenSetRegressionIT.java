@@ -8,16 +8,17 @@ import com.cartethyia.easyorange.ai.application.eval.GoldenSetEvaluator;
 import com.cartethyia.easyorange.ai.application.eval.GoldenSetLoader;
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
 import com.cartethyia.easyorange.ai.domain.model.RetrievalReport;
+import com.cartethyia.easyorange.ai.domain.model.RoutingReport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * 金标准集回归门禁（评估进 CI）— 跑真实 LLM 对 golden-set.yaml 全部用例
- * Judge 打分 + 检索指标，分数低于「基线 - 容忍度」或评审覆盖率不达标即失败（卡 build）。
+ * Judge 打分 + 检索指标 + 路由准确率，任一低于阈值即失败（卡 build）。
  * 阈值单一来源：{@code eval/baselines.yaml}（改阈值不用改本类）。
  * <p>
- * 需要真实 AI key：CI 的 ai-eval job（**按需 dispatch**，不做定时空跑——单次约 60 次真实模型调用）
+ * 需要真实 AI key：CI 的 ai-eval job（**按需 dispatch**，不做定时空跑——量级为百次真实模型调用）
  * 注入 EASYORANGE_AI_API_KEY 后经 failsafe 在 verify 阶段执行；本地/无 key 时自动跳过
  * （@EnabledIfEnvironmentVariable）。
  * <p>
@@ -68,5 +69,20 @@ class GoldenSetRegressionIT extends AbstractIntegrationTest {
         assertThat(report.hitRateAt5())
                 .as("hit@5 低于下限 %.2f（阈值见 eval/baselines.yaml）：语料含同域干扰文档，命中不再是必然", minHitAt5)
                 .isGreaterThanOrEqualTo(minHitAt5);
+    }
+
+    @Test
+    void routingAccuracyAboveFloor() {
+        double minAccuracy = loader.loadBaselines().routing().minAccuracy();
+        RoutingReport report = evaluator.evaluateRouting();
+
+        assertThat(report.totalCases()).as("金标准集应存在标了 expected_tools 的 chat 用例").isGreaterThan(0);
+        // 容差取 0 = 这是下限不是基线：路由错一步就直接答错，给容忍带等于把回归藏起来
+        EvalGate.GateResult gate = EvalGate.check("routing", report.accuracy(), minAccuracy, 0);
+        assertThat(gate.passed())
+                .as(
+                        "路由准确率 %.0f%%（%d/%d）低于下限 %.0f%%：模型选错工具这件事生成分门禁量不到",
+                        report.accuracy() * 100, report.correctCases(), report.totalCases(), minAccuracy * 100)
+                .isTrue();
     }
 }

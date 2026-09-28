@@ -30,7 +30,7 @@ class ChatPromptAssemblerTest {
                 question,
                 history,
                 List.of(new UserPreference("condition", "九五新以上")),
-                new AgentLoopRunner.Result(hits, assets, details, LoopOutcome.FINISHED, 1));
+                new AgentLoopRunner.Result(hits, assets, details, LoopOutcome.FINISHED, 1, List.of()));
     }
 
     private static String currentUserMessage(List<Message> messages) {

@@ -39,20 +39,34 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
 @SuppressWarnings("unused") // thought 只进工具 schema，方法体不消费（见类注释）
 public class AgentTools {
 
-    /** 工具名与 {@code @Tool(name = ...)} 同源，编排器引用常量而不是重写字面量。 */
-    static final String TOOL_KNOWLEDGE_SEARCH = "knowledge_search";
+    /**
+     * 工具名与 {@code @Tool(name = ...)} 同源，编排器引用常量而不是重写字面量。
+     * 对外公开：{@code eval/golden-set.yaml} 的 {@code expected_tools} 按这些名字标注期望路径，
+     * 加载期据此强校验（工具改名后标注写错会炸，而不是静默评成「路由走错」）。
+     */
+    public static final String TOOL_KNOWLEDGE_SEARCH = "knowledge_search";
 
-    static final String TOOL_PRODUCT_SEARCH = "product_search";
+    public static final String TOOL_PRODUCT_SEARCH = "product_search";
 
-    static final String TOOL_PRODUCT_DETAIL = "product_detail";
+    public static final String TOOL_PRODUCT_DETAIL = "product_detail";
 
-    static final String TOOL_MARKET_PRICE_STATS = "market_price_stats";
+    public static final String TOOL_MARKET_PRICE_STATS = "market_price_stats";
 
-    static final String TOOL_COMPARE_ASSETS = "compare_assets";
+    public static final String TOOL_COMPARE_ASSETS = "compare_assets";
 
-    static final String TOOL_REMEMBER_PREFERENCE = "remember_preference";
+    public static final String TOOL_REMEMBER_PREFERENCE = "remember_preference";
 
-    static final String TOOL_FINISH = "finish";
+    public static final String TOOL_FINISH = "finish";
+
+    /** 全部工具名（{@code expected_tools} 的合法取值域）—— 工具面改名后此处与 yaml 一起被加载期校验兜住。 */
+    public static final Set<String> TOOL_NAMES = Set.of(
+            TOOL_KNOWLEDGE_SEARCH,
+            TOOL_PRODUCT_SEARCH,
+            TOOL_PRODUCT_DETAIL,
+            TOOL_MARKET_PRICE_STATS,
+            TOOL_COMPARE_ASSETS,
+            TOOL_REMEMBER_PREFERENCE,
+            TOOL_FINISH);
 
     /** 每轮工具召回的 topK（决策失败降级补检索沿用同一口径）。 */
     static final int RETRIEVAL_TOP_K = 5;

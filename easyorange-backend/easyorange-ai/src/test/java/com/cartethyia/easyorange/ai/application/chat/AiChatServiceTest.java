@@ -113,7 +113,7 @@ class AiChatServiceTest {
         // 部分用例（空问题/预算超限/缓存命中）不会走到循环，runner 的默认行为允许不被消费
         lenient()
                 .when(agentLoopRunner.run(any(Input.class)))
-                .thenReturn(new Result(List.of(), List.of(), List.of(), LoopOutcome.FINISHED, 1));
+                .thenReturn(new Result(List.of(), List.of(), List.of(), LoopOutcome.FINISHED, 1, List.of()));
     }
 
     @Test
@@ -154,7 +154,8 @@ class AiChatServiceTest {
                         List.of(),
                         List.of(),
                         LoopOutcome.FINISHED,
-                        2));
+                        2,
+                        List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("签收后 7 天内支持无理由退货 [来源:退款规则]");
 
         ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId());
@@ -187,7 +188,8 @@ class AiChatServiceTest {
                         List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)),
                         List.of(),
                         LoopOutcome.FINISHED,
-                        2));
+                        2,
+                        List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("这几件在预算内：MacBook Air M1 [来源:MacBook Air M1]");
 
         ChatAnswer answer = chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false), AUTH_USER.userId());
@@ -221,7 +223,8 @@ class AiChatServiceTest {
                                 "liming",
                                 "ONLINE")),
                         LoopOutcome.FINISHED,
-                        3));
+                        3,
+                        List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("推荐 MacBook [来源:MacBook Air M1]");
 
         chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false), AUTH_USER.userId());
@@ -243,7 +246,8 @@ class AiChatServiceTest {
                         List.of(new AssetHit("p-1", "交易规则", null, null, null, 0.5)),
                         List.of(),
                         LoopOutcome.FINISHED,
-                        3));
+                        3,
+                        List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("担保交易保障双方 [来源:交易规则]");
 
         ChatAnswer answer =
@@ -270,7 +274,8 @@ class AiChatServiceTest {
                                 new AssetHit("p-3", "资产三", null, null, null, 0.5)),
                         List.of(),
                         LoopOutcome.FINISHED,
-                        4));
+                        4,
+                        List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
 
         ChatAnswer answer = chatService.answer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId());
@@ -386,7 +391,8 @@ class AiChatServiceTest {
                     List.of(),
                     List.of(),
                     LoopOutcome.FINISHED,
-                    2);
+                    2,
+                    List.of());
         });
         when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenAnswer(invocation -> {
@@ -517,7 +523,8 @@ class AiChatServiceTest {
                         List.of(),
                         List.of(),
                         LoopOutcome.FINISHED,
-                        1));
+                        1,
+                        List.of()));
         when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenReturn("生成的回答");
 
@@ -575,7 +582,7 @@ class AiChatServiceTest {
     @DisplayName("机器主体（评估跑批）-> 原样透传给循环，会话与缓存按同一主体分桶")
     void stream_machineSubjectPassesThrough() {
         when(agentLoopRunner.run(any()))
-                .thenReturn(new Result(List.of(), List.of(), List.of(), LoopOutcome.FINISHED, 1));
+                .thenReturn(new Result(List.of(), List.of(), List.of(), LoopOutcome.FINISHED, 1, List.of()));
         when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenReturn("回答");
 
