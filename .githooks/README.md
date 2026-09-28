@@ -10,8 +10,8 @@ git config core.hooksPath .githooks
 
 | 文件 | 用途 | 耗时 |
 |------|------|------|
-| `pre-commit` | staged 内容快速检查（密钥 + 空白 + 冲突标记 + 大文件 + 前端 lint + 文档口径校验 + 上下文预算） | <1s~几秒 |
-| `pre-push` | 重门禁（后端 `mvn test` + 前端 `npm test`，按推送变更分发） | 数秒~数分钟 |
+| `pre-commit` | staged 内容快速检查（密钥 + 空白 + 冲突标记 + 大文件 + 前端 lint + **后端 spotless 格式** + 文档口径校验 + 上下文预算） | <1s~几秒 |
+| `pre-push` | 重门禁（后端 `spotless:check` + `mvn test` + 前端 `npm test`，按推送变更分发） | 数秒~数分钟 |
 | `commit-msg` | Conventional Commits 格式校验（标题 + breaking change）+ 消息-内容一致性（纯文档提交必须标 `docs`） | <100ms |
 | `check-test-tier-drift.py` | 文档的「集成测试」声明 vs 代码事实（`*IT` 文件 + pom failsafe 绑定）一致性校验 | <100ms |
 | `check-metrics-drift.py` | 结构计数（模块/Port/ADR/消费者/表/ArchUnit 规则/Prompt 模板/前端测试文件/金标准集）单点区块 vs 代码事实；区块外出现计数即失败（`--fix` 自动回写） | <100ms |
@@ -20,7 +20,7 @@ git config core.hooksPath .githooks
 | `check-comment-dup.py` | 跨层级重复注释：方法 / 行内注释是否在复述本类的类注释（AGENTS.md「注释」一节的机器门禁）。语义例外收在 `comment-dup-allowlist.txt`，必填理由 | <150ms |
 | `_lib.sh` | 共享工具（颜色、日志、SKIP、staged 文件、密钥扫描、快检函数） | — |
 
-**职责分层**：`pre-commit` 只放秒级快检，构建/测试的重活放 `pre-push`，避免每次提交付全量编译成本。
+**职责分层**：`pre-commit` 只放秒级快检（后端格式门禁实测全后端 ~2s，仍在这个量级内），编译/测试的重活放 `pre-push`。
 
 ## 跳过
 
@@ -43,6 +43,7 @@ SKIP=1        git commit -m "..."   # 任何非空值都视为跳过
 | 任意文本 | merge 冲突标记残留（`<<<<<<<`/`>>>>>>>`） | grep（staged diff） |
 | 任意文本 | 大文件 >2MB | `git cat-file -s`（staged blob） |
 | `easyorange-frontend/{src,tests}/**/*.{ts,tsx,js,jsx}` | `biome check`（仅变更文件） | `node_modules/.bin/biome` |
+| `easyorange-backend/**/*.java` | 格式门禁 `spotless:check`（`-Pci`，与 CI 同源） | `mvnw` |
 | `**/*.md` / `easyorange-backend/pom.xml` | 测试口径漂移校验（文档声明 vs 代码事实） | `python3 check-test-tier-drift.py` |
 | `**/*.md` / `pom.xml` / `*.sql` / `*.java` | 结构计数漂移校验（单点区块 vs 代码事实 + 区块外不得出现） | `python3 check-metrics-drift.py` |
 | `**/AGENTS.md` | 上下文预算校验（份数 + 字符预算） | `python3 check-context-budget.py` |
@@ -51,7 +52,7 @@ SKIP=1        git commit -m "..."   # 任何非空值都视为跳过
 
 > 文档不复刻版本号（权威源只有 `pom.xml` / `package.json` / `compose.yaml`），因此**没有版本漂移校验**。
 
-> 快检全部基于 **staged 内容**（`git diff --cached` / `git cat-file :path`），不受工作区未暂存改动影响。
+> 快检基于 **staged 内容**（`git diff --cached` / `git cat-file :path`），不受工作区未暂存改动影响。唯一例外是后端 `spotless:check` —— 它扫工作区源码，所以工作区里未暂存的格式问题同样会被报出来（报错文案已写明，不算误判）。
 
 ## Pre-push 行为
 
@@ -59,12 +60,14 @@ SKIP=1        git commit -m "..."   # 任何非空值都视为跳过
 
 | 推送变更 | 触发检查 | 工具 |
 |----------|----------|------|
-| `easyorange-backend/**`（除 `*.md`） | `./mvnw test`（含编译，`-fae` 聚合） | `mvnw` |
+| `easyorange-backend/**`（除 `*.md`） | `spotless:check`（兜底）+ `./mvnw test`（含编译，`-fae` 聚合） | `mvnw` |
 | `easyorange-frontend/**`（除 `*.md`） | `npm test`（`vitest run`） | npm |
 
 判定用 **「只放行纯文档」** 而非枚举触发文件名：枚举（`*.java` / `pom.xml`）会漏掉 `src/test/resources/logback-test.xml`、Flyway 迁移 SQL、`.mvn/maven.config`、`vitest.config.ts` 等同样能改变测试结果的变更 —— 门禁会随文件类型增加而静默失效。
 
 新分支推送（远端无基线）→ 全量跑。
+
+> `spotless:check` 在 pre-commit 已有一份，这里是兜底：`SKIP=git-hooks` 绕过提交钩子、或合并他人分支带进来的格式问题由它接住。CI（`./mvnw verify -Pci`）仍是权威硬闸门。
 
 ## Commit-msg 规则
 
