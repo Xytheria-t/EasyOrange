@@ -184,7 +184,7 @@ public class AgentLoopRunner {
                         rounds);
                 return toResult(tools, LoopOutcome.BUDGET, rounds, toolPath);
             }
-            List<ToolCallDecision> decisions = decideRound(input, conversation.snapshot(), dispatcher.callbacks());
+            List<ToolCallDecision> decisions = decideToolCalls(input, conversation.snapshot(), dispatcher.callbacks());
             if (decisions.isEmpty()) {
                 // 识别不出检索需求时仍补一次：最坏是多几条不相关片段，好过把检索链路失效伪装成「无需检索」
                 try {
@@ -198,7 +198,7 @@ public class AgentLoopRunner {
                 return toResult(tools, LoopOutcome.DECISION_FAILED, rounds, toolPath);
             }
             rounds = round;
-            RoundResult roundResult = executeRound(input, traceId, dispatcher, conversation, decisions, nextStepIndex);
+            RoundResult roundResult = executeToolCalls(input, traceId, dispatcher, conversation, decisions, nextStepIndex);
             nextStepIndex = roundResult.nextStepIndex();
             toolPath.addAll(roundResult.toolPath());
             if (roundResult.finished()) {
@@ -221,13 +221,13 @@ public class AgentLoopRunner {
     }
 
     /**
-     * 一轮决策：工具 schema 随请求下发，模型以原生 tool calling 返回「调用哪个工具 + 参数」。
+     * 取一轮的工具调用决策：工具 schema 随请求下发，模型以原生 tool calling 返回「调用哪个工具 + 参数」。
      * 一轮可以带回多个调用，全部返回 —— 供应商侧的并行发起（规则 + 找货同问最常见）在这里省掉一整轮往返。
      * 决策失败（调用故障 / 未返回工具调用 / 任一调用参数 JSON 不可解析）返回空列表，由调用方走单步降级
      * —— 循环内不重试，一次请求最多一次决策故障；同轮有一个调用解析不了就整轮作废，
      * 半执行一轮会让回填的 assistant tool_calls 与 role=tool 观察对不上（协议不合法）。
      */
-    private List<ToolCallDecision> decideRound(
+    private List<ToolCallDecision> decideToolCalls(
             Input input, List<Message> decisionMessages, List<ToolCallback> toolCallbacks) {
         try {
             List<AssistantMessage.ToolCall> toolCalls = aiModelSupport.callWithTools(
@@ -261,10 +261,12 @@ public class AgentLoopRunner {
 
     /**
      * 执行一轮里的全部工具调用并落成观测副产物（trace 落库 / SSE step 事件 / 步级指标），再按对话协议回填。
+     * 与 {@link #decideToolCalls} 同以「这批工具调用」为宾语：轮是循环级单位（{@code round} 循环变量与
+     * {@link RoundResult} 归它），不写进方法名 —— 否则与 {@code recordToolStep} 的「步」在名字上分不开。
      * 步序跨轮连续（{@code firstStepIndex} 进、{@link RoundResult#nextStepIndex()} 出）：一轮内的并行调用是同一个决策
      * 动作的多个工具，挤进同一个 stepIndex 会让 trace 里两个动作看起来是同一步。
      */
-    private RoundResult executeRound(
+    private RoundResult executeToolCalls(
             Input input,
             String traceId,
             ToolDispatcher dispatcher,
