@@ -56,7 +56,7 @@ V1 单脚本建全部表（`eo_*` 业务/观测表 + 2 个 Spring Modulith 基�
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
 | 用户 | eo_user | 用户信息 | UserDO |
-| 商品 | eo_category | 商品分类（两级树） | CategoryDO |
+| 商品 | eo_category | 商品分类（类目树，上限 3 级，`parent_id` 为 NULL 即一级） | CategoryDO |
 | 商品 | eo_product | 商品信息 | ProductDO |
 | 商品 | eo_product_detail | 商品详情（1:1） | ProductDetailDO |
 | 商品 | eo_product_image | 商品图片（1:N） | ProductImageDO |
