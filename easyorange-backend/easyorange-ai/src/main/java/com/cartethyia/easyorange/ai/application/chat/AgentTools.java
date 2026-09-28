@@ -80,7 +80,7 @@ public class AgentTools {
     private static final int OBSERVATION_SUMMARY_LIMIT = 3;
 
     /**
-     * 检索无新增时的观察文案 —— 收敛判据本身（见 {@link #knowledgeSearch} / {@link #productSearch}）：
+     * 检索无新增时的观察文案 —— 收敛判据本身（见 {@link #searchKnowledge} / {@link #searchProducts}）：
      * 判据是「本轮命中的条目有多少此前已出现过」，模型不会自己看出「再查也是重复」，把这件事作为一条
      * 明确观察交回，比在循环里硬性拦掉更合适。
      */
@@ -140,32 +140,34 @@ public class AgentTools {
             name = TOOL_KNOWLEDGE_SEARCH,
             description = "检索平台规则知识库（交易流程 / 退款 / 运费 / 禁售品类）",
             resultConverter = ObservationTextConverter.class)
-    public String knowledgeSearch(
+    public String searchKnowledge(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "改写后的检索关键词，3-10 字") String query) {
         List<KnowledgeHit> found = retrievalService.search(query, RETRIEVAL_TOP_K);
-        List<KnowledgeHit> fresh = retainNewKnowledge(found);
+        List<KnowledgeHit> fresh = newKnowledgeHits(found);
         knowledgeHits.addAll(fresh);
         return isRedundant(found.size() - fresh.size(), found.size())
                 ? NO_NEW_HIT_OBSERVATION
-                : summarizeKnowledge(found);
+                : formatKnowledgeObservation(found);
     }
 
     @Tool(name = TOOL_PRODUCT_SEARCH, description = "检索在售资产（找货 / 比价）", resultConverter = ObservationTextConverter.class)
-    public String productSearch(
+    public String searchProducts(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "改写后的找货关键词，3-10 字，保留品类与硬约束（预算 / 成色）") String query) {
         List<AssetHit> found = assetSourcingService.search(query, ASSET_TOP_K);
-        List<AssetHit> fresh = retainNewAssets(found);
+        List<AssetHit> fresh = newAssetHits(found);
         assets.addAll(fresh);
-        return isRedundant(found.size() - fresh.size(), found.size()) ? NO_NEW_HIT_OBSERVATION : summarizeAssets(found);
+        return isRedundant(found.size() - fresh.size(), found.size())
+                ? NO_NEW_HIT_OBSERVATION
+                : formatAssetObservation(found);
     }
 
     @Tool(
             name = TOOL_PRODUCT_DETAIL,
             description = "查看某件在售资产的详情（描述 / 成色 / 位置 / 卖家）",
             resultConverter = ObservationTextConverter.class)
-    public String productDetail(
+    public String fetchProductDetail(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "资产 ID，必须取自此前 product_search 观察中方括号里的资产 ID") String productId) {
         if (isBlank(productId)) {
@@ -177,14 +179,14 @@ public class AgentTools {
             return "未找到该资产（可能不存在或已下架）";
         }
         details.add(found.get());
-        return summarizeDetail(found.get());
+        return formatDetailObservation(found.get());
     }
 
     @Tool(
             name = TOOL_MARKET_PRICE_STATS,
             description = "对已召回的资产算行情（在售件数 / 均价 / 价格区间），用于判断某件值不值得买；零模型计算",
             resultConverter = ObservationTextConverter.class)
-    public String marketPriceStats(@ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought) {
+    public String summarizeMarketPrice(@ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought) {
         return PriceStats.of(assets)
                 .map(PriceStats::observation)
                 .orElse("暂无可统计的在售资产（尚未召回，或召回项均无有效价格），先调用 product_search 召回候选");
@@ -261,7 +263,7 @@ public class AgentTools {
             preferenceRepository.record(userId, key, value);
         } catch (Exception e) {
             // DB 故障是真实故障（区别于「查无此资产」那类有效结果），按抛异常 = 该步失败上报
-            throw new IllegalStateException("偏好记录失败: " + reasonOf(e), e);
+            throw new IllegalStateException("偏好记录失败: " + failureReason(e), e);
         }
         return "已记录偏好：%s = %s".formatted(key, value);
     }
@@ -272,59 +274,60 @@ public class AgentTools {
         return TOOL_FINISH;
     }
 
-    /** 决策失败降级的补检索 — 判重口径与 {@link #knowledgeSearch} 一致，降级路径不会把 Result 撑出重复来源。 */
-    void recallKnowledgeFallback(String question) {
-        knowledgeHits.addAll(retainNewKnowledge(retrievalService.search(question, RETRIEVAL_TOP_K)));
+    /** 决策失败降级的补检索 — 判重口径与 {@link #searchKnowledge} 一致，降级路径不会把 Result 撑出重复来源。 */
+    void searchKnowledgeForFallback(String question) {
+        knowledgeHits.addAll(newKnowledgeHits(retrievalService.search(question, RETRIEVAL_TOP_K)));
     }
 
     /** 按 ID 查详情 — product_detail 与 compare_assets 共用：端口抛出（DB 故障）按工具失败上报，empty（查无此资产）是正常结果。 */
     private Optional<AssetDetail> findDetail(String productId) {
-        return detailQuery(() -> assetDetailPort.findDetail(productId));
+        return queryDetailOrFail(() -> assetDetailPort.findDetail(productId));
     }
 
     /** compare_assets 的批量通道，失败语义与 {@link #findDetail} 一致（抛 = 本步失败）。 */
     private List<AssetDetail> findDetails(List<String> productIds) {
-        return detailQuery(() -> assetDetailPort.findDetails(productIds));
+        return queryDetailOrFail(() -> assetDetailPort.findDetails(productIds));
     }
 
     /** 详情端口调用的统一失败口径：端口异常（DB 故障）包成 {@code IllegalStateException} 上报为该步失败。 */
-    private <T> T detailQuery(Supplier<T> query) {
+    private <T> T queryDetailOrFail(Supplier<T> query) {
         try {
             return query.get();
         } catch (Exception e) {
-            throw new IllegalStateException("资产详情查询失败: " + reasonOf(e), e);
+            throw new IllegalStateException("资产详情查询失败: " + failureReason(e), e);
         }
     }
 
     /** 本轮检索是否已无新增信息 —— 完全没召回到（{@code foundCount == 0}）不算冗余：那是空结果，不是重复。 */
-    private static boolean isRedundant(int seenCount, int foundCount) {
-        return foundCount > 0 && (double) seenCount / foundCount >= REDUNDANT_OVERLAP_RATIO;
+    private static boolean isRedundant(int alreadySeenCount, int foundCount) {
+        return foundCount > 0 && (double) alreadySeenCount / foundCount >= REDUNDANT_OVERLAP_RATIO;
     }
 
     /**
      * 保留本轮新增的召回物 —— 判据取 docId（资产按 productId），缺失时退回标题：
      * ES 命中必有 docId，兜底只为 LIKE 降级路径不因 null 误判成「全新增」。
      */
-    private List<KnowledgeHit> retainNewKnowledge(List<KnowledgeHit> found) {
-        Set<String> seen = knowledgeHits.stream().map(AgentTools::knowledgeKey).collect(Collectors.toSet());
-        return found.stream().filter(hit -> seen.add(knowledgeKey(hit))).collect(Collectors.toList());
+    private List<KnowledgeHit> newKnowledgeHits(List<KnowledgeHit> found) {
+        Set<String> seen =
+                knowledgeHits.stream().map(AgentTools::knowledgeHitId).collect(Collectors.toSet());
+        return found.stream().filter(hit -> seen.add(knowledgeHitId(hit))).collect(Collectors.toList());
     }
 
-    /** 同 {@link #retainNewKnowledge}，资产按 productId 判重。 */
-    private List<AssetHit> retainNewAssets(List<AssetHit> found) {
-        Set<String> seen = assets.stream().map(AgentTools::assetKey).collect(Collectors.toSet());
-        return found.stream().filter(asset -> seen.add(assetKey(asset))).collect(Collectors.toList());
+    /** 同 {@link #newKnowledgeHits}，资产按 productId 判重。 */
+    private List<AssetHit> newAssetHits(List<AssetHit> found) {
+        Set<String> seen = assets.stream().map(AgentTools::assetHitId).collect(Collectors.toSet());
+        return found.stream().filter(asset -> seen.add(assetHitId(asset))).collect(Collectors.toList());
     }
 
-    private static String knowledgeKey(KnowledgeHit hit) {
+    private static String knowledgeHitId(KnowledgeHit hit) {
         return isBlank(hit.docId()) ? String.valueOf(hit.title()) : hit.docId();
     }
 
-    private static String assetKey(AssetHit asset) {
+    private static String assetHitId(AssetHit asset) {
         return isBlank(asset.productId()) ? String.valueOf(asset.title()) : asset.productId();
     }
 
-    private static String summarizeKnowledge(List<KnowledgeHit> found) {
+    private static String formatKnowledgeObservation(List<KnowledgeHit> found) {
         if (found.isEmpty()) {
             return "知识库未命中，可换关键词重试或直接 finish";
         }
@@ -335,7 +338,7 @@ public class AgentTools {
         return "命中 %d 条：%s".formatted(found.size(), titles);
     }
 
-    private static String summarizeAssets(List<AssetHit> found) {
+    private static String formatAssetObservation(List<AssetHit> found) {
         if (found.isEmpty()) {
             return "在售资产未召回，可换更宽泛的关键词重试或直接 finish";
         }
@@ -352,10 +355,10 @@ public class AgentTools {
         return "召回 %d 件：%s".formatted(found.size(), items);
     }
 
-    private static String summarizeDetail(AssetDetail detail) {
+    private static String formatDetailObservation(AssetDetail detail) {
         return "描述：%s｜成色：%s｜位置：%s｜卖家：%s｜状态：%s"
                 .formatted(
-                        ellipsis(detail.description()),
+                        truncate(detail.description()),
                         orDefault(detail.conditionDesc(), "未标注"),
                         orDefault(detail.location(), "未知"),
                         orDefault(detail.sellerName(), "未知"),
@@ -370,12 +373,12 @@ public class AgentTools {
         return isBlank(value) ? fallback : value;
     }
 
-    private static String ellipsis(String value) {
+    private static String truncate(String value) {
         String text = orDefault(value, "无");
         return text.length() > DETAIL_DESC_MAX_CHARS ? text.substring(0, DETAIL_DESC_MAX_CHARS) + "…" : text;
     }
 
-    private static String reasonOf(Throwable e) {
+    private static String failureReason(Throwable e) {
         return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
     }
 
