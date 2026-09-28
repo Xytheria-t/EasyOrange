@@ -31,7 +31,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AutoListingAppService 测试")
-class AutoListingServiceTest {
+class AutoListingAppServiceTest {
 
     @Mock
     private ChatModel visionChatModel;

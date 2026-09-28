@@ -25,7 +25,7 @@ import org.springframework.beans.factory.ObjectProvider;
  * 不把异常抛给对话循环与 MCP 工具面。
  */
 @DisplayName("AssetSourcingAppService -> 降级口径测试")
-class AssetSourcingServiceTest {
+class AssetSourcingAppServiceTest {
 
     private static final String QUERY = "5000 以内的笔记本";
     private static final AssetHit HIT =
