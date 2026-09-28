@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.ai.application.support;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
-import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -21,7 +21,7 @@ import org.springframework.util.DigestUtils;
  * <p>
  * 独立成类是为了让「治理只有一个出口」成为结构性事实而不是注释约定：{@code TokenBudgetAspect} 只做
  * 前置检查（切面拿不到响应体，只能拿到业务 DTO），本类是全工程唯一把供应商回报的 usage 写进
- * {@link TokenBudgetStore} 的地方。绕开记账直接调 {@code ChatModel} 的新代码在类型上就不成立 ——
+ * {@link TokenBudgetStorePort} 的地方。绕开记账直接调 {@code ChatModel} 的新代码在类型上就不成立 ——
  * 调用必须经 {@link AiModelSupport}，记账就必然跟着发生。
  * <p>
  * 两笔账的口径刻意不同，别互相套用：<b>调用日志记 0 而不估算</b>（估算值混进成本报表比缺数据更危险，
@@ -40,7 +40,7 @@ public class AiCallRecorder {
     private static final int ERROR_MSG_MAX = 512;
 
     private final AiCallLogPort callLogPort;
-    private final TokenBudgetStore budgetStore;
+    private final TokenBudgetStorePort budgetStore;
     private final AiProperties aiProperties;
 
     /**

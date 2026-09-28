@@ -9,10 +9,6 @@ import java.util.Optional;
 /**
  * 已召回资产的价格统计 — market_price_stats 工具的观察物：件数 / 均价 / 价格区间，零 LLM 调用。
  * <p>
- * 同口径的另一个消费方是搜索管道的 {@code MarketAnalysisTool}（吃 {@code ProductReadModel}）——
- * 两者共用 {@link #ofPrices} 计算与 {@link #observation()} 文案，避免「同一句话两处各写一份、
- * 靠一条同步测试盯着别漂移」。
- * <p>
  * {@link #count()} 是<b>有效价格件数</b>而非入参件数：面议（price 为 null）与非正价不进统计，
  * 也就不能算进均价的分母。
  */
@@ -35,20 +31,11 @@ public final class PriceStats {
         if (hits == null) {
             return Optional.empty();
         }
-        return ofPrices(
-                hits.stream().filter(Objects::nonNull).map(AssetHit::price).toList());
-    }
-
-    /**
-     * 从价格列表建统计（{@code null} 与非正价先剔除）—— 不依赖 {@link AssetHit}，
-     * 供搜索管道复用同一口径。
-     */
-    public static Optional<PriceStats> ofPrices(List<BigDecimal> rawPrices) {
-        List<BigDecimal> prices = rawPrices == null
-                ? List.of()
-                : rawPrices.stream()
-                        .filter(price -> price != null && price.signum() > 0)
-                        .toList();
+        List<BigDecimal> prices = hits.stream()
+                .filter(Objects::nonNull)
+                .map(AssetHit::price)
+                .filter(price -> price != null && price.signum() > 0)
+                .toList();
         if (prices.isEmpty()) {
             return Optional.empty();
         }
@@ -74,7 +61,7 @@ public final class PriceStats {
         return max;
     }
 
-    /** 均价，HALF_UP 取整到整数——与 MarketAnalysisTool 口径一致，不要改精度。 */
+    /** 均价，HALF_UP 取整到整数——不要改精度：观察文案把均价当整数报给模型，拆成小数会诱导它自己再算一遍。 */
     public BigDecimal avg() {
         return avg;
     }

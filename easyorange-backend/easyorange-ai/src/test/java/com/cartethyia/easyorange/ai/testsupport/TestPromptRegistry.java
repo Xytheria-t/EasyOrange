@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.ai.testsupport;
 
 import com.cartethyia.easyorange.ai.domain.model.PromptTemplate;
-import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
+import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
 import java.util.Optional;
 
 /**
- * 测试用 PromptRegistry 桩 — 默认返回以模板名拼成的 stub 正文，避免依赖 classpath YAML 文件。
+ * 测试用 PromptRegistryPort 桩 — 默认返回以模板名拼成的 stub 正文，避免依赖 classpath YAML 文件。
  * <p>
  * 正文里带上模板名，是为了让「多个 LLM 调用打同一个 mock」的测试能用
  * {@code withSystemContaining("auto_listing")} 区分调用来自哪个模板；
@@ -13,7 +13,7 @@ import java.util.Optional;
  * <p>
  * 验「模板缺失」路径用 {@link #empty()}，不要在每个测试里再手写一遍匿名实现。
  */
-public final class TestPromptRegistry implements PromptRegistry {
+public final class TestPromptRegistry implements PromptRegistryPort {
 
     @Override
     public Optional<PromptTemplate> getLatest(String name) {
@@ -21,7 +21,7 @@ public final class TestPromptRegistry implements PromptRegistry {
     }
 
     /** 任何模板都查不到 —— 用于验证调用方在模板缺失时的行为。 */
-    public static PromptRegistry empty() {
+    public static PromptRegistryPort empty() {
         return name -> Optional.empty();
     }
 }

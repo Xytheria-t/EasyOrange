@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
-import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -21,15 +21,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ChatBudgetGuardTest {
 
     @Mock
-    private TokenBudgetStore budgetStore;
+    private TokenBudgetStorePort budgetStore;
 
     @Test
     @DisplayName("used + maxPerCall 越过日限即 true，未越即 false（流式预检与循环中途共用同一判据）")
     void exhausted_acrossDailyLimit() {
-        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(299_000, 0, 0)));
+        when(budgetStore.getTodayUsage("chat"))
+                .thenReturn(Optional.of(new TokenBudgetStorePort.TokenUsage(299_000, 0, 0)));
         assertThat(guard(PropertyBindings.bind(AiProperties.class)).exhausted()).isTrue();
 
-        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(1000, 0, 0)));
+        when(budgetStore.getTodayUsage("chat"))
+                .thenReturn(Optional.of(new TokenBudgetStorePort.TokenUsage(1000, 0, 0)));
         assertThat(guard(PropertyBindings.bind(AiProperties.class)).exhausted()).isFalse();
     }
 
@@ -42,7 +44,8 @@ class ChatBudgetGuardTest {
                 "1500",
                 "budget.scenarios.chat.daily-token-limit",
                 "10000");
-        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(20_000, 0, 0)));
+        when(budgetStore.getTodayUsage("chat"))
+                .thenReturn(Optional.of(new TokenBudgetStorePort.TokenUsage(20_000, 0, 0)));
 
         assertThat(guard(properties).exhausted()).isTrue();
     }
@@ -50,7 +53,8 @@ class ChatBudgetGuardTest {
     @Test
     @DisplayName("场景配置缺失 -> 走与 @TokenBudget 注解同值的兜底（不静默当作不限额）")
     void exhausted_fallsBackWhenScenarioMissing() {
-        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(299_000, 0, 0)));
+        when(budgetStore.getTodayUsage("chat"))
+                .thenReturn(Optional.of(new TokenBudgetStorePort.TokenUsage(299_000, 0, 0)));
 
         assertThat(guard(PropertyBindings.bind(AiProperties.class)).exhausted()).isTrue();
     }
@@ -60,7 +64,7 @@ class ChatBudgetGuardTest {
     void exhausted_zeroDailyLimitNeverExhausts() {
         var properties = PropertyBindings.bind(AiProperties.class, "budget.scenarios.chat.daily-token-limit", "0");
         when(budgetStore.getTodayUsage("chat"))
-                .thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(9_999_999, 0, 0)));
+                .thenReturn(Optional.of(new TokenBudgetStorePort.TokenUsage(9_999_999, 0, 0)));
 
         assertThat(guard(properties).exhausted()).isFalse();
     }

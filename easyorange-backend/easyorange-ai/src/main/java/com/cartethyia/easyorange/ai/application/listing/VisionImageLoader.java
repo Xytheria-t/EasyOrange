@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.ai.application.listing;
 
 import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
-import com.cartethyia.easyorange.framework.file.storage.FileStorage;
+import com.cartethyia.easyorange.framework.file.storage.FileStoragePort;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -32,10 +32,10 @@ public class VisionImageLoader {
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
-    private final FileStorage fileStorage;
+    private final FileStoragePort fileStorage;
     private final FileUploadProperties fileUploadProperties;
 
-    public VisionImageLoader(FileStorage fileStorage, FileUploadProperties fileUploadProperties) {
+    public VisionImageLoader(FileStoragePort fileStorage, FileUploadProperties fileUploadProperties) {
         this.fileStorage = fileStorage;
         this.fileUploadProperties = fileUploadProperties;
     }

@@ -31,8 +31,8 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
  * 都在 {@link ToolCallLoop}。
  * <p>
  * 约定：thought 是每个工具的必填参数（原生 tool calling 没有独立的「决策理由」通道，工具方法不消费，
- * 由 编排器 取出落 trace / SSE）；抛异常 = 该步失败（编排器 收敛成失败观察交回模型修复），「查无此资产」
- * 这类有效结果必须返回观察文本而不是抛异常；finish 只有 schema 没有执行（编排器 在执行前按名称拦截）；
+ * 由编排器取出落 trace / SSE）；抛异常 = 该步失败（编排器收敛成失败观察交回模型修复），「查无此资产」
+ * 这类有效结果必须返回观察文本而不是抛异常；finish 只有 schema 没有执行（编排器在执行前按名称拦截）；
  * remember_preference 是唯一的写路径（按 userId + key 幂等 upsert，作为独立工具让「写入长期记忆」成为
  * 模型自主决策的一步，步数超限 / 预算耗尽 / 决策失败三条降级路径下偏好不再静默丢失）。
  */

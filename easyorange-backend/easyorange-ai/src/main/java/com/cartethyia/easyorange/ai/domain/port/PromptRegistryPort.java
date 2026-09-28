@@ -6,7 +6,7 @@ import java.util.Optional;
 /**
  * Prompt 模板注册中心 — 按 name + version 查找版本化的 Prompt 模板。
  */
-public interface PromptRegistry {
+public interface PromptRegistryPort {
 
     /**
      * 获取指定模板名的最新版本（按语义化版本排序）。

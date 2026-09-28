@@ -13,7 +13,6 @@ import com.cartethyia.easyorange.ai.domain.port.RetrievalMetricPort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -26,7 +25,7 @@ import org.springframework.stereotype.Component;
  * 显式传机器主体 {@link ToolCallLoop#MACHINE_SUBJECT}——画像不落库，评估不被历史偏好污染）对照参考回答
  * 打分、聚合 avg score；检索质量对每个 retrieval 用例跑知识库检索算 hit@5 / MRR，逐条采样落
  * eo_retrieval_metric；路由质量对标了 {@code expected_tools} 的 chat 用例跑一次工具循环，看模型实际选了哪些
- * 工具。供定时任务（RetrievalEvalScheduler / 每日回归）与 CI 门禁（GoldenSetRegressionIT）复用。
+ * 工具。供 CI 门禁（GoldenSetRegressionIT）与人工触发的每日回归复用。
  * <p>
  * <b>路由线只跑循环不跑生成</b>：它量的是选路，生成那一步的结论属于生成分；少一次生成调用，
  * 这条线才是「为路由单独付的钱」而不是把生成分重跑一遍。
@@ -59,11 +58,9 @@ public class GoldenSetEvaluator {
             try {
                 ChatAnswer answer = chatService.answer(
                         new ChatRequest(c.question(), "eval-" + c.id(), true), ToolCallLoop.MACHINE_SUBJECT);
-                Optional<AiJudge.Judgement> judgement =
-                        (c.referenceAnswer() != null && !c.referenceAnswer().isBlank())
-                                ? aiJudge.judgeAgainstReference(c.referenceAnswer(), answer.answer())
-                                : aiJudge.judge("chat", answer.answer());
-                judgement.ifPresent(j -> scores.add(new CaseScore(c.id(), j.score())));
+                // 只有对照参考回答这一条评分路径：chat 用例必带 reference_answer，加载期已强校验
+                aiJudge.judgeAgainstReference(c.referenceAnswer(), answer.answer())
+                        .ifPresent(j -> scores.add(new CaseScore(c.id(), j.score())));
             } catch (Exception e) {
                 log.warn("golden case {} generation eval failed: {}", c.id(), e.getMessage());
             }

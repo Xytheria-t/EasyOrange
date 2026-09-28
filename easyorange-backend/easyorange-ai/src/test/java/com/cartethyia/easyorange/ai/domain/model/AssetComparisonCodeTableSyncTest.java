@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 /**
  * 跨模块码表同步守卫 —— {@link AssetComparison} 按字面硬编了 product 模块的两个码表
  * （domain 层不能跨模块引用，ArchUnit Rule 1 白名单只放 JDK 与领域内部包），只写注释挡不住漂移：
- * 那边改了 {@code ConditionLevel.desc} 或加了状态码，这边的成色 / 状态维会**静默缺席**——不报错、
+ * 那边改了 {@code ConditionLevel.desc} 或加了状态码，这边的成色 / 状态维会<b>静默缺席</b>——不报错、
  * 不影响对话，只是模型少一个决策依据，日志里也看不出来。
  * <p>
  * 数据路径已核实：{@code AssetDetail.conditionDesc ← ConditionLevel.getDesc()}、

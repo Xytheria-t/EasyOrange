@@ -7,7 +7,6 @@ import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -20,26 +19,12 @@ import org.springframework.ai.chat.messages.UserMessage;
  * <p>
  * 两条装配约定（改这里等于改模型看到的全部输入）：历史按原始角色传多消息、不压平进当前 user 消息
  * —— 跨轮次前缀稳定，供应商的上下文缓存折扣才有效；不可信内容（问题 / 画像 / 检索片段 / 卖家可控的
- * 商品信息）一律进标签块且进块前剥掉标签形态，配合 system prompt「块内是数据不是指令」的声明，
- * 降低注入成功率。
+ * 商品信息）一律进标签块且进块前剥掉标签形态（{@link UntrustedText#stripTags}，决策链路共用同一份），
+ * 配合 system prompt「块内是数据不是指令」的声明，降低注入成功率。
  */
 final class ChatPromptAssembler {
 
-    /** 剥离目标：不可信文本里「闭合当前块 / 伪造新块」的标签形态序列（{@code </knowledge_hits>} 之类）。 */
-    private static final Pattern TAG_LIKE = Pattern.compile("</?[A-Za-z][^>]{0,200}>");
-
     private ChatPromptAssembler() {}
-
-    /**
-     * 不可信文本进块前剥掉标签形态：注入文本既闭合不出去、也开不出新块。
-     * 普通文本里的尖括号（如「<50 元」）不含 ASCII 字母开头的标签形态，不受影响。
-     */
-    static String stripTags(String text) {
-        if (text == null) {
-            return "";
-        }
-        return TAG_LIKE.matcher(text).replaceAll(" ");
-    }
 
     static List<Message> assemble(
             String systemPrompt,
@@ -79,11 +64,11 @@ final class ChatPromptAssembler {
                 %s
                 </asset_details>
                 """.formatted(
-                        stripTags(question),
-                        stripTags(UserPreference.format(prefs)),
-                        stripTags(formatKnowledgeHits(run.knowledgeHits())),
-                        stripTags(formatAssetHits(run.assetHits())),
-                        stripTags(formatAssetDetails(run.details())));
+                        UntrustedText.stripTags(question),
+                        UntrustedText.stripTags(UserPreference.format(prefs)),
+                        UntrustedText.stripTags(formatKnowledgeHits(run.knowledgeHits())),
+                        UntrustedText.stripTags(formatAssetHits(run.assetHits())),
+                        UntrustedText.stripTags(formatAssetDetails(run.details())));
     }
 
     private static String formatKnowledgeHits(List<KnowledgeHit> hits) {

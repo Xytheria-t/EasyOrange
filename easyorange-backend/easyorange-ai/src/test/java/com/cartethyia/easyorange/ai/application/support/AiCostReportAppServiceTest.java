@@ -2,15 +2,18 @@ package com.cartethyia.easyorange.ai.application.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.dto.AiCostReportRow;
-import java.sql.ResultSet;
+import com.cartethyia.easyorange.ai.application.port.query.AiCostReportPort;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("AiCostReportAppService -> 测试")
 class AiCostReportAppServiceTest {
+
+    private final AiCostReportPort port = mock(AiCostReportPort.class);
 
     @Test
     @DisplayName("时间窗 -> 非法值兜底 24h，超上限收敛到 30 天")
@@ -22,24 +25,13 @@ class AiCostReportAppServiceTest {
     }
 
     @Test
-    @DisplayName("行映射 -> 列名与 DTO 字段对应，totalTokens 为入出之和")
-    void rowMapper() throws Exception {
-        ResultSet rs = mock(ResultSet.class);
-        when(rs.getString("scope")).thenReturn("PRICING");
-        when(rs.getLong("calls")).thenReturn(12L);
-        when(rs.getLong("token_input")).thenReturn(8000L);
-        when(rs.getLong("token_output")).thenReturn(2000L);
-        when(rs.getLong("avg_latency_ms")).thenReturn(1500L);
-        when(rs.getLong("failures")).thenReturn(1L);
+    @DisplayName("时间窗先夹取再交给读端口（超上限的入参不会原样打到 SQL）")
+    void report_clampsWindowBeforeQuerying() {
+        var service = new AiCostReportAppService(port);
+        when(port.report(AiCostReportAppService.MAX_WINDOW_HOURS)).thenReturn(List.of());
 
-        AiCostReportRow row = AiCostReportAppService.rowMapper().mapRow(rs, 0);
+        service.report(24 * 365);
 
-        assertThat(row.scope()).isEqualTo("PRICING");
-        assertThat(row.calls()).isEqualTo(12);
-        assertThat(row.tokenInput()).isEqualTo(8000);
-        assertThat(row.tokenOutput()).isEqualTo(2000);
-        assertThat(row.totalTokens()).isEqualTo(10_000);
-        assertThat(row.avgLatencyMs()).isEqualTo(1500);
-        assertThat(row.failures()).isEqualTo(1);
+        verify(port).report(AiCostReportAppService.MAX_WINDOW_HOURS);
     }
 }

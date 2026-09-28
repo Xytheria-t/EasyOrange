@@ -2,12 +2,16 @@ package com.cartethyia.easyorange.ai.application.support;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import com.cartethyia.easyorange.ai.domain.model.TokenBudgetPolicy;
+import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 对话场景的日预算前置判定 — 判据只有一处，命中「流式入口预检」与「循环中途降级」两个生效点。
+ * 对话场景的日预算前置判定 — 命中「流式入口预检」与「循环中途降级」两个生效点。
+ * <p>
+ * 判定式不在本类：{@link TokenBudgetPolicy} 是全链路唯一一份，AOP 切面（非流式 {@code answer}）
+ * 与本类（流式 + 循环降级）都调它，两侧只负责「取哪个场景的配置与用量」。
  * <p>
  * 为什么流式路径手动调而不挂 {@code @TokenBudget} 注解（注解同样会被切面拦）：切面在
  * <b>代理边界</b>抛 {@code TokenBudgetExceededException}，发生在方法体之前，{@code streamAnswer}
@@ -32,18 +36,18 @@ public class ChatBudgetGuard {
 
     static final int DEFAULT_DAILY_LIMIT = 300_000;
 
-    private final TokenBudgetStore budgetStore;
+    private final TokenBudgetStorePort budgetStore;
     private final AiProperties aiProperties;
 
-    /** 日预算余量不足（累计用量 + 本次预估越过日限）即 true；{@code dailyTokenLimit <= 0} 表示不限。 */
+    /** 日预算余量不足即 true；{@code dailyTokenLimit <= 0} 表示不限。 */
     public boolean exhausted() {
         int used = budgetStore
                 .getTodayUsage(CHAT_SCENARIO)
-                .map(TokenBudgetStore.TokenUsage::total)
+                .map(TokenBudgetStorePort.TokenUsage::total)
                 .orElse(0);
         var cfg = aiProperties.budget().resolve(CHAT_SCENARIO);
         int maxPerCall = cfg != null ? cfg.maxTokensPerCall() : DEFAULT_MAX_TOKENS_PER_CALL;
         int dailyLimit = cfg != null ? cfg.dailyTokenLimit() : DEFAULT_DAILY_LIMIT;
-        return dailyLimit > 0 && used + maxPerCall > dailyLimit;
+        return TokenBudgetPolicy.exhausted(used, maxPerCall, dailyLimit);
     }
 }

@@ -10,7 +10,7 @@ import com.cartethyia.easyorange.ai.domain.model.ToolCallStepTrace;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
-import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
+import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
 import com.cartethyia.easyorange.ai.domain.port.ToolCallStepTracePort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.ArrayList;
@@ -75,7 +75,7 @@ public class ToolCallLoop {
      */
     public static final String MACHINE_SUBJECT = "machine";
 
-    private final PromptRegistry promptRegistry;
+    private final PromptRegistryPort promptRegistry;
     private final ChatToolsFactory toolsFactory;
     private final ToolCallDecider decider;
     private final ToolCallStepTracePort tracePort;
@@ -85,7 +85,7 @@ public class ToolCallLoop {
     private final ToolCallLoopMetrics metrics;
 
     public ToolCallLoop(
-            PromptRegistry promptRegistry,
+            PromptRegistryPort promptRegistry,
             ChatToolsFactory toolsFactory,
             ToolCallDecider decider,
             ToolCallStepTracePort tracePort,
@@ -368,7 +368,11 @@ public class ToolCallLoop {
         return MACHINE_SUBJECT.equals(input.userId()) ? null : input.userId();
     }
 
-    /** 首条 user 消息（问题 / 历史 / 画像）— 每请求固定不变，是全部轮次共享的前缀：改一个字节这轮的 KV cache 就全部作废。 */
+    /**
+     * 首条 user 消息（问题 / 历史 / 画像）— 每请求固定不变，是全部轮次共享的前缀：改一个字节这轮的 KV cache 就全部作废。
+     * 三个分量都过 {@link UntrustedText#stripTags}：这条上下文决定调哪个工具（含唯一的写路径
+     * remember_preference），原样填等于把闭合标签的注入口留在决策侧。
+     */
     private static String firstUserMessage(Input input) {
         return """
                 用户问题：
@@ -381,7 +385,10 @@ public class ToolCallLoop {
 
                 用户画像：
                 %s
-                """.formatted(input.question(), formatHistory(input.history()), UserPreference.format(input.prefs()));
+                """.formatted(
+                        UntrustedText.stripTags(input.question()),
+                        UntrustedText.stripTags(formatHistory(input.history())),
+                        UntrustedText.stripTags(UserPreference.format(input.prefs())));
     }
 
     private static String formatHistory(List<ChatTurn> history) {

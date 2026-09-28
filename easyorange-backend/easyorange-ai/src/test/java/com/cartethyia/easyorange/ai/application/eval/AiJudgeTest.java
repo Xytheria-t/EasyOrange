@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +38,7 @@ class AiJudgeTest {
     @BeforeEach
     void setUp() {
         lenient().when(modelRouter.choose(AiJudge.JUDGE_SCENARIO)).thenReturn(chatModel);
-        aiJudge = new AiJudge(modelRouter, TestAiModelSupport.create(), new ObjectMapper());
+        aiJudge = new AiJudge(modelRouter, new TestPromptRegistry(), TestAiModelSupport.create(), new ObjectMapper());
     }
 
     private static ChatResponse textResponse(String text) {
@@ -45,19 +46,7 @@ class AiJudgeTest {
     }
 
     @Test
-    @DisplayName("通用评审 -> 返回分数与评语")
-    void judge_scores() {
-        when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"score\": 4, \"comment\": \"准确\"}"));
-
-        Optional<AiJudge.Judgement> result = aiJudge.judge("chat", "回答内容");
-
-        assertThat(result).isPresent();
-        assertThat(result.get().score()).isEqualTo(4);
-        assertThat(result.get().comment()).isEqualTo("准确");
-    }
-
-    @Test
-    @DisplayName("对照参考评审 -> 语义一致判定")
+    @DisplayName("对照参考评审 -> 返回分数与评语")
     void judge_againstReference() {
         when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"score\": 5, \"comment\": \"一致\"}"));
 

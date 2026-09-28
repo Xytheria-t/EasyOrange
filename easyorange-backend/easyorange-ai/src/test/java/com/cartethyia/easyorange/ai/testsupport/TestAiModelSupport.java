@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.ai.application.support.AiCallRecorder;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
-import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
+import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -34,7 +34,7 @@ public final class TestAiModelSupport {
     }
 
     public static AiModelSupport create(
-            AiCallLogPort callLogPort, TokenBudgetStore budgetStore, AiProperties aiProperties) {
+            AiCallLogPort callLogPort, TokenBudgetStorePort budgetStore, AiProperties aiProperties) {
         return new AiModelSupport(
                 new AiCallRecorder(callLogPort, budgetStore, aiProperties), aiProperties, new ObjectMapper());
     }

@@ -9,7 +9,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.cartethyia.easyorange.ai.adapter.outbound.persistence.AiFeedbackRecorder;
 import com.cartethyia.easyorange.ai.adapter.outbound.persistence.GoldenSetExportService;
+import com.cartethyia.easyorange.ai.domain.port.AiFeedbackPort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.List;
 import java.util.Map;
@@ -32,17 +34,45 @@ class FeedbackLoopTest {
     @Mock
     private IdGenerator idGenerator;
 
+    @Mock
+    private AiFeedbackPort feedbackPort;
+
     @Nested
     @DisplayName("反馈入库")
     class RecordFeedback {
 
         @Test
-        @DisplayName("8 参 INSERT（含用户 ID）")
+        @DisplayName("scope 缺省补 chat，身份取安全上下文（未登录时为 null）")
         void recordFeedback() {
-            when(idGenerator.generateId()).thenReturn("fb-1");
-            AiFeedbackAppService service = new AiFeedbackAppService(jdbcTemplate, idGenerator);
+            AiFeedbackAppService service = new AiFeedbackAppService(feedbackPort);
 
-            service.record("chat", "怎么退款？", "7 天无理由", true, "很实用", "log-1");
+            service.record(null, "怎么退款？", "7 天无理由", true, "很实用", "log-1");
+
+            verify(feedbackPort).record("chat", "怎么退款？", "7 天无理由", true, "很实用", "log-1", null);
+        }
+
+        @Test
+        @DisplayName("显式 scope 原样透传，负评与空备注不被吞掉")
+        void recordFeedback_passesThrough() {
+            AiFeedbackAppService service = new AiFeedbackAppService(feedbackPort);
+
+            service.record("chat", "问题", "回答", false, null, null);
+
+            verify(feedbackPort).record("chat", "问题", "回答", false, null, null, null);
+        }
+    }
+
+    @Nested
+    @DisplayName("反馈落库（适配器）")
+    class RecordToDb {
+
+        @Test
+        @DisplayName("8 参 INSERT（id 由适配器生成，helpful 转 0/1）")
+        void insert() {
+            when(idGenerator.generateId()).thenReturn("fb-1");
+
+            new AiFeedbackRecorder(jdbcTemplate, idGenerator)
+                    .record("chat", "怎么退款？", "7 天无理由", true, "很实用", "log-1", null);
 
             verify(jdbcTemplate)
                     .update(
@@ -58,14 +88,13 @@ class FeedbackLoopTest {
         }
 
         @Test
-        @DisplayName("入库失败 -> 只告警不抛出")
-        void recordFeedback_swallowsError() {
+        @DisplayName("入库失败 -> 只告警不抛出（反馈点不动主链路）")
+        void insert_swallowsError() {
             when(idGenerator.generateId()).thenReturn("fb-1");
             when(jdbcTemplate.update(anyString(), org.mockito.ArgumentMatchers.<Object>any()))
                     .thenThrow(new RuntimeException("db down"));
-            AiFeedbackAppService service = new AiFeedbackAppService(jdbcTemplate, idGenerator);
 
-            service.record("chat", "问题", "回答", false, null, null);
+            new AiFeedbackRecorder(jdbcTemplate, idGenerator).record("chat", "问题", "回答", false, null, null, null);
         }
     }
 

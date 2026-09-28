@@ -69,17 +69,17 @@ class GoldenSetEvaluatorTest {
     }
 
     @Test
-    @DisplayName("生成回归：有参考的对照打分，无参考的四维打分，聚合平均分")
+    @DisplayName("生成回归：逐条对照参考回答打分，聚合平均分")
     void evaluateGeneration_averages() {
         setUp();
         when(loader.load())
                 .thenReturn(new GoldenSet(List.of(
                         new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of(), List.of()),
-                        new GoldenSetCase("chat-002", "chat", "问题B", null, List.of(), List.of()))));
+                        new GoldenSetCase("chat-002", "chat", "问题B", "参考B", List.of(), List.of()))));
         when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT)))
                 .thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
         when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(4, "ok")));
-        when(aiJudge.judge("chat", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(3, "ok")));
+        when(aiJudge.judgeAgainstReference("参考B", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(3, "ok")));
 
         GenerationReport report = evaluator.evaluateGeneration();
 

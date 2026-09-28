@@ -5,7 +5,6 @@ import com.cartethyia.easyorange.ai.domain.port.ToolCallStepTracePort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Component;
  * 记录失败只告警不抛出：轨迹是观测副产物，绝不能影响对话主链路（与 {@link AiCallLogRecorder} 同一取向）。
  */
 @Slf4j
-@Primary
 @Component
 @RequiredArgsConstructor
 public class ToolCallStepTraceRecorder implements ToolCallStepTracePort {

@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
-import com.cartethyia.easyorange.framework.file.storage.FileStorage;
+import com.cartethyia.easyorange.framework.file.storage.FileStoragePort;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,13 +28,13 @@ class VisionImageLoaderTest {
     @TempDir
     Path uploadDir;
 
-    private FileStorage fileStorage;
+    private FileStoragePort fileStorage;
     private VisionImageLoader loader;
     private HttpServer httpServer;
 
     @BeforeEach
     void setUp() {
-        fileStorage = mock(FileStorage.class);
+        fileStorage = mock(FileStoragePort.class);
         var properties = new FileUploadProperties(uploadDir.toString(), "/api/file/", 10 * 1024 * 1024, List.of());
         loader = new VisionImageLoader(fileStorage, properties);
     }
