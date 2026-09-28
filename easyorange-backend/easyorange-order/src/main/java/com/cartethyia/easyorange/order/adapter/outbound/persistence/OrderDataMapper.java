@@ -28,7 +28,7 @@ public class OrderDataMapper {
         this.objectMapper = objectMapper;
     }
 
-    // ==================== DO → Aggregate (Read path) ====================
+    // ── DO → 聚合根（读路径） ──
 
     public Order toAggregate(OrderDO orderDO) {
         if (orderDO == null) return null;
@@ -40,7 +40,7 @@ public class OrderDataMapper {
         return Order.from(toReconstructSpec(orderDO, items != null ? items : List.of()));
     }
 
-    // ==================== DO → ReadModel ====================
+    // ── DO → 读模型 ──
 
     public OrderReadModel toReadModel(OrderDO orderDO) {
         if (orderDO == null) return null;
@@ -72,7 +72,7 @@ public class OrderDataMapper {
                 orderDO.getUpdateTime());
     }
 
-    // ==================== Item DO → Domain ====================
+    // ── 订单项 DO → 领域对象 ──
 
     public OrderItem toOrderItem(OrderItemDO itemDO) {
         if (itemDO == null) return null;
@@ -86,7 +86,7 @@ public class OrderDataMapper {
                 .build();
     }
 
-    // ==================== Item DO → ItemReadModel ====================
+    // ── 订单项 DO → 读模型 ──
 
     public OrderItemReadModel toItemReadModel(OrderItemDO itemDO) {
         if (itemDO == null) return null;
@@ -99,7 +99,7 @@ public class OrderDataMapper {
                 itemDO.getSubtotal());
     }
 
-    // ==================== Aggregate → DO (Write path) ====================
+    // ── 聚合根 → DO（写路径） ──
 
     public OrderDO toDataObject(Order aggregate) {
         if (aggregate == null) return null;
@@ -135,7 +135,7 @@ public class OrderDataMapper {
                 .build();
     }
 
-    // ==================== Shared helpers ====================
+    // ── 共用辅助方法 ──
 
     private static OrderReconstructSpec toReconstructSpec(OrderDO orderDO, List<OrderItem> items) {
         return new OrderReconstructSpec(

@@ -17,7 +17,7 @@
 ## 工作纪律
 
 - **≥3 步的改动先列 todo 清单**，完成即勾；能一次工具调用不拆两次；输出只留结论与必要边界
-- **走读防漂移**：改到 [doc/interview/02](doc/interview/02-代码走读.md) 点名的类（改名 / 搬包 / 整类重写）就同轮跑 `python3 doc/interview/check-drift.py --changed`，核完再提交；面试前跑一次默认模式。代码块是速写骨架，核控制流与降级口径，不核逐字文本
+- **走读防漂移**：改到 [doc/interview/02](doc/interview/02-代码走读.md) 点名的类（改名 / 搬包 / 整类重写）就同轮跑走读防漂移脚本，核完再提交；面试前跑一次默认模式。代码块是速写骨架，核控制流与降级口径，不核逐字文本
 - **本项目只用 ZCode 开发**：不建 CLAUDE.md / .cursorrules 等跨工具兼容文件
 
 ## 全局硬约束（任何改动都适用，违反即返工）
@@ -27,20 +27,28 @@
 - **领域异常必须继承 `BaseBusinessException`**，用模块专属 `ResultCode` 与具名工厂（`notFound(id)`…）；每模块只一个统一领域异常，不新增叶子异常（门禁 `ArchitectureRulesTest` Rule 11）
 - **DTO 转换统一在 `adapter/inbound/web/assembler/`**，Controller/Service 不直接构造 Response
 - **ID 统一 UUID v7 String**（36 位），前端实体 ID 保持 string
-- **改子模块后启动前必须 `./mvnw install -DskipTests`**，否则 ClassNotFoundException；**删过资源文件必须 `clean`**（install 不删 target 陈旧副本）
+- **改子模块后启动前必须 `mvnw install`**（`-DskipTests`），否则 ClassNotFoundException；**删过资源文件必须 `clean`**（install 不删 target 陈旧副本）
 - **MCP 只暴露公开只读工具**（检索/详情/类目/规则），禁用户态数据与写路径——外部 client 无用户上下文
 - **Elasticsearch 版本硬锁**（客户端与 IK 按它编译），不在 infra 侧单独升级
-- **开发中只跑涉及模块的测试**，不查覆盖率、不刷工程指标（收口统一跑）；结构计数只在工程指标单点维护，改代码后跑 `python3 .githooks/check-metrics-drift.py --fix`
+- **开发中只跑涉及模块的测试**，不查覆盖率、不刷工程指标（收口统一跑）；结构计数只在工程指标单点维护，改代码后跑指标漂移校验（脚本见常用命令）
+
+## 注释
+
+面试样本，**偏多是资产、冗余是负债**。判据：删掉这行，读者对控制流 / 取舍会不会退化成猜？会则留；条数与比例不设限。
+
+- **只写"为什么"**：取舍、降级口径、并发与边界理由。方法名已说清的、类注释已覆盖的不写
+- **失同步比没注释更伤**，随手一验即穿帮 —— 故按能否扛住漂移检验取舍
+- **口径**：中文、术语留英文原名；类注释三段「做什么 → 取舍 → 边界降级」；分节统一 `// ── 小节名 ──`；不留死代码与 TODO
 
 ## 提交规范（Git 工作流）
 
 - 一个逻辑单元一个提交，验证通过即提交；禁攒大提交、禁 `git add -A`；直接在 `develop` 提交
-- 消息格式与 type 规则照 `.githooks/commit-msg` 报错改；钩子 `git config core.hooksPath .githooks`（紧急 `SKIP=git-hooks`）
+- 消息格式与 type 规则照 `.githooks/commit-msg` 报错改（钩子路径已配 `.githooks`；紧急 `SKIP=git-hooks`）
 
-## 参考索引（按需读取）
+## 参考索引
 
-- 状态机 / 领域术语 → [doc/agents/领域参考.md](doc/agents/领域参考.md)；模块职责 / 错误码 / 异常判据 → [doc/agents/架构参考.md](doc/agents/架构参考.md)
-- 后端 / 前端约定 → [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md) · [easyorange-frontend/AGENTS.md](easyorange-frontend/AGENTS.md)
-- 构建 / 测试 / 部署 / gh / CI → [doc/agents/常用命令.md](doc/agents/常用命令.md)；技术栈选型 → [README](README.md#技术栈)
-- 数据库 / 表清单 / Flyway 规范 → [doc/DATABASE.md](doc/DATABASE.md)；测试数 / 覆盖率 / 结构计数 / 技术债 → [doc/工程指标.md](doc/工程指标.md)
-- 迭代路线 / 不做清单 → [doc/迭代路线.md](doc/迭代路线.md)；ADR → `doc/adr/`；面试 → [doc/interview/](doc/interview/)（每章循环 = 自读 → 白话讲解 → 拷打 → **拷打后校准**；破防台账 = `01 §7`，带「上次考」日期供抽样）；REST 端点看 Swagger
+- 状态机 / 领域术语 → [领域参考](doc/agents/领域参考.md)；模块职责 / 错误码 / 异常判据 → [架构参考](doc/agents/架构参考.md)
+- 后端 / 前端约定 → [后端](easyorange-backend/AGENTS.md) · [前端](easyorange-frontend/AGENTS.md)
+- 构建 / 测试 / 部署 / gh / CI / 校验脚本 → [常用命令](doc/agents/常用命令.md)；技术栈选型 → [README](README.md#技术栈)
+- 数据库 / 表清单 / Flyway 规范 → [DATABASE](doc/DATABASE.md)；测试数 / 覆盖率 / 结构计数 / 技术债 → [工程指标](doc/工程指标.md)
+- 迭代路线 / 不做清单 → [迭代路线](doc/迭代路线.md)；ADR → `doc/adr/`；面试 → [interview](doc/interview/)（每章循环 = 自读 → 白话讲解 → 拷打 → **拷打后校准**；破防台账 = `01 §7`，带「上次考」日期供抽样）；REST 端点看 Swagger

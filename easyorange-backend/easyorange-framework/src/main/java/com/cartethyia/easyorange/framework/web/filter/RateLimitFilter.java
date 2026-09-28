@@ -150,7 +150,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return rule.methods().stream().anyMatch(m -> m.equalsIgnoreCase(method));
     }
 
-    // ==================== 限流 ====================
+    // ── 限流 ──
 
     private void checkRateLimit(HttpServletRequest request, String method, Rule rule) {
         if (rule.strategy() == Strategy.LOCAL) {
@@ -195,7 +195,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
     }
 
-    // ==================== 防重提交 ====================
+    // ── 防重提交 ──
 
     private void checkRepeatSubmit(HttpServletRequest request, String method, byte[] cachedBody) {
         RepeatSubmitConfig config = properties.repeatSubmit();
@@ -252,7 +252,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return false;
     }
 
-    // ==================== Skip 注解检查 ====================
+    // ── Skip 注解检查 ──
 
     /**
      * 解析请求对应的目标 {@link HandlerMethod}，解析失败返回 {@code null}（放行默认规则）。
@@ -283,7 +283,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                         || handlerMethod.getBeanType().isAnnotationPresent(annotationClass));
     }
 
-    // ==================== 工具方法 ====================
+    // ── 工具方法 ──
 
     private void writeErrorResponse(HttpServletResponse response, BusinessException ex) throws IOException {
         errorResponseWriter.write(

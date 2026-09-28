@@ -22,7 +22,7 @@ public record OfflineMessage(
         Integer retryCount,
         Integer maxRetryCount) {
 
-    // ==================== Factory ====================
+    // ── 工厂方法 ──
 
     /**
      * 创建离线消息（默认 PENDING 状态）。
@@ -40,7 +40,7 @@ public record OfflineMessage(
                 MessageConstant.DEFAULT_MAX_RETRY_COUNT);
     }
 
-    // ==================== Reconstruction ====================
+    // ── 重建 ──
 
     /**
      * 从持久层原始数据重建聚合根
@@ -56,7 +56,7 @@ public record OfflineMessage(
         return new OfflineMessage(id, userId, messageId, pushChannel, pushStatus, retryCount, maxRetryCount);
     }
 
-    // ==================== Predicates ====================
+    // ── 状态判定 ──
 
     public boolean isPending() {
         return PushStatus.PENDING == this.pushStatus;
@@ -66,7 +66,7 @@ public record OfflineMessage(
         return this.retryCount < this.maxRetryCount;
     }
 
-    // ==================== State Transitions ====================
+    // ── 状态迁移 ──
 
     /**
      * 标记为已推送

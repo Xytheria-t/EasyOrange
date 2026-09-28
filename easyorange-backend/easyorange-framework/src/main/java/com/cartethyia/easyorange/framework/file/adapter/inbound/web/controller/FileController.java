@@ -115,7 +115,7 @@ public class FileController {
                 imageQueryService.getResponsive(id, width, parseFormat(format), clampQuality(quality), ifNoneMatch));
     }
 
-    // ===== Internal =====
+    // ── 内部实现 ──
 
     private static float clampQuality(Integer quality) {
         if (quality == null) return 0.8f;

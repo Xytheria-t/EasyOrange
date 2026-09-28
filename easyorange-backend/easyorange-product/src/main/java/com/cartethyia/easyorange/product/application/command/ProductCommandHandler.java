@@ -36,7 +36,7 @@ public class ProductCommandHandler {
     private final DomainEventPublisher domainEventPublisher;
     private final BusinessMetricsService businessMetricsService;
 
-    // ==================== CRUD ====================
+    // ── 资产增删改查 ──
 
     public String createProduct(String userId, CreateProductCommand command) {
         var created = Product.create(new ProductCreateSpec(
@@ -93,7 +93,7 @@ public class ProductCommandHandler {
         domainEventPublisher.publish(t.event());
     }
 
-    // ==================== Stock ====================
+    // ── 库存 ──
 
     /**
      * 下单扣减库存 — 先以 {@code (DECREASE, orderId, productId)} 抢占流水落账权，再改库存并发布事件。
@@ -131,7 +131,7 @@ public class ProductCommandHandler {
         domainEventPublisher.publish(result.event());
     }
 
-    // ==================== Status Transitions ====================
+    // ── 状态流转 ──
 
     public void submitForReview(String userId, String productId) {
         var product = findByIdOrThrow(ProductId.of(productId));
@@ -153,7 +153,7 @@ public class ProductCommandHandler {
         mutateIfPresent(product, Product::markAsSold);
     }
 
-    // ==================== Private Helpers ====================
+    // ── 私有辅助方法 ──
 
     /**
      * 抢占流水落账权 — 落账失败即判定该变更此前已生效，跳过库存变更与事件发布并计数。

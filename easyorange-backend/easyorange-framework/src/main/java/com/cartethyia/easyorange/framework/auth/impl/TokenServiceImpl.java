@@ -63,7 +63,7 @@ public class TokenServiceImpl implements TokenService {
     private final JwtDecoder jwtDecoder;
     private final JwtProperties jwtProperties;
 
-    // ==================== access token（RSA JWT） ====================
+    // ── access token（RSA JWT） ──
 
     @Override
     public String createAccessToken(String userId, String username, Collection<String> authorities) {
@@ -102,7 +102,7 @@ public class TokenServiceImpl implements TokenService {
         }
     }
 
-    // ==================== refresh token（opaque，Redis） ====================
+    // ── refresh token（opaque，Redis） ──
 
     @Override
     public String createRefreshToken(String userId) {

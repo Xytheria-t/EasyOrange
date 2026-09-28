@@ -30,7 +30,7 @@ public class AdminCategoryService {
     private final AdminCategoryPort adminCategoryPort;
     private final CategoryWritePort categoryWritePort;
 
-    // ==================== 查询 ====================
+    // ── 查询 ──
 
     /** 分类列表（含禁用，后台要能看到并恢复禁用项）。 */
     public List<CategoryResponse> listCategories(String parentId) {
@@ -44,7 +44,7 @@ public class AdminCategoryService {
         return adminCategoryPort.categoryTree().stream().map(this::toResponse).toList();
     }
 
-    // ==================== 写操作 ====================
+    // ── 写操作 ──
 
     @Transactional(rollbackFor = Exception.class)
     public CategoryResponse createCategory(CategoryCreateRequest request) {
@@ -108,7 +108,7 @@ public class AdminCategoryService {
         categoryWritePort.deleteCategory(id);
     }
 
-    // ==================== 私有 ====================
+    // ── 私有 ──
 
     private CategoryResponse toResponse(CategoryView view) {
         return new CategoryResponse(

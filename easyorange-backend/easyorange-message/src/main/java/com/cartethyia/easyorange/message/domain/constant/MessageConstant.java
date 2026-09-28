@@ -6,11 +6,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class MessageConstant {
 
-    // ==================== 重试常量 ====================
+    // ── 重试常量 ──
     public static final int DEFAULT_RETRY_COUNT = 0;
     public static final int DEFAULT_MAX_RETRY_COUNT = 3;
 
-    // ==================== WebSocket 常量 ====================
+    // ── WebSocket 常量 ──
     public static final String WS_ENDPOINT = "/ws";
     public static final String WS_USER_PREFIX = "/user";
     public static final String WS_TOPIC_PREFIX = "/topic";
