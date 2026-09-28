@@ -28,7 +28,17 @@ public class ImageQueryService {
 
     private static final int[] PRESET_WIDTHS = {150, 300, 600, 1200};
 
-    public record ImageQueryResult(Resource resource, String mimeType, String eTag, boolean notModified) {}
+    public record ImageQueryResult(Resource resource, String mimeType, String eTag, boolean notModified) {
+
+        /** 缓存条目 → 对外查询结果 —— 缓存里只存磁盘路径，{@link Resource} 在此处现造。 */
+        static ImageQueryResult of(ProcessCacheEntry entry) {
+            return new ImageQueryResult(
+                    new FileSystemResource(entry.entry().file()),
+                    entry.entry().mimeType(),
+                    entry.entry().eTag(),
+                    entry.notModified());
+        }
+    }
 
     public ImageQueryResult getForView(
             String fileId, Integer width, Integer height, ImageFormat format, float quality, String ifNoneMatch)
@@ -45,14 +55,14 @@ public class ImageQueryService {
             else if (th == 0 && tw > 0) th = tw;
 
             var entry = getCachedOrProcess(fileEntry.path.toFile(), fileId, tw, th, format, quality, ifNoneMatch);
-            return toResult(entry);
+            return ImageQueryResult.of(entry);
         }
 
         if (imageProcessingService.supportsFormat(format)) {
             var dims = imageProcessingService.getDimensions(fileEntry.path);
             var entry = getCachedOrProcess(
                     fileEntry.path.toFile(), fileId, dims.width(), dims.height(), format, quality, ifNoneMatch);
-            return toResult(entry);
+            return ImageQueryResult.of(entry);
         }
 
         return new ImageQueryResult(fileEntry.resource, fileEntry.mimeType, null, false);
@@ -64,7 +74,7 @@ public class ImageQueryService {
             return new ImageQueryResult(null, null, null, false);
         }
         var entry = getCachedOrProcessForThumbnail(fileEntry.path.toFile(), fileId, size, ifNoneMatch);
-        return toResult(entry);
+        return ImageQueryResult.of(entry);
     }
 
     public ImageQueryResult getResponsive(
@@ -77,7 +87,7 @@ public class ImageQueryService {
         int targetSize = findClosestPresetWidth(width);
         var entry = getCachedOrProcess(
                 fileEntry.path.toFile(), fileId, targetSize, targetSize, format, quality, ifNoneMatch);
-        return toResult(entry);
+        return ImageQueryResult.of(entry);
     }
 
     public void evictCache(String fileId) {
@@ -123,14 +133,6 @@ public class ImageQueryService {
         if (name.endsWith(".gif")) return "image/gif";
         if (name.endsWith(".webp")) return "image/webp";
         return "application/octet-stream";
-    }
-
-    private static ImageQueryResult toResult(ProcessCacheEntry e) {
-        return new ImageQueryResult(
-                new FileSystemResource(e.entry().file()),
-                e.entry().mimeType(),
-                e.entry().eTag(),
-                e.notModified);
     }
 
     private record ProcessCacheEntry(ImageProcessingCacheEntry entry, boolean notModified) {}
