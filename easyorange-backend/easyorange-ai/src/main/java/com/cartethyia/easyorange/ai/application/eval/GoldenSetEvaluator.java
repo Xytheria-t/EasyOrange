@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.application.eval;
 
-import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner;
 import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
+import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
  * （期望工具路径命中率）。三条线读同一份用例集，各按自己的口径取子集。
  * <p>
  * 生成质量对每个 chat 用例调 {@link AiChatAppService#answer}（forceFresh 跳过缓存；评估跑批没有登录态，
- * 显式传机器主体 {@link AgentLoopRunner#MACHINE_SUBJECT}——画像不落库，评估不被历史偏好污染）对照参考回答
+ * 显式传机器主体 {@link ToolCallLoop#MACHINE_SUBJECT}——画像不落库，评估不被历史偏好污染）对照参考回答
  * 打分、聚合 avg score；检索质量对每个 retrieval 用例跑知识库检索算 hit@5 / MRR，逐条采样落
  * eo_retrieval_metric；路由质量对标了 {@code expected_tools} 的 chat 用例跑一次工具循环，看模型实际选了哪些
  * 工具。供定时任务（RetrievalEvalScheduler / 每日回归）与 CI 门禁（GoldenSetRegressionIT）复用。
@@ -47,7 +47,7 @@ public class GoldenSetEvaluator {
     private final KnowledgeRetrievalAppService retrievalService;
     private final RetrievalMetricPort metricRecorder;
     private final IdGenerator idGenerator;
-    private final AgentLoopRunner agentLoopRunner;
+    private final ToolCallLoop toolCallLoop;
 
     /** 生成质量回归：全部 chat 用例 Judge 打分，返回平均分。 */
     public GenerationReport evaluateGeneration() {
@@ -58,7 +58,7 @@ public class GoldenSetEvaluator {
         for (var c : cases) {
             try {
                 ChatAnswer answer = chatService.answer(
-                        new ChatRequest(c.question(), "eval-" + c.id(), true), AgentLoopRunner.MACHINE_SUBJECT);
+                        new ChatRequest(c.question(), "eval-" + c.id(), true), ToolCallLoop.MACHINE_SUBJECT);
                 Optional<AiJudge.Judgement> judgement =
                         (c.referenceAnswer() != null && !c.referenceAnswer().isBlank())
                                 ? aiJudge.judgeAgainstReference(c.referenceAnswer(), answer.answer())
@@ -129,11 +129,11 @@ public class GoldenSetEvaluator {
         for (var c : cases) {
             List<String> actual;
             try {
-                actual = agentLoopRunner
-                        .run(new AgentLoopRunner.Input(
+                actual = toolCallLoop
+                        .run(new ToolCallLoop.Input(
                                 c.question(),
                                 "eval-" + c.id(),
-                                AgentLoopRunner.MACHINE_SUBJECT,
+                                ToolCallLoop.MACHINE_SUBJECT,
                                 List.of(),
                                 List.of(),
                                 null))

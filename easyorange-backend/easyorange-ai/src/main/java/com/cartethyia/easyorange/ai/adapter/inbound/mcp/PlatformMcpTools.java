@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
  * MCP 公开只读工具面 — 外部 MCP client（Cursor / Claude Desktop 等）经 streamable HTTP
  * （端点 {@code /mcp}）调用的入口。
  * <p>
- * 与 Agent 内部工具（{@code AgentLoopRunner} 工具面）是<b>两级独立暴露</b>：外部 client
+ * 与 Agent 内部工具（{@code ToolCallLoop} 工具面）是<b>两级独立暴露</b>：外部 client
  * 无用户上下文，这里只挂公开只读数据（在售资产检索/详情、类目、平台规则知识），
  * 不暴露订单、个人信息与任何写路径（信任边界见根 AGENTS.md）。
  * <p>

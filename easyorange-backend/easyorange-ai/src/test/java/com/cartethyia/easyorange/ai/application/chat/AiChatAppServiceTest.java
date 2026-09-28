@@ -11,8 +11,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Input;
-import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Result;
+import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop.Input;
+import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop.Result;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
@@ -89,7 +89,7 @@ class AiChatAppServiceTest {
     private UserPreferenceRepository preferenceRepository;
 
     @Mock
-    private AgentLoopRunner agentLoopRunner;
+    private ToolCallLoop toolCallLoop;
 
     @Mock
     private ChatBudgetGuard budgetGuard;
@@ -110,10 +110,10 @@ class AiChatAppServiceTest {
                 return operation.execute();
             }
         });
-        // 部分用例（空问题/预算超限/缓存命中）不会走到循环，runner 的默认行为允许不被消费
+        // 部分用例（空问题/预算超限/缓存命中）不会走到循环，循环 的默认行为允许不被消费
         lenient()
-                .when(agentLoopRunner.run(any(Input.class)))
-                .thenReturn(new Result(List.of(), List.of(), List.of(), LoopOutcome.FINISHED, 1, List.of()));
+                .when(toolCallLoop.run(any(Input.class)))
+                .thenReturn(new Result(List.of(), List.of(), List.of(), ToolCallLoopOutcome.FINISHED, 1, List.of()));
     }
 
     @Test
@@ -148,12 +148,12 @@ class AiChatAppServiceTest {
     void answer_withKnowledgeRetrieval() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(agentLoopRunner.run(any()))
+        when(toolCallLoop.run(any()))
                 .thenReturn(new Result(
                         List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)),
                         List.of(),
                         List.of(),
-                        LoopOutcome.FINISHED,
+                        ToolCallLoopOutcome.FINISHED,
                         2,
                         List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("签收后 7 天内支持无理由退货 [来源:退款规则]");
@@ -171,7 +171,7 @@ class AiChatAppServiceTest {
         verify(semanticCache).store(any(), any(), anyString(), anyList(), any());
         // 循环输入：问题与会话 ID 透传
         ArgumentCaptor<Input> input = ArgumentCaptor.forClass(Input.class);
-        verify(agentLoopRunner).run(input.capture());
+        verify(toolCallLoop).run(input.capture());
         assertThat(input.getValue().question()).isEqualTo("怎么退款？");
         assertThat(input.getValue().sessionId()).isEqualTo("sess-1");
     }
@@ -182,12 +182,12 @@ class AiChatAppServiceTest {
     void answer_withAssetSourcing() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(agentLoopRunner.run(any()))
+        when(toolCallLoop.run(any()))
                 .thenReturn(new Result(
                         List.of(),
                         List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)),
                         List.of(),
-                        LoopOutcome.FINISHED,
+                        ToolCallLoopOutcome.FINISHED,
                         2,
                         List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("这几件在预算内：MacBook Air M1 [来源:MacBook Air M1]");
@@ -208,7 +208,7 @@ class AiChatAppServiceTest {
     void answer_injectsAssetDetails() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(agentLoopRunner.run(any()))
+        when(toolCallLoop.run(any()))
                 .thenReturn(new Result(
                         List.of(),
                         List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)),
@@ -222,7 +222,7 @@ class AiChatAppServiceTest {
                                 "上海",
                                 "liming",
                                 "ONLINE")),
-                        LoopOutcome.FINISHED,
+                        ToolCallLoopOutcome.FINISHED,
                         3,
                         List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("推荐 MacBook [来源:MacBook Air M1]");
@@ -240,12 +240,12 @@ class AiChatAppServiceTest {
     void answer_mergesSourcesFromLoopResult() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(agentLoopRunner.run(any()))
+        when(toolCallLoop.run(any()))
                 .thenReturn(new Result(
                         List.of(new KnowledgeHit("kb-0007", "交易规则", "平台担保交易…", 0.9)),
                         List.of(new AssetHit("p-1", "交易规则", null, null, null, 0.5)),
                         List.of(),
-                        LoopOutcome.FINISHED,
+                        ToolCallLoopOutcome.FINISHED,
                         3,
                         List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("担保交易保障双方 [来源:交易规则]");
@@ -265,7 +265,7 @@ class AiChatAppServiceTest {
     void answer_limitsSourcesWithAssetsFirst() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(agentLoopRunner.run(any()))
+        when(toolCallLoop.run(any()))
                 .thenReturn(new Result(
                         List.of(new KnowledgeHit("kb-1", "规则一", "…", 0.9), new KnowledgeHit("kb-2", "规则二", "…", 0.8)),
                         List.of(
@@ -273,7 +273,7 @@ class AiChatAppServiceTest {
                                 new AssetHit("p-2", "资产二", null, null, null, 0.6),
                                 new AssetHit("p-3", "资产三", null, null, null, 0.5)),
                         List.of(),
-                        LoopOutcome.FINISHED,
+                        ToolCallLoopOutcome.FINISHED,
                         4,
                         List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
@@ -307,7 +307,7 @@ class AiChatAppServiceTest {
 
         assertThat(answer).isEqualTo(cached);
         verify(aiModelSupport, never()).callText(any(), any(), anyList());
-        verify(agentLoopRunner, never()).run(any());
+        verify(toolCallLoop, never()).run(any());
         verify(semanticCache, never()).store(any(), any(), anyString(), anyList(), any());
     }
 
@@ -383,14 +383,14 @@ class AiChatAppServiceTest {
     @Test
     @DisplayName("流式回答 -> step/token/sources/done 事件依次回调")
     void stream_happyPath() {
-        when(agentLoopRunner.run(any())).thenAnswer(invocation -> {
+        when(toolCallLoop.run(any())).thenAnswer(invocation -> {
             Input input = invocation.getArgument(0);
             input.handler().onStep(new AgentStepView(1, "knowledge_search", "查退款规则", "命中 1 条"));
             return new Result(
                     List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)),
                     List.of(),
                     List.of(),
-                    LoopOutcome.FINISHED,
+                    ToolCallLoopOutcome.FINISHED,
                     2,
                     List.of());
         });
@@ -444,7 +444,7 @@ class AiChatAppServiceTest {
         // 流式工作在另一个线程上跑，身份只能靠入参带进来：这条断言锁住「Controller 传了 -> 循环用上了」，
         // 否则长期画像不加载、remember_preference 写不进库、trace 的 userId 为空
         ArgumentCaptor<Input> input = ArgumentCaptor.forClass(Input.class);
-        verify(agentLoopRunner).run(input.capture());
+        verify(toolCallLoop).run(input.capture());
         assertThat(input.getValue().userId()).isEqualTo(AUTH_USER.userId());
         verify(preferenceRepository).findByUserId(AUTH_USER.userId());
     }
@@ -487,7 +487,7 @@ class AiChatAppServiceTest {
                 });
 
         // 命中即回放：不进循环、不再调模型、不写会话记忆、不再写回缓存（与非流式命中同口径）
-        verify(agentLoopRunner, never()).run(any());
+        verify(toolCallLoop, never()).run(any());
         verify(aiModelSupport, never()).callTextStream(any(), any(), anyList(), any());
         verify(sessionStore, never()).saveTurns(anyString(), anyString(), anyList());
         verify(semanticCache, never()).store(any(), any(), anyString(), anyList(), any());
@@ -517,12 +517,12 @@ class AiChatAppServiceTest {
     void stream_cacheMiss_storesAfterGeneration() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(agentLoopRunner.run(any()))
+        when(toolCallLoop.run(any()))
                 .thenReturn(new Result(
                         List.of(new KnowledgeHit("kb-2", "规则B", "内容B", 0.9)),
                         List.of(),
                         List.of(),
-                        LoopOutcome.FINISHED,
+                        ToolCallLoopOutcome.FINISHED,
                         1,
                         List.of()));
         when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
@@ -581,17 +581,17 @@ class AiChatAppServiceTest {
     @Test
     @DisplayName("机器主体（评估跑批）-> 原样透传给循环，会话与缓存按同一主体分桶")
     void stream_machineSubjectPassesThrough() {
-        when(agentLoopRunner.run(any()))
-                .thenReturn(new Result(List.of(), List.of(), List.of(), LoopOutcome.FINISHED, 1, List.of()));
+        when(toolCallLoop.run(any()))
+                .thenReturn(new Result(List.of(), List.of(), List.of(), ToolCallLoopOutcome.FINISHED, 1, List.of()));
         when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenReturn("回答");
 
         chatService.streamAnswer(
-                new ChatRequest("问题", "sess-1", false), AgentLoopRunner.MACHINE_SUBJECT, new StreamHandlerStub());
+                new ChatRequest("问题", "sess-1", false), ToolCallLoop.MACHINE_SUBJECT, new StreamHandlerStub());
 
         ArgumentCaptor<Input> input = ArgumentCaptor.forClass(Input.class);
-        verify(agentLoopRunner).run(input.capture());
-        assertThat(input.getValue().userId()).isEqualTo(AgentLoopRunner.MACHINE_SUBJECT);
+        verify(toolCallLoop).run(input.capture());
+        assertThat(input.getValue().userId()).isEqualTo(ToolCallLoop.MACHINE_SUBJECT);
     }
 
     @Test
@@ -626,7 +626,7 @@ class AiChatAppServiceTest {
     @Test
     @DisplayName("客户端断流中止 -> 静默收尾：不回 onError、不计入 chat.degraded（刷新不再污染降级率）")
     void stream_clientAborted_isNotDegraded() {
-        when(agentLoopRunner.run(any(Input.class)))
+        when(toolCallLoop.run(any(Input.class)))
                 .thenThrow(new ChatStreamAbortedException(new java.io.IOException("broken pipe")));
 
         AtomicReference<String> error = new AtomicReference<>();
@@ -802,7 +802,7 @@ class AiChatAppServiceTest {
                 semanticCache,
                 sessionStore,
                 preferenceRepository,
-                agentLoopRunner,
+                toolCallLoop,
                 budgetGuard,
                 // 真实实例：默认预算 2000 token，测试历史远小于预算，行为等同直通
                 new ChatContextTrimmer(aiProperties, meterRegistry),

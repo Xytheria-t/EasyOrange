@@ -15,7 +15,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 /**
  * Redis 版 Token 预算存储 — 多实例部署下的日预算口径（内存版每实例各记各的，日限会被放大 N 倍）。
  * key 按「场景 + 本地日期」隔离，{@code HINCRBY} 原子累加；判定式 {@code used + maxPerCall > dailyLimit}
- * 在 {@code TokenBudgetAspect} / {@code AgentLoopRunner}，本类只负责存取。key 名自带日期，跨天自然
+ * 在 {@code TokenBudgetAspect} / {@code ToolCallLoop}，本类只负责存取。key 名自带日期，跨天自然
  * 从零开始，TTL 只做回收。
  * <p>
  * <b>fail-open</b>：Redis 不可用或读写异常时读返回 empty、写只告警 —— 记账失败不该让对话不可用，

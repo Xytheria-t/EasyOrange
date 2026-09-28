@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.stereotype.Component;
 
 /**
- * Agent 工具循环的观测副产物 — 四组指标：循环结局 / 决策轮数 / 工具调用分布 / 工具执行耗时。
+ * 工具调用循环的观测副产物 — 四组指标：循环结局 / 决策轮数 / 工具调用分布 / 工具执行耗时。
  * <p>
  * 埋点是横切关注点，编排器不该知道指标名与 tag 契约：本类构造期按枚举全集注册（tag 键与取值是时序
  * 契约，显式固化在字段上，改枚举名不影响历史数据；预注册也让 {@code rate(...)} 类告警从 t=0 有效，
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
  * 观测失败绝不影响主链路：调用方只传已算好的结局与耗时，本类不抛异常、不反查配置。
  */
 @Component
-public class AgentLoopMetrics {
+public class ToolCallLoopMetrics {
 
     private static final String LOOP_METRIC = "easyorange.ai.chat.loop";
     private static final String STEPS_METRIC = "easyorange.ai.chat.steps";
@@ -67,18 +67,18 @@ public class AgentLoopMetrics {
         }
     }
 
-    private final Map<LoopOutcome, Counter> loopCounters;
+    private final Map<ToolCallLoopOutcome, Counter> loopCounters;
     private final DistributionSummary stepsSummary;
     private final Map<TrackedTool, Counter> toolCounters;
     private final Map<TrackedTool, Timer> toolTimers;
 
-    public AgentLoopMetrics(MeterRegistry meterRegistry) {
-        this.loopCounters = new EnumMap<>(LoopOutcome.class);
-        for (LoopOutcome outcome : LoopOutcome.values()) {
+    public ToolCallLoopMetrics(MeterRegistry meterRegistry) {
+        this.loopCounters = new EnumMap<>(ToolCallLoopOutcome.class);
+        for (ToolCallLoopOutcome outcome : ToolCallLoopOutcome.values()) {
             loopCounters.put(outcome, meterRegistry.counter(LOOP_METRIC, "outcome", outcome.getTag()));
         }
         this.stepsSummary = DistributionSummary.builder(STEPS_METRIC)
-                .description("每次循环出口的 Agent 决策轮数（含 finish 轮，故障哨兵不入分布）")
+                .description("每次循环出口的决策轮数（含 finish 轮，故障哨兵不入分布）")
                 .publishPercentileHistogram()
                 .register(meterRegistry);
         this.toolCounters = new EnumMap<>(TrackedTool.class);
@@ -95,7 +95,7 @@ public class AgentLoopMetrics {
     }
 
     /** 记一次循环的结局与决策轮数 —— 结局含降级归因，轮数是「平均步数」口径的来源。 */
-    void recordLoop(LoopOutcome outcome, int rounds) {
+    void recordLoop(ToolCallLoopOutcome outcome, int rounds) {
         loopCounters.get(outcome).increment();
         stepsSummary.record(rounds);
     }
@@ -107,7 +107,7 @@ public class AgentLoopMetrics {
      * 最需要读这条曲线的时候。分母因此只由真实出口构成，与 loop 计数器的非 error 之和一致。
      */
     void recordLoopFailure() {
-        loopCounters.get(LoopOutcome.ERROR).increment();
+        loopCounters.get(ToolCallLoopOutcome.ERROR).increment();
     }
 
     /** 记一次工具执行：调用计数（tag 封闭集外落 unknown）+ 执行耗时。 */

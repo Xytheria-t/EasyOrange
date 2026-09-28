@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service;
  * 结构化检索正交：那边「一次查询定结果」，这里模型自己决定检索几轮、查什么。
  * <p>
  * 链路：记忆装配（Redis 会话窗口 + 用户画像表，注入前过 {@link ChatContextTrimmer} 的 token 裁剪）→
- * 工具循环（{@link AgentLoopRunner}，步数 / 预算超限降级为用已积累观察直接生成，决策失败降级为按原始
+ * 工具循环（{@link ToolCallLoop}，步数 / 预算超限降级为用已积累观察直接生成，决策失败降级为按原始
  * 问题检索一次）→ 生成回答（消息形状在 {@link ChatPromptAssembler}，回答末尾 [来源:标题] 引用溯源）。
  * <p>
  * 流式路径的预算前置检查手动做而不挂 {@link TokenBudget} 注解（原因见 {@link ChatBudgetGuard}）：
@@ -84,7 +84,7 @@ public class AiChatAppService {
     private final SemanticCachePort semanticCache;
     private final ChatSessionPort sessionStore;
     private final UserPreferenceRepository preferenceRepository;
-    private final AgentLoopRunner agentLoopRunner;
+    private final ToolCallLoop toolCallLoop;
     private final ChatBudgetGuard budgetGuard;
     private final ChatContextTrimmer contextTrimmer;
     private final DistributedLockPort distributedLockPort;
@@ -129,7 +129,7 @@ public class AiChatAppService {
             SemanticCachePort semanticCache,
             ChatSessionPort sessionStore,
             UserPreferenceRepository preferenceRepository,
-            AgentLoopRunner agentLoopRunner,
+            ToolCallLoop toolCallLoop,
             ChatBudgetGuard budgetGuard,
             ChatContextTrimmer contextTrimmer,
             DistributedLockPort distributedLockPort,
@@ -142,7 +142,7 @@ public class AiChatAppService {
         this.semanticCache = semanticCache;
         this.sessionStore = sessionStore;
         this.preferenceRepository = preferenceRepository;
-        this.agentLoopRunner = agentLoopRunner;
+        this.toolCallLoop = toolCallLoop;
         this.budgetGuard = budgetGuard;
         this.contextTrimmer = contextTrimmer;
         this.distributedLockPort = distributedLockPort;
@@ -168,7 +168,7 @@ public class AiChatAppService {
      * <p>
      * 身份由入站适配层解析后显式传入（本类不读安全上下文）：HTTP 入口在 servlet 线程取登录态
      * （缺失即 401，身份是硬前置不静默降级，对话没有匿名路径），评估跑批传机器主体
-     * （{@link AgentLoopRunner#MACHINE_SUBJECT}）。入口见 Controller 与 {@code GoldenSetEvaluator}。
+     * （{@link ToolCallLoop#MACHINE_SUBJECT}）。入口见 Controller 与 {@code GoldenSetEvaluator}。
      * <p>
      * 两个缓存职责不同：语义缓存（Redis，跨请求近似问题复用）在 {@code forceFresh} 下读写都跳过；
      * stale 缓存（Caffeine，供应商故障兜底）随每次成功回答无条件刷新 —— forceFresh 只绕过语义缓存，
@@ -226,7 +226,7 @@ public class AiChatAppService {
      * {@code SecurityContextHolder} 的 ThreadLocal 不会跟着过去，在这里读会恒为空 ——
      * 长期画像不加载、偏好写不进库、trace 的 userId 为空。Controller 在 servlet 线程解析登录态后
      * 传入，缺失即 401（身份是硬前置，不静默降级）。对话链路没有匿名调用方，另一个主体是评估跑批
-     * （{@link AgentLoopRunner#MACHINE_SUBJECT}）。预算前置检查不挂注解的原因见类注释。
+     * （{@link ToolCallLoop#MACHINE_SUBJECT}）。预算前置检查不挂注解的原因见类注释。
      */
     public void streamAnswer(ChatRequest request, String userId, ChatStreamHandler handler) {
         if (request.question() == null || request.question().isBlank()) {
@@ -323,8 +323,8 @@ public class AiChatAppService {
             // 机器主体在写侧被 AgentTools 拒收偏好，此处查到的恒为空表，无需特判
             List<UserPreference> prefs = preferenceRepository.findByUserId(userId);
 
-            AgentLoopRunner.Result run = agentLoopRunner.run(new AgentLoopRunner.Input(
-                    request.question(), request.sessionId(), userId, history, prefs, handler));
+            ToolCallLoop.Result run = toolCallLoop.run(
+                    new ToolCallLoop.Input(request.question(), request.sessionId(), userId, history, prefs, handler));
 
             // 引用来源：知识 / 资产两路召回物合并成结构化来源（带 type + id），资产优先，截断到 3 条
             List<ChatSource> sources = ChatSource.merge(run.knowledgeHits(), run.assets(), SOURCE_LIMIT);

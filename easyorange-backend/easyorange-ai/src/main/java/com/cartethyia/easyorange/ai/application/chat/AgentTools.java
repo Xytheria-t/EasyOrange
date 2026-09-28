@@ -28,11 +28,11 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
  * Agent 循环的内部工具面 — 7 个工具的 schema 与执行都在这里：{@code @Tool} / {@code @ToolParam} 注解
  * 生成供应商侧校验的 JSON Schema，方法体即「执行 + 观察格式化」。每次循环实例化一份：召回物累加器是
  * 单次请求内的可变状态，由实例独占持有，编排器经只读快照读取；框架不执行这些工具，执行与循环控制权
- * 都在 {@link AgentLoopRunner}。
+ * 都在 {@link ToolCallLoop}。
  * <p>
  * 约定：thought 是每个工具的必填参数（原生 tool calling 没有独立的「决策理由」通道，工具方法不消费，
- * 由 runner 取出落 trace / SSE）；抛异常 = 该步失败（runner 收敛成失败观察交回模型修复），「查无此资产」
- * 这类有效结果必须返回观察文本而不是抛异常；finish 只有 schema 没有执行（runner 在执行前按名称拦截）；
+ * 由 编排器 取出落 trace / SSE）；抛异常 = 该步失败（编排器 收敛成失败观察交回模型修复），「查无此资产」
+ * 这类有效结果必须返回观察文本而不是抛异常；finish 只有 schema 没有执行（编排器 在执行前按名称拦截）；
  * remember_preference 是唯一的写路径（按 userId + key 幂等 upsert，作为独立工具让「写入长期记忆」成为
  * 模型自主决策的一步，步数超限 / 预算耗尽 / 决策失败三条降级路径下偏好不再静默丢失）。
  */

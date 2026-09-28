@@ -14,7 +14,7 @@ import { useEffect, useId, useState } from 'react';
 import type { AgentStep } from '@/types/ai';
 
 /**
- * Agent 工具循环各步骤的展示文案（与后端 AgentLoopRunner 工具面对齐）。
+ * Agent 工具循环各步骤的展示文案（与后端 ToolCallLoop 工具面对齐）。
  * 后端加工具必须同步这里，否则该步在前端渲染成裸工具名——`PlaygroundPage.test.tsx` 有断言兜底。
  */
 const STEP_LABELS: Record<string, string> = {
