@@ -51,7 +51,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ToolCallLoop {
 
-    /** 决策对话的 system prompt 键（与 {@code prompts/ai_chat_tool_system.yml} 同名）。 */
+    /** 决策对话的 system prompt 键（与 {@code prompts/ai_chat_tool.yml} 的 name 同名）。 */
     private static final String CHAT_TOOL_PROMPT = "ai_chat_tool_system";
     /** 未知工具观察里的工具名清单（与 {@link AgentTools} 的常量同源，不重写字面量）。 */
     private static final String TOOL_NAME_LIST = String.join(
@@ -125,7 +125,7 @@ public class ToolCallLoop {
      */
     public record Result(
             List<KnowledgeHit> knowledgeHits,
-            List<AssetHit> assets,
+            List<AssetHit> assetHits,
             List<AssetDetail> details,
             ToolCallLoopOutcome outcome,
             int rounds,
@@ -192,7 +192,7 @@ public class ToolCallLoop {
     /** 出循环时一次性定稿：结局 + 轮数 + 工具路径 + 工具实例上已积累的召回物。 */
     private static Result toResult(AgentTools tools, ToolCallLoopOutcome outcome, int rounds, List<String> toolPath) {
         return new Result(
-                tools.knowledgeHits(), tools.assets(), tools.details(), outcome, rounds, List.copyOf(toolPath));
+                tools.knowledgeHits(), tools.assetHits(), tools.details(), outcome, rounds, List.copyOf(toolPath));
     }
 
     /**

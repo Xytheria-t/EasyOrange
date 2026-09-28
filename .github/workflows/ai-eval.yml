@@ -73,7 +73,7 @@ jobs:
         working-directory: easyorange-backend
 
       # 检索指标必须有 ES：金标准集的 gold_doc_ids 按 ES 索引设计（dense_vector kNN + BM25 排名融合，
-      # 语料含同域干扰文档，命中不是必然）。无 ES 时 KnowledgeRetrievalService 降级为 MySQL LIKE
+      # 语料含同域干扰文档，命中不是必然）。无 ES 时 KnowledgeRetrievalAppService 降级为 MySQL LIKE
       # （只命中关键词字面重叠，其注释自陈「仅保证可用不保证召回质量」），
       # hit@5 必然大幅下滑、断言失败 —— 这个失败是「测的是降级路径而非产品检索」的正确信号。
       # 时序无抖动：种子文档 R__seed_knowledge_docs 以 status=PENDING 入库，
