@@ -19,10 +19,8 @@ import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
 import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -151,17 +149,16 @@ public class AiChatService {
      * 「AI 不可用」，大盘也分不清供应商故障与代码缺陷，且与流式路径的 error 事件口径不一致。
      * 预算超限等业务异常照旧上抛——客户端可控的 4xx，不伪装成降级回答。
      * <p>
+     * 身份由入站适配层解析后显式传入（本类不读安全上下文）：HTTP 入口在 servlet 线程取登录态
+     * （缺失即 401，身份是硬前置不静默降级），评估跑批传机器主体。入口见 Controller 与
+     * {@code GoldenSetEvaluator}。
+     * <p>
      * 两个缓存职责不同：语义缓存（Redis，跨请求近似问题复用）在 {@code forceFresh} 下读写都跳过；
      * stale 缓存（Caffeine，供应商故障兜底）随每次成功回答无条件刷新 —— forceFresh 只绕过语义缓存，
      * 故障时仍能拿到旧回答。
      */
     @TokenBudget(scenario = "chat", maxTokensPerCall = 1500, dailyTokenLimit = 300_000)
-    public ChatAnswer answer(ChatRequest request) {
-        return answer(request, currentUserId());
-    }
-
-    /** 非流式回答 — SSE 路径工作在另一线程读不到 {@code SecurityContextHolder}，两条路径共用实现，身份从入参拿。 */
-    ChatAnswer answer(ChatRequest request, String userId) {
+    public ChatAnswer answer(ChatRequest request, String userId) {
         if (request.question() == null || request.question().isBlank()) {
             return new ChatAnswer(EMPTY_QUESTION_TEXT, List.of(), request.sessionId(), false);
         }
@@ -208,16 +205,16 @@ public class AiChatService {
      * token 事件并重放 sources 事件（不进循环，无 step 事件），缓存命中不碰会话记忆、也不进会话锁
      * ——没有需要串行化的共享状态；流末帧用量由 {@link AiModelSupport} 记账，切面只前置检查。
      * <p>
-     * 身份由调用方传入而非在这里读安全上下文：流式跑在 Controller 提交的另一线程上，
-     * {@code SecurityContextHolder} 的 ThreadLocal 不会跟着过去，在这里读会恒为 anonymous ——
-     * 长期画像不加载、偏好写不进库、trace 的 userId 为空。预算前置检查不挂注解的原因见类注释。
+     * 身份由调用方显式传入而非在这里读安全上下文：流式跑在 Controller 提交的另一线程上，
+     * {@code SecurityContextHolder} 的 ThreadLocal 不会跟着过去，在这里读会恒为空 ——
+     * 长期画像不加载、偏好写不进库、trace 的 userId 为空。Controller 在 servlet 线程解析登录态后
+     * 传入，缺失即 401（身份是硬前置，不静默降级）。预算前置检查不挂注解的原因见类注释。
      */
-    public void streamAnswer(ChatRequest request, @Nullable AuthUser authUser, ChatStreamHandler handler) {
+    public void streamAnswer(ChatRequest request, String userId, ChatStreamHandler handler) {
         if (request.question() == null || request.question().isBlank()) {
             handler.onError(EMPTY_QUESTION_TEXT);
             return;
         }
-        String userId = authUser != null ? authUser.userId() : AgentLoopRunner.ANONYMOUS_USER;
         try {
             // 流式链路绕过 @TokenBudget 切面，这里手动前置检查；判定与循环中途共用 AgentLoopRunner 同一方法
             if (agentLoopRunner.chatBudgetExhausted()) {
@@ -256,14 +253,9 @@ public class AiChatService {
         }
     }
 
-    /** stale 缓存键 — 与语义缓存同一分桶口径（{@link SemanticCachePort#cacheUserKey}），否则故障兜底会把一个人的旧回答返给另一个人。 */
+    /** stale 缓存键 — 与语义缓存同一分桶口径（都按 userId），否则故障兜底会把一个人的旧回答返给另一个人。 */
     private static String staleKey(String userId, String question) {
-        return AiCallScope.CHAT.cacheKeyPrefix() + SemanticCachePort.cacheUserKey(userId) + ':' + question;
-    }
-
-    /** 调用线程上的登录身份 —— 非流式路径与 Controller 同线程，直接读安全上下文。 */
-    static String currentUserId() {
-        return SecurityContextUtil.getCurrentUserId().orElse(AgentLoopRunner.ANONYMOUS_USER);
+        return AiCallScope.CHAT.cacheKeyPrefix() + userId + ':' + question;
     }
 
     /** 缓存命中回放 — sources 先行（与实时生成的事件顺序一致），按固定块推 token；不补人为延迟，缓存命中的价值就是快。 */
@@ -308,8 +300,8 @@ public class AiChatService {
     private ChatAnswer doAgenticAnswer(ChatRequest request, String userId, @Nullable ChatStreamHandler handler) {
         // token 级上下文治理：轮数窗口（存储侧）之上再按 token 预算裁注入窗口，一处裁、决策与生成两处生效
         List<ChatTurn> history = contextTrimmer.trim(sessionStore.loadRecent(userId, request.sessionId()));
-        List<UserPreference> prefs =
-                AgentLoopRunner.ANONYMOUS_USER.equals(userId) ? List.of() : preferenceRepository.findByUserId(userId);
+        // 机器主体在写侧被 AgentTools 拒收偏好，此处查到的恒为空表，无需特判
+        List<UserPreference> prefs = preferenceRepository.findByUserId(userId);
 
         AgentLoopRunner.Result run = agentLoopRunner.run(
                 new AgentLoopRunner.Input(request.question(), request.sessionId(), userId, history, prefs, handler));

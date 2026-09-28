@@ -67,7 +67,7 @@ class AiChatServiceTest {
     /** 语义缓存的查询向量桩值 — 非空即表示「缓存可用」。 */
     private static final List<Float> QUERY_EMBEDDING = List.of(0.1f, 0.2f);
 
-    /** 流式路径的登录身份桩值：Controller 在 servlet 线程捕获后显式传进来。 */
+    /** 登录身份桩值：Controller 在 servlet 线程解析后显式传进服务层（缺失即 401，服务层不读安全上下文）。 */
     private static final AuthUser AUTH_USER = new AuthUser("user-42", "tester");
 
     @Mock
@@ -140,13 +140,16 @@ class AiChatServiceTest {
                         2));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("签收后 7 天内支持无理由退货 [来源:退款规则]");
 
-        ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
+        ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId());
 
         assertThat(answer.answer()).contains("[来源:退款规则]");
         assertThat(answer.sources()).containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-0002", "退款规则"));
         // 一轮对话一次写入（提问 + 回答），不留半轮记忆
         verify(sessionStore)
-                .saveTurns("anonymous", "sess-1", List.of(ChatTurn.user("怎么退款？"), ChatTurn.assistant(answer.answer())));
+                .saveTurns(
+                        AUTH_USER.userId(),
+                        "sess-1",
+                        List.of(ChatTurn.user("怎么退款？"), ChatTurn.assistant(answer.answer())));
         verify(semanticCache).store(any(), any(), anyString(), anyList(), any());
         // 循环输入：问题与会话 ID 透传
         ArgumentCaptor<Input> input = ArgumentCaptor.forClass(Input.class);
@@ -170,7 +173,7 @@ class AiChatServiceTest {
                         2));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("这几件在预算内：MacBook Air M1 [来源:MacBook Air M1]");
 
-        ChatAnswer answer = chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false));
+        ChatAnswer answer = chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false), AUTH_USER.userId());
 
         assertThat(answer.sources()).containsExactly(new ChatSource(ChatSource.Type.ASSET, "p-1", "MacBook Air M1"));
 
@@ -204,7 +207,7 @@ class AiChatServiceTest {
                         3));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("推荐 MacBook [来源:MacBook Air M1]");
 
-        chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false));
+        chatService.answer(new ChatRequest("想找 5000 以内的笔记本", "sess-1", false), AUTH_USER.userId());
 
         // product_detail 轮次的观察要真的进 prompt（块内形状见 ChatPromptAssemblerTest）
         ArgumentCaptor<List<Message>> captor = ArgumentCaptor.forClass(List.class);
@@ -226,7 +229,7 @@ class AiChatServiceTest {
                         3));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("担保交易保障双方 [来源:交易规则]");
 
-        ChatAnswer answer = chatService.answer(new ChatRequest("5000 的笔记本有吗？平台怎么保障交易？", "sess-1", false));
+        ChatAnswer answer = chatService.answer(new ChatRequest("5000 的笔记本有吗？平台怎么保障交易？", "sess-1", false), AUTH_USER.userId());
 
         // 资产排在前面：找货是主链路，不该被同名的规则来源挤掉
         assertThat(answer.sources())
@@ -252,7 +255,7 @@ class AiChatServiceTest {
                         4));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
 
-        ChatAnswer answer = chatService.answer(new ChatRequest("问题", "sess-1", false));
+        ChatAnswer answer = chatService.answer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId());
 
         assertThat(answer.sources()).extracting(ChatSource::id).containsExactly("p-1", "p-2", "p-3");
     }
@@ -264,7 +267,7 @@ class AiChatServiceTest {
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("在的，有什么可以帮你？");
 
-        ChatAnswer answer = chatService.answer(new ChatRequest("在吗？", "sess-1", false));
+        ChatAnswer answer = chatService.answer(new ChatRequest("在吗？", "sess-1", false), AUTH_USER.userId());
 
         assertThat(answer.answer()).isEqualTo("在的，有什么可以帮你？");
         assertThat(answer.sources()).isEmpty();
@@ -277,7 +280,7 @@ class AiChatServiceTest {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.of(cached));
 
-        ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
+        ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId());
 
         assertThat(answer).isEqualTo(cached);
         verify(aiModelSupport, never()).callText(any(), any(), anyList());
@@ -322,7 +325,7 @@ class AiChatServiceTest {
                 .thenReturn(Optional.of(new ChatAnswer(
                         "缓存回答", List.of(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-9", "来源A")), "sess-旧", false)));
 
-        ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-新", false));
+        ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-新", false), AUTH_USER.userId());
 
         assertThat(answer.answer()).isEqualTo("缓存回答");
         assertThat(answer.sources()).containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-9", "来源A"));
@@ -336,7 +339,7 @@ class AiChatServiceTest {
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
 
-        chatService.answer(new ChatRequest("问题", "sess-1", false));
+        chatService.answer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId());
 
         verify(semanticCache, times(1)).embedQuery(anyString());
         verify(semanticCache).store(any(), any(), anyString(), eq(QUERY_EMBEDDING), any());
@@ -347,7 +350,7 @@ class AiChatServiceTest {
     void answer_forceFreshSkipsCache() {
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
 
-        chatService.answer(new ChatRequest("问题", "sess-1", true));
+        chatService.answer(new ChatRequest("问题", "sess-1", true), AUTH_USER.userId());
 
         verify(semanticCache, never()).embedQuery(anyString());
         verify(semanticCache, never()).lookUp(any(), any(), anyString(), anyList(), any());
@@ -380,7 +383,7 @@ class AiChatServiceTest {
         AtomicReference<String> done = new AtomicReference<>();
         AtomicReference<String> error = new AtomicReference<>();
         List<AgentStepView> steps = new ArrayList<>();
-        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER, new ChatStreamHandler() {
+        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
             public void onStep(AgentStepView step) {
                 steps.add(step);
@@ -433,7 +436,7 @@ class AiChatServiceTest {
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.of(cached));
 
         List<String> events = new ArrayList<>();
-        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-新", false), AUTH_USER, new ChatStreamHandler() {
+        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-新", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
             public void onStep(AgentStepView step) {
                 events.add("step");
@@ -496,7 +499,7 @@ class AiChatServiceTest {
         when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class))).thenReturn("生成的回答");
 
         AtomicReference<String> done = new AtomicReference<>();
-        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER, new ChatStreamHandler() {
+        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
             public void onStep(AgentStepView step) {}
 
@@ -536,7 +539,7 @@ class AiChatServiceTest {
     void stream_forceFresh_skipsCache() {
         when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class))).thenReturn("回答");
 
-        chatService.streamAnswer(new ChatRequest("问题", "sess-1", true), AUTH_USER, new StreamHandlerStub());
+        chatService.streamAnswer(new ChatRequest("问题", "sess-1", true), AUTH_USER.userId(), new StreamHandlerStub());
 
         verify(semanticCache, never()).embedQuery(anyString());
         verify(semanticCache, never()).lookUp(any(), any(), anyString(), anyList(), any());
@@ -544,19 +547,19 @@ class AiChatServiceTest {
     }
 
     @Test
-    @DisplayName("流式回答且无登录身份 -> 循环按匿名跑，不查用户画像")
-    void stream_anonymousSkipsPreferences() {
+    @DisplayName("机器主体（评估跑批）-> 原样透传给循环，会话与缓存按同一主体分桶")
+    void stream_machineSubjectPassesThrough() {
         when(agentLoopRunner.run(any()))
                 .thenReturn(new Result(List.of(), List.of(), List.of(), LoopOutcome.FINISHED, 1));
         when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenReturn("回答");
 
-        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), null, new StreamHandlerStub());
+        chatService.streamAnswer(
+                new ChatRequest("问题", "sess-1", false), AgentLoopRunner.MACHINE_SUBJECT, new StreamHandlerStub());
 
         ArgumentCaptor<Input> input = ArgumentCaptor.forClass(Input.class);
         verify(agentLoopRunner).run(input.capture());
-        assertThat(input.getValue().userId()).isEqualTo(AgentLoopRunner.ANONYMOUS_USER);
-        verify(preferenceRepository, never()).findByUserId(anyString());
+        assertThat(input.getValue().userId()).isEqualTo(AgentLoopRunner.MACHINE_SUBJECT);
     }
 
     @Test
@@ -565,7 +568,7 @@ class AiChatServiceTest {
         when(agentLoopRunner.chatBudgetExhausted()).thenReturn(true);
 
         AtomicReference<String> error = new AtomicReference<>();
-        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), null, new ChatStreamHandler() {
+        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
             public void onStep(AgentStepView step) {}
 
@@ -596,7 +599,7 @@ class AiChatServiceTest {
 
         AtomicReference<String> error = new AtomicReference<>();
         AtomicReference<String> done = new AtomicReference<>();
-        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), null, new ChatStreamHandler() {
+        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
             public void onStep(AgentStepView step) {}
 
@@ -631,7 +634,7 @@ class AiChatServiceTest {
     @DisplayName("空问题 -> onError 提示")
     void stream_blankQuestion() {
         AtomicReference<String> error = new AtomicReference<>();
-        chatService.streamAnswer(new ChatRequest("  ", "sess-1", false), null, new ChatStreamHandler() {
+        chatService.streamAnswer(new ChatRequest("  ", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
             public void onStep(AgentStepView step) {}
 
@@ -662,8 +665,8 @@ class AiChatServiceTest {
                 .thenReturn("正常回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
 
-        ChatAnswer first = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
-        ChatAnswer degraded = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
+        ChatAnswer first = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId());
+        ChatAnswer degraded = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId());
 
         assertThat(first.answer()).isEqualTo("正常回答");
         assertThat(first.degraded()).isFalse();
@@ -681,8 +684,8 @@ class AiChatServiceTest {
                 .thenReturn("正常回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
 
-        chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
-        ChatAnswer degraded = chatService.answer(new ChatRequest("怎么退款？", "sess-2", false));
+        chatService.answer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId());
+        ChatAnswer degraded = chatService.answer(new ChatRequest("怎么退款？", "sess-2", false), AUTH_USER.userId());
 
         assertThat(degraded.answer()).isEqualTo("正常回答");
         assertThat(degraded.degraded()).isTrue();
@@ -696,7 +699,7 @@ class AiChatServiceTest {
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(new RuntimeException("DeepSeek 超时"));
 
-        ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false));
+        ChatAnswer answer = chatService.answer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId());
 
         assertThat(answer.answer()).isEqualTo(ChatAnswer.UNAVAILABLE_TEXT);
         assertThat(answer.sources()).isEmpty();
@@ -711,7 +714,8 @@ class AiChatServiceTest {
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(BusinessException.of("AI 调用预算已用尽"));
 
-        Assertions.assertThatThrownBy(() -> chatService.answer(new ChatRequest("怎么退款？", "sess-1", false)))
+        Assertions.assertThatThrownBy(() -> chatService.answer(
+                        new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId()))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("AI 调用预算已用尽");
     }
@@ -723,8 +727,8 @@ class AiChatServiceTest {
                 .thenReturn("新鲜回答")
                 .thenThrow(new RuntimeException("DeepSeek 超时"));
 
-        ChatAnswer first = chatService.answer(new ChatRequest("问题", "sess-1", true));
-        ChatAnswer degraded = chatService.answer(new ChatRequest("问题", "sess-1", true));
+        ChatAnswer first = chatService.answer(new ChatRequest("问题", "sess-1", true), AUTH_USER.userId());
+        ChatAnswer degraded = chatService.answer(new ChatRequest("问题", "sess-1", true), AUTH_USER.userId());
 
         assertThat(first.answer()).isEqualTo("新鲜回答");
         assertThat(degraded.answer()).isEqualTo("新鲜回答");
@@ -736,7 +740,7 @@ class AiChatServiceTest {
     void answer_injectsHistory() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
-        when(sessionStore.loadRecent("anonymous", "sess-1"))
+        when(sessionStore.loadRecent(AUTH_USER.userId(), "sess-1"))
                 .thenReturn(List.of(ChatTurn.user("上一轮问题"), ChatTurn.assistant("上一轮回答")));
         when(aiModelSupport.callText(any(), any(), anyList())).thenAnswer(invocation -> {
             List<Message> messages = invocation.getArgument(2);
@@ -752,7 +756,7 @@ class AiChatServiceTest {
             return "记住了";
         });
 
-        ChatAnswer answer = chatService.answer(new ChatRequest("继续", "sess-1", false));
+        ChatAnswer answer = chatService.answer(new ChatRequest("继续", "sess-1", false), AUTH_USER.userId());
 
         assertThat(answer.answer()).isEqualTo("记住了");
     }
@@ -789,7 +793,7 @@ class AiChatServiceTest {
     void answer_whenLockTimeout_returnsBusyNotice() {
         chatService = newChatService(lockTimeoutPort());
 
-        ChatAnswer answer = chatService.answer(new ChatRequest("继续", "sess-1", false));
+        ChatAnswer answer = chatService.answer(new ChatRequest("继续", "sess-1", false), AUTH_USER.userId());
 
         assertThat(answer.answer()).isEqualTo("上一条消息还在处理中，请稍候再试");
         assertThat(meterRegistry.counter("easyorange.ai.chat.session.busy").count())
@@ -802,7 +806,7 @@ class AiChatServiceTest {
         chatService = newChatService(lockTimeoutPort());
 
         AtomicReference<String> error = new AtomicReference<>();
-        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), null, new ChatStreamHandler() {
+        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
             public void onStep(AgentStepView step) {}
 

@@ -91,7 +91,8 @@ public class AgentTools {
     private final AssetSourcingService assetSourcingService;
     private final AssetDetailPort assetDetailPort;
     private final UserPreferenceRepository preferenceRepository;
-    /** 画像归属用户；匿名会话为 null（长期记忆不落库）。 */
+    /** 画像归属用户；机器主体（评估跑批）为 null（长期记忆不落库）。 */
+    @Nullable
     private final String userId;
 
     AgentTools(
@@ -99,7 +100,7 @@ public class AgentTools {
             AssetSourcingService assetSourcingService,
             AssetDetailPort assetDetailPort,
             UserPreferenceRepository preferenceRepository,
-            String userId) {
+            @Nullable String userId) {
         this.retrievalService = retrievalService;
         this.assetSourcingService = assetSourcingService;
         this.assetDetailPort = assetDetailPort;
@@ -232,7 +233,7 @@ public class AgentTools {
             return "偏好类别或取值为空，已跳过记录；直接继续回答即可";
         }
         if (userId == null) {
-            return "匿名会话不落长期画像，已跳过记录；直接继续回答即可";
+            return "机器调用不落长期画像，已跳过记录；直接继续回答即可";
         }
         String key = preferenceKey.trim();
         if (!PREFERENCE_KEYS.contains(key)) {

@@ -10,15 +10,12 @@ import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
@@ -63,11 +60,14 @@ public class AiChatController {
 
     @PostMapping
     public Result<ChatAnswer> chat(@Valid @RequestBody ChatRequest request) {
-        return Result.success(chatService.answer(request));
+        return Result.success(chatService.answer(request, SecurityContextUtil.getUserContextOrThrow().userId()));
     }
 
     @PostMapping("/stream")
     public SseEmitter stream(@Valid @RequestBody ChatRequest request) {
+        // 登录身份在 servlet 线程上解析（此时 SecurityContext 还在），缺失即 401 —— 身份是硬前置，
+        // 不静默降级；显式带进流式线程，即便执行器没有传播上下文，画像与 trace 的 userId 也照常归属
+        String userId = SecurityContextUtil.getUserContextOrThrow().userId();
         SseEmitter emitter = new SseEmitter(STREAM_TIMEOUT_MS);
         // 客户端挂到超时 / 传输错误 = 客户端侧放弃（刷新、关页、代理掐线）：注册回调安静收尾，
         // 否则超时走 AsyncRequestTimeoutException 落 GlobalExceptionHandler 的 system_error ERROR 兜底——
@@ -77,10 +77,7 @@ public class AiChatController {
             log.debug("sse emitter error, client gone", e);
             completeQuietly(emitter);
         });
-        // 登录身份在 servlet 线程上取（此时 SecurityContext 还在），显式带进流式线程：
-        // 即便执行器没有传播上下文，画像与 trace 的 userId 也不会退化成 anonymous
-        Optional<AuthUser> authUser = SecurityContextUtil.getUserContext();
-        Runnable task = () -> runStream(emitter, request, authUser.orElse(null));
+        Runnable task = () -> runStream(emitter, request, userId);
         var executor = taskExecutors.getIfAvailable();
         // 取不到执行器（极简上下文/手工构造）才退回当前线程 —— 正式装配下绝不能走这条分支：
         // 内联执行会让 emitter 拖到流结束才返回，全部事件积压成一次性回放，SSE 退化成同步接口
@@ -92,9 +89,9 @@ public class AiChatController {
         return emitter;
     }
 
-    private void runStream(SseEmitter emitter, ChatRequest request, @Nullable AuthUser authUser) {
+    private void runStream(SseEmitter emitter, ChatRequest request, String userId) {
         try {
-            chatService.streamAnswer(request, authUser, new ChatStreamHandler() {
+            chatService.streamAnswer(request, userId, new ChatStreamHandler() {
                 @Override
                 public void onStep(AgentStepView step) {
                     send(emitter, SseEmitter.event().name("step").data(step));

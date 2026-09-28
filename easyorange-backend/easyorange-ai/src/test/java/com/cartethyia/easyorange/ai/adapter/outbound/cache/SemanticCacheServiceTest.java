@@ -213,25 +213,6 @@ class SemanticCacheServiceTest {
         }
 
         @Test
-        @DisplayName("匿名用户（userId 为 null / 空白）-> 收敛到同一个 anon 桶")
-        void anonymousUsersShareOneBucket() {
-            when(redisProvider.getIfAvailable()).thenReturn(redis);
-            when(redis.opsForHash()).thenReturn(hashOps);
-            when(hashOps.entries("eo:ai:semantic:chat:anon")).thenReturn(Map.of("f1", CACHED_JSON));
-            when(hashOps.size("eo:ai:semantic:chat:anon")).thenReturn(0L);
-
-            // 匿名不注入画像（AiChatService 返 List.of()），共享是安全的
-            assertThat(cache.lookUp(AiCallScope.CHAT, null, "问题", QUERY_VECTOR, ChatAnswer.class))
-                    .isPresent();
-            assertThat(cache.lookUp(AiCallScope.CHAT, "  ", "问题", QUERY_VECTOR, ChatAnswer.class))
-                    .as("空白身份与 null 同义，不能开出新桶")
-                    .isPresent();
-
-            cache.store(AiCallScope.CHAT, null, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
-            verify(hashOps).put(eq("eo:ai:semantic:chat:anon"), anyString(), anyString());
-        }
-
-        @Test
         @DisplayName("分桶后不再读 scope 级旧 key（旧数据自然过期，不做迁移）")
         void doesNotReadLegacyScopeOnlyKey() {
             when(redisProvider.getIfAvailable()).thenReturn(redis);
