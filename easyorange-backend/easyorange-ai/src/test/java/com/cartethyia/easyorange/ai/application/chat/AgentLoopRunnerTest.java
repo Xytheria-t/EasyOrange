@@ -542,26 +542,111 @@ class AgentLoopRunnerTest {
     }
 
     @Test
-    @DisplayName("供应商侧并行工具调用 -> 每步只执行第一个，其余不进观察（循环按每步一个工具推进）")
-    void run_parallelToolCallsExecuteFirstOnly() {
-        var first =
-                new AssistantMessage.ToolCall("call-1", "function", AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款"));
-        var second =
-                new AssistantMessage.ToolCall("call-2", "function", AgentTools.TOOL_PRODUCT_SEARCH, searchArgs("笔记本"));
-        var parallel = AssistantMessage.builder()
-                .content("")
-                .toolCalls(List.of(first, second))
-                .build();
+    @DisplayName("供应商侧并行工具调用 -> 同轮全部执行（省掉一整轮决策往返），观察按协议同序回填")
+    void run_parallelToolCallsExecuteAllInOneRound() {
         stubDecisions(
-                new ChatResponse(List.of(new Generation(parallel))),
+                parallelResponse(
+                        parallelCall("call-1", AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                        parallelCall("call-2", AgentTools.TOOL_PRODUCT_SEARCH, searchArgs("笔记本"))),
                 toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
-        when(retrievalService.search("退款", 5)).thenReturn(List.of());
+        when(retrievalService.search("退款", 5))
+                .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)));
+        when(assetSourcingService.search("笔记本", 5))
+                .thenReturn(List.of(new AssetHit("p-1", "ThinkPad X1", BigDecimal.valueOf(4800), "数码", "九五新", 0.8)));
+        var steps = new RecordingHandler();
+
+        Result result = run("退款规则顺便推荐台笔记本", "user-1", steps);
+
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        // 规则 + 找货两路召回都进了 Result，两条工具各只发一次决策
+        assertThat(result.knowledgeHits()).hasSize(1);
+        assertThat(result.assets()).hasSize(1);
+        assertThat(result.toolPath())
+                .containsExactly(
+                        AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_PRODUCT_SEARCH, AgentTools.TOOL_FINISH);
+        verify(aiModelSupport, times(2)).callWithTools(any(), any(), anyList(), anyList());
+        assertThat(steps.steps)
+                .extracting(AgentStepView::tool)
+                .containsExactly(
+                        AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_PRODUCT_SEARCH, AgentTools.TOOL_FINISH);
+
+        // 协议回填：一条 assistant 带两个 tool_calls + 一条 tool 消息带两份观察，tool_call_id 逐条对上
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
+        verify(aiModelSupport, times(2)).callWithTools(any(), any(), decisionMessages.capture(), anyList());
+        var secondRound = decisionMessages.getAllValues().get(1);
+        var assistant = secondRound.stream()
+                .filter(AssistantMessage.class::isInstance)
+                .map(AssistantMessage.class::cast)
+                .reduce((first, second) -> second)
+                .orElseThrow();
+        assertThat(assistant.getToolCalls())
+                .extracting(AssistantMessage.ToolCall::id)
+                .containsExactly("call-1", "call-2");
+        assertThat(observationTexts(secondRound)).containsExactly("命中 1 条：退款规则", "召回 1 件：[p-1] ThinkPad X1 ¥4800");
+    }
+
+    @Test
+    @DisplayName("并行调用里混入 finish -> 同轮非 finish 调用照常执行，finish 记在最后一个并收敛")
+    void run_parallelCallWithFinishExecutesSiblingsFirst() {
+        stubDecisions(parallelResponse(
+                parallelCall("call-1", AgentTools.TOOL_FINISH, finishArgs()),
+                parallelCall("call-2", AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款"))));
+        when(retrievalService.search("退款", 5))
+                .thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)));
+        var steps = new RecordingHandler();
+
+        Result result = run("怎么退款？", "user-1", steps);
+
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        // 模型确实要了这份信息就照给，不因同轮出现 finish 就丢弃
+        verify(retrievalService).search("退款", 5);
+        assertThat(result.knowledgeHits()).hasSize(1);
+        assertThat(steps.steps)
+                .extracting(AgentStepView::tool)
+                .containsExactly(AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_FINISH);
+        assertThat(result.toolPath()).containsExactly(AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_FINISH);
+    }
+
+    @Test
+    @DisplayName("并行调用里有一个参数不可解析 -> 整轮判决策失败降级（半执行会让回填的工具调用与观察对不上）")
+    void run_parallelCallWithUnparsableArgumentsDegrades() {
+        stubDecisions(parallelResponse(
+                parallelCall("call-1", AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                parallelCall("call-2", AgentTools.TOOL_PRODUCT_SEARCH, "这不是 JSON")));
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
-        verify(retrievalService).search("退款", 5);
+        assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
+        assertThat(result.toolPath()).isEmpty();
         verifyNoInteractions(assetSourcingService);
+    }
+
+    @Test
+    @DisplayName("一轮多个工具 -> 步序跨轮连续（并行调用不挤进同一个 stepIndex）")
+    void run_stepIndexIsContinuousAcrossParallelCalls() {
+        stubDecisions(
+                parallelResponse(
+                        parallelCall("call-1", AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
+                        parallelCall("call-2", AgentTools.TOOL_PRODUCT_SEARCH, searchArgs("笔记本"))),
+                toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
+        when(retrievalService.search(anyString(), anyInt())).thenReturn(List.of());
+        when(assetSourcingService.search(anyString(), anyInt())).thenReturn(List.of());
+        var steps = new RecordingHandler();
+
+        run("怎么退款？", "user-1", steps);
+
+        assertThat(steps.steps).extracting(AgentStepView::step).containsExactly(1, 2, 3);
+    }
+
+    private static AssistantMessage.ToolCall parallelCall(String id, String tool, String arguments) {
+        return new AssistantMessage.ToolCall(id, "function", tool, arguments);
+    }
+
+    private static ChatResponse parallelResponse(AssistantMessage.ToolCall... calls) {
+        var message =
+                AssistantMessage.builder().content("").toolCalls(List.of(calls)).build();
+        return new ChatResponse(List.of(new Generation(message)));
     }
 
     @Test

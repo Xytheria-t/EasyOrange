@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.cartethyia.easyorange.ai.application.chat.AgentTools;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSet;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSetCase;
 import java.util.List;
@@ -76,27 +77,73 @@ class GoldenSetLoaderTest {
     @Test
     @DisplayName("校验：scope 非法 / chat 无参考 / retrieval 无 gold 都会抛错")
     void validate_rejectsInconsistentCases() {
-        assertThatThrownBy(
-                        () -> GoldenSetLoader.validate(new GoldenSetCase("bad-001", "retrival", "q", "a", List.of())))
+        assertThatThrownBy(() -> GoldenSetLoader.validate(
+                        new GoldenSetCase("bad-001", "retrival", "q", "a", List.of(), List.of())))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("scope 非法");
-        assertThatThrownBy(() -> GoldenSetLoader.validate(new GoldenSetCase("chat-999", "chat", "q", null, List.of())))
+        assertThatThrownBy(() -> GoldenSetLoader.validate(
+                        new GoldenSetCase("chat-999", "chat", "q", null, List.of(), List.of())))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("reference_answer");
-        assertThatThrownBy(() ->
-                        GoldenSetLoader.validate(new GoldenSetCase("retr-999", "retrieval", "q", null, List.of())))
+        assertThatThrownBy(() -> GoldenSetLoader.validate(
+                        new GoldenSetCase("retr-999", "retrieval", "q", null, List.of(), List.of())))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("gold_doc_ids");
 
-        assertThatCode(() -> GoldenSetLoader.validate(new GoldenSetCase("chat-001", "chat", "q", "a", List.of())))
+        assertThatCode(() ->
+                        GoldenSetLoader.validate(new GoldenSetCase("chat-001", "chat", "q", "a", List.of(), List.of())))
                 .doesNotThrowAnyException();
         assertThatCode(() -> GoldenSetLoader.validate(
-                        new GoldenSetCase("retr-001", "retrieval", "q", null, List.of("kb-0001"))))
+                        new GoldenSetCase("retr-001", "retrieval", "q", null, List.of("kb-0001"), List.of())))
                 .doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName("加载 baselines.yaml -> 分数基线 / 容忍度 / 覆盖率下限 / hit@5 下限齐全")
+    @DisplayName("校验：expected_tools 必须是真实工具名，且检索用例不得标（不跑循环，标了永远评不出命中）")
+    void validate_rejectsBadExpectedTools() {
+        assertThatThrownBy(() -> GoldenSetLoader.validate(
+                        new GoldenSetCase("chat-001", "chat", "q", "a", List.of(), List.of("web_browse"))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("未知工具");
+        assertThatThrownBy(() -> GoldenSetLoader.validate(new GoldenSetCase(
+                        "retr-001", "retrieval", "q", null, List.of("kb-0001"), List.of("knowledge_search"))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("不能标 expected_tools");
+    }
+
+    @Test
+    @DisplayName("标注了 expected_tools 的用例 -> 取值全部是真实工具名（工具改名后这里会红）")
+    void load_expectedToolsAreRealToolNames() {
+        GoldenSet goldenSet = loader.load();
+
+        var annotated = goldenSet.cases().stream()
+                .filter(c -> !c.expectedTools().isEmpty())
+                .toList();
+        assertThat(annotated).as("路由评估要有足够的标注用例才量得准").hasSizeGreaterThanOrEqualTo(15);
+        for (GoldenSetCase c : annotated) {
+            assertThat(c.expectedTools()).allMatch(AgentTools.TOOL_NAMES::contains);
+            assertThat(GoldenSetLoader.SCOPE_CHAT).as("只有 chat 用例会跑工具循环").isEqualTo(c.scope());
+        }
+    }
+
+    @Test
+    @DisplayName("标注覆盖面 -> 寒暄类标 finish、规则类标 knowledge_search，两端都有样本")
+    void load_annotationsCoverBothRoutingOutcomes() {
+        GoldenSet goldenSet = loader.load();
+
+        var annotated = goldenSet.cases().stream()
+                .filter(c -> !c.expectedTools().isEmpty())
+                .toList();
+        assertThat(annotated).anyMatch(c -> c.expectedTools().contains(AgentTools.TOOL_FINISH));
+        assertThat(annotated).anyMatch(c -> c.expectedTools().contains(AgentTools.TOOL_KNOWLEDGE_SEARCH));
+        // 只标一种路由的评测集量不出「该不该检索」这个判断 —— 那正是最容易错的一步
+        assertThat(annotated)
+                .filteredOn(c -> c.expectedTools().equals(List.of(AgentTools.TOOL_FINISH)))
+                .hasSizeGreaterThanOrEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("加载 baselines.yaml -> 分数基线 / 容忍度 / 覆盖率下限 / hit@5 与路由准确率下限齐全")
     void loadBaselines() {
         EvalBaselines baselines = loader.loadBaselines();
 
@@ -104,6 +151,7 @@ class GoldenSetLoaderTest {
         assertThat(baselines.generation().scoreTolerance()).isEqualTo(0.3);
         assertThat(baselines.generation().minCoverage()).isEqualTo(0.8);
         assertThat(baselines.retrieval().minHitAt5()).isEqualTo(0.5);
+        assertThat(baselines.routing().minAccuracy()).isEqualTo(0.7);
     }
 
     private static List<GoldenSetCase> scoped(GoldenSet goldenSet, String scope) {

@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.model.AgentStepDecision;
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import com.sun.net.httpserver.HttpServer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -41,7 +40,8 @@ import tools.jackson.databind.ObjectMapper;
  *   <li>工具轮不带 {@code response_format}（JSON 模式与 tools 同发在部分供应商会冲突），
  *       且响应里的 tool call 经 Spring AI 的 OpenAI 映射层能被正确解析出来；</li>
  *   <li>历史轮的 assistant tool_calls + role=tool 消息能序列化成供应商接受的请求体
- *       （循环轮间的 wire 形态，{@code tool_call_id} 关联不上 = 第二轮起整条链路 400）。</li>
+ *       （循环轮间的 wire 形态，{@code tool_call_id} 关联不上 = 第二轮起整条链路 400），
+ *       一轮并行发起的多个调用同样每个 id 都要带一条对应观察。</li>
  * </ol>
  */
 @DisplayName("原生 tool calling wire 契约（HTTP 桩）-> 测试")
@@ -70,7 +70,33 @@ class ToolCallingWireTest {
             }
             """;
 
+    /** 供应商一轮并行发起两个工具的响应 —— 对应「规则 + 找货」同问的场景。 */
+    private static final String PARALLEL_TOOL_CALL_RESPONSE = """
+            {
+              "id": "chatcmpl-parallel",
+              "object": "chat.completion",
+              "created": 1758300000,
+              "model": "deepseek-chat",
+              "choices": [{
+                "index": 0,
+                "message": {
+                  "role": "assistant",
+                  "content": "",
+                  "tool_calls": [
+                    {"id": "call-1", "type": "function", "function": {"name": "knowledge_search", "arguments": "{\\"thought\\":\\"查退款规则\\",\\"query\\":\\"退款\\"}"}},
+                    {"id": "call-2", "type": "function", "function": {"name": "product_search", "arguments": "{\\"thought\\":\\"找笔记本\\",\\"query\\":\\"笔记本\\"}"}}
+                  ]
+                },
+                "finish_reason": "tool_calls"
+              }],
+              "usage": {"prompt_tokens": 120, "completion_tokens": 36, "total_tokens": 156}
+            }
+            """;
+
     private final AtomicReference<String> capturedBody = new AtomicReference<>();
+    /** 供应商回的响应体：默认单 tool call，需要验并行回填的用例换成 {@link #PARALLEL_TOOL_CALL_RESPONSE}。 */
+    private final AtomicReference<String> stubResponse = new AtomicReference<>(TOOL_CALL_RESPONSE);
+
     private HttpServer server;
 
     @BeforeEach
@@ -78,7 +104,7 @@ class ToolCallingWireTest {
         server = HttpServer.create(new InetSocketAddress(0), 0);
         server.createContext("/", exchange -> {
             capturedBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
-            byte[] body = TOOL_CALL_RESPONSE.getBytes(StandardCharsets.UTF_8);
+            byte[] body = stubResponse.get().getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, body.length);
             exchange.getResponseBody().write(body);
@@ -124,7 +150,7 @@ class ToolCallingWireTest {
         // 回来的 tool call 经 Spring AI OpenAI 映射层解析后，参数字段与 {@code @ToolParam} 名对齐
         assertThat(calls).hasSize(1);
         assertThat(calls.getFirst().name()).isEqualTo(AgentTools.TOOL_KNOWLEDGE_SEARCH);
-        AgentStepDecision parsed = new ObjectMapper().readValue(calls.getFirst().arguments(), AgentStepDecision.class);
+        ToolCallArgs parsed = new ObjectMapper().readValue(calls.getFirst().arguments(), ToolCallArgs.class);
         assertThat(parsed.thought()).isEqualTo("查退款规则");
         assertThat(parsed.query()).isEqualTo("退款");
     }
@@ -162,6 +188,49 @@ class ToolCallingWireTest {
         assertThat(request).contains("\"tools\"", "\"tool_choice\":\"required\"");
         assertThat(calls).hasSize(1);
         assertThat(calls.getFirst().name()).isEqualTo(AgentTools.TOOL_KNOWLEDGE_SEARCH);
+    }
+
+    @Test
+    @DisplayName("一轮并行发起两个工具 -> 两个 call 都被解析；回填时一条 assistant 带两个 tool_calls + 两条 role=tool")
+    void callWithTools_parallelWireContract() throws Exception {
+        stubResponse.set(PARALLEL_TOOL_CALL_RESPONSE);
+        String baseUrl = "http://localhost:" + server.getAddress().getPort();
+        ChatModel chatModel = stubChatModel(baseUrl);
+        var support = support();
+        var tools = new AgentTools(null, null, null, null, null);
+        var knowledgeCall = new AssistantMessage.ToolCall(
+                "call-1", "function", AgentTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
+        var productCall = new AssistantMessage.ToolCall(
+                "call-2", "function", AgentTools.TOOL_PRODUCT_SEARCH, "{\"thought\":\"找笔记本\",\"query\":\"笔记本\"}");
+
+        List<AssistantMessage.ToolCall> calls = support.callWithTools(
+                chatModel,
+                AiCallScope.CHAT,
+                List.of(
+                        new SystemMessage("你是多步工具决策器"),
+                        new UserMessage("用户问题：退款规则，顺便推荐台笔记本"),
+                        AssistantMessage.builder()
+                                .content("")
+                                .toolCalls(List.of(knowledgeCall, productCall))
+                                .build(),
+                        ToolResponseMessage.builder()
+                                .responses(List.of(
+                                        new ToolResponseMessage.ToolResponse(
+                                                "call-1", AgentTools.TOOL_KNOWLEDGE_SEARCH, "命中 1 条：退款规则"),
+                                        new ToolResponseMessage.ToolResponse(
+                                                "call-2",
+                                                AgentTools.TOOL_PRODUCT_SEARCH,
+                                                "召回 1 件：[p-1] ThinkPad X1 ¥4800")))
+                                .build()),
+                List.of(ToolCallbacks.from(tools)));
+
+        // 并行回填的 wire 事实：两个 tool_call_id 都得各自带一条 role=tool，少一条供应商直接 400
+        String request = capturedBody.get();
+        assertThat(request).contains("\"tool_call_id\":\"call-1\"", "\"tool_call_id\":\"call-2\"");
+        assertThat(request).contains("命中 1 条：退款规则", "召回 1 件：[p-1] ThinkPad X1 ¥4800");
+        assertThat(calls)
+                .extracting(AssistantMessage.ToolCall::name)
+                .containsExactly(AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_PRODUCT_SEARCH);
     }
 
     private static ChatModel stubChatModel(String baseUrl) {

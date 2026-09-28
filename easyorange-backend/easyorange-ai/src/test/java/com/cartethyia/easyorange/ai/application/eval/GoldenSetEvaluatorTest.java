@@ -7,7 +7,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner;
+import com.cartethyia.easyorange.ai.application.chat.AgentTools;
 import com.cartethyia.easyorange.ai.application.chat.AiChatService;
+import com.cartethyia.easyorange.ai.application.chat.LoopOutcome;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
@@ -16,6 +18,7 @@ import com.cartethyia.easyorange.ai.domain.model.GoldenSet;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSetCase;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.RetrievalReport;
+import com.cartethyia.easyorange.ai.domain.model.RoutingReport;
 import com.cartethyia.easyorange.ai.domain.port.RetrievalMetricPort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.List;
@@ -48,10 +51,20 @@ class GoldenSetEvaluatorTest {
     @Mock
     private IdGenerator idGenerator;
 
+    @Mock
+    private AgentLoopRunner agentLoopRunner;
+
     private GoldenSetEvaluator evaluator;
 
     private void setUp() {
-        evaluator = new GoldenSetEvaluator(loader, chatService, aiJudge, retrievalService, metricRecorder, idGenerator);
+        evaluator = new GoldenSetEvaluator(
+                loader, chatService, aiJudge, retrievalService, metricRecorder, idGenerator, agentLoopRunner);
+    }
+
+    /** 工具循环的桩结果 —— 路由评估只读 {@code toolPath}，召回物与结局对它无影响。 */
+    private static AgentLoopRunner.Result loopResult(String... tools) {
+        List<String> path = List.of(tools);
+        return new AgentLoopRunner.Result(List.of(), List.of(), List.of(), LoopOutcome.FINISHED, path.size(), path);
     }
 
     @Test
@@ -60,8 +73,8 @@ class GoldenSetEvaluatorTest {
         setUp();
         when(loader.load())
                 .thenReturn(new GoldenSet(List.of(
-                        new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of()),
-                        new GoldenSetCase("chat-002", "chat", "问题B", null, List.of()))));
+                        new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of(), List.of()),
+                        new GoldenSetCase("chat-002", "chat", "问题B", null, List.of(), List.of()))));
         when(chatService.answer(any(ChatRequest.class), eq(AgentLoopRunner.MACHINE_SUBJECT)))
                 .thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
         when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(4, "ok")));
@@ -79,7 +92,8 @@ class GoldenSetEvaluatorTest {
     void evaluateGeneration_skipsFailedCase() {
         setUp();
         when(loader.load())
-                .thenReturn(new GoldenSet(List.of(new GoldenSetCase("chat-001", "chat", "问题A", null, List.of()))));
+                .thenReturn(new GoldenSet(
+                        List.of(new GoldenSetCase("chat-001", "chat", "问题A", null, List.of(), List.of()))));
         when(chatService.answer(any(ChatRequest.class), eq(AgentLoopRunner.MACHINE_SUBJECT)))
                 .thenThrow(new RuntimeException("model down"));
 
@@ -95,8 +109,8 @@ class GoldenSetEvaluatorTest {
         setUp();
         when(loader.load())
                 .thenReturn(new GoldenSet(List.of(
-                        new GoldenSetCase("retr-001", "retrieval", "退款", null, List.of("kb-0002")),
-                        new GoldenSetCase("retr-002", "retrieval", "禁售", null, List.of("kb-0005")))));
+                        new GoldenSetCase("retr-001", "retrieval", "退款", null, List.of("kb-0002"), List.of()),
+                        new GoldenSetCase("retr-002", "retrieval", "禁售", null, List.of("kb-0005"), List.of()))));
         when(retrievalService.search("退款", 5)).thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "内容", 0.9)));
         when(retrievalService.search("禁售", 5)).thenReturn(List.of(new KnowledgeHit("kb-0001", "交易流程", "内容", 0.9)));
         when(idGenerator.generateId()).thenReturn("run-1");
@@ -117,8 +131,8 @@ class GoldenSetEvaluatorTest {
         setUp();
         when(loader.load())
                 .thenReturn(new GoldenSet(List.of(
-                        new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of("kb-0001")),
-                        new GoldenSetCase("retr-001", "retrieval", "退款", null, List.of("kb-0002")))));
+                        new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of("kb-0001"), List.of()),
+                        new GoldenSetCase("retr-001", "retrieval", "退款", null, List.of("kb-0002"), List.of()))));
         when(chatService.answer(any(ChatRequest.class), eq(AgentLoopRunner.MACHINE_SUBJECT)))
                 .thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
         when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(5, "ok")));
@@ -132,6 +146,82 @@ class GoldenSetEvaluatorTest {
         assertThat(generation.totalCases()).isEqualTo(1);
         assertThat(retrieval.totalCases()).isEqualTo(1);
         assertThat(retrieval.hitRateAt5()).isEqualTo(1.0);
+    }
+
+    @Test
+    @DisplayName("路由回归：只跑标了 expected_tools 的 chat 用例，路径带上期望工具即命中")
+    void evaluateRouting_countsMatches() {
+        setUp();
+        when(loader.load())
+                .thenReturn(new GoldenSet(List.of(
+                        new GoldenSetCase(
+                                "chat-001", "chat", "怎么退款", "参考", List.of(), List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH)),
+                        new GoldenSetCase("chat-011", "chat", "在吗", "参考", List.of(), List.of(AgentTools.TOOL_FINISH)),
+                        new GoldenSetCase("chat-016", "chat", "推荐什么数码", "参考", List.of(), List.of()))));
+        when(agentLoopRunner.run(any()))
+                .thenReturn(loopResult(AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_FINISH));
+
+        RoutingReport report = evaluator.evaluateRouting();
+
+        // 前两条命中；chat-016 没标 expected_tools -> 不进分母（否则未标注等于判错）
+        assertThat(report.totalCases()).isEqualTo(2);
+        assertThat(report.correctCases()).isEqualTo(2);
+        assertThat(report.accuracy()).isEqualTo(1.0);
+    }
+
+    @Test
+    @DisplayName("路由回归：走错工具（规则问题去查商品）算未命中，且仍计入分母")
+    void evaluateRouting_countsRouteMiss() {
+        setUp();
+        when(loader.load())
+                .thenReturn(new GoldenSet(List.of(
+                        new GoldenSetCase(
+                                "chat-001", "chat", "怎么退款", "参考", List.of(), List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH)),
+                        new GoldenSetCase(
+                                "chat-011", "chat", "在吗", "参考", List.of(), List.of(AgentTools.TOOL_FINISH)))));
+        when(agentLoopRunner.run(any())).thenReturn(loopResult(AgentTools.TOOL_PRODUCT_SEARCH, AgentTools.TOOL_FINISH));
+
+        RoutingReport report = evaluator.evaluateRouting();
+
+        assertThat(report.totalCases()).isEqualTo(2);
+        assertThat(report.correctCases()).isEqualTo(1);
+        assertThat(report.accuracy()).isEqualTo(0.5);
+    }
+
+    @Test
+    @DisplayName("路由回归：循环跑挂按未命中算而不是剔除 —— 决策失败正是「没选出该选的工具」")
+    void evaluateRouting_countsFailureAsMiss() {
+        setUp();
+        when(loader.load())
+                .thenReturn(new GoldenSet(List.of(new GoldenSetCase(
+                        "chat-001", "chat", "怎么退款", "参考", List.of(), List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH)))));
+        when(agentLoopRunner.run(any())).thenThrow(new RuntimeException("decision down"));
+
+        RoutingReport report = evaluator.evaluateRouting();
+
+        assertThat(report.totalCases()).isEqualTo(1);
+        assertThat(report.correctCases()).isZero();
+        assertThat(report.accuracy()).isZero();
+    }
+
+    @Test
+    @DisplayName("路由命中判据：只看期望工具在不在路径里，不比顺序与次数（多查一步不算走错）")
+    void routeMatches_ignoresOrderAndCount() {
+        assertThat(GoldenSetEvaluator.routeMatches(
+                        List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH),
+                        List.of(
+                                AgentTools.TOOL_PRODUCT_SEARCH,
+                                AgentTools.TOOL_KNOWLEDGE_SEARCH,
+                                AgentTools.TOOL_FINISH)))
+                .isTrue();
+        assertThat(GoldenSetEvaluator.routeMatches(List.of(AgentTools.TOOL_FINISH), List.of(AgentTools.TOOL_FINISH)))
+                .isTrue();
+        assertThat(GoldenSetEvaluator.routeMatches(
+                        List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH), List.of(AgentTools.TOOL_FINISH)))
+                .isFalse();
+        // 决策失败降级由代码补检索，不进 toolPath —— 期望检索的用例据此判未命中
+        assertThat(GoldenSetEvaluator.routeMatches(List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH), List.of()))
+                .isFalse();
     }
 
     @Test

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.application.eval;
 
 /**
- * 评估门禁阈值（{@code eval/baselines.yaml}）—— 按 scope 分节，与文件结构一一对应。
+ * 评估门禁阈值（{@code eval/baselines.yaml}）—— 按评估维度分节，与文件结构一一对应。
  * <p>
  * 阈值放配置而不是测试代码里：调基线是「跑一次回归、评审、改 yaml」，不需要改 Java 重新编译；
  * 「门禁卡多严」也变成可评审的 diff，而不是散在断言里的魔数。
@@ -11,8 +11,9 @@ package com.cartethyia.easyorange.ai.application.eval;
  *
  * @param generation 生成质量（{@code chat} 用例）门槛
  * @param retrieval  检索质量（{@code retrieval} 用例）门槛
+ * @param routing    路由质量（{@code chat} 用例的 {@code expected_tools}）门槛
  */
-public record EvalBaselines(Generation generation, Retrieval retrieval) {
+public record EvalBaselines(Generation generation, Retrieval retrieval, Routing routing) {
 
     /**
      * @param scoreBaseline  Judge 平均分基线（1-5）
@@ -25,4 +26,10 @@ public record EvalBaselines(Generation generation, Retrieval retrieval) {
      * @param minHitAt5 hit@5 下限；语料与 topK 同量级时 hit@5 恒满分，该值才需要随语料扩容上调
      */
     public record Retrieval(double minHitAt5) {}
+
+    /**
+     * @param minAccuracy 路由准确率下限。它与生成分数门禁互补：答案可以靠知识库兜底答对，路由走错这件事
+     *                    只有独立看工具路径才量得到（生成分高不代表模型选对了工具）
+     */
+    public record Routing(double minAccuracy) {}
 }
