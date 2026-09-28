@@ -102,8 +102,7 @@ public class ProductDomainException extends BaseBusinessException {
     /** 分类不存在（B2020）— 消息带 id 便于定位。 */
     public static ProductDomainException categoryNotFound(String categoryId) {
         return new ProductDomainException(
-                ProductResultCode.CATEGORY_NOT_FOUND,
-                "分类不存在: id=" + (categoryId != null ? categoryId : "null"));
+                ProductResultCode.CATEGORY_NOT_FOUND, "分类不存在: id=" + (categoryId != null ? categoryId : "null"));
     }
 
     /** 父分类不存在（B2021）。 */
@@ -135,14 +134,12 @@ public class ProductDomainException extends BaseBusinessException {
 
     /** 存在子分类（B2025）。 */
     public static ProductDomainException categoryHasChildren(String categoryId) {
-        return new ProductDomainException(
-                ProductResultCode.CATEGORY_HAS_CHILDREN, "该分类下存在子分类，无法删除: id=" + categoryId);
+        return new ProductDomainException(ProductResultCode.CATEGORY_HAS_CHILDREN, "该分类下存在子分类，无法删除: id=" + categoryId);
     }
 
     /** 存在关联商品（B2026）— 附商品数便于运营判断要先下架还是先迁走。 */
     public static ProductDomainException categoryHasProducts(String categoryId, long productCount) {
         return new ProductDomainException(
-                ProductResultCode.CATEGORY_HAS_PRODUCTS,
-                "该分类下存在关联商品，无法删除: id=" + categoryId + ", 商品数=" + productCount);
+                ProductResultCode.CATEGORY_HAS_PRODUCTS, "该分类下存在关联商品，无法删除: id=" + categoryId + ", 商品数=" + productCount);
     }
 }

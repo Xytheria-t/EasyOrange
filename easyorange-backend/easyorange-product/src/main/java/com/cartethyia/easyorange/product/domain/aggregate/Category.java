@@ -37,6 +37,7 @@ public class Category {
     private final CategoryName name;
     /** 父分类 id；一级分类为 null。 */
     private final CategoryId parentId;
+
     private final Integer level;
     private final String icon;
     private final Integer sortOrder;
@@ -96,7 +97,8 @@ public class Category {
 
         BizRequire.requireTrue(newParent.getId() != null, "父分类ID不能为空");
         if (newParent.getId().equals(this.id) || descendants.contains(newParent.getId())) {
-            throw ProductDomainException.categoryCycleDetected(id.value(), newParent.getId().value());
+            throw ProductDomainException.categoryCycleDetected(
+                    id.value(), newParent.getId().value());
         }
 
         int newLevel = newParent.getLevel() + 1;

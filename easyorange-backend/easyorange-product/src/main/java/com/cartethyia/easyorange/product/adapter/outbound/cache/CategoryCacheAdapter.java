@@ -25,9 +25,7 @@ public class CategoryCacheAdapter implements CategoryCachePort {
     private final CategoryQueryRepository categoryQueryRepository;
 
     @Override
-    @Cacheable(
-            cacheNames = ProductCacheConstant.CATEGORY_LIST_CACHE,
-            key = "#parentId == null ? 'root' : #parentId")
+    @Cacheable(cacheNames = ProductCacheConstant.CATEGORY_LIST_CACHE, key = "#parentId == null ? 'root' : #parentId")
     public List<CategoryReadModel> getCategoriesByParentId(String parentId) {
         return orEmpty(categoryQueryRepository.findEnabledByParentId(parentId));
     }

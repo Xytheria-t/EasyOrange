@@ -156,7 +156,8 @@ class CategoryTest {
         @Test
         @DisplayName("改名 / 排序 / 图标 / 状态各自独立生效")
         void mutations_areIndependent() {
-            Category renamed = root().rename(CategoryName.of("数码")).changeSortOrder(9).changeStatus(CategoryStatus.DISABLED);
+            Category renamed =
+                    root().rename(CategoryName.of("数码")).changeSortOrder(9).changeStatus(CategoryStatus.DISABLED);
 
             assertThat(renamed.getName().value()).isEqualTo("数码");
             assertThat(renamed.getSortOrder()).isEqualTo(9);

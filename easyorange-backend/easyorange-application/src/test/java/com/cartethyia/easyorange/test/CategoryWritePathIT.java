@@ -87,8 +87,8 @@ class CategoryWritePathIT {
     @Test
     @DisplayName("新建分类真的落库：主键是 36 位 UUID v7，不是空（旧实现没 set id，这里直接 NOT NULL 插入失败）")
     void create_persistsWithGeneratedId() {
-        Map<String, Object> row = jdbcTemplate.queryForMap(
-                "SELECT id, parent_id, level, status FROM eo_category WHERE id = ?", childId);
+        Map<String, Object> row =
+                jdbcTemplate.queryForMap("SELECT id, parent_id, level, status FROM eo_category WHERE id = ?", childId);
 
         assertThat((String) row.get("id"))
                 .hasSize(36)
@@ -101,7 +101,8 @@ class CategoryWritePathIT {
     @Test
     @DisplayName("一级分类的 parent_id 落库为 NULL（不是字符串 '0'）")
     void create_root_persistsNullParent() {
-        Object parentId = jdbcTemplate.queryForObject("SELECT parent_id FROM eo_category WHERE id = ?", Object.class, rootId);
+        Object parentId =
+                jdbcTemplate.queryForObject("SELECT parent_id FROM eo_category WHERE id = ?", Object.class, rootId);
 
         assertThat(parentId).isNull();
     }
@@ -161,7 +162,8 @@ class CategoryWritePathIT {
         // 换个父分类下同名是允许的
         var other = commandHandler.createCategory(sameLevelName, childId, null, 10);
         assertThat(other.getParentId().value()).isEqualTo(childId);
-        jdbcTemplate.update("DELETE FROM eo_category WHERE id = ?", other.getId().value());
+        jdbcTemplate.update(
+                "DELETE FROM eo_category WHERE id = ?", other.getId().value());
     }
 
     @Test
@@ -172,13 +174,17 @@ class CategoryWritePathIT {
             jdbcTemplate.update(
                     "INSERT INTO eo_product (id, user_id, category_id, name, price, stock, status, del_flag)"
                             + " VALUES (?, ?, ?, ?, 100, 1, 'OFFLINE', 0)",
-                    "it-cat-off-" + suffix(), userId, grandChildId, "下架商品");
+                    "it-cat-off-" + suffix(),
+                    userId,
+                    grandChildId,
+                    "下架商品");
 
             assertThatThrownBy(() -> commandHandler.deleteCategory(grandChildId))
                     .isInstanceOf(ProductDomainException.class)
                     .hasMessageContaining("关联商品");
 
-            assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM eo_category WHERE id = ?", Integer.class, grandChildId))
+            assertThat(jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM eo_category WHERE id = ?", Integer.class, grandChildId))
                     .isEqualTo(1);
         } finally {
             jdbcTemplate.update("DELETE FROM eo_product WHERE category_id = ?", grandChildId);
@@ -228,7 +234,10 @@ class CategoryWritePathIT {
             jdbcTemplate.update(
                     "INSERT INTO eo_product (id, user_id, category_id, name, price, stock, status, del_flag)"
                             + " VALUES (?, ?, ?, ?, 100, 1, 'ONLINE', 0)",
-                    productId, userId, grandChildId, "在售商品");
+                    productId,
+                    userId,
+                    grandChildId,
+                    "在售商品");
 
             Map<String, Long> counts = queryRepository.countOnlineProductsByCategoryIdsWithChildren(List.of(rootId));
 
@@ -263,7 +272,10 @@ class CategoryWritePathIT {
             jdbcTemplate.update(
                     "INSERT INTO eo_product (id, user_id, category_id, name, price, stock, status, del_flag)"
                             + " VALUES (?, ?, ?, ?, 100, 1, 'ONLINE', 0)",
-                    "it-cat-agg-" + suffix(), userId, grandChildId, "在售商品");
+                    "it-cat-agg-" + suffix(),
+                    userId,
+                    grandChildId,
+                    "在售商品");
 
             // 走 CategoryQueryHandler 而不是查询仓储：缓存里存的是**未富化**的原始列表
             // （productCount 恒 0），商品计数是在 handler 里事后聚合的 —— 直接断言仓储的
@@ -298,7 +310,9 @@ class CategoryWritePathIT {
         jdbcTemplate.update(
                 "INSERT INTO eo_user (user_id, username, password, user_type, create_time, update_time, del_flag)"
                         + " VALUES (?, ?, ?, '01', NOW(), NOW(), 0)",
-                userId, userId, "$2a$10$ittest");
+                userId,
+                userId,
+                "$2a$10$ittest");
         return userId;
     }
 }

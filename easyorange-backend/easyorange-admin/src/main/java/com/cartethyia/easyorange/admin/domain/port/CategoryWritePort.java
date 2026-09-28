@@ -12,8 +12,7 @@ public interface CategoryWritePort {
     CategoryWriteResult createCategory(String name, String parentId, String icon, Integer sortOrder);
 
     /** 更新属性（名称 / 排序 / 图标 / 状态），**不移动挂载点**。 */
-    CategoryWriteResult updateCategory(
-            String id, String name, Integer sortOrder, String icon, Integer status);
+    CategoryWriteResult updateCategory(String id, String name, Integer sortOrder, String icon, Integer status);
 
     /** 移动挂载点；{@code newParentId} 为 null 表示移到一级。 */
     CategoryWriteResult moveCategory(String id, String newParentId);

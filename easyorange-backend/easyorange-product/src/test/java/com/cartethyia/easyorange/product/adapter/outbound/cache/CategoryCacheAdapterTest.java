@@ -160,7 +160,6 @@ class CategoryCacheAdapterTest {
     }
 
     private static CategoryReadModel category(String id) {
-        return new CategoryReadModel(
-                id, "分类" + id, null, 1, null, 0, CategoryStatus.ENABLED, LocalDateTime.now(), 0);
+        return new CategoryReadModel(id, "分类" + id, null, 1, null, 0, CategoryStatus.ENABLED, LocalDateTime.now(), 0);
     }
 }

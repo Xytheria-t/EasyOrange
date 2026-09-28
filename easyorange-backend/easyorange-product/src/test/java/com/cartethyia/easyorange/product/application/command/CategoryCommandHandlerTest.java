@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
@@ -65,8 +64,8 @@ class CategoryCommandHandlerTest {
 
     @BeforeEach
     void setUp() {
-        handler = new CategoryCommandHandler(
-                categoryRepository, categoryQueryRepository, categoryCachePort, idGenerator);
+        handler =
+                new CategoryCommandHandler(categoryRepository, categoryQueryRepository, categoryCachePort, idGenerator);
         when(idGenerator.generateId()).thenReturn("generated-id");
     }
 
@@ -283,7 +282,8 @@ class CategoryCommandHandlerTest {
             when(categoryRepository.findById(CategoryId.of(LEAF_ID)))
                     .thenReturn(Optional.of(category(LEAF_ID, "折叠屏", MID_ID, 3)));
             when(categoryRepository.findChildren(CategoryId.of(LEAF_ID))).thenReturn(List.of());
-            when(categoryQueryRepository.countAllProductsByCategoryIds(List.of(LEAF_ID))).thenReturn(Map.of());
+            when(categoryQueryRepository.countAllProductsByCategoryIds(List.of(LEAF_ID)))
+                    .thenReturn(Map.of());
 
             handler.deleteCategory(LEAF_ID);
 

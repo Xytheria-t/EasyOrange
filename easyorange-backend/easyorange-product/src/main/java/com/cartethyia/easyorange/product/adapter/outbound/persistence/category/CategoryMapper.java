@@ -52,7 +52,8 @@ public interface CategoryMapper extends BaseMapper<CategoryDO> {
             + "WHERE p.del_flag = 0 AND p.status = 'ONLINE' "
             + "GROUP BY s.root_id"
             + "</script>")
-    List<CategoryProductCount> countOnlineProductsByCategoryIdsWithChildren(@Param("categoryIds") List<String> categoryIds);
+    List<CategoryProductCount> countOnlineProductsByCategoryIdsWithChildren(
+            @Param("categoryIds") List<String> categoryIds);
 
     /**
      * 查某分类子树内的全部 id（**含自身**）—— 成环检测与整棵子树 level 平移的输入。

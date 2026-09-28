@@ -57,7 +57,8 @@ class CacheSerializerRoundTripTest {
     @DisplayName("分类列表（record 元素）往返无损")
     void categoryList_roundTrips() {
         // 必须用可变 ArrayList：List.of() 是不可变 final 类（java.* 包），序列化器不写类型信息
-        var list = new ArrayList<>(List.of(new CategoryReadModel("1", "分类1", null, 1, null, 0, CategoryStatus.ENABLED, null, 0)));
+        var list = new ArrayList<>(
+                List.of(new CategoryReadModel("1", "分类1", null, 1, null, 0, CategoryStatus.ENABLED, null, 0)));
         var serializer = serializer();
 
         Object restored = serializer.deserialize(serializer.serialize(list));

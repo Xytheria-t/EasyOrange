@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.adapter.outbound.product.ProductSearchIndexAdapter;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
-import com.cartethyia.easyorange.product.domain.enums.CategoryStatus;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailDO;
@@ -15,6 +14,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.Pr
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.application.port.query.QueryEmbeddingPort;
+import com.cartethyia.easyorange.product.domain.enums.CategoryStatus;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import java.math.BigDecimal;

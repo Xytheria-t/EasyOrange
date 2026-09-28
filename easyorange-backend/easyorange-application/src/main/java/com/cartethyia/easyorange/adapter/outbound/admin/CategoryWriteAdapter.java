@@ -29,8 +29,7 @@ public class CategoryWriteAdapter implements CategoryWritePort {
     }
 
     @Override
-    public CategoryWriteResult updateCategory(
-            String id, String name, Integer sortOrder, String icon, Integer status) {
+    public CategoryWriteResult updateCategory(String id, String name, Integer sortOrder, String icon, Integer status) {
         return toResult(categoryCommandHandler.updateCategory(id, name, sortOrder, icon, status));
     }
 

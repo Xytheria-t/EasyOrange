@@ -24,7 +24,8 @@ public class CategoryDataMapper {
     public CategoryDO toEntity(Category category) {
         CategoryDO entity = CategoryDO.builder()
                 .name(category.getName().value())
-                .parentId(category.getParentId() != null ? category.getParentId().value() : null)
+                .parentId(
+                        category.getParentId() != null ? category.getParentId().value() : null)
                 .level(category.getLevel())
                 .icon(category.getIcon())
                 .sortOrder(category.getSortOrder())

@@ -43,11 +43,11 @@ public class AdminCategoryAdapter implements AdminCategoryPort {
     @Override
     public List<CategoryView> listCategories(String parentId, boolean includeDisabled) {
         String normalized = (parentId == null || parentId.isBlank()) ? null : parentId;
-        List<Category> rows = categoryRepository.findChildren(
-                        normalized != null ? CategoryId.of(normalized) : null)
-                .stream()
-                .filter(category -> includeDisabled || category.getStatus().isEnabled())
-                .toList();
+        List<Category> rows =
+                categoryRepository.findChildren(normalized != null ? CategoryId.of(normalized) : null).stream()
+                        .filter(category ->
+                                includeDisabled || category.getStatus().isEnabled())
+                        .toList();
         return enrich(rows);
     }
 
@@ -61,7 +61,8 @@ public class AdminCategoryAdapter implements AdminCategoryPort {
                 .filter(view -> view.parentId() != null)
                 .collect(Collectors.groupingBy(CategoryView::parentId, LinkedHashMap::new, Collectors.toList()));
         // 一级分类的 parentId 是 null，单独挑出来当根 —— 直接用 null 做 map key 虽可行但语义不清
-        List<CategoryView> roots = all.stream().filter(view -> view.parentId() == null).toList();
+        List<CategoryView> roots =
+                all.stream().filter(view -> view.parentId() == null).toList();
         return attachChildren(roots, childrenByParent);
     }
 
@@ -84,9 +85,13 @@ public class AdminCategoryAdapter implements AdminCategoryPort {
         if (parentIds.isEmpty()) {
             return Map.of();
         }
-        return categoryRepository.findByIds(parentIds.stream().map(CategoryId::of).toList()).stream()
+        return categoryRepository
+                .findByIds(parentIds.stream().map(CategoryId::of).toList())
+                .stream()
                 .collect(Collectors.toMap(
-                        parent -> parent.getId().value(), parent -> parent.getName().value(), (a, b) -> a));
+                        parent -> parent.getId().value(),
+                        parent -> parent.getName().value(),
+                        (a, b) -> a));
     }
 
     /**
@@ -96,15 +101,14 @@ public class AdminCategoryAdapter implements AdminCategoryPort {
      * 若分组里存在孤儿节点（父分类被禁用或被删），它不会出现在任何 children 里 ——
      * 后台看到的是「少了一条」，比死循环安全。
      */
-    private List<CategoryView> attachChildren(List<CategoryView> nodes, Map<String, List<CategoryView>> childrenByParent) {
-        return nodes.stream()
-                .map(node -> withChildren(node, childrenByParent))
-                .toList();
+    private List<CategoryView> attachChildren(
+            List<CategoryView> nodes, Map<String, List<CategoryView>> childrenByParent) {
+        return nodes.stream().map(node -> withChildren(node, childrenByParent)).toList();
     }
 
     private CategoryView withChildren(CategoryView node, Map<String, List<CategoryView>> childrenByParent) {
-        List<CategoryView> children = attachChildren(
-                childrenByParent.getOrDefault(node.id(), List.of()), childrenByParent);
+        List<CategoryView> children =
+                attachChildren(childrenByParent.getOrDefault(node.id(), List.of()), childrenByParent);
         return new CategoryView(
                 node.id(),
                 node.name(),
@@ -124,7 +128,8 @@ public class AdminCategoryAdapter implements AdminCategoryPort {
 
     private CategoryView toViewWithNames(
             Category category, Map<String, Long> productCounts, Map<String, String> parentNames) {
-        String parentId = category.getParentId() != null ? category.getParentId().value() : null;
+        String parentId =
+                category.getParentId() != null ? category.getParentId().value() : null;
         return new CategoryView(
                 category.getId().value(),
                 category.getName().value(),

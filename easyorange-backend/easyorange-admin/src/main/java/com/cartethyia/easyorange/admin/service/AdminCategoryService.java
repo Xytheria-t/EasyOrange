@@ -71,9 +71,8 @@ public class AdminCategoryService {
      */
     @Transactional(rollbackFor = Exception.class)
     public CategoryResponse updateCategory(String id, CategoryUpdateRequest request) {
-        CategoryView existing = adminCategoryPort
-                .getCategory(id)
-                .orElseThrow(() -> BusinessException.of("分类不存在: id=" + id));
+        CategoryView existing =
+                adminCategoryPort.getCategory(id).orElseThrow(() -> BusinessException.of("分类不存在: id=" + id));
         // 一级分类的 parentId 就是 null，所以「是否找到」不能靠 map(parentId) 判断 ——
         // Optional.map 遇 null 会退化成 empty，根分类会被误判成不存在。
         String currentParentId = existing.parentId();
@@ -83,8 +82,8 @@ public class AdminCategoryService {
         if (parentChanged) {
             categoryWritePort.moveCategory(id, request.parentId());
         }
-        CategoryWriteResult result =
-                categoryWritePort.updateCategory(id, request.name(), request.sortOrder(), request.icon(), request.status());
+        CategoryWriteResult result = categoryWritePort.updateCategory(
+                id, request.name(), request.sortOrder(), request.icon(), request.status());
         return new CategoryResponse(
                 result.categoryId(),
                 result.name(),
