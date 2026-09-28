@@ -10,10 +10,10 @@ import org.jspecify.annotations.Nullable;
  * 描述，与此处字段同源，不重写。
  * <p>
  * 放编排器包内而非 domain：形状由 {@code AgentTools} 的注解决定，domain 反过来依赖 application 的注解
- * 是倒置的依赖方向；且主代码里只有 {@link AgentLoopRunner} 一个消费者，包级私有即足够，不进领域模型。
+ * 是倒置的依赖方向；且主代码里只有 {@link ToolCallLoop} 一个消费者，包级私有即足够，不进领域模型。
  * <p>
  * 工具名与 arguments 原始串刻意不在此记录内：前者来自 tool call 的 function name，后者就是被解析的
- * 那个串本身，两者都由 {@link AgentLoopRunner.ToolCallDecision} 从原生 tool call 取，一个来源。所以这里
+ * 那个串本身，两者都由 {@link ToolCallLoop.ToolCallDecision} 从原生 tool call 取，一个来源。所以这里
  * 不需要「解析后再补全」的两段式构造 —— 补全会让记录存在「已解析但未补全」的半初始化态，而调用方
  * 拿到的类型签名却看不出来。
  * <p>
@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
  * 钉在类上，不寄望全局 ObjectMapper 的默认值。
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-record ToolCallArgs(
+record ToolCallArguments(
         @Nullable String thought,
         @Nullable String query,
         @Nullable String productId,

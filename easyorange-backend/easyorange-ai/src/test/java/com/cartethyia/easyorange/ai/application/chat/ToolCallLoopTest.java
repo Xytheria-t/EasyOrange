@@ -15,8 +15,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Input;
-import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Result;
+import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop.Input;
+import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop.Result;
 import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
@@ -63,8 +63,8 @@ import org.springframework.ai.tool.ToolCallback;
 import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AgentLoopRunner (多步 ReAct 循环) -> 测试")
-class AgentLoopRunnerTest {
+@DisplayName("ToolCallLoop (多步 ReAct 循环) -> 测试")
+class ToolCallLoopTest {
 
     @Mock
     private ChatModel chatModel;
@@ -102,7 +102,7 @@ class AgentLoopRunnerTest {
     private AiProperties aiProperties;
     private SimpleMeterRegistry meterRegistry;
     private ChatBudgetGuard budgetGuard;
-    private AgentLoopRunner runner;
+    private ToolCallLoop toolCallLoop;
 
     @BeforeEach
     void setUp() {
@@ -110,7 +110,7 @@ class AgentLoopRunnerTest {
         meterRegistry = new SimpleMeterRegistry();
         // 真实 guard：判定读同一个 budgetStore 桩，预算降级用例不用额外改写
         budgetGuard = new ChatBudgetGuard(budgetStore, aiProperties);
-        runner = newRunner();
+        toolCallLoop = newToolCallLoop();
         lenient().when(modelRouter.choose("chat_tool")).thenReturn(chatModel);
         lenient().when(idGenerator.generateId()).thenReturn("trace-1");
         lenient().when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.empty());
@@ -171,7 +171,7 @@ class AgentLoopRunnerTest {
     }
 
     private Result run(String question, String userId, ChatStreamHandler handler) {
-        return runner.run(new Input(question, "sess-1", userId, List.of(), List.of(), handler));
+        return toolCallLoop.run(new Input(question, "sess-1", userId, List.of(), List.of(), handler));
     }
 
     private Result run(String question) {
@@ -187,7 +187,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("在吗？", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(1);
         assertThat(result.knowledgeHits()).isEmpty();
         verifyNoInteractions(retrievalService, assetSourcingService);
@@ -253,7 +253,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
         assertThat(result.knowledgeHits()).hasSize(1);
         verify(retrievalService).search("退款", 5);
@@ -296,7 +296,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("预算 5000 想买笔记本", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(3);
         assertThat(result.assets()).hasSize(1);
         assertThat(result.details()).hasSize(1);
@@ -345,7 +345,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("预算 5000 想买笔记本，帮我挑一台", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         // 一次 compare_assets 拿到两件详情（等价于两次 product_detail）但只花一步
         assertThat(result.details()).hasSize(2);
         assertThat(steps.steps)
@@ -376,7 +376,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("比一下", "user-1", null);
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         verifyNoInteractions(assetDetailPort);
     }
 
@@ -395,7 +395,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("预算 5000 想买笔记本", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         assertThat(steps.steps.get(1).tool()).isEqualTo(AgentTools.TOOL_MARKET_PRICE_STATS);
         assertThat(steps.steps.get(1).observation()).isEqualTo("当前 2 件在售，均价 ¥4500，价格区间 ¥4200-¥4800");
         // 行情统计只吃已召回资产，不额外读详情
@@ -416,7 +416,7 @@ class AgentLoopRunnerTest {
     @DisplayName("步数上限内未 finish -> 强制收敛（step_limit），不再发第 N+1 次决策")
     void run_stepLimitForcesConvergence() {
         aiProperties = PropertyBindings.bind(AiProperties.class, "chat.max-steps", "2");
-        runner = newRunner();
+        toolCallLoop = newToolCallLoop();
         stubDecisions(
                 toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
                 toolCallResponse(AgentTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退货")),
@@ -425,7 +425,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("反复问规则");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.STEP_LIMIT);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.STEP_LIMIT);
         assertThat(result.rounds()).isEqualTo(2);
         verify(aiModelSupport, times(2)).callWithTools(any(), any(), anyList(), anyList());
         assertThat(meterRegistry
@@ -446,7 +446,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.BUDGET);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.BUDGET);
         assertThat(result.rounds()).isEqualTo(1);
         verify(aiModelSupport, times(1)).callWithTools(any(), any(), anyList(), anyList());
     }
@@ -461,7 +461,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.DECISION_FAILED);
         assertThat(result.knowledgeHits()).hasSize(1);
         verify(retrievalService).search("怎么退款？", 5);
         verify(tracePort, never()).record(any());
@@ -479,7 +479,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.DECISION_FAILED);
         verify(retrievalService).search("怎么退款？", 5);
     }
 
@@ -491,7 +491,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.DECISION_FAILED);
         verify(retrievalService).search("怎么退款？", 5);
     }
 
@@ -506,7 +506,7 @@ class AgentLoopRunnerTest {
         Result result = run("怎么退款？");
 
         // 缺名不是决策失败（决策本身成功了，模型确实要了个工具）：走完一轮后由 finish 正常收敛
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         // 归一化后的空串照常进 toolPath（它就是「模型选了什么」的真实记录），finish 轮同口径计入
         assertThat(result.toolPath()).containsExactly("", AgentTools.TOOL_FINISH);
 
@@ -525,7 +525,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.DECISION_FAILED);
         assertThat(result.knowledgeHits()).isEmpty();
     }
 
@@ -542,7 +542,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.DECISION_FAILED);
         assertThat(result.knowledgeHits()).hasSize(1);
     }
 
@@ -579,7 +579,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("退款规则顺便推荐台笔记本", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         // 规则 + 找货两路召回都进了 Result，两条工具各只发一次决策
         assertThat(result.knowledgeHits()).hasSize(1);
         assertThat(result.assets()).hasSize(1);
@@ -620,7 +620,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         // 模型确实要了这份信息就照给，不因同轮出现 finish 就丢弃
         verify(retrievalService).search("退款", 5);
         assertThat(result.knowledgeHits()).hasSize(1);
@@ -639,7 +639,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.DECISION_FAILED);
         assertThat(result.toolPath()).isEmpty();
         verifyNoInteractions(assetSourcingService);
     }
@@ -681,7 +681,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("看看 p-404");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         assertThat(result.details()).isEmpty();
         verify(tracePort, times(2))
                 .record(argThat(trace -> trace.stepIndex() != 1
@@ -698,7 +698,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("看看 p-1");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
         verify(tracePort, times(2))
                 .record(argThat(trace -> trace.stepIndex() != 1
@@ -715,7 +715,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
         verify(tracePort, times(2)).record(any(AgentStepTrace.class));
         verify(tracePort)
@@ -731,7 +731,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("随便看看");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
         verify(tracePort)
                 .record(argThat(trace -> "web_browse".equals(trace.tool())
@@ -772,7 +772,7 @@ class AgentLoopRunnerTest {
                 toolCallResponse(AgentTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
                 toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
 
-        run("我喜欢复古风格的东西", AgentLoopRunner.MACHINE_SUBJECT, null);
+        run("我喜欢复古风格的东西", ToolCallLoop.MACHINE_SUBJECT, null);
 
         verifyNoInteractions(preferenceRepository);
     }
@@ -786,7 +786,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("我想买台九成新的相机", "user-1", null);
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         verify(preferenceRepository, never()).record(anyString(), anyString(), anyString());
     }
 
@@ -802,7 +802,7 @@ class AgentLoopRunnerTest {
 
         Result result = run("我喜欢复古风格的东西", "user-1", null);
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
     }
 
     @Test
@@ -812,12 +812,12 @@ class AgentLoopRunnerTest {
 
         Result result = run("在吗？");
 
-        assertThat(result.outcome()).isEqualTo(LoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         verify(tracePort).record(any(AgentStepTrace.class));
     }
 
-    private AgentLoopRunner newRunner() {
-        return new AgentLoopRunner(
+    private ToolCallLoop newToolCallLoop() {
+        return new ToolCallLoop(
                 aiModelSupport,
                 modelRouter,
                 promptRegistry,
@@ -830,7 +830,7 @@ class AgentLoopRunnerTest {
                 aiProperties,
                 new ObjectMapper(),
                 idGenerator,
-                new AgentLoopMetrics(meterRegistry));
+                new ToolCallLoopMetrics(meterRegistry));
     }
 
     /** 记录 step 事件的回调桩。 */

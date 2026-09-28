@@ -8,22 +8,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("AgentLoopMetrics (循环观测副产物) -> 测试")
-class AgentLoopMetricsTest {
+@DisplayName("ToolCallLoopMetrics (循环观测副产物) -> 测试")
+class ToolCallLoopMetricsTest {
 
     private SimpleMeterRegistry registry;
-    private AgentLoopMetrics metrics;
+    private ToolCallLoopMetrics metrics;
 
     @BeforeEach
     void setUp() {
         registry = new SimpleMeterRegistry();
-        metrics = new AgentLoopMetrics(registry);
+        metrics = new ToolCallLoopMetrics(registry);
     }
 
     @Test
     @DisplayName("构造期全集预注册 —— 结局与工具 tag 在任何一次调用发生前就已在时序里（rate 类告警从 t=0 有效）")
     void meters_registeredAtConstruction() {
-        for (LoopOutcome outcome : LoopOutcome.values()) {
+        for (ToolCallLoopOutcome outcome : ToolCallLoopOutcome.values()) {
             assertThat(registry.counter("easyorange.ai.chat.loop", "outcome", outcome.getTag())
                             .count())
                     .isZero();
@@ -83,8 +83,8 @@ class AgentLoopMetricsTest {
     @Test
     @DisplayName("recordLoop -> 结局计数 + 决策轮数分布（降级率与平均步数的口径来源）")
     void recordLoop_countsOutcomeAndRounds() {
-        metrics.recordLoop(LoopOutcome.FINISHED, 3);
-        metrics.recordLoop(LoopOutcome.STEP_LIMIT, 7);
+        metrics.recordLoop(ToolCallLoopOutcome.FINISHED, 3);
+        metrics.recordLoop(ToolCallLoopOutcome.STEP_LIMIT, 7);
 
         assertThat(registry.counter("easyorange.ai.chat.loop", "outcome", "finished")
                         .count())
@@ -99,7 +99,7 @@ class AgentLoopMetricsTest {
     @Test
     @DisplayName("recordLoopFailure -> 只记结局，不进轮数分布（记 0 会把平均步数的均值往 0 拽）")
     void recordLoopFailure_excludedFromSteps() {
-        metrics.recordLoop(LoopOutcome.FINISHED, 3);
+        metrics.recordLoop(ToolCallLoopOutcome.FINISHED, 3);
         metrics.recordLoopFailure();
 
         assertThat(registry.counter("easyorange.ai.chat.loop", "outcome", "error")
@@ -113,7 +113,7 @@ class AgentLoopMetricsTest {
     @DisplayName("分位数不由客户端算 —— 走直方图分桶，metric 不带 quantile 维度（多副本下由 PromQL 聚合）")
     void percentilesNotComputedClientSide() {
         metrics.recordTool(AgentTools.TOOL_PRODUCT_SEARCH, 8);
-        metrics.recordLoop(LoopOutcome.FINISHED, 1);
+        metrics.recordLoop(ToolCallLoopOutcome.FINISHED, 1);
 
         assertThat(registry.timer("easyorange.ai.chat.tool.duration", "tool", AgentTools.TOOL_PRODUCT_SEARCH)
                         .takeSnapshot()

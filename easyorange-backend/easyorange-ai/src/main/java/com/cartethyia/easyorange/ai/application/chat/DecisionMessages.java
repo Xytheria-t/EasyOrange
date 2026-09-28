@@ -9,7 +9,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
 /**
- * 决策对话序列 — 首两条（system + 首条 user）每请求固定，每执行一轮按「assistant tool_calls +
+ * 决策侧消息序列 — 首两条（system + 首条 user）每请求固定，每执行一轮按「assistant tool_calls +
  * role=tool 观察」逐轮回填，轮间前缀稳定命中供应商 KV cache 折扣。
  * <p>
  * 一轮内的多个工具调用合成一条 assistant 消息（{@code tool_calls} 数组）+ 一条 tool 消息（多条响应），
@@ -19,11 +19,11 @@ import org.springframework.ai.chat.messages.UserMessage;
  * prompt，这边逐轮累积决策上下文。两边都刻意不改写前缀内容（不改写历史、不压进单条 user 消息），
  * 因为前缀每变一个字节这轮的缓存折扣就全部作废。
  */
-final class DecisionConversation {
+final class DecisionMessages {
 
     private final List<Message> messages;
 
-    DecisionConversation(String systemPrompt, String firstUserMessage) {
+    DecisionMessages(String systemPrompt, String firstUserMessage) {
         this.messages = new ArrayList<>();
         messages.add(new SystemMessage(systemPrompt));
         messages.add(new UserMessage(firstUserMessage));

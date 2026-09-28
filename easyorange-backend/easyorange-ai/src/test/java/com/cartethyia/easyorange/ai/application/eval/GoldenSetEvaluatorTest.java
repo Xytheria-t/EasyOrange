@@ -6,10 +6,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner;
 import com.cartethyia.easyorange.ai.application.chat.AgentTools;
 import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
-import com.cartethyia.easyorange.ai.application.chat.LoopOutcome;
+import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop;
+import com.cartethyia.easyorange.ai.application.chat.ToolCallLoopOutcome;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
@@ -52,19 +52,20 @@ class GoldenSetEvaluatorTest {
     private IdGenerator idGenerator;
 
     @Mock
-    private AgentLoopRunner agentLoopRunner;
+    private ToolCallLoop toolCallLoop;
 
     private GoldenSetEvaluator evaluator;
 
     private void setUp() {
         evaluator = new GoldenSetEvaluator(
-                loader, chatService, aiJudge, retrievalService, metricRecorder, idGenerator, agentLoopRunner);
+                loader, chatService, aiJudge, retrievalService, metricRecorder, idGenerator, toolCallLoop);
     }
 
     /** 工具循环的桩结果 —— 路由评估只读 {@code toolPath}，召回物与结局对它无影响。 */
-    private static AgentLoopRunner.Result loopResult(String... tools) {
+    private static ToolCallLoop.Result loopResult(String... tools) {
         List<String> path = List.of(tools);
-        return new AgentLoopRunner.Result(List.of(), List.of(), List.of(), LoopOutcome.FINISHED, path.size(), path);
+        return new ToolCallLoop.Result(
+                List.of(), List.of(), List.of(), ToolCallLoopOutcome.FINISHED, path.size(), path);
     }
 
     @Test
@@ -75,7 +76,7 @@ class GoldenSetEvaluatorTest {
                 .thenReturn(new GoldenSet(List.of(
                         new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of(), List.of()),
                         new GoldenSetCase("chat-002", "chat", "问题B", null, List.of(), List.of()))));
-        when(chatService.answer(any(ChatRequest.class), eq(AgentLoopRunner.MACHINE_SUBJECT)))
+        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT)))
                 .thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
         when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(4, "ok")));
         when(aiJudge.judge("chat", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(3, "ok")));
@@ -94,7 +95,7 @@ class GoldenSetEvaluatorTest {
         when(loader.load())
                 .thenReturn(new GoldenSet(
                         List.of(new GoldenSetCase("chat-001", "chat", "问题A", null, List.of(), List.of()))));
-        when(chatService.answer(any(ChatRequest.class), eq(AgentLoopRunner.MACHINE_SUBJECT)))
+        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT)))
                 .thenThrow(new RuntimeException("model down"));
 
         GenerationReport report = evaluator.evaluateGeneration();
@@ -133,7 +134,7 @@ class GoldenSetEvaluatorTest {
                 .thenReturn(new GoldenSet(List.of(
                         new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of("kb-0001"), List.of()),
                         new GoldenSetCase("retr-001", "retrieval", "退款", null, List.of("kb-0002"), List.of()))));
-        when(chatService.answer(any(ChatRequest.class), eq(AgentLoopRunner.MACHINE_SUBJECT)))
+        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT)))
                 .thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
         when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(5, "ok")));
         when(retrievalService.search("退款", 5)).thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "内容", 1.0)));
@@ -158,8 +159,7 @@ class GoldenSetEvaluatorTest {
                                 "chat-001", "chat", "怎么退款", "参考", List.of(), List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH)),
                         new GoldenSetCase("chat-011", "chat", "在吗", "参考", List.of(), List.of(AgentTools.TOOL_FINISH)),
                         new GoldenSetCase("chat-016", "chat", "推荐什么数码", "参考", List.of(), List.of()))));
-        when(agentLoopRunner.run(any()))
-                .thenReturn(loopResult(AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_FINISH));
+        when(toolCallLoop.run(any())).thenReturn(loopResult(AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_FINISH));
 
         RoutingReport report = evaluator.evaluateRouting();
 
@@ -179,7 +179,7 @@ class GoldenSetEvaluatorTest {
                                 "chat-001", "chat", "怎么退款", "参考", List.of(), List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH)),
                         new GoldenSetCase(
                                 "chat-011", "chat", "在吗", "参考", List.of(), List.of(AgentTools.TOOL_FINISH)))));
-        when(agentLoopRunner.run(any())).thenReturn(loopResult(AgentTools.TOOL_PRODUCT_SEARCH, AgentTools.TOOL_FINISH));
+        when(toolCallLoop.run(any())).thenReturn(loopResult(AgentTools.TOOL_PRODUCT_SEARCH, AgentTools.TOOL_FINISH));
 
         RoutingReport report = evaluator.evaluateRouting();
 
@@ -195,7 +195,7 @@ class GoldenSetEvaluatorTest {
         when(loader.load())
                 .thenReturn(new GoldenSet(List.of(new GoldenSetCase(
                         "chat-001", "chat", "怎么退款", "参考", List.of(), List.of(AgentTools.TOOL_KNOWLEDGE_SEARCH)))));
-        when(agentLoopRunner.run(any())).thenThrow(new RuntimeException("decision down"));
+        when(toolCallLoop.run(any())).thenThrow(new RuntimeException("decision down"));
 
         RoutingReport report = evaluator.evaluateRouting();
 

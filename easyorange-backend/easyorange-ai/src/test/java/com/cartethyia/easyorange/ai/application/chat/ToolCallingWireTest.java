@@ -150,7 +150,7 @@ class ToolCallingWireTest {
         // 回来的 tool call 经 Spring AI OpenAI 映射层解析后，参数字段与 {@code @ToolParam} 名对齐
         assertThat(calls).hasSize(1);
         assertThat(calls.getFirst().name()).isEqualTo(AgentTools.TOOL_KNOWLEDGE_SEARCH);
-        ToolCallArgs parsed = new ObjectMapper().readValue(calls.getFirst().arguments(), ToolCallArgs.class);
+        ToolCallArguments parsed = new ObjectMapper().readValue(calls.getFirst().arguments(), ToolCallArguments.class);
         assertThat(parsed.thought()).isEqualTo("查退款规则");
         assertThat(parsed.query()).isEqualTo("退款");
     }

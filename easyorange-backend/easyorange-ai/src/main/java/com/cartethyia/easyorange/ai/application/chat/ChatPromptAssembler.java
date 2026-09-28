@@ -46,7 +46,7 @@ final class ChatPromptAssembler {
             String question,
             List<ChatTurn> history,
             List<UserPreference> prefs,
-            AgentLoopRunner.Result run) {
+            ToolCallLoop.Result run) {
         List<Message> messages = new ArrayList<>(history.size() + 2);
         messages.add(new SystemMessage(systemPrompt));
         for (ChatTurn turn : history) {
@@ -57,7 +57,7 @@ final class ChatPromptAssembler {
     }
 
     private static String buildCurrentUserMessage(
-            String question, List<UserPreference> prefs, AgentLoopRunner.Result run) {
+            String question, List<UserPreference> prefs, ToolCallLoop.Result run) {
         return """
                 <user_question>
                 %s

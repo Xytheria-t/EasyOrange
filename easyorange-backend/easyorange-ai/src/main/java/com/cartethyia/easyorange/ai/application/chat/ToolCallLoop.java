@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 多步 Agent 工具循环（ReAct）— 逐轮「决策 → 工具 → 观察」推进，直到模型判定信息足够（finish）。
+ * 多步工具调用循环（ReAct）— 逐轮「决策 → 工具 → 观察」推进，直到模型判定信息足够（finish）。
  * <p>
  * 手写循环 + 原生 tool calling：每轮把 7 个工具的 JSON Schema（{@link AgentTools} 的 {@code @Tool}
  * 注解生成）随请求下发，模型返回「调哪个工具 + 参数 + 理由」。调不调、调几次、调什么由本类决定
@@ -54,12 +54,12 @@ import tools.jackson.databind.ObjectMapper;
  * 检索后直接生成。工具执行失败不算决策失败：收敛成失败观察交回模型修复，不打断对话。
  * <p>
  * 每轮 trace 落库、每步推 SSE step 事件、每次循环计指标 —— 三者都是观测副产物，失败绝不影响主链路。
- * 指标落在 {@link AgentLoopMetrics}、预算判定落在 {@link ChatBudgetGuard}：本类只管「决策 → 工具 → 观察」，
+ * 指标落在 {@link ToolCallLoopMetrics}、预算判定落在 {@link ChatBudgetGuard}：本类只管「决策 → 工具 → 观察」，
  * 不知道指标名与 tag 契约，也不管这次调用还发不发得出去。
  */
 @Slf4j
 @Component
-public class AgentLoopRunner {
+public class ToolCallLoop {
 
     /** 决策对话的 system prompt 键（与 {@code prompts/ai_chat_tool_system.yml} 同名）。 */
     private static final String CHAT_TOOL_PROMPT = "ai_chat_tool_system";
@@ -95,9 +95,9 @@ public class AgentLoopRunner {
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
     private final IdGenerator idGenerator;
-    private final AgentLoopMetrics metrics;
+    private final ToolCallLoopMetrics metrics;
 
-    public AgentLoopRunner(
+    public ToolCallLoop(
             AiModelSupport aiModelSupport,
             AiModelRouter modelRouter,
             PromptRegistry promptRegistry,
@@ -110,7 +110,7 @@ public class AgentLoopRunner {
             AiProperties aiProperties,
             ObjectMapper objectMapper,
             IdGenerator idGenerator,
-            AgentLoopMetrics metrics) {
+            ToolCallLoopMetrics metrics) {
         this.aiModelSupport = aiModelSupport;
         this.modelRouter = modelRouter;
         this.promptRegistry = promptRegistry;
@@ -152,7 +152,7 @@ public class AgentLoopRunner {
             List<KnowledgeHit> knowledgeHits,
             List<AssetHit> assets,
             List<AssetDetail> details,
-            LoopOutcome outcome,
+            ToolCallLoopOutcome outcome,
             int rounds,
             List<String> toolPath) {}
 
@@ -171,7 +171,7 @@ public class AgentLoopRunner {
         String traceId = idGenerator.generateId();
         var tools = agentToolsFor(input);
         var dispatcher = ToolDispatcher.of(tools);
-        var conversation = new DecisionConversation(promptRegistry.require(CHAT_TOOL_PROMPT), firstUserMessage(input));
+        var messages = new DecisionMessages(promptRegistry.require(CHAT_TOOL_PROMPT), firstUserMessage(input));
         var toolPath = new ArrayList<String>();
         int rounds = 0;
         int nextStepIndex = 1;
@@ -182,9 +182,9 @@ public class AgentLoopRunner {
                         "action=agent_loop_degraded, reason=budget, sessionId={}, rounds={}",
                         input.sessionId(),
                         rounds);
-                return toResult(tools, LoopOutcome.BUDGET, rounds, toolPath);
+                return toResult(tools, ToolCallLoopOutcome.BUDGET, rounds, toolPath);
             }
-            List<ToolCallDecision> decisions = decideToolCalls(input, conversation.snapshot(), dispatcher.callbacks());
+            List<ToolCallDecision> decisions = decideToolCalls(input, messages.snapshot(), dispatcher.callbacks());
             if (decisions.isEmpty()) {
                 // 识别不出检索需求时仍补一次：最坏是多几条不相关片段，好过把检索链路失效伪装成「无需检索」
                 try {
@@ -195,15 +195,14 @@ public class AgentLoopRunner {
                             input.sessionId(),
                             failureReason(e));
                 }
-                return toResult(tools, LoopOutcome.DECISION_FAILED, rounds, toolPath);
+                return toResult(tools, ToolCallLoopOutcome.DECISION_FAILED, rounds, toolPath);
             }
             rounds = round;
-            RoundResult roundResult =
-                    executeToolCalls(input, traceId, dispatcher, conversation, decisions, nextStepIndex);
+            RoundResult roundResult = executeToolCalls(input, traceId, dispatcher, messages, decisions, nextStepIndex);
             nextStepIndex = roundResult.nextStepIndex();
             toolPath.addAll(roundResult.toolPath());
             if (roundResult.finished()) {
-                return toResult(tools, LoopOutcome.FINISHED, rounds, toolPath);
+                return toResult(tools, ToolCallLoopOutcome.FINISHED, rounds, toolPath);
             }
         }
         log.warn(
@@ -211,7 +210,7 @@ public class AgentLoopRunner {
                 input.sessionId(),
                 rounds,
                 String.join(",", toolPath));
-        return toResult(tools, LoopOutcome.STEP_LIMIT, rounds, toolPath);
+        return toResult(tools, ToolCallLoopOutcome.STEP_LIMIT, rounds, toolPath);
     }
 
     /** 按请求装配工具实例 — 召回累加器随实例隔离（所有权在 {@link AgentTools}），出口经只读快照收取。 */
@@ -221,7 +220,7 @@ public class AgentLoopRunner {
     }
 
     /** 出循环时一次性定稿：结局 + 轮数 + 工具路径 + 工具实例上已积累的召回物。 */
-    private static Result toResult(AgentTools tools, LoopOutcome outcome, int rounds, List<String> toolPath) {
+    private static Result toResult(AgentTools tools, ToolCallLoopOutcome outcome, int rounds, List<String> toolPath) {
         return new Result(
                 tools.knowledgeHits(), tools.assets(), tools.details(), outcome, rounds, List.copyOf(toolPath));
     }
@@ -247,7 +246,7 @@ public class AgentLoopRunner {
             var decisions = new ArrayList<ToolCallDecision>(toolCalls.size());
             for (AssistantMessage.ToolCall toolCall : toolCalls) {
                 decisions.add(ToolCallDecision.of(
-                        objectMapper.readValue(orEmpty(toolCall.arguments()), ToolCallArgs.class), toolCall));
+                        objectMapper.readValue(orEmpty(toolCall.arguments()), ToolCallArguments.class), toolCall));
             }
             if (decisions.size() > 1) {
                 log.info(
@@ -276,7 +275,7 @@ public class AgentLoopRunner {
             Input input,
             String traceId,
             ToolDispatcher dispatcher,
-            DecisionConversation conversation,
+            DecisionMessages messages,
             List<ToolCallDecision> decisions,
             int firstStepIndex) {
         // finish 先摘出去：执行体里就没有「跳过它」的分支，回填的 tool_calls 与观察也天然等长。
@@ -304,7 +303,7 @@ public class AgentLoopRunner {
             toolPath.add(AgentTools.TOOL_FINISH);
             return new RoundResult(stepIndex + 1, toolPath, true);
         }
-        conversation.appendRound(rawToolCallsOf(executableCalls), observations);
+        messages.appendRound(rawToolCallsOf(executableCalls), observations);
         return new RoundResult(stepIndex, toolPath, false);
     }
 
@@ -389,9 +388,9 @@ public class AgentLoopRunner {
      * 得我们自己收。收敛成空串而不是把 {@code @Nullable} 往下传，是为了让下游的 switch 分发、
      * 回调表查名、trace 落库都不必各写一次判空，也免得空名在某一环被当成「合法工具名」继续流下去。
      */
-    private record ToolCallDecision(ToolCallArgs args, String tool, String arguments, ToolCall rawToolCall) {
+    private record ToolCallDecision(ToolCallArguments args, String tool, String arguments, ToolCall rawToolCall) {
 
-        static ToolCallDecision of(ToolCallArgs args, ToolCall toolCall) {
+        static ToolCallDecision of(ToolCallArguments args, ToolCall toolCall) {
             return new ToolCallDecision(args, orEmpty(toolCall.name()), orEmpty(toolCall.arguments()), toolCall);
         }
 
@@ -483,7 +482,7 @@ public class AgentLoopRunner {
      * 不必再判空，否则等于让同一件事在两层各防一次。
      */
     private static String toolInputOf(ToolCallDecision decision) {
-        ToolCallArgs args = decision.args();
+        ToolCallArguments args = decision.args();
         return switch (decision.tool()) {
             case AgentTools.TOOL_PRODUCT_DETAIL -> args.productId();
             case AgentTools.TOOL_COMPARE_ASSETS ->
