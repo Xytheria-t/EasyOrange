@@ -84,8 +84,7 @@ class OrderCreationIT {
 
         CreateOrderResult result = orderCommandHandler.createOrder(
                 buyerId,
-                new CreateOrderCommand(
-                        List.of(new CreateOrderItem(productId, 2)), "北京市海淀区", "13800138000", "IT", "WECHAT"));
+                new CreateOrderCommand(List.of(new CreateOrderItem(productId, 2)), "北京市海淀区", "13800138000", "IT"));
 
         var order = jdbcTemplate.queryForMap(
                 "SELECT status, total_amount, seller_id FROM eo_order WHERE id = ?", result.orderId());
@@ -118,7 +117,7 @@ class OrderCreationIT {
         assertThatThrownBy(() -> orderCommandHandler.createOrder(
                         buyerId,
                         new CreateOrderCommand(
-                                List.of(new CreateOrderItem(productId, 2)), "北京市海淀区", "13800138000", null, null)))
+                                List.of(new CreateOrderItem(productId, 2)), "北京市海淀区", "13800138000", null)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("库存");
 
@@ -161,11 +160,7 @@ class OrderCreationIT {
                         orderCommandHandler.createOrder(
                                 bid,
                                 new CreateOrderCommand(
-                                        List.of(new CreateOrderItem(productId, 1)),
-                                        "上海市浦东新区",
-                                        "13900139000",
-                                        null,
-                                        null));
+                                        List.of(new CreateOrderItem(productId, 1)), "上海市浦东新区", "13900139000", null));
                         success.incrementAndGet();
                     } catch (Exception e) {
                         rejected.incrementAndGet();
@@ -215,7 +210,7 @@ class OrderCreationIT {
         assertThatThrownBy(() -> orderCommandHandler.createOrder(
                         sellerId,
                         new CreateOrderCommand(
-                                List.of(new CreateOrderItem(productId, 1)), "北京市海淀区", "13800138000", null, null)))
+                                List.of(new CreateOrderItem(productId, 1)), "北京市海淀区", "13800138000", null)))
                 .isInstanceOf(Exception.class);
         assertThat(jdbcTemplate.queryForObject(
                         "SELECT COUNT(*) FROM eo_order WHERE buyer_id = ?", Integer.class, sellerId))

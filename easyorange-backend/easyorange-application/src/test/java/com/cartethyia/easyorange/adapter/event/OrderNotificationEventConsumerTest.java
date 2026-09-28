@@ -111,7 +111,7 @@ class OrderNotificationEventConsumerTest {
         void onOrderPaid_shouldSendNotification() {
             mockClaimSuccess();
 
-            consumer.onOrderEvent(new OrderPaidEvent("evt-2", ORDER_ID, BUYER_ID, "1"), buildMessage());
+            consumer.onOrderEvent(new OrderPaidEvent("evt-2", ORDER_ID, BUYER_ID), buildMessage());
 
             verifyNotificationSent("OrderPaid", "订单已支付", "您的订单已支付成功，订单号: " + ORDER_NO);
         }
@@ -174,7 +174,7 @@ class OrderNotificationEventConsumerTest {
         void onEvent_withoutBuyerId_shouldSkip() {
             mockClaimSuccess();
 
-            consumer.onOrderEvent(new OrderPaidEvent("evt-8", ORDER_ID, null, "1"), buildMessage());
+            consumer.onOrderEvent(new OrderPaidEvent("evt-8", ORDER_ID, null), buildMessage());
 
             verify(messageCommandHandler, never()).sendSystemMessage(any(SendSystemMessageCommand.class));
         }
@@ -208,7 +208,7 @@ class OrderNotificationEventConsumerTest {
         void onEvent_withDuplicateEvent_shouldSkip() {
             when(idempotencyChecker.tryMark(anyString(), anyString())).thenReturn(false);
 
-            consumer.onOrderEvent(new OrderPaidEvent("evt-7", ORDER_ID, BUYER_ID, "1"), buildMessage());
+            consumer.onOrderEvent(new OrderPaidEvent("evt-7", ORDER_ID, BUYER_ID), buildMessage());
 
             verify(idempotencyChecker).tryMark(anyString(), anyString());
             verify(messageCommandHandler, never()).sendSystemMessage(any(SendSystemMessageCommand.class));

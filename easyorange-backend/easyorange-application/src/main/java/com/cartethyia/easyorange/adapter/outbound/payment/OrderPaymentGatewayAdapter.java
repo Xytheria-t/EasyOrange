@@ -26,7 +26,7 @@ public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
                 request.orderId(),
                 request.amount(),
                 request.paymentMethod(),
-                null, // payPassword
+                // 支付密码：支付网关按商户号鉴权，本仓链路不传
                 request.attach());
         return paymentCommandHandler.createPayment(request.buyerId(), command);
     }
