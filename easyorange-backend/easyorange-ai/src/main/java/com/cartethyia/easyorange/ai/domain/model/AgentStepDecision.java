@@ -21,7 +21,6 @@ public record AgentStepDecision(
         String preferenceValue,
         String arguments) {
 
-    /** 补入工具名与原始参数 JSON（二者都不在 arguments JSON 里）。 */
     public AgentStepDecision withToolCall(String tool, String arguments) {
         return new AgentStepDecision(
                 thought, tool, query, productId, productIds, preferenceKey, preferenceValue, arguments);

@@ -38,11 +38,7 @@ public record EventMetadata(
     private static final String HEADER_TRACE_ID = "traceId";
     private static final String HEADER_CAUSATION_ID = "causationId";
 
-    /**
-     * 从 RabbitMQ message headers 解码元数据，结合事件本身的属性。
-     * <p>
-     * eventId 优先取事件实例自身（重投稳定）；消息体未携带时（历史消息）兜底读 messageId header。
-     */
+    /** 事件实例上的 eventId 在重投间不变，故优先取事件自身而非 messageId header。 */
     public static EventMetadata from(Message message, DomainEvent event) {
         var props = message.getMessageProperties();
         var eventId = event.eventId() != null ? event.eventId() : props.getMessageId();

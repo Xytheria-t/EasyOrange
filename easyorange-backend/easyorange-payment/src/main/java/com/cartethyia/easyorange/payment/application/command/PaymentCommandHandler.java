@@ -69,13 +69,7 @@ public class PaymentCommandHandler {
         return result.aggregate().id();
     }
 
-    /**
-     * 支付：两阶段（本地事务 + 外部网关）。
-     * <p>
-     * 单数据库场景下遵循 ADR-0007「拒绝 Saga」——本地事务提供原子性，
-     * 外部网关调用无法纳入同一事务，因此用「准备 → 网关 → 确认」顺序两阶段，
-     * 网关失败时回退状态，无需跨服务编排。
-     */
+    /** 网关失败回退状态（{@code rollbackPayStatus}），不跨服务编排。 */
     public void pay(PayCommand command) {
         String lockKey = PAY_LOCK_PREFIX + command.paymentNo();
 
@@ -91,11 +85,8 @@ public class PaymentCommandHandler {
     }
 
     /**
-     * 支付回调确认：扣款已在渠道侧完成，直接以回调携带的 transactionId 确认成功。
-     * <p>
-     * 与 {@link #pay(PayCommand)} 不同——不调用支付网关（回调本身就是网关的结果通知），
-     * 仅「准备 → 确认」两步；回调金额非空时先校验与支付单一致（防止金额被篡改，
-     * HMAC 签名只覆盖 paymentNo|transactionId）。
+     * 回调金额非空时先校验与支付单一致（防止金额被篡改 ——
+     * HMAC 签名只覆盖 paymentNo|transactionId，金额是签名盲区）。
      */
     public void processCallback(PaymentCallbackCommand command) {
         String lockKey = PAY_LOCK_PREFIX + command.paymentNo();

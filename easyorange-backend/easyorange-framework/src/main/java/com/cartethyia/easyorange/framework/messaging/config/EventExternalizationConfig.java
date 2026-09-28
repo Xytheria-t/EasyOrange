@@ -33,10 +33,8 @@ public class EventExternalizationConfig {
     }
 
     /**
-     * 将领域事件类型名转换为 RabbitMQ 路由键。
-     * 约定：CamelCase → 全小写点分。
-     * <p>
-     * "Event" 后缀已由 {@link DomainEvent#eventType()} 剥离。
+     * 将领域事件类型名转换为 RabbitMQ 路由键 —— "Event" 后缀已由
+     * {@link DomainEvent#eventType()} 剥离。
      * <p>
      * 示例：
      * <pre>

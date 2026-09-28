@@ -78,7 +78,6 @@ public class IdempotencyService {
                 waitBeforePoll();
             }
         } catch (RedisUnavailableException e) {
-            // Redis 不可用 → fail-open：降级为直接执行，无幂等保护
             log.warn("action=idempotency_fail_open, key={}", key, e.getCause());
             return operation.execute();
         }
