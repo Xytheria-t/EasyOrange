@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.adapter.inbound.web.controller;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.cartethyia.easyorange.ai.domain.port.ChatStreamAbortedException;
+import com.cartethyia.easyorange.ai.domain.exception.ChatStreamAbortedException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;

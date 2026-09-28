@@ -26,8 +26,6 @@
     "tags":            { "type": "keyword" },
     "mainImage":       { "type": "keyword" },
     "images":          { "type": "keyword" },
-    "sellerName":      { "type": "keyword" },
-    "sellerAvatar":    { "type": "keyword" },
     "createTime":      { "type": "date", "format": "epoch_millis" },
     "updateTime":      { "type": "date", "format": "epoch_millis" }
   }

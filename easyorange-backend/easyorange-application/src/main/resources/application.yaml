@@ -316,7 +316,7 @@ webmvc:
     - /favicon.ico
     - /error
     - /actuator/**
-    # MCP streamable HTTP — GET /mcp 是长连 SSE 流，计入 http.server.request 会拖垮分位值口径
+    # MCP streamable HTTP — GET /mcp 是长连 SSE 流，计入 HTTP 请求指标会把分位值口径拖成「连接时长」
     - /mcp
   skip-logging-paths:
     - /actuator/**
@@ -358,6 +358,8 @@ security:
     - /api/products
     - /api/products/{id}
     - /api/products/categories/**
+    # 类目浏览页的按类目筛选 — 内部委托 listProducts，与 /api/products 同属公开浏览能力（前端 skipAuth）
+    - /api/products/category/**
     - /api/products/search
     - /api/products/search/**
     - /api/products/{id}/similar
@@ -470,6 +472,9 @@ easyorange:
     chat:                  # 多轮对话记忆 + Agent 循环 — Redis 会话窗口（短期）
       session-ttl-hours: 24
       history-limit: 6
+      # 会话级互斥锁等待上限（秒）— 同一会话的并发请求排队，避免两轮生成互相污染上下文。
+      # 上限需覆盖最坏一轮富轨迹的端到端耗时（实测 7 轮 62s），超时按「会话繁忙」降级而非无限等待
+      session-lock-wait-seconds: 90
       # 多步 ReAct 循环单次上限（含 finish 轮）；达到上限未 finish 用已积累观察强制收敛
       # 工具面扩到 5 个（含 remember_preference）后由 5 上调：典型轨迹 search → 计算/详情 → remember → finish
       # 需要 4~5 步，留出余量避免工具一多反而更容易撞上限降级；步数分布见 easyorange.ai.chat.steps

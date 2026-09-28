@@ -195,7 +195,6 @@ class ArchitectureRulesTest {
     // 已知技术债（被 FreezingArchRule 自动冻结在 src/test/resources/archunit_store/，重构后自动解除，
     // 无需删本文件的豁免名单；快照为 archunit 实际报送的违规行，与此处描述互为印证）：
     //   • SearchHistoryBufferAppService  — application 直构 SearchHistoryDO + 注入 SearchHistoryMapper
-    //   • ViewCountBatchProcessor        — application 直注 ProductMapper（batchAddViewCounts）
     // 规则继续拦截 domain/application 对 adapter 的新增依赖。
     @ArchTest
     static final ArchRule domain_and_application_should_not_depend_on_adapter = FreezingArchRule.freeze(noClasses()
@@ -236,9 +235,11 @@ class ArchitectureRulesTest {
             .resideInAnyPackage("..domain..", "..application..")
             .should()
             .dependOnClassesThat()
-            .resideInAPackage("org.springframework.dao..")
-            .because("Spring DataAccessException 家族是持久化技术细节，必须在 adapter/outbound 内翻译成"
-                    + "端口返回值或领域异常（如 UniqueConstraint → 幂等返回空），禁止渗进 domain/application");
+            .resideInAnyPackage("org.springframework.dao..", "org.springframework.jdbc..")
+            .because("Spring DataAccessException 家族与 JdbcTemplate 都是持久化技术细节，必须在 adapter/outbound 内"
+                    + "翻译成端口返回值或领域异常（如 UniqueConstraint → 幂等返回空），禁止渗进 domain/application；"
+                    + "org.springframework.jdbc 一并禁是因为 application 层直连 JdbcTemplate + 内联 SQL 是绕过端口"
+                    + "最省事也最难被发现的破口（历史上 AiFeedbackAppService / AiCostReportAppService 各出现过一处）");
 
     // ==================== Rule 11: 每个模块一套领域异常层级 ====================
 

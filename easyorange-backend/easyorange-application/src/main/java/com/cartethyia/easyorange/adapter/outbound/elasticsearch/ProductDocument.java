@@ -40,8 +40,6 @@ public class ProductDocument {
     private List<String> tags;
     private String mainImage;
     private List<String> images;
-    private String sellerName;
-    private String sellerAvatar;
 
     @Field(type = FieldType.Dense_Vector)
     private List<Float> nameEmbedding;

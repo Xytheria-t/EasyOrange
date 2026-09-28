@@ -56,7 +56,8 @@ import tools.jackson.databind.node.ObjectNode;
  * kNN 缺 query 子句只能退化成 match_all，等于按过滤条件随机取一批。
  * <p>
  * <b>单路失败不影响另一路</b>：任一路抛异常就退化为另一路单独排序（与 AI 找货链路同一语义），
- * 两路都失败才回落到单路查询。
+ * 两路都失败才回落到单路查询；ES 整体不可达时由 {@code ProductSearchQueryHandler} 降级回 MySQL 检索
+ * （facets 依赖 ES 聚合，降级后为空）。
  */
 @Slf4j
 @Component
@@ -125,6 +126,9 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
 
         // 用 NativeQuery 组装请求体：SDE 的 StringQuery 会把整段 body 当作 query DSL 包进 wrapper 查询，
         // 形成 {"query":{"query":…,"sort":…,"aggs":…}} 被 ES 拒收（unknown query [query]）。
+        // 异常不在本层兜底：适配器手里只有拼好的 ES 查询、没有原始查询条件，补不出等价的 MySQL 检索。
+        // ES 整体不可达由 ProductSearchQueryHandler 统一降级回 MySQL，不在这里返回空结果集 ——
+        // 「空结果」与「真的没搜到」在响应上无法区分，会把一次集群故障伪装成正常响应
         SearchHits<ProductDocument> searchHits =
                 elasticsearchOperations.search(queryBuilder.build(), ProductDocument.class);
 
@@ -200,8 +204,9 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
     }
 
     /**
-     * 批量补卖家展示信息（昵称/头像）：索引侧不含 sellerName，查询时经 {@link SellerCachePort}（Caffeine）回填。
-     * 卖家服务不可用时降级为匿名展示，不影响检索主链路。
+     * 批量补卖家展示信息（昵称/头像）：索引侧不存卖家名/头像（写侧不查用户表，索引只有 sellerId），
+     * 统一在查询时经 {@link SellerCachePort}（Caffeine）按 sellerId 回填。卖家服务不可用时降级为匿名展示，
+     * 不影响检索主链路。
      */
     private List<ProductReadModel> fillSellers(List<ProductReadModel> records) {
         if (records.isEmpty()) {
@@ -416,9 +421,6 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         return ProductReadModel.builder()
                 .id(doc.getId())
                 .sellerId(doc.getUserId() != null ? doc.getUserId().toString() : null)
-                // 索引侧字段名是 seller*，读模型/响应侧叫 username（前端归一为 sellerName）
-                .username(doc.getSellerName())
-                .userAvatar(doc.getSellerAvatar())
                 .categoryId(doc.getCategoryId())
                 .categoryName(doc.getCategoryName())
                 .title(doc.getName())
