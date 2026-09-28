@@ -13,6 +13,22 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 
+/**
+ * 用户聚合根 — 凭据、状态、联系方式、资料、登录痕迹的持有者。
+ * <p>
+ * 取舍：本类<b>不</b>对外承诺不可变。所有变更方法走 Lombok {@code toBuilder} 返回<b>新实例</b>
+ * （含 {@link #assignId(String)}），实例本身不可变、字段全 final，但聚合不做「同一实例多方改写」的自制约束——
+ * 变更即派生，共享引用不会被就地改脏。
+ * <p>
+ * 边界：密码只以密文形态进出（{@link #getPassword()} 直出 {@code Credentials.encodedPassword()}），
+ * 明文编码在 {@code PasswordEncoderPort} 一侧完成；对外响应一律经
+ * {@code application/dto/UserView} 脱敏，不把本对象直接序列化。审计信息按 operatorId 是否为 null 决定
+ * 是否落库（null = 系统自身操作，不写 updateBy），软删由 delFlag 过滤，聚合不提供删除迁移。
+ * <p>
+ * {@code remark} 是<b>管理端</b>变更原因（停用 / 改角色 / 重置密码时前端必填的那句），对应
+ * {@code eo_user.remark}。C 端用户自己改资料没有「原因」这个概念，故该字段只在
+ * {@link #withChangeReason(String)} 这一条路径上被写入。
+ */
 @Getter
 public class User {
 
@@ -24,6 +40,7 @@ public class User {
     private final PersonalInfo personalInfo;
     private final LoginInfo loginInfo;
     private final AuditInfo auditInfo;
+    private final String remark;
 
     @Builder(toBuilder = true)
     private User(
@@ -34,7 +51,8 @@ public class User {
             ContactInfo contactInfo,
             PersonalInfo personalInfo,
             LoginInfo loginInfo,
-            AuditInfo auditInfo) {
+            AuditInfo auditInfo,
+            String remark) {
         this.id = id;
         this.credentials = credentials;
         this.userType = userType;
@@ -43,6 +61,7 @@ public class User {
         this.personalInfo = personalInfo;
         this.loginInfo = loginInfo;
         this.auditInfo = auditInfo;
+        this.remark = remark;
     }
 
     public static User create(String username, String encodedPassword, String phone) {
@@ -133,6 +152,14 @@ public class User {
                 .userType(newUserType)
                 .auditInfo(updateAuditInfo(operatorId))
                 .build();
+    }
+
+    /**
+     * 记录管理端变更原因 — 管理端口写路径专用，与 {@code operatorId} 一起构成「谁、为什么」，
+     * 两者都落到同一行（{@code remark} + {@code auditInfo.updateBy}）。
+     */
+    public User withChangeReason(String reason) {
+        return this.toBuilder().remark(reason).build();
     }
 
     public User recordLogin(String loginIp) {

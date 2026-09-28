@@ -1,15 +1,34 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.assembler;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
+import com.cartethyia.easyorange.admin.domain.model.ProductDetailView;
+import com.cartethyia.easyorange.admin.domain.model.ProductListView;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductSummary;
+import com.cartethyia.easyorange.common.result.PageResult;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
+/**
+ * 商品出参组装 — 主图取哪一张、列表与详情共用一套字段命名，都属展示口径，留在 web 边界。
+ */
 @Component
 public class AdminProductAssembler {
 
-    public AdminProductResponse toDetailResponse(ProductDetail detail, List<String> images) {
+    public PageResult<AdminProductResponse> toPageResponses(ProductListView view) {
+        List<AdminProductResponse> records = view.page().records().stream()
+                .map(summary -> toSummaryResponse(summary, view.images().getOrDefault(summary.id(), List.of())))
+                .toList();
+        ProductQueryResult page = view.page();
+        return PageResult.of(records, page.total(), page.pageNum(), page.pageSize());
+    }
+
+    public AdminProductResponse toDetailResponse(ProductDetailView view) {
+        return toDetailResponse(view.product(), view.images());
+    }
+
+    private AdminProductResponse toDetailResponse(ProductDetail detail, List<String> images) {
         return AdminProductResponse.builder()
                 .productId(detail.id())
                 .name(detail.name())
@@ -32,7 +51,7 @@ public class AdminProductAssembler {
                 .build();
     }
 
-    public AdminProductResponse toSummaryResponse(ProductSummary summary, List<String> images) {
+    private AdminProductResponse toSummaryResponse(ProductSummary summary, List<String> images) {
         return AdminProductResponse.builder()
                 .productId(summary.id())
                 .name(summary.name())

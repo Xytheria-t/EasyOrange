@@ -1,17 +1,15 @@
-package com.cartethyia.easyorange.admin.service;
+package com.cartethyia.easyorange.admin.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminOrderQueryRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
+import com.cartethyia.easyorange.admin.domain.exception.AdminDomainException;
+import com.cartethyia.easyorange.admin.domain.model.OrderDetailView;
+import com.cartethyia.easyorange.admin.domain.model.OrderListView;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemDetail;
@@ -24,7 +22,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.ProductInfo;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.common.result.PageResult;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,9 +34,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * 订单服务测试 — 断言的是**编排结果**（这一页补齐了哪些关联数据），字段命名由 assembler 的测试负责。
+ */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AdminOrderService 单元测试")
-class AdminOrderServiceTest {
+@DisplayName("AdminOrderAppService 单元测试")
+class AdminOrderAppServiceTest {
 
     @Mock
     private AdminOrderPort adminOrderPort;
@@ -48,12 +48,15 @@ class AdminOrderServiceTest {
     private AdminUserPort adminUserPort;
 
     @InjectMocks
-    private AdminOrderService orderService;
+    private AdminOrderAppService orderService;
 
     private static final String ORDER_ID = "100";
     private static final String BUYER_ID = "1";
     private static final String SELLER_ID = "2";
     private static final String PRODUCT_ID = "200";
+
+    private static final OrderQueryCondition CONDITION =
+            new OrderQueryCondition(null, null, null, null, null, null, null, 1, 20);
 
     private OrderSummary createOrderSummary(String status) {
         return new OrderSummary(
@@ -96,12 +99,9 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("分页查询订单列表")
         void listOrders_returnsPage() {
-            AdminOrderQueryRequest request =
-                    new AdminOrderQueryRequest(null, null, null, null, null, null, null, 1, 20);
             OrderSummary order = createOrderSummary("PENDING_PAYMENT");
 
-            when(adminOrderPort.queryOrders(any(OrderQueryCondition.class)))
-                    .thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
+            when(adminOrderPort.queryOrders(CONDITION)).thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
             when(adminUserPort.getUserInfos(anyList()))
                     .thenReturn(Map.of(
                             BUYER_ID, new UserInfo(BUYER_ID, "buyer", "认领方", null, null),
@@ -112,47 +112,29 @@ class AdminOrderServiceTest {
             when(adminOrderPort.getProducts(anyList()))
                     .thenReturn(Map.of(PRODUCT_ID, new ProductInfo(PRODUCT_ID, "测试商品", new BigDecimal("99.99"))));
 
-            PageResult<AdminOrderResponse> result = orderService.listOrders(request);
+            OrderListView view = orderService.listOrders(CONDITION);
 
-            assertThat(result.records()).hasSize(1);
-            assertThat(result.total()).isEqualTo(1);
-            assertThat(result.records().get(0).buyerName()).isEqualTo("认领方");
+            assertThat(view.page().total()).isEqualTo(1);
+            assertThat(view.page().pageNum()).isEqualTo(1);
+            assertThat(view.users().get(BUYER_ID).nickName()).isEqualTo("认领方");
+            assertThat(view.items().get(ORDER_ID)).hasSize(1);
+            assertThat(view.products().get(PRODUCT_ID).name()).isEqualTo("测试商品");
         }
 
         @Test
-        @DisplayName("订单列表用户信息缺失时返回空昵称")
-        void listOrders_missingUserInfo_returnsNullNickname() {
-            AdminOrderQueryRequest request =
-                    new AdminOrderQueryRequest(null, null, null, null, null, null, null, 1, 20);
+        @DisplayName("用户 / 商品查不到时补空表，订单本身照常返回")
+        void listOrders_missingRelatedData_returnsEmptyMaps() {
             OrderSummary order = createOrderSummary("PENDING_PAYMENT");
-            when(adminOrderPort.queryOrders(any(OrderQueryCondition.class)))
-                    .thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
+            when(adminOrderPort.queryOrders(CONDITION)).thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
             when(adminUserPort.getUserInfos(anyList())).thenReturn(Map.of());
             when(adminOrderPort.getOrderItems(anyList())).thenReturn(Map.of());
             when(adminOrderPort.getProducts(anyList())).thenReturn(Map.of());
 
-            PageResult<AdminOrderResponse> result = orderService.listOrders(request);
+            OrderListView view = orderService.listOrders(CONDITION);
 
-            assertThat(result.records()).hasSize(1);
-            assertThat(result.records().get(0).buyerName()).isNull();
-            assertThat(result.records().get(0).sellerName()).isNull();
-        }
-
-        @Test
-        @DisplayName("非法时间格式回退为空")
-        void listOrders_invalidTimes_returnsNullTimes() {
-            AdminOrderQueryRequest request =
-                    new AdminOrderQueryRequest(null, null, null, null, null, "invalid", "invalid", 1, 20);
-            OrderSummary order = createOrderSummary("PENDING_PAYMENT");
-            when(adminOrderPort.queryOrders(any(OrderQueryCondition.class)))
-                    .thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
-            when(adminUserPort.getUserInfos(anyList())).thenReturn(Map.of());
-            when(adminOrderPort.getOrderItems(anyList())).thenReturn(Map.of());
-            when(adminOrderPort.getProducts(anyList())).thenReturn(Map.of());
-
-            PageResult<AdminOrderResponse> result = orderService.listOrders(request);
-
-            assertThat(result.records()).hasSize(1);
+            assertThat(view.page().records()).hasSize(1);
+            assertThat(view.users()).isEmpty();
+            assertThat(view.items()).isEmpty();
         }
     }
 
@@ -169,12 +151,11 @@ class AdminOrderServiceTest {
             when(adminOrderPort.getProducts(anyList()))
                     .thenReturn(Map.of(PRODUCT_ID, new ProductInfo(PRODUCT_ID, "测试商品", new BigDecimal("99.99"))));
 
-            AdminOrderDetailResponse detail = orderService.getOrderDetail(ORDER_ID);
+            OrderDetailView view = orderService.getOrderDetail(ORDER_ID);
 
-            assertThat(detail).isNotNull();
-            assertThat(detail.orderId()).isEqualTo(ORDER_ID);
-            assertThat(detail.buyer().nickname()).isEqualTo("认领方");
-            assertThat(detail.products()).hasSize(1);
+            assertThat(view.order().id()).isEqualTo(ORDER_ID);
+            assertThat(view.buyer().nickName()).isEqualTo("认领方");
+            assertThat(view.products()).containsKey(PRODUCT_ID);
         }
 
         @Test
@@ -183,24 +164,23 @@ class AdminOrderServiceTest {
             when(adminOrderPort.getOrderDetail(ORDER_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> orderService.getOrderDetail(ORDER_ID))
-                    .isInstanceOf(BusinessException.class)
+                    .isInstanceOf(AdminDomainException.class)
                     .hasMessageContaining("订单不存在");
         }
 
         @Test
-        @DisplayName("订单详情中买/卖/商品缺失时返回空信息")
+        @DisplayName("买/卖/商品缺失时原样返回 null，由展示层兜底")
         void getOrderDetail_nullBuyerSellerProduct() {
             when(adminOrderPort.getOrderDetail(ORDER_ID)).thenReturn(createOrderDetail("PENDING_PAYMENT"));
             when(adminUserPort.getUserInfo(BUYER_ID)).thenReturn(null);
             when(adminUserPort.getUserInfo(SELLER_ID)).thenReturn(null);
             when(adminOrderPort.getProducts(anyList())).thenReturn(Map.of());
 
-            AdminOrderDetailResponse detail = orderService.getOrderDetail(ORDER_ID);
+            OrderDetailView view = orderService.getOrderDetail(ORDER_ID);
 
-            assertThat(detail).isNotNull();
-            assertThat(detail.buyer().nickname()).isNull();
-            assertThat(detail.seller().nickname()).isNull();
-            assertThat(detail.products()).hasSize(1);
+            assertThat(view.order().items()).hasSize(1);
+            assertThat(view.buyer()).isNull();
+            assertThat(view.seller()).isNull();
         }
     }
 
@@ -215,7 +195,7 @@ class AdminOrderServiceTest {
                     .thenReturn(new OrderStats(
                             100, 10, 20, 30, 15, 25, 5, 5, new BigDecimal("5000.00"), new BigDecimal("200.00")));
 
-            OrderStatsResponse stats = orderService.getOrderStats();
+            OrderStats stats = orderService.getOrderStats();
 
             assertThat(stats.totalOrders()).isEqualTo(100);
             assertThat(stats.todayOrders()).isEqualTo(10);
@@ -242,13 +222,14 @@ class AdminOrderServiceTest {
         void cancelOrder_portThrows_propagates() {
             doThrow(BusinessException.of("订单不存在")).when(adminOrderPort).cancelOrder(ORDER_ID, "取消");
 
+            // 端口抛什么就上抛什么：服务层不把下游异常换一种类型，调用方才认得出错误码
             assertThatThrownBy(() -> orderService.cancelOrder(ORDER_ID, "取消"))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("订单不存在");
         }
 
         @Test
-        @DisplayName("强制完成订单委托端口")
+        @DisplayName("强制完成订单委托端口（原因不落库，不下发）")
         void forceComplete_delegatesToPort() {
             orderService.forceComplete(ORDER_ID, "强制完成");
 

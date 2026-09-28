@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.admin.service;
+package com.cartethyia.easyorange.admin.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -8,10 +8,9 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAuditRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAuditRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
+import com.cartethyia.easyorange.admin.domain.model.BatchAuditItem;
+import com.cartethyia.easyorange.admin.domain.model.BatchAuditResult;
+import com.cartethyia.easyorange.admin.domain.model.ProductAuditCommand;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort.AuditLogRecord;
 import com.cartethyia.easyorange.common.exception.BusinessException;
@@ -31,8 +30,8 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AdminProductAuditService 单元测试")
-class AdminProductAuditServiceTest {
+@DisplayName("AdminProductAuditAppService 单元测试")
+class AdminProductAuditAppServiceTest {
 
     @Mock
     private AdminProductAuditPort adminProductAuditPort;
@@ -41,7 +40,7 @@ class AdminProductAuditServiceTest {
     private TransactionTemplate transactionTemplate;
 
     @InjectMocks
-    private AdminProductAuditService auditService;
+    private AdminProductAuditAppService auditService;
 
     private static final String PRODUCT_ID = "100";
     private static final String OPERATOR_ID = "1";
@@ -75,23 +74,19 @@ class AdminProductAuditServiceTest {
         @Test
         @DisplayName("审核通过 — 委托端口并携带操作人信息")
         void auditProduct_approve_delegatesToPort() {
-            ProductAuditRequest request = new ProductAuditRequest(1, null, null, null);
-
-            auditService.auditProduct(operator(), PRODUCT_ID, request);
+            auditService.auditProduct(operator(), PRODUCT_ID, new ProductAuditCommand(1, null, null, null));
 
             verify(adminProductAuditPort)
                     .auditProduct(eq(PRODUCT_ID), eq(1), eq(null), eq(null), eq(null), eq(OPERATOR_ID), any());
         }
 
         @Test
-        @DisplayName("审核拒绝带原因")
+        @DisplayName("审核拒绝带原因与备注")
         void auditProduct_reject_delegatesToPort() {
-            ProductAuditRequest request = new ProductAuditRequest(2, "商品信息不完整", null, null);
-
-            auditService.auditProduct(operator(), PRODUCT_ID, request);
+            auditService.auditProduct(operator(), PRODUCT_ID, new ProductAuditCommand(2, "商品信息不完整", "人工复核", null));
 
             verify(adminProductAuditPort)
-                    .auditProduct(eq(PRODUCT_ID), eq(2), eq("商品信息不完整"), eq(null), eq(null), eq(OPERATOR_ID), any());
+                    .auditProduct(eq(PRODUCT_ID), eq(2), eq("商品信息不完整"), eq("人工复核"), eq(null), eq(OPERATOR_ID), any());
         }
     }
 
@@ -115,33 +110,32 @@ class AdminProductAuditServiceTest {
         @Test
         @DisplayName("批量审核成功")
         void batchAudit_allSuccess() {
-            BatchAuditRequest request = new BatchAuditRequest(List.of(
-                    new BatchAuditRequest.AuditItem("100", 1, "通过", null),
-                    new BatchAuditRequest.AuditItem("101", 2, "信息不符", null)));
+            List<BatchAuditItem> items =
+                    List.of(new BatchAuditItem("100", 1, "通过", null), new BatchAuditItem("101", 2, "信息不符", null));
 
-            BatchAuditResultResponse result = auditService.batchAudit(operator(), request);
+            BatchAuditResult result = auditService.batchAudit(operator(), items);
 
+            assertThat(result.total()).isEqualTo(2);
             assertThat(result.success()).isEqualTo(2);
-            assertThat(result.failed()).isZero();
+            assertThat(result.errors()).isEmpty();
         }
 
         @Test
-        @DisplayName("批量审核中跳过失败项")
+        @DisplayName("批量审核中跳过失败项，备注位固定为 null")
         void batchAudit_skipFailedItems() {
             doThrow(BusinessException.of("资产不存在"))
                     .when(adminProductAuditPort)
                     .auditProduct(eq("100"), eq(1), any(), any(), any(), any(), any());
 
-            BatchAuditRequest request = new BatchAuditRequest(List.of(
-                    new BatchAuditRequest.AuditItem("100", 1, "通过", null),
-                    new BatchAuditRequest.AuditItem("101", 1, "通过", null)));
+            List<BatchAuditItem> items =
+                    List.of(new BatchAuditItem("100", 1, "通过", null), new BatchAuditItem("101", 1, "通过", null));
 
-            BatchAuditResultResponse result = auditService.batchAudit(operator(), request);
+            BatchAuditResult result = auditService.batchAudit(operator(), items);
 
             assertThat(result.success()).isEqualTo(1);
-            assertThat(result.failed()).isEqualTo(1);
             assertThat(result.errors()).hasSize(1);
             assertThat(result.errors().get(0)).contains("100");
+            verify(adminProductAuditPort).auditProduct(eq("101"), eq(1), any(), eq((String) null), any(), any(), any());
         }
     }
 
@@ -154,11 +148,11 @@ class AdminProductAuditServiceTest {
         void getAuditLogs_returnsLogs() {
             when(adminProductAuditPort.getAuditLogs(PRODUCT_ID)).thenReturn(List.of(createAuditLog()));
 
-            List<AuditLogResponse> logs = auditService.getAuditLogs(PRODUCT_ID);
+            List<AuditLogRecord> logs = auditService.getAuditLogs(PRODUCT_ID);
 
             assertThat(logs).hasSize(1);
             assertThat(logs.get(0).productId()).isEqualTo(PRODUCT_ID);
-            assertThat(logs.get(0).action()).isEqualTo(1);
+            assertThat(logs.get(0).action()).isEqualTo("1");
             assertThat(logs.get(0).actionDesc()).isEqualTo("通过");
             assertThat(logs.get(0).afterStatusDesc()).isEqualTo("上架");
         }
@@ -168,9 +162,7 @@ class AdminProductAuditServiceTest {
         void getAuditLogs_empty_returnsEmptyList() {
             when(adminProductAuditPort.getAuditLogs(PRODUCT_ID)).thenReturn(List.of());
 
-            List<AuditLogResponse> logs = auditService.getAuditLogs(PRODUCT_ID);
-
-            assertThat(logs).isEmpty();
+            assertThat(auditService.getAuditLogs(PRODUCT_ID)).isEmpty();
         }
     }
 }

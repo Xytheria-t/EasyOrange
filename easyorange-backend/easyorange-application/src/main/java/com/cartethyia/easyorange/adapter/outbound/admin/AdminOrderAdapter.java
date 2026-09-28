@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.adapter.outbound.admin;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
 import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
@@ -13,10 +14,10 @@ import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.application.port.query.OrderQueryRepository;
 import com.cartethyia.easyorange.order.application.query.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
-import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
@@ -24,12 +25,15 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.Pr
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Admin 订单查询/操作适配器
@@ -41,6 +45,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class AdminOrderAdapter implements AdminOrderPort {
+
+    private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
 
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
@@ -162,6 +168,36 @@ public class AdminOrderAdapter implements AdminOrderPort {
                 .map(row -> (BigDecimal) row.get("total"))
                 .findFirst()
                 .orElse(BigDecimal.ZERO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> getCreateTrend(LocalDate since) {
+        var rows = ChainWrappers.lambdaQueryChain(orderMapper)
+                .select(OrderDO::getCreateTime)
+                .eq(OrderDO::getDelFlag, 0)
+                .ge(OrderDO::getCreateTime, since.atStartOfDay())
+                .list();
+
+        Map<String, Long> counts = new TreeMap<>();
+        for (OrderDO row : rows) {
+            counts.merge(row.getCreateTime().format(MONTH_FORMAT), 1L, Long::sum);
+        }
+        return counts;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RecentActivity> findRecentCreated(int limit) {
+        return ChainWrappers.lambdaQueryChain(orderMapper)
+                .select(OrderDO::getId, OrderDO::getOrderNo, OrderDO::getCreateTime)
+                .eq(OrderDO::getDelFlag, 0)
+                .orderByDesc(OrderDO::getCreateTime)
+                .last("LIMIT " + limit)
+                .list()
+                .stream()
+                .map(o -> new RecentActivity(o.getId(), o.getOrderNo(), o.getCreateTime()))
+                .toList();
     }
 
     @Override

@@ -4,8 +4,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Admin 模块的商品审核端口
- * 用于跨模块执行商品审核与查询审核日志，遵循防腐层原则
+ * Admin 模块的商品审核端口。
+ * <p>
+ * <b>取舍</b>：审核是一次带操作人身份的写操作，所以端口参数里显式带 {@code operatorId} /
+ * {@code operatorName} —— 让 admin 侧自己查一次当前用户再传进来，是把鉴权上下文漏过模块边界的另一种写法。
+ * 动作与状态一律传 String code，枚举翻译留在 product 侧，admin 侧不复制一份审核状态机。
+ * <p>
+ * <b>边界</b>：商品是否存在、状态是否允许审核由 product 侧裁决后抛业务异常；本端口只落日志、
+ * 发事件，不吞异常也不改写结果。
  */
 public interface AdminProductAuditPort {
 
@@ -21,9 +27,7 @@ public interface AdminProductAuditPort {
             String operatorId,
             String operatorName);
 
-    /**
-     * 查询商品审核日志（按时间倒序）
-     */
+    /** 按时间倒序。 */
     List<AuditLogRecord> getAuditLogs(String productId);
 
     /**

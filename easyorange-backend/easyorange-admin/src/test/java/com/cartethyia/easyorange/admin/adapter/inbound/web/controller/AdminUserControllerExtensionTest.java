@@ -9,14 +9,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ResetPasswordResponse;
-import com.cartethyia.easyorange.admin.service.AdminUserSecurityService;
-import com.cartethyia.easyorange.admin.service.AdminUserService;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminUserAssembler;
+import com.cartethyia.easyorange.admin.application.service.AdminUserAppService;
+import com.cartethyia.easyorange.admin.application.service.AdminUserSecurityAppService;
+import com.cartethyia.easyorange.common.security.AuthUser;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,14 +34,29 @@ class AdminUserControllerExtensionTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private AdminUserService adminUserService;
+    private AdminUserAppService adminUserService;
 
     @MockitoBean
-    private AdminUserSecurityService adminUserSecurityService;
+    private AdminUserSecurityAppService adminUserSecurityService;
+
+    @MockitoBean
+    private AdminUserAssembler assembler;
+
+    /**
+     * 管理端写端点从 {@code @AuthenticationPrincipal} 取操作人；无 SecurityContext 时
+     * 解析出 null 会让「谁改的」这条审计链在测试里断掉，故显式造一个已认证主体。
+     */
+    @BeforeEach
+    void authenticate() {
+        var operator = new AuthUser("admin-1", "admin");
+        var authentication = new UsernamePasswordAuthenticationToken(
+                operator, null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
 
     @Test
     void unlockUser_shouldSucceed() throws Exception {
-        doNothing().when(adminUserSecurityService).unlockUser("1");
+        doNothing().when(adminUserSecurityService).unlockUser("1", "admin-1");
 
         mockMvc.perform(put("/api/admin/users/1/unlock"))
                 .andExpect(status().isOk())
@@ -44,11 +65,8 @@ class AdminUserControllerExtensionTest {
 
     @Test
     void resetPassword_shouldReturnNewPassword() throws Exception {
-        var resetResponse = ResetPasswordResponse.builder()
-                .newPassword("newPass123!")
-                .message("密码已重置")
-                .build();
-        when(adminUserSecurityService.resetPassword(eq("1"))).thenReturn(resetResponse);
+        when(adminUserSecurityService.resetPassword(eq("1"), any(), eq("admin-1")))
+                .thenReturn("newPass123!");
 
         mockMvc.perform(put("/api/admin/users/1/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -56,7 +74,7 @@ class AdminUserControllerExtensionTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("A0000"))
                 .andExpect(jsonPath("$.data.newPassword").value("newPass123!"))
-                .andExpect(jsonPath("$.data.message").value("密码已重置"));
+                .andExpect(jsonPath("$.data.message").value("密码已重置，请将新密码安全地传递给用户"));
     }
 
     @Test
@@ -80,7 +98,7 @@ class AdminUserControllerExtensionTest {
 
     @Test
     void changeUserRole_shouldSucceed() throws Exception {
-        doNothing().when(adminUserSecurityService).changeUserRole(eq("1"), any());
+        doNothing().when(adminUserSecurityService).changeUserRole(eq("1"), any(), any(), eq("admin-1"));
 
         mockMvc.perform(put("/api/admin/users/1/role")
                         .contentType(MediaType.APPLICATION_JSON)

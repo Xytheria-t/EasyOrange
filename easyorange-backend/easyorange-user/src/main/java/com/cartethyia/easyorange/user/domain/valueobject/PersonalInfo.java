@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.domain.valueobject;
 
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import lombok.Builder;
 import lombok.With;
@@ -21,7 +22,7 @@ public record PersonalInfo(
     /** 拒绝 blank 值；null 是允许的（表示字段未设置） */
     private static void rejectBlank(@Nullable String value, String fieldName) {
         if (value != null && value.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " must not be blank");
+            throw BusinessException.of(fieldName + " 不能为空白字符串");
         }
     }
 

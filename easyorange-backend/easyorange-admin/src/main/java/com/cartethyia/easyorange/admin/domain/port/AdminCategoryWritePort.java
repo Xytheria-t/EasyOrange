@@ -6,7 +6,7 @@ package com.cartethyia.easyorange.admin.domain.port;
  * <p>
  * 只含 JDK 类型：admin 模块不依赖 product，翻译在 application 模块的适配器里做。
  */
-public interface CategoryWritePort {
+public interface AdminCategoryWritePort {
 
     /** 新建分类；{@code parentId} 为 null 表示一级分类。 */
     CategoryWriteResult createCategory(String name, String parentId, String icon, Integer sortOrder);

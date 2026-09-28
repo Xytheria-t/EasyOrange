@@ -47,6 +47,7 @@ public interface UserEntityMapper {
                 .password(user.getPassword())
                 .userType(user.getUserType())
                 .status(user.getStatus())
+                .remark(user.getRemark())
                 .email(safeGet(user.getContactInfo(), ContactInfo::email))
                 .phone(safeGet(user.getContactInfo(), ContactInfo::phone))
                 .realName(safeGet(user.getPersonalInfo(), PersonalInfo::realName))

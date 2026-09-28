@@ -10,7 +10,6 @@ public record AuditInfo(
         Integer delFlag,
         int version) {
     public static final int NOT_DELETED = 0;
-    public static final int DELETED = 1;
 
     public static AuditInfo create(String operatorId) {
         LocalDateTime now = LocalDateTime.now();
@@ -19,9 +18,5 @@ public record AuditInfo(
 
     public AuditInfo update(String operatorId) {
         return new AuditInfo(createTime, LocalDateTime.now(), createBy, operatorId, delFlag, version);
-    }
-
-    public AuditInfo markDeleted(String operatorId) {
-        return new AuditInfo(createTime, LocalDateTime.now(), createBy, operatorId, DELETED, version);
     }
 }

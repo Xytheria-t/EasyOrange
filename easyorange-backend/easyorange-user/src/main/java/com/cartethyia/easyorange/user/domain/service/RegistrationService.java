@@ -14,13 +14,10 @@ public class RegistrationService {
     private final PasswordEncoderPort passwordEncoder;
 
     /**
-     * Registers a new user with the given username, password and phone.
-     *
-     * @param username the desired username (must be unique)
-     * @param password the raw plain-text password (will be encoded before storage)
-     * @param phone    the phone number bound at signup (must be unique, used by SMS login / 找回密码)
-     * @return the newly created user aggregate
-     * @throws BusinessException if the username or phone already exists
+     * 注册新用户 — 内部先查重再编码，明文密码不离开本方法。
+     * <p>
+     * 与 {@link #validateRegisterable} 的分工：编排时通常先调后者（不消费验证码的预检），
+     * 此处的自查重是兜底，防止绕过预检的调用方跳过唯一性校验。
      */
     public User registerNewUser(String username, String password, String phone) {
         validateRegisterable(username, phone);

@@ -24,6 +24,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @DisplayName("AdminUserManagementService 单元测试")
 class AdminUserManagementServiceTest {
 
+    private static final String REASON = "违规核查";
+    private static final String OPERATOR = "admin-1";
+
     @Mock
     private UserRepository userRepository;
 
@@ -49,7 +52,7 @@ class AdminUserManagementServiceTest {
         void success() {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user(UserType.NORMAL, UserStatus.NORMAL)));
 
-            User updated = service.updateStatus(USER_ID, UserStatus.DISABLED);
+            User updated = service.updateStatus(USER_ID, UserStatus.DISABLED, REASON, OPERATOR);
 
             assertThat(updated.getStatus()).isEqualTo(UserStatus.DISABLED);
             assertThat(updated.getUserType()).isEqualTo(UserType.NORMAL);
@@ -60,7 +63,7 @@ class AdminUserManagementServiceTest {
         void notFound_throws() {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.updateStatus(USER_ID, UserStatus.DISABLED))
+            assertThatThrownBy(() -> service.updateStatus(USER_ID, UserStatus.DISABLED, REASON, OPERATOR))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("用户不存在");
         }
@@ -69,11 +72,11 @@ class AdminUserManagementServiceTest {
         @DisplayName("已删除用户按不存在处理")
         void deleted_throws() {
             User deleted = UserTestFixture.aUser()
-                    .auditInfo(new AuditInfo(null, null, null, null, AuditInfo.DELETED, 0))
+                    .auditInfo(new AuditInfo(null, null, null, null, 1, 0))
                     .build();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(deleted));
 
-            assertThatThrownBy(() -> service.updateStatus(USER_ID, UserStatus.DISABLED))
+            assertThatThrownBy(() -> service.updateStatus(USER_ID, UserStatus.DISABLED, REASON, OPERATOR))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("用户不存在");
         }
@@ -88,7 +91,7 @@ class AdminUserManagementServiceTest {
         void locked_setsNormal() {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user(UserType.NORMAL, UserStatus.LOCKED)));
 
-            User updated = service.unlock(USER_ID);
+            User updated = service.unlock(USER_ID, OPERATOR);
 
             assertThat(updated.getStatus()).isEqualTo(UserStatus.NORMAL);
         }
@@ -98,7 +101,7 @@ class AdminUserManagementServiceTest {
         void disabled_setsNormal() {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user(UserType.NORMAL, UserStatus.DISABLED)));
 
-            User updated = service.unlock(USER_ID);
+            User updated = service.unlock(USER_ID, OPERATOR);
 
             assertThat(updated.getStatus()).isEqualTo(UserStatus.NORMAL);
         }
@@ -108,7 +111,7 @@ class AdminUserManagementServiceTest {
         void normal_throws() {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user(UserType.NORMAL, UserStatus.NORMAL)));
 
-            assertThatThrownBy(() -> service.unlock(USER_ID))
+            assertThatThrownBy(() -> service.unlock(USER_ID, OPERATOR))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("未被锁定或禁用");
         }
@@ -118,7 +121,7 @@ class AdminUserManagementServiceTest {
         void notFound_throws() {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.unlock(USER_ID))
+            assertThatThrownBy(() -> service.unlock(USER_ID, OPERATOR))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("用户不存在");
         }
@@ -133,7 +136,7 @@ class AdminUserManagementServiceTest {
         void success() {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user(UserType.NORMAL, UserStatus.NORMAL)));
 
-            User updated = service.changeUserType(USER_ID, UserType.MANAGER);
+            User updated = service.changeUserType(USER_ID, UserType.MANAGER, REASON, OPERATOR);
 
             assertThat(updated.getUserType()).isEqualTo(UserType.MANAGER);
         }
@@ -143,7 +146,7 @@ class AdminUserManagementServiceTest {
         void sameRole_throws() {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user(UserType.NORMAL, UserStatus.NORMAL)));
 
-            assertThatThrownBy(() -> service.changeUserType(USER_ID, UserType.NORMAL))
+            assertThatThrownBy(() -> service.changeUserType(USER_ID, UserType.NORMAL, REASON, OPERATOR))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("已是该角色");
         }
@@ -153,7 +156,7 @@ class AdminUserManagementServiceTest {
         void promoteToAdmin_succeeds() {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user(UserType.NORMAL, UserStatus.NORMAL)));
 
-            User updated = service.changeUserType(USER_ID, UserType.ADMIN);
+            User updated = service.changeUserType(USER_ID, UserType.ADMIN, REASON, OPERATOR);
 
             assertThat(updated.getUserType()).isEqualTo(UserType.ADMIN);
         }
@@ -164,7 +167,7 @@ class AdminUserManagementServiceTest {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user(UserType.ADMIN, UserStatus.NORMAL)));
             when(userRepository.countByUserType(UserType.ADMIN)).thenReturn(1L);
 
-            assertThatThrownBy(() -> service.changeUserType(USER_ID, UserType.NORMAL))
+            assertThatThrownBy(() -> service.changeUserType(USER_ID, UserType.NORMAL, REASON, OPERATOR))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("不能修改最后一个管理员的角色");
         }
@@ -175,7 +178,7 @@ class AdminUserManagementServiceTest {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user(UserType.ADMIN, UserStatus.NORMAL)));
             when(userRepository.countByUserType(UserType.ADMIN)).thenReturn(2L);
 
-            User updated = service.changeUserType(USER_ID, UserType.NORMAL);
+            User updated = service.changeUserType(USER_ID, UserType.NORMAL, REASON, OPERATOR);
 
             assertThat(updated.getUserType()).isEqualTo(UserType.NORMAL);
         }
@@ -185,7 +188,7 @@ class AdminUserManagementServiceTest {
         void notFound_throws() {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.changeUserType(USER_ID, UserType.MANAGER))
+            assertThatThrownBy(() -> service.changeUserType(USER_ID, UserType.MANAGER, REASON, OPERATOR))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("用户不存在");
         }
@@ -200,7 +203,7 @@ class AdminUserManagementServiceTest {
         void success() {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user(UserType.NORMAL, UserStatus.NORMAL)));
 
-            User updated = service.resetPassword(USER_ID, "$2a$10$newEncoded");
+            User updated = service.resetPassword(USER_ID, "$2a$10$newEncoded", REASON, OPERATOR);
 
             assertThat(updated.getPassword()).isEqualTo("$2a$10$newEncoded");
         }
@@ -210,7 +213,7 @@ class AdminUserManagementServiceTest {
         void notFound_throws() {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.resetPassword(USER_ID, "$2a$10$newEncoded"))
+            assertThatThrownBy(() -> service.resetPassword(USER_ID, "$2a$10$newEncoded", REASON, OPERATOR))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("用户不存在");
         }

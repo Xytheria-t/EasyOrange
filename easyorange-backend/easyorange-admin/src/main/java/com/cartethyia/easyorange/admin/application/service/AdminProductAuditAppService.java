@@ -1,36 +1,41 @@
-package com.cartethyia.easyorange.admin.service;
+package com.cartethyia.easyorange.admin.application.service;
 
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAuditRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAuditRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
+import com.cartethyia.easyorange.admin.domain.model.BatchAuditItem;
+import com.cartethyia.easyorange.admin.domain.model.BatchAuditResult;
+import com.cartethyia.easyorange.admin.domain.model.ProductAuditCommand;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductAuditPort.AuditLogRecord;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@Slf4j
+/**
+ * 后台商品审核 — 审核动作与审核日志的编排，命令与结果都是 {@code domain} 记录。
+ * <p>
+ * <b>取舍</b>：动作码、原因、备注、命中维度打成一个 {@link ProductAuditCommand}，
+ * 单条与批量因此共用同一套到端口的参数映射，两条入口不会各自漂移。
+ * <p>
+ * <b>边界</b>：审核是否合法由 product 侧的聚合裁决，本类不预判；日志里的状态码保持原文，数值化在 web 层。
+ */
 @Service
 @RequiredArgsConstructor
-public class AdminProductAuditService {
+public class AdminProductAuditAppService {
 
     private final AdminProductAuditPort adminProductAuditPort;
     private final TransactionTemplate transactionTemplate;
 
     @Transactional(rollbackFor = Exception.class)
-    public void auditProduct(AuthUser operator, String id, ProductAuditRequest request) {
+    public void auditProduct(AuthUser operator, String id, ProductAuditCommand command) {
         adminProductAuditPort.auditProduct(
                 id,
-                request.action(),
-                request.reason(),
-                request.remark(),
-                request.dimensions(),
+                command.action(),
+                command.reason(),
+                command.remark(),
+                command.dimensions(),
                 operator.userId(),
                 operator.username());
     }
@@ -43,11 +48,11 @@ public class AdminProductAuditService {
      * 内层一旦加 {@code @Transactional}，单条失败会把外层事务标记 rollback-only，
      * 全部已成功条目陪葬回滚，响应却仍是部分成功（假成功）。批量条目间无原子性需求。
      */
-    public BatchAuditResultResponse batchAudit(AuthUser operator, BatchAuditRequest request) {
+    public BatchAuditResult batchAudit(AuthUser operator, List<BatchAuditItem> items) {
         List<String> errors = new ArrayList<>();
         int successCount = 0;
 
-        for (BatchAuditRequest.AuditItem item : request.items()) {
+        for (BatchAuditItem item : items) {
             try {
                 transactionTemplate.executeWithoutResult(status -> adminProductAuditPort.auditProduct(
                         item.productId(),
@@ -63,31 +68,11 @@ public class AdminProductAuditService {
             }
         }
 
-        return new BatchAuditResultResponse(request.items().size(), successCount, errors.size(), errors);
+        return new BatchAuditResult(items.size(), successCount, errors);
     }
 
     @Transactional(readOnly = true)
-    public List<AuditLogResponse> getAuditLogs(String productId) {
-        return adminProductAuditPort.getAuditLogs(productId).stream()
-                .map(this::toAuditLogResponse)
-                .toList();
-    }
-
-    private AuditLogResponse toAuditLogResponse(AuditLogRecord log) {
-        return new AuditLogResponse(
-                log.id(),
-                log.productId(),
-                log.operatorId(),
-                log.operatorName(),
-                Integer.valueOf(log.action()),
-                log.actionDesc(),
-                log.reason(),
-                log.dimensions(),
-                log.beforeStatus(),
-                log.beforeStatusDesc(),
-                log.afterStatus(),
-                log.afterStatusDesc(),
-                log.remark(),
-                log.createTime());
+    public List<AuditLogRecord> getAuditLogs(String productId) {
+        return adminProductAuditPort.getAuditLogs(productId);
     }
 }

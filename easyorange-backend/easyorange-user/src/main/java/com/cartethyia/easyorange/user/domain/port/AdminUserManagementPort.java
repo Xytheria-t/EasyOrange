@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.domain.port;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -41,22 +42,37 @@ public interface AdminUserManagementPort {
     /**
      * 更新用户状态（statusCode 为 'NORMAL'/'DISABLED'/'LOCKED'），非法值抛出 BusinessException。
      */
-    void updateStatus(String userId, String statusCode);
+    void updateStatus(String userId, String statusCode, String reason, String operatorId);
 
     /**
      * 解锁/启用用户：仅当状态为 LOCKED 或 DISABLED 时置为 NORMAL，否则抛出 BusinessException。
      */
-    void unlock(String userId);
+    void unlock(String userId, String operatorId);
 
     /**
      * 变更用户角色（typeCode 为 '00'/'01'/'02'），非法值/已是该角色/最后一个管理员被降级时抛出 BusinessException。
      */
-    void setUserType(String userId, String typeCode);
+    void setUserType(String userId, String typeCode, String reason, String operatorId);
 
     /**
      * 更新用户密码（encodedPassword 为已编码密文）。
      */
-    void setPassword(String userId, String encodedPassword);
+    void setPassword(String userId, String encodedPassword, String reason, String operatorId);
+
+    /**
+     * 注册趋势：{@code yyyy-MM} → 新增用户数（管理端仪表板用；聚合留在 user 模块，admin 不得自己查表）
+     */
+    Map<String, Long> getCreateTrend(LocalDate since);
+
+    /**
+     * 最近注册用户，按创建时间倒序取 limit 条
+     */
+    List<RecentUser> findRecentRegistrations(int limit);
+
+    /**
+     * 最近注册用户 — 昵称可空，展示层自行兜底
+     */
+    record RecentUser(String id, String nickName, LocalDateTime createTime) {}
 
     /**
      * 用户总数与今日新增（均不含已删除）。

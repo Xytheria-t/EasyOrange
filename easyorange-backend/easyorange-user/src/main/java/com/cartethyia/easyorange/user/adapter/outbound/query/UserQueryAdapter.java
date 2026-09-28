@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /** {@link UserQueryPort} 实现 — 聚合 → 公开信息投影。 */
 @Component
@@ -16,6 +17,7 @@ public class UserQueryAdapter implements UserQueryPort {
     private final UserRepository userRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserInfo> findAllByIds(Collection<String> ids) {
         if (ids == null || ids.isEmpty()) {
             return List.of();
@@ -24,6 +26,7 @@ public class UserQueryAdapter implements UserQueryPort {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long count() {
         return userRepository.count();
     }

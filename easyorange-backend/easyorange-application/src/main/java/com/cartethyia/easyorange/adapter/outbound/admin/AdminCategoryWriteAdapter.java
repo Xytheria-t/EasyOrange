@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
-import com.cartethyia.easyorange.admin.domain.port.CategoryWritePort;
+import com.cartethyia.easyorange.admin.domain.port.AdminCategoryWritePort;
 import com.cartethyia.easyorange.product.application.command.CategoryCommandHandler;
 import com.cartethyia.easyorange.product.domain.aggregate.Category;
 import com.cartethyia.easyorange.product.domain.enums.CategoryStatus;
@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 /**
- * 分类写侧适配器 — 实现 admin 的 {@link CategoryWritePort}，把调用转给 product 模块的
+ * 分类写侧适配器 — 实现 admin 的 {@link AdminCategoryWritePort}，把调用转给 product 模块的
  * {@link CategoryCommandHandler}。
  * <p>
  * 这层只做**翻译**（聚合 → 只含 JDK 类型的 {@link CategoryWriteResult}），不含任何规则：
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 @Primary
 @Component
 @RequiredArgsConstructor
-public class CategoryWriteAdapter implements CategoryWritePort {
+public class AdminCategoryWriteAdapter implements AdminCategoryWritePort {
 
     private final CategoryCommandHandler categoryCommandHandler;
 

@@ -1,13 +1,11 @@
-package com.cartethyia.easyorange.admin.service;
+package com.cartethyia.easyorange.admin.application.service;
 
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryCreateRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryUpdateRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryResponse;
+import com.cartethyia.easyorange.admin.domain.exception.AdminDomainException;
+import com.cartethyia.easyorange.admin.domain.model.CategoryUpdateCommand;
 import com.cartethyia.easyorange.admin.domain.model.CategoryView;
 import com.cartethyia.easyorange.admin.domain.port.AdminCategoryPort;
-import com.cartethyia.easyorange.admin.domain.port.CategoryWritePort;
-import com.cartethyia.easyorange.admin.domain.port.CategoryWritePort.CategoryWriteResult;
-import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.admin.domain.port.AdminCategoryWritePort;
+import com.cartethyia.easyorange.admin.domain.port.AdminCategoryWritePort.CategoryWriteResult;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,51 +14,33 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 后台分类管理 — **薄适配层**，不含任何分类业务规则。
  * <p>
- * 分类是资产域的概念（商品挂在分类上），它的层级 / 环 / 重名 / 删除约束全部在
+ * <b>取舍</b>：分类是资产域的概念（商品挂在分类上），它的层级 / 环 / 重名 / 删除约束全部在
  * product 模块的 {@code Category} 聚合与 {@code CategoryCommandHandler} 里。
- * 本类只做三件事：DTO → 端口入参、端口结果 → DTO、事务边界。
+ * 本类只做三件事：把 web 的入参收成 {@link CategoryUpdateCommand}、决定走移动还是属性更新、划事务边界；
+ * 出入参一律是 {@code domain} 的视图与写侧结果，HTTP 形状归 web 侧的 assembler。
  * <p>
- * 早先这里是规则的实际落点（裸中文串 {@code BusinessException}、{@code MAX_CATEGORY_LEVEL} 常量、
- * 递归建树），导致「分类」在代码里读起来像后台的配置功能而不是领域对象。
+ * <b>边界</b>：分类不存在时 {@link AdminDomainException#categoryNotFound}；
+ * 规则不合法时端口抛什么就上抛什么，本类不换一种异常类型。
  */
 @Service
 @RequiredArgsConstructor
-public class AdminCategoryService {
+public class AdminCategoryAppService {
 
     private final AdminCategoryPort adminCategoryPort;
-    private final CategoryWritePort categoryWritePort;
+    private final AdminCategoryWritePort categoryWritePort;
 
-    // ── 查询 ──
-
-    /** 分类列表（含禁用，后台要能看到并恢复禁用项）。 */
-    public List<CategoryResponse> listCategories(String parentId) {
-        return adminCategoryPort.listCategories(parentId, true).stream()
-                .map(this::toResponse)
-                .toList();
+    public List<CategoryView> listCategories(String parentId) {
+        // includeDisabled 恒为 true：后台要能看见并恢复被禁用的分类
+        return adminCategoryPort.listCategories(parentId, true);
     }
 
-    /** 整棵分类树（仅启用中）。 */
-    public List<CategoryResponse> categoryTree() {
-        return adminCategoryPort.categoryTree().stream().map(this::toResponse).toList();
+    public List<CategoryView> categoryTree() {
+        return adminCategoryPort.categoryTree();
     }
-
-    // ── 写操作 ──
 
     @Transactional(rollbackFor = Exception.class)
-    public CategoryResponse createCategory(CategoryCreateRequest request) {
-        CategoryWriteResult result = categoryWritePort.createCategory(
-                request.name(), request.parentId(), request.icon(), request.sortOrder());
-        return new CategoryResponse(
-                result.categoryId(),
-                result.name(),
-                result.parentId(),
-                null,
-                result.level(),
-                result.sortOrder(),
-                result.status(),
-                result.productCount(),
-                result.createTime(),
-                List.of());
+    public CategoryWriteResult createCategory(String name, String parentId, String icon, Integer sortOrder) {
+        return categoryWritePort.createCategory(name, parentId, icon, sortOrder);
     }
 
     /**
@@ -70,31 +50,20 @@ public class AdminCategoryService {
      * 与「改个名字」是完全不同的操作，混在一起正是旧实现静默丢失 parent_id 更新的根因。
      */
     @Transactional(rollbackFor = Exception.class)
-    public CategoryResponse updateCategory(String id, CategoryUpdateRequest request) {
+    public CategoryWriteResult updateCategory(String id, CategoryUpdateCommand command) {
         CategoryView existing =
-                adminCategoryPort.getCategory(id).orElseThrow(() -> BusinessException.of("分类不存在: id=" + id));
+                adminCategoryPort.getCategory(id).orElseThrow(() -> AdminDomainException.categoryNotFound(id));
         // 一级分类的 parentId 就是 null，所以「是否找到」不能靠 map(parentId) 判断 ——
         // Optional.map 遇 null 会退化成 empty，根分类会被误判成不存在。
         String currentParentId = existing.parentId();
         boolean parentChanged =
-                request.parentId() != null ? !request.parentId().equals(currentParentId) : currentParentId != null;
+                command.parentId() != null ? !command.parentId().equals(currentParentId) : currentParentId != null;
 
         if (parentChanged) {
-            categoryWritePort.moveCategory(id, request.parentId());
+            categoryWritePort.moveCategory(id, command.parentId());
         }
-        CategoryWriteResult result = categoryWritePort.updateCategory(
-                id, request.name(), request.sortOrder(), request.icon(), request.status());
-        return new CategoryResponse(
-                result.categoryId(),
-                result.name(),
-                result.parentId(),
-                null,
-                result.level(),
-                result.sortOrder(),
-                result.status(),
-                result.productCount(),
-                result.createTime(),
-                List.of());
+        return categoryWritePort.updateCategory(
+                id, command.name(), command.sortOrder(), command.icon(), command.status());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -105,23 +74,5 @@ public class AdminCategoryService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteCategory(String id) {
         categoryWritePort.deleteCategory(id);
-    }
-
-    // ── 私有 ──
-
-    private CategoryResponse toResponse(CategoryView view) {
-        return new CategoryResponse(
-                view.id(),
-                view.name(),
-                view.parentId(),
-                view.parentName(),
-                view.level(),
-                view.sortOrder(),
-                view.status(),
-                view.productCount(),
-                view.createTime(),
-                view.children() == null
-                        ? List.of()
-                        : view.children().stream().map(this::toResponse).toList());
     }
 }

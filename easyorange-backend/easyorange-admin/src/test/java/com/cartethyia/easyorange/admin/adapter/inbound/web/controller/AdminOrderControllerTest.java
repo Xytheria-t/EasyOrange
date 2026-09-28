@@ -1,58 +1,82 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
-import com.cartethyia.easyorange.admin.service.AdminOrderService;
-import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminOrderAssembler;
+import com.cartethyia.easyorange.admin.application.service.AdminOrderAppService;
+import com.cartethyia.easyorange.admin.domain.model.OrderDetailView;
+import com.cartethyia.easyorange.admin.domain.model.OrderListView;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderItemInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderStats;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.OrderSummary;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderPort.ProductInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserInfo;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+/**
+ * 后台订单接口契约测试 — 服务给 {@code domain} 读模型，assembler 用真身，锁的是最终 JSON。
+ */
 @WebMvcTest(AdminOrderController.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Import(AdminOrderAssembler.class)
 class AdminOrderControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private AdminOrderService adminOrderService;
+    private AdminOrderAppService adminOrderService;
 
-    @Test
-    void listOrders_shouldReturnPaginatedOrders() throws Exception {
-        var orders = List.of(new AdminOrderResponse(
+    private static OrderListView listView() {
+        OrderSummary order = new OrderSummary(
                 "1",
                 "ORD001",
                 "10",
-                "buyer1",
                 "20",
-                "seller1",
-                List.of(new AdminOrderResponse.ItemInfo("100", "Product1")),
                 BigDecimal.valueOf(199),
                 "PENDING_PAYMENT",
                 "待付款",
                 "UNPAID",
                 "未支付",
-                LocalDateTime.of(2026, 5, 16, 10, 0)));
-        var pageResult = PageResult.of(orders, 1L, 1, 20);
-        when(adminOrderService.listOrders(any())).thenReturn(pageResult);
+                LocalDateTime.of(2026, 5, 16, 10, 0));
+        OrderItemInfo item = new OrderItemInfo("1", "100", 1, BigDecimal.valueOf(199));
+        return new OrderListView(
+                new OrderQueryResult(List.of(order), 1, 1, 20),
+                Map.of(
+                        "10", new UserInfo("10", "buyer1", "buyer1", null, null),
+                        "20", new UserInfo("20", "seller1", "seller1", null, null)),
+                Map.of("1", List.of(item)),
+                Map.of("100", new ProductInfo("100", "Product1", BigDecimal.valueOf(199))));
+    }
+
+    @Test
+    void listOrders_shouldReturnPaginatedOrders() throws Exception {
+        when(adminOrderService.listOrders(any(OrderQueryCondition.class))).thenReturn(listView());
 
         mockMvc.perform(get("/api/admin/orders"))
                 .andExpect(status().isOk())
@@ -60,24 +84,50 @@ class AdminOrderControllerTest {
                 .andExpect(jsonPath("$.data.records[0].orderId").value("1"))
                 .andExpect(jsonPath("$.data.records[0].orderNo").value("ORD001"))
                 .andExpect(jsonPath("$.data.records[0].status").value("PENDING_PAYMENT"))
+                .andExpect(jsonPath("$.data.records[0].buyerName").value("buyer1"))
+                .andExpect(jsonPath("$.data.records[0].items[0].productName").value("Product1"))
                 .andExpect(jsonPath("$.data.total").value(1));
     }
 
     @Test
+    void listOrders_shouldMapDateRangeToWholeDays() throws Exception {
+        when(adminOrderService.listOrders(any(OrderQueryCondition.class))).thenReturn(listView());
+
+        mockMvc.perform(get("/api/admin/orders?startTime=2026-05-01&endTime=2026-05-02"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("A0000"));
+
+        var captor = ArgumentCaptor.forClass(OrderQueryCondition.class);
+        verify(adminOrderService).listOrders(captor.capture());
+        assertThat(captor.getValue().startTime()).isEqualTo(LocalDateTime.of(2026, 5, 1, 0, 0));
+        assertThat(captor.getValue().endTime()).isEqualTo(LocalDateTime.of(2026, 5, 2, 23, 59, 59));
+    }
+
+    @Test
     void getOrderDetail_shouldReturnDetail() throws Exception {
-        var detail = AdminOrderDetailResponse.builder()
-                .orderId("1")
-                .orderNo("ORD001")
-                .buyer(new AdminOrderDetailResponse.BuyerInfo("10", "buyer1", "avatar1", "13800138000"))
-                .seller(new AdminOrderDetailResponse.SellerInfo("20", "seller1", "avatar2", "13900139000"))
-                .products(List.of(new AdminOrderDetailResponse.ProductInfo(
-                        "100", "Product1", "img.jpg", BigDecimal.valueOf(199))))
-                .totalAmount(BigDecimal.valueOf(199))
-                .status("PENDING_PAYMENT")
-                .statusDesc("待付款")
-                .createTime(LocalDateTime.of(2026, 5, 16, 10, 0))
-                .build();
-        when(adminOrderService.getOrderDetail("1")).thenReturn(detail);
+        OrderDetail order = new OrderDetail(
+                "1",
+                "ORD001",
+                "10",
+                "20",
+                List.of(new OrderItemDetail("100", 1, BigDecimal.valueOf(199))),
+                BigDecimal.valueOf(199),
+                "PENDING_PAYMENT",
+                "待付款",
+                "UNPAID",
+                null,
+                null,
+                LocalDateTime.of(2026, 5, 16, 10, 0),
+                null,
+                null,
+                null,
+                null);
+        when(adminOrderService.getOrderDetail("1"))
+                .thenReturn(new OrderDetailView(
+                        order,
+                        new UserInfo("10", "buyer1", "buyer1", "avatar1", "13800138000"),
+                        new UserInfo("20", "seller1", "seller1", "avatar2", "13900139000"),
+                        Map.of("100", new ProductInfo("100", "Product1", BigDecimal.valueOf(199)))));
 
         mockMvc.perform(get("/api/admin/orders/1"))
                 .andExpect(status().isOk())
@@ -91,19 +141,9 @@ class AdminOrderControllerTest {
 
     @Test
     void getOrderStats_shouldReturnStats() throws Exception {
-        var stats = OrderStatsResponse.builder()
-                .totalOrders(1000L)
-                .todayOrders(50L)
-                .pendingPayment(200L)
-                .toShip(100L)
-                .toReceive(150L)
-                .completed(500L)
-                .cancelled(30L)
-                .refunded(20L)
-                .totalRevenue(BigDecimal.valueOf(50000))
-                .todayRevenue(BigDecimal.valueOf(3000))
-                .build();
-        when(adminOrderService.getOrderStats()).thenReturn(stats);
+        when(adminOrderService.getOrderStats())
+                .thenReturn(new OrderStats(
+                        1000, 50, 200, 100, 150, 500, 30, 20, BigDecimal.valueOf(50000), BigDecimal.valueOf(3000)));
 
         mockMvc.perform(get("/api/admin/orders/stats"))
                 .andExpect(status().isOk())

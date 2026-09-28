@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -8,48 +9,69 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
-import com.cartethyia.easyorange.admin.service.AdminProductService;
-import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminProductAssembler;
+import com.cartethyia.easyorange.admin.application.service.AdminProductAppService;
+import com.cartethyia.easyorange.admin.domain.model.ProductDetailView;
+import com.cartethyia.easyorange.admin.domain.model.ProductListView;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductSummary;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+/**
+ * 后台商品接口契约测试 — 锁 JSON 字段名（{@code productId} / 主图取第一张图）。
+ */
 @WebMvcTest(AdminProductController.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Import(AdminProductAssembler.class)
 class AdminProductControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private AdminProductService adminProductService;
+    private AdminProductAppService adminProductService;
+
+    private static ProductSummary summary(String id, String name, String status) {
+        return new ProductSummary(
+                id,
+                name,
+                BigDecimal.valueOf(100),
+                null,
+                1,
+                status,
+                "状态",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+    }
 
     @Test
     void listProducts_shouldReturnPaginatedProducts() throws Exception {
-        var products = List.of(
-                AdminProductResponse.builder()
-                        .productId("1")
-                        .name("Product1")
-                        .price(BigDecimal.valueOf(100))
-                        .status("ONLINE")
-                        .statusDesc("上架")
-                        .build(),
-                AdminProductResponse.builder()
-                        .productId("2")
-                        .name("Product2")
-                        .price(BigDecimal.valueOf(200))
-                        .status("DRAFT")
-                        .statusDesc("草稿")
-                        .build());
-        var pageResult = PageResult.of(products, 2L, 1, 20);
-        when(adminProductService.listProducts(any())).thenReturn(pageResult);
+        when(adminProductService.listProducts(any(ProductQueryCondition.class)))
+                .thenReturn(new ProductListView(
+                        new ProductQueryResult(
+                                List.of(summary("1", "Product1", "ONLINE"), summary("2", "Product2", "DRAFT")),
+                                2,
+                                1,
+                                20),
+                        Map.of()));
 
         mockMvc.perform(get("/api/admin/products"))
                 .andExpect(status().isOk())
@@ -61,14 +83,10 @@ class AdminProductControllerTest {
     }
 
     @Test
-    void listProducts_withStatusFilter_shouldFilterByStatus() throws Exception {
-        var products = List.of(AdminProductResponse.builder()
-                .productId("1")
-                .name("Online")
-                .status("ONLINE")
-                .build());
-        var pageResult = PageResult.of(products, 1L, 1, 20);
-        when(adminProductService.listProducts(any())).thenReturn(pageResult);
+    void listProducts_withStatusFilter_shouldPassFilterToService() throws Exception {
+        when(adminProductService.listProducts(any(ProductQueryCondition.class)))
+                .thenReturn(new ProductListView(
+                        new ProductQueryResult(List.of(summary("1", "Online", "ONLINE")), 1, 1, 20), Map.of()));
 
         mockMvc.perform(get("/api/admin/products?status=" + "ONLINE"))
                 .andExpect(status().isOk())
@@ -76,17 +94,39 @@ class AdminProductControllerTest {
     }
 
     @Test
-    void getProductDetail_shouldReturnProduct() throws Exception {
-        var product = AdminProductResponse.builder()
-                .productId("1")
-                .name("DetailProduct")
-                .description("A detailed product")
-                .price(BigDecimal.valueOf(150))
-                .status("ONLINE")
-                .statusDesc("上架")
-                .build();
-        when(adminProductService.getProductDetail("1")).thenReturn(product);
+    void listProducts_shouldTakeFirstImageAsMainImage() throws Exception {
+        when(adminProductService.listProducts(any(ProductQueryCondition.class)))
+                .thenReturn(new ProductListView(
+                        new ProductQueryResult(List.of(summary("1", "Product1", "ONLINE")), 1, 1, 20),
+                        Map.of("1", List.of("first.jpg", "second.jpg"))));
 
+        mockMvc.perform(get("/api/admin/products"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.records[0].mainImage").value("first.jpg"));
+    }
+
+    @Test
+    void getProductDetail_shouldReturnProduct() throws Exception {
+        when(adminProductService.getProductDetail("1"))
+                .thenReturn(new ProductDetailView(
+                        new ProductDetail(
+                                "1",
+                                "DetailProduct",
+                                "A detailed product",
+                                BigDecimal.valueOf(150),
+                                null,
+                                1,
+                                "ONLINE",
+                                "上架",
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null),
+                        List.of()));
         mockMvc.perform(get("/api/admin/products/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("A0000"))
@@ -97,11 +137,11 @@ class AdminProductControllerTest {
 
     @Test
     void updateProductStatus_shouldSucceed() throws Exception {
-        doNothing().when(adminProductService).updateProductStatus("1", null);
+        doNothing().when(adminProductService).updateProductStatus(eq("1"), eq("OFFLINE"));
 
         mockMvc.perform(put("/api/admin/products/1/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\": \"" + "OFFLINE" + "\", \"reason\": \"下架商品\"}"))
+                        .content("{\"status\": \"OFFLINE\", \"reason\": \"下架商品\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("A0000"));
     }

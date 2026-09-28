@@ -1,40 +1,41 @@
 package com.cartethyia.easyorange.admin.domain.port;
 
+import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Admin 模块的订单查询/操作端口
- * 用于跨模块查询与操作订单信息，遵循防腐层原则
+ * Admin 模块的订单查询/操作端口 — 跨模块查询与操作订单信息的唯一出口。
+ * <p>
+ * <b>取舍</b>：{@code reason} 只出现在**会被持久化**的干预动作上（取消 / 退款），
+ * 走 order 侧的订单原因字段；不落库的动作（强制完成）不收它，收了就是装饰。
+ * <p>
+ * <b>边界</b>：查询一律只读，越权与状态非法由 order 模块的领域异常决定，端口只翻译不吞。
  */
 public interface AdminOrderPort {
 
-    /**
-     * 查询订单列表（带条件查询）
-     */
     OrderQueryResult queryOrders(OrderQueryCondition condition);
 
-    /**
-     * 根据订单 ID 列表批量查询订单项
-     */
     Map<String, List<OrderItemInfo>> getOrderItems(List<String> orderIds);
 
-    /**
-     * 根据产品 ID 列表批量查询产品信息
-     */
     Map<String, ProductInfo> getProducts(List<String> productIds);
 
-    /**
-     * 根据订单 ID 查询订单详情，不存在或已删除时返回 null
-     */
     OrderDetail getOrderDetail(String orderId);
 
-    /**
-     * 订单状态统计
-     */
     OrderStats getOrderStats();
+
+    /**
+     * 下单趋势：{@code yyyy-MM} → 新增订单数，键按创建时间升序
+     */
+    Map<String, Long> getCreateTrend(LocalDate since);
+
+    /**
+     * 最近创建的订单（按创建时间倒序取 limit 条）
+     */
+    List<RecentActivity> findRecentCreated(int limit);
 
     /**
      * 取消订单（PENDING_PAYMENT 取消 / PAID 强制取消），不合法状态抛出 BusinessException
@@ -65,9 +66,6 @@ public interface AdminOrderPort {
             Integer pageNum,
             Integer pageSize) {}
 
-    /**
-     * 订单查询结果
-     */
     record OrderQueryResult(List<OrderSummary> records, long total, int pageNum, int pageSize) {}
 
     /**
@@ -85,19 +83,10 @@ public interface AdminOrderPort {
             String paymentStatusDesc,
             LocalDateTime createTime) {}
 
-    /**
-     * 订单项信息
-     */
     record OrderItemInfo(String orderId, String productId, Integer quantity, BigDecimal price) {}
 
-    /**
-     * 产品信息（用于订单查询）
-     */
     record ProductInfo(String id, String name, BigDecimal price) {}
 
-    /**
-     * 订单详情
-     */
     record OrderDetail(
             String id,
             String orderNo,
@@ -116,9 +105,6 @@ public interface AdminOrderPort {
             String refundReason,
             LocalDateTime refundTime) {}
 
-    /**
-     * 订单项详情
-     */
     record OrderItemDetail(String productId, Integer quantity, BigDecimal price) {}
 
     /**

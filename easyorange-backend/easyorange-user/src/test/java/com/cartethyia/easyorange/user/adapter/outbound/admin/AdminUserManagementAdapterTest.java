@@ -8,13 +8,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.aggregate.UserTestFixture;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
+import com.cartethyia.easyorange.user.domain.event.UserPasswordChangedEvent;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserPage;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserQuery;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
@@ -25,12 +28,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminUserManagementAdapter 单元测试")
 class AdminUserManagementAdapterTest {
+
+    private static final String REASON = "违规核查";
+    private static final String OPERATOR = "admin-1";
 
     @Mock
     private UserMapper userMapper;
@@ -41,13 +48,20 @@ class AdminUserManagementAdapterTest {
     @Mock
     private AdminUserManagementService adminUserManagementService;
 
+    @Mock
+    private TokenService tokenService;
+
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
+
     private AdminUserManagementAdapter adapter;
 
     private static final String USER_ID = "1";
 
     @BeforeEach
     void setUp() {
-        adapter = new AdminUserManagementAdapter(userMapper, userRepository, adminUserManagementService);
+        adapter = new AdminUserManagementAdapter(
+                userMapper, userRepository, adminUserManagementService, tokenService, domainEventPublisher);
     }
 
     private User updatedUser() {
@@ -76,10 +90,10 @@ class AdminUserManagementAdapterTest {
         @DisplayName("解析状态码后委托领域服务并持久化")
         void success() {
             User updated = updatedUser();
-            when(adminUserManagementService.updateStatus(USER_ID, UserStatus.DISABLED))
+            when(adminUserManagementService.updateStatus(USER_ID, UserStatus.DISABLED, REASON, OPERATOR))
                     .thenReturn(updated);
 
-            adapter.updateStatus(USER_ID, "DISABLED");
+            adapter.updateStatus(USER_ID, "DISABLED", REASON, OPERATOR);
 
             verify(userRepository).update(updated);
         }
@@ -87,10 +101,10 @@ class AdminUserManagementAdapterTest {
         @Test
         @DisplayName("非法状态码抛出业务异常且不触达领域服务")
         void invalidCode_throws() {
-            assertThatThrownBy(() -> adapter.updateStatus(USER_ID, "999"))
+            assertThatThrownBy(() -> adapter.updateStatus(USER_ID, "999", REASON, OPERATOR))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("无效的用户状态");
-            verify(adminUserManagementService, never()).updateStatus(any(), any());
+            verify(adminUserManagementService, never()).updateStatus(any(), any(), any(), any());
         }
     }
 
@@ -102,9 +116,9 @@ class AdminUserManagementAdapterTest {
         @DisplayName("委托领域服务并持久化")
         void success() {
             User updated = updatedUser();
-            when(adminUserManagementService.unlock(USER_ID)).thenReturn(updated);
+            when(adminUserManagementService.unlock(USER_ID, OPERATOR)).thenReturn(updated);
 
-            adapter.unlock(USER_ID);
+            adapter.unlock(USER_ID, OPERATOR);
 
             verify(userRepository).update(updated);
         }
@@ -118,10 +132,10 @@ class AdminUserManagementAdapterTest {
         @DisplayName("解析角色码后委托领域服务并持久化")
         void success() {
             User updated = updatedUser();
-            when(adminUserManagementService.changeUserType(USER_ID, UserType.MANAGER))
+            when(adminUserManagementService.changeUserType(USER_ID, UserType.MANAGER, REASON, OPERATOR))
                     .thenReturn(updated);
 
-            adapter.setUserType(USER_ID, "02");
+            adapter.setUserType(USER_ID, "02", REASON, OPERATOR);
 
             verify(userRepository).update(updated);
         }
@@ -129,10 +143,10 @@ class AdminUserManagementAdapterTest {
         @Test
         @DisplayName("非法角色码抛出业务异常且不触达领域服务")
         void invalidCode_throws() {
-            assertThatThrownBy(() -> adapter.setUserType(USER_ID, "99"))
+            assertThatThrownBy(() -> adapter.setUserType(USER_ID, "99", REASON, OPERATOR))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("无效的用户角色");
-            verify(adminUserManagementService, never()).changeUserType(any(), any());
+            verify(adminUserManagementService, never()).changeUserType(any(), any(), any(), any());
         }
     }
 
@@ -144,12 +158,28 @@ class AdminUserManagementAdapterTest {
         @DisplayName("委托领域服务并持久化")
         void success() {
             User updated = updatedUser();
-            when(adminUserManagementService.resetPassword(USER_ID, "$2a$10$newEncoded"))
+            when(adminUserManagementService.resetPassword(USER_ID, "$2a$10$newEncoded", REASON, OPERATOR))
                     .thenReturn(updated);
 
-            adapter.setPassword(USER_ID, "$2a$10$newEncoded");
+            adapter.setPassword(USER_ID, "$2a$10$newEncoded", REASON, OPERATOR);
 
             verify(userRepository).update(updated);
+        }
+
+        @Test
+        @DisplayName("改凭证后吊销全部会话并发 source=admin 的改密事件")
+        void revokesSessionsAndPublishesEvent() {
+            when(adminUserManagementService.resetPassword(USER_ID, "$2a$10$newEncoded", REASON, OPERATOR))
+                    .thenReturn(updatedUser());
+
+            adapter.setPassword(USER_ID, "$2a$10$newEncoded", REASON, OPERATOR);
+
+            verify(tokenService).revokeAllUserSessions(USER_ID);
+            var eventCaptor = ArgumentCaptor.forClass(UserPasswordChangedEvent.class);
+            verify(domainEventPublisher).publish(eventCaptor.capture());
+            assertThat(eventCaptor.getValue().userId()).isEqualTo(USER_ID);
+            assertThat(eventCaptor.getValue().source()).isEqualTo("admin");
+            assertThat(eventCaptor.getValue().eventId()).isNotBlank();
         }
     }
 
