@@ -746,7 +746,7 @@ ON DUPLICATE KEY UPDATE
 
 -- ===================================================================
 -- 14. testuser 长期画像（Agent 记忆演示：首轮对话即注入既有偏好）
---      pref_key 限 AgentTools.PREFERENCE_KEYS：condition / price_range / style / location
+--      pref_key 限 ChatTools.PREFERENCE_KEYS：condition / price_range / style / location
 -- ===================================================================
 
 INSERT INTO `eo_user_preference` (

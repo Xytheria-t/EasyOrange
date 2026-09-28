@@ -38,7 +38,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
 
 /**
- * AI 智能对话（Agent 编排）— 多轮记忆 + 多步工具循环 + 引用溯源 + 语义缓存 + 预算治理；与搜索页的
+ * AI 智能对话（工具循环编排）— 多轮记忆 + 多步工具循环 + 引用溯源 + 语义缓存 + 预算治理；与搜索页的
  * 结构化检索正交：那边「一次查询定结果」，这里模型自己决定检索几轮、查什么。
  * <p>
  * 链路：记忆装配（Redis 会话窗口 + 用户画像表，注入前过 {@link ChatContextTrimmer} 的 token 裁剪）→
@@ -60,7 +60,7 @@ public class AiChatAppService {
     private static final String SESSION_BUSY_METRIC = "easyorange.ai.chat.session.busy";
     private static final String STREAM_ABORTED_METRIC = "easyorange.ai.chat.stream.aborted";
     /**
-     * 一次问答的端到端耗时（Agent 循环 + 生成 + 会话落盘）— 对外引用的延迟数字只有这一处指标源。
+     * 一次问答的端到端耗时（工具调用循环 + 生成 + 会话落盘）— 对外引用的延迟数字只有这一处指标源。
      * 口径只圈「跑通生成链路」的请求：语义缓存命中与空问题不进分布，否则几十毫秒的缓存回放会把
      * p95 拉到与真实生成延迟不可比；直方图分位数在多副本下由 PromQL 聚合。
      */
@@ -185,7 +185,7 @@ public class AiChatAppService {
             if (probe.hit().isPresent()) {
                 return probe.hit().get().withSessionId(request.sessionId());
             }
-            ChatAnswer answer = agenticAnswer(request, userId, null);
+            ChatAnswer answer = answerWithSessionLock(request, userId, null);
             storeInSemanticCache(request, userId, probe, answer);
             staleCache.put(staleKey(userId, request.question()), answer);
             return answer;
@@ -237,7 +237,7 @@ public class AiChatAppService {
                 replayCached(probe.hit().get(), handler);
                 return;
             }
-            ChatAnswer answer = agenticAnswer(request, userId, handler);
+            ChatAnswer answer = answerWithSessionLock(request, userId, handler);
             storeInSemanticCache(request, userId, probe, answer);
             handler.onDone(answer.answer());
         } catch (TokenBudgetExceededException e) {
@@ -314,11 +314,11 @@ public class AiChatAppService {
         degradedCounters.get(DegradationReason.UNAVAILABLE).increment();
     }
 
-    private ChatAnswer agenticAnswer(ChatRequest request, String userId, @Nullable ChatStreamHandler handler) {
+    private ChatAnswer answerWithSessionLock(ChatRequest request, String userId, @Nullable ChatStreamHandler handler) {
         String sessionId = request.sessionId();
         if (sessionId == null || sessionId.isBlank()) {
             // 无会话即无共享状态，没有需要串行化的 load→save，直接执行
-            return doAgenticAnswer(request, userId, handler);
+            return generateWithToolLoop(request, userId, handler);
         }
         // 同会话串行：load→loop→save 非原子，并发请求会互相串写历史（读到半轮、写丢轮）；
         // per-session 分布式锁把后到请求排队到前一轮完整落盘之后，等待超时按业务提示返回不伪装成降级。
@@ -326,15 +326,15 @@ public class AiChatAppService {
         return distributedLockPort.executeWithLocks(
                 List.of(SESSION_LOCK_PREFIX + userId + ":" + sessionId),
                 aiProperties.chat().sessionLockWaitSeconds(),
-                () -> doAgenticAnswer(request, userId, handler));
+                () -> generateWithToolLoop(request, userId, handler));
     }
 
-    private ChatAnswer doAgenticAnswer(ChatRequest request, String userId, @Nullable ChatStreamHandler handler) {
+    private ChatAnswer generateWithToolLoop(ChatRequest request, String userId, @Nullable ChatStreamHandler handler) {
         long start = System.nanoTime();
         try {
             // token 级上下文治理：轮数窗口（存储侧）之上再按 token 预算裁注入窗口，一处裁、决策与生成两处生效
             List<ChatTurn> history = contextTrimmer.trim(sessionStore.loadRecent(userId, request.sessionId()));
-            // 机器主体在写侧被 AgentTools 拒收偏好，此处查到的恒为空表，无需特判
+            // 机器主体在写侧被 ChatTools 拒收偏好，此处查到的恒为空表，无需特判
             List<UserPreference> prefs = preferenceRepository.findByUserId(userId);
 
             ToolCallLoop.Result run = toolCallLoop.run(

@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
-import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
+import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
@@ -29,7 +29,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * AI 对话端点 — 非流式（语义缓存 + Judge 回归同源）与 SSE 流式（打字机效果）。
  * <p>
  * SSE 走 POST + SseEmitter（前端用 fetch + ReadableStream 消费，可带 Authorization 头）；
- * 事件协议：step（Agent 工具循环每步：工具 + 决策理由 + 观察摘要，前端步骤可视化）/
+ * 事件协议：step（工具循环每步：工具 + 决策理由 + 观察摘要，前端步骤可视化）/
  * token（逐字）/ sources（知识库来源）/ done（完整回答）/ error（降级文案）。
  * 流式工作提交到 {@code applicationTaskExecutor}（spring.threads.virtual.enabled=true，虚拟线程），
  * 而非裸 {@code Thread.ofVirtual()}：后者不继承任何 ThreadLocal，SecurityContext / Observation / MDC
@@ -41,7 +41,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Slf4j
 @SkipRateLimit
 @SkipRepeatSubmit
-@Tag(name = "AI 对话", description = "多轮 Agent 对话（SSE 流式 + 知识库引用溯源）")
+@Tag(name = "AI 对话", description = "多轮工具对话（SSE 流式 + 知识库引用溯源）")
 @RestController
 @RequestMapping("/api/ai/chat")
 public class AiChatController {
@@ -94,7 +94,7 @@ public class AiChatController {
         try {
             chatService.streamAnswer(request, userId, new ChatStreamHandler() {
                 @Override
-                public void onStep(AgentStepView step) {
+                public void onStep(ToolCallStepView step) {
                     send(emitter, SseEmitter.event().name("step").data(step));
                 }
 

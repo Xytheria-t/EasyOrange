@@ -21,13 +21,13 @@ import org.springframework.stereotype.Component;
  * MCP 公开只读工具面 — 外部 MCP client（Cursor / Claude Desktop 等）经 streamable HTTP
  * （端点 {@code /mcp}）调用的入口。
  * <p>
- * 与 Agent 内部工具（{@code ToolCallLoop} 工具面）是<b>两级独立暴露</b>：外部 client
+ * 与对话工具面（{@code ToolCallLoop} 的 {@code ChatTools}）是<b>两级独立暴露</b>：外部 client
  * 无用户上下文，这里只挂公开只读数据（在售资产检索/详情、类目、平台规则知识），
  * 不暴露订单、个人信息与任何写路径（信任边界见根 AGENTS.md）。
  * <p>
  * 降级语义沿用服务层：检索类调用失败返回空列表不抛异常（与对话主链路同一取向），
  * 详情查询的底层故障按 MCP 协议转为错误结果交 client 处理。
- * 每次调用计 {@code easyorange.mcp.tool{name}} 指标，与 Agent 循环指标同面板观测。
+ * 每次调用计 {@code easyorange.mcp.tool{name}} 指标，与 工具调用循环指标同面板观测。
  */
 @Component
 public class PlatformMcpTools {

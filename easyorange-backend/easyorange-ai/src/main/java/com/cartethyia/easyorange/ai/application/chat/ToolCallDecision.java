@@ -32,6 +32,6 @@ record ToolCallDecision(
     }
 
     boolean isFinish() {
-        return AgentTools.TOOL_FINISH.equals(tool);
+        return ChatTools.TOOL_FINISH.equals(tool);
     }
 }

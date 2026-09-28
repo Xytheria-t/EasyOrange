@@ -6,10 +6,10 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * 一次 tool call 的参数解析视图 — arguments JSON 的只读投影，编排器据此取「本步理由」与工具入参摘要
- * （trace 落库 / SSE step 事件消费）。各参数的取值约束见 {@link AgentTools} 的 {@code @ToolParam}
+ * （trace 落库 / SSE step 事件消费）。各参数的取值约束见 {@link ChatTools} 的 {@code @ToolParam}
  * 描述，与此处字段同源，不重写。
  * <p>
- * 放编排器包内而非 domain：形状由 {@code AgentTools} 的注解决定，domain 反过来依赖 application 的注解
+ * 放编排器包内而非 domain：形状由 {@code ChatTools} 的注解决定，domain 反过来依赖 application 的注解
  * 是倒置的依赖方向；且主代码里只有 {@link ToolCallLoop} 一个消费者，包级私有即足够，不进领域模型。
  * <p>
  * 工具名与 arguments 原始串刻意不在此记录内：前者来自 tool call 的 function name，后者就是被解析的

@@ -29,12 +29,12 @@ class ToolCallLoopMetricsTest {
                     .isZero();
         }
         for (String tool : List.of(
-                AgentTools.TOOL_KNOWLEDGE_SEARCH,
-                AgentTools.TOOL_PRODUCT_SEARCH,
-                AgentTools.TOOL_PRODUCT_DETAIL,
-                AgentTools.TOOL_MARKET_PRICE_STATS,
-                AgentTools.TOOL_COMPARE_ASSETS,
-                AgentTools.TOOL_REMEMBER_PREFERENCE,
+                ChatTools.TOOL_KNOWLEDGE_SEARCH,
+                ChatTools.TOOL_PRODUCT_SEARCH,
+                ChatTools.TOOL_PRODUCT_DETAIL,
+                ChatTools.TOOL_MARKET_PRICE_STATS,
+                ChatTools.TOOL_COMPARE_ASSETS,
+                ChatTools.TOOL_REMEMBER_PREFERENCE,
                 "unknown")) {
             assertThat(registry.counter("easyorange.ai.chat.tool", "name", tool).count())
                     .isZero();
@@ -53,15 +53,15 @@ class ToolCallLoopMetricsTest {
                         meter -> "easyorange.ai.chat.tool".equals(meter.getId().getName()))
                 .extracting(meter -> meter.getId().getTag("name"))
                 .containsExactlyInAnyOrder(
-                        AgentTools.TOOL_KNOWLEDGE_SEARCH,
-                        AgentTools.TOOL_PRODUCT_SEARCH,
-                        AgentTools.TOOL_PRODUCT_DETAIL,
-                        AgentTools.TOOL_MARKET_PRICE_STATS,
-                        AgentTools.TOOL_COMPARE_ASSETS,
-                        AgentTools.TOOL_REMEMBER_PREFERENCE,
+                        ChatTools.TOOL_KNOWLEDGE_SEARCH,
+                        ChatTools.TOOL_PRODUCT_SEARCH,
+                        ChatTools.TOOL_PRODUCT_DETAIL,
+                        ChatTools.TOOL_MARKET_PRICE_STATS,
+                        ChatTools.TOOL_COMPARE_ASSETS,
+                        ChatTools.TOOL_REMEMBER_PREFERENCE,
                         "unknown");
         assertThat(registry.find("easyorange.ai.chat.tool")
-                        .tag("name", AgentTools.TOOL_FINISH)
+                        .tag("name", ChatTools.TOOL_FINISH)
                         .counter())
                 .isNull();
     }
@@ -112,10 +112,10 @@ class ToolCallLoopMetricsTest {
     @Test
     @DisplayName("分位数不由客户端算 —— 走直方图分桶，metric 不带 quantile 维度（多副本下由 PromQL 聚合）")
     void percentilesNotComputedClientSide() {
-        metrics.recordTool(AgentTools.TOOL_PRODUCT_SEARCH, 8);
+        metrics.recordTool(ChatTools.TOOL_PRODUCT_SEARCH, 8);
         metrics.recordLoop(ToolCallLoopOutcome.FINISHED, 1);
 
-        assertThat(registry.timer("easyorange.ai.chat.tool.duration", "tool", AgentTools.TOOL_PRODUCT_SEARCH)
+        assertThat(registry.timer("easyorange.ai.chat.tool.duration", "tool", ChatTools.TOOL_PRODUCT_SEARCH)
                         .takeSnapshot()
                         .percentileValues())
                 .isEmpty();

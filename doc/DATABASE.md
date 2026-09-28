@@ -78,7 +78,7 @@ V1 单脚本建全部表（`eo_*` 业务/观测表 + 2 个 Spring Modulith 基�
 | 观测 | eo_knowledge_doc | RAG 知识库文档（解析→分块→embed→ES 索引，启动补索引） | KnowledgeDocDO |
 | 观测 | eo_user_preference | 用户长期画像（Agent 长期记忆，聊天时注入 prompt） | UserPreferenceDO |
 | 观测 | eo_retrieval_metric | RAG 检索指标采样（hit@5 / MRR，金标准集回归数据源） | — |
-| 观测 | eo_agent_step_trace | Agent 步级轨迹（工具 / 参数 / 理由 / 观察，一次请求一个 trace_id） | —（JDBC 直写） |
+| 观测 | eo_tool_call_step_trace | 工具步级轨迹（工具 / 参数 / 理由 / 观察，一次请求一个 trace_id） | —（JDBC 直写） |
 
 ## 公共字段
 
@@ -96,7 +96,7 @@ V1 单脚本建全部表（`eo_*` 业务/观测表 + 2 个 Spring Modulith 基�
 **例外**：
 
 - `EVENT_PUBLICATION` / `EVENT_PUBLICATION_ARCHIVE` 列名大写、时间 TIMESTAMP(6)（Modulith 官方约定），无公共字段，索引名不适用 `idx_eo_` 规范。
-- 观测表 `eo_ai_call_log` / `eo_ai_feedback` / `eo_knowledge_doc` / `eo_user_preference` / `eo_retrieval_metric` / `eo_agent_step_trace` 只有 `created_at` 时间线（`eo_knowledge_doc` / `eo_user_preference` 另有 `create_time`/`update_time` 等，但**均无 version**）。
+- 观测表 `eo_ai_call_log` / `eo_ai_feedback` / `eo_knowledge_doc` / `eo_user_preference` / `eo_retrieval_metric` / `eo_tool_call_step_trace` 只有 `created_at` 时间线（`eo_knowledge_doc` / `eo_user_preference` 另有 `create_time`/`update_time` 等，但**均无 version**）。
 - `eo_audit_log` 无 del_flag / version / create_by / update_by，使用独立主键 id 和时间字段 created_at。
 - `eo_stock_ledger` 无 version（append-only，落账是插入，冲突由唯一索引裁决）。
 - `eo_product_audit_log` 无 version（BaseDO 四列齐备，追加写无需乐观锁）。

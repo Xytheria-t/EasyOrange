@@ -19,12 +19,12 @@ import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
+import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
 import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
@@ -61,7 +61,7 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.model.ChatModel;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AiChatAppService (Agent 编排) -> 测试")
+@DisplayName("AiChatAppService (工具循环编排) -> 测试")
 class AiChatAppServiceTest {
 
     /** 语义缓存的查询向量桩值 — 非空即表示「缓存可用」。 */
@@ -385,7 +385,7 @@ class AiChatAppServiceTest {
     void stream_happyPath() {
         when(toolCallLoop.run(any())).thenAnswer(invocation -> {
             Input input = invocation.getArgument(0);
-            input.handler().onStep(new AgentStepView(1, "knowledge_search", "查退款规则", "命中 1 条"));
+            input.handler().onStep(new ToolCallStepView(1, "knowledge_search", "查退款规则", "命中 1 条"));
             return new Result(
                     List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)),
                     List.of(),
@@ -406,11 +406,11 @@ class AiChatAppServiceTest {
         AtomicReference<List<ChatSource>> sources = new AtomicReference<>();
         AtomicReference<String> done = new AtomicReference<>();
         AtomicReference<String> error = new AtomicReference<>();
-        List<AgentStepView> steps = new ArrayList<>();
+        List<ToolCallStepView> steps = new ArrayList<>();
         chatService.streamAnswer(
                 new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
                     @Override
-                    public void onStep(AgentStepView step) {
+                    public void onStep(ToolCallStepView step) {
                         steps.add(step);
                     }
 
@@ -436,7 +436,7 @@ class AiChatAppServiceTest {
                 });
 
         assertThat(tokens.toString()).isEqualTo("可以退款");
-        assertThat(steps).extracting(AgentStepView::tool).containsExactly("knowledge_search");
+        assertThat(steps).extracting(ToolCallStepView::tool).containsExactly("knowledge_search");
         assertThat(sources.get()).containsExactly(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-0002", "退款规则"));
         assertThat(done.get()).isEqualTo("可以退款");
         assertThat(error.get()).isNull();
@@ -461,7 +461,7 @@ class AiChatAppServiceTest {
         chatService.streamAnswer(
                 new ChatRequest("怎么退款？", "sess-新", false), AUTH_USER.userId(), new ChatStreamHandler() {
                     @Override
-                    public void onStep(AgentStepView step) {
+                    public void onStep(ToolCallStepView step) {
                         events.add("step");
                     }
 
@@ -532,7 +532,7 @@ class AiChatAppServiceTest {
         chatService.streamAnswer(
                 new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
                     @Override
-                    public void onStep(AgentStepView step) {}
+                    public void onStep(ToolCallStepView step) {}
 
                     @Override
                     public void onToken(String token) {}
@@ -602,7 +602,7 @@ class AiChatAppServiceTest {
         AtomicReference<String> error = new AtomicReference<>();
         chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
-            public void onStep(AgentStepView step) {}
+            public void onStep(ToolCallStepView step) {}
 
             @Override
             public void onToken(String token) {}
@@ -633,7 +633,7 @@ class AiChatAppServiceTest {
         AtomicReference<String> done = new AtomicReference<>();
         chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
-            public void onStep(AgentStepView step) {}
+            public void onStep(ToolCallStepView step) {}
 
             @Override
             public void onToken(String token) {}
@@ -668,7 +668,7 @@ class AiChatAppServiceTest {
         AtomicReference<String> error = new AtomicReference<>();
         chatService.streamAnswer(new ChatRequest("  ", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
-            public void onStep(AgentStepView step) {}
+            public void onStep(ToolCallStepView step) {}
 
             @Override
             public void onToken(String token) {}
@@ -841,7 +841,7 @@ class AiChatAppServiceTest {
         AtomicReference<String> error = new AtomicReference<>();
         chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
             @Override
-            public void onStep(AgentStepView step) {}
+            public void onStep(ToolCallStepView step) {}
 
             @Override
             public void onToken(String token) {}
@@ -864,7 +864,7 @@ class AiChatAppServiceTest {
     /** 只关心「循环收到什么身份」的用例用的空回调 —— 事件内容在各自用例里断言。 */
     private static final class StreamHandlerStub implements ChatStreamHandler {
         @Override
-        public void onStep(AgentStepView step) {}
+        public void onStep(ToolCallStepView step) {}
 
         @Override
         public void onToken(String token) {}

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.persistence;
 
-import com.cartethyia.easyorange.ai.domain.model.AgentStepTrace;
-import com.cartethyia.easyorange.ai.domain.port.AgentTracePort;
+import com.cartethyia.easyorange.ai.domain.model.ToolCallStepTrace;
+import com.cartethyia.easyorange.ai.domain.port.ToolCallStepTracePort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * Agent 步级轨迹记录器 — 多步工具循环每轮落一条 {@code eo_agent_step_trace}，
+ * 工具步级轨迹记录器 — 多步工具循环每轮落一条 {@code eo_tool_call_step_trace}，
  * 作为平均步数 / 降级率 / 步级延迟 p95 三个口径的数据源。
  * <p>
  * 记录失败只告警不抛出：轨迹是观测副产物，绝不能影响对话主链路（与 {@link AiCallLogRecorder} 同一取向）。
@@ -19,10 +19,10 @@ import org.springframework.stereotype.Component;
 @Primary
 @Component
 @RequiredArgsConstructor
-public class AgentTraceRecorder implements AgentTracePort {
+public class ToolCallStepTraceRecorder implements ToolCallStepTracePort {
 
     private static final String INSERT_SQL = """
-            INSERT INTO eo_agent_step_trace
+            INSERT INTO eo_tool_call_step_trace
                 (id, trace_id, session_id, user_id, step_index, tool, tool_input, thought, observation,
                  latency_ms, success, error_msg)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -32,7 +32,7 @@ public class AgentTraceRecorder implements AgentTracePort {
     private final IdGenerator idGenerator;
 
     @Override
-    public void record(AgentStepTrace trace) {
+    public void record(ToolCallStepTrace trace) {
         try {
             // sessionId 契约上可空（首轮 / 直连 API 不带会话），列 NOT NULL：收敛为匿名桶，步骤轨迹不丢
             String sessionId =
@@ -53,7 +53,7 @@ public class AgentTraceRecorder implements AgentTracePort {
                     truncate(trace.errorMsg(), 512));
         } catch (Exception e) {
             log.warn(
-                    "Agent step trace record failed (sessionId={}, step={}): {}",
+                    "Tool call step trace record failed (sessionId={}, step={}): {}",
                     trace.sessionId(),
                     trace.stepIndex(),
                     e.getMessage());
