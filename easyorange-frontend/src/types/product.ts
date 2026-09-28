@@ -86,11 +86,12 @@ export interface Category {
     id: string;
     name: string;
     icon: string | null;
+    /** 一级分类为 null。 */
     parentId: string | null;
     level?: number;
     sortOrder?: number;
+    /** 后端返回的是 0/1 数字（与 admin 侧一致），不是枚举名字符串。 */
     status?: number;
-    children?: Category[];
     productCount?: number;
 }
 

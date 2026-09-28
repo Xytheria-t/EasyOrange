@@ -1,11 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../api/adminApi';
-import type {
-    CategoryCreateRequest,
-    CategoryResponse,
-    CategoryTreeResponse,
-    CategoryUpdateRequest,
-} from '../types/admin';
+import type { CategoryCreateRequest, CategoryResponse, CategoryUpdateRequest } from '../types/admin';
 
 export const ADMIN_CATEGORY_KEYS = {
     all: ['admin', 'categories'] as const,
@@ -27,7 +22,7 @@ export function useAdminCategories() {
 }
 
 export function useAdminCategoryTree() {
-    return useQuery<CategoryTreeResponse[]>({
+    return useQuery<CategoryResponse[]>({
         queryKey: ADMIN_CATEGORY_KEYS.tree(),
         queryFn: async () => {
             const response = await adminApi.getCategoryTree();

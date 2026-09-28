@@ -203,9 +203,11 @@ export interface OrderStatsResponse {
 
 // ==================== Category Types ====================
 
+/** 分类节点 —— 列表与树共用一个类型（树的层级体现在 children 上）。 */
 export interface CategoryResponse {
-    categoryId: string;
+    id: string;
     name: string;
+    /** 一级分类为 null。 */
     parentId: string | null;
     parentName: string | null;
     level: number;
@@ -213,27 +215,22 @@ export interface CategoryResponse {
     status: number;
     productCount: number;
     createTime: string | null;
-    updateTime: string | null;
-}
-
-export interface CategoryTreeResponse {
-    categoryId: string;
-    name: string;
-    level: number;
-    sortOrder: number;
-    status: number;
-    children: CategoryTreeResponse[];
+    /** 仅 /tree 接口非空，列表接口为空数组。 */
+    children: CategoryResponse[];
 }
 
 export interface CategoryCreateRequest {
     name: string;
     parentId?: string;
+    icon?: string;
     sortOrder?: number;
 }
 
 export interface CategoryUpdateRequest {
-    name?: string;
+    name: string;
+    /** 不传表示移到一级；与当前父分类不同即触发移动。 */
     parentId?: string;
+    icon?: string;
     sortOrder?: number;
     status?: number;
 }

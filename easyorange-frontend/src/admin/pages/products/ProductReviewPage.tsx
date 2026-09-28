@@ -61,10 +61,7 @@ export default function ProductReviewPage() {
     // 分类选项取真实分类树：此前写死 7 个英文 ID，分类改名 / 新增后筛选直接失效
     const { data: categories } = useAdminCategories();
     const categoryOptions = useMemo(
-        () => [
-            { value: '', label: '全部分类' },
-            ...(categories ?? []).map(c => ({ value: c.categoryId, label: c.name })),
-        ],
+        () => [{ value: '', label: '全部分类' }, ...(categories ?? []).map(c => ({ value: c.id, label: c.name }))],
         [categories]
     );
 
