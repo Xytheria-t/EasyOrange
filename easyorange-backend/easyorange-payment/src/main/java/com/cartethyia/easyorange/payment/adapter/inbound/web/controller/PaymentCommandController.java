@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.payment.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentCommandMapper;
+import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentViewAssembler;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.CreatePaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.PaymentCallback;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.RefundRequest;
@@ -23,14 +24,13 @@ public class PaymentCommandController {
 
     private final PaymentCommandHandler commandHandler;
     private final CallbackSignatureVerifierPort signatureVerifier;
+    private final PaymentViewAssembler paymentViewAssembler;
 
     @PostMapping
     public Result<PaymentResponse> createPayment(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody CreatePaymentRequest request) {
-        String paymentId =
-                commandHandler.createPayment(user.userId(), PaymentCommandMapper.toCreateCommand(request, null));
-        PaymentResponse response = PaymentResponse.builder().id(paymentId).build();
-        return Result.success(response);
+        String paymentId = commandHandler.createPayment(user.userId(), PaymentCommandMapper.toCreateCommand(request));
+        return Result.success(paymentViewAssembler.toIdOnlyResponse(paymentId));
     }
 
     @PostMapping("/callback")

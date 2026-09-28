@@ -2,15 +2,15 @@ package com.cartethyia.easyorange.payment.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentViewAssembler;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.MockPaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
 import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentCreateSpec;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,6 +30,7 @@ public class MockPaymentController {
     private final PaymentRepository paymentRepository;
     private final IdGenerator idGenerator;
     private final PaymentCommandHandler paymentCommandHandler;
+    private final PaymentViewAssembler paymentViewAssembler;
 
     @PostMapping("/create")
     // 不加 @Transactional：单条 insert 自成事务，控制器层的事务只会把连接占用拉长（演示端点）
@@ -41,7 +42,7 @@ public class MockPaymentController {
 
         paymentRepository.save(created.aggregate());
 
-        return Result.success(buildPaymentResponse(created.aggregate()));
+        return Result.success(paymentViewAssembler.toPaymentResponse(created.aggregate()));
     }
 
     /**
@@ -58,8 +59,7 @@ public class MockPaymentController {
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
 
         if (Boolean.TRUE.equals(request.success())) {
-            paymentCommandHandler.pay(
-                    new PayCommand(aggregate.paymentNo(), "MOCK_TXN_" + System.currentTimeMillis(), null));
+            paymentCommandHandler.pay(new PayCommand(aggregate.paymentNo()));
         } else {
             var failed = aggregate.fail("模拟支付失败");
             paymentRepository.update(failed.aggregate());
@@ -68,7 +68,7 @@ public class MockPaymentController {
         aggregate = paymentRepository
                 .findById(request.paymentId())
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        return Result.success(buildPaymentResponse(aggregate));
+        return Result.success(paymentViewAssembler.toPaymentResponse(aggregate));
     }
 
     @PostMapping("/success/{paymentId}")
@@ -76,10 +76,9 @@ public class MockPaymentController {
         Payment aggregate = paymentRepository
                 .findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        paymentCommandHandler.pay(
-                new PayCommand(aggregate.paymentNo(), "MOCK_TXN_" + System.currentTimeMillis(), null));
+        paymentCommandHandler.pay(new PayCommand(aggregate.paymentNo()));
 
-        return Result.success(buildPaymentResponse(paymentRepository
+        return Result.success(paymentViewAssembler.toPaymentResponse(paymentRepository
                 .findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND))));
     }
@@ -93,7 +92,7 @@ public class MockPaymentController {
         var failed = aggregate.fail("模拟支付失败");
         paymentRepository.update(failed.aggregate());
 
-        return Result.success(buildPaymentResponse(paymentRepository
+        return Result.success(paymentViewAssembler.toPaymentResponse(paymentRepository
                 .findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND))));
     }
@@ -108,21 +107,5 @@ public class MockPaymentController {
         paymentRepository.update(result.aggregate());
 
         return Result.success();
-    }
-
-    private PaymentResponse buildPaymentResponse(Payment aggregate) {
-        return PaymentResponse.builder()
-                .id(aggregate.id())
-                .paymentNo(aggregate.paymentNo())
-                .orderId(aggregate.orderId())
-                .amount(aggregate.amount())
-                .paymentMethod(aggregate.paymentMethod().getCode())
-                .paymentMethodDesc(
-                        PaymentMethod.getDescByCode(aggregate.paymentMethod().getCode()))
-                .status(aggregate.status().getCode())
-                .statusDesc(PaymentStatus.getDescByCode(aggregate.status().getCode()))
-                .transactionId(aggregate.transactionId())
-                .createTime(aggregate.createTime())
-                .build();
     }
 }

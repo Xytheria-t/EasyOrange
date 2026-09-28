@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.payment.domain.constant;
+package com.cartethyia.easyorange.payment.domain.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;

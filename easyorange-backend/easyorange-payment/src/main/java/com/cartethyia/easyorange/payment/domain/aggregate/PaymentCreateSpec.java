@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.aggregate;
 
-import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentMethod;
 import java.math.BigDecimal;
 
 /**

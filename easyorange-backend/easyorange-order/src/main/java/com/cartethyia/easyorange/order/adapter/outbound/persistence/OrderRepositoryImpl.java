@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> implements OrderRepository {
@@ -48,6 +49,7 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Order> findById(OrderId id) {
         OrderDO orderDO = mapper.selectById(id.value());
         if (orderDO == null) {
@@ -87,8 +89,7 @@ public class OrderRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> im
         return toAggregatesWithItems(orderDOs);
     }
 
-    @Override
-    public List<OrderItem> findItemsByOrderId(String orderId) {
+    private List<OrderItem> findItemsByOrderId(String orderId) {
         return orderItemMapper
                 .selectList(new LambdaQueryWrapper<OrderItemDO>().eq(OrderItemDO::getOrderId, orderId))
                 .stream()

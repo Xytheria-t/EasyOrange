@@ -26,7 +26,7 @@ class PaymentCommandAssemblerTest {
         void toCreateCommand_convertsCorrectly() {
             CreatePaymentRequest request = new CreatePaymentRequest("1001", null, "1");
 
-            CreatePaymentCommand command = PaymentCommandMapper.toCreateCommand(request, "2001");
+            CreatePaymentCommand command = PaymentCommandMapper.toCreateCommand(request);
 
             assertThat(command.orderId()).isEqualTo("1001");
             assertThat(command.paymentMethod()).isEqualTo("1");

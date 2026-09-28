@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.domain.constant;
+package com.cartethyia.easyorange.order.domain.enums;
 
 /**
  * 订单关闭归因类型 — 决定关闭类动作的原因/时间落在哪一组字段上。

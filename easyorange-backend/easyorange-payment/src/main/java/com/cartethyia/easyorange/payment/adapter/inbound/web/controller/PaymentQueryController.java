@@ -4,15 +4,15 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.assembler.PaymentViewAssembler;
+import com.cartethyia.easyorange.payment.adapter.inbound.web.dto.response.PaymentStatusResponse;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.QueryPaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
 import com.cartethyia.easyorange.payment.application.query.PaymentListQuery;
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentStatus;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -42,14 +42,8 @@ public class PaymentQueryController {
     @GetMapping("/{id}/status")
     public Result<PaymentStatusResponse> getStatus(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
         Payment aggregate = queryHandler.getPaymentById(id, user.userId());
-        return Result.success(new PaymentStatusResponse(
-                aggregate.status().getDesc(),
-                com.cartethyia.easyorange.payment.domain.constant.PaymentMethod.getDescByCode(
-                        aggregate.paymentMethod().getCode()),
-                aggregate.updateTime()));
+        return Result.success(paymentViewAssembler.toPaymentStatusResponse(aggregate));
     }
-
-    public record PaymentStatusResponse(String status, String paymentMethod, LocalDateTime payTime) {}
 
     @GetMapping("/my")
     public Result<PageResult<PaymentResponse>> getMyPayments(

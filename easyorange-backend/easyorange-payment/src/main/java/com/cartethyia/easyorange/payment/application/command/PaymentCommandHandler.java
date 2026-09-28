@@ -7,8 +7,8 @@ import com.cartethyia.easyorange.framework.lock.DistributedLockPort;
 import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentCreateSpec;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
@@ -69,7 +69,14 @@ public class PaymentCommandHandler {
         return result.aggregate().id();
     }
 
-    /** 网关失败回退状态（{@code rollbackPayStatus}），不跨服务编排。 */
+    /**
+     * 发起支付 — 按支付单号加分布式锁（等待 0 秒，争用即 429 交网关重试），锁内编排两阶段：
+     * {@code preparePayPhase1}（PENDING→PAYING）→ {@code invokePayGateway}（无事务，外部调用）
+     * → 网关成功 {@code confirmPayPhase2}（PAYING→SUCCESS 并发事件）/ 失败 {@code rollbackPayStatus}（回 PENDING）。
+     * <p>
+     * 本方法自身不开事务：编排跨网关调用，事务边界必须落在各 phase 上（见 {@link PaymentPhaseExecutor}），
+     * 在这里开事务会把「本地更新 + 外部 HTTP」绑成一段长事务。
+     */
     public void pay(PayCommand command) {
         String lockKey = PAY_LOCK_PREFIX + command.paymentNo();
 
@@ -121,9 +128,6 @@ public class PaymentCommandHandler {
         });
     }
 
-    /**
-     * 关闭支付。
-     */
     @Transactional(rollbackFor = Exception.class)
     public void closePayment(ClosePaymentCommand command) {
         Payment aggregate = assertOwnership(command.paymentId(), command.userId());
@@ -144,7 +148,7 @@ public class PaymentCommandHandler {
      * @throws PaymentDomainException 支付单不存在（B4001）
      */
     public void payByOrderId(String orderId) {
-        pay(new PayCommand(resolveByOrderId(orderId).paymentNo(), null, null));
+        pay(new PayCommand(resolveByOrderId(orderId).paymentNo()));
     }
 
     /**

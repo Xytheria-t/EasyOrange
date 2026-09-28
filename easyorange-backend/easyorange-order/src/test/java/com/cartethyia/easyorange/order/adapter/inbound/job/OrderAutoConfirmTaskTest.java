@@ -10,10 +10,10 @@ import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderAutoConfirmProperties;
 import com.cartethyia.easyorange.order.application.service.OrderCacheEvictor;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
-import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,7 +77,7 @@ class OrderAutoConfirmTaskTest {
         return new OrderAutoConfirmTask(
                 orderRepository,
                 domainEventPublisher,
-                new OrderAutoConfirmProperties(enabled, 7, "0 0 2 * * ?"),
+                new OrderAutoConfirmProperties(enabled, 7),
                 orderCacheEvictor,
                 migrationExecutor);
     }

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.order.application.query;
 
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
 
 /**
  * 订单列表查询参数对象 — 收敛订单列表查询的 6 个参数为单一 record。

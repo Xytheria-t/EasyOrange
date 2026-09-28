@@ -1,14 +1,14 @@
 package com.cartethyia.easyorange.payment.domain.aggregate;
 
 import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.enums.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.event.PaymentClosedEvent;
-import com.cartethyia.easyorange.payment.domain.event.PaymentConfirmEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentRefundedEvent;
@@ -201,7 +201,7 @@ public class Payment {
     /**
      * 确认支付结果：根据网关结果变为 SUCCESS 或 FAILED。
      */
-    public Transition<Payment, PaymentConfirmEvent> confirmPay(PaymentResult result) {
+    public Transition<Payment, DomainEvent> confirmPay(PaymentResult result) {
         if (!canConfirmPay()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有支付中状态可以确认支付结果");
         }
@@ -291,9 +291,6 @@ public class Payment {
         return new Transition<>(updated, new PaymentRefundedEvent(UuidV7.generateId(), this.id, refundReason));
     }
 
-    /**
-     * 标记为失败。
-     */
     public Transition<Payment, PaymentFailedEvent> fail(String reason) {
         if (!canFail()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有待支付状态可以标记为失败");
@@ -302,9 +299,6 @@ public class Payment {
         return new Transition<>(updated, new PaymentFailedEvent(UuidV7.generateId(), this.id, reason));
     }
 
-    /**
-     * 关闭支付。
-     */
     public Transition<Payment, PaymentClosedEvent> close() {
         if (!canClose()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "当前状态不允许关闭: " + this.status);

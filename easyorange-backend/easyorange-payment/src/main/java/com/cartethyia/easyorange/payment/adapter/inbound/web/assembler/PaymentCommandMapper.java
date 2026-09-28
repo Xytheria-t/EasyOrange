@@ -15,8 +15,8 @@ public final class PaymentCommandMapper {
 
     private PaymentCommandMapper() {}
 
-    public static CreatePaymentCommand toCreateCommand(CreatePaymentRequest request, String userId) {
-        return new CreatePaymentCommand(request.orderId(), request.amount(), request.paymentMethod(), null, null);
+    public static CreatePaymentCommand toCreateCommand(CreatePaymentRequest request) {
+        return new CreatePaymentCommand(request.orderId(), request.amount(), request.paymentMethod(), null);
     }
 
     public static PaymentCallbackCommand toCallbackCommand(PaymentCallback callback) {

@@ -16,10 +16,5 @@ public record OrderCreatedEvent(
         items = List.copyOf(items);
     }
 
-    @Override
-    public String orderId() {
-        return orderId;
-    }
-
     public record OrderItemPayload(String productId, int quantity, BigDecimal unitPrice, BigDecimal subtotal) {}
 }

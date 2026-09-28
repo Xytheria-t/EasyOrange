@@ -11,7 +11,7 @@ import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderCreateSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
@@ -44,7 +44,9 @@ import org.springframework.util.StringUtils;
  * 库存扣减由乐观锁版本检查最终兜底防超卖，并由 product 侧库存流水（幂等键 = 订单 ID + 资产）保证
  * 「同一订单只扣一次、恢复数量与扣减对称」；事件副作用经 Outbox 与应用事务同原子持久化。
  * 为何不使用 Saga 见 ADR-0007。
- * 异常不做二次包装，直接抛给 {@code GlobalExceptionHandler} 按错误码映射。
+ * 异常上抛口径：领域异常直接上抛，由 {@code GlobalExceptionHandler} 按错误码映射；
+ * 锁争用（{@code LockAcquisitionException}）与上游不可用（支付网关失败）在用例边界各自映射为
+ * 订单域错误码，不对已有业务异常做二次包装。
  * 状态转换命令经 {@link Order} 聚合根守卫执行。
  */
 @Slf4j
@@ -123,7 +125,7 @@ public class OrderCommandHandler {
             productInventoryPort.decreaseStock(result.event().orderId(), item.productId(), item.quantity());
         }
 
-        createPayment(result.event(), command);
+        createPayment(result.event());
         // 买家/卖家订单列表缓存提交后再失效，避免提交前失效被并发读以旧数据重新填充
         orderCacheEvictor.evictOrderCacheAfterCommit(result.aggregate());
 
@@ -139,17 +141,14 @@ public class OrderCommandHandler {
      * 创建支付。
      *
      * @param orderEvent 订单创建事件
-     * @param command    创建订单命令
      * @throws OrderDomainException 如果支付创建失败（上游不可用，D0502→502）
      */
-    private void createPayment(OrderCreatedEvent orderEvent, CreateOrderCommand command) {
+    private void createPayment(OrderCreatedEvent orderEvent) {
         try {
             paymentGatewayPort.createPayment(new PaymentGatewayPort.CreatePaymentRequest(
                     orderEvent.orderId(),
                     orderEvent.totalAmount(),
-                    StringUtils.hasText(command.paymentMethod())
-                            ? command.paymentMethod()
-                            : OrderConstant.DEFAULT_PAYMENT_METHOD,
+                    OrderConstant.DEFAULT_PAYMENT_METHOD,
                     OrderConstant.PAYMENT_BIZ_TYPE,
                     OrderConstant.PAYMENT_DESC,
                     orderEvent.buyerId()));

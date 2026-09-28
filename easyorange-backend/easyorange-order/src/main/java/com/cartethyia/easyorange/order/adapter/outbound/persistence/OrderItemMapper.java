@@ -9,6 +9,4 @@ import org.apache.ibatis.annotations.Param;
 public interface OrderItemMapper extends BaseMapper<OrderItemDO> {
 
     void batchInsert(@Param("items") List<OrderItemDO> items);
-
-    void deleteByOrderId(@Param("orderId") String orderId);
 }

@@ -30,22 +30,12 @@ public class OrderDataMapper {
 
     // ── DO → 聚合根（读路径） ──
 
-    public Order toAggregate(OrderDO orderDO) {
-        if (orderDO == null) return null;
-        return Order.from(toReconstructSpec(orderDO, List.of()));
-    }
-
     public Order toAggregate(OrderDO orderDO, List<OrderItem> items) {
         if (orderDO == null) return null;
         return Order.from(toReconstructSpec(orderDO, items != null ? items : List.of()));
     }
 
     // ── DO → 读模型 ──
-
-    public OrderReadModel toReadModel(OrderDO orderDO) {
-        if (orderDO == null) return null;
-        return toReadModel(orderDO, List.of());
-    }
 
     public OrderReadModel toReadModel(OrderDO orderDO, List<OrderItemReadModel> items) {
         if (orderDO == null) return null;

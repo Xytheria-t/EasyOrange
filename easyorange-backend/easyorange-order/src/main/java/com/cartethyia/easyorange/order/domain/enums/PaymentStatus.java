@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.domain.valueobject;
+package com.cartethyia.easyorange.order.domain.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
@@ -7,10 +7,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * 支付状态枚举 — 订单聚合根中使用的值对象。
+ * 订单侧支付状态枚举 — 与 payment 模块的 {@code PaymentStatus} 是两套独立状态机，
+ * 不共享类型：订单只关心「能不能付 / 能不能退」，渠道侧状态细节不外泄。
  * <p>
  * code 为有意义字符串，DB 列 VARCHAR(20)，经 {@code @EnumValue} 持久化。
- * </p>
  */
 @Getter
 @AllArgsConstructor
