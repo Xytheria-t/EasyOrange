@@ -20,8 +20,11 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
 
     @Override
     public List<CategoryReadModel> findEnabledByParentId(String parentId) {
+        // parentId 为空表示查一级分类：必须走 isNull()，eq(col, null) 生成的是
+        // `parent_id = NULL` —— SQL 里恒不成立，一级分类会一条都查不出来。
         return lambdaQuery()
-                .eq(CategoryDO::getParentId, parentId)
+                .eq(parentId != null && !parentId.isBlank(), CategoryDO::getParentId, parentId)
+                .isNull(parentId == null || parentId.isBlank(), CategoryDO::getParentId)
                 .eq(CategoryDO::getStatus, CategoryStatus.ENABLED)
                 .orderByAsc(CategoryDO::getSortOrder)
                 .list()
