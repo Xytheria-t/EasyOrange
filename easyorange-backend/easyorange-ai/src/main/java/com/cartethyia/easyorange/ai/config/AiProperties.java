@@ -82,7 +82,7 @@ public record AiProperties(
 
     /**
      * Token 预算治理配置 — 按场景限制单次调用 token 上限 + 日预算上限。
-     * 场景键与 {@link com.cartethyia.easyorange.ai.domain.constant.AiCallScope} 枚举名对齐；
+     * 场景键与 {@link com.cartethyia.easyorange.ai.domain.enums.AiCallScope} 枚举名对齐；
      * {@code @TokenBudget} 注解上的字段为默认兜底值，配置文件可覆盖。
      */
     public record Budget(

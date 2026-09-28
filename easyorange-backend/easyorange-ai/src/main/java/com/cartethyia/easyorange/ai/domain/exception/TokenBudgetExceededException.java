@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.domain.exception;
 
-import com.cartethyia.easyorange.ai.domain.constant.AiResultCode;
+import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 
 /**

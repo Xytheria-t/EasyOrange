@@ -14,6 +14,8 @@ import jakarta.validation.constraints.Size;
  * @param forceFresh  跳过语义缓存（评估/回归用，线上请求保持 false）
  */
 public record ChatRequest(
-        @NotBlank(message = "问题不能为空") @Size(max = 2000, message = "问题长度不能超过 2000 字") String question,
+        @NotBlank(message = "问题不能为空") @Size(max = 2000, message = "问题长度不能超过 2000 字")
+        String question,
+
         String sessionId,
         boolean forceFresh) {}

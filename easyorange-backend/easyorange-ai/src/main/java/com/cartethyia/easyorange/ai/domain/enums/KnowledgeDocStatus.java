@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.domain.constant;
+package com.cartethyia.easyorange.ai.domain.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import lombok.Getter;

@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test;
 @DisplayName("ChatRequest 约束 -> 测试")
 class ChatRequestTest {
 
-    private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
+    private static final Validator VALIDATOR =
+            Validation.buildDefaultValidatorFactory().getValidator();
 
     @Test
     @DisplayName("空白问题被拒（NotBlank）")
@@ -37,12 +38,14 @@ class ChatRequestTest {
     @Test
     @DisplayName("恰好 2000 字在限内（边界值）")
     void exactlyAtLimitAccepted() {
-        assertThat(VALIDATOR.validate(new ChatRequest("问".repeat(2000), "sess-1", false))).isEmpty();
+        assertThat(VALIDATOR.validate(new ChatRequest("问".repeat(2000), "sess-1", false)))
+                .isEmpty();
     }
 
     @Test
     @DisplayName("合法请求无约束违规")
     void validRequestAccepted() {
-        assertThat(VALIDATOR.validate(new ChatRequest("怎么退款？", "sess-1", false))).isEmpty();
+        assertThat(VALIDATOR.validate(new ChatRequest("怎么退款？", "sess-1", false)))
+                .isEmpty();
     }
 }

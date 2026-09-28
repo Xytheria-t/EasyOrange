@@ -8,7 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.domain.constant.KnowledgeDocStatus;
+import com.cartethyia.easyorange.ai.domain.enums.KnowledgeDocStatus;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;

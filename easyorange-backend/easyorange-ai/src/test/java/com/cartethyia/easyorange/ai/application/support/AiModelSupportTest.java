@@ -7,7 +7,7 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.budget.InMemoryTokenBudgetStore;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
@@ -138,6 +138,29 @@ class AiModelSupportTest {
                             anyInt(),
                             eq(true),
                             isNull());
+        }
+
+        @Test
+        @DisplayName("超长异常消息按 error_msg 列宽截断 —— 供应商异常体常含完整 HTTP 响应，不截断整条记录写不进去")
+        void callText_truncatesOversizedErrorMessage() {
+            when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("x".repeat(5000)));
+
+            assertThatThrownBy(() -> aiModelSupport.callText(chatModel, AiCallScope.CHAT, "system", "user"))
+                    .isInstanceOf(RuntimeException.class);
+
+            var captor = ArgumentCaptor.forClass(String.class);
+            verify(callLogRecorder)
+                    .record(
+                            eq("CHAT"),
+                            anyString(),
+                            anyString(),
+                            isNull(),
+                            anyLong(),
+                            anyInt(),
+                            anyInt(),
+                            eq(false),
+                            captor.capture());
+            assertThat(captor.getValue()).hasSize(512);
         }
     }
 

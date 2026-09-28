@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.web;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.RequestUtil;

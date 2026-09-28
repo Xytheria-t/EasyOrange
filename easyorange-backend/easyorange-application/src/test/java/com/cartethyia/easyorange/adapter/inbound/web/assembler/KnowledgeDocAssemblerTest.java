@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.adapter.inbound.web.assembler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cartethyia.easyorange.ai.domain.constant.KnowledgeDocStatus;
+import com.cartethyia.easyorange.ai.domain.enums.KnowledgeDocStatus;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
 import com.cartethyia.easyorange.common.result.PageResult;
 import java.time.LocalDateTime;

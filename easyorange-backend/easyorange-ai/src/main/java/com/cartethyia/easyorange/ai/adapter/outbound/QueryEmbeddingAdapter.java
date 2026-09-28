@@ -1,8 +1,9 @@
 package com.cartethyia.easyorange.ai.adapter.outbound;
 
+import com.cartethyia.easyorange.ai.application.support.AiCallRecorder;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.product.application.port.query.QueryEmbeddingPort;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Component;
  * 因此「不带任何 AI key 也能正常搜索」由这里的 catch 保证。
  * <p>
  * 预算走 {@code semantic} 场景：用量取供应商回报的真实 prompt token，
- * 未回报时才退化为按场景上限估算（见 {@link AiModelSupport}）。
+ * 未回报时才退化为按场景上限估算（见 {@link AiCallRecorder}）。
  */
 @Slf4j
 @Component

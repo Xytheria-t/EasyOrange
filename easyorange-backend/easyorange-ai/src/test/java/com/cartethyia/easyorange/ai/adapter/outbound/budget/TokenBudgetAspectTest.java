@@ -6,7 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
-import com.cartethyia.easyorange.ai.domain.constant.AiResultCode;
+import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
 import com.cartethyia.easyorange.ai.domain.exception.TokenBudgetExceededException;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import org.aspectj.lang.ProceedingJoinPoint;

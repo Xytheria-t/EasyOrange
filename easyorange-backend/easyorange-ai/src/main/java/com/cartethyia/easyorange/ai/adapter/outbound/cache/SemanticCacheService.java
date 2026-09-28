@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.ai.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.VectorUtils;
 import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
 import java.nio.ByteBuffer;
@@ -108,8 +108,7 @@ public class SemanticCacheService implements SemanticCachePort {
 
     /** 写入缓存 (queryEmbedding, response)；淘汰上限按用户桶各算各的 —— 高频用户的桶满了不该把其他用户的条目挤掉。 */
     @Override
-    public void store(
-            AiCallScope scope, String userId, String query, List<Float> queryEmbedding, Object response) {
+    public void store(AiCallScope scope, String userId, String query, List<Float> queryEmbedding, Object response) {
         if (queryEmbedding == null || queryEmbedding.isEmpty()) {
             return;
         }

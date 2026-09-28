@@ -44,7 +44,7 @@ class KnowledgeFallbackAdapterTest {
                         "退款规则",
                         "7 天无理由退货…",
                         "平台规则",
-                        com.cartethyia.easyorange.ai.domain.constant.KnowledgeDocStatus.INDEXED,
+                        com.cartethyia.easyorange.ai.domain.enums.KnowledgeDocStatus.INDEXED,
                         3,
                         LocalDateTime.now())));
         KnowledgeIndexPort adapter = new KnowledgeFallbackAdapter(repository, meterRegistry);

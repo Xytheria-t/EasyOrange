@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.ai.application.retrieval;
 
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.constant.KnowledgeDocStatus;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.KnowledgeDocStatus;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;

@@ -7,7 +7,7 @@ import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.application.listing.AutoListingService;
-import com.cartethyia.easyorange.ai.domain.constant.AiResultCode;
+import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
 import java.math.BigDecimal;
