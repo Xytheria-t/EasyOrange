@@ -158,7 +158,7 @@ public class AgentLoopRunner {
             metrics.recordLoop(result.outcome(), result.rounds());
             return result;
         } catch (RuntimeException e) {
-            metrics.recordLoop(LoopOutcome.ERROR, 0);
+            metrics.recordLoopFailure();
             throw e;
         }
     }

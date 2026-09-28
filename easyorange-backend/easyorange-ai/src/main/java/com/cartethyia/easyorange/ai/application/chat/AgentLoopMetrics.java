@@ -78,7 +78,7 @@ public class AgentLoopMetrics {
             loopCounters.put(outcome, meterRegistry.counter(LOOP_METRIC, "outcome", outcome.getTag()));
         }
         this.stepsSummary = DistributionSummary.builder(STEPS_METRIC)
-                .description("每次对话请求的 Agent 决策轮数（含 finish 轮）")
+                .description("每次循环出口的 Agent 决策轮数（含 finish 轮，故障哨兵不入分布）")
                 .publishPercentileHistogram()
                 .register(meterRegistry);
         this.toolCounters = new EnumMap<>(TrackedTool.class);
@@ -98,6 +98,16 @@ public class AgentLoopMetrics {
     void recordLoop(LoopOutcome outcome, int rounds) {
         loopCounters.get(outcome).increment();
         stepsSummary.record(rounds);
+    }
+
+    /**
+     * 记一次故障穿透 —— 只记结局，不进轮数分布。
+     * <p>
+     * 走到这里的请求没有循环出口，轮数不可知；记 0 会把「平均步数」往 0 拽，而故障爆发恰恰是
+     * 最需要读这条曲线的时候。分母因此只由真实出口构成，与 loop 计数器的非 error 之和一致。
+     */
+    void recordLoopFailure() {
+        loopCounters.get(LoopOutcome.ERROR).increment();
     }
 
     /** 记一次工具执行：调用计数（tag 封闭集外落 unknown）+ 执行耗时。 */
