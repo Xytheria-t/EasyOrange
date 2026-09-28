@@ -16,9 +16,9 @@ import com.cartethyia.easyorange.ai.application.chat.AgentLoopRunner.Result;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.constant.LoopOutcome;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
@@ -91,6 +91,9 @@ class AiChatServiceTest {
     @Mock
     private AgentLoopRunner agentLoopRunner;
 
+    @Mock
+    private ChatBudgetGuard budgetGuard;
+
     private AiProperties aiProperties;
     private Cache<String, ChatAnswer> staleCache;
     private SimpleMeterRegistry meterRegistry;
@@ -116,13 +119,27 @@ class AiChatServiceTest {
     @Test
     @DisplayName("指标构造期注册 —— degraded 按原因全集、busy/aborted 一次性建齐（热路径零查找）")
     void meters_registeredAtConstruction() {
-        assertThat(meterRegistry.get("easyorange.ai.chat.degraded").tag("reason", "stale").counter().count())
+        assertThat(meterRegistry
+                        .get("easyorange.ai.chat.degraded")
+                        .tag("reason", "stale")
+                        .counter()
+                        .count())
                 .isZero();
-        assertThat(meterRegistry.get("easyorange.ai.chat.degraded").tag("reason", "unavailable").counter().count())
+        assertThat(meterRegistry
+                        .get("easyorange.ai.chat.degraded")
+                        .tag("reason", "unavailable")
+                        .counter()
+                        .count())
                 .isZero();
-        assertThat(meterRegistry.get("easyorange.ai.chat.session.busy").counter().count())
+        assertThat(meterRegistry
+                        .get("easyorange.ai.chat.session.busy")
+                        .counter()
+                        .count())
                 .isZero();
-        assertThat(meterRegistry.get("easyorange.ai.chat.stream.aborted").counter().count())
+        assertThat(meterRegistry
+                        .get("easyorange.ai.chat.stream.aborted")
+                        .counter()
+                        .count())
                 .isZero();
     }
 
@@ -229,7 +246,8 @@ class AiChatServiceTest {
                         3));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("担保交易保障双方 [来源:交易规则]");
 
-        ChatAnswer answer = chatService.answer(new ChatRequest("5000 的笔记本有吗？平台怎么保障交易？", "sess-1", false), AUTH_USER.userId());
+        ChatAnswer answer =
+                chatService.answer(new ChatRequest("5000 的笔记本有吗？平台怎么保障交易？", "sess-1", false), AUTH_USER.userId());
 
         // 资产排在前面：找货是主链路，不该被同名的规则来源挤掉
         assertThat(answer.sources())
@@ -383,32 +401,33 @@ class AiChatServiceTest {
         AtomicReference<String> done = new AtomicReference<>();
         AtomicReference<String> error = new AtomicReference<>();
         List<AgentStepView> steps = new ArrayList<>();
-        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
-            @Override
-            public void onStep(AgentStepView step) {
-                steps.add(step);
-            }
+        chatService.streamAnswer(
+                new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
+                    @Override
+                    public void onStep(AgentStepView step) {
+                        steps.add(step);
+                    }
 
-            @Override
-            public void onToken(String token) {
-                tokens.append(token);
-            }
+                    @Override
+                    public void onToken(String token) {
+                        tokens.append(token);
+                    }
 
-            @Override
-            public void onSources(List<ChatSource> src) {
-                sources.set(src);
-            }
+                    @Override
+                    public void onSources(List<ChatSource> src) {
+                        sources.set(src);
+                    }
 
-            @Override
-            public void onDone(String fullAnswer) {
-                done.set(fullAnswer);
-            }
+                    @Override
+                    public void onDone(String fullAnswer) {
+                        done.set(fullAnswer);
+                    }
 
-            @Override
-            public void onError(String message) {
-                error.set(message);
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        error.set(message);
+                    }
+                });
 
         assertThat(tokens.toString()).isEqualTo("可以退款");
         assertThat(steps).extracting(AgentStepView::tool).containsExactly("knowledge_search");
@@ -428,40 +447,38 @@ class AiChatServiceTest {
     @DisplayName("流式语义缓存命中 -> 不进循环，按固定块回放 token 并重放 sources（事件顺序与实时生成一致）")
     void stream_cacheHit_replays() {
         var cached = new ChatAnswer(
-                "缓存回答内容",
-                List.of(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-1", "来源A")),
-                "sess-旧",
-                false);
+                "缓存回答内容", List.of(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-1", "来源A")), "sess-旧", false);
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.of(cached));
 
         List<String> events = new ArrayList<>();
-        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-新", false), AUTH_USER.userId(), new ChatStreamHandler() {
-            @Override
-            public void onStep(AgentStepView step) {
-                events.add("step");
-            }
+        chatService.streamAnswer(
+                new ChatRequest("怎么退款？", "sess-新", false), AUTH_USER.userId(), new ChatStreamHandler() {
+                    @Override
+                    public void onStep(AgentStepView step) {
+                        events.add("step");
+                    }
 
-            @Override
-            public void onToken(String token) {
-                events.add("token:" + token);
-            }
+                    @Override
+                    public void onToken(String token) {
+                        events.add("token:" + token);
+                    }
 
-            @Override
-            public void onSources(List<ChatSource> sources) {
-                events.add("sources");
-            }
+                    @Override
+                    public void onSources(List<ChatSource> sources) {
+                        events.add("sources");
+                    }
 
-            @Override
-            public void onDone(String fullAnswer) {
-                events.add("done");
-            }
+                    @Override
+                    public void onDone(String fullAnswer) {
+                        events.add("done");
+                    }
 
-            @Override
-            public void onError(String message) {
-                events.add("error:" + message);
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        events.add("error:" + message);
+                    }
+                });
 
         // 命中即回放：不进循环、不再调模型、不写会话记忆、不再写回缓存（与非流式命中同口径）
         verify(agentLoopRunner, never()).run(any());
@@ -470,7 +487,12 @@ class AiChatServiceTest {
         verify(semanticCache, never()).store(any(), any(), anyString(), anyList(), any());
         // 查找走同一分桶与类型契约（缓存按用户分桶，回答注入了该用户的画像）
         verify(semanticCache)
-                .lookUp(eq(AiCallScope.CHAT), eq(AUTH_USER.userId()), eq("怎么退款？"), eq(QUERY_EMBEDDING), eq(ChatAnswer.class));
+                .lookUp(
+                        eq(AiCallScope.CHAT),
+                        eq(AUTH_USER.userId()),
+                        eq("怎么退款？"),
+                        eq(QUERY_EMBEDDING),
+                        eq(ChatAnswer.class));
         // 事件序列：sources 先行，token 随后拼回完整回答，done 收尾；无 step（没进循环）、无 error
         assertThat(events.getFirst()).isEqualTo("sources");
         assertThat(events.get(1)).startsWith("token:");
@@ -496,27 +518,29 @@ class AiChatServiceTest {
                         List.of(),
                         LoopOutcome.FINISHED,
                         1));
-        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class))).thenReturn("生成的回答");
+        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
+                .thenReturn("生成的回答");
 
         AtomicReference<String> done = new AtomicReference<>();
-        chatService.streamAnswer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
-            @Override
-            public void onStep(AgentStepView step) {}
+        chatService.streamAnswer(
+                new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
+                    @Override
+                    public void onStep(AgentStepView step) {}
 
-            @Override
-            public void onToken(String token) {}
+                    @Override
+                    public void onToken(String token) {}
 
-            @Override
-            public void onSources(List<ChatSource> sources) {}
+                    @Override
+                    public void onSources(List<ChatSource> sources) {}
 
-            @Override
-            public void onDone(String fullAnswer) {
-                done.set(fullAnswer);
-            }
+                    @Override
+                    public void onDone(String fullAnswer) {
+                        done.set(fullAnswer);
+                    }
 
-            @Override
-            public void onError(String message) {}
-        });
+                    @Override
+                    public void onError(String message) {}
+                });
 
         assertThat(done.get()).isEqualTo("生成的回答");
         @SuppressWarnings("unchecked")
@@ -537,7 +561,8 @@ class AiChatServiceTest {
     @Test
     @DisplayName("流式 forceFresh -> 跳过语义缓存读写，连向量化都不做（与非流式同口径）")
     void stream_forceFresh_skipsCache() {
-        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class))).thenReturn("回答");
+        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
+                .thenReturn("回答");
 
         chatService.streamAnswer(new ChatRequest("问题", "sess-1", true), AUTH_USER.userId(), new StreamHandlerStub());
 
@@ -565,7 +590,7 @@ class AiChatServiceTest {
     @Test
     @DisplayName("流式回答 -> 预算超限走 onError 降级")
     void stream_budgetExceeded() {
-        when(agentLoopRunner.chatBudgetExhausted()).thenReturn(true);
+        when(budgetGuard.exhausted()).thenReturn(true);
 
         AtomicReference<String> error = new AtomicReference<>();
         chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
@@ -714,8 +739,8 @@ class AiChatServiceTest {
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
         when(aiModelSupport.callText(any(), any(), anyList())).thenThrow(BusinessException.of("AI 调用预算已用尽"));
 
-        Assertions.assertThatThrownBy(() -> chatService.answer(
-                        new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId()))
+        Assertions.assertThatThrownBy(
+                        () -> chatService.answer(new ChatRequest("怎么退款？", "sess-1", false), AUTH_USER.userId()))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("AI 调用预算已用尽");
     }
@@ -771,6 +796,7 @@ class AiChatServiceTest {
                 sessionStore,
                 preferenceRepository,
                 agentLoopRunner,
+                budgetGuard,
                 // 真实实例：默认预算 2000 token，测试历史远小于预算，行为等同直通
                 new ChatContextTrimmer(aiProperties, meterRegistry),
                 lockPort,

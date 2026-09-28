@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.domain.constant;
+package com.cartethyia.easyorange.ai.domain.enums;
 
 import com.cartethyia.easyorange.common.enums.IResultCode;
 import lombok.AllArgsConstructor;

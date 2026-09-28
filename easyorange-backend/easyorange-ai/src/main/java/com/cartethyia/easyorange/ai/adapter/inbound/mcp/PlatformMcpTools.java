@@ -12,7 +12,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;

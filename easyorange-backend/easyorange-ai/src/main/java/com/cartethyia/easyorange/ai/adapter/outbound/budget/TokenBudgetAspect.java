@@ -20,7 +20,8 @@ import org.springframework.stereotype.Component;
  * <b>配置优先</b>：{@code easyorange.ai.budget.scenarios.<scenario>} 覆盖注解默认值 —— 注解提供
  * 编译期可见的兜底契约，运维通过配置热更新限额而无需发版。
  * <p>
- * <b>只做前置检查，不做记账</b>：真实用量在 {@code AiModelSupport} 拿到供应商回报 tokens 的地方记。
+ * <b>只做前置检查，不做记账</b>：真实用量在 {@link com.cartethyia.easyorange.ai.application.support.AiCallRecorder}
+ * 拿到供应商回报 tokens 的地方记。
  * 记账不能放这里：服务方法返回业务 DTO，只能把 {@code maxTokensPerCall} 当用量累加，
  * 数字与真实消耗差一个量级。
  */

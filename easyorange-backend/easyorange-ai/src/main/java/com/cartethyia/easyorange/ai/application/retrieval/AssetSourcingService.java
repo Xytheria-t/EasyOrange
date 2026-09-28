@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.application.retrieval;
 
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.port.AssetRetrievalPort;
 import java.util.List;

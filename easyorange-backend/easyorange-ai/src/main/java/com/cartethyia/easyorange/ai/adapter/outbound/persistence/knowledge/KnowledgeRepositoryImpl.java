@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.persistence.knowledge;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.ai.domain.constant.KnowledgeDocStatus;
+import com.cartethyia.easyorange.ai.domain.enums.KnowledgeDocStatus;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;

@@ -3,10 +3,11 @@ package com.cartethyia.easyorange.ai.application.chat;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.constant.AiResultCode;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
 import com.cartethyia.easyorange.ai.domain.exception.TokenBudgetExceededException;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
@@ -24,9 +25,11 @@ import com.cartethyia.easyorange.framework.lock.LockAcquisitionException;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.messages.Message;
@@ -41,10 +44,10 @@ import org.springframework.stereotype.Service;
  * 工具循环（{@link AgentLoopRunner}，步数 / 预算超限降级为用已积累观察直接生成，决策失败降级为按原始
  * 问题检索一次）→ 生成回答（消息形状在 {@link ChatPromptAssembler}，回答末尾 [来源:标题] 引用溯源）。
  * <p>
- * 流式路径的预算前置检查手动做而不挂 {@link TokenBudget} 注解（判定与循环中途共用
- * {@link AgentLoopRunner#chatBudgetExhausted()}，口径单处维护）：不是 AOP 拦不住——注解同样会被切面
- * 拦截——而是切面在<b>代理边界</b>抛 {@link TokenBudgetExceededException}，发生在方法体之前，
- * streamAnswer 内部把预算异常转成 error 事件的路由接不到它，预算提示会落成 Controller 的通用降级文案。
+ * 流式路径的预算前置检查手动做而不挂 {@link TokenBudget} 注解（原因见 {@link ChatBudgetGuard}）：
+ * 不是 AOP 拦不住——注解同样会被切面拦截——而是切面在<b>代理边界</b>抛
+ * {@link TokenBudgetExceededException}，发生在方法体之前，streamAnswer 内部把预算异常转成 error
+ * 事件的路由接不到它，预算提示会落成 Controller 的通用降级文案。
  */
 @Slf4j
 @Service
@@ -55,6 +58,12 @@ public class AiChatService {
     private static final String DEGRADED_METRIC = "easyorange.ai.chat.degraded";
     private static final String SESSION_BUSY_METRIC = "easyorange.ai.chat.session.busy";
     private static final String STREAM_ABORTED_METRIC = "easyorange.ai.chat.stream.aborted";
+    /**
+     * 一次问答的端到端耗时（Agent 循环 + 生成 + 会话落盘）— 对外引用的延迟数字只有这一处指标源。
+     * 口径只圈「跑通生成链路」的请求：语义缓存命中与空问题不进分布，否则几十毫秒的缓存回放会把
+     * p95 拉到与真实生成延迟不可比；直方图分位数在多副本下由 PromQL 聚合。
+     */
+    private static final String TURN_DURATION_METRIC = "easyorange.ai.chat.turn.duration";
 
     /** 空问题 / 同会话锁等待超时的提示语：非流式走 {@link ChatAnswer}、流式走 SSE error 事件，同源一处维护。 */
     private static final String EMPTY_QUESTION_TEXT = "请描述你的问题";
@@ -77,6 +86,7 @@ public class AiChatService {
     private final ChatSessionPort sessionStore;
     private final UserPreferenceRepository preferenceRepository;
     private final AgentLoopRunner agentLoopRunner;
+    private final ChatBudgetGuard budgetGuard;
     private final ChatContextTrimmer contextTrimmer;
     private final DistributedLockPort distributedLockPort;
     private final AiProperties aiProperties;
@@ -111,6 +121,8 @@ public class AiChatService {
 
     private final Counter streamAbortedCounter;
 
+    private final Timer turnTimer;
+
     public AiChatService(
             ChatModel chatModel,
             PromptRegistry promptRegistry,
@@ -119,6 +131,7 @@ public class AiChatService {
             ChatSessionPort sessionStore,
             UserPreferenceRepository preferenceRepository,
             AgentLoopRunner agentLoopRunner,
+            ChatBudgetGuard budgetGuard,
             ChatContextTrimmer contextTrimmer,
             DistributedLockPort distributedLockPort,
             AiProperties aiProperties,
@@ -131,6 +144,7 @@ public class AiChatService {
         this.sessionStore = sessionStore;
         this.preferenceRepository = preferenceRepository;
         this.agentLoopRunner = agentLoopRunner;
+        this.budgetGuard = budgetGuard;
         this.contextTrimmer = contextTrimmer;
         this.distributedLockPort = distributedLockPort;
         this.aiProperties = aiProperties;
@@ -141,6 +155,10 @@ public class AiChatService {
         }
         this.sessionBusyCounter = meterRegistry.counter(SESSION_BUSY_METRIC);
         this.streamAbortedCounter = meterRegistry.counter(STREAM_ABORTED_METRIC);
+        this.turnTimer = Timer.builder(TURN_DURATION_METRIC)
+                .description("一次问答端到端耗时（循环 + 生成 + 落盘，不含缓存命中与锁等待）")
+                .publishPercentileHistogram()
+                .register(meterRegistry);
     }
 
     /**
@@ -150,8 +168,8 @@ public class AiChatService {
      * 预算超限等业务异常照旧上抛——客户端可控的 4xx，不伪装成降级回答。
      * <p>
      * 身份由入站适配层解析后显式传入（本类不读安全上下文）：HTTP 入口在 servlet 线程取登录态
-     * （缺失即 401，身份是硬前置不静默降级），评估跑批传机器主体。入口见 Controller 与
-     * {@code GoldenSetEvaluator}。
+     * （缺失即 401，身份是硬前置不静默降级，对话没有匿名路径），评估跑批传机器主体
+     * （{@link AgentLoopRunner#MACHINE_SUBJECT}）。入口见 Controller 与 {@code GoldenSetEvaluator}。
      * <p>
      * 两个缓存职责不同：语义缓存（Redis，跨请求近似问题复用）在 {@code forceFresh} 下读写都跳过；
      * stale 缓存（Caffeine，供应商故障兜底）随每次成功回答无条件刷新 —— forceFresh 只绕过语义缓存，
@@ -208,7 +226,8 @@ public class AiChatService {
      * 身份由调用方显式传入而非在这里读安全上下文：流式跑在 Controller 提交的另一线程上，
      * {@code SecurityContextHolder} 的 ThreadLocal 不会跟着过去，在这里读会恒为空 ——
      * 长期画像不加载、偏好写不进库、trace 的 userId 为空。Controller 在 servlet 线程解析登录态后
-     * 传入，缺失即 401（身份是硬前置，不静默降级）。预算前置检查不挂注解的原因见类注释。
+     * 传入，缺失即 401（身份是硬前置，不静默降级）。对话链路没有匿名调用方，另一个主体是评估跑批
+     * （{@link AgentLoopRunner#MACHINE_SUBJECT}）。预算前置检查不挂注解的原因见类注释。
      */
     public void streamAnswer(ChatRequest request, String userId, ChatStreamHandler handler) {
         if (request.question() == null || request.question().isBlank()) {
@@ -216,8 +235,8 @@ public class AiChatService {
             return;
         }
         try {
-            // 流式链路绕过 @TokenBudget 切面，这里手动前置检查；判定与循环中途共用 AgentLoopRunner 同一方法
-            if (agentLoopRunner.chatBudgetExhausted()) {
+            // 流式链路绕过 @TokenBudget 切面，这里手动前置检查；判定与循环中途共用 ChatBudgetGuard 同一方法
+            if (budgetGuard.exhausted()) {
                 log.warn("action=token_budget_exceeded, scenario={}", AiCallScope.CHAT.budgetScenario());
                 throw new TokenBudgetExceededException();
             }
@@ -298,33 +317,40 @@ public class AiChatService {
     }
 
     private ChatAnswer doAgenticAnswer(ChatRequest request, String userId, @Nullable ChatStreamHandler handler) {
-        // token 级上下文治理：轮数窗口（存储侧）之上再按 token 预算裁注入窗口，一处裁、决策与生成两处生效
-        List<ChatTurn> history = contextTrimmer.trim(sessionStore.loadRecent(userId, request.sessionId()));
-        // 机器主体在写侧被 AgentTools 拒收偏好，此处查到的恒为空表，无需特判
-        List<UserPreference> prefs = preferenceRepository.findByUserId(userId);
+        long start = System.nanoTime();
+        try {
+            // token 级上下文治理：轮数窗口（存储侧）之上再按 token 预算裁注入窗口，一处裁、决策与生成两处生效
+            List<ChatTurn> history = contextTrimmer.trim(sessionStore.loadRecent(userId, request.sessionId()));
+            // 机器主体在写侧被 AgentTools 拒收偏好，此处查到的恒为空表，无需特判
+            List<UserPreference> prefs = preferenceRepository.findByUserId(userId);
 
-        AgentLoopRunner.Result run = agentLoopRunner.run(
-                new AgentLoopRunner.Input(request.question(), request.sessionId(), userId, history, prefs, handler));
+            AgentLoopRunner.Result run = agentLoopRunner.run(new AgentLoopRunner.Input(
+                    request.question(), request.sessionId(), userId, history, prefs, handler));
 
-        // 引用来源：知识 / 资产两路召回物合并成结构化来源（带 type + id），资产优先，截断到 3 条
-        List<ChatSource> sources = ChatSource.merge(run.knowledgeHits(), run.assets(), SOURCE_LIMIT);
-        if (handler != null && !sources.isEmpty()) {
-            handler.onSources(sources);
+            // 引用来源：知识 / 资产两路召回物合并成结构化来源（带 type + id），资产优先，截断到 3 条
+            List<ChatSource> sources = ChatSource.merge(run.knowledgeHits(), run.assets(), SOURCE_LIMIT);
+            if (handler != null && !sources.isEmpty()) {
+                handler.onSources(sources);
+            }
+
+            List<Message> messages = ChatPromptAssembler.assemble(
+                    promptRegistry.require(CHAT_PROMPT), request.question(), history, prefs, run);
+            String answer = handler != null
+                    ? aiModelSupport.callTextStream(chatModel, AiCallScope.CHAT, messages, handler::onToken)
+                    : aiModelSupport.callText(chatModel, AiCallScope.CHAT, messages);
+            if (answer == null || answer.isBlank()) {
+                // 显式业务码而非裸 IllegalStateException（曾落 500）：空回答 = 模型没给出可用结果
+                throw BusinessException.of(AiResultCode.AI_UNAVAILABLE, "模型返回空回答");
+            }
+
+            // 一轮对话一次写入（提问 + 回答），存储侧一次落盘也不会留下半轮记忆
+            sessionStore.saveTurns(
+                    userId,
+                    request.sessionId(),
+                    List.of(ChatTurn.user(request.question()), ChatTurn.assistant(answer)));
+            return new ChatAnswer(answer, sources, request.sessionId(), false);
+        } finally {
+            turnTimer.record(System.nanoTime() - start, TimeUnit.NANOSECONDS);
         }
-
-        List<Message> messages = ChatPromptAssembler.assemble(
-                promptRegistry.require(CHAT_PROMPT), request.question(), history, prefs, run);
-        String answer = handler != null
-                ? aiModelSupport.callTextStream(chatModel, AiCallScope.CHAT, messages, handler::onToken)
-                : aiModelSupport.callText(chatModel, AiCallScope.CHAT, messages);
-        if (answer == null || answer.isBlank()) {
-            // 显式业务码而非裸 IllegalStateException（曾落 500）：空回答 = 模型没给出可用结果
-            throw BusinessException.of(AiResultCode.AI_UNAVAILABLE, "模型返回空回答");
-        }
-
-        // 一轮对话一次写入（提问 + 回答），存储侧一次落盘也不会留下半轮记忆
-        sessionStore.saveTurns(
-                userId, request.sessionId(), List.of(ChatTurn.user(request.question()), ChatTurn.assistant(answer)));
-        return new ChatAnswer(answer, sources, request.sessionId(), false);
     }
 }

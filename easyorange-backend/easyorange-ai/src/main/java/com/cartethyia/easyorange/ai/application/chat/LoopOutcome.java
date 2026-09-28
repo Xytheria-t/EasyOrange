@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.domain.constant;
+package com.cartethyia.easyorange.ai.application.chat;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +11,9 @@ import lombok.RequiredArgsConstructor;
  * {@link #ERROR} 不是循环出口：循环内的决策 / 工具失败都已收敛成降级，能落到它头上的是
  * 基础设施故障穿透，正常应为零 —— 收进同一枚举只为共用同一套结局计数。
  * <p>
- * 结局是纯观测口径（指标与降级归因），生成链路不按它分支 —— 消费方只有循环结局计数器。
+ * 结局是纯观测口径（指标与降级归因），生成链路不按它分支。与工具指标 tag 集
+ * （{@code AgentLoopMetrics} 的私有枚举）同住 application 层：观测词汇与它的埋点放一处，
+ * 领域层不留只为计数存在的枚举。
  */
 @Getter
 @RequiredArgsConstructor

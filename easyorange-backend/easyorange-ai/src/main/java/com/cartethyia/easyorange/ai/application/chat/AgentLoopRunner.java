@@ -4,9 +4,9 @@ import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.constant.LoopOutcome;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepDecision;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepTrace;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
@@ -19,28 +19,17 @@ import com.cartethyia.easyorange.ai.domain.port.AgentTracePort;
 import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistry;
-import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.DistributionSummary;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
-import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
@@ -51,24 +40,22 @@ import tools.jackson.databind.ObjectMapper;
  * <p>
  * 手写循环 + 原生 tool calling：每轮把 7 个工具的 JSON Schema（{@link AgentTools} 的 {@code @Tool}
  * 注解生成）随请求下发，模型返回「调哪个工具 + 参数 + 理由」。调不调、调几次、调什么由本类决定
- * —— Spring AI 2.0 的 {@code ChatModel.call} 不自动执行工具，步数 / 预算 / 降级的循环控制权留在本类。
+ * —— Spring AI 2.0 的 {@code ChatModel.call} 不自动执行工具，步数与降级的循环控制权留在本类
+ * （预算余量问 {@link ChatBudgetGuard}，本类只决定何时因它切断）。
  * <p>
  * 降级口径（自治循环被切断，退回确定性单次生成，已积累的观察不丢弃）：步数超限 / 预算超限
- * （与 {@link #chatBudgetExhausted} 同一判定）→ 用已积累观察直接生成；决策失败 → 按原始问题补一次
+ * （与入口预检同一判定，见 {@link ChatBudgetGuard}）→ 用已积累观察直接生成；决策失败 → 按原始问题补一次
  * 检索后直接生成。工具执行失败不算决策失败：收敛成失败观察交回模型修复，不打断对话。
  * <p>
  * 每轮 trace 落库、每步推 SSE step 事件、每次循环计指标 —— 三者都是观测副产物，失败绝不影响主链路。
+ * 指标落在 {@link AgentLoopMetrics}、预算判定落在 {@link ChatBudgetGuard}：本类只管「决策 → 工具 → 观察」，
+ * 不知道指标名与 tag 契约，也不管这次调用还发不发得出去。
  */
 @Slf4j
 @Component
 public class AgentLoopRunner {
 
     private static final String TOOL_PROMPT = "ai_chat_tool_system";
-    private static final String LOOP_METRIC = "easyorange.ai.chat.loop";
-    private static final String TOOL_METRIC = "easyorange.ai.chat.tool";
-    private static final String STEP_DURATION_METRIC = "easyorange.ai.chat.step.duration";
-    /** 预算场景键取自 {@link AiCallScope}（枚举名小写），与 {@code @TokenBudget(scenario=...)} 单点同源不重写。 */
-    private static final String CHAT_SCENARIO = AiCallScope.CHAT.budgetScenario();
     /** 未知工具观察里的工具清单（与 {@link AgentTools} 的常量同源，不重写字面量）。 */
     private static final String TOOL_MENU = String.join(
             " / ",
@@ -80,15 +67,12 @@ public class AgentLoopRunner {
             AgentTools.TOOL_REMEMBER_PREFERENCE,
             AgentTools.TOOL_FINISH);
 
-    /** 与 {@code @TokenBudget(scenario="chat")} 注解默认值一致（yaml 缺失时兜底；改注解要同步改这里）。 */
-    private static final int DEFAULT_MAX_TOKENS_PER_CALL = 1500;
-
-    private static final int DEFAULT_DAILY_LIMIT = 300_000;
-
     /**
-     * 机器调用主体的统一标识 —— 无登录态的调用方（评估跑批等）经 {@link Input#userId()} 传入：
+     * 机器主体的统一标识 —— 唯一非登录调用方是评估跑批（{@code GoldenSetEvaluator} 定时回归 / CI 门禁）：
      * 会话 / 缓存键照常按此主体隔离，但画像不落库（{@code AgentTools} 拒写）、trace 的 user_id 为空
-     * （{@link #subjectUserId} 收敛）。身份与主体口径由入口单点维护，循环只认这一份。
+     * （{@link #subjectUserId} 收敛）。对话的 HTTP 入口不存在匿名路径 —— 身份缺失即 401，
+     * 所以「机器主体」不等于「匿名用户」。哨兵值定义在本类（唯一判定画像是否落库的地方），
+     * 调用方只负责把该主体传进来。
      */
     public static final String MACHINE_SUBJECT = "machine";
 
@@ -100,51 +84,11 @@ public class AgentLoopRunner {
     private final AssetDetailPort assetDetailPort;
     private final AgentTracePort tracePort;
     private final UserPreferenceRepository preferenceRepository;
-    private final TokenBudgetStore budgetStore;
+    private final ChatBudgetGuard budgetGuard;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
     private final IdGenerator idGenerator;
-
-    /**
-     * 工具指标 tag 封闭集 — 名单即 {@link AgentTools} 的 7 个 {@code @Tool} 名，模型输出名单外一律记
-     * {@code unknown}（tag 直接取模型输出的开集，一次提示注入就能撑爆时序基数）。finish 收敛轮在执行前
-     * 被拦截，保留仅为全集封闭 —— 该格恒为零数据点。
-     */
-    private enum TrackedTool {
-        KNOWLEDGE_SEARCH(AgentTools.TOOL_KNOWLEDGE_SEARCH),
-        PRODUCT_SEARCH(AgentTools.TOOL_PRODUCT_SEARCH),
-        PRODUCT_DETAIL(AgentTools.TOOL_PRODUCT_DETAIL),
-        MARKET_PRICE_STATS(AgentTools.TOOL_MARKET_PRICE_STATS),
-        COMPARE_ASSETS(AgentTools.TOOL_COMPARE_ASSETS),
-        REMEMBER_PREFERENCE(AgentTools.TOOL_REMEMBER_PREFERENCE),
-        FINISH(AgentTools.TOOL_FINISH),
-        UNKNOWN("unknown");
-
-        private final String tag;
-
-        TrackedTool(String tag) {
-            this.tag = tag;
-        }
-
-        String tag() {
-            return tag;
-        }
-
-        static TrackedTool fromName(String tool) {
-            for (TrackedTool tracked : values()) {
-                if (tracked.tag.equals(tool)) {
-                    return tracked;
-                }
-            }
-            return UNKNOWN;
-        }
-    }
-
-    /** 循环结局 / 决策轮数 / 工具调用与步级耗时四组指标 —— 全部按枚举全集构造期注册（tag 键与取值是时序契约），热路径零查找。 */
-    private final Map<LoopOutcome, Counter> loopCounters;
-    private final DistributionSummary stepsSummary;
-    private final Map<TrackedTool, Counter> toolCounters;
-    private final Map<TrackedTool, Timer> stepTimers;
+    private final AgentLoopMetrics metrics;
 
     public AgentLoopRunner(
             AiModelSupport aiModelSupport,
@@ -155,11 +99,11 @@ public class AgentLoopRunner {
             AssetDetailPort assetDetailPort,
             AgentTracePort tracePort,
             UserPreferenceRepository preferenceRepository,
-            TokenBudgetStore budgetStore,
+            ChatBudgetGuard budgetGuard,
             AiProperties aiProperties,
             ObjectMapper objectMapper,
             IdGenerator idGenerator,
-            MeterRegistry meterRegistry) {
+            AgentLoopMetrics metrics) {
         this.aiModelSupport = aiModelSupport;
         this.modelRouter = modelRouter;
         this.promptRegistry = promptRegistry;
@@ -168,35 +112,17 @@ public class AgentLoopRunner {
         this.assetDetailPort = assetDetailPort;
         this.tracePort = tracePort;
         this.preferenceRepository = preferenceRepository;
-        this.budgetStore = budgetStore;
+        this.budgetGuard = budgetGuard;
         this.aiProperties = aiProperties;
         this.objectMapper = objectMapper;
         this.idGenerator = idGenerator;
-        this.loopCounters = new EnumMap<>(LoopOutcome.class);
-        for (LoopOutcome outcome : LoopOutcome.values()) {
-            loopCounters.put(outcome, meterRegistry.counter(LOOP_METRIC, "outcome", outcome.getTag()));
-        }
-        this.stepsSummary = DistributionSummary.builder("easyorange.ai.chat.steps")
-                .description("每次对话请求的 Agent 决策轮数（含 finish 轮）")
-                .publishPercentiles(0.5, 0.95)
-                .register(meterRegistry);
-        this.toolCounters = new EnumMap<>(TrackedTool.class);
-        this.stepTimers = new EnumMap<>(TrackedTool.class);
-        for (TrackedTool tracked : TrackedTool.values()) {
-            toolCounters.put(tracked, meterRegistry.counter(TOOL_METRIC, "name", tracked.tag()));
-            stepTimers.put(
-                    tracked,
-                    Timer.builder(STEP_DURATION_METRIC)
-                            .tag("tool", tracked.tag())
-                            .publishPercentiles(0.95)
-                            .register(meterRegistry));
-        }
+        this.metrics = metrics;
     }
 
     /**
      * 一次循环的输入 — 记忆（历史 / 画像）由调用方装配，循环只管「决策 → 工具 → 观察」。
      *
-     * @param userId  登录用户 ID；无登录态的机器调用方传 {@link #MACHINE_SUBJECT}（画像不落库）
+     * @param userId  登录用户 ID；评估跑批（非登录调用方）传 {@link #MACHINE_SUBJECT}，画像不落库
      * @param handler 流式回调，可空：非流式路径不推 step 事件，trace / 指标照常
      */
     public record Input(
@@ -221,37 +147,23 @@ public class AgentLoopRunner {
     public Result run(Input input) {
         try {
             Result result = executeLoop(input);
-            loopCounters.get(result.outcome()).increment();
-            stepsSummary.record(result.rounds());
+            metrics.recordLoop(result.outcome(), result.rounds());
             return result;
         } catch (RuntimeException e) {
-            loopCounters.get(LoopOutcome.ERROR).increment();
+            metrics.recordLoop(LoopOutcome.ERROR, 0);
             throw e;
         }
-    }
-
-    /** chat 场景日预算前置检查 — 流式入口与循环中途共用同一判定（与 TokenBudgetAspect 同式），判据单处维护两处生效。 */
-    public boolean chatBudgetExhausted() {
-        int used = budgetStore
-                .getTodayUsage(CHAT_SCENARIO)
-                .map(TokenBudgetStore.TokenUsage::total)
-                .orElse(0);
-        var cfg = aiProperties.budget().resolve(CHAT_SCENARIO);
-        int maxPerCall = cfg != null ? cfg.maxTokensPerCall() : DEFAULT_MAX_TOKENS_PER_CALL;
-        int dailyLimit = cfg != null ? cfg.dailyTokenLimit() : DEFAULT_DAILY_LIMIT;
-        return dailyLimit > 0 && used + maxPerCall > dailyLimit;
     }
 
     private Result executeLoop(Input input) {
         String traceId = idGenerator.generateId();
         var tools = agentToolsFor(input);
         var toolFace = ToolFace.of(tools);
-        var conversation =
-                new DecisionConversation(promptRegistry.require(TOOL_PROMPT), baseStepUserMessage(input));
+        var conversation = new DecisionConversation(promptRegistry.require(TOOL_PROMPT), baseStepUserMessage(input));
         int rounds = 0;
 
         for (int round = 1; round <= aiProperties.chat().maxSteps(); round++) {
-            if (round > 1 && chatBudgetExhausted()) {
+            if (round > 1 && budgetGuard.exhausted()) {
                 log.warn(
                         "action=agent_loop_degraded, reason=budget, sessionId={}, rounds={}",
                         input.sessionId(),
@@ -319,7 +231,8 @@ public class AgentLoopRunner {
             }
             AssistantMessage.ToolCall toolCall = toolCalls.getFirst();
             AgentStepDecision decision = objectMapper.readValue(toolCall.arguments(), AgentStepDecision.class);
-            return Optional.of(new StepDecision(decision.withToolCall(toolCall.name(), toolCall.arguments()), toolCall));
+            return Optional.of(
+                    new StepDecision(decision.withToolCall(toolCall.name(), toolCall.arguments()), toolCall));
         } catch (Exception e) {
             log.warn(
                     "action=agent_decision_failed, fallback=single_step, sessionId={}, reason={}",
@@ -338,13 +251,10 @@ public class AgentLoopRunner {
             ToolFace toolFace,
             DecisionConversation conversation) {
         AgentStepDecision decision = step.decision();
-        TrackedTool tracked = TrackedTool.fromName(decision.tool());
-        toolCounters.get(tracked).increment();
-
         long start = System.nanoTime();
         ToolOutcome outcome = toolFace.invoke(decision);
         long latencyMs = (System.nanoTime() - start) / 1_000_000;
-        stepTimers.get(tracked).record(latencyMs, TimeUnit.MILLISECONDS);
+        metrics.recordTool(decision.tool(), latencyMs);
 
         recordStep(input, traceId, round, decision, toolInputOf(decision), outcome, latencyMs);
         conversation.appendStep(step.toolCall(), outcome.observation());
@@ -377,10 +287,7 @@ public class AgentLoopRunner {
         ChatStreamHandler handler = input.handler();
         if (handler != null) {
             handler.onStep(new AgentStepView(
-                    round,
-                    decision.tool(),
-                    decision.thought(),
-                    outcome == null ? null : outcome.observation()));
+                    round, decision.tool(), decision.thought(), outcome == null ? null : outcome.observation()));
         }
     }
 
@@ -419,44 +326,9 @@ public class AgentLoopRunner {
             } catch (Exception e) {
                 // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
                 String reason = reasonOf(e.getCause() != null ? e.getCause() : e);
-                log.warn(
-                        "action=agent_tool_failed, tool={}, input={}, reason={}",
-                        tool,
-                        toolInputOf(decision),
-                        reason);
+                log.warn("action=agent_tool_failed, tool={}, input={}, reason={}", tool, toolInputOf(decision), reason);
                 return new ToolOutcome(false, reason);
             }
-        }
-    }
-
-    /**
-     * 决策对话 — 首两条（system + 首条 user）每请求固定，每执行一步按「assistant tool_call +
-     * role=tool 观察」逐轮回填，轮间前缀稳定命中供应商 KV cache 折扣。
-     */
-    private static final class DecisionConversation {
-
-        private final List<Message> messages;
-
-        DecisionConversation(String systemPrompt, String firstUserMessage) {
-            this.messages = new ArrayList<>();
-            messages.add(new SystemMessage(systemPrompt));
-            messages.add(new UserMessage(firstUserMessage));
-        }
-
-        /** 当轮的不可变消息序列（循环后续追加对已发出的调用不可见）。 */
-        List<Message> snapshot() {
-            return List.copyOf(messages);
-        }
-
-        void appendStep(AssistantMessage.ToolCall toolCall, String observation) {
-            messages.add(AssistantMessage.builder()
-                    .content("")
-                    .toolCalls(List.of(toolCall))
-                    .build());
-            messages.add(ToolResponseMessage.builder()
-                    .responses(List.of(new ToolResponseMessage.ToolResponse(
-                            toolCall.id(), toolCall.name(), observation)))
-                    .build());
         }
     }
 

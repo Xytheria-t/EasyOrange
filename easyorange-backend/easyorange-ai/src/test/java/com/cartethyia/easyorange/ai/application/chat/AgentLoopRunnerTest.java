@@ -21,8 +21,8 @@ import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalService;
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.constant.LoopOutcome;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepTrace;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepView;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
@@ -101,12 +101,15 @@ class AgentLoopRunnerTest {
 
     private AiProperties aiProperties;
     private SimpleMeterRegistry meterRegistry;
+    private ChatBudgetGuard budgetGuard;
     private AgentLoopRunner runner;
 
     @BeforeEach
     void setUp() {
         aiProperties = PropertyBindings.bind(AiProperties.class);
         meterRegistry = new SimpleMeterRegistry();
+        // 真实 guard：判定读同一个 budgetStore 桩，预算降级用例不用额外改写
+        budgetGuard = new ChatBudgetGuard(budgetStore, aiProperties);
         runner = newRunner();
         lenient().when(modelRouter.choose("chat_tool")).thenReturn(chatModel);
         lenient().when(idGenerator.generateId()).thenReturn("trace-1");
@@ -313,8 +316,7 @@ class AgentLoopRunnerTest {
                 .containsExactly("召回 1 件：[p-1] MacBook Air M1 ¥4200");
         assertThat(observationTexts(decisionMessages.getAllValues().get(2)))
                 .containsExactly(
-                        "召回 1 件：[p-1] MacBook Air M1 ¥4200",
-                        "描述：M1 芯片，95 新无磕碰｜成色：九五新｜位置：上海｜卖家：liming｜状态：ONLINE");
+                        "召回 1 件：[p-1] MacBook Air M1 ¥4200", "描述：M1 芯片，95 新无磕碰｜成色：九五新｜位置：上海｜卖家：liming｜状态：ONLINE");
 
         // 详情步骤的 trace 带入参 productId
         verify(tracePort, times(3))
@@ -355,7 +357,8 @@ class AgentLoopRunnerTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
         verify(aiModelSupport, times(3)).callWithTools(any(), any(), decisionMessages.capture(), anyList());
-        assertThat(String.join("\n", observationTexts(decisionMessages.getAllValues().get(2))))
+        assertThat(String.join(
+                        "\n", observationTexts(decisionMessages.getAllValues().get(2))))
                 .contains("价格：p-1 最低 ¥4200", "成色：p-2 成色最好（几乎全新）");
 
         // compare_assets 的 trace 带入参 ID 列表
@@ -696,16 +699,6 @@ class AgentLoopRunnerTest {
     }
 
     @Test
-    @DisplayName("chatBudgetExhausted -> used + maxPerCall 超日限即 true（与入口检查同判据）")
-    void chatBudgetExhausted() {
-        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(299_000, 0, 0)));
-        assertThat(runner.chatBudgetExhausted()).isTrue();
-
-        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(new TokenBudgetStore.TokenUsage(1000, 0, 0)));
-        assertThat(runner.chatBudgetExhausted()).isFalse();
-    }
-
-    @Test
     @DisplayName("非流式路径（handler 为空）-> trace 照常落库，无 step 事件")
     void run_nonStreamStillTraces() {
         stubDecisions(toolCallResponse(AgentTools.TOOL_FINISH, finishArgs()));
@@ -726,11 +719,11 @@ class AgentLoopRunnerTest {
                 assetDetailPort,
                 tracePort,
                 preferenceRepository,
-                budgetStore,
+                budgetGuard,
                 aiProperties,
                 new ObjectMapper(),
                 idGenerator,
-                meterRegistry);
+                new AgentLoopMetrics(meterRegistry));
     }
 
     /** 记录 step 事件的回调桩。 */

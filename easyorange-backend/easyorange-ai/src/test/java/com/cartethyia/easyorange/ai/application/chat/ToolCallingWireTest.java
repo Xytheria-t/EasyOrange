@@ -2,13 +2,10 @@ package com.cartethyia.easyorange.ai.application.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cartethyia.easyorange.ai.adapter.outbound.budget.InMemoryTokenBudgetStore;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
-import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AgentStepDecision;
-import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
-import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
+import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import com.sun.net.httpserver.HttpServer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
@@ -100,11 +97,7 @@ class ToolCallingWireTest {
     void callWithTools_wireContract() throws Exception {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
-        var support = new AiModelSupport(
-                noopCallLog(),
-                new InMemoryTokenBudgetStore(),
-                PropertyBindings.bind(AiProperties.class),
-                new ObjectMapper());
+        var support = support();
         var tools = new AgentTools(null, null, null, null, null);
 
         List<AssistantMessage.ToolCall> calls = support.callWithTools(
@@ -141,11 +134,7 @@ class ToolCallingWireTest {
     void callWithTools_toolHistoryWireContract() throws Exception {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
-        var support = new AiModelSupport(
-                noopCallLog(),
-                new InMemoryTokenBudgetStore(),
-                PropertyBindings.bind(AiProperties.class),
-                new ObjectMapper());
+        var support = support();
         var tools = new AgentTools(null, null, null, null, null);
         var historyCall = new AssistantMessage.ToolCall(
                 "call-9", "function", AgentTools.TOOL_KNOWLEDGE_SEARCH, "{\"thought\":\"查退款规则\",\"query\":\"退款\"}");
@@ -156,7 +145,10 @@ class ToolCallingWireTest {
                 List.of(
                         new SystemMessage("你是多步工具决策器"),
                         new UserMessage("用户问题：怎么退款？"),
-                        AssistantMessage.builder().content("").toolCalls(List.of(historyCall)).build(),
+                        AssistantMessage.builder()
+                                .content("")
+                                .toolCalls(List.of(historyCall))
+                                .build(),
                         ToolResponseMessage.builder()
                                 .responses(List.of(new ToolResponseMessage.ToolResponse(
                                         "call-9", AgentTools.TOOL_KNOWLEDGE_SEARCH, "命中 1 条：退款规则")))
@@ -202,7 +194,9 @@ class ToolCallingWireTest {
                 .build();
     }
 
-    private static AiCallLogPort noopCallLog() {
-        return (scope, model, promptHash, response, latencyMs, tokenInput, tokenOutput, success, errorMsg) -> {};
+    /** 只关心请求体形状，用例不校验记账 —— 走统一夹具，日志端口空实现、预算记内存。 */
+    private static AiModelSupport support() {
+        return TestAiModelSupport.create(
+                (scope, model, promptHash, response, latencyMs, tokenInput, tokenOutput, success, errorMsg) -> {});
     }
 }

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.domain.port;
 
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,8 +22,7 @@ public interface SemanticCachePort {
      * 按余弦相似度查最近的历史回答。<b>userId 是缓存键的一部分，不是过滤条件</b>：回答里注入了
      * 该用户的长期画像与会话历史，不带用户维度的共享桶会把 A 的个性化答案返给 B。
      */
-    <T> Optional<T> lookUp(
-            AiCallScope scope, String userId, String query, List<Float> queryEmbedding, Class<T> type);
+    <T> Optional<T> lookUp(AiCallScope scope, String userId, String query, List<Float> queryEmbedding, Class<T> type);
 
     /** 写入缓存，条目超上限时淘汰最旧一条（userId 分桶与 {@link #lookUp} 同口径，空向量直接跳过）。 */
     void store(AiCallScope scope, String userId, String query, List<Float> queryEmbedding, Object response);

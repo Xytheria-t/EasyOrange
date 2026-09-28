@@ -1,17 +1,15 @@
 package com.cartethyia.easyorange.ai.application.support;
 
+import static com.cartethyia.easyorange.ai.application.support.AiCallRecorder.UsageAccumulator;
+import static com.cartethyia.easyorange.ai.application.support.AiCallRecorder.usageOf;
+
+import com.cartethyia.easyorange.ai.application.support.AiCallRecorder.CallOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.constant.AiCallScope;
-import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
-import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStore;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,30 +18,24 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.content.Media;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
-import org.springframework.util.DigestUtils;
-import org.springframework.util.MimeType;
 import tools.jackson.databind.ObjectMapper;
 
 /**
  * Spring AI 调用小工具 — 收敛 system+user 双消息、JSON 结构化输出、原生 tool calling、Embedding、
  * 多模态结构化输出这几类重复调用模式，避免每个服务重复组装 {@link Prompt}。
  * <p>
- * 带 {@link AiCallScope} 的重载在调用前后做两件横切记账（都是「调用副产物」，失败绝不影响业务）：
- * {@link AiCallLogPort} 记一条 eo_ai_call_log（LLM-as-Judge 离线评估数据源）；{@link TokenBudgetStore}
- * 记本次调用的真实 token 用量（场景键 = scope 小写），供预算前置检查累计。供应商未回报用量时退化为按
- * 场景上限估算，宁可高估也不让预算静默失效；失败调用不记账 —— 没有用量可依据，估算会让故障期虚烧
- * 日预算、恢复后把场景锁死。
+ * 带 {@link AiCallScope} 的方法一律经 {@link AiCallRecorder} 执行，由它落 eo_ai_call_log 与场景预算
+ * 记账 —— 本类不直接碰两个记账端口，治理出口因此只有一个。唯一的例外是 {@link #callJson}：它专供
+ * LLM-as-Judge 的离线评估调用，刻意不记账（见该方法）。
  * <p>
  * 需要按角色分隔多轮消息（system / 历史 user+assistant / 当前 user）的调用走
  * {@link #callText(ChatModel, AiCallScope, List)} 重载 —— 历史不进单条 user 消息，前缀稳定才能命中
@@ -57,19 +49,18 @@ public class AiModelSupport {
     /** OpenAI 兼容协议的工具选择枚举值：{@code required} = 必须从给定工具里选一个（见 {@link #toolOptions}）。 */
     private static final String TOOL_CHOICE_REQUIRED = "required";
 
-    private final AiCallLogPort callLogRecorder;
-    private final TokenBudgetStore budgetStore;
+    private final AiCallRecorder callRecorder;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
 
-    /** 普通文本生成（system + user 双消息，带调用日志与预算记账），委托多消息重载。 */
+    /** 普通文本生成（system + user 双消息，带调用日志与预算记账）。 */
     public String callText(ChatModel chatModel, AiCallScope scope, String systemPrompt, String userMessage) {
-        return callText(chatModel, scope, List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)));
+        return callText(chatModel, scope, systemUser(systemPrompt, userMessage));
     }
 
-    /** 多角色消息版（多轮对话专用）— 历史不拼进当前 user 消息使前缀稳定的原因见类注释。 */
+    /** 多角色消息版（多轮对话专用）—— 历史不拼进当前 user 消息、使前缀稳定命中 KV cache 折扣的原因见类注释。 */
     public String callText(ChatModel chatModel, AiCallScope scope, List<Message> messages) {
-        return recordCall(
+        return callRecorder.record(
                 scope,
                 chatModel,
                 joinTexts(messages),
@@ -77,14 +68,16 @@ public class AiModelSupport {
     }
 
     /**
-     * JSON 结构化输出：追加 {@code response_format=json_object}，提示模型返回合法 JSON
-     * （解析与降级仍由调用方 ObjectMapper + try/catch 承担）。per-request options 必须继承模型的
-     * 连接与模型名，原因见 {@link #inheritConnection}。
+     * JSON 结构化输出（<b>唯一不记账的调用</b>）：追加 {@code response_format=json_object}，提示模型返回
+     * 合法 JSON，解析与降级仍由调用方 ObjectMapper + try/catch 承担。
+     * <p>
+     * 不走 {@link AiCallRecorder} 是刻意的：当前唯一调用方是 {@code AiJudge}，其调用只发生在金标准集
+     * 回归跑批里，给它记账会让「谁来评估评估者」在成本报表里套娃，还要额外给评估场景配预算。
+     * 换句话说这里省的是离线评估自身的成本，不是业务成本 —— 走这条路的业务调用必须换成带 scope 的重载。
      */
     public String callJson(ChatModel chatModel, String systemPrompt, String userMessage) {
-        return outputText(chatModel.call(new Prompt(
-                List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)),
-                jsonOptions(chatModel, null))));
+        return outputText(
+                chatModel.call(new Prompt(systemUser(systemPrompt, userMessage), jsonOptions(chatModel, null))));
     }
 
     /**
@@ -92,17 +85,13 @@ public class AiModelSupport {
      * （空列表 = 模型没调工具，由调用方按决策失败处理）。消息序列由调用方组装并跨轮累积，
      * 轮间前缀稳定命中供应商 KV cache 折扣。只发请求、不执行工具 —— Spring AI 2.0 的
      * {@code ChatModel.call} 原样返回 tool call，执行与循环控制权留在调用方。
-     * options 必须继承连接与模型名的坑同 {@link #inheritConnection}。
      */
     public List<AssistantMessage.ToolCall> callWithTools(
-            ChatModel chatModel,
-            AiCallScope scope,
-            List<Message> messages,
-            List<ToolCallback> toolCallbacks) {
-        return recordCall(scope, chatModel, joinTexts(messages), () -> {
-            ChatResponse response = chatModel.call(
-                    new Prompt(messages, toolOptions(chatModel, toolCallbacks, maxTokensOf(scope))));
-            return new CallOutcome<>(toolCallsOf(response), reportedUsage(response));
+            ChatModel chatModel, AiCallScope scope, List<Message> messages, List<ToolCallback> toolCallbacks) {
+        return callRecorder.record(scope, chatModel, joinTexts(messages), () -> {
+            ChatResponse response =
+                    chatModel.call(new Prompt(messages, toolOptions(chatModel, toolCallbacks, maxTokensOf(scope))));
+            return new CallOutcome<>(toolCallsOf(response), usageOf(response));
         });
     }
 
@@ -113,30 +102,26 @@ public class AiModelSupport {
             String systemPrompt,
             String userMessage,
             Consumer<String> tokenConsumer) {
-        return callTextStream(
-                chatModel,
-                scope,
-                List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage)),
-                tokenConsumer);
+        return callTextStream(chatModel, scope, systemUser(systemPrompt, userMessage), tokenConsumer);
     }
 
     /** 多角色消息版流式文本生成，逐 token 回调并把整段回答返回给调用方。 */
     public String callTextStream(
             ChatModel chatModel, AiCallScope scope, List<Message> messages, Consumer<String> tokenConsumer) {
-        return recordCall(scope, chatModel, joinTexts(messages), () -> {
-            var sb = new StringBuilder();
+        return callRecorder.record(scope, chatModel, joinTexts(messages), () -> {
+            var collected = new StringBuilder();
             var usage = new UsageAccumulator();
             chatModel.stream(new Prompt(messages, scopedOptions(chatModel, scope)))
                     .doOnNext(response -> {
                         usage.accept(response);
                         String token = outputText(response);
-                        if (token != null && !token.isEmpty()) {
-                            sb.append(token);
+                        if (!token.isEmpty()) {
+                            collected.append(token);
                             tokenConsumer.accept(token);
                         }
                     })
                     .blockLast();
-            return new CallOutcome<>(sb.toString(), usage.result());
+            return new CallOutcome<>(collected.toString(), usage.result());
         });
     }
 
@@ -146,18 +131,11 @@ public class AiModelSupport {
      * 供应商回报的 usage 取不到，成本报表里 embedding 一行就永远是 0。
      */
     public List<Float> embed(EmbeddingModel embeddingModel, AiCallScope scope, String text) {
-        return recordCall(scope, embeddingModel, "embed" + text, () -> {
+        // 加前缀把 embedding 与 chat 的 prompt 摘要在报表里隔开，同段文本两种调用的 hash 不撞
+        return callRecorder.record(scope, embeddingModel, "embed:" + text, () -> {
             EmbeddingResponse response = embeddingModel.embedForResponse(List.of(text));
-            return new CallOutcome<>(toFloatList(response.getResult().getOutput()), reportedUsage(response));
+            return new CallOutcome<>(toFloatList(response.getResult().getOutput()), usageOf(response));
         });
-    }
-
-    private static List<Float> toFloatList(float[] arr) {
-        var list = new ArrayList<Float>(arr.length);
-        for (float value : arr) {
-            list.add(value);
-        }
-        return list;
     }
 
     /**
@@ -172,9 +150,11 @@ public class AiModelSupport {
             String userText,
             List<String> imageUrls,
             Class<T> responseType) {
-        Message userMessage =
-                UserMessage.builder().text(userText).media(mediaOf(imageUrls)).build();
-        String json = recordCall(
+        Message userMessage = UserMessage.builder()
+                .text(userText)
+                .media(MediaResolver.of(imageUrls))
+                .build();
+        String json = callRecorder.record(
                 scope,
                 chatModel,
                 systemPrompt + userText,
@@ -198,60 +178,51 @@ public class AiModelSupport {
         }
     }
 
-    /** 图片以 {@link Media}（URL）承载，MIME 按 URL 后缀推断；{@code data:} URL 从 mime 头直接解析。 */
-    private static List<Media> mediaOf(List<String> imageUrls) {
-        return imageUrls.stream()
-                .map(url -> Media.builder()
-                        .mimeType(mimeTypeOf(url))
-                        .data(URI.create(url))
-                        .build())
-                .toList();
+    private static List<Message> systemUser(String systemPrompt, String userMessage) {
+        return List.of(new SystemMessage(systemPrompt), new UserMessage(userMessage));
     }
 
-    /** 推断图片 MIME — 一律标 JPEG 会让 PNG/WebP 被供应商按错误类型解码（部分模型直接拒答）；认不出来时回退 JPEG。 */
-    private static MimeType mimeTypeOf(String url) {
-        if (url.startsWith("data:")) {
-            int headerEnd = url.indexOf(',', "data:".length());
-            int semicolon = url.indexOf(';');
-            String type = url.substring(
-                    "data:".length(),
-                    semicolon > 0 && (headerEnd < 0 || semicolon < headerEnd) ? semicolon : headerEnd);
-            try {
-                return MimeType.valueOf(type);
-            } catch (Exception e) {
-                return Media.Format.IMAGE_JPEG;
-            }
-        }
-        int query = url.indexOf('?');
-        int end = query >= 0 ? query : url.length();
-        int dot = url.lastIndexOf('.', end - 1);
-        if (dot < 0) {
-            return Media.Format.IMAGE_JPEG;
-        }
-        return switch (url.substring(dot + 1, end).toLowerCase(Locale.ROOT)) {
-            case "png" -> Media.Format.IMAGE_PNG;
-            case "webp" -> Media.Format.IMAGE_WEBP;
-            case "gif" -> Media.Format.IMAGE_GIF;
-            default -> Media.Format.IMAGE_JPEG;
-        };
+    private static String joinTexts(List<Message> messages) {
+        return messages.stream().map(Message::getText).collect(Collectors.joining("\n"));
     }
 
-    /** 提取模型文本输出；模型可能不返回结果（避免 NPE，返回空串）。 */
-    private static String outputText(ChatResponse response) {
-        var result = response.getResult();
-        return result != null ? result.getOutput().getText() : "";
+    private static List<Float> toFloatList(float[] vector) {
+        var list = new ArrayList<Float>(vector.length);
+        for (float value : vector) {
+            list.add(value);
+        }
+        return list;
+    }
+
+    /** 提取模型文本输出；模型可能不返回结果（流式分片尤其常见只有 metadata 没有 output），统一回退空串。 */
+    private static String outputText(@Nullable ChatResponse response) {
+        var result = response == null ? null : response.getResult();
+        return result == null || result.getOutput() == null
+                ? ""
+                : result.getOutput().getText();
+    }
+
+    /** 把 ChatResponse 包成「文本 + 用量」；响应为 null 时是空文本、无用量。 */
+    private static CallOutcome<String> chatOutcome(@Nullable ChatResponse response) {
+        return new CallOutcome<>(outputText(response), usageOf(response));
+    }
+
+    /** 模型请求的工具调用（可能为空：模型直接回了文本）；供应商侧未回结果时同样为空。 */
+    private static List<AssistantMessage.ToolCall> toolCallsOf(@Nullable ChatResponse response) {
+        if (response == null
+                || response.getResult() == null
+                || response.getResult().getOutput() == null) {
+            return List.of();
+        }
+        return response.getResult().getOutput().getToolCalls();
     }
 
     private static OpenAiChatOptions jsonOptions(ChatModel chatModel, @Nullable Integer maxTokens) {
-        var jsonOptions = OpenAiChatOptions.builder()
+        return options(chatModel, maxTokens)
                 .responseFormat(OpenAiChatModel.ResponseFormat.builder()
                         .type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
-                        .build());
-        if (maxTokens != null) {
-            jsonOptions.maxTokens(maxTokens);
-        }
-        inheritConnection(jsonOptions, chatModel);
-        return jsonOptions.build();
+                        .build())
+                .build();
     }
 
     /**
@@ -262,195 +233,57 @@ public class AiModelSupport {
      */
     private static OpenAiChatOptions toolOptions(
             ChatModel chatModel, List<ToolCallback> toolCallbacks, @Nullable Integer maxTokens) {
-        var toolOptions =
-                OpenAiChatOptions.builder().toolCallbacks(toolCallbacks).toolChoice(TOOL_CHOICE_REQUIRED);
-        if (maxTokens != null) {
-            toolOptions.maxTokens(maxTokens);
-        }
-        inheritConnection(toolOptions, chatModel);
-        return toolOptions.build();
-    }
-
-    /** scoped 调用的 per-request options — 输出上限按场景预算配置真下发（{@code max_tokens}），与预算前置检查 / 记账共用同一份配置：供应商侧截断输出，最坏单次成本由此封顶；无场景配置返回 null。 */
-    private @Nullable OpenAiChatOptions scopedOptions(ChatModel chatModel, AiCallScope scope) {
-        Integer maxTokens = maxTokensOf(scope);
-        if (maxTokens == null) {
-            return null;
-        }
-        var builder = OpenAiChatOptions.builder().maxTokens(maxTokens);
-        inheritConnection(builder, chatModel);
-        return builder.build();
-    }
-
-    /** 场景的单次调用输出上限；无场景配置或值非正返回 null（不下发，保持供应商默认）。 */
-    private @Nullable Integer maxTokensOf(AiCallScope scope) {
-        var configured = aiProperties.budget().resolve(scope.budgetScenario());
-        return configured != null && configured.maxTokensPerCall() > 0 ? configured.maxTokensPerCall() : null;
+        return options(chatModel, maxTokens)
+                .toolCallbacks(toolCallbacks)
+                .toolChoice(TOOL_CHOICE_REQUIRED)
+                .build();
     }
 
     /**
-     * per-request options 继承模型的连接与模型名 —— 只设业务字段时 {@code model} 为 null，
-     * openai-java 客户端会回退到 SDK 默认模型名（{@code gpt-5-mini}），对非 OpenAI 供应商直接 404，
-     * 走到这条路径的所有 AI 决策点会整体静默降级。
+     * scoped 调用的 per-request options —— 输出上限按场景预算配置真下发（{@code max_tokens}），
+     * 与预算前置检查 / 记账共用同一份配置：供应商侧截断输出，最坏单次成本由此封顶。
+     * 无场景配置返回 null（不下发，保持供应商默认），此时连继承连接都不做，避免发一个只有
+     * 连接字段的 options 把「没配」这件事伪装成「配了」。
      */
-    private static void inheritConnection(OpenAiChatOptions.Builder builder, ChatModel chatModel) {
+    private @Nullable OpenAiChatOptions scopedOptions(ChatModel chatModel, AiCallScope scope) {
+        Integer maxTokens = maxTokensOf(scope);
+        return maxTokens == null ? null : options(chatModel, maxTokens).build();
+    }
+
+    /**
+     * per-request options 的统一入口：先按场景下发的 {@code max_tokens}，再继承连接的模型名。
+     * 顺序不能反 —— 继承会写 model，max_tokens 只是业务字段，两者互不覆盖，但只有「先定上限再补连接」
+     * 这一种顺序能让三种 options 复用同一段模板。
+     */
+    private static OpenAiChatOptions.Builder options(ChatModel chatModel, @Nullable Integer maxTokens) {
+        var builder = OpenAiChatOptions.builder();
+        if (maxTokens != null) {
+            builder.maxTokens(maxTokens);
+        }
+        return inheritConnection(builder, chatModel);
+    }
+
+    /**
+     * 继承模型的连接与模型名 —— 只设业务字段时 {@code model} 为 null，openai-java 客户端会回退到
+     * SDK 默认模型名（{@code gpt-5-mini}），对非 OpenAI 供应商直接 404，走到这条路径的所有 AI 决策点
+     * 会整体静默降级。
+     */
+    private static OpenAiChatOptions.Builder inheritConnection(OpenAiChatOptions.Builder builder, ChatModel chatModel) {
         if (chatModel instanceof OpenAiChatModel openAiModel
                 && openAiModel.getDefaultOptions() instanceof OpenAiChatOptions defaults) {
             builder.baseUrl(defaults.getBaseUrl()).apiKey(defaults.getApiKey()).model(defaults.getModel());
         }
-    }
-
-    private static String joinTexts(List<Message> messages) {
-        return messages.stream().map(Message::getText).collect(Collectors.joining("\n"));
-    }
-
-    /** 把 ChatResponse 包成「文本 + 用量」，未回报用量时 usage 为 null。 */
-    private static CallOutcome<String> chatOutcome(@Nullable ChatResponse response) {
-        if (response == null) {
-            return new CallOutcome<>("", null);
-        }
-        return new CallOutcome<>(outputText(response), reportedUsage(response));
-    }
-
-    /** 模型请求的工具调用（可能为空：模型直接回了文本）；供应商侧未回结果时同样为空。 */
-    private static List<AssistantMessage.ToolCall> toolCallsOf(@Nullable ChatResponse response) {
-        if (response == null || response.getResult() == null) {
-            return List.of();
-        }
-        return response.getResult().getOutput().getToolCalls();
-    }
-
-    /** 供应商回报的 token 用量；未回报（无元数据或全 0）时返回 null，记账退化为按场景上限估算。 */
-    private static @Nullable Usage reportedUsage(@Nullable ChatResponse response) {
-        return response == null || response.getMetadata() == null
-                ? null
-                : reportedUsage(response.getMetadata().getUsage());
-    }
-
-    /** embedding 响应的用量挂在与 chat 同一套 metadata 结构上，取法一致。 */
-    private static @Nullable Usage reportedUsage(@Nullable EmbeddingResponse response) {
-        return response == null || response.getMetadata() == null
-                ? null
-                : reportedUsage(response.getMetadata().getUsage());
-    }
-
-    private static @Nullable Usage reportedUsage(@Nullable Usage usage) {
-        if (usage == null) {
-            return null;
-        }
-        Integer in = usage.getPromptTokens();
-        Integer out = usage.getCompletionTokens();
-        boolean reported = (in != null && in > 0) || (out != null && out > 0);
-        return reported ? usage : null;
-    }
-
-    private <T> T recordCall(AiCallScope scope, Object model, String promptText, Supplier<CallOutcome<T>> supplier) {
-        long start = System.nanoTime();
-        CallOutcome<T> outcome = null;
-        boolean success = false;
-        String errorMsg = null;
-        try {
-            outcome = supplier.get();
-            success = true;
-            return outcome.value();
-        } catch (Exception e) {
-            errorMsg = e.getMessage();
-            throw e;
-        } finally {
-            recordCallLog(scope, model, promptText, outcome, start, success, errorMsg);
-            recordBudgetUsage(scope, outcome);
-        }
-    }
-
-    private void recordCallLog(
-            AiCallScope scope,
-            Object model,
-            String promptText,
-            @Nullable CallOutcome<?> outcome,
-            long startNanos,
-            boolean success,
-            @Nullable String errorMsg) {
-        try {
-            String response = outcome != null && outcome.value() instanceof String s ? s : null;
-            // 用量直接取供应商回报的 usage（记账路径已解析过同一份数据），未回报记 0 而不估算
-            Usage usage = outcome != null ? outcome.usage() : null;
-            callLogRecorder.record(
-                    scope.name(),
-                    model.getClass().getSimpleName(),
-                    md5(promptText),
-                    response,
-                    (System.nanoTime() - startNanos) / 1_000_000,
-                    usage != null && usage.getPromptTokens() != null ? usage.getPromptTokens() : 0,
-                    usage != null && usage.getCompletionTokens() != null ? usage.getCompletionTokens() : 0,
-                    success,
-                    errorMsg);
-        } catch (Exception e) {
-            // recorder 内部已吞异常，此处兜底
-        }
+        return builder;
     }
 
     /**
-     * 记录本次调用的 token 用量（场景键与 {@code @TokenBudget(scenario=...)} 对齐）。
-     * 有真实用量就用真实值；供应商未回报用量时退化为场景配置的单次上限（偏高，但比「预算永远为 0、
-     * 限流静默失效」安全）。<b>失败调用不记账</b>：异常路径按上限估算会让故障期虚烧日预算
-     * （chat 口径下约 100 个失败请求烧穿 30 万日限），故障恢复后整个场景被前置检查锁死。
+     * 场景的单次调用输出上限；无场景配置或值非正返回 null（不下发，保持供应商默认）。
+     * <p>
+     * <b>刻意不受 {@code budget.enabled} 开关控制</b>：预算是记账口径，关掉只意味着不再累计，
+     * 而 {@code max_tokens} 是供应商侧的硬约束 —— 跟着一起关掉等于把「省统计」变成「放开单次成本」。
      */
-    private void recordBudgetUsage(AiCallScope scope, @Nullable CallOutcome<?> outcome) {
-        if (!aiProperties.budget().enabled()) {
-            return;
-        }
-        if (outcome == null) {
-            return;
-        }
-        try {
-            String scenario = scope.budgetScenario();
-            Usage usage = outcome.usage();
-            int inputTokens = usage != null && usage.getPromptTokens() != null ? usage.getPromptTokens() : 0;
-            int outputTokens = usage != null && usage.getCompletionTokens() != null ? usage.getCompletionTokens() : 0;
-            if (inputTokens + outputTokens > 0) {
-                budgetStore.recordUsage(scenario, inputTokens, outputTokens);
-                return;
-            }
-            var configured = aiProperties.budget().resolve(scenario);
-            if (configured != null) {
-                budgetStore.recordUsage(scenario, configured.maxTokensPerCall(), 0);
-            }
-        } catch (Exception e) {
-            log.debug("Token 用量记账失败（不影响调用）: {}", e.getMessage());
-        }
-    }
-
-    private static String md5(String input) {
-        return DigestUtils.md5DigestAsHex(input.getBytes(StandardCharsets.UTF_8));
-    }
-
-    /** 调用结果 + 供应商回报的用量（未回报时为 null）。 */
-    private record CallOutcome<T>(T value, @Nullable Usage usage) {}
-
-    /** 流式响应里用量只出现在末尾分片，且可能整段缺失 —— 取最后一个非空用量。 */
-    private static final class UsageAccumulator implements Consumer<ChatResponse> {
-
-        private Usage latest;
-
-        @Override
-        public void accept(ChatResponse response) {
-            if (response == null || response.getMetadata() == null) {
-                return;
-            }
-            Usage usage = response.getMetadata().getUsage();
-            if (usage == null) {
-                return;
-            }
-            Integer in = usage.getPromptTokens();
-            Integer out = usage.getCompletionTokens();
-            if ((in != null && in > 0) || (out != null && out > 0)) {
-                latest = usage;
-            }
-        }
-
-        @Nullable
-        Usage result() {
-            return latest;
-        }
+    private @Nullable Integer maxTokensOf(AiCallScope scope) {
+        var configured = aiProperties.budget().resolve(scope.budgetScenario());
+        return configured != null && configured.maxTokensPerCall() > 0 ? configured.maxTokensPerCall() : null;
     }
 }

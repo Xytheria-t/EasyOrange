@@ -85,6 +85,7 @@ public class AgentTools {
 
     /** 各轮召回物累加器 — 请求内可变状态，实例独占持有；读取走只读快照方法，不交出可变引用。 */
     private final List<KnowledgeHit> knowledgeHits = new ArrayList<>();
+
     private final List<AssetHit> assets = new ArrayList<>();
     private final List<AssetDetail> details = new ArrayList<>();
     private final KnowledgeRetrievalService retrievalService;
