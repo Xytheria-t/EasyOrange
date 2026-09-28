@@ -7,10 +7,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * 消息读取状态枚举
- *
- * @author cartethyia
- * @date 2026/03/06
+ * 消息已读状态枚举 —— 对应 {@code eo_message.is_read} 列（TINYINT 0/1）。
+ * <p>
+ * 与 {@link MessageStatus} 分工：已读与否只由本列表达（批量标记走一条 UPDATE 的谓词下推），
+ * {@code msg_status} 只管发送与撤回，两者不交叉。
  */
 @Getter
 @AllArgsConstructor
@@ -26,13 +26,5 @@ public enum ReadStatus implements BaseCodeEnum {
 
     public static ReadStatus fromCode(String code) {
         return BaseCodeEnum.fromCode(ReadStatus.class, code);
-    }
-
-    public static String getDescByCode(String code) {
-        try {
-            return fromCode(code).getDesc();
-        } catch (IllegalArgumentException e) {
-            return "未知状态";
-        }
     }
 }

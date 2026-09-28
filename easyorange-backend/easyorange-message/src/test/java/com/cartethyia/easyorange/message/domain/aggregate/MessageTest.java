@@ -55,6 +55,17 @@ class MessageTest {
             assertThat(message.title()).isEqualTo("<script>alert('xss')</script>");
             assertThat(message.content()).isEqualTo("<b>bold</b>");
         }
+
+        @Test
+        @DisplayName("会话 ID 按收发方排序生成，与发送方向无关")
+        void create_computesConversationId_bothDirections() {
+            Message forward = Message.create(MESSAGE_ID, SENDER_ID, RECEIVER_ID, MessageType.CHAT, "标题", "hello", null);
+            Message backward =
+                    Message.create(MESSAGE_ID, RECEIVER_ID, SENDER_ID, MessageType.CHAT, "标题", "hello", null);
+
+            assertThat(forward.conversationId()).isEqualTo("conv_1_2");
+            assertThat(backward.conversationId()).isEqualTo("conv_1_2");
+        }
     }
 
     @Nested
@@ -73,6 +84,7 @@ class MessageTest {
             assertThat(message.title()).isEqualTo("系统通知");
             assertThat(message.content()).isEqualTo("您的商品已审核通过");
             assertThat(message.isRead()).isEqualTo(ReadStatus.UNREAD);
+            assertThat(message.conversationId()).as("系统消息无会话").isNull();
         }
 
         @Test
@@ -95,7 +107,7 @@ class MessageTest {
         void recall_within2Minutes_success() {
             Message aggregate = testMessage(LocalDateTime.now().minusMinutes(1));
 
-            var result = aggregate.recall(SENDER_ID, "conv_1_2");
+            var result = aggregate.recall(SENDER_ID);
 
             assertThat(result.event()).isNotNull();
             assertThat(result.event().messageId()).isEqualTo("100");
@@ -109,7 +121,7 @@ class MessageTest {
         void recall_notSender_throws() {
             Message aggregate = testMessage(LocalDateTime.now());
 
-            assertThatThrownBy(() -> aggregate.recall(OTHER_USER_ID, "conv_1_2"))
+            assertThatThrownBy(() -> aggregate.recall(OTHER_USER_ID))
                     .isInstanceOf(MessageDomainException.class)
                     .hasMessageContaining("不能撤回他人的消息");
         }
@@ -119,7 +131,7 @@ class MessageTest {
         void recall_over2Minutes_throws() {
             Message aggregate = testMessage(LocalDateTime.now().minusMinutes(3));
 
-            assertThatThrownBy(() -> aggregate.recall(SENDER_ID, "conv_1_2"))
+            assertThatThrownBy(() -> aggregate.recall(SENDER_ID))
                     .isInstanceOf(MessageDomainException.class)
                     .hasMessageContaining("超过可撤回时间");
         }
@@ -137,11 +149,12 @@ class MessageTest {
                     ReadStatus.UNREAD,
                     null,
                     null,
+                    "conv_1_2",
                     MessageStatus.RECALLED,
                     LocalDateTime.now(),
                     LocalDateTime.now().minusMinutes(1));
 
-            assertThatThrownBy(() -> aggregate.recall(SENDER_ID, "conv_1_2"))
+            assertThatThrownBy(() -> aggregate.recall(SENDER_ID))
                     .isInstanceOf(MessageDomainException.class)
                     .hasMessageContaining("已被撤回");
         }
@@ -151,7 +164,7 @@ class MessageTest {
         void recall_returnsEventWithCorrectInfo() {
             Message aggregate = testMessage(LocalDateTime.now().minusMinutes(1));
 
-            var result = aggregate.recall(SENDER_ID, "conv_1_2");
+            var result = aggregate.recall(SENDER_ID);
 
             assertThat(result.event()).isNotNull();
             assertThat(result.event().messageId()).isEqualTo("100");
@@ -199,6 +212,7 @@ class MessageTest {
                     ReadStatus.READ,
                     LocalDateTime.now(),
                     null,
+                    "conv_1_2",
                     MessageStatus.SENT,
                     null,
                     LocalDateTime.now());
@@ -234,6 +248,7 @@ class MessageTest {
                     ReadStatus.READ,
                     LocalDateTime.now(),
                     null,
+                    "conv_1_2",
                     MessageStatus.SENT,
                     null,
                     LocalDateTime.now());
@@ -274,6 +289,7 @@ class MessageTest {
                     null,
                     null,
                     null,
+                    null,
                     LocalDateTime.now());
 
             assertThat(aggregate.isSender(SENDER_ID)).isFalse();
@@ -292,6 +308,7 @@ class MessageTest {
                 ReadStatus.UNREAD,
                 null,
                 null,
+                "conv_1_2",
                 MessageStatus.SENT,
                 null,
                 createTime);

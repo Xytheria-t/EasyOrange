@@ -3,10 +3,12 @@ package com.cartethyia.easyorange.message.domain.valueobject;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 
 /**
- * Domain query parameters for message queries.
- * The application layer converts QueryMessageRequest (inbound DTO) to this domain record.
+ * 消息列表查询参数 —— 分页 + 类型 / 已读态两个可选过滤。
  * <p>
- * 分页兜底是领域边界的第二层防线（第一层在 {@code PageRequest} 的字段默认值/setter）：
+ * 取舍：接收方不入参，恒取当前登录用户（列表语义就是「我的收件箱」，让调用方指定 receiverId
+ * 等于开放越权读的口子）。
+ * <p>
+ * 边界：分页兜底是领域边界的第二层防线（第一层在 {@code PageRequest} 的字段默认值/setter）：
  * 领域对象不假设调用方一定规范化过参数，null 或不合法值一律兜到默认区间，
  * 否则下游拆箱直接 NPE（约定同 {@code OrderListQuery} / {@code PaymentListQuery} /
  * {@code ProductSearchCriteria}）。

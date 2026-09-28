@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.message.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
+import com.cartethyia.easyorange.message.adapter.inbound.web.assembler.MessageAssembler;
 import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.application.query.ConversationQueryHandler;
 import com.cartethyia.easyorange.message.application.query.MessageQueryHandler;
@@ -10,8 +11,6 @@ import com.cartethyia.easyorange.message.application.query.dto.ConversationListV
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
-import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
-import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +25,7 @@ public class MessageQueryController {
 
     private final MessageQueryHandler queryHandler;
     private final ConversationQueryHandler conversationQueryHandler;
+    private final MessageAssembler assembler;
 
     @GetMapping("/conversations")
     public Result<List<ConversationListVO>> getConversations(@AuthenticationPrincipal AuthUser user) {
@@ -35,7 +35,7 @@ public class MessageQueryController {
     @GetMapping("/list")
     public Result<PageResult<MessageVO>> getMyMessages(
             @AuthenticationPrincipal AuthUser user, QueryMessageRequest request) {
-        return Result.success(queryHandler.getMyMessages(user.userId(), toMessageQuery(request)));
+        return Result.success(queryHandler.getMyMessages(user.userId(), assembler.toMessageQuery(request)));
     }
 
     @GetMapping("/unread-count")
@@ -47,12 +47,5 @@ public class MessageQueryController {
     public Result<List<ConversationVO>> getConversation(
             @AuthenticationPrincipal AuthUser user, @PathVariable String userId) {
         return Result.success(conversationQueryHandler.getConversation(user.userId(), userId));
-    }
-
-    /** 边界层 DTO → 领域查询参数，非法 isRead code 由 {@link ReadStatus#fromCode(String)} 抛 IllegalArgumentException 映射为 400。 */
-    private static MessageQuery toMessageQuery(QueryMessageRequest request) {
-        ReadStatus isRead =
-                request.getIsRead() != null ? ReadStatus.fromCode(String.valueOf(request.getIsRead())) : null;
-        return new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), isRead);
     }
 }

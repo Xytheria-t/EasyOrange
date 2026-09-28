@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
+import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,17 +48,16 @@ public class MessageQueryHandler {
     }
 
     private PageResult<MessageVO> toMessageVOPage(PageResult<Message> messagePage) {
-        Map<String, String> usernameMap =
-                resolveUsernames(messagePage.records().stream().collect(Collectors.toSet()));
+        Map<String, UserInfo> userMap = resolveUserInfo(messagePage.records());
 
-        List<MessageVO> voList = messagePage.records().stream()
-                .map(m -> toMessageVO(m, usernameMap))
-                .collect(Collectors.toList());
+        List<MessageVO> voList =
+                messagePage.records().stream().map(m -> toMessageVO(m, userMap)).toList();
 
         return PageResult.of(voList, messagePage.total(), messagePage.current(), messagePage.size());
     }
 
-    private Map<String, String> resolveUsernames(Set<Message> aggregates) {
+    /** 一页消息涉及的收发方通常只有个位数，摊成一次 {@code IN} 查询，不做 N+1。 */
+    private Map<String, UserInfo> resolveUserInfo(List<Message> aggregates) {
         Set<String> userIds = aggregates.stream()
                 .flatMap(m -> java.util.stream.Stream.of(m.senderId(), m.receiverId()))
                 .filter(Objects::nonNull)
@@ -66,19 +66,22 @@ public class MessageQueryHandler {
         if (userIds.isEmpty()) {
             return Map.of();
         }
-
-        Map<String, String> result = new java.util.HashMap<>();
-        for (var entry : userInfoPort.getUserInfoMap(userIds).entrySet()) {
-            result.put(entry.getKey(), entry.getValue().username());
-        }
-        return result;
+        return userInfoPort.getUserInfoMap(userIds);
     }
 
-    private MessageVO toMessageVO(Message aggregate, Map<String, String> usernameMap) {
-        MessageVO.MessageVOBuilder builder = MessageVO.builder()
+    private MessageVO toMessageVO(Message aggregate, Map<String, UserInfo> userMap) {
+        UserInfo sender = aggregate.senderId() != null ? userMap.get(aggregate.senderId()) : null;
+        UserInfo receiver = aggregate.receiverId() != null ? userMap.get(aggregate.receiverId()) : null;
+
+        return MessageVO.builder()
                 .id(aggregate.id())
                 .senderId(aggregate.senderId())
+                // senderId 为 null 即系统消息，与 ConversationQueryHandler 的占位口径一致
+                .senderName(aggregate.senderId() == null ? "系统" : nameOf(sender))
+                .senderAvatar(avatarOf(sender))
                 .receiverId(aggregate.receiverId())
+                .receiverName(nameOf(receiver))
+                .receiverAvatar(avatarOf(receiver))
                 .type(
                         aggregate.type() == null
                                 ? null
@@ -90,18 +93,14 @@ public class MessageQueryHandler {
                 .readDesc(ReadStatus.READ == aggregate.isRead() ? "已读" : "未读")
                 .businessId(aggregate.businessId())
                 .createTime(aggregate.createTime())
-                .updateTime(null);
+                .build();
+    }
 
-        if (aggregate.senderId() != null) {
-            builder.senderName(usernameMap.getOrDefault(aggregate.senderId(), "未知用户"));
-        } else {
-            builder.senderName("系统");
-        }
+    private static String nameOf(UserInfo user) {
+        return user != null ? user.username() : "未知用户";
+    }
 
-        if (aggregate.receiverId() != null) {
-            builder.receiverName(usernameMap.getOrDefault(aggregate.receiverId(), "未知用户"));
-        }
-
-        return builder.build();
+    private static String avatarOf(UserInfo user) {
+        return user != null ? user.avatar() : null;
     }
 }

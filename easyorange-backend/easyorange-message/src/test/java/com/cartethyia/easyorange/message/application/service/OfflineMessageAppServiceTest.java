@@ -7,7 +7,6 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.message.application.port.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
-import com.cartethyia.easyorange.message.domain.constant.MessageConstant;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.PushStatus;
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
@@ -24,8 +23,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("OfflineMessageStoreService 单元测试")
-class OfflineMessageStoreServiceTest {
+@DisplayName("OfflineMessageAppService 单元测试")
+class OfflineMessageAppServiceTest {
 
     @Mock
     private OfflineMessageRepository offlineMessageRepository;
@@ -40,7 +39,7 @@ class OfflineMessageStoreServiceTest {
     private IdGenerator idGenerator;
 
     @InjectMocks
-    private OfflineMessageStoreService offlineMessageStoreService;
+    private OfflineMessageAppService offlineMessageAppService;
 
     private static final String OFFLINE_ID = "offline-1";
     private static final String USER_ID = "1";
@@ -56,7 +55,7 @@ class OfflineMessageStoreServiceTest {
         void storeIfOffline_userOffline_savesMessage() {
             when(idGenerator.generateId()).thenReturn(OFFLINE_ID);
 
-            offlineMessageStoreService.storeIfOffline(USER_ID, MESSAGE_ID, PUSH_CHANNEL, false);
+            offlineMessageAppService.storeIfOffline(USER_ID, MESSAGE_ID, PUSH_CHANNEL, false);
 
             ArgumentCaptor<OfflineMessage> captor = ArgumentCaptor.forClass(OfflineMessage.class);
             verify(offlineMessageRepository).save(captor.capture());
@@ -72,28 +71,15 @@ class OfflineMessageStoreServiceTest {
         @Test
         @DisplayName("用户在线时不存储离线消息")
         void storeIfOffline_userOnline_doesNotSave() {
-            offlineMessageStoreService.storeIfOffline(USER_ID, MESSAGE_ID, PUSH_CHANNEL, true);
+            offlineMessageAppService.storeIfOffline(USER_ID, MESSAGE_ID, PUSH_CHANNEL, true);
 
             verify(offlineMessageRepository, never()).save(any());
         }
 
         @Test
-        @DisplayName("用户离线时使用默认重试计数值")
-        void storeIfOffline_offline_setsDefaultRetryCount() {
-            offlineMessageStoreService.storeIfOffline(USER_ID, MESSAGE_ID, PUSH_CHANNEL, false);
-
-            ArgumentCaptor<OfflineMessage> captor = ArgumentCaptor.forClass(OfflineMessage.class);
-            verify(offlineMessageRepository).save(captor.capture());
-
-            OfflineMessage saved = captor.getValue();
-            assertThat(saved.retryCount()).isEqualTo(MessageConstant.DEFAULT_RETRY_COUNT);
-            assertThat(saved.maxRetryCount()).isEqualTo(MessageConstant.DEFAULT_MAX_RETRY_COUNT);
-        }
-
-        @Test
         @DisplayName("用户离线时可处理 null 参数")
         void storeIfOffline_offlineWithNullParams() {
-            offlineMessageStoreService.storeIfOffline(null, null, null, false);
+            offlineMessageAppService.storeIfOffline(null, null, null, false);
 
             ArgumentCaptor<OfflineMessage> captor = ArgumentCaptor.forClass(OfflineMessage.class);
             verify(offlineMessageRepository).save(captor.capture());
@@ -114,7 +100,7 @@ class OfflineMessageStoreServiceTest {
         void replayPending_empty_noop() {
             when(offlineMessageRepository.findPendingByUserId(USER_ID)).thenReturn(List.of());
 
-            offlineMessageStoreService.replayPending(USER_ID);
+            offlineMessageAppService.replayPending(USER_ID);
 
             verify(messageNotifier, never()).sendNotification(any(), any());
             verify(offlineMessageRepository, never()).save(any());
@@ -128,7 +114,7 @@ class OfflineMessageStoreServiceTest {
             when(offlineMessageRepository.findPendingByUserId(USER_ID)).thenReturn(List.of(pending));
             when(messageQueryRepository.findById(MESSAGE_ID)).thenReturn(system);
 
-            offlineMessageStoreService.replayPending(USER_ID);
+            offlineMessageAppService.replayPending(USER_ID);
 
             ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
             verify(messageNotifier).sendNotification(eq(USER_ID), payloadCaptor.capture());
@@ -147,7 +133,7 @@ class OfflineMessageStoreServiceTest {
             when(offlineMessageRepository.findPendingByUserId(USER_ID)).thenReturn(List.of(pending));
             when(messageQueryRepository.findById(MESSAGE_ID)).thenReturn(null);
 
-            offlineMessageStoreService.replayPending(USER_ID);
+            offlineMessageAppService.replayPending(USER_ID);
 
             verify(messageNotifier, never()).sendNotification(any(), any());
             verify(offlineMessageRepository, never()).save(any());
@@ -161,7 +147,7 @@ class OfflineMessageStoreServiceTest {
             when(offlineMessageRepository.findPendingByUserId(USER_ID)).thenReturn(List.of(pending));
             when(messageQueryRepository.findById(MESSAGE_ID)).thenReturn(chat);
 
-            offlineMessageStoreService.replayPending(USER_ID);
+            offlineMessageAppService.replayPending(USER_ID);
 
             verify(messageNotifier, never()).sendNotification(any(), any());
             verify(offlineMessageRepository, never()).save(any());

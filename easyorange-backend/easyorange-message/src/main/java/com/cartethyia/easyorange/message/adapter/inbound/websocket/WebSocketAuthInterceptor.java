@@ -58,7 +58,6 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
 
                 String userId = jwt.getSubject();
                 attributes.put(WebSocketAttributes.USER_ID, userId);
-                attributes.put(WebSocketAttributes.USERNAME, jwt.getClaimAsString("username"));
                 return true;
             } catch (JwtException e) {
                 log.warn("WebSocket握手失败: token验证失败", e);

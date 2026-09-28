@@ -2,12 +2,19 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+/**
+ * 离线消息表 {@code eo_offline_message} 数据对象。
+ * <p>
+ * 只映射在用的列：{@code push_time} / {@code retry_count} / {@code max_retry_count} /
+ * {@code last_retry_time} 四列在 V1 里随「重试机制」一起建表，但该机制从未实现（见
+ * {@code OfflineMessage} 类注释），故不映射——四列在库里可空或带默认值，不写不影响读写。
+ * 收口收表时由迁移删除，本模块不改已执行的 V1。
+ */
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,10 +26,6 @@ public class OfflineMessageDO extends BaseDO {
     private String messageId;
     private String pushChannel;
     private Integer pushStatus;
-    private LocalDateTime pushTime;
-    private Integer retryCount;
-    private Integer maxRetryCount;
-    private LocalDateTime lastRetryTime;
 
     public String getUserId() {
         return userId;
@@ -38,21 +41,5 @@ public class OfflineMessageDO extends BaseDO {
 
     public Integer getPushStatus() {
         return pushStatus;
-    }
-
-    public LocalDateTime getPushTime() {
-        return pushTime;
-    }
-
-    public Integer getRetryCount() {
-        return retryCount;
-    }
-
-    public Integer getMaxRetryCount() {
-        return maxRetryCount;
-    }
-
-    public LocalDateTime getLastRetryTime() {
-        return lastRetryTime;
     }
 }

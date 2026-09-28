@@ -3,9 +3,11 @@
 <mapper namespace="com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper">
 
     <!-- 会话列表：库端聚合每个会话对方的最新一条消息（UUIDv7 时间有序，MAX(id) 即最新），替代全量拉取内存聚合 -->
+    <!-- 列清单须与 MessageDO 对齐：漏列（如 msg_status / recalled_at）不会报错，只会让聚合根对应字段恒 null -->
     <select id="selectLatestPerConversation" resultType="com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO">
         SELECT m.id, m.sender_id, m.receiver_id, m.type, m.title, m.content,
                m.is_read, m.read_time, m.business_id, m.conversation_id,
+               m.msg_status, m.recalled_at,
                m.del_flag, m.create_time, m.update_time, m.create_by, m.update_by, m.version
         FROM eo_message m
         JOIN (

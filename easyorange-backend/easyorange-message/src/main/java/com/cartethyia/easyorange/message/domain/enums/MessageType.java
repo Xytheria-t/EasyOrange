@@ -7,10 +7,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * 消息类型枚举
- *
- * @author cartethyia
- * @date 2026/03/06
+ * 消息类型枚举 —— 对应 {@code eo_message.type} 列（TINYINT，存 code 的整数值）。
+ * <p>
+ * 前端按 code 数字收发（WS 发 type:2、REST 按 type=1 查系统通知），故 JSON 侧 {@code @JsonValue} 在 code 上；
+ * 领域内部一律用枚举，非法 code 在边界 {@code fromCode} 抛异常映射 400，不静默落库。
  */
 @Getter
 @AllArgsConstructor
@@ -29,13 +29,5 @@ public enum MessageType implements BaseCodeEnum {
 
     public static MessageType fromCode(String code) {
         return BaseCodeEnum.fromCode(MessageType.class, code);
-    }
-
-    public static String getDescByCode(String code) {
-        try {
-            return fromCode(code).getDesc();
-        } catch (IllegalArgumentException e) {
-            return "未知类型";
-        }
     }
 }

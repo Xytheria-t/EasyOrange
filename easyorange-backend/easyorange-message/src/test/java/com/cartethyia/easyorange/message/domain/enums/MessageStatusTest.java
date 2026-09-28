@@ -10,11 +10,16 @@ import org.junit.jupiter.api.Test;
 class MessageStatusTest {
 
     @Test
+    @DisplayName("只保留实际写入的两个状态（已读态由 is_read 列承载）")
+    void values_containOnlyWrittenStates() {
+        assertThat(MessageStatus.values()).containsExactlyInAnyOrder(MessageStatus.SENT, MessageStatus.RECALLED);
+    }
+
+    @Test
     @DisplayName("fromCode 正确映射 String 类型 code")
     void fromCode_stringCode_returnsCorrectEnum() {
-        assertThat(MessageStatus.fromCode("UNREAD")).isEqualTo(MessageStatus.UNREAD);
-        assertThat(MessageStatus.fromCode("READ")).isEqualTo(MessageStatus.READ);
         assertThat(MessageStatus.fromCode("SENT")).isEqualTo(MessageStatus.SENT);
+        assertThat(MessageStatus.fromCode("RECALLED")).isEqualTo(MessageStatus.RECALLED);
     }
 
     @Test
@@ -25,23 +30,17 @@ class MessageStatusTest {
     }
 
     @Test
-    @DisplayName("getDescByCode 返回正确描述")
-    void getDescByCode_validCode_returnsDesc() {
-        assertThat(MessageStatus.getDescByCode("UNREAD")).isEqualTo("未读");
-        assertThat(MessageStatus.getDescByCode("READ")).isEqualTo("已读");
-    }
-
-    @Test
-    @DisplayName("getDescByCode 返回未知状态描述")
-    void getDescByCode_unknownCode_returnsUnknown() {
-        assertThat(MessageStatus.getDescByCode("UNKNOWN")).isEqualTo("未知状态");
+    @DisplayName("已删除的取值（未读 / 已读 / 已送达）不再被接受")
+    void fromCode_removedCodes_rejected() {
+        assertThatThrownBy(() -> MessageStatus.fromCode("UNREAD")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> MessageStatus.fromCode("READ")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> MessageStatus.fromCode("DELIVERED")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     @DisplayName("getCode 返回正确类型")
     void getCode_returnsCorrectType() {
-        assertThat(MessageStatus.UNREAD.getCode()).isEqualTo("UNREAD");
         assertThat(MessageStatus.SENT.getCode()).isEqualTo("SENT");
-        assertThat(MessageStatus.READ.getCode()).isEqualTo("READ");
+        assertThat(MessageStatus.RECALLED.getCode()).isEqualTo("RECALLED");
     }
 }

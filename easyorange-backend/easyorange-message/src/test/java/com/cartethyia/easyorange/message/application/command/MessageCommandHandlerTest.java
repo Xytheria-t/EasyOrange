@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.message.application.command;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -8,10 +9,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
-import com.cartethyia.easyorange.message.application.service.OfflineMessageStoreService;
+import com.cartethyia.easyorange.message.application.service.OfflineMessageAppService;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
@@ -44,7 +44,7 @@ class MessageCommandHandlerTest {
     private DomainEventPublisher domainEventPublisher;
 
     @Mock
-    private OfflineMessageStoreService offlineMessageStoreService;
+    private OfflineMessageAppService offlineMessageAppService;
 
     @Mock
     private DistributedRateLimiter distributedRateLimiter;
@@ -77,6 +77,7 @@ class MessageCommandHandlerTest {
                 ReadStatus.UNREAD,
                 null,
                 null,
+                "conv_1_2",
                 MessageStatus.SENT,
                 null,
                 LocalDateTime.now());
@@ -93,6 +94,7 @@ class MessageCommandHandlerTest {
                 ReadStatus.UNREAD,
                 null,
                 null,
+                "conv_1_2",
                 MessageStatus.SENT,
                 null,
                 LocalDateTime.now().minusMinutes(1));
@@ -105,7 +107,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("正常发送消息")
         void sendMessage_success() {
-            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "hello", null, null);
+            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "hello", null);
 
             when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                     .thenReturn(true);
@@ -123,13 +125,15 @@ class MessageCommandHandlerTest {
                     ReadStatus.UNREAD,
                     null,
                     null,
+                    "conv_1_2",
                     MessageStatus.SENT,
                     null,
                     LocalDateTime.now());
             when(messageRepository.save(any(Message.class))).thenReturn(savedAggregate);
 
-            commandHandler.sendMessage(USER_ID, command);
+            Message returned = commandHandler.sendMessage(USER_ID, command);
 
+            assertThat(returned).as("返回落库后的聚合根，供 WS 广播与落库一致的帧").isSameAs(savedAggregate);
             verify(messageRepository).save(argThat(msg -> GENERATED_ID.equals(msg.id())));
             verify(distributedRateLimiter).tryAcquire(eq("eo:rate:message:" + USER_ID), anyLong(), anyLong());
             verify(sensitiveWordFilterService).filter("hello");
@@ -138,7 +142,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("发送过于频繁时抛出异常")
         void sendMessage_rateLimited_throws() {
-            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "hello", null, null);
+            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "hello", null);
 
             when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                     .thenReturn(false);
@@ -151,13 +155,13 @@ class MessageCommandHandlerTest {
         }
 
         @Test
-        @DisplayName("发送消息经过敏感词过滤")
+        @DisplayName("发送消息经过敏感词过滤（过滤后的内容才落库）")
         void sendMessage_sensitiveFilterApplied() {
-            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "包含敏感词示例", null, null);
+            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "包含诈骗内容", null);
 
             when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                     .thenReturn(true);
-            when(sensitiveWordFilterService.filter("包含敏感词示例")).thenReturn("包含***");
+            when(sensitiveWordFilterService.filter("包含诈骗内容")).thenReturn("包含***");
             when(sensitiveWordFilterService.filter("标题")).thenReturn("标题");
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
             when(idGenerator.generateId()).thenReturn(GENERATED_ID);
@@ -172,6 +176,7 @@ class MessageCommandHandlerTest {
                     ReadStatus.UNREAD,
                     null,
                     null,
+                    "conv_1_2",
                     MessageStatus.SENT,
                     null,
                     LocalDateTime.now());
@@ -183,9 +188,26 @@ class MessageCommandHandlerTest {
         }
 
         @Test
+        @DisplayName("落库时带上按收发方算出的会话 ID")
+        void sendMessage_persistsConversationId() {
+            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, 2, "标题", "hello", null);
+
+            when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                    .thenReturn(true);
+            when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
+            when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
+            when(idGenerator.generateId()).thenReturn(GENERATED_ID);
+            when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            Message returned = commandHandler.sendMessage(USER_ID, command);
+
+            assertThat(returned.conversationId()).isEqualTo("conv_1_2");
+        }
+
+        @Test
         @DisplayName("type 缺省时归一化为聊天消息（CHAT=2）")
         void sendMessage_nullType_defaultsToChat() {
-            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, null, "标题", "hello", null, null);
+            SendMessageCommand command = new SendMessageCommand(RECEIVER_ID, null, "标题", "hello", null);
 
             when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                     .thenReturn(true);
@@ -225,13 +247,14 @@ class MessageCommandHandlerTest {
                     null,
                     null,
                     null,
+                    null,
                     LocalDateTime.now());
             when(messageRepository.save(any(Message.class))).thenReturn(savedAggregate);
 
             commandHandler.sendSystemMessage(command);
 
             verify(messageRepository).save(argThat(msg -> GENERATED_ID.equals(msg.id())));
-            verify(offlineMessageStoreService).storeIfOffline(anyString(), any(), anyString(), eq(true));
+            verify(offlineMessageAppService).storeIfOffline(anyString(), any(), anyString(), eq(true));
             verify(messageNotifier).sendNotification(eq(RECEIVER_ID), any());
         }
     }
@@ -272,7 +295,10 @@ class MessageCommandHandlerTest {
             Message aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
-            assertThatThrownBy(() -> commandHandler.markAsRead("999", command)).isInstanceOf(BusinessException.class);
+            // 归属校验由聚合根 read(userId) 抛，异常类型是模块统一领域异常（非 BizRequire 的 BusinessException）
+            assertThatThrownBy(() -> commandHandler.markAsRead("999", command))
+                    .isInstanceOf(MessageDomainException.class)
+                    .hasMessageContaining("只有接收者");
         }
     }
 
@@ -350,7 +376,8 @@ class MessageCommandHandlerTest {
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
             assertThatThrownBy(() -> commandHandler.recallMessage("999", command))
-                    .isInstanceOf(BusinessException.class);
+                    .isInstanceOf(MessageDomainException.class)
+                    .hasMessageContaining("不能撤回他人的消息");
 
             verify(messageRepository, never()).update(any());
         }

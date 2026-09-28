@@ -4,9 +4,8 @@ import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
 import java.util.List;
 
 /**
- * 离线消息仓储。状态转换（markAsPushed/markAsFailed/incrementRetry）唯一归属
- * {@link OfflineMessage} 聚合根，重推流程按 加载 → 迁移 → save 接线即可；
- * 此处不再提供绕过聚合根的平行 SQL 状态方法。
+ * 离线消息仓储。状态转换（{@code markAsPushed}）唯一归属 {@link OfflineMessage} 聚合根，
+ * 补推流程按 加载 → 迁移 → save 接线即可；此处不提供绕过聚合根的平行 SQL 状态方法。
  */
 public interface OfflineMessageRepository {
 

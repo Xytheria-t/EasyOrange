@@ -6,10 +6,14 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * 推送状态枚举 —— 对应 {@code eo_offline_message.push_status} 列（TINYINT，0/1/2）。
+ * 离线消息推送状态枚举 —— 对应 {@code eo_offline_message.push_status} 列（TINYINT 0/1/2）。
  * <p>
- * 沿用 MessageType 对 TINYINT 的处理：code 存语义串（"0"/"1"/"2"），
- * 由持久层边界做 String ↔ int 转换，替换原 MessageConstant.PUSH_STATUS_* 裸 int。
+ * code 存的是数字字符串（"0"/"1"/"2"）而非语义名：列是 TINYINT，{@code MessageDataMapper} 在持久层
+ * 边界做 String ↔ int 转换，领域内其余部分只见枚举。
+ * <p>
+ * 边界：FAILED 目前无生产写入方（补推时目标消息缺失或非系统通知就跳过、保持 PENDING，等用户下次上线再试），
+ * 保留该值只为能读懂这类行；本枚举无 {@code @EnumValue}——{@code OfflineMessageDO.pushStatus} 声明为
+ * {@code Integer}（列是 TINYINT），转换在 {@code MessageDataMapper} 边界显式做。
  */
 @Getter
 @AllArgsConstructor
@@ -25,13 +29,5 @@ public enum PushStatus implements BaseCodeEnum {
 
     public static PushStatus fromCode(String code) {
         return BaseCodeEnum.fromCode(PushStatus.class, code);
-    }
-
-    public static String getDescByCode(String code) {
-        try {
-            return fromCode(code).getDesc();
-        } catch (IllegalArgumentException e) {
-            return "未知状态";
-        }
     }
 }
