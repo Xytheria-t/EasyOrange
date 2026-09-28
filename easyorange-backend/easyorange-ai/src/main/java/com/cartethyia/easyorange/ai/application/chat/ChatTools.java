@@ -182,9 +182,13 @@ public class ChatTools {
         return formatDetailObservation(found.get());
     }
 
+    // 顺序约束写进 schema 描述而不是只写 system prompt：同轮多工具按模型给出的顺序逐个执行，
+    // 本工具统计的是「此刻」已召回的候选，排在 product_search 前面就统计到空集。模型是在选工具时读这段描述的，
+    // 等生成回答时才发现约束已经晚一轮。空集观察本身可恢复（会提示先 product_search），这里只是省掉那一轮
     @Tool(
             name = TOOL_MARKET_PRICE_STATS,
-            description = "对已召回的资产算行情（在售件数 / 均价 / 价格区间），用于判断某件值不值得买；零模型计算",
+            description = "对已召回的资产算行情（在售件数 / 均价 / 价格区间），用于判断某件值不值得买；零模型计算。"
+                    + "必须在 product_search 之后的轮次调用（同一轮里它会排在 product_search 前面而统计到空集）",
             resultConverter = ObservationTextConverter.class)
     public String summarizeMarketPrice(@ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought) {
         return PriceStats.of(assetHits)
