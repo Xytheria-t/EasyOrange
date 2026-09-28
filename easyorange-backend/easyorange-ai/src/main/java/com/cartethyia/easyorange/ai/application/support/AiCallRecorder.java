@@ -196,7 +196,7 @@ public class AiCallRecorder {
     }
 
     /** 「供应商真的回报了 token」的判据 —— null、空壳、全 0 都算没回报，下游据此退化为按场景上限估算。 */
-    static boolean hasReportedTokens(@Nullable Usage usage) {
+    private static boolean hasReportedTokens(@Nullable Usage usage) {
         if (usage == null) {
             return false;
         }
