@@ -131,7 +131,17 @@ public class ToolCallLoop {
             List<AssetDetail> details,
             ToolCallLoopOutcome outcome,
             int rounds,
-            List<String> toolPath) {}
+            List<String> toolPath) {
+
+        /**
+         * 出循环时一次性定稿 —— 结局 / 轮数 / 工具路径来自循环，三个召回物来自 {@code tools} 实例上
+         * 已积累的累加器（累加器是实例独占的可变状态，循环只有这一处读它定稿）。
+         */
+        static Result of(ChatTools tools, ToolCallLoopOutcome outcome, int rounds, List<String> toolPath) {
+            return new Result(
+                    tools.knowledgeHits(), tools.assetHits(), tools.details(), outcome, rounds, List.copyOf(toolPath));
+        }
+    }
 
     public Result run(Input input) {
         try {
@@ -159,7 +169,7 @@ public class ToolCallLoop {
                         "action=tool_call_loop_degraded, reason=budget, sessionId={}, rounds={}",
                         input.sessionId(),
                         rounds);
-                return toResult(tools, ToolCallLoopOutcome.BUDGET, rounds, toolPath);
+                return Result.of(tools, ToolCallLoopOutcome.BUDGET, rounds, toolPath);
             }
             List<ToolCallDecision> decisions =
                     decider.decide(input.sessionId(), messages.snapshot(), dispatcher.callbacks());
@@ -173,14 +183,14 @@ public class ToolCallLoop {
                             input.sessionId(),
                             failureReason(e));
                 }
-                return toResult(tools, ToolCallLoopOutcome.DECISION_FAILED, rounds, toolPath);
+                return Result.of(tools, ToolCallLoopOutcome.DECISION_FAILED, rounds, toolPath);
             }
             rounds = round;
             RoundResult roundResult = executeToolCalls(input, traceId, dispatcher, messages, decisions, nextStepIndex);
             nextStepIndex = roundResult.nextStepIndex();
             toolPath.addAll(roundResult.toolPath());
             if (roundResult.finished()) {
-                return toResult(tools, ToolCallLoopOutcome.FINISHED, rounds, toolPath);
+                return Result.of(tools, ToolCallLoopOutcome.FINISHED, rounds, toolPath);
             }
         }
         log.warn(
@@ -188,13 +198,7 @@ public class ToolCallLoop {
                 input.sessionId(),
                 rounds,
                 String.join(",", toolPath));
-        return toResult(tools, ToolCallLoopOutcome.STEP_LIMIT, rounds, toolPath);
-    }
-
-    /** 出循环时一次性定稿：结局 + 轮数 + 工具路径 + 工具实例上已积累的召回物。 */
-    private static Result toResult(ChatTools tools, ToolCallLoopOutcome outcome, int rounds, List<String> toolPath) {
-        return new Result(
-                tools.knowledgeHits(), tools.assetHits(), tools.details(), outcome, rounds, List.copyOf(toolPath));
+        return Result.of(tools, ToolCallLoopOutcome.STEP_LIMIT, rounds, toolPath);
     }
 
     /**
