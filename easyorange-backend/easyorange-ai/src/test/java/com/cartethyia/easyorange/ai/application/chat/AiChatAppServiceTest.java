@@ -62,7 +62,7 @@ import org.springframework.ai.chat.model.ChatModel;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiChatAppService (Agent 编排) -> 测试")
-class AiChatServiceTest {
+class AiChatAppServiceTest {
 
     /** 语义缓存的查询向量桩值 — 非空即表示「缓存可用」。 */
     private static final List<Float> QUERY_EMBEDDING = List.of(0.1f, 0.2f);
