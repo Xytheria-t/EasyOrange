@@ -188,7 +188,7 @@ public class AgentLoopRunner {
             if (decisions.isEmpty()) {
                 // 识别不出检索需求时仍补一次：最坏是多几条不相关片段，好过把检索链路失效伪装成「无需检索」
                 try {
-                    tools.recallKnowledgeFallback(input.question());
+                    tools.searchKnowledgeForFallback(input.question());
                 } catch (Exception e) {
                     log.warn(
                             "action=agent_fallback_search_failed, sessionId={}, reason={}",
