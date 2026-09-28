@@ -25,7 +25,7 @@ import org.springframework.ai.chat.messages.UserMessage;
  */
 final class ChatPromptAssembler {
 
-    /** 剥离目标：不可信文本里「闭合当前块 / 伪造新块」的标签形态序列（{@code </knowledge_snippets>} 之类）。 */
+    /** 剥离目标：不可信文本里「闭合当前块 / 伪造新块」的标签形态序列（{@code </knowledge_hits>} 之类）。 */
     private static final Pattern TAG_LIKE = Pattern.compile("</?[A-Za-z][^>]{0,200}>");
 
     private ChatPromptAssembler() {}
@@ -67,13 +67,13 @@ final class ChatPromptAssembler {
                 %s
                 </user_profile>
 
-                <knowledge_snippets>
+                <knowledge_hits>
                 %s
-                </knowledge_snippets>
+                </knowledge_hits>
 
-                <candidate_assets>
+                <asset_hits>
                 %s
-                </candidate_assets>
+                </asset_hits>
 
                 <asset_details>
                 %s
@@ -81,12 +81,12 @@ final class ChatPromptAssembler {
                 """.formatted(
                         stripTags(question),
                         stripTags(UserPreference.format(prefs)),
-                        stripTags(formatHits(run.knowledgeHits())),
-                        stripTags(formatAssets(run.assets())),
-                        stripTags(formatDetails(run.details())));
+                        stripTags(formatKnowledgeHits(run.knowledgeHits())),
+                        stripTags(formatAssetHits(run.assets())),
+                        stripTags(formatAssetDetails(run.details())));
     }
 
-    private static String formatHits(List<KnowledgeHit> hits) {
+    private static String formatKnowledgeHits(List<KnowledgeHit> hits) {
         if (hits.isEmpty()) {
             return "(无检索结果)";
         }
@@ -99,7 +99,7 @@ final class ChatPromptAssembler {
     }
 
     /** 资产块带 id 与价格：提示词已硬约束不得编造资产与数字，这里把可核对的 id 显式给到，让约束有据可依。 */
-    private static String formatAssets(List<AssetHit> assets) {
+    private static String formatAssetHits(List<AssetHit> assets) {
         if (assets.isEmpty()) {
             return "(无可推荐资产)";
         }
@@ -119,7 +119,7 @@ final class ChatPromptAssembler {
     }
 
     /** 详情块承接 product_detail 轮次的观察：描述全文进 prompt，推荐理由才有据可写（资产块只有一行摘要）。 */
-    private static String formatDetails(List<AssetDetail> details) {
+    private static String formatAssetDetails(List<AssetDetail> details) {
         if (details.isEmpty()) {
             return "(无)";
         }
