@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheConstant;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.HotKeywordBufferAdapter;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.HotKeywordDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.HotKeywordMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryDO;
@@ -46,6 +47,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     private final CategoryMapper categoryMapper;
     private final SearchHistoryMapper searchHistoryMapper;
     private final HotKeywordMapper hotKeywordMapper;
+    private final HotKeywordBufferAdapter hotKeywordBuffer;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final SearchHistoryBufferAppService searchHistoryBufferService;
     private final CategoryRepository categoryRepository;
@@ -246,10 +248,22 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         redisTemplate.opsForList().leftPush(key, keyword);
         redisTemplate.opsForList().trim(key, 0, ProductCacheConstant.SEARCH_HISTORY_MAX_SIZE - 1);
 
+        // 热词是非关键路径的旁挂增强：Redis / DB 抖了只丢这一次计数，
+        // 绝不能连带让上面的搜索历史记录失败（record 内部已兜，这里是写路径这一层的兜底）。
+        try {
+            hotKeywordBuffer.record(keyword);
+        } catch (Exception e) {
+            log.warn("action=recordHotKeywordFailed keyword={}", keyword, e);
+        }
+
         searchHistoryBufferService.addToBuffer(userId, keyword);
     }
 
+    // ── 以下两个是真删库，必须覆盖类级 readOnly：
+    // MySQL 下 readOnly 事务执行 DELETE 抛「Cannot execute statement in a READ ONLY transaction」
+
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void clearSearchHistory(String userId) {
         redisTemplate.delete(ProductCacheConstant.searchHistoryKey(userId));
         ChainWrappers.lambdaUpdateChain(searchHistoryMapper)
@@ -258,6 +272,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteSearchHistoryById(String historyId, String userId) {
         ChainWrappers.lambdaUpdateChain(searchHistoryMapper)
                 .eq(SearchHistoryDO::getId, historyId)

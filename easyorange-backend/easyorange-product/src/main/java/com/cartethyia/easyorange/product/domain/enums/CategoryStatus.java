@@ -9,8 +9,8 @@ import lombok.Getter;
 /**
  * 分类启用状态 — 0 禁用 / 1 启用（对应 {@code eo_category.status} 的 TINYINT）。
  * <p>
- * 此前 status 是裸 {@code Integer}，三条读路径各自决定要不要过滤，且只有一处过滤对了
- * （{@code JdbcCategoryCatalogAdapter}）。改成枚举 + 单一口径后，"禁用即不出现"是类型系统保证的。
+ * 此前 status 是裸 {@code Integer}，三条读路径各自决定要不要过滤，且只有一处过滤对了。
+ * 改成枚举 + 单一口径后，"禁用即不出现"是类型系统保证的。
  */
 @Getter
 @AllArgsConstructor

@@ -3,13 +3,13 @@
 <mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.search.HotKeywordMapper">
 
     <update id="batchInsertOrUpdate">
-        INSERT INTO eo_hot_keyword (keyword, search_count, last_search_time, create_time, update_time)
+        INSERT INTO eo_hot_keyword (id, keyword, search_count, last_search_time, create_time, update_time)
         VALUES
         <foreach collection="list" item="item" separator=",">
-            (#{item.keyword}, #{item.searchCount}, #{item.lastSearchTime}, NOW(), NOW())
+            (#{item.id}, #{item.keyword}, #{item.searchCount}, #{item.lastSearchTime}, NOW(), NOW())
         </foreach>
         ON DUPLICATE KEY UPDATE
-            search_count = VALUES(search_count),
+            search_count = search_count + VALUES(search_count),
             last_search_time = VALUES(last_search_time),
             update_time = NOW()
     </update>

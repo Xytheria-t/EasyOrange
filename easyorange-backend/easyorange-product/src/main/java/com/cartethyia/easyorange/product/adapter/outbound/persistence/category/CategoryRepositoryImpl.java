@@ -119,19 +119,10 @@ public class CategoryRepositoryImpl extends BaseRepository<CategoryMapper, Categ
     }
 
     @Override
-    public long countAll() {
-        return lambdaQuery().count();
-    }
-
-    @Override
     public List<Category> findAll() {
         return lambdaQuery().orderByAsc(CategoryDO::getSortOrder).list().stream()
                 .map(categoryDataMapper::toAggregate)
                 .toList();
-    }
-
-    private boolean existsById(String id) {
-        return mapper.selectById(id) != null;
     }
 
     private CategoryDO requireById(String id) {

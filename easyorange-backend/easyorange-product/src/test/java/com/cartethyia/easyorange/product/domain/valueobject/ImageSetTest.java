@@ -72,14 +72,6 @@ class ImageSetTest {
     }
 
     @Test
-    @DisplayName("size 应返回正确计数")
-    void size_shouldReturnCorrectCount() {
-        var imageSet = ImageSet.of(List.of("http://img/1.jpg", "http://img/2.jpg"));
-
-        assertThat(imageSet.size()).isEqualTo(2);
-    }
-
-    @Test
     @DisplayName("imageUrls 应返回提取的 URL 列表")
     void imageUrls_shouldReturnExtractedUrls() {
         var imageSet = ImageSet.of(List.of("http://img/1.jpg", "http://img/2.jpg"));

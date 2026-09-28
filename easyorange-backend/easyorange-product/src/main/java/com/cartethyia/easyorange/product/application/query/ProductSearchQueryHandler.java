@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductSearchQueryPort;
 import com.cartethyia.easyorange.product.application.port.query.QueryEmbeddingPort;
+import com.cartethyia.easyorange.product.application.port.query.SearchResult;
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
@@ -50,10 +51,18 @@ public class ProductSearchQueryHandler {
                     criteria.effectivePageSize(),
                     embedding,
                     !embedding.isEmpty());
-            var searchResult = esPort.search(query);
-            facets = mergeFacetsList(searchResult);
-            page = PageResult.of(
-                    searchResult.records(), searchResult.total(), searchResult.current(), searchResult.size());
+            // ES 集群不可达也降级到 MySQL：公开浏览端点是匿名可访问的主链路，一次索引故障不该让它整体 500。
+            // 降级后 facets 只能为空（分类 / 成色 / 价格分桶都是 ES 侧聚合，MySQL 侧没有等价口径），
+            // 也不在适配器层兜底 —— 那里返回空结果集与「真的没搜到」在响应上无法区分，等于把故障伪装成正常响应
+            try {
+                var searchResult = esPort.search(query);
+                facets = mergeFacetsList(searchResult);
+                page = PageResult.of(
+                        searchResult.records(), searchResult.total(), searchResult.current(), searchResult.size());
+            } catch (Exception e) {
+                log.warn("action=product_search_es_unavailable fallback=db keyword={}", criteria.keyword(), e);
+                page = productQueryRepository.searchProducts(criteria);
+            }
         } else {
             page = productQueryRepository.searchProducts(criteria);
         }
@@ -66,10 +75,12 @@ public class ProductSearchQueryHandler {
         return productQueryRepository.findSearchHistoryByUserId(userId, limit);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void clearMySearchHistory(String userId) {
         productQueryRepository.clearSearchHistory(userId);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void deleteSearchHistory(String userId, String historyId) {
         productQueryRepository.deleteSearchHistoryById(historyId, userId);
     }
@@ -109,8 +120,7 @@ public class ProductSearchQueryHandler {
         return port == null ? List.of() : port.embed(criteria.keyword());
     }
 
-    private static List<FacetBucket> mergeFacetsList(
-            com.cartethyia.easyorange.product.application.port.query.SearchResult result) {
+    private static List<FacetBucket> mergeFacetsList(SearchResult result) {
         var list = new ArrayList<FacetBucket>();
         result.categoryFacets()
                 .forEach(fb -> list.add(new FacetBucket("category_" + fb.key(), fb.label(), fb.count())));

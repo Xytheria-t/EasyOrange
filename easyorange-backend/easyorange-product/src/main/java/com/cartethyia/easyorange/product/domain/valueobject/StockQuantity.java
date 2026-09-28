@@ -20,21 +20,20 @@ public record StockQuantity(@JsonValue Integer value) {
         return value > 0;
     }
 
+    /**
+     * 扣减库存；扣成负数即抛。
+     * <p>
+     * 正常路径的「够不够扣」由 {@code Product.decrementStock} 一次判定（并抛带 productId 的 B2003）。
+     * 这道 {@link BizRequire} 是值对象层的最后防线：聚合根判定与实际写入之间的并发窗口
+     * （乐观锁失败前的读改算）一旦漏到这里，宁可抛异常也不产出负库存。
+     */
     public StockQuantity decrease(int amount) {
         int newValue = value - amount;
         BizRequire.requireTrue(newValue >= 0, "库存扣减后不能为负数, 当前: " + value + ", 扣减: " + amount);
         return new StockQuantity(newValue);
     }
 
-    public StockQuantity decrease() {
-        return decrease(1);
-    }
-
     public StockQuantity increase(int amount) {
         return new StockQuantity(value + amount);
-    }
-
-    public StockQuantity increase() {
-        return increase(1);
     }
 }

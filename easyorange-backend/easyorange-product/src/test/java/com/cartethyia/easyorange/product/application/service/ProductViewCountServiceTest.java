@@ -28,7 +28,7 @@ class ProductViewCountServiceTest {
     private ProductRepository productRepository;
 
     @InjectMocks
-    private ViewCountBatchProcessor batchProcessor;
+    private ViewCountFlushAppService batchProcessor;
 
     @Nested
     @DisplayName("batchProcessor.flush")

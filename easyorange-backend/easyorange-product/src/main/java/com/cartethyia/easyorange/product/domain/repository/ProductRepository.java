@@ -16,6 +16,6 @@ public interface ProductRepository {
 
     List<Product> findByIds(List<ProductId> ids);
 
-    /** 批量自增浏览量（view_count = view_count + count），由 {@code ViewCountBatchProcessor} 落库。 */
+    /** 批量自增浏览量（view_count = view_count + count），由 {@code ViewCountFlushAppService} 落库。 */
     void batchAddViewCounts(List<ViewCountEntry> entries);
 }

@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.product.domain.exception.ProductDomainException
 import com.cartethyia.easyorange.product.domain.repository.CategoryRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryName;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -183,7 +184,7 @@ public class CategoryCommandHandler {
 
     /** 载入自身及其全部子孙（含禁用节点：脏数据也得能算清层级）。 */
     private List<Category> loadSubtree(Category root) {
-        List<Category> collected = new java.util.ArrayList<>();
+        List<Category> collected = new ArrayList<>();
         collected.add(root);
         collectDescendants(CategoryId.of(root.getId().value()), collected);
         return collected;

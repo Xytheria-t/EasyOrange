@@ -52,10 +52,6 @@ public record ImageSet(List<ProductImage> images) {
                 .toList();
     }
 
-    public int size() {
-        return images.size();
-    }
-
     public boolean isEmpty() {
         return images.isEmpty();
     }

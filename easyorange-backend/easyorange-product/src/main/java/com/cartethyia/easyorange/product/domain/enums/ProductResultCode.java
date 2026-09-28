@@ -42,8 +42,7 @@ public enum ProductResultCode implements IResultCode {
     CATEGORY_LEVEL_EXCEEDED("B2023", "分类层级超过上限"),
     CATEGORY_CYCLE_DETECTED("B2024", "不能把分类挂到它自己的子分类下"),
     CATEGORY_HAS_CHILDREN("B2025", "该分类下存在子分类，无法删除"),
-    CATEGORY_HAS_PRODUCTS("B2026", "该分类下存在关联商品，无法删除"),
-    CATEGORY_ERROR("B2027", "分类业务异常");
+    CATEGORY_HAS_PRODUCTS("B2026", "该分类下存在关联商品，无法删除");
 
     private final String code;
     private final String message;

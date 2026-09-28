@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.scheduler;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.product.application.service.ViewCountBatchProcessor;
+import com.cartethyia.easyorange.product.application.service.ViewCountFlushAppService;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,7 +23,7 @@ class ViewCountFlushSchedulerTest {
     private RedisTemplate<Object, Object> redisTemplate;
 
     @Mock
-    private ViewCountBatchProcessor batchProcessor;
+    private ViewCountFlushAppService batchProcessor;
 
     @Mock
     private ValueOperations<Object, Object> valueOperations;

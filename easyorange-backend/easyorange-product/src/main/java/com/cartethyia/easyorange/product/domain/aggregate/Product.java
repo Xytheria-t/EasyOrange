@@ -28,7 +28,6 @@ import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
-import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
 import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
 import com.cartethyia.easyorange.product.domain.valueobject.Version;
 import java.time.LocalDateTime;
@@ -68,7 +67,6 @@ public class Product {
     private final ContactMethod contactMethod;
     private final ProductDescription description;
     private final ImageSet images;
-    private final TagSet tags;
     private final String searchText;
     private final LocalDateTime priceUpdateTime;
     private final LocalDateTime createTime;
@@ -97,7 +95,6 @@ public class Product {
                 .contactMethod(spec.contactMethod())
                 .description(spec.description())
                 .images(spec.images())
-                .tags(TagSet.empty())
                 .priceUpdateTime(LocalDateTime.now())
                 .createTime(LocalDateTime.now())
                 .updateTime(LocalDateTime.now())
@@ -249,12 +246,10 @@ public class Product {
 
     // ── 库存操作 ──
 
-    public Transition<Product, StockDecreasedEvent> decrementStock() {
-        return decrementStock(1);
-    }
-
     public Transition<Product, StockDecreasedEvent> decrementStock(int quantity) {
-        if (!hasStock()) {
+        // 一次判定：`hasStock()` 只看 >0，扣 2 件库存为 1 会在 StockQuantity 里撞 BizRequire 抛通用 BusinessException。
+        // 统一按「本次扣减后仍非负」判定，保证所有超卖路径同码同上下文。
+        if (stock == null || stock.value() < quantity) {
             throw ProductDomainException.insufficientStock("资产库存不足", id, stock);
         }
         return new Transition<>(
@@ -263,10 +258,6 @@ public class Product {
                         .updateTime(LocalDateTime.now())
                         .build(),
                 StockDecreasedEvent.of(id.value(), quantity));
-    }
-
-    public Transition<Product, StockRestoredEvent> restoreStock() {
-        return restoreStock(1);
     }
 
     public Transition<Product, StockRestoredEvent> restoreStock(int quantity) {

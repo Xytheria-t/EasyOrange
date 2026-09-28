@@ -111,7 +111,7 @@ public class ProductQueryHandler {
 
     // ── Aggregate assembly path ──
 
-    /** 回源 loader：商品不存在时返回 null（不落缓存），由调用方决定是否抛 404。 */
+    /** 回源 loader：商品不存在时返回 null，null 会被缓存层缓存下来防穿透，由调用方决定是否抛 404。 */
     private ProductVO loadProductVO(String id) {
         return productRepository
                 .findById(ProductId.of(id))

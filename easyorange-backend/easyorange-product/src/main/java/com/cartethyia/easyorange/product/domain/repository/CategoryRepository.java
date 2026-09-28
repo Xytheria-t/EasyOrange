@@ -39,9 +39,6 @@ public interface CategoryRepository {
     /** 查同一父分类下的兄弟节点（parentId 为 null 即一级分类），用于同级重名判定。 */
     List<Category> findSiblings(CategoryId parentId, String excludeId);
 
-    /** 统计整个类目树的节点数。 */
-    long countAll();
-
     /** 查全部分类（按 sortOrder 升序）—— 建树用，分类量级小（百级）无需分页。 */
     List<Category> findAll();
 }

@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.application.port.query;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface ProductSearchQueryPort {
@@ -21,8 +22,8 @@ public interface ProductSearchQueryPort {
             String keyword,
             String categoryId,
             String status,
-            java.math.BigDecimal minPrice,
-            java.math.BigDecimal maxPrice,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
             String conditionLevel,
             String sort,
             int pageNum,
