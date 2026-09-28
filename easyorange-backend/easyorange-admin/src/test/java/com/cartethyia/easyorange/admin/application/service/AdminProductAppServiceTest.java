@@ -1,22 +1,18 @@
-package com.cartethyia.easyorange.admin.service;
+package com.cartethyia.easyorange.admin.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
-import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminProductAssembler;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminProductQueryRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
+import com.cartethyia.easyorange.admin.domain.exception.AdminDomainException;
+import com.cartethyia.easyorange.admin.domain.model.ProductDetailView;
+import com.cartethyia.easyorange.admin.domain.model.ProductListView;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductSummary;
-import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.common.result.PageResult;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,24 +23,27 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * 商品服务测试 — 断言端口编排结果（分页原样返回 + 图片按当页 id 批量取回），
+ * 商品 → 响应 DTO 的字段命名由 {@code AdminProductAssembler} 负责，不在这里复测一遍。
+ */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AdminProductService 单元测试")
-class AdminProductServiceTest {
+@DisplayName("AdminProductAppService 单元测试")
+class AdminProductAppServiceTest {
 
     @Mock
     private AdminProductPort adminProductPort;
 
-    @Spy
-    private AdminProductAssembler adminProductAssembler = new AdminProductAssembler();
-
     @InjectMocks
-    private AdminProductService productService;
+    private AdminProductAppService productService;
 
     private static final String PRODUCT_ID = "100";
     private static final String SELLER_ID = "1";
+
+    private static final ProductQueryCondition CONDITION =
+            new ProductQueryCondition(null, null, null, null, null, null, 1, 20);
 
     private ProductSummary createProductSummary(String status) {
         return new ProductSummary(
@@ -103,38 +102,33 @@ class AdminProductServiceTest {
     class ListProductsTests {
 
         @Test
-        @DisplayName("分页查询商品列表")
-        void listProducts_returnsPage() {
-            AdminProductQueryRequest request =
-                    new AdminProductQueryRequest(null, null, null, null, null, null, null, null);
+        @DisplayName("分页查询商品列表并按当页 id 取回图片")
+        void listProducts_returnsPageWithImages() {
             ProductSummary product = createProductSummary("1");
-
-            when(adminProductPort.queryProducts(any(ProductQueryCondition.class)))
+            when(adminProductPort.queryProducts(CONDITION))
                     .thenReturn(new ProductQueryResult(List.of(product), 1, 1, 20));
-            when(adminProductPort.getProductImages(anyList())).thenReturn(Map.of());
+            when(adminProductPort.getProductImages(List.of(PRODUCT_ID)))
+                    .thenReturn(Map.of(PRODUCT_ID, List.of("img.jpg")));
 
-            PageResult<AdminProductResponse> result = productService.listProducts(request);
+            ProductListView view = productService.listProducts(CONDITION);
 
-            assertThat(result.records()).hasSize(1);
-            assertThat(result.records().get(0).name()).isEqualTo("测试商品");
-            assertThat(result.total()).isEqualTo(1);
+            assertThat(view.page().total()).isEqualTo(1);
+            assertThat(view.page().records().get(0).name()).isEqualTo("测试商品");
+            assertThat(view.images()).containsKey(PRODUCT_ID);
         }
 
         @Test
-        @DisplayName("带关键词和状态过滤")
-        void listProducts_withFilters_returnsFiltered() {
-            AdminProductQueryRequest request =
-                    new AdminProductQueryRequest(null, null, "测试", null, "4", SELLER_ID, null, null);
-            ProductSummary product = createProductSummary("4");
-
-            when(adminProductPort.queryProducts(any(ProductQueryCondition.class)))
-                    .thenReturn(new ProductQueryResult(List.of(product), 1, 1, 20));
+        @DisplayName("查询条件原样下发端口")
+        void listProducts_passesConditionToPort() {
+            ProductQueryCondition condition = new ProductQueryCondition("测试", null, "4", SELLER_ID, null, null, 1, 20);
+            when(adminProductPort.queryProducts(condition))
+                    .thenReturn(new ProductQueryResult(List.of(createProductSummary("4")), 1, 1, 20));
             when(adminProductPort.getProductImages(anyList())).thenReturn(Map.of());
 
-            PageResult<AdminProductResponse> result = productService.listProducts(request);
+            ProductListView view = productService.listProducts(condition);
 
-            assertThat(result.records()).hasSize(1);
-            assertThat(result.records().get(0).name()).isEqualTo("测试商品");
+            assertThat(view.page().records()).hasSize(1);
+            verify(adminProductPort).queryProducts(condition);
         }
     }
 
@@ -143,19 +137,17 @@ class AdminProductServiceTest {
     class GetProductDetailTests {
 
         @Test
-        @DisplayName("获取商品详情成功")
+        @DisplayName("获取商品详情成功并带上图片")
         void getProductDetail_success() {
-            ProductDetail detail = createProductDetail("1");
-            when(adminProductPort.getProductDetail(PRODUCT_ID)).thenReturn(detail);
-            when(adminProductPort.getProductImages(anyList())).thenReturn(Map.of(PRODUCT_ID, List.of("img.jpg")));
+            when(adminProductPort.getProductDetail(PRODUCT_ID)).thenReturn(createProductDetail("1"));
+            when(adminProductPort.getProductImages(List.of(PRODUCT_ID)))
+                    .thenReturn(Map.of(PRODUCT_ID, List.of("img.jpg")));
 
-            AdminProductResponse vo = productService.getProductDetail(PRODUCT_ID);
+            ProductDetailView view = productService.getProductDetail(PRODUCT_ID);
 
-            assertThat(vo).isNotNull();
-            assertThat(vo.productId()).isEqualTo(PRODUCT_ID);
-            assertThat(vo.name()).isEqualTo("测试商品");
-            assertThat(vo.description()).isEqualTo("商品描述");
-            assertThat(vo.images()).contains("img.jpg");
+            assertThat(view.product().id()).isEqualTo(PRODUCT_ID);
+            assertThat(view.product().name()).isEqualTo("测试商品");
+            assertThat(view.images()).containsExactly("img.jpg");
         }
 
         @Test
@@ -164,7 +156,7 @@ class AdminProductServiceTest {
             when(adminProductPort.getProductDetail(PRODUCT_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> productService.getProductDetail(PRODUCT_ID))
-                    .isInstanceOf(BusinessException.class)
+                    .isInstanceOf(AdminDomainException.class)
                     .hasMessageContaining("商品不存在");
         }
     }
@@ -176,9 +168,7 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("更新商品状态委托端口")
         void updateProductStatus_success() {
-            UpdateStatusRequest request = new UpdateStatusRequest("OFFLINE", null);
-
-            productService.updateProductStatus(PRODUCT_ID, request);
+            productService.updateProductStatus(PRODUCT_ID, "OFFLINE");
 
             verify(adminProductPort).applyProductStatus(PRODUCT_ID, "OFFLINE");
         }

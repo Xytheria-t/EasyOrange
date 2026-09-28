@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Primary
 @Repository
@@ -28,11 +29,13 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     // ── 查询 ──
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<User> findById(String id) {
         return Optional.ofNullable(mapper.selectById(id)).map(entityMapper::toDomain);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<User> findAllByIds(Collection<String> ids) {
         return findAllByIn(UserDO::getId, ids).stream()
                 .map(entityMapper::toDomain)
@@ -40,21 +43,25 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<User> findByEmail(String email) {
         return findBy(UserDO::getEmail, email).map(entityMapper::toDomain);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<User> findByPhone(String phone) {
         return findBy(UserDO::getPhone, phone).map(entityMapper::toDomain);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<User> findByUsername(String username) {
         return findBy(UserDO::getUsername, username).map(entityMapper::toDomain);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<User> findByLoginIdentifier(String identifier) {
         if (identifier == null || identifier.isBlank()) {
             return Optional.empty();
@@ -69,6 +76,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     // ── 写入 ──
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public User save(User user) {
         UserDO entity = entityMapper.from(user);
         // 主键为 IdType.INPUT，领域新建聚合无 ID → 由应用生成 UUID v7 后落库
@@ -80,6 +88,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void update(User user) {
         UserDO entity = entityMapper.from(user);
         if (mapper.updateById(entity) == 0) {
@@ -90,11 +99,13 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> imple
     // ── 聚合统计 ──
 
     @Override
+    @Transactional(readOnly = true)
     public long count() {
         return super.count();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long countByUserType(UserType userType) {
         if (userType == null) {
             return 0L;

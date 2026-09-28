@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.admin.service;
+package com.cartethyia.easyorange.admin.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -6,11 +6,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UserRoleRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ResetPasswordResponse;
+import com.cartethyia.easyorange.admin.domain.exception.AdminDomainException;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserAuth;
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,8 +20,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AdminUserSecurityService 单元测试")
-class AdminUserSecurityServiceTest {
+@DisplayName("AdminUserSecurityAppService 单元测试")
+class AdminUserSecurityAppServiceTest {
 
     @Mock
     private AdminUserPort adminUserPort;
@@ -34,13 +32,15 @@ class AdminUserSecurityServiceTest {
     @Mock
     private TokenService tokenService;
 
-    private AdminUserSecurityService service;
+    private AdminUserSecurityAppService service;
 
     private static final String USER_ID = "1";
+    private static final String REASON = "违规操作核查";
+    private static final String OPERATOR = "admin-1";
 
     @BeforeEach
     void setUp() {
-        service = new AdminUserSecurityService(adminUserPort, passwordEncoder, tokenService);
+        service = new AdminUserSecurityAppService(adminUserPort, passwordEncoder, tokenService);
     }
 
     @Nested
@@ -50,9 +50,9 @@ class AdminUserSecurityServiceTest {
         @Test
         @DisplayName("解锁委托端口")
         void unlockUser_delegatesToPort() {
-            service.unlockUser(USER_ID);
+            service.unlockUser(USER_ID, OPERATOR);
 
-            verify(adminUserPort).unlockUser(USER_ID);
+            verify(adminUserPort).unlockUser(USER_ID, OPERATOR);
         }
     }
 
@@ -66,10 +66,10 @@ class AdminUserSecurityServiceTest {
             when(adminUserPort.getUserAuth(USER_ID)).thenReturn(new UserAuth("01", "NORMAL"));
             when(passwordEncoder.encode(anyString())).thenReturn("encoded");
 
-            ResetPasswordResponse response = service.resetPassword(USER_ID);
+            String newPassword = service.resetPassword(USER_ID, REASON, OPERATOR);
 
-            assertThat(response.newPassword()).hasSize(12);
-            verify(adminUserPort).setPassword(USER_ID, "encoded");
+            assertThat(newPassword).hasSize(12);
+            verify(adminUserPort).setPassword(USER_ID, "encoded", REASON, OPERATOR);
         }
 
         @Test
@@ -77,8 +77,8 @@ class AdminUserSecurityServiceTest {
         void resetPassword_notFound_throws() {
             when(adminUserPort.getUserAuth(USER_ID)).thenReturn(null);
 
-            assertThatThrownBy(() -> service.resetPassword(USER_ID))
-                    .isInstanceOf(BusinessException.class)
+            assertThatThrownBy(() -> service.resetPassword(USER_ID, REASON, OPERATOR))
+                    .isInstanceOf(AdminDomainException.class)
                     .hasMessageContaining("用户不存在");
         }
     }
@@ -103,7 +103,7 @@ class AdminUserSecurityServiceTest {
             when(adminUserPort.getUserAuth(USER_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> service.forceLogout(USER_ID))
-                    .isInstanceOf(BusinessException.class)
+                    .isInstanceOf(AdminDomainException.class)
                     .hasMessageContaining("用户不存在");
         }
     }
@@ -115,11 +115,9 @@ class AdminUserSecurityServiceTest {
         @Test
         @DisplayName("变更角色委托端口")
         void changeUserRole_delegatesToPort() {
-            UserRoleRequest request = new UserRoleRequest("01", null);
+            service.changeUserRole(USER_ID, "01", REASON, OPERATOR);
 
-            service.changeUserRole(USER_ID, request);
-
-            verify(adminUserPort).setUserType(USER_ID, "01");
+            verify(adminUserPort).setUserType(USER_ID, "01", REASON, OPERATOR);
         }
     }
 }

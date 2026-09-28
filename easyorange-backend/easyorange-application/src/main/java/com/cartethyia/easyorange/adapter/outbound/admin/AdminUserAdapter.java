@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
+import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserAuth;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserDetail;
@@ -12,6 +13,7 @@ import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminU
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserInfo;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserPage;
 import com.cartethyia.easyorange.user.domain.port.AdminUserManagementPort.AdminUserQuery;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -75,23 +77,35 @@ public class AdminUserAdapter implements AdminUserPort {
     }
 
     @Override
-    public void updateUserStatus(String userId, String statusCode) {
-        adminUserManagementPort.updateStatus(userId, statusCode);
+    public void updateUserStatus(String userId, String statusCode, String reason, String operatorId) {
+        adminUserManagementPort.updateStatus(userId, statusCode, reason, operatorId);
     }
 
     @Override
-    public void unlockUser(String userId) {
-        adminUserManagementPort.unlock(userId);
+    public void unlockUser(String userId, String operatorId) {
+        adminUserManagementPort.unlock(userId, operatorId);
     }
 
     @Override
-    public void setUserType(String userId, String typeCode) {
-        adminUserManagementPort.setUserType(userId, typeCode);
+    public void setUserType(String userId, String typeCode, String reason, String operatorId) {
+        adminUserManagementPort.setUserType(userId, typeCode, reason, operatorId);
     }
 
     @Override
-    public void setPassword(String userId, String encodedPassword) {
-        adminUserManagementPort.setPassword(userId, encodedPassword);
+    public void setPassword(String userId, String encodedPassword, String reason, String operatorId) {
+        adminUserManagementPort.setPassword(userId, encodedPassword, reason, operatorId);
+    }
+
+    @Override
+    public Map<String, Long> getCreateTrend(LocalDate since) {
+        return adminUserManagementPort.getCreateTrend(since);
+    }
+
+    @Override
+    public List<RecentActivity> findRecentRegistrations(int limit) {
+        return adminUserManagementPort.findRecentRegistrations(limit).stream()
+                .map(u -> new RecentActivity(u.id(), u.nickName(), u.createTime()))
+                .toList();
     }
 
     @Override

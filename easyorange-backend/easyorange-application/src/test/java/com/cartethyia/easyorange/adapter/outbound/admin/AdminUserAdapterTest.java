@@ -29,6 +29,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @DisplayName("AdminUserAdapter 翻译层单元测试")
 class AdminUserAdapterTest {
 
+    private static final String REASON = "违规核查";
+    private static final String OPERATOR = "admin-1";
+
     @Mock
     private AdminUserManagementPort adminUserManagementPort;
 
@@ -174,33 +177,34 @@ class AdminUserAdapterTest {
         @Test
         @DisplayName("updateUserStatus 原样委托")
         void updateUserStatus_delegates() {
-            adapter.updateUserStatus(USER_ID, "DISABLED");
+            adapter.updateUserStatus(USER_ID, "DISABLED", REASON, OPERATOR);
 
-            verify(adminUserManagementPort).updateStatus(USER_ID, "DISABLED");
+            // 原样透传：reason / operatorId 一路带到 user 模块落库，翻译层不吞
+            verify(adminUserManagementPort).updateStatus(USER_ID, "DISABLED", REASON, OPERATOR);
         }
 
         @Test
         @DisplayName("unlockUser 原样委托")
         void unlockUser_delegates() {
-            adapter.unlockUser(USER_ID);
+            adapter.unlockUser(USER_ID, OPERATOR);
 
-            verify(adminUserManagementPort).unlock(USER_ID);
+            verify(adminUserManagementPort).unlock(USER_ID, OPERATOR);
         }
 
         @Test
         @DisplayName("setUserType 原样委托")
         void setUserType_delegates() {
-            adapter.setUserType(USER_ID, "02");
+            adapter.setUserType(USER_ID, "02", REASON, OPERATOR);
 
-            verify(adminUserManagementPort).setUserType(USER_ID, "02");
+            verify(adminUserManagementPort).setUserType(USER_ID, "02", REASON, OPERATOR);
         }
 
         @Test
         @DisplayName("setPassword 原样委托")
         void setPassword_delegates() {
-            adapter.setPassword(USER_ID, "$2a$10$encoded");
+            adapter.setPassword(USER_ID, "$2a$10$encoded", REASON, OPERATOR);
 
-            verify(adminUserManagementPort).setPassword(USER_ID, "$2a$10$encoded");
+            verify(adminUserManagementPort).setPassword(USER_ID, "$2a$10$encoded", REASON, OPERATOR);
         }
     }
 

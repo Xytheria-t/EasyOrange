@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.adapter.outbound.admin;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
@@ -17,12 +18,16 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Admin 商品查询/操作适配器
@@ -34,6 +39,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class AdminProductAdapter implements AdminProductPort {
+
+    private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
 
     private final ProductMapper productMapper;
     private final ProductDetailMapper productDetailMapper;
@@ -135,6 +142,35 @@ public class AdminProductAdapter implements AdminProductPort {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> getCreateTrend(LocalDate since) {
+        var rows = ChainWrappers.lambdaQueryChain(productMapper)
+                .select(ProductDO::getCreateTime)
+                .eq(ProductDO::getDelFlag, 0)
+                .ge(ProductDO::getCreateTime, since.atStartOfDay())
+                .list();
+
+        Map<String, Long> counts = new TreeMap<>();
+        for (ProductDO row : rows) {
+            counts.merge(row.getCreateTime().format(MONTH_FORMAT), 1L, Long::sum);
+        }
+        return counts;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RecentActivity> findRecentPublished(int limit) {
+        return ChainWrappers.lambdaQueryChain(productMapper)
+                .select(ProductDO::getId, ProductDO::getName, ProductDO::getCreateTime)
+                .eq(ProductDO::getDelFlag, 0)
+                .orderByDesc(ProductDO::getCreateTime)
+                .last("LIMIT " + limit)
+                .list()
+                .stream()
+                .map(p -> new RecentActivity(p.getId(), p.getName(), p.getCreateTime()))
+                .toList();
+    }
+
     public void applyProductStatus(String productId, String statusCode) {
         ProductStatus newStatus;
         try {

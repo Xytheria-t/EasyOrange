@@ -1,9 +1,11 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
+import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminCategoryAssembler;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryCreateRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryUpdateRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryResponse;
-import com.cartethyia.easyorange.admin.service.AdminCategoryService;
+import com.cartethyia.easyorange.admin.application.service.AdminCategoryAppService;
+import com.cartethyia.easyorange.admin.domain.model.CategoryUpdateCommand;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,7 +27,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AdminCategoryController {
 
-    private final AdminCategoryService adminCategoryService;
+    private final AdminCategoryAppService adminCategoryService;
+    private final AdminCategoryAssembler assembler;
 
     /**
      * 分类列表（含禁用）。
@@ -34,7 +37,7 @@ public class AdminCategoryController {
      */
     @GetMapping
     public Result<List<CategoryResponse>> listCategories(@RequestParam(required = false) String parentId) {
-        return Result.success(adminCategoryService.listCategories(parentId));
+        return Result.success(assembler.toResponses(adminCategoryService.listCategories(parentId)));
     }
 
     /**
@@ -45,19 +48,20 @@ public class AdminCategoryController {
      */
     @GetMapping("/tree")
     public Result<List<CategoryResponse>> categoryTree() {
-        return Result.success(adminCategoryService.categoryTree());
+        return Result.success(assembler.toResponses(adminCategoryService.categoryTree()));
     }
 
     @PostMapping
     public Result<CategoryResponse> createCategory(@Valid @RequestBody CategoryCreateRequest request) {
-        return Result.success(adminCategoryService.createCategory(request));
+        return Result.success(assembler.toResponse(adminCategoryService.createCategory(
+                request.name(), request.parentId(), request.icon(), request.sortOrder())));
     }
 
     /** 更新分类；请求体带 parentId 且与当前不同即视为移动挂载点。 */
     @PutMapping("/{id}")
     public Result<CategoryResponse> updateCategory(
             @PathVariable String id, @Valid @RequestBody CategoryUpdateRequest request) {
-        return Result.success(adminCategoryService.updateCategory(id, request));
+        return Result.success(assembler.toResponse(adminCategoryService.updateCategory(id, toCommand(request))));
     }
 
     @PutMapping("/{id}/status")
@@ -70,5 +74,10 @@ public class AdminCategoryController {
     public Result<Void> deleteCategory(@PathVariable String id) {
         adminCategoryService.deleteCategory(id);
         return Result.success();
+    }
+
+    private static CategoryUpdateCommand toCommand(CategoryUpdateRequest request) {
+        return new CategoryUpdateCommand(
+                request.name(), request.parentId(), request.icon(), request.sortOrder(), request.status());
     }
 }

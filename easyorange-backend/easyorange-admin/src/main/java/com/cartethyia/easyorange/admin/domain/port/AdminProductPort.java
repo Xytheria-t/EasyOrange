@@ -1,37 +1,28 @@
 package com.cartethyia.easyorange.admin.domain.port;
 
+import com.cartethyia.easyorange.admin.domain.model.RecentActivity;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Admin 模块的商品查询/操作端口
- * 用于跨模块查询与操作商品信息，遵循防腐层原则
+ * Admin 模块的商品查询/操作端口 — 跨模块查询与操作商品信息的唯一出口。
  * <p>
- * 审核/分类/仪表板功能域见 {@link AdminProductAuditPort}、{@link AdminCategoryPort}、
- * {@link AdminDashboardPort}
+ * 审核 / 分类功能域见 {@link AdminProductAuditPort}、{@link AdminCategoryPort}。
+ * <p>
+ * <b>边界</b>：状态转换合法性由 product 侧的聚合根守卫裁决，端口只负责把 admin 的状态码
+ * 翻成领域枚举 —— 端口里不复制一份状态机。
  */
 public interface AdminProductPort {
 
-    /**
-     * 查询产品列表（带条件查询）
-     */
     ProductQueryResult queryProducts(ProductQueryCondition condition);
 
-    /**
-     * 根据产品 ID 查询产品详情
-     */
     ProductDetail getProductDetail(String productId);
 
-    /**
-     * 根据产品 ID 列表批量查询产品图片
-     */
     Map<String, List<String>> getProductImages(List<String> productIds);
 
-    /**
-     * 根据产品 ID 列表批量查询产品基本信息
-     */
     Map<String, ProductInfo> getProductInfos(List<String> productIds);
 
     /**
@@ -40,13 +31,17 @@ public interface AdminProductPort {
     void applyProductStatus(String productId, String statusCode);
 
     /**
-     * 产品基本信息
+     * 发布趋势：{@code yyyy-MM} → 新增商品数，键按创建时间升序
      */
-    record ProductInfo(String id, String name) {}
+    Map<String, Long> getCreateTrend(LocalDate since);
 
     /**
-     * 产品查询条件
+     * 最近发布的商品（按创建时间倒序取 limit 条）
      */
+    List<RecentActivity> findRecentPublished(int limit);
+
+    record ProductInfo(String id, String name) {}
+
     record ProductQueryCondition(
             String keyword,
             String categoryId,
@@ -57,14 +52,8 @@ public interface AdminProductPort {
             Integer pageNum,
             Integer pageSize) {}
 
-    /**
-     * 产品查询结果
-     */
     record ProductQueryResult(List<ProductSummary> records, long total, int pageNum, int pageSize) {}
 
-    /**
-     * 产品摘要信息
-     */
     record ProductSummary(
             String id,
             String name,
@@ -82,9 +71,6 @@ public interface AdminProductPort {
             LocalDateTime createTime,
             LocalDateTime updateTime) {}
 
-    /**
-     * 产品详情信息
-     */
     record ProductDetail(
             String id,
             String name,

@@ -11,11 +11,8 @@ package com.cartethyia.easyorange.user.domain.port;
  *   <li>不关注验证码的存储和验证（由 {@link SmsCodePort} 负责）</li>
  * </ul>
  * <p>
- * 实现类：
- * <ul>
- *   <li>开发/测试：{@code MockSmsSenderAdapter}（日志输出，不真实发送）</li>
- *   <li>生产：对接第三方 SMS 服务商（阿里云、腾讯云等）</li>
- * </ul>
+ * 实现类：仓内仅 {@code MockSmsSenderAdapter} 一个（全 profile 装配，验证码只落日志），
+ * 未接真实供应商；接入时新增一个实现并改其 {@code @Profile} 即可。
  */
 public interface SmsSenderPort {
 

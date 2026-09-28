@@ -21,14 +21,15 @@ public enum UserResultCode implements IResultCode {
     USERNAME_EXISTS("B1004", "用户名已存在"),
     EMAIL_EXISTS("B1005", "邮箱已被注册"),
     PHONE_EXISTS("B1006", "手机号已被注册"),
-    PASSWORD_ERROR("B1007", "密码错误"),
     INVALID_CREDENTIALS("B1011", "账号或密码错误"),
     SMS_CODE_INVALID("B1008", "验证码无效或已过期"),
     SMS_CODE_SEND_TOO_FREQUENT("B1009", "验证码发送过于频繁"),
     SMS_CODE_VERIFY_TOO_FREQUENT("B1010", "验证码验证次数过多，请重新获取"),
     PASSWORD_SAME_AS_OLD("B1013", "新密码不能与旧密码相同"),
     AVATAR_EMPTY("B1014", "头像不能为空"),
-    AVATAR_TOO_LARGE("B1015", "头像大小超过限制，最大允许5MB");
+    AVATAR_TOO_LARGE("B1015", "头像大小超过限制，最大允许5MB"),
+    EMAIL_INVALID("B1016", "邮箱格式不正确"),
+    PHONE_INVALID("B1017", "手机号格式不正确");
 
     private final String code;
     private final String message;

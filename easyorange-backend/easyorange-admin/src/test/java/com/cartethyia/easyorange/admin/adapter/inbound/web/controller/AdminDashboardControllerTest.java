@@ -1,15 +1,21 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminDashboardAssembler;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ActivityResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.DashboardStatsResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
-import com.cartethyia.easyorange.admin.service.AdminDashboardService;
+import com.cartethyia.easyorange.admin.application.service.AdminDashboardAppService;
+import com.cartethyia.easyorange.admin.domain.model.ActivityItem;
+import com.cartethyia.easyorange.admin.domain.model.DashboardStats;
+import com.cartethyia.easyorange.admin.domain.model.TrendPoint;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +32,10 @@ class AdminDashboardControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private AdminDashboardService adminDashboardService;
+    private AdminDashboardAppService adminDashboardService;
+
+    @MockitoBean
+    private AdminDashboardAssembler assembler;
 
     @Test
     void getStats_shouldReturnDashboardStats() throws Exception {
@@ -39,7 +48,9 @@ class AdminDashboardControllerTest {
                 .todayOrders(15L)
                 .totalRevenue(new BigDecimal("12345.60"))
                 .build();
-        when(adminDashboardService.getDashboardStats()).thenReturn(stats);
+        when(adminDashboardService.getDashboardStats())
+                .thenReturn(new DashboardStats(100, 5, 200, 10, 300, 15, new BigDecimal("12345.60")));
+        when(assembler.toStatsResponse(any())).thenReturn(stats);
 
         mockMvc.perform(get("/api/admin/dashboard/stats"))
                 .andExpect(status().isOk())
@@ -61,7 +72,8 @@ class AdminDashboardControllerTest {
                 .products(5L)
                 .orders(3L)
                 .build());
-        when(adminDashboardService.getTrend()).thenReturn(trends);
+        when(adminDashboardService.getTrend()).thenReturn(List.of(new TrendPoint("2026-01", 10, 5, 3)));
+        when(assembler.toTrendResponses(any())).thenReturn(trends);
 
         mockMvc.perform(get("/api/admin/dashboard/trend"))
                 .andExpect(status().isOk())
@@ -77,7 +89,9 @@ class AdminDashboardControllerTest {
                 .text("新用户 test 完成注册")
                 .type("user")
                 .build());
-        when(adminDashboardService.getRecentActivity()).thenReturn(activities);
+        when(adminDashboardService.getRecentActivity())
+                .thenReturn(List.of(new ActivityItem("user", "新用户 test 完成注册", LocalDateTime.of(2026, 5, 16, 10, 0))));
+        when(assembler.toActivityResponses(any())).thenReturn(activities);
 
         mockMvc.perform(get("/api/admin/dashboard/activity"))
                 .andExpect(status().isOk())

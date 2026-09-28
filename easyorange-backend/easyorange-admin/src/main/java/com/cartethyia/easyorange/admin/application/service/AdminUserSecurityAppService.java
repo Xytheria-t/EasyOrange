@@ -1,10 +1,8 @@
-package com.cartethyia.easyorange.admin.service;
+package com.cartethyia.easyorange.admin.application.service;
 
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UserRoleRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ResetPasswordResponse;
+import com.cartethyia.easyorange.admin.domain.exception.AdminDomainException;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserAuth;
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import java.security.SecureRandom;
 import lombok.RequiredArgsConstructor;
@@ -12,9 +10,18 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 管理端用户安全操作 — 解锁 / 重置密码 / 强制登出 / 改角色。
+ * <p>
+ * <b>取舍</b>：三条写路径都收 reason + operatorId 并落库（{@code eo_user.remark} + {@code update_by}），
+ * 不靠日志留痕 —— 「谁在什么时候把谁停了」是管理端最常被追问的审计问题。
+ * <p>
+ * <b>边界</b>：重置密码与改角色都会吊销该用户全部会话，让变更即时生效；
+ * 吊销失败不回滚密码变更（凭证已改这一事实先落地，会话作废可由用户重新登录兜底）。
+ */
 @Service
 @RequiredArgsConstructor
-public class AdminUserSecurityService {
+public class AdminUserSecurityAppService {
 
     private static final String CHAR_LOWER = "abcdefghijklmnopqrstuvwxyz";
     private static final String CHAR_UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -28,19 +35,17 @@ public class AdminUserSecurityService {
     private final TokenService tokenService;
 
     @Transactional(rollbackFor = Exception.class)
-    public void unlockUser(String id) {
-        adminUserPort.unlockUser(id);
+    public void unlockUser(String id, String operatorId) {
+        adminUserPort.unlockUser(id, operatorId);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public ResetPasswordResponse resetPassword(String id) {
-        UserAuth auth = requireUser(id);
+    /** 返回明文新密码 —— 明文只在这一刻存在，响应文案与包装归 web 层。 */
+    public String resetPassword(String id, String reason, String operatorId) {
+        requireUser(id);
         String newPassword = generateRandomPassword();
-        adminUserPort.setPassword(id, passwordEncoder.encode(newPassword));
-        return ResetPasswordResponse.builder()
-                .newPassword(newPassword)
-                .message("密码已重置，请将新密码安全地传递给用户")
-                .build();
+        adminUserPort.setPassword(id, passwordEncoder.encode(newPassword), reason, operatorId);
+        return newPassword;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -50,8 +55,8 @@ public class AdminUserSecurityService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void changeUserRole(String id, UserRoleRequest request) {
-        adminUserPort.setUserType(id, request.role());
+    public void changeUserRole(String id, String role, String reason, String operatorId) {
+        adminUserPort.setUserType(id, role, reason, operatorId);
         // 角色即时生效：吊销该用户全部会话，下次登录/刷新按新角色签发
         tokenService.revokeAllUserSessions(id);
     }
@@ -59,7 +64,7 @@ public class AdminUserSecurityService {
     private UserAuth requireUser(String id) {
         UserAuth auth = adminUserPort.getUserAuth(id);
         if (auth == null) {
-            throw BusinessException.of("用户不存在");
+            throw AdminDomainException.userNotFound(id);
         }
         return auth;
     }
