@@ -18,6 +18,8 @@ import org.springframework.mock.web.MockMultipartFile;
 @DisplayName("FileUtils Tests")
 class FileUtilsTest {
 
+    private static final long MAX_SIZE = 50L * 1024 * 1024;
+
     @TempDir
     Path tempDir;
 
@@ -31,7 +33,7 @@ class FileUtilsTest {
             byte[] pngContent = new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
             MockMultipartFile file = new MockMultipartFile("file", "test.png", "image/png", pngContent);
 
-            FileUtils.assertAllowed(file, FileUtils.DEFAULT_ALLOWED_EXTENSION);
+            FileUtils.assertAllowed(file, FileUtils.DEFAULT_ALLOWED_EXTENSION, MAX_SIZE);
         }
 
         @Test
@@ -40,7 +42,7 @@ class FileUtilsTest {
             MockMultipartFile file =
                     new MockMultipartFile("file", "test.exe", "application/x-msdownload", "fake content".getBytes());
 
-            assertThatThrownBy(() -> FileUtils.assertAllowed(file, FileUtils.DEFAULT_ALLOWED_EXTENSION))
+            assertThatThrownBy(() -> FileUtils.assertAllowed(file, FileUtils.DEFAULT_ALLOWED_EXTENSION, MAX_SIZE))
                     .isInstanceOf(InvalidExtensionException.class);
         }
 
@@ -50,7 +52,21 @@ class FileUtilsTest {
             byte[] largeContent = new byte[52 * 1024 * 1024];
             MockMultipartFile file = new MockMultipartFile("file", "test.png", "image/png", largeContent);
 
-            assertThatThrownBy(() -> FileUtils.assertAllowed(file, FileUtils.DEFAULT_ALLOWED_EXTENSION))
+            assertThatThrownBy(() -> FileUtils.assertAllowed(file, FileUtils.DEFAULT_ALLOWED_EXTENSION, MAX_SIZE))
+                    .isInstanceOf(FileSizeLimitExceededException.class);
+        }
+
+        @Test
+        @DisplayName("maxSize 由调用方给：配 1KB 时 2KB 文件即拒（证明不再读硬编码阈值）")
+        void assertAllowed_withCallerSuppliedMaxSize_shouldThrow() {
+            byte[] pngContent = new byte[2048];
+            pngContent[0] = (byte) 0x89;
+            pngContent[1] = 0x50;
+            pngContent[2] = 0x4E;
+            pngContent[3] = 0x47;
+            MockMultipartFile file = new MockMultipartFile("file", "test.png", "image/png", pngContent);
+
+            assertThatThrownBy(() -> FileUtils.assertAllowed(file, FileUtils.DEFAULT_ALLOWED_EXTENSION, 1024))
                     .isInstanceOf(FileSizeLimitExceededException.class);
         }
 
@@ -60,7 +76,7 @@ class FileUtilsTest {
             byte[] content = "some content".getBytes();
             MockMultipartFile file = new MockMultipartFile("file", "test.exe", "application/x-msdownload", content);
 
-            FileUtils.assertAllowed(file, Set.of());
+            FileUtils.assertAllowed(file, Set.of(), MAX_SIZE);
         }
 
         @Test
@@ -69,7 +85,7 @@ class FileUtilsTest {
             byte[] fakePng = "This is not a PNG file".getBytes();
             MockMultipartFile file = new MockMultipartFile("file", "test.png", "image/png", fakePng);
 
-            assertThatThrownBy(() -> FileUtils.assertAllowed(file, FileUtils.DEFAULT_ALLOWED_EXTENSION))
+            assertThatThrownBy(() -> FileUtils.assertAllowed(file, FileUtils.DEFAULT_ALLOWED_EXTENSION, MAX_SIZE))
                     .isInstanceOf(InvalidExtensionException.class);
         }
     }

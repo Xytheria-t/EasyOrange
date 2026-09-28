@@ -4,6 +4,13 @@ public class MaskUtils {
 
     private static final String MASK = "****";
 
+    /**
+     * 地址专用遮罩：3 颗星。地址本身已按「保留前 N 字」处理，遮罩位数不影响判读，
+     * 单独成常量是为了让「地址用 3 颗星」成为显式契约而不是裸字面量 ——
+     * 该形态已被 order / application 的脱敏断言锁定，不能随手并到 {@link #MASK}。
+     */
+    private static final String ADDRESS_MASK = "***";
+
     private MaskUtils() {}
 
     public static String maskPhone(String phone) {
@@ -45,6 +52,6 @@ public class MaskUtils {
         if (address.length() <= visibleChars) {
             return address;
         }
-        return address.substring(0, visibleChars) + "***";
+        return address.substring(0, visibleChars) + ADDRESS_MASK;
     }
 }

@@ -128,9 +128,12 @@ public class ImageProcessingService {
         return SUPPORTED_OUTPUT_FORMATS.contains(format);
     }
 
+    /**
+     * 产物生命周期归 {@code ImageProcessCacheConfig} 的 removalListener：条目被驱逐时显式删文件。
+     * 刻意不调 {@code deleteOnExit} —— 那是「进程退出时统一删」，长跑进程里每个文件都永久登记进
+     * JVM 的退出钩子集合，堆持续上涨，而缓存 24h 过期后文件早已无人引用。
+     */
     private static File createTempFile(String prefix, String suffix) throws IOException {
-        var file = File.createTempFile(prefix, "." + suffix);
-        file.deleteOnExit();
-        return file;
+        return File.createTempFile(prefix, "." + suffix);
     }
 }

@@ -7,10 +7,12 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.file.FileException;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.util.FileSizeFormat;
+import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
+import com.cartethyia.easyorange.framework.file.entity.StorageType;
 import com.cartethyia.easyorange.framework.file.entity.UploadFileDO;
 import com.cartethyia.easyorange.framework.file.mapper.UploadFileMapper;
-import com.cartethyia.easyorange.framework.file.storage.FileStorage;
+import com.cartethyia.easyorange.framework.file.storage.FileStoragePort;
 import com.cartethyia.easyorange.framework.util.FileUtils;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import java.io.IOException;
@@ -30,8 +32,9 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileService {
 
     private final UploadFileMapper uploadFileMapper;
-    private final FileStorage fileStorage;
+    private final FileStoragePort fileStorage;
     private final IdGenerator idGenerator;
+    private final FileUploadProperties fileUploadProperties;
 
     public UploadFileVO uploadFile(MultipartFile file, String businessType) {
         return uploadFile(file, businessType, null);
@@ -45,7 +48,7 @@ public class FileService {
         var userId = SecurityContextUtil.getCurrentUserId().orElseThrow(() -> BusinessException.of("用户未登录"));
 
         try {
-            FileUtils.assertAllowed(file, FileUtils.DEFAULT_ALLOWED_EXTENSION);
+            FileUtils.assertAllowed(file, fileUploadProperties.allowedExtensions(), fileUploadProperties.maxSize());
             var content = file.getBytes();
             var storageKey = fileStorage.store(content, file.getOriginalFilename(), file.getContentType());
 
@@ -58,7 +61,7 @@ public class FileService {
             entity.setFileSize(file.getSize());
             entity.setFileType(FileUtils.getExtension(file));
             entity.setMimeType(file.getContentType());
-            entity.setStorageType("LOCAL");
+            entity.setStorageType(StorageType.LOCAL.getCode());
             entity.setBusinessType(businessType);
             entity.setBusinessId(businessId);
             entity.setUploaderId(userId);

@@ -47,8 +47,8 @@ import tools.jackson.databind.node.ObjectNode;
  * {@code AuditLogEventConsumer} 消费写库。若事件发布失败，降级为直接入库（best-effort）。
  * </p>
  * <p>
- * 执行顺序 {@code @Order(3)}，在幂等/限流等 Filter 层拦截生效之后，
- * 确保防护拦截在审计日志记录前执行。
+ * {@code @Order(3)} 只在本切面与其他切面之间排序。限流 / 防重 / 幂等这些 Filter 由 servlet 容器与
+ * Security 链保证先于 MVC 执行，与本切面的 {@code @Order} 无关。
  * </p>
  */
 @Slf4j
@@ -253,7 +253,7 @@ public class AuditLogAspect {
 
             String json = Jsons.writeQuietly(objectMapper, value);
             if (json == null) {
-                continue; // skip un-serializable arguments
+                continue; // 序列化不出来的参数直接跳过，不让审计日志整体失败
             }
             params.append(maskSensitiveFields(json)).append(" ");
         }

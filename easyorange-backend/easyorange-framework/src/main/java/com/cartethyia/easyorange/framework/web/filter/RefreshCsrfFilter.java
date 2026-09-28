@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -19,8 +18,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * 对 csrf-protected 路径（默认 refresh/logout）的 POST 强制要求自定义头 X-Client-Type：
  * 浏览器跨站请求无法伪造自定义头（会触发预检并被同源策略拦截），从 Cookie 读取 refresh 的流程靠此防 CSRF。
  * 自定义头缺失返回 403。路径由 {@link SecurityProperties#getCsrfProtectedPaths()} 配置驱动。
+ *
+ * <p>
+ * 由 {@code SecurityConfig} 局部装配（不加 {@code @Component}）：执行位置由 Security 链的
+ * {@code addFilterBefore} 决定；容器链再自动注册一次只会让顺序变成两套事实。
+ * </p>
  */
-@Component
 @RequiredArgsConstructor
 @NullMarked
 public class RefreshCsrfFilter extends OncePerRequestFilter {

@@ -24,7 +24,7 @@ public class BusinessException extends BaseBusinessException {
         super(resultCode, message, cause);
     }
 
-    // Static factory methods for concise throw-site usage
+    // 静态工厂：抛点处一行构造，不用 new 再选构造器
     public static BusinessException of(String message) {
         return new BusinessException(message);
     }

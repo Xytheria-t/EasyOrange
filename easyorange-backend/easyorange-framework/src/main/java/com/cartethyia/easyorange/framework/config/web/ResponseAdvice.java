@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.framework.config.web;
 import com.cartethyia.easyorange.common.result.Result;
 import jakarta.annotation.Nullable;
 import java.util.Objects;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.io.Resource;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 import tools.jackson.databind.ObjectMapper;
 
+@AutoConfiguration
 @RestControllerAdvice(basePackages = "com.cartethyia.easyorange")
 public class ResponseAdvice implements ResponseBodyAdvice<Object> {
 

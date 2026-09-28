@@ -10,8 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingResponseWrapper;
@@ -26,15 +24,16 @@ import org.springframework.web.util.ContentCachingResponseWrapper;
  * 与 AOP 版本的区别：本过滤器缓存的是<b>序列化后的 HTTP 响应</b>（status + contentType + body），
  * 而非控制器返回的类型化对象——字节级精确回放客户端真正看到的内容。
  * </p>
- * <ul>
- *   <li>仅对配置的 {@code path-patterns} + 写方法生效，未命中则透传</li>
- *   <li>非 2xx 响应（业务异常/校验失败/未认证）不缓存，允许客户端重试</li>
- *   <li>Redis 不可用 → fail-open，请求透传（降级为无幂等保护）</li>
- * </ul>
+ * <p>
+ * 落在 {@code AnonymousAuthenticationFilter} 之前，才能包住认证后到 DispatcherServlet 之间的整段链、
+ * 抓到最终响应字节。Redis 不可用时 {@code IdempotencyService} fail-open 放行（降级为无幂等保护）。
+ * </p>
+ * <p>
+ * 由 {@code SecurityConfig} 局部装配（不加 {@code @Component}）：执行位置由 Security 链的
+ * {@code addFilterBefore} 决定；容器链再自动注册一次只会让顺序变成两套事实。
+ * </p>
  */
 @Slf4j
-@Component
-@Order(2)
 @NullMarked
 public class IdempotencyKeyFilter extends OncePerRequestFilter {
 

@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class BusinessMetricsService {
 
-    // ── 计数器 ──────────────────────────────────────────────────────
+    // ── 计数器 ──
     private final Counter userRegistrationCounter;
     private final Counter productPublishedCounter;
     private final Counter orderCreatedCounter;
@@ -23,8 +23,6 @@ public class BusinessMetricsService {
     private final Counter stockDriftCounter;
 
     public BusinessMetricsService(MeterRegistry meterRegistry) {
-
-        // 注册计数器
         this.userRegistrationCounter = Counter.builder("easyorange.users.registered")
                 .description("Total number of user registrations")
                 .register(meterRegistry);
@@ -52,34 +50,28 @@ public class BusinessMetricsService {
                 .register(meterRegistry);
     }
 
-    // ── 计数器方法 ──────────────────────────────────────────────────
+    // ── 计数器方法 ──
 
-    /** 用户注册 +1 */
     public void incrementUserRegistration() {
         userRegistrationCounter.increment();
     }
 
-    /** 商品发布 +1 */
     public void incrementProductPublished() {
         productPublishedCounter.increment();
     }
 
-    /** 订单创建 +1 */
     public void incrementOrderCreated() {
         orderCreatedCounter.increment();
     }
 
-    /** 支付完成 +1 */
     public void incrementPaymentCompleted() {
         paymentCompletedCounter.increment();
     }
 
-    /** 库存重复变更被流水幂等键跳过 +1 */
     public void incrementStockChangeSkipped() {
         stockChangeSkippedCounter.increment();
     }
 
-    /** 对账发现库存漂移 +count */
     public void recordStockDrift(int count) {
         stockDriftCounter.increment(count);
     }

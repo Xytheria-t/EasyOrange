@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.framework.file.storage;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public interface FileStorage {
+public interface FileStoragePort {
 
     String store(byte[] content, String originalFilename, String contentType) throws IOException;
 

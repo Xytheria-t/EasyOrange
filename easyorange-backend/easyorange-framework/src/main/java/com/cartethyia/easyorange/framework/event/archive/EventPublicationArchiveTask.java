@@ -37,7 +37,7 @@ public class EventPublicationArchiveTask {
 
     /** 每日 03:30 归档（与审计清理 03:00 错峰）。 */
     @Scheduled(cron = "0 30 3 * * ?")
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void archiveCompletedEvents() {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(properties.archiveAfterDays());
         int moved = jdbcTemplate.update(

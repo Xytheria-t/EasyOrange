@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.framework.config.redis;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.framework.config.cache.RedisCacheConfig;
+import com.cartethyia.easyorange.framework.web.idempotency.CachedResponse;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -79,5 +80,20 @@ class RedisJsonSerializerRoundtripTest {
         Object back = serializer.deserialize(bytes);
 
         assertThat(back).isEqualTo(value);
+    }
+
+    @Test
+    @DisplayName("byte[] 字段经 base64 写读对称（CachedResponse 形态 —— 幂等回放的响应体是裸字节）")
+    void byteArrayField_roundtrip() {
+        var body = new byte[] {0x7B, 0x22, 0x6F, 0x6B, 0x22, 0x3A, 0x74, 0x72, 0x75, 0x65, 0x7D, 0x00, (byte) 0xFF};
+        var value = new CachedResponse(200, "application/json", body);
+
+        Object back = serializer.deserialize(serializer.serialize(value));
+
+        assertThat(back).isInstanceOf(CachedResponse.class);
+        var restored = (CachedResponse) back;
+        assertThat(restored.status()).isEqualTo(200);
+        assertThat(restored.contentType()).isEqualTo("application/json");
+        assertThat(restored.body()).isEqualTo(body);
     }
 }

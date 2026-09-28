@@ -8,12 +8,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.exception.file.FileSizeLimitExceededException;
+import com.cartethyia.easyorange.common.exception.file.InvalidExtensionException;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.security.AuthUser;
+import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
+import com.cartethyia.easyorange.framework.file.entity.StorageType;
 import com.cartethyia.easyorange.framework.file.entity.UploadFileDO;
 import com.cartethyia.easyorange.framework.file.mapper.UploadFileMapper;
-import com.cartethyia.easyorange.framework.file.storage.FileStorage;
+import com.cartethyia.easyorange.framework.file.storage.FileStoragePort;
 import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -48,9 +52,12 @@ class FileServiceTest {
     private UploadFileMapper uploadFileMapper;
 
     @Mock
-    private FileStorage fileStorage;
+    private FileStoragePort fileStorage;
 
     private final IdGenerator idGenerator = () -> GENERATED_ID;
+
+    private final FileUploadProperties fileUploadProperties =
+            new FileUploadProperties("./upload", "/api/file/", 10 * 1024 * 1024, List.of("png"));
 
     @AfterEach
     void tearDown() {
@@ -58,7 +65,15 @@ class FileServiceTest {
     }
 
     private FileService newService() {
-        return new FileService(uploadFileMapper, fileStorage, idGenerator);
+        return new FileService(uploadFileMapper, fileStorage, idGenerator, fileUploadProperties);
+    }
+
+    private FileService newService(long maxSize) {
+        return new FileService(
+                uploadFileMapper,
+                fileStorage,
+                idGenerator,
+                new FileUploadProperties("./upload", "/api/file/", maxSize, List.of("png")));
     }
 
     private void loginAs(String userId) {
@@ -86,7 +101,34 @@ class FileServiceTest {
         assertThat(persisted.getFileName()).isEqualTo("photo.png");
         assertThat(persisted.getFileType()).isEqualTo("png");
         assertThat(persisted.getStorageKey()).isEqualTo("2026/09/17/abc.png");
+        assertThat(persisted.getStorageType()).isEqualTo(StorageType.LOCAL.getCode());
         assertThat(vo.id()).isEqualTo(GENERATED_ID);
+    }
+
+    @Test
+    @DisplayName("上传：扩展名白名单取自 file.upload 配置 —— 配置收紧后 .png 之外的类型被拒")
+    void uploadFile_rejectsExtensionOutsideConfiguredWhitelist() {
+        loginAs("1001");
+        var file = new MockMultipartFile("file", "photo.webp", "image/webp", "RIFF....WEBPVP8 ".getBytes());
+
+        assertThatThrownBy(() -> newService().uploadFile(file, "product"))
+                .isInstanceOf(InvalidExtensionException.class);
+
+        verify(uploadFileMapper, never()).insert(any(UploadFileDO.class));
+    }
+
+    @Test
+    @DisplayName("上传：大小上限取自 file.upload 配置 —— 配 1KB 时超过即拒")
+    void uploadFile_rejectsFileOverConfiguredMaxSize() {
+        loginAs("1001");
+        var oversized = new byte[2048];
+        System.arraycopy(PNG_1PX, 0, oversized, 0, PNG_1PX.length);
+        var file = new MockMultipartFile("file", "photo.png", "image/png", oversized);
+
+        assertThatThrownBy(() -> newService(1 * 1024).uploadFile(file, "product"))
+                .isInstanceOf(FileSizeLimitExceededException.class);
+
+        verify(uploadFileMapper, never()).insert(any(UploadFileDO.class));
     }
 
     @Test

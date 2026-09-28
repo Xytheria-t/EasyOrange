@@ -18,6 +18,7 @@ import jakarta.validation.ConstraintViolationException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatusCode;
@@ -60,6 +61,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
  * 一律落入 500 兜底，提示编程错误而非客户端参数错误（见 AGENTS.md 异常规则）。
  */
 @Slf4j
+@AutoConfiguration
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
