@@ -25,17 +25,17 @@ public class CategoryWriteAdapter implements CategoryWritePort {
 
     @Override
     public CategoryWriteResult createCategory(String name, String parentId, String icon, Integer sortOrder) {
-        return toResult(categoryCommandHandler.createCategory(name, parentId, icon, sortOrder));
+        return toWriteResult(categoryCommandHandler.createCategory(name, parentId, icon, sortOrder));
     }
 
     @Override
     public CategoryWriteResult updateCategory(String id, String name, Integer sortOrder, String icon, Integer status) {
-        return toResult(categoryCommandHandler.updateCategory(id, name, sortOrder, icon, status));
+        return toWriteResult(categoryCommandHandler.updateCategory(id, name, sortOrder, icon, status));
     }
 
     @Override
     public CategoryWriteResult moveCategory(String id, String newParentId) {
-        return toResult(categoryCommandHandler.moveCategory(id, newParentId));
+        return toWriteResult(categoryCommandHandler.moveCategory(id, newParentId));
     }
 
     @Override
@@ -49,7 +49,7 @@ public class CategoryWriteAdapter implements CategoryWritePort {
     }
 
     /** 新建的分类还没有商品，计数恒为 0。 */
-    private CategoryWriteResult toResult(Category category) {
+    private CategoryWriteResult toWriteResult(Category category) {
         return new CategoryWriteResult(
                 category.getId().value(),
                 category.getName().value(),

@@ -128,7 +128,8 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         SearchHits<ProductDocument> searchHits =
                 elasticsearchOperations.search(queryBuilder.build(), ProductDocument.class);
 
-        return toResult(searchHits, page, size, searchHits.getTotalHits(), fillSellers(extractRecords(searchHits)));
+        return toSearchResult(
+                searchHits, page, size, searchHits.getTotalHits(), fillSellers(extractRecords(searchHits)));
     }
 
     /** 两路召回 + RRF 融合：候选池按需增长，融合后按页切片（顺序由排名决定，不由 ES 分页决定）。 */
@@ -173,10 +174,10 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
 
         // facets 来自 BM25 那路的聚合：聚合是「过滤条件命中的语料」上的统计量，
         // 与融合后的排序无关，因此只需要一路带聚合，不必两路都算一遍。
-        return toResult(bm25Leg.hits(), page, size, total, records);
+        return toSearchResult(bm25Leg.hits(), page, size, total, records);
     }
 
-    private SearchResult toResult(
+    private SearchResult toSearchResult(
             SearchHits<ProductDocument> aggSource, int page, int size, long total, List<ProductReadModel> records) {
         if (aggSource == null) {
             return new SearchResult(records, total, page, size, List.of(), List.of(), List.of());
