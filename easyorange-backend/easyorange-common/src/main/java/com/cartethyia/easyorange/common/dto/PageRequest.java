@@ -57,7 +57,7 @@ public class PageRequest {
         this.sortDirection = sortDirection;
     }
 
-    // ——— Setter 级自动规整（Jackson 反序列化路径） ———
+    // ── Setter 级自动规整（Jackson 反序列化路径） ──
 
     public void setPageNum(Integer pageNum) {
         this.pageNum = (pageNum == null || pageNum < DEFAULT_PAGE_NUM) ? DEFAULT_PAGE_NUM : pageNum;

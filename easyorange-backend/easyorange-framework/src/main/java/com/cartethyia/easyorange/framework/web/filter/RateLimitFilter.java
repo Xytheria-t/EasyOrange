@@ -26,10 +26,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -47,11 +45,15 @@ import org.springframework.web.servlet.HandlerMapping;
  *   <li>限流：GET 走本地内存，写操作走 Redis 分布式限流</li>
  *   <li>防重：写操作自动防重（Redis SETNX），key 包含请求体 hash</li>
  *   <li>降级：Redis 不可用时放行请求（fail-open）</li>
+ *   <li>拒绝响应只覆盖本过滤器抛出的 {@link BusinessException}；下游异常原样上抛，不改写错误码</li>
  * </ul>
+ *
+ * <p>
+ * 由 {@code SecurityConfig} 局部装配（不加 {@code @Component}）：执行位置由 Security 链的
+ * {@code addFilterBefore} 决定；容器链再自动注册一次只会让顺序变成两套事实。
+ * </p>
  */
 @Slf4j
-@Component
-@Order(0)
 @NullMarked
 public class RateLimitFilter extends OncePerRequestFilter {
 
@@ -96,31 +98,33 @@ public class RateLimitFilter extends OncePerRequestFilter {
             wrappedRequest = new CachedBodyHttpServletRequestWrapper(request);
         }
 
+        // 限流 — 只在命中规则且方法没有 @SkipRateLimit 时检查
+        Rule matchedRule = findMatchingRule(method, request.getRequestURI());
+
+        // 命中规则或写请求时才需要解析 handler；仅解析一次供限流/防重复用，避免每请求重复解析
+        @Nullable
+        HandlerMethod handlerMethod =
+                (matchedRule != null || WRITE_METHODS.contains(method)) ? resolveHandler(request) : null;
+
+        // try 只包本过滤器自己抛的 BusinessException（限流/防重拒绝）；
+        // filterChain.doFilter 必须在 try 之外 —— 下游逃出的业务异常交容器与 GlobalExceptionHandler，
+        // 在此 catch 会被无条件写成 429，让限流计数与错误码双双失真
         try {
-            HttpServletRequest effectiveRequest = wrappedRequest != null ? wrappedRequest : request;
-
-            // 限流 — 只在命中规则且方法没有 @SkipRateLimit 时检查
-            Rule matchedRule = findMatchingRule(method, effectiveRequest.getRequestURI());
-
-            // 命中规则或写请求时才需要解析 handler；仅解析一次供限流/防重复用，避免每请求重复解析
-            @Nullable
-            HandlerMethod handlerMethod =
-                    (matchedRule != null || WRITE_METHODS.contains(method)) ? resolveHandler(effectiveRequest) : null;
-
             if (matchedRule != null && !hasSkipAnnotation(handlerMethod, SkipRateLimit.class)) {
-                checkRateLimit(effectiveRequest, method, matchedRule);
+                checkRateLimit(request, method, matchedRule);
             }
 
             // 防重 — 有缓存 body 的写请求且没有 @SkipRepeatSubmit 时检查
             // （wrappedRequest 非空 ⟺ 写方法且非 multipart，防重 key 依赖 body hash）
             if (wrappedRequest != null && !hasSkipAnnotation(handlerMethod, SkipRepeatSubmit.class)) {
-                checkRepeatSubmit(effectiveRequest, method, wrappedRequest.getCachedBody());
+                checkRepeatSubmit(request, method, wrappedRequest.getCachedBody());
             }
-
-            filterChain.doFilter(wrappedRequest != null ? wrappedRequest : request, response);
         } catch (BusinessException ex) {
             writeErrorResponse(response, ex);
+            return;
         }
+
+        filterChain.doFilter(wrappedRequest != null ? wrappedRequest : request, response);
     }
 
     /**

@@ -170,7 +170,7 @@ public class DlqRetryScheduler {
         }
 
         log.info("action=dlq_retry, queue={}, retryCount={}, routingKey={}", originalQueue, retryCount, routingKey);
-        republishToMainExchange(message, routingKey, retryCount, originalQueue);
+        republishToMainExchange(message, routingKey, retryCount);
         metricsService.recordDlq(originalQueue, "retry");
         return RetryAction.REPUBLISH;
     }
@@ -202,8 +202,7 @@ public class DlqRetryScheduler {
 
     // ── 重投辅助方法 ──
 
-    private void republishToMainExchange(
-            Message message, String routingKey, int currentRetryCount, String originalQueue) {
+    private void republishToMainExchange(Message message, String routingKey, int currentRetryCount) {
         var props = message.getMessageProperties();
         props.setHeader(X_RETRY_COUNT_HEADER, currentRetryCount + 1);
         rabbitTemplate.send(RabbitMQConfig.EXCHANGE_NAME, routingKey, message);

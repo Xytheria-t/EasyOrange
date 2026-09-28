@@ -90,6 +90,7 @@ public class ImageQueryService {
         return ImageQueryResult.of(entry);
     }
 
+    /** 驱逐即删盘：{@code ImageProcessCacheConfig} 的 removalListener 挂在 invalidate 上，条目消失时文件一并删除。 */
     public void evictCache(String fileId) {
         imageProcessCache.asMap().keySet().removeIf(key -> key.startsWith(fileId + "_"));
         log.info("Evicted image cache for fileId={}", fileId);

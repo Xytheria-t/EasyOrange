@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.RepeatSubmitConfig;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Rule;
@@ -303,5 +304,39 @@ class RateLimitFilterTest {
         filter.doFilter(req, new MockHttpServletResponse(), (r, s) -> {});
 
         verify(redisTemplate, never()).opsForValue();
+    }
+
+    // ==================== 下游异常不得被改写成 429 ====================
+
+    @Test
+    @DisplayName("下游逃出的业务异常原样上抛，不被限流过滤器改写成 429")
+    void downstreamBusinessException_isNotRewrittenAsTooManyRequests() throws Exception {
+        stubHandler(handlerFor("noSkip"));
+        // 阈值调到 1000：本用例要验证的是「异常不被改写」，不能先被限流本身拒掉
+        // ——限流键是 IP+方法+URI，与前几个用例同键，共用 5 次配额时链路边都走不到
+        filter = filterWithRules(new Rule("/api/**", null, Strategy.LOCAL, 1000, 60, "请求过于频繁，请稍后重试"));
+
+        // localRateLimiter 是 mock（默认 false = 拒绝），必须显式放行，否则过滤器自己先拒 429、链路边都走不到
+        when(localRateLimiter.tryAcquire(anyString(), anyInt(), anyLong())).thenReturn(true);
+
+        var res = new MockHttpServletResponse();
+        var thrown = new AtomicReference<Throwable>();
+        var invoked = new AtomicBoolean(false);
+
+        try {
+            filter.doFilter(new MockHttpServletRequest("GET", "/api/orders"), res, (r, s) -> {
+                invoked.set(true);
+                throw BusinessException.of("订单不存在");
+            });
+        } catch (Throwable t) {
+            thrown.set(t);
+        }
+
+        assertThat(invoked).isTrue();
+        assertThat(thrown.get()).isInstanceOf(BusinessException.class).hasMessage("订单不存在");
+        // 仍是 Mock 的默认 200：若被限流分支改写过，这里会是 429 且响应体非空
+        assertThat(res.getStatus()).isEqualTo(200);
+        // MockHttpServletResponse 从未写入内容时返回 null（而非空串），故按「无内容」断言
+        assertThat(res.getContentAsString()).isNullOrEmpty();
     }
 }

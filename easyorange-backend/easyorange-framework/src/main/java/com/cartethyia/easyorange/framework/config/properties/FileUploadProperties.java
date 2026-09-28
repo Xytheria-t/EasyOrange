@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
 import com.cartethyia.easyorange.common.constant.CommonConstant;
+import com.cartethyia.easyorange.framework.util.FileUtils;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -10,11 +11,12 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * 文件上传配置。
+ * 文件上传配置 — 上传校验阈值与扩展名白名单的<b>唯一来源</b>（{@code FileService} 直接取用，改 yaml 即生效）。
  *
  * @param path 上传文件落盘根目录
  * @param urlPrefix 访问上传文件的 URL 前缀
- * @param maxSize 单文件大小上限（字节），默认 {@link CommonConstant#FILE_MAX_SIZE}
+ * @param maxSize 单文件大小上限（字节），默认 {@link CommonConstant#FILE_MAX_SIZE}；与容器级
+ *     {@code spring.servlet.multipart.max-file-size} 取小者生效，先到者拒
  * @param allowedExtensions 允许的扩展名（小写、不含点）；显式配成空列表会被 {@code @NotEmpty} 拒绝
  */
 @Validated
@@ -30,7 +32,7 @@ public record FileUploadProperties(
 
     public FileUploadProperties {
         allowedExtensions = allowedExtensions == null
-                ? List.of("jpg", "jpeg", "png", "gif", "webp", "bmp")
+                ? List.copyOf(FileUtils.DEFAULT_ALLOWED_EXTENSION)
                 : List.copyOf(allowedExtensions);
     }
 }

@@ -9,7 +9,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,15 +16,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 public final class FileUtils {
 
-    private static final long KB = 1024;
-    private static final long MB = KB * 1024;
-    private static final long GB = MB * 1024;
-
-    public static final long DEFAULT_MAX_SIZE = 50 * MB;
-
-    public static final Set<String> DEFAULT_ALLOWED_EXTENSION = new LinkedHashSet<>(Set.of(
+    /**
+     * 扩展名白名单兜底值，仅供 {@code FileUploadProperties.allowedExtensions} 缺省时使用 ——
+     * 校验入口的阈值与白名单一律由配置给，本类不自带策略。
+     */
+    public static final Set<String> DEFAULT_ALLOWED_EXTENSION = Set.of(
             "bmp", "gif", "jpg", "jpeg", "png", "webp", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "rar",
-            "zip", "gz", "bz2", "pdf"));
+            "zip", "gz", "bz2", "pdf");
 
     private static final Map<String, String> MIME_TO_EXTENSION = Map.ofEntries(
             Map.entry("image/bmp", "bmp"),
@@ -71,10 +68,10 @@ public final class FileUtils {
         throw new IllegalStateException("Utility class");
     }
 
-    public static void assertAllowed(MultipartFile file, Collection<String> allowedExtension) {
+    public static void assertAllowed(MultipartFile file, Collection<String> allowedExtension, long maxSize) {
         var size = file.getSize();
-        if (size > DEFAULT_MAX_SIZE) {
-            throw new FileSizeLimitExceededException(DEFAULT_MAX_SIZE, size);
+        if (size > maxSize) {
+            throw new FileSizeLimitExceededException(maxSize, size);
         }
         if (allowedExtension == null || allowedExtension.isEmpty()) {
             return;

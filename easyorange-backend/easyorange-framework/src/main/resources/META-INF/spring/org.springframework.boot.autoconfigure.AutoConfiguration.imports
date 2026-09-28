@@ -12,3 +12,5 @@ com.cartethyia.easyorange.framework.config.redis.RedissonConfig
 com.cartethyia.easyorange.framework.messaging.config.EventExternalizationConfig
 com.cartethyia.easyorange.framework.config.database.TransactionTemplateConfig
 com.cartethyia.easyorange.framework.config.lock.LockConfig
+com.cartethyia.easyorange.framework.config.web.ResponseAdvice
+com.cartethyia.easyorange.framework.exception.GlobalExceptionHandler

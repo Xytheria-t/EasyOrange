@@ -3,17 +3,24 @@ package com.cartethyia.easyorange.framework.config.security;
 import com.cartethyia.easyorange.common.enums.IResultCode;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.security.AuthUser;
+import com.cartethyia.easyorange.framework.config.properties.IdempotencyProperties;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
+import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
+import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
+import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
 import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
 import com.cartethyia.easyorange.framework.web.filter.IdempotencyKeyFilter;
 import com.cartethyia.easyorange.framework.web.filter.RateLimitFilter;
 import com.cartethyia.easyorange.framework.web.filter.RefreshCsrfFilter;
 import com.cartethyia.easyorange.framework.web.filter.TokenRevocationFilter;
+import com.cartethyia.easyorange.framework.web.idempotency.IdempotencyService;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jwt.proc.ExpiredJWTException;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.servlet.Filter;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,10 +31,14 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -55,6 +66,7 @@ import org.springframework.security.web.header.writers.ContentSecurityPolicyHead
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.HandlerMapping;
 
 @Slf4j
 @AutoConfiguration
@@ -72,18 +84,95 @@ public class SecurityConfig {
 
     // ── 依赖注入 ──
 
-    private final IdempotencyKeyFilter idempotencyKeyFilter;
-    private final RateLimitFilter rateLimitFilter;
-    private final TokenRevocationFilter tokenRevocationFilter;
-    private final RefreshCsrfFilter refreshCsrfFilter;
     private final SecurityProperties securityProperties;
     private final ErrorResponseWriter errorResponseWriter;
 
     // ── 安全过滤链 ──
 
+    /**
+     * 四个业务过滤器<b>只在 Security 链里注册一次</b>。
+     * <p>
+     * 两处曾经重复：{@code @Component}（Spring Boot 把容器里任何 Filter bean 自动注册进 servlet 容器链）
+     * 与 {@code addFilterBefore}。{@code OncePerRequestFilter} 的标记让第二次执行被跳过，于是实际顺序由
+     * Security 链决定，容器链上的 {@code @Order} 是死配置 —— 注释表达的却是反过来。
+     * <p>
+     * 现在：{@code @Component} 去掉，{@code addFilterBefore} 保留，并配 {@code FilterRegistrationBean(enabled=false)}
+     * 把它们挡在容器链之外。执行顺序 = {@code addFilterBefore} 的声明顺序。
+     * <p>
+     * {@link RateLimitFilter} 必须收 {@code ObjectProvider<List<HandlerMapping>>}（延迟注入），
+     * 直接注入会经 WebSocket 配置链形成循环依赖，别改回构造器直连。
+     */
+    @Bean
+    public RateLimitFilter rateLimitFilter(
+            RateLimitFilterProperties rateLimitProperties,
+            RedisTemplate<Object, Object> redisTemplate,
+            LocalRateLimiter localRateLimiter,
+            DistributedRateLimiter distributedRateLimiter,
+            ObjectProvider<List<HandlerMapping>> handlerMappingsProvider) {
+        return new RateLimitFilter(
+                rateLimitProperties,
+                redisTemplate,
+                localRateLimiter,
+                distributedRateLimiter,
+                errorResponseWriter,
+                handlerMappingsProvider);
+    }
+
+    @Bean
+    public RefreshCsrfFilter refreshCsrfFilter() {
+        return new RefreshCsrfFilter(securityProperties, errorResponseWriter);
+    }
+
+    @Bean
+    public IdempotencyKeyFilter idempotencyKeyFilter(
+            IdempotencyService idempotencyService, IdempotencyProperties idempotencyProperties) {
+        return new IdempotencyKeyFilter(idempotencyService, idempotencyProperties);
+    }
+
+    @Bean
+    public TokenRevocationFilter tokenRevocationFilter(StringRedisTemplate redis, MeterRegistry meterRegistry) {
+        return new TokenRevocationFilter(redis, errorResponseWriter, meterRegistry);
+    }
+
+    // 去掉 @Component 还不算完：ServletContextInitializerBeans 会把容器里<b>任何</b> Filter bean
+    // （@Bean 定义的也一样）自动注册进 servlet 容器链。靠 FilterRegistrationBean(enabled=false)
+    // 显式声明「不进容器链」，否则与 addFilterBefore 构成第二次注册，@Order 又变成两套事实。
+    @Bean
+    FilterRegistrationBean<RateLimitFilter> rateLimitFilterContainerRegistration(RateLimitFilter rateLimitFilter) {
+        return notInContainerChain(rateLimitFilter);
+    }
+
+    @Bean
+    FilterRegistrationBean<RefreshCsrfFilter> refreshCsrfFilterContainerRegistration(RefreshCsrfFilter filter) {
+        return notInContainerChain(filter);
+    }
+
+    @Bean
+    FilterRegistrationBean<IdempotencyKeyFilter> idempotencyKeyFilterContainerRegistration(
+            IdempotencyKeyFilter idempotencyKeyFilter) {
+        return notInContainerChain(idempotencyKeyFilter);
+    }
+
+    @Bean
+    FilterRegistrationBean<TokenRevocationFilter> tokenRevocationFilterContainerRegistration(
+            TokenRevocationFilter tokenRevocationFilter) {
+        return notInContainerChain(tokenRevocationFilter);
+    }
+
+    private static <T extends Filter> FilterRegistrationBean<T> notInContainerChain(T filter) {
+        var registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
     @Bean
     @Order(1)
-    public SecurityFilterChain filterChain(HttpSecurity http) {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            IdempotencyKeyFilter idempotencyKeyFilter,
+            RateLimitFilter rateLimitFilter,
+            RefreshCsrfFilter refreshCsrfFilter,
+            TokenRevocationFilter tokenRevocationFilter) {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -101,7 +190,9 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(securityProperties.ignorePaths().toArray(String[]::new))
                         .permitAll()
-                        // 精确匹配优先于 product-paths 前缀放行：/api/products/my 需登录（CLAUDE.md product-paths 陷阱）
+                        // 声明顺序即优先级：本条排在 product-paths 之前，/api/products/** 万一被误加进
+                        // product-paths 也不会把「我的商品」放行；且 /api/products 是精确匹配
+                        // （PathPattern 未带 ** 不做前缀放行），本就覆盖不到 /api/products/my，故显式声明
                         .requestMatchers(HttpMethod.GET, "/api/products/my/**")
                         .authenticated()
                         // 管理后台仅 ADMIN/MANAGER 可访问（UserType#getDefaultRoles 均含 ROLE_ADMIN）

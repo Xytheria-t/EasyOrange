@@ -6,7 +6,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -57,6 +56,8 @@ public class LoggingInterceptor implements HandlerInterceptor {
         var status = response.getStatus();
         var method = request.getMethod();
 
+        // 只留无 tag 的总请求计数：actuator 的 http.server.requests 已按路径模板给出耗时/状态/异常分维度，
+        // 这里再挂一个 timer 只会用原始 URI（含 {id} 路径变量）开新时间序列，无基数上限且信息量严格更少
         meterRegistry.counter("http.requests.total").increment();
 
         if (ex != null || status >= 500) {
@@ -70,10 +71,6 @@ public class LoggingInterceptor implements HandlerInterceptor {
         } else if (status >= 400) {
             log.warn("action=request_warn method={} uri={} status={} cost={}ms", method, uri, status, costTime);
         }
-
-        meterRegistry
-                .timer("http.server.request", "uri", uri, "method", method)
-                .record(costTime, TimeUnit.MILLISECONDS);
 
         MDC.clear();
     }

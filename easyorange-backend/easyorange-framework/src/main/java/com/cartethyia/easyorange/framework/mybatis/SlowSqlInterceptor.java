@@ -91,12 +91,10 @@ public class SlowSqlInterceptor implements Interceptor {
             long elapsedNanos = System.nanoTime() - start;
             long elapsedMs = TimeUnit.NANOSECONDS.toMillis(elapsedNanos);
 
-            // 上报全部 SQL 耗时指标
             if (sqlTimer != null) {
                 sqlTimer.record(Duration.ofNanos(elapsedNanos));
             }
 
-            // 慢查询检测
             if (properties.enabled() && elapsedMs >= properties.thresholdMs()) {
                 reportSlowSql(invocation, elapsedMs, elapsedNanos);
             }
@@ -108,17 +106,14 @@ public class SlowSqlInterceptor implements Interceptor {
         MappedStatement ms = (MappedStatement) args[0];
         Object parameter = args[1];
 
-        // 提取 SQL 信息
         String sql = getSql(ms, parameter);
         String namespace = ms.getId();
         String commandName = ms.getSqlCommandType().name();
 
-        // 上报慢 SQL 指标
         if (slowSqlTimer != null) {
             slowSqlTimer.record(Duration.ofNanos(elapsedNanos));
         }
 
-        // 结构化日志
         String message = String.format(
                 "action=slow_sql namespace=%s command=%s cost=%dms threshold=%dms sql=[%s]",
                 namespace, commandName, elapsedMs, properties.thresholdMs(), sql);
@@ -205,7 +200,6 @@ public class SlowSqlInterceptor implements Interceptor {
 
     @Override
     public Object plugin(Object target) {
-        // MyBatis 标准: 只拦截 Executor
         if (target instanceof Executor) {
             return Interceptor.super.plugin(target);
         }
