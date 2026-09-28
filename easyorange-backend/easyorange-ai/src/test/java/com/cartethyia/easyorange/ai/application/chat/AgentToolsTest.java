@@ -180,7 +180,7 @@ class AgentToolsTest {
             String observation = tools.searchProducts("再找找", "二手微单 夜景");
 
             assertThat(observation).contains("无新增信息").contains("finish");
-            assertThat(tools.assets()).hasSize(1);
+            assertThat(tools.assetHits()).hasSize(1);
         }
 
         @Test

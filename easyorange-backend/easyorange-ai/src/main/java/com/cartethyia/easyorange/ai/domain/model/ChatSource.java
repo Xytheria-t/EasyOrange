@@ -30,10 +30,10 @@ public record ChatSource(Type type, String id, String title) {
     }
 
     /** 合并两路召回的来源，资产优先（找货是主链路，规则来源不该在数量上挤出它）；去重按 (type, id) 而非标题 —— 同名资产是两条不同记录。 */
-    public static List<ChatSource> merge(List<KnowledgeHit> hits, List<AssetHit> assets, int limit) {
+    public static List<ChatSource> merge(List<KnowledgeHit> knowledgeHits, List<AssetHit> assetHits, int limit) {
         return Stream.of(
-                        assets.stream().map(ChatSource::from).toList(),
-                        hits.stream().map(ChatSource::from).toList())
+                        assetHits.stream().map(ChatSource::from).toList(),
+                        knowledgeHits.stream().map(ChatSource::from).toList())
                 .flatMap(List::stream)
                 .distinct()
                 .limit(limit)

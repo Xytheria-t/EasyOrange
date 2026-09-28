@@ -298,7 +298,7 @@ class ToolCallLoopTest {
 
         assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(3);
-        assertThat(result.assets()).hasSize(1);
+        assertThat(result.assetHits()).hasSize(1);
         assertThat(result.details()).hasSize(1);
         assertThat(result.details().getFirst().description()).isEqualTo("M1 芯片，95 新无磕碰");
 
@@ -582,7 +582,7 @@ class ToolCallLoopTest {
         assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
         // 规则 + 找货两路召回都进了 Result，两条工具各只发一次决策
         assertThat(result.knowledgeHits()).hasSize(1);
-        assertThat(result.assets()).hasSize(1);
+        assertThat(result.assetHits()).hasSize(1);
         assertThat(result.toolPath())
                 .containsExactly(
                         AgentTools.TOOL_KNOWLEDGE_SEARCH, AgentTools.TOOL_PRODUCT_SEARCH, AgentTools.TOOL_FINISH);
