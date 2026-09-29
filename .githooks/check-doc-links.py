@@ -35,15 +35,27 @@ EXTERNAL = ("http://", "https://", "mailto:", "tel:")
 
 
 def github_slug(heading: str) -> str:
-    """GitHub 标题锚点规则：小写 → 去标点 → 空白转连字符（保留 CJK 与 _-）。"""
+    """单个标题的 GitHub slug：小写 → 去标点 → **逐个**空白转连字符（保留 CJK 与 _-）。
+
+    逐个而非折叠成单个：标题里 ` — `（空格-破折号-空格）去掉破折号后剩两个空格，
+    真实 GitHub 产出 `a--b`，折叠成 `a-b` 会让所有这类锚点判成失效。
+    """
     s = re.sub(r"`", "", heading.strip().lower())
     s = re.sub(r"[^\w\s-]", "", s, flags=re.UNICODE)
-    return re.sub(r"\s+", "-", s.strip())
+    return re.sub(r"\s", "-", s.strip())
 
 
 def anchors_of(path: Path) -> set[str]:
+    """全文标题的 slug 集合。同名标题按出现顺序追加 `-1` / `-2`，与 GitHub 一致。"""
     text = path.read_text(encoding="utf-8")
-    return {github_slug(h) for h in HEADING_RE.findall(text)} | set(HTML_ANCHOR_RE.findall(text))
+    seen: dict[str, int] = {}
+    out: set[str] = set()
+    for heading in HEADING_RE.findall(text):
+        base = github_slug(heading)
+        n = seen.get(base, 0)
+        out.add(base if n == 0 else f"{base}-{n}")
+        seen[base] = n + 1
+    return out | set(HTML_ANCHOR_RE.findall(text))
 
 
 def scan() -> list[tuple[Path, str, str]]:
