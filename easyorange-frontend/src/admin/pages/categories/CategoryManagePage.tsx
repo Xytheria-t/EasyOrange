@@ -3,8 +3,14 @@ import { useCallback, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { AdminField, AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
-import { AdminCard, AdminErrorBanner, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
+import { AdminField, AdminFilterField, AdminSearchInput } from '../../components/AdminControls';
+import {
+    AdminErrorBanner,
+    AdminListCard,
+    AdminListCount,
+    AdminPage,
+    AdminPageHeader,
+} from '../../components/AdminPage';
 import { AdminSelect } from '../../components/AdminSelect';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import {
@@ -274,9 +280,23 @@ export default function CategoryManagePage() {
                 }
             />
 
-            <AdminCard>
-                <div style={{ padding: '0.9rem 1.15rem' }}>
-                    <AdminToolbar>
+            <AdminListCard
+                title="分类结构"
+                icon={<FolderTree size={17} />}
+                // 筛选后报总数会让人以为筛选没生效；请求失败时报「共 0 个」同样会被当成真的没数据
+                count={
+                    isError ? undefined : hasFilter ? (
+                        <AdminListCount
+                            prefix="筛选出"
+                            count={filteredCount}
+                            suffix={`/ ${allCategories.length} 个分类`}
+                        />
+                    ) : (
+                        <AdminListCount prefix="共" count={allCategories.length.toLocaleString()} suffix="个分类" />
+                    )
+                }
+                toolbar={
+                    <>
                         <AdminSearchInput
                             value={searchInput}
                             onChange={setSearchInput}
@@ -314,77 +334,21 @@ export default function CategoryManagePage() {
                             />
                             {sortDir === 'asc' ? '升序' : '降序'}
                         </Button>
-                        <ToolbarDivider />
-                        <div style={{ flex: 1 }} />
-                        {/* 筛选后报总数会让人以为筛选没生效；请求失败时报「共 0 个」同样会被当成真的没数据 */}
-                        {isError ? null : (
-                            <span className="admin-muted">
-                                {hasFilter ? (
-                                    <>
-                                        筛选出 <strong style={{ color: 'var(--admin-ink)' }}>{filteredCount}</strong> /{' '}
-                                        {allCategories.length} 个分类
-                                    </>
-                                ) : (
-                                    <>
-                                        共{' '}
-                                        <strong style={{ color: 'var(--admin-ink)' }}>
-                                            {allCategories.length.toLocaleString()}
-                                        </strong>{' '}
-                                        个分类
-                                    </>
-                                )}
-                            </span>
-                        )}
-                    </AdminToolbar>
-                </div>
-            </AdminCard>
-
-            <AdminCard grow>
+                    </>
+                }
+            >
                 <div className="admin-tree-scroll">
                     {isLoading ? (
-                        <div style={{ padding: '3rem', textAlign: 'center' }} role="status" aria-busy="true">
-                            <div
-                                style={{
-                                    display: 'inline-block',
-                                    width: 32,
-                                    height: 32,
-                                    border: '3px solid var(--admin-accent-soft-border)',
-                                    borderTopColor: 'var(--primary-500)',
-                                    borderRadius: '50%',
-                                    animation: 'spin 0.7s linear infinite',
-                                }}
-                            />
-                            <div className="admin-muted" style={{ marginTop: '1rem' }}>
-                                加载分类数据…
-                            </div>
+                        <div className="admin-tree-state" role="status" aria-busy="true">
+                            <div className="admin-spinner animate-spin" />
+                            <p className="admin-muted">加载分类数据…</p>
                         </div>
                     ) : isError ? null : filteredTree.length === 0 ? (
-                        <div style={{ padding: '3rem', textAlign: 'center' }}>
-                            <div
-                                aria-hidden="true"
-                                style={{
-                                    width: 56,
-                                    height: 56,
-                                    borderRadius: 'var(--admin-radius-media)',
-                                    background: 'var(--admin-accent-soft)',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    marginBottom: '1rem',
-                                }}
-                            >
+                        <div className="admin-tree-state">
+                            <span className="admin-tree-state-icon" aria-hidden="true">
                                 <FolderTree size={28} />
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: '0.95rem',
-                                    fontWeight: 600,
-                                    color: 'var(--admin-ink)',
-                                    marginBottom: '0.3rem',
-                                }}
-                            >
-                                暂无分类数据
-                            </div>
+                            </span>
+                            <div className="admin-tree-state-title">暂无分类数据</div>
                             <p className="admin-muted">
                                 {hasFilter ? '尝试调整筛选条件' : '点击右上角「添加分类」创建第一个分类'}
                             </p>
@@ -407,7 +371,7 @@ export default function CategoryManagePage() {
                         </div>
                     )}
                 </div>
-            </AdminCard>
+            </AdminListCard>
 
             {/* ===== Create Modal ===== */}
             <Dialog
@@ -421,27 +385,14 @@ export default function CategoryManagePage() {
                 <DialogContent className="sm:max-w-[480px] gap-0 p-0 overflow-hidden rounded-3xl">
                     <DialogHeader className="p-6 pb-0">
                         <DialogTitle className="flex items-center gap-2">
-                            <span
-                                aria-hidden="true"
-                                style={{
-                                    width: 28,
-                                    height: 28,
-                                    borderRadius: 10,
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: 'var(--admin-primary-bg)',
-                                    color: 'var(--admin-surface-solid)',
-                                    flexShrink: 0,
-                                }}
-                            >
+                            <span aria-hidden="true" className="admin-dialog-icon">
                                 <Plus size={14} />
                             </span>
                             添加分类
                         </DialogTitle>
                     </DialogHeader>
 
-                    <div className="p-6" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="p-6 flex flex-col gap-4">
                         <AdminField label="分类名称" required>
                             {props => (
                                 <input
@@ -523,7 +474,7 @@ export default function CategoryManagePage() {
                         <DialogTitle>编辑分类</DialogTitle>
                     </DialogHeader>
 
-                    <div className="p-6" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="p-6 flex flex-col gap-4">
                         <AdminField label="分类名称" required>
                             {props => (
                                 <input
@@ -569,9 +520,7 @@ export default function CategoryManagePage() {
                         </AdminField>
 
                         <div>
-                            <p className="admin-label" style={{ marginBottom: '0.4rem' }}>
-                                状态
-                            </p>
+                            <p className="admin-label mb-[0.4rem]">状态</p>
                             <RadioGroup
                                 value={String(editStatus)}
                                 onValueChange={value => setEditStatus(Number(value))}
@@ -579,25 +528,17 @@ export default function CategoryManagePage() {
                             >
                                 <label
                                     htmlFor="status-enabled"
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 1 ? 'border-emerald-500 bg-emerald-50' : 'border-border bg-white'}`}
+                                    className={`admin-choice ${editStatus === 1 ? 'admin-choice--on-success' : ''}`}
                                 >
                                     <RadioGroupItem value="1" id="status-enabled" />
-                                    <span
-                                        className={`text-sm font-medium ${editStatus === 1 ? 'text-emerald-600' : 'text-muted-foreground'}`}
-                                    >
-                                        启用
-                                    </span>
+                                    <span className="admin-choice-text">启用</span>
                                 </label>
                                 <label
                                     htmlFor="status-disabled"
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 0 ? 'border-rose-500 bg-rose-50' : 'border-border bg-white'}`}
+                                    className={`admin-choice ${editStatus === 0 ? 'admin-choice--on-error' : ''}`}
                                 >
                                     <RadioGroupItem value="0" id="status-disabled" />
-                                    <span
-                                        className={`text-sm font-medium ${editStatus === 0 ? 'text-rose-600' : 'text-muted-foreground'}`}
-                                    >
-                                        禁用
-                                    </span>
+                                    <span className="admin-choice-text">禁用</span>
                                 </label>
                             </RadioGroup>
                         </div>

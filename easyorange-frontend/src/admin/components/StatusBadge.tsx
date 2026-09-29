@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 export interface StatusBadgeProps {
     status: number | string;
-    type: 'user' | 'product' | 'order';
+    type: 'user' | 'product' | 'order' | 'category' | 'knowledge';
     className?: string;
 }
 
@@ -31,6 +31,21 @@ const orderStatusConfig: Record<string, StatusConfig> = {
     COMPLETED: { label: '已完成', variant: 'success' },
     CANCELLED: { label: '已取消', variant: 'default' },
     REFUNDED: { label: '退款中', variant: 'error' },
+};
+
+/** 分类启停：后端是 1/0 数字，这里显式列出两个键，未知值回落到「未知」而不是假报「禁用」 */
+const categoryStatusConfig: Record<string, StatusConfig> = {
+    '1': { label: '启用', variant: 'success' },
+    '0': { label: '禁用', variant: 'default' },
+    // 切换启停的进行态：全局 pending 会让整棵树一起变灰，这里只标当前那一行
+    UPDATING: { label: '更新中', variant: 'info' },
+};
+
+/** 知识库文档的索引状态：RAG 摄入管线的对外可见阶段 */
+const knowledgeStatusConfig: Record<string, StatusConfig> = {
+    PENDING: { label: '待索引', variant: 'warning' },
+    INDEXED: { label: '已索引', variant: 'success' },
+    FAILED: { label: '索引失败', variant: 'error' },
 };
 
 type StatusVariant = 'success' | 'warning' | 'error' | 'info' | 'default';
@@ -67,6 +82,8 @@ const configMap: Record<StatusBadgeProps['type'], Record<string, StatusConfig>> 
     user: userStatusConfig,
     product: productStatusConfig,
     order: orderStatusConfig,
+    category: categoryStatusConfig,
+    knowledge: knowledgeStatusConfig,
 };
 
 /**
@@ -136,7 +153,8 @@ export function StatusBadge({ status, type, className }: StatusBadgeProps) {
         <Badge
             variant="outline"
             className={cn(
-                'inline-flex items-center gap-1.5 border-0 px-2.5 py-[0.27rem] text-[0.73rem] font-semibold tracking-wide rounded-full pointer-events-none',
+                // nowrap 是必需的：窄屏下表格被压到 min-width 时，状态列会窄到把「待审核」竖着断成三行
+                'inline-flex items-center gap-1.5 border-0 px-2.5 py-[0.27rem] text-[0.73rem] font-semibold tracking-wide rounded-full whitespace-nowrap pointer-events-none',
                 className
             )}
             style={{

@@ -219,6 +219,17 @@ describe('UserManagePage', () => {
         expect(screen.getByText('管理平台所有注册用户，查看详情或调整状态')).toBeInTheDocument();
     });
 
+    // 工具栏此前独占一张卡（只装一行控件，没标题也没数据），现在并进表格卡的卡头
+    it('把筛选工具栏与列表放进同一张卡', () => {
+        renderWithProviders(<UserManagePage />);
+
+        const cards = document.querySelectorAll('.admin-card');
+        expect(cards).toHaveLength(1);
+        expect(cards[0].querySelector('.admin-card-head .admin-toolbar')).not.toBeNull();
+        // 本文件 mock 掉了 AdminTable，按 mock 出来的节点判同卡
+        expect(cards[0].contains(screen.getByTestId('admin-table'))).toBe(true);
+    });
+
     // ── Test 2: Shows user list ──
     it('renders user list with user data', () => {
         renderWithProviders(<UserManagePage />);

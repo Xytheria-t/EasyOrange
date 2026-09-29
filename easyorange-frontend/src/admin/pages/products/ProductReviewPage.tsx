@@ -13,8 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { usePagination } from '@/hooks/usePagination';
 import type { ProductStatus } from '@/types';
 import { formatRelativeTime } from '@/utils/format';
-import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
-import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
+import { AdminFilterField, AdminSearchInput } from '../../components/AdminControls';
+import { AdminListCard, AdminListCount, AdminPage, AdminPageHeader } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { StatusBadge, statusFilterOptions } from '../../components/StatusBadge';
 import { useAdminCategories } from '../../hooks/useAdminCategories';
@@ -112,29 +112,9 @@ export default function ProductReviewPage() {
             render: (_value, record) => {
                 const src = record.mainImage || record.images?.[0];
                 return (
-                    <div
-                        style={{
-                            width: 46,
-                            height: 46,
-                            borderRadius: 12,
-                            overflow: 'hidden',
-                            flexShrink: 0,
-                            background:
-                                'linear-gradient(135deg, color-mix(in srgb, var(--admin-chart-4) 12%, var(--admin-surface-solid)), color-mix(in srgb, var(--admin-chart-4) 22%, var(--admin-surface-solid)))',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            border: '1px solid var(--admin-accent-soft-border)',
-                        }}
-                    >
+                    <div className="admin-media-tile">
                         {src ? (
-                            <img
-                                src={src}
-                                alt={`${record.name ?? '商品'}的缩略图`}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                loading="lazy"
-                                decoding="async"
-                            />
+                            <img src={src} alt={`${record.name ?? '商品'}的缩略图`} loading="lazy" decoding="async" />
                         ) : (
                             <Package size={18} aria-hidden="true" style={{ color: 'var(--admin-faint)' }} />
                         )}
@@ -146,10 +126,7 @@ export default function ProductReviewPage() {
             key: 'name',
             title: '商品名称',
             render: value => (
-                <span
-                    className="truncate block"
-                    style={{ fontWeight: 600, color: 'var(--admin-ink)', fontSize: '0.875rem', maxWidth: 220 }}
-                >
+                <span className="admin-cell-strong admin-cell-clamp" style={{ maxWidth: 220 }}>
                     {value as string}
                 </span>
             ),
@@ -204,9 +181,14 @@ export default function ProductReviewPage() {
                 description="审核待上架商品，管理通过与驳回"
             />
 
-            <AdminCard>
-                <div style={{ padding: '0.9rem 1.15rem' }}>
-                    <AdminToolbar>
+            <AdminListCard
+                title="商品列表"
+                icon={<ClipboardCheck size={17} />}
+                count={
+                    isError ? undefined : <AdminListCount prefix="共" count={total.toLocaleString()} suffix="件商品" />
+                }
+                toolbar={
+                    <>
                         <AdminSearchInput
                             value={searchInput}
                             onChange={setSearchInput}
@@ -234,19 +216,9 @@ export default function ProductReviewPage() {
                                 goTo(1);
                             }}
                         />
-                        <ToolbarDivider />
-                        <div style={{ flex: 1 }} />
-                        {isError ? null : (
-                            <span className="admin-muted">
-                                共 <strong style={{ color: 'var(--admin-ink)' }}>{total.toLocaleString()}</strong>{' '}
-                                件商品
-                            </span>
-                        )}
-                    </AdminToolbar>
-                </div>
-            </AdminCard>
-
-            <AdminCard grow>
+                    </>
+                }
+            >
                 <AdminTable
                     columns={columns}
                     data={products}
@@ -268,7 +240,7 @@ export default function ProductReviewPage() {
                     }}
                     emptyText="暂无商品数据"
                 />
-            </AdminCard>
+            </AdminListCard>
 
             <BatchAuditBar
                 count={selectedIds.size}

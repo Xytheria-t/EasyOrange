@@ -182,6 +182,16 @@ describe('ProductReviewPage', () => {
         expect(screen.getByText('审核待上架商品，管理通过与驳回')).toBeInTheDocument();
     });
 
+    // 工具栏此前独占一张卡（只装一行控件，没标题也没数据），现在并进表格卡的卡头
+    it('把筛选工具栏与列表放进同一张卡', () => {
+        renderWithProviders(<ProductReviewPage />);
+
+        const cards = document.querySelectorAll('.admin-card');
+        expect(cards).toHaveLength(1);
+        expect(cards[0].querySelector('.admin-card-head .admin-toolbar')).not.toBeNull();
+        expect(cards[0].querySelector('.admin-table')).not.toBeNull();
+    });
+
     // ── Test 2: Search input and search button ──
     it('renders search input and search button', () => {
         renderWithProviders(<ProductReviewPage />);

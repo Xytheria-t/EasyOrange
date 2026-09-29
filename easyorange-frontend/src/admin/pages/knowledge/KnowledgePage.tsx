@@ -12,18 +12,13 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { formatDate } from '@/utils/format';
 import { AdminField } from '../../components/AdminControls';
-import { AdminCard, AdminPage, AdminPageHeader } from '../../components/AdminPage';
+import { AdminListCard, AdminListCount, AdminPage, AdminPageHeader } from '../../components/AdminPage';
 import { AdminTable } from '../../components/AdminTable';
 import { ConfirmModal } from '../../components/ConfirmModal';
+import { StatusBadge } from '../../components/StatusBadge';
 import { useAdminKnowledgeDocs, useCreateKnowledgeDoc, useDeleteKnowledgeDoc, useReindexKnowledge } from '../../hooks';
 import { notify } from '../../notify';
 import type { KnowledgeDoc } from '../../types/admin';
-
-const STATUS_LABEL: Record<string, { text: string; color: string }> = {
-    PENDING: { text: '待索引', color: 'var(--status-warning)' },
-    INDEXED: { text: '已索引', color: 'var(--status-success)' },
-    FAILED: { text: '失败', color: 'var(--status-error)' },
-};
 
 const PAGE_SIZE = 10;
 
@@ -106,17 +101,22 @@ export default function KnowledgePage() {
                 }
             />
 
-            <AdminCard grow>
+            <AdminListCard
+                title="文档列表"
+                icon={<BookOpen size={17} />}
+                count={
+                    isError ? undefined : (
+                        <AdminListCount prefix="共" count={(data?.total ?? 0).toLocaleString()} suffix="篇文档" />
+                    )
+                }
+            >
                 <AdminTable<KnowledgeDoc>
                     columns={[
                         {
                             key: 'title',
                             title: '标题',
                             render: value => (
-                                <span
-                                    className="truncate block"
-                                    style={{ fontWeight: 600, color: 'var(--admin-ink)', maxWidth: 280 }}
-                                >
+                                <span className="admin-cell-strong admin-cell-clamp" style={{ maxWidth: 280 }}>
                                     {(value as string) || '（无标题）'}
                                 </span>
                             ),
@@ -127,33 +127,10 @@ export default function KnowledgePage() {
                             render: value => <span className="admin-muted">{(value as string) || '—'}</span>,
                         },
                         {
+                            // 未收录的状态原样回显，不伪装成"待索引"
                             key: 'status',
                             title: '状态',
-                            render: (_value, record) => {
-                                // 此前未知状态回落到「待索引」，把后端新状态伪装成排队中
-                                const status = STATUS_LABEL[String(record.status)];
-                                const dotColor = status?.color ?? 'var(--status-default)';
-                                return (
-                                    <span
-                                        style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '0.35rem',
-                                            padding: '0.22rem 0.6rem',
-                                            borderRadius: 'var(--admin-radius-pill)',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600,
-                                            color: dotColor,
-                                            background: status
-                                                ? `color-mix(in srgb, ${dotColor} 10%, transparent)`
-                                                : 'var(--status-default-bg)',
-                                        }}
-                                    >
-                                        <span className="admin-status-dot" style={{ background: dotColor }} />
-                                        {status?.text ?? String(record.status ?? '未知')}
-                                    </span>
-                                );
-                            },
+                            render: value => <StatusBadge status={value as string} type="knowledge" />,
                         },
                         {
                             key: 'chunkCount',
@@ -197,7 +174,7 @@ export default function KnowledgePage() {
                     }}
                     emptyText="暂无知识库文档"
                 />
-            </AdminCard>
+            </AdminListCard>
 
             <Dialog
                 open={createOpen}

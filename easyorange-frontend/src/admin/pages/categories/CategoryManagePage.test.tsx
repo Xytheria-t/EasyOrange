@@ -147,6 +147,16 @@ describe('CategoryManagePage', () => {
         expect(screen.getByText('管理商品分类结构，支持添加、编辑、删除操作')).toBeInTheDocument();
     });
 
+    // 工具栏此前独占一张卡（只装一行控件，没标题也没数据），现在并进树卡的卡头
+    it('把筛选工具栏与分类树放进同一张卡', () => {
+        renderWithProviders(<CategoryManagePage />);
+
+        const cards = document.querySelectorAll('.admin-card');
+        expect(cards).toHaveLength(1);
+        expect(cards[0].querySelector('.admin-card-head .admin-toolbar')).not.toBeNull();
+        expect(cards[0].querySelector('.admin-tree-scroll')).not.toBeNull();
+    });
+
     // ── Test 2: Shows category tree ──
     it('renders category tree with categories', () => {
         renderWithProviders(<CategoryManagePage />);

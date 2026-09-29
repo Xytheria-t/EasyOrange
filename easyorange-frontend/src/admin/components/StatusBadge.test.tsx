@@ -70,6 +70,42 @@ describe('StatusBadge', () => {
         });
     });
 
+    describe('knowledge status', () => {
+        it('renders 待索引 for status PENDING', () => {
+            renderWithProviders(<StatusBadge status="PENDING" type="knowledge" />);
+            expect(screen.getByText('待索引')).toBeInTheDocument();
+        });
+
+        it('renders 已索引 for status INDEXED', () => {
+            renderWithProviders(<StatusBadge status="INDEXED" type="knowledge" />);
+            expect(screen.getByText('已索引')).toBeInTheDocument();
+        });
+
+        // 知识库页此前自抄映射时把未知状态兜底成「待索引」，等于把后端新状态伪装成排队中
+        it('renders raw status instead of disguising it as 待索引', () => {
+            renderWithProviders(<StatusBadge status="REINDEXING" type="knowledge" />);
+            expect(screen.getByText('REINDEXING')).toBeInTheDocument();
+            expect(screen.queryByText('待索引')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('category status', () => {
+        it('renders 启用 for status 1', () => {
+            renderWithProviders(<StatusBadge status={1} type="category" />);
+            expect(screen.getByText('启用')).toBeInTheDocument();
+        });
+
+        it('renders 禁用 for status 0', () => {
+            renderWithProviders(<StatusBadge status={0} type="category" />);
+            expect(screen.getByText('禁用')).toBeInTheDocument();
+        });
+
+        it('renders 更新中 for the in-flight toggle', () => {
+            renderWithProviders(<StatusBadge status="UPDATING" type="category" />);
+            expect(screen.getByText('更新中')).toBeInTheDocument();
+        });
+    });
+
     describe('fallback', () => {
         it('renders 未知 for unknown numeric status', () => {
             renderWithProviders(<StatusBadge status={999} type="user" />);

@@ -199,6 +199,17 @@ describe('OrderManagePage', () => {
         expect(screen.getByText('查看和管理平台所有交易订单')).toBeInTheDocument();
     });
 
+    // 工具栏此前独占一张卡（只装一行控件，没标题也没数据），现在并进表格卡的卡头
+    it('把筛选工具栏与列表放进同一张卡', () => {
+        renderWithProviders(<OrderManagePage />);
+
+        const cards = document.querySelectorAll('.admin-card');
+        expect(cards).toHaveLength(1);
+        expect(cards[0].querySelector('.admin-card-head .admin-toolbar')).not.toBeNull();
+        // 本文件 mock 掉了 AdminTable，按 mock 出来的节点判同卡
+        expect(cards[0].contains(screen.getByTestId('admin-table'))).toBe(true);
+    });
+
     // ── Test 2: Shows order list ──
     it('renders order list with order data', () => {
         renderWithProviders(<OrderManagePage />);
