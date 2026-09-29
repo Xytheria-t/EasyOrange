@@ -1,16 +1,14 @@
 import { Search } from 'lucide-react';
 import { type ReactNode, useId } from 'react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { AdminSelect } from './AdminSelect';
 
 /**
  * 工具栏控件 —— 收敛此前 4 个页面逐字复制的搜索框与筛选下拉。
  * 关键修正：筛选项不再是「悬空 span + 无名控件」，统一由 `<label htmlFor>` 关联。
+ * 容器（工具栏本身）由 `AdminListCard` 提供，这里只出控件。
  */
-
-export function AdminToolbar({ children }: { children: ReactNode }) {
-    return <div className="admin-toolbar">{children}</div>;
-}
 
 interface AdminSearchInputProps {
     value: string;
@@ -37,24 +35,12 @@ export function AdminSearchInput({
 
     return (
         <div className="admin-search">
-            <div style={{ flex: 1, minWidth: 0 }}>
-                <label htmlFor={inputId} className="admin-label" style={{ display: 'block' }}>
+            <div className="admin-search-field">
+                <label htmlFor={inputId} className="admin-label admin-label--block">
                     关键词
                 </label>
-                {/* 图标单独包一层：放在 label 同级会让 50% 居中落到 label+输入框的中点 */}
-                <div style={{ position: 'relative' }}>
-                    <Search
-                        size={15}
-                        aria-hidden="true"
-                        style={{
-                            position: 'absolute',
-                            left: '0.85rem',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            color: 'var(--admin-faint)',
-                            pointerEvents: 'none',
-                        }}
-                    />
+                <div className="admin-search-box">
+                    <Search size={15} aria-hidden="true" className="admin-search-icon" />
                     <input
                         id={inputId}
                         type="search"
@@ -69,7 +55,6 @@ export function AdminSearchInput({
                             }
                         }}
                         className="admin-input"
-                        style={{ paddingLeft: '2.4rem' }}
                     />
                 </div>
             </div>
@@ -143,15 +128,11 @@ export function AdminField({ label, required = false, error, hint, children }: A
     const messageId = `${id}-msg`;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label
-                htmlFor={id}
-                className="admin-label"
-                style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}
-            >
+        <div className="admin-field">
+            <label htmlFor={id} className="admin-label admin-field-label">
                 {label}
                 {required ? (
-                    <span aria-hidden="true" style={{ color: 'var(--admin-danger)' }}>
+                    <span aria-hidden="true" className="admin-field-required">
                         *
                     </span>
                 ) : null}
@@ -162,14 +143,7 @@ export function AdminField({ label, required = false, error, hint, children }: A
                 ...(error || hint ? { 'aria-describedby': messageId } : {}),
             })}
             {error || hint ? (
-                <p
-                    id={messageId}
-                    style={{
-                        margin: 0,
-                        fontSize: '0.78rem',
-                        color: error ? 'var(--admin-danger)' : 'var(--admin-muted)',
-                    }}
-                >
+                <p id={messageId} className={cn('admin-field-message', error && 'admin-field-message--error')}>
                     {error || hint}
                 </p>
             ) : null}

@@ -43,6 +43,16 @@ const pageResult: PageResult<KnowledgeDoc> = {
 };
 
 describe('KnowledgePage (知识库管理)', () => {
+    // 本页没有筛选控件，但此前表格卡也没有卡头；现在与其它列表页同结构
+    it('表格与卡头同卡', () => {
+        renderWithProviders(<KnowledgePage />);
+
+        const cards = document.querySelectorAll('.admin-card');
+        expect(cards).toHaveLength(1);
+        expect(cards[0].querySelector('.admin-card-head-title')).toHaveTextContent('文档列表');
+        expect(cards[0].querySelector('.admin-table')).not.toBeNull();
+    });
+
     it('渲染文档列表与状态标签', async () => {
         vi.mocked(adminApi.getKnowledgeDocs).mockResolvedValue({
             code: 'A0000',

@@ -1,5 +1,6 @@
 import { ChevronRight, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { StatusBadge } from '../../components/StatusBadge';
 import type { CategoryResponse } from '../../types/admin';
 
 // 索引按 depth 取：depth=0 是一级。
@@ -48,76 +49,27 @@ export function CategoryTreeNode({
                     variant="ghost"
                     size="icon"
                     onClick={() => onToggleExpand(node.id)}
-                    className="admin-icon-button"
-                    style={{
-                        width: 24,
-                        height: 24,
-                        transform: isExpanded ? 'rotate(90deg)' : 'none',
-                        transition: 'transform 180ms var(--ease-out)',
-                        visibility: hasChildren ? 'visible' : 'hidden',
-                    }}
+                    className="admin-icon-button admin-tree-toggle"
+                    data-open={isExpanded}
+                    data-has-children={hasChildren}
                     aria-label={isExpanded ? `折叠分类 ${node.name}` : `展开分类 ${node.name}`}
                     aria-expanded={hasChildren ? isExpanded : undefined}
                 >
                     <ChevronRight size={13} aria-hidden="true" />
                 </Button>
 
-                <span
-                    style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minWidth: 32,
-                        height: 20,
-                        borderRadius: 6,
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        color: tone.color,
-                        background: tone.background,
-                        flexShrink: 0,
-                        whiteSpace: 'nowrap',
-                    }}
-                >
+                <span className="admin-level-tag" style={{ color: tone.color, background: tone.background }}>
                     {LEVEL_LABELS[depth] ?? `L${depth + 1}`}
                 </span>
 
-                <span
-                    className="admin-value"
-                    style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                >
-                    {node.name}
-                </span>
+                <span className="admin-value admin-tree-name">{node.name}</span>
 
-                {node.sortOrder > 0 ? (
-                    <span className="admin-muted" style={{ flexShrink: 0 }}>
-                        排序 {node.sortOrder}
-                    </span>
-                ) : null}
+                {node.sortOrder > 0 ? <span className="admin-muted admin-tree-sort">排序 {node.sortOrder}</span> : null}
 
-                {/* 状态：圆点 + 文字双编码，不靠颜色单独传达 */}
-                <span
-                    style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.35rem',
-                        padding: '0.22rem 0.6rem',
-                        borderRadius: 'var(--admin-radius-pill)',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        color: isEnabled ? 'var(--status-success)' : 'var(--status-default)',
-                        background: isEnabled ? 'var(--status-success-bg)' : 'var(--status-default-bg)',
-                        flexShrink: 0,
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    <span
-                        className="admin-status-dot"
-                        style={{ background: isEnabled ? 'var(--status-success-dot)' : 'var(--status-default-dot)' }}
-                    />
-                    {isRowUpdating ? '更新中' : isEnabled ? '启用' : '禁用'}
-                </span>
+                {/* 状态标签走 StatusBadge：分类树此前自绘了一份同形药丸，与列表页的状态可能显示成两个样子 */}
+                <StatusBadge status={isRowUpdating ? 'UPDATING' : node.status} type="category" className="shrink-0" />
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
+                <div className="admin-tree-actions">
                     <Button
                         type="button"
                         variant="ghost"

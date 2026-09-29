@@ -57,16 +57,10 @@ export function AdminErrorBanner({ message, onRetry, retrying = false }: AdminEr
     }
     return (
         <div className="admin-error-banner" role="alert">
-            <AlertTriangle
-                size={17}
-                aria-hidden="true"
-                style={{ color: 'var(--admin-danger)', flexShrink: 0, marginTop: 1 }}
-            />
-            <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: 'var(--admin-danger)' }}>
-                    加载失败
-                </p>
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.84rem', color: 'var(--admin-ink-soft)' }}>{message}</p>
+            <AlertTriangle size={17} aria-hidden="true" className="admin-error-banner-icon" />
+            <div className="admin-error-banner-text">
+                <p className="admin-error-banner-title">加载失败</p>
+                <p className="admin-error-banner-message">{message}</p>
             </div>
             {onRetry ? (
                 <Button variant="outline" size="sm" onClick={onRetry} disabled={retrying} className="shrink-0">
@@ -126,7 +120,58 @@ export function AdminCardHead({ title, icon, note, actions }: AdminCardHeadProps
     );
 }
 
-/** 工具栏内的分隔线，窄屏隐藏。 */
-export function ToolbarDivider() {
-    return <span className="admin-toolbar-divider" aria-hidden="true" />;
+interface AdminListCardProps {
+    title: string;
+    icon?: ReactNode;
+    /** 计数口径行，见 AdminListCount */
+    count?: ReactNode;
+    /** 筛选工具栏槽：与表格同卡，窄屏换行到标题下方 */
+    toolbar?: ReactNode;
+    children: ReactNode;
+}
+
+/**
+ * 列表页主卡 —— 一页一卡，表格（或分类树）就是页面主体。
+ *
+ * 此前四个列表页都是「工具栏卡 + 表格卡」上下堆叠：上面那张卡里只有一行筛选控件，
+ * 既没有标题也没有数据，凭空多出一层边框和一块空白。现在工具栏并进卡头右侧，
+ * 筛选与它筛的那张表读成同一块。
+ */
+export function AdminListCard({ title, icon, count, toolbar, children }: AdminListCardProps) {
+    return (
+        <AdminCard grow>
+            <div className="admin-card-head admin-card-head--list">
+                <div>
+                    <h2 className="admin-card-head-title">
+                        {icon}
+                        {title}
+                    </h2>
+                    {count}
+                </div>
+                {toolbar ? <div className="admin-toolbar">{toolbar}</div> : null}
+            </div>
+            {children}
+        </AdminCard>
+    );
+}
+
+interface AdminListCountProps {
+    /** 「共」/「筛选出」等前缀 */
+    prefix: ReactNode;
+    count: ReactNode;
+    /** 量词后缀，可带口径（如「/ 20 个分类」） */
+    suffix?: ReactNode;
+}
+
+/**
+ * 列表计数：分页前的全量条数，是这一屏数据的口径，五个页面原本各拼一份。
+ * 请求失败时调用方整段不渲染——报「共 0 条」会被读成真的没有数据。
+ */
+export function AdminListCount({ prefix, count, suffix }: AdminListCountProps) {
+    return (
+        <p className="admin-card-head-note">
+            {prefix} <strong>{count}</strong>
+            {suffix ? <> {suffix}</> : null}
+        </p>
+    );
 }

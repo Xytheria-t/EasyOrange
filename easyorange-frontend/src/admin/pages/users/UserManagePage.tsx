@@ -3,8 +3,8 @@ import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { usePagination } from '@/hooks/usePagination';
 import { formatDate } from '@/utils/format';
-import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
-import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
+import { AdminFilterField, AdminSearchInput } from '../../components/AdminControls';
+import { AdminListCard, AdminListCount, AdminPage, AdminPageHeader } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { pickAvatarGradient } from '../../components/avatarGradient';
 import {
@@ -78,30 +78,16 @@ export default function UserManagePage() {
             key: 'username',
             title: '用户',
             render: (_value, record) => (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+                <div className="admin-identity">
                     <span
                         aria-hidden="true"
-                        style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 12,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.85rem',
-                            fontWeight: 700,
-                            color: 'var(--admin-surface-solid)',
-                            fontFamily: 'var(--admin-font-title)',
-                            background: pickAvatarGradient(record.userId ?? ''),
-                            flexShrink: 0,
-                        }}
+                        className="admin-avatar"
+                        style={{ background: pickAvatarGradient(record.userId ?? '') }}
                     >
                         {(record.nickname || record.username || '?').charAt(0).toUpperCase()}
                     </span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                        <span style={{ fontWeight: 600, color: 'var(--admin-ink)', fontSize: '0.875rem' }}>
-                            {record.username}
-                        </span>
+                    <div className="admin-identity-text">
+                        <span className="admin-cell-strong">{record.username}</span>
                         {record.nickname ? <span className="admin-muted">{record.nickname}</span> : null}
                     </div>
                 </div>
@@ -116,13 +102,7 @@ export default function UserManagePage() {
             key: 'userType',
             title: '类型',
             render: (_value, record) => (
-                <span
-                    style={{
-                        fontWeight: 600,
-                        fontSize: '0.82rem',
-                        color: userTypeColor(record.userType),
-                    }}
-                >
+                <span className="admin-cell-accent" style={{ color: userTypeColor(record.userType) }}>
                     {userTypeLabel(record.userType, record.userTypeDesc)}
                 </span>
             ),
@@ -168,9 +148,15 @@ export default function UserManagePage() {
                 description="管理平台所有注册用户，查看详情或调整状态"
             />
 
-            <AdminCard>
-                <div style={{ padding: '0.9rem 1.15rem' }}>
-                    <AdminToolbar>
+            <AdminListCard
+                title="用户列表"
+                icon={<Users size={17} />}
+                // 失败时不报「共 0 位」——那会被读成真的没有用户
+                count={
+                    isError ? undefined : <AdminListCount prefix="共" count={total.toLocaleString()} suffix="位用户" />
+                }
+                toolbar={
+                    <>
                         <AdminSearchInput
                             value={searchInput}
                             onChange={setSearchInput}
@@ -196,20 +182,9 @@ export default function UserManagePage() {
                                 goTo(1);
                             }}
                         />
-                        <ToolbarDivider />
-                        <div style={{ flex: 1 }} />
-                        {/* 失败时不报「共 0 位」——那会被读成真的没有用户 */}
-                        {isError ? null : (
-                            <span className="admin-muted">
-                                共 <strong style={{ color: 'var(--admin-ink)' }}>{total.toLocaleString()}</strong>{' '}
-                                位用户
-                            </span>
-                        )}
-                    </AdminToolbar>
-                </div>
-            </AdminCard>
-
-            <AdminCard grow>
+                    </>
+                }
+            >
                 <AdminTable
                     columns={columns}
                     data={users}
@@ -221,7 +196,7 @@ export default function UserManagePage() {
                     pagination={total > pageSize ? { current: page, pageSize, total, onChange: goTo } : undefined}
                     emptyText="暂无用户数据"
                 />
-            </AdminCard>
+            </AdminListCard>
 
             <UserDetailModal
                 // key 绑定用户：切换用户时整棵表单重建，草稿状态不会带着上一位用户的旧选择

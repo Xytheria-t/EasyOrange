@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { usePagination } from '@/hooks/usePagination';
 import type { OrderStatus } from '@/types';
 import { formatDate } from '@/utils/format';
-import { AdminFilterField, AdminSearchInput, AdminToolbar } from '../../components/AdminControls';
-import { AdminCard, AdminPage, AdminPageHeader, ToolbarDivider } from '../../components/AdminPage';
+import { AdminFilterField, AdminSearchInput } from '../../components/AdminControls';
+import { AdminListCard, AdminListCount, AdminPage, AdminPageHeader } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { StatusBadge, statusFilterOptions } from '../../components/StatusBadge';
 import { useAdminOrders } from '../../hooks';
@@ -43,11 +43,7 @@ export default function OrderManagePage() {
         {
             key: 'orderNo',
             title: '订单号',
-            render: value => (
-                <span className="admin-mono" style={{ fontWeight: 600, color: 'var(--admin-ink)' }}>
-                    {value as string}
-                </span>
-            ),
+            render: value => <span className="admin-cell-strong admin-mono">{value as string}</span>,
         },
         {
             key: 'items',
@@ -57,19 +53,7 @@ export default function OrderManagePage() {
                 const firstName = items?.[0]?.productName || '—';
                 const multi = items && items.length > 1;
                 return (
-                    <span
-                        style={{
-                            fontWeight: 500,
-                            color: 'var(--admin-ink-soft)',
-                            fontSize: '0.87rem',
-                            maxWidth: 180,
-                            display: 'inline-block',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            verticalAlign: 'bottom',
-                        }}
-                    >
+                    <span className="admin-cell-sub" style={{ maxWidth: 180 }}>
                         {firstName}
                         {multi ? ` 等${items.length}件` : ''}
                     </span>
@@ -126,9 +110,15 @@ export default function OrderManagePage() {
                 description="查看和管理平台所有交易订单"
             />
 
-            <AdminCard>
-                <div style={{ padding: '0.9rem 1.15rem' }}>
-                    <AdminToolbar>
+            <AdminListCard
+                title="订单列表"
+                icon={<ReceiptText size={17} />}
+                // 失败时不报「共 0 笔」——那会被读成真的没有订单
+                count={
+                    isError ? undefined : <AdminListCount prefix="共" count={total.toLocaleString()} suffix="笔订单" />
+                }
+                toolbar={
+                    <>
                         <AdminSearchInput
                             value={searchInput}
                             onChange={setSearchInput}
@@ -145,20 +135,9 @@ export default function OrderManagePage() {
                                 goTo(1);
                             }}
                         />
-                        <ToolbarDivider />
-                        <div style={{ flex: 1 }} />
-                        {/* 失败时不报「共 0 笔」——那会被读成真的没有订单 */}
-                        {isError ? null : (
-                            <span className="admin-muted">
-                                共 <strong style={{ color: 'var(--admin-ink)' }}>{total.toLocaleString()}</strong>{' '}
-                                笔订单
-                            </span>
-                        )}
-                    </AdminToolbar>
-                </div>
-            </AdminCard>
-
-            <AdminCard grow>
+                    </>
+                }
+            >
                 <AdminTable
                     columns={columns}
                     data={data?.records ?? []}
@@ -171,7 +150,7 @@ export default function OrderManagePage() {
                     }
                     emptyText="暂无订单数据"
                 />
-            </AdminCard>
+            </AdminListCard>
 
             <OrderDetailModal
                 open={detailOrderId !== null}
