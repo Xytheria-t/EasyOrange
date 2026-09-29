@@ -82,6 +82,7 @@
 |---|---|---|
 | ① | 自治式工具循环 | 本地打流式口跑量，看 `eo_tool_call_step_trace` 与 `easyorange.ai.chat.loop{outcome}` |
 | ② | 编排范式判断 | 读 `ToolCallLoop` 控制流，对照 [02 §4](02-代码走读.md) 的收益区论证与三条硬指标，能口述「为什么不做 Workflow」 |
+| ②' | 发布助手 | 读 [02 §5](02-代码走读.md)，能口述「为什么砍到一次调用」与「为什么识别失败不做降级」 |
 | ③ | RAG 完整链路 | 手改 query，观察两路召回各自排名与融合后排名 |
 | ④ | 评估闭环 | 改一版 prompt 后 dispatch `ai-eval.yml`，看门禁是否卡住 |
 | ⑤ | 成本与延迟治理 | 读 `GET /api/admin/ai/cost-report` 与预算场景配置 |
