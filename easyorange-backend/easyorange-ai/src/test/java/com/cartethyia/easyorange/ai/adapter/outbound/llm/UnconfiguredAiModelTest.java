@@ -16,7 +16,7 @@ import org.springframework.ai.embedding.EmbeddingRequest;
 @DisplayName("AI 未配置占位模型")
 class UnconfiguredAiModelTest {
 
-    private static final String REASON = "easyorange.ai.deepseek.api-key 为空";
+    private static final String REASON = "easyorange.ai.text.api-key 为空";
 
     @Test
     @DisplayName("chatModel.call 抛出含配置原因的异常")

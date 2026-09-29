@@ -13,8 +13,8 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "easyorange.ai")
 public record AiProperties(
-        DeepSeek deepseek,
-        QwenVl qwenVl,
+        Text text,
+        Vision vision,
         @Valid Embedding embedding,
         Cache cache,
         RateLimit rateLimit,
@@ -28,11 +28,11 @@ public record AiProperties(
         // 两边失同步的症状不报错、也不打日志：单测用 PropertyBindings 裸绑（不加载 application.yaml）时会静默吃这里的旧值，
         // 表现为「本地测试全绿、起服行为不同」。embedding 的 dimensions 尤其致命 —— 与 ES dense_vector 不一致时
         // kNN 全库召回，表现为「语义检索能跑但结果很烂」，排查成本极高。
-        if (deepseek == null) {
-            deepseek = new DeepSeek(null, "https://api.deepseek.com", "deepseek-chat", "", 30000);
+        if (text == null) {
+            text = new Text(null, "https://api.deepseek.com", "deepseek-chat", "", 30000);
         }
-        if (qwenVl == null) {
-            qwenVl = new QwenVl(null, "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-vl-max", 60000);
+        if (vision == null) {
+            vision = new Vision(null, "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-vl-max", 60000);
         }
         if (embedding == null) {
             embedding = new Embedding(
@@ -59,7 +59,9 @@ public record AiProperties(
     }
 
     /**
-     * 文本模型配置 — OpenAI 兼容托管 API（项目实际用阿里云百炼，DeepSeek / Qwen 系同一端点同一把 key）。
+     * 文本生成模型配置 — 供应商无关，槽位按<b>职责</b>命名而非按厂商：
+     * 厂商只作为 base-url / model 两个配置<b>值</b>存在，写进键名会让「键名是 deepseek、实际跑百炼」
+     * 这种失配在排查时无法一眼看出（默认值仍是 DeepSeek 官方端点，可不带任何环境变量直接跑通）。
      *
      * @param routerModel 工具决策专用模型，留空与 {@code model} 同模型；决策与生成为什么分开配
      *     见 {@link AiModelConfig#decisionChatModel}
@@ -67,9 +69,10 @@ public record AiProperties(
      * 端点 / 模型 / 超时的单一来源是 application.yaml；构造器兜底仅防属性源整段缺失（测试裸绑场景），
      * 不另设 @DefaultValue——同一默认值写两处必然漂移。
      */
-    public record DeepSeek(String apiKey, String baseUrl, String model, String routerModel, int timeout) {}
+    public record Text(String apiKey, String baseUrl, String model, String routerModel, int timeout) {}
 
-    public record QwenVl(String apiKey, String baseUrl, String model, int timeout) {}
+    /** 视觉理解模型配置 — 同 {@link Text}，槽位命名只表职责。 */
+    public record Vision(String apiKey, String baseUrl, String model, int timeout) {}
 
     /** Embedding 模型配置 — dimensions 必须与 ES 索引 {@code dense_vector} 映射维度一致，否则语义检索 kNN 查询维度不匹配失败。 */
     public record Embedding(String apiKey, String baseUrl, String model, int dimensions, int timeout) {}

@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated;
  * 映射到本 record（{@code EASYORANGE_DB_HOST} → {@code easyorange.prod.db-host} → {@code dbHost}），
  * 缺失时占位符解析失败直接中止启动，值为空串时由 {@code @NotBlank} 兜底。
  * 仅 {@code prod} profile 生效（dev 密钥有默认值或自动生成，无需强制）；
- * AI 密钥（DEEPSEEK/QWEN_VL/EMBEDDING）按既定契约可选、降级装配，不在此列。
+ * AI 密钥（AI_TEXT/AI_VISION/EMBEDDING）按既定契约可选、降级装配，不在此列。
  */
 @Validated
 @Profile("prod")

@@ -31,8 +31,8 @@ public class AiHealthIndicator implements HealthIndicator {
         var builder = Health.up();
         int configured = 0;
 
-        configured += describeProvider(builder, "chat", properties.deepseek().apiKey());
-        configured += describeProvider(builder, "vision", properties.qwenVl().apiKey());
+        configured += describeProvider(builder, "chat", properties.text().apiKey());
+        configured += describeProvider(builder, "vision", properties.vision().apiKey());
         configured +=
                 describeProvider(builder, "embedding", properties.embedding().apiKey());
 

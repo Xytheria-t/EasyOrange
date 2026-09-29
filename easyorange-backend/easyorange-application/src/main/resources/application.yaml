@@ -26,7 +26,7 @@ spring:
     banner-mode: console
 
   ai:
-    # 模型由 easyorange-ai 的 AiModelConfig 手动装配（DeepSeek/Qwen-VL/Embedding），
+    # 模型由 easyorange-ai 的 AiModelConfig 手动装配（文本/视觉/Embedding 三槽位），
     # 且不使用 audio/image/moderation 模型族，故整体禁用 Spring AI OpenAI 自动配置，
     # 避免无 AI key 时这些自动装配模型在启动期强制校验凭据而崩溃
     model:
@@ -409,18 +409,21 @@ easyorange:
 
   ai:
     # 四个模型槽位（决策 / 文本 / 视觉 / Embedding）的 api-key、base-url、model 都可经环境变量覆盖：
-    # 各云厂商的 OpenAI 兼容端点（如百炼 compatible-mode）协议一致，换供应商只改环境变量、不动代码
-    deepseek:
-      api-key: ${DEEPSEEK_API_KEY:}
-      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
-      model: ${DEEPSEEK_MODEL:deepseek-chat}
+    # 槽位按「职责」命名而非按厂商 —— 厂商只作为 base-url / model 的取值存在。带厂商名的键名会制造
+    # 「键名是 A、实际值是 B」这种失配，此时读配置的人无从判断该信哪个，排查成本极高（曾发生：
+    # 键名 deepseek 而实跑百炼）。各云厂商的 OpenAI 兼容端点（如百炼 compatible-mode）协议一致，
+    # 换供应商只改环境变量、不动代码。
+    text:
+      api-key: ${AI_TEXT_API_KEY:}
+      base-url: ${AI_TEXT_BASE_URL:https://api.deepseek.com}
+      model: ${AI_TEXT_MODEL:deepseek-chat}
       # 工具决策专用模型（chat_tool 场景）— 纯路由任务配快模型，生成仍走上面的强模型；留空即同模型
-      router-model: ${DEEPSEEK_ROUTER_MODEL:}
+      router-model: ${AI_TEXT_ROUTER_MODEL:}
       timeout: 30000
-    qwen-vl:
-      api-key: ${QWEN_VL_API_KEY:}
-      base-url: ${QWEN_VL_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
-      model: ${QWEN_VL_MODEL:qwen-vl-max}
+    vision:
+      api-key: ${AI_VISION_API_KEY:}
+      base-url: ${AI_VISION_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+      model: ${AI_VISION_MODEL:qwen-vl-max}
       timeout: 60000
     embedding:
       api-key: ${EMBEDDING_API_KEY:}
