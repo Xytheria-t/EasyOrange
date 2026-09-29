@@ -1,5 +1,5 @@
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -12,9 +12,7 @@ export function AdminPage({ children }: { children: ReactNode }) {
     return (
         <div className="admin-page-root">
             <div className="admin-page-backdrop" aria-hidden="true" />
-            <div className="admin-page admin-page-body" style={{ animation: 'pageIn 0.5s var(--ease-out) both' }}>
-                {children}
-            </div>
+            <div className="admin-page admin-page-body">{children}</div>
         </div>
     );
 }
@@ -30,33 +28,15 @@ interface AdminPageHeaderProps {
 export function AdminPageHeader({ icon, title, description, actions }: AdminPageHeaderProps) {
     return (
         <header className="admin-page-header">
-            <div style={{ display: 'flex', gap: '0.9rem', alignItems: 'flex-start', minWidth: 0 }}>
+            <div className="admin-page-header-main">
                 {icon ? (
-                    <span
-                        aria-hidden="true"
-                        style={{
-                            width: 34,
-                            height: 34,
-                            borderRadius: 11,
-                            background: 'var(--admin-primary-bg)',
-                            color: 'var(--admin-surface-solid)',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                            boxShadow: 'var(--admin-primary-shadow)',
-                        }}
-                    >
+                    <span className="admin-page-header-icon" aria-hidden="true">
                         {icon}
                     </span>
                 ) : null}
-                <div style={{ minWidth: 0 }}>
+                <div className="admin-page-header-text">
                     <h1 className="admin-title">{title}</h1>
-                    {description ? (
-                        <p className="admin-subtitle" style={{ marginTop: '0.35rem' }}>
-                            {description}
-                        </p>
-                    ) : null}
+                    {description ? <p className="admin-subtitle">{description}</p> : null}
                 </div>
             </div>
             {actions ? <div className="admin-page-header-actions">{actions}</div> : null}
@@ -98,23 +78,51 @@ export function AdminErrorBanner({ message, onRetry, retrying = false }: AdminEr
     );
 }
 
-/** 玻璃内容卡。`grow` 用于撑满剩余高度的主表卡；`className` 追加语义变体（如 .admin-stat-card）。 */
+/** 玻璃内容卡。`grow` 用于撑满剩余高度的主表卡；`className` 追加语义变体（如 .admin-kpi）。 */
 export function AdminCard({
     grow = false,
     className,
+    style,
     children,
 }: {
     grow?: boolean;
     className?: string;
+    /** 只给按数据算出来的值（如 KPI 卡的指标色变量），静态视觉一律走 className */
+    style?: CSSProperties;
     children: ReactNode;
 }) {
     return (
         <section
             className={`${grow ? 'admin-card admin-card--grow' : 'admin-card'}${className ? ` ${className}` : ''}`}
-            style={{ animation: 'cardIn 0.45s var(--ease-out) both' }}
+            style={style}
         >
             {children}
         </section>
+    );
+}
+
+interface AdminCardHeadProps {
+    title: string;
+    icon?: ReactNode;
+    /** 口径说明：这一块的数字怎么来的、含什么不含什么 */
+    note?: ReactNode;
+    actions?: ReactNode;
+}
+
+/** 卡片头：标题 + 口径说明 + 右侧动作。表格卡与图卡共用，此前每个页面各拼一版，
+ *  标题字号、说明位置、分隔线样式三页三个样。 */
+export function AdminCardHead({ title, icon, note, actions }: AdminCardHeadProps) {
+    return (
+        <div className="admin-card-head">
+            <div>
+                <h2 className="admin-card-head-title">
+                    {icon}
+                    {title}
+                </h2>
+                {note ? <p className="admin-card-head-note">{note}</p> : null}
+            </div>
+            {actions ? <div className="admin-page-header-actions">{actions}</div> : null}
+        </div>
     );
 }
 

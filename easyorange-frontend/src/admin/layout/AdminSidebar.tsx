@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAdminStore } from '../store';
 
@@ -136,6 +137,23 @@ interface AdminSidebarProps {
     className?: string;
 }
 
+/**
+ * 运行环境徽标 —— 把 vite 的 MODE 翻成人话。
+ *
+ * 摆在侧边栏底部那段本来就空着的留白里。后台演示最常见的手滑是改着改着连错了栈，
+ * 页面上又没有地方交代当前连的是哪套，出了问题只能回头翻 vite.config 的 proxy。
+ * 色值走 admin.css 令牌（开发=琥珀 / 生产=青），不写字面量。
+ */
+const ENV_PRESETS: Record<string, { label: string; color: string }> = {
+    development: { label: '开发环境', color: 'var(--admin-flow-ship)' },
+    production: { label: '生产环境', color: 'var(--admin-flow-done)' },
+    test: { label: '测试环境', color: 'var(--admin-chart-5)' },
+};
+const RUNTIME_ENV = ENV_PRESETS[import.meta.env.MODE] ?? {
+    label: import.meta.env.MODE,
+    color: 'var(--admin-faint)',
+};
+
 export function AdminSidebar({ onNavigate, className = '' }: AdminSidebarProps = {}) {
     const { sidebarCollapsed } = useAdminStore();
     const location = useLocation();
@@ -175,13 +193,16 @@ export function AdminSidebar({ onNavigate, className = '' }: AdminSidebarProps =
             <nav className="sidebar-nav">
                 {navItems.map(section => (
                     <div key={section.section} className="nav-section">
-                        {!sidebarCollapsed && <div className="nav-section-title">{section.section}</div>}
+                        {/* 条件渲染必须看 collapsed 而不是裸的 sidebarCollapsed：抽屉里
+                            collapsed 被强制成 false（永远展开），若读 store，
+                            桌面端收起过一次后，抽屉里的分组标题会整片消失。 */}
+                        {!collapsed && <div className="nav-section-title">{section.section}</div>}
                         {section.items.map(item => (
                             <Link
                                 key={item.path}
                                 to={item.path}
                                 className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
-                                title={sidebarCollapsed ? item.label : undefined}
+                                title={collapsed ? item.label : undefined}
                                 onClick={onNavigate}
                             >
                                 <span className="nav-item-icon">{item.icon}</span>
@@ -194,10 +215,18 @@ export function AdminSidebar({ onNavigate, className = '' }: AdminSidebarProps =
 
             {/* Footer */}
             <div className="sidebar-footer">
+                <div
+                    className="sidebar-env"
+                    title={`当前构建模式：${import.meta.env.MODE}`}
+                    style={{ '--env-color': RUNTIME_ENV.color } as CSSProperties}
+                >
+                    <span className="sidebar-env-dot" aria-hidden="true" />
+                    <span className="sidebar-env-text">{RUNTIME_ENV.label}</span>
+                </div>
                 <Link
                     to="/"
                     className="sidebar-back-link"
-                    title={sidebarCollapsed ? '返回主站' : undefined}
+                    title={collapsed ? '返回主站' : undefined}
                     onClick={onNavigate}
                 >
                     <svg

@@ -20,8 +20,8 @@ vi.mock('../../hooks', () => ({
 }));
 
 vi.mock('./charts/lazyCharts', () => ({
-    LazyTrendChart: ({ data: _data, isCompact, height }: { data: TrendItem[]; isCompact: boolean; height: number }) => (
-        <div data-testid="trend-chart" data-compact={isCompact} data-height={height}>
+    LazyTrendChart: ({ data: _data, height }: { data: TrendItem[]; height?: number }) => (
+        <div data-testid="trend-chart" data-height={height}>
             TrendChart
         </div>
     ),
@@ -52,7 +52,7 @@ const sampleOrderStats: OrderStatsResponse = {
 
 const sampleCategories: CategoryResponse[] = [
     {
-        categoryId: '1',
+        id: '1',
         name: '电子产品',
         parentId: null,
         parentName: null,
@@ -62,9 +62,10 @@ const sampleCategories: CategoryResponse[] = [
         productCount: 100,
         createTime: null,
         updateTime: null,
+        children: [],
     },
     {
-        categoryId: '2',
+        id: '2',
         name: '图书',
         parentId: null,
         parentName: null,
@@ -74,9 +75,10 @@ const sampleCategories: CategoryResponse[] = [
         productCount: 50,
         createTime: null,
         updateTime: null,
+        children: [],
     },
     {
-        categoryId: '3',
+        id: '3',
         name: '服装',
         parentId: null,
         parentName: null,
@@ -86,10 +88,11 @@ const sampleCategories: CategoryResponse[] = [
         productCount: 30,
         createTime: null,
         updateTime: null,
+        children: [],
     },
     // 二级分类：一级计数已归并它，进分布图会把同一件商品算两遍
     {
-        categoryId: '4',
+        id: '4',
         name: '手机',
         parentId: '1',
         parentName: '电子产品',
@@ -99,6 +102,7 @@ const sampleCategories: CategoryResponse[] = [
         productCount: 60,
         createTime: null,
         updateTime: null,
+        children: [],
     },
 ];
 
@@ -291,5 +295,37 @@ describe('StatsPage', () => {
         expect(screen.getAllByText('加载失败，请刷新重试').length).toBeGreaterThan(0);
         // 失败时不能同时声称「暂无数据」
         expect(screen.queryByText('暂无数据')).not.toBeInTheDocument();
+    });
+
+    // ── Test 13: KPI 副指标 ──
+    it('KPI 卡带上当日 / 待办口径，不只摆累计数', () => {
+        renderWithProviders(<StatsPage />);
+        // 接口早就返回了这几个字段，此前一个都没上屏
+        expect(screen.getByText('今日新增 25 人')).toBeInTheDocument();
+        expect(screen.getByText('待审核 10 件')).toBeInTheDocument();
+        expect(screen.getByText('今日 15 笔')).toBeInTheDocument();
+    });
+
+    // ── Test 14: 分布占比要加得起来 ──
+    it('把超出展示上限的分类合并成「其他」一行，使占比之和等于 100%', () => {
+        const many: CategoryResponse[] = Array.from({ length: 8 }, (_, i) => ({
+            id: `c${i}`,
+            name: `分类${i}`,
+            parentId: null,
+            parentName: null,
+            level: 1,
+            sortOrder: i,
+            status: 1,
+            productCount: (i + 1) * 10,
+            createTime: null,
+            updateTime: null,
+            children: [],
+        }));
+        setupMocks({ categories: many });
+        renderWithProviders(<StatsPage />);
+
+        // 只列前 6 却按全部一级分类算占比，六个百分数加起来对不上 100%
+        expect(screen.getByText('其他 2 个分类')).toBeInTheDocument();
+        expect(screen.getByText('合计 360 件')).toBeInTheDocument();
     });
 });
