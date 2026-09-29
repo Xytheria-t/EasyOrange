@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeIngestionAppS
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -24,7 +25,7 @@ public class KnowledgeBootstrapIndexer implements ApplicationRunner {
     private final ObjectProvider<KnowledgeIndexPort> indexPortProvider;
 
     @Override
-    public void run(ApplicationArguments args) {
+    public void run(@NonNull ApplicationArguments args) {
         var port = indexPortProvider.getIfAvailable();
         if (port == null || !port.isAvailable()) {
             log.info("Knowledge index unavailable, skip bootstrap indexing");
