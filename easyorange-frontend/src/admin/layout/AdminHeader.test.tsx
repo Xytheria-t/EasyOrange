@@ -1,6 +1,15 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminHeader } from './AdminHeader';
+
+// 顶栏的「刷新数据」用 useQueryClient / useIsFetching，必须有 QueryClientProvider；
+// 这里不能用 renderWithProviders——本文件把 react-router-dom 整个 mock 掉了
+function renderHeader(ui: ReactElement) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
@@ -50,7 +59,7 @@ describe('AdminHeader', () => {
 
     // 顶栏不再重复页面标题：标题只有各页页头一处（/admin/stats 深链曾回落成「管理后台」）
     it('does not render a duplicated page title', () => {
-        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
+        renderHeader(<AdminHeader onOpenMobileNav={vi.fn()} />);
         expect(screen.queryByText('数据统计')).not.toBeInTheDocument();
     });
 
@@ -58,18 +67,18 @@ describe('AdminHeader', () => {
         mockAuthStore.mockReturnValue({
             user: { nickname: 'Admin', username: 'admin', userType: '02' },
         });
-        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
+        renderHeader(<AdminHeader onOpenMobileNav={vi.fn()} />);
         expect(screen.getByText('管理员')).toBeInTheDocument();
         expect(screen.queryByText('超级管理员')).not.toBeInTheDocument();
     });
 
     it('shows user name', () => {
-        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
+        renderHeader(<AdminHeader onOpenMobileNav={vi.fn()} />);
         expect(screen.getByText('Admin')).toBeInTheDocument();
     });
 
     it('shows user avatar initial', () => {
-        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
+        renderHeader(<AdminHeader onOpenMobileNav={vi.fn()} />);
         expect(screen.getByText('A')).toBeInTheDocument();
     });
 
@@ -79,7 +88,7 @@ describe('AdminHeader', () => {
             sidebarCollapsed: false,
             toggleSidebar,
         });
-        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
+        renderHeader(<AdminHeader onOpenMobileNav={vi.fn()} />);
         fireEvent.click(screen.getByTitle('收起侧边栏'));
         expect(toggleSidebar).toHaveBeenCalledTimes(1);
     });
@@ -89,7 +98,7 @@ describe('AdminHeader', () => {
             sidebarCollapsed: true,
             toggleSidebar: vi.fn(),
         });
-        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
+        renderHeader(<AdminHeader onOpenMobileNav={vi.fn()} />);
         expect(screen.getByTitle('展开侧边栏')).toBeInTheDocument();
     });
 
@@ -101,26 +110,39 @@ describe('AdminHeader', () => {
             sidebarCollapsed: false,
             toggleSidebar,
         });
-        render(<AdminHeader onOpenMobileNav={onOpenMobileNav} />);
+        renderHeader(<AdminHeader onOpenMobileNav={onOpenMobileNav} />);
         fireEvent.click(screen.getByTitle('打开导航菜单'));
         expect(onOpenMobileNav).toHaveBeenCalledTimes(1);
         expect(toggleSidebar).not.toHaveBeenCalled();
     });
 
     it('点击用户区块回到主站，但不结束会话', () => {
-        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
+        renderHeader(<AdminHeader onOpenMobileNav={vi.fn()} />);
         fireEvent.click(screen.getByTitle('返回主站'));
         expect(mockNavigate).toHaveBeenCalledWith('/');
         expect(mockLogout).not.toHaveBeenCalled();
     });
 
     it('点击退出登录 -> 登出、提示、落登录页', async () => {
-        render(<AdminHeader onOpenMobileNav={vi.fn()} />);
+        renderHeader(<AdminHeader onOpenMobileNav={vi.fn()} />);
         fireEvent.click(screen.getByTitle('退出登录'));
         await waitFor(() => {
             expect(mockNavigate).toHaveBeenCalledWith('/login');
         });
         expect(mockLogout).toHaveBeenCalledTimes(1);
         expect(mockAddToast).toHaveBeenCalledWith({ type: 'success', message: '已退出登录' });
+    });
+
+    // 数据新鲜度入口：管理端读的是实时值，顶栏必须有一个全局刷新
+    it('提供全局刷新入口，一个 admin 前缀刷全站', () => {
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+        render(
+            <QueryClientProvider client={queryClient}>
+                <AdminHeader onOpenMobileNav={vi.fn()} />
+            </QueryClientProvider>
+        );
+        fireEvent.click(screen.getByTitle('刷新全部管理端数据'));
+        expect(invalidate).toHaveBeenCalledWith({ queryKey: ['admin'] });
     });
 });

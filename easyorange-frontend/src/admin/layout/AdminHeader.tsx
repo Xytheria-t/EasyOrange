@@ -1,4 +1,5 @@
-import { LogOut } from 'lucide-react';
+import { useIsFetching, useQueryClient } from '@tanstack/react-query';
+import { LogOut, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useLogout, useMediaQuery } from '@/hooks';
@@ -18,6 +19,10 @@ export function AdminHeader({ onOpenMobileNav }: AdminHeaderProps) {
     const logout = useLogout();
     const navigate = useNavigate();
     const isDesktop = useMediaQuery('(min-width: 769px)');
+    const queryClient = useQueryClient();
+    // 管理端所有查询键都以 ['admin'] 开头（见各 useAdminXxx 的 KEYS 出口），
+    // 一个前缀就能刷全站，不必让每页各自暴露 refetch
+    const isFetching = useIsFetching({ queryKey: ['admin'] }) > 0;
 
     const handleBackToSite = () => {
         navigate('/');
@@ -28,6 +33,10 @@ export function AdminHeader({ onOpenMobileNav }: AdminHeaderProps) {
         await logout();
         addToast({ type: 'success', message: '已退出登录' });
         navigate('/login');
+    };
+
+    const handleRefresh = () => {
+        void queryClient.invalidateQueries({ queryKey: ['admin'] });
     };
 
     return (
@@ -69,6 +78,22 @@ export function AdminHeader({ onOpenMobileNav }: AdminHeaderProps) {
             </div>
 
             <div className="header-right">
+                {/* 手动刷新：管理端读的全是实时值，页面却从不交代数据是什么时候的；
+                    顶栏此前除折叠钮和用户块外整条空着，这里把刷新补上。 */}
+                <Button
+                    variant="ghost"
+                    className="header-refresh"
+                    onClick={handleRefresh}
+                    disabled={isFetching}
+                    data-busy={isFetching}
+                    title="刷新全部管理端数据"
+                    aria-label={isFetching ? '正在刷新数据' : '刷新全部管理端数据'}
+                >
+                    <span className="header-refresh-icon">
+                        <RefreshCw size={14} aria-hidden="true" />
+                    </span>
+                    {isFetching ? '刷新中' : '刷新数据'}
+                </Button>
                 {/* 两个动作位分开：用户区块只回主站（不结束会话），登出是独立的显式动作 ——
                     此前一个函数名叫 logout 的按钮只做 navigate('/')，语义割裂，极易误用。
                     角色按真实 userType 显示；此前写死「超级管理员」，管理员（02）看了也是超管 */}

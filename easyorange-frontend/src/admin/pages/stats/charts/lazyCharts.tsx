@@ -5,17 +5,11 @@ const TrendChart = lazy(() => import('./TrendChart'));
 
 interface TrendChartProps {
     data: TrendItem[];
-    isCompact?: boolean;
     height?: number;
 }
 
 const ChartFallback = ({ height = 200 }: { height?: number }) => (
-    <div
-        role="img"
-        aria-label="图表加载中"
-        className="flex items-center justify-center rounded-xl bg-white/40"
-        style={{ height, color: 'var(--admin-muted)', fontSize: '0.85rem' }}
-    >
+    <div role="img" aria-label="图表加载中" className="admin-panel-state" style={{ height }}>
         <span className="inline-flex items-center gap-2">
             <span
                 aria-hidden="true"
