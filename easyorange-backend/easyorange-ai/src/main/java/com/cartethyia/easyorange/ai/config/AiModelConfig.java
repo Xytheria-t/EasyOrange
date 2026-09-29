@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Primary;
 
 /**
  * Spring AI 模型装配 — 四个模型 bean 全手动创建（决策 / 文本 / 视觉 / Embedding）：
- * 两个 OpenAI 兼容供应商（DeepSeek 文本 / DashScope 视觉 + Embedding）的 base-url 与 api-key 不同，
+ * 文本与视觉是两家 OpenAI 兼容供应商（部署实测用阿里云百炼，两者同端点同 key），base-url 与 api-key 可各自独立，
  * 单一 {@code spring.ai.openai.*} 自动配置表达不了，统一经 {@link OpenAiSetup#setupSyncClient} 手动
  * 构造 {@link OpenAIClient}；定义 bean 后自动配置的 {@code @ConditionalOnMissingBean} 自动退让，
  * 不会产生重复 bean。重试与并发隔离由 openai-java 客户端内置（{@code maxRetries} / 连接池）承担。
@@ -35,7 +35,7 @@ public class AiModelConfig {
     private static final int MAX_RETRIES = 2;
 
     /**
-     * 文本模型 — DeepSeek，业务服务默认注入的 {@code ChatModel}。
+     * 文本模型，业务服务默认注入的 {@code ChatModel}。
      * options 必须同时带 baseUrl / apiKey：Builder 需要同步与异步两个客户端，异步的由 options 里的
      * 连接参数自行装配，缺凭据会抛 IllegalStateException 导致 key 非空时上下文启动失败
      * （key 为空走占位 bean 分支，恰好掩盖该问题）。
@@ -43,17 +43,16 @@ public class AiModelConfig {
     @Bean
     @Primary
     public ChatModel chatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
-        var deepseek = props.deepseek();
-        if (hasNoText(deepseek.apiKey())) {
-            return new UnconfiguredChatModel("easyorange.ai.deepseek.api-key 为空，请配置 DEEPSEEK_API_KEY");
+        var text = props.text();
+        if (hasNoText(text.apiKey())) {
+            return new UnconfiguredChatModel("easyorange.ai.text.api-key 为空，请配置 AI_TEXT_API_KEY");
         }
         return OpenAiChatModel.builder()
-                .openAiClient(syncClient(
-                        deepseek.baseUrl(), deepseek.apiKey(), deepseek.model(), deepseek.timeout(), obs, meters))
+                .openAiClient(syncClient(text.baseUrl(), text.apiKey(), text.model(), text.timeout(), obs, meters))
                 .options(OpenAiChatOptions.builder()
-                        .baseUrl(deepseek.baseUrl())
-                        .apiKey(deepseek.apiKey())
-                        .model(deepseek.model())
+                        .baseUrl(text.baseUrl())
+                        .apiKey(text.apiKey())
+                        .model(text.model())
                         // 流式默认不带用量分片，打开后末帧回报 token 用量 —— 流式对话的预算记账依赖它
                         .streamUsage(true)
                         .build())
@@ -71,38 +70,38 @@ public class AiModelConfig {
      */
     @Bean
     public ChatModel decisionChatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
-        var deepseek = props.deepseek();
-        if (hasNoText(deepseek.apiKey())) {
-            return new UnconfiguredChatModel("easyorange.ai.deepseek.api-key 为空，请配置 DEEPSEEK_API_KEY");
+        var text = props.text();
+        if (hasNoText(text.apiKey())) {
+            return new UnconfiguredChatModel("easyorange.ai.text.api-key 为空，请配置 AI_TEXT_API_KEY");
         }
-        String model = hasNoText(deepseek.routerModel())
-                ? deepseek.model()
-                : deepseek.routerModel().trim();
+        String model = hasNoText(text.routerModel())
+                ? text.model()
+                : text.routerModel().trim();
         return OpenAiChatModel.builder()
-                .openAiClient(syncClient(deepseek.baseUrl(), deepseek.apiKey(), model, deepseek.timeout(), obs, meters))
+                .openAiClient(syncClient(text.baseUrl(), text.apiKey(), model, text.timeout(), obs, meters))
                 .options(OpenAiChatOptions.builder()
-                        .baseUrl(deepseek.baseUrl())
-                        .apiKey(deepseek.apiKey())
+                        .baseUrl(text.baseUrl())
+                        .apiKey(text.apiKey())
                         .model(model)
                         .build())
                 .observationRegistry(obs)
                 .build();
     }
 
-    /** 视觉模型 — Qwen-VL（DashScope OpenAI 兼容端点），拍照上架图片识别专用；options 带 baseUrl / apiKey 的理由同 {@link #chatModel}。 */
+    /** 视觉模型，拍照上架图片识别专用；options 带 baseUrl / apiKey 的理由同 {@link #chatModel}。 */
     @Bean
     public ChatModel visionChatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
-        var qwenVl = props.qwenVl();
-        if (hasNoText(qwenVl.apiKey())) {
-            return new UnconfiguredChatModel("easyorange.ai.qwen-vl.api-key 为空，请配置 QWEN_VL_API_KEY");
+        var vision = props.vision();
+        if (hasNoText(vision.apiKey())) {
+            return new UnconfiguredChatModel("easyorange.ai.vision.api-key 为空，请配置 AI_VISION_API_KEY");
         }
         return OpenAiChatModel.builder()
                 .openAiClient(
-                        syncClient(qwenVl.baseUrl(), qwenVl.apiKey(), qwenVl.model(), qwenVl.timeout(), obs, meters))
+                        syncClient(vision.baseUrl(), vision.apiKey(), vision.model(), vision.timeout(), obs, meters))
                 .options(OpenAiChatOptions.builder()
-                        .baseUrl(qwenVl.baseUrl())
-                        .apiKey(qwenVl.apiKey())
-                        .model(qwenVl.model())
+                        .baseUrl(vision.baseUrl())
+                        .apiKey(vision.apiKey())
+                        .model(vision.model())
                         .build())
                 .observationRegistry(obs)
                 .build();
@@ -130,7 +129,7 @@ public class AiModelConfig {
         return value == null || value.isBlank();
     }
 
-    /** OpenAI 兼容供应商的统一同步客户端装配 — 非本项目使用的 Azure/stubbing/自定义头等能力传空值（两个供应商均走 apiKey + base-url 直连）。 */
+    /** OpenAI 兼容供应商的统一同步客户端装配 — 非本项目使用的 Azure/stubbing/自定义头等能力传空值（均走 apiKey + base-url 直连）。 */
     private static OpenAIClient syncClient(
             String baseUrl,
             String apiKey,

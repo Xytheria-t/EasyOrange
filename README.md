@@ -29,7 +29,7 @@
 
 ### 核心矛盾与解法
 
-DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。解法：**AI 基础设施全面框架化为 Spring AI**（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)）——LLM / Embedding 调用点直接注入 `ChatModel` / `EmbeddingModel` bean（DeepSeek + Qwen-VL + DashScope，统一 OpenAI 兼容协议），供应商可换只改配置；业务级治理保留：Redisson 令牌桶限流（超限 429）、`@TokenBudget` 日预算 AOP、供应商故障 stale 兜底、Prompt YAML 版本化。
+DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。解法：**AI 基础设施全面框架化为 Spring AI**（[ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)）——LLM / Embedding 调用点直接注入 `ChatModel` / `EmbeddingModel` bean（文本 / 视觉 / 向量三个槽位，统一 OpenAI 兼容协议），供应商可换只改配置；业务级治理保留：Redisson 令牌桶限流（超限 429）、`@TokenBudget` 日预算 AOP、供应商故障 stale 兜底、Prompt YAML 版本化。
 
 ### 两条 AI 主线链路
 
@@ -94,7 +94,7 @@ flowchart TB
     DB[("MySQL")]
     REDIS[("Redis · 缓存 / 令牌桶 / 锁")]
     ES[("Elasticsearch · 可选")]
-    LLM["DeepSeek / Qwen-VL / DashScope"]
+    LLM["文本 / 视觉 / Embedding<br/>（OpenAI 兼容端点）"]
 
     FE --> APP
     APP --> USER
@@ -126,7 +126,7 @@ flowchart TB
 - **后端**：Spring Boot 聚合 Maven 多模块，DDD 六边形 + CQRS 分层（CQRS 范围决策见 [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md)）
 - **数据**：MySQL（Flyway 迁移）+ Redis（缓存 / 令牌桶 / 分布式锁 / 会话）+ Elasticsearch（BM25 + kNN）
 - **消息**：Spring Modulith Outbox → RabbitMQ Topic Exchange，每个业务模块独占队列的消费者，DLQ 三级重试
-- **AI**：DeepSeek（Chat）/ Qwen-VL（Vision）/ DashScope（Embedding），统一 OpenAI 兼容协议
+- **AI**：三个模型槽位（文本生成 / 视觉理解 / Embedding），统一 OpenAI 兼容协议。供应商只作为 `base-url` + `model` 的**取值**存在，不写进配置键名——部署实况是阿里云百炼托管 DeepSeek（文本）与 Qwen（视觉）两个系列，默认值则是 DeepSeek 官方端点，换供应商只改环境变量
 
 > 组件级细节见 [doc/agents/架构参考.md](doc/agents/架构参考.md)。
 
@@ -167,7 +167,7 @@ flowchart TB
 | **安全** | Spring Security OAuth2 Resource Server · **双 Token**：RSA 签名 Access（30min 无状态）+ Opaque Refresh（Redis SHA-256，HttpOnly Cookie，轮换 + 复用检测）· BCrypt |
 | **前端** | React · TypeScript · Vite · React Router · TanStack Query · Zustand · Tailwind CSS · shadcn/ui · react-hook-form + Zod · Framer Motion · Biome · Playwright |
 | **数据 / 消息** | MySQL（utf8mb4 / InnoDB）· Redis（业务缓存单层，Caffeine 仅用于 stale / 图片处理等专用本地缓存）· RabbitMQ（Topic Exchange + Quorum Queue）· Elasticsearch（dev / prod 默认启用，关掉走 LIKE 兜底；**版本硬锁**见 `infra/elasticsearch/Dockerfile` 注释） |
-| **AI** | Spring AI · DeepSeek · Qwen-VL · DashScope Embedding · MCP server（`@McpTool` 公开只读工具面） |
+| **AI** | Spring AI · 文本 / 视觉 / Embedding 三槽位（默认 DeepSeek `deepseek-chat` + Qwen-VL + DashScope `text-embedding-v3`，部署实况为百炼托管，键名不带厂商）· MCP server（`@McpTool` 公开只读工具面） |
 | **可靠性** | Redisson（分布式锁 / 令牌桶）· Spring Modulith Outbox · CacheErrorHandler fail-open · UUID v7 主键 |
 | **可观测** | Micrometer + Prometheus · OpenTelemetry（traceId → Langfuse）· Spring AI Observation · StructuredLogEncoder（prod 输出 logstash JSON） |
 | **DevOps** | Docker / docker-compose（多阶段构建，非 root 运行）· GitHub Actions · Flyway（DDL / DML 分离） |

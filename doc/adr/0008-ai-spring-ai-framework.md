@@ -41,6 +41,10 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 | `visionChatModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-vl-max` | 拍照上架图片识别 |
 | `embeddingModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `text-embedding-v3`（dimensions=1024） | 语义召回（商品 / 知识库）+ ES 索引写入 |
 
+> 表中端点与模型是**默认值**（不带任何环境变量即可跑通的形态），非部署实况。配置槽位后来按职责改名为
+> `easyorange.ai.text` / `easyorange.ai.vision` / `easyorange.ai.embedding`（键名不带厂商名，厂商只作为
+> `base-url` / `model` 的取值存在）—— 见 [application.yaml](../../easyorange-backend/easyorange-application/src/main/resources/application.yaml)。
+
 `OpenAiChatAutoConfiguration` 的 `@ConditionalOnMissingBean`（按返回类型推断）会因自定义 bean 存在而安全退让，不产生重复 bean。
 
 ### 2. 调用去重（[AiModelSupport.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/support/AiModelSupport.java)）

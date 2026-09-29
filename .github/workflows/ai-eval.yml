@@ -16,7 +16,7 @@ name: AI eval gate
 #   同一个 key 兼作两者仅在「同一平台同时提供 chat 与 embedding」时成立（如百炼 compatible-mode：
 #   DeepSeek 系列 chat + text-embedding-v3）。若只配了纯 chat 供应商的 key，
 #   embedding bean 会退化为 UnconfiguredEmbeddingModel，检索指标走 MySQL LIKE 降级路径。
-# 供应商可换：DEEPSEEK_BASE_URL / DEEPSEEK_MODEL 由仓库变量提供，缺省仍是 DeepSeek 官方端点。
+# 供应商可换：AI_TEXT_BASE_URL / AI_TEXT_MODEL 由仓库变量提供，缺省仍是 DeepSeek 官方端点。
 on:
   # 需要定期回归时加回（原为每周一 03:30，与 PIT 02:30 错峰）：
   #   schedule:
@@ -37,11 +37,11 @@ concurrency:
 
 env:
   EASYORANGE_AI_API_KEY: ${{ secrets.EASYORANGE_AI_API_KEY }}
-  DEEPSEEK_API_KEY: ${{ secrets.EASYORANGE_AI_API_KEY }}
+  AI_TEXT_API_KEY: ${{ secrets.EASYORANGE_AI_API_KEY }}
   EMBEDDING_API_KEY: ${{ secrets.EASYORANGE_AI_API_KEY }}
-  # 云厂商托管的 DeepSeek 模型与官方端点线协议一致，换供应商只改这两个仓库变量
-  DEEPSEEK_BASE_URL: ${{ vars.EASYORANGE_AI_BASE_URL || 'https://api.deepseek.com' }}
-  DEEPSEEK_MODEL: ${{ vars.EASYORANGE_AI_MODEL || 'deepseek-chat' }}
+  # 云厂商托管的模型与 DeepSeek 官方端点线协议一致，换供应商只改这两个仓库变量
+  AI_TEXT_BASE_URL: ${{ vars.EASYORANGE_AI_BASE_URL || 'https://api.deepseek.com' }}
+  AI_TEXT_MODEL: ${{ vars.EASYORANGE_AI_MODEL || 'deepseek-chat' }}
 
 jobs:
   eval:

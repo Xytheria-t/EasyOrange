@@ -15,7 +15,7 @@ export interface AutoListingResult {
 /**
  * AI 调用专用超时：LLM 单次生成远慢于普通接口（实测视觉识别 ~12s、文案生成 6~28s，
  * 视供应商档位而定），沿用 10s 默认值会让请求被前端中断、后端白算一次。
- * 取值必须高于后端供应商超时（easyorange.ai.deepseek.timeout 30s / qwen-vl.timeout 60s），
+ * 取值必须高于后端供应商超时（easyorange.ai.text.timeout 30s / vision.timeout 60s），
  * 否则后端自己的降级结果来不及返回，前端先断在超时上。
  */
 const AI_TIMEOUT = 90000;
