@@ -80,7 +80,13 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
 
         var wrapper = ChainWrappers.lambdaQueryChain(productMapper);
         if (categoryId != null) {
-            wrapper.in(ProductDO::getCategoryId, resolveCategoryIdsWithChildren(categoryId));
+            // 类目子树为空 = 传了不存在的类目 ID（或该类目已下架）：直接返回空页。
+            // 继续往下走会拼出 `category_id IN ()` —— MySQL 拒绝空 IN 列表，整条请求变 500
+            var categoryIds = resolveCategoryIdsWithChildren(categoryId);
+            if (categoryIds.isEmpty()) {
+                return PageResult.of(List.of(), 0L, criteria.effectivePageNum(), criteria.effectivePageSize());
+            }
+            wrapper.in(ProductDO::getCategoryId, categoryIds);
         }
         wrapper.eq(ProductDO::getStatus, Objects.requireNonNullElse(status, ProductStatus.ONLINE.getCode()));
         if (minPrice != null) wrapper.ge(ProductDO::getPrice, minPrice);
