@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.cache;
 
+import com.cartethyia.easyorange.ai.application.cache.SemanticCacheMetrics;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
@@ -30,12 +31,17 @@ import tools.jackson.databind.ObjectMapper;
  * <b>按用户分桶</b>（正确性要求而非调优项）：条目存的是注入了该用户长期画像与会话历史的回答，
  * 共享桶会把一个人的偏好返给另一个人 —— 按用户分桶是修正确性，不是牺牲命中率换调优。
  * <p>
- * <b>向量按 base64 float32 存</b>，不用 JSON 数字数组：1024 维按 JSON 数组约 10KB，而每次查询都要
- * 把整个 Hash 拉回逐条算余弦（O(n) 扫描），base64 压到约 4KB 且不走浮点文本解析；容量默认 200 同理
- * —— 真到了需要更大容量的量级，应换向量索引（ES kNN）而不是继续加大这个 Hash。
+ * <b>向量按 base64 float32 存</b>，不用 JSON 数字数组：1024 维按 JSON 数组约 10KB（每个数字含分隔符约 9 字节），
+ * base64 float32 压到约 5.5KB 且不走浮点文本解析。查询侧要把整个 Hash 拉回逐条算余弦（O(n) 扫描），
+ * 单条约 7KB（向量 + 序列化响应）× 默认 200 条上限；真到了需要更大容量的量级，应换向量索引（ES kNN）
+ * 而不是继续加大这个 Hash。
  * <p>
  * <b>单条脏数据不影响整次查询</b>：格式不符或向量解码失败的条目直接跳过，旧格式条目随 TTL /
  * 淘汰自然过期，不做迁移。一次查询只算一次向量的调用约定见 {@link SemanticCachePort}。
+ * <p>
+ * <b>命中率可观测</b>：每次查找记一个结局到 {@link SemanticCacheMetrics}。这是本缓存唯一能回答
+ * 「阈值 0.92 / 上限 200 是否调准」的依据 —— 成本模型是先无条件付一次供应商 embedding 调用、
+ * 未命中纯亏，没有命中率就只能拍脑袋调参，换 embedding 模型后也无从判断阈值是否还成立。
  */
 @Slf4j
 @Component
@@ -49,21 +55,27 @@ public class SemanticCacheService implements SemanticCachePort {
     private final AiModelSupport aiModelSupport;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
+    private final SemanticCacheMetrics metrics;
 
     /** 查询向量化 — 按 {@link AiCallScope#CHAT} 记账：命中一次就是一次真实供应商调用，不落日志不计预算就永远是账外项。 */
     @Override
     public List<Float> embedQuery(String query) {
         if (!aiProperties.semanticCache().enabled() || query == null || query.isBlank()) {
+            metrics.record(SemanticCacheMetrics.Outcome.BYPASS);
             return List.of();
         }
         var embeddingModel = embeddingModelProvider.getIfAvailable();
         if (embeddingModel == null) {
+            metrics.record(SemanticCacheMetrics.Outcome.BYPASS);
             return List.of();
         }
         try {
             return aiModelSupport.embed(embeddingModel, AiCallScope.CHAT, query);
         } catch (Exception e) {
             log.warn("Semantic cache query embedding failed, skip cache for this call", e);
+            // 向量化失败记 error 而非 bypass：钱已经花了（供应商已计费）却没换来一次查找，
+            // 与「主动没查」的 bypass 不是一回事，故障期间要能从这条曲线看出来
+            metrics.recordFailure();
             return List.of();
         }
     }
@@ -73,10 +85,12 @@ public class SemanticCacheService implements SemanticCachePort {
     public <T> Optional<T> lookUp(
             AiCallScope scope, String userId, String query, List<Float> queryEmbedding, Class<T> type) {
         if (queryEmbedding == null || queryEmbedding.isEmpty()) {
+            metrics.record(SemanticCacheMetrics.Outcome.BYPASS);
             return Optional.empty();
         }
         var redis = redisProvider.getIfAvailable();
         if (redis == null) {
+            metrics.record(SemanticCacheMetrics.Outcome.BYPASS);
             return Optional.empty();
         }
         try {
@@ -97,9 +111,18 @@ public class SemanticCacheService implements SemanticCachePort {
                     bestResponse = entry.response();
                 }
             }
-            return bestResponse == null ? Optional.empty() : Optional.of(objectMapper.readValue(bestResponse, type));
+            if (bestResponse == null) {
+                metrics.record(SemanticCacheMetrics.Outcome.MISS);
+                return Optional.empty();
+            }
+            // 反序列化放在计数之前：它同样可能抛，而一次查找只能出一个结局
+            // （先记 HIT 再抛会被 catch 补记 ERROR，命中率分子分母同时污染）
+            var hit = objectMapper.readValue(bestResponse, type);
+            metrics.record(SemanticCacheMetrics.Outcome.HIT);
+            return Optional.of(hit);
         } catch (Exception e) {
             log.warn("Semantic cache read failed, miss", e);
+            metrics.recordFailure();
             return Optional.empty();
         }
     }

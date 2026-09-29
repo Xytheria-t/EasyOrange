@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.ai.application.chat;
 
+import com.cartethyia.easyorange.ai.application.cache.SemanticCacheMetrics;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
@@ -120,6 +121,9 @@ public class AiChatAppService {
 
     private final Timer turnTimer;
 
+    /** forceFresh 绕过语义缓存的计数 — 由本服务直接记：绕过发生在调用缓存之前，缓存实现无从感知。 */
+    private final Counter semanticCacheBypassCounter;
+
     public AiChatAppService(
             ChatModel chatModel,
             PromptRegistryPort promptRegistry,
@@ -156,6 +160,8 @@ public class AiChatAppService {
                 .description("一次问答端到端耗时（循环 + 生成 + 落盘，不含缓存命中与锁等待）")
                 .publishPercentileHistogram()
                 .register(meterRegistry);
+        this.semanticCacheBypassCounter = meterRegistry.counter(
+                SemanticCacheMetrics.CACHE_METRIC, "outcome", SemanticCacheMetrics.Outcome.BYPASS.getTag());
     }
 
     /**
@@ -264,6 +270,7 @@ public class AiChatAppService {
 
     private SemanticCacheProbe probeSemanticCache(ChatRequest request, String userId) {
         if (request.forceFresh()) {
+            semanticCacheBypassCounter.increment();
             return new SemanticCacheProbe(List.of(), Optional.empty());
         }
         List<Float> queryEmbedding = semanticCache.embedQuery(request.question());
