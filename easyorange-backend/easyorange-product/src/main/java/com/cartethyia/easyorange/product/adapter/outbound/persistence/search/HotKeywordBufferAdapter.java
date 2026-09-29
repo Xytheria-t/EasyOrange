@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.search;
 
+import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.common.idgen.UuidV7;
 import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheConstant;
 import java.time.LocalDateTime;
@@ -9,6 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -26,6 +29,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class HotKeywordBufferAdapter {
+
+    private static final int WARMUP_TOP_N = 200;
 
     private final HotKeywordMapper hotKeywordMapper;
     private final RedisTemplate<Object, Object> redisTemplate;
@@ -96,6 +101,37 @@ public class HotKeywordBufferAdapter {
                             -ProductCacheConstant.HOT_KEYWORD_MAX_SIZE - 1L);
         } catch (Exception e) {
             log.warn("action=hotKeywordZsetTrimFailed", e);
+        }
+    }
+
+    /**
+     * 启动时从 {@code eo_hot_keyword} 回填 zset 计数。
+     * <p>
+     * 不做的话重启后两个数据源会分叉：读侧 zset 非空就只看 zset，DB 里已累积的词
+     * （含重启前那几天的搜索）会被整体顶掉。只在 zset 为空时回填，不覆盖运行中的真实计数。
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void warmUpFromDatabase() {
+        try {
+            var existing = redisTemplate.opsForZSet().reverseRange(ProductCacheConstant.HOT_KEYWORD_ZSET_KEY, 0, 0);
+            if (existing != null && !existing.isEmpty()) {
+                return;
+            }
+            var rows = ChainWrappers.lambdaQueryChain(hotKeywordMapper)
+                    .orderByDesc(HotKeywordDO::getSearchCount)
+                    .last("LIMIT " + WARMUP_TOP_N)
+                    .list();
+            for (HotKeywordDO row : rows) {
+                redisTemplate
+                        .opsForZSet()
+                        .add(
+                                ProductCacheConstant.HOT_KEYWORD_ZSET_KEY,
+                                row.getKeyword(),
+                                row.getSearchCount().doubleValue());
+            }
+            log.info("action=hotKeywordWarmup size={}", rows.size());
+        } catch (Exception e) {
+            log.warn("action=hotKeywordWarmupFailed", e);
         }
     }
 
