@@ -39,3 +39,5 @@ jobs:
         run: python3 .githooks/check-context-budget.py
       - name: 文档链接校验（仓库内相对链接 + 锚点）
         run: python3 .githooks/check-doc-links.py
+      - name: 注释预算校验（类 javadoc 长度 / 单文件注释密度 / 无 TODO）
+        run: python3 .githooks/check-comment-budget.py
