@@ -159,8 +159,8 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
             return singleLegSearch(query, page, size);
         }
 
-        // total 取 BM25 路的总命中：它是「过滤 + 词面匹配」的完整计数，唯一有全量语义的口径
-        // （kNN 只返回候选池条数，不是匹配总数）；BM25 路挂掉时退化为候选池大小。
+        // BM25 路的总命中是「过滤 + 词面匹配」的完整计数（kNN 只返回候选池条数，不是匹配总数），
+        // 但它不含语义路补进的召回，所以最终 total 取它与融合后条数的较大值。
         long bm25Total = bm25Leg.hits() != null ? bm25Leg.total() : 0L;
 
         var fused = RrfFusion.fuse(RrfFusion.DEFAULT_K, rankedLists);
