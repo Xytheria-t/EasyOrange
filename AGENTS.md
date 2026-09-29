@@ -1,4 +1,4 @@
-# EasyOrange — Java AI Agent 工程化实战
+# EasyOrange · Java AI Agent 工程化实战
 
 > **定位**：Java AI Agent 工程化实战（不对外运营，实践对标生产）——多范式工具编排 + RAG 检索增强 + 评估闭环进 CI + 成本/延迟治理 + MCP 工具面 + Langfuse 可观测，AI 链路**可换供应商、可降级、可观测、可评估**。业务是 C2C 资产流转（固定价格 + 直发 + 平台不碰货），复杂度留给 AI 工程化与架构；两条主线：卖家「发布助手」/ 买家「对话式找货」；DDD 六边形 + ADR/ArchUnit/PIT 是工程底座叙事。可量化数字以 [doc/工程指标.md](doc/工程指标.md) 为唯一来源。
 > monorepo：后端 `easyorange-backend/`（Maven 多模块）· 前端 `easyorange-frontend/` · 文档 `doc/`。
