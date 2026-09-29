@@ -8,5 +8,3 @@
 #
 # 什么样的例外值得开：类注释讲的是「契约」，行内注释锚的是「字面量含义」，
 # 读者看代码时眼睛停在调用现场、不会往上翻十几行。纯措辞不同的重复不算例外。
-
-easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/lock/DistributedRedissonLockAdapter.java|leaseTime1由Redissonwatchdog续期避免固定租约在操作结束前自动过期  # 类注释把 leaseTime=-1 列为契约第三条（面向读者）；行内这句面向的是 tryLock(timeout, -1, SECONDS) 的 -1 字面量——Effective Java 的「解释魔数」，读者停在调用现场不会往上翻 15 行
