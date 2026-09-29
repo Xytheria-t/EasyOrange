@@ -1,4 +1,4 @@
-# EasyOrange — Java AI Agent 工程化实战
+# EasyOrange · Java AI Agent 工程化实战
 
 > **EasyOrange** — 按生产级标准做 LLM Agent 工程化：自治式 Agent 工具循环（多步 ReAct + 工具面分层）· RAG 检索增强（kNN + BM25 两路召回 + RRF 融合）· 评估闭环进 CI · 限流 / Token 预算 / stale 降级 · LLM 专用可观测——AI 链路**可换供应商、可降级、可观测、可评估**。
 >

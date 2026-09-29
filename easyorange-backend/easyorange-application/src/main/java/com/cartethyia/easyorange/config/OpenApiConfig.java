@@ -35,8 +35,8 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("EasyOrange API")
                         .description("""
-                                EasyOrange — LLM × DDD：Java 架构工程化实战。
-                                AI 工程化 7 件套：可换供应商、可降级、可观测。
+                                EasyOrange · Java AI Agent 工程化实战。
+                                AI 链路可换供应商、可降级、可观测、可评估。
                                 """)
                         .version("v1")
                         .contact(new Contact().name("cartethyia").url("https://github.com/cartethyia/easy-orange"))
