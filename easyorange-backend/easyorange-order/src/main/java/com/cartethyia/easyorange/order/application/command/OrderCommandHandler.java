@@ -32,22 +32,17 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 /**
- * 订单命令处理器 — CQRS Write 侧唯一应用服务，收口全部订单命令（创建/支付/取消/发货/确认收货/退款）。
- * 每个命令一个以用例命名的公开方法（命令类型与方法一一对应，不用重载区分命令）；
+ * 订单命令处理器 — CQRS Write 侧唯一应用服务，收口订单全部命令；
  * 事件驱动入口 {@link #onPaymentSucceeded} 单列，不混入命令入口。
  * <p>
- * 下单链路：分布式锁排队串行 → 准备商品数据 → 创建订单 → 同步扣减库存 → 创建支付，
- * 全部步骤运行在同一本地事务内（事务边界由 {@link TransactionTemplate} 显式控制，锁等待在事务外），
- * 任一步失败由数据库整体回滚兜底（订单 / 库存 / 支付 / Outbox 事件原子提交）。
+ * 下单链路：分布式锁排队串行 → 准备商品数据 → 创建订单 → 扣减库存 → 创建支付，全部步骤同一本地事务（边界由
+ * {@link TransactionTemplate} 显式控制，锁等待在事务外），任一步失败由数据库回滚兜底，Outbox 事件同事务原子提交。
  * <p>
- * 一致性语义：本地单事务保证原子性；并发下单由 {@link DistributedLockPort} 按 productId 排队串行，
- * 库存扣减由乐观锁版本检查最终兜底防超卖，并由 product 侧库存流水（幂等键 = 订单 ID + 资产）保证
- * 「同一订单只扣一次、恢复数量与扣减对称」；事件副作用经 Outbox 与应用事务同原子持久化。
- * 为何不使用 Saga 见 ADR-0007。
- * 异常上抛口径：领域异常直接上抛，由 {@code GlobalExceptionHandler} 按错误码映射；
- * 锁争用（{@code LockAcquisitionException}）与上游不可用（支付网关失败）在用例边界各自映射为
- * 订单域错误码，不对已有业务异常做二次包装。
- * 状态转换命令经 {@link Order} 聚合根守卫执行。
+ * 并发下单由 {@link DistributedLockPort} 按 productId 排队串行，库存扣减另由乐观锁版本检查防超卖兜底；库存流水以订单 ID
+ * 为幂等键，保证同一订单只扣一次、恢复数量与扣减对称。不用 Saga 见 ADR-0007。
+ * <p>
+ * 异常上抛：领域异常直接上抛由 {@code GlobalExceptionHandler} 按错误码映射；锁争用与上游不可用在用例边界
+ * 各自映射为订单域错误码，不对已有业务异常二次包装。状态转换一律经 {@link Order} 聚合根守卫。
  */
 @Slf4j
 @Service
@@ -71,12 +66,10 @@ public class OrderCommandHandler {
     // ── 订单创建 ──
 
     /**
-     * 执行订单创建 — 分布式锁在事务外获取、提交后释放，创建流程在事务内执行。
+     * 分布式锁在事务外获取、提交后释放，锁内只跑事务内的创建流程。
      * <p>
-     * 事务边界由 {@link TransactionTemplate} 显式控制：锁的 tryLock 等待（最长 10s）发生在事务开启之前，
-     * 不占用数据库连接；锁内仅执行 {@link #createOrderFlow} 流程，事务提交后由锁适配器释放锁。
-     * 锁基础设施的 {@link LockAcquisitionException} 在用例边界映射为 {@link OrderDomainException}，
-     * 保留订单域的错误码（B3009→400）与提示文案。
+     * 锁争用（{@link LockAcquisitionException}）在此映射为 {@link OrderDomainException}，
+     * 保留订单域错误码（B3009→400）与提示文案。
      */
     public CreateOrderResult createOrder(String userId, CreateOrderCommand command) {
         try {
@@ -89,9 +82,7 @@ public class OrderCommandHandler {
         }
     }
 
-    /**
-     * 构建锁键列表 — 按 productId 排序避免死锁。
-     */
+    /** 锁键按 productId 排序获取，避免多资产并发下单互相等待形成死锁。 */
     private List<String> buildLockKeys(CreateOrderCommand command) {
         return command.items().stream()
                 .map(CreateOrderCommand.CreateOrderItem::productId)
@@ -101,9 +92,6 @@ public class OrderCommandHandler {
                 .toList();
     }
 
-    /**
-     * 执行下单流程 — 全部步骤在同一事务内，失败由回滚兜底。
-     */
     private CreateOrderResult createOrderFlow(String buyerId, CreateOrderCommand command) {
         // 准备订单项数据（含资产存在/在线/库存/同资产方校验）
         OrderItemPreparer.PreparationResult preparation = itemPreparer.prepareOrderItems(command.items());
@@ -138,10 +126,9 @@ public class OrderCommandHandler {
     }
 
     /**
-     * 创建支付。
+     * 创建支付 —— 网关调用失败在此统一收敛为上游不可用，避免异常类型外泄到用例编排层。
      *
-     * @param orderEvent 订单创建事件
-     * @throws OrderDomainException 如果支付创建失败（上游不可用，D0502→502）
+     * @throws OrderDomainException 支付创建失败（上游不可用，D0502→502）
      */
     private void createPayment(OrderCreatedEvent orderEvent) {
         try {
@@ -160,9 +147,8 @@ public class OrderCommandHandler {
     // ── 状态转换 ──
 
     /**
-     * 发起支付 — 校验买家身份与订单可支付状态后，委托支付模块执行「准备 → 网关 → 确认」两阶段；
-     * 订单置 PAID 不再在此直接发生，而是由「支付成功」事件桥接驱动（见 {@link #onPaymentSucceeded}），
-     * 保证订单状态与支付单状态联动一致。本方法无本地写，不开事务，避免事务跨支付流程。
+     * 发起支付 — 校验买家身份与可支付状态后委托支付模块走两阶段；订单置 PAID 不在此发生，
+     * 而由 {@link #onPaymentSucceeded} 事件桥接驱动，保证订单与支付单状态联动一致。本方法无本地写，不开事务。
      */
     public void payOrder(String userId, PayOrderCommand command) {
         var aggregate = validateParticipant(userId, command.orderId(), Order::isBuyer);
@@ -171,15 +157,12 @@ public class OrderCommandHandler {
     }
 
     /**
-     * 支付成功事件桥接 — 订单置 PAID 的唯一入口（消费 {@code PaymentSucceededEvent}）。
-     * 订单已支付直接跳过（幂等，覆盖事件重复投递与重复支付单）；订单已取消（超时/买家取消/
-     * 管理端强制取消）时支付款已扣但订单不再流转，触发自动退款补偿（库存已在取消时恢复，
-     * 订单保持取消态不再更新）；其余非法状态由 {@link Order#pay} 守卫抛 {@code ORDER_STATUS_ERROR}，
-     * 消费失败进 DLQ/terminal 人工介入。
+     * 支付成功事件桥接 — 订单置 PAID 的唯一入口。已支付直接跳过（幂等，覆盖重复投递与重复支付单）；
+     * 已取消时款已扣但订单不再流转，触发自动退款补偿（库存已在取消时恢复，订单保持取消态）；其余非法状态由
+     * {@link Order#pay} 守卫抛 {@code ORDER_STATUS_ERROR}，消费失败进 DLQ。
      * <p>
-     * 不整体开事务：退款分支是纯网关动作（无 DB 写），网关调用必须在事务外（支付两阶段不变量，
-     * 与支付侧 PaymentPhaseExecutor 同口径）；置 PAID 分支才用 {@link TransactionTemplate} 显式开边界，
-     * 并在事务内重读订单，让 {@link Order#pay} 的状态守卫以事务内快照为准。
+     * 不整体开事务：退款分支是纯网关动作，网关调用必须在事务外；置 PAID 分支才用 {@link TransactionTemplate}，
+     * 并在事务内重读订单，使 {@link Order#pay} 的状态守卫以事务内快照为准。
      */
     public void onPaymentSucceeded(String orderId) {
         var aggregate = findOrder(orderId);
@@ -188,8 +171,7 @@ public class OrderCommandHandler {
             return;
         }
         if (aggregate.status() == OrderStatus.CANCELLED) {
-            // 支付已成功但订单已取消：仅补偿退款，不改订单状态；退款失败仍走容器重试/DLQ 人工兜底。
-            // 无 DB 写，纯网关调用——留在事务里会让外部 HTTP 挂住 DB 连接，回滚也撤不回已发生的退款
+            // 款已扣但订单已取消：只补偿退款不改状态；纯网关调用留在事务里会挂住 DB 连接，且回滚撤不回已发生的退款
             log.info("支付成功但订单已取消，自动退款: orderId={}", orderId);
             paymentGatewayPort.refundPayment(orderId, OrderConstant.AUTO_REFUND_REASON);
             return;

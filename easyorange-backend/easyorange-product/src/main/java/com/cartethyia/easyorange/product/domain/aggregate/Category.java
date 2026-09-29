@@ -13,18 +13,13 @@ import lombok.Getter;
 /**
  * 商品分类聚合根 — 平台的类目树（当前口径两级，允许配置到 {@link #MAX_LEVEL} 级）。
  * <p>
- * 聚合边界 = 一个分类节点，**不包含子节点**。子节点通过 {@link CategoryRepository} 按需加载：
- * 类目树是低频写、高频读的配置数据，把整棵树塞进一个聚合会让每次改一个叶子都要加载并重写全树。
- * 需要跨节点的判断（环、深度）由方法参数显式传入 {@code descendants} / {@code subtreeHeight}，
- * 由 {@code CategoryCommandHandler} 负责取数——领域对象只负责判定，不负责查询。
+ * 聚合边界 = 一个分类节点，<b>不包含子节点</b>。子节点由 {@link CategoryRepository} 按需加载：类目树是低频写、
+ * 高频读的配置数据，整棵树塞进一个聚合会让改一个叶子都要加载并重写全树。跨节点判断（环、深度）由方法参数
+ * {@code descendants} / {@code subtreeHeight} 显式传入——领域对象只判定，不查询。
  * <p>
- * 内聚的不变量：
- * <ul>
- *   <li>名称非空且长度受限（{@link CategoryName}）</li>
- *   <li>层级 = 父层级 + 1，根节点为 1，且整棵子树不超过 {@link #MAX_LEVEL}</li>
- *   <li>移动不得成环（目标父分类不能在自身子树内）</li>
- *   <li>同级重名由 {@code CategoryCommandHandler} 查库判定（需要全量同级，非本聚合职责）</li>
- * </ul>
+ * 不变量：名称非空且长度受限（{@link CategoryName}）；层级 = 父层级 + 1、根为 1，整棵子树不超过
+ * {@link #MAX_LEVEL}；移动不得成环（目标父分类不能在自身子树内）；同级重名由 {@code CategoryCommandHandler}
+ * 查库判定（需全量同级，非本聚合职责）。
  */
 @Getter
 @Builder(toBuilder = true)
@@ -119,13 +114,11 @@ public class Category {
         return toBuilder().level(newLevel).updateTime(LocalDateTime.now()).build();
     }
 
-    /** 改名。 */
     public Category rename(CategoryName newName) {
         BizRequire.notNull(newName, "分类名称不能为空");
         return toBuilder().name(newName).updateTime(LocalDateTime.now()).build();
     }
 
-    /** 改排序值。 */
     public Category changeSortOrder(Integer newSortOrder) {
         return toBuilder()
                 .sortOrder(newSortOrder != null ? newSortOrder : 0)
@@ -133,18 +126,15 @@ public class Category {
                 .build();
     }
 
-    /** 改图标。 */
     public Category changeIcon(String newIcon) {
         return toBuilder().icon(newIcon).updateTime(LocalDateTime.now()).build();
     }
 
-    /** 启用/禁用。 */
     public Category changeStatus(CategoryStatus newStatus) {
         BizRequire.notNull(newStatus, "分类状态不能为空");
         return toBuilder().status(newStatus).updateTime(LocalDateTime.now()).build();
     }
 
-    /** 层级是否为一级。 */
     public boolean isRoot() {
         return parentId == null;
     }

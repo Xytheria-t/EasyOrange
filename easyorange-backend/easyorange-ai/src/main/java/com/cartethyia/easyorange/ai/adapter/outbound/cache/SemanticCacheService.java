@@ -24,24 +24,16 @@ import org.springframework.util.DigestUtils;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 语义缓存 — 相似问题复用历史回答（成本优化的核心落地）：查询向量化后与缓存条目算余弦，
- * 超阈值即命中。写入走 Redis Hash（{@code eo:ai:semantic:<scope>:<用户桶>}），条目超上限淘汰最旧；
- * Redis / embedding 任一不可用都 fail-open（不命中不阻塞）。
+ * 语义缓存 — 相似问题复用历史回答：查询向量化后与缓存条目算余弦，超阈值即命中。写入 Redis Hash
+ * （{@code eo:ai:semantic:<scope>:<用户桶>}），条目超上限淘汰最旧；Redis / embedding 任一不可用都 fail-open。
  * <p>
- * <b>按用户分桶</b>（正确性要求而非调优项）：条目存的是注入了该用户长期画像与会话历史的回答，
- * 共享桶会把一个人的偏好返给另一个人 —— 按用户分桶是修正确性，不是牺牲命中率换调优。
+ * 按用户分桶是正确性要求而非调优项：条目存的是注入了该用户长期画像与会话历史的回答，共享桶会把一个人的偏好
+ * 返给另一个人。向量按 base64 float32 存而非 JSON 数字数组：1024 维 JSON 约 10KB，base64 约 5.5KB 且不走
+ * 浮点文本解析；查询要把整个 Hash 拉回逐条算余弦（O(n) 扫描），单条约 7KB × 默认 200 条上限，真到这个量级
+ * 应换向量索引（ES kNN）而不是加大 Hash。
  * <p>
- * <b>向量按 base64 float32 存</b>，不用 JSON 数字数组：1024 维按 JSON 数组约 10KB（每个数字含分隔符约 9 字节），
- * base64 float32 压到约 5.5KB 且不走浮点文本解析。查询侧要把整个 Hash 拉回逐条算余弦（O(n) 扫描），
- * 单条约 7KB（向量 + 序列化响应）× 默认 200 条上限；真到了需要更大容量的量级，应换向量索引（ES kNN）
- * 而不是继续加大这个 Hash。
- * <p>
- * <b>单条脏数据不影响整次查询</b>：格式不符或向量解码失败的条目直接跳过，旧格式条目随 TTL /
- * 淘汰自然过期，不做迁移。一次查询只算一次向量的调用约定见 {@link SemanticCachePort}。
- * <p>
- * <b>命中率可观测</b>：每次查找记一个结局到 {@link SemanticCacheMetrics}。这是本缓存唯一能回答
- * 「阈值 0.92 / 上限 200 是否调准」的依据 —— 成本模型是先无条件付一次供应商 embedding 调用、
- * 未命中纯亏，没有命中率就只能拍脑袋调参，换 embedding 模型后也无从判断阈值是否还成立。
+ * 单条脏数据（格式不符 / 向量解码失败）直接跳过，旧格式条目随 TTL 与淘汰自然过期，不做迁移。每次查找记一个
+ * 结局到 {@link SemanticCacheMetrics} —— 未命中纯亏一次供应商 embedding 调用，没有命中率就只能拍脑袋调参。
  */
 @Slf4j
 @Component

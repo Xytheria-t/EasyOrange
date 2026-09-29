@@ -14,20 +14,15 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
- * Redisson 分布式锁适配器 — {@link DistributedLockPort} 的统一实现。
+ * Redisson 分布式锁适配器 — {@link DistributedLockPort} 的统一实现：按序获取多键，任一把失败即逆序释放已获取
+ * 的锁并抛 {@link LockAcquisitionException}；leaseTime=-1，持有期由 Redisson watchdog 续期。
  * <p>
- * 行为契约：
- * <ul>
- *   <li>按序获取调用方传入的多个锁键，任一把失败即逆序释放已获取的锁并抛 {@link LockAcquisitionException}。</li>
- *   <li>leaseTime={@code -1}：持有期由 Redisson watchdog 续期，避免固定租约在长事务结束前自动过期。</li>
- *   <li>锁的释放推迟到事务提交/回滚之后（{@link TransactionSynchronization#afterCompletion}）：
- *       若在事务方法体内提前释放，后一个请求会在前一个事务尚未提交时读到旧快照，击穿防超卖 /
- *       防并发重复处理；无事务（如定时任务）时立即释放。</li>
- * </ul>
- * ponytail: 持有期无硬性上限——watchdog 会持续续期，事务 hang 住时锁不会自动释放；
- * 唯一能设硬上限的做法是改回固定租约，但那会引入「租约早于事务结束过期」的并发窗口（四坑中
- * 完全相反的那一个），故保留 watchdog + 用 {@link LockProperties#holdWarnThreshold()} 监控长持有，
- * 异常时由人 / 运维介入。同一时刻持有锁的线程必须把事务完整跑完，禁止在锁内另开异步线程执行事务部分。
+ * 释放推迟到事务提交/回滚之后（{@link TransactionSynchronization#afterCompletion}）：在事务方法体内提前释放，
+ * 后一个请求会在前一个事务尚未提交时读到旧快照，击穿防超卖；无事务（如定时任务）时立即释放。
+ * <p>
+ * <b>持有期无硬上限</b>（ponytail 取舍）：watchdog 会持续续期，事务 hang 住时锁不会自动释放。设硬上限只能改回
+ * 固定租约，那会引入「租约早于事务结束过期」的并发窗口，故改用 {@link LockProperties#holdWarnThreshold()}
+ * 监控长持有、由人 / 运维介入；持锁线程必须把事务完整跑完，禁止在锁内另开异步线程执行事务部分。
  */
 @Slf4j
 @Component("distributedLockAdapter")

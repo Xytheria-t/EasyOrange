@@ -1,35 +1,15 @@
 package com.cartethyia.easyorange.ai.application.eval;
 
-/**
- * 评估门禁阈值（{@code eval/baselines.yaml}）—— 按评估维度分节，与文件结构一一对应。
- * <p>
- * 阈值放配置而不是测试代码里：调基线是「跑一次回归、评审、改 yaml」，不需要改 Java 重新编译；
- * 「门禁卡多严」也变成可评审的 diff，而不是散在断言里的魔数。
- * <p>
- * 缺失键在加载期抛异常（{@link GoldenSetLoader#loadBaselines()}），不给默认值 ——
- * 门禁阈值静默回落成内置默认值，等于门禁悄悄放松，比加载失败危险。
- *
- * @param generation 生成质量（{@code chat} 用例）门槛
- * @param retrieval  检索质量（{@code retrieval} 用例）门槛
- * @param routing    路由质量（{@code chat} 用例的 {@code expected_tools}）门槛
- */
+/** 评估门禁阈值（{@code eval/baselines.yaml}）— 按评估维度分节，与文件结构一一对应；放配置而非测试代码，是让调基线成为可评审的 diff。
+ * 缺失键在加载期抛异常（{@link GoldenSetLoader#loadBaselines()}）不给默认值 —— 静默回落成内置默认等于门禁悄悄放松。 */
 public record EvalBaselines(Generation generation, Retrieval retrieval, Routing routing) {
 
-    /**
-     * @param scoreBaseline  Judge 平均分基线（1-5）
-     * @param scoreTolerance 允许低于基线的幅度；A/B 改造后分数下滑超过它即判失败
-     * @param minCoverage    评审覆盖率下限：低于它说明「大部分用例没跑成功」，均分不可信
-     */
+    /** 生成质量门槛（走 chat 用例）：scoreBaseline 是 Judge 平均分基线（1-5），scoreTolerance 是允许低于基线的幅度（超出即判失败），minCoverage 是评审覆盖率下限 —— 低于它说明大部分用例没跑成功、均分不可信。 */
     public record Generation(double scoreBaseline, double scoreTolerance, double minCoverage) {}
 
-    /**
-     * @param minHitAt5 hit@5 下限；语料与 topK 同量级时 hit@5 恒满分，该值才需要随语料扩容上调
-     */
+    /** hit@5 下限；语料与 topK 同量级时 hit@5 恒满分，该值才需要随语料扩容上调。 */
     public record Retrieval(double minHitAt5) {}
 
-    /**
-     * @param minAccuracy 路由准确率下限。它与生成分数门禁互补：答案可以靠知识库兜底答对，路由走错这件事
-     *                    只有独立看工具路径才量得到（生成分高不代表模型选对了工具）
-     */
+    /** 路由准确率下限；与生成分数门禁互补 —— 答案可以靠知识库兜底答对，路由走错只有独立看工具路径才量得到。 */
     public record Routing(double minAccuracy) {}
 }

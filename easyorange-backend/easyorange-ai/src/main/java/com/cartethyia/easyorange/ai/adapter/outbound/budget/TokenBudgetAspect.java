@@ -14,17 +14,15 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Token 预算切面 — 拦截标注 {@link TokenBudget} 的方法，调用前检查日预算：
- * 累计用量 + 本次预估越过日限时抛 {@link TokenBudgetExceededException}，目标方法不执行
- * （判定式见 {@link TokenBudgetPolicy}，与流式预检 / 循环降级共用同一份）。
+ * Token 预算切面 — 拦截标注 {@link TokenBudget} 的方法，调用前检查日预算：累计用量 + 本次预估越过日限就抛
+ * {@link TokenBudgetExceededException}，目标方法不执行（判定式见 {@link TokenBudgetPolicy}，与流式预检 /
+ * 循环降级共用同一份）。
  * <p>
- * <b>配置优先</b>：{@code easyorange.ai.budget.scenarios.<scenario>} 覆盖注解默认值 —— 注解提供
- * 编译期可见的兜底契约，运维通过配置热更新限额而无需发版。
+ * <b>配置优先</b>：{@code easyorange.ai.budget.scenarios.<scenario>} 覆盖注解默认值 —— 注解给编译期可见的兜底
+ * 契约，运维改限额不发版。
  * <p>
- * <b>只做前置检查，不做记账</b>：真实用量在 {@link com.cartethyia.easyorange.ai.application.support.AiCallRecorder}
- * 拿到供应商回报 tokens 的地方记。
- * 记账不能放这里：服务方法返回业务 DTO，只能把 {@code maxTokensPerCall} 当用量累加，
- * 数字与真实消耗差一个量级。
+ * <b>只做前置检查，不做记账</b>：真实用量在 {@code AiCallRecorder} 拿到供应商回报 tokens 处记 —— 服务方法只返回
+ * 业务 DTO，拿 {@code maxTokensPerCall} 当用量累加会与真实消耗差一个量级。
  */
 @Slf4j
 @Aspect

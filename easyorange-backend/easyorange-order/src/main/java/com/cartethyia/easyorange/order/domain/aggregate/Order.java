@@ -34,25 +34,17 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 
 /**
- * 订单聚合根 —— 不可变对象
+ * 订单聚合根 —— 不可变对象。合法转换的单一事实来源见 {@link OrderAction}，所有转换统一经 {@link #transitionTo} 守卫。
  * <p>
- * 订单遵循以下状态机：
+ * 状态机：
  * <pre>
  * PENDING_PAYMENT ──→ PAID ──→ SHIPPED ──→ COMPLETED
  *       │                │         │
  *       ↓                ↓         ↓
  *   CANCELLED        CANCELLED   REFUNDED
  * </pre>
- * 状态机合法转换的单一事实来源见 {@link OrderAction}，所有转换统一经
- * {@link #transitionTo(OrderAction, String, LocalDateTime)} 守卫（一处校验合法性 + 一处应用副作用）。
- * <p>
- * 核心不变量：
- * <ul>
- *   <li>订单必须包含至少一件资产，总金额必须大于 0</li>
- *   <li>认领方不能认领自己的资产</li>
- *   <li>状态转换必须严格遵循状态机规则（用户取消仅限待付款，已付款取消走 forceCancel）</li>
- *   <li>取消/退款时必须附带原因</li>
- * </ul>
+ * 不变量：资产非空且总金额 > 0；认领方不得认领自己的资产；用户取消仅限待付款（已付款走 {@link #forceCancel}）；
+ * 取消/退款须附原因。
  */
 @Getter
 @Accessors(fluent = true)
@@ -115,13 +107,7 @@ public class Order {
 
     // ── 工厂方法 ──
 
-    /**
-     * 创建新订单。
-     *
-     * @param spec 创建参数（收敛 buyerId/sellerId/items/address/phone/remark/orderId）
-     * @return 订单创建结果（含聚合根与领域事件）
-     * @throws IllegalArgumentException 如果认领方等于资产方、资产为空或金额为零
-     */
+    /** 认领方等于资产方、资产为空或金额为零时抛 {@code IllegalArgumentException}（聚合根三条创建不变量）。 */
     public static Transition<Order, OrderCreatedEvent> createOrder(OrderCreateSpec spec) {
         BizRequire.requireTrue(
                 !Objects.equals(spec.buyerId().value(), spec.sellerId().value()), "不能认领自己的资产");
@@ -170,11 +156,7 @@ public class Order {
 
     // ── 重建 ──
 
-    /**
-     * 从持久层重建聚合根（统一入口，含列表查询无行项场景）。
-     * <p>
-     * 状态字段使用领域枚举类型，由 {@code @EnumValue} 注解完成 VARCHAR 列互转。
-     */
+    /** 重建统一入口，列表查询无行项的场景也走这里。 */
     public static Order from(OrderReconstructSpec spec) {
         return new Order(
                 spec.id(),
@@ -197,12 +179,10 @@ public class Order {
 
     // ── 身份判定 ──
 
-    /** 是否为本订单的认领方（买家） */
     public boolean isBuyer(String userId) {
         return Objects.equals(buyerId.value(), userId);
     }
 
-    /** 是否为本订单的资产方（卖家） */
     public boolean isSeller(String userId) {
         return Objects.equals(sellerId.value(), userId);
     }
@@ -211,17 +191,14 @@ public class Order {
     // 能力谓词只保留有生产调用方的；新增前先确认调用方，否则由
     // OrderAction.X.canApply(status, paymentStatus) 直接裁决，无需在聚合根上重复暴露。
 
-    /** 是否可取消（买家取消仅限待付款状态；已付款订单取消走 {@link #forceCancel}） */
     public boolean canCancel() {
         return OrderAction.CANCEL.canApply(status, paymentStatus);
     }
 
-    /** 是否可支付（仅待付款状态可发起支付） */
     public boolean canPay() {
         return OrderAction.PAY.canApply(status, paymentStatus);
     }
 
-    /** 是否可确认收货（仅已发货状态可确认） */
     public boolean canConfirmReceipt() {
         return OrderAction.CONFIRM_RECEIPT.canApply(status, paymentStatus);
     }
@@ -241,11 +218,7 @@ public class Order {
                         UuidV7.generateId(), id.value(), buyerId().value(), extractItems(), reason));
     }
 
-    /**
-     * 管理端强制取消订单 — 允许取消已付款的订单。
-     * <p>
-     * 正常用户取消只允许待付款订单，管理端可以强制取消已付款订单。
-     */
+    /** 管理端强制取消，允许取消已付款订单（用户取消只限待付款）。 */
     public Transition<Order, OrderCancelledEvent> forceCancel(String reason, LocalDateTime now) {
         return new Transition<>(
                 transitionTo(OrderAction.FORCE_CANCEL, reason, now),
@@ -280,13 +253,10 @@ public class Order {
     // ── 状态机守卫 ──
 
     /**
-     * 状态机守卫 — 所有转换的唯一入口。
+     * 状态机守卫 — 所有转换的唯一入口：校验动作在当前 status + paymentStatus 下是否合法、关闭类动作是否附原因，
+     * 再一次性应用目标状态 + 目标支付状态 + 按 {@link ClosureKind} 归因的关闭原因/时间。
      * <p>
-     * 校验动作在当前订单状态（status + paymentStatus）下是否合法、关闭类动作是否附带原因，
-     * 然后一次性应用副作用：目标状态 + 目标支付状态 + 按 {@link ClosureKind} 归因的关闭原因/时间。
-     * 任何新增转换都必须先声明 {@link OrderAction}，再经此方法执行，禁止绕过守卫直接修改状态。
-     *
-     * @param now 关闭类动作的归因时间（由应用层传入，保证时间源不落在领域模型上）
+     * {@code now} 由应用层传入，保证时间源不落在领域模型上。
      */
     private Order transitionTo(OrderAction action, String reason, LocalDateTime now) {
         BizRequire.requireTrue(action.canApply(status, paymentStatus), action.resultCode());

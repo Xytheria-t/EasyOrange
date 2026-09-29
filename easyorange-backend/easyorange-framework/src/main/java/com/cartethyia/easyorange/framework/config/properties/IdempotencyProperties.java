@@ -8,33 +8,14 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * Idempotency-Key 幂等配置（Filter 驱动，替代 {@code @Idempotent} 注解）。
- * <p>
- * 由 {@link com.cartethyia.easyorange.framework.web.filter.IdempotencyKeyFilter} 消费，
- * 通过路径模式 + 写方法约定式启用，零注解覆盖。
- * </p>
- * <pre>{@code
- * idempotency:
- *   enabled: true
- *   header-name: "Idempotency-Key"
- *   path-patterns:
- *     - /api/orders
- *     - /api/products
- *   methods: [POST, PUT, PATCH]
- *   key-prefix: "eo:idempotency"
- *   default-ttl-seconds: 86400
- *   lock-ttl-seconds: 30
- *   lock-poll-interval-ms: 100
- * }</pre>
+ * Idempotency-Key 幂等配置 — 由 {@link com.cartethyia.easyorange.framework.web.filter.IdempotencyKeyFilter} 消费，
+ * 路径模式 + 写方法约定式启用，零注解覆盖。
  *
- * @param enabled 是否启用 Idempotency-Key 幂等保护
- * @param headerName 幂等 key 所在请求头名称
- * @param pathPatterns 启用幂等保护的路径模式（Ant 风格，如 {@code /api/orders}）；空列表视为不启用
- * @param methods 启用幂等保护的 HTTP 方法
- * @param keyPrefix Redis key 前缀
- * @param defaultTtlSeconds 默认缓存 TTL（秒），24 小时
- * @param lockTtlSeconds 处理锁 TTL（秒）；超过该时长仍未完成视为持有者崩溃，允许其它请求重新执行
- * @param lockPollIntervalMs 输家轮询等待赢家结果的时间间隔（毫秒）
+ * @param pathPatterns 启用幂等的路径模式（Ant 风格，如 {@code /api/orders}）；空列表视为不启用
+ * @param methods 启用幂等的 HTTP 方法；未配置时默认 POST/PUT/PATCH
+ * @param defaultTtlSeconds 缓存 TTL（秒），默认 86400 即 24 小时
+ * @param lockTtlSeconds 处理锁 TTL（秒）；超时仍未完成视为持有者崩溃，允许其它请求重新执行
+ * @param lockPollIntervalMs 输家轮询等待赢家结果的间隔（毫秒）
  */
 @Validated
 @ConfigurationProperties(prefix = "idempotency")

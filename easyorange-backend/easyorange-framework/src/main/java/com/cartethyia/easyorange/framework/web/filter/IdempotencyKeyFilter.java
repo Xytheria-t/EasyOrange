@@ -15,23 +15,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 /**
- * Idempotency-Key 幂等过滤器（替代原 {@code IdempotencyAspect} AOP 方案）。
+ * Idempotency-Key 幂等过滤器（替代原 {@code IdempotencyAspect} AOP 方案）：客户端在写请求头携带
+ * {@code Idempotency-Key}，同一 key 的业务操作只执行一次，首次请求执行并缓存成功响应，重复请求回放缓存响应。
  * <p>
- * 客户端在写请求头携带 {@code Idempotency-Key}，同一 key 的业务操作只执行一次：
- * 首次请求执行并缓存成功响应，重复请求直接回放缓存响应。
- * </p>
- * <p>
- * 与 AOP 版本的区别：本过滤器缓存的是<b>序列化后的 HTTP 响应</b>（status + contentType + body），
- * 而非控制器返回的类型化对象——字节级精确回放客户端真正看到的内容。
- * </p>
- * <p>
- * 落在 {@code AnonymousAuthenticationFilter} 之前，才能包住认证后到 DispatcherServlet 之间的整段链、
- * 抓到最终响应字节。Redis 不可用时 {@code IdempotencyService} fail-open 放行（降级为无幂等保护）。
- * </p>
+ * 缓存的是<b>序列化后的 HTTP 响应</b>（status + contentType + body）而非控制器返回的类型化对象——字节级精确
+ * 回放客户端真正看到的内容；落在 {@code AnonymousAuthenticationFilter} 之前，才能包住认证后到 DispatcherServlet
+ * 之间的整段链、抓到最终响应字节。Redis 不可用时 {@code IdempotencyService} fail-open 放行（降级为无幂等保护）。
  * <p>
  * 由 {@code SecurityConfig} 局部装配（不加 {@code @Component}）：执行位置由 Security 链的
  * {@code addFilterBefore} 决定；容器链再自动注册一次只会让顺序变成两套事实。
- * </p>
  */
 @Slf4j
 @NullMarked

@@ -8,27 +8,14 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 
 /**
- * 订单状态机动作 — 订单生命周期所有合法转换的**唯一事实来源**。
+ * 订单状态机动作 — 生命周期合法转换的唯一事实来源：每个动作声明前置状态集、目标状态、目标支付状态（null
+ * 表示不变）、关闭归因（NONE / CANCEL / REFUND）与非法时的错误码；是否可触发只由 {@link #canApply} 裁决，
+ * 聚合根统一经 {@code Order#transitionTo} 守卫，新增转换必须先在此声明，禁止绕过守卫改状态。
  * <p>
- * 每个动作声明：前置状态集合（sources）、目标状态（target）、目标支付状态（targetPaymentStatus，
- * null 表示不变）、关闭归因类型（closureKind，NONE 无需原因 / CANCEL 记入取消字段 / REFUND 记入退款字段）、
- * 非法时的错误码，以及额外的支付前置条件（paymentGuard）。
- * 是否可触发只由 {@link #canApply} 裁决，聚合根统一经
- * {@code Order#transitionTo(OrderAction, String, LocalDateTime)} 守卫。
- * <pre>
- * PENDING_PAYMENT ──PAY──→ PAID ──SHIP──→ SHIPPED ──CONFIRM_RECEIPT──→ COMPLETED
- *       │                   │  │                     │
- *       │                   │  └──FORCE_CANCEL──→    │
- *       │                   └──REFUND──→            └──REFUND──→
- *   CANCEL──→ CANCELLED            │                              REFUNDED
- *       │        ▲                 │
- *       └────────┴──FORCE_CANCEL───┘
- * </pre>
- * <ul>
- *   <li>{@code CANCEL}：买家取消，仅限待付款</li>
- *   <li>{@code FORCE_CANCEL}：管理端强制取消，待付款或已付款</li>
- *   <li>{@code REFUND}：退款，已付款或已发货，且支付状态必须为已支付</li>
- * </ul>
+ * 主干：PENDING_PAYMENT ─PAY→ PAID ─SHIP→ SHIPPED ─CONFIRM_RECEIPT→ COMPLETED
+ * <p>
+ * 旁路判据：CANCEL 与 FORCE_CANCEL 归 CANCELLED（前者限待付款、后者覆盖待付款与已付款）；REFUND 归 REFUNDED，
+ * 要求支付状态为已支付。
  */
 @Getter
 @Accessors(fluent = true)
@@ -83,24 +70,14 @@ public enum OrderAction {
             OrderResultCode.ORDER_CANNOT_REFUND,
             payment -> payment == PaymentStatus.PAID);
 
-    /** 动作名称（用于日志/提示） */
     private final String actionName;
-    /** 允许触发该动作的前置状态集合 */
     private final Set<OrderStatus> sources;
-    /** 动作执行后的目标状态 */
     private final OrderStatus target;
-    /** 动作执行后的目标支付状态；null 表示支付状态不变 */
     private final PaymentStatus targetPaymentStatus;
-    /** 关闭归因类型：NONE 无原因；CANCEL 记入 cancel_reason/cancel_time；REFUND 记入 refund_reason/refund_time */
     private final ClosureKind closureKind;
-    /** 非法触发时的错误码 */
     private final OrderResultCode resultCode;
-    /** 额外的支付前置条件；null 表示无额外限制 */
     private final Predicate<PaymentStatus> paymentGuard;
 
-    /**
-     * 当前订单状态（status + paymentStatus）是否允许触发该动作。
-     */
     public boolean canApply(OrderStatus currentStatus, PaymentStatus currentPaymentStatus) {
         return sources.contains(currentStatus) && (paymentGuard == null || paymentGuard.test(currentPaymentStatus));
     }

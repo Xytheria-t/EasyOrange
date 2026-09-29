@@ -14,79 +14,40 @@ import java.util.Map;
  */
 public interface AdminUserManagementPort {
 
-    /**
-     * 查询用户基础信息，不存在时返回 null。
-     */
     AdminUserInfo getInfo(String userId);
 
-    /**
-     * 批量查询用户基础信息（缺失的 ID 不返回）。
-     */
     Map<String, AdminUserInfo> getInfos(Collection<String> userIds);
 
-    /**
-     * 查询用户详情，不存在或已删除时返回 null。
-     */
     AdminUserDetail getDetail(String userId);
 
-    /**
-     * 分页条件查询（keyword 匹配用户名/昵称/邮箱/手机号，userType/status 为枚举 code）。
-     */
     AdminUserPage query(AdminUserQuery query);
 
-    /**
-     * 查询用户认证信息（角色/状态 code），不存在或已删除时返回 null。
-     */
     AdminUserAuth getAuth(String userId);
 
-    /**
-     * 更新用户状态（statusCode 为 'NORMAL'/'DISABLED'/'LOCKED'），非法值抛出 BusinessException。
-     */
+    /** statusCode ∈ {NORMAL, DISABLED, LOCKED}，非法值抛 BusinessException。 */
     void updateStatus(String userId, String statusCode, String reason, String operatorId);
 
-    /**
-     * 解锁/启用用户：仅当状态为 LOCKED 或 DISABLED 时置为 NORMAL，否则抛出 BusinessException。
-     */
+    /** 仅 LOCKED / DISABLED 可置回 NORMAL，否则抛 BusinessException。 */
     void unlock(String userId, String operatorId);
 
-    /**
-     * 变更用户角色（typeCode 为 '00'/'01'/'02'），非法值/已是该角色/最后一个管理员被降级时抛出 BusinessException。
-     */
+    /** typeCode ∈ {00, 01, 02}；已是该角色、或把最后一个管理员降级时抛 BusinessException。 */
     void setUserType(String userId, String typeCode, String reason, String operatorId);
 
-    /**
-     * 更新用户密码（encodedPassword 为已编码密文）。
-     */
     void setPassword(String userId, String encodedPassword, String reason, String operatorId);
 
-    /**
-     * 注册趋势：{@code yyyy-MM} → 新增用户数（管理端仪表板用；聚合留在 user 模块，admin 不得自己查表）
-     */
+    /** {@code yyyy-MM} → 新增用户数；聚合留在 user 模块，admin 不得自己查表。 */
     Map<String, Long> getCreateTrend(LocalDate since);
 
-    /**
-     * 最近注册用户，按创建时间倒序取 limit 条
-     */
+    /** 按创建时间倒序取 limit 条；昵称可空，展示层自行兜底。 */
     List<RecentUser> findRecentRegistrations(int limit);
 
-    /**
-     * 最近注册用户 — 昵称可空，展示层自行兜底
-     */
     record RecentUser(String id, String nickName, LocalDateTime createTime) {}
 
-    /**
-     * 用户总数与今日新增（均不含已删除）。
-     */
     AdminUserStats getStats();
 
-    /**
-     * 用户基础信息
-     */
     record AdminUserInfo(String id, String username, String nickName, String avatar, String phone) {}
 
-    /**
-     * 用户详情
-     */
+    /** userType / status 为枚举 code，userTypeDesc / statusDesc 为展示态文本。 */
     record AdminUserDetail(
             String id,
             String username,
@@ -104,9 +65,7 @@ public interface AdminUserManagementPort {
             LocalDateTime createTime,
             LocalDateTime updateTime) {}
 
-    /**
-     * 用户查询条件 — userType/status 为枚举 code（'00'/'01'/'02'、'NORMAL'/'DISABLED'/'LOCKED'）
-     */
+    /** userType / status 为枚举 code（'00'/'01'/'02'、'NORMAL'/'DISABLED'/'LOCKED'）；startTime / endTime 为闭区间。 */
     record AdminUserQuery(
             String keyword,
             String userType,
@@ -116,18 +75,11 @@ public interface AdminUserManagementPort {
             Integer pageNum,
             Integer pageSize) {}
 
-    /**
-     * 用户查询结果
-     */
     record AdminUserPage(List<AdminUserDetail> records, long total, int pageNum, int pageSize) {}
 
-    /**
-     * 用户认证信息 — userType/status 为枚举 code
-     */
+    /** userType / status 为枚举 code。 */
     record AdminUserAuth(String userType, String status) {}
 
-    /**
-     * 用户统计
-     */
+    /** 均不含已删除用户。 */
     record AdminUserStats(long totalUsers, long todayNewUsers) {}
 }

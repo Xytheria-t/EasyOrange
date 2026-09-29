@@ -11,18 +11,11 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * 审计日志配置属性
+ * 审计日志配置属性（prefix=audit）— 是否启用、保留天数、是否落请求 / 响应数据、跳过的读方法前缀、掩码字段、
+ * 模块名与操作映射。
  * <p>
- * 用于控制审计日志的记录行为，包括是否启用、是否保存请求/响应数据等。
- * </p>
- * 配置示例：
- * <pre>{@code
- * audit:
- *   enabled: true
- *   save-request-data: false
- *   save-response-data: false
- *   retention-days: 180
- * }</pre>
+ * {@code methodMappings} 按方法名前缀<b>单表</b>同时推导操作标题与业务类型，避免标题映射与类型映射两套表各自
+ * 维护而漂移；{@code moduleNames} 同为长优先匹配。
  *
  * @param enabled 是否启用审计日志记录；false 时完全禁用日志记录功能
  * @param retentionDays 审计日志保留天数，超期由 AuditLogCleanupTask 每日清理
@@ -32,8 +25,7 @@ import org.springframework.validation.annotation.Validated;
  * @param sensitiveFields 请求参数中需要掩码的敏感字段名列表，记录时值被替换为 ******
  * @param moduleNames Controller 类名 → 中文模块名称映射，用于推导审计日志的模块字段，按长优先匹配
  *     （如 "ProductAudit" 优先于 "Product"）
- * @param methodMappings 方法名前缀 → 操作映射（标题 + 业务类型）；审计日志推导的单一事实来源，从方法名前缀
- *     同时推导操作标题与业务类型，避免标题映射与类型映射两套表各自维护而漂移，按长优先匹配
+ * @param methodMappings 方法名前缀 → 操作映射（标题 + 业务类型）；审计日志推导的单一事实来源
  */
 @Validated
 @ConfigurationProperties(prefix = "audit")

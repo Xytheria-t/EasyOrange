@@ -26,28 +26,15 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
 
 /**
- * 多步工具调用循环（ReAct）— 逐轮「决策 → 工具 → 观察」推进，直到模型判定信息足够（finish）。
+ * 多步工具调用循环（ReAct）— 逐轮「决策 → 工具 → 观察」推进到模型判定信息足够。
  * <p>
- * 手写循环 + 原生 tool calling：每轮把 7 个工具的 JSON Schema（{@link ChatTools} 的 {@code @Tool}
- * 注解生成）随请求下发，模型返回「调哪个工具 + 参数 + 理由」。调不调、调几次、调什么由本类决定
- * —— Spring AI 2.0 的 {@code ChatModel.call} 不自动执行工具，步数与降级的循环控制权留在本类
- * （预算余量问 {@link ChatBudgetGuard}，本类只决定何时因它切断）。
+ * 手写循环 + 原生 tool calling：{@code ChatModel.call} 不自动执行工具，步数与降级的控制权留在本类（预算余量问
+ * {@link ChatBudgetGuard}）。一轮可带多个调用且同轮全执行 —— 决策调用比工具调用贵一个量级，砍往返更划算；但同轮按
+ * 模型给出的顺序逐个执行（召回累加器是实例独占状态），顺序因此带语义，依赖顺序由工具 schema 描述约束而非本类排序。
  * <p>
- * 一轮可以带多个工具调用：供应商侧并行发起（典型是「规则 + 找货」兼有的问题同时要规则知识与在售资产）
- * 时同轮全部执行，省掉一整轮决策往返 —— 决策调用比工具调用贵一个量级，砍往返比并发执行工具划算得多。
- * 同轮多个调用按模型给出的顺序逐个执行（召回累加器是实例独占的可变状态，见 {@link ChatTools}）——
- * 顺序因此带语义：唯一「读累加器却不带参数」的 market_price_stats 排在 product_search 前面会统计到空集。
- * 本类不做依赖排序，约束落在该工具的 schema 描述里（模型选工具时就读得到）；空集观察可恢复，只多一轮。
- * finish 与其它调用同现时以 finish 收敛：同轮非 finish 调用照常执行（模型确实要了这份信息），
- * finish 记在最后一个；收敛后不回填消息（本轮序列就此丢弃）。
- * <p>
- * 降级口径（自治循环被切断，退回确定性单次生成，已积累的观察不丢弃）：步数超限 / 预算超限
- * （与入口预检同一判定，见 {@link ChatBudgetGuard}）→ 用已积累观察直接生成；决策失败 → 按原始问题补一次
- * 检索后直接生成。工具执行失败不算决策失败：收敛成失败观察交回模型修复，不打断对话。
- * <p>
- * 每轮 trace 落库、每步推 SSE step 事件、每次循环计指标 —— 三者都是观测副产物，失败绝不影响主链路。
- * 指标落在 {@link ToolCallLoopMetrics}、预算判定落在 {@link ChatBudgetGuard}：本类只管「决策 → 工具 → 观察」，
- * 不知道指标名与 tag 契约，也不管这次调用还发不发得出去。
+ * 降级口径（退回确定性单次生成，已积累的观察不丢弃）：步数 / 预算超限 → 用已积累观察直接生成；决策失败 → 按原始问题
+ * 补一次检索后生成；工具执行失败不算决策失败，收敛成失败观察交回模型修复。trace / SSE step 事件 / 指标都是观测副
+ * 产物，失败绝不影响主链路。
  */
 @Slf4j
 @Component
@@ -67,11 +54,8 @@ public class ToolCallLoop {
             ChatTools.TOOL_FINISH);
 
     /**
-     * 机器主体的统一标识 —— 唯一非登录调用方是评估跑批（{@code GoldenSetEvaluator} 定时回归 / CI 门禁）：
-     * 会话 / 缓存键照常按此主体隔离，但画像不落库（{@code ChatTools} 拒写）、trace 的 user_id 为空
-     * （{@link #attributedUserId} 收敛）。对话的 HTTP 入口不存在匿名路径 —— 身份缺失即 401，
-     * 所以「机器主体」不等于「匿名用户」。哨兵值定义在本类（唯一判定画像是否落库的地方），
-     * 调用方只负责把该主体传进来。
+     * 机器主体标识 —— 唯一非登录调用方是评估跑批（{@code GoldenSetEvaluator}）：会话 / 缓存键照常按此主体隔离，但画像不
+     * 落库、trace 的 user_id 为空。HTTP 入口无匿名路径（身份缺失即 401），故「机器主体」≠「匿名用户」。
      */
     public static final String MACHINE_SUBJECT = "machine";
 
@@ -106,10 +90,9 @@ public class ToolCallLoop {
     /**
      * 一次循环的输入 — 记忆（历史 / 画像）由调用方装配，循环只管「决策 → 工具 → 观察」。
      *
-     * @param sessionId 会话 ID，可空：请求不带会话时为 null。两处消费方各自兜底（trace 落 anonymous
-     *                 桶、会话记忆按无会话 fail-open），本类只把它带进日志与 trace
-     * @param userId    登录用户 ID；评估跑批（非登录调用方）传 {@link #MACHINE_SUBJECT}，画像不落库
-     * @param handler   流式回调，可空：非流式路径不推 step 事件，trace / 指标照常
+     * @param sessionId 可空（请求不带会话），两处消费方各自兜底：trace 落 anonymous 桶、会话记忆无会话 fail-open
+     * @param userId    评估跑批传 {@link #MACHINE_SUBJECT}，画像不落库
+     * @param handler   可空：非流式路径不推 step 事件，trace / 指标照常
      */
     public record Input(
             String question,
@@ -120,10 +103,8 @@ public class ToolCallLoop {
             @Nullable ChatStreamHandler handler) {}
 
     /**
-     * 循环结果 — 召回物供最终生成装配 prompt 与引用溯源；outcome / rounds 供指标与降级归因；
-     * toolPath 是模型实际选过的工具序列，供路由准确率评估（金标准集 {@code expected_tools} 对照）。
-     * rounds 含 finish 轮，决策失败轮不计（那一轮没有决策）；toolPath 同样不含降级补检索
-     * ——补检索由代码发起，不是模型的路由决策。
+     * 循环结果 — 召回物供最终生成装配 prompt 与引用溯源；outcome / rounds 供指标与降级归因；toolPath 供路由准确率评估
+     * （金标准集 {@code expected_tools} 对照）：rounds 含 finish 轮但不计决策失败轮，降级补检索由代码发起、不进 toolPath。
      */
     public record Result(
             List<KnowledgeHit> knowledgeHits,
@@ -133,10 +114,7 @@ public class ToolCallLoop {
             int rounds,
             List<String> toolPath) {
 
-        /**
-         * 出循环时一次性定稿 —— 结局 / 轮数 / 工具路径来自循环，三个召回物来自 {@code tools} 实例上
-         * 已积累的累加器（累加器是实例独占的可变状态，循环只有这一处读它定稿）。
-         */
+        /** 出循环时一次性定稿 — 三个召回物来自 {@code tools} 实例上已积累的累加器，循环只有这一处读它。 */
         static Result of(ChatTools tools, ToolCallLoopOutcome outcome, int rounds, List<String> toolPath) {
             return new Result(
                     tools.knowledgeHits(), tools.assetHits(), tools.details(), outcome, rounds, List.copyOf(toolPath));
@@ -202,11 +180,10 @@ public class ToolCallLoop {
     }
 
     /**
-     * 执行一轮里的全部工具调用并落成观测副产物（trace 落库 / SSE step 事件 / 步级指标），再按对话协议回填。
-     * 与 {@link ToolCallDecider#decide} 同以「这批工具调用」为宾语：轮是循环级单位（{@code round} 循环变量与
-     * {@link RoundResult} 归它），不写进方法名 —— 否则与 {@code recordToolStep} 的「步」在名字上分不开。
-     * 步序跨轮连续（{@code firstStepIndex} 进、{@link RoundResult#nextStepIndex()} 出）：一轮内的并行调用是同一个决策
-     * 动作的多个工具，挤进同一个 stepIndex 会让 trace 里两个动作看起来是同一步。
+     * 执行一轮里的全部工具调用并落成观测副产物（trace 落库 / SSE step 事件 / 步级指标），再按对话协议回填。与
+     * {@link ToolCallDecider#decide} 同以「这批工具调用」为宾语：轮是循环级单位，不写进方法名（否则与 {@code
+     * recordToolStep} 的「步」分不开）；步序跨轮连续，否则一轮内的多个工具（同一个决策动作）挤进同一 stepIndex 会让
+     * trace 里两个动作看起来是同一步。
      */
     private RoundResult executeToolCalls(
             Input input,
@@ -215,8 +192,7 @@ public class ToolCallLoop {
             DecisionMessages messages,
             List<ToolCallDecision> decisions,
             int firstStepIndex) {
-        // finish 先摘出去：执行体里就没有「跳过它」的分支，回填的 tool_calls 与观察也天然等长。
-        // 一趟分完而不是两趟 filter：同一份 decisions 只走一次；多个 finish 取最后一个，与摘出前的行为一致
+        // finish 先摘出去：执行体里就没有「跳过它」的分支，回填的 tool_calls 与观察天然等长；多个 finish 取最后一个
         ToolCallDecision finish = null;
         var executableCalls = new ArrayList<ToolCallDecision>(decisions.size());
         for (ToolCallDecision decision : decisions) {
@@ -244,7 +220,6 @@ public class ToolCallLoop {
         return new RoundResult(stepIndex, toolPath, false);
     }
 
-    /** 执行一步工具调用，顺带把这步的观测副产物记全（步级延迟指标 / trace / SSE step 事件）—— 循环里只留骨架。 */
     private ToolResult executeOneTool(
             Input input, String traceId, int stepIndex, ToolDispatcher dispatcher, ToolCallDecision decision) {
         long start = System.nanoTime();
@@ -255,15 +230,13 @@ public class ToolCallLoop {
         return result;
     }
 
-    /** 本轮全部 tool call 的原始对象（按模型给出的顺序）—— 回填时 assistant 与 role=tool 两侧同序。 */
+    /** 按模型给出的顺序取原始 tool call —— 回填时 assistant 与 role=tool 两侧须同序。 */
     private static List<AssistantMessage.ToolCall> rawToolCallsOf(List<ToolCallDecision> decisions) {
         return decisions.stream().map(ToolCallDecision::rawToolCall).toList();
     }
 
-    /**
-     * 落一步工具步 trace 并推 SSE step 事件 —— 前端步骤可视化与「平均步数 / 降级率 / 步级延迟」口径的数据
-     * 来源，端口实现内部兜底不打挂主链路。
-     */
+    /** 落一步工具步 trace 并推 SSE step 事件 —— 前端步骤可视化与「平均步数 / 降级率 / 步级延迟」口径的唯一数据来源，
+     * 端口实现内部兜底、不打挂主链路。 */
     private void recordToolStep(
             Input input,
             String traceId,
@@ -287,11 +260,8 @@ public class ToolCallLoop {
         emitStep(input, stepIndex, decision, result.observation());
     }
 
-    /**
-     * 落一步 finish trace —— 收敛轮没有执行体，所以入参与观察为空、延迟记 0、视为成功。
-     * 不与工具步共用一个可空参数的落库方法：那样「无执行体」这个事实会在每个取值处各判一次空，
-     * 而把结果类型收成非空，真正需要这个判断的只有调用点本身。
-     */
+    /** 落一步 finish trace —— 收敛轮没有执行体，入参与观察为空、延迟记 0、视为成功。不与工具步共用带可空参数的落库方法：
+     * 结果类型收成非空，需要判断「无执行体」的只有调用点本身。 */
     private void recordFinishStep(Input input, String traceId, int stepIndex, ToolCallDecision finish) {
         tracePort.record(new ToolCallStepTrace(
                 traceId,
@@ -316,15 +286,9 @@ public class ToolCallLoop {
         }
     }
 
-    /**
-     * 一轮的执行结果 — 下一轮的起始步序、本轮执行过的工具名（finish 记在最后）、是否收敛。
-     *
-     * @param nextStepIndex 本轮之后下一个要落的步序（步序跨轮连续，1 起）
-     * @param toolPath      本轮执行过的工具名；finish 轮也计入，让「模型选了什么」在整条路径上是完整的一段
-     */
+    /** 一轮的执行结果 — nextStepIndex 跨轮连续（1 起）；toolPath 含 finish 轮，让整条路径上的「模型选了什么」完整。 */
     private record RoundResult(int nextStepIndex, List<String> toolPath, boolean finished) {}
 
-    /** 工具执行结果 — succeeded=false 时 observation 即失败原因（模型据此重试或收敛）；成功步 errorMsg 为 null（trace 不落）。 */
     private record ToolResult(boolean succeeded, String observation) {
 
         @Nullable
@@ -333,7 +297,7 @@ public class ToolCallLoop {
         }
     }
 
-    /** 工具面（一次请求内） — 两种框架形态（schema 下发的回调列表、按名执行的回调表）绑在一处并按名分发；召回累加器归 {@link ChatTools} 实例，不进这里。 */
+    /** 工具面（一次请求内） — 两种框架形态（schema 下发的回调列表、按名执行的回调表）绑在一处按名分发；召回累加器归 {@link ChatTools} 实例。 */
     private record ToolDispatcher(List<ToolCallback> callbacks, Map<String, ToolCallback> byName) {
 
         static ToolDispatcher of(ChatTools tools) {
@@ -344,7 +308,7 @@ public class ToolCallLoop {
             return new ToolDispatcher(callbacks, byName);
         }
 
-        /** 按名称分发执行 — 未知工具与执行异常（参数不合 schema / 工具内部故障）都收敛成失败观察：模型据此重试或收敛，不把整轮对话打死。 */
+        /** 未知工具与执行异常（参数不合 schema / 工具内部故障）都收敛成失败观察：模型据此重试或收敛，不把整轮对话打死。 */
         ToolResult dispatch(ToolCallDecision decision) {
             String tool = decision.tool();
             ToolCallback callback = byName.get(tool);
@@ -362,7 +326,6 @@ public class ToolCallLoop {
         }
     }
 
-    /** 画像归属用户 — 机器主体返回 null（长期记忆不落库），与 trace 的 user_id 口径一致。 */
     @Nullable
     private static String attributedUserId(Input input) {
         return MACHINE_SUBJECT.equals(input.userId()) ? null : input.userId();
@@ -370,8 +333,8 @@ public class ToolCallLoop {
 
     /**
      * 首条 user 消息（问题 / 历史 / 画像）— 每请求固定不变，是全部轮次共享的前缀：改一个字节这轮的 KV cache 就全部作废。
-     * 三个分量都过 {@link UntrustedText#stripTags}：这条上下文决定调哪个工具（含唯一的写路径
-     * remember_preference），原样填等于把闭合标签的注入口留在决策侧。
+     * 三个分量都过 {@link UntrustedText#stripTags}：这条上下文决定调哪个工具（含唯一写路径 remember_preference），原样
+     * 填等于把闭合标签的注入口留在决策侧。
      */
     private static String firstUserMessage(Input input) {
         return """
@@ -401,9 +364,8 @@ public class ToolCallLoop {
     }
 
     /**
-     * 工具入参摘要（trace 落库与失败日志用）—— 按工具名取对应分量，其余工具的分量为 null 是常态。
-     * 工具名缺失时已在 {@link ToolCallDecision} 构造期收敛成空串，这里走 default 分支即可 ——
-     * 不必再判空，否则等于让同一件事在两层各防一次。
+     * 工具入参摘要（trace 落库与失败日志用）—— 按工具名取对应分量，其余工具分量为 null 是常态。工具名缺失已在
+     * {@link ToolCallDecision} 构造期收敛成空串，这里走 default 即可：再判一次空等于同一件事防两遍。
      */
     private static String toolInputOf(ToolCallDecision decision) {
         ToolCallArguments parsed = decision.parsedArguments();
