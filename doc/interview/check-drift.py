@@ -13,6 +13,7 @@
 
     python3 doc/interview/check-drift.py            # 路径巡检，无漂移退出 0
     python3 doc/interview/check-drift.py --changed  # 本轮改动的重核清单，命中退出 1
+    python3 doc/interview/check-drift.py --symbols  # 类名巡检，散文里的项目类名是否还在
 
 范围：只核 02 的 .java 路径与节归属，不核散文与关键代码块的逐字文本——02 的代码块
 是简写速写骨架（面试要讲的是控制流与降级口径，不是逐行复现），逐字比对会永远红。
@@ -99,5 +100,56 @@ def main() -> int:
     return 1
 
 
+# 第三方 / JDK / 框架自带的类，文档会提到但不在本仓源码里。
+# 要写进这个清单得给出理由——它是「允许不校验」的唯一入口。
+EXTERNAL_CLASSES = {
+    "ChatClient",  # Spring AI 的高层门面，本项目只用到 ChatModel 一层
+    "ChatModel",  # Spring AI 抽象接口，由本仓 AiModelConfig 实现
+    "ToolCallback",  # Spring AI 工具执行回调
+}
+
+# 已从源码删除、但 02 保留类名作为「为什么删」的证据。
+# 与 EXTERNAL_CLASSES 分开：这里的名字必须曾经属于本仓，删了就该在文档里消失。
+DELETED_CLASSES = {
+    "AiSearchEnhancerAdapter",  # §4 讲删除理由，随搜索页四路增强整节删除（2026-09）
+}
+
+CODE_FENCE = re.compile(r"```.*?```", re.S)
+IDENT = re.compile(r"`([A-Z][A-Za-z0-9]*)`")
+
+
+def symbol_drift() -> list[tuple[int, str]]:
+    """散文中形如 `FooBar` 的项目类名，在源码里已查无此物。
+
+    跳过围栏代码块——02 的代码块是明示的示意名骨架，逐字比对必然红。
+    """
+    prose = CODE_FENCE.sub("", DOC.read_text(encoding="utf-8"))
+    java = "\n".join(p.read_text(encoding="utf-8", errors="ignore") for p in BACKEND.rglob("*.java"))
+    out = []
+    for i, line in enumerate(prose.splitlines(), 1):
+        for name in IDENT.findall(line):
+            if name in EXTERNAL_CLASSES or name in DELETED_CLASSES:
+                continue
+            if re.search(rf"\b{re.escape(name)}\b", java):
+                continue
+            out.append((i, name))
+    return out
+
+
+def main_symbols() -> int:
+    if not BACKEND.is_dir():
+        raise SystemExit(f"找不到 {BACKEND}")
+    bad = symbol_drift()
+    if not bad:
+        print("OK：02 散文中提到的项目类名在源码里都存在")
+        return 0
+    print(f"走读漂移：02 散文里提到但源码中查无此物的类名 {len(bad)} 处：")
+    for line, name in bad:
+        print(f"  L{line}: {name}（改过类名要同步 02；确实是外部类就加进 EXTERNAL_CLASSES）")
+    return 1
+
+
 if __name__ == "__main__":
+    if "--symbols" in sys.argv:
+        sys.exit(main_symbols())
     sys.exit(main())

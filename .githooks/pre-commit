@@ -244,4 +244,22 @@ else
   hook_log "No markdown changes, skipping doc links check"
 fi
 
+# 10. 走读类名巡检：02 散文里 `FooBar` 形式的类名必须还能在源码里搜到。
+#     路径巡检只认「**文件**」行，重命名或重写整类而不改路径时它是绿的；这条补上
+#     「散文提到了但类已经没了」这半——被追问时当场答不出来的正是这种漂移
+if echo "$files" | grep -qE '\.md$|\.java$'; then
+  if command -v python3 >/dev/null 2>&1; then
+    hook_log "变更 → 走读类名巡检（散文中提到的类还在不在）..."
+    if python3 "$ROOT/doc/interview/check-drift.py" --symbols; then
+      hook_ok "walkthrough symbol check"
+    else
+      hook_fail "走读漂移：02 提到的类名在源码里已不存在（见上方输出；SKIP=git-hooks 可跳过）"
+    fi
+  else
+    hook_warn "python3 not found, skipping walkthrough symbol check"
+  fi
+else
+  hook_log "No doc / java changes, skipping walkthrough symbol check"
+fi
+
 hook_ok "pre-commit passed"
