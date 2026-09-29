@@ -70,8 +70,7 @@ public class ToolCallDecider {
     }
 
     private ToolCallArguments parseArgs(AssistantMessage.ToolCall toolCall) {
-        String arguments = toolCall.arguments();
-        return objectMapper.readValue(arguments == null ? "" : arguments, ToolCallArguments.class);
+        return objectMapper.readValue(toolCall.arguments(), ToolCallArguments.class);
     }
 
     private static String failureReason(Throwable e) {
