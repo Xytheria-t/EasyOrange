@@ -39,7 +39,7 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 |------|------|------|--------|
 | `chatModel`（`@Primary`） | DeepSeek `https://api.deepseek.com` | `deepseek-chat` | 发布助手文本生成 / 对话与工具决策 / LLM-as-Judge 评审（另：搜索意图识别，2026-09 随搜索增强下线） |
 | `visionChatModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-vl-max` | 拍照上架图片识别 |
-| `embeddingModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | embedding 模型（dimensions=1024） | 语义召回（商品 / 知识库）+ ES 索引写入 |
+| `embeddingModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `text-embedding-v3`（dimensions=1024） | 语义召回（商品 / 知识库）+ ES 索引写入 |
 
 `OpenAiChatAutoConfiguration` 的 `@ConditionalOnMissingBean`（按返回类型推断）会因自定义 bean 存在而安全退让，不产生重复 bean。
 
