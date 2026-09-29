@@ -9,12 +9,16 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.cartethyia.easyorange.ai.application.cache.SemanticCacheMetrics;
+import com.cartethyia.easyorange.ai.application.cache.SemanticCacheMetrics.Outcome;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -69,14 +73,31 @@ class SemanticCacheServiceTest {
 
     private SemanticCacheService cache;
 
+    /** 真实 registry 而非 mock：口径要断言的是「记到了哪个 outcome」，mock 只能验调用次数、验不了取值。 */
+    private SimpleMeterRegistry meterRegistry;
+
     @BeforeEach
     void setUp() {
+        meterRegistry = new SimpleMeterRegistry();
         cache = cache(PropertyBindings.bind(AiProperties.class));
     }
 
     private SemanticCacheService cache(AiProperties aiProperties) {
         return new SemanticCacheService(
-                redisProvider, embeddingModelProvider, aiModelSupport, aiProperties, new ObjectMapper());
+                redisProvider,
+                embeddingModelProvider,
+                aiModelSupport,
+                aiProperties,
+                new ObjectMapper(),
+                new SemanticCacheMetrics(meterRegistry));
+    }
+
+    private double outcomeCount(Outcome outcome) {
+        Counter counter = meterRegistry
+                .find(SemanticCacheMetrics.CACHE_METRIC)
+                .tag("outcome", outcome.getTag())
+                .counter();
+        return counter == null ? 0d : counter.count();
     }
 
     @Nested
@@ -300,11 +321,93 @@ class SemanticCacheServiceTest {
                 embeddingModelProvider,
                 aiModelSupport,
                 PropertyBindings.bind(AiProperties.class),
-                new ObjectMapper());
+                new ObjectMapper(),
+                new SemanticCacheMetrics(meterRegistry));
 
         assertThat(cacheNoRedis.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
                 .isEmpty();
         cacheNoRedis.store(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
+    }
+
+    @Nested
+    @DisplayName("命中率指标口径（分母只由真实查找构成）")
+    class MetricsTests {
+
+        @Test
+        @DisplayName("相似度超阈值 -> hit，未超 -> miss")
+        void hitAndMissAreDistinguished() {
+            when(redisProvider.getIfAvailable()).thenReturn(redis);
+            when(redis.opsForHash()).thenReturn(hashOps);
+            when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of("f", CACHED_JSON));
+
+            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
+                    .isPresent();
+            assertThat(outcomeCount(Outcome.HIT)).isEqualTo(1d);
+
+            // 与 CACHED_JSON 向量正交（0.99, 0.1, 0）—— 余弦低于 0.92 阈值
+            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", List.of(0f, 1f, 0f), ChatAnswer.class))
+                    .isEmpty();
+            assertThat(outcomeCount(Outcome.MISS)).isEqualTo(1d);
+        }
+
+        @Test
+        @DisplayName("缓存关闭 / 向量不可用 -> bypass，不进命中率分母")
+        void bypassIsExcludedFromDenominator() {
+            cache = cache(PropertyBindings.bind(AiProperties.class, "semantic-cache.enabled", "false"));
+            assertThat(cache.embedQuery("问题")).isEmpty();
+            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
+                    .isEmpty();
+
+            assertThat(outcomeCount(Outcome.BYPASS)).isEqualTo(2d);
+            assertThat(outcomeCount(Outcome.MISS)).as("未发生查找，不得记成 miss").isZero();
+            assertThat(outcomeCount(Outcome.HIT)).isZero();
+        }
+
+        @Test
+        @DisplayName("向量化抛异常 -> error 而非 bypass（钱已付却没查成，与主动不查不是一回事）")
+        void embeddingFailureCountsAsErrorNotBypass() {
+            when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
+            when(aiModelSupport.embed(any(), any(), anyString())).thenThrow(new RuntimeException("供应商超时"));
+
+            assertThat(cache.embedQuery("问题")).isEmpty();
+
+            assertThat(outcomeCount(Outcome.ERROR)).isEqualTo(1d);
+            assertThat(outcomeCount(Outcome.BYPASS)).isZero();
+        }
+
+        @Test
+        @DisplayName("Redis 读取抛异常 -> error，fail-open 不记 miss")
+        void redisFailureCountsAsErrorNotMiss() {
+            when(redisProvider.getIfAvailable()).thenReturn(redis);
+            when(redis.opsForHash()).thenThrow(new RuntimeException("redis down"));
+
+            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
+                    .isEmpty();
+
+            assertThat(outcomeCount(Outcome.ERROR)).isEqualTo(1d);
+            assertThat(outcomeCount(Outcome.MISS))
+                    .as("故障记成 miss 会让人在故障期间误以为阈值该调松")
+                    .isZero();
+        }
+
+        @Test
+        @DisplayName("缓存响应反序列化失败 -> 只记 error，一次查找不出两个结局")
+        void deserializationFailureRecordsExactlyOneOutcome() {
+            when(redisProvider.getIfAvailable()).thenReturn(redis);
+            when(redis.opsForHash()).thenReturn(hashOps);
+            // 命中条目但 response 不是合法 JSON —— 语义上已选中却交不出结果
+            String corrupt =
+                    cachedEntry(List.of(0.99f, 0.1f, 0f), "回答", 1).replace("\"response\":\"", "\"response\":\"{");
+            when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of("f", corrupt));
+
+            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
+                    .isEmpty();
+
+            assertThat(outcomeCount(Outcome.ERROR)).isEqualTo(1d);
+            assertThat(outcomeCount(Outcome.HIT))
+                    .as("先记 hit 再抛会被 catch 补记 error，分子分母同时被污染")
+                    .isZero();
+        }
     }
 
     /** 构造一条缓存条目 JSON：向量按 base64 float32 存（与生产写入格式一致）。 */

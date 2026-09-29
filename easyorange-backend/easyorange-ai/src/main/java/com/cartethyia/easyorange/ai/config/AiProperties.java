@@ -123,9 +123,9 @@ public record AiProperties(
     /**
      * 语义缓存配置 — Embedding 相似度命中即复用历史回答（跨用户、近似问题共享，相同意图不再重复调 LLM）。
      *
-     * @param maxEntries 每个 scope 最多缓存的条目数：命中判定要遍历全部条目（Redis Hash 全量拉取 +
-     *     逐条算余弦），这个数直接决定未命中时的查询开销（500 条 ≈ 每次拉回 2MB），需更大容量应换
-     *     向量索引（ES kNN）而不是继续加大 Hash
+     * @param maxEntries 每个 scope 最多缓存的条目数：命中判定要遍历全部条目（Redis Hash 全量拉回 +
+     *     逐条算余弦），这个数直接决定未命中时的查询开销（单条 ≈ 向量 5.5KB + 序列化响应，
+     *     500 条 ≈ 每次拉回 3MB+），需更大容量应换向量索引（ES kNN）而不是继续加大 Hash
      */
     public record SemanticCache(
             @DefaultValue("true") boolean enabled,
