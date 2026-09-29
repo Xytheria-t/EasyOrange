@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand.CreateOrderItem;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
@@ -118,7 +118,7 @@ class OrderCreationIT {
                         buyerId,
                         new CreateOrderCommand(
                                 List.of(new CreateOrderItem(productId, 2)), "北京市海淀区", "13800138000", null)))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(BaseBusinessException.class)
                 .hasMessageContaining("库存");
 
         assertThat(jdbcTemplate.queryForObject(
