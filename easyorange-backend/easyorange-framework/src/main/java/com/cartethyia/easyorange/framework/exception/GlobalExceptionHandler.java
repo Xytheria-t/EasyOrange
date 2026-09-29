@@ -43,22 +43,15 @@ import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
- * 全局异常处理。
+ * 全局异常处理 — 统一返回 {@link Result} 信封（与 Controller 正常响应和所有 Filter 一致）；HTTP 状态码
+ * 单一来源 {@link IResultCode#resolveStatus(String)}（A 段推导 4xx、B→400、C→500、D→502），
+ * 业务异常直接取 {@link BaseBusinessException#getStatusCode()}。
  * <p>
- * 统一返回 {@link Result} 信封（与 Controller 正常响应和所有 Filter 一致），
- * HTTP 状态码由错误码映射（{@link IResultCode#resolveStatus(String)}，单一来源）：
- * A 段取码内数字推导 4xx（A0401/A04011→401 / A0403→403 / A0404→404 / A0405→405 / A0413→413 / A0429→429，
- * 其余 A 归 400），B→400，C→500，D→502。校验类错误统一返回 400。业务异常实现 Spring {@code ErrorResponse}，
- * 状态码直接取自 {@link BaseBusinessException#getStatusCode()}。
+ * 参数级约束两条路径都映射 400：控制器未标 {@code @Validated} 抛 {@link HandlerMethodValidationException}，标了走 AOP 抛
+ * {@link ConstraintViolationException}；multipart 超限 413 + A0413、解析失败 400；死锁与唯一键冲突映射 B0006/400 ——
+ * 这些若落 500 会被前端 {@code isRetryable}（status≥500）当可重试错误自动重试，把客户端错误变成重试风暴。
  * <p>
- * 方法参数级约束有两条路径，均已映射 400：控制器未标 {@code @Validated} 时由 MVC 内建校验抛
- * {@link HandlerMethodValidationException}，标了则走 AOP 抛 {@link ConstraintViolationException}。
- * multipart 超限（容器级限制先于应用层文件校验触发）映射 413 + A0413，multipart 解析失败映射 400；
- * 数据库死锁/锁等待超时映射 B0006 并发冲突、唯一键冲突映射 400 — 这些若落 500，会被前端
- * {@code isRetryable}（status>=500）当可重试错误自动重试，把客户端错误变成重试风暴。
- * <p>
- * 非 {@link BaseBusinessException} 子类的 RuntimeException（如 IllegalArgumentException）
- * 一律落入 500 兜底，提示编程错误而非客户端参数错误（见 AGENTS.md 异常规则）。
+ * 非 {@link BaseBusinessException} 子类的 RuntimeException（如 IllegalArgumentException）一律落 500 兜底，提示编程错误。
  */
 @Slf4j
 @AutoConfiguration
@@ -84,9 +77,8 @@ public class GlobalExceptionHandler {
             case HttpRequestMethodNotSupportedException _ ->
                 response(METHOD_NOT_ALLOWED, ResultCode.METHOD_NOT_ALLOWED);
             case MethodArgumentNotValidException _, BindException _ -> handleValidation(getBindingResult(e));
-            // 方法参数级约束（如 @RequestParam @Max/@Pattern）：控制器未标注 @Validated 时由 Spring MVC
-            // 内建方法校验抛出本异常（控制器标了 @Validated 则内建校验被关掉、改抛 ConstraintViolationException，
-            // 两条路径都必须映射，否则约束被违反会静默变 500）
+            // 方法参数级约束：控制器未标 @Validated 时由 MVC 内建方法校验抛本异常（标了则改抛
+            // ConstraintViolationException），两条路径都必须映射，否则约束被违反会静默变 500
             case HandlerMethodValidationException h -> {
                 var msg = h.getParameterValidationResults().stream()
                         .flatMap(result -> result.getResolvableErrors().stream()
@@ -118,11 +110,9 @@ public class GlobalExceptionHandler {
                 log.warn("action=media_type_not_supported, content_type={}", m.getContentType());
                 yield response(UNSUPPORTED_MEDIA_TYPE, ResultCode.PARAM_ERROR, "不支持的媒体类型：" + m.getContentType());
             }
-            // 容器级 multipart 限制（spring.servlet.multipart.*）先于应用层文件校验触发：
-            // 必须早于 MultipartException 匹配（子类在前），并映射为 413 而非 500，
-            // 免得"文件过大"被前端 isRetryable（>=500）当作可重试错误自动重试。
-            // 413 用 CONTENT_TOO_LARGE 而非 PAYLOAD_TOO_LARGE：RFC 9110 已把
-            // "Payload Too Large" 更名为 "Content Too Large"，Spring 7 起后者标记 @Deprecated
+            // 容器级 multipart 限制（spring.servlet.multipart.*）先于应用层文件校验触发：必须早于
+            // MultipartException 匹配（子类在前）。413 用 CONTENT_TOO_LARGE：RFC 9110 已改此名，
+            // Spring 7 起 PAYLOAD_TOO_LARGE 标记 @Deprecated
             case MaxUploadSizeExceededException m -> {
                 log.warn("action=upload_too_large, limit={}", m.getMaxUploadSize());
                 yield response(
@@ -134,8 +124,8 @@ public class GlobalExceptionHandler {
                 log.warn("action=multipart_error");
                 yield badRequest("文件上传请求格式错误");
             }
-            // MySQL 死锁(1213)/锁等待超时(1205) 经 Spring 翻译为 CannotAcquireLockException：
-            // 属并发竞争下的可重试冲突，与乐观锁冲突同码（B0006→400），而非落 500
+            // MySQL 死锁(1213)/锁等待超时(1205) 经 Spring 翻译为 CannotAcquireLockException：属并发
+            // 竞争下的可重试冲突，与乐观锁冲突同码（B0006→400），而非落 500
             case CannotAcquireLockException _ -> {
                 log.warn("action=lock_conflict, type={}", e.getClass().getSimpleName());
                 yield response(BAD_REQUEST, ResultCode.CONCURRENT_UPDATE, "数据并发冲突，请重试");
@@ -149,8 +139,8 @@ public class GlobalExceptionHandler {
                 yield response(NOT_FOUND, ResultCode.NOT_FOUND);
             }
             // 客户端在响应写出途中断开（刷新/关页/代理超时，Tomcat 写管道抛出）：请求已被客户端放弃，
-            // 不是服务故障 —— 降 debug、不进 system_error 的 ERROR 大盘（与流式断流 ChatStreamAborted 同一分级）。
-            // 响应通常已部分提交，返回体本就无人接收，沿用 500 形状只为闭合 switch
+            // 不是服务故障 —— 降 debug、不进 system_error 的 ERROR 大盘。响应通常已部分提交，
+            // 返回体本就无人接收，沿用 500 形状只为闭合 switch
             case ClientAbortException ignored -> {
                 log.debug("action=client_disconnected, type={}", e.getClass().getName());
                 yield response(INTERNAL_SERVER_ERROR, ResultCode.INTERNAL_SERVER_ERROR);

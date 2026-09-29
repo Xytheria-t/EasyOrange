@@ -10,22 +10,16 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
- * 消息聚合根 —— 不可变 record
+ * 消息聚合根 —— 不可变 record。
  * <p>
- * 取舍：会话 ID（{@code conversation_id}）由聚合根按「排序双 ID」规则算出而非由调用方传入——
- * 它是收发双方的纯函数，客户端可控的入参只会让同一房间被命名成两个值。
+ * 取舍：会话 ID 由聚合根按「排序双 ID」算出而非调用方传入——它是收发双方的纯函数，
+ * 客户端可控的入参只会让同一房间被命名成两个值。
  * <p>
- * 边界降级：系统消息（senderId 为 null）无会话概念，conversationId 恒 null；老数据（列接入前写入的行）
- * 也为 null，只影响按会话查询，不影响按收发方的读路径。
+ * 不变量：只有接收者可标已读（已读幂等返回自身）；只有发送者可撤回；撤回须在 2 分钟内且未撤回过；
+ * 标题与内容存原始文本，XSS 防护由渲染端承担，写入不转义（避免渲染时双转义）。
  * <p>
- * 核心不变量：
- * <ul>
- *   <li>只有接收者可以标记已读</li>
- *   <li>只有发送者可以撤回消息</li>
- *   <li>撤回必须在 2 分钟内完成</li>
- *   <li>已撤回的消息不能再次撤回</li>
- *   <li>标题和内容以原始文本存储；XSS 防护由渲染端文本输出承担，写入不做转义（避免文本渲染时双转义）</li>
- * </ul>
+ * 边界：系统消息（senderId 为 null）无会话概念，conversationId 恒 null；
+ * 老数据（列接入前写入的行）同样为 null，只影响按会话查询。
  */
 public record Message(
         String id,
@@ -44,11 +38,7 @@ public record Message(
 
     // ── 工厂方法 ──
 
-    /**
-     * 创建普通消息。
-     *
-     * @param id 消息 ID，由应用层 {@code IdGenerator} 生成（{@code BaseDO.id} 为 {@code IdType.INPUT}，数据库不回填）
-     */
+    /** 消息 ID 由应用层 {@code IdGenerator} 生成（{@code BaseDO.id} 为 {@code IdType.INPUT}，数据库不回填）。 */
     public static Message create(
             String id,
             String senderId,
@@ -73,11 +63,7 @@ public record Message(
                 LocalDateTime.now());
     }
 
-    /**
-     * 创建系统消息。
-     *
-     * @param id 消息 ID，由应用层 {@code IdGenerator} 生成（{@code BaseDO.id} 为 {@code IdType.INPUT}，数据库不回填）
-     */
+    /** 消息 ID 由应用层 {@code IdGenerator} 生成（{@code BaseDO.id} 为 {@code IdType.INPUT}，数据库不回填）。 */
     public static Message createSystem(String id, String receiverId, String title, String content, String businessId) {
         return new Message(
                 id,
@@ -97,9 +83,6 @@ public record Message(
 
     // ── 重建 ──
 
-    /**
-     * 从持久层原始数据重建聚合根
-     */
     public static Message fromRaw(
             String id,
             String senderId,
@@ -146,12 +129,7 @@ public record Message(
 
     // ── 状态迁移 ──
 
-    /**
-     * 标记消息为已读（幂等：已读返回自身）。
-     *
-     * @return 已读后的消息；若本就已读则返回当前实例
-     * @throws MessageDomainException 如果 userId 不是接收者
-     */
+    /** 幂等：已读直接返回自身；非接收者抛 {@link MessageDomainException#notOwner}。 */
     public Message read(String userId) {
         if (!isOwnedBy(userId)) {
             throw MessageDomainException.notOwner("只有接收者才能读取该消息");
@@ -176,11 +154,9 @@ public record Message(
     }
 
     /**
-     * 撤回消息
-     *
-     * @return 包含更新后聚合根和领域事件的结果；事件自带本消息的 conversationId，订阅方据此定向广播
-     * @throws MessageDomainException 如果 operatorId 不是发送者
-     * @throws MessageDomainException         如果消息已撤回或超过 2 分钟
+     * 撤回 —— 2 分钟窗口、已撤回不可再撤回；非发送者抛 {@link MessageDomainException#notOwner}。
+     * <p>
+     * 返回的事件自带本消息的 conversationId，订阅方据此定向广播。
      */
     public MessageRecallResult recall(String operatorId) {
         if (!isSender(operatorId)) {

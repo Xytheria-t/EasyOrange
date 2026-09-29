@@ -44,20 +44,16 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * 商品检索（ES 适配器）— 实现 {@link ProductSearchQueryPort}。
+ * 商品检索（ES 适配器）— 实现 {@link ProductSearchQueryPort}，与 {@link AssetElasticsearchAdapter} /
+ * {@link KnowledgeElasticsearchAdapter} 刻意对称：kNN（{@code nameEmbedding}）与 BM25
+ * （{@code multi_match name^3/description}）两路独立召回，再用 {@link RrfFusion} 按排名融合。
+ * 同一请求里「knn + query」不行：ES 会把两路分数合成一个分值、余弦相似度与 BM25 量纲不可比，只有排名能融（ADR-0012）。
  * <p>
- * <b>与 {@link AssetElasticsearchAdapter} / {@link KnowledgeElasticsearchAdapter} 刻意对称：两路独立召回 + RRF 排名融合。</b>
- * kNN（{@code nameEmbedding}，dense_vector）与 BM25（{@code multi_match name^3/description}）各查一次，
- * 再用 {@link RrfFusion} 按排名融合 —— 同一请求里「knn + query」不行：ES 会把两路分数按内部规则合成一个分值，
- * 拿不到各自排名，而余弦相似度与 BM25 分值量纲不可比，只有排名能融（ADR-0012）。
+ * 仅「按相关性排序 + 拿得到查询向量」（{@link #useTwoLegRecall}）才走两路；显式排序或关键词为空走单路
+ * BM25 并保留 ES 侧分页排序 —— kNN 缺 query 子句会退化成 match_all，等于按过滤条件随机取一批。
  * <p>
- * <b>何时走两路</b>：仅当「按相关性排序」且拿得到查询向量（见 {@link #useTwoLegRecall}）。
- * 显式排序（价格 / 最新 / 热度）走单路 BM25 并保留原来的 ES 侧分页与排序；关键词为空同样单路 ——
- * kNN 缺 query 子句只能退化成 match_all，等于按过滤条件随机取一批。
- * <p>
- * <b>单路失败不影响另一路</b>：任一路抛异常就退化为另一路单独排序（与 AI 找货链路同一语义），
- * 两路都失败才回落到单路查询；ES 整体不可达时由 {@code ProductSearchQueryHandler} 降级回 MySQL 检索
- * （facets 依赖 ES 聚合，降级后为空）。
+ * 降级：任一路抛异常即退化为另一路单独排名（与 AI 找货链路同一语义），两路都失败才回落单路查询；
+ * ES 整体不可达由 {@code ProductSearchQueryHandler} 降级回 MySQL 检索，facets 依赖 ES 聚合故降级后为空。
  */
 @Slf4j
 @Component
@@ -67,24 +63,19 @@ import tools.jackson.databind.node.ObjectNode;
 public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQueryPort {
 
     /**
-     * 两路召回各取的候选条数 = {@code max(100, page * size * 2)}：池子随页码增长保证请求的那一页
-     * 永远落在池内（固定池子在深翻页时返回空记录，而总数仍报 BM25 完整计数，前后端对不上）；
-     * 下限保证前几页融合顺序稳定 —— 池子大小变化会让「翻到第 2 页时第 1 页的顺序也变了」。
+     * 两路召回各取的候选条数 = {@code max(100, page * size * 2)}：池子随页码增长保证目标页永远落在池内
+     * （固定池深翻页返空记录而总数仍报 BM25 完整计数，前后端对不上）；下限保证前几页融合顺序稳定
+     * —— 池子大小变化会让「翻到第 2 页时第 1 页的顺序也变了」。
      */
     private static final int MIN_CANDIDATES = 100;
 
-    /**
-     * kNN 的 {@code num_candidates} 下限：ES 先按 ANN 取这么多候选再精确打分（远大于 k 才有效果）；
-     * 必须 ≥ {@code k} 否则 ES 直接拒收整个请求，候池增长时固定 100 会踩坑，故取 {@code max(100, 2k)}。
-     */
+    /** kNN 的 {@code num_candidates} 下限 100：ES 先按 ANN 取这么多候选再精确打分（远大于 k 才有效果）；
+     *  必须 ≥ {@code k} 否则 ES 直接拒收整个请求，候池增长时固定 100 会踩坑，故取 {@code max(100, 2k)}。 */
     private static final int NUM_CANDIDATES = 100;
 
-    /**
-     * kNN 路的余弦相似度下限：纯 kNN 召回没有相关性门槛，小语料下 ANN 会把全库凑满 {@code k} 条，
-     * 不相关商品会被顶进结果页。实测（2026-09-23，106 文档 / text-embedding-v3 + bbq_hnsw）：乱码查询
-     * 0 命中、「相机」4 条、自然语言查询 7 条 —— 门槛按 ANN 图上的估计分剪枝（报告的 {@code _score}
-     * 是 rescore 后的值，0.5 对应报告分约 0.75 的有效切点）。只影响语义路，BM25 词面命中不受限。
-     */
+    /** kNN 路的余弦相似度下限 0.5：纯 kNN 召回没有相关性门槛，小语料下 ANN 会把全库凑满 {@code k} 条、
+     *  不相关商品被顶进结果页；门槛按 ANN 图上的估计分剪枝（报告的 {@code _score} 是 rescore 后的值，
+     *  0.5 对应报告分约 0.75 的有效切点）。只影响语义路，BM25 词面命中不受限。 */
     private static final float KNN_MIN_SIMILARITY = 0.5f;
 
     /** 索引里只取检索需要的字段（1024 维向量不回传，只在 ES 内部参与打分）。 */
@@ -114,7 +105,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 && ProductSearchQueryPort.isRelevanceSort(query.sort());
     }
 
-    /** 单路 BM25：显式排序、关键词为空、以及两路都失败时都走这里，分页与排序完全交给 ES。 */
+    /** 单路 BM25：分页与排序完全交给 ES 侧承担。 */
     private SearchResult singleLegSearch(ProductSearchQuery query, int page, int size) {
         var queryBuilder = NativeQuery.builder()
                 .withPageable(PageRequest.of(page - 1, size))
@@ -125,10 +116,9 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 .withAggregation("priceRanges", priceRangeAgg());
 
         // 用 NativeQuery 组装请求体：SDE 的 StringQuery 会把整段 body 当作 query DSL 包进 wrapper 查询，
-        // 形成 {"query":{"query":…,"sort":…,"aggs":…}} 被 ES 拒收（unknown query [query]）。
-        // 异常不在本层兜底：适配器手里只有拼好的 ES 查询、没有原始查询条件，补不出等价的 MySQL 检索。
-        // ES 整体不可达由 ProductSearchQueryHandler 统一降级回 MySQL，不在这里返回空结果集 ——
-        // 「空结果」与「真的没搜到」在响应上无法区分，会把一次集群故障伪装成正常响应
+        // 形成 {"query":{"query":…,"sort":…,"aggs":…}} 被 ES 拒收（unknown query [query]）
+        // 异常不在本层兜底：适配器手里只有拼好的 ES 查询、没有原始查询条件，补不出等价的 MySQL 检索；
+        // 「空结果」与「真的没搜到」在响应上无法区分，会把一次集群故障伪装成正常响应，故交上层统一降级
         SearchHits<ProductDocument> searchHits =
                 elasticsearchOperations.search(queryBuilder.build(), ProductDocument.class);
 
@@ -136,7 +126,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 searchHits, page, size, searchHits.getTotalHits(), fillSellers(extractRecords(searchHits)));
     }
 
-    /** 两路召回 + RRF 融合：候选池按需增长，融合后按页切片（顺序由排名决定，不由 ES 分页决定）。 */
+    /** 两路召回 + RRF 融合：融合后按页切片，顺序由 RRF 排名决定而非 ES 分页。 */
     private SearchResult fusedSearch(ProductSearchQuery query, int page, int size) {
         int candidateK = Math.max(MIN_CANDIDATES, page * size * 2);
         var knnLeg = runLeg(SearchLegMetrics.Leg.KNN, knnQuery(query, candidateK));
@@ -153,14 +143,13 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
             rankedLists.add(bm25Leg.ids());
         }
 
-        // 两路都空：可能是真无结果，也可能是 ES 抖动。交给单路查询再确认一次，
-        // 避免把一次抖动放大成「搜索无结果」这种看起来正常的假象。
+        // 两路都空：可能是真无结果，也可能是 ES 抖动，回单路再确认一次，避免把抖动放大成「搜索无结果」
         if (rankedLists.isEmpty()) {
             return singleLegSearch(query, page, size);
         }
 
         // BM25 路的总命中是「过滤 + 词面匹配」的完整计数（kNN 只返回候选池条数，不是匹配总数），
-        // 但它不含语义路补进的召回，所以最终 total 取它与融合后条数的较大值。
+        // 但它不含语义路补进的召回，所以最终 total 取它与融合后条数的较大值
         long bm25Total = bm25Leg.hits() != null ? bm25Leg.total() : 0L;
 
         var fused = RrfFusion.fuse(RrfFusion.DEFAULT_K, rankedLists);
@@ -172,12 +161,11 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 .map(this::toReadModel)
                 .toList());
 
-        // 与融合后记录数取 max：语义路在词面命中之外补进的召回也承诺给了用户（只报 BM25 数会出现
+        // total 与融合后记录数取 max：语义路在词面命中之外补进的召回也承诺给了用户（只报 BM25 数会出现
         // 「共找到 0 件」却列着 N 张卡、翻页控件消失的口径裂缝）
         long total = Math.max(bm25Total, fused.size());
 
-        // facets 来自 BM25 那路的聚合：聚合是「过滤条件命中的语料」上的统计量，
-        // 与融合后的排序无关，因此只需要一路带聚合，不必两路都算一遍。
+        // facets 只需一路带聚合：聚合是「过滤条件命中的语料」上的统计量，与融合后的排序无关
         return toSearchResult(bm25Leg.hits(), page, size, total, records);
     }
 
@@ -204,9 +192,8 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
     }
 
     /**
-     * 批量补卖家展示信息（昵称/头像）：索引侧不存卖家名/头像（写侧不查用户表，索引只有 sellerId），
-     * 统一在查询时经 {@link SellerCachePort}（Caffeine）按 sellerId 回填。卖家服务不可用时降级为匿名展示，
-     * 不影响检索主链路。
+     * 批量回填卖家展示信息：索引侧不存卖家名/头像（写侧不查用户表，索引只有 sellerId），
+     * 统一在查询时经 {@link SellerCachePort}（Caffeine）按 sellerId 补齐。卖家服务不可用降级为匿名展示。
      */
     private List<ProductReadModel> fillSellers(List<ProductReadModel> records) {
         if (records.isEmpty()) {
@@ -243,7 +230,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 .toList();
     }
 
-    /** 单路召回结果：有序 ID + id → 文档（融合后按 id 回捞字段）+ 总命中数；失败时为空路且 {@code hits} 为 null。 */
+    /** 单路召回结果：有序 ID、id → 文档（融合后按 id 回捞字段）、总命中数；失败时为空路且 {@code hits} 为 null。 */
     private record Leg(
             List<String> ids, Map<String, ProductDocument> docs, long total, SearchHits<ProductDocument> hits) {}
 
@@ -260,7 +247,6 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
             legMetrics.record(SearchLegMetrics.Source.PRODUCT, leg, Duration.ofNanos(System.nanoTime() - start), true);
             return new Leg(ids, docs, hits.getTotalHits(), hits);
         } catch (Exception e) {
-            // 单路失败不影响另一路：退化为单路排名，而不是把整个检索打成 500
             log.warn("Product search leg failed, falling back to single-leg ranking", e);
             legMetrics.record(SearchLegMetrics.Source.PRODUCT, leg, Duration.ofNanos(System.nanoTime() - start), false);
             return new Leg(List.of(), Map.of(), 0L, null);
@@ -268,11 +254,10 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
     }
 
     /**
-     * kNN 腿：过滤条件放 {@code knn.filter}（预过滤），<b>不得挂顶层 query</b> —— 顶层 query
-     * （match_all + 过滤）与 {@code knn.similarity} 并存时，kNN 侧被相似度剪成 0 后 ES 仍把 query
-     * 侧命中当结果返回（实测乱码查询该腿返 100 条、分值恒为 match_all 的 1.0），相似度门槛等于没有；
-     * 过滤搬进 knn.filter 后同样查询 0 命中。wrapper 查询装的是<b>查询对象</b> {@code {"bool":…}}，
-     * 直接装子句数组会被 ES 以 x_content_parse_exception 拒收，整条腿静默退化成单路。
+     * kNN 腿：过滤条件放 {@code knn.filter}（预过滤），<b>不得挂顶层 query</b> —— 顶层 query（match_all + 过滤）
+     * 与 {@code knn.similarity} 并存时，kNN 侧被相似度剪成 0 后 ES 仍把 query 侧命中当结果返回
+     * （实测该腿返满 k 条、分值恒为 match_all 的 1.0），相似度门槛等于没有。
+     * wrapper 查询装的是<b>查询对象</b> {@code {"bool":…}}，直接装子句数组会被 ES 以 x_content_parse_exception 拒收、整条腿静默退化成单路。
      */
     private NativeQuery knnQuery(ProductSearchQuery query, int k) {
         int numCandidates = Math.max(NUM_CANDIDATES, k * 2);
@@ -317,7 +302,6 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
     private JsonNode buildQuery(ProductSearchQuery query) {
         ObjectNode bool = objectMapper.createObjectNode();
 
-        // Must clause
         ArrayNode must = objectMapper.createArrayNode();
         String keyword = query.keyword();
         if (keyword != null && !keyword.isBlank()) {
@@ -337,7 +321,6 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         }
         bool.set("must", must);
 
-        // Filter clauses
         ArrayNode filter = buildFilterClauses(query);
         if (filter.size() > 0) {
             bool.set("filter", filter);
@@ -346,7 +329,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         return objectMapper.createObjectNode().set("bool", bool);
     }
 
-    /** 过滤子句（status/categoryId/conditionLevel/price），两路召回共用且都必须带 —— 只过滤一路会让另一路把被过滤的商品带进候选池（见类注释）。 */
+    /** 过滤子句（status/categoryId/conditionLevel/price）两路召回共用且都必须带 —— 只过滤一路会让另一路把已过滤的商品带进候选池。 */
     private ArrayNode buildFilterClauses(ProductSearchQuery query) {
         ArrayNode filter = objectMapper.createArrayNode();
         if (query.status() != null) {

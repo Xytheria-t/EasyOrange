@@ -39,7 +39,7 @@ public class PaymentCommandHandler {
     private static final String PAY_LOCK_PREFIX = "payment:lock:pay:";
     private static final String REFUND_LOCK_PREFIX = "payment:lock:refund:";
     /**
-     * 锁等待 0 秒：并发重复回调立即失败返回 429（可重试），由网关重试兜底；
+     * 锁等待 0 秒：并发重复回调立即失败返回 429（可重试）由网关重试兜底；
      * 不排队等待，避免回调线程挂在可能长时间运行的网关调用之后。
      */
     private static final long LOCK_TRY_TIMEOUT_SECONDS = 0;
@@ -70,12 +70,10 @@ public class PaymentCommandHandler {
     }
 
     /**
-     * 发起支付 — 按支付单号加分布式锁（等待 0 秒，争用即 429 交网关重试），锁内编排两阶段：
-     * {@code preparePayPhase1}（PENDING→PAYING）→ {@code invokePayGateway}（无事务，外部调用）
-     * → 网关成功 {@code confirmPayPhase2}（PAYING→SUCCESS 并发事件）/ 失败 {@code rollbackPayStatus}（回 PENDING）。
+     * 发起支付 — 按支付单号加分布式锁，锁内编排两阶段：准备（PENDING→PAYING）→ 网关调用（无事务）→
+     * 成功确认（PAYING→SUCCESS 并发事件）/ 失败回退（PENDING）。
      * <p>
-     * 本方法自身不开事务：编排跨网关调用，事务边界必须落在各 phase 上（见 {@link PaymentPhaseExecutor}），
-     * 在这里开事务会把「本地更新 + 外部 HTTP」绑成一段长事务。
+     * 本方法自身不开事务：编排跨网关调用，事务边界必须落在各 phase 上（见 {@link PaymentPhaseExecutor}）。
      */
     public void pay(PayCommand command) {
         String lockKey = PAY_LOCK_PREFIX + command.paymentNo();
@@ -92,8 +90,7 @@ public class PaymentCommandHandler {
     }
 
     /**
-     * 回调金额非空时先校验与支付单一致（防止金额被篡改 ——
-     * HMAC 签名只覆盖 paymentNo|transactionId，金额是签名盲区）。
+     * 回调金额非空时先校验与支付单一致 —— HMAC 签名只覆盖 paymentNo|transactionId，金额是签名盲区，不校验等于放行篡改。
      */
     public void processCallback(PaymentCallbackCommand command) {
         String lockKey = PAY_LOCK_PREFIX + command.paymentNo();
@@ -106,9 +103,8 @@ public class PaymentCommandHandler {
     }
 
     /**
-     * 退款：两阶段（本地事务 + 外部网关），与支付一致遵循 ADR-0007 拒绝 Saga。
-     * <p>
-     * 操作者必须与支付单所属用户一致（越权防护，见 {@link #assertOwnership}）。
+     * 退款与支付同构：两阶段（本地事务 + 外部网关），拒绝 Saga 见 ADR-0007。
+     * 操作者必须与支付单所属用户一致，否则按「记录不存在」处理。
      */
     public void refundPayment(RefundPaymentCommand command) {
         String lockKey = REFUND_LOCK_PREFIX + command.paymentId();
@@ -140,10 +136,9 @@ public class PaymentCommandHandler {
     // ── 订单侧入口（以 orderId 为键） ──
 
     /**
-     * 按订单 ID 发起支付 — 订单模块的 {@code PaymentGatewayPort.pay(orderId)} 以订单 ID 为键，
-     * 而 {@link PayCommand} 以支付单号为键，解析步骤收口在此，调用方不必接触支付仓储。
-     * <p>
-     * 不持有事务：委托 {@link #pay(PayCommand)} 走两阶段，事务边界在 {@link PaymentPhaseExecutor}。
+     * 按订单 ID 发起支付 —— 订单侧 {@code PaymentGatewayPort.pay(orderId)} 以订单 ID 为键，
+     * 而 {@link PayCommand} 以支付单号为键，解析收口在此，调用方不必接触支付仓储；
+     * 事务边界在 {@link PaymentPhaseExecutor}。
      *
      * @throws PaymentDomainException 支付单不存在（B4001）
      */
@@ -152,7 +147,7 @@ public class PaymentCommandHandler {
     }
 
     /**
-     * 按订单 ID 退款 — 操作者记为支付单所属用户（通过归属校验），供订单取消等系统内部路径使用。
+     * 按订单 ID 退款 —— 供订单取消等系统内部路径使用；操作者取支付单所属用户，故越权由 {@link #assertOwnership} 兜住。
      *
      * @throws PaymentDomainException 支付单不存在（B4001）
      */
@@ -162,8 +157,8 @@ public class PaymentCommandHandler {
     }
 
     /**
-     * 按订单 ID 解析支付单 — 订单与支付单在同一下单事务内落库，正常路径下必然存在；
-     * 缺失属数据不一致，按 B4001 显性失败而非静默跳过（静默会让用户点了支付却毫无反馈）。
+     * 订单与支付单在同一下单事务内落库，正常路径必然存在；缺失属数据不一致，按 B4001 显性失败而非静默跳过
+     * （静默会让用户点了支付却毫无反馈）。
      */
     private Payment resolveByOrderId(String orderId) {
         return paymentRepository
@@ -171,11 +166,7 @@ public class PaymentCommandHandler {
                 .orElseThrow(() -> PaymentDomainException.notFound("orderId=" + orderId));
     }
 
-    /**
-     * 回调金额校验 — 回调未携带金额时跳过（签名已覆盖 paymentNo|transactionId）。
-     * <p>
-     * 金额不一致视为篡改，按业务异常拒绝（不落 500 兜底）。
-     */
+    /** 回调未携带金额时跳过；金额不一致视为篡改，按业务异常拒绝而非落 500 兜底。 */
     private void verifyCallbackAmount(PaymentCallbackCommand command) {
         if (command.amount() == null) {
             return;
@@ -190,9 +181,7 @@ public class PaymentCommandHandler {
     }
 
     /**
-     * 资源归属校验（越权防护）— 操作者必须与支付单所属用户一致。
-     * <p>
-     * 不一致时按「记录不存在」处理（B4001，B 段前缀统一映射 400），避免向调用方泄露支付单存在性。
+     * 资源归属校验（越权防护）—— 不一致时按「记录不存在」处理（B4001 → 400），避免向调用方泄露支付单存在性。
      */
     private Payment assertOwnership(String paymentId, String operatorId) {
         Payment aggregate = paymentRepository
@@ -205,10 +194,8 @@ public class PaymentCommandHandler {
     }
 
     /**
-     * 带锁执行并记录并发冲突指标 — 锁获取失败由用例层记录，指标属支付域而不属锁基础设施。
-     * <p>
-     * 锁争用映射为支付域 {@link PaymentResultCode#PAYMENT_BUSY}（A0429 → 429，可重试语义），
-     * 而非把基础设施异常直接上抛落入 500 兜底；原异常带锁 key 记 warn 日志供运维定位。
+     * 锁争用映射为支付域 {@link PaymentResultCode#PAYMENT_BUSY}（A0429 → 429，可重试语义）而非基础设施异常直抛落 500；
+     * 指标属支付域不属锁基础设施，原异常带锁 key 记 warn 供运维定位。
      */
     private void executeWithLock(String lockKey, Runnable operation) {
         try {

@@ -5,23 +5,15 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * product 模块错误码 — 资产（B2001~）与分类（B2020~）共用本枚举。
+ * product 模块错误码 — 资产（B2001~）与分类（B2020~）共用本枚举，范围 B2001-B2999，HTTP 状态映射见
+ * {@link IResultCode#resolveStatus(String)}。
  * <p>
- * 错误码范围：B2001-B2999。HTTP 状态映射见 {@link IResultCode#resolveStatus(String)}。
- * </p>
+ * <b>一个模块一个码枚举</b>：分类是资产域的概念（商品挂在分类上），不另开 {@code CategoryResultCode}，
+ * 模块内多个领域概念靠码值段区分，异常侧同样只留一个根类 {@code ProductDomainException}（见 ArchUnit 规则 11）。
  * <p>
- * **一个模块一个码枚举**（其余模块亦然）。分类是资产域的概念（商品挂在分类上），
- * 所以不另开 {@code CategoryResultCode}——模块内多个领域概念靠码值段区分，
- * 异常侧同样只留一个根类 {@code ProductDomainException}（见 ArchUnit 规则 11）。
- * </p>
- * <p>
- * 码值空洞（B2002 / B2004 / B2006 / B2007 / B2008 / B2010 / B2011 / B2013 / B2014 / B2015 / B2016 / B2017 / B2018）是刻意的：
- * 前三个曾是「已下架 / 已售出 / 已审核」的按状态分列的码，但状态拒绝统一走
- * {@link #PRODUCT_STATUS_INVALID}（携带当前状态辅助定位状态机误用）；B2010/B2011/B2016-B2018 属已下线的商品评价，
- * B2013-B2015 属已下线的举报功能。这些码从未被外部契约引用，已删除。已删除的码值不再复用。
- * </p>
- *
- * @see IResultCode
+ * 码值空洞（B2002 / B2004 / B2006~B2008 / B2010 / B2011 / B2013~B2018）是刻意的：状态拒绝统一走
+ * {@link #PRODUCT_STATUS_INVALID}（携带当前状态辅助定位状态机误用），其余属已下线的商品评价与举报功能，
+ * 从未被外部契约引用故已删除——已删除的码值不再复用。
  */
 @Getter
 @AllArgsConstructor

@@ -35,21 +35,16 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * 审计日志 AOP 切面。
+ * 审计日志 AOP 切面 — 拦截所有 RestController 的写操作方法，通过 Spring Modulith Outbox 异步记录。
  * <p>
- * 拦截所有 RestController 的写操作方法，通过 Spring Modulith Outbox 异步记录审计日志。
- * 约定优于注解：方法名以 get/query/find/list 等前缀开头视为读操作，跳过记录。
- * 模块名、操作标题和业务类型通过 {@link AuditLogProperties} 的映射表推导。
- * </p>
+ * 约定优于注解：方法名以 get/query/find/list 等前缀开头视为读操作跳过记录；模块名、操作标题与业务类型
+ * 由 {@link AuditLogProperties} 的映射表推导。
  * <p>
- * 事件流：切面发布 {@link AuditLogEvent} → Modulith 写入 {@code EVENT_PUBLICATION} 表
- * （与当前事务同提交，Outbox 模式保证崩溃不丢）→ RabbitMQ 异步投递 →
- * {@code AuditLogEventConsumer} 消费写库。若事件发布失败，降级为直接入库（best-effort）。
- * </p>
+ * 事件流：切面发布 {@link AuditLogEvent} → Modulith 写入 {@code EVENT_PUBLICATION} 表（与当前事务同提交，
+ * Outbox 保证崩溃不丢）→ RabbitMQ 投递 → {@code AuditLogEventConsumer} 消费写库；发布失败降级为直接入库。
  * <p>
- * {@code @Order(3)} 只在本切面与其他切面之间排序。限流 / 防重 / 幂等这些 Filter 由 servlet 容器与
- * Security 链保证先于 MVC 执行，与本切面的 {@code @Order} 无关。
- * </p>
+ * {@code @Order(3)} 只在本切面与其他切面之间排序：限流 / 防重 / 幂等这些 Filter 由 servlet 容器与 Security
+ * 链保证先于 MVC 执行，与本切面的 {@code @Order} 无关。
  */
 @Slf4j
 @Aspect

@@ -11,16 +11,9 @@ import org.springframework.stereotype.Component;
 /**
  * 检索双路（kNN / BM25）腿级打点 — 三个 ES 适配器共用一套指标名，改名只改这里。
  * <p>
- * {@code runLeg} 按设计吞掉单路异常（退化为另一路排名），失败在这里是<b>唯一可见面</b>：
- * 没有计数时腿挂掉表现为「结果变少」，只能靠 grep 日志发现（2026-09-23 排查实测假通过）。
- * <ul>
- *   <li>{@code easyorange.search.leg.calls{source,leg,outcome}} — 失败率按
- *       {@code outcome="failure"} 出数，降级率口径的腿级分量；</li>
- *   <li>{@code easyorange.search.leg.duration{source,leg,outcome}} — P50/P95/P99，
- *       腿超时（失败里慢的那部分）与正常腿延迟分开看。</li>
- * </ul>
- * tag 空间封闭（source × leg × outcome = 3 × 2 × 2，见 {@link Source} / {@link Leg}），
- * 构造期按全集注册（12 组 counter + timer），热路径只查表不查注册表。
+ * {@code runLeg} 按设计吞掉单路异常（退化为另一路排名），腿挂掉时这里是<b>唯一可见面</b>：没有计数只表现为
+ * 「结果变少」，曾因此假通过。指标名 {@code easyorange.search.leg.calls} 与 {@code .duration}、tag 空间
+ * source × leg × outcome（3 × 2 × 2）是时序契约，构造期按全集注册，热路径只查表。
  */
 @Component
 public class SearchLegMetrics {

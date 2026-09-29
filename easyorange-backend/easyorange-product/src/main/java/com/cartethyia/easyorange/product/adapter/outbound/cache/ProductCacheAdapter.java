@@ -11,15 +11,11 @@ import org.springframework.stereotype.Component;
 /**
  * 商品缓存适配器 — Spring Cache 注解式（纯 Redis 单层，见 framework {@code RedisCacheConfig}）。
  * <p>
- * 缓存三防在注解层收口：
- * <ul>
- *   <li><b>防穿透</b>：null 结果一并缓存（无 {@code unless}），查不存在 ID 不再每次打 DB；
- *       「ID 之后被创建」的一致性由写路径事件 evict 保证（{@code ProductDomainEventListener} 进程内 /
- *       {@code ProductEventConsumer} 跨实例，商品全写路径发事件）；</li>
- *   <li><b>防击穿</b>：{@code sync = true} 同 key 单飞重建，JVM 内并发未命中只有一个线程回源；
- *       跨实例残留少量并发由事件 evict + TTL 兜底；</li>
- *   <li><b>防雪崩</b>：TTL 随机抖动由 framework {@code JitterTtlRedisCacheWriter} 统一加，本层零感知。</li>
- * </ul>
+ * 缓存三防在注解层收口：<b>防穿透</b>靠 null 结果一并缓存（无 {@code unless}），「ID 之后被创建」由写路径
+ * 事件 evict 保证（进程内 {@code ProductDomainEventListener} / 跨实例 {@code ProductEventConsumer}，商品全
+ * 写路径发事件）；<b>防击穿</b>靠 {@code sync = true} 同 key 单飞重建，跨实例残留并发由事件 evict + TTL 兜底；
+ * <b>防雪崩</b>的 TTL 随机抖动由 framework {@code JitterTtlRedisCacheWriter} 统一加，本层零感知。
+ * <p>
  * Redis 故障由框架级 {@code CacheErrorHandler} fail-open，降级直查 DB。
  */
 @Component

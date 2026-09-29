@@ -21,17 +21,12 @@ import org.springframework.stereotype.Component;
  * 金标准集回归评估器 — 三条评估线：生成质量（LLM-as-Judge）、检索质量（hit@5 / MRR）、路由质量
  * （期望工具路径命中率）。三条线读同一份用例集，各按自己的口径取子集。
  * <p>
- * 生成质量对每个 chat 用例调 {@link AiChatAppService#answer}（forceFresh 跳过缓存；评估跑批没有登录态，
- * 显式传机器主体 {@link ToolCallLoop#MACHINE_SUBJECT}——画像不落库，评估不被历史偏好污染）对照参考回答
- * 打分、聚合 avg score；检索质量对每个 retrieval 用例跑知识库检索算 hit@5 / MRR，逐条采样落
- * eo_retrieval_metric；路由质量对标了 {@code expected_tools} 的 chat 用例跑一次工具循环，看模型实际选了哪些
- * 工具。供 CI 门禁（GoldenSetRegressionIT）与人工触发的每日回归复用。
+ * 生成线对每个 chat 用例调 {@link AiChatAppService#answer}（forceFresh 跳过缓存；显式传机器主体
+ * {@link ToolCallLoop#MACHINE_SUBJECT}，画像不落库，评估不被历史偏好污染）对照参考回答打分取均值；
+ * 检索线逐条采样落 eo_retrieval_metric；路由线对标了 {@code expected_tools} 的用例跑一次工具循环。
  * <p>
- * <b>路由线只跑循环不跑生成</b>：它量的是选路，生成那一步的结论属于生成分；少一次生成调用，
- * 这条线才是「为路由单独付的钱」而不是把生成分重跑一遍。
- * <p>
- * 生成 / 检索两条线按 scope 字段分流（{@link GoldenSetLoader} 加载时已校验），不用「有没有 gold_doc_ids」
- * 这类派生特征 —— 那会让带 gold_doc_ids 的生成用例同时被算进检索分母。
+ * <b>路由线只跑循环不跑生成</b>：它量的是选路，生成那步属生成分。两条线按 scope 字段分流，不用「有没有
+ * gold_doc_ids」这类派生特征，那会让带 gold 的生成用例同时被算进检索分母。
  */
 @Slf4j
 @Component

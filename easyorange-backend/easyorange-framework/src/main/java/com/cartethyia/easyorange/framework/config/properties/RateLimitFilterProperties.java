@@ -9,34 +9,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * Filter-based 限流配置属性
- * <p>
- * 通过 path-pattern + method 组合规则实现约定式限流，替代 AOP 切面方式。
- * 未命中任何规则的请求不限流。
- * </p>
- * 配置示例：
- * <pre>{@code
- * rate-limit-filter:
- *   enabled: true
- *   rules:
- *     - path-pattern: /api/products
- *       method: GET
- *       strategy: local
- *       max-requests: 200
- *       window-seconds: 60
- *     - path-pattern: /api/**
- *       method: [POST, PUT, DELETE, PATCH]
- *       strategy: redis
- *       max-requests: 30
- *       window-seconds: 60
- *   repeat-submit:
- *     enabled: true
- *     interval-ms: 3000
- *     message: "不允许重复提交"
- *     methods: [POST, PUT, DELETE, PATCH]
- * }</pre>
+ * Filter 限流配置 — path-pattern + method 约定式匹配，替代 AOP 切面；未命中任何规则的请求不限流。
  *
- * @param enabled 是否启用限流过滤器
  * @param rules 限流规则列表
  * @param repeatSubmit 重复提交防护配置
  */
@@ -59,9 +33,7 @@ public record RateLimitFilterProperties(
         }
     }
 
-    /**
-     * 限流策略 — 决定计数落在本地内存还是 Redis。
-     */
+    /** 限流策略 — 计数落本地内存还是 Redis。 */
     public enum Strategy {
 
         /** 本地内存计数，单实例生效，零网络开销。 */
@@ -72,14 +44,10 @@ public record RateLimitFilterProperties(
     }
 
     /**
-     * 单条限流规则。
-     *
      * @param pathPattern Ant 风格路径模式，如 /api/products、/api/**
-     * @param methods HTTP 方法列表（不区分大小写），如 GET、POST；为空表示匹配所有方法
-     * @param strategy 限流策略
+     * @param methods HTTP 方法列表（不区分大小写）；为空表示匹配所有方法
      * @param maxRequests 窗口内最大请求数
      * @param windowSeconds 时间窗口（秒）
-     * @param message 限流触发时的提示信息
      */
     public record Rule(
             @NotBlank String pathPattern,
@@ -95,14 +63,10 @@ public record RateLimitFilterProperties(
     }
 
     /**
-     * 重复提交防护配置。
-     *
-     * @param enabled 是否启用
      * @param intervalMs 防重间隔（毫秒）
-     * @param message 触发时的提示信息
-     * @param methods 需要防重的 HTTP 方法（不区分大小写）；为空表示所有写操作方法（POST/PUT/DELETE/PATCH）
-     * @param excludePathPatterns 豁免防重的路径模式（Ant 风格）——机器协议端点（如 MCP 的 /mcp）
-     *     的重复请求体是协议内合法行为（JSON-RPC 超时重试复用同一请求体），不适用浏览器表单防重语义
+     * @param methods 需要防重的 HTTP 方法（不区分大小写）；为空表示所有写操作方法
+     * @param excludePathPatterns 豁免路径（Ant 风格）——机器协议端点（如 MCP 的 /mcp）重复请求体是协议内合法行为
+     *     （JSON-RPC 超时重试复用同一请求体），拦掉会把 client 卡死在错误循环里
      */
     public record RepeatSubmitConfig(
             @DefaultValue(DEFAULT_ENABLED + "") boolean enabled,

@@ -28,15 +28,13 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 /**
  * AI 对话端点 — 非流式（语义缓存 + Judge 回归同源）与 SSE 流式（打字机效果）。
  * <p>
- * SSE 走 POST + SseEmitter（前端用 fetch + ReadableStream 消费，可带 Authorization 头）；
- * 事件协议：step（工具循环每步：工具 + 决策理由 + 观察摘要，前端步骤可视化）/
- * token（逐字）/ sources（知识库来源）/ done（完整回答）/ error（降级文案）。
- * 流式工作提交到 {@code applicationTaskExecutor}（spring.threads.virtual.enabled=true，虚拟线程），
- * 而非裸 {@code Thread.ofVirtual()}：后者不继承任何 ThreadLocal，SecurityContext / Observation / MDC
- * 全部丢失，长期用户画像与 Langfuse 父 trace 会在唯一的流式路径上静默失效。
- * {@link SkipRepeatSubmit} 豁免防重：对话非写操作，同一问题 3 秒内二次提交是合法动作
- * （流式卡住时用户停掉立刻重试是最常见的路径），误拦会以 HTTP 429 打断重试。
- * Controller 只负责事件 → SseEmitter 的适配；客户端断开视为正常收尾，不补发 error。
+ * SSE 走 POST + SseEmitter（前端 fetch + ReadableStream 消费，可带 Authorization 头）；事件协议：step（工具循环
+ * 每步：工具 + 决策理由 + 观察摘要，前端步骤可视化）/ token（逐字）/ sources / done / error（降级文案）。
+ * <p>
+ * 流式工作提交到 {@code applicationTaskExecutor}（虚拟线程）而非裸 {@code Thread.ofVirtual()}：后者不继承任何
+ * ThreadLocal，SecurityContext / Observation / MDC 全部丢失，长期用户画像与 Langfuse 父 trace 会在唯一的流式
+ * 路径上静默失效。{@link SkipRepeatSubmit} 豁免防重：对话非写操作，同一问题 3 秒内二次提交是合法动作，误拦会以
+ * HTTP 429 打断重试。Controller 只做事件 → SseEmitter 适配；客户端断开视为正常收尾，不补发 error。
  */
 @Slf4j
 @SkipRateLimit

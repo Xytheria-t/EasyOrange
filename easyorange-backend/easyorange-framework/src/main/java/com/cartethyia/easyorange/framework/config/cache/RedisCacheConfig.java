@@ -22,19 +22,15 @@ import org.springframework.data.redis.serializer.RedisSerializationContext.Seria
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
- * Redis 缓存配置 — Spring Cache 注解式 + Redis 单层。
- * 进程内本地缓存（如图片处理）见 {@link ImageProcessCacheConfig}。
+ * Redis 缓存配置 — Spring Cache 注解式 + Redis 单层；进程内本地缓存（如图片处理）见
+ * {@link ImageProcessCacheConfig}。
  * <p>
- * 设计要点：
- * <ul>
- *   <li><b>注解驱动</b>：业务侧用 {@code @Cacheable}/{@code @CacheEvict}，零缓存代码；</li>
- *   <li><b>单层 Redis + 统一短 TTL</b>：TTL 由 {@code easyorange.cache.default-ttl} 控制，
- *       一致性靠写路径显式 evict + TTL 兜底，不再需要 L1/L2 配平与跨节点广播；</li>
- *   <li><b>序列化与 RedisTemplate 一致</b>：复用 {@link RedisConfig} 的
- *       {@link GenericJacksonJsonRedisSerializer}（JSON + 类型信息），值可读可调试；</li>
- *   <li><b>缓存故障 fail-open</b>：{@link #errorHandler()} 集中吞掉 Redis 异常并降级
- *       （读 → 直查 DB；写 → 放弃本次缓存），替代旧逐点 try-catch。</li>
- * </ul>
+ * 单层 Redis + 统一短 TTL（{@code easyorange.cache.default-ttl}）：一致性靠写路径显式 evict + TTL 兜底，
+ * 不再需要 L1/L2 配平与跨节点广播；写入路径包 {@link JitterTtlRedisCacheWriter} 给 TTL 加随机抖动防雪崩。
+ * <p>
+ * 序列化复用 {@link RedisConfig} 的 {@link GenericJacksonJsonRedisSerializer}（JSON + 类型信息），值可读可调试。
+ * <p>
+ * 缓存故障由 {@link #errorHandler()} 集中 fail-open：读降级为直查 DB、写放弃本次缓存，业务侧无需逐点 try-catch。
  */
 @Slf4j
 @AutoConfiguration
@@ -54,7 +50,6 @@ public class RedisCacheConfig implements CachingConfigurer {
     /**
      * Spring Cache 的 Redis 实现 — String key + JSON value（与 {@link RedisConfig} 序列化约定一致）。
      * Redis key 形如 {@code <cacheName>::<key>}（如 {@code eo:product:info::<productId>}）。
-     * 写入路径包 {@link JitterTtlRedisCacheWriter} 给 TTL 加随机抖动，同批 key 错峰过期防雪崩。
      */
     @Bean
     @ConditionalOnMissingBean(CacheManager.class)

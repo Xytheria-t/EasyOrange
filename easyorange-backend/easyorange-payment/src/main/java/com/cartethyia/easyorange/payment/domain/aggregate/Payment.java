@@ -21,9 +21,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 支付聚合根 —— 不可变对象
- * <p>
- * 状态机：
+ * 支付聚合根 —— 不可变对象。状态机：
  * <pre>
  * PENDING → PAYING → SUCCESS
  *   ↓         ↓        ↓
@@ -31,9 +29,8 @@ import java.time.LocalDateTime;
  *                      ↓
  *                PARTIALLY_REFUNDED
  * </pre>
- * <p>
- * 状态转换返回 {@link Transition}（带事件）或 {@code Payment}（中间态，无事件）。
- * 聚合根工厂与重建入口通过 spec record 收敛参数。
+ * 状态转换返回 {@link Transition}（带事件）或 {@code Payment}（中间态，无事件）；
+ * 工厂与重建入口经 spec record 收敛参数。
  */
 public class Payment {
 
@@ -88,12 +85,6 @@ public class Payment {
 
     // ── 工厂方法 ──
 
-    /**
-     * 创建新支付。
-     *
-     * @param spec 创建参数（收敛 paymentId/orderId/userId/amount/paymentMethod/attach）
-     * @return 支付创建结果（含聚合根与领域事件）
-     */
     public static Transition<Payment, PaymentCreatedEvent> create(PaymentCreateSpec spec) {
         BizRequire.notNull(spec.paymentId(), "支付ID不能为空");
         BizRequire.notNull(spec.orderId(), "订单ID不能为空");
@@ -136,11 +127,6 @@ public class Payment {
 
     // ── 重建 ──
 
-    /**
-     * 从持久层重建聚合根（统一入口）。
-     * <p>
-     * 状态字段使用领域枚举类型，由 {@code @EnumValue} 注解完成 VARCHAR 列互转。
-     */
     public static Payment from(PaymentReconstructSpec spec) {
         return new Payment(
                 spec.id(),
@@ -188,9 +174,7 @@ public class Payment {
 
     // ── 状态迁移 ──
 
-    /**
-     * 准备支付：将状态变为 PAYING（中间态，不发事件）。
-     */
+    /** 置 PAYING 中间态，不发领域事件（外部调用期间没有可广播的事实）。 */
     public Payment preparePay() {
         if (!canPay()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "当前状态不允许支付: " + this.status);
@@ -198,9 +182,6 @@ public class Payment {
         return withStatus(PaymentStatus.PAYING, nextVersion());
     }
 
-    /**
-     * 确认支付结果：根据网关结果变为 SUCCESS 或 FAILED。
-     */
     public Transition<Payment, DomainEvent> confirmPay(PaymentResult result) {
         if (!canConfirmPay()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有支付中状态可以确认支付结果");
@@ -217,9 +198,7 @@ public class Payment {
         }
     }
 
-    /**
-     * 取消支付：从 PAYING 回退到 PENDING（中间态，不发事件）。
-     */
+    /** 网关支付失败时回退 PAYING → PENDING，重试从待支付重新起跑。 */
     public Payment cancelPay() {
         if (!canConfirmPay()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有支付中状态可以取消支付");
@@ -227,9 +206,7 @@ public class Payment {
         return withStatus(PaymentStatus.PENDING, nextVersion());
     }
 
-    /**
-     * 准备退款：将状态变为 REFUNDING（中间态，不发事件）。
-     */
+    /** 置 REFUNDING 中间态，不发领域事件。 */
     public Payment prepareRefund(BigDecimal refundAmount) {
         if (!canRefund()) {
             throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, "当前状态不允许退款: " + this.status);
@@ -238,9 +215,6 @@ public class Payment {
         return withStatus(PaymentStatus.REFUNDING, nextVersion());
     }
 
-    /**
-     * 确认退款结果：根据网关结果变为 REFUNDED 或 PARTIALLY_REFUNDED。
-     */
     public Transition<Payment, PaymentRefundedEvent> confirmRefund(RefundResult result, BigDecimal refundAmount) {
         if (!canConfirmRefund()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有退款中状态可以确认退款结果");
@@ -269,9 +243,7 @@ public class Payment {
         return new Transition<>(updated, new PaymentRefundedEvent(UuidV7.generateId(), this.id, refundEventReason));
     }
 
-    /**
-     * 取消退款：从 REFUNDING 回退到 SUCCESS（中间态，不发事件）。
-     */
+    /** 退款网关失败时回退 REFUNDING → SUCCESS，资金未出账故回到已付态而非待付。 */
     public Payment cancelRefund() {
         if (!canConfirmRefund()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有退款中状态可以取消退款");
@@ -279,9 +251,7 @@ public class Payment {
         return withStatus(PaymentStatus.SUCCESS, nextVersion());
     }
 
-    /**
-     * 直接退款（不复用网关两阶段流程，dev mock 路径使用）。
-     */
+    /** 直接退款：不走网关两阶段，仅 dev mock 路径使用。 */
     public Transition<Payment, PaymentRefundedEvent> directRefund(String refundReason) {
         if (!canRefund()) {
             throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, "当前状态不允许退款: " + this.status);

@@ -20,18 +20,15 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Token 吊销检查过滤器。
+ * Token 吊销检查过滤器 — JWT 认证完成后查 Redis 黑名单与强制登出时间戳，密码学验证由 JwtDecoder 负责。
  * <p>
- * 在 JWT 认证完成后检查 Token 是否被列入 Redis 黑名单或被踢下线。
- * 密码学验证由 JwtDecoder 负责，本过滤器仅做吊销状态验证。
- * <p>
- * 由 {@code SecurityConfig} 局部装配（不加 {@code @Component}）：执行位置由 Security 链决定，
- * 被容器链再自动注册一次只会让顺序变成两套事实。
- * <p>
- * Redis 不可用时 <b>fail-open 放行</b>：签名与有效期已由 JwtDecoder 验过，本检查只是「已验签之后的附加拦截」，
- * 且黑名单 key 的 TTL 只等于 token 剩余有效期 —— Redis 抖动造成的安全敞口等于「该 token 自然过期前的一小段时间」，
- * 换来的是 Redis 故障不把每个已认证请求打成 500。降级量由 {@code easyorange.security.revocation_check_degraded} 计数，
+ * Redis 不可用时 <b>fail-open 放行</b>：签名与有效期已验过，本检查只是「已验签之后的附加拦截」，且黑名单 key
+ * 的 TTL 只等于 token 剩余有效期，Redis 抖动造成的安全敞口限于该 token 自然过期前的一小段时间；换来的是
+ * Redis 故障不把每个已认证请求打成 500。降级量由 {@code easyorange.security.revocation_check_degraded} 计数，
  * 非 0 即说明降级正在生效。
+ * <p>
+ * 由 {@code SecurityConfig} 局部装配（不加 {@code @Component}）：执行位置由 Security 链决定，被容器链再自动
+ * 注册一次只会让顺序变成两套事实。
  */
 @Slf4j
 @NullMarked

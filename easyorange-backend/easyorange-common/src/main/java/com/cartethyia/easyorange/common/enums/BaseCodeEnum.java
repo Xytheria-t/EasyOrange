@@ -1,24 +1,8 @@
 package com.cartethyia.easyorange.common.enums;
 
 /**
- * code 枚举公共接口 — 统一 fromCode 查找逻辑。
- * <p>
- * 所有 domain 层枚举（XxxStatus / XxxType / XxxMethod / XxxLevel）实现此接口，
- * 避免每个枚举重复 for 循环 + null 检查 + throw 模板。
- * <p>
- * 用法：
- * <pre>{@code
- * public enum OrderStatus implements BaseCodeEnum {
- *     PENDING_PAYMENT("PENDING_PAYMENT", "待付款"),
- *     // ...
- *     @JsonValue private final String code;
- *     private final String desc;
- *
- *     public static OrderStatus fromCode(String code) {
- *         return BaseCodeEnum.fromCode(OrderStatus.class, code);
- *     }
- * }
- * }</pre>
+ * code 枚举公共接口 — 统一 {@code fromCode} 查找，避免每个枚举各写一遍 for 循环 + null 检查 + throw 模板。
+ * domain 层的 XxxStatus / XxxType / XxxMethod / XxxLevel 一律实现本接口，code 与 desc 的对应由实现方声明。
  */
 public interface BaseCodeEnum {
 

@@ -29,8 +29,7 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.stereotype.Component;
 
 /**
- * ES 实现的商品搜索索引适配器。
- * 当 easyorange.search.elasticsearch.enabled=true 时激活并接管端口（{@code @Primary}）；
+ * ES 实现的商品搜索索引适配器 — 当 easyorange.search.elasticsearch.enabled=true 时激活并接管端口（{@code @Primary}）；
  * 写 ES 的同时委托 {@link com.cartethyia.easyorange.adapter.outbound.product.ProductSearchIndexAdapter}
  * 双写 MySQL search_text —— 降级语料始终是热的，任意时刻关 ES 检索照常可用。
  */
@@ -68,22 +67,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
         log.debug("Deleted ES document for productId={}", productId);
     }
 
-    /**
-     * 保存单个商品到 ES 索引。
-     *
-     * <p><b>性能说明</b></p>
-     * <p>此方法会执行 4 次数据库查询：</p>
-     * <ul>
-     *   <li>1 次查询商品基本信息</li>
-     *   <li>1 次查询商品详情</li>
-     *   <li>1 次查询商品图片列表</li>
-     *   <li>1 次查询分类信息</li>
-     * </ul>
-     * <p>对于单个商品索引操作，这个查询开销是可接受的。</p>
-     * <p><b>批量操作请使用 {@link #indexProducts(List)} 方法，避免 N+1 查询问题。</b></p>
-     *
-     * @param productId 商品 ID
-     */
+    /** 写 ES 失败只记 error 不外抛：索引只是检索旁路，写侧事务已落 MySQL，抛出去会把商品发布打成失败。 */
     private void saveDocument(String productId) {
         try {
             ProductDO product = productMapper.selectById(productId);
@@ -100,17 +84,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
         }
     }
 
-    /**
-     * 将 ProductDO 组装为 ES ProductDocument（含关联查询）。
-     *
-     * <p><b>警告：N+1 查询风险</b></p>
-     * <p>此方法会执行 3 次数据库查询：ProductDetail、ProductImage、Category。</p>
-     * <p>如果循环调用此方法处理多个商品，会产生 3N 次查询。</p>
-     * <p><b>批量操作请使用 {@link #indexProducts(List)} 方法，它会批量预加载所有关联数据。</b></p>
-     *
-     * @param product 商品 DO
-     * @return ES 文档对象
-     */
+    /** 单条构建走 3 次关联查询（详情/图片/分类），只用于单商品路径；批量请走 {@link #indexProducts(List)} 免 N+1。 */
     ProductDocument buildDocument(ProductDO product) {
         String productId = product.getId();
 
@@ -132,7 +106,6 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
         return buildDocument(product, detail, imageList, categoryName);
     }
 
-    /** 使用预加载的数据构建文档（批量操作使用，消除 N+1 查询） */
     private ProductDocument buildDocument(
             ProductDO product,
             Map<String, ProductDetailDO> detailMap,
@@ -154,7 +127,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
         return buildDocument(product, detail, imageList, categoryName);
     }
 
-    /** 核心文档构建逻辑（无数据库查询） */
+    /** 纯组装不查库：单条与批量两条路径的公共终点。 */
     private ProductDocument buildDocument(
             ProductDO product, ProductDetailDO detail, List<ProductImageDO> imageList, String categoryName) {
         String productId = product.getId();
@@ -207,8 +180,8 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
     }
 
     /**
-     * LocalDateTime → epoch 毫秒：ES 文档时间以 Long（epoch_millis）存储，规避 Spring Data ES 6
-     * 对 LocalDateTime 的默认序列化陷阱。zone 用系统默认时区——与库里 DATETIME 同为本地墙钟语义。
+     * LocalDateTime → epoch 毫秒：ES 文档时间以 Long（epoch_millis）存储，规避 Spring Data ES 6 对
+     * LocalDateTime 的默认序列化陷阱；zone 用系统默认时区——与库里 DATETIME 同为本地墙钟语义。
      */
     private static Long toEpochMillis(LocalDateTime value) {
         if (value == null) {
@@ -218,12 +191,9 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
     }
 
     /**
-     * 商品名向量化（best-effort）：用于 ES kNN 语义搜索。
-     * <p>
-     * 走 {@link QueryEmbeddingPort} 而不是直接调 {@code EmbeddingModel}：查询侧与索引侧必须同一个
-     * 编码器（同模型同维度，否则 kNN 相似度没有意义），顺带同享预算记账与调用日志。
-     * <p>端口返回空（未配置 / 调用失败）或抛异常（日预算耗尽）时返回 {@code null}，
-     * 索引照常写入 —— 仅缺失向量匹配能力，不阻塞索引。</p>
+     * 商品名向量化（best-effort）：走 {@link QueryEmbeddingPort} 而不是直接调 {@code EmbeddingModel} —— 查询侧与
+     * 索引侧必须同一个编码器（同模型同维度，否则 kNN 相似度没有意义），顺带同享预算记账与调用日志。
+     * 端口缺失、返回空或抛异常（日预算耗尽）一律返回 {@code null}：仅缺失向量匹配能力，不阻塞索引。
      */
     private List<Float> embedName(String name) {
         if (name == null || name.isBlank()) {
@@ -243,8 +213,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
     }
 
     /**
-     * 批量索引商品到 ES。
-     * 先批量加载所有关联数据到内存 Map，再逐条构建 document 并批量保存，消除 N+1 查询问题。
+     * 批量索引商品到 ES — 先批量加载所有关联数据到内存 Map，再逐条构建 document 并批量保存，消除 N+1 查询问题。
      */
     public void indexProducts(List<String> productIds) {
         if (productIds == null || productIds.isEmpty()) {
@@ -261,7 +230,6 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
         }
     }
 
-    /** 批量加载所有关联数据到内存 Map，再逐条构建 document */
     private List<ProductDocument> loadDocumentsBulk(List<String> productIds) {
         List<ProductDO> products = productMapper.selectByIds(productIds);
         if (products.isEmpty()) {

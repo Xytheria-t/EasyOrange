@@ -25,25 +25,18 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 
 /**
- * 多步工具循环的内部工具面 — 7 个工具的 schema 与执行都在这里：{@code @Tool} / {@code @ToolParam} 注解
- * 生成供应商侧校验的 JSON Schema，方法体即「执行 + 观察格式化」。每次循环实例化一份：召回物累加器是
- * 单次请求内的可变状态，由实例独占持有，编排器经只读快照读取；框架不执行这些工具，执行与循环控制权
- * 都在 {@link ToolCallLoop}。
+ * 多步工具循环的内部工具面 — 7 个工具的 schema 与执行都在这里（{@code @Tool} / {@code @ToolParam} 注解生成供应商侧校验
+ * 的 JSON Schema）；每次循环实例化一份，召回物累加器是单次请求内的可变状态、由实例独占。
  * <p>
- * 约定：thought 是每个工具的必填参数（原生 tool calling 没有独立的「决策理由」通道，工具方法不消费，
- * 由编排器取出落 trace / SSE）；抛异常 = 该步失败（编排器收敛成失败观察交回模型修复），「查无此资产」
- * 这类有效结果必须返回观察文本而不是抛异常；finish 只有 schema 没有执行（编排器在执行前按名称拦截）；
- * remember_preference 是唯一的写路径（按 userId + key 幂等 upsert，作为独立工具让「写入长期记忆」成为
- * 模型自主决策的一步，步数超限 / 预算耗尽 / 决策失败三条降级路径下偏好不再静默丢失）。
+ * 约定：thought 是每个工具的必填参数（原生 tool calling 没有独立的「决策理由」通道，只由编排器取出落 trace / SSE）；抛
+ * 异常 = 该步失败，「查无此资产」这类有效结果必须返回观察文本；finish 只有 schema 没有执行；remember_preference 是唯一
+ * 写路径（按 userId + key 幂等 upsert），独立成一步是为了让降级路径下偏好不再静默丢失。
  */
 @SuppressWarnings("unused") // thought 只进工具 schema，方法体不消费（见类注释）
 public class ChatTools {
 
-    /**
-     * 工具名与 {@code @Tool(name = ...)} 同源，编排器引用常量而不是重写字面量。
-     * 对外公开：{@code eval/golden-set.yaml} 的 {@code expected_tools} 按这些名字标注期望路径，
-     * 加载期据此强校验（工具改名后标注写错会炸，而不是静默评成「路由走错」）。
-     */
+    /** 工具名与 {@code @Tool(name = ...)} 同源，编排器引用常量；{@code eval/golden-set.yaml} 的 {@code expected_tools}
+     * 按这些名字在加载期强校验，工具改名后标注写错会炸而不是静默评成「路由走错」。 */
     public static final String TOOL_KNOWLEDGE_SEARCH = "knowledge_search";
 
     public static final String TOOL_PRODUCT_SEARCH = "product_search";
@@ -58,7 +51,6 @@ public class ChatTools {
 
     public static final String TOOL_FINISH = "finish";
 
-    /** 全部工具名（{@code expected_tools} 的合法取值域）—— 工具面改名后此处与 yaml 一起被加载期校验兜住。 */
     public static final Set<String> TOOL_NAMES = Set.of(
             TOOL_KNOWLEDGE_SEARCH,
             TOOL_PRODUCT_SEARCH,
@@ -68,29 +60,23 @@ public class ChatTools {
             TOOL_REMEMBER_PREFERENCE,
             TOOL_FINISH);
 
-    /** 每轮工具召回的 topK（决策失败降级补检索沿用同一口径）。 */
     static final int RETRIEVAL_TOP_K = 5;
 
     static final int ASSET_TOP_K = 5;
 
-    /** remember_preference 的偏好类别白名单 —— 取值与 schema 描述 / prompt yml 同源，落库前的代码层硬校验。 */
     private static final Set<String> PREFERENCE_KEYS = Set.of("condition", "price_range", "style", "location");
 
     /** 观察里列举的命中条数上限 —— 观察是给下一轮决策的摘要，召回多少条都只列举这么多。 */
     private static final int OBSERVATION_SUMMARY_LIMIT = 3;
 
-    /**
-     * 检索无新增时的观察文案 —— 收敛判据本身（见 {@link #searchKnowledge} / {@link #searchProducts}）：
-     * 判据是「本轮命中的条目有多少此前已出现过」，模型不会自己看出「再查也是重复」，把这件事作为一条
-     * 明确观察交回，比在循环里硬性拦掉更合适。
-     */
+    /** 检索无新增时的观察文案 —— 收敛判据见 {@link #REDUNDANT_OVERLAP_RATIO}。模型不会自己看出「再查也是重复」，把这件事
+     * 作为一条明确观察交回比在循环里硬性拦掉更合适。 */
     private static final String NO_NEW_HIT_OBSERVATION = "本次检索无新增信息（命中的内容此前已出现过）：请直接调用 finish 基于已有信息作答，不要再换关键词重试";
 
     /**
-     * 判为「无新增」的重合比例阈值 —— 本轮命中里此前出现过的条目占比达到此值即收敛。
-     * 只认「完全重复」不够：检索是 topK 截断的，换关键词常返回高度重叠但不完全相同的一批，
-     * 逐条判重会让模型无限换词直到撞步数上限（实测 7 步里 5 步换词重搜）。取 0.6：首次检索重合率为 0，
-     * 一次检索能带进 3 条以上新内容时（约 40% 重合）不算冗余。
+     * 判为「无新增」的重合比例阈值 —— 本轮命中里此前出现过的条目占比达到此值即收敛。只认「完全重复」不够：检索是 topK
+     * 截断的，换关键词常返回高度重叠但不完全相同的一批，逐条判重会让模型无限换词直到撞步数上限；取 0.6 是因为一次检索
+     * 能带进 3 条以上新内容时（约 40% 重合）不算冗余。
      */
     private static final double REDUNDANT_OVERLAP_RATIO = 0.6;
 
@@ -123,7 +109,6 @@ public class ChatTools {
         this.userId = userId;
     }
 
-    /** 已累加的召回物（只读快照，供循环出口装配 Result）。 */
     List<KnowledgeHit> knowledgeHits() {
         return List.copyOf(knowledgeHits);
     }
@@ -182,9 +167,7 @@ public class ChatTools {
         return formatDetailObservation(found.get());
     }
 
-    // 顺序约束写进 schema 描述而不是只写 system prompt：同轮多工具按模型给出的顺序逐个执行，
-    // 本工具统计的是「此刻」已召回的候选，排在 product_search 前面就统计到空集。模型是在选工具时读这段描述的，
-    // 等生成回答时才发现约束已经晚一轮。空集观察本身可恢复（会提示先 product_search），这里只是省掉那一轮
+    // 顺序约束写进 schema 描述而不只写 system prompt：模型是在选工具时读它的，等生成回答时才发现约束已经晚一轮
     @Tool(
             name = TOOL_MARKET_PRICE_STATS,
             description = "对已召回的资产算行情（在售件数 / 均价 / 价格区间），用于判断某件值不值得买；零模型计算。"
@@ -250,7 +233,6 @@ public class ChatTools {
                     String preferenceKey,
             @ToolParam(description = "偏好的具体值（如「九五新」「5000 以内」「复古」）") String preferenceValue) {
         if (isBlank(preferenceKey) || isBlank(preferenceValue)) {
-            // 「模型没提取到有效偏好」是有效结果而非故障：返回观察文本让模型继续，不打断对话
             return "偏好类别或取值为空，已跳过记录；直接继续回答即可";
         }
         if (userId == null) {
@@ -258,8 +240,7 @@ public class ChatTools {
         }
         String key = preferenceKey.trim();
         if (!PREFERENCE_KEYS.contains(key)) {
-            // 白名单是代码层的硬校验：schema 描述与 prompt yml 只是对模型的指令，提示注入可让模型
-            // 带任意 key 进来，落库前以本集合为准；拒绝理由回给模型，不当故障处理
+            // 白名单（取值与 schema 描述 / prompt yml 同源）是代码层硬校验：那两处只是对模型的指令，提示注入可让它带任意 key 进来
             return "偏好类别仅支持 condition / price_range / style / location，已跳过记录；直接继续回答即可";
         }
         String value = preferenceValue.trim();
@@ -283,17 +264,15 @@ public class ChatTools {
         knowledgeHits.addAll(newKnowledgeHits(retrievalService.search(question, RETRIEVAL_TOP_K)));
     }
 
-    /** 按 ID 查详情 — product_detail 与 compare_assets 共用：端口抛出（DB 故障）按工具失败上报，empty（查无此资产）是正常结果。 */
     private Optional<AssetDetail> findDetail(String productId) {
         return queryDetailOrFail(() -> assetDetailPort.findDetail(productId));
     }
 
-    /** compare_assets 的批量通道，失败语义与 {@link #findDetail} 一致（抛 = 本步失败）。 */
     private List<AssetDetail> findDetails(List<String> productIds) {
         return queryDetailOrFail(() -> assetDetailPort.findDetails(productIds));
     }
 
-    /** 详情端口调用的统一失败口径：端口异常（DB 故障）包成 {@code IllegalStateException} 上报为该步失败。 */
+    /** 详情端口调用的统一失败口径：端口异常（DB 故障）包成 {@code IllegalStateException} 上报为该步失败（empty 是正常结果）。 */
     private <T> T queryDetailOrFail(Supplier<T> query) {
         try {
             return query.get();
@@ -307,16 +286,12 @@ public class ChatTools {
         return foundCount > 0 && (double) alreadySeenCount / foundCount >= REDUNDANT_OVERLAP_RATIO;
     }
 
-    /**
-     * 保留本轮新增的召回物 —— 判据取 docId（资产按 productId），缺失时退回标题：
-     * ES 命中必有 docId，兜底只为 LIKE 降级路径不因 null 误判成「全新增」。
-     */
+    /** 保留本轮新增的召回物 —— 判据取 docId（资产按 productId），缺失时退回标题：兜底只为 LIKE 降级路径不因 null 误判成「全新增」。 */
     private List<KnowledgeHit> newKnowledgeHits(List<KnowledgeHit> found) {
         Set<String> seen = knowledgeHits.stream().map(ChatTools::knowledgeHitId).collect(Collectors.toSet());
         return found.stream().filter(hit -> seen.add(knowledgeHitId(hit))).collect(Collectors.toList());
     }
 
-    /** 同 {@link #newKnowledgeHits}，资产按 productId 判重。 */
     private List<AssetHit> newAssetHits(List<AssetHit> found) {
         Set<String> seen = assetHits.stream().map(ChatTools::assetHitId).collect(Collectors.toSet());
         return found.stream().filter(asset -> seen.add(assetHitId(asset))).collect(Collectors.toList());
