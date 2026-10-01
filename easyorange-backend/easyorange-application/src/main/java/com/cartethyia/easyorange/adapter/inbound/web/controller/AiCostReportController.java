@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 路径落在 {@code /api/admin/**} 下，由安全配置统一限 ADMIN/MANAGER（见 SecurityConfig 管理后台规则），
  * 不额外标 {@code @PreAuthorize}。
  */
-@Tag(name = "AI 报表", description = "AI 成本报表（按场景）与 AI 建议字段级采纳率")
+@Tag(name = "AI 报表", description = "AI 成本报表（按场景×模型，含货币化）与 AI 建议字段级采纳率")
 @RestController
 @RequestMapping("/api/admin/ai")
 @RequiredArgsConstructor
