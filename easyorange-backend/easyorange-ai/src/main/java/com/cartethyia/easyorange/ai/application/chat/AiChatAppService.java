@@ -10,7 +10,6 @@ import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
 import com.cartethyia.easyorange.ai.domain.exception.ChatStreamAbortedException;
-import com.cartethyia.easyorange.ai.domain.exception.TokenBudgetExceededException;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
@@ -201,19 +200,22 @@ public class AiChatAppService {
      * <p>
      * 身份必须由调用方显式传入而非在这里读安全上下文：流式跑在 Controller 提交的另一线程上，{@code
      * SecurityContextHolder} 的 ThreadLocal 不会跟过去，在这里读恒为空 —— 长期画像不加载、偏好写不进库、trace 的
-     * userId 为空。流末帧用量由 {@link AiModelSupport} 记账（切面只做前置检查）。
+     * userId 为空。流末帧用量由 {@link AiModelSupport} 记账（本入口只做预留，真实记账按供应商回报）。
      */
     public void streamAnswer(ChatRequest request, String userId, ChatStreamHandler handler) {
         if (request.question() == null || request.question().isBlank()) {
             handler.onError(EMPTY_QUESTION_TEXT);
             return;
         }
+        // 流式链路绕过 @TokenBudget 切面，这里手动原子预留（与切面同一条 tryReserve 协议）；预留在 finally 释放，
+        // 真实用量仍由记账侧按供应商回报记 —— 请求结束后只留真实消耗，在途占用不滞留
+        var reservation = budgetGuard.tryAcquire();
+        if (reservation == null) {
+            log.warn("action=token_budget_exceeded, scenario={}", AiCallScope.CHAT.budgetScenario());
+            handler.onError("今日 AI 调用预算已用尽，请明天再试");
+            return;
+        }
         try {
-            // 流式链路绕过 @TokenBudget 切面，这里手动前置检查；判定与循环中途共用 ChatBudgetGuard 同一方法
-            if (budgetGuard.exhausted()) {
-                log.warn("action=token_budget_exceeded, scenario={}", AiCallScope.CHAT.budgetScenario());
-                throw new TokenBudgetExceededException();
-            }
             SemanticCacheProbe probe = probeSemanticCache(request, userId);
             if (probe.hit().isPresent()) {
                 replayCached(probe.hit().get(), handler);
@@ -222,8 +224,6 @@ public class AiChatAppService {
             ChatAnswer answer = answerWithSessionLock(request, userId, handler);
             storeInSemanticCache(request, userId, probe, answer);
             handler.onDone(answer.answer());
-        } catch (TokenBudgetExceededException e) {
-            handler.onError("今日 AI 调用预算已用尽，请明天再试");
         } catch (LockAcquisitionException e) {
             recordSessionBusy(request.sessionId());
             handler.onError(SESSION_BUSY_TEXT);
@@ -234,6 +234,8 @@ public class AiChatAppService {
         } catch (Exception e) {
             recordUnavailableDegradation(request.question(), e);
             handler.onError(ChatAnswer.UNAVAILABLE_TEXT);
+        } finally {
+            reservation.release();
         }
     }
 

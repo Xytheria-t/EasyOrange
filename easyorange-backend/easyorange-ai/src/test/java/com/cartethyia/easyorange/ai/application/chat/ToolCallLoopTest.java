@@ -439,7 +439,7 @@ class ToolCallLoopTest {
     void run_budgetExhaustedStopsLoop() {
         // 循环只在第 2 轮起做预算检查；首轮已执行一次工具，第 2 轮检查时余量已耗尽
         when(budgetStore.getTodayUsage("chat"))
-                .thenReturn(Optional.of(new TokenBudgetStorePort.TokenUsage(500_000, 0, 0)));
+                .thenReturn(Optional.of(new TokenBudgetStorePort.TokenUsage(500_000, 0, 0, 0L)));
         stubDecisions(
                 toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
                 toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退货")));

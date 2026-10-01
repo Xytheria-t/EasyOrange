@@ -24,14 +24,12 @@ class ChatBudgetGuardTest {
     private TokenBudgetStorePort budgetStore;
 
     @Test
-    @DisplayName("used + maxPerCall 越过日限即 true，未越即 false（流式预检与循环中途共用同一判据）")
+    @DisplayName("used + maxPerCall 越过日限即 true，未越即 false（循环中途只读检查与预留共用同一判据）")
     void exhausted_acrossDailyLimit() {
-        when(budgetStore.getTodayUsage("chat"))
-                .thenReturn(Optional.of(new TokenBudgetStorePort.TokenUsage(299_000, 0, 0)));
+        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(usage(299_000)));
         assertThat(guard(PropertyBindings.bind(AiProperties.class)).exhausted()).isTrue();
 
-        when(budgetStore.getTodayUsage("chat"))
-                .thenReturn(Optional.of(new TokenBudgetStorePort.TokenUsage(1000, 0, 0)));
+        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(usage(1000)));
         assertThat(guard(PropertyBindings.bind(AiProperties.class)).exhausted()).isFalse();
     }
 
@@ -44,8 +42,7 @@ class ChatBudgetGuardTest {
                 "1500",
                 "budget.scenarios.chat.daily-token-limit",
                 "10000");
-        when(budgetStore.getTodayUsage("chat"))
-                .thenReturn(Optional.of(new TokenBudgetStorePort.TokenUsage(20_000, 0, 0)));
+        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(usage(20_000)));
 
         assertThat(guard(properties).exhausted()).isTrue();
     }
@@ -53,8 +50,7 @@ class ChatBudgetGuardTest {
     @Test
     @DisplayName("场景配置缺失 -> 走与 @TokenBudget 注解同值的兜底（不静默当作不限额）")
     void exhausted_fallsBackWhenScenarioMissing() {
-        when(budgetStore.getTodayUsage("chat"))
-                .thenReturn(Optional.of(new TokenBudgetStorePort.TokenUsage(299_000, 0, 0)));
+        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(usage(299_000)));
 
         assertThat(guard(PropertyBindings.bind(AiProperties.class)).exhausted()).isTrue();
     }
@@ -63,10 +59,36 @@ class ChatBudgetGuardTest {
     @DisplayName("日限配 0 = 不限，任何用量都不判超限")
     void exhausted_zeroDailyLimitNeverExhausts() {
         var properties = PropertyBindings.bind(AiProperties.class, "budget.scenarios.chat.daily-token-limit", "0");
-        when(budgetStore.getTodayUsage("chat"))
-                .thenReturn(Optional.of(new TokenBudgetStorePort.TokenUsage(9_999_999, 0, 0)));
+        when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.of(usage(9_999_999)));
 
         assertThat(guard(properties).exhausted()).isFalse();
+    }
+
+    @Test
+    @DisplayName("tryAcquire 余量充足返回句柄，耗尽返回 null（流式入口与切面同一条原子预留协议）")
+    void tryAcquire_grantsOrDeniesAtomically() {
+        when(budgetStore.tryReserve("chat", 1500, 300_000))
+                .thenReturn(null)
+                .thenReturn(TokenBudgetStorePort.TokenReservation.NOOP);
+
+        var guard = guard(PropertyBindings.bind(AiProperties.class));
+
+        assertThat(guard.tryAcquire()).isNull();
+        assertThat(guard.tryAcquire()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("tryAcquire 的预留量与判据同源：场景配置缺失用注解同值的兜底常量")
+    void tryAcquire_usesResolvedConfig() {
+        var properties = PropertyBindings.bind(
+                AiProperties.class,
+                "budget.scenarios.chat.max-tokens-per-call",
+                "800",
+                "budget.scenarios.chat.daily-token-limit",
+                "5000");
+        when(budgetStore.tryReserve("chat", 800, 5000)).thenReturn(TokenBudgetStorePort.TokenReservation.NOOP);
+
+        assertThat(guard(properties).tryAcquire()).isNotNull();
     }
 
     /**
@@ -88,5 +110,9 @@ class ChatBudgetGuardTest {
 
     private ChatBudgetGuard guard(AiProperties properties) {
         return new ChatBudgetGuard(budgetStore, properties);
+    }
+
+    private TokenBudgetStorePort.TokenUsage usage(int total) {
+        return new TokenBudgetStorePort.TokenUsage(total, 0, 0, 0L);
     }
 }

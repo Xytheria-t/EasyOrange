@@ -30,6 +30,7 @@ import com.cartethyia.easyorange.ai.domain.port.ChatSessionPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
 import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
+import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
@@ -114,6 +115,8 @@ class AiChatAppServiceTest {
         lenient()
                 .when(toolCallLoop.run(any(Input.class)))
                 .thenReturn(new Result(List.of(), List.of(), List.of(), ToolCallLoopOutcome.FINISHED, 1, List.of()));
+        // 流式入口先原子预留；预算超限用例会显式覆盖为 null
+        lenient().when(budgetGuard.tryAcquire()).thenReturn(TokenBudgetStorePort.TokenReservation.NOOP);
     }
 
     @Test
@@ -595,9 +598,9 @@ class AiChatAppServiceTest {
     }
 
     @Test
-    @DisplayName("流式回答 -> 预算超限走 onError 降级")
+    @DisplayName("流式回答 -> 预算超限（预留失败）走 onError 降级")
     void stream_budgetExceeded() {
-        when(budgetGuard.exhausted()).thenReturn(true);
+        when(budgetGuard.tryAcquire()).thenReturn(null);
 
         AtomicReference<String> error = new AtomicReference<>();
         chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId(), new ChatStreamHandler() {
