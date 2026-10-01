@@ -18,9 +18,9 @@ import org.springframework.stereotype.Service;
 /**
  * RAG 文档摄入管线 — 解析 → 分块（chunk size + overlap）→ embed → ES 索引。
  * <p>
- * <b>best-effort 写入</b>：分块是纯本地计算必然成功；embed 失败的分块向量为 null
- * （该块仍写入索引，仅缺失语义召回能力）；索引不可用（ES 未启用）时文档保持
- * PENDING，由启动补索引任务重试。任何失败都不阻塞文档落库。
+ * <b>要么完整要么 FAILED</b>：embed 或 ES 写入失败整篇标 FAILED（启动补索引与管理端 reindex 会重试
+ * PENDING 与 FAILED），不再「缺向量块照写」—— 那会让 INDEXED 掩盖「语义召回静默缺失」。索引不可用
+ * （ES 未启用）时文档保持 PENDING。任何失败都不阻塞文档落库。
  */
 @Slf4j
 @Service
@@ -45,23 +45,24 @@ public class KnowledgeIngestionAppService {
         return id;
     }
 
-    /** 重新摄入已存在的文档（启动补索引用）— 保持文档 ID 稳定（金标准集引用同一批 ID）。 */
+    /** 重新摄入已存在的文档（启动补索引用）— 保持文档 ID 稳定（金标准集引用同一批 ID）。
+     * FAILED 一并重试：它是「ES 可用但 embed/写失败」的产物，与 PENDING（当时索引不可用）同属未完成态。 */
     public void reindexPending(String id) {
         var doc = repository.findById(id).orElse(null);
-        if (doc == null || doc.status() != KnowledgeDocStatus.PENDING) {
+        if (doc == null || (doc.status() != KnowledgeDocStatus.PENDING && doc.status() != KnowledgeDocStatus.FAILED)) {
             return;
         }
         indexChunks(id, doc.title(), doc.content());
     }
 
-    /** 全量补索引：把所有 PENDING 文档重试一遍（管理端 reindex 入口），返回重试的文档数。 */
-    public int reindexAllPending() {
+    /** 全量补索引：把所有未完成（PENDING/FAILED）文档重试一遍（管理端 reindex 入口），返回重试的文档数。 */
+    public int reindexIncomplete() {
         int page = 1;
         int total = 0;
         while (true) {
             var docs = repository.page(page, 50);
             for (var doc : docs.records()) {
-                if (doc.status() != KnowledgeDocStatus.PENDING) {
+                if (doc.status() != KnowledgeDocStatus.PENDING && doc.status() != KnowledgeDocStatus.FAILED) {
                     continue;
                 }
                 reindexPending(doc.id());
@@ -85,16 +86,23 @@ public class KnowledgeIngestionAppService {
         List<String> chunks = chunkContent(content);
         try {
             var embeddingModel = embeddingModelProvider.getIfAvailable();
+            if (embeddingModel == null) {
+                throw new IllegalStateException("embedding model unconfigured");
+            }
+            // 整批一次供应商调用（逐块串行是 N 倍往返）；失败整篇 FAILED 待补索引
+            List<List<Float>> vectors =
+                    aiModelSupport.embedBatch(embeddingModel, AiCallScope.KNOWLEDGE, embedTexts(title, chunks));
             List<KnowledgeChunk> docs = new ArrayList<>(chunks.size());
             for (int i = 0; i < chunks.size(); i++) {
-                docs.add(new KnowledgeChunk(
-                        id, i, title, chunks.get(i), bestEffortEmbed(embeddingModel, title + "\n" + chunks.get(i))));
+                docs.add(new KnowledgeChunk(id, i, title, chunks.get(i), vectors.get(i)));
             }
+            // 重摄前清旧块：内容改版块数变少时，确定性 _id 覆盖不到旧高序号块，会留孤儿
+            port.removeDoc(id);
             port.ingestChunks(docs);
             repository.updateStatus(id, KnowledgeDocStatus.INDEXED, chunks.size());
             log.info("Knowledge doc {} ingested: {} chunks", id, chunks.size());
         } catch (Exception e) {
-            log.error("Knowledge doc {} ingestion failed, marked FAILED", id, e);
+            log.error("Knowledge doc {} ingestion failed, marked FAILED (bootstrap retries it)", id, e);
             repository.updateStatus(id, KnowledgeDocStatus.FAILED, chunks.size());
         }
     }
@@ -146,15 +154,7 @@ public class KnowledgeIngestionAppService {
         return chunks;
     }
 
-    private List<Float> bestEffortEmbed(EmbeddingModel model, String text) {
-        if (model == null) {
-            return null;
-        }
-        try {
-            return aiModelSupport.embed(model, AiCallScope.KNOWLEDGE, text);
-        } catch (Exception e) {
-            log.warn("Knowledge chunk embed failed, chunk falls back to text-only: {}", e.getMessage());
-            return null;
-        }
+    private static List<String> embedTexts(String title, List<String> chunks) {
+        return chunks.stream().map(chunk -> title + "\n" + chunk).toList();
     }
 }

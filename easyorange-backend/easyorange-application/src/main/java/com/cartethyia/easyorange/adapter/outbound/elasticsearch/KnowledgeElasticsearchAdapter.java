@@ -65,16 +65,10 @@ public class KnowledgeElasticsearchAdapter implements KnowledgeIndexPort {
 
     @Override
     public void ingestChunks(List<KnowledgeChunk> chunks) {
-        try {
-            for (KnowledgeChunk chunk : chunks) {
-                elasticsearchOperations.save(toDocument(chunk));
-            }
-        } catch (Exception e) {
-            log.warn(
-                    "Knowledge chunk ingest failed (best-effort), docId={}",
-                    chunks.isEmpty() ? "?" : chunks.getFirst().docId(),
-                    e);
-        }
+        // bulk 一次往返（逐条 save 是 N 次 ES 请求）；失败上抛由调用方记 FAILED 走补索引 ——
+        // 在这里吞掉会让文档带着「没写进去」的状态标成 INDEXED，语义召回静默缺失无从发现
+        elasticsearchOperations.save(
+                chunks.stream().map(KnowledgeElasticsearchAdapter::toDocument).toList());
     }
 
     @Override

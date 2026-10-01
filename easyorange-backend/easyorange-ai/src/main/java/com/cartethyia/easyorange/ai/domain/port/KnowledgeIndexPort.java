@@ -12,9 +12,10 @@ import java.util.List;
  */
 public interface KnowledgeIndexPort {
 
-    /** 批量写入分块（best-effort：失败由调用方记录状态，不阻塞主链路）。 */
+    /** 批量写入分块（bulk 一次往返）；写失败抛出由调用方记 FAILED 走补索引 —— 吞掉会让文档带着「没写进去」的状态标成 INDEXED。 */
     void ingestChunks(List<KnowledgeChunk> chunks);
 
+    /** 移除一个文档的全部分块（best-effort：失败只告警，残留孤儿由重摄前的清空兜底）。 */
     void removeDoc(String docId);
 
     /**

@@ -21,6 +21,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -114,6 +115,18 @@ public class AiModelSupport {
         return callRecorder.record(scope, embeddingModel, "embed:" + text, () -> {
             EmbeddingResponse response = embeddingModel.embedForResponse(List.of(text));
             return new CallOutcome<>(toFloatList(response.getResult().getOutput()), usageOf(response));
+        });
+    }
+
+    /** 批量向量化 — 整批一条供应商调用、一条记账日志（摄取侧一次 N 块），返回顺序与入参一致；失败整批抛出。 */
+    public List<List<Float>> embedBatch(EmbeddingModel embeddingModel, AiCallScope scope, List<String> texts) {
+        return callRecorder.record(scope, embeddingModel, "embed-batch:" + texts.size() + " items", () -> {
+            EmbeddingResponse response = embeddingModel.embedForResponse(texts);
+            var vectors = new ArrayList<List<Float>>(texts.size());
+            for (Embedding embedding : response.getResults()) {
+                vectors.add(toFloatList(embedding.getOutput()));
+            }
+            return new CallOutcome<>(List.copyOf(vectors), usageOf(response));
         });
     }
 

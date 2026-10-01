@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,6 +15,8 @@ import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
+import com.cartethyia.easyorange.common.result.PageResult;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -49,9 +52,13 @@ class KnowledgeIngestionAppServiceTest {
 
     private KnowledgeIngestionAppService ingestionService;
 
-    /** embedding 响应夹具：向量化走 embedForResponse（拿得到响应本体，记账才取得到 usage）。 */
-    private static EmbeddingResponse embeddingResponse(float[] vector) {
-        return new EmbeddingResponse(List.of(new Embedding(vector, 0)));
+    /** embedding 响应夹具：向量化走 embedForResponse（拿得到响应本体，记账才取得到 usage），批量按请求条数逐条返回。 */
+    private static EmbeddingResponse embeddingResponse(float[] vector, int count) {
+        var embeddings = new ArrayList<Embedding>(count);
+        for (int i = 0; i < count; i++) {
+            embeddings.add(new Embedding(vector, i));
+        }
+        return new EmbeddingResponse(embeddings);
     }
 
     private void setUpIngestion() {
@@ -106,14 +113,19 @@ class KnowledgeIngestionAppServiceTest {
         when(indexPort.isAvailable()).thenReturn(true);
         when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
         when(repository.save(any())).thenReturn("doc-1");
-        when(embeddingModel.embedForResponse(anyList())).thenReturn(embeddingResponse(new float[] {1f, 0f, 0f}));
+        when(embeddingModel.embedForResponse(anyList()))
+                .thenAnswer(
+                        inv -> embeddingResponse(new float[] {1f, 0f, 0f}, ((List<String>) inv.getArgument(0)).size()));
 
         ingestionService.ingest("交易流程", "步骤".repeat(400), "平台规则");
 
         ArgumentCaptor<List<KnowledgeChunk>> captor = ArgumentCaptor.forClass(List.class);
+        // 重摄幂等：写入前先按 docId 清旧块（内容改版块数变少时不留孤儿）
+        verify(indexPort).removeDoc("doc-1");
         verify(indexPort).ingestChunks(captor.capture());
         assertThat(captor.getValue()).hasSize(2);
         assertThat(captor.getValue().getFirst().docId()).isEqualTo("doc-1");
+        assertThat(captor.getValue().get(1).embedding()).isNotNull();
         verify(repository).updateStatus("doc-1", KnowledgeDocStatus.INDEXED, 2);
     }
 
@@ -132,8 +144,8 @@ class KnowledgeIngestionAppServiceTest {
     }
 
     @Test
-    @DisplayName("摄入：embed 失败 -> 块照常写入（best-effort）")
-    void ingest_embedFailsStillIndexes() {
+    @DisplayName("摄入：embed 失败 -> 整篇标 FAILED 待补索引（不再「缺向量块照写」掩盖静默缺失）")
+    void ingest_embedFailsMarksFailed() {
         setUpIngestion();
         when(indexPortProvider.getIfAvailable()).thenReturn(indexPort);
         when(indexPort.isAvailable()).thenReturn(true);
@@ -143,10 +155,26 @@ class KnowledgeIngestionAppServiceTest {
 
         ingestionService.ingest("标题", "内容内容内容内容内容内容内容内容内容内容", "来源");
 
-        ArgumentCaptor<List<KnowledgeChunk>> captor = ArgumentCaptor.forClass(List.class);
-        verify(indexPort).ingestChunks(captor.capture());
-        assertThat(captor.getValue().getFirst().embedding()).isNull();
-        verify(repository).updateStatus("doc-1", KnowledgeDocStatus.INDEXED, 1);
+        verify(indexPort, never()).ingestChunks(any());
+        verify(repository).updateStatus("doc-1", KnowledgeDocStatus.FAILED, 1);
+    }
+
+    @Test
+    @DisplayName("摄入：ES 写入失败 -> 整篇标 FAILED（适配器不再吞异常假标 INDEXED）")
+    void ingest_indexWriteFailsMarksFailed() {
+        setUpIngestion();
+        when(indexPortProvider.getIfAvailable()).thenReturn(indexPort);
+        when(indexPort.isAvailable()).thenReturn(true);
+        when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
+        when(repository.save(any())).thenReturn("doc-1");
+        when(embeddingModel.embedForResponse(anyList()))
+                .thenAnswer(
+                        inv -> embeddingResponse(new float[] {1f, 0f, 0f}, ((List<String>) inv.getArgument(0)).size()));
+        doThrow(new RuntimeException("es write failed")).when(indexPort).ingestChunks(any());
+
+        ingestionService.ingest("标题", "内容", "来源");
+
+        verify(repository).updateStatus("doc-1", KnowledgeDocStatus.FAILED, 1);
     }
 
     @Test
@@ -162,7 +190,9 @@ class KnowledgeIngestionAppServiceTest {
         when(indexPortProvider.getIfAvailable()).thenReturn(indexPort);
         when(indexPort.isAvailable()).thenReturn(true);
         when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
-        when(embeddingModel.embedForResponse(anyList())).thenReturn(embeddingResponse(new float[] {1f, 0f, 0f}));
+        when(embeddingModel.embedForResponse(anyList()))
+                .thenAnswer(
+                        inv -> embeddingResponse(new float[] {1f, 0f, 0f}, ((List<String>) inv.getArgument(0)).size()));
 
         ingestionService.reindexPending("doc-1");
         ingestionService.reindexPending("doc-2");
@@ -171,5 +201,42 @@ class KnowledgeIngestionAppServiceTest {
         verify(indexPort).ingestChunks(captor.capture());
         assertThat(captor.getValue().getFirst().docId()).isEqualTo("doc-1");
         verify(repository).updateStatus("doc-1", KnowledgeDocStatus.INDEXED, 1);
+    }
+
+    @Test
+    @DisplayName("补索引：FAILED 文档一并重试（embed/写失败的未完成态，与 PENDING 同口径）")
+    void reindexPending_retriesFailedDocs() {
+        setUpIngestion();
+        when(repository.findById("doc-1"))
+                .thenReturn(Optional.of(
+                        new KnowledgeDocEntity("doc-1", "标题", "内容", "来源", KnowledgeDocStatus.FAILED, 1, null)));
+        when(indexPortProvider.getIfAvailable()).thenReturn(indexPort);
+        when(indexPort.isAvailable()).thenReturn(true);
+        when(embeddingModelProvider.getIfAvailable()).thenReturn(embeddingModel);
+        when(embeddingModel.embedForResponse(anyList()))
+                .thenAnswer(
+                        inv -> embeddingResponse(new float[] {1f, 0f, 0f}, ((List<String>) inv.getArgument(0)).size()));
+
+        ingestionService.reindexPending("doc-1");
+
+        verify(repository).updateStatus("doc-1", KnowledgeDocStatus.INDEXED, 1);
+    }
+
+    @Test
+    @DisplayName("补索引：INDEXED 文档跳过（已完成态不重摄）")
+    void reindexIncomplete_skipsIndexedDocs() {
+        setUpIngestion();
+        when(repository.page(1, 50))
+                .thenReturn(new PageResult<>(
+                        List.of(new KnowledgeDocEntity("doc-1", "标题", "内容", "来源", KnowledgeDocStatus.INDEXED, 1, null)),
+                        1,
+                        1,
+                        1,
+                        1));
+
+        int retried = ingestionService.reindexIncomplete();
+
+        assertThat(retried).isZero();
+        verify(repository, never()).updateStatus(anyString(), any(), any(Integer.class));
     }
 }
