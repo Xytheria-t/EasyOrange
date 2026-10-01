@@ -71,6 +71,9 @@ function nextId(): string {
 /** 贴底判定余量：一次 token 渲染约长高一行，距底这么近都算「在看最新消息」。 */
 const FOLLOW_THRESHOLD = 120;
 
+/** token 缓冲窗口：合并窗口内的 token 一次上屏，流式渲染频率封顶 ~16 次/秒。 */
+const TOKEN_FLUSH_INTERVAL_MS = 60;
+
 /** 主动取消（停止按钮 / 卸载）不算故障 */
 function isAbortError(e: unknown): boolean {
     return e instanceof DOMException && e.name === 'AbortError';
@@ -172,12 +175,57 @@ export default function PlaygroundPage() {
     };
 
     useEffect(() => {
-        return () => abortRef.current?.abort();
+        return () => {
+            abortRef.current?.abort();
+            if (tokenFlushTimerRef.current !== null) {
+                window.clearTimeout(tokenFlushTimerRef.current);
+            }
+        };
     }, []);
 
-    const appendToken = useCallback((messageId: string, token: string) => {
-        setMessages(prev => prev.map(msg => (msg.id === messageId ? { ...msg, content: msg.content + token } : msg)));
+    // ── token 缓冲：token 先堆 ref、60ms 定时合并上屏。逐 token setMessages 会整表复制并让
+    // 全部消息（含各条 MarkdownContent）跟着重渲染，长回答明显卡顿；缓冲后渲染频率封顶 ~16 次/秒。
+    // 终态必须同步 flush/error 路径保内容（见 flushTokensNow），done 自带全量直接覆盖 ──
+    const pendingTokensRef = useRef('');
+    const tokenFlushTimerRef = useRef<number | null>(null);
+
+    const appendContent = useCallback((messageId: string, chunk: string) => {
+        setMessages(prev => prev.map(msg => (msg.id === messageId ? { ...msg, content: msg.content + chunk } : msg)));
     }, []);
+
+    const appendToken = useCallback(
+        (messageId: string, token: string) => {
+            pendingTokensRef.current += token;
+            if (tokenFlushTimerRef.current !== null) {
+                return;
+            }
+            tokenFlushTimerRef.current = window.setTimeout(() => {
+                tokenFlushTimerRef.current = null;
+                const chunk = pendingTokensRef.current;
+                pendingTokensRef.current = '';
+                if (chunk) {
+                    appendContent(messageId, chunk);
+                }
+            }, TOKEN_FLUSH_INTERVAL_MS);
+        },
+        [appendContent]
+    );
+
+    /** 同步落盘缓冲 token —— error / 用户停止时已推出的半截答案不能丢在缓冲里 */
+    const flushTokensNow = useCallback(
+        (messageId: string) => {
+            if (tokenFlushTimerRef.current !== null) {
+                window.clearTimeout(tokenFlushTimerRef.current);
+                tokenFlushTimerRef.current = null;
+            }
+            const chunk = pendingTokensRef.current;
+            pendingTokensRef.current = '';
+            if (chunk) {
+                appendContent(messageId, chunk);
+            }
+        },
+        [appendContent]
+    );
 
     const appendStep = useCallback((messageId: string, step: AgentStep) => {
         setMessages(prev => prev.map(msg => (msg.id === messageId ? { ...msg, steps: [...msg.steps, step] } : msg)));
@@ -258,11 +306,18 @@ export default function PlaygroundPage() {
                     setMessage(assistantId, { sources: event.data });
                     break;
                 case 'done':
+                    // done 自带完整回答直接覆盖；缓冲里未上屏的片段是旧内容的一部分，丢弃防二次追加
+                    if (tokenFlushTimerRef.current !== null) {
+                        window.clearTimeout(tokenFlushTimerRef.current);
+                        tokenFlushTimerRef.current = null;
+                    }
+                    pendingTokensRef.current = '';
                     setMessage(assistantId, { content: event.data, status: 'done' });
                     setAnnouncement('回答已生成');
                     setIsStreaming(false);
                     break;
                 case 'error':
+                    flushTokensNow(assistantId);
                     setMessage(assistantId, { note: event.data, status: 'error' });
                     setAnnouncement('回答生成失败');
                     setIsStreaming(false);
@@ -279,6 +334,8 @@ export default function PlaygroundPage() {
             // 补设会把上面刚落的 error 覆盖成 done，重试按钮随之消失
             setIsStreaming(false);
         } catch (e) {
+            // 已推给用户的 token 先上屏再标状态，半截答案不能丢在缓冲里
+            flushTokensNow(assistantId);
             if (isAbortError(e)) {
                 // 用户主动停止：已流出的部分答案保留，只标状态
                 setMessage(assistantId, { status: 'stopped', note: '已停止生成' });

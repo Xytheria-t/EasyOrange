@@ -185,6 +185,34 @@
     font-weight: 500;
 }
 
+.ai-photo-failure {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--error);
+}
+
+.ai-photo-retry {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border: 1px solid var(--error-soft-border);
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--error);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ai-photo-retry:hover {
+    background: var(--error-light);
+}
+
 /* ============ AI QA PANEL - PREMIUM GLASSMORPHISM ============ */
 .pdp-ai-qa-section {
     margin: 1.5rem 0;
