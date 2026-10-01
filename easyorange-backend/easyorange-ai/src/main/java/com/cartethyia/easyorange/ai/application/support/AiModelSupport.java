@@ -6,6 +6,7 @@ import static com.cartethyia.easyorange.ai.application.support.AiCallRecorder.us
 import com.cartethyia.easyorange.ai.application.support.AiCallRecorder.CallOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.exception.ChatStreamAbortedException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -94,16 +95,21 @@ public class AiModelSupport {
         return callRecorder.record(scope, chatModel, joinTexts(messages), () -> {
             var collected = new StringBuilder();
             var usage = new UsageAccumulator();
-            chatModel.stream(new Prompt(messages, scopedOptions(chatModel, scope)))
-                    .doOnNext(response -> {
-                        usage.accept(response);
-                        String token = outputText(response);
-                        if (!token.isEmpty()) {
-                            collected.append(token);
-                            tokenConsumer.accept(token);
-                        }
-                    })
-                    .blockLast();
+            try {
+                chatModel.stream(new Prompt(messages, scopedOptions(chatModel, scope)))
+                        .doOnNext(response -> {
+                            usage.accept(response);
+                            String token = outputText(response);
+                            if (!token.isEmpty()) {
+                                collected.append(token);
+                                tokenConsumer.accept(token);
+                            }
+                        })
+                        .blockLast();
+            } catch (ChatStreamAbortedException e) {
+                // 客户端离开时把已生成的半截回答带出去：上层据此把中断轮落会话历史，刷新后追问才有上下文
+                throw collected.isEmpty() ? e : new ChatStreamAbortedException(collected.toString(), e);
+            }
             return new CallOutcome<>(collected.toString(), usage.result());
         });
     }

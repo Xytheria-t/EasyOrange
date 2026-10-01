@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.exception.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -80,5 +81,25 @@ class AiModelSupportStreamTest {
 
         assertThat(holder.get()).isInstanceOf(RuntimeException.class).hasMessageContaining("model down");
         verify(chatModel, never()).call(any(Prompt.class));
+    }
+
+    @Test
+    @DisplayName("客户端中断 -> 异常携带中断前已生成的 partial 文本穿透")
+    void stream_abortCarriesPartialText() {
+        when(chatModel.stream(any(Prompt.class))).thenReturn(Flux.just(textResponse("你"), textResponse("好")));
+
+        var holder = new AtomicReference<Throwable>();
+        try {
+            aiModelSupport.callTextStream(chatModel, AiCallScope.CHAT, "system", "user", token -> {
+                if (token.equals("你")) {
+                    throw new ChatStreamAbortedException(new java.io.IOException("broken pipe"));
+                }
+            });
+        } catch (Exception e) {
+            holder.set(e);
+        }
+
+        assertThat(holder.get()).isInstanceOf(ChatStreamAbortedException.class);
+        assertThat(((ChatStreamAbortedException) holder.get()).partialText()).isEqualTo("你");
     }
 }
