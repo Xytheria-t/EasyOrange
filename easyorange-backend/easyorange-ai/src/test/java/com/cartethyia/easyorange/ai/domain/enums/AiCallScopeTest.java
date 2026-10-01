@@ -27,6 +27,21 @@ class AiCallScopeTest {
     }
 
     @Test
+    @DisplayName("fromUri 子串不得命中 — 片段出现在别的路径段里不算（防未来 URI 意外落入已有场景）")
+    void fromUri_substringNoMatch() {
+        assertThat(AiCallScope.fromUri("/api/ai/chatty")).isEqualTo(AiCallScope.CHAT);
+        assertThat(AiCallScope.fromUri("/api/ai/products/search/history")).isEqualTo(AiCallScope.CHAT);
+        assertThat(AiCallScope.fromUri("/api/ai/auto-listing-x")).isEqualTo(AiCallScope.CHAT);
+    }
+
+    @Test
+    @DisplayName("fromUri 匹配场景下的子路径（chat/stream、knowledge/search 也要落到各自场景）")
+    void fromUri_subPath() {
+        assertThat(AiCallScope.fromUri("/api/ai/chat/stream")).isEqualTo(AiCallScope.CHAT);
+        assertThat(AiCallScope.fromUri("/api/ai/knowledge/search")).isEqualTo(AiCallScope.KNOWLEDGE);
+    }
+
+    @Test
     @DisplayName("fromUri null 返回 CHAT")
     void fromUri_null() {
         assertThat(AiCallScope.fromUri(null)).isEqualTo(AiCallScope.CHAT);
