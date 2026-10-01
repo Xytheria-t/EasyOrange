@@ -19,14 +19,12 @@ import org.springframework.stereotype.Component;
 
 /**
  * MCP 公开只读工具面 — 外部 MCP client（Cursor / Claude Desktop 等）经 streamable HTTP
- * （端点 {@code /mcp}）调用的入口。
- * <p>
- * 与对话工具面（{@code ToolCallLoop} 的 {@code ChatTools}）是<b>两级独立暴露</b>：外部 client
- * 无用户上下文，这里只挂公开只读数据（在售资产检索/详情、类目、平台规则知识），
+ * （端点 {@code /mcp}）调用；与对话工具面（{@code ToolCallLoop} 的 {@code ChatTools}）两级独立暴露：
+ * 外部 client 无用户上下文，只挂公开只读数据（在售资产检索/详情、类目、平台规则知识），
  * 不暴露订单、个人信息与任何写路径（信任边界见根 AGENTS.md）。
  * <p>
- * 降级语义沿用服务层：检索类调用失败返回空列表不抛异常（与对话主链路同一取向），
- * 详情查询的底层故障按 MCP 协议转为错误结果交 client 处理。
+ * <b>故障一律上抛</b>（经 MCP 协议转错误结果交 client）：空结果被工具 description 承诺为「无匹配」，
+ * 故障伪装成空会让外部模型误判没货而盲目换词重试 —— 吞异常降级只属于对话侧，MCP 走 strict 路径。
  * 每次调用计 {@code easyorange.mcp.tool{name}} 指标，与 工具调用循环指标同面板观测。
  */
 @Component
@@ -90,7 +88,7 @@ public class PlatformMcpTools {
             @McpToolParam(description = "检索关键词，支持中文自然语言") String query,
             @McpToolParam(description = "返回数量上限，默认 5，最大 20", required = false) @Nullable Integer topK) {
         recordCall(McpToolTag.SEARCH_PRODUCTS);
-        return assetSourcingService.search(query, clampTopK(topK, MAX_PRODUCT_TOP_K));
+        return assetSourcingService.searchStrict(query, clampTopK(topK, MAX_PRODUCT_TOP_K));
     }
 
     @McpTool(

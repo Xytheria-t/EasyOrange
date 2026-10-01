@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.application.retrieval;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -12,6 +13,7 @@ import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.port.AssetRetrievalPort;
+import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,10 +23,11 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 
 /**
- * 找货召回的降级口径 —— 三种失败（无适配器 / 向量化失败 / 检索抛异常）都收敛成「少一次推荐」，
- * 不把异常抛给对话循环与 MCP 工具面。
+ * 找货召回的降级语义分层 —— 同一成功路径两种故障语义：对话侧 {@code search} 三种失败（无适配器 / 检索抛异常）
+ * 收敛成「少一次推荐」；MCP 侧 {@code searchStrict} 故障上抛（工具 description 承诺空结果 = 无匹配，
+ * 故障伪装成空会让外部模型误判没货而盲目换词重试）。向量化失败两侧同语义：退化 BM25 单路，部分降级 ≠ 不可用。
  */
-@DisplayName("AssetSourcingAppService -> 降级口径测试")
+@DisplayName("AssetSourcingAppService -> 降级语义分层测试")
 class AssetSourcingAppServiceTest {
 
     private static final String QUERY = "5000 以内的笔记本";
@@ -82,6 +85,48 @@ class AssetSourcingAppServiceTest {
         assertThat(service.search(null, 5)).isEmpty();
         assertThat(service.search("   ", 5)).isEmpty();
         assertThat(service.search(QUERY, 0)).isEmpty();
+
+        verifyNoInteractions(aiModelSupport);
+    }
+
+    @Test
+    @DisplayName("strict：检索端口抛异常 -> 原样上抛（MCP 协议转错误结果，不伪装成空结果）")
+    void searchStrict_portThrows_propagates() {
+        when(retrievalPortProvider.getIfAvailable()).thenReturn(port);
+        when(aiModelSupport.embed(embeddingModel, AiCallScope.SEMANTIC, QUERY)).thenReturn(List.of(0.1f, 0.2f));
+        var failure = new RuntimeException("ES 不可用");
+        when(port.search(eq(QUERY), anyList(), eq(5))).thenThrow(failure);
+
+        assertThatThrownBy(() -> service.searchStrict(QUERY, 5)).isSameAs(failure);
+    }
+
+    @Test
+    @DisplayName("strict：ES 适配器缺失 -> 业务异常（装配问题给统一话术），且不白付 embedding 调用")
+    void searchStrict_portMissing_throwsBusinessException() {
+        assertThatThrownBy(() -> service.searchStrict(QUERY, 5))
+                .isInstanceOf(BaseBusinessException.class)
+                .hasMessageContaining("资产检索服务不可用");
+
+        verifyNoInteractions(aiModelSupport);
+    }
+
+    @Test
+    @DisplayName("strict：向量化失败仍退化 BM25 单路（部分降级 ≠ 不可用，与对话侧同语义）")
+    void searchStrict_embedFailed_stillReturnsBm25Results() {
+        when(retrievalPortProvider.getIfAvailable()).thenReturn(port);
+        when(aiModelSupport.embed(embeddingModel, AiCallScope.SEMANTIC, QUERY))
+                .thenThrow(new IllegalStateException("AI 模型未配置：embedding key 为空"));
+        when(port.search(eq(QUERY), argThat(List::isEmpty), eq(5))).thenReturn(List.of(HIT));
+
+        assertThat(service.searchStrict(QUERY, 5)).containsExactly(HIT);
+    }
+
+    @Test
+    @DisplayName("strict：参数非法仍是空列表（client 输入问题不是服务故障）")
+    void searchStrict_invalidArguments_returnsEmpty() {
+        assertThat(service.searchStrict(null, 5)).isEmpty();
+        assertThat(service.searchStrict("   ", 5)).isEmpty();
+        assertThat(service.searchStrict(QUERY, 0)).isEmpty();
 
         verifyNoInteractions(aiModelSupport);
     }
