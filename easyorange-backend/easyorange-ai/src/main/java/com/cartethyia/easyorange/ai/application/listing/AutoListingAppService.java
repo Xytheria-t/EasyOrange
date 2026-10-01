@@ -9,10 +9,13 @@ import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
 import com.cartethyia.easyorange.ai.domain.port.CategoryCatalogPort;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -45,7 +48,44 @@ public class AutoListingAppService {
             log.warn("Auto listing analysis returned nothing for {} images", imageUrls.size());
             throw BusinessException.of(AiResultCode.AI_UNAVAILABLE);
         }
-        return listing.get();
+        return sanitize(listing.get());
+    }
+
+    /**
+     * 字段级净化 — 模型越界输出（负价格 / 清单外类目 / 非法成色码）置空交给用户填，不整单拒绝：标题描述
+     * 大概率仍然可用，而脏值一旦随 ai_suggestion 快照落库，采纳率（唯一不靠 LLM 评 LLM 的质量数字）就被
+     * 污染。json_object 只保证「是合法 JSON」，不保证「合业务约束」。
+     */
+    private AutoListingResult sanitize(AutoListingResult listing) {
+        var available = Set.copyOf(categoryCatalogPort.listAvailableCategoryNames());
+        var sanitized = new AutoListingResult(
+                listing.title(),
+                listing.description(),
+                listing.price() != null && listing.price().signum() > 0 ? listing.price() : null,
+                available.contains(listing.categoryName()) ? listing.categoryName() : null,
+                isValidConditionLevel(listing.conditionLevel()) ? listing.conditionLevel() : null,
+                listing.location());
+        if (!sanitized.equals(listing)) {
+            log.warn(
+                    "action=auto_listing_sanitized, price={}, categoryName={}, conditionLevel={}",
+                    listing.price(),
+                    listing.categoryName(),
+                    listing.conditionLevel());
+        }
+        return sanitized;
+    }
+
+    /** 成色码白名单复用 product 侧 {@link ConditionLevel}（code 1~4 的单一来源）；fromCode 对未知码 fail-fast，这里按「不合法」收敛。 */
+    private static boolean isValidConditionLevel(@Nullable String value) {
+        if (value == null) {
+            return false;
+        }
+        try {
+            ConditionLevel.fromCode(value);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     /** 供应商异常返回空 Optional，与「模型输出不可解析」收敛成同一个用户可见结果（识别失败）。 */

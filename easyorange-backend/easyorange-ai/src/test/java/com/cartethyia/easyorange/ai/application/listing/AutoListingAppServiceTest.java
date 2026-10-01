@@ -166,4 +166,62 @@ class AutoListingAppServiceTest {
             verify(visionChatModel, never()).call(any(Prompt.class));
         }
     }
+
+    @Nested
+    @DisplayName("字段级净化（越界输出置空而非整单拒绝）")
+    class SanitizeTests {
+
+        /** 模型返回含越界字段的识别结果，走完整 analyzeImages 链路拿净化后的值。 */
+        private AutoListingResult analyze(String modelJson) {
+            when(visionChatModel.call(any(Prompt.class))).thenReturn(textResponse(modelJson));
+            return service.analyzeImages(List.of("http://example.com/a.jpg"));
+        }
+
+        @Test
+        @DisplayName("负价格置空（脏值不进快照，采纳率分母不被污染），其余字段保留")
+        void sanitize_negativePrice_nulled() {
+            var result = analyze("""
+                    {"title":"二手 iPhone 14","description":"99新","price":-100,
+                    "categoryName":"手机数码","conditionLevel":"2","location":"上海"}
+                    """);
+
+            assertThat(result.price()).isNull();
+            assertThat(result.title()).isEqualTo("二手 iPhone 14");
+            assertThat(result.categoryName()).isEqualTo("手机数码");
+        }
+
+        @Test
+        @DisplayName("清单外类目置空（模型自造类目名不给透传）")
+        void sanitize_unknownCategory_nulled() {
+            var result = analyze("""
+                    {"title":"二手 iPhone 14","description":"99新","price":4500,
+                    "categoryName":"限量绝版好物","conditionLevel":"2","location":"上海"}
+                    """);
+
+            assertThat(result.categoryName()).isNull();
+            assertThat(result.price()).isEqualByComparingTo(new BigDecimal("4500"));
+        }
+
+        @Test
+        @DisplayName("非法成色码置空（code 白名单与 product 侧 ConditionLevel 同源，1~4 之外不透传）")
+        void sanitize_invalidConditionLevel_nulled() {
+            var result = analyze("""
+                    {"title":"二手 iPhone 14","description":"99新","price":4500,
+                    "categoryName":"手机数码","conditionLevel":"九五新","location":"上海"}
+                    """);
+
+            assertThat(result.conditionLevel()).isNull();
+        }
+
+        @Test
+        @DisplayName("全部字段合法时原样透传 — 净化不改变合法输出")
+        void sanitize_allValid_untouched() {
+            var result = analyze(VALID_JSON);
+
+            assertThat(result.title()).isEqualTo("二手 iPhone 14");
+            assertThat(result.price()).isEqualByComparingTo(new BigDecimal("4500"));
+            assertThat(result.categoryName()).isEqualTo("手机数码");
+            assertThat(result.conditionLevel()).isEqualTo("2");
+        }
+    }
 }
