@@ -34,7 +34,7 @@ class KnowledgeElasticsearchAdapterTest {
     private ElasticsearchOperations elasticsearchOperations;
 
     @Test
-    @DisplayName("写入分块 -> 逐块 save（id = docId:chunkIndex 幂等覆盖）")
+    @DisplayName("写入分块 -> bulk 一次 save 整批（id = docId:chunkIndex 幂等覆盖）")
     void ingestChunks() {
         KnowledgeIndexPort adapter = new KnowledgeElasticsearchAdapter(
                 elasticsearchOperations, new ObjectMapper(), new SearchLegMetrics(new SimpleMeterRegistry()));
@@ -43,7 +43,11 @@ class KnowledgeElasticsearchAdapterTest {
                 new KnowledgeChunk("kb-1", 0, "标题", "块0", List.of(0.1f, 0.2f)),
                 new KnowledgeChunk("kb-1", 1, "标题", "块1", null)));
 
-        verify(elasticsearchOperations, org.mockito.Mockito.times(2)).save(any(KnowledgeChunkDocument.class));
+        // bulk 一次往返（逐条 save 是 N 次 ES 请求），与同族商品批量路径一致
+        @SuppressWarnings("unchecked")
+        var captor = org.mockito.ArgumentCaptor.forClass(Iterable.class);
+        verify(elasticsearchOperations).save(captor.capture());
+        assertThat(captor.getValue()).hasSize(2);
     }
 
     @Test
@@ -58,14 +62,16 @@ class KnowledgeElasticsearchAdapterTest {
     }
 
     @Test
-    @DisplayName("写入失败 -> best-effort 不抛异常（索引失败不阻塞主链路）")
-    void ingestChunks_bestEffort() {
-        when(elasticsearchOperations.save(any(KnowledgeChunkDocument.class)))
+    @DisplayName("写入失败 -> 异常上抛（吞掉会让没写进去的文档假标 INDEXED，静默缺失无从发现）")
+    void ingestChunks_failurePropagates() {
+        when(elasticsearchOperations.save(org.mockito.ArgumentMatchers.<Iterable<KnowledgeChunkDocument>>any()))
                 .thenThrow(new RuntimeException("es down"));
         KnowledgeIndexPort adapter = new KnowledgeElasticsearchAdapter(
                 elasticsearchOperations, new ObjectMapper(), new SearchLegMetrics(new SimpleMeterRegistry()));
 
-        adapter.ingestChunks(List.of(new KnowledgeChunk("kb-1", 0, "标题", "块0", null)));
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () -> adapter.ingestChunks(List.of(new KnowledgeChunk("kb-1", 0, "标题", "块0", null))))
+                .isInstanceOf(RuntimeException.class);
     }
 
     @Test
