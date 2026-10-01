@@ -17,15 +17,12 @@ import tools.jackson.databind.ObjectMapper;
  * {@code reference_answer}，无参考回答的通用评分标准没有任何生产可达路径，留着等于一份改不到、
  * 也测不到的旁支评测口径。
  * <p>
- * 评审模型走场景路由（{@code judge} → 当前默认 chatModel）：自评有偏差（同一模型倾向给自己风格的
- * 输出高分），换评审模型只需改 yaml 里该场景的 bean 名，代码零改动 —— 可演进的位，不是遗漏。
+ * 评审模型走场景路由（{@code judge} → 配置的评审模型 bean）：自评有偏差（同一模型倾向给自己风格的
+ * 输出高分），场景名在 {@link AiModelRouter} 单点定义，换评审模型只改 yaml，代码零改动。
  */
 @Component
 @RequiredArgsConstructor
 public class AiJudge {
-
-    /** 评审场景名（{@code easyorange.ai.routing.scenarios} 的键）。 */
-    public static final String JUDGE_SCENARIO = "judge";
 
     /** 评审 system prompt 键（与 {@code prompts/judge.yml} 的 name 同名）。 */
     private static final String JUDGE_PROMPT = "judge_system";
@@ -45,7 +42,8 @@ public class AiJudge {
 
     private Optional<Judgement> judgeWith(String systemPrompt, String caseText) {
         try {
-            String json = aiModelSupport.callJson(modelRouter.choose(JUDGE_SCENARIO), systemPrompt, caseText);
+            String json =
+                    aiModelSupport.callJson(modelRouter.choose(AiModelRouter.SCENARIO_JUDGE), systemPrompt, caseText);
             return parse(json);
         } catch (Exception e) {
             return Optional.empty();

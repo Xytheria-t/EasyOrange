@@ -96,7 +96,7 @@ public class AutoListingAppService {
             // 视觉模型走场景路由（vision → visionChatModel），与文本生成解耦、可独立换模型；
             // 带 scope 以便视觉模型的 token 用量计入 auto_listing 场景预算
             return aiModelSupport.callJsonAsWithImages(
-                    modelRouter.choose("vision"),
+                    modelRouter.choose(AiModelRouter.SCENARIO_VISION),
                     AiCallScope.AUTO_LISTING,
                     prompt,
                     categoryCatalogHint(),
