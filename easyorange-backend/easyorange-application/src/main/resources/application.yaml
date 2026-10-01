@@ -408,7 +408,7 @@ easyorange:
         min-entropy-threshold: 0.5
 
   ai:
-    # 四个模型槽位（决策 / 文本 / 视觉 / Embedding）的 api-key、base-url、model 都可经环境变量覆盖：
+    # 五个模型槽位（决策 / 文本 / 视觉 / 评审 / Embedding）的 api-key、base-url、model 都可经环境变量覆盖：
     # 槽位按「职责」命名而非按厂商 —— 厂商只作为 base-url / model 的取值存在。带厂商名的键名会制造
     # 「键名是 A、实际值是 B」这种失配，此时读配置的人无从判断该信哪个，排查成本极高（曾发生：
     # 键名 deepseek 而实跑百炼）。各云厂商的 OpenAI 兼容端点（如百炼 compatible-mode）协议一致，
@@ -424,6 +424,14 @@ easyorange:
       api-key: ${AI_VISION_API_KEY:}
       base-url: ${AI_VISION_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
       model: ${AI_VISION_MODEL:qwen-vl-max}
+      timeout: 60000
+    judge:
+      # LLM-as-Judge 评审模型 — 刻意与生成模型分家族（生成是 DeepSeek，评审默认百炼 qwen）：
+      # 同一模型给自己风格的输出打分系统性偏高，Judge 分数要对外可引用就必须换评审员；
+      # key 缺省借视觉槽的 DashScope key（同账号零新增配置），要独立计费时设 AI_JUDGE_API_KEY 覆盖
+      api-key: ${AI_JUDGE_API_KEY:${AI_VISION_API_KEY:}}
+      base-url: ${AI_JUDGE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+      model: ${AI_JUDGE_MODEL:qwen-plus}
       timeout: 60000
     embedding:
       api-key: ${EMBEDDING_API_KEY:}
@@ -465,7 +473,7 @@ easyorange:
       scenarios:
         chat_tool: decisionChatModel  # 工具决策（多步工具循环）— 快模型，只选工具不写答案
         vision: visionChatModel   # 图片分析（智能上架）— 视觉模型 Qwen-VL
-        judge: chatModel          # LLM-as-Judge 评审 — 指向独立评审模型可消除自评偏差（当前只有文本模型）
+        judge: judgeChatModel     # LLM-as-Judge 评审 — 独立评审模型（家族异于生成模型，消自评偏差）
     semantic-cache:        # 语义缓存 — 相似问题复用历史回答（成本优化）
       enabled: true
       similarity-threshold: 0.92
