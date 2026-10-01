@@ -159,7 +159,7 @@ public class ToolCallLoop {
                     log.warn(
                             "action=tool_call_fallback_search_failed, sessionId={}, reason={}",
                             input.sessionId(),
-                            failureReason(e));
+                            FailureReason.of(e));
                 }
                 return Result.of(tools, ToolCallLoopOutcome.DECISION_FAILED, rounds, toolPath);
             }
@@ -319,7 +319,7 @@ public class ToolCallLoop {
                 return new ToolResult(true, callback.call(decision.rawArguments()));
             } catch (Exception e) {
                 // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
-                String reason = failureReason(e.getCause() != null ? e.getCause() : e);
+                String reason = FailureReason.of(e.getCause() != null ? e.getCause() : e);
                 log.warn("action=tool_call_failed, tool={}, input={}, reason={}", tool, toolInputOf(decision), reason);
                 return new ToolResult(false, reason);
             }
@@ -381,9 +381,5 @@ public class ToolCallLoop {
 
     private static String orEmpty(@Nullable String value) {
         return value == null ? "" : value;
-    }
-
-    private static String failureReason(Throwable e) {
-        return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
     }
 }

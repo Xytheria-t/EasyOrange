@@ -64,16 +64,12 @@ public class ToolCallDecider {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason={}",
                     sessionId,
-                    failureReason(e));
+                    FailureReason.of(e));
             return List.of();
         }
     }
 
     private ToolCallArguments parseArgs(AssistantMessage.ToolCall toolCall) {
         return objectMapper.readValue(toolCall.arguments(), ToolCallArguments.class);
-    }
-
-    private static String failureReason(Throwable e) {
-        return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
     }
 }
