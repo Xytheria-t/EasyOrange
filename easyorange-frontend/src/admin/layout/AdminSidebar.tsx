@@ -126,6 +126,24 @@ const navItems = [
                     </svg>
                 ),
             },
+            {
+                path: '/admin/retrieval-quality',
+                label: '检索质量回看',
+                icon: (
+                    <svg
+                        aria-hidden="true"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                        <path d="M3 3v18h18" />
+                        <path d="M7 15l4-5 3 3 5-7" />
+                    </svg>
+                ),
+            },
         ],
     },
 ];

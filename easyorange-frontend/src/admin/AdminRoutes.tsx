@@ -16,6 +16,7 @@ const OrderManagePage = lazy(() => import('./pages/orders/OrderManagePage'));
 const StatsPage = lazy(() => import('./pages/stats/StatsPage'));
 const CategoryManagePage = lazy(() => import('./pages/categories/CategoryManagePage'));
 const KnowledgePage = lazy(() => import('./pages/knowledge/KnowledgePage'));
+const RetrievalQualityPage = lazy(() => import('./pages/retrieval/RetrievalQualityPage'));
 
 export function AdminRoutes() {
     return (
@@ -32,6 +33,7 @@ export function AdminRoutes() {
                         <Route path="orders" element={<OrderManagePage />} />
                         <Route path="categories" element={<CategoryManagePage />} />
                         <Route path="knowledge" element={<KnowledgePage />} />
+                        <Route path="retrieval-quality" element={<RetrievalQualityPage />} />
                         {/* 后台内未知路径回数据统计，绝不给演示留白屏 */}
                         <Route path="*" element={<Navigate to="/admin" replace />} />
                     </Route>

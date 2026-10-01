@@ -22,6 +22,9 @@ import type {
     OrderStatsResponse,
     ProductAuditRequest,
     ResetPasswordRequest,
+    RetrievalEvalCase,
+    RetrievalEvalLine,
+    RetrievalEvalRun,
     TrendItem,
     UpdateStatusRequest,
     UpdateUserStatusRequest,
@@ -237,6 +240,35 @@ export const adminApi = {
                 params: { pageNum, pageSize },
             })
         );
+    },
+
+    /** 检索评测批次列表（hit@5 / MRR 趋势）—— 空数组即「还没跑过评测」，与「跑了全没命中」分得开 */
+    async getRetrievalEvalRuns(line: RetrievalEvalLine, limit = 20) {
+        const response = await request<RetrievalEvalRun[]>(`${ADMIN_API_PREFIX}/ai/retrieval-eval/runs`, {
+            params: { line, limit },
+        });
+        // reciprocalRank 来自 DECIMAL 列、caseCount 等计数在后端是包装类型 Long —— 一律收敛成 number
+        return {
+            ...response,
+            data: (response.data ?? []).map(row =>
+                coerceCounts(row, ['caseCount', 'hitCount', 'hitRateAt5', 'hitRatePct', 'mrr'])
+            ),
+        };
+    },
+
+    async getRetrievalEvalCases(runId: string, pageNum = 1, pageSize = 10) {
+        const page = await coercePageTotal(
+            await request<PageResult<RetrievalEvalCase>>(`${ADMIN_API_PREFIX}/ai/retrieval-eval/cases`, {
+                params: { runId, pageNum, pageSize },
+            })
+        );
+        return {
+            ...page,
+            data: {
+                ...page.data,
+                records: (page.data?.records ?? []).map(row => coerceCounts(row, ['reciprocalRank'])),
+            },
+        };
     },
 
     createKnowledgeDoc(data: CreateKnowledgeDocRequest) {

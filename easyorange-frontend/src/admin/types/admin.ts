@@ -326,3 +326,31 @@ export interface CreateKnowledgeDocRequest {
     content: string;
     source: string;
 }
+
+// ==================== Retrieval Eval Types ====================
+
+/** 检索评测线（按 case_id 前缀判定）— KNOWLEDGE 真实 embedding 语义空间 / ASSET 合成向量语料 */
+export type RetrievalEvalLine = 'KNOWLEDGE' | 'ASSET';
+
+/** 一次评测批次（run_id）的汇总行 — hit@5 与 MRR 的分母都是本批用例数 */
+export interface RetrievalEvalRun {
+    runId: string;
+    line: RetrievalEvalLine;
+    lineLabel: string;
+    caseCount: number;
+    hitCount: number;
+    hitRateAt5: number;
+    hitRatePct: number;
+    mrr: number;
+    createdAt: string | null;
+}
+
+/** 单条检索用例的采样明细 — hitRank 为首个命中位次，未命中时为 null */
+export interface RetrievalEvalCase {
+    caseId: string;
+    queryText: string | null;
+    goldDocIds: string | null;
+    hitAt5: boolean;
+    reciprocalRank: number;
+    hitRank: number | null;
+}
