@@ -18,9 +18,10 @@ name: AI eval gate
 #   embedding bean 会退化为 UnconfiguredEmbeddingModel，检索指标走 MySQL LIKE 降级路径。
 # 供应商可换：AI_TEXT_BASE_URL / AI_TEXT_MODEL 由仓库变量提供，缺省仍是 DeepSeek 官方端点。
 on:
-  # 需要定期回归时加回（原为每周一 03:30，与 PIT 02:30 错峰）：
-  #   schedule:
-  #     - cron: '30 3 * * 1'
+  # 每周一 03:30 定时回归（与 PIT 02:30 错峰）：捕获「不改 prompt / 语料也会漂移」的隐性回归
+  # （供应商侧模型更新、评测环境变化），否则回归只能滞后到下一次 AI 面合入才被发现
+  schedule:
+    - cron: '30 3 * * 1'
   workflow_dispatch:
   push:
     branches: [develop]
