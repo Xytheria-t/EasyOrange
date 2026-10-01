@@ -15,6 +15,7 @@ import org.springframework.validation.annotation.Validated;
 public record AiProperties(
         Text text,
         Vision vision,
+        @Valid Judge judge,
         @Valid Embedding embedding,
         Cache cache,
         RateLimit rateLimit,
@@ -33,6 +34,9 @@ public record AiProperties(
         }
         if (vision == null) {
             vision = new Vision(null, "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-vl-max", 60000);
+        }
+        if (judge == null) {
+            judge = new Judge(null, "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-plus", 60000);
         }
         if (embedding == null) {
             embedding = new Embedding(
@@ -73,6 +77,13 @@ public record AiProperties(
 
     /** 视觉理解模型配置 — 同 {@link Text}，槽位命名只表职责。 */
     public record Vision(String apiKey, String baseUrl, String model, int timeout) {}
+
+    /**
+     * 评审模型配置（LLM-as-Judge）— 刻意与生成模型分家族：同一模型给自己风格的输出打分系统性偏高，
+     * Judge 分数要对外可引用就必须换评审员（生成默认 DeepSeek、评审默认百炼 qwen）；apiKey 缺省借视觉槽
+     * 的 DashScope key（yaml 占位符兜底），要独立计费时另设。
+     */
+    public record Judge(String apiKey, String baseUrl, String model, int timeout) {}
 
     /** Embedding 模型配置 — dimensions 必须与 ES 索引 {@code dense_vector} 映射维度一致，否则语义检索 kNN 查询维度不匹配失败。 */
     public record Embedding(String apiKey, String baseUrl, String model, int dimensions, int timeout) {}

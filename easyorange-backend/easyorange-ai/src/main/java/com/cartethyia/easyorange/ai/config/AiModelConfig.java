@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 /**
- * Spring AI 模型装配 — 四个模型 bean 全手动创建（决策 / 文本 / 视觉 / Embedding）：
+ * Spring AI 模型装配 — 五个模型 bean 全手动创建（决策 / 文本 / 视觉 / 评审 / Embedding）：
  * 文本与视觉是两家 OpenAI 兼容供应商（部署实测用阿里云百炼，两者同端点同 key），base-url 与 api-key 可各自独立，
  * 单一 {@code spring.ai.openai.*} 自动配置表达不了，统一经 {@link OpenAiSetup#setupSyncClient} 手动
  * 构造 {@link OpenAIClient}；定义 bean 后自动配置的 {@code @ConditionalOnMissingBean} 自动退让，
@@ -102,6 +102,28 @@ public class AiModelConfig {
                         .baseUrl(vision.baseUrl())
                         .apiKey(vision.apiKey())
                         .model(vision.model())
+                        .build())
+                .observationRegistry(obs)
+                .build();
+    }
+
+    /**
+     * 评审模型（LLM-as-Judge）— 金标准集回归的打分员，由 {@code judge} 场景路由到这里。
+     * 与生成模型分家族的理由：同一模型给自己风格的输出打分系统性偏高，Judge 分数要对外可引用
+     * 就必须换评审员；默认落百炼 qwen（与视觉槽同账号同 key），换评审员只改 yaml。
+     */
+    @Bean
+    public ChatModel judgeChatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
+        var judge = props.judge();
+        if (hasNoText(judge.apiKey())) {
+            return new UnconfiguredChatModel("easyorange.ai.judge.api-key 为空，请配置 AI_JUDGE_API_KEY 或 AI_VISION_API_KEY");
+        }
+        return OpenAiChatModel.builder()
+                .openAiClient(syncClient(judge.baseUrl(), judge.apiKey(), judge.model(), judge.timeout(), obs, meters))
+                .options(OpenAiChatOptions.builder()
+                        .baseUrl(judge.baseUrl())
+                        .apiKey(judge.apiKey())
+                        .model(judge.model())
                         .build())
                 .observationRegistry(obs)
                 .build();

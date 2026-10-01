@@ -50,7 +50,7 @@ class EmbeddingDimensionsConsistencyTest {
     void constructorFallbackMatchesYaml() throws Exception {
         // 构造器兜底只在属性源整段缺失时生效（单测裸绑场景），但它会与 yaml 静默分叉：
         // 本地测试全绿、起服行为不同。这条断言把「本地绿 ≠ 线上绿」这个失效模式关掉。
-        var fallback = new AiProperties(null, null, null, null, null, null, null, null, null);
+        var fallback = new AiProperties(null, null, null, null, null, null, null, null, null, null);
 
         assertThat(fallback.embedding().dimensions())
                 .as(
