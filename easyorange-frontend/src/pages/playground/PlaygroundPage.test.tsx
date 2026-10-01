@@ -39,6 +39,13 @@ function emit(events: ChatStreamEvent[]) {
     });
 }
 
+/** token 走 60ms 缓冲合并上屏：断言「上屏后」的派生行为（面板收起/滚动跟随）前先等满一个缓冲窗口 */
+async function flushTokenBuffer() {
+    await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 80));
+    });
+}
+
 describe('PlaygroundPage (AI 找货)', () => {
     // 默认成功收口；个别用例自行覆盖实现。不重置的话，上一条用例的
     // mockRejectedValue / 挂起实现会漏到下一条，断言互相干扰
@@ -116,7 +123,7 @@ describe('PlaygroundPage (AI 找货)', () => {
         expect(within(panel).getByText('正在决定下一步…')).toBeInTheDocument();
     });
 
-    it('思考面板：正文开始后自动收起为摘要，点击头部可展开回看', () => {
+    it('思考面板：正文开始后自动收起为摘要，点击头部可展开回看', async () => {
         mockedChatStream.mockResolvedValue(undefined);
         renderWithProviders(<PlaygroundPage />);
 
@@ -129,6 +136,7 @@ describe('PlaygroundPage (AI 找货)', () => {
             },
             { type: 'token', data: '可以' },
         ]);
+        await flushTokenBuffer();
 
         const panel = screen.getByRole('region', { name: 'Agent 思考过程' });
         const toggle = within(panel).getByRole('button');
@@ -418,7 +426,7 @@ describe('PlaygroundPage (AI 找货)', () => {
         expect(scrollToMock).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }));
     });
 
-    it('流式 token 在贴底时跟随滚动', () => {
+    it('流式 token 在贴底时跟随滚动', async () => {
         mockedChatStream.mockResolvedValue(undefined);
         const { container } = renderWithProviders(<PlaygroundPage />);
         const { chatEl, scrollToMock } = stubChatScroll(container);
@@ -430,10 +438,11 @@ describe('PlaygroundPage (AI 找货)', () => {
         scrollToMock.mockClear();
 
         emit([{ type: 'token', data: '可以' }]);
+        await flushTokenBuffer();
         expect(scrollToMock).toHaveBeenCalledWith({ top: 600 });
     });
 
-    it('用户上翻读历史时流式 token 不抢滚动位置，翻回底部恢复跟随', () => {
+    it('用户上翻读历史时流式 token 不抢滚动位置，翻回底部恢复跟随', async () => {
         mockedChatStream.mockResolvedValue(undefined);
         const { container } = renderWithProviders(<PlaygroundPage />);
         const { chatEl, scrollToMock } = stubChatScroll(container);
@@ -447,12 +456,33 @@ describe('PlaygroundPage (AI 找货)', () => {
         scrollToMock.mockClear();
 
         emit([{ type: 'token', data: '可以' }]);
+        await flushTokenBuffer();
         expect(scrollToMock).not.toHaveBeenCalled();
 
         // 翻回底部：恢复跟随
         mockChatGeometry(chatEl, { scrollTop: 1500, scrollHeight: 2000, clientHeight: 500 });
         fireEvent.scroll(chatEl);
         emit([{ type: 'token', data: '退款' }]);
+        await flushTokenBuffer();
         expect(scrollToMock).toHaveBeenCalledWith({ top: 2000 });
+    });
+
+    it('流式 token 经缓冲合并上屏：窗口内不逐 token 渲染，窗口后一次上屏', async () => {
+        // 挂起流：token 只经 emit 到达，无终态事件
+        mockedChatStream.mockReturnValue(new Promise(() => {}));
+        renderWithProviders(<PlaygroundPage />);
+
+        fireEvent.change(screen.getByLabelText('问题输入'), { target: { value: '怎么退款？' } });
+        fireEvent.click(screen.getByRole('button', { name: '发送' }));
+        emit([
+            { type: 'token', data: '可以' },
+            { type: 'token', data: '退款' },
+        ]);
+
+        // 缓冲窗口内：token 已到但未上屏
+        expect(screen.queryByText('可以退款')).not.toBeInTheDocument();
+
+        await flushTokenBuffer();
+        expect(screen.getByText('可以退款')).toBeInTheDocument();
     });
 });

@@ -61,5 +61,15 @@ describe('useAutoListing', () => {
         expect(toasts).toHaveLength(1);
         expect(toasts[0]).toMatchObject({ type: 'error', message: 'AI 服务暂时不可用，请稍后重试' });
         expect(result.current.result).toBeNull();
+        // 失败文案持久挂 hook 上（识别按钮旁的重试入口），不随 toast 消失
+        expect(result.current.failure).toBe('AI 服务暂时不可用，请稍后重试');
+
+        // 重试（再次 analyze）成功 -> 失败态清除
+        server.use(http.post('/api/ai/auto-listing', () => HttpResponse.json(successBody)));
+        await act(async () => {
+            await result.current.analyzeImages(['https://example.com/a.jpg']);
+        });
+        expect(result.current.failure).toBeNull();
+        expect(result.current.result).toEqual(successBody.data);
     });
 });

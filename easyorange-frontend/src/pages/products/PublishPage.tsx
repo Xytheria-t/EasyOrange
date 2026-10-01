@@ -64,6 +64,7 @@ function PublishPage() {
     const {
         result: autoListingResult,
         isLoading: autoListingLoading,
+        failure: autoListingFailure,
         analyzeImages,
         clearResult: clearAutoListing,
     } = useAutoListing();
@@ -418,6 +419,7 @@ function PublishPage() {
                                         onAnalyze={() => analyzeImages(vals.imageUrls)}
                                         isLoading={autoListingLoading}
                                         hasImages={vals.imageUrls.length > 0}
+                                        failure={autoListingFailure}
                                     />
                                 )}
                             </section>
