@@ -223,3 +223,12 @@ cases:
     scope: retrieval
     question: 二手书品相怎么判断
     gold_doc_ids: [kb-0033]
+  # ---- 多块文档用例：长文档会被切多块（chunk），hit 按 docId 归并，这两条把「长文档切完还能不能检索」纳入评测 ----
+  - id: retr-025
+    scope: retrieval
+    question: 交易纠纷仲裁要提供什么证据
+    gold_doc_ids: [kb-0036]
+  - id: retr-026
+    scope: retrieval
+    question: 买贵的二手商品怎么保证资金安全
+    gold_doc_ids: [kb-0037]
