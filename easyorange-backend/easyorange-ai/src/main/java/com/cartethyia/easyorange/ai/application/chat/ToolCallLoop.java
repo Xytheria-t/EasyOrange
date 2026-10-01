@@ -16,6 +16,7 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -92,6 +93,9 @@ public class ToolCallLoop {
      * @param sessionId 可空（请求不带会话），两处消费方各自兜底：trace 落 anonymous 桶、会话记忆无会话 fail-open
      * @param userId    评估跑批传 {@link #MACHINE_SUBJECT}，画像不落库
      * @param handler   可空：非流式路径不推 step 事件，trace / 指标照常
+     * @param toolAllowList 工具白名单，null = 全量工具面（生产路径）；非空则只装配列出的工具，供
+     *                      RAG 有效性对照的「无检索来源」臂只挂 {@link ChatTools#TOOL_FINISH} ——
+     *                      消融变量只落在工具装配上，编排、生成与 Judge 口径两臂完全同构
      */
     public record Input(
             String question,
@@ -99,7 +103,19 @@ public class ToolCallLoop {
             String userId,
             List<ChatTurn> history,
             List<UserPreference> prefs,
-            @Nullable ChatStreamHandler handler) {}
+            @Nullable ChatStreamHandler handler,
+            @Nullable Set<String> toolAllowList) {
+
+        public Input(
+                String question,
+                @Nullable String sessionId,
+                String userId,
+                List<ChatTurn> history,
+                List<UserPreference> prefs,
+                @Nullable ChatStreamHandler handler) {
+            this(question, sessionId, userId, history, prefs, handler, null);
+        }
+    }
 
     /**
      * 循环结果 — 召回物供最终生成装配 prompt 与引用溯源；outcome / rounds 供指标与降级归因；toolPath 供路由准确率评估
@@ -134,7 +150,7 @@ public class ToolCallLoop {
     private Result executeLoop(Input input) {
         String traceId = idGenerator.generateId();
         var tools = toolsFactory.create(attributedUserId(input));
-        var dispatcher = ToolDispatcher.of(tools);
+        var dispatcher = ToolDispatcher.of(tools, input.toolAllowList());
         var messages = new DecisionMessages(promptRegistry.require(CHAT_TOOL_PROMPT), firstUserMessage(input));
         var toolPath = new ArrayList<String>();
         int rounds = 0;
@@ -152,13 +168,16 @@ public class ToolCallLoop {
                     decider.decide(input.sessionId(), messages.snapshot(), dispatcher.callbacks());
             if (decisions.isEmpty()) {
                 // 识别不出检索需求时仍补一次：最坏是多几条不相关片段，好过把检索链路失效伪装成「无需检索」
-                try {
-                    tools.searchKnowledgeForFallback(input.question());
-                } catch (Exception e) {
-                    log.warn(
-                            "action=tool_call_fallback_search_failed, sessionId={}, reason={}",
-                            input.sessionId(),
-                            FailureReason.of(e));
+                // 白名单未含知识库检索（无检索对照臂）时跳过：补检索会把这臂的检索来源偷偷加回来，对照失效
+                if (allowsKnowledgeSearch(input)) {
+                    try {
+                        tools.searchKnowledgeForFallback(input.question());
+                    } catch (Exception e) {
+                        log.warn(
+                                "action=tool_call_fallback_search_failed, sessionId={}, reason={}",
+                                input.sessionId(),
+                                FailureReason.of(e));
+                    }
                 }
                 return Result.of(tools, ToolCallLoopOutcome.DECISION_FAILED, rounds, toolPath);
             }
@@ -299,8 +318,12 @@ public class ToolCallLoop {
     /** 工具面（一次请求内） — 两种框架形态（schema 下发的回调列表、按名执行的回调表）绑在一处按名分发；召回累加器归 {@link ChatTools} 实例。 */
     private record ToolDispatcher(List<ToolCallback> callbacks, Map<String, ToolCallback> byName) {
 
-        static ToolDispatcher of(ChatTools tools) {
-            List<ToolCallback> callbacks = List.of(ToolCallbacks.from(tools));
+        /** 白名单为 null 时装配全量工具面；否则只装配白名单内的工具（模型拿不到 schema 就调不到）。 */
+        static ToolDispatcher of(ChatTools tools, @Nullable Set<String> allowList) {
+            List<ToolCallback> callbacks = List.of(ToolCallbacks.from(tools)).stream()
+                    .filter(callback -> allowList == null
+                            || allowList.contains(callback.getToolDefinition().name()))
+                    .toList();
             var byName = callbacks.stream()
                     .collect(Collectors.toMap(
                             callback -> callback.getToolDefinition().name(), Function.identity()));
@@ -328,6 +351,11 @@ public class ToolCallLoop {
     @Nullable
     private static String attributedUserId(Input input) {
         return MACHINE_SUBJECT.equals(input.userId()) ? null : input.userId();
+    }
+
+    private static boolean allowsKnowledgeSearch(Input input) {
+        Set<String> allowList = input.toolAllowList();
+        return allowList == null || allowList.contains(ChatTools.TOOL_KNOWLEDGE_SEARCH);
     }
 
     /**

@@ -1,11 +1,14 @@
 package com.cartethyia.easyorange.ai.application.eval;
 
 import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
+import com.cartethyia.easyorange.ai.application.chat.ChatTools;
 import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
+import com.cartethyia.easyorange.ai.domain.model.ArmComparisonReport;
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
+import com.cartethyia.easyorange.ai.domain.model.GoldenSetCase;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.RetrievalReport;
 import com.cartethyia.easyorange.ai.domain.model.RoutingReport;
@@ -13,13 +16,16 @@ import com.cartethyia.easyorange.ai.domain.port.RetrievalMetricPort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
  * 金标准集回归评估器 — 三条评估线：生成质量（LLM-as-Judge）、检索质量（hit@5 / MRR）、路由质量
- * （期望工具路径命中率）。三条线读同一份用例集，各按自己的口径取子集。
+ * （期望工具路径命中率），外加一条按需跑的双臂对照（RAG 有效性）。三条线读同一份用例集，各按自己的口径取子集。
  * <p>
  * 生成线对每个 chat 用例调 {@link AiChatAppService#answer}（forceFresh 跳过缓存；显式传机器主体
  * {@link ToolCallLoop#MACHINE_SUBJECT}，画像不落库，评估不被历史偏好污染）对照参考回答打分取均值；
@@ -34,6 +40,9 @@ import org.springframework.stereotype.Component;
 public class GoldenSetEvaluator {
 
     private static final int RETRIEVAL_TOP_K = 5;
+
+    /** 无检索臂的白名单：只留 finish —— 模型拿不到检索工具的 schema，凭自身知识作答。 */
+    private static final Set<String> NO_RETRIEVAL_TOOLS = Set.of(ChatTools.TOOL_FINISH);
 
     private final GoldenSetLoader loader;
     private final AiChatAppService chatService;
@@ -50,15 +59,7 @@ public class GoldenSetEvaluator {
                 .toList();
         var scores = new ArrayList<CaseScore>();
         for (var c : cases) {
-            try {
-                ChatAnswer answer = chatService.answer(
-                        new ChatRequest(c.question(), "eval-" + c.id(), true), ToolCallLoop.MACHINE_SUBJECT);
-                // 只有对照参考回答这一条评分路径：chat 用例必带 reference_answer，加载期已强校验
-                aiJudge.judgeAgainstReference(c.referenceAnswer(), answer.answer())
-                        .ifPresent(j -> scores.add(new CaseScore(c.id(), j.score())));
-            } catch (Exception e) {
-                log.warn("golden case {} generation eval failed: {}", c.id(), e.getMessage());
-            }
+            scoreCase(c, null).ifPresent(j -> scores.add(new CaseScore(c.id(), j.score())));
         }
         // 均值分母是「成功评分的用例数」而非 cases.size()：判分失败的用例不参与平均，
         // 它们的流失由 GenerationReport 的 judgedCount 对比 sampleCount 单独暴露 ——
@@ -72,6 +73,80 @@ public class GoldenSetEvaluator {
                 cases.size(),
                 "%.2f".formatted(avg));
         return new GenerationReport(cases.size(), scores.size(), avg);
+    }
+
+    /**
+     * RAG 有效性对照（双臂）— 同批 chat 用例跑两臂，唯一变量是检索来源：
+     * 有检索臂走现状全量工具面，无检索臂只挂 finish，模型拿不到任何检索工具的 schema。
+     * <p>
+     * 两臂同模型、同 Judge 提示词、同机器主体、同 forceFresh，在同一次调用里跑完；评分路径复用
+     * {@link #scoreCase}（对照参考回答），因此与 {@link #evaluateGeneration} 是同一套口径。
+     * <b>只报配对差分</b>（见 {@link ArmComparisonReport}），两臂绝对分不作对外质量证据。
+     */
+    public ArmComparisonReport evaluateRagArmComparison() {
+        var cases = loader.load().cases().stream()
+                .filter(c -> GoldenSetLoader.SCOPE_CHAT.equals(c.scope()))
+                .toList();
+        var diffs = new ArrayList<Double>();
+        var missing = new ArrayList<String>();
+        double retrievalSum = 0;
+        double noRetrievalSum = 0;
+        for (var c : cases) {
+            var retrieval = scoreCase(c, null);
+            var noRetrieval = scoreCase(c, NO_RETRIEVAL_TOOLS);
+            if (retrieval.isEmpty() || noRetrieval.isEmpty()) {
+                missing.add(c.id() + "(有检索=" + retrieval.isPresent() + ",无检索=" + noRetrieval.isPresent() + ")");
+                continue;
+            }
+            double r = retrieval.get().score();
+            double n = noRetrieval.get().score();
+            retrievalSum += r;
+            noRetrievalSum += n;
+            diffs.add(r - n);
+        }
+        double meanDiff =
+                diffs.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+        int paired = diffs.size();
+        var report = new ArmComparisonReport(
+                paired,
+                paired == 0 ? 0 : retrievalSum / paired,
+                paired == 0 ? 0 : noRetrievalSum / paired,
+                meanDiff,
+                stdDev(diffs),
+                List.copyOf(missing));
+        log.info(
+                "RAG arm comparison (paired n={}): retrieval={} noRetrieval={} meanDiff={} stdDev={} missing={}",
+                report.pairedCases(),
+                "%.2f".formatted(report.retrievalMean()),
+                "%.2f".formatted(report.noRetrievalMean()),
+                "%+.4f".formatted(report.meanDiff()),
+                "%.4f".formatted(report.diffStdDev()),
+                report.missingArms());
+        return report;
+    }
+
+    /** 跑一臂并评分 — {@code toolAllowList} 为 null 即全量工具面（与生产路径同一条链路）。 */
+    private Optional<AiJudge.Judgement> scoreCase(GoldenSetCase c, @Nullable Set<String> toolAllowList) {
+        try {
+            ChatAnswer answer = chatService.answer(
+                    new ChatRequest(c.question(), "eval-" + c.id(), true), ToolCallLoop.MACHINE_SUBJECT, toolAllowList);
+            // 只有对照参考回答这一条评分路径：chat 用例必带 reference_answer，加载期已强校验
+            return aiJudge.judgeAgainstReference(c.referenceAnswer(), answer.answer());
+        } catch (Exception e) {
+            log.warn("golden case {} generation eval failed: {}", c.id(), e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /** 配对差分的样本标准差 — 判「差分是信号还是单轮噪声」的量级依据（n-1 分母）。 */
+    private static double stdDev(List<Double> diffs) {
+        if (diffs.size() < 2) {
+            return 0;
+        }
+        double mean = diffs.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+        double variance =
+                diffs.stream().mapToDouble(d -> (d - mean) * (d - mean)).sum() / (diffs.size() - 1);
+        return Math.sqrt(variance);
     }
 
     /**
