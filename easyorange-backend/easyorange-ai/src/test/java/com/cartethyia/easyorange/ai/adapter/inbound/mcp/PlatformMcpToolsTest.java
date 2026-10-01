@@ -47,20 +47,31 @@ class PlatformMcpToolsTest {
     }
 
     @Test
-    @DisplayName("search_products：topK 缺省 5、钳制到 [1, 20]")
+    @DisplayName("search_products：topK 缺省 5、钳制到 [1, 20]，走 strict 路径（故障上抛不伪装成空结果）")
     void searchProducts_clampsTopK() {
         var tools = tools();
-        when(assetSourcingService.search("显卡", 5)).thenReturn(List.of(hit("p1")));
-        when(assetSourcingService.search("显卡", 20)).thenReturn(List.of());
-        when(assetSourcingService.search("显卡", 1)).thenReturn(List.of());
+        when(assetSourcingService.searchStrict("显卡", 5)).thenReturn(List.of(hit("p1")));
+        when(assetSourcingService.searchStrict("显卡", 20)).thenReturn(List.of());
+        when(assetSourcingService.searchStrict("显卡", 1)).thenReturn(List.of());
 
         assertThat(tools.searchProducts("显卡", null)).hasSize(1);
         assertThat(tools.searchProducts("显卡", 99)).isEmpty();
         assertThat(tools.searchProducts("显卡", 0)).isEmpty();
 
-        verify(assetSourcingService).search("显卡", 5);
-        verify(assetSourcingService).search("显卡", 20);
-        verify(assetSourcingService).search("显卡", 1);
+        verify(assetSourcingService).searchStrict("显卡", 5);
+        verify(assetSourcingService).searchStrict("显卡", 20);
+        verify(assetSourcingService).searchStrict("显卡", 1);
+    }
+
+    @Test
+    @DisplayName("search_products：检索故障上抛（MCP 协议转错误结果，client 能区分没货与服务故障）")
+    void searchProducts_strictFailurePropagates() {
+        var tools = tools();
+        when(assetSourcingService.searchStrict("显卡", 5)).thenThrow(new IllegalStateException("ES 不可用"));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> tools.searchProducts("显卡", null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ES 不可用");
     }
 
     @Test
@@ -119,7 +130,7 @@ class PlatformMcpToolsTest {
     @DisplayName("每次调用计 easyorange.mcp.tool{name} 指标")
     void recordsToolCallMetrics() {
         var tools = tools();
-        when(assetSourcingService.search("显卡", 5)).thenReturn(List.of(hit("p1")));
+        when(assetSourcingService.searchStrict("显卡", 5)).thenReturn(List.of(hit("p1")));
         tools.searchProducts("显卡", null);
         tools.listCategories(null);
 
