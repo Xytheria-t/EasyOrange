@@ -63,7 +63,10 @@ public class ToolCallDecider {
     private List<ToolCallDecision> decideOnce(
             @Nullable String sessionId, List<Message> decisionMessages, List<ToolCallback> toolCallbacks) {
         List<AssistantMessage.ToolCall> toolCalls = aiModelSupport.callWithTools(
-                modelRouter.choose("chat_tool"), AiCallScope.CHAT, decisionMessages, toolCallbacks);
+                modelRouter.choose(AiModelRouter.SCENARIO_CHAT_TOOL),
+                AiCallScope.CHAT,
+                decisionMessages,
+                toolCallbacks);
         if (toolCalls.isEmpty()) {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",

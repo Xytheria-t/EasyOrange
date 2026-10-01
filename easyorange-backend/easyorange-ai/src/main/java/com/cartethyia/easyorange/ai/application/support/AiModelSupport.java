@@ -214,7 +214,7 @@ public class AiModelSupport {
     }
 
     /** 工具决策调用的请求选项 —— {@code tool_choice} 显式设 {@code required}：ReAct 每轮的产物契约就是「一个工具调用」，
-     * {@code auto} 下模型仍可能回纯文本。在协议层要求，失败模式就从「降级」变成「不可能发生」。 */
+     * {@code auto} 下模型仍可能回纯文本，在协议层要求后失败模式就从「降级」变成「不可能发生」。 */
     private static OpenAiChatOptions toolOptions(
             ChatModel chatModel, List<ToolCallback> toolCallbacks, @Nullable Integer maxTokens) {
         return options(chatModel, maxTokens)
