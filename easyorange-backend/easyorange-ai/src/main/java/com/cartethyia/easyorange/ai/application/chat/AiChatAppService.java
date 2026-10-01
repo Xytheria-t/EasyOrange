@@ -338,6 +338,18 @@ public class AiChatAppService {
                     request.sessionId(),
                     List.of(ChatTurn.user(request.question()), ChatTurn.assistant(answer)));
             return new ChatAnswer(answer, sources, request.sessionId(), false);
+        } catch (ChatStreamAbortedException e) {
+            // 中断轮照落历史：预算已花、半截回答用户已看到，不落盘则刷新后追问「继续」丢上下文；
+            // 空 partial（循环阶段就中断）与空 sessionId（无会话）都无需落盘，saveTurns 对空参幂等跳过。
+            // 原样上抛，由 streamAnswer 按中断静默收尾（不打错误、不进降级率）
+            String partial = e.partialText();
+            if (partial != null && !partial.isBlank()) {
+                sessionStore.saveTurns(
+                        userId,
+                        request.sessionId(),
+                        List.of(ChatTurn.user(request.question()), ChatTurn.assistant(partial)));
+            }
+            throw e;
         } finally {
             turnTimer.record(System.nanoTime() - start, TimeUnit.NANOSECONDS);
         }

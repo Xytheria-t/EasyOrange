@@ -666,6 +666,43 @@ class AiChatAppServiceTest {
     }
 
     @Test
+    @DisplayName("生成阶段客户端断流 -> 半截回答照落会话历史后静默收尾（刷新后追问不丢上下文）")
+    void stream_clientAbortedDuringGeneration_savesPartialTurn() {
+        when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
+                .thenThrow(new ChatStreamAbortedException("半截回答", new java.io.IOException("broken pipe")));
+
+        chatService.streamAnswer(new ChatRequest("问题", "sess-1", false), AUTH_USER.userId(), noopHandler());
+
+        verify(sessionStore)
+                .saveTurns(
+                        eq(AUTH_USER.userId()),
+                        eq("sess-1"),
+                        eq(List.of(ChatTurn.user("问题"), ChatTurn.assistant("半截回答"))));
+        assertThat(meterRegistry.counter("easyorange.ai.chat.stream.aborted").count())
+                .isEqualTo(1);
+    }
+
+    /** 全回调空实现的桩 handler：不关心事件的用例复用。 */
+    private ChatStreamHandler noopHandler() {
+        return new ChatStreamHandler() {
+            @Override
+            public void onStep(ToolCallStepView step) {}
+
+            @Override
+            public void onToken(String token) {}
+
+            @Override
+            public void onSources(List<ChatSource> sources) {}
+
+            @Override
+            public void onDone(String fullAnswer) {}
+
+            @Override
+            public void onError(String message) {}
+        };
+    }
+
+    @Test
     @DisplayName("空问题 -> onError 提示")
     void stream_blankQuestion() {
         AtomicReference<String> error = new AtomicReference<>();
