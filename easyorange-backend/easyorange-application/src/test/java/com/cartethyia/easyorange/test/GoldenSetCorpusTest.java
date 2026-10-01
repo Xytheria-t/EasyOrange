@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
  * 金标准集的 gold_doc_ids 与知识库种子文档 R__seed_knowledge_docs.sql 是两份独立文件，
  * 靠人工保持一致：ID 写错、语料被删、语料规模退回与 topK 同量级，都会让 hit@5 变成
  * 「测不出来」或「必然满分」—— 指标照样有数字，但已经不代表检索质量。
- * 这里把三条约束断言化，让这类错误在单元测试阶段就暴露，而不是等评测回归时误判成模型问题。
+ * 这里把这些约束断言化，让这类错误在单元测试阶段就暴露，而不是等评测回归时误判成模型问题。
  */
 @DisplayName("评测集与种子语料一致性 -> 测试")
 class GoldenSetCorpusTest {
@@ -60,11 +60,42 @@ class GoldenSetCorpusTest {
     }
 
     @Test
-    @DisplayName("所有种子文档都是单块（正文长度 < 分块阈值，语料规模 = 篇数）")
-    void seedDocsAreSingleChunk() {
-        // 分块阈值 500 字（KnowledgeIngestionAppService.CHUNK_SIZE）：正文超阈值会切多块，
-        // 语义上等同于「同一文档占据多个 topK 名额」，前面的规模判断会失真。
-        assertThat(longestContentLength()).isLessThan(500);
+    @DisplayName("语料含多块长文档 —— 分块质量被评测覆盖（全部单块等于 chunking 从未进过评测范围）")
+    void seedCorpusIncludesMultiChunkDocs() {
+        // 分块阈值 500 字（KnowledgeIngestionAppService.CHUNK_SIZE）：正文超阈值会切多块。
+        // 此前语料全部单块，长文档切完还能不能检索全凭手感；两条多块用例（retr-025/026）补上这个盲区。
+        assertThat(longestContentLength())
+                .as("种子语料应至少含一篇超分块阈值的长文档（chunking 行为需要有评测用例盯着）")
+                .isGreaterThanOrEqualTo(500);
+    }
+
+    @Test
+    @DisplayName("多块长文档被金标准集引用（切完检索不到时评测会红，而不是静默劣化）")
+    void multiChunkDocsAreReferencedByGoldenSet() {
+        Set<String> goldenDocIds = new GoldenSetLoader()
+                .load().cases().stream()
+                        .flatMap(c -> c.goldDocIds().stream())
+                        .collect(java.util.stream.Collectors.toSet());
+
+        assertThat(goldenDocIds.stream().anyMatch(id -> longestLiteralAfter(id) >= 500))
+                .as("金标准集应引用至少一篇多块长文档，否则分块质量没有评测路径")
+                .isTrue();
+    }
+
+    /** docId 所在行内最长字符串字面量长度 —— 正文是该行最长的字面量（标题 / 来源都是短语）。 */
+    private static int longestLiteralAfter(String docId) {
+        String sql = seedSql();
+        int from = sql.indexOf("'" + docId + "'");
+        assertThat(from).as("种子语料里找不到文档 %s", docId).isGreaterThanOrEqualTo(0);
+        int lineEnd = sql.indexOf('\n', from);
+        String row = lineEnd < 0 ? sql.substring(from) : sql.substring(from, lineEnd);
+        Pattern literal = Pattern.compile("'((?:[^'\\\\]|\\\\.)*)'");
+        Matcher matcher = literal.matcher(row);
+        int longest = 0;
+        while (matcher.find()) {
+            longest = Math.max(longest, matcher.group(1).replace("\\n", "\n").length());
+        }
+        return longest;
     }
 
     private static Set<String> seedDocIds() {

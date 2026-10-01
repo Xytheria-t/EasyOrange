@@ -19,17 +19,17 @@ class GoldenSetLoaderTest {
     private final GoldenSetLoader loader = new GoldenSetLoader();
 
     @Test
-    @DisplayName("加载 golden-set.yaml -> 43 条用例（22 chat + 21 retrieval）")
+    @DisplayName("加载 golden-set.yaml -> 45 条用例（22 chat + 23 retrieval）")
     void load_allCases() {
         GoldenSet goldenSet = loader.load();
 
-        assertThat(goldenSet.cases()).hasSize(43);
+        assertThat(goldenSet.cases()).hasSize(45);
         assertThat(scoped(goldenSet, GoldenSetLoader.SCOPE_CHAT)).hasSize(22);
-        assertThat(scoped(goldenSet, GoldenSetLoader.SCOPE_RETRIEVAL)).hasSize(21);
+        assertThat(scoped(goldenSet, GoldenSetLoader.SCOPE_RETRIEVAL)).hasSize(23);
         assertThat(goldenSet.cases().stream().filter(c -> c.id().startsWith("chat-")))
                 .hasSize(22);
         assertThat(goldenSet.cases().stream().filter(c -> c.id().startsWith("retr-")))
-                .hasSize(21);
+                .hasSize(23);
     }
 
     @Test
@@ -48,7 +48,7 @@ class GoldenSetLoaderTest {
     }
 
     @Test
-    @DisplayName("检索用例引用的文档 ID 均落在种子语料范围内（kb-0001 ~ kb-0035）")
+    @DisplayName("检索用例引用的文档 ID 均落在种子语料范围内（kb-0001 ~ kb-0037）")
     void load_goldDocIdsMatchSeed() {
         GoldenSet goldenSet = loader.load();
 
@@ -56,7 +56,7 @@ class GoldenSetLoaderTest {
             for (String docId : c.goldDocIds()) {
                 assertThat(docId).as(c.id() + " 引用的 " + docId + " 必须在种子文档范围").matches("kb-\\d{4}");
                 int ordinal = Integer.parseInt(docId.substring("kb-".length()));
-                assertThat(ordinal).as(c.id() + " 引用的 " + docId + " 超出语料范围").isBetween(1, 35);
+                assertThat(ordinal).as(c.id() + " 引用的 " + docId + " 超出语料范围").isBetween(1, 37);
             }
         }
     }
