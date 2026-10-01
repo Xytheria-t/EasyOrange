@@ -63,6 +63,20 @@ class ChatToolsTest {
             assertThat(observation).contains("仅支持 condition / price_range / style / location");
             verify(repository, never()).record(anyString(), anyString(), anyString());
         }
+
+        @Test
+        @DisplayName("偏好值超长 -> 拒绝落库（value 会跨会话回注画像块，不吃无界文本）")
+        void rememberPreference_rejectsOverlongValue() {
+            UserPreferenceRepository repository = mock(UserPreferenceRepository.class);
+            ChatTools rejectingTools = new ChatTools(
+                    retrievalService, assetSourcingService, mock(AssetDetailPort.class), repository, "user-1");
+
+            String observation = rejectingTools.rememberPreference(
+                    "记偏好", "style", "复".repeat(ChatTools.PREFERENCE_VALUE_MAX_LENGTH + 1));
+
+            assertThat(observation).contains("过长");
+            verify(repository, never()).record(anyString(), anyString(), anyString());
+        }
     }
 
     private static KnowledgeHit doc(String docId, String title) {
