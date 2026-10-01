@@ -15,13 +15,13 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * 决策器 — 一轮里「调哪个工具、参数是什么」的发起方，工具 schema 随请求下发，模型以原生 tool calling 返回决策。
+ * 模型调用 / 路由选型 / 参数反序列化收在一处：它们在编排器里只服务于这一个决策动作，摊开会让「循环控制」
+ * 与「一次模型调用的技术细节」共用一张依赖清单。
  * <p>
- * 取舍：把这三件事（模型调用 / 路由选型 / 参数反序列化）收在一处，是因为它们在编排器里只服务于这一个决策动作；
- * 摊在编排器构造器上会让「循环控制」与「一次模型调用的技术细节」共用一张依赖清单。
- * <p>
- * 降级口径：调用故障 / 未返回工具调用 / 任一调用参数 JSON 不可解析，一律返回空列表由编排器走单步降级 ——
- * 循环内不重试，一次请求最多一次决策故障。同轮有一个调用解析不了就整轮作废：半执行一轮会让回填的
- * assistant tool_calls 与 role=tool 观察对不上，协议不合法。因此这里不做「跳过坏调用、继续执行其余」。
+ * 降级口径：调用故障 / 参数 JSON 不可解析 → 同模型重试一次，仍失败返回空列表交编排器单步降级（快模型输出
+ * 不稳定，一次抖动丢掉整个多步能力比多付一次决策调用更贵）；「未返回工具调用」是协议层确定性响应，不重试。
+ * 同轮有一个调用解析不了就整轮作废：半执行一轮会让回填的 assistant tool_calls 与 role=tool 观察对不上，
+ * 协议不合法，因此不做「跳过坏调用、继续执行其余」。
  */
 @Slf4j
 @Component
@@ -44,29 +44,40 @@ public class ToolCallDecider {
     List<ToolCallDecision> decide(
             @Nullable String sessionId, List<Message> decisionMessages, List<ToolCallback> toolCallbacks) {
         try {
-            List<AssistantMessage.ToolCall> toolCalls = aiModelSupport.callWithTools(
-                    modelRouter.choose("chat_tool"), AiCallScope.CHAT, decisionMessages, toolCallbacks);
-            if (toolCalls.isEmpty()) {
-                log.warn(
-                        "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",
-                        sessionId);
-                return List.of();
-            }
-            var decisions = new ArrayList<ToolCallDecision>(toolCalls.size());
-            for (AssistantMessage.ToolCall toolCall : toolCalls) {
-                decisions.add(ToolCallDecision.of(parseArgs(toolCall), toolCall));
-            }
-            if (decisions.size() > 1) {
-                log.info("action=tool_call_parallel, sessionId={}, count={}", sessionId, decisions.size());
-            }
-            return List.copyOf(decisions);
-        } catch (Exception e) {
+            return decideOnce(sessionId, decisionMessages, toolCallbacks);
+        } catch (Exception first) {
+            // 瞬时抖动（超时 / 坏 JSON）的自愈窗口：重试一次，仍失败才交编排器单步降级
+            log.warn("action=tool_call_decision_retry, sessionId={}, reason={}", sessionId, FailureReason.of(first));
+        }
+        try {
+            return decideOnce(sessionId, decisionMessages, toolCallbacks);
+        } catch (Exception second) {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason={}",
                     sessionId,
-                    FailureReason.of(e));
+                    FailureReason.of(second));
             return List.of();
         }
+    }
+
+    private List<ToolCallDecision> decideOnce(
+            @Nullable String sessionId, List<Message> decisionMessages, List<ToolCallback> toolCallbacks) {
+        List<AssistantMessage.ToolCall> toolCalls = aiModelSupport.callWithTools(
+                modelRouter.choose("chat_tool"), AiCallScope.CHAT, decisionMessages, toolCallbacks);
+        if (toolCalls.isEmpty()) {
+            log.warn(
+                    "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",
+                    sessionId);
+            return List.of();
+        }
+        var decisions = new ArrayList<ToolCallDecision>(toolCalls.size());
+        for (AssistantMessage.ToolCall toolCall : toolCalls) {
+            decisions.add(ToolCallDecision.of(parseArgs(toolCall), toolCall));
+        }
+        if (decisions.size() > 1) {
+            log.info("action=tool_call_parallel, sessionId={}, count={}", sessionId, decisions.size());
+        }
+        return List.copyOf(decisions);
     }
 
     private ToolCallArguments parseArgs(AssistantMessage.ToolCall toolCall) {
