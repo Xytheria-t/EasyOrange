@@ -48,15 +48,28 @@ class TokenBudgetAspectTest {
     }
 
     @Test
-    @DisplayName("切面只做前置检查不记账（真实用量由 AiModelSupport 从 ChatResponse 记账）")
+    @DisplayName("预留完成即释放 — 切面不落真实用量（真实记账由 AiModelSupport 从 ChatResponse 另行累加）")
     void aroundBudget_doesNotRecordUsage() throws Throwable {
         var annotation = mockBudget("pricing", 100, 1000);
         when(pjp.proceed()).thenReturn("AI response");
 
         aspect.aroundBudget(pjp, annotation);
 
-        // 记账职责已移出切面：切面拿不到真实 token 数，若在这里按上限累加会与真实用量重复计数
-        assertThat(store.getTodayUsage("pricing")).isEmpty();
+        // 切面只做原子预留 + 释放：若按 maxTokensPerCall 记账会与真实用量重复计数；
+        // 预留会在今日条目上留一个零值快照，判据是总量归零而非条目不存在
+        assertThat(store.getTodayUsage("pricing").map(u -> u.total()).orElse(0)).isZero();
+    }
+
+    @Test
+    @DisplayName("目标方法抛异常也释放预留 — finally 兜底，在途占用不滞留")
+    void aroundBudget_proceedThrows_releasesReservation() throws Throwable {
+        var annotation = mockBudget("pricing", 100, 1000);
+        when(pjp.proceed()).thenThrow(new RuntimeException("model blew up"));
+
+        assertThatThrownBy(() -> aspect.aroundBudget(pjp, annotation)).isInstanceOf(RuntimeException.class);
+
+        assertThat(store.getTodayUsage("pricing").orElseThrow().reservedTokens())
+                .isZero();
     }
 
     @Test
