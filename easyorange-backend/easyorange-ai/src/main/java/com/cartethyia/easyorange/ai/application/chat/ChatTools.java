@@ -248,7 +248,7 @@ public class ChatTools {
             preferenceRepository.record(userId, key, value);
         } catch (Exception e) {
             // DB 故障是真实故障（区别于「查无此资产」那类有效结果），按抛异常 = 该步失败上报
-            throw new IllegalStateException("偏好记录失败: " + failureReason(e), e);
+            throw new IllegalStateException("偏好记录失败: " + FailureReason.of(e), e);
         }
         return "已记录偏好：%s = %s".formatted(key, value);
     }
@@ -277,7 +277,7 @@ public class ChatTools {
         try {
             return query.get();
         } catch (Exception e) {
-            throw new IllegalStateException("资产详情查询失败: " + failureReason(e), e);
+            throw new IllegalStateException("资产详情查询失败: " + FailureReason.of(e), e);
         }
     }
 
@@ -354,10 +354,6 @@ public class ChatTools {
     private static String truncate(String value) {
         String text = orDefault(value, "无");
         return text.length() > DETAIL_DESC_MAX_CHARS ? text.substring(0, DETAIL_DESC_MAX_CHARS) + "…" : text;
-    }
-
-    private static String failureReason(Throwable e) {
-        return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
     }
 
     /** 观察文本原样返回 — 默认转换器会把 String 返回值 JSON 序列化（观察多一层引号），本工具面的观察是进下一轮 prompt 的纯文本。finish 无执行体、不需要该转换器。 */

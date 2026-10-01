@@ -442,7 +442,7 @@ CREATE TABLE `eo_audit_log` (
 -- 读取方为成本报表 GET /api/admin/ai/cost-report）
 CREATE TABLE `eo_ai_call_log` (
     `id` VARCHAR(36) NOT NULL COMMENT '主键 UUID v7',
-    `scope` VARCHAR(32) NOT NULL COMMENT 'AI 调用场景 (PRICING/REVIEW/COPY/AUTO_LISTING/SEMANTIC/QA/SEARCH_ENHANCE)',
+    `scope` VARCHAR(32) NOT NULL COMMENT 'AI 调用场景 (AUTO_LISTING/SEMANTIC/CHAT/KNOWLEDGE)',
     `model` VARCHAR(64) NOT NULL COMMENT '模型标识',
     `prompt_hash` CHAR(32) NOT NULL COMMENT 'system+user prompt 摘要 MD5（去重与回归用）',
     `response_text` TEXT NULL COMMENT '模型输出文本',
@@ -459,7 +459,7 @@ CREATE TABLE `eo_ai_call_log` (
 -- AI 输出用户反馈（反馈飞轮：赞/踩入库，导出后自动扩充金标准评测集）
 CREATE TABLE `eo_ai_feedback` (
     `id` VARCHAR(36) NOT NULL COMMENT '主键 UUID v7',
-    `scope` VARCHAR(32) NOT NULL COMMENT 'AI 调用场景 (QA/CHAT/SEMANTIC/...)',
+    `scope` VARCHAR(32) NOT NULL COMMENT '反馈来源场景（前端传入，当前为 chat）',
     `query_text` TEXT NULL COMMENT '用户问题',
     `response_text` TEXT NULL COMMENT 'AI 回答',
     `helpful` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否有帮助 1/0',

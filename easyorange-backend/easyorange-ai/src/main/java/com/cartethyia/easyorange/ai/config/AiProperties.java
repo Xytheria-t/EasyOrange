@@ -145,8 +145,7 @@ public record AiProperties(
      *     之上的第二道裁剪；&lt;=0 关闭。超限只裁历史、不影响生成（生成侧由 maxTokensPerCall 兜底）
      * @param sessionLockWaitSeconds 同会话串行锁的获取等待上限（秒）：同会话 load→loop→save 非原子，
      *     并发请求会互相串写历史；上限需覆盖最坏 7 轮富轨迹的端到端耗时（实测 62s），超时按
-     *     「会话处理中」业务提示返回。<b>application.yaml 目前没有这个键</b>，只有这里的默认值生效 ——
-     *     运维要调它得先在 yaml 里补 {@code easyorange.ai.chat.session-lock-wait-seconds}
+     *     「会话处理中」业务提示返回
      */
     public record Chat(
             @DefaultValue("24") int sessionTtlHours,
