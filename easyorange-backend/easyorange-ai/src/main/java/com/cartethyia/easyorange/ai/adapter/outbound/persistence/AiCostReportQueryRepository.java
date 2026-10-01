@@ -10,9 +10,11 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * AI 成本报表读仓储 — 在 {@code eo_ai_call_log} 上按场景聚合（token 用量降序，同量按调用次数）。
+ * AI 成本报表读仓储 — 在 {@code eo_ai_call_log} 上按「场景 × 模型」聚合（token 用量降序，同量按调用次数）。
  * <p>
  * 用量口径（只认供应商真实回报、不估算）写在端口上；这里只负责把那条口径翻译成聚合 SQL。
+ * model 维度在这里展开而不是调用方再 GROUP 一次：决策/生成分离的效果（同一个场景里贵慢模型与
+ * 便宜快模型的占比）要靠它对照。
  */
 @Repository
 @RequiredArgsConstructor
@@ -20,6 +22,7 @@ public class AiCostReportQueryRepository implements AiCostReportPort {
 
     private static final String REPORT_SQL = """
             SELECT scope,
+                   model,
                    COUNT(*)                                                        AS calls,
                    COALESCE(SUM(token_input), 0)                                   AS token_input,
                    COALESCE(SUM(token_output), 0)                                  AS token_output,
@@ -27,7 +30,7 @@ public class AiCostReportQueryRepository implements AiCostReportPort {
                    COALESCE(SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END), 0)       AS failures
             FROM eo_ai_call_log
             WHERE created_at >= DATE_SUB(NOW(), INTERVAL ? HOUR)
-            GROUP BY scope
+            GROUP BY scope, model
             ORDER BY (COALESCE(SUM(token_input), 0) + COALESCE(SUM(token_output), 0)) DESC, calls DESC
             """;
 
@@ -43,10 +46,12 @@ public class AiCostReportQueryRepository implements AiCostReportPort {
     static RowMapper<AiCostReportRow> rowMapper() {
         return (rs, rowNum) -> new AiCostReportRow(
                 rs.getString("scope"),
+                rs.getString("model"),
                 rs.getLong("calls"),
                 rs.getLong("token_input"),
                 rs.getLong("token_output"),
                 rs.getLong("avg_latency_ms"),
-                rs.getLong("failures"));
+                rs.getLong("failures"),
+                null);
     }
 }

@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.ai.application.dto.AiCostReportRow;
 import java.util.List;
 
 /**
- * AI 成本报表读端口 — 按场景聚合 {@code eo_ai_call_log} 的调用次数、token 用量、平均耗时与失败次数。
+ * AI 成本报表读端口 — 按「场景 × 模型」聚合 {@code eo_ai_call_log} 的调用次数、token 用量、平均耗时与失败次数。
  * <p>
  * 读模型是应用层概念（不是领域契约），所以端口落在 application 而不是 domain。
  * <p>
@@ -15,7 +15,7 @@ import java.util.List;
 public interface AiCostReportPort {
 
     /**
-     * 按场景聚合出一行一场景的成本报表。
+     * 按「场景 × 模型」聚合出一行一组合的成本报表。
      *
      * @param hours 时间窗（小时），已由调用方夹到合法区间
      */
