@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.application.eval;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,7 +77,7 @@ class GoldenSetEvaluatorTest {
                 .thenReturn(new GoldenSet(List.of(
                         new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of(), List.of()),
                         new GoldenSetCase("chat-002", "chat", "问题B", "参考B", List.of(), List.of()))));
-        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT)))
+        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT), isNull()))
                 .thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
         when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(4, "ok")));
         when(aiJudge.judgeAgainstReference("参考B", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(3, "ok")));
@@ -95,7 +96,7 @@ class GoldenSetEvaluatorTest {
         when(loader.load())
                 .thenReturn(new GoldenSet(
                         List.of(new GoldenSetCase("chat-001", "chat", "问题A", null, List.of(), List.of()))));
-        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT)))
+        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT), isNull()))
                 .thenThrow(new RuntimeException("model down"));
 
         GenerationReport report = evaluator.evaluateGeneration();
@@ -134,7 +135,7 @@ class GoldenSetEvaluatorTest {
                 .thenReturn(new GoldenSet(List.of(
                         new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of("kb-0001"), List.of()),
                         new GoldenSetCase("retr-001", "retrieval", "退款", null, List.of("kb-0002"), List.of()))));
-        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT)))
+        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT), isNull()))
                 .thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
         when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(5, "ok")));
         when(retrievalService.search("退款", 5)).thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "内容", 1.0)));
