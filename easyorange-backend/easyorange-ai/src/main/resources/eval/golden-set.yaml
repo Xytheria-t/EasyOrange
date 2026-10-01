@@ -232,3 +232,37 @@ cases:
     scope: retrieval
     question: 买贵的二手商品怎么保证资金安全
     gold_doc_ids: [kb-0037]
+  # ---- 难用例（真实语义层）：提问刻意绕开 gold 文档的用词，逼检索走语义腿而非词面腿 ----
+  # 上面的 retr-001~026 提问基本复用 gold 文档标题/正文的原词（"交易流程"/"运费谁出"/"怎么退款"），
+  # 属于「用户照着文档标题问」的理想形态，BM25 单路就够 —— 混合检索的增益在它们上面量不出来。
+  # 本组全部是「零词面重叠」形态：查询用日常说法绕开 gold 文档的正式术语，IK ik_smart 切词后
+  # 与 gold 无任何多字公共 token（单字虚词不算）→ BM25 单路必挂，kNN 腿是唯一出路，融合腿能否捞回
+  # 即「混合检索价值」在真实 embedding 语义空间的可复现证据（合成向量层证不了这个）。
+  - id: retr-027
+    scope: retrieval
+    question: 寄出去的钱一般谁掏
+    gold_doc_ids: [kb-0003]
+  - id: retr-028
+    scope: retrieval
+    question: 垫的那笔钱什么时候能拿回来
+    gold_doc_ids: [kb-0019]
+  - id: retr-029
+    scope: retrieval
+    question: 收货之后留下的那些字能不能撤掉重来
+    gold_doc_ids: [kb-0014]
+  - id: retr-030
+    scope: retrieval
+    question: 家里孩子还是个小不点能不能自己买东西
+    gold_doc_ids: [kb-0021]
+  - id: retr-031
+    scope: retrieval
+    question: 价格上万的稀有物件怎么出手才不容易出问题
+    gold_doc_ids: [kb-0037]
+  - id: retr-032
+    scope: retrieval
+    question: 付过钱的东西不对该找哪方说理
+    gold_doc_ids: [kb-0002]
+  - id: retr-033
+    scope: retrieval
+    question: 凭什么不让我卖那些东西
+    gold_doc_ids: [kb-0005]

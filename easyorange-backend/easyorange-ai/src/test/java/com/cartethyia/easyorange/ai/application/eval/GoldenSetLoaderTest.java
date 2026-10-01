@@ -19,17 +19,17 @@ class GoldenSetLoaderTest {
     private final GoldenSetLoader loader = new GoldenSetLoader();
 
     @Test
-    @DisplayName("加载 golden-set.yaml -> 45 条用例（22 chat + 23 retrieval）")
+    @DisplayName("加载 golden-set.yaml -> 52 条用例（22 chat + 30 retrieval）")
     void load_allCases() {
         GoldenSet goldenSet = loader.load();
 
-        assertThat(goldenSet.cases()).hasSize(45);
+        assertThat(goldenSet.cases()).hasSize(52);
         assertThat(scoped(goldenSet, GoldenSetLoader.SCOPE_CHAT)).hasSize(22);
-        assertThat(scoped(goldenSet, GoldenSetLoader.SCOPE_RETRIEVAL)).hasSize(23);
+        assertThat(scoped(goldenSet, GoldenSetLoader.SCOPE_RETRIEVAL)).hasSize(30);
         assertThat(goldenSet.cases().stream().filter(c -> c.id().startsWith("chat-")))
                 .hasSize(22);
         assertThat(goldenSet.cases().stream().filter(c -> c.id().startsWith("retr-")))
-                .hasSize(23);
+                .hasSize(30);
     }
 
     @Test
