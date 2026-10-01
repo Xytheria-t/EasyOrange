@@ -51,9 +51,9 @@ public class AdminKnowledgeController {
         return Result.success();
     }
 
-    /** 补索引：把上次摄入失败/ES 不可用的 PENDING 文档全部重试一遍。 */
+    /** 补索引：把上次摄入未完成（PENDING/FAILED）的文档全部重试一遍。 */
     @PostMapping("/reindex")
     public Result<Integer> reindex() {
-        return Result.success(ingestionService.reindexAllPending());
+        return Result.success(ingestionService.reindexIncomplete());
     }
 }

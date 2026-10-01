@@ -11,7 +11,8 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 /**
- * 知识库启动补索引 — 上次摄入时 ES 不可用/失败的 PENDING 文档，启动时重试（保持文档 ID 稳定）。
+ * 知识库启动补索引 — 上次摄入时 ES 不可用（PENDING）或写入/embed 失败（FAILED）的文档，启动时重试
+ * （保持文档 ID 稳定）。
  * <p>
  * best-effort 语义：种子文档（R__seed_knowledge_docs.sql）首次启动即被摄入进 ES，
  * 不需要人工点管理端「重新索引」；索引持续不可用则保持 PENDING 下次再试。
@@ -31,9 +32,9 @@ public class KnowledgeBootstrapIndexer implements ApplicationRunner {
             log.info("Knowledge index unavailable, skip bootstrap indexing");
             return;
         }
-        int retried = ingestionService.reindexAllPending();
+        int retried = ingestionService.reindexIncomplete();
         if (retried > 0) {
-            log.info("Knowledge bootstrap indexer: retried {} PENDING docs", retried);
+            log.info("Knowledge bootstrap indexer: retried {} incomplete (PENDING/FAILED) docs", retried);
         }
     }
 }
