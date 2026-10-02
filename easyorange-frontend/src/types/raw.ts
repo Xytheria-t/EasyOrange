@@ -40,11 +40,18 @@ export interface RawProduct {
  */
 export interface RawChatMessage {
     id: string;
+    conversationId?: string;
     senderId: string;
+    senderAvatar?: string | null;
     receiverId: string;
     content: string;
-    type?: string;
-    status?: string;
+    title?: string | null;
+    /** 后端 MessageType.getCode()，数字型 */
+    type?: number | null;
+    /** 后端 MessageStatus.getCode()：SENT / RECALLED */
+    status?: string | null;
+    /** ReadStatus.getCode()：0 未读 / 1 已读。与 status 正交 —— status 只管发送与撤回 */
+    isRead?: number;
     createTime: string;
     readTime?: string | null;
     recalledAt?: string | null;

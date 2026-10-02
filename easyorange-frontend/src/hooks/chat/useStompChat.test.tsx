@@ -346,7 +346,6 @@ describe('useStompChat', () => {
         const message = useChatStore.getState().messages['conv-1']?.[0];
         expect(message?.status).toBe('RECALLED');
         expect(message?.content).toBe('[消息已撤回]');
-        expect(message?.type).toBe('RECALLED');
         expect(message?.recalledAt).toBe('2026-07-28T10:01:00Z');
     });
 

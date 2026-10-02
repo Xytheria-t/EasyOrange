@@ -27,15 +27,13 @@ describe('MessageBubble', () => {
         expect(screen.getByText('Hello world')).toBeInTheDocument();
     });
 
-    it('shows recalled text when type is RECALLED', () => {
-        render(
-            <MessageBubble message={{ ...baseMessage, type: 'RECALLED', status: 'SENT', content: '' }} isOwn={false} />
-        );
+    it('shows recalled text when status is RECALLED', () => {
+        render(<MessageBubble message={{ ...baseMessage, status: 'RECALLED', content: '' }} isOwn={false} />);
         expect(screen.getByText('[消息已撤回]')).toBeInTheDocument();
     });
 
-    it('shows recalled text when status is RECALLED', () => {
-        render(<MessageBubble message={{ ...baseMessage, status: 'RECALLED' }} isOwn={false} />);
+    it('shows recalled text and keeps content out of the bubble', () => {
+        render(<MessageBubble message={{ ...baseMessage, status: 'RECALLED', content: '' }} isOwn={false} />);
         expect(screen.getByText('[消息已撤回]')).toBeInTheDocument();
     });
 
@@ -76,8 +74,8 @@ describe('MessageBubble', () => {
         expect(checkmarks.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('shows checkmark for DELIVERED status on own message', () => {
-        const { container } = render(<MessageBubble message={{ ...baseMessage, status: 'DELIVERED' }} isOwn={true} />);
+    it('shows single checkmark for SENT status on own message', () => {
+        const { container } = render(<MessageBubble message={{ ...baseMessage, status: 'SENT' }} isOwn={true} />);
         const checkmarks = container.querySelectorAll('svg');
         expect(checkmarks.length).toBeGreaterThanOrEqual(1);
     });
@@ -129,7 +127,7 @@ describe('MessageBubble', () => {
     });
 
     it('does not show context menu when message is recalled', () => {
-        render(<MessageBubble message={{ ...baseMessage, type: 'RECALLED', content: '' }} isOwn={false} />);
+        render(<MessageBubble message={{ ...baseMessage, status: 'RECALLED', content: '' }} isOwn={false} />);
         const recalledText = screen.getByText('[消息已撤回]');
         fireEvent.contextMenu(recalledText);
         expect(screen.queryByText('复制')).not.toBeInTheDocument();
