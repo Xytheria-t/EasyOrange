@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.common.domain.Version;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper;
@@ -22,7 +23,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
-import com.cartethyia.easyorange.order.domain.valueobject.Version;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import java.math.BigDecimal;
 import java.util.List;

@@ -23,10 +23,6 @@ public class OrderDomainException extends BaseBusinessException {
         super(resultCode, message);
     }
 
-    protected OrderDomainException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
     protected OrderDomainException(IResultCode resultCode, String message, Throwable cause) {
         super(resultCode, message, cause);
     }
@@ -46,10 +42,6 @@ public class OrderDomainException extends BaseBusinessException {
 
     public static OrderDomainException of(IResultCode resultCode, String message) {
         return new OrderDomainException(resultCode, message);
-    }
-
-    public static OrderDomainException of(String message, Throwable cause) {
-        return new OrderDomainException(message, cause);
     }
 
     /** 订单不存在（B3001）— 消息带订单 ID，命令侧与查询侧共用这一处定义。 */

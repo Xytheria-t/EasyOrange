@@ -14,10 +14,6 @@ public class PaymentDomainException extends BaseBusinessException {
         super(resultCode);
     }
 
-    protected PaymentDomainException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
     protected PaymentDomainException(IResultCode resultCode, String message) {
         super(resultCode, message);
     }
@@ -31,16 +27,8 @@ public class PaymentDomainException extends BaseBusinessException {
         return PaymentResultCode.PAYMENT_FAILED.getCode();
     }
 
-    public static PaymentDomainException of(String message) {
-        return new PaymentDomainException(message);
-    }
-
     public static PaymentDomainException of(IResultCode resultCode) {
         return new PaymentDomainException(resultCode);
-    }
-
-    public static PaymentDomainException of(String message, Throwable cause) {
-        return new PaymentDomainException(message, cause);
     }
 
     public static PaymentDomainException of(IResultCode resultCode, String message) {
