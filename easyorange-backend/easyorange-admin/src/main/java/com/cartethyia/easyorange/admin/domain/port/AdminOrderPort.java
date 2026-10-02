@@ -123,7 +123,8 @@ public interface AdminOrderPort {
             String refundReason,
             LocalDateTime refundTime) {}
 
-    record OrderItemDetail(String productId, Integer quantity, BigDecimal price) {}
+    /** 行项自带 id 与小计 —— 详情页要按行渲染，不能只给 productId 让前端自己拼。 */
+    record OrderItemDetail(String itemId, String productId, Integer quantity, BigDecimal price, BigDecimal subtotal) {}
 
     /**
      * 订单状态统计。营收口径：eo_payment 中状态 SUCCESS 的支付金额合计。
