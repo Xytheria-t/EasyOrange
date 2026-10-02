@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.util.AntPathMatcher;
@@ -26,6 +27,7 @@ import org.springframework.web.util.ContentCachingResponseWrapper;
  * {@code addFilterBefore} 决定；容器链再自动注册一次只会让顺序变成两套事实。
  */
 @Slf4j
+@RequiredArgsConstructor
 @NullMarked
 public class IdempotencyKeyFilter extends OncePerRequestFilter {
 
@@ -33,11 +35,6 @@ public class IdempotencyKeyFilter extends OncePerRequestFilter {
 
     private final IdempotencyService idempotencyService;
     private final IdempotencyProperties properties;
-
-    public IdempotencyKeyFilter(IdempotencyService idempotencyService, IdempotencyProperties properties) {
-        this.idempotencyService = idempotencyService;
-        this.properties = properties;
-    }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {

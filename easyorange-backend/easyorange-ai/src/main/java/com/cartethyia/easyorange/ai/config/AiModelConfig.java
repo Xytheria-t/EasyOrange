@@ -47,17 +47,7 @@ public class AiModelConfig {
         if (hasNoText(text.apiKey())) {
             return new UnconfiguredChatModel("easyorange.ai.text.api-key 为空，请配置 AI_TEXT_API_KEY");
         }
-        return OpenAiChatModel.builder()
-                .openAiClient(syncClient(text.baseUrl(), text.apiKey(), text.model(), text.timeout(), obs, meters))
-                .options(OpenAiChatOptions.builder()
-                        .baseUrl(text.baseUrl())
-                        .apiKey(text.apiKey())
-                        .model(text.model())
-                        // 流式默认不带用量分片，打开后末帧回报 token 用量 —— 流式对话的预算记账依赖它
-                        .streamUsage(true)
-                        .build())
-                .observationRegistry(obs)
-                .build();
+        return chatModel(text.baseUrl(), text.apiKey(), text.model(), text.timeout(), true, obs, meters);
     }
 
     /**
@@ -77,15 +67,7 @@ public class AiModelConfig {
         String model = hasNoText(text.routerModel())
                 ? text.model()
                 : text.routerModel().trim();
-        return OpenAiChatModel.builder()
-                .openAiClient(syncClient(text.baseUrl(), text.apiKey(), model, text.timeout(), obs, meters))
-                .options(OpenAiChatOptions.builder()
-                        .baseUrl(text.baseUrl())
-                        .apiKey(text.apiKey())
-                        .model(model)
-                        .build())
-                .observationRegistry(obs)
-                .build();
+        return chatModel(text.baseUrl(), text.apiKey(), model, text.timeout(), false, obs, meters);
     }
 
     /** 视觉模型，拍照上架图片识别专用；options 带 baseUrl / apiKey 的理由同 {@link #chatModel}。 */
@@ -95,22 +77,13 @@ public class AiModelConfig {
         if (hasNoText(vision.apiKey())) {
             return new UnconfiguredChatModel("easyorange.ai.vision.api-key 为空，请配置 AI_VISION_API_KEY");
         }
-        return OpenAiChatModel.builder()
-                .openAiClient(
-                        syncClient(vision.baseUrl(), vision.apiKey(), vision.model(), vision.timeout(), obs, meters))
-                .options(OpenAiChatOptions.builder()
-                        .baseUrl(vision.baseUrl())
-                        .apiKey(vision.apiKey())
-                        .model(vision.model())
-                        .build())
-                .observationRegistry(obs)
-                .build();
+        return chatModel(vision.baseUrl(), vision.apiKey(), vision.model(), vision.timeout(), false, obs, meters);
     }
 
     /**
      * 评审模型（LLM-as-Judge）— 金标准集回归的打分员，由 {@code judge} 场景路由到这里。
      * 与生成模型分家族的理由：同一模型给自己风格的输出打分系统性偏高，Judge 分数要对外可引用
-     * 就必须换评审员；默认落百炼 qwen（与视觉槽同账号同 key），换评审员只改 yaml。
+     * 就必须换评审员；默认落百炼qwen（与视觉槽同账号同 key），换评审员只改 yaml。
      */
     @Bean
     public ChatModel judgeChatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
@@ -118,15 +91,7 @@ public class AiModelConfig {
         if (hasNoText(judge.apiKey())) {
             return new UnconfiguredChatModel("easyorange.ai.judge.api-key 为空，请配置 AI_JUDGE_API_KEY 或 AI_VISION_API_KEY");
         }
-        return OpenAiChatModel.builder()
-                .openAiClient(syncClient(judge.baseUrl(), judge.apiKey(), judge.model(), judge.timeout(), obs, meters))
-                .options(OpenAiChatOptions.builder()
-                        .baseUrl(judge.baseUrl())
-                        .apiKey(judge.apiKey())
-                        .model(judge.model())
-                        .build())
-                .observationRegistry(obs)
-                .build();
+        return chatModel(judge.baseUrl(), judge.apiKey(), judge.model(), judge.timeout(), false, obs, meters);
     }
 
     /** Embedding 模型 — DashScope text-embedding-v3（OpenAI 兼容端点），维度对齐约束见 {@link AiProperties#embedding()}。 */
@@ -149,6 +114,33 @@ public class AiModelConfig {
 
     private static boolean hasNoText(String value) {
         return value == null || value.isBlank();
+    }
+
+    /**
+     * 文本类模型的统一装配 —— 四个槽位只在「凭据 / 模型名 / 是否开流式用量」上不同。
+     * options 必须同时带 baseUrl / apiKey：Builder 需要同步与异步两个客户端，异步的由 options 里的
+     * 连接参数自行装配，缺凭据会抛 IllegalStateException 导致 key 非空时上下文启动失败
+     * （key 为空走占位 bean 分支，恰好掩盖该问题）。
+     */
+    private static ChatModel chatModel(
+            String baseUrl,
+            String apiKey,
+            String model,
+            int timeoutMillis,
+            boolean streamUsage,
+            ObservationRegistry obs,
+            MeterRegistry meters) {
+        var options =
+                OpenAiChatOptions.builder().baseUrl(baseUrl).apiKey(apiKey).model(model);
+        if (streamUsage) {
+            // 流式默认不带用量分片，打开后末帧回报 token 用量 —— 流式对话的预算记账依赖它
+            options.streamUsage(true);
+        }
+        return OpenAiChatModel.builder()
+                .openAiClient(syncClient(baseUrl, apiKey, model, timeoutMillis, obs, meters))
+                .options(options.build())
+                .observationRegistry(obs)
+                .build();
     }
 
     /** OpenAI 兼容供应商的统一同步客户端装配 — 非本项目使用的 Azure/stubbing/自定义头等能力传空值（均走 apiKey + base-url 直连）。 */

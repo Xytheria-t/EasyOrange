@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Instant;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -31,6 +32,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * 注册一次只会让顺序变成两套事实。
  */
 @Slf4j
+@RequiredArgsConstructor
 @NullMarked
 public class TokenRevocationFilter extends OncePerRequestFilter {
 
@@ -39,13 +41,6 @@ public class TokenRevocationFilter extends OncePerRequestFilter {
     private final StringRedisTemplate redis;
     private final ErrorResponseWriter errorResponseWriter;
     private final MeterRegistry meterRegistry;
-
-    public TokenRevocationFilter(
-            StringRedisTemplate redis, ErrorResponseWriter errorResponseWriter, MeterRegistry meterRegistry) {
-        this.redis = redis;
-        this.errorResponseWriter = errorResponseWriter;
-        this.meterRegistry = meterRegistry;
-    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)

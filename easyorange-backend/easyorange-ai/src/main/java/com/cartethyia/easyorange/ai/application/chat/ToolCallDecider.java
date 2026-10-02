@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -24,18 +25,13 @@ import tools.jackson.databind.ObjectMapper;
  * 协议不合法，因此不做「跳过坏调用、继续执行其余」。
  */
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public class ToolCallDecider {
 
     private final AiModelSupport aiModelSupport;
     private final AiModelRouter modelRouter;
     private final ObjectMapper objectMapper;
-
-    ToolCallDecider(AiModelSupport aiModelSupport, AiModelRouter modelRouter, ObjectMapper objectMapper) {
-        this.aiModelSupport = aiModelSupport;
-        this.modelRouter = modelRouter;
-        this.objectMapper = objectMapper;
-    }
 
     /**
      * 取一轮的工具调用决策；空列表即「本轮决策失败」，调用方负责降级。

@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Component;
  * localhost 地址对它都不可达（DashScope 直接报 {@code InvalidParameter}）。统一在服务端
  * 把图取回内联——本地文件读盘、公网 URL 下载——供应商不再需要回源访问本服务。
  */
+@RequiredArgsConstructor
 @Component
 public class VisionImageLoader {
 
@@ -34,11 +36,6 @@ public class VisionImageLoader {
 
     private final FileStoragePort fileStorage;
     private final FileUploadProperties fileUploadProperties;
-
-    public VisionImageLoader(FileStoragePort fileStorage, FileUploadProperties fileUploadProperties) {
-        this.fileStorage = fileStorage;
-        this.fileUploadProperties = fileUploadProperties;
-    }
 
     /** 逐张转 data URL；任一失败即抛出，由调用方降级为「识别失败」（部分缺图的识别结果不可信）。 */
     public List<String> toDataUrls(List<String> imageUrls) {

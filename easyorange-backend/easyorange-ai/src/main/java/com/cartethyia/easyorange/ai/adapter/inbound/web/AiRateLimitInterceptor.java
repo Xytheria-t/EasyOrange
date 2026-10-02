@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * 拦截器不再承担缓存职责（历史设计因请求体字节依赖不可靠而移除）。
  */
 @Slf4j
+@RequiredArgsConstructor
 @Component
 @NullMarked
 public class AiRateLimitInterceptor implements HandlerInterceptor {
@@ -29,15 +31,6 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
     private final DistributedRateLimiter distributedRateLimiter;
     private final AiProperties aiProperties;
     private final ErrorResponseWriter errorResponseWriter;
-
-    public AiRateLimitInterceptor(
-            DistributedRateLimiter distributedRateLimiter,
-            AiProperties aiProperties,
-            ErrorResponseWriter errorResponseWriter) {
-        this.distributedRateLimiter = distributedRateLimiter;
-        this.aiProperties = aiProperties;
-        this.errorResponseWriter = errorResponseWriter;
-    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)

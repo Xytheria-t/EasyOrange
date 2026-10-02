@@ -33,50 +33,38 @@ public class ElasticsearchIndexManager {
         createKnowledgeIndex();
     }
 
+    /** 重建路径的入口（{@code ReindexService} 删索引后要按 mapping 复原，否则 ES 动态 auto-create 出错 mapping）。 */
     void createProductIndex() {
-        IndexOperations indexOps = elasticsearchOperations.indexOps(ProductDocument.class);
+        createIndex(ProductDocument.class, "elasticsearch/product-mapping.json", "products", "ES index");
+    }
 
-        if (indexOps.exists()) {
-            log.info("ES index 'products' already exists, skipping creation");
-            return;
-        }
-
-        try {
-            String settingsJson = readJson("elasticsearch/product-settings.json");
-            String mappingJson = readJson("elasticsearch/product-mapping.json");
-
-            indexOps.create(Settings.parse(settingsJson));
-            indexOps.putMapping(Document.parse(mappingJson));
-
-            log.info("Created ES index 'products' with IK analyzer mapping");
-        } catch (Exception e) {
-            log.error("Failed to create ES index 'products'", e);
-            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "ES index creation failed", e);
-        }
+    /** RAG 知识库分块索引（dense_vector 1024 与 text-embedding-v3 对齐，复用 IK 分词 settings）。 */
+    void createKnowledgeIndex() {
+        createIndex(
+                KnowledgeChunkDocument.class,
+                "elasticsearch/knowledge-mapping.json",
+                "knowledge_docs",
+                "ES knowledge index");
     }
 
     /**
-     * RAG 知识库分块索引（dense_vector 1024 与 text-embedding-v3 对齐，复用 IK 分词 settings）。
+     * 建索引的唯一路径：两个索引只在「文档类 / mapping 文件 / 索引名」上不同。
+     * 已存在则跳过 —— 启动与重建都靠这一行保证幂等。
      */
-    void createKnowledgeIndex() {
-        IndexOperations indexOps = elasticsearchOperations.indexOps(KnowledgeChunkDocument.class);
-
+    private void createIndex(Class<?> documentClass, String mappingFile, String indexName, String errorPrefix) {
+        IndexOperations indexOps = elasticsearchOperations.indexOps(documentClass);
         if (indexOps.exists()) {
-            log.info("ES index 'knowledge_docs' already exists, skipping creation");
+            log.info("ES index '{}' already exists, skipping creation", indexName);
             return;
         }
-
         try {
-            String settingsJson = readJson("elasticsearch/product-settings.json");
-            String mappingJson = readJson("elasticsearch/knowledge-mapping.json");
-
-            indexOps.create(Settings.parse(settingsJson));
-            indexOps.putMapping(Document.parse(mappingJson));
-
-            log.info("Created ES index 'knowledge_docs' with IK analyzer mapping");
+            // 两个索引共用同一份 IK 分词 settings，mapping 各自一份
+            indexOps.create(Settings.parse(readJson("elasticsearch/product-settings.json")));
+            indexOps.putMapping(Document.parse(readJson(mappingFile)));
+            log.info("Created ES index '{}' with IK analyzer mapping", indexName);
         } catch (Exception e) {
-            log.error("Failed to create ES index 'knowledge_docs'", e);
-            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "ES knowledge index creation failed", e);
+            log.error("Failed to create ES index '{}'", indexName, e);
+            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, errorPrefix + " creation failed", e);
         }
     }
 

@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Component;
  * 按原始问题补一次检索；工具执行失败≠决策失败，收敛成失败观察交回模型自修复。trace/step/指标是副产物，失败不碰主链路。
  */
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public class ToolCallLoop {
 
@@ -67,25 +69,6 @@ public class ToolCallLoop {
     private final AiProperties aiProperties;
     private final IdGenerator idGenerator;
     private final ToolCallLoopMetrics metrics;
-
-    public ToolCallLoop(
-            PromptRegistryPort promptRegistry,
-            ChatToolsFactory toolsFactory,
-            ToolCallDecider decider,
-            ToolCallStepTracePort tracePort,
-            ChatBudgetGuard budgetGuard,
-            AiProperties aiProperties,
-            IdGenerator idGenerator,
-            ToolCallLoopMetrics metrics) {
-        this.promptRegistry = promptRegistry;
-        this.toolsFactory = toolsFactory;
-        this.decider = decider;
-        this.tracePort = tracePort;
-        this.budgetGuard = budgetGuard;
-        this.aiProperties = aiProperties;
-        this.idGenerator = idGenerator;
-        this.metrics = metrics;
-    }
 
     /**
      * 一次循环的输入 — 记忆（历史 / 画像）由调用方装配，循环只管「决策 → 工具 → 观察」。
