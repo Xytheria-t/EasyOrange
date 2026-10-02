@@ -254,6 +254,7 @@ public class AdminOrderAdapter implements AdminOrderPort {
         List<OrderItemDetail> items = model.items().stream()
                 .map(item -> new OrderItemDetail(item.productId(), item.quantity(), item.unitPrice()))
                 .toList();
+        var payment = findPayment(model.id());
         return new OrderDetail(
                 model.id(),
                 model.orderNo(),
@@ -264,13 +265,29 @@ public class AdminOrderAdapter implements AdminOrderPort {
                 model.status(),
                 model.statusDesc(),
                 model.paymentStatus(),
+                payment != null ? payment.getPaymentNo() : null,
+                payment != null ? payment.getAmount() : null,
+                payment != null ? payment.getRefundedAmount() : null,
+                model.address(),
+                model.phone(),
                 model.remark(),
                 model.cancelReason(),
                 model.createTime(),
                 model.updateTime(),
+                // 与 sumSuccessfulPayments 的营收口径同源：支付单最后一次状态变更即支付完成时点
+                payment != null ? payment.getUpdateTime() : null,
                 model.cancelTime(),
                 model.refundReason(),
                 model.refundTime());
+    }
+
+    /** 一单可能有多条支付尝试（失败重试），取最新一条 —— 运营看到的是最后一次尝试的结果。 */
+    private PaymentDO findPayment(String orderId) {
+        return paymentMapper.selectOne(new QueryWrapper<PaymentDO>()
+                .eq("order_id", orderId)
+                .eq("del_flag", 0)
+                .orderByDesc("update_time")
+                .last("LIMIT 1"));
     }
 
     private OrderSummary toOrderSummary(OrderDO order) {

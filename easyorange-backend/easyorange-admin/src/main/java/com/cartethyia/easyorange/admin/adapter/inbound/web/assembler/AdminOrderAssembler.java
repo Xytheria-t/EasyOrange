@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.assembler;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse.Address;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse.BuyerInfo;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse.SellerInfo;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
@@ -50,14 +51,28 @@ public class AdminOrderAssembler {
                 .status(order.status())
                 .statusDesc(order.statusDesc())
                 .paymentStatus(order.paymentStatus())
+                .paymentNo(order.paymentNo())
+                .paidAmount(order.paidAmount())
+                .refundedAmount(order.refundedAmount())
+                .shippingAddress(toAddress(view.buyer(), order))
                 .remark(order.remark())
                 .cancelReason(order.cancelReason())
                 .createTime(order.createTime())
+                .payTime(order.payTime())
                 .updateTime(order.updateTime())
                 .cancelTime(order.cancelTime())
                 .refundReason(order.refundReason())
                 .refundTime(order.refundTime())
                 .build();
+    }
+
+    /** 收件人名取买家昵称：eo_order 只存 address / phone 两列，没有收件人姓名单列。 */
+    private static Address toAddress(UserInfo buyer, OrderDetail order) {
+        if (order.address() == null && order.phone() == null) {
+            return null;
+        }
+        String receiverName = buyer != null ? buyer.nickName() : null;
+        return new Address(receiverName, order.phone(), order.address());
     }
 
     public OrderStatsResponse toStatsResponse(OrderStats stats) {

@@ -115,10 +115,16 @@ class AdminOrderControllerTest {
                 "PENDING_PAYMENT",
                 "待付款",
                 "UNPAID",
+                "PAY20260516001",
+                BigDecimal.valueOf(199),
+                null,
+                "北京市朝阳区xxx",
+                "13800138000",
                 null,
                 null,
                 LocalDateTime.of(2026, 5, 16, 10, 0),
                 null,
+                LocalDateTime.of(2026, 5, 16, 10, 5),
                 null,
                 null,
                 null);
@@ -136,7 +142,13 @@ class AdminOrderControllerTest {
                 .andExpect(jsonPath("$.data.orderNo").value("ORD001"))
                 .andExpect(jsonPath("$.data.buyer.userId").value("10"))
                 .andExpect(jsonPath("$.data.seller.nickname").value("seller1"))
-                .andExpect(jsonPath("$.data.products[0].name").value("Product1"));
+                .andExpect(jsonPath("$.data.products[0].name").value("Product1"))
+                // 支付与收货信息曾长期恒为 null：前端四块 UI 永远走空分支，这里锁住实际下发
+                .andExpect(jsonPath("$.data.paymentNo").value("PAY20260516001"))
+                .andExpect(jsonPath("$.data.paidAmount").value(199))
+                .andExpect(jsonPath("$.data.payTime").value("2026-05-16T10:05:00"))
+                .andExpect(jsonPath("$.data.shippingAddress.phone").value("13800138000"))
+                .andExpect(jsonPath("$.data.shippingAddress.detailAddress").value("北京市朝阳区xxx"));
     }
 
     @Test
