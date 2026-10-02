@@ -64,7 +64,16 @@ public class AdminProductAdapter implements AdminProductPort {
             wrapper.like(ProductDO::getName, condition.keyword());
         }
         if (condition.categoryId() != null) {
-            wrapper.eq(ProductDO::getCategoryId, condition.categoryId());
+            // 分类子树匹配（与 C 端口径一致）：商品挂在叶子分类上，一级分类应含其下全部后代。
+            // 此处此前用 eq 精确匹配，而审核页下拉给的是一级分类 id → 每个选项都 0 条。
+            // 子树为空 = 传了不存在的分类 id：直接返回空页，不能拼出空 IN 列表（MySQL 报错 → 500）
+            var categoryIds = categoryMapper.selectSubtreeIds(condition.categoryId());
+            if (categoryIds.isEmpty()) {
+                int emptyPageNum = condition.pageNum() != null ? condition.pageNum() : 1;
+                int emptyPageSize = condition.pageSize() != null ? condition.pageSize() : 20;
+                return new ProductQueryResult(List.of(), 0L, emptyPageNum, emptyPageSize);
+            }
+            wrapper.in(ProductDO::getCategoryId, categoryIds);
         }
         if (condition.status() != null) {
             wrapper.eq(ProductDO::getStatus, condition.status());

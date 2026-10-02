@@ -1,15 +1,23 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.MybatisMapperBuilderAssistant;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
@@ -31,6 +39,7 @@ import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -174,6 +183,61 @@ class AdminProductAdapterTest {
             assertThatThrownBy(() -> adapter.applyProductStatus(PRODUCT_ID, "ONLINE"))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("商品不存在");
+        }
+    }
+
+    @Nested
+    @DisplayName("queryProducts 的分类筛选")
+    class QueryProductsCategory {
+
+        private static final String ROOT_CATEGORY_ID = "018bcfe5-6800";
+
+        @BeforeAll
+        static void initTableInfo() {
+            // 纯 Mockito 环境无 MyBatis-Plus 启动，LambdaQueryWrapper 需要手动初始化实体元数据缓存
+            var assistant = new MybatisMapperBuilderAssistant(new MybatisConfiguration(), "");
+            TableInfoHelper.initTableInfo(assistant, ProductDO.class);
+        }
+
+        @Test
+        @DisplayName("按分类筛选时展开子树而非精确匹配一级分类")
+        void expandsSubtree() {
+            when(categoryMapper.selectSubtreeIds(ROOT_CATEGORY_ID))
+                    .thenReturn(List.of(ROOT_CATEGORY_ID, "018bcfe5-7f70", "018bcfe5-8358"));
+            when(productMapper.selectPage(any(), any())).thenReturn(new Page<>());
+
+            adapter.queryProducts(condition(ROOT_CATEGORY_ID));
+
+            // 走子树才能命中挂在二级分类上的商品；精确匹配一级分类会让审核页每个筛选项都是 0 条
+            verify(categoryMapper).selectSubtreeIds(ROOT_CATEGORY_ID);
+            verify(productMapper).selectPage(any(), any());
+        }
+
+        @Test
+        @DisplayName("分类不存在时返回空页而不是拼出空 IN 列表")
+        void unknownCategory_returnsEmptyPage() {
+            when(categoryMapper.selectSubtreeIds("missing")).thenReturn(List.of());
+
+            var result = adapter.queryProducts(condition("missing"));
+
+            // 空 IN 列表会被 MySQL 拒绝，整条请求变 500
+            assertThat(result.records()).isEmpty();
+            assertThat(result.total()).isZero();
+            verify(productMapper, never()).selectPage(any(), any());
+        }
+
+        @Test
+        @DisplayName("不按分类筛选时不查子树")
+        void noCategory_skipsSubtreeLookup() {
+            when(productMapper.selectPage(any(), any())).thenReturn(new Page<>());
+
+            adapter.queryProducts(condition(null));
+
+            verify(categoryMapper, never()).selectSubtreeIds(any());
+        }
+
+        private AdminProductPort.ProductQueryCondition condition(String categoryId) {
+            return new AdminProductPort.ProductQueryCondition(null, categoryId, null, null, null, null, 1, 20);
         }
     }
 }
