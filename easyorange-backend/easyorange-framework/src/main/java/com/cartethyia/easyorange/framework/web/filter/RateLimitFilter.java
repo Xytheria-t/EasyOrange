@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -45,6 +46,7 @@ import org.springframework.web.servlet.HandlerMapping;
  * {@code addFilterBefore} 决定，容器链再自动注册一次只会让顺序变成两套事实。
  */
 @Slf4j
+@RequiredArgsConstructor
 @NullMarked
 public class RateLimitFilter extends OncePerRequestFilter {
 
@@ -57,21 +59,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final DistributedRateLimiter distributedRateLimiter;
     private final ErrorResponseWriter errorResponseWriter;
     private final ObjectProvider<List<HandlerMapping>> handlerMappingsProvider;
-
-    public RateLimitFilter(
-            RateLimitFilterProperties properties,
-            RedisTemplate<Object, Object> redisTemplate,
-            LocalRateLimiter localRateLimiter,
-            DistributedRateLimiter distributedRateLimiter,
-            ErrorResponseWriter errorResponseWriter,
-            ObjectProvider<List<HandlerMapping>> handlerMappingsProvider) {
-        this.properties = properties;
-        this.redisTemplate = redisTemplate;
-        this.localRateLimiter = localRateLimiter;
-        this.distributedRateLimiter = distributedRateLimiter;
-        this.errorResponseWriter = errorResponseWriter;
-        this.handlerMappingsProvider = handlerMappingsProvider;
-    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
