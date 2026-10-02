@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.assembler;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
 import com.cartethyia.easyorange.admin.domain.model.ProductDetailView;
 import com.cartethyia.easyorange.admin.domain.model.ProductListView;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.PartyProfile;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductSummary;
@@ -18,17 +19,18 @@ public class AdminProductAssembler {
 
     public PageResult<AdminProductResponse> toPageResponses(ProductListView view) {
         List<AdminProductResponse> records = view.page().records().stream()
-                .map(summary -> toSummaryResponse(summary, view.images().getOrDefault(summary.id(), List.of())))
+                .map(summary -> toSummaryResponse(
+                        summary, view.images().getOrDefault(summary.id(), List.of()), view.profileOf(summary.id())))
                 .toList();
         ProductQueryResult page = view.page();
         return PageResult.of(records, page.total(), page.pageNum(), page.pageSize());
     }
 
     public AdminProductResponse toDetailResponse(ProductDetailView view) {
-        return toDetailResponse(view.product(), view.images());
+        return toDetailResponse(view.product(), view.images(), view.party());
     }
 
-    private AdminProductResponse toDetailResponse(ProductDetail detail, List<String> images) {
+    private AdminProductResponse toDetailResponse(ProductDetail detail, List<String> images, PartyProfile party) {
         return AdminProductResponse.builder()
                 .productId(detail.id())
                 .name(detail.name())
@@ -44,14 +46,17 @@ public class AdminProductAssembler {
                 .images(images)
                 .mainImage(resolveMainImage(images))
                 .categoryId(detail.categoryId())
+                .categoryName(party.categoryName())
                 .sellerId(detail.sellerId())
+                .sellerName(party.sellerName())
+                .sellerAvatar(party.sellerAvatar())
                 .viewCount(detail.viewCount())
                 .createTime(detail.createTime())
                 .updateTime(detail.updateTime())
                 .build();
     }
 
-    private AdminProductResponse toSummaryResponse(ProductSummary summary, List<String> images) {
+    private AdminProductResponse toSummaryResponse(ProductSummary summary, List<String> images, PartyProfile party) {
         return AdminProductResponse.builder()
                 .productId(summary.id())
                 .name(summary.name())
@@ -66,7 +71,10 @@ public class AdminProductAssembler {
                 .images(images)
                 .mainImage(resolveMainImage(images))
                 .categoryId(summary.categoryId())
+                .categoryName(party.categoryName())
                 .sellerId(summary.sellerId())
+                .sellerName(party.sellerName())
+                .sellerAvatar(party.sellerAvatar())
                 .viewCount(summary.viewCount())
                 .createTime(summary.createTime())
                 .updateTime(summary.updateTime())

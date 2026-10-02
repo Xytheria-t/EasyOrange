@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminProduc
 import com.cartethyia.easyorange.admin.application.service.AdminProductAppService;
 import com.cartethyia.easyorange.admin.domain.model.ProductDetailView;
 import com.cartethyia.easyorange.admin.domain.model.ProductListView;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.PartyProfile;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductPort.ProductQueryResult;
@@ -71,6 +72,7 @@ class AdminProductControllerTest {
                                 2,
                                 1,
                                 20),
+                        Map.of(),
                         Map.of()));
 
         mockMvc.perform(get("/api/admin/products"))
@@ -86,7 +88,9 @@ class AdminProductControllerTest {
     void listProducts_withStatusFilter_shouldPassFilterToService() throws Exception {
         when(adminProductService.listProducts(any(ProductQueryCondition.class)))
                 .thenReturn(new ProductListView(
-                        new ProductQueryResult(List.of(summary("1", "Online", "ONLINE")), 1, 1, 20), Map.of()));
+                        new ProductQueryResult(List.of(summary("1", "Online", "ONLINE")), 1, 1, 20),
+                        Map.of(),
+                        Map.of()));
 
         mockMvc.perform(get("/api/admin/products?status=" + "ONLINE"))
                 .andExpect(status().isOk())
@@ -98,7 +102,8 @@ class AdminProductControllerTest {
         when(adminProductService.listProducts(any(ProductQueryCondition.class)))
                 .thenReturn(new ProductListView(
                         new ProductQueryResult(List.of(summary("1", "Product1", "ONLINE")), 1, 1, 20),
-                        Map.of("1", List.of("first.jpg", "second.jpg"))));
+                        Map.of("1", List.of("first.jpg", "second.jpg")),
+                        Map.of()));
 
         mockMvc.perform(get("/api/admin/products"))
                 .andExpect(status().isOk())
@@ -126,13 +131,17 @@ class AdminProductControllerTest {
                                 null,
                                 null,
                                 null),
-                        List.of()));
+                        List.of(),
+                        new PartyProfile("卖家昵称", "avatar.png", "电子数码")));
         mockMvc.perform(get("/api/admin/products/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("A0000"))
                 .andExpect(jsonPath("$.data.productId").value("1"))
                 .andExpect(jsonPath("$.data.name").value("DetailProduct"))
-                .andExpect(jsonPath("$.data.description").value("A detailed product"));
+                .andExpect(jsonPath("$.data.description").value("A detailed product"))
+                // 卖家与分类档案曾声明在 DTO 里却从不下发：审核列表「资产方」整列、详情「分类」「资产方」两格恒空
+                .andExpect(jsonPath("$.data.sellerName").value("卖家昵称"))
+                .andExpect(jsonPath("$.data.categoryName").value("电子数码"));
     }
 
     @Test

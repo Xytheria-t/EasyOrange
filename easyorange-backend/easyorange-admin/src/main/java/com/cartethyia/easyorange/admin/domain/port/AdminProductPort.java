@@ -24,6 +24,20 @@ public interface AdminProductPort {
     Map<String, List<String>> getProductImages(List<String> productIds);
 
     /**
+     * 批量取卖家与分类档案 — 审核列表要显示资产方、详情要显示分类名，两者都不在商品记录里。
+     * 与 {@link #getProductImages} 同一手法：按当页 id 摊成一次查询，避免逐条 N+1。
+     */
+    Map<String, PartyProfile> getPartyProfiles(List<String> productIds);
+
+    /** 卖家昵称 / 卖家头像 / 分类名；查不到的一方为 null（用户注销 / 分类被删），前端各留兜底 */
+    record PartyProfile(String sellerName, String sellerAvatar, String categoryName) {
+
+        public static PartyProfile empty() {
+            return new PartyProfile(null, null, null);
+        }
+    }
+
+    /**
      * 管理员直改商品状态（ONLINE/OFFLINE/SOLD），非法状态码/商品不存在/状态转换不允许时抛出 BusinessException
      */
     void applyProductStatus(String productId, String statusCode);
