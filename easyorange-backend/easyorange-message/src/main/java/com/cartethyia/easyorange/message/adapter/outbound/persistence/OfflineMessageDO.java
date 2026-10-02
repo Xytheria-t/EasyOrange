@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
@@ -15,6 +16,7 @@ import lombok.experimental.SuperBuilder;
  * {@code OfflineMessage} 类注释），故不映射——四列在库里可空或带默认值，不写不影响读写。
  * 收口收表时由迁移删除，本模块不改已执行的 V1。
  */
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,20 +28,4 @@ public class OfflineMessageDO extends BaseDO {
     private String messageId;
     private String pushChannel;
     private Integer pushStatus;
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public String getMessageId() {
-        return messageId;
-    }
-
-    public String getPushChannel() {
-        return pushChannel;
-    }
-
-    public Integer getPushStatus() {
-        return pushStatus;
-    }
 }

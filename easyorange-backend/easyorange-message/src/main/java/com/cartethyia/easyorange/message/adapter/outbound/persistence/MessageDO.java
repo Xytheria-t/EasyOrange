@@ -7,9 +7,12 @@ import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+/** {@code isRead} 声明为枚举而非 boolean，故Lombok 生成的是 {@code getIsRead()}，与仓储侧的 Lambda 引用一致。 */
+@Getter
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -28,48 +31,4 @@ public class MessageDO extends BaseDO {
     private String conversationId;
     private MessageStatus msgStatus;
     private LocalDateTime recalledAt;
-
-    public String getSenderId() {
-        return senderId;
-    }
-
-    public String getReceiverId() {
-        return receiverId;
-    }
-
-    public Integer getType() {
-        return type;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public ReadStatus getIsRead() {
-        return isRead;
-    }
-
-    public String getBusinessId() {
-        return businessId;
-    }
-
-    public String getConversationId() {
-        return conversationId;
-    }
-
-    public LocalDateTime getReadTime() {
-        return readTime;
-    }
-
-    public MessageStatus getMsgStatus() {
-        return msgStatus;
-    }
-
-    public LocalDateTime getRecalledAt() {
-        return recalledAt;
-    }
 }

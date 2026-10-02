@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.product;
 
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
+import com.cartethyia.easyorange.common.domain.Version;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.valueobject.AiSuggestion;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
@@ -13,7 +14,6 @@ import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
-import com.cartethyia.easyorange.product.domain.valueobject.Version;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;

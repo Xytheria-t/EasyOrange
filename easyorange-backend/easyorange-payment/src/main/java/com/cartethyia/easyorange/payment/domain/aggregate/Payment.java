@@ -279,27 +279,17 @@ public class Payment {
 
     // ── 内部辅助方法 ──
 
-    private Payment withStatus(PaymentStatus newStatus, int newVersion) {
-        return new Payment(
-                id,
-                paymentNo,
-                orderId,
-                userId,
-                amount,
-                refundedAmount,
-                paymentMethod,
-                newStatus,
-                transactionId,
-                refundReason,
-                refundTime,
-                attach,
-                createTime,
-                LocalDateTime.now(),
-                newVersion);
-    }
-
-    private Payment withRefundResult(
-            PaymentStatus newStatus, Money newRefundedAmount, String reason, LocalDateTime time, int newVersion) {
+    /**
+     * 状态流转的唯一出口：全部字段照搬，只换变化的那几项，并统一盖上 {@code updateTime}。
+     * 各流转方法各自手写 15 个构造参数时，新增字段必然漏改其中几处。
+     */
+    private Payment copyWith(
+            PaymentStatus newStatus,
+            Money newRefundedAmount,
+            String newTransactionId,
+            String newRefundReason,
+            LocalDateTime newRefundTime,
+            int newVersion) {
         return new Payment(
                 id,
                 paymentNo,
@@ -309,32 +299,26 @@ public class Payment {
                 newRefundedAmount,
                 paymentMethod,
                 newStatus,
-                transactionId,
-                reason,
-                time,
+                newTransactionId,
+                newRefundReason,
+                newRefundTime,
                 attach,
                 createTime,
                 LocalDateTime.now(),
                 newVersion);
     }
 
+    private Payment withStatus(PaymentStatus newStatus, int newVersion) {
+        return copyWith(newStatus, refundedAmount, transactionId, refundReason, refundTime, newVersion);
+    }
+
+    private Payment withRefundResult(
+            PaymentStatus newStatus, Money newRefundedAmount, String reason, LocalDateTime time, int newVersion) {
+        return copyWith(newStatus, newRefundedAmount, transactionId, reason, time, newVersion);
+    }
+
     private Payment withSuccess(String transactionId) {
-        return new Payment(
-                id,
-                paymentNo,
-                orderId,
-                userId,
-                amount,
-                refundedAmount,
-                paymentMethod,
-                PaymentStatus.SUCCESS,
-                transactionId,
-                refundReason,
-                refundTime,
-                attach,
-                createTime,
-                LocalDateTime.now(),
-                nextVersion());
+        return copyWith(PaymentStatus.SUCCESS, refundedAmount, transactionId, refundReason, refundTime, nextVersion());
     }
 
     private void validateRefundAmount(BigDecimal refundAmount) {

@@ -49,11 +49,7 @@ public class MessageQueryHandler {
 
     private PageResult<MessageVO> toMessageVOPage(PageResult<Message> messagePage) {
         Map<String, UserInfo> userMap = resolveUserInfo(messagePage.records());
-
-        List<MessageVO> voList =
-                messagePage.records().stream().map(m -> toMessageVO(m, userMap)).toList();
-
-        return PageResult.of(voList, messagePage.total(), messagePage.current(), messagePage.size());
+        return messagePage.map(m -> toMessageVO(m, userMap));
     }
 
     /** 一页消息涉及的收发方通常只有个位数，摊成一次 {@code IN} 查询，不做 N+1。 */
