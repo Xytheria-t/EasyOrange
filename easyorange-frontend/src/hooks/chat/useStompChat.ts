@@ -64,7 +64,6 @@ export function useStompChat(): UseStompChatReturn {
                     updateMessage(conversationId, data.messageId, {
                         status: 'RECALLED',
                         content: '[消息已撤回]',
-                        type: 'RECALLED',
                         recalledAt: data.recalledAt,
                     });
                 } catch {

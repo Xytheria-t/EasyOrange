@@ -102,13 +102,23 @@ function ChatWindowPage() {
     const isTyping = typingUsers.size > 0;
     const targetUserName = isSystemSession ? '系统通知' : (targetUserId ?? '用户');
 
+    // 对方头像从已拉到的消息里取：会话列表能显示、点进聊天页却退回灰色首字母圆点，
+    // 就是因为这里此前写死 null。取任一条对方发的消息即可，两侧档案对称。
+    const targetAvatar = useMemo(() => {
+        if (isSystemSession) {
+            return null;
+        }
+        const counterpart = messages.find(m => m.senderId !== currentUserId);
+        return counterpart?.senderAvatar ?? null;
+    }, [messages, isSystemSession, currentUserId]);
+
     return (
         <div className="chat-window-page">
             <div className={`connection-status status-${connectionStatus}`} />
 
             <ChatHeader
                 onBack={handleBack}
-                targetUser={targetUserId ? { id: targetUserId, name: targetUserName, avatar: null } : null}
+                targetUser={targetUserId ? { id: targetUserId, name: targetUserName, avatar: targetAvatar } : null}
             />
 
             <div className="chat-messages-area">

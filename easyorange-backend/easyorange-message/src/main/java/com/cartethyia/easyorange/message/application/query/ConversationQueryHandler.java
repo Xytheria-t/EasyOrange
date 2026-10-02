@@ -78,14 +78,20 @@ public class ConversationQueryHandler {
 
         return ConversationVO.builder()
                 .id(message.id())
+                .conversationId(message.conversationId())
                 .senderId(message.senderId())
                 .senderName(sender != null ? sender.username() : (message.senderId() == null ? "系统" : "未知用户"))
                 .senderAvatar(sender != null ? sender.avatar() : null)
                 .receiverId(message.receiverId())
                 .receiverName(receiver != null ? receiver.username() : "未知用户")
                 .receiverAvatar(receiver != null ? receiver.avatar() : null)
+                .type(message.type() != null ? Integer.valueOf(message.type().getCode()) : null)
+                .title(message.title())
                 .content(message.content())
                 .isRead(Integer.valueOf(message.isRead().getCode()))
+                .readTime(message.readTime())
+                .msgStatus(message.msgStatus() != null ? message.msgStatus().getCode() : null)
+                .recalledAt(message.recalledAt())
                 .createTime(message.createTime())
                 .build();
     }

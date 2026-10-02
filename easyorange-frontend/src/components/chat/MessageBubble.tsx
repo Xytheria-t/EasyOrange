@@ -18,7 +18,8 @@ function formatTime(timeString: string): string {
 }
 
 function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleProps) {
-    const isRecalled = message.type === 'RECALLED' || message.status === 'RECALLED';
+    // 撤回只由 status 表达：后端 MessageStatus 才有 RECALLED，type 没有这个取值
+    const isRecalled = message.status === 'RECALLED';
     const [menuVisible, setMenuVisible] = useState(false);
     const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
     const menuRef = useRef<HTMLDivElement>(null);
@@ -150,9 +151,7 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
                                     </svg>
                                 )}
 
-                                {(message.status === 'SENT' || message.status === 'DELIVERED') && (
-                                    <Check size={14} className="opacity-60" />
-                                )}
+                                {message.status === 'SENT' && <Check size={14} className="opacity-60" />}
 
                                 {message.status === 'READ' && <CheckCheck size={14} className="opacity-80" />}
                             </>

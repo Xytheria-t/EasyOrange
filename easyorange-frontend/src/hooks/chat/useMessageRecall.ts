@@ -28,7 +28,6 @@ export function useMessageRecall(conversationId: string) {
                 updateMessage(conversationId, messageId, {
                     status: 'RECALLED',
                     content: '[消息已撤回]',
-                    type: 'RECALLED',
                     recalledAt: new Date().toISOString(),
                 });
                 return true;

@@ -80,9 +80,39 @@ class ConversationQueryHandlerTest {
             List<ConversationVO> result = handler.getConversation(CURRENT_USER_ID, OTHER_USER_ID);
 
             assertThat(result).hasSize(2);
-            assertThat(result.get(0).getContent()).isEqualTo("你好");
-            assertThat(result.get(0).getSenderId()).isEqualTo(CURRENT_USER_ID);
-            assertThat(result.get(0).getReceiverId()).isEqualTo(OTHER_USER_ID);
+            assertThat(result.get(0).content()).isEqualTo("你好");
+            assertThat(result.get(0).senderId()).isEqualTo(CURRENT_USER_ID);
+            assertThat(result.get(0).receiverId()).isEqualTo(OTHER_USER_ID);
+        }
+
+        @Test
+        @DisplayName("撤回状态与时间必须下发：撤回不清 content，漏了下发前端刷新会重显原文")
+        void getConversation_includesRecallState() {
+            LocalDateTime recalledAt = LocalDateTime.now();
+            Message recalled = Message.fromRaw(
+                    "1",
+                    CURRENT_USER_ID,
+                    OTHER_USER_ID,
+                    MessageType.CHAT,
+                    "",
+                    "撤回前的原文",
+                    ReadStatus.UNREAD,
+                    null,
+                    null,
+                    "conv_1_2",
+                    MessageStatus.RECALLED,
+                    recalledAt,
+                    recalledAt.minusMinutes(1));
+
+            when(queryRepository.findConversation(CURRENT_USER_ID, OTHER_USER_ID))
+                    .thenReturn(List.of(recalled));
+            when(userInfoPort.getUserInfoMap(any())).thenReturn(Map.of());
+
+            ConversationVO vo =
+                    handler.getConversation(CURRENT_USER_ID, OTHER_USER_ID).getFirst();
+
+            assertThat(vo.msgStatus()).isEqualTo("RECALLED");
+            assertThat(vo.recalledAt()).isNotNull();
         }
 
         @Test
