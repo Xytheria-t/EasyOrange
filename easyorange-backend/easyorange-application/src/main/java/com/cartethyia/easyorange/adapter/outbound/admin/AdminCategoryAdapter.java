@@ -41,13 +41,11 @@ public class AdminCategoryAdapter implements AdminCategoryPort {
     }
 
     @Override
-    public List<CategoryView> listCategories(String parentId, boolean includeDisabled) {
+    public List<CategoryView> listCategories(String parentId) {
         String normalized = (parentId == null || parentId.isBlank()) ? null : parentId;
-        List<Category> rows =
-                categoryRepository.findChildren(normalized != null ? CategoryId.of(normalized) : null).stream()
-                        .filter(category ->
-                                includeDisabled || category.getStatus().isEnabled())
-                        .toList();
+        // 不过滤禁用：后台要能看见并恢复被禁用的分类。端口曾留 includeDisabled 形参，
+        // 但唯一调用点恒传 true —— C 端走 categoryTree 那条已过滤的路径
+        List<Category> rows = categoryRepository.findChildren(normalized != null ? CategoryId.of(normalized) : null);
         return enrich(rows);
     }
 

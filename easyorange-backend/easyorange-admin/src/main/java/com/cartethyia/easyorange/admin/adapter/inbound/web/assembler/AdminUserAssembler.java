@@ -2,36 +2,43 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.assembler;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminUserQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminUserResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ResetPasswordResponse;
+import com.cartethyia.easyorange.admin.domain.model.DayRange;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserDetail;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminUserPort.UserQueryResult;
 import com.cartethyia.easyorange.common.result.PageResult;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 /**
  * 管理端用户视图组装 — 查询串解析 + 出参命名都在这一层，服务层只见端口记录。
- * <p>
- * <b>取舍</b>：日期解析失败按「不过滤」处理并记 warn，而不是 400 ——
- * 管理端多传一个手滑的日期就把整页数据查不出来，比漏掉该过滤条件更难排查。
+ *
+ * <p>时间过滤走 {@link DayRange}：当天边界的口径由它定一次，订单 / 商品 / 用户三个列表共用，
+ * 同一句查询在三个接口里含义必须一致。
  */
 @Slf4j
 @Component
 public class AdminUserAssembler {
 
     public UserQueryCondition toCondition(AdminUserQueryRequest request) {
+        DayRange range = DayRange.of(request.startTime(), request.endTime());
         return new UserQueryCondition(
                 request.keyword(),
                 request.userType(),
                 request.status(),
-                parseStart(request.startTime()),
-                parseEnd(request.endTime()),
+                range.start(),
+                range.end(),
                 request.pageNum(),
                 request.pageSize());
+    }
+
+    /** 新密码只在这次响应里出现一次，DB 存哈希、无法再取回，故必须给运营一个可转达的提示。 */
+    public ResetPasswordResponse toResetPasswordResponse(String newPassword) {
+        return ResetPasswordResponse.builder()
+                .newPassword(newPassword)
+                .message("密码已重置，请将新密码安全地传递给用户")
+                .build();
     }
 
     public PageResult<AdminUserResponse> toPageResponse(UserQueryResult result) {
@@ -60,30 +67,5 @@ public class AdminUserAssembler {
                 .createTime(user.createTime())
                 .updateTime(user.updateTime())
                 .build();
-    }
-
-    private LocalDateTime parseStart(String startTime) {
-        if (!StringUtils.hasText(startTime)) {
-            return null;
-        }
-        try {
-            return LocalDate.parse(startTime).atStartOfDay();
-        } catch (DateTimeParseException e) {
-            log.warn("action=user_query_start_time_unparsable, value={}, expected=yyyy-MM-dd", startTime);
-            return null;
-        }
-    }
-
-    private LocalDateTime parseEnd(String endTime) {
-        if (!StringUtils.hasText(endTime)) {
-            return null;
-        }
-        try {
-            // 结束日期含当天：给时间戳而不是当天零点，否则「查 5 月」会漏掉 5 月 31 日
-            return LocalDate.parse(endTime).atTime(23, 59, 59);
-        } catch (DateTimeParseException e) {
-            log.warn("action=user_query_end_time_unparsable, value={}, expected=yyyy-MM-dd", endTime);
-            return null;
-        }
     }
 }

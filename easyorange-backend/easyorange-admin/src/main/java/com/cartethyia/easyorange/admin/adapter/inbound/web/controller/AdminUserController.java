@@ -59,10 +59,7 @@ public class AdminUserController {
             @PathVariable String id,
             @Valid @RequestBody ResetPasswordRequest request) {
         String newPassword = adminUserSecurityService.resetPassword(id, request.reason(), operator.userId());
-        return Result.success(ResetPasswordResponse.builder()
-                .newPassword(newPassword)
-                .message("密码已重置，请将新密码安全地传递给用户")
-                .build());
+        return Result.success(assembler.toResetPasswordResponse(newPassword));
     }
 
     @PutMapping("/{id}/force-logout")

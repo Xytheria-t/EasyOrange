@@ -53,9 +53,4 @@ public class AdminDomainException extends BaseBusinessException {
     public static AdminDomainException categoryNotFound(String categoryId) {
         return new AdminDomainException(AdminResultCode.CATEGORY_NOT_FOUND, "分类不存在: id=" + categoryId);
     }
-
-    /** 审核记录不存在 — 带 id 便于定位。 */
-    public static AdminDomainException auditLogNotFound(String logId) {
-        return new AdminDomainException(AdminResultCode.AUDIT_LOG_NOT_FOUND, "审核记录不存在: id=" + logId);
-    }
 }
