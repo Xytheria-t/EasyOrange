@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildQueryString, escapeHtml, formatDate, formatPrice, formatRelativeTime } from './format';
+import { buildQueryString, formatDate, formatPrice, formatRelativeTime } from './format';
 
 describe('formatPrice', () => {
     it('formats integer to two decimal places', () => {
@@ -65,23 +65,6 @@ describe('formatRelativeTime', () => {
     it('returns days ago', () => {
         const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
         expect(formatRelativeTime(twoDaysAgo)).toBe('2天前');
-    });
-});
-
-describe('escapeHtml', () => {
-    it('escapes HTML special characters', () => {
-        expect(escapeHtml('<script>alert("xss")</script>')).toBe(
-            '&lt;script&gt;alert(&quot;xss&quot;)&lt;&#x2F;script&gt;'
-        );
-    });
-
-    it('returns empty string for null/undefined', () => {
-        expect(escapeHtml(null)).toBe('');
-        expect(escapeHtml(undefined)).toBe('');
-    });
-
-    it('passes through plain text unchanged', () => {
-        expect(escapeHtml('hello world')).toBe('hello world');
     });
 });
 

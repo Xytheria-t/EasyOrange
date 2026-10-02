@@ -9,13 +9,7 @@ export { cn } from '@/lib/utils';
 export { errorHandler } from './errorHandler';
 
 // 格式化工具
-export {
-    buildQueryString,
-    escapeHtml,
-    formatDate,
-    formatPrice,
-    formatRelativeTime,
-} from './format';
+export { buildQueryString, formatDate, formatPrice, formatRelativeTime } from './format';
 
 // 函数工具
 export { debounce, throttle } from './functionUtils';

@@ -74,10 +74,6 @@ export const productApi = {
         });
     },
 
-    getProductsByCategory(categoryId: string | number) {
-        return request<PageResult<RawProduct>>(`/products/category/${categoryId}`, { skipAuth: true });
-    },
-
     searchProducts(params: ProductSearchParams = {}) {
         return request<ProductSearchResult>('/products/search', {
             method: 'GET',

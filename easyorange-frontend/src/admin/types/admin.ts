@@ -295,18 +295,6 @@ export interface AuditLogResponse {
     createTime: string;
 }
 
-export interface UserRoleRequest {
-    role: string;
-}
-
-export interface ResetPasswordRequest {
-    newPassword: string;
-}
-
-export interface UserUnlockRequest {
-    reason?: string;
-}
-
 // ==================== Rating Types ====================
 
 // ==================== Dashboard Chart Types ====================
