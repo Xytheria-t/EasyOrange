@@ -1,15 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { messageApi } from '@/api/messageApi';
 import { useChatStore } from '@/store/chatStore';
 import type { ChatMessage } from '@/types/message';
 import { normalizeChatMessages } from '@/utils/message';
+import { CHAT_PAGE_SIZE, chatMessagesQueryKey, fetchChatMessages } from './chatMessagesQuery';
 
-const PAGE_SIZE = 50;
 const EMPTY_MESSAGES: ChatMessage[] = [];
 
 export function useChatMessages(targetUserId: string | null, conversationId: string) {
     const [hasMore, setHasMore] = useState(true);
+    const loadingOlderRef = useRef(false);
     const queryClient = useQueryClient();
 
     const storeMessages = useChatStore(s =>
@@ -22,15 +23,8 @@ export function useChatMessages(targetUserId: string | null, conversationId: str
         error,
         refetch,
     } = useQuery({
-        queryKey: ['chat', 'messages', targetUserId],
-        queryFn: async () => {
-            if (!targetUserId) {
-                return EMPTY_MESSAGES;
-            }
-            const response = await messageApi.getConversation(targetUserId);
-            const data = normalizeChatMessages(response.data ?? []);
-            return data.slice(-PAGE_SIZE);
-        },
+        queryKey: chatMessagesQueryKey(targetUserId ?? ''),
+        queryFn: () => fetchChatMessages(targetUserId),
         enabled: !!targetUserId,
         staleTime: Infinity,
         refetchOnWindowFocus: false,
@@ -50,9 +44,12 @@ export function useChatMessages(targetUserId: string | null, conversationId: str
     const oldestMessageId = messages[0]?.id;
 
     const loadOlder = useCallback(async () => {
-        if (!targetUserId || !hasMore || !oldestMessageId) {
+        // ref 互斥而非 state：await 期间 hasMore 仍是旧值，顶部连续滚动会并发进入，
+        // 两次都算出同一个 oldestMessageId，把同一批历史 concat 两遍（消息重复）
+        if (!targetUserId || !hasMore || !oldestMessageId || loadingOlderRef.current) {
             return;
         }
+        loadingOlderRef.current = true;
 
         try {
             const response = await messageApi.getConversation(targetUserId);
@@ -64,17 +61,19 @@ export function useChatMessages(targetUserId: string | null, conversationId: str
                 return;
             }
 
-            const olderBatch = allMessages.slice(Math.max(0, oldestIndex - PAGE_SIZE), oldestIndex);
-            if (oldestIndex <= PAGE_SIZE) {
+            const olderBatch = allMessages.slice(Math.max(0, oldestIndex - CHAT_PAGE_SIZE), oldestIndex);
+            if (oldestIndex <= CHAT_PAGE_SIZE) {
                 setHasMore(false);
             }
 
-            queryClient.setQueryData<ChatMessage[]>(['chat', 'messages', targetUserId], old => {
+            queryClient.setQueryData<ChatMessage[]>(chatMessagesQueryKey(targetUserId), old => {
                 return olderBatch.concat(old ?? []);
             });
         } catch (e) {
             // 向上抛：翻历史失败要让用户看到提示，不能静默吞掉
             throw e instanceof Error ? e : new Error('加载历史消息失败');
+        } finally {
+            loadingOlderRef.current = false;
         }
     }, [targetUserId, oldestMessageId, hasMore, queryClient]);
 

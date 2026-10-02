@@ -1,18 +1,23 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { messageApi } from '@/api/messageApi';
 import { ChatHeader, ChatInputBar, MessageList } from '@/components/chat';
 import { ErrorState } from '@/components/feedback/StateDisplay';
 import { useChatMessages, useMessageRecall, useStompChat } from '@/hooks/chat';
+import { chatMessagesQueryKey } from '@/hooks/chat/chatMessagesQuery';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/chatStore';
 import { useUIStore } from '@/store/uiStore';
+import type { ChatMessage } from '@/types/message';
 import { WS_MESSAGE_TYPE_CHAT } from '@/types/message';
+import { errorHandler } from '@/utils/errorHandler';
 import './chat-window.css';
 
 function ChatWindowPage() {
     const { targetUserId } = useParams<{ targetUserId: string }>();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     // 系统通知伪会话（后端 ConversationQueryHandler.SYSTEM_CONVERSATION）：只读——
     // 发出的 WS 帧既不落库也无回执，静默失败比禁用输入更糟
@@ -56,6 +61,19 @@ function ChatWindowPage() {
         }
     }, [loadOlder, addToast]);
 
+    // 撤回失败要出声：recallMessage 返回 false 时此前无人判返回值，
+    // 用户看到的是「点了撤回、菜单关了、什么都没发生」
+    const handleRecall = useCallback(
+        async (messageId: string) => {
+            const ok = await recallMessage(messageId);
+            if (!ok) {
+                addToast({ type: 'error', message: '撤回失败，可能已超过 2 分钟可撤回时限' });
+            }
+            return ok;
+        },
+        [recallMessage, addToast]
+    );
+
     useEffect(() => {
         if (!conversationId) {
             return;
@@ -71,10 +89,24 @@ function ChatWindowPage() {
 
         const unreadIds = messages.filter(m => m.senderId !== targetUserId && m.status !== 'READ').map(m => m.id);
 
-        if (unreadIds.length > 0) {
-            messageApi.markAsRead(unreadIds).catch(() => {});
+        if (unreadIds.length === 0) {
+            return;
         }
-    }, [messages, targetUserId]);
+
+        // 成功后本地回写 READ：此前只发请求不回写，缓存里 status 恒为 SENT，
+        // 每条新消息到达都会把整页未读 ID 重新 PUT 一遍
+        const marked = new Set(unreadIds);
+        messageApi
+            .markAsRead(unreadIds)
+            .then(() => {
+                queryClient.setQueryData<ChatMessage[]>(chatMessagesQueryKey(targetUserId), old =>
+                    (old ?? []).map(m => (marked.has(m.id) ? { ...m, status: 'READ' } : m))
+                );
+            })
+            .catch(e => {
+                addToast({ type: 'error', message: errorHandler.handle(e) });
+            });
+    }, [messages, targetUserId, queryClient, addToast]);
 
     const handleSend = useCallback(
         (content: string) => {
@@ -145,7 +177,7 @@ function ChatWindowPage() {
                         isTyping={isTyping}
                         onLoadMore={handleLoadOlder}
                         hasMore={hasMore}
-                        onRecall={recallMessage}
+                        onRecall={handleRecall}
                         canRecallFn={msg => canRecall(msg, currentUserId)}
                     />
                 )}

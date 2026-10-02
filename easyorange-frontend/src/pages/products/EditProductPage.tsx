@@ -23,6 +23,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { CONDITION_LABEL_MAP } from '@/constants';
 import { useCategories, useDeleteProduct, useProduct, useUpdateProduct } from '@/hooks';
 import { buildProductPayload, useProductForm } from '@/hooks/useProductForm';
+import { useUIStore } from '@/store/uiStore';
+import { errorHandler } from '@/utils/errorHandler';
 import './edit-product.css';
 
 function EditProductPage() {
@@ -37,6 +39,7 @@ function EditProductPage() {
     } = useProduct(id ?? '');
     const updateProduct = useUpdateProduct(id ?? '');
     const deleteProduct = useDeleteProduct();
+    const addToast = useUIStore(s => s.addToast);
     const { data: categories } = useCategories();
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -85,8 +88,10 @@ function EditProductPage() {
         try {
             await deleteProduct.mutateAsync(id ?? '');
             navigate('/products');
-        } catch {
-            // delete failed
+        } catch (e) {
+            // 页面只渲染 updateProduct.isError 的横幅，删除失败没有任何出口 ——
+            // 后端「当前无法删除，可能有进行中的订单」这类文案会被整个丢弃
+            addToast({ type: 'error', message: errorHandler.handle(e) });
         }
     };
 

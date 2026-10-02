@@ -123,7 +123,7 @@ export default function OrderManagePage() {
                             value={searchInput}
                             onChange={setSearchInput}
                             onSubmit={handleSearch}
-                            placeholder="搜索订单号 / 认领方"
+                            placeholder="搜索订单号"
                             loading={isLoading}
                         />
                         <AdminFilterField

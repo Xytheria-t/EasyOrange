@@ -231,7 +231,7 @@ describe('OrderManagePage', () => {
     it('searches by keyword', () => {
         renderWithProviders(<OrderManagePage />);
 
-        const searchInput = screen.getByPlaceholderText('搜索订单号 / 认领方');
+        const searchInput = screen.getByPlaceholderText('搜索订单号');
         fireEvent.change(searchInput, { target: { value: 'ORD20260516001' } });
 
         // Click search button
@@ -243,7 +243,7 @@ describe('OrderManagePage', () => {
     it('triggers search on Enter key press', () => {
         renderWithProviders(<OrderManagePage />);
 
-        const searchInput = screen.getByPlaceholderText('搜索订单号 / 认领方');
+        const searchInput = screen.getByPlaceholderText('搜索订单号');
         fireEvent.change(searchInput, { target: { value: '测试' } });
         fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
 

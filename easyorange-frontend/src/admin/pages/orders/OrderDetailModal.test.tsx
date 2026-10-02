@@ -9,6 +9,9 @@ const mockUseAdminOrderDetail = vi.fn();
 
 vi.mock('../../hooks', () => ({
     useAdminOrderDetail: (...args: unknown[]) => mockUseAdminOrderDetail(...args),
+    useAdminCancelOrder: () => ({ mutateAsync: vi.fn(), isPending: false }),
+    useForceCompleteOrder: () => ({ mutateAsync: vi.fn(), isPending: false }),
+    useAdminRefundOrder: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 // ─── Sample data ───

@@ -36,6 +36,8 @@ import { useCategories, useCreateProduct } from '@/hooks';
 import { useAutoListing } from '@/hooks/useAutoListing';
 import { buildProductPayload, useProductForm } from '@/hooks/useProductForm';
 import type { PublishFormData } from '@/schemas/publishSchema';
+import { useUIStore } from '@/store/uiStore';
+import { errorHandler } from '@/utils/errorHandler';
 import './publish.css';
 
 const CONDITION_ICONS: Record<number, LucideIcon> = {
@@ -60,6 +62,7 @@ const CONDITION_DESC: Record<number, string> = {
 function PublishPage() {
     const navigate = useNavigate();
     const createProduct = useCreateProduct();
+    const addToast = useUIStore(s => s.addToast);
     const { data: categories } = useCategories();
     const {
         result: autoListingResult,
@@ -197,7 +200,18 @@ function PublishPage() {
             if (!isDraft && productId) {
                 // 新建商品是 DRAFT，只能先提交审核（DRAFT → PENDING_REVIEW）；
                 // 通过后由管理端置 ONLINE；已下架商品的重新上架走「我的发布」上的上架按钮
-                await productApi.submitForReview(productId);
+                //
+                // 单独 catch：这一步失败时 createProduct 已成功（商品已落库为 DRAFT），
+                // 混进外层 catch 会被 createProduct.isError 的横幅盖掉，用户看不到任何提示，
+                // 表单原样保留 —— 再点一次提交就多一条重复的 DRAFT 商品
+                try {
+                    await productApi.submitForReview(productId);
+                } catch (e) {
+                    addToast({
+                        type: 'error',
+                        message: `商品已创建为草稿，但提交审核失败：${errorHandler.handle(e)}`,
+                    });
+                }
             }
 
             navigate(`/products/${productId}`);
