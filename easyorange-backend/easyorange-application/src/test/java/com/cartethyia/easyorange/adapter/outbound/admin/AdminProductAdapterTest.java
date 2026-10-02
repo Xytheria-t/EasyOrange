@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
@@ -26,6 +27,7 @@ import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +59,12 @@ class AdminProductAdapterTest {
     private ProductCacheEvictionPort productCacheEvictionPort;
 
     @Mock
+    private UserMapper userMapper;
+
+    @Mock
+    private CategoryMapper categoryMapper;
+
+    @Mock
     private DomainEventPublisher domainEventPublisher;
 
     private AdminProductAdapter adapter;
@@ -70,6 +78,8 @@ class AdminProductAdapterTest {
                 productMapper,
                 productDetailMapper,
                 productImageMapper,
+                userMapper,
+                categoryMapper,
                 productRepository,
                 productCacheEvictionPort,
                 domainEventPublisher);

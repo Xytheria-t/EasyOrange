@@ -8,6 +8,8 @@ import com.cartethyia.easyorange.common.domain.ProductId;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
@@ -18,10 +20,13 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +50,8 @@ public class AdminProductAdapter implements AdminProductPort {
     private final ProductMapper productMapper;
     private final ProductDetailMapper productDetailMapper;
     private final ProductImageMapper productImageMapper;
+    private final UserMapper userMapper;
+    private final CategoryMapper categoryMapper;
     private final ProductRepository productRepository;
     private final ProductCacheEvictionPort productCacheEvictionPort;
     private final DomainEventPublisher domainEventPublisher;
@@ -113,6 +120,42 @@ public class AdminProductAdapter implements AdminProductPort {
                 product.getViewCount(),
                 product.getCreateTime(),
                 product.getUpdateTime());
+    }
+
+    @Override
+    public Map<String, PartyProfile> getPartyProfiles(List<String> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return Map.of();
+        }
+        List<ProductDO> products = productMapper.selectByIds(productIds);
+        if (products.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, UserDO> sellers = userMapper
+                .selectByIds(products.stream()
+                        .map(ProductDO::getUserId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList())
+                .stream()
+                .collect(Collectors.toMap(UserDO::getId, u -> u, (a, _) -> a));
+        Map<String, CategoryDO> categories = categoryMapper
+                .selectByIds(products.stream()
+                        .map(ProductDO::getCategoryId)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .toList())
+                .stream()
+                .collect(Collectors.toMap(CategoryDO::getId, c -> c, (a, _) -> a));
+
+        return products.stream().collect(Collectors.toMap(ProductDO::getId, product -> {
+            UserDO seller = sellers.get(product.getUserId());
+            CategoryDO category = categories.get(product.getCategoryId());
+            return new PartyProfile(
+                    seller != null ? seller.getNickName() : null,
+                    seller != null ? seller.getAvatar() : null,
+                    category != null ? category.getName() : null);
+        }));
     }
 
     @Override

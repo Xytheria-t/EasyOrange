@@ -63,6 +63,13 @@ function maskEmail(email: string | null) {
     return `${maskedName}@${domain}`;
 }
 
+function maskRealName(realName: string | null | undefined) {
+    if (!realName) {
+        return '未实名';
+    }
+    return realName.length === 1 ? realName : `${realName[0]}${'*'.repeat(realName.length - 1)}`;
+}
+
 export function UserDetailModal({ open, user, onClose, onSave, loading = false }: UserDetailModalProps) {
     // 草稿初值取当前用户状态；调用方用 key={userId} 重建本组件，切人即重置，
     // 不需要 effect 把 props 镜像进 state（那样会先渲染一次上一位用户的旧选择）
@@ -144,25 +151,36 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                             marginBottom: '1.25rem',
                         }}
                     >
-                        <div
-                            aria-hidden="true"
-                            style={{
-                                height: 52,
-                                width: 52,
-                                flexShrink: 0,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                borderRadius: 16,
-                                fontSize: '1.25rem',
-                                fontWeight: 700,
-                                color: 'var(--admin-surface-solid)',
-                                fontFamily: 'var(--admin-font-title)',
-                                background: avatarGradient,
-                            }}
-                        >
-                            {(user.nickname || user.username || '?').charAt(0).toUpperCase()}
-                        </div>
+                        {/* 真实头像优先：管理员做风控 / 申诉判断时，首字母色块没有辨识价值 */}
+                        {user.avatar ? (
+                            <img
+                                src={user.avatar}
+                                alt=""
+                                style={{ height: 52, width: 52, borderRadius: 16, flexShrink: 0 }}
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        ) : (
+                            <div
+                                aria-hidden="true"
+                                style={{
+                                    height: 52,
+                                    width: 52,
+                                    flexShrink: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: 16,
+                                    fontSize: '1.25rem',
+                                    fontWeight: 700,
+                                    color: 'var(--admin-surface-solid)',
+                                    fontFamily: 'var(--admin-font-title)',
+                                    background: avatarGradient,
+                                }}
+                            >
+                                {(user.nickname || user.username || '?').charAt(0).toUpperCase()}
+                            </div>
+                        )}
                         <div style={{ minWidth: 0, flex: 1 }}>
                             <p style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--admin-ink)' }}>
                                 {user.nickname || user.username}
@@ -181,6 +199,10 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                             { label: '昵称', value: user.nickname || '未设置' },
                             { label: '邮箱', value: maskEmail(user.email) },
                             { label: '手机', value: maskPhone(user.phone) },
+                            // 实名与手机同属身份信息：按同一口径遮住名、留姓便于风控辨识
+                            { label: '实名', value: maskRealName(user.realName) },
+                            { label: '登录 IP', value: user.loginIp || '—' },
+                            { label: '最后登录', value: formatDate(user.loginDate) },
                             {
                                 label: '用户类型',
                                 value: userTypeLabel(user.userType, user.userTypeDesc),
