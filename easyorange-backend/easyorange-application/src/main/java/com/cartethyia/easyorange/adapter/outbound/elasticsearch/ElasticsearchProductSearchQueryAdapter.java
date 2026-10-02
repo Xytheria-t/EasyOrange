@@ -332,23 +332,10 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
     /** 过滤子句（status/categoryId/conditionLevel/price）两路召回共用且都必须带 —— 只过滤一路会让另一路把已过滤的商品带进候选池。 */
     private ArrayNode buildFilterClauses(ProductSearchQuery query) {
         ArrayNode filter = objectMapper.createArrayNode();
-        if (query.status() != null) {
-            filter.add(objectMapper
-                    .createObjectNode()
-                    .set("term", objectMapper.createObjectNode().put("status", query.status())));
-        }
-        if (query.categoryId() != null) {
-            filter.add(objectMapper
-                    .createObjectNode()
-                    .set("term", objectMapper.createObjectNode().put("categoryId", query.categoryId())));
-        }
-        if (query.conditionLevel() != null) {
-            filter.add(objectMapper
-                    .createObjectNode()
-                    .set("term", objectMapper.createObjectNode().put("conditionLevel", query.conditionLevel())));
-        }
+        addTerm(filter, "status", query.status());
+        addTerm(filter, "categoryId", query.categoryId());
+        addTerm(filter, "conditionLevel", query.conditionLevel());
         if (query.minPrice() != null || query.maxPrice() != null) {
-            ObjectNode range = objectMapper.createObjectNode();
             ObjectNode priceRange = objectMapper.createObjectNode();
             if (query.minPrice() != null) {
                 priceRange.put("gte", query.minPrice());
@@ -356,26 +343,35 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
             if (query.maxPrice() != null) {
                 priceRange.put("lte", query.maxPrice());
             }
-            range.set("price", priceRange);
-            filter.add(objectMapper.createObjectNode().set("range", range));
+            filter.add(objectMapper
+                    .createObjectNode()
+                    .set("range", objectMapper.createObjectNode().set("price", priceRange)));
         }
-
         return filter;
+    }
+
+    /** 值为 null 不加子句 —— 三个字段都是「不筛即不限」，逐个判空会重复三遍。 */
+    private void addTerm(ArrayNode filter, String field, String value) {
+        if (value != null) {
+            filter.add(objectMapper
+                    .createObjectNode()
+                    .set("term", objectMapper.createObjectNode().put(field, value)));
+        }
     }
 
     private List<SortOptions> sortOptions(String sortField) {
         String sortKey = sortField != null ? sortField : "relevance";
         return switch (sortKey) {
-            case "price_asc" ->
-                List.of(SortOptions.of(so -> so.field(f -> f.field("price").order(SortOrder.Asc))));
-            case "price_desc" ->
-                List.of(SortOptions.of(so -> so.field(f -> f.field("price").order(SortOrder.Desc))));
-            case "newest" ->
-                List.of(SortOptions.of(so -> so.field(f -> f.field("createTime").order(SortOrder.Desc))));
-            case "popular" ->
-                List.of(SortOptions.of(so -> so.field(f -> f.field("viewCount").order(SortOrder.Desc))));
-            default -> List.of(SortOptions.of(so -> so.score(s -> s.order(SortOrder.Desc))));
+            case "price_asc" -> List.of(fieldSort("price", SortOrder.Asc));
+            case "price_desc" -> List.of(fieldSort("price", SortOrder.Desc));
+            case "newest" -> List.of(fieldSort("createTime", SortOrder.Desc));
+            case "popular" -> List.of(fieldSort("viewCount", SortOrder.Desc));
+            default -> byScoreDesc();
         };
+    }
+
+    private static SortOptions fieldSort(String field, SortOrder order) {
+        return SortOptions.of(so -> so.field(f -> f.field(field).order(order)));
     }
 
     /**
@@ -436,13 +432,8 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
     }
 
     private List<FacetBucket> extractAggBuckets(SearchHits<?> searchHits, String aggName) {
-        if (searchHits.getAggregations() == null) return List.of();
-
-        var aggsContainer = (ElasticsearchAggregations) searchHits.getAggregations();
-        ElasticsearchAggregation agg = aggsContainer.get(aggName);
-        if (agg == null) return List.of();
-
-        var aggregate = agg.aggregation().getAggregate();
+        var aggregate = resolveAgg(searchHits, aggName);
+        if (aggregate == null) return List.of();
 
         // 先按变体类型判空再取值：Aggregate.sterms()/lterms() 在变体不匹配时抛 IllegalStateException（不返回 null）
         if (aggregate.isSterms()) {
@@ -492,13 +483,9 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
     }
 
     private List<FacetBucket> extractRangeAggBuckets(SearchHits<?> searchHits, String aggName) {
-        if (searchHits.getAggregations() == null) return List.of();
+        var aggregate = resolveAgg(searchHits, aggName);
+        if (aggregate == null) return List.of();
 
-        var aggsContainer = (ElasticsearchAggregations) searchHits.getAggregations();
-        ElasticsearchAggregation agg = aggsContainer.get(aggName);
-        if (agg == null) return List.of();
-
-        var aggregate = agg.aggregation().getAggregate();
         var rangeAgg = aggregate.range();
         if (rangeAgg != null && rangeAgg.buckets() != null) {
             return rangeAgg.buckets().array().stream()
@@ -512,5 +499,12 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         }
 
         return List.of();
+    }
+
+    /** 取指定聚合的 Aggregate，三级判空（无聚合 / 无此名 / 类型不符）都归为「取不到」。 */
+    private static Aggregate resolveAgg(SearchHits<?> searchHits, String aggName) {
+        if (searchHits.getAggregations() == null) return null;
+        ElasticsearchAggregation agg = ((ElasticsearchAggregations) searchHits.getAggregations()).get(aggName);
+        return agg != null ? agg.aggregation().getAggregate() : null;
     }
 }

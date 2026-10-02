@@ -87,6 +87,18 @@ public interface AdminOrderPort {
 
     record ProductInfo(String id, String name, BigDecimal price) {}
 
+    /**
+     * 订单详情读模型。
+     *
+     * <p><b>支付字段的来源与边界</b>：{@code paymentNo} / {@code paidAmount} / {@code refundedAmount} /
+     * {@code payTime} 来自 {@code eo_payment} 表，按 {@code orderId} 取该订单的支付单；订单尚未发起支付时
+     * 四项均为 {@code null}（不是 0 —— 「没付过」与「付了 0 元」在运营处置上完全不同，前者要催付、后者不可能发生）。
+     * {@code payTime} 取支付单的 {@code updateTime}：该表无独立的支付时间列，支付成功是这条记录最后一次
+     * 状态变更，故用 {@code updateTime} 近似，列语义与 {@code eo_order.payment_status} 保持同一时点。
+     *
+     * <p><b>收货信息</b>：{@code eo_order} 只有 {@code address} / {@code phone} 两列，没有收件人姓名单列
+     * （下单时只校验买家本人，地址与买家档案同源），故收件人名取买家昵称。
+     */
     record OrderDetail(
             String id,
             String orderNo,
@@ -97,10 +109,16 @@ public interface AdminOrderPort {
             String status,
             String statusDesc,
             String paymentStatus,
+            String paymentNo,
+            BigDecimal paidAmount,
+            BigDecimal refundedAmount,
+            String address,
+            String phone,
             String remark,
             String cancelReason,
             LocalDateTime createTime,
             LocalDateTime updateTime,
+            LocalDateTime payTime,
             LocalDateTime cancelTime,
             String refundReason,
             LocalDateTime refundTime) {}
