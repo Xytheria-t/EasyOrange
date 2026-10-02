@@ -7,7 +7,6 @@ import com.cartethyia.easyorange.framework.audit.entity.AuditLog;
 import com.cartethyia.easyorange.framework.audit.event.AuditLogEvent;
 import com.cartethyia.easyorange.framework.audit.service.AuditLogService;
 import com.cartethyia.easyorange.framework.config.properties.AuditLogProperties;
-import com.cartethyia.easyorange.framework.util.AuditLogUtil;
 import com.cartethyia.easyorange.framework.util.Jsons;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
@@ -72,6 +71,11 @@ public class AuditLogAspect {
     }
 
     // ── 常量 ──
+
+    /** 审计表 request_params / response_data / error_msg 列宽，截断保住可读前缀 */
+    private static final int MAX_FIELD_LENGTH = 2000;
+    /** 截断后缀，占列宽的一部分 */
+    private static final String TRUNCATE_SUFFIX = "...(已截断)";
 
     /** 操作状态：正常（对齐 {@link AuditLog#getStatus()} 注释） */
     private static final int STATUS_SUCCESS = 0;
@@ -180,20 +184,20 @@ public class AuditLogAspect {
                 .username(userCtx.map(AuthUser::username).orElse("anonymous"))
                 .operatorType(resolveOperatorType(userCtx.orElse(null)))
                 .status(e != null ? STATUS_FAILURE : STATUS_SUCCESS)
-                .errorMsg(e != null ? AuditLogUtil.truncate(e.getMessage(), 2000) : null)
+                .errorMsg(e != null ? truncate(e.getMessage()) : null)
                 .createdAt(LocalDateTime.now())
                 .duration(Math.toIntExact(costTime));
 
         if (auditLogProperties.saveRequestData()) {
             String params = argsArrayToString(joinPoint.getArgs());
-            builder.requestParams(AuditLogUtil.truncate(params, 2000));
+            builder.requestParams(truncate(params));
         }
 
         if (auditLogProperties.saveResponseData() && jsonResult != null) {
             String json = Jsons.writeQuietly(objectMapper, jsonResult);
             if (json != null) {
                 // 与请求参数一致，响应数据同样做敏感字段掩码
-                builder.responseData(AuditLogUtil.truncate(maskSensitiveFields(json), 2000));
+                builder.responseData(truncate(maskSensitiveFields(json)));
             } else {
                 log.warn("Failed to serialize response data for audit log");
             }
@@ -203,6 +207,17 @@ public class AuditLogAspect {
     }
 
     // ── 约定辅助方法 ──
+
+    /**
+     * 按列宽截断，保住可读前缀并显式标注截断（不留半句给读审计日志的人猜）。
+     */
+    private static String truncate(String value) {
+        if (value == null || value.length() <= MAX_FIELD_LENGTH) {
+            return value;
+        }
+        int keep = MAX_FIELD_LENGTH - TRUNCATE_SUFFIX.length();
+        return keep <= 0 ? value.substring(0, MAX_FIELD_LENGTH) : value.substring(0, keep) + TRUNCATE_SUFFIX;
+    }
 
     private String deriveModuleName(String className) {
         if (className == null || className.isEmpty()) return className;
@@ -256,10 +271,12 @@ public class AuditLogAspect {
     }
 
     private static boolean isFilterObject(Object obj) {
-        Class<?> clazz = obj.getClass();
-        if (clazz.isArray()) {
-            return clazz.getComponentType().isAssignableFrom(MultipartFile.class)
-                    || clazz.getComponentType().isAssignableFrom(HttpServletRequest.class);
+        if (obj.getClass().isArray()) {
+            // 方向必须是 componentType 可赋值给 MultipartFile：原写法反了，只在 componentType
+            // 是 Object 时成立，导致 MultipartFile[] 参数被原样序列化进审计表
+            Class<?> component = obj.getClass().getComponentType();
+            return MultipartFile.class.isAssignableFrom(component)
+                    || HttpServletRequest.class.isAssignableFrom(component);
         }
         return obj instanceof MultipartFile
                 || obj instanceof HttpServletRequest

@@ -19,13 +19,4 @@ public enum StorageType {
     @EnumValue
     @JsonValue
     private final String code;
-
-    public static StorageType fromCode(String code) {
-        for (var type : values()) {
-            if (type.code.equals(code)) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException("Unknown StorageType code: " + code);
-    }
 }

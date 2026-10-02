@@ -112,14 +112,14 @@ class MaskUtilsTest {
         @Test
         @DisplayName("正常地址脱敏")
         void maskAddress_normal() {
-            String result = MaskUtils.maskAddress("北京市朝阳区xxx街道");
+            String result = MaskUtils.maskAddress("北京市朝阳区xxx街道", 6);
             assertEquals("北京市朝阳区***", result);
         }
 
         @Test
         @DisplayName("null 返回 null")
         void maskAddress_null() {
-            assertNull(MaskUtils.maskAddress(null));
+            assertNull(MaskUtils.maskAddress(null, 6));
         }
     }
 }

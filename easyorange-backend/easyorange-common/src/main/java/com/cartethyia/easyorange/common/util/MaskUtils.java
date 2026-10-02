@@ -41,10 +41,6 @@ public class MaskUtils {
         };
     }
 
-    public static String maskAddress(String address) {
-        return maskAddress(address, 6);
-    }
-
     public static String maskAddress(String address, int visibleChars) {
         if (address == null || address.isEmpty()) {
             return address;

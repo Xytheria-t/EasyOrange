@@ -17,15 +17,6 @@ public interface IResultCode {
     }
 
     /**
-     * 当前错误码对应的 HTTP 状态码，按错误码前缀映射。
-     *
-     * @see #resolveStatus(String)
-     */
-    default HttpStatus httpStatus() {
-        return resolveStatus(getCode());
-    }
-
-    /**
      * 按错误码映射 HTTP 状态码（错误码体系单一来源，GlobalExceptionHandler 与
      * {@code ErrorResponse} 均消费此映射）：
      * <pre>
