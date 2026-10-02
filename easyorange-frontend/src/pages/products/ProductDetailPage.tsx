@@ -25,7 +25,6 @@ import {
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { messageApi } from '@/api/messageApi';
 import { productApi } from '@/api/productApi';
 import placeholderImage from '@/assets/placeholder.png';
 import { ErrorState } from '@/components/feedback/StateDisplay';
@@ -43,6 +42,7 @@ import { Button } from '@/components/ui/button';
 import { Image, preloadImages } from '@/components/ui/Image';
 import { CONDITION_LABEL_MAP, STATUS_LABEL_MAP } from '@/constants';
 import { useCreateOrder, useProduct, useSimilarProducts } from '@/hooks';
+import { chatMessagesQueryKey, fetchChatMessages } from '@/hooks/chat/chatMessagesQuery';
 import { type OrderFormData, orderFormSchema } from '@/schemas/productDetailSchema';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -194,12 +194,8 @@ function ProductDetailPage() {
         const targetUserId = product.sellerId;
         try {
             await queryClient.prefetchQuery({
-                queryKey: ['chat', 'messages', targetUserId],
-                queryFn: () =>
-                    messageApi.getConversation(targetUserId).then(res => {
-                        const data = (res.data ?? []) as unknown[];
-                        return data.slice(-50);
-                    }),
+                queryKey: chatMessagesQueryKey(targetUserId),
+                queryFn: () => fetchChatMessages(targetUserId),
                 staleTime: Infinity,
             });
         } catch {

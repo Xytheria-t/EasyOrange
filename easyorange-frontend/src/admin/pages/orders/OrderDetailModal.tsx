@@ -2,6 +2,7 @@ import { AdminDetailModal, InfoCell } from '@/admin/components/AdminDetailModal'
 import { statusVisual } from '@/admin/components/StatusBadge';
 import { useAdminOrderDetail } from '../../hooks';
 import type { AdminOrderDetail } from '../../types/admin';
+import { OrderInterventionBar } from './OrderInterventionBar';
 
 export interface OrderDetailModalProps {
     open: boolean;
@@ -271,6 +272,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                     )}
                 </div>
             ) : null}
+            footer={orderData ? <OrderInterventionBar order={orderData} /> : null}
         </AdminDetailModal>
     );
 }

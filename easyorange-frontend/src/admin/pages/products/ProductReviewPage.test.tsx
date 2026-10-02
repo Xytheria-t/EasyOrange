@@ -12,16 +12,16 @@ beforeAll(() => {
 
 // ─── Hook mocks ───
 const mockUseAdminProducts = vi.fn();
-const mockUseAdminCategories = vi.fn();
+const mockUseAdminCategoryTree = vi.fn();
 
 vi.mock('../../hooks/useAdminProducts', () => ({
     useAdminProducts: (...args: unknown[]) => mockUseAdminProducts(...args),
     useAdminProductDetail: vi.fn(),
 }));
 
-// 分类筛选项取自真实分类树（此前写死 7 个英文 ID，分类改名即失效），测试需可注入
+// 分类筛选项取自真实分类树的**全层级叶子**（根级列表只返回一级分类，配上二级商品的筛选恒为 0 条），测试需可注入
 vi.mock('../../hooks/useAdminCategories', () => ({
-    useAdminCategories: () => mockUseAdminCategories(),
+    useAdminCategoryTree: () => mockUseAdminCategoryTree(),
 }));
 
 // Mock the drawer component
@@ -142,11 +142,11 @@ function setupDefaultMocks() {
         refetch: vi.fn(),
     });
 
-    mockUseAdminCategories.mockReturnValue({
+    mockUseAdminCategoryTree.mockReturnValue({
         data: [
             {
-                categoryId: 'electronics',
-                name: '电子产品',
+                id: 'electronics',
+                name: '电子数码',
                 parentId: null,
                 parentName: null,
                 level: 1,
@@ -154,7 +154,20 @@ function setupDefaultMocks() {
                 status: 1,
                 productCount: 3,
                 createTime: null,
-                updateTime: null,
+                children: [
+                    {
+                        id: 'phone',
+                        name: '手机',
+                        parentId: 'electronics',
+                        parentName: '电子数码',
+                        level: 2,
+                        sortOrder: 1,
+                        status: 1,
+                        productCount: 2,
+                        createTime: null,
+                        children: [],
+                    },
+                ],
             },
         ],
     });
@@ -268,7 +281,7 @@ describe('ProductReviewPage', () => {
         expect(statusElements.length).toBeGreaterThanOrEqual(1);
         expect(screen.getByText('分类')).toBeInTheDocument();
         // 分类选项来自接口而不是写死的英文 ID（下拉展开后才渲染 option，这里断言取数发生）
-        expect(mockUseAdminCategories).toHaveBeenCalled();
+        expect(mockUseAdminCategoryTree).toHaveBeenCalled();
         // 「排序」下拉此前不参与请求（API 无 sort 参数），与表头排序重复，已删除
         expect(screen.queryByText('排序')).not.toBeInTheDocument();
     });

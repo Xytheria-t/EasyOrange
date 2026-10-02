@@ -17,11 +17,11 @@ import { AdminFilterField, AdminSearchInput } from '../../components/AdminContro
 import { AdminListCard, AdminListCount, AdminPage, AdminPageHeader } from '../../components/AdminPage';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { StatusBadge, statusFilterOptions } from '../../components/StatusBadge';
-import { useAdminCategories } from '../../hooks/useAdminCategories';
+import { useAdminCategoryTree } from '../../hooks/useAdminCategories';
 import { useBatchAuditProducts } from '../../hooks/useAdminProductAudit';
 import { useAdminProducts } from '../../hooks/useAdminProducts';
 import { notify } from '../../notify';
-import type { AdminProduct } from '../../types/admin';
+import type { AdminProduct, CategoryResponse } from '../../types/admin';
 import { BatchAuditBar } from './BatchAuditBar';
 import { ProductDetailDrawer } from './ProductDetailDrawer';
 
@@ -58,12 +58,23 @@ export default function ProductReviewPage() {
 
     const batchAudit = useBatchAuditProducts();
 
-    // 分类选项取真实分类树：此前写死 7 个英文 ID，分类改名 / 新增后筛选直接失效
-    const { data: categories } = useAdminCategories();
-    const categoryOptions = useMemo(
-        () => [{ value: '', label: '全部分类' }, ...(categories ?? []).map(c => ({ value: c.id, label: c.name }))],
-        [categories]
-    );
+    // 分类选项取真实分类树的**全层级**叶子：useAdminCategories 打的是 /admin/categories 且不传 parentId，
+    // 后端只返回一级分类，而商品挂在二级分类上 —— 配上限级筛选每个选项都是 0 条。后端按子树匹配。
+    const { data: categoryTree } = useAdminCategoryTree();
+    const categoryOptions = useMemo(() => {
+        const leaves: { value: string; label: string }[] = [];
+        const walk = (nodes: CategoryResponse[], depth: number) => {
+            for (const node of nodes) {
+                if (node.children.length > 0) {
+                    walk(node.children, depth + 1);
+                } else {
+                    leaves.push({ value: node.id, label: `${'　'.repeat(depth)}${node.name}` });
+                }
+            }
+        };
+        walk(categoryTree ?? [], 0);
+        return [{ value: '', label: '全部分类' }, ...leaves];
+    }, [categoryTree]);
 
     const products = data?.records ?? [];
     const total = data?.total ?? 0;

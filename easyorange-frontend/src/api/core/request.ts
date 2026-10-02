@@ -107,7 +107,7 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
 
     const queryString = params ? buildQueryParams(params) : '';
     const url = `${API_BASE_URL}${endpoint}${queryString}`;
-    const requestKey = requestManager.generateKey(endpoint, { method, body });
+    const requestKey = requestManager.generateKey(endpoint, { method, body, params });
 
     if (dedupe && requestManager.isDuplicate(requestKey)) {
         throw new ApiClientError('重复请求已取消', 0);

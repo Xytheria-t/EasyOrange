@@ -10,7 +10,7 @@ interface MessageListProps {
     currentUserId: string;
     targetUserName: string;
     isTyping: boolean;
-    onLoadMore?: () => void;
+    onLoadMore?: () => void | Promise<void>;
     hasMore?: boolean;
     onRecall?: (messageId: string) => Promise<boolean>;
     canRecallFn?: (message: ChatMessage) => boolean;
@@ -89,8 +89,9 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
             }
             if (virtualizer.scrollOffset != null && virtualizer.scrollOffset < 100) {
                 isLoadingMoreRef.current = true;
-                onLoadMore();
-                requestAnimationFrame(() => {
+                // 闸门跟请求生命周期走：此前用 requestAnimationFrame 释放，下一帧就解锁而请求还在飞，
+                // 顶部连续滚动会并发触发 onLoadMore
+                Promise.resolve(onLoadMore()).finally(() => {
                     isLoadingMoreRef.current = false;
                 });
             }

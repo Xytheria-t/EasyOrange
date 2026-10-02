@@ -147,8 +147,21 @@ export const adminApi = {
         return request<AdminOrderDetail>(`${ADMIN_API_PREFIX}/orders/${id}`);
     },
 
-    getOrderStats() {
-        return request<OrderStatsResponse>(`${ADMIN_API_PREFIX}/orders/stats`);
+    async getOrderStats() {
+        const res = await request<OrderStatsResponse>(`${ADMIN_API_PREFIX}/orders/stats`);
+        return {
+            ...res,
+            data: coerceCounts(res.data, [
+                'totalOrders',
+                'todayOrders',
+                'pendingPayment',
+                'toShip',
+                'toReceive',
+                'completed',
+                'cancelled',
+                'refunded',
+            ]),
+        };
     },
 
     cancelOrder(id: string, data: OrderInterventionRequest) {

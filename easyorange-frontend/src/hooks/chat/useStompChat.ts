@@ -2,7 +2,9 @@ import { Client, type IMessage } from '@stomp/stompjs';
 import { useCallback, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/chatStore';
-import type { ChatMessage, RecallPayload, TypingPayload } from '@/types/message';
+import type { RecallPayload, TypingPayload } from '@/types/message';
+import type { RawChatMessage } from '@/types/raw';
+import { normalizeChatMessage } from '@/utils/message';
 
 declare module '@stomp/stompjs' {
     interface Client {
@@ -41,8 +43,9 @@ export function useStompChat(): UseStompChatReturn {
 
             const msgSub = client.subscribe(`/queue/chat/${conversationId}`, (message: IMessage) => {
                 try {
-                    const data: ChatMessage = JSON.parse(message.body);
-                    addMessage(conversationId, data);
+                    // 走 normalize：后端 chatFrame 的 type 是数字码且没有 senderAvatar/readTime，
+                    // 直接当 ChatMessage 断言会让实时消息与 REST 拉回的同一条渲染不一致
+                    addMessage(conversationId, normalizeChatMessage(JSON.parse(message.body) as RawChatMessage));
                 } catch {
                     // Failed to parse message
                 }
