@@ -7,12 +7,13 @@ import lombok.Builder;
  * 会话内单条消息响应 —— 与 WebSocket {@code chatFrame} 同字段集，前端把两种来源当同一对象处理，
  * 少一个字段就得在客户端补默认值。
  *
- * <p>{@code msgStatus} 与 {@code recalledAt} 必须下发：撤回只把状态改成 {@code RECALLED} 并盖时间戳，
- * 不清 {@code content}（原文留在库里便于审计）。前端没有这两个字段时，撤回过的消息刷新页面会
- * 重新显示原文 —— 撤回形同虚设。
+ * <p>字段名 {@code status} 必须与 {@code chatFrame} 一致：前端 {@code normalizeChatMessage} 只认这一个键，
+ * 这条路径下发成 {@code msgStatus} 时撤回状态恒为 undefined，刷新后已撤回消息重新显示原文。
+ * 列名仍是 {@code eo_message.msg_status}，改名只发生在传输层。
  *
- * <p>已读语义走 {@code isRead}（{@code eo_message.is_read}），不走 {@code msgStatus}：
- * 后者只承载发送与撤回两个事实。
+ * <p>{@code status} 与 {@code recalledAt} 必须下发：撤回只改状态盖时间戳，不清 {@code content}（原文留库便于审计）。
+ *
+ * <p>已读语义走 {@code isRead}，不走 {@code status}：后者只承载发送与撤回两个事实。
  */
 @Builder
 public record ConversationVO(
@@ -29,6 +30,6 @@ public record ConversationVO(
         String content,
         Integer isRead,
         LocalDateTime readTime,
-        String msgStatus,
+        String status,
         LocalDateTime recalledAt,
         LocalDateTime createTime) {}

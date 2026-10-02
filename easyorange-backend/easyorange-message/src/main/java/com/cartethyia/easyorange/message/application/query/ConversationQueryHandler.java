@@ -90,7 +90,7 @@ public class ConversationQueryHandler {
                 .content(message.content())
                 .isRead(Integer.valueOf(message.isRead().getCode()))
                 .readTime(message.readTime())
-                .msgStatus(message.msgStatus() != null ? message.msgStatus().getCode() : null)
+                .status(message.msgStatus() != null ? message.msgStatus().getCode() : null)
                 .recalledAt(message.recalledAt())
                 .createTime(message.createTime())
                 .build();
