@@ -21,8 +21,7 @@ public enum AdminResultCode implements IResultCode {
     USER_NOT_FOUND("B6001", "用户不存在"),
     ORDER_NOT_FOUND("B6002", "订单不存在"),
     PRODUCT_NOT_FOUND("B6003", "商品不存在"),
-    CATEGORY_NOT_FOUND("B6004", "分类不存在"),
-    AUDIT_LOG_NOT_FOUND("B6005", "审核记录不存在");
+    CATEGORY_NOT_FOUND("B6004", "分类不存在");
 
     private final String code;
     private final String message;

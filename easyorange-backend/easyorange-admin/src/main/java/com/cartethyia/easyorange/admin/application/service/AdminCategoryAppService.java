@@ -30,8 +30,7 @@ public class AdminCategoryAppService {
     private final AdminCategoryWritePort categoryWritePort;
 
     public List<CategoryView> listCategories(String parentId) {
-        // includeDisabled 恒为 true：后台要能看见并恢复被禁用的分类
-        return adminCategoryPort.listCategories(parentId, true);
+        return adminCategoryPort.listCategories(parentId);
     }
 
     public List<CategoryView> categoryTree() {

@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminUserAssembler;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ResetPasswordResponse;
 import com.cartethyia.easyorange.admin.application.service.AdminUserAppService;
 import com.cartethyia.easyorange.admin.application.service.AdminUserSecurityAppService;
 import com.cartethyia.easyorange.common.security.AuthUser;
@@ -67,6 +68,12 @@ class AdminUserControllerExtensionTest {
     void resetPassword_shouldReturnNewPassword() throws Exception {
         when(adminUserSecurityService.resetPassword(eq("1"), any(), eq("admin-1")))
                 .thenReturn("newPass123!");
+        // 响应形状由 assembler 产出，这里 stub 其返回以锁住 Controller 的输出契约
+        when(assembler.toResetPasswordResponse("newPass123!"))
+                .thenReturn(ResetPasswordResponse.builder()
+                        .newPassword("newPass123!")
+                        .message("密码已重置，请将新密码安全地传递给用户")
+                        .build());
 
         mockMvc.perform(put("/api/admin/users/1/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)

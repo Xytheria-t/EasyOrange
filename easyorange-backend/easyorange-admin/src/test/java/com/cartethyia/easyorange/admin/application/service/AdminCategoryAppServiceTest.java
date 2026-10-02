@@ -61,15 +61,15 @@ class AdminCategoryAppServiceTest {
     class QueryTests {
 
         @Test
-        @DisplayName("列表含禁用：后台要能看到并恢复禁用项")
+        @DisplayName("列表原样透传端口结果（含禁用项：后台要能看到并恢复禁用项）")
         void listCategories_includesDisabled() {
-            when(adminCategoryPort.listCategories(null, true)).thenReturn(List.of(view("1", "电子数码", null, 1)));
+            when(adminCategoryPort.listCategories(null)).thenReturn(List.of(view("1", "电子数码", null, 1)));
 
             var result = categoryService.listCategories(null);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).id()).isEqualTo("1");
-            verify(adminCategoryPort).listCategories(null, true);
+            verify(adminCategoryPort).listCategories(null);
         }
 
         @Test

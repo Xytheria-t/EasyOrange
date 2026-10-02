@@ -15,11 +15,8 @@ public interface AdminCategoryPort {
 
     Optional<CategoryView> getCategory(String categoryId);
 
-    /**
-     * @param parentId 父分类 id；null 表示查一级分类
-     * @param includeDisabled 是否包含禁用分类（后台管理要看得见，C 端不要）
-     */
-    List<CategoryView> listCategories(String parentId, boolean includeDisabled);
+    /** 直属子分类；{@code parentId} 为 null 表示查一级分类。不过滤禁用 —— 后台要能看见并恢复禁用分类。 */
+    List<CategoryView> listCategories(String parentId);
 
     /** 仅启用中的整棵树。 */
     List<CategoryView> categoryTree();

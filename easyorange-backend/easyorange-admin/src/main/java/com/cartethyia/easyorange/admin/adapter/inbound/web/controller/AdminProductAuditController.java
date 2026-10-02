@@ -6,8 +6,6 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAu
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.admin.application.service.AdminProductAuditAppService;
-import com.cartethyia.easyorange.admin.domain.model.BatchAuditItem;
-import com.cartethyia.easyorange.admin.domain.model.ProductAuditCommand;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,25 +29,19 @@ public class AdminProductAuditController {
             @AuthenticationPrincipal AuthUser operator,
             @PathVariable String id,
             @Valid @RequestBody ProductAuditRequest request) {
-        adminProductAuditService.auditProduct(operator, id, toCommand(request));
+        adminProductAuditService.auditProduct(operator, id, assembler.toCommand(request));
         return Result.success();
     }
 
     @PostMapping("/batch-audit")
     public Result<BatchAuditResultResponse> batchAudit(
             @AuthenticationPrincipal AuthUser operator, @Valid @RequestBody BatchAuditRequest request) {
-        List<BatchAuditItem> items = request.items().stream()
-                .map(i -> new BatchAuditItem(i.productId(), i.action(), i.reason(), i.dimensions()))
-                .toList();
-        return Result.success(assembler.toBatchResultResponse(adminProductAuditService.batchAudit(operator, items)));
+        return Result.success(assembler.toBatchResultResponse(
+                adminProductAuditService.batchAudit(operator, assembler.toBatchItems(request))));
     }
 
     @GetMapping("/{id}/audit-logs")
     public Result<List<AuditLogResponse>> getAuditLogs(@PathVariable String id) {
         return Result.success(assembler.toAuditLogResponses(adminProductAuditService.getAuditLogs(id)));
-    }
-
-    private static ProductAuditCommand toCommand(ProductAuditRequest request) {
-        return new ProductAuditCommand(request.action(), request.reason(), request.remark(), request.dimensions());
     }
 }

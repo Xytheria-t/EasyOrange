@@ -131,17 +131,6 @@ public class AdminProductAdapter implements AdminProductPort {
     }
 
     @Override
-    public Map<String, ProductInfo> getProductInfos(List<String> productIds) {
-        if (productIds == null || productIds.isEmpty()) {
-            return Map.of();
-        }
-        List<ProductDO> products = productMapper.selectByIds(productIds);
-        return products.stream()
-                .filter(p -> p.getDelFlag() == 0)
-                .collect(Collectors.toMap(ProductDO::getId, p -> new ProductInfo(p.getId(), p.getName()), (a, b) -> a));
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public Map<String, Long> getCreateTrend(LocalDate since) {
         var rows = ChainWrappers.lambdaQueryChain(productMapper)

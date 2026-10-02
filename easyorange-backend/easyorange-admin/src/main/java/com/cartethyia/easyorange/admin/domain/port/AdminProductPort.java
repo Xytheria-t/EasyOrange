@@ -23,8 +23,6 @@ public interface AdminProductPort {
 
     Map<String, List<String>> getProductImages(List<String> productIds);
 
-    Map<String, ProductInfo> getProductInfos(List<String> productIds);
-
     /**
      * 管理员直改商品状态（ONLINE/OFFLINE/SOLD），非法状态码/商品不存在/状态转换不允许时抛出 BusinessException
      */
@@ -39,8 +37,6 @@ public interface AdminProductPort {
      * 最近发布的商品（按创建时间倒序取 limit 条）
      */
     List<RecentActivity> findRecentPublished(int limit);
-
-    record ProductInfo(String id, String name) {}
 
     record ProductQueryCondition(
             String keyword,
