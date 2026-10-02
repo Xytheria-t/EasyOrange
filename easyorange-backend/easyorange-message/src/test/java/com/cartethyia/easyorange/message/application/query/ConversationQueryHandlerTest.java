@@ -111,7 +111,7 @@ class ConversationQueryHandlerTest {
             ConversationVO vo =
                     handler.getConversation(CURRENT_USER_ID, OTHER_USER_ID).getFirst();
 
-            assertThat(vo.msgStatus()).isEqualTo("RECALLED");
+            assertThat(vo.status()).isEqualTo("RECALLED");
             assertThat(vo.recalledAt()).isNotNull();
         }
 

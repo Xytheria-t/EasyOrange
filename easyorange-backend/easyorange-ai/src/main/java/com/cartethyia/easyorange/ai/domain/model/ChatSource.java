@@ -1,5 +1,8 @@
 package com.cartethyia.easyorange.ai.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -13,12 +16,33 @@ import java.util.stream.Stream;
  */
 public record ChatSource(Type type, String id, String title) {
 
-    /** 来源类型 —— 与前端 {@code types/ai.ts} 的 {@code ChatSource['type']} 字面量对齐。 */
+    /**
+     * 来源类型 —— 与前端 {@code types/ai.ts} 的 {@code ChatSource['type']} 字面量对齐。
+     * <p>
+     * {@code @JsonValue} 是必需的对齐手段而非装饰：枚举名默认按 {@code name()} 下发大写，
+     * 前端 {@code parseSources} 判的是小写字面量，缺了它商品引用会被全判成知识库来源、
+     * 渲染成点不动的胶囊。
+     */
     public enum Type {
         /** 平台规则知识库片段，可展开看原文。 */
-        KNOWLEDGE,
+        KNOWLEDGE("knowledge"),
         /** 在售资产，可点进商品详情。 */
-        ASSET
+        ASSET("asset");
+
+        @JsonValue
+        private final String code;
+
+        Type(String code) {
+            this.code = code;
+        }
+
+        @JsonCreator
+        public static Type fromCode(String code) {
+            return Arrays.stream(values())
+                    .filter(t -> t.code.equals(code))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("未知来源类型: " + code));
+        }
     }
 
     public static ChatSource from(KnowledgeHit hit) {
