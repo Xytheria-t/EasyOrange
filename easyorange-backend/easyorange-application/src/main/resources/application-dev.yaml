@@ -122,17 +122,7 @@ easyorange:
   # -------------------------------------------------------------------
   file:
     image:
-      quality: 0.80
       thumbnail-quality: 0.75
-      responsive-quality: 0.75
-      progressive-jpeg:
-        enabled: true
-        min-size: 102400
-      smart-crop:
-        enabled: true
-        # 必须加引号：YAML 会把裸写的 1:1 当六十进制整数解析成 61（4:3 → 243）
-        default-aspect-ratio: "1:1"
-        min-entropy-threshold: 0.5
 
 # -------------------------------------------------------------------
 # JWT Token 配置

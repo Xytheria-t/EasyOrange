@@ -109,7 +109,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 checkRepeatSubmit(request, method, wrappedRequest.getCachedBody());
             }
         } catch (BusinessException ex) {
-            writeErrorResponse(response, ex);
+            errorResponseWriter.write(
+                    response, HttpStatus.TOO_MANY_REQUESTS.value(), ResultCode.TOO_MANY_REQUESTS, ex.getMessage());
             return;
         }
 
@@ -145,45 +146,42 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     // ── 限流 ──
 
+    /**
+     * 两种策略只差「计数器在哪、key 有没有 Redis 前缀」，超限动作完全一致，故收敛为一个方法。
+     * 本地策略不包try：进程内计数器不会因基础设施故障而抛。
+     */
     private void checkRateLimit(HttpServletRequest request, String method, Rule rule) {
-        if (rule.strategy() == Strategy.LOCAL) {
-            checkLocalRateLimit(request, method, rule);
-        } else {
-            checkRedisRateLimit(request, method, rule);
-        }
-    }
-
-    private void checkLocalRateLimit(HttpServletRequest request, String method, Rule rule) {
-        long windowMs = TimeUnit.SECONDS.toMillis(rule.windowSeconds());
-        if (windowMs <= 0 || rule.maxRequests() <= 0) {
-            return;
-        }
-
-        String key = RequestUtil.getClientIp(request) + ":" + method + ":" + request.getRequestURI();
-        if (!localRateLimiter.tryAcquire(key, rule.maxRequests(), windowMs)) {
-            log.warn("action=local_rate_limit, key={}, limit={}", key, rule.maxRequests());
-            throw BusinessException.of(rule.message());
-        }
-    }
-
-    private void checkRedisRateLimit(HttpServletRequest request, String method, Rule rule) {
         if (rule.windowSeconds() <= 0 || rule.maxRequests() <= 0) {
             return;
         }
+        boolean local = rule.strategy() == Strategy.LOCAL;
+        String key = (local ? "" : "eo:rate:") + RequestUtil.getClientIp(request) + ":" + method + ":"
+                + request.getRequestURI();
+        // 日志 action 名小写，与既有检索口径保持一致（枚举名是 LOCAL/REDIS）
+        String action = local ? "local_rate_limit" : "redis_rate_limit";
 
-        String identifier = RequestUtil.getClientIp(request);
-        String key = "eo:rate:" + identifier + ":" + method + ":" + request.getRequestURI();
+        if (local) {
+            long windowMs = TimeUnit.SECONDS.toMillis(rule.windowSeconds());
+            if (!localRateLimiter.tryAcquire(key, rule.maxRequests(), windowMs)) {
+                rejectRateLimited(action, key, rule);
+            }
+            return;
+        }
         try {
-            boolean allowed = distributedRateLimiter.tryAcquire(key, rule.maxRequests(), rule.windowSeconds());
-            if (!allowed) {
-                log.warn("action=redis_rate_limit, key={}, limit={}", key, rule.maxRequests());
-                throw BusinessException.of(rule.message());
+            if (!distributedRateLimiter.tryAcquire(key, rule.maxRequests(), rule.windowSeconds())) {
+                rejectRateLimited(action, key, rule);
             }
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {
+            // fail-open：Redis 抖动不该把正常请求全拒了
             log.warn("action=redis_rate_limit_error, key={}", key, ex);
         }
+    }
+
+    private void rejectRateLimited(String action, String key, Rule rule) {
+        log.warn("action={}, key={}, limit={}", action, key, rule.maxRequests());
+        throw BusinessException.of(rule.message());
     }
 
     // ── 防重提交 ──
@@ -211,7 +209,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         // key 含方法 + 查询串 + 请求体 hash：同 URI 的不同方法（如收藏 POST / 取消收藏 DELETE）是不同操作；
         // 查询串必须入 key —— 发验证码这类参数走 @RequestParam（body 恒空），不带会把「给不同手机号取码」
         // 误判成重复提交
-        String bodyHash = md5(cachedBody);
+        String bodyHash = DigestUtils.md5DigestAsHex(cachedBody);
         String query = request.getQueryString() == null ? "" : "?" + request.getQueryString();
         String key =
                 "eo:repeat:" + userIdentifier + ":" + method + ":" + request.getRequestURI() + query + ":" + bodyHash;
@@ -263,16 +261,5 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return handlerMethod != null
                 && (handlerMethod.getMethodAnnotation(annotationClass) != null
                         || handlerMethod.getBeanType().isAnnotationPresent(annotationClass));
-    }
-
-    // ── 工具方法 ──
-
-    private void writeErrorResponse(HttpServletResponse response, BusinessException ex) throws IOException {
-        errorResponseWriter.write(
-                response, HttpStatus.TOO_MANY_REQUESTS.value(), ResultCode.TOO_MANY_REQUESTS, ex.getMessage());
-    }
-
-    private String md5(byte[] input) {
-        return DigestUtils.md5DigestAsHex(input);
     }
 }
