@@ -13,7 +13,6 @@ export type ErrorTypeValue =
     | 'server'
     | 'timeout'
     | 'unknown';
-export type ErrorSeverityValue = 'low' | 'medium' | 'high' | 'fatal';
 
 const httpErrorMessages: Record<number, string> = {
     0: '网络连接失败，请检查网络设置',
@@ -81,39 +80,6 @@ const errorHandler = {
         }
 
         return fallbackTypeMessages[type];
-    },
-
-    handleApiError(error: unknown, status?: number): string {
-        if (!status) {
-            status =
-                typeof error === 'object' && error !== null && 'status' in error
-                    ? (error as { status?: number }).status
-                    : undefined;
-        }
-
-        let type: ErrorTypeValue = 'api';
-        if (status === 401) {
-            type = 'auth';
-        } else if (status === 403) {
-            type = 'permission';
-        } else if (status === 404) {
-            type = 'not_found';
-        } else if (status && status >= 500) {
-            type = 'server';
-        } else if (status === 0) {
-            type = 'network';
-        }
-
-        let message = this.handle(error, type);
-
-        if (!message || message.includes('HTTP error')) {
-            message =
-                status !== undefined
-                    ? (httpErrorMessages[status] ?? fallbackTypeMessages[type])
-                    : fallbackTypeMessages[type];
-        }
-
-        return message;
     },
 };
 

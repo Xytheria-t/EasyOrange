@@ -1,14 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { PageResult } from '@/types';
 import { adminApi } from '../api/adminApi';
 import type { AdminUser, AdminUserQuery, UpdateUserStatusRequest } from '../types/admin';
-
-/** 同 useAdminProducts 的 selectList：只留列表页消费的 records / total / current */
-const selectList = (data: PageResult<AdminUser>) => ({
-    records: data.records,
-    total: data.total,
-    current: data.current,
-});
+import { selectList } from './listSelect';
 
 export const ADMIN_USER_KEYS = {
     all: ['admin', 'users'] as const,

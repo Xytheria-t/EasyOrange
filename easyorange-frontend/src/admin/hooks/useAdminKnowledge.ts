@@ -1,14 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { PageResult } from '@/types';
 import { adminApi } from '../api/adminApi';
-import type { CreateKnowledgeDocRequest, KnowledgeDoc } from '../types/admin';
-
-/** 同 useAdminProducts 的 selectList：只留列表页消费的 records / total / current */
-const selectList = (data: PageResult<KnowledgeDoc>) => ({
-    records: data.records,
-    total: data.total,
-    current: data.current,
-});
+import type { CreateKnowledgeDocRequest } from '../types/admin';
+import { selectList } from './listSelect';
 
 export const ADMIN_KNOWLEDGE_KEYS = {
     all: ['admin', 'knowledge'] as const,

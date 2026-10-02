@@ -1,6 +1,6 @@
 import { getStoredToken, handleUnauthorized, refreshAccessToken } from '@/features/auth/session';
 import { type ApiCode, isSuccessCode, type RequestOptions, type Result } from '@/types';
-import { buildQueryString, escapeHtml } from '@/utils/format';
+import { buildQueryString } from '@/utils/format';
 import { requestManager } from './requestManager';
 
 const API_BASE_URL = '/api';
@@ -43,7 +43,9 @@ const parseError = async (response: Response): Promise<ApiClientError> => {
         };
 
         if (body?.message || body?.msg) {
-            message = escapeHtml(String(body.message ?? body.msg));
+            // 原样透传：文案最终作为 React 文本渲染，由 React 负责转义。
+            // 这里再 HTML 转义一次会让含 & / < / = 的后端消息显示成实体串
+            message = String(body.message ?? body.msg);
         }
         details = body?.data ?? body?.errors ?? null;
     } catch {

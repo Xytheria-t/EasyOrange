@@ -67,28 +67,6 @@ export function formatRelativeTime(date: Date | string | number): string {
     }
 }
 
-export function escapeHtml(str: string | null | undefined): string {
-    if (str == null) {
-        return '';
-    }
-    if (typeof str !== 'string') {
-        str = String(str);
-    }
-
-    const HTML_ENTITIES: Record<string, string> = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#x27;',
-        '/': '&#x2F;',
-        '`': '&#x60;',
-        '=': '&#x3D;',
-    };
-
-    return str.replace(/[&<>"'`=/]/g, char => HTML_ENTITIES[char]);
-}
-
 export function buildQueryString(params: Record<string, unknown>): string {
     const filtered = Object.entries(params)
         .filter(([, value]) => value !== null && value !== undefined && value !== '')

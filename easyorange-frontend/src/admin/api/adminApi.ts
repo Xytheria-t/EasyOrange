@@ -21,15 +21,12 @@ import type {
     OrderInterventionRequest,
     OrderStatsResponse,
     ProductAuditRequest,
-    ResetPasswordRequest,
     RetrievalEvalCase,
     RetrievalEvalLine,
     RetrievalEvalRun,
     TrendItem,
     UpdateStatusRequest,
     UpdateUserStatusRequest,
-    UserRoleRequest,
-    UserUnlockRequest,
 } from '../types/admin';
 
 const ADMIN_API_PREFIX = '/admin';
@@ -95,27 +92,6 @@ export const adminApi = {
 
     updateUserStatus(id: string, data: UpdateUserStatusRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/users/${id}/status`, {
-            method: 'PUT',
-            body: data,
-        });
-    },
-
-    resetPassword(id: string, data: ResetPasswordRequest) {
-        return request<void>(`${ADMIN_API_PREFIX}/users/${id}/reset-password`, {
-            method: 'PUT',
-            body: data,
-        });
-    },
-
-    unlockUser(id: string, data: UserUnlockRequest) {
-        return request<void>(`${ADMIN_API_PREFIX}/users/${id}/unlock`, {
-            method: 'PUT',
-            body: data,
-        });
-    },
-
-    updateUserRole(id: string, data: UserRoleRequest) {
-        return request<void>(`${ADMIN_API_PREFIX}/users/${id}/role`, {
             method: 'PUT',
             body: data,
         });
