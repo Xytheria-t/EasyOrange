@@ -29,15 +29,6 @@ public final class Jsons {
         }
     }
 
-    /** 反序列化，失败返回 null（绝不抛出）。 */
-    public static <T> T readQuietly(ObjectMapper mapper, String json, Class<T> type) {
-        try {
-            return mapper.readValue(json, type);
-        } catch (JacksonException e) {
-            return null;
-        }
-    }
-
     /** 泛型容器形态的反序列化，失败返回 null（绝不抛出）。 */
     public static <T> T readQuietly(ObjectMapper mapper, String json, TypeReference<T> type) {
         try {

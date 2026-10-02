@@ -5,7 +5,6 @@ import com.cartethyia.easyorange.common.result.Result;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
@@ -23,11 +22,6 @@ public class ErrorResponseWriter {
 
     public ErrorResponseWriter(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-    }
-
-    public void write(HttpServletResponse response, HttpStatusCode status, IResultCode code, String message)
-            throws IOException {
-        write(response, status.value(), Result.error(code, message));
     }
 
     public void write(HttpServletResponse response, int status, IResultCode code, String message) throws IOException {

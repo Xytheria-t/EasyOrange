@@ -169,58 +169,68 @@ class IResultCodeTest {
         @Test
         @DisplayName("A0401/A04011 should map to 401")
         void a0401AndA04011_shouldMapToUnauthorized() {
-            assertThat(ResultCode.UNAUTHORIZED.httpStatus()).isEqualTo(HttpStatus.UNAUTHORIZED);
-            assertThat(ResultCode.TOKEN_EXPIRED.httpStatus()).isEqualTo(HttpStatus.UNAUTHORIZED);
+            assertThat(IResultCode.resolveStatus(ResultCode.UNAUTHORIZED.getCode()))
+                    .isEqualTo(HttpStatus.UNAUTHORIZED);
+            assertThat(IResultCode.resolveStatus(ResultCode.TOKEN_EXPIRED.getCode()))
+                    .isEqualTo(HttpStatus.UNAUTHORIZED);
         }
 
         @Test
         @DisplayName("A0403 should map to 403")
         void a0403_shouldMapToForbidden() {
-            assertThat(ResultCode.FORBIDDEN.httpStatus()).isEqualTo(HttpStatus.FORBIDDEN);
+            assertThat(IResultCode.resolveStatus(ResultCode.FORBIDDEN.getCode()))
+                    .isEqualTo(HttpStatus.FORBIDDEN);
         }
 
         @Test
         @DisplayName("A0404 should map to 404")
         void a0404_shouldMapToNotFound() {
-            assertThat(ResultCode.NOT_FOUND.httpStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(IResultCode.resolveStatus(ResultCode.NOT_FOUND.getCode()))
+                    .isEqualTo(HttpStatus.NOT_FOUND);
         }
 
         @Test
         @DisplayName("A0405 should map to 405")
         void a0405_shouldMapToMethodNotAllowed() {
-            assertThat(ResultCode.METHOD_NOT_ALLOWED.httpStatus()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+            assertThat(IResultCode.resolveStatus(ResultCode.METHOD_NOT_ALLOWED.getCode()))
+                    .isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
         }
 
         @Test
         @DisplayName("A0429 should map to 429")
         void a0429_shouldMapToTooManyRequests() {
-            assertThat(ResultCode.TOO_MANY_REQUESTS.httpStatus()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+            assertThat(IResultCode.resolveStatus(ResultCode.TOO_MANY_REQUESTS.getCode()))
+                    .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
         }
 
         @Test
         @DisplayName("B prefix should map to 400")
         void bPrefix_shouldMapToBadRequest() {
-            assertThat(ResultCode.BUSINESS_ERROR.httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
-            assertThat(FileResultCode.FILE_UPLOAD_FAILED.httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(IResultCode.resolveStatus(ResultCode.BUSINESS_ERROR.getCode()))
+                    .isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(IResultCode.resolveStatus(FileResultCode.FILE_UPLOAD_FAILED.getCode()))
+                    .isEqualTo(HttpStatus.BAD_REQUEST);
         }
 
         @Test
         @DisplayName("C prefix should map to 500")
         void cPrefix_shouldMapToInternalServerError() {
-            assertThat(ResultCode.INTERNAL_SERVER_ERROR.httpStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+            assertThat(IResultCode.resolveStatus(ResultCode.INTERNAL_SERVER_ERROR.getCode()))
+                    .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         @Test
         @DisplayName("D prefix should map to 502")
         void dPrefix_shouldMapToBadGateway() {
-            assertThat(ResultCode.UPSTREAM_ERROR.httpStatus()).isEqualTo(HttpStatus.BAD_GATEWAY);
+            assertThat(IResultCode.resolveStatus(ResultCode.UPSTREAM_ERROR.getCode()))
+                    .isEqualTo(HttpStatus.BAD_GATEWAY);
         }
 
         @Test
         @DisplayName("未知 A 码应归 400（防止静默成功）")
         void unknownACode_shouldMapToBadRequest() {
-            IResultCode unknown = new TestResultCode("A0999", "未知");
-            assertThat(unknown.httpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(IResultCode.resolveStatus(new TestResultCode("A0999", "未知").getCode()))
+                    .isEqualTo(HttpStatus.BAD_REQUEST);
         }
 
         @Test
