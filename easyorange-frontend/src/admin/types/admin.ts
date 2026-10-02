@@ -108,7 +108,6 @@ export interface AdminOrder {
     sellerName: string;
     items: AdminOrderItem[];
     totalAmount: number;
-    singleItem: boolean;
     status: OrderStatus;
     statusDesc: string;
     paymentStatus: string;
@@ -123,7 +122,6 @@ export interface AdminOrderDetail {
     seller: OrderParticipant;
     items: AdminOrderDetailItem[];
     totalAmount: number;
-    singleItem: boolean;
     status: OrderStatus;
     statusDesc: string;
     paymentStatus: string;
@@ -144,8 +142,10 @@ export interface AdminOrderDetail {
 export interface AdminOrderDetailItem {
     itemId: string;
     productId: string;
-    productName: string;
-    productImage: string;
+    /** 商品已下架或被删时后端查不到档案，两项为 null，渲染处各有兜底 */
+    productName: string | null;
+    /** 主图在 eo_product_image 另一张表，行项快照不带图，可为 null 走占位图 */
+    productImage: string | null;
     unitPrice: number;
     quantity: number;
     subtotal: number;

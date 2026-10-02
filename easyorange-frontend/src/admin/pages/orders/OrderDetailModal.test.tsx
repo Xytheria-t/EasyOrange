@@ -29,7 +29,6 @@ const sampleOrderDetail: AdminOrderDetail = {
         },
     ],
     totalAmount: 100.0,
-    singleItem: true,
     status: 'PENDING_PAYMENT',
     statusDesc: '待付款',
     paymentStatus: 'UNPAID',

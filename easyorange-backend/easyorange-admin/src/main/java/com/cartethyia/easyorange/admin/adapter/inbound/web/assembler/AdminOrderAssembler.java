@@ -2,8 +2,7 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.assembler;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse.Address;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse.BuyerInfo;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse.SellerInfo;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse.Participant;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse.ItemInfo;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
@@ -44,9 +43,9 @@ public class AdminOrderAssembler {
         return AdminOrderDetailResponse.builder()
                 .orderId(order.id())
                 .orderNo(order.orderNo())
-                .buyer(toBuyerInfo(view.buyer(), order.buyerId()))
-                .seller(toSellerInfo(view.seller(), order.sellerId()))
-                .products(toProductInfos(order.items(), view.products()))
+                .buyer(toParticipant(view.buyer(), order.buyerId()))
+                .seller(toParticipant(view.seller(), order.sellerId()))
+                .items(toItems(order.items(), view.products()))
                 .totalAmount(order.totalAmount())
                 .status(order.status())
                 .statusDesc(order.statusDesc())
@@ -120,28 +119,27 @@ public class AdminOrderAssembler {
                 .toList();
     }
 
-    private List<AdminOrderDetailResponse.ProductInfo> toProductInfos(
+    private List<AdminOrderDetailResponse.ItemInfo> toItems(
             List<OrderItemDetail> items, Map<String, AdminOrderPort.ProductInfo> products) {
         return items.stream()
                 .map(item -> {
                     AdminOrderPort.ProductInfo product = products.get(item.productId());
-                    return product != null
-                            ? new AdminOrderDetailResponse.ProductInfo(
-                                    product.id(), product.name(), null, product.price())
-                            : new AdminOrderDetailResponse.ProductInfo(item.productId(), null, null, null);
+                    return new AdminOrderDetailResponse.ItemInfo(
+                            item.itemId(),
+                            item.productId(),
+                            product != null ? product.name() : null,
+                            null,
+                            item.price(),
+                            item.quantity(),
+                            item.subtotal());
                 })
                 .toList();
     }
 
-    private BuyerInfo toBuyerInfo(UserInfo buyer, String fallbackId) {
-        return buyer != null
-                ? new BuyerInfo(buyer.id(), buyer.nickName(), buyer.avatar(), buyer.phone())
-                : new BuyerInfo(fallbackId, null, null, null);
-    }
-
-    private SellerInfo toSellerInfo(UserInfo seller, String fallbackId) {
-        return seller != null
-                ? new SellerInfo(seller.id(), seller.nickName(), seller.avatar(), seller.phone())
-                : new SellerInfo(fallbackId, null, null, null);
+    /** 查不到档案时保留 id，让前端能显示「用户已不可见」而不是把整块信息抹成空白。 */
+    private static Participant toParticipant(UserInfo user, String fallbackId) {
+        return user != null
+                ? new Participant(user.id(), user.nickName(), user.avatar(), user.phone())
+                : new Participant(fallbackId, null, null, null);
     }
 }

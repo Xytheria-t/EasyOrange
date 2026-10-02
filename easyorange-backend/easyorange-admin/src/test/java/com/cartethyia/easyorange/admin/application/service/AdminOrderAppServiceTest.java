@@ -78,7 +78,7 @@ class AdminOrderAppServiceTest {
                 "ORD2026001",
                 BUYER_ID,
                 SELLER_ID,
-                List.of(new OrderItemDetail(PRODUCT_ID, 1, new BigDecimal("99.99"))),
+                List.of(new OrderItemDetail("item-1", PRODUCT_ID, 1, new BigDecimal("99.99"), new BigDecimal("99.99"))),
                 new BigDecimal("99.99"),
                 status,
                 "待支付",

@@ -252,7 +252,8 @@ public class AdminOrderAdapter implements AdminOrderPort {
 
     private OrderDetail toOrderDetail(OrderReadModel model) {
         List<OrderItemDetail> items = model.items().stream()
-                .map(item -> new OrderItemDetail(item.productId(), item.quantity(), item.unitPrice()))
+                .map(item -> new OrderItemDetail(
+                        item.itemId(), item.productId(), item.quantity(), item.unitPrice(), item.subtotal()))
                 .toList();
         var payment = findPayment(model.id());
         return new OrderDetail(

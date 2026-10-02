@@ -110,7 +110,7 @@ class AdminOrderControllerTest {
                 "ORD001",
                 "10",
                 "20",
-                List.of(new OrderItemDetail("100", 1, BigDecimal.valueOf(199))),
+                List.of(new OrderItemDetail("item-1", "100", 1, BigDecimal.valueOf(199), BigDecimal.valueOf(199))),
                 BigDecimal.valueOf(199),
                 "PENDING_PAYMENT",
                 "待付款",
@@ -142,7 +142,14 @@ class AdminOrderControllerTest {
                 .andExpect(jsonPath("$.data.orderNo").value("ORD001"))
                 .andExpect(jsonPath("$.data.buyer.userId").value("10"))
                 .andExpect(jsonPath("$.data.seller.nickname").value("seller1"))
-                .andExpect(jsonPath("$.data.products[0].name").value("Product1"))
+                // 行项曾以 products / name / price 返回，与前端声明的 items / productName / unitPrice
+                // 字段名全不相同，orderData.items 恒为 undefined，数量与单价永不显示
+                .andExpect(jsonPath("$.data.items[0].itemId").value("item-1"))
+                .andExpect(jsonPath("$.data.items[0].productId").value("100"))
+                .andExpect(jsonPath("$.data.items[0].productName").value("Product1"))
+                .andExpect(jsonPath("$.data.items[0].unitPrice").value(199))
+                .andExpect(jsonPath("$.data.items[0].quantity").value(1))
+                .andExpect(jsonPath("$.data.items[0].subtotal").value(199))
                 // 支付与收货信息曾长期恒为 null：前端四块 UI 永远走空分支，这里锁住实际下发
                 .andExpect(jsonPath("$.data.paymentNo").value("PAY20260516001"))
                 .andExpect(jsonPath("$.data.paidAmount").value(199))
