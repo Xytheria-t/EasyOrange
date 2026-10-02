@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.framework.file.service;
 
 import com.cartethyia.easyorange.framework.config.properties.ImageProcessingProperties;
 import com.cartethyia.easyorange.framework.file.service.ImageProcessingService.ImageFormat;
+import com.cartethyia.easyorange.framework.file.service.ImageProcessingService.ProcessedImage;
 import com.github.benmanes.caffeine.cache.Cache;
 import java.io.File;
 import java.io.IOException;
@@ -10,6 +11,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.concurrent.Callable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
@@ -148,29 +150,26 @@ public class ImageQueryService {
             String ifNoneMatch)
             throws IOException {
         var cacheKey = buildCacheKey(fileId, width, height, format, quality);
-        var cached = getFromCache(cacheKey);
-        if (cached != null) {
-            if (ifNoneMatch != null && ifNoneMatch.equals(cached.eTag())) {
-                return new ProcessCacheEntry(cached, true);
-            }
-            if (cached.file().exists()) {
-                return new ProcessCacheEntry(cached, false);
-            }
-            imageProcessCache.invalidate(cacheKey);
-        }
-
-        var processed = imageProcessingService.processImage(originalFile, width, height, format, quality);
-        var eTag = computeETag(processed.file());
-        var entry = new ImageProcessingCacheEntry(processed.file(), processed.mimeType(), eTag);
-        putToCache(cacheKey, entry);
-        log.debug("Image processed and cached: key={}", cacheKey);
-        return new ProcessCacheEntry(entry, false);
+        return cachedOrCompute(
+                cacheKey,
+                ifNoneMatch,
+                () -> imageProcessingService.processImage(originalFile, width, height, format, quality));
     }
 
     private ProcessCacheEntry getCachedOrProcessForThumbnail(
             File originalFile, String fileId, int size, String ifNoneMatch) throws IOException {
         var quality = imageProcessingProperties.thumbnailQuality();
         var cacheKey = buildCacheKey(fileId, size, size, ImageFormat.WEBP, quality);
+        return cachedOrCompute(
+                cacheKey, ifNoneMatch, () -> imageProcessingService.createThumbnail(originalFile, size, quality));
+    }
+
+    /**
+     * 缓存命中优先的三段式：命中且 ETag 匹配 → 304；命中且盘上文件还在 → 直接用；
+     * 否则重算并回填。缩略图与指定尺寸加工只差「怎么产出」，故共用本方法。
+     */
+    private ProcessCacheEntry cachedOrCompute(String cacheKey, String ifNoneMatch, Callable<ProcessedImage> compute)
+            throws IOException {
         var cached = getFromCache(cacheKey);
         if (cached != null) {
             if (ifNoneMatch != null && ifNoneMatch.equals(cached.eTag())) {
@@ -182,11 +181,16 @@ public class ImageQueryService {
             imageProcessCache.invalidate(cacheKey);
         }
 
-        var thumbnail = imageProcessingService.createThumbnail(originalFile, size, quality);
-        var eTag = computeETag(thumbnail.file());
-        var entry = new ImageProcessingCacheEntry(thumbnail.file(), thumbnail.mimeType(), eTag);
+        final ProcessedImage processed;
+        try {
+            processed = compute.call();
+        } catch (Exception e) {
+            throw e instanceof IOException io ? io : new IOException(e);
+        }
+        var entry =
+                new ImageProcessingCacheEntry(processed.file(), processed.mimeType(), computeETag(processed.file()));
         putToCache(cacheKey, entry);
-        log.debug("Thumbnail processed and cached: key={}", cacheKey);
+        log.debug("Image processed and cached: key={}", cacheKey);
         return new ProcessCacheEntry(entry, false);
     }
 

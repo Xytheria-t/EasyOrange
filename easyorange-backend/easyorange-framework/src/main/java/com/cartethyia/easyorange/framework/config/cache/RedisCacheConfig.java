@@ -69,44 +69,31 @@ public class RedisCacheConfig implements CachingConfigurer {
 
     @Override
     public CacheErrorHandler errorHandler() {
+        // 缓存故障一律降级为日志 + 失败计数，绝不抛给业务方：Redis 抖动不该让下单失败
         return new CacheErrorHandler() {
             @Override
-            public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) {
-                log.warn(
-                        "action=cache_get_failed, cache={}, key={}, error={}",
-                        cache.getName(),
-                        key,
-                        exception.getMessage());
-                recordFailure("get", cache);
+            public void handleCacheGetError(RuntimeException e, Cache cache, Object key) {
+                fail("get", cache, key, e);
             }
 
             @Override
-            public void handleCachePutError(RuntimeException exception, Cache cache, Object key, Object value) {
-                log.warn(
-                        "action=cache_put_failed, cache={}, key={}, error={}",
-                        cache.getName(),
-                        key,
-                        exception.getMessage());
-                recordFailure("put", cache);
+            public void handleCachePutError(RuntimeException e, Cache cache, Object key, Object value) {
+                fail("put", cache, key, e);
             }
 
             @Override
-            public void handleCacheEvictError(RuntimeException exception, Cache cache, Object key) {
-                log.warn(
-                        "action=cache_evict_failed, cache={}, key={}, error={}",
-                        cache.getName(),
-                        key,
-                        exception.getMessage());
-                recordFailure("evict", cache);
+            public void handleCacheEvictError(RuntimeException e, Cache cache, Object key) {
+                fail("evict", cache, key, e);
             }
 
             @Override
-            public void handleCacheClearError(RuntimeException exception, Cache cache) {
-                log.warn("action=cache_clear_failed, cache={}, error={}", cache.getName(), exception.getMessage());
-                recordFailure("clear", cache);
+            public void handleCacheClearError(RuntimeException e, Cache cache) {
+                fail("clear", cache, null, e);
             }
 
-            private void recordFailure(String op, Cache cache) {
+            private void fail(String op, Cache cache, Object key, RuntimeException e) {
+                log.warn(
+                        "action=cache_{}_failed, cache={}, key={}, error={}", op, cache.getName(), key, e.getMessage());
                 meterRegistry
                         .counter("easyorange.cache.failures", "op", op, "cache", cache.getName())
                         .increment();

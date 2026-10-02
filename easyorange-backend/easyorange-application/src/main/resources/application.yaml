@@ -395,17 +395,9 @@ easyorange:
 
   file:
     image:
-      quality: 0.80
+      # 只有缩略图质量走配置：默认输出质量由 FileController 的 q 参数按请求给，
+      # 响应式图同走该参数，进度式 JPEG 与智能裁剪尚未实现 —— 不写「配了等于没配」的键
       thumbnail-quality: 0.75
-      responsive-quality: 0.75
-      progressive-jpeg:
-        enabled: true
-        min-size: 102400
-      smart-crop:
-        enabled: true
-        # 必须加引号：YAML 会把裸写的 1:1 当六十进制整数解析成 61（4:3 → 243）
-        default-aspect-ratio: "1:1"
-        min-entropy-threshold: 0.5
 
   ai:
     # 五个模型槽位（决策 / 文本 / 视觉 / 评审 / Embedding）的 api-key、base-url、model 都可经环境变量覆盖：

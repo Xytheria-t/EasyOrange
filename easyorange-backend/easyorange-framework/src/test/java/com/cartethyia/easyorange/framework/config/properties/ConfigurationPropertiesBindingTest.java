@@ -47,12 +47,8 @@ class ConfigurationPropertiesBindingTest {
             assertThat(context.getBean(WebMvcProperties.class).excludePaths()).isEmpty();
             assertThat(context.getBean(WebMvcProperties.class).interceptorOrder())
                     .isZero();
-            assertThat(context.getBean(ImageProcessingProperties.class).quality())
-                    .isEqualTo(0.8f);
-            assertThat(context.getBean(ImageProcessingProperties.class)
-                            .smartCrop()
-                            .defaultAspectRatio())
-                    .isEqualTo("1:1");
+            assertThat(context.getBean(ImageProcessingProperties.class).thumbnailQuality())
+                    .isEqualTo(0.75f);
             assertThat(context.getBean(SlowSqlProperties.class).logLevel()).isEqualTo(SlowSqlProperties.LogLevel.WARN);
             assertThat(context.getBean(MybatisPlusInterceptorProperties.class).maxLimit())
                     .isEqualTo(100L);
@@ -66,14 +62,6 @@ class ConfigurationPropertiesBindingTest {
             var image = context.getBean(CacheProperties.class).image();
             assertThat(image.maxSize()).isEqualTo(1000);
             assertThat(image.expireHours()).isEqualTo(24);
-
-            var jpeg = context.getBean(ImageProcessingProperties.class).progressiveJpeg();
-            assertThat(jpeg.enabled()).isTrue();
-            assertThat(jpeg.minSize()).isEqualTo(102400L);
-            assertThat(context.getBean(ImageProcessingProperties.class)
-                            .smartCrop()
-                            .minEntropyThreshold())
-                    .isEqualTo(0.5);
 
             var repeatSubmit = context.getBean(RateLimitFilterProperties.class).repeatSubmit();
             assertThat(repeatSubmit.enabled()).isTrue();
@@ -121,14 +109,14 @@ class ConfigurationPropertiesBindingTest {
         @Test
         @DisplayName("越界值启动即失败（@Validated 生效）")
         void rejectsOutOfRangeQuality() {
-            runner.withPropertyValues("easyorange.file.image.quality=1.5")
+            runner.withPropertyValues("easyorange.file.image.thumbnail-quality=1.5")
                     .run(context -> assertThat(context).hasFailed());
         }
 
         @Test
         @DisplayName("嵌套对象约束级联生效（@Valid 生效）")
         void rejectsInvalidNestedValue() {
-            runner.withPropertyValues("easyorange.file.image.smart-crop.min-entropy-threshold=2.0")
+            runner.withPropertyValues("rate-limit-filter.repeat-submit.interval-ms=0")
                     .run(context -> assertThat(context).hasFailed());
         }
 
@@ -136,13 +124,6 @@ class ConfigurationPropertiesBindingTest {
         @DisplayName("枚举取值非法启动即失败，不再静默退化")
         void rejectsInvalidEnumValue() {
             runner.withPropertyValues("slow-sql.log-level=wran")
-                    .run(context -> assertThat(context).hasFailed());
-        }
-
-        @Test
-        @DisplayName("宽高比格式非法启动即失败（@Pattern 生效）")
-        void rejectsMalformedAspectRatio() {
-            runner.withPropertyValues("easyorange.file.image.smart-crop.default-aspect-ratio=1x1")
                     .run(context -> assertThat(context).hasFailed());
         }
     }
