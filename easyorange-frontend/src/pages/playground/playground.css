@@ -259,9 +259,15 @@
     transform: scale(0.98);
 }
 
+/* 全站唯一两处「环只能画在内侧」的焦点态之一（父级 .playground-think 有
+   overflow:hidden，外侧环会被裁掉）。实测 Chromium 下负偏移的 outline 会盖住
+   同位置的 inset box-shadow，亮圈根本显不出来，所以内侧环不套双层，改用 3px
+   暗环直接贴边；它压的是元素自身那块浅色面板底，对比度 5.18:1 够 3:1。
+   box-shadow 要显式清掉：全局基线那条 2px 外插亮圈会漏进来，被 overflow 裁成一圈 */
 .playground-think__head:focus-visible {
-    outline: 2px solid var(--primary-700);
-    outline-offset: -2px;
+    outline: 3px solid var(--focus-ring);
+    outline-offset: -3px;
+    box-shadow: none;
 }
 
 .playground-think__head-meta {
@@ -502,6 +508,7 @@
 .playground-msg__retry:focus-visible {
     outline: 2px solid var(--status-error);
     outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--focus-halo);
 }
 
 /* 思考中三点 —— 真正表达 loading 的动画，保留 */
@@ -588,8 +595,9 @@
 }
 
 .playground-msg__feedback-btn:focus-visible {
-    outline: 2px solid var(--primary-700);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--focus-halo);
 }
 
 /* ============ SUGGESTIONS ============ */
@@ -648,8 +656,9 @@
 }
 
 .playground__suggestion:focus-visible {
-    outline: 2px solid var(--primary-700);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--focus-halo);
 }
 
 /* ============ COMPOSER ============ */
@@ -750,8 +759,13 @@
 }
 
 .playground__send:focus-visible {
-    outline: 2px solid var(--primary-700);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+    /* 亮圈排在前：box-shadow 后写的画在上层，光晕在前会把白圈染成浅橙。
+       原光晕必须显式带上，box-shadow 是整体替换，不写就会在聚焦时抹掉 */
+    box-shadow:
+        0 0 0 2px var(--focus-halo),
+        0 4px 12px var(--primary-glow);
 }
 
 .playground__disclaimer {

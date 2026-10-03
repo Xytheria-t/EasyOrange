@@ -633,8 +633,11 @@
 }
 
 .product-title-link-premium:focus-visible {
-    outline: 2px solid var(--primary-700);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 3px;
+    /* 亮圈宽度跟着 offset 走，两层才相接；5px 外扩仍落在内边距里
+       （标准卡 20px、compact 卡 12px），碰不到卡片圆角 */
+    box-shadow: 0 0 0 3px var(--focus-halo);
     border-radius: var(--radius-sm);
 }
 
@@ -908,8 +911,12 @@
 }
 
 .product-card-premium--compact:has(.product-title-link-premium:focus-visible) {
-    outline: 2px solid var(--primary-700);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+    /* 常驻阴影要显式带上：box-shadow 整体替换，只写亮圈会在聚焦时把卡片压平 */
+    box-shadow:
+        var(--shadow-sm),
+        0 0 0 2px var(--focus-halo);
 }
 
 .product-card-premium--compact .product-image-premium {

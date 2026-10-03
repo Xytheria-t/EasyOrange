@@ -107,11 +107,16 @@ body {
 
 /* ============ FOCUS & MOTION BASELINE ============ */
 /* 键盘可达性基线：Tab 聚焦一律可见（页面自有 :focus-visible 样式特异性更高，自然覆盖）
-   焦点环取 700：2px 细窄元素在页面底色上，500 只有 2.45:1，达不到非文本 3:1。
-   页面若要改 outline-offset，颜色仍跟这条走，别退回 500。 */
+   双层环：outline 画暗环，box-shadow 的 2px 亮圈填满 outline-offset 让出的空隙，
+   两者相接读作「白 2px + 橙 2px」。取值与改法一律走 tokens 的 --focus-ring /
+   --focus-halo，页面要覆盖时连 halo 一起搬，别只搬 outline。
+   唯一例外是 outline-offset 取负值（环被 overflow:hidden 逼进内侧）：
+   Chromium 下负偏移 outline 会盖死同位置的 inset 亮圈，内侧只能单用更粗的暗环，
+   现成两处见 playground 的 think 折叠头与 notifications 的整行按钮。 */
 :focus-visible {
-    outline: 2px solid var(--primary-700);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--focus-halo);
 }
 
 /* 鼠标/触摸点击不画焦点环 */
@@ -154,8 +159,9 @@ body {
 }
 
 .scroll-progress-container:focus-visible {
-    outline: 2px solid var(--primary-400);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--focus-halo);
 }
 
 .scroll-progress-container[data-visible="true"] {
