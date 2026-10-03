@@ -2,7 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper">
 
-    <!-- 会话列表：库端聚合每个会话对方的最新一条消息（UUIDv7 时间有序，MAX(id) 即最新），替代全量拉取内存聚合 -->
+    <!-- 会话列表：库端聚合每个会话对方的最新一条消息，替代全量拉取内存聚合 -->
+    <!-- 以 create_time 取最新而非 MAX(id)：字典序取最大仅在 ID 全为 UUIDv7（时间有序）时成立，
+         dev 种子 MSGxx 等字符串 ID 会排在 UUIDv7 之上，预览/排序被旧消息霸占。id 仅作同秒 tiebreaker -->
     <!-- 列清单须与 MessageDO 对齐：漏列（如 msg_status / recalled_at）不会报错，只会让聚合根对应字段恒 null -->
     <select id="selectLatestPerConversation" resultType="com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO">
         SELECT m.id, m.sender_id, m.receiver_id, m.type, m.title, m.content,
@@ -11,13 +13,20 @@
                m.del_flag, m.create_time, m.update_time, m.create_by, m.update_by, m.version
         FROM eo_message m
         JOIN (
-            SELECT MAX(id) AS max_id
-            FROM eo_message
-            WHERE (sender_id = #{userId} OR receiver_id = #{userId}) AND del_flag = 0
-            GROUP BY CASE WHEN sender_id IS NULL THEN 'system'
-                          WHEN sender_id = #{userId} THEN receiver_id
-                          ELSE sender_id END
-        ) t ON m.id = t.max_id
+            SELECT id AS latest_id
+            FROM (
+                SELECT id,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY CASE WHEN sender_id IS NULL THEN 'system'
+                                             WHEN sender_id = #{userId} THEN receiver_id
+                                             ELSE sender_id END
+                           ORDER BY create_time DESC, id DESC
+                       ) AS rn
+                FROM eo_message
+                WHERE (sender_id = #{userId} OR receiver_id = #{userId}) AND del_flag = 0
+            ) ranked
+            WHERE rn = 1
+        ) t ON m.id = t.latest_id
         ORDER BY m.create_time DESC
     </select>
 
