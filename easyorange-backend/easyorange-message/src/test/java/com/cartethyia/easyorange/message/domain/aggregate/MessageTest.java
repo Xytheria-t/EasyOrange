@@ -297,6 +297,28 @@ class MessageTest {
         }
     }
 
+    @Nested
+    @DisplayName("isConversationParticipant")
+    class ConversationParticipantTests {
+
+        @Test
+        @DisplayName("双参与者均命中")
+        void participant_bothSidesMatch() {
+            assertThat(Message.isConversationParticipant("conv_1_2", "1")).isTrue();
+            assertThat(Message.isConversationParticipant("conv_1_2", "2")).isTrue();
+        }
+
+        @Test
+        @DisplayName("第三人 / 前缀含糊串 / 非法格式一律 false（fail-closed）")
+        void nonParticipant_orMalformed_returnsFalse() {
+            assertThat(Message.isConversationParticipant("conv_1_2", "3")).isFalse();
+            assertThat(Message.isConversationParticipant("conv_1_2_extra", "3")).isFalse();
+            assertThat(Message.isConversationParticipant("conv_1_2", null)).isFalse();
+            assertThat(Message.isConversationParticipant(null, "1")).isFalse();
+            assertThat(Message.isConversationParticipant("garbage", "1")).isFalse();
+        }
+    }
+
     private Message testMessage(LocalDateTime createTime) {
         return Message.fromRaw(
                 "100",

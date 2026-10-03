@@ -2,6 +2,7 @@ import { Client, type IMessage } from '@stomp/stompjs';
 import { useCallback, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/chatStore';
+import { useUIStore } from '@/store/uiStore';
 import type { RecallPayload, TypingPayload } from '@/types/message';
 import type { RawChatMessage } from '@/types/raw';
 import { normalizeChatMessage } from '@/utils/message';
@@ -27,6 +28,7 @@ export function useStompChat(): UseStompChatReturn {
     const clientRef = useRef<Client | null>(null);
     const reconnectAttemptRef = useRef(0);
     const subscriptionsRef = useRef<Map<string, () => void>>(new Map());
+    const disposedRef = useRef(false);
     // 订阅意图跨 client 重建保留（token 刷新会换实例）：onConnect 统一补订阅。
     // 进页时 WS 尚未握手完成，旧逻辑直接 return 静默丢订阅，消息发出后收不到回显。
     const wantedRef = useRef<Set<string>>(new Set());
@@ -35,6 +37,7 @@ export function useStompChat(): UseStompChatReturn {
     const addMessage = useChatStore(s => s.addMessage);
     const updateMessage = useChatStore(s => s.updateMessage);
     const setTyping = useChatStore(s => s.setTyping);
+    const addToast = useUIStore(s => s.addToast);
     const token = useAuthStore(s => s.token);
 
     const doSubscribe = useCallback(
@@ -89,6 +92,9 @@ export function useStompChat(): UseStompChatReturn {
             setConnectionStatus('disconnected');
             return;
         }
+        // 主动 deactivate（离开聊天页的 cleanup）也会触发 onWebSocketClose：
+        // 不加此标记，正常退出会把连接状态残留成 reconnecting
+        disposedRef.current = false;
         const brokerURL = `${WS_URL}?token=${encodeURIComponent(token)}`;
 
         const client = new Client({
@@ -106,12 +112,21 @@ export function useStompChat(): UseStompChatReturn {
                         doSubscribe(c, id);
                     });
                 }
+                // 发送失败回执（限流/校验/技术异常）：此前只回帧无人订阅，用户点发送毫无反馈
+                client.subscribe('/user/queue/error', (message: IMessage) => {
+                    try {
+                        const data: { type: string; message: string } = JSON.parse(message.body);
+                        addToast({ type: 'error', message: data.message });
+                    } catch {
+                        // Failed to parse error frame
+                    }
+                });
             },
             onDisconnect: () => {
                 setConnectionStatus('disconnected');
             },
             onWebSocketClose: () => {
-                setConnectionStatus('reconnecting');
+                setConnectionStatus(disposedRef.current ? 'disconnected' : 'reconnecting');
             },
             onWebSocketError: (_event: Event) => {
                 // WebSocket error occurred
@@ -129,6 +144,7 @@ export function useStompChat(): UseStompChatReturn {
         clientRef.current = client;
 
         return () => {
+            disposedRef.current = true;
             subscriptions.forEach(unsub => {
                 unsub();
             });
@@ -136,7 +152,7 @@ export function useStompChat(): UseStompChatReturn {
             client.deactivate();
             clientRef.current = null;
         };
-    }, [setConnectionStatus, token, doSubscribe]);
+    }, [setConnectionStatus, token, doSubscribe, addToast]);
 
     const sendMessage = useCallback((payload: Record<string, unknown>) => {
         clientRef.current?.publish({

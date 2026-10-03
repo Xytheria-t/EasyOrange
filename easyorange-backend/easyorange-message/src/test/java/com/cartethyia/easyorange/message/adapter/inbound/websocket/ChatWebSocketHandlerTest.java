@@ -15,6 +15,8 @@ import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
+import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
+import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -39,6 +41,9 @@ class ChatWebSocketHandlerTest {
 
     @Mock
     private MessageCommandHandler messageCommandHandler;
+
+    @Mock
+    private UserInfoPort userInfoPort;
 
     @InjectMocks
     private ChatWebSocketHandler handler;
@@ -86,8 +91,9 @@ class ChatWebSocketHandlerTest {
     @BeforeEach
     void setUp() {
         principal = mock(Principal.class);
-        // lenient：broadcastRecallEvent 用例不使用 principal
+        // lenient：broadcastRecallEvent / typing 用例不使用这两个依赖
         lenient().when(principal.getName()).thenReturn(USER_ID);
+        lenient().when(userInfoPort.getUserInfoMap(any())).thenReturn(Map.of());
         wsMessage = WsMessage.builder()
                 .receiverId(RECEIVER_ID)
                 .type(2)
@@ -138,7 +144,23 @@ class ChatWebSocketHandlerTest {
                     .containsEntry("content", "hello")
                     .containsEntry("type", 2)
                     .containsEntry("status", "SENT")
-                    .containsEntry("createTime", CREATE_TIME.toString());
+                    .containsEntry("createTime", CREATE_TIME.toString())
+                    .containsEntry("isRead", 0);
+        }
+
+        @Test
+        @DisplayName("回显帧带发送者档案（与 REST 会话详情同源），纯实时会话前端也能取到头像")
+        void handleChatMessage_broadcastsSenderProfile() {
+            stubSavedMessage();
+            when(userInfoPort.getUserInfoMap(any()))
+                    .thenReturn(Map.of(USER_ID, UserInfo.of(USER_ID, "alice", "http://a.png")));
+
+            handler.handleChatMessage(wsMessage, principal);
+
+            verify(messagingTemplate).convertAndSend(eq("/queue/chat/" + CONVERSATION_ID), frameCaptor.capture());
+            @SuppressWarnings("unchecked")
+            Map<String, Object> frame = (Map<String, Object>) frameCaptor.getValue();
+            assertThat(frame).containsEntry("senderName", "alice").containsEntry("senderAvatar", "http://a.png");
         }
 
         @Test
@@ -294,13 +316,13 @@ class ChatWebSocketHandlerTest {
         }
 
         @Test
-        @DisplayName("正在输入时 conversationId 为 null 仍广播（原样透传客户端话题）")
-        void handleTyping_nullConversationId_stillBroadcasts() {
-            wsMessage.setConversationId(null);
+        @DisplayName("typing 帧归属校验：非会话参与者不广播（防止向任意会话注入输入状态）")
+        void handleTyping_foreignConversation_dropped() {
+            wsMessage.setConversationId("conv_2_3");
 
             handler.handleTyping(wsMessage, principal);
 
-            verify(messagingTemplate).convertAndSend(eq("/topic/chat/null/typing"), (Object) any(Map.class));
+            verifyNoInteractions(messagingTemplate);
         }
 
         @Test

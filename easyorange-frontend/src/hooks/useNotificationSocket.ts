@@ -36,6 +36,12 @@ export function useNotificationSocket(): void {
                         // ignore parse errors
                     }
                 });
+                // 聊天未读增量帧：载荷只当触发器用，REST unread-count / 会话列表是唯一真相源；
+                // 此前后端每条消息都在发、前端无人订阅，红点只能等 60s 轮询
+                client.subscribe('/user/queue/unread-count', () => {
+                    void queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+                    void queryClient.invalidateQueries({ queryKey: ['messages', 'conversations'] });
+                });
             },
             beforeConnect: () => {
                 const delay = RECONNECT_DELAYS[Math.min(reconnectAttemptRef.current, RECONNECT_DELAYS.length - 1)];

@@ -109,7 +109,7 @@ class MessageQueryHandlerTest {
         @Test
         @DisplayName("获取未读数")
         void getUnreadCount_returnsCount() {
-            UnreadCount count = new UnreadCount(5L, 2L, 3L, 0L, 0L, 0L);
+            UnreadCount count = new UnreadCount(5, 2, 3, 0, 0, 0);
             when(queryRepository.countUnreadByReceiverId(anyString())).thenReturn(count);
 
             UnreadCountVO result = queryHandler.getUnreadCount(USER_ID);

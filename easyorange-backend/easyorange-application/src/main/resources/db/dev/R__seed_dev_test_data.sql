@@ -16,8 +16,9 @@
 --   ④ 库存流水按上述时点从 eo_order_item **结构化推导**（见第 9 段），不手写数值，
 --      保证「eo_product.stock == 最新流水 stock_after」恒成立，StockReconcileScheduler 零漂移。
 --      （推导含单件库存假设：quantity=1、初始库存=1；将来出现多件商品需改写推导式。）
---   ⑤ eo_message.conversation_id 一律留 NULL：写路径 MessageDataMapper.toEntity 根本不落该列，
---      会话列表按 sender/receiver 聚合（MessageMapper.xml），造 conv_xxx 只会与代码行为不符。
+--   ⑤ eo_message.conversation_id 留 NULL：会话列表按 sender/receiver 聚合（MessageMapper.xml），
+--      不依赖该列；真实写路径由 Message 聚合推导（conv_+双 UUID，78 字符，V4 已扩列宽），
+--      种子行补写推导值只会与「代码现算」的双真相源。
 --   ⑥ 审计日志 / 请求 URL 只引用真实存在的 Controller 与路由。
 --   ⑦ 每个商品必配 1 张主图（is_main=1 唯一，上架校验主图>1 会拒）；多图商品供详情页轮播演示。
 --   ⑧ 固定账号密码同哈希（BCrypt），演示用；真实发布商品是 UUID v7 主键，不会落在这些数字 ID 上。
@@ -567,7 +568,7 @@ WHERE o.`status` IN ('CANCELLED', 'REFUNDED')
 ON DUPLICATE KEY UPDATE `eo_stock_ledger`.`id` = `eo_stock_ledger`.`id`;
 
 -- ===================================================================
--- 10. 消息（46 条：欢迎/上架提醒/订单链/私聊；conversation_id 一律 NULL，见约束 ⑤）
+-- 10. 消息（46 条：欢迎/上架提醒/订单链/私聊；conversation_id 留 NULL，见约束 ⑤）
 --      type：1 系统 2 聊天 3 订单 4 支付；business_id 指向商品或订单
 -- ===================================================================
 

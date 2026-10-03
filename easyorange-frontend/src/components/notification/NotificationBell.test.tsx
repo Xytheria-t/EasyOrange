@@ -26,7 +26,7 @@ describe('NotificationBell', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { systemCount: 0, totalCount: 0 },
+                    data: { systemCount: 0, total: 0 },
                     timestamp: Date.now(),
                 });
             })
@@ -42,7 +42,7 @@ describe('NotificationBell', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { systemCount: 3, totalCount: 3 },
+                    data: { systemCount: 3, total: 3 },
                     timestamp: Date.now(),
                 });
             })
@@ -59,7 +59,7 @@ describe('NotificationBell', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { systemCount: 0, totalCount: 0 },
+                    data: { systemCount: 0, total: 0 },
                     timestamp: Date.now(),
                 });
             })
@@ -77,7 +77,7 @@ describe('NotificationBell', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { systemCount: 150, totalCount: 150 },
+                    data: { systemCount: 150, total: 150 },
                     timestamp: Date.now(),
                 });
             })
@@ -94,7 +94,7 @@ describe('NotificationBell', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { systemCount: 0, totalCount: 0 },
+                    data: { systemCount: 0, total: 0 },
                     timestamp: Date.now(),
                 });
             })

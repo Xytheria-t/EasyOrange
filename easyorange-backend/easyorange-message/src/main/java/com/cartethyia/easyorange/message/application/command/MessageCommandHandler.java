@@ -91,25 +91,29 @@ public class MessageCommandHandler {
      * 推送失败在提交后只告警不打回请求（DB 行已落库，离线兜底才是可靠路径）。
      * 无事务上下文（单元测试 / 非事务调用方）时立即投递。
      */
-    private void notifyAfterCommit(Message saved, boolean pushNotification) {
+    private void notifyAfterCommit(Message saved, boolean systemNotification) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            deliverRealtime(saved, pushNotification);
+            deliverRealtime(saved, systemNotification);
             return;
         }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                deliverRealtime(saved, pushNotification);
+                deliverRealtime(saved, systemNotification);
             }
         });
     }
 
-    private void deliverRealtime(Message saved, boolean pushNotification) {
+    private void deliverRealtime(Message saved, boolean systemNotification) {
         try {
-            boolean online = messageNotifier.isUserOnline(saved.receiverId());
-            offlineMessageAppService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);
-            if (online && pushNotification) {
-                messageNotifier.sendNotification(saved.receiverId(), SystemNotificationPayload.toMap(saved));
+            // 只有系统通知进离线兜底（replayPending 也只补推 SYSTEM）：聊天消息的会话与未读真相源
+            // 就在 eo_message，客户端上线自拉——落离线行只会造出永不消费、永不清账的 PENDING 行
+            if (systemNotification) {
+                boolean online = messageNotifier.isUserOnline(saved.receiverId());
+                offlineMessageAppService.storeIfOffline(saved.receiverId(), saved.id(), "websocket", online);
+                if (online) {
+                    messageNotifier.sendNotification(saved.receiverId(), SystemNotificationPayload.toMap(saved));
+                }
             }
         } catch (Exception e) {
             log.warn(
