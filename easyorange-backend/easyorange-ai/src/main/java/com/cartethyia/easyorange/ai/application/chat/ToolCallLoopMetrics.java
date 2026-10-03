@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.ai.application.chat;
 
+import com.cartethyia.easyorange.ai.application.support.ToolCallLoopOutcome;
+import com.cartethyia.easyorange.ai.application.support.ToolLoopListener;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -23,7 +25,7 @@ import org.springframework.stereotype.Component;
  * 观测失败绝不影响主链路：调用方只传已算好的结局与耗时，本类不抛异常、不反查配置。
  */
 @Component
-public class ToolCallLoopMetrics {
+public class ToolCallLoopMetrics implements ToolLoopListener {
 
     private static final String LOOP_METRIC = "easyorange.ai.chat.loop";
     private static final String STEPS_METRIC = "easyorange.ai.chat.steps";
@@ -95,7 +97,8 @@ public class ToolCallLoopMetrics {
     }
 
     /** 记一次循环的结局与决策轮数 —— 结局含降级归因，轮数是「平均步数」口径的来源。 */
-    void recordLoop(ToolCallLoopOutcome outcome, int rounds) {
+    @Override
+    public void recordLoop(ToolCallLoopOutcome outcome, int rounds) {
         loopCounters.get(outcome).increment();
         stepsSummary.record(rounds);
     }
@@ -106,12 +109,14 @@ public class ToolCallLoopMetrics {
      * 走到这里的请求没有循环出口，轮数不可知；记 0 会把「平均步数」往 0 拽，而故障爆发恰恰是
      * 最需要读这条曲线的时候。分母因此只由真实出口构成，与 loop 计数器的非 error 之和一致。
      */
-    void recordLoopFailure() {
+    @Override
+    public void recordLoopFailure() {
         loopCounters.get(ToolCallLoopOutcome.ERROR).increment();
     }
 
     /** 记一次工具执行：调用计数（tag 封闭集外落 unknown）+ 执行耗时。 */
-    void recordTool(String toolName, long latencyMs) {
+    @Override
+    public void recordTool(String toolName, long latencyMs) {
         TrackedTool tracked = TrackedTool.fromName(toolName);
         toolCounters.get(tracked).increment();
         toolTimers.get(tracked).record(latencyMs, TimeUnit.MILLISECONDS);

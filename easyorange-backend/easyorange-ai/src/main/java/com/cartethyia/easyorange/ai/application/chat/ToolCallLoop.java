@@ -1,44 +1,40 @@
 package com.cartethyia.easyorange.ai.application.chat;
 
 import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
+import com.cartethyia.easyorange.ai.application.support.FailureReason;
+import com.cartethyia.easyorange.ai.application.support.ToolCallLoopOutcome;
+import com.cartethyia.easyorange.ai.application.support.ToolLoopDecider;
+import com.cartethyia.easyorange.ai.application.support.ToolLoopKernel;
+import com.cartethyia.easyorange.ai.application.support.UntrustedText;
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
-import com.cartethyia.easyorange.ai.domain.model.ToolCallStepTrace;
-import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
 import com.cartethyia.easyorange.ai.domain.port.ToolCallStepTracePort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * 多步工具调用循环（ReAct）— 逐轮「决策 → 工具 → 观察」推进到模型判定信息足够。
- * <p>
- * 手写循环 + 原生 tool calling：{@code ChatModel.call} 不自动执行工具（Spring AI 2.0 删掉了
- * internalToolExecutionEnabled、模型类无 executeToolCalls 调用点，代执行上移到 ChatClient），步数与
- * 降级控制权留在本类；一轮可多调用同轮全执行、按模型顺序逐个执行（召回累加器是实例独占状态）。
+ * 买家侧多步工具调用循环（ReAct）— 找货对话的编排器：注入首轮上下文、工具面与降级口径，循环机制交给
+ * {@link ToolLoopKernel}（与 listing 链路共用）。
  * <p>
  * 降级口径（退回确定性单次生成，已积累观察不丢弃）：步数/预算超限 → 用已积累观察直接生成；决策失败 →
- * 按原始问题补一次检索；工具执行失败≠决策失败，收敛成失败观察交回模型自修复。trace/step/指标是副产物，失败不碰主链路。
+ * 按原始问题补一次检索（白名单未含知识检索的对照臂跳过——补检索会把该臂的检索来源偷偷加回来）。
  */
 @Slf4j
-@RequiredArgsConstructor
 @Component
 public class ToolCallLoop {
 
@@ -64,11 +60,33 @@ public class ToolCallLoop {
     private final PromptRegistryPort promptRegistry;
     private final ChatToolsFactory toolsFactory;
     private final ToolCallDecider decider;
-    private final ToolCallStepTracePort tracePort;
+    private final ToolLoopKernel loopKernel;
     private final ChatBudgetGuard budgetGuard;
     private final AiProperties aiProperties;
-    private final IdGenerator idGenerator;
     private final ToolCallLoopMetrics metrics;
+
+    /**
+     * trace 端口与 trace_id 来源经内核持有：步级落库是循环机制的一部分（chat 不再单独消费这两个依赖）。
+     * 构造器签名保持循环抽象前的形态 —— 买家侧测试与装配零改动是内核抽取「行为不变」的验证基线。
+     */
+    @Autowired
+    public ToolCallLoop(
+            PromptRegistryPort promptRegistry,
+            ChatToolsFactory toolsFactory,
+            ToolCallDecider decider,
+            ToolCallStepTracePort tracePort,
+            ChatBudgetGuard budgetGuard,
+            AiProperties aiProperties,
+            IdGenerator idGenerator,
+            ToolCallLoopMetrics metrics) {
+        this.promptRegistry = promptRegistry;
+        this.toolsFactory = toolsFactory;
+        this.decider = decider;
+        this.loopKernel = new ToolLoopKernel(tracePort, idGenerator);
+        this.budgetGuard = budgetGuard;
+        this.aiProperties = aiProperties;
+        this.metrics = metrics;
+    }
 
     /**
      * 一次循环的输入 — 记忆（历史 / 画像）由调用方装配，循环只管「决策 → 工具 → 观察」。
@@ -120,225 +138,63 @@ public class ToolCallLoop {
     }
 
     public Result run(Input input) {
+        ChatTools tools = toolsFactory.create(attributedUserId(input));
+        ToolLoopKernel.Outcome outcome = loopKernel.run(spec(input, tools), chatDecider());
+        return Result.of(tools, outcome.outcome(), outcome.rounds(), outcome.toolPath());
+    }
+
+    private ToolLoopKernel.Spec spec(Input input, ChatTools tools) {
+        return new ToolLoopKernel.Spec(
+                promptRegistry.require(CHAT_TOOL_PROMPT),
+                firstUserMessage(input),
+                dispatcherCallbacks(tools, input.toolAllowList()),
+                TOOL_NAME_LIST,
+                aiProperties.chat().maxSteps(),
+                budgetGuard::exhausted,
+                () -> fallbackSearch(input, tools),
+                input.sessionId(),
+                attributedUserId(input),
+                input.handler(),
+                metrics);
+    }
+
+    /** 决策走 chat 场景快模型、记账进 chat 预算；入参摘要按本链路工具面取。 */
+    private ToolLoopDecider chatDecider() {
+        return (sessionId, messages, callbacks) ->
+                decider.decideForLoop(sessionId, messages, callbacks, AiCallScope.CHAT, ToolCallLoop::toolInputOf);
+    }
+
+    /** 白名单为 null 时装配全量工具面；否则只装配白名单内的工具（模型拿不到 schema 就调不到）。 */
+    private static List<ToolCallback> dispatcherCallbacks(ChatTools tools, @Nullable Set<String> allowList) {
+        return List.of(ToolCallbacks.from(tools)).stream()
+                .filter(callback -> allowList == null
+                        || allowList.contains(callback.getToolDefinition().name()))
+                .toList();
+    }
+
+    /** 决策失败的降级补检索 — 判重口径与工具步一致（在 {@code ChatTools} 内），自身故障不外抛（对话不死在降级路径）。 */
+    private void fallbackSearch(Input input, ChatTools tools) {
+        if (!allowsKnowledgeSearch(input)) {
+            return;
+        }
         try {
-            Result result = executeLoop(input);
-            metrics.recordLoop(result.outcome(), result.rounds());
-            return result;
-        } catch (RuntimeException e) {
-            metrics.recordLoopFailure();
-            throw e;
+            tools.searchKnowledgeForFallback(input.question());
+        } catch (Exception e) {
+            log.warn(
+                    "action=tool_call_fallback_search_failed, sessionId={}, reason={}",
+                    input.sessionId(),
+                    FailureReason.of(e));
         }
-    }
-
-    private Result executeLoop(Input input) {
-        String traceId = idGenerator.generateId();
-        var tools = toolsFactory.create(attributedUserId(input));
-        var dispatcher = ToolDispatcher.of(tools, input.toolAllowList());
-        var messages = new DecisionMessages(promptRegistry.require(CHAT_TOOL_PROMPT), firstUserMessage(input));
-        var toolPath = new ArrayList<String>();
-        int rounds = 0;
-        int nextStepIndex = 1;
-
-        for (int round = 1; round <= aiProperties.chat().maxSteps(); round++) {
-            if (round > 1 && budgetGuard.exhausted()) {
-                log.warn(
-                        "action=tool_call_loop_degraded, reason=budget, sessionId={}, rounds={}",
-                        input.sessionId(),
-                        rounds);
-                return Result.of(tools, ToolCallLoopOutcome.BUDGET, rounds, toolPath);
-            }
-            List<ToolCallDecision> decisions =
-                    decider.decide(input.sessionId(), messages.snapshot(), dispatcher.callbacks());
-            if (decisions.isEmpty()) {
-                // 识别不出检索需求时仍补一次：最坏是多几条不相关片段，好过把检索链路失效伪装成「无需检索」
-                // 白名单未含知识库检索（无检索对照臂）时跳过：补检索会把这臂的检索来源偷偷加回来，对照失效
-                if (allowsKnowledgeSearch(input)) {
-                    try {
-                        tools.searchKnowledgeForFallback(input.question());
-                    } catch (Exception e) {
-                        log.warn(
-                                "action=tool_call_fallback_search_failed, sessionId={}, reason={}",
-                                input.sessionId(),
-                                FailureReason.of(e));
-                    }
-                }
-                return Result.of(tools, ToolCallLoopOutcome.DECISION_FAILED, rounds, toolPath);
-            }
-            rounds = round;
-            RoundResult roundResult = executeToolCalls(input, traceId, dispatcher, messages, decisions, nextStepIndex);
-            nextStepIndex = roundResult.nextStepIndex();
-            toolPath.addAll(roundResult.toolPath());
-            if (roundResult.finished()) {
-                return Result.of(tools, ToolCallLoopOutcome.FINISHED, rounds, toolPath);
-            }
-        }
-        log.warn(
-                "action=tool_call_loop_degraded, reason=step_limit, sessionId={}, rounds={}, toolPath={}",
-                input.sessionId(),
-                rounds,
-                String.join(",", toolPath));
-        return Result.of(tools, ToolCallLoopOutcome.STEP_LIMIT, rounds, toolPath);
-    }
-
-    /**
-     * 执行一轮里的全部工具调用并落成观测副产物（trace 落库 / SSE step 事件 / 步级指标），再按对话协议回填。与
-     * {@link ToolCallDecider#decide} 同以「这批工具调用」为宾语：轮是循环级单位，不写进方法名（否则与 {@code
-     * recordToolStep} 的「步」分不开）；步序跨轮连续，否则一轮内的多个工具（同一个决策动作）挤进同一 stepIndex 会让
-     * trace 里两个动作看起来是同一步。
-     */
-    private RoundResult executeToolCalls(
-            Input input,
-            String traceId,
-            ToolDispatcher dispatcher,
-            DecisionMessages messages,
-            List<ToolCallDecision> decisions,
-            int firstStepIndex) {
-        // finish 先摘出去：执行体里就没有「跳过它」的分支，回填的 tool_calls 与观察天然等长；多个 finish 取最后一个
-        ToolCallDecision finish = null;
-        var executableCalls = new ArrayList<ToolCallDecision>(decisions.size());
-        for (ToolCallDecision decision : decisions) {
-            if (decision.isFinish()) {
-                finish = decision;
-            } else {
-                executableCalls.add(decision);
-            }
-        }
-
-        var toolPath = new ArrayList<String>(executableCalls.size() + 1);
-        var observations = new ArrayList<String>(executableCalls.size());
-        int stepIndex = firstStepIndex;
-        for (ToolCallDecision decision : executableCalls) {
-            ToolResult result = executeOneTool(input, traceId, stepIndex++, dispatcher, decision);
-            toolPath.add(decision.tool());
-            observations.add(result.observation());
-        }
-        if (finish != null) {
-            recordFinishStep(input, traceId, stepIndex, finish);
-            toolPath.add(ChatTools.TOOL_FINISH);
-            return new RoundResult(stepIndex + 1, toolPath, true);
-        }
-        messages.appendRound(rawToolCallsOf(executableCalls), observations);
-        return new RoundResult(stepIndex, toolPath, false);
-    }
-
-    private ToolResult executeOneTool(
-            Input input, String traceId, int stepIndex, ToolDispatcher dispatcher, ToolCallDecision decision) {
-        long start = System.nanoTime();
-        ToolResult result = dispatcher.dispatch(decision);
-        long latencyMs = (System.nanoTime() - start) / 1_000_000;
-        metrics.recordTool(decision.tool(), latencyMs);
-        recordToolStep(input, traceId, stepIndex, decision, toolInputOf(decision), result, latencyMs);
-        return result;
-    }
-
-    /** 按模型给出的顺序取原始 tool call —— 回填时 assistant 与 role=tool 两侧须同序。 */
-    private static List<AssistantMessage.ToolCall> rawToolCallsOf(List<ToolCallDecision> decisions) {
-        return decisions.stream().map(ToolCallDecision::rawToolCall).toList();
-    }
-
-    /** 落一步工具步 trace 并推 SSE step 事件 —— 前端步骤可视化与「平均步数 / 降级率 / 步级延迟」口径的唯一数据来源，
-     * 端口实现内部兜底、不打挂主链路。 */
-    private void recordToolStep(
-            Input input,
-            String traceId,
-            int stepIndex,
-            ToolCallDecision decision,
-            String toolInput,
-            ToolResult result,
-            long latencyMs) {
-        tracePort.record(new ToolCallStepTrace(
-                traceId,
-                input.sessionId(),
-                attributedUserId(input),
-                stepIndex,
-                decision.tool(),
-                toolInput,
-                decision.parsedArguments().thought(),
-                result.observation(),
-                latencyMs,
-                result.succeeded(),
-                result.errorMsg()));
-        emitStep(input, stepIndex, decision, result.observation());
-    }
-
-    /** 落一步 finish trace —— 收敛轮没有执行体，入参与观察为空、延迟记 0、视为成功。不与工具步共用带可空参数的落库方法：
-     * 结果类型收成非空，需要判断「无执行体」的只有调用点本身。 */
-    private void recordFinishStep(Input input, String traceId, int stepIndex, ToolCallDecision finish) {
-        tracePort.record(new ToolCallStepTrace(
-                traceId,
-                input.sessionId(),
-                attributedUserId(input),
-                stepIndex,
-                finish.tool(),
-                null,
-                finish.parsedArguments().thought(),
-                null,
-                0,
-                true,
-                null));
-        emitStep(input, stepIndex, finish, null);
-    }
-
-    private void emitStep(Input input, int stepIndex, ToolCallDecision decision, @Nullable String observation) {
-        ChatStreamHandler handler = input.handler();
-        if (handler != null) {
-            handler.onStep(new ToolCallStepView(
-                    stepIndex, decision.tool(), decision.parsedArguments().thought(), observation));
-        }
-    }
-
-    /** 一轮的执行结果 — nextStepIndex 跨轮连续（1 起）；toolPath 含 finish 轮，让整条路径上的「模型选了什么」完整。 */
-    private record RoundResult(int nextStepIndex, List<String> toolPath, boolean finished) {}
-
-    private record ToolResult(boolean succeeded, String observation) {
-
-        @Nullable
-        String errorMsg() {
-            return succeeded ? null : observation;
-        }
-    }
-
-    /** 工具面（一次请求内） — 两种框架形态（schema 下发的回调列表、按名执行的回调表）绑在一处按名分发；召回累加器归 {@link ChatTools} 实例。 */
-    private record ToolDispatcher(List<ToolCallback> callbacks, Map<String, ToolCallback> byName) {
-
-        /** 白名单为 null 时装配全量工具面；否则只装配白名单内的工具（模型拿不到 schema 就调不到）。 */
-        static ToolDispatcher of(ChatTools tools, @Nullable Set<String> allowList) {
-            List<ToolCallback> callbacks = List.of(ToolCallbacks.from(tools)).stream()
-                    .filter(callback -> allowList == null
-                            || allowList.contains(callback.getToolDefinition().name()))
-                    .toList();
-            var byName = callbacks.stream()
-                    .collect(Collectors.toMap(
-                            callback -> callback.getToolDefinition().name(), Function.identity()));
-            return new ToolDispatcher(callbacks, byName);
-        }
-
-        /** 未知工具与执行异常（参数不合 schema / 工具内部故障）都收敛成失败观察：模型据此重试或收敛，不把整轮对话打死。 */
-        ToolResult dispatch(ToolCallDecision decision) {
-            String tool = decision.tool();
-            ToolCallback callback = byName.get(tool);
-            if (callback == null) {
-                return new ToolResult(false, "未知工具 %s，请改用 %s".formatted(tool, TOOL_NAME_LIST));
-            }
-            try {
-                return new ToolResult(true, callback.call(decision.rawArguments()));
-            } catch (Exception e) {
-                // MethodToolCallback 把「参数转换失败」与「方法体异常」统一包成 ToolExecutionException
-                String reason = FailureReason.of(e.getCause() != null ? e.getCause() : e);
-                log.warn("action=tool_call_failed, tool={}, input={}, reason={}", tool, toolInputOf(decision), reason);
-                return new ToolResult(false, reason);
-            }
-        }
-    }
-
-    @Nullable
-    private static String attributedUserId(Input input) {
-        return MACHINE_SUBJECT.equals(input.userId()) ? null : input.userId();
     }
 
     private static boolean allowsKnowledgeSearch(Input input) {
         Set<String> allowList = input.toolAllowList();
         return allowList == null || allowList.contains(ChatTools.TOOL_KNOWLEDGE_SEARCH);
+    }
+
+    @Nullable
+    private static String attributedUserId(Input input) {
+        return MACHINE_SUBJECT.equals(input.userId()) ? null : input.userId();
     }
 
     /**
