@@ -28,7 +28,8 @@ class PromptContentTest {
         registry.init(); // package-private — 触发 classpath:prompts/*.yml 加载
     }
 
-    private static final String[] ALL_PROMPTS = {"ai_chat_system", "ai_chat_tool_system", "auto_listing", "judge_system"
+    private static final String[] ALL_PROMPTS = {
+        "ai_chat_system", "ai_chat_tool_system", "auto_listing", "auto_listing_tool_system", "judge_system"
     };
 
     /**
@@ -36,11 +37,11 @@ class PromptContentTest {
      * judge 不在内：它评的是模型自己产出的回答与人工金标准，评分标准是封闭量表、不含让模型照做的指令空间。
      */
     private static final String[] PROMPTS_DECLARING_UNTRUSTED_BLOCKS = {
-        "ai_chat_system", "ai_chat_tool_system", "auto_listing"
+        "ai_chat_system", "ai_chat_tool_system", "auto_listing", "auto_listing_tool_system"
     };
 
     @Test
-    @DisplayName("4 个 prompt 模板全部加载成功（发布助手 1 + 对话 2 + 评审 1）")
+    @DisplayName("5 个 prompt 模板全部加载成功（发布助手 2 + 对话 2 + 评审 1）")
     void allPromptsLoaded() {
         for (String name : ALL_PROMPTS) {
             assertThat(registry.getLatest(name)).as("prompt '%s' 应加载成功", name).isPresent();
@@ -80,10 +81,13 @@ class PromptContentTest {
         // 旧措辞与编排器的一轮多工具并行调用相悖，等于把模型按回串行、并行能力白建；
         // 随标签块名对齐领域类型（knowledge_hits / asset_hits / asset_details）升 v1.2.0；
         // 随 asset_details 块补进上下文清单与不可信声明升 v1.3.0
+        // auto_listing 从「一次多模态调用直接产出」改为「消费多步工具循环的观察产出」升 v2.0.0 ——
+        // 原措辞的「直接生成」与循环决策互斥，留着会让同名多版本取到错的角色
         var bumpedVersions = java.util.Map.of(
                 "ai_chat_tool_system", "v4.4.0",
                 "ai_chat_system", "v1.3.0",
-                "auto_listing", "v1.1.0");
+                "auto_listing", "v2.0.0",
+                "auto_listing_tool_system", "v1.0.0");
         for (String name : ALL_PROMPTS) {
             var template = registry.getLatest(name).orElseThrow();
             assertThat(template.version())
