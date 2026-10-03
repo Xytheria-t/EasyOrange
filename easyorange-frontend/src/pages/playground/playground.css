@@ -260,7 +260,7 @@
 }
 
 .playground-think__head:focus-visible {
-    outline: 2px solid var(--primary-500);
+    outline: 2px solid var(--primary-700);
     outline-offset: -2px;
 }
 
@@ -588,7 +588,7 @@
 }
 
 .playground-msg__feedback-btn:focus-visible {
-    outline: 2px solid var(--primary-500);
+    outline: 2px solid var(--primary-700);
     outline-offset: 2px;
 }
 
@@ -648,7 +648,7 @@
 }
 
 .playground__suggestion:focus-visible {
-    outline: 2px solid var(--primary-500);
+    outline: 2px solid var(--primary-700);
     outline-offset: 2px;
 }
 
@@ -750,7 +750,7 @@
 }
 
 .playground__send:focus-visible {
-    outline: 2px solid var(--primary-500);
+    outline: 2px solid var(--primary-700);
     outline-offset: 2px;
 }
 

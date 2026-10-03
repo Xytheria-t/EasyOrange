@@ -168,7 +168,7 @@
 }
 
 .notification-row-overlay:focus-visible {
-    outline: 2px solid var(--primary-500);
+    outline: 2px solid var(--primary-700);
     outline-offset: -3px;
 }
 
@@ -231,12 +231,13 @@
     color: var(--text-primary);
 }
 
+/* 6px 圆点是细窄强调，跟消息选中竖条同走 700；上方 --biz-* 只管图标色，不管未读标记 */
 .notification-unread-dot {
     width: 6px;
     height: 6px;
     flex-shrink: 0;
     border-radius: 50%;
-    background: var(--primary-500);
+    background: var(--primary-700);
 }
 
 .notification-time {
