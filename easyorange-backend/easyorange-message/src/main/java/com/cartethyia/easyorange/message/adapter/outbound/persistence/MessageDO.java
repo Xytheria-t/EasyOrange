@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
+import com.cartethyia.easyorange.message.domain.enums.MessageBizType;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import java.time.LocalDateTime;
@@ -28,6 +29,7 @@ public class MessageDO extends BaseDO {
     private ReadStatus isRead;
     private LocalDateTime readTime;
     private String businessId;
+    private MessageBizType bizType;
     private String conversationId;
     private MessageStatus msgStatus;
     private LocalDateTime recalledAt;

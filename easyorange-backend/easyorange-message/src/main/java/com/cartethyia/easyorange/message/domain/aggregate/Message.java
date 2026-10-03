@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.message.domain.aggregate;
 
 import com.cartethyia.easyorange.common.idgen.UuidV7;
+import com.cartethyia.easyorange.message.domain.enums.MessageBizType;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
@@ -31,6 +32,7 @@ public record Message(
         ReadStatus isRead,
         LocalDateTime readTime,
         String businessId,
+        MessageBizType bizType,
         String conversationId,
         MessageStatus msgStatus,
         LocalDateTime recalledAt,
@@ -57,6 +59,7 @@ public record Message(
                 ReadStatus.UNREAD,
                 null,
                 businessId,
+                MessageBizType.NONE,
                 conversationIdOf(senderId, receiverId),
                 MessageStatus.SENT,
                 null,
@@ -64,7 +67,8 @@ public record Message(
     }
 
     /** 消息 ID 由应用层 {@code IdGenerator} 生成（{@code BaseDO.id} 为 {@code IdType.INPUT}，数据库不回填）。 */
-    public static Message createSystem(String id, String receiverId, String title, String content, String businessId) {
+    public static Message createSystem(
+            String id, String receiverId, String title, String content, String businessId, MessageBizType bizType) {
         return new Message(
                 id,
                 null,
@@ -75,6 +79,7 @@ public record Message(
                 ReadStatus.UNREAD,
                 null,
                 businessId,
+                bizType == null ? MessageBizType.NONE : bizType,
                 null,
                 MessageStatus.SENT,
                 null,
@@ -97,6 +102,38 @@ public record Message(
             MessageStatus msgStatus,
             LocalDateTime recalledAt,
             LocalDateTime createTime) {
+        return fromRaw(
+                id,
+                senderId,
+                receiverId,
+                type,
+                title,
+                content,
+                isRead,
+                readTime,
+                businessId,
+                MessageBizType.NONE,
+                conversationId,
+                msgStatus,
+                recalledAt,
+                createTime);
+    }
+
+    public static Message fromRaw(
+            String id,
+            String senderId,
+            String receiverId,
+            MessageType type,
+            String title,
+            String content,
+            ReadStatus isRead,
+            LocalDateTime readTime,
+            String businessId,
+            MessageBizType bizType,
+            String conversationId,
+            MessageStatus msgStatus,
+            LocalDateTime recalledAt,
+            LocalDateTime createTime) {
         return new Message(
                 id,
                 senderId,
@@ -107,6 +144,7 @@ public record Message(
                 isRead,
                 readTime,
                 businessId,
+                bizType,
                 conversationId,
                 msgStatus,
                 recalledAt,
@@ -147,6 +185,7 @@ public record Message(
                 ReadStatus.READ,
                 LocalDateTime.now(),
                 this.businessId,
+                this.bizType,
                 this.conversationId,
                 this.msgStatus,
                 this.recalledAt,
@@ -180,6 +219,7 @@ public record Message(
                 this.isRead,
                 this.readTime,
                 this.businessId,
+                this.bizType,
                 this.conversationId,
                 MessageStatus.RECALLED,
                 now,

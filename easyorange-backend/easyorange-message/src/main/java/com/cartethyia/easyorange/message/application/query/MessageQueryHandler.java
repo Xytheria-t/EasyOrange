@@ -88,6 +88,13 @@ public class MessageQueryHandler {
                 .isRead(Integer.valueOf(aggregate.isRead().getCode()))
                 .readDesc(ReadStatus.READ == aggregate.isRead() ? "已读" : "未读")
                 .businessId(aggregate.businessId())
+                // 点击跳转的目标页由 bizType 决定：前端不该靠标题中文猜商品还是订单
+                .bizType(
+                        aggregate.bizType() == null
+                                ? null
+                                : Integer.valueOf(aggregate.bizType().getCode()))
+                .bizTypeDesc(
+                        aggregate.bizType() == null ? null : aggregate.bizType().getDesc())
                 .createTime(aggregate.createTime())
                 .build();
     }

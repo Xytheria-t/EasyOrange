@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.message.application.port.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
+import com.cartethyia.easyorange.message.domain.enums.MessageBizType;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.PushStatus;
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
@@ -110,7 +111,8 @@ class OfflineMessageAppServiceTest {
         @DisplayName("系统通知补推并标记 PUSHED")
         void replayPending_systemMessage_pushedAndMarked() {
             OfflineMessage pending = OfflineMessage.create(OFFLINE_ID, USER_ID, MESSAGE_ID, PUSH_CHANNEL);
-            Message system = Message.createSystem("msg-1", USER_ID, "收藏降价提醒", "价格已下降", "prod-1");
+            Message system =
+                    Message.createSystem("msg-1", USER_ID, "收藏降价提醒", "价格已下降", "prod-1", MessageBizType.PRODUCT);
             when(offlineMessageRepository.findPendingByUserId(USER_ID)).thenReturn(List.of(pending));
             when(messageQueryRepository.findById(MESSAGE_ID)).thenReturn(system);
 

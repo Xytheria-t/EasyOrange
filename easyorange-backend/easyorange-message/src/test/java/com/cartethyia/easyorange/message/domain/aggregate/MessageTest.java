@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.message.domain.aggregate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.cartethyia.easyorange.message.domain.enums.MessageBizType;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
@@ -75,7 +76,8 @@ class MessageTest {
         @Test
         @DisplayName("正常创建系统消息")
         void createSystem_validParams_returnsSystemMessage() {
-            Message message = Message.createSystem(MESSAGE_ID, RECEIVER_ID, "系统通知", "您的商品已审核通过", null);
+            Message message =
+                    Message.createSystem(MESSAGE_ID, RECEIVER_ID, "系统通知", "您的商品已审核通过", null, MessageBizType.PRODUCT);
 
             assertThat(message.id()).isEqualTo(MESSAGE_ID);
             assertThat(message.senderId()).isNull();
@@ -85,16 +87,19 @@ class MessageTest {
             assertThat(message.content()).isEqualTo("您的商品已审核通过");
             assertThat(message.isRead()).isEqualTo(ReadStatus.UNREAD);
             assertThat(message.conversationId()).as("系统消息无会话").isNull();
+            assertThat(message.bizType()).isEqualTo(MessageBizType.PRODUCT);
         }
 
         @Test
         @DisplayName("系统消息标题和内容原样存储")
         void createSystem_storesRawContent() {
             Message message = Message.createSystem(
-                    MESSAGE_ID, RECEIVER_ID, "<script>alert(1)</script>", "<img onerror='alert(1)'>", null);
+                    MESSAGE_ID, RECEIVER_ID, "<script>alert(1)</script>", "<img onerror='alert(1)'>", null, null);
 
             assertThat(message.title()).isEqualTo("<script>alert(1)</script>");
             assertThat(message.content()).isEqualTo("<img onerror='alert(1)'>");
+            // 生产者漏传业务类型时收敛成 NONE，而不是把 null 写进 NOT NULL 列
+            assertThat(message.bizType()).isEqualTo(MessageBizType.NONE);
         }
     }
 

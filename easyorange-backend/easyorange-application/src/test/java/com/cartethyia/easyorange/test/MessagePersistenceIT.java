@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.message.application.command.SendSystemMessageCo
 import com.cartethyia.easyorange.message.application.port.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
+import com.cartethyia.easyorange.message.domain.enums.MessageBizType;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import java.util.List;
@@ -41,7 +42,8 @@ class MessagePersistenceIT extends AbstractIntegrationTest {
     void systemMessage_persistedWithGeneratedId() {
         String receiverId = UUID.randomUUID().toString();
 
-        messageCommandHandler.sendSystemMessage(new SendSystemMessageCommand(receiverId, TITLE, "集成测试内容", null));
+        messageCommandHandler.sendSystemMessage(
+                new SendSystemMessageCommand(receiverId, TITLE, "集成测试内容", "product-1", MessageBizType.PRODUCT));
 
         var page = messageQueryRepository.findByReceiverId(new MessageQuery(1, 10, null, null), receiverId);
         assertThat(page.records()).as("系统消息必须落库").hasSize(1);
@@ -51,6 +53,8 @@ class MessagePersistenceIT extends AbstractIntegrationTest {
         assertThat(UUID.fromString(saved.id()).version()).as("主键为 UUID v7").isEqualTo(7);
         assertThat(saved.receiverId()).isEqualTo(receiverId);
         assertThat(saved.title()).isEqualTo(TITLE);
+        // 枚举 ↔ TINYINT 的回读：biz_type 走 MyBatis 枚举处理器，写进去什么就读回什么
+        assertThat(saved.bizType()).as("业务对象类型经枚举处理器回读").isEqualTo(MessageBizType.PRODUCT);
 
         List<OfflineMessage> pending = offlineMessageRepository.findPendingByUserId(receiverId);
         assertThat(pending).as("接收方离线时写入离线行").hasSize(1);
