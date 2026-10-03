@@ -3,28 +3,16 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import type { ChatMessage } from '@/types/message';
-import ChatWindowPage from './ChatWindowPage';
+import ChatThread from './ChatThread';
 
-const mockNavigate = vi.hoisted(() => vi.fn());
 const mockSendMessage = vi.hoisted(() => vi.fn());
-const mockTargetUserId = vi.hoisted(() => ({ value: 'user2' }));
 const mockUseChatMessages = vi.hoisted(() =>
     vi.fn(() => ({ messages: [] as ChatMessage[], isLoading: true, loadOlder: vi.fn(), hasMore: false }))
 );
-const mockRecallMessage = vi.hoisted(() => vi.fn());
 
-vi.mock('react-router-dom', async () => {
-    const actual = await vi.importActual('react-router-dom');
-    return {
-        ...(actual as object),
-        useNavigate: () => mockNavigate,
-        useParams: () => ({ targetUserId: mockTargetUserId.value }),
-    };
-});
-
-vi.mock('@/stores/chatStore', () => ({
+vi.mock('@/store/chatStore', () => ({
     useChatStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) => {
-        const s = { connectionStatus: 'connected', typingUsers: new Set() };
+        const s = { connectionStatus: 'connected', typingUsers: new Set<string>() };
         return sel ? sel(s) : s;
     }),
 }));
@@ -41,16 +29,23 @@ vi.mock('@/hooks/chat', () => ({
         unsubscribe: vi.fn(),
     })),
     useChatMessages: mockUseChatMessages,
-    useMessageRecall: vi.fn(() => ({ canRecall: () => false, recallMessage: mockRecallMessage })),
+    useMessageRecall: vi.fn(() => ({ canRecall: () => false, recallMessage: vi.fn() })),
 }));
 
 vi.mock('@/api/messageApi', () => ({
     messageApi: { markAsRead: vi.fn().mockResolvedValue({}) },
 }));
 
-vi.mock('@/components/chat', () => ({
-    ChatHeader: () => <div data-testid="chat-header" />,
-    MessageList: ({ messages }: { messages: ChatMessage[] }) => (
+vi.mock('./ChatHeader', () => ({
+    default: ({ targetUser, isTyping }: { targetUser?: { name: string } | null; isTyping?: boolean }) => (
+        <div data-testid="chat-header" data-typing={String(isTyping ?? false)}>
+            {targetUser?.name}
+        </div>
+    ),
+}));
+
+vi.mock('./MessageList', () => ({
+    default: ({ messages }: { messages: ChatMessage[] }) => (
         <div data-testid="message-list">
             {messages.map((m: ChatMessage) => (
                 <div key={m.id} data-testid="message-item">
@@ -59,7 +54,10 @@ vi.mock('@/components/chat', () => ({
             ))}
         </div>
     ),
-    ChatInputBar: ({
+}));
+
+vi.mock('./ChatInputBar', () => ({
+    default: ({
         onSend,
         isDisabled,
         disabledPlaceholder,
@@ -77,21 +75,31 @@ vi.mock('@/components/chat', () => ({
     ),
 }));
 
-function renderPage() {
-    return renderWithProviders(<ChatWindowPage />, { initialRoute: '/messages/user2' });
+function renderThread(id = 'user2', name = '卖家小橙') {
+    return renderWithProviders(<ChatThread counterpart={{ id, name, avatar: null }} />);
 }
 
 beforeEach(() => {
     vi.clearAllMocks();
-    mockTargetUserId.value = 'user2';
+    mockUseChatMessages.mockReturnValue({
+        messages: [] as ChatMessage[],
+        isLoading: true,
+        loadOlder: vi.fn(),
+        hasMore: false,
+    });
 });
 
-describe('ChatWindowPage', () => {
-    it('renders loading state', () => {
-        renderPage();
+describe('ChatThread', () => {
+    it('renders loading state with header and input', () => {
+        renderThread();
         expect(screen.getByText('加载消息中...')).toBeInTheDocument();
         expect(screen.getByTestId('chat-header')).toBeInTheDocument();
         expect(screen.getByTestId('chat-input-bar')).toBeInTheDocument();
+    });
+
+    it('shows the counterpart name carried by the conversation list', () => {
+        renderThread();
+        expect(screen.getByTestId('chat-header')).toHaveTextContent('卖家小橙');
     });
 
     it('renders messages when loaded', () => {
@@ -101,10 +109,11 @@ describe('ChatWindowPage', () => {
                     id: 'msg1',
                     senderId: 'user2',
                     receiverId: 'user1',
+                    senderAvatar: null,
                     content: '你好',
                     type: 'TEXT' as const,
                     status: 'SENT' as const,
-                    createTime: '2026-05-15T10:00:00Z',
+                    createTime: '2026-05-15T10:00:00',
                     readTime: null,
                     recalledAt: null,
                 },
@@ -113,8 +122,7 @@ describe('ChatWindowPage', () => {
             loadOlder: vi.fn(),
             hasMore: false,
         });
-        renderPage();
-        expect(screen.getByTestId('message-list')).toBeInTheDocument();
+        renderThread();
         expect(screen.getByText('你好')).toBeInTheDocument();
     });
 
@@ -125,28 +133,26 @@ describe('ChatWindowPage', () => {
             loadOlder: vi.fn(),
             hasMore: false,
         });
-        renderPage();
-        const user = userEvent.setup();
-        await user.click(screen.getByText('send-btn'));
+        renderThread();
+        await userEvent.click(screen.getByText('send-btn'));
         expect(mockSendMessage).toHaveBeenCalledWith(
             expect.objectContaining({ content: 'hello', receiverId: 'user2', conversationId: 'conv_user1_user2' })
         );
     });
 
     it('system conversation is read-only: input disabled with placeholder, send blocked', async () => {
-        mockTargetUserId.value = 'system';
         mockUseChatMessages.mockReturnValue({
             messages: [] as ChatMessage[],
             isLoading: false,
             loadOlder: vi.fn(),
             hasMore: false,
         });
-        renderWithProviders(<ChatWindowPage />, { initialRoute: '/messages/system' });
+        renderThread('system', '系统通知');
 
         expect(screen.getByTestId('chat-input-bar')).toHaveAttribute('data-disabled', 'true');
         expect(screen.getByTestId('disabled-placeholder')).toHaveTextContent('系统通知不支持回复');
 
-        // 即使绕过组件禁用触发 onSend，页面守卫也不应发出 WS 帧（发了也不落库，静默失败）
+        // 即使绕过组件禁用触发 onSend，组件守卫也不应发出 WS 帧（发了也不落库，静默失败）
         await userEvent.click(screen.getByText('send-btn'));
         expect(mockSendMessage).not.toHaveBeenCalled();
     });

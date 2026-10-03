@@ -200,7 +200,11 @@ export const ProductCard = memo(({ product, style, index = 0, variant = 'default
                                 size="icon"
                                 className="action-icon-premium contact-btn-premium"
                                 onClick={() => {
-                                    navigate(`/messages/${product.sellerId}`);
+                                    // 首次联系卖家时对方还没有会话记录，会话列表取不到名字，
+                                    // 把昵称随导航状态带过去，头部才不至于只显示一个 userId
+                                    navigate(`/messages/${product.sellerId}`, {
+                                        state: { counterpartName: sellerName },
+                                    });
                                 }}
                                 onMouseMove={handleButtonMouseMove}
                                 onMouseLeave={handleButtonMouseLeave}

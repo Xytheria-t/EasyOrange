@@ -121,24 +121,34 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
         const virtualItems = virtualizer.getVirtualItems();
 
         return (
-            <div ref={setRefs} style={{ overflow: 'auto', height: '100%', minHeight: 0 }}>
+            // role="region" 而非 role="log"：虚拟滚动随滚动不断增删 DOM 行，live region
+            // 会把滚过的每条消息都念一遍。tabIndex 是为了让键盘也能滚长会话——
+            // 可滚动但不可聚焦的容器，键盘用户永远够不到上方的历史消息。
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: scrollable region must be focusable
+            // biome-ignore lint/a11y/useSemanticElements: 语义等价于 <section>，此处沿用 div 以复用虚拟滚动的 ref
+            <div ref={setRefs} className="chat-scroll" role="region" aria-label="消息列表" tabIndex={0}>
                 <div style={{ height: `${virtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
                     {virtualItems.map(virtualItem => {
                         const isLoadMoreRow = hasMore && virtualItem.index === 0;
                         const isTypingRow = virtualItem.index === messages.length + (hasMore ? 1 : 0);
 
                         if (isLoadMoreRow) {
+                            // 定位交给外层绝对定位容器：直接给按钮 translateY 会让它叠在第一条消息上
                             return (
-                                <Button
+                                <div
                                     key="load-more"
-                                    type="button"
-                                    variant="outline"
-                                    onClick={onLoadMore}
-                                    className="chat-load-more"
+                                    className="absolute left-0 w-full"
                                     style={{ transform: `translateY(${virtualItem.start}px)` }}
                                 >
-                                    加载更多消息
-                                </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={onLoadMore}
+                                        className="chat-load-more"
+                                    >
+                                        加载更多消息
+                                    </Button>
+                                </div>
                             );
                         }
 

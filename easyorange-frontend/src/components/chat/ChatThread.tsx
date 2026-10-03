@@ -1,30 +1,48 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { messageApi } from '@/api/messageApi';
-import { ChatHeader, ChatInputBar, MessageList } from '@/components/chat';
-import { ErrorState } from '@/components/feedback/StateDisplay';
 import { useChatMessages, useMessageRecall, useStompChat } from '@/hooks/chat';
 import { chatMessagesQueryKey } from '@/hooks/chat/chatMessagesQuery';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/chatStore';
 import { useUIStore } from '@/store/uiStore';
 import type { ChatMessage } from '@/types/message';
-import { WS_MESSAGE_TYPE_CHAT } from '@/types/message';
+import { SYSTEM_TARGET_USER_ID, WS_MESSAGE_TYPE_CHAT } from '@/types/message';
 import { errorHandler } from '@/utils/errorHandler';
-import './chat-window.css';
+import { ErrorState } from '../feedback/StateDisplay';
+import ChatHeader from './ChatHeader';
+import ChatInputBar from './ChatInputBar';
+import MessageList from './MessageList';
 
 /** 与后端 markAsReadBatch 的单次上限（50）对齐 */
 const MARK_READ_BATCH_SIZE = 50;
 
-function ChatWindowPage() {
-    const { targetUserId } = useParams<{ targetUserId: string }>();
-    const navigate = useNavigate();
+export interface ChatCounterpart {
+    id: string;
+    name: string;
+    avatar: string | null;
+}
+
+interface ChatThreadProps {
+    /** 会话对方。名字与头像由会话列表带下来，深链进来时退化为从消息反查 */
+    counterpart: ChatCounterpart;
+    /** 收起会话（移动端从列表进入时用）；桌面端双栏常驻列表，不传即不渲染返回键 */
+    onBack?: () => void;
+}
+
+/**
+ * 单个会话的完整视图 —— 头部 + 消息流 + 输入框。
+ *
+ * <p>消息中心双栏与独立路由共用这一个组件：会话的订阅、标已读、撤回、发送都收敛在此，
+ * 页面层只负责「当前选中谁」。
+ */
+function ChatThread({ counterpart, onBack }: ChatThreadProps) {
     const queryClient = useQueryClient();
+    const targetUserId = counterpart.id;
 
     // 系统通知伪会话（后端 ConversationQueryHandler.SYSTEM_CONVERSATION）：只读——
     // 发出的 WS 帧既不落库也无回执，静默失败比禁用输入更糟
-    const isSystemSession = targetUserId === 'system';
+    const isSystemSession = targetUserId === SYSTEM_TARGET_USER_ID;
 
     const { user } = useAuthStore();
     const currentUserId = user?.userId ?? '';
@@ -48,7 +66,7 @@ function ChatWindowPage() {
         refetch: refetchMessages,
         loadOlder,
         hasMore,
-    } = useChatMessages(targetUserId ?? null, conversationId);
+    } = useChatMessages(targetUserId, conversationId);
     const { canRecall, recallMessage } = useMessageRecall(conversationId);
     const addToast = useUIStore(s => s.addToast);
 
@@ -86,7 +104,7 @@ function ChatWindowPage() {
     }, [conversationId, subscribe, unsubscribe]);
 
     useEffect(() => {
-        if (messages.length === 0 || !targetUserId) {
+        if (messages.length === 0) {
             return;
         }
 
@@ -104,8 +122,7 @@ function ChatWindowPage() {
             chunks.push(unreadIds.slice(i, i + MARK_READ_BATCH_SIZE));
         }
 
-        // 成功后本地回写 READ：此前只发请求不回写，缓存里 status 恒为 SENT，
-        // 每条新消息到达都会把整页未读 ID 重新 PUT 一遍
+        // 成功后本地回写 READ：否则缓存里 status 恒为 SENT，每条新消息到达都会把整页未读重发一遍
         const marked = new Set(unreadIds);
         Promise.all(chunks.map(chunk => messageApi.markAsRead(chunk)))
             .then(() => {
@@ -120,7 +137,7 @@ function ChatWindowPage() {
 
     const handleSend = useCallback(
         (content: string) => {
-            if (!targetUserId || isSystemSession || !content.trim()) {
+            if (isSystemSession || !content.trim()) {
                 return;
             }
             sendMessage({
@@ -130,37 +147,33 @@ function ChatWindowPage() {
                 conversationId,
             });
         },
-        [targetUserId, isSystemSession, conversationId, sendMessage]
+        [isSystemSession, targetUserId, conversationId, sendMessage]
     );
 
     const handleTyping = useCallback(() => {
-        if (targetUserId && !isSystemSession) {
+        if (!isSystemSession) {
             sendTyping(conversationId, targetUserId);
         }
-    }, [targetUserId, isSystemSession, conversationId, sendTyping]);
-
-    const handleBack = useCallback(() => navigate(-1), [navigate]);
+    }, [isSystemSession, conversationId, targetUserId, sendTyping]);
 
     const isTyping = typingUsers.size > 0;
-    const targetUserName = isSystemSession ? '系统通知' : (targetUserId ?? '用户');
 
-    // 对方头像从已拉到的消息里取：会话列表能显示、点进聊天页却退回灰色首字母圆点，
-    // 就是因为这里此前写死 null。取任一条对方发的消息即可，两侧档案对称。
+    // 会话列表没这一行时（直接粘深链进来）从已拉到的消息反查头像：两侧档案对称，不必再查用户档案
     const targetAvatar = useMemo(() => {
-        if (isSystemSession) {
-            return null;
+        if (counterpart.avatar) {
+            return counterpart.avatar;
         }
-        const counterpart = messages.find(m => m.senderId !== currentUserId);
-        return counterpart?.senderAvatar ?? null;
-    }, [messages, isSystemSession, currentUserId]);
+        return messages.find(m => m.senderId !== currentUserId)?.senderAvatar ?? null;
+    }, [counterpart.avatar, messages, currentUserId]);
 
     return (
-        <div className="chat-window-page">
+        <div className="chat-thread">
             <div className={`connection-status status-${connectionStatus}`} />
 
             <ChatHeader
-                onBack={handleBack}
-                targetUser={targetUserId ? { id: targetUserId, name: targetUserName, avatar: targetAvatar } : null}
+                onBack={onBack}
+                isTyping={isTyping}
+                targetUser={{ id: targetUserId, name: counterpart.name, avatar: targetAvatar }}
             />
 
             <div className="chat-messages-area">
@@ -183,7 +196,7 @@ function ChatWindowPage() {
                     <MessageList
                         messages={messages}
                         currentUserId={currentUserId}
-                        targetUserName={targetUserName}
+                        targetUserName={counterpart.name}
                         isTyping={isTyping}
                         onLoadMore={handleLoadOlder}
                         hasMore={hasMore}
@@ -197,12 +210,12 @@ function ChatWindowPage() {
                 <ChatInputBar
                     onSend={handleSend}
                     onTyping={handleTyping}
-                    isDisabled={!targetUserId || isSystemSession}
-                    disabledPlaceholder={isSystemSession ? '系统通知不支持回复' : undefined}
+                    isDisabled={isSystemSession}
+                    disabledPlaceholder="系统通知不支持回复"
                 />
             </div>
         </div>
     );
 }
 
-export default ChatWindowPage;
+export default ChatThread;

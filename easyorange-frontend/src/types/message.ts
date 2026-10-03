@@ -18,6 +18,14 @@ export type ChatMessageType = 'TEXT';
 export const WS_MESSAGE_TYPE_CHAT = 2;
 
 /**
+ * 系统通知伪会话的对方 id（后端 ConversationQueryHandler.SYSTEM_CONVERSATION）。
+ *
+ * <p>只是 id 占位：系统消息 senderId 为 null，没有会话也无法回复。
+ * 消息中心不把它当会话列出来，未读由顶栏铃铛承载。
+ */
+export const SYSTEM_TARGET_USER_ID = 'system';
+
+/**
  * 消息状态 ——
  * `SENDING` / `FAILED` 是前端乐观更新的本地态；
  * `SENT` / `READ` / `RECALLED` 来自后端：后端 MessageStatus 只有 SENT 与 RECALLED，

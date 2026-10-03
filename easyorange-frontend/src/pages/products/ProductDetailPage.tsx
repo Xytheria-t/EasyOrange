@@ -186,7 +186,7 @@ function ProductDetailPage() {
         }
 
         // Prefetch chat data and await completion before navigating.
-        // This ensures query.state.data exists when ChatWindowPage mounts,
+        // This ensures query.state.data exists when ChatThread mounts,
         // preventing the TanStack Query + React 19 + StrictMode infinite loop:
         // render-time getOptimisticResult uses mounted=FALSE → optimistic fetchStatus,
         // subscribe+updateResult switches to mounted=TRUE → different snapshot →
@@ -199,10 +199,10 @@ function ProductDetailPage() {
                 staleTime: Infinity,
             });
         } catch {
-            // Navigate even if prefetch fails — ChatWindowPage handles error state natively
+            // Navigate even if prefetch fails — ChatThread handles error state natively
         }
 
-        navigate(`/messages/${targetUserId}`);
+        navigate(`/messages/${targetUserId}`, { state: { counterpartName: product.sellerName } });
     };
 
     const handleShare = () => {
@@ -663,7 +663,9 @@ function ProductDetailPage() {
                                 className="w-full justify-between"
                                 onClick={() => {
                                     setShowOrderModal(false);
-                                    navigate(`/messages/${product.sellerId}`);
+                                    navigate(`/messages/${product.sellerId}`, {
+                                        state: { counterpartName: product.sellerName },
+                                    });
                                 }}
                             >
                                 <span className="text-muted-foreground">私聊资产方协商交易地点</span>
