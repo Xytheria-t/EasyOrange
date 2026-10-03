@@ -3,14 +3,13 @@ package com.cartethyia.easyorange.ai.application.chat;
 import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.support.FailureReason;
+import com.cartethyia.easyorange.ai.application.support.RetrievalObservations;
 import com.cartethyia.easyorange.ai.domain.model.AssetComparison;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
-import com.cartethyia.easyorange.ai.domain.model.PriceStats;
 import com.cartethyia.easyorange.ai.domain.port.AssetDetailPort;
 import com.cartethyia.easyorange.ai.domain.port.UserPreferenceRepository;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,12 +17,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.ai.tool.execution.ToolCallResultConverter;
 
 /**
  * 多步工具循环的内部工具面 — 7 个工具的 schema 与执行都在这里（{@code @Tool} / {@code @ToolParam} 注解生成供应商侧校验
@@ -64,25 +60,7 @@ public class ChatTools {
             TOOL_REMEMBER_PREFERENCE,
             TOOL_FINISH);
 
-    static final int RETRIEVAL_TOP_K = 5;
-
-    static final int ASSET_TOP_K = 5;
-
     private static final Set<String> PREFERENCE_KEYS = Set.of("condition", "price_range", "style", "location");
-
-    /** 观察里列举的命中条数上限 —— 观察是给下一轮决策的摘要，召回多少条都只列举这么多。 */
-    private static final int OBSERVATION_SUMMARY_LIMIT = 3;
-
-    /** 检索无新增时的观察文案 —— 收敛判据见 {@link #REDUNDANT_OVERLAP_RATIO}。模型不会自己看出「再查也是重复」，把这件事
-     * 作为一条明确观察交回比在循环里硬性拦掉更合适。 */
-    private static final String NO_NEW_HIT_OBSERVATION = "本次检索无新增信息（命中的内容此前已出现过）：请直接调用 finish 基于已有信息作答，不要再换关键词重试";
-
-    /**
-     * 判为「无新增」的重合比例阈值 —— 本轮命中里此前出现过的条目占比达到此值即收敛。只认「完全重复」不够：检索是 topK
-     * 截断的，换关键词常返回高度重叠但不完全相同的一批，逐条判重会让模型无限换词直到撞步数上限；取 0.6 是因为一次检索
-     * 能带进 3 条以上新内容时（约 40% 重合）不算冗余。
-     */
-    private static final double REDUNDANT_OVERLAP_RATIO = 0.6;
 
     /** 详情描述进观察前截断的字数 —— 描述是自由文本，长度不可控。 */
     private static final int DETAIL_DESC_MAX_CHARS = 80;
@@ -128,34 +106,33 @@ public class ChatTools {
     @Tool(
             name = TOOL_KNOWLEDGE_SEARCH,
             description = "检索平台规则知识库（交易流程 / 退款 / 运费 / 禁售品类）",
-            resultConverter = ObservationTextConverter.class)
+            resultConverter = RetrievalObservations.ObservationTextConverter.class)
     public String searchKnowledge(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "改写后的检索关键词，3-10 字") String query) {
-        List<KnowledgeHit> found = retrievalService.search(query, RETRIEVAL_TOP_K);
-        List<KnowledgeHit> fresh = newKnowledgeHits(found);
-        knowledgeHits.addAll(fresh);
-        return isRedundant(found.size() - fresh.size(), found.size())
-                ? NO_NEW_HIT_OBSERVATION
-                : formatKnowledgeObservation(found);
+        List<KnowledgeHit> found = retrievalService.search(query, RetrievalObservations.TOP_K);
+        var turn = RetrievalObservations.knowledgeTurn(knowledgeHits, found);
+        knowledgeHits.addAll(turn.fresh());
+        return turn.observation();
     }
 
-    @Tool(name = TOOL_PRODUCT_SEARCH, description = "检索在售资产（找货 / 比价）", resultConverter = ObservationTextConverter.class)
+    @Tool(
+            name = TOOL_PRODUCT_SEARCH,
+            description = "检索在售资产（找货 / 比价）",
+            resultConverter = RetrievalObservations.ObservationTextConverter.class)
     public String searchProducts(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "改写后的找货关键词，3-10 字，保留品类与硬约束（预算 / 成色）") String query) {
-        List<AssetHit> found = assetSourcingService.search(query, ASSET_TOP_K);
-        List<AssetHit> fresh = newAssetHits(found);
-        assetHits.addAll(fresh);
-        return isRedundant(found.size() - fresh.size(), found.size())
-                ? NO_NEW_HIT_OBSERVATION
-                : formatAssetObservation(found);
+        List<AssetHit> found = assetSourcingService.search(query, RetrievalObservations.TOP_K);
+        var turn = RetrievalObservations.assetTurn(assetHits, found);
+        assetHits.addAll(turn.fresh());
+        return turn.observation();
     }
 
     @Tool(
             name = TOOL_PRODUCT_DETAIL,
             description = "查看某件在售资产的详情（描述 / 成色 / 位置 / 卖家）",
-            resultConverter = ObservationTextConverter.class)
+            resultConverter = RetrievalObservations.ObservationTextConverter.class)
     public String fetchProductDetail(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "资产 ID，必须取自此前 product_search 观察中方括号里的资产 ID") String productId) {
@@ -176,17 +153,15 @@ public class ChatTools {
             name = TOOL_MARKET_PRICE_STATS,
             description = "对已召回的资产算行情（在售件数 / 均价 / 价格区间），用于判断某件值不值得买；零模型计算。"
                     + "必须在 product_search 之后的轮次调用（同一轮里它会排在 product_search 前面而统计到空集）",
-            resultConverter = ObservationTextConverter.class)
+            resultConverter = RetrievalObservations.ObservationTextConverter.class)
     public String summarizeMarketPrice(@ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought) {
-        return PriceStats.of(assetHits)
-                .map(PriceStats::observation)
-                .orElse("暂无可统计的在售资产（尚未召回，或召回项均无有效价格），先调用 product_search 召回候选");
+        return RetrievalObservations.priceStatsObservation(assetHits);
     }
 
     @Tool(
             name = TOOL_COMPARE_ASSETS,
             description = "对 2-4 件候选做逐维确定性比对（价格 / 成色 / 地区 / 在售状态），一次替代多次 product_detail",
-            resultConverter = ObservationTextConverter.class)
+            resultConverter = RetrievalObservations.ObservationTextConverter.class)
     public String compareAssets(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "要对比的资产 ID 列表，2-4 个，必须取自此前 product_search 观察中方括号里的资产 ID")
@@ -230,7 +205,7 @@ public class ChatTools {
     @Tool(
             name = TOOL_REMEMBER_PREFERENCE,
             description = "记录用户的长期偏好（成色 / 价格区间 / 风格 / 地区）到用户画像，跨会话生效；对话中出现明确偏好时调用一次即可，同一偏好不要重复记录",
-            resultConverter = ObservationTextConverter.class)
+            resultConverter = RetrievalObservations.ObservationTextConverter.class)
     public String rememberPreference(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
             @ToolParam(description = "偏好类别，只允许 condition（成色）/ price_range（价格区间）/ style（风格）/ location（地区）")
@@ -270,7 +245,8 @@ public class ChatTools {
 
     /** 决策失败降级的补检索 — 判重口径与 {@link #searchKnowledge} 一致，降级路径不会把 Result 撑出重复来源。 */
     void searchKnowledgeForFallback(String question) {
-        knowledgeHits.addAll(newKnowledgeHits(retrievalService.search(question, RETRIEVAL_TOP_K)));
+        List<KnowledgeHit> found = retrievalService.search(question, RetrievalObservations.TOP_K);
+        knowledgeHits.addAll(RetrievalObservations.freshKnowledge(knowledgeHits, found));
     }
 
     private Optional<AssetDetail> findDetail(String productId) {
@@ -288,58 +264,6 @@ public class ChatTools {
         } catch (Exception e) {
             throw new IllegalStateException("资产详情查询失败: " + FailureReason.of(e), e);
         }
-    }
-
-    /** 本轮检索是否已无新增信息 —— 完全没召回到（{@code foundCount == 0}）不算冗余：那是空结果，不是重复。 */
-    private static boolean isRedundant(int alreadySeenCount, int foundCount) {
-        return foundCount > 0 && (double) alreadySeenCount / foundCount >= REDUNDANT_OVERLAP_RATIO;
-    }
-
-    /** 保留本轮新增的召回物 —— 判据取 docId（资产按 productId），缺失时退回标题：兜底只为 LIKE 降级路径不因 null 误判成「全新增」。 */
-    private List<KnowledgeHit> newKnowledgeHits(List<KnowledgeHit> found) {
-        Set<String> seen = knowledgeHits.stream().map(ChatTools::knowledgeHitId).collect(Collectors.toSet());
-        return found.stream().filter(hit -> seen.add(knowledgeHitId(hit))).collect(Collectors.toList());
-    }
-
-    private List<AssetHit> newAssetHits(List<AssetHit> found) {
-        Set<String> seen = assetHits.stream().map(ChatTools::assetHitId).collect(Collectors.toSet());
-        return found.stream().filter(asset -> seen.add(assetHitId(asset))).collect(Collectors.toList());
-    }
-
-    private static String knowledgeHitId(KnowledgeHit hit) {
-        return isBlank(hit.docId()) ? String.valueOf(hit.title()) : hit.docId();
-    }
-
-    private static String assetHitId(AssetHit asset) {
-        return isBlank(asset.productId()) ? String.valueOf(asset.title()) : asset.productId();
-    }
-
-    private static String formatKnowledgeObservation(List<KnowledgeHit> found) {
-        if (found.isEmpty()) {
-            return "知识库未命中，可换关键词重试或直接 finish";
-        }
-        String titles = found.stream()
-                .limit(OBSERVATION_SUMMARY_LIMIT)
-                .map(KnowledgeHit::title)
-                .collect(Collectors.joining(" / "));
-        return "命中 %d 条：%s".formatted(found.size(), titles);
-    }
-
-    private static String formatAssetObservation(List<AssetHit> found) {
-        if (found.isEmpty()) {
-            return "在售资产未召回，可换更宽泛的关键词重试或直接 finish";
-        }
-        String items = found.stream()
-                .limit(OBSERVATION_SUMMARY_LIMIT)
-                .map(asset -> "[%s] %s ¥%s"
-                        .formatted(
-                                asset.productId(),
-                                asset.title(),
-                                asset.price() == null
-                                        ? "面议"
-                                        : asset.price().stripTrailingZeros().toPlainString()))
-                .collect(Collectors.joining("；"));
-        return "召回 %d 件：%s".formatted(found.size(), items);
     }
 
     private static String formatDetailObservation(AssetDetail detail) {
@@ -363,15 +287,5 @@ public class ChatTools {
     private static String truncate(String value) {
         String text = orDefault(value, "无");
         return text.length() > DETAIL_DESC_MAX_CHARS ? text.substring(0, DETAIL_DESC_MAX_CHARS) + "…" : text;
-    }
-
-    /** 观察文本原样返回 — 默认转换器会把 String 返回值 JSON 序列化（观察多一层引号），本工具面的观察是进下一轮 prompt 的纯文本。finish 无执行体、不需要该转换器。 */
-    @NullMarked
-    public static final class ObservationTextConverter implements ToolCallResultConverter {
-
-        @Override
-        public String convert(@Nullable Object result, @Nullable Type returnType) {
-            return result == null ? "" : String.valueOf(result);
-        }
     }
 }
