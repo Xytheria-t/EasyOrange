@@ -21,6 +21,7 @@ export function NotificationBell() {
     });
 
     const count = unreadCount?.systemCount ?? 0;
+    const label = count > 0 ? `通知，${count} 条未读` : '通知';
 
     return (
         // 徽标挂在按钮外侧：icon-btn 为了流光动效带了 overflow:hidden,放按钮内会被裁掉
@@ -29,7 +30,7 @@ export function NotificationBell() {
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate('/notifications')}
-                aria-label="通知"
+                aria-label={label}
                 className="floating-nav__icon-btn"
             >
                 <Bell size={19} />
@@ -37,6 +38,7 @@ export function NotificationBell() {
             {count > 0 && (
                 <Badge
                     variant="destructive"
+                    aria-hidden="true"
                     className="floating-nav__bell-badge absolute -right-1 -top-1 h-5 min-w-5 px-1.5 text-[0.65rem]"
                 >
                     {count > 99 ? '99+' : count}
