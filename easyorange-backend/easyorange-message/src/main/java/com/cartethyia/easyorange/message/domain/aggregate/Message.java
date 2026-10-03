@@ -188,6 +188,19 @@ public record Message(
                 updated, new MessageRecalledEvent(UuidV7.generateId(), this.id, this.conversationId, operatorId, now));
     }
 
+    /**
+     * 判断用户是否为会话参与者 —— STOMP 订阅与 typing 帧的归属校验唯一判据。
+     * UUID 不含下划线，剥掉 {@code conv_} 前缀按 {@code _} 拆分即得双参与者；
+     * 格式不合法一律 false（fail-closed），不依赖 DB 查询即可裁决。
+     */
+    public static boolean isConversationParticipant(String conversationId, String userId) {
+        if (conversationId == null || userId == null || !conversationId.startsWith("conv_")) {
+            return false;
+        }
+        String[] parts = conversationId.substring("conv_".length()).split("_");
+        return parts.length == 2 && (userId.equals(parts[0]) || userId.equals(parts[1]));
+    }
+
     // ── 内部规则 ──
 
     /** 会话 ID：排序双 ID {@code conv_{min}_{max}}，保证 A→B 与 B→A 一致。 */

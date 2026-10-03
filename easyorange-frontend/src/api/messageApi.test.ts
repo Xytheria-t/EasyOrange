@@ -21,15 +21,6 @@ describe('messageApi', () => {
         expect(mockRequest).toHaveBeenCalledWith('/messages/conversation/123');
     });
 
-    it('sendMessage calls request with POST and body', () => {
-        const data = { receiverId: '456', content: 'Hello' };
-        messageApi.sendMessage(data);
-        expect(mockRequest).toHaveBeenCalledWith('/messages', {
-            method: 'POST',
-            body: data,
-        });
-    });
-
     it('markAsRead calls request with PUT and single id as array', () => {
         messageApi.markAsRead(789);
         expect(mockRequest).toHaveBeenCalledWith('/messages/read', {

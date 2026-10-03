@@ -112,7 +112,6 @@ class MessageCommandHandlerTest {
             when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                     .thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
-            when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
             when(idGenerator.generateId()).thenReturn(GENERATED_ID);
 
             Message savedAggregate = Message.fromRaw(
@@ -137,6 +136,9 @@ class MessageCommandHandlerTest {
             verify(messageRepository).save(argThat(msg -> GENERATED_ID.equals(msg.id())));
             verify(distributedRateLimiter).tryAcquire(eq("eo:rate:message:" + USER_ID), anyLong(), anyLong());
             verify(sensitiveWordFilterService).filter("hello");
+            // 聊天消息不进离线兜底：会话与未读真相源在 eo_message，落离线行只会堆积永不消费的 PENDING 行
+            verifyNoInteractions(offlineMessageAppService);
+            verifyNoInteractions(messageNotifier);
         }
 
         @Test
@@ -163,7 +165,6 @@ class MessageCommandHandlerTest {
                     .thenReturn(true);
             when(sensitiveWordFilterService.filter("包含诈骗内容")).thenReturn("包含***");
             when(sensitiveWordFilterService.filter("标题")).thenReturn("标题");
-            when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
             when(idGenerator.generateId()).thenReturn(GENERATED_ID);
 
             Message savedAggregate = Message.fromRaw(
@@ -195,7 +196,6 @@ class MessageCommandHandlerTest {
             when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                     .thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
-            when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
             when(idGenerator.generateId()).thenReturn(GENERATED_ID);
             when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -212,7 +212,6 @@ class MessageCommandHandlerTest {
             when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
                     .thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
-            when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
             when(idGenerator.generateId()).thenReturn(GENERATED_ID);
 
             when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));

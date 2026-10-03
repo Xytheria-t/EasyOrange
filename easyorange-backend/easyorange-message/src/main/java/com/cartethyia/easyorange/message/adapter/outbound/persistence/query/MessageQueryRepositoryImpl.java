@@ -63,14 +63,14 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
 
         // eo_message.type 为 TINYINT，SQL 返回 Integer；用 Integer 作 key，按 MessageType.code 反查，
         // 避免 String code 与 Integer key 永不匹配导致按类型未读数恒为 0。
-        Map<Integer, Long> countMap = counts.stream()
+        Map<Integer, Integer> countMap = counts.stream()
                 .collect(Collectors.toMap(
                         m -> ((Number) m.get("type")).intValue(),
-                        m -> ((Number) m.get("count")).longValue(),
+                        m -> ((Number) m.get("count")).intValue(),
                         (a, b) -> a));
 
         return new UnreadCount(
-                countMap.values().stream().mapToLong(Long::longValue).sum(),
+                countMap.values().stream().mapToInt(Integer::intValue).sum(),
                 countByCode(countMap, MessageType.SYSTEM),
                 countByCode(countMap, MessageType.CHAT),
                 countByCode(countMap, MessageType.ORDER),
@@ -78,8 +78,8 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
                 countByCode(countMap, MessageType.ACTIVITY));
     }
 
-    private static long countByCode(Map<Integer, Long> countMap, MessageType type) {
-        return countMap.getOrDefault(Integer.valueOf(type.getCode()), 0L);
+    private static int countByCode(Map<Integer, Integer> countMap, MessageType type) {
+        return countMap.getOrDefault(Integer.valueOf(type.getCode()), 0);
     }
 
     /** 会话详情窗口上限：只取最近 N 条（降序取页后反转为时间升序），避免长会话全量加载。 */

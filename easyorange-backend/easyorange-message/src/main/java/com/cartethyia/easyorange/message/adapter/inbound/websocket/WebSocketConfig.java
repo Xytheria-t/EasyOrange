@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.message.adapter.inbound.websocket;
 import com.cartethyia.easyorange.message.domain.constant.MessageConstant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -15,6 +16,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthInterceptor webSocketAuthInterceptor;
+    private final StompSubscribeGuard stompSubscribeGuard;
     private final ThreadPoolTaskScheduler taskScheduler;
 
     @Override
@@ -24,6 +26,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.enableSimpleBroker(MessageConstant.WS_TOPIC_PREFIX, MessageConstant.WS_QUEUE_PREFIX)
                 .setTaskScheduler(taskScheduler);
         registry.setUserDestinationPrefix(MessageConstant.WS_USER_PREFIX);
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        // 握手认证只挡「未登录」，订阅级别的归属校验在这里补齐
+        registration.interceptors(stompSubscribeGuard);
     }
 
     @Override

@@ -14,6 +14,9 @@ import { WS_MESSAGE_TYPE_CHAT } from '@/types/message';
 import { errorHandler } from '@/utils/errorHandler';
 import './chat-window.css';
 
+/** 与后端 markAsReadBatch 的单次上限（50）对齐 */
+const MARK_READ_BATCH_SIZE = 50;
+
 function ChatWindowPage() {
     const { targetUserId } = useParams<{ targetUserId: string }>();
     const navigate = useNavigate();
@@ -87,17 +90,24 @@ function ChatWindowPage() {
             return;
         }
 
-        const unreadIds = messages.filter(m => m.senderId !== targetUserId && m.status !== 'READ').map(m => m.id);
+        // 只标「对方发来的」消息：条件写反成 !== 时选中全是自己的消息，
+        // 后端 receiver 谓词静默跳过 → 对方的未读永远不清零，自己的消息还立刻显示已读
+        const unreadIds = messages.filter(m => m.senderId === targetUserId && m.status !== 'READ').map(m => m.id);
 
         if (unreadIds.length === 0) {
             return;
         }
 
+        // 后端单次上限 50 条（防 IN 子句膨胀），翻历史/长会话积压超限时按 50 分块
+        const chunks: string[][] = [];
+        for (let i = 0; i < unreadIds.length; i += MARK_READ_BATCH_SIZE) {
+            chunks.push(unreadIds.slice(i, i + MARK_READ_BATCH_SIZE));
+        }
+
         // 成功后本地回写 READ：此前只发请求不回写，缓存里 status 恒为 SENT，
         // 每条新消息到达都会把整页未读 ID 重新 PUT 一遍
         const marked = new Set(unreadIds);
-        messageApi
-            .markAsRead(unreadIds)
+        Promise.all(chunks.map(chunk => messageApi.markAsRead(chunk)))
             .then(() => {
                 queryClient.setQueryData<ChatMessage[]>(chatMessagesQueryKey(targetUserId), old =>
                     (old ?? []).map(m => (marked.has(m.id) ? { ...m, status: 'READ' } : m))

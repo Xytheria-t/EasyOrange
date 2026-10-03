@@ -15,13 +15,6 @@ export const messageApi = {
         return request<RawChatMessage[]>(`/messages/conversation/${userId}`);
     },
 
-    sendMessage(data: { receiverId: string; content: string }) {
-        return request('/messages', {
-            method: 'POST',
-            body: data,
-        });
-    },
-
     markAsRead(ids: (string | number) | (string | number)[]) {
         // filter(Boolean) 兜底空/脏入参（TD-026）：后端对空列表已改 no-op 成功，两侧都不再出 400
         const idArray = (Array.isArray(ids) ? ids : [ids]).filter(Boolean);

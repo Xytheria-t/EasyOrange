@@ -7,11 +7,14 @@ import com.cartethyia.easyorange.message.application.command.MessageCommandHandl
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
+import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
+import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import java.security.Principal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
@@ -30,6 +33,7 @@ public class ChatWebSocketHandler {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final MessageCommandHandler messageCommandHandler;
+    private final UserInfoPort userInfoPort;
 
     @MessageMapping("/chat.send")
     public void handleChatMessage(@Payload WsMessage payload, Principal principal) {
@@ -100,6 +104,16 @@ public class ChatWebSocketHandler {
     public void handleTyping(@Payload WsMessage payload, Principal principal) {
         String userId = requireUserId(principal);
 
+        // typing 是会话广播帧，无归属校验则任何人可向任意会话注入输入状态；
+        // 攻击面拒绝无需回帧提示（合法客户端不会命中）
+        if (!Message.isConversationParticipant(payload.getConversationId(), userId)) {
+            log.warn(
+                    "action=typing_indicator_rejected conversationId={} userId={}",
+                    payload.getConversationId(),
+                    userId);
+            return;
+        }
+
         messagingTemplate.convertAndSend("/topic/chat/" + payload.getConversationId() + "/typing", (Object)
                 Map.of("userId", userId, "timestamp", Instant.now().toEpochMilli()));
 
@@ -139,12 +153,18 @@ public class ChatWebSocketHandler {
 
     /**
      * 聊天帧字段与 REST 会话详情（{@code ConversationVO}）对齐：前端把回显帧直接当消息对象存进 store，
-     * 少一个字段就少一处客户端补默认值。可空字段按 {@code SystemNotificationPayload} 的同款口径兜底。
+     * 少一个字段就少一处客户端补默认值。可空字段按 {@code SystemNotificationPayload} 的同款口径兜底；
+     * 发送者档案与 {@code ConversationVO} 同源（UserInfoPort），纯实时会话（未刷新）也能取到对方头像。
      */
-    private static Map<String, Object> chatFrame(Message message) {
+    private Map<String, Object> chatFrame(Message message) {
+        UserInfo sender = message.senderId() == null
+                ? null
+                : userInfoPort.getUserInfoMap(Set.of(message.senderId())).get(message.senderId());
         Map<String, Object> frame = new HashMap<>();
         frame.put("id", message.id());
         frame.put("senderId", message.senderId());
+        frame.put("senderName", sender != null ? sender.username() : null);
+        frame.put("senderAvatar", sender != null ? sender.avatar() : null);
         frame.put("receiverId", message.receiverId());
         frame.put("conversationId", message.conversationId());
         frame.put(
@@ -152,6 +172,12 @@ public class ChatWebSocketHandler {
                 message.type() == null ? null : Integer.valueOf(message.type().getCode()));
         frame.put("title", message.title() != null ? message.title() : "");
         frame.put("content", message.content() != null ? message.content() : "");
+        frame.put(
+                "isRead",
+                message.isRead() == null
+                        ? null
+                        : Integer.valueOf(message.isRead().getCode()));
+        frame.put("readTime", message.readTime() != null ? message.readTime().toString() : null);
         frame.put(
                 "status",
                 message.msgStatus() == null ? null : message.msgStatus().getCode());
