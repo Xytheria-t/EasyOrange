@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.message.application.query.dto.ConversationListV
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
+import com.cartethyia.easyorange.message.domain.valueobject.SystemConversation;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,9 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ConversationQueryHandler {
-
-    /** 系统通知在会话列表中的固定占位会话 key（senderId 为 null 的消息归并到此处，避免 null key / NPE）。 */
-    private static final String SYSTEM_CONVERSATION = "system";
 
     private final MessageQueryRepository queryRepository;
     private final UserInfoPort userInfoPort;
@@ -55,7 +53,7 @@ public class ConversationQueryHandler {
 
         // 排除固定占位 key，避免向用户仓库查询不存在的 "system" 用户
         Set<String> userKeys = latestByUser.keySet().stream()
-                .filter(key -> !SYSTEM_CONVERSATION.equals(key))
+                .filter(key -> !SystemConversation.ID.equals(key))
                 .collect(Collectors.toSet());
         Map<String, UserInfo> userMap = userInfoPort.getUserInfoMap(userKeys);
 
@@ -67,7 +65,7 @@ public class ConversationQueryHandler {
     /** 会话对方：senderId 为 null 的系统消息归并到固定 system 会话。 */
     private static String otherUserId(String currentUserId, Message msg) {
         if (msg.senderId() == null) {
-            return SYSTEM_CONVERSATION;
+            return SystemConversation.ID;
         }
         return msg.senderId().equals(currentUserId) ? msg.receiverId() : msg.senderId();
     }
@@ -98,7 +96,7 @@ public class ConversationQueryHandler {
 
     private ConversationListVO buildConversationListVO(
             String targetUserId, Message latestMsg, Map<String, UserInfo> userMap, Map<String, Integer> unreadCounts) {
-        boolean isSystem = SYSTEM_CONVERSATION.equals(targetUserId);
+        boolean isSystem = SystemConversation.ID.equals(targetUserId);
         UserInfo targetUser = userMap.get(targetUserId);
         return ConversationListVO.builder()
                 .targetUserId(targetUserId)
