@@ -39,7 +39,8 @@ export function useNotificationSocket(): void {
                 // 聊天未读增量帧：载荷只当触发器用，REST unread-count / 会话列表是唯一真相源；
                 // 此前后端每条消息都在发、前端无人订阅，红点只能等 60s 轮询
                 client.subscribe('/user/queue/unread-count', () => {
-                    void queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+                    // 只失效会话列表：聊天未读由各会话的 unreadCount 求和得出，
+                    // 铃铛显示的 systemCount 不受聊天消息影响，多刷一次 unread-count 是白请求
                     void queryClient.invalidateQueries({ queryKey: ['messages', 'conversations'] });
                 });
             },

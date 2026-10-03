@@ -1,4 +1,4 @@
-import { MessageCircle, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminGuard } from '@/admin/hooks/useAdminGuard';
@@ -8,6 +8,7 @@ import { useLogout } from '@/hooks';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { throttle } from '@/utils/functionUtils';
+import { MessagesEntry } from './MessagesEntry';
 
 export function Header() {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -143,18 +144,9 @@ export function Header() {
                     {/* 通知铃铛（仅登录可见）— 未读数走 /messages/unread-count，实时推送走 WebSocket */}
                     {isLoggedIn && <NotificationBell />}
 
-                    {/* 消息入口（仅登录可见） */}
-                    {isLoggedIn && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="floating-nav__icon-btn"
-                            onClick={() => navigate('/messages')}
-                            aria-label="消息"
-                        >
-                            <MessageCircle size={19} />
-                        </Button>
-                    )}
+                    {/* 消息入口（仅登录可见）—— 未读数取会话列表求和，与消息中心同一份数据，
+                        不额外发请求；会话列表随 WS 帧失效，数字跟着实时更新 */}
+                    {isLoggedIn && <MessagesEntry />}
 
                     {/* 用户菜单 */}
                     <div
