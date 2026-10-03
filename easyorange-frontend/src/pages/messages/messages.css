@@ -1,196 +1,117 @@
 /* ============================================================
-   EasyOrange - Messages Page (Desktop Full-Screen Edition)
-   Style: Two-panel messaging layout, full viewport
-   Theme: Warm Orange-Pink Diffusion
+   EasyOrange - Messages Page（消息中心）
+   两栏信使布局：左会话列表 + 右会话视图。
+   层级靠明度差与发丝线，不靠玻璃模糊——列表页每帧都要重绘，模糊层是纯开销。
    ============================================================ */
 
 .messages-page {
     display: flex;
     flex-direction: column;
     height: calc(100vh - var(--header-height));
-    background:
-        radial-gradient(ellipse at 0% 0%, var(--primary-alpha-1) 0%, transparent 50%),
-        radial-gradient(ellipse at 100% 100%, rgba(195, 155, 211, 0.03) 0%, transparent 50%),
-        linear-gradient(180deg, var(--gray-50) 0%, var(--primary-50) 50%, var(--gray-50) 100%);
+    background: var(--surface-page);
     position: relative;
     overflow: hidden;
 }
 
-/* Ambient floating orbs - subtle */
-.messages-ambient {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
-}
-
-.messages-orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.3;
-    animation: messagesOrbFloat 20s ease-in-out infinite;
-}
-
-.messages-orb-1 {
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, var(--primary-alpha-2) 0%, transparent 70%);
-    top: -120px;
-    right: -80px;
-    animation-delay: 0s;
-}
-
-.messages-orb-2 {
-    width: 300px;
-    height: 300px;
-    background: radial-gradient(circle, var(--rose-alpha-1) 0%, transparent 70%);
-    bottom: 20%;
-    left: -60px;
-    animation-delay: -7s;
-    animation-duration: 24s;
-}
-
-@keyframes messagesOrbFloat {
-    0%,
-    100% {
-        transform: translate(0, 0) scale(1);
-    }
-    33% {
-        transform: translate(20px, -15px) scale(1.03);
-    }
-    66% {
-        transform: translate(-12px, 12px) scale(0.97);
-    }
-}
-
-/* ============ TOPBAR ============ */
-.messages-topbar {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 1.25rem 1.5rem 0.625rem;
-    position: relative;
-    z-index: 2;
-    gap: 1rem;
-}
-
-.messages-kicker {
-    display: inline-flex;
-    align-items: center;
-    flex-shrink: 0;
-    gap: 0.5rem;
-    font-family: var(--font-accent);
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--primary-600);
-    padding: 0.3125rem 0.75rem;
-    background: var(--primary-50);
-    border-radius: var(--radius-full);
-}
-
-.messages-kicker .kicker-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--primary-500);
-    animation: kickerPulse 2s ease-in-out infinite;
-}
-
-@keyframes kickerPulse {
-    0%,
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    50% {
-        opacity: 0.5;
-        transform: scale(0.8);
-    }
-}
-
-.messages-topbar-title {
-    display: flex;
-    align-items: baseline;
-    gap: 0.75rem;
-}
-
-.messages-topbar-title h1 {
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    margin: 0;
-    color: var(--text-primary);
-}
-
-.messages-topbar-title p {
-    font-family: var(--font-accent);
-    font-size: 0.8125rem;
-    color: var(--text-tertiary);
-    margin: 0;
-    letter-spacing: 0.02em;
-}
-
-/* ============ BODY: TWO PANELS ============ */
+/* ============ 主体：唯一一层容器 ============ */
 .messages-body {
     flex: 1;
     min-height: 0;
     display: flex;
     position: relative;
-    z-index: 1;
-    overflow: hidden;
     margin: 0 1.25rem 1.25rem;
     border-radius: var(--radius-2xl);
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(20px) saturate(1.1);
-    -webkit-backdrop-filter: blur(20px) saturate(1.1);
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: var(--surface-panel);
+    border: 1px solid var(--border-light);
     box-shadow:
-        0 4px 24px rgba(42, 37, 32, 0.04),
-        0 1px 0 rgba(255, 255, 255, 0.8) inset,
-        0 -1px 0 var(--primary-alpha-1) inset;
+        var(--shadow-sm),
+        0 1px 0 rgba(255, 255, 255, 0.9) inset;
+    overflow: hidden;
 }
 
-/* ============ LEFT PANEL: CONVERSATIONS ============ */
-.messages-conversations-panel {
-    width: 340px;
-    min-width: 280px;
+/* ============ 左栏：会话列表 ============ */
+.messages-panel {
+    width: 344px;
+    min-width: 268px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--primary-alpha-2);
-    overflow-y: auto;
-    padding: 0.5rem 0.625rem;
+    min-height: 0;
+    border-right: 1px solid var(--border-light);
+    background: var(--surface-panel);
+}
+
+.messages-panel-head {
+    flex-shrink: 0;
+    padding: 1.125rem 1.125rem 0.9375rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.messages-panel-head-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.messages-panel-title {
+    display: flex;
+    align-items: center;
     gap: 0.5rem;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--text-primary);
+    margin: 0;
 }
 
-.messages-conversations-panel::-webkit-scrollbar {
-    width: 4px;
+/* 未读总数写在副标题里，头部不再挂一个重复它的数字药丸 */
+.messages-panel-subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0;
 }
 
-.messages-conversations-panel::-webkit-scrollbar-thumb {
-    background: var(--primary-alpha-2);
-    border-radius: 2px;
-}
-
-.messages-conversations-panel::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-alpha-4);
-}
-
-/* 列表与分页条贴底：会话多时把分页顶到视野外是常被投诉的细节 */
-.messages-list {
+.messages-panel-body {
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.5rem 0.5rem 0.75rem;
+}
+
+.messages-panel-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.messages-panel-body::-webkit-scrollbar-thumb {
+    background: var(--border-medium);
+    border-radius: 3px;
+}
+
+.messages-panel-body::-webkit-scrollbar-thumb:hover {
+    background: var(--border-strong);
+}
+
+/* 分组头（今天 / 昨天 / 更早）：粘顶，长列表滚动时始终知道自己在第几段 */
+.messages-group-label {
+    position: sticky;
+    top: -0.5rem;
+    z-index: 1;
+    margin: 0;
+    padding: 0.5rem 0.625rem 0.375rem;
+    background: var(--surface-panel);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--text-tertiary);
 }
 
 .messages-list {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 1px;
     list-style: none;
     margin: 0;
     padding: 0;
@@ -200,31 +121,42 @@
     min-width: 0;
 }
 
-/* Conversation card - "app list item" style */
+/* ============ 会话行 ============ */
 .message-card {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.75rem 0.875rem;
-    border-radius: var(--radius-xl);
+    padding: 0.6875rem 0.75rem;
+    border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: all var(--transition-normal);
     text-decoration: none;
     position: relative;
+    transition: background var(--transition-fast);
 }
 
 .message-card:hover {
-    background: var(--primary-alpha-1);
+    background: var(--surface-sunken);
 }
 
 .message-card:active {
-    background: var(--primary-alpha-2);
+    background: var(--primary-alpha-1);
 }
 
-/* 选中态：右栏正在显示的就是这个会话，双栏下不标出来会不知道自己在哪 */
+/* 选中态：左缘竖条 + 浅橙底。不用盒子阴影，跟列表其余行保持同一套语汇 */
 .message-card.is-active {
-    background: var(--primary-alpha-2);
-    box-shadow: inset 0 0 0 1px var(--primary-alpha-3);
+    background: var(--primary-alpha-1);
+}
+
+.message-card.is-active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 22px;
+    border-radius: 0 var(--radius-full) var(--radius-full) 0;
+    background: var(--primary-500);
 }
 
 .message-avatar-wrap {
@@ -233,44 +165,43 @@
 }
 
 .message-avatar {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-lg);
     object-fit: cover;
-    border: 2px solid var(--gray-100);
+    background: var(--surface-sunken);
 }
 
 .message-avatar-fallback {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary-alpha-2) 0%, rgba(195, 155, 211, 0.08) 100%);
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(140deg, var(--primary-100), var(--rose-100));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--primary-600);
+    color: var(--primary-700);
     font-size: 1rem;
     font-weight: 700;
-    border: 2px solid var(--gray-100);
 }
 
 .message-badge {
     position: absolute;
-    top: -3px;
-    right: -3px;
+    top: -4px;
+    right: -4px;
     min-width: 18px;
     height: 18px;
     padding: 0 5px;
-    background: linear-gradient(135deg, var(--error) 0%, var(--status-error) 100%);
+    background: var(--error);
     border-radius: var(--radius-full);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.625rem;
     font-weight: 700;
+    line-height: 1;
     color: var(--white);
-    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
-    border: 1.5px solid var(--white);
+    box-shadow: 0 0 0 2px var(--surface-panel);
 }
 
 .message-content {
@@ -280,98 +211,109 @@
 
 .message-header-row {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 0.5rem;
-    margin-bottom: 0.125rem;
 }
 
 .message-name {
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text-primary);
-    margin: 0;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 未读会话：名字加重 + 主色，一眼扫出还有谁没读 */
+.message-card.has-unread .message-name {
+    font-weight: 700;
+    color: var(--primary-800);
 }
 
 .message-card.is-active .message-name {
-    color: var(--primary-600);
+    color: var(--primary-700);
 }
 
 .message-time {
+    flex-shrink: 0;
     font-size: 0.6875rem;
     color: var(--text-tertiary);
-    font-weight: 500;
+    font-weight: 400;
     white-space: nowrap;
 }
 
 .message-preview {
     display: block;
+    margin-top: 0.125rem;
     font-size: 0.78125rem;
     color: var(--text-secondary);
-    margin: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 1.4;
+    line-height: 1.45;
+}
+
+.message-card.has-unread .message-preview {
+    color: var(--text-primary);
+}
+
+/* 系统伪会话只读：标签跟在预览后，不另起一行挤高行高 */
+.message-card-tag {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.375rem;
+    padding: 0 0.3125rem;
+    border-radius: var(--radius-xs);
+    background: var(--primary-alpha-2);
+    color: var(--primary-700);
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1.5;
+    vertical-align: 1px;
 }
 
 .messages-panel-state,
 .messages-thread-empty {
-    height: 100%;
+    flex: 1;
     min-height: 0;
     overflow-y: auto;
 }
 
-.message-card {
-    /* 徽标与预览同行，卡片高度不受影响 */
-    position: relative;
+/* 分页贴底：会话多时把分页顶到视野外是常被投诉的细节 */
+.messages-panel-foot {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    padding: 0.625rem 0.75rem;
+    border-top: 1px solid var(--border-light);
 }
 
-.message-card-tag {
-    display: inline-flex;
-    align-items: center;
-    margin-top: 0.25rem;
-    padding: 0.0625rem 0.375rem;
-    border-radius: var(--radius-full);
-    background: var(--primary-alpha-2);
-    color: var(--primary-600);
-    font-size: 0.625rem;
-    font-weight: 600;
-    line-height: 1.5;
-}
-
-/* ============ RIGHT PANEL: THREAD ============ */
+/* ============ 右栏：会话视图 ============ */
 .messages-thread-panel {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background: var(--surface-canvas);
 }
 
-/* ============ RESPONSIVE ============ */
+/* ============ 响应式 ============ */
 @media (max-width: 900px) {
     .messages-body {
         margin: 0 0.75rem 0.75rem;
     }
 
-    .messages-conversations-panel {
+    .messages-panel {
         width: 100%;
         min-width: 0;
         border-right: none;
     }
 
     /* 窄屏一次只给一栏：选了会话就收起列表，返回键再展开 */
-    .messages-page.has-thread .messages-conversations-panel {
-        display: none;
-    }
-
-    .messages-topbar {
-        padding: 1rem 1rem 0.5rem;
-    }
-
-    .messages-topbar-title p {
+    .messages-page.has-thread .messages-panel {
         display: none;
     }
 }
@@ -386,52 +328,27 @@
         border-radius: var(--radius-xl);
     }
 
-    .messages-conversations-panel {
-        width: 100%;
-        min-width: 0;
+    .messages-panel-head {
+        padding: 0.875rem 0.875rem 0.75rem;
     }
 
-    .messages-topbar {
-        padding: 0.75rem 0.75rem 0.375rem;
-    }
-
-    .messages-topbar-title h1 {
-        font-size: 1.0625rem;
-    }
-
-    .messages-kicker {
-        font-size: 0.625rem;
-        padding: 0.25rem 0.625rem;
+    .messages-panel-body {
+        padding: 0.375rem 0.375rem 0.5rem;
     }
 
     .message-card {
-        padding: 0.625rem 0.75rem;
+        padding: 0.625rem 0.625rem;
     }
 
     .message-avatar,
     .message-avatar-fallback {
-        width: 40px;
-        height: 40px;
-    }
-
-    .message-name {
-        font-size: 0.8125rem;
-    }
-
-    .message-preview {
-        font-size: 0.71875rem;
+        width: 38px;
+        height: 38px;
     }
 }
 
-/* ============ REDUCED MOTION ============ */
+/* ============ 降低动效 ============ */
 @media (prefers-reduced-motion: reduce) {
-    .messages-orb {
-        animation: none;
-    }
-    .messages-kicker .kicker-dot {
-        animation: none;
-    }
-
     .message-card {
         transition: none;
     }

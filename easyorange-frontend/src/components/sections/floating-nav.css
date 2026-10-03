@@ -504,6 +504,23 @@
     transform: translateY(-3px) scale(1.05);
 }
 
+/* 新通知到达：徽标弹一下。不靠常驻动画——那是每帧的重绘，不是提醒 */
+.floating-nav__bell.has-new .floating-nav__bell-badge {
+    animation: bellBadgePop 0.5s var(--ease-spring);
+}
+
+@keyframes bellBadgePop {
+    0% {
+        transform: scale(1);
+    }
+    45% {
+        transform: scale(1.35);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
 .floating-nav__user {
     position: relative;
 }
@@ -1116,6 +1133,10 @@
     .floating-nav__user-avatar,
     .floating-nav__login-btn,
     .floating-nav__publish-btn {
+        animation: none;
+    }
+
+    .floating-nav__bell.has-new .floating-nav__bell-badge {
         animation: none;
     }
 

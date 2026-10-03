@@ -13,6 +13,7 @@ import { ErrorState } from '../feedback/StateDisplay';
 import ChatHeader from './ChatHeader';
 import ChatInputBar from './ChatInputBar';
 import MessageList from './MessageList';
+import './chat-window.css';
 
 /** 与后端 markAsReadBatch 的单次上限（50）对齐 */
 const MARK_READ_BATCH_SIZE = 50;
@@ -173,6 +174,7 @@ function ChatThread({ counterpart, onBack }: ChatThreadProps) {
             <ChatHeader
                 onBack={onBack}
                 isTyping={isTyping}
+                subtitle={isSystemSession ? '系统通知 · 只读' : undefined}
                 targetUser={{ id: targetUserId, name: counterpart.name, avatar: targetAvatar }}
             />
 

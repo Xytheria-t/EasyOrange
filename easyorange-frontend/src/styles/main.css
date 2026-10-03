@@ -1606,7 +1606,9 @@
 
 @media (max-width: 768px) {
     :root {
-        --header-height: 80px;
+        /* 窄屏浮动导航会折成两行（实测高约 110px + top 14px）：沿用 80px 的话
+           页面首屏标题会被压在导航底下 */
+        --header-height: 124px;
     }
 
     .header-container {
