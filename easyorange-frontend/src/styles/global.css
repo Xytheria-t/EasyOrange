@@ -106,9 +106,11 @@ body {
 }
 
 /* ============ FOCUS & MOTION BASELINE ============ */
-/* 键盘可达性基线：Tab 聚焦一律可见（页面自有 :focus-visible 样式特异性更高，自然覆盖） */
+/* 键盘可达性基线：Tab 聚焦一律可见（页面自有 :focus-visible 样式特异性更高，自然覆盖）
+   焦点环取 700：2px 细窄元素在页面底色上，500 只有 2.45:1，达不到非文本 3:1。
+   页面若要改 outline-offset，颜色仍跟这条走，别退回 500。 */
 :focus-visible {
-    outline: 2px solid var(--primary-500);
+    outline: 2px solid var(--primary-700);
     outline-offset: 2px;
 }
 

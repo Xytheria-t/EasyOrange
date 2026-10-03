@@ -1,8 +1,25 @@
 /* ============================================================
    EasyOrange - Design Tokens
-   CSS Custom Properties for the design system
-   Theme: Orange-Pink Diffusion Gradient (橙粉弥散渐变)
-   Primary: #F97316 Warm Orange → #C39BD3 Soft Pink-Purple
+   全站视觉取值的唯一来源：页面 CSS / tsx 里禁裸 hex、禁裸 rgba()。
+
+   加页面前先对号入座，两类页面走两套规则：
+
+   【工作台页】列表 + 详情、消息、通知、后台
+     实色表面。层级靠 --surface-page / --surface-panel / --surface-canvas /
+     --surface-sunken 四档明度递进，加 --border-* 发丝线；不用 backdrop-filter，
+     不用装饰光球。原因是模糊层压在长列表上，文字与分隔都读不清，层级只能改
+     靠阴影堆，越堆越糊。工作台页要的是能长时间读下去，不是第一眼惊艳。
+
+   【营销页】Hero、AI 功能区、登录页
+     渐变与模糊可用：只出现一次，也不承载需要持续阅读的信息。品牌辨识度由
+     这里负责，不外溢到工作台页。
+
+   【焦点色】全站辨识度 = 一个高饱和品牌橙 + 其余灰阶，不靠模糊承担。
+     强调色只允许落在四处：选中态、主操作按钮、自己的消息气泡、状态色。
+     强调一律取 --primary-700：白字在 #f97316 上只有 2.8:1，在 #c2410c 上是
+     5.18:1（AA 正文阈值 4.5:1）；且同屏出现两档橙会被读成两套强调色。
+     --primary-500 只留给营销页的大面积渐变与光晕 —— 那里靠体量辨识，
+     不靠细窄元素。细窄强调（选中竖条、未读圆点、焦点环、强调文字）同样走 700。
    ============================================================ */
 
 :root {
@@ -27,23 +44,22 @@
     --rose-500: #f43f5e;
     --rose-600: #e11d48;
 
-    /* Accent aliases */
+    /* Accent aliases —— 2026-10 删了 --accent-600，它是 --rose-600 的零引用同值别名，
+       留着只会在「强调色到底取哪档」上多一个候选。 */
     --accent-300: var(--rose-300);
     --accent-400: var(--rose-400);
     --accent-500: var(--rose-500);
-    --accent-600: var(--rose-600);
 
-    /* Purple palette - Gradient endpoint #C39BD3 */
+    /* Purple palette - Gradient endpoint #C39BD3
+       2026-10 删了 --purple-100 / -200 与 --plum-400 / -500（后者是前者的同值别名），
+       四条全零引用；--plum-600 仍有引用，保留。 */
     --purple-50: #faf5ff;
-    --purple-100: #f3e8ff;
-    --purple-200: #e9d5ff;
     --purple-300: #d8b4fe;
     --purple-400: #c39bd3;
     --purple-500: #af7ac5;
     --purple-600: #9333ea;
 
-    /* Gold accent for warmth */
-    --gold-300: #fcd34d;
+    /* Gold accent for warmth —— 2026-10 删了零引用的 --gold-300 */
     --gold-400: #fbbf24;
     --gold-500: #f59e0b;
 
@@ -60,28 +76,19 @@
     --cyan-500: #06b6d4;
 
     /* Plum Purple - Unified with purple palette */
-    --plum-400: var(--purple-400);
-    --plum-500: var(--purple-500);
     --plum-600: var(--purple-600);
-
-    /* Warm neutral */
-    --warm-50: #fdf6e3;
-    --warm-100: #faf0dc;
-    --warm-200: #f5e6d3;
 
     /* Blue - minimal use */
     --blue-50: #eff6ff;
     --blue-500: #3b82f6;
 
-    /* Semantic colors */
+    /* Semantic colors —— 2026-10 删了零引用的 --warning-light / --info-light */
     --success: #10b981;
     --success-light: #d1fae5;
     --warning: #f59e0b;
-    --warning-light: #fef3c7;
     --error: #f43f5e;
     --error-light: #ffe4e6;
     --info: #3b82f6;
-    --info-light: #dbeafe;
 
     /* Status palette (状态色板) */
     --status-success: #059669; /* 成功-文本/深色 */
@@ -100,31 +107,28 @@
     --status-default-dot: #c4bcb4;
     --status-default-bg: linear-gradient(135deg, rgba(168, 160, 152, 0.1), rgba(168, 160, 152, 0.05));
 
-    /* Neutral scale - Warmer */
+    /* Neutral scale - Warmer —— 2026-10 删了零引用的 --gray-25 / -600 / -950；
+       刻意跳档，页面用色不按连续灰阶取，别擅自补回来 */
     --white: #ffffff;
-    --gray-25: #fefefe;
     --gray-50: #faf8f5;
     --gray-100: #f5f3f0;
     --gray-200: #e8e4e0;
     --gray-300: #d6d0c8;
     --gray-400: #a8a098;
     --gray-500: #787068;
-    --gray-600: #5c544c;
     --gray-700: #433d36;
     --gray-800: #2a2520;
     --gray-900: #1a1612;
-    --gray-950: #0d0b09;
 
-    /* Text colors - Warm tint with orange-pink harmony */
+    /* Text colors - Warm tint with orange-pink harmony
+       2026-10 删了三条零引用的：--text-accent（与 --primary-700 同值的死别名，
+       正是「同值别名没人引用」的现成反例）、--text-inverse、--text-rose。 */
     --text-primary: #1e1a16;
     --text-secondary: #5a524a;
     /* 原 #8b7e72 在白底只有 3.94:1，正文级文本不达 AA；#6b6058 为 6.11:1 */
     --text-tertiary: #6b6058;
-    --text-inverse: #ffffff;
     --text-heading: #1a1612;
-    --text-accent: #c2410c;
     --text-warm: #a67c52;
-    --text-rose: #b76e79;
 
     /*
      * 表面层级 —— 会话 / 通知这类「列表 + 详情」页的三层递进。
@@ -145,14 +149,14 @@
     --biz-system: #8b5cf6;
     --biz-system-bg: rgba(139, 92, 246, 0.1);
 
-    /* Borders */
+    /* Borders —— 2026-10 删了零引用的 --border-glass；
+       剩下的四档就是工作台页的发丝线取值，别再加玻璃色回来 */
     --border-light: rgba(42, 37, 32, 0.05);
     --border-medium: rgba(42, 37, 32, 0.08);
     --border-strong: rgba(42, 37, 32, 0.12);
     --border-control: rgba(42, 37, 32, 0.35);
-    --border-glass: rgba(255, 255, 255, 0.7);
 
-    /* Shadows - Warm tinted */
+    /* Shadows - Warm tinted —— 2026-10 删了零引用的 --shadow-inner */
     --shadow-xs: 0 1px 2px rgba(42, 37, 32, 0.03);
     --shadow-sm: 0 2px 4px rgba(42, 37, 32, 0.04), 0 1px 2px rgba(42, 37, 32, 0.02);
     --shadow-md: 0 6px 12px -2px rgba(42, 37, 32, 0.06), 0 3px 6px -2px rgba(42, 37, 32, 0.03);
@@ -160,11 +164,7 @@
     --shadow-xl: 0 24px 48px -8px rgba(42, 37, 32, 0.1), 0 12px 24px -6px rgba(42, 37, 32, 0.05);
     --shadow-2xl: 0 32px 64px -12px rgba(42, 37, 32, 0.14), 0 16px 32px -8px rgba(42, 37, 32, 0.08);
     --shadow-glow: 0 0 60px rgba(249, 115, 22, 0.2);
-    --shadow-glow-accent: 0 0 60px rgba(195, 155, 211, 0.2);
-    --shadow-glow-pink: 0 0 60px rgba(251, 113, 133, 0.15);
-    --shadow-glow-gold: 0 0 40px rgba(251, 191, 36, 0.2);
     --shadow-card-hover: 0 24px 48px -8px rgba(42, 37, 32, 0.12), 0 0 0 1px rgba(249, 115, 22, 0.08);
-    --shadow-inner: inset 0 2px 4px rgba(42, 37, 32, 0.04);
 
     /* Glassmorphism - Enhanced */
     --glass-bg: rgba(255, 255, 255, 0.78);
@@ -197,23 +197,20 @@
     --rose-alpha-2: rgba(251, 113, 133, 0.16);
 
     /* ============================================================
-       GRADIENTS - Orange-Pink Diffusion Theme
-       Core: #F97316 → #C39BD3
+       GRADIENTS —— 只服务营销页（Hero / AI 功能区 / 登录页）。
+       工作台页不用，理由见文件头。
+
+       2026-10 清零引用后删掉的：--gradient-hero / -primary-soft / -luxury /
+       -deep / -aurora / -shine / -pink-purple；diffusion 只剩 -4（global.css
+       的氛围光球还在用），-1/-2/-3/-5 已删；shadow-glow 的 -accent / -gold /
+       -pink 三条已删，母版 --shadow-glow 仍被 global.css 引用，留着。
        ============================================================ */
 
     /* Primary gradient - Orange to Pink-Purple */
     --gradient-primary: linear-gradient(135deg, #f97316 0%, #fb7185 50%, #c39bd3 100%);
-    --gradient-primary-soft: linear-gradient(135deg, #f97316 0%, #fda4af 60%, #c39bd3 100%);
-
-    /* Hero gradient - Full diffusion spectrum */
-    --gradient-hero: linear-gradient(135deg, #ea580c 0%, #f97316 20%, #fb7185 45%, #c39bd3 70%, #d8b4fe 100%);
 
     /* Diffusion gradients - Soft and ethereal */
-    --gradient-diffusion-1: radial-gradient(ellipse at 20% 30%, rgba(249, 115, 22, 0.15) 0%, transparent 50%);
-    --gradient-diffusion-2: radial-gradient(ellipse at 80% 70%, rgba(195, 155, 211, 0.12) 0%, transparent 50%);
-    --gradient-diffusion-3: radial-gradient(ellipse at 50% 50%, rgba(251, 113, 133, 0.08) 0%, transparent 60%);
     --gradient-diffusion-4: radial-gradient(ellipse at 70% 20%, rgba(249, 115, 22, 0.1) 0%, transparent 45%);
-    --gradient-diffusion-5: radial-gradient(ellipse at 30% 80%, rgba(195, 155, 211, 0.1) 0%, transparent 45%);
 
     /* Warm subtle backgrounds */
     --gradient-warm: linear-gradient(
@@ -234,30 +231,8 @@
     --gradient-mesh-2: radial-gradient(ellipse at 100% 100%, rgba(195, 155, 211, 0.1) 0%, transparent 50%);
     --gradient-mesh-3: radial-gradient(ellipse at 50% 50%, rgba(251, 113, 133, 0.06) 0%, transparent 60%);
 
-    /* Aurora flowing effect */
-    --gradient-aurora: conic-gradient(
-        from 180deg at 50% 50%,
-        rgba(249, 115, 22, 0.08),
-        rgba(251, 113, 133, 0.06),
-        rgba(195, 155, 211, 0.08),
-        rgba(251, 191, 36, 0.04),
-        rgba(249, 115, 22, 0.08)
-    );
-
-    /* Shine effect */
-    --gradient-shine: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.4) 50%, transparent 70%);
-
-    /* Luxury gold gradient */
-    --gradient-luxury: linear-gradient(135deg, #9a3412 0%, #c2410c 25%, #f97316 50%, #fbbf24 75%, #f59e0b 100%);
-
     /* Rose gold gradient */
     --gradient-rose-gold: linear-gradient(135deg, #b76e79 0%, #e8b4b8 40%, #f5d5cb 70%, #fbbf24 100%);
-
-    /* Deep gradient */
-    --gradient-deep: linear-gradient(135deg, #1a1612 0%, #2a2520 30%, #433d36 60%, #9a3412 100%);
-
-    /* Pink-Purple soft gradient */
-    --gradient-pink-purple: linear-gradient(135deg, #fb7185 0%, #c39bd3 50%, #d8b4fe 100%);
 
     /* Orange glow gradient */
     --gradient-orange-glow: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fda4af 100%);
@@ -269,9 +244,7 @@
 
     /* Transitions - Ultra smooth */
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
     --transition-fast: 120ms var(--ease-out);
     --transition-normal: 280ms var(--ease-out);
     --transition-slow: 480ms var(--ease-out);
@@ -297,39 +270,9 @@
     --font-mono: "Fira Code", "Noto Sans Mono", "Consolas", "Monaco", monospace;
     --font-accent: "LXGW WenKai", "Noto Serif SC", "Playfair Display", serif;
 
-    /* Typography Scale */
-    --text-display-xl: clamp(3.5rem, 8vw, 6rem);
-    --text-display-lg: clamp(2.5rem, 5vw, 4rem);
-    --text-display-md: clamp(2rem, 4vw, 3rem);
-    --text-display-sm: clamp(1.5rem, 3vw, 2rem);
-    --text-body-lg: 1.125rem;
-    --text-body-md: 1rem;
-    --text-body-sm: 0.875rem;
-    --text-body-xs: 0.75rem;
-
-    /* Font Weights */
-    --font-light: 300;
-    --font-regular: 400;
-    --font-medium: 500;
-    --font-semibold: 600;
-    --font-bold: 700;
-    --font-extrabold: 800;
-    --font-black: 900;
-
-    /* Line Heights */
-    --leading-tight: 1.1;
-    --leading-snug: 1.25;
-    --leading-normal: 1.5;
-    --leading-relaxed: 1.65;
-    --leading-loose: 1.8;
-
-    /* Letter Spacing */
-    --tracking-tighter: -0.05em;
-    --tracking-tight: -0.03em;
-    --tracking-normal: 0;
-    --tracking-wide: 0.02em;
-    --tracking-wider: 0.05em;
-    --tracking-widest: 0.1em;
+    /* 字号 / 字重 / 行高 / 字距：2026-10 清零引用后整段删除。页面里同名的
+       text-lg / leading-tight / tracking-widest 是 Tailwind 内置工具类，走 Tailwind
+       自己的主题，从来没读过这里的令牌；同名的 --warm-* 暖中性色板零引用，也一并清了。 */
 
     /* Spacing */
     --container-max: 1280px;

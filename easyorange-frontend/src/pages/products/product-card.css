@@ -633,7 +633,7 @@
 }
 
 .product-title-link-premium:focus-visible {
-    outline: 2px solid var(--primary-500);
+    outline: 2px solid var(--primary-700);
     outline-offset: 3px;
     border-radius: var(--radius-sm);
 }
@@ -908,7 +908,7 @@
 }
 
 .product-card-premium--compact:has(.product-title-link-premium:focus-visible) {
-    outline: 2px solid var(--primary-500);
+    outline: 2px solid var(--primary-700);
     outline-offset: 2px;
 }
 

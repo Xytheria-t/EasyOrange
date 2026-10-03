@@ -156,7 +156,9 @@
     width: 3px;
     height: 22px;
     border-radius: 0 var(--radius-full) var(--radius-full) 0;
-    background: var(--primary-500);
+    /* 强调色收敛到 700：竖条虽不带白字，但在 --surface-page 上 500 只有 2.45:1，
+       达不到非文本元素的 3:1；且同屏再冒出 500 橙会被读成两套强调色。 */
+    background: var(--primary-700);
 }
 
 .message-avatar-wrap {
