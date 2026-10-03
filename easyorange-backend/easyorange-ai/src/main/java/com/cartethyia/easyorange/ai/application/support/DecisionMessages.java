@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.application.chat;
+package com.cartethyia.easyorange.ai.application.support;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,22 +15,22 @@ import org.springframework.ai.chat.messages.UserMessage;
  * 一轮内的多个工具调用合成一条 assistant 消息（{@code tool_calls} 数组）+ 一条 tool 消息（多条响应），
  * 与逐个调用时的消息形状同构：协议要求每个 {@code tool_call_id} 都有一条对应观察，少一条供应商直接 400。
  * <p>
- * 与生成路径的消息装配（{@link ChatPromptAssembler}）是一对对称职责：那边按角色装配单次生成的
- * prompt，这边逐轮累积决策上下文。两边都刻意不改写前缀内容（不改写历史、不压进单条 user 消息），
- * 因为前缀每变一个字节这轮的缓存折扣就全部作废。
+ * 首条 user 消息的拼装由调用方注入（chat 是问题/历史/画像三段，listing 是图片线索/卖家备注/分类清单），
+ * 本类只保证「首两条固定 + 逐轮按协议回填」。与各链路生成侧的消息装配是一对对称职责，两边都刻意不改写
+ * 前缀内容（不改写历史、不压进单条 user 消息）——前缀每变一个字节这轮的缓存折扣就全部作废。
  */
-final class DecisionMessages {
+public final class DecisionMessages {
 
     private final List<Message> messages;
 
-    DecisionMessages(String systemPrompt, String firstUserMessage) {
+    public DecisionMessages(String systemPrompt, String firstUserMessage) {
         this.messages = new ArrayList<>();
         messages.add(new SystemMessage(systemPrompt));
         messages.add(new UserMessage(firstUserMessage));
     }
 
     /** 当轮的不可变消息序列（循环后续追加对已发出的调用不可见）。 */
-    List<Message> snapshot() {
+    public List<Message> snapshot() {
         return List.copyOf(messages);
     }
 
@@ -39,7 +39,7 @@ final class DecisionMessages {
      *
      * @param observations 与 {@code toolCalls} 一一对应的观察文本，长度必须相同
      */
-    void appendRound(List<AssistantMessage.ToolCall> toolCalls, List<String> observations) {
+    public void appendRound(List<AssistantMessage.ToolCall> toolCalls, List<String> observations) {
         if (toolCalls.size() != observations.size()) {
             throw new IllegalArgumentException("tool call 与观察数量不一致，无法按协议回填");
         }

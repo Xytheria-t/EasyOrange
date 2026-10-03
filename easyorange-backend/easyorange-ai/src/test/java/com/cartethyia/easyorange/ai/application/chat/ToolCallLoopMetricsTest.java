@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.application.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.cartethyia.easyorange.ai.application.support.ToolCallLoopOutcome;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

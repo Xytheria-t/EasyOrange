@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.ai.application.chat;
 
+import com.cartethyia.easyorange.ai.application.support.UntrustedText;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;

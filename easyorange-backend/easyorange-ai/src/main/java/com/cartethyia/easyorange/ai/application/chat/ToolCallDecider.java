@@ -2,9 +2,12 @@ package com.cartethyia.easyorange.ai.application.chat;
 
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.FailureReason;
+import com.cartethyia.easyorange.ai.application.support.ToolLoopCall;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -39,14 +42,43 @@ public class ToolCallDecider {
      */
     List<ToolCallDecision> decide(
             @Nullable String sessionId, List<Message> decisionMessages, List<ToolCallback> toolCallbacks) {
+        return decideInternal(sessionId, decisionMessages, toolCallbacks, AiCallScope.CHAT);
+    }
+
+    /**
+     * 编排内核的决策入口 — 输出 {@link ToolLoopCall} 视图。模型路由场景固定 {@code chat_tool}（决策是纯
+     * 路由任务，chat / listing 两条链路共用快模型），记账口径由 {@code scope} 指定（listing 的决策调用要
+     * 记进 auto_listing 场景预算）；{@code toolInputOf} 按各链路工具面取入参摘要，供 trace 展示。
+     */
+    public List<ToolLoopCall> decideForLoop(
+            @Nullable String sessionId,
+            List<Message> decisionMessages,
+            List<ToolCallback> toolCallbacks,
+            AiCallScope scope,
+            Function<ToolCallDecision, String> toolInputOf) {
+        return decideInternal(sessionId, decisionMessages, toolCallbacks, scope).stream()
+                .map(decision -> new ToolLoopCall(
+                        decision.tool(),
+                        decision.parsedArguments().thought(),
+                        toolInputOf.apply(decision),
+                        decision.rawArguments(),
+                        decision.rawToolCall()))
+                .toList();
+    }
+
+    private List<ToolCallDecision> decideInternal(
+            @Nullable String sessionId,
+            List<Message> decisionMessages,
+            List<ToolCallback> toolCallbacks,
+            AiCallScope scope) {
         try {
-            return decideOnce(sessionId, decisionMessages, toolCallbacks);
+            return decideOnce(sessionId, decisionMessages, toolCallbacks, scope);
         } catch (Exception first) {
             // 瞬时抖动（超时 / 坏 JSON）的自愈窗口：重试一次，仍失败才交编排器单步降级
             log.warn("action=tool_call_decision_retry, sessionId={}, reason={}", sessionId, FailureReason.of(first));
         }
         try {
-            return decideOnce(sessionId, decisionMessages, toolCallbacks);
+            return decideOnce(sessionId, decisionMessages, toolCallbacks, scope);
         } catch (Exception second) {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason={}",
@@ -57,12 +89,12 @@ public class ToolCallDecider {
     }
 
     private List<ToolCallDecision> decideOnce(
-            @Nullable String sessionId, List<Message> decisionMessages, List<ToolCallback> toolCallbacks) {
+            @Nullable String sessionId,
+            List<Message> decisionMessages,
+            List<ToolCallback> toolCallbacks,
+            AiCallScope scope) {
         List<AssistantMessage.ToolCall> toolCalls = aiModelSupport.callWithTools(
-                modelRouter.choose(AiModelRouter.SCENARIO_CHAT_TOOL),
-                AiCallScope.CHAT,
-                decisionMessages,
-                toolCallbacks);
+                modelRouter.choose(AiModelRouter.SCENARIO_CHAT_TOOL), scope, decisionMessages, toolCallbacks);
         if (toolCalls.isEmpty()) {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",
