@@ -35,6 +35,7 @@ export function normalizeChatMessage(raw: RawChatMessage): ChatMessage {
         senderAvatar: raw.senderAvatar ?? null,
         receiverId: raw.receiverId,
         content: raw.content,
+        title: raw.title ?? null,
         type: (raw.type != null && MESSAGE_TYPE_BY_CODE[raw.type]) || 'TEXT',
         status: resolveStatus(raw),
         createTime: raw.createTime,

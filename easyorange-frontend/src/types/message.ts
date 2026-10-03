@@ -40,6 +40,8 @@ export interface ChatMessage {
     senderAvatar: string | null;
     receiverId: string;
     content: string;
+    /** 系统通知的标题；聊天消息恒为空 */
+    title: string | null;
     type: ChatMessageType;
     status: ChatMessageStatus;
     createTime: string;

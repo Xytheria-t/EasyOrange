@@ -108,9 +108,9 @@ function ChatThread({ counterpart, onBack }: ChatThreadProps) {
             return;
         }
 
-        // 只标「对方发来的」消息：条件写反成 !== 时选中全是自己的消息，
-        // 后端 receiver 谓词静默跳过 → 对方的未读永远不清零，自己的消息还立刻显示已读
-        const unreadIds = messages.filter(m => m.senderId === targetUserId && m.status !== 'READ').map(m => m.id);
+        // 判据是「收件人是我」，不是「发送方是对方」：自己发的消息收件人是对方，天然被排除；
+        // 而系统通知 senderId 为 null，按发送方筛永远选不中，它那一格的未读徽标会永远卡住
+        const unreadIds = messages.filter(m => m.receiverId === currentUserId && m.status !== 'READ').map(m => m.id);
 
         if (unreadIds.length === 0) {
             return;
@@ -133,7 +133,7 @@ function ChatThread({ counterpart, onBack }: ChatThreadProps) {
             .catch(e => {
                 addToast({ type: 'error', message: errorHandler.handle(e) });
             });
-    }, [messages, targetUserId, queryClient, addToast]);
+    }, [messages, currentUserId, targetUserId, queryClient, addToast]);
 
     const handleSend = useCallback(
         (content: string) => {

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { MessageCircle } from 'lucide-react';
+import { Bell, MessageCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { messageApi } from '@/api/messageApi';
@@ -47,12 +47,10 @@ function MessagesPage() {
 
     const { pageNum: convPage, goTo: setConvPage } = usePagination({ pageSize: CONVERSATION_PAGE_SIZE });
 
-    // 系统通知不是「跟某人的对话」：它没有会话、没有回复能力，混进列表只会得到一个打不开的条目。
-    // 它由顶栏铃铛与通知中心承载（未读数同源）。
-    const sessions = useMemo(
-        () => (conversations ?? []).filter(c => c.targetUserId !== SYSTEM_TARGET_USER_ID),
-        [conversations]
-    );
+    // 系统通知会话保留在列表里：后端把 senderId 为 null 的消息（系统/订单/支付各类通知）
+    // 都归并到它，通知页只列 type=1，滤掉这行等于让订单类通知在界面上无处可见。
+    // 它只读不可回，头部与输入框据此禁用输入。
+    const sessions = conversations ?? [];
 
     const totalConversationPages = Math.max(1, Math.ceil(sessions.length / CONVERSATION_PAGE_SIZE));
     const paginatedSessions = useMemo(() => {
@@ -111,6 +109,7 @@ function MessagesPage() {
                 <ul className="messages-list">
                     {paginatedSessions.map(conv => {
                         const isActive = conv.targetUserId === targetUserId;
+                        const isSystem = conv.targetUserId === SYSTEM_TARGET_USER_ID;
                         return (
                             <li key={conv.targetUserId}>
                                 <Link
@@ -134,6 +133,11 @@ function MessagesPage() {
                                                 loading="lazy"
                                                 decoding="async"
                                             />
+                                        ) : isSystem ? (
+                                            // 系统通知不是「某个人」：首字母圆点会让人以为还有同名用户
+                                            <span className="message-avatar-fallback" aria-hidden="true">
+                                                <Bell size={18} />
+                                            </span>
                                         ) : (
                                             <span className="message-avatar-fallback" aria-hidden="true">
                                                 {conv.targetUserName?.charAt(0) ?? '?'}
@@ -153,6 +157,7 @@ function MessagesPage() {
                                             </span>
                                         </span>
                                         <span className="message-preview">{conv.lastMessage || '暂无消息'}</span>
+                                        {isSystem && <span className="message-card-tag">只读</span>}
                                     </span>
                                 </Link>
                             </li>

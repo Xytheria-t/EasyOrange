@@ -366,6 +366,13 @@
     word-break: break-word;
 }
 
+/* 系统通知的标题：与正文分行，别糊成一段没主语的话 */
+.chat-bubble-title {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 700;
+}
+
 .chat-bubble-meta {
     display: flex;
     align-items: center;
