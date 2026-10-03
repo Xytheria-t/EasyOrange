@@ -10,6 +10,7 @@ import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
 import com.cartethyia.easyorange.message.domain.enums.MessageBizType;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
+import com.cartethyia.easyorange.message.domain.valueobject.SystemConversation;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -55,6 +56,13 @@ class MessagePersistenceIT extends AbstractIntegrationTest {
         assertThat(saved.title()).isEqualTo(TITLE);
         // 枚举 ↔ TINYINT 的回读：biz_type 走 MyBatis 枚举处理器，写进去什么就读回什么
         assertThat(saved.bizType()).as("业务对象类型经枚举处理器回读").isEqualTo(MessageBizType.PRODUCT);
+
+        // 系统会话的占位 ID 必须翻译成 sender_id IS NULL：直接比 sender_id 时
+        // SQL 恒不成立，会话列表有这一行、点进去却是空白
+        List<Message> systemThread = messageQueryRepository.findConversation(receiverId, SystemConversation.ID);
+        assertThat(systemThread).as("系统会话详情能查到消息").isNotEmpty();
+        assertThat(systemThread.getFirst().senderId()).as("系统消息没有发送方").isNull();
+        assertThat(systemThread.getFirst().title()).isEqualTo(TITLE);
 
         List<OfflineMessage> pending = offlineMessageRepository.findPendingByUserId(receiverId);
         assertThat(pending).as("接收方离线时写入离线行").hasSize(1);

@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
+import com.cartethyia.easyorange.message.domain.valueobject.SystemConversation;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
 import java.util.List;
 import java.util.Map;
@@ -87,19 +88,32 @@ public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, Me
 
     @Override
     public List<Message> findConversation(String userId, String otherUserId) {
-        List<MessageDO> recent = lambdaQuery()
-                .and(w -> w.eq(MessageDO::getSenderId, userId)
-                        .eq(MessageDO::getReceiverId, otherUserId)
-                        .or()
-                        .eq(MessageDO::getSenderId, otherUserId)
-                        .eq(MessageDO::getReceiverId, userId))
-                .eq(MessageDO::getDelFlag, 0)
-                .orderByDesc(MessageDO::getCreateTime)
-                .page(new Page<>(1, CONVERSATION_HISTORY_LIMIT, false))
-                .getRecords();
+        List<MessageDO> recent = isSystemConversation(otherUserId)
+                ? lambdaQuery()
+                        .isNull(MessageDO::getSenderId)
+                        .eq(MessageDO::getReceiverId, userId)
+                        .eq(MessageDO::getDelFlag, 0)
+                        .orderByDesc(MessageDO::getCreateTime)
+                        .page(new Page<>(1, CONVERSATION_HISTORY_LIMIT, false))
+                        .getRecords()
+                : lambdaQuery()
+                        .and(w -> w.eq(MessageDO::getSenderId, userId)
+                                .eq(MessageDO::getReceiverId, otherUserId)
+                                .or()
+                                .eq(MessageDO::getSenderId, otherUserId)
+                                .eq(MessageDO::getReceiverId, userId))
+                        .eq(MessageDO::getDelFlag, 0)
+                        .orderByDesc(MessageDO::getCreateTime)
+                        .page(new Page<>(1, CONVERSATION_HISTORY_LIMIT, false))
+                        .getRecords();
         List<Message> chronological = new java.util.ArrayList<>(MessageDataMapper.toAggregateList(recent));
         java.util.Collections.reverse(chronological);
         return chronological;
+    }
+
+    /** 占位 ID 是给会话列表归并用的，不是真实用户；拿它当 sender_id 比会恒不成立。 */
+    private static boolean isSystemConversation(String otherUserId) {
+        return SystemConversation.ID.equals(otherUserId);
     }
 
     @Override
