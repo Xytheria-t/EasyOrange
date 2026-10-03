@@ -71,36 +71,38 @@ function ChatInputBar({ onSend, onTyping, isDisabled = false, disabledPlaceholde
     };
 
     return (
-        <div className="chat-input-bar">
-            <div className="chat-input-bar-inner">
-                <div className="chat-input-wrapper">
-                    <Textarea
-                        ref={textareaRef}
-                        value={value}
-                        onChange={handleChange}
-                        onKeyDown={handleKeyDown}
-                        disabled={isDisabled}
-                        rows={1}
-                        aria-label="消息内容"
-                        placeholder={
-                            isDisabled ? (disabledPlaceholder ?? '') : '输入消息，Enter 发送，Shift+Enter 换行'
-                        }
-                        className="chat-textarea"
-                        style={{ maxHeight: 120 }}
-                    />
-                </div>
-
-                <Button
-                    type="button"
-                    size="icon"
-                    onClick={handleSubmit}
-                    disabled={!value.trim() || isDisabled}
-                    className="chat-send-btn"
-                    aria-label="发送"
-                >
-                    <Send size={18} className="-rotate-[15deg] translate-x-[1px]" />
-                </Button>
+        <div className="chat-input-bar-inner">
+            <div className="chat-input-wrapper">
+                <Textarea
+                    ref={textareaRef}
+                    value={value}
+                    onChange={handleChange}
+                    onKeyDown={handleKeyDown}
+                    disabled={isDisabled}
+                    rows={1}
+                    aria-label="消息内容"
+                    placeholder={isDisabled ? (disabledPlaceholder ?? '') : '输入消息…'}
+                    className="chat-textarea"
+                    style={{ maxHeight: 120 }}
+                />
+                {/* 快捷键提示常驻：塞在占位符里，用户一开始打字就再也看不到了 */}
+                {!isDisabled && (
+                    <div className="chat-input-hint">
+                        <span>Enter 发送 · Shift + Enter 换行</span>
+                    </div>
+                )}
             </div>
+
+            <Button
+                type="button"
+                size="icon"
+                onClick={handleSubmit}
+                disabled={!value.trim() || isDisabled}
+                className="chat-send-btn"
+                aria-label="发送"
+            >
+                <Send size={17} />
+            </Button>
         </div>
     );
 }

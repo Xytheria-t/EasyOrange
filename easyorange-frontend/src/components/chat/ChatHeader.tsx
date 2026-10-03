@@ -13,51 +13,53 @@ interface ChatHeaderProps {
     onBack?: () => void;
     /** 对方正在输入——没有 presence 服务，这里只报真实观测到的状态 */
     isTyping?: boolean;
+    /** 副标题：会话性质（如系统通知只读）。不传时默认报「实时会话」 */
+    subtitle?: string;
 }
 
-function ChatHeader({ targetUser, onBack, isTyping = false }: ChatHeaderProps) {
+function ChatHeader({ targetUser, onBack, isTyping = false, subtitle }: ChatHeaderProps) {
     return (
         <header className="chat-header">
             <div className="chat-header-inner">
-                <div className="flex items-center gap-3">
-                    {onBack && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={onBack}
-                            className="chat-back-btn"
-                            aria-label="返回会话列表"
-                        >
-                            <ArrowLeft size={20} />
-                        </Button>
-                    )}
+                {onBack && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onBack}
+                        className="chat-back-btn"
+                        aria-label="返回会话列表"
+                    >
+                        <ArrowLeft size={19} />
+                    </Button>
+                )}
 
-                    {targetUser && (
-                        <div className="flex items-center gap-3">
-                            <div className="chat-avatar">
-                                {targetUser.avatar ? (
-                                    <img
-                                        src={targetUser.avatar}
-                                        alt={targetUser.name}
-                                        className="w-full h-full object-cover"
-                                        loading="lazy"
-                                        decoding="async"
-                                    />
-                                ) : (
-                                    <span className="chat-avatar-text">{targetUser.name.charAt(0)}</span>
-                                )}
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="chat-header-name">{targetUser.name}</span>
-                                {isTyping && (
-                                    <span className="chat-header-status" role="status">
-                                        正在输入
-                                    </span>
-                                )}
-                            </div>
+                {targetUser && (
+                    <div className="chat-header-identity">
+                        <div className="chat-avatar">
+                            {targetUser.avatar ? (
+                                <img
+                                    src={targetUser.avatar}
+                                    alt={targetUser.name}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                            ) : (
+                                <span className="chat-avatar-text">{targetUser.name.charAt(0)}</span>
+                            )}
+                            {!isTyping && <span className="chat-avatar-status" aria-hidden="true" />}
                         </div>
-                    )}
-                </div>
+                        <div className="chat-header-meta">
+                            <span className="chat-header-name">{targetUser.name}</span>
+                            <span
+                                className={isTyping ? 'chat-header-status' : 'chat-header-sub'}
+                                role={isTyping ? 'status' : undefined}
+                            >
+                                {isTyping ? '正在输入…' : (subtitle ?? '实时会话')}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
         </header>
     );

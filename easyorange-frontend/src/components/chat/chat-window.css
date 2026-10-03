@@ -1,0 +1,696 @@
+/* ============================================================
+   EasyOrange - Chat Thread（消息中心右栏的会话视图）
+   实色表面 + 发丝线：消息流每帧都在动，玻璃模糊是最贵又最不划算的装饰。
+   ============================================================ */
+
+.chat-thread {
+    /* 头部 / 消息流 / 输入框共用一条列宽，避免三者左右边缘对不齐 */
+    --chat-column: 780px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    background: var(--surface-canvas);
+    position: relative;
+    overflow: hidden;
+}
+
+/* ============ 连接状态：顶部 2px 状态条 ============ */
+.connection-status {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    height: 2px;
+}
+
+.status-connected {
+    background: var(--success);
+}
+
+.status-connecting,
+.status-reconnecting {
+    background: var(--warning);
+    animation: statusPulse 1.5s ease-in-out infinite;
+}
+
+.status-disconnected {
+    background: var(--error);
+}
+
+@keyframes statusPulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* ============ 会话头部 ============ */
+.chat-header {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+    background: var(--surface-panel);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.chat-header-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6875rem 1.25rem;
+    max-width: var(--chat-column);
+    margin: 0 auto;
+    width: 100%;
+}
+
+.chat-header-identity {
+    display: flex;
+    align-items: center;
+    gap: 0.6875rem;
+    min-width: 0;
+}
+
+.chat-header-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.35;
+}
+
+.chat-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    margin-left: -0.25rem;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    transition:
+        background var(--transition-fast),
+        color var(--transition-fast);
+}
+
+.chat-back-btn:hover {
+    background: var(--surface-sunken);
+    color: var(--text-primary);
+}
+
+.chat-back-btn:active {
+    transform: scale(0.94);
+}
+
+.chat-avatar {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(140deg, var(--primary-200), var(--rose-200));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px var(--border-light);
+}
+
+.chat-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.chat-avatar-text {
+    color: var(--primary-800);
+    font-size: 0.9375rem;
+    font-weight: 700;
+}
+
+/* 在线点只表示「这条会话连着」，没有 presence 服务就别假装知道在线与否 */
+.chat-avatar-status {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 0 2px var(--surface-panel);
+}
+
+.chat-header-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-header-status {
+    font-size: 0.75rem;
+    color: var(--success);
+    font-weight: 500;
+}
+
+.chat-header-sub {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-weight: 400;
+}
+
+/* ============ 消息流 ============ */
+.chat-messages-area {
+    flex: 1 1 auto;
+    min-height: 0;
+    /* 滚动交给 .chat-scroll：这里若再滚一层，虚拟列表的滚动位置与滚到底判定都会失准 */
+    overflow: hidden;
+    padding: 1.25rem 1rem 0.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+/* 唯一滚动容器：列宽与头部、输入框对齐 */
+.chat-scroll {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    max-width: var(--chat-column);
+    margin: 0 auto;
+    width: 100%;
+    /* 底部留白：最后一条别贴着输入框 */
+    padding-bottom: 0.75rem;
+}
+
+.chat-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb {
+    background: var(--border-medium);
+    border-radius: 3px;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--border-strong);
+}
+
+/* ============ 日期分隔 ============ */
+.chat-date-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0.5rem 0 0.875rem;
+}
+
+.chat-date-separator::before,
+.chat-date-separator::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-light);
+}
+
+.chat-date-separator span {
+    margin: 0 0.75rem;
+    padding: 0.1875rem 0.625rem;
+    border-radius: var(--radius-full);
+    background: var(--surface-sunken);
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* ============ 气泡组：同一个人连着发的收成一组 ============ */
+/* 左右对齐交给 tsx 里的 justify-end / justify-start 工具类 */
+.msg-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.125rem;
+}
+
+.msg-row.is-group-start {
+    margin-top: 0.875rem;
+}
+
+/* 头像列恒占位：组内后续气泡靠这条 28px 对齐，不会随有无头像左右跳 */
+.msg-avatar-col {
+    width: 28px;
+    flex-shrink: 0;
+    align-self: flex-end;
+}
+
+.msg-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    background: var(--surface-sunken);
+}
+
+.msg-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(140deg, var(--primary-100), var(--rose-100));
+    color: var(--primary-700);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.msg-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1875rem;
+    max-width: 74%;
+    min-width: 0;
+}
+
+.msg-row.is-own .msg-col {
+    align-items: flex-end;
+}
+
+/* ============ 气泡 ============ */
+.chat-bubble {
+    /* 气泡是 Button，自带 inline-flex：正文会被当成单个 flex item 永不换行，
+       长消息挤成一条横贯全宽的细条。这里改回块级按内容收缩 */
+    display: block;
+    width: fit-content;
+    /* Button 默认 size 带 h-11（44px 定高）：不解除的话多行正文会溢出气泡被裁掉 */
+    height: auto;
+    min-height: unset;
+    position: relative;
+    padding: 0.5625rem 0.875rem;
+    border-radius: var(--radius-lg);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+    cursor: default;
+    transition: box-shadow var(--transition-fast);
+    max-width: 100%;
+    text-align: left;
+}
+
+.chat-bubble-own {
+    /* 白字压 600 级只有约 3.5:1（不达 AA 正文阈值），底色下移到 700 级 */
+    background: var(--primary-700);
+    color: var(--white);
+    box-shadow: 0 1px 2px var(--primary-alpha-4);
+}
+
+.chat-bubble-own:hover {
+    box-shadow: 0 4px 12px var(--primary-alpha-4);
+}
+
+.chat-bubble-other {
+    background: var(--surface-panel);
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-xs);
+}
+
+.chat-bubble-other:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+/* 尾角：只在组内最后一条收角，一串同源消息因此有方向感 */
+.msg-row.is-group-end .chat-bubble-own {
+    border-bottom-right-radius: var(--radius-xs);
+}
+
+.msg-row.is-group-end .chat-bubble-other {
+    border-bottom-left-radius: var(--radius-xs);
+}
+
+.chat-bubble-recalled {
+    background: transparent;
+    color: var(--text-tertiary);
+    box-shadow: none;
+    border: 1px dashed var(--border-strong);
+    font-style: italic;
+}
+
+.chat-bubble-text {
+    display: block;
+}
+
+/* 系统通知的标题：与正文分行，别糊成一段没主语的话 */
+.chat-bubble-title {
+    display: block;
+    margin-bottom: 0.1875rem;
+    font-weight: 700;
+}
+
+/* 时间与送达状态移到气泡外：塞进气泡会让正文左右各缩一截，长句更难读 */
+.chat-bubble-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0 0.25rem;
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+    line-height: 1.4;
+}
+
+.chat-bubble-meta.is-own {
+    color: var(--primary-600);
+}
+
+/* ============ 悬浮操作菜单 ============ */
+.chat-context-menu {
+    background: var(--surface-panel);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-light);
+    padding: 0.25rem;
+    min-width: 132px;
+    animation: menuAppear 0.16s var(--ease-out);
+}
+
+@keyframes menuAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.94);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.chat-context-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.625rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    transition:
+        background var(--transition-fast),
+        color var(--transition-fast);
+    height: auto;
+    min-height: unset;
+}
+
+.chat-context-item:hover {
+    background: var(--surface-sunken);
+    color: var(--text-primary);
+}
+
+.chat-context-item-danger {
+    color: var(--status-error);
+}
+
+.chat-context-item-danger:hover {
+    background: var(--error-light);
+    color: var(--status-error);
+}
+
+/* ============ 正在输入 ============ */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--surface-panel);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    border-bottom-left-radius: var(--radius-xs);
+    box-shadow: var(--shadow-xs);
+    width: fit-content;
+}
+
+.typing-dots {
+    display: flex;
+    align-items: center;
+    gap: 0.1875rem;
+}
+
+.typing-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--primary-400);
+    animation: typingBounce 1.4s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 160ms;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 320ms;
+}
+
+@keyframes typingBounce {
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.35;
+    }
+    30% {
+        transform: translateY(-3px);
+        opacity: 1;
+    }
+}
+
+.typing-text {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+/* ============ 输入区 ============ */
+.chat-input-area {
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 10;
+    background: var(--surface-panel);
+    border-top: 1px solid var(--border-light);
+}
+
+.chat-input-bar-inner {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.625rem;
+    padding: 0.75rem 1.25rem 0.875rem;
+    max-width: var(--chat-column);
+    margin: 0 auto;
+    width: 100%;
+}
+
+.chat-input-wrapper {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-textarea {
+    width: 100%;
+    resize: none;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-medium);
+    background: var(--surface-sunken);
+    padding: 0.625rem 0.875rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--text-primary);
+    transition:
+        border-color var(--transition-fast),
+        background var(--transition-fast),
+        box-shadow var(--transition-fast);
+    outline: none;
+    min-height: 44px;
+    box-shadow: none;
+}
+
+.chat-textarea::placeholder {
+    color: var(--text-tertiary);
+}
+
+.chat-textarea:focus {
+    border-color: var(--primary-400);
+    background: var(--surface-panel);
+    box-shadow: 0 0 0 3px var(--primary-alpha-1);
+}
+
+.chat-textarea:disabled {
+    color: var(--text-tertiary);
+    cursor: not-allowed;
+}
+
+/* 快捷键提示常驻：占位符一被输入就消失，收起后就没处再看到了 */
+.chat-input-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.375rem 0.125rem 0;
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+    line-height: 1.4;
+}
+
+.chat-send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    background: var(--primary-700);
+    color: var(--white);
+    transition:
+        background var(--transition-fast),
+        transform var(--transition-fast);
+}
+
+.chat-send-btn:hover:not(:disabled) {
+    background: var(--primary-600);
+}
+
+.chat-send-btn:active:not(:disabled) {
+    transform: scale(0.94);
+    transition-duration: 80ms;
+}
+
+.chat-send-btn:disabled {
+    background: var(--gray-200);
+    color: var(--gray-400);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* ============ 加载更多 ============ */
+.chat-load-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    width: fit-content;
+    margin: 0 auto 0.5rem;
+    padding: 0.4375rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    background: var(--surface-panel);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-full);
+    transition:
+        color var(--transition-fast),
+        border-color var(--transition-fast);
+    height: auto;
+    min-height: unset;
+}
+
+.chat-load-more:hover {
+    color: var(--primary-700);
+    border-color: var(--primary-300);
+}
+
+.chat-load-more:active {
+    transform: scale(0.98);
+}
+
+/* ============ 加载态 ============ */
+.chat-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 0.75rem;
+    color: var(--text-tertiary);
+    font-size: 0.875rem;
+}
+
+.chat-loading-spinner {
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--primary-alpha-2);
+    border-top-color: var(--primary-500);
+    border-radius: 50%;
+    animation: chatSpin 0.8s linear infinite;
+}
+
+@keyframes chatSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ============ 响应式 ============ */
+/* 桌面双栏下会话列表常驻，返回键没有去处可言 */
+@media (min-width: 901px) {
+    .chat-back-btn {
+        display: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .chat-header-inner {
+        padding: 0.625rem 0.875rem;
+    }
+
+    .chat-input-bar-inner {
+        padding: 0.625rem 0.875rem 0.75rem;
+    }
+
+    .chat-messages-area {
+        padding: 0.875rem 0.5rem 0.25rem;
+    }
+
+    .chat-bubble {
+        font-size: 0.875rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .msg-col {
+        max-width: 82%;
+    }
+
+    .chat-input-hint {
+        font-size: 0.625rem;
+    }
+}
+
+/* ============ 降低动效 ============ */
+@media (prefers-reduced-motion: reduce) {
+    .typing-dot,
+    .chat-loading-spinner {
+        animation: none;
+    }
+
+    .chat-bubble,
+    .chat-back-btn,
+    .chat-send-btn,
+    .chat-textarea {
+        transition: none;
+    }
+}

@@ -54,13 +54,32 @@ function shouldShowDateSeparator(index: number, messages: ChatMessage[]): boolea
     return current !== prev;
 }
 
+/** 同一个人连着发的并成一组：超过这个间隔就另起一组，避免连发时糊成一条长墙 */
+const GROUP_GAP_MS = 5 * 60 * 1000;
+
+function startsGroup(index: number, messages: ChatMessage[]): boolean {
+    if (index === 0) {
+        return true;
+    }
+    const prev = messages[index - 1];
+    const current = messages[index];
+    if (prev.senderId !== current.senderId) {
+        return true;
+    }
+    return new Date(current.createTime).getTime() - new Date(prev.createTime).getTime() > GROUP_GAP_MS;
+}
+
 const ESTIMATED_ITEM_HEIGHT = 72;
+
+/** 距底部小于该值即视为「贴底」，新消息到达时继续跟随 */
+const PIN_THRESHOLD_PX = 48;
 
 const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
     ({ messages, currentUserId, targetUserName, isTyping, onLoadMore, hasMore, onRecall, canRecallFn }, ref) => {
         const scrollContainerRef = useRef<HTMLDivElement>(null);
-        const prevMessagesLengthRef = useRef(messages.length);
         const isLoadingMoreRef = useRef(false);
+        /** 用户是否还贴在底部：翻历史时必须为 false，否则会被一次次拽回最新 */
+        const isPinnedRef = useRef(true);
 
         const virtualizer = useVirtualizer({
             count: messages.length + (hasMore ? 1 : 0) + 1,
@@ -69,21 +88,24 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
             overscan: 5,
         });
 
-        const scrollToBottom = useCallback(
-            (smooth = false) => {
-                virtualizer.scrollToIndex(messages.length - 1, { align: 'end', behavior: smooth ? 'smooth' : 'auto' });
-            },
-            [virtualizer, messages.length]
-        );
+        const totalSize = virtualizer.getTotalSize();
 
+        // 逐条测高会持续改写总高度，只在消息数变化时按 index 对齐会停在半路，
+        // 最后一条消息的时间戳被顶出可视区像被截断。贴底时直接压到底，
+        // 且用瞬时定位——平滑动画会被随后的布局变动打断。
+        // biome-ignore lint/correctness/useExhaustiveDependencies: totalSize / messages.length 是触发条件而非读取值——测高每改一次就该重新贴底
         useEffect(() => {
-            if (messages.length > prevMessagesLengthRef.current) {
-                scrollToBottom(true);
+            const el = scrollContainerRef.current;
+            if (el && isPinnedRef.current) {
+                el.scrollTop = el.scrollHeight;
             }
-            prevMessagesLengthRef.current = messages.length;
-        }, [messages.length, scrollToBottom]);
+        }, [totalSize, messages.length]);
 
         const handleScroll = useCallback(() => {
+            const el = scrollContainerRef.current;
+            if (el) {
+                isPinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < PIN_THRESHOLD_PX;
+            }
             if (!hasMore || !onLoadMore || isLoadingMoreRef.current) {
                 return;
             }
@@ -137,6 +159,8 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                             return (
                                 <div
                                     key="load-more"
+                                    data-index={virtualItem.index}
+                                    ref={virtualizer.measureElement}
                                     className="absolute left-0 w-full"
                                     style={{ transform: `translateY(${virtualItem.start}px)` }}
                                 >
@@ -156,6 +180,8 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                             return (
                                 <div
                                     key="typing-indicator"
+                                    data-index={virtualItem.index}
+                                    ref={virtualizer.measureElement}
                                     className="absolute left-0 w-full"
                                     style={{ transform: `translateY(${virtualItem.start}px)` }}
                                 >
@@ -164,21 +190,25 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                             );
                         }
 
-                        const message = messages[virtualItem.index - (hasMore ? 1 : 0)];
-                        const showDateSeparator = shouldShowDateSeparator(
-                            virtualItem.index - (hasMore ? 1 : 0),
-                            messages
-                        );
+                        const messageIndex = virtualItem.index - (hasMore ? 1 : 0);
+                        const message = messages[messageIndex];
+                        const groupStart = startsGroup(messageIndex, messages);
+                        const groupEnd =
+                            messageIndex === messages.length - 1 || startsGroup(messageIndex + 1, messages);
 
                         return (
+                            // measureElement 不可省：只给 estimateSize 的话每行都按 72px 排，
+                            // 长消息与多行时间戳会直接压在下一条上（虚拟列表量不到真实高度）
                             <div
                                 key={message.id}
+                                data-index={virtualItem.index}
+                                ref={virtualizer.measureElement}
                                 className="absolute left-0 w-full"
                                 style={{
                                     transform: `translateY(${virtualItem.start}px)`,
                                 }}
                             >
-                                {showDateSeparator && (
+                                {shouldShowDateSeparator(messageIndex, messages) && (
                                     <div className="chat-date-separator">
                                         <span>{formatMessageDate(message.createTime)}</span>
                                     </div>
@@ -186,6 +216,10 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                                 <MessageBubble
                                     message={message}
                                     isOwn={message.senderId === currentUserId}
+                                    isGroupStart={groupStart}
+                                    isGroupEnd={groupEnd}
+                                    showAvatar={groupStart}
+                                    senderName={targetUserName}
                                     onRecall={onRecall}
                                     canRecallFn={canRecallFn}
                                 />

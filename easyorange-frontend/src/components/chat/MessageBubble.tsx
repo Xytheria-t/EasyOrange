@@ -6,6 +6,12 @@ import type { ChatMessage } from '@/types/message';
 interface MessageBubbleProps {
     message: ChatMessage;
     isOwn: boolean;
+    /** 同一个人连着发时收成一组：组首留白 + 出头像，组尾收出尾角 */
+    isGroupStart?: boolean;
+    isGroupEnd?: boolean;
+    showAvatar?: boolean;
+    /** 对方昵称，仅用于无头像时的首字母 */
+    senderName?: string;
     onRecall?: (messageId: string) => Promise<boolean>;
     canRecallFn?: (message: ChatMessage) => boolean;
 }
@@ -20,7 +26,16 @@ function formatTime(timeString: string): string {
 /** 菜单与视口边缘的最小间距 */
 const MENU_VIEWPORT_GAP = 8;
 
-function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleProps) {
+function MessageBubble({
+    message,
+    isOwn,
+    isGroupStart = false,
+    isGroupEnd = true,
+    showAvatar = true,
+    senderName = '',
+    onRecall,
+    canRecallFn,
+}: MessageBubbleProps) {
     // 撤回只由 status 表达：后端 MessageStatus 才有 RECALLED，type 没有这个取值
     const isRecalled = message.status === 'RECALLED';
     const [menuVisible, setMenuVisible] = useState(false);
@@ -118,8 +133,25 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
     const canRecallThis = isOwn && !isRecalled && (canRecallFn ? canRecallFn(message) : false);
 
     return (
-        <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}>
-            <div className={`max-w-[75%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
+        // 时间与送达状态在气泡外面（见 chat-window.css）：塞进气泡正文左右各缩一截，长句更难读
+        <div
+            className={`msg-row flex ${isOwn ? 'justify-end' : 'justify-start'} ${isGroupStart ? 'is-group-start' : ''} ${isGroupEnd ? 'is-group-end' : ''}`}
+        >
+            {!isOwn && (
+                // 常驻占位列：组内后续气泡靠它对齐，不会因头像是隐是现左右跳
+                <span className="msg-avatar-col">
+                    {showAvatar &&
+                        (message.senderAvatar ? (
+                            <img src={message.senderAvatar} alt="" className="msg-avatar" loading="lazy" />
+                        ) : (
+                            <span className="msg-avatar-fallback" aria-hidden="true">
+                                {senderName.charAt(0)}
+                            </span>
+                        ))}
+                </span>
+            )}
+
+            <div className="msg-col">
                 <Button
                     type="button"
                     variant="ghost"
@@ -135,52 +167,51 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
                     }
                     className={`chat-bubble ${isOwn ? 'chat-bubble-own' : 'chat-bubble-other'} ${
                         isRecalled ? 'chat-bubble-recalled' : ''
-                    } font-normal tracking-normal text-left hover:bg-transparent`}
+                    } font-normal text-left hover:bg-transparent`}
                 >
                     {isRecalled ? (
-                        <span className="italic opacity-60">[消息已撤回]</span>
+                        <span>[消息已撤回]</span>
                     ) : (
-                        <span className="chat-bubble-text">{message.content}</span>
+                        <>
+                            {message.title && <span className="chat-bubble-title">{message.title}</span>}
+                            <span className="chat-bubble-text">{message.content}</span>
+                        </>
                     )}
-
-                    <div className={`chat-bubble-meta ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                        <span className="chat-bubble-time">{formatTime(message.createTime)}</span>
-
-                        {isOwn && !isRecalled && (
-                            <>
-                                {message.status === 'SENDING' && (
-                                    <div className="flex items-center gap-0.5">
-                                        <span className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0ms] opacity-40" />
-                                        <span className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:150ms] opacity-40" />
-                                        <span className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:300ms] opacity-40" />
-                                    </div>
-                                )}
-
-                                {message.status === 'FAILED' && (
-                                    <svg
-                                        className="w-3.5 h-3.5 text-red-400"
-                                        viewBox="0 0 16 16"
-                                        fill="currentColor"
-                                        aria-hidden="true"
-                                    >
-                                        <circle cx="8" cy="8" r="7" fill="currentColor" opacity="0.15" />
-                                        <path
-                                            d="M8 4v5"
-                                            stroke="currentColor"
-                                            strokeWidth="1.5"
-                                            strokeLinecap="round"
-                                        />
-                                        <circle cx="8" cy="11" r="0.75" fill="currentColor" />
-                                    </svg>
-                                )}
-
-                                {message.status === 'SENT' && <Check size={14} className="opacity-60" />}
-
-                                {message.status === 'READ' && <CheckCheck size={14} className="opacity-80" />}
-                            </>
-                        )}
-                    </div>
                 </Button>
+
+                <div className={`chat-bubble-meta ${isOwn ? 'is-own' : ''}`}>
+                    <span className="chat-bubble-time">{formatTime(message.createTime)}</span>
+
+                    {isOwn && !isRecalled && (
+                        <>
+                            {message.status === 'SENDING' && (
+                                <div className="flex items-center gap-0.5">
+                                    <span className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0ms] opacity-40" />
+                                    <span className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:150ms] opacity-40" />
+                                    <span className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:300ms] opacity-40" />
+                                </div>
+                            )}
+
+                            {message.status === 'FAILED' && (
+                                <svg
+                                    className="w-3.5 h-3.5"
+                                    viewBox="0 0 16 16"
+                                    fill="currentColor"
+                                    aria-label="发送失败"
+                                    role="img"
+                                >
+                                    <circle cx="8" cy="8" r="7" fill="currentColor" opacity="0.15" />
+                                    <path d="M8 4v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                    <circle cx="8" cy="11" r="0.75" fill="currentColor" />
+                                </svg>
+                            )}
+
+                            {message.status === 'SENT' && <Check size={13} aria-label="已送达" />}
+
+                            {message.status === 'READ' && <CheckCheck size={13} aria-label="已读" />}
+                        </>
+                    )}
+                </div>
 
                 {menuVisible && (
                     <div

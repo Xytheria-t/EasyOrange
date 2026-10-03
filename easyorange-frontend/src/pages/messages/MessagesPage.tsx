@@ -20,6 +20,82 @@ interface ChatNavState {
 
 const CONVERSATION_PAGE_SIZE = 20;
 
+/** 列表按最后一条消息的时间分三段，长列表滚动时才有方位感 */
+const BUCKETS = ['today', 'yesterday', 'earlier'] as const;
+type Bucket = (typeof BUCKETS)[number];
+const BUCKET_LABEL: Record<Bucket, string> = { today: '今天', yesterday: '昨天', earlier: '更早' };
+
+function bucketOf(time: string): Bucket {
+    const at = new Date(time);
+    if (Number.isNaN(at.getTime())) {
+        return 'earlier';
+    }
+    const now = new Date();
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const msgDay = new Date(at.getFullYear(), at.getMonth(), at.getDate()).getTime();
+    const days = Math.round((dayStart - msgDay) / 86_400_000);
+    if (days <= 0) {
+        return 'today';
+    }
+    if (days === 1) {
+        return 'yesterday';
+    }
+    return 'earlier';
+}
+
+function sessionRow(conv: ChatSession, targetUserId: string | undefined) {
+    const isActive = conv.targetUserId === targetUserId;
+    const isSystem = conv.targetUserId === SYSTEM_TARGET_USER_ID;
+    const hasUnread = conv.unreadCount > 0;
+
+    return (
+        <li key={conv.targetUserId}>
+            <Link
+                to={`/messages/${conv.targetUserId}`}
+                className={`message-card ${isActive ? 'is-active' : ''} ${hasUnread ? 'has-unread' : ''}`}
+                aria-current={isActive ? 'page' : undefined}
+                aria-label={hasUnread ? `${conv.targetUserName}，${conv.unreadCount} 条未读` : conv.targetUserName}
+            >
+                <span className="message-avatar-wrap">
+                    {conv.targetUserAvatar ? (
+                        <img
+                            src={conv.targetUserAvatar}
+                            alt=""
+                            className="message-avatar"
+                            width="42"
+                            height="42"
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    ) : isSystem ? (
+                        // 系统通知不是「某个人」：首字母圆点会让人以为还有同名用户
+                        <span className="message-avatar-fallback" aria-hidden="true">
+                            <Bell size={17} />
+                        </span>
+                    ) : (
+                        <span className="message-avatar-fallback" aria-hidden="true">
+                            {conv.targetUserName?.charAt(0) ?? '?'}
+                        </span>
+                    )}
+                    {hasUnread && (
+                        <span className="message-badge">{conv.unreadCount > 99 ? '99+' : conv.unreadCount}</span>
+                    )}
+                </span>
+                <span className="message-content">
+                    <span className="message-header-row">
+                        <span className="message-name">{conv.targetUserName}</span>
+                        <span className="message-time">{formatRelativeTime(conv.lastMessageTime)}</span>
+                    </span>
+                    <span className="message-preview">
+                        {conv.lastMessage || '暂无消息'}
+                        {isSystem && <span className="message-card-tag">只读</span>}
+                    </span>
+                </span>
+            </Link>
+        </li>
+    );
+}
+
 /**
  * 消息中心 —— 左侧会话列表 + 右侧当前会话。
  *
@@ -53,9 +129,15 @@ function MessagesPage() {
     const sessions = conversations ?? [];
 
     const totalConversationPages = Math.max(1, Math.ceil(sessions.length / CONVERSATION_PAGE_SIZE));
-    const paginatedSessions = useMemo(() => {
+
+    const groupedSessions = useMemo(() => {
         const start = (convPage - 1) * CONVERSATION_PAGE_SIZE;
-        return sessions.slice(start, start + CONVERSATION_PAGE_SIZE);
+        const page = sessions.slice(start, start + CONVERSATION_PAGE_SIZE);
+        const groups = BUCKETS.map(bucket => ({
+            bucket,
+            items: page.filter(conv => bucketOf(conv.lastMessageTime) === bucket),
+        })).filter(group => group.items.length > 0);
+        return groups;
     }, [sessions, convPage]);
 
     const totalUnread = useMemo(
@@ -106,89 +188,35 @@ function MessagesPage() {
         }
         return (
             <>
-                <ul className="messages-list">
-                    {paginatedSessions.map(conv => {
-                        const isActive = conv.targetUserId === targetUserId;
-                        const isSystem = conv.targetUserId === SYSTEM_TARGET_USER_ID;
-                        return (
-                            <li key={conv.targetUserId}>
-                                <Link
-                                    to={`/messages/${conv.targetUserId}`}
-                                    className={`message-card ${isActive ? 'is-active' : ''}`}
-                                    aria-current={isActive ? 'page' : undefined}
-                                    aria-label={
-                                        conv.unreadCount > 0
-                                            ? `${conv.targetUserName}，${conv.unreadCount} 条未读`
-                                            : conv.targetUserName
-                                    }
-                                >
-                                    <span className="message-avatar-wrap">
-                                        {conv.targetUserAvatar ? (
-                                            <img
-                                                src={conv.targetUserAvatar}
-                                                alt=""
-                                                className="message-avatar"
-                                                width="44"
-                                                height="44"
-                                                loading="lazy"
-                                                decoding="async"
-                                            />
-                                        ) : isSystem ? (
-                                            // 系统通知不是「某个人」：首字母圆点会让人以为还有同名用户
-                                            <span className="message-avatar-fallback" aria-hidden="true">
-                                                <Bell size={18} />
-                                            </span>
-                                        ) : (
-                                            <span className="message-avatar-fallback" aria-hidden="true">
-                                                {conv.targetUserName?.charAt(0) ?? '?'}
-                                            </span>
-                                        )}
-                                        {conv.unreadCount > 0 && (
-                                            <span className="message-badge">
-                                                {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
-                                            </span>
-                                        )}
-                                    </span>
-                                    <span className="message-content">
-                                        <span className="message-header-row">
-                                            <span className="message-name">{conv.targetUserName}</span>
-                                            <span className="message-time">
-                                                {formatRelativeTime(conv.lastMessageTime)}
-                                            </span>
-                                        </span>
-                                        <span className="message-preview">{conv.lastMessage || '暂无消息'}</span>
-                                        {isSystem && <span className="message-card-tag">只读</span>}
-                                    </span>
-                                </Link>
-                            </li>
-                        );
-                    })}
-                </ul>
-                <PaginationBar pageNum={convPage} totalPages={totalConversationPages} onPageChange={setConvPage} />
+                <div className="messages-panel-body">
+                    {groupedSessions.map(group => (
+                        <section key={group.bucket} aria-label={BUCKET_LABEL[group.bucket]}>
+                            <h2 className="messages-group-label">{BUCKET_LABEL[group.bucket]}</h2>
+                            <ul className="messages-list">{group.items.map(conv => sessionRow(conv, targetUserId))}</ul>
+                        </section>
+                    ))}
+                </div>
+                {totalConversationPages > 1 && (
+                    <div className="messages-panel-foot">
+                        <PaginationBar
+                            pageNum={convPage}
+                            totalPages={totalConversationPages}
+                            onPageChange={setConvPage}
+                        />
+                    </div>
+                )}
             </>
         );
     })();
 
     return (
         <div className={`messages-page ${targetUserId ? 'has-thread' : ''}`}>
-            <div className="messages-ambient" aria-hidden="true">
-                <div className="messages-orb messages-orb-1" />
-                <div className="messages-orb messages-orb-2" />
-            </div>
-
-            <div className="messages-topbar">
-                <div className="messages-kicker">
-                    <span className="kicker-dot" />
-                    Messages
-                </div>
-                <div className="messages-topbar-title">
-                    <h1>消息中心</h1>
-                    <p>{subtitle}</p>
-                </div>
-            </div>
-
-            <div className="messages-body">
-                <section className="messages-conversations-panel" aria-label="会话列表">
+            <main className="messages-body">
+                <section className="messages-panel" aria-label="会话列表">
+                    <header className="messages-panel-head">
+                        <h1 className="messages-panel-title">消息</h1>
+                        <p className="messages-panel-subtitle">{subtitle}</p>
+                    </header>
                     {listPanel}
                 </section>
 
@@ -211,7 +239,7 @@ function MessagesPage() {
                         />
                     )}
                 </section>
-            </div>
+            </main>
         </div>
     );
 }

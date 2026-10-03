@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationApi } from '@/api/notificationApi';
 import { Badge } from '@/components/ui';
@@ -23,9 +24,28 @@ export function NotificationBell() {
     const count = unreadCount?.systemCount ?? 0;
     const label = count > 0 ? `通知，${count} 条未读` : '通知';
 
+    // 只认「数变多」这一种变化：轮询把同一个数字再送回来不该惊动用户
+    const seenCountRef = useRef(count);
+    const [hasNew, setHasNew] = useState(false);
+    useEffect(() => {
+        if (count > seenCountRef.current) {
+            setHasNew(true);
+        }
+        seenCountRef.current = count;
+    }, [count]);
+
+    // 动画播完就摘掉 class：留着会靠 hover 的 :has 规则反复触发
+    useEffect(() => {
+        if (!hasNew) {
+            return;
+        }
+        const timer = setTimeout(() => setHasNew(false), 800);
+        return () => clearTimeout(timer);
+    }, [hasNew]);
+
     return (
         // 徽标挂在按钮外侧：icon-btn 为了流光动效带了 overflow:hidden,放按钮内会被裁掉
-        <div className="floating-nav__bell">
+        <div className={`floating-nav__bell ${hasNew ? 'has-new' : ''}`}>
             <Button
                 variant="ghost"
                 size="icon"

@@ -15,17 +15,20 @@ const PAGE_SIZE = 20;
 /** 后端 MessageBizType.code —— 决定图标与点击跳转，不再靠标题中文猜 */
 const BIZ_TYPE = { NONE: 0, PRODUCT: 1, ORDER: 2 } as const;
 
-function getNotificationIcon(bizType: number, title: string) {
+/** 图标配色交给 CSS 的 [data-biz]，色值统一在 tokens 里 */
+type BizKey = 'order' | 'product' | 'reject' | 'system';
+
+function getNotificationIcon(bizType: number, title: string): { icon: typeof Bell; biz: BizKey } {
     if (bizType === BIZ_TYPE.ORDER) {
-        return { icon: ShoppingCart, color: '#6366F1' };
+        return { icon: ShoppingCart, biz: 'order' };
     }
     if (bizType === BIZ_TYPE.PRODUCT) {
         // 审核结论只在标题里，且同属商品事件，用形状区分成败比再加一个 bizType 更划算
         return title.includes('审核未通过') || title.includes('驳回')
-            ? { icon: XCircle, color: '#EF4444' }
-            : { icon: Package, color: '#F97316' };
+            ? { icon: XCircle, biz: 'reject' }
+            : { icon: Package, biz: 'product' };
     }
-    return { icon: Bell, color: '#8B5CF6' };
+    return { icon: Bell, biz: 'system' };
 }
 
 /**
@@ -101,15 +104,8 @@ export default function NotificationsPage() {
 
     return (
         <div className="notifications-page">
-            <div className="notifications-ambient">
-                <div className="notifications-orb notifications-orb-1" />
-                <div className="notifications-orb notifications-orb-2" />
-                <div className="notifications-orb notifications-orb-3" />
-            </div>
-
             <div className="notifications-container">
-                {/* Header */}
-                <div className="notifications-header">
+                <header className="notifications-header">
                     <div className="notifications-header-left">
                         <Button
                             variant="ghost"
@@ -118,96 +114,85 @@ export default function NotificationsPage() {
                             onClick={() => navigate(-1)}
                             aria-label="返回"
                         >
-                            <ArrowLeft size={20} />
+                            <ArrowLeft size={19} />
                         </Button>
-                        <div className="notifications-header-info">
+                        <div>
                             <h1 className="notifications-title">系统通知</h1>
-                            <div className="notifications-header-meta">
-                                <span className="notifications-kicker">
-                                    <span className="kicker-dot" />
-                                    通知中心
-                                </span>
-                                <span className="notifications-subtitle">审核结果等系统消息</span>
-                            </div>
+                            <p className="notifications-subtitle">
+                                <span>通知中心</span>
+                                <span className="notifications-subtitle-tail">审核结果与订单状态</span>
+                            </p>
                         </div>
                     </div>
+
                     {systemUnread > 0 && (
                         <Button
+                            variant="outline"
+                            size="sm"
                             className="notifications-mark-all-btn"
                             onClick={() => markAllReadMutation.mutate()}
                             disabled={markAllReadMutation.isPending}
                         >
                             {markAllReadMutation.isPending ? (
-                                <Loader2 size={16} className="animate-spin" />
+                                <Loader2 size={15} className="animate-spin" />
                             ) : (
-                                <CheckCheck size={16} />
+                                <CheckCheck size={15} />
                             )}
                             全部已读
-                            {systemUnread > 0 && <span className="notifications-mark-all-count">{systemUnread}</span>}
+                            <span className="notifications-mark-all-count">{systemUnread}</span>
                         </Button>
                     )}
-                </div>
+                </header>
 
-                <div className="notifications-divider" />
-
-                {/* Content */}
-                {isLoading ? (
-                    <LoadingState label="正在加载通知" />
-                ) : error ? (
-                    // 失败必须与空态分开：显示「暂无通知」会被当成本来就没有
-                    <ErrorState
-                        title="通知加载失败"
-                        description="网络或服务暂时不可用，请稍后重试。"
-                        onRetry={() => queryClient.invalidateQueries({ queryKey: ['notifications'] })}
-                    />
-                ) : notifications.length === 0 ? (
-                    <EmptyState
-                        icon={Bell}
-                        title="暂无系统通知"
-                        description="商品审核结果、订单状态等系统消息会出现在这里。"
-                    />
-                ) : (
-                    <>
+                <div className="notifications-card">
+                    {isLoading ? (
+                        <LoadingState label="正在加载通知" />
+                    ) : error ? (
+                        // 失败必须与空态分开：显示「暂无通知」会被当成本来就没有
+                        <ErrorState
+                            title="通知加载失败"
+                            description="网络或服务暂时不可用，请稍后重试。"
+                            onRetry={() => queryClient.invalidateQueries({ queryKey: ['notifications'] })}
+                        />
+                    ) : notifications.length === 0 ? (
+                        <EmptyState
+                            icon={Bell}
+                            title="暂无系统通知"
+                            description="商品审核结果、订单状态等系统消息会出现在这里。"
+                        />
+                    ) : (
                         <ul className="notifications-list">
                             {notifications.map(item => {
-                                const { icon: Icon, color } = getNotificationIcon(item.bizType, item.title);
+                                const { icon: Icon, biz } = getNotificationIcon(item.bizType, item.title);
                                 const isUnread = item.isRead === 0;
                                 const target = resolveTarget(item);
                                 return (
-                                    <li key={item.id} className={`notification-card ${isUnread ? 'unread' : ''}`}>
-                                        {isUnread && <span className="notification-card-accent" />}
-                                        <div
-                                            className="notification-card-icon"
-                                            style={{
-                                                background: `linear-gradient(135deg, ${color}18, ${color}08)`,
-                                                borderColor: `${color}15`,
-                                                color,
-                                            }}
-                                        >
-                                            <Icon size={18} />
-                                        </div>
-                                        <div className="notification-card-body">
-                                            <div className="notification-card-header">
-                                                <h3 className="notification-card-title">
+                                    <li key={item.id} className={`notification-row ${isUnread ? 'unread' : ''}`}>
+                                        <span className="notification-icon" data-biz={biz} aria-hidden="true">
+                                            <Icon size={17} />
+                                        </span>
+                                        <div className="notification-body">
+                                            <div className="notification-row-head">
+                                                <h3 className="notification-title">
                                                     {item.title}
                                                     {isUnread && <span className="notification-unread-dot" />}
                                                 </h3>
-                                                <span className="notification-card-time">
+                                                <span className="notification-time">
                                                     {formatRelativeTime(item.createTime)}
                                                 </span>
                                             </div>
-                                            <p className="notification-card-content">{item.content}</p>
+                                            <p className="notification-content">{item.content}</p>
                                             {target && (
-                                                <span className="notification-card-link">
+                                                <span className="notification-link">
                                                     查看详情
                                                     <ArrowRight size={11} />
                                                 </span>
                                             )}
                                         </div>
-                                        {/* 覆盖整卡的按钮：键盘可达，标题语义留给 h3 */}
+                                        {/* 覆盖整行的按钮：键盘可达，标题语义留给 h3 */}
                                         <button
                                             type="button"
-                                            className="notification-card-overlay"
+                                            className="notification-row-overlay"
                                             onClick={() => handleNotificationClick(item)}
                                             aria-label={`${item.title}${isUnread ? '，未读' : ''}`}
                                         />
@@ -215,10 +200,13 @@ export default function NotificationsPage() {
                                 );
                             })}
                         </ul>
+                    )}
+                </div>
 
-                        {/* Pagination */}
+                {totalPages > 1 && !isLoading && !error && notifications.length > 0 && (
+                    <div className="notifications-foot">
                         <PaginationBar pageNum={page} totalPages={totalPages} onPageChange={goTo} />
-                    </>
+                    </div>
                 )}
             </div>
         </div>

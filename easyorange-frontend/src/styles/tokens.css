@@ -126,6 +126,25 @@
     --text-warm: #a67c52;
     --text-rose: #b76e79;
 
+    /*
+     * 表面层级 —— 会话 / 通知这类「列表 + 详情」页的三层递进。
+     * 层级靠明度差与发丝线表达，不再靠玻璃模糊堆装饰。
+     */
+    --surface-page: #f2efeb; /* 页面底 */
+    --surface-panel: #ffffff; /* 卡片 / 面板 */
+    --surface-canvas: #faf8f5; /* 会话消息流画布：比面板暗一档，气泡才浮得起来 */
+    --surface-sunken: #f7f5f2; /* 凹陷区：输入框、分组头 */
+
+    /* 通知语义色 —— 由 biz_type 决定图标色，取代散在 tsx 里的裸 hex */
+    --biz-order: #6366f1;
+    --biz-order-bg: rgba(99, 102, 241, 0.1);
+    --biz-product: #f97316;
+    --biz-product-bg: rgba(249, 115, 22, 0.1);
+    --biz-reject: #f43f5e;
+    --biz-reject-bg: rgba(244, 63, 94, 0.1);
+    --biz-system: #8b5cf6;
+    --biz-system-bg: rgba(139, 92, 246, 0.1);
+
     /* Borders */
     --border-light: rgba(42, 37, 32, 0.05);
     --border-medium: rgba(42, 37, 32, 0.08);
