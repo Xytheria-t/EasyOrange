@@ -107,7 +107,9 @@ describe('MessagesPage', () => {
         expect(links[0]).toHaveAttribute('href', '/messages/user0');
     });
 
-    it('hides the system pseudo-conversation: it is not a chat and cannot be replied to', async () => {
+    it('keeps the system conversation and marks it read-only', async () => {
+        // 后端把 senderId 为 null 的消息（系统/订单/支付各类通知）都归并到这一会话，
+        // 通知页只列 type=1 —— 从列表里滤掉它，订单类通知就在界面上无处可见了
         mockGetConversations.mockResolvedValue({
             data: [
                 ...createMockConversations(1),
@@ -122,8 +124,9 @@ describe('MessagesPage', () => {
             ],
         });
         renderPage();
-        expect(await screen.findByText('用户0')).toBeInTheDocument();
-        expect(screen.queryByText('系统通知')).not.toBeInTheDocument();
+        const row = await screen.findByLabelText('系统通知，1 条未读');
+        expect(row).toHaveAttribute('href', '/messages/system');
+        expect(row).toHaveTextContent('只读');
     });
 
     it('shows the placeholder thread panel when no conversation is selected', async () => {

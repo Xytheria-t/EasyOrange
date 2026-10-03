@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
@@ -9,6 +9,7 @@ const mockSendMessage = vi.hoisted(() => vi.fn());
 const mockUseChatMessages = vi.hoisted(() =>
     vi.fn(() => ({ messages: [] as ChatMessage[], isLoading: true, loadOlder: vi.fn(), hasMore: false }))
 );
+const mockMarkAsRead = vi.hoisted(() => vi.fn().mockResolvedValue({}));
 
 vi.mock('@/store/chatStore', () => ({
     useChatStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) => {
@@ -33,7 +34,7 @@ vi.mock('@/hooks/chat', () => ({
 }));
 
 vi.mock('@/api/messageApi', () => ({
-    messageApi: { markAsRead: vi.fn().mockResolvedValue({}) },
+    messageApi: { markAsRead: mockMarkAsRead },
 }));
 
 vi.mock('./ChatHeader', () => ({
@@ -75,6 +76,23 @@ vi.mock('./ChatInputBar', () => ({
     ),
 }));
 
+function makeMessage(overrides: Partial<ChatMessage>): ChatMessage {
+    return {
+        id: 'm1',
+        senderId: 'user2',
+        senderAvatar: null,
+        receiverId: 'user1',
+        content: 'hi',
+        title: null,
+        type: 'TEXT',
+        status: 'SENT',
+        createTime: '2026-05-15T10:00:00',
+        readTime: null,
+        recalledAt: null,
+        ...overrides,
+    };
+}
+
 function renderThread(id = 'user2', name = '卖家小橙') {
     return renderWithProviders(<ChatThread counterpart={{ id, name, avatar: null }} />);
 }
@@ -110,6 +128,7 @@ describe('ChatThread', () => {
                     senderId: 'user2',
                     receiverId: 'user1',
                     senderAvatar: null,
+                    title: null,
                     content: '你好',
                     type: 'TEXT' as const,
                     status: 'SENT' as const,
@@ -138,6 +157,28 @@ describe('ChatThread', () => {
         expect(mockSendMessage).toHaveBeenCalledWith(
             expect.objectContaining({ content: 'hello', receiverId: 'user2', conversationId: 'conv_user1_user2' })
         );
+    });
+
+    it('marks received messages as read, including system ones whose senderId is null', async () => {
+        mockUseChatMessages.mockReturnValue({
+            messages: [
+                makeMessage({ id: 'from-them' }),
+                makeMessage({ id: 'mine', senderId: 'user1', receiverId: 'user2' }),
+                // 后端系统消息 senderId 为 null
+                makeMessage({ id: 'from-system', senderId: null as unknown as string }),
+            ],
+            isLoading: false,
+            loadOlder: vi.fn(),
+            hasMore: false,
+        });
+
+        renderThread('system', '系统通知');
+
+        await waitFor(() => expect(mockMarkAsRead).toHaveBeenCalled());
+        // 判据是「收件人是我」：按发送方筛时系统消息（senderId 为 null）会被漏掉，
+        // 它那一格的未读徽标永远清不掉
+        expect(mockMarkAsRead).toHaveBeenCalledWith(expect.arrayContaining(['from-them', 'from-system']));
+        expect(mockMarkAsRead.mock.calls[0][0]).not.toContain('mine');
     });
 
     it('system conversation is read-only: input disabled with placeholder, send blocked', async () => {
