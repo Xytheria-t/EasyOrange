@@ -16,7 +16,6 @@ const ProductsPage = lazy(() => import('@/pages/products/ProductsPage'));
 const ProductDetailPage = lazy(() => import('@/pages/products/ProductDetailPage'));
 const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'));
 const MessagesPage = lazy(() => import('@/pages/messages/MessagesPage'));
-const ChatWindowPage = lazy(() => import('@/pages/messages/ChatWindowPage'));
 const OrdersPage = lazy(() => import('@/pages/orders/OrdersPage'));
 const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage'));
 const PublishPage = lazy(() => import('@/pages/products/PublishPage'));
@@ -88,9 +87,10 @@ export const router = createBrowserRouter(
                     path="messages"
                     element={<ProtectedRoute>{withSuspense(MessagesPage, R.messages)}</ProtectedRoute>}
                 />
+                {/* 选中会话走路由参数而非页面内 state：深链可分享、浏览器后退回到上一个会话 */}
                 <Route
                     path="messages/:targetUserId"
-                    element={<ProtectedRoute>{withSuspense(ChatWindowPage, R.chat)}</ProtectedRoute>}
+                    element={<ProtectedRoute>{withSuspense(MessagesPage, R.chat)}</ProtectedRoute>}
                 />
                 <Route path="orders" element={<ProtectedRoute>{withSuspense(OrdersPage, R.orders)}</ProtectedRoute>} />
                 <Route

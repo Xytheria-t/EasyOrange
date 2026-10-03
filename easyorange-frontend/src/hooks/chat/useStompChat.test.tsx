@@ -255,7 +255,9 @@ describe('useStompChat', () => {
             result.current.subscribe('conv-1');
         });
 
-        expect(client?.subscribe).not.toHaveBeenCalled();
+        // 只断言会话订阅：连上时还会订 /user/queue/error 收发送失败回执，那是全局的、与本用例无关
+        expect(client?.subscribe).not.toHaveBeenCalledWith('/queue/chat/conv-1', expect.any(Function));
+        expect(client?.subscribe).not.toHaveBeenCalledWith('/topic/chat/conv-1/typing', expect.any(Function));
     });
 
     it('adds incoming chat messages to the store', async () => {

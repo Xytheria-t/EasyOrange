@@ -17,6 +17,9 @@ function formatTime(timeString: string): string {
     return `${hours}:${minutes}`;
 }
 
+/** 菜单与视口边缘的最小间距 */
+const MENU_VIEWPORT_GAP = 8;
+
 function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleProps) {
     // 撤回只由 status 表达：后端 MessageStatus 才有 RECALLED，type 没有这个取值
     const isRecalled = message.status === 'RECALLED';
@@ -41,7 +44,12 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
                 y = e.clientY;
             }
 
-            setMenuPos({ x, y });
+            //贴着指针开会在屏幕右/下缘被裁掉一半；按菜单实测尺寸往内收
+            const { width, height } = menuRef.current?.getBoundingClientRect() ?? { width: 160, height: 96 };
+            setMenuPos({
+                x: Math.min(x, window.innerWidth - width - MENU_VIEWPORT_GAP),
+                y: Math.min(y, window.innerHeight - height - MENU_VIEWPORT_GAP),
+            });
             setMenuVisible(true);
         },
         [isRecalled]
@@ -60,8 +68,18 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
                 hideMenu();
             }
         };
+        // Esc 要能关：右键弹出的浮层是纯鼠标可达，键盘用户没有别的退路
+        const handleKeyDown = (ev: KeyboardEvent) => {
+            if (ev.key === 'Escape') {
+                hideMenu();
+            }
+        };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
     }, [menuVisible, hideMenu]);
 
     const handleTouchStart = useCallback(
@@ -81,6 +99,11 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
     }, []);
 
     const handleCopy = () => {
+        // 撤回后剪贴板里不该再出现原文
+        if (isRecalled) {
+            hideMenu();
+            return;
+        }
         navigator.clipboard.writeText(message.content).catch(() => {});
         hideMenu();
     };
@@ -164,6 +187,8 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
                         ref={menuRef}
                         className="fixed z-50 chat-context-menu"
                         style={{ left: menuPos.x, top: menuPos.y }}
+                        role="menu"
+                        aria-label="消息操作"
                     >
                         <Button type="button" variant="ghost" onClick={handleCopy} className="chat-context-item">
                             <Copy size={14} />

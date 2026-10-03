@@ -1,4 +1,4 @@
-import { Paperclip, Send, Smile } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -73,17 +73,6 @@ function ChatInputBar({ onSend, onTyping, isDisabled = false, disabledPlaceholde
     return (
         <div className="chat-input-bar">
             <div className="chat-input-bar-inner">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="chat-input-action-btn"
-                    aria-label="附件"
-                    disabled={isDisabled}
-                >
-                    <Paperclip size={20} />
-                </Button>
-
                 <div className="chat-input-wrapper">
                     <Textarea
                         ref={textareaRef}
@@ -92,22 +81,14 @@ function ChatInputBar({ onSend, onTyping, isDisabled = false, disabledPlaceholde
                         onKeyDown={handleKeyDown}
                         disabled={isDisabled}
                         rows={1}
-                        placeholder={isDisabled ? (disabledPlaceholder ?? '') : '输入消息...'}
+                        aria-label="消息内容"
+                        placeholder={
+                            isDisabled ? (disabledPlaceholder ?? '') : '输入消息，Enter 发送，Shift+Enter 换行'
+                        }
                         className="chat-textarea"
                         style={{ maxHeight: 120 }}
                     />
                 </div>
-
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="chat-input-action-btn"
-                    aria-label="表情"
-                    disabled={isDisabled}
-                >
-                    <Smile size={20} />
-                </Button>
 
                 <Button
                     type="button"

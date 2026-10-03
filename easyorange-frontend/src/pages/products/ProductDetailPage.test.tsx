@@ -332,7 +332,10 @@ describe('ProductDetailPage', () => {
         // Click the primary "联系资产方" action button
         const contactBtn = screen.getByRole('button', { name: '联系资产方' });
         await user.click(contactBtn);
-        expect(mockNavigate).toHaveBeenCalledWith('/messages/seller1');
+        // 首次联系卖家时会话列表里还没有这一行，昵称随导航状态带过去
+        expect(mockNavigate).toHaveBeenCalledWith('/messages/seller1', {
+            state: { counterpartName: '资产方张三' },
+        });
     });
 
     it('navigates back when "返回" button is clicked', async () => {

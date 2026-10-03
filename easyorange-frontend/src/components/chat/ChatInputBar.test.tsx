@@ -6,7 +6,7 @@ import ChatInputBar from './ChatInputBar';
 describe('ChatInputBar', () => {
     it('has placeholder when not disabled', () => {
         render(<ChatInputBar onSend={() => {}} onTyping={() => {}} />);
-        expect(screen.getByPlaceholderText('输入消息...')).toBeInTheDocument();
+        expect(screen.getByLabelText('消息内容')).toBeInTheDocument();
     });
 
     it('send button is disabled when textarea is empty', () => {
@@ -16,7 +16,7 @@ describe('ChatInputBar', () => {
 
     it('send button is enabled when textarea has text', async () => {
         render(<ChatInputBar onSend={() => {}} onTyping={() => {}} />);
-        const textarea = screen.getByPlaceholderText('输入消息...');
+        const textarea = screen.getByLabelText('消息内容');
         await userEvent.type(textarea, 'hello');
         expect(screen.getByLabelText('发送')).toBeEnabled();
     });
@@ -24,7 +24,7 @@ describe('ChatInputBar', () => {
     it('calls onSend with trimmed content on button click', async () => {
         const onSend = vi.fn();
         render(<ChatInputBar onSend={onSend} onTyping={() => {}} />);
-        const textarea = screen.getByPlaceholderText('输入消息...');
+        const textarea = screen.getByLabelText('消息内容');
         await userEvent.type(textarea, 'hello');
         await userEvent.click(screen.getByLabelText('发送'));
         expect(onSend).toHaveBeenCalledWith('hello');
@@ -33,7 +33,7 @@ describe('ChatInputBar', () => {
     it('clears textarea after sending', async () => {
         const onSend = vi.fn();
         render(<ChatInputBar onSend={onSend} onTyping={() => {}} />);
-        const textarea = screen.getByPlaceholderText('输入消息...') as HTMLTextAreaElement;
+        const textarea = screen.getByLabelText('消息内容') as HTMLTextAreaElement;
         await userEvent.type(textarea, 'hello');
         await userEvent.click(screen.getByLabelText('发送'));
         // 终态断言必须绑定请求级信号：清空/按钮禁用是同步副作用，
@@ -45,7 +45,7 @@ describe('ChatInputBar', () => {
     it('calls onSend on Enter key without Shift', async () => {
         const onSend = vi.fn();
         render(<ChatInputBar onSend={onSend} onTyping={() => {}} />);
-        const textarea = screen.getByPlaceholderText('输入消息...');
+        const textarea = screen.getByLabelText('消息内容');
         await userEvent.type(textarea, 'hello{Enter}');
         expect(onSend).toHaveBeenCalledWith('hello');
     });
@@ -53,7 +53,7 @@ describe('ChatInputBar', () => {
     it('does NOT call onSend on Shift+Enter', async () => {
         const onSend = vi.fn();
         render(<ChatInputBar onSend={onSend} onTyping={() => {}} />);
-        const textarea = screen.getByPlaceholderText('输入消息...');
+        const textarea = screen.getByLabelText('消息内容');
         await userEvent.type(textarea, 'hello');
         await userEvent.keyboard('{Shift>}{Enter}{/Shift}');
         expect(onSend).not.toHaveBeenCalled();
@@ -62,7 +62,7 @@ describe('ChatInputBar', () => {
     it('calls onTyping when user types', async () => {
         const onTyping = vi.fn();
         render(<ChatInputBar onSend={() => {}} onTyping={onTyping} />);
-        const textarea = screen.getByPlaceholderText('输入消息...');
+        const textarea = screen.getByLabelText('消息内容');
         await userEvent.type(textarea, 'h');
         expect(onTyping).toHaveBeenCalled();
     });

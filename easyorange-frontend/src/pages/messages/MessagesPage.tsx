@@ -1,15 +1,36 @@
 import { useQuery } from '@tanstack/react-query';
-import { MessageCircle, RefreshCw } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { messageApi } from '@/api/messageApi';
+import { ChatThread } from '@/components/chat';
+import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/StateDisplay';
 import { PaginationBar } from '@/components/PaginationBar';
 import { Button } from '@/components/ui/button';
 import { usePagination } from '@/hooks/usePagination';
 import type { ChatSession } from '@/types';
+import { SYSTEM_TARGET_USER_ID } from '@/types/message';
+import { formatRelativeTime } from '@/utils';
 import './messages.css';
 
+/** 从商品页「联系卖家」带过来的对方昵称：会话列表里还没有这条会话时，头部得有个能认出来的人名 */
+interface ChatNavState {
+    counterpartName?: string;
+}
+
+const CONVERSATION_PAGE_SIZE = 20;
+
+/**
+ * 消息中心 —— 左侧会话列表 + 右侧当前会话。
+ *
+ * <p>选中会话走路由参数（`/messages/:targetUserId`）而非组件内state：
+ * 这样深链可分享、浏览器后退能回到上一个会话，移动端也能只显示会话视图。
+ */
 function MessagesPage() {
+    const { targetUserId } = useParams<{ targetUserId: string }>();
+    const location = useLocation();
+    const navigate = useNavigate();
+
     const {
         data: conversations,
         isLoading,
@@ -24,192 +45,167 @@ function MessagesPage() {
         staleTime: 15 * 1000,
     });
 
-    const { pageNum: convPage, pageSize: convPageSize, goTo: setConvPage } = usePagination({ pageSize: 10 });
+    const { pageNum: convPage, goTo: setConvPage } = usePagination({ pageSize: CONVERSATION_PAGE_SIZE });
 
-    const totalConversationPages = Math.max(1, Math.ceil((conversations?.length ?? 0) / convPageSize));
-    const paginatedConversations = useMemo(() => {
-        if (!conversations) {
-            return [];
+    // 系统通知不是「跟某人的对话」：它没有会话、没有回复能力，混进列表只会得到一个打不开的条目。
+    // 它由顶栏铃铛与通知中心承载（未读数同源）。
+    const sessions = useMemo(
+        () => (conversations ?? []).filter(c => c.targetUserId !== SYSTEM_TARGET_USER_ID),
+        [conversations]
+    );
+
+    const totalConversationPages = Math.max(1, Math.ceil(sessions.length / CONVERSATION_PAGE_SIZE));
+    const paginatedSessions = useMemo(() => {
+        const start = (convPage - 1) * CONVERSATION_PAGE_SIZE;
+        return sessions.slice(start, start + CONVERSATION_PAGE_SIZE);
+    }, [sessions, convPage]);
+
+    const totalUnread = useMemo(
+        () => sessions.reduce((sum, c) => sum + (c.unreadCount > 0 ? c.unreadCount : 0), 0),
+        [sessions]
+    );
+
+    const activeSession = useMemo(() => sessions.find(c => c.targetUserId === targetUserId), [sessions, targetUserId]);
+
+    const navState = location.state as ChatNavState | null;
+    const counterpartName = activeSession?.targetUserName ?? navState?.counterpartName ?? '私聊';
+
+    const closeThread = () => navigate('/messages');
+
+    const subtitle =
+        totalUnread > 0
+            ? `${sessions.length} 个会话 · ${totalUnread} 条未读`
+            : `${sessions.length} 个会话 · 与资产方实时沟通`;
+
+    const listPanel = (() => {
+        if (isLoading) {
+            return <LoadingState label="正在加载会话" className="messages-panel-state" />;
         }
-        return conversations.slice((convPage - 1) * convPageSize, convPage * convPageSize);
-    }, [conversations, convPage, convPageSize]);
-
-    if (isLoading) {
+        if (error) {
+            return (
+                <ErrorState
+                    title="会话加载失败"
+                    description="网络或服务暂时不可用，请稍后重试。"
+                    onRetry={() => refetch()}
+                    className="messages-panel-state"
+                />
+            );
+        }
+        if (sessions.length === 0) {
+            return (
+                <EmptyState
+                    icon={MessageCircle}
+                    title="暂无会话"
+                    description="在商品详情页点「联系卖家」即可开始第一段对话。"
+                    action={
+                        <Button variant="outline" asChild>
+                            <Link to="/products">去逛逛商品</Link>
+                        </Button>
+                    }
+                    className="messages-panel-state"
+                />
+            );
+        }
         return (
-            <div className="messages-page">
-                <div className="messages-ambient">
-                    <div className="messages-orb messages-orb-1" />
-                    <div className="messages-orb messages-orb-2" />
-                </div>
-                <div className="messages-topbar">
-                    <div className="messages-topbar-left">
-                        <div className="messages-kicker">
-                            <span className="kicker-dot" />
-                            Messages
-                        </div>
-                        <div className="messages-topbar-title">
-                            <h1>消息中心</h1>
-                            <p>与资产方实时沟通，快速达成交易</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="messages-body">
-                    <div className="messages-conversations-panel">
-                        <div className="messages-loading">
-                            <div className="loading-spinner" />
-                            <span>加载中...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <>
+                <ul className="messages-list">
+                    {paginatedSessions.map(conv => {
+                        const isActive = conv.targetUserId === targetUserId;
+                        return (
+                            <li key={conv.targetUserId}>
+                                <Link
+                                    to={`/messages/${conv.targetUserId}`}
+                                    className={`message-card ${isActive ? 'is-active' : ''}`}
+                                    aria-current={isActive ? 'page' : undefined}
+                                    aria-label={
+                                        conv.unreadCount > 0
+                                            ? `${conv.targetUserName}，${conv.unreadCount} 条未读`
+                                            : conv.targetUserName
+                                    }
+                                >
+                                    <span className="message-avatar-wrap">
+                                        {conv.targetUserAvatar ? (
+                                            <img
+                                                src={conv.targetUserAvatar}
+                                                alt=""
+                                                className="message-avatar"
+                                                width="44"
+                                                height="44"
+                                                loading="lazy"
+                                                decoding="async"
+                                            />
+                                        ) : (
+                                            <span className="message-avatar-fallback" aria-hidden="true">
+                                                {conv.targetUserName?.charAt(0) ?? '?'}
+                                            </span>
+                                        )}
+                                        {conv.unreadCount > 0 && (
+                                            <span className="message-badge">
+                                                {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
+                                            </span>
+                                        )}
+                                    </span>
+                                    <span className="message-content">
+                                        <span className="message-header-row">
+                                            <span className="message-name">{conv.targetUserName}</span>
+                                            <span className="message-time">
+                                                {formatRelativeTime(conv.lastMessageTime)}
+                                            </span>
+                                        </span>
+                                        <span className="message-preview">{conv.lastMessage || '暂无消息'}</span>
+                                    </span>
+                                </Link>
+                            </li>
+                        );
+                    })}
+                </ul>
+                <PaginationBar pageNum={convPage} totalPages={totalConversationPages} onPageChange={setConvPage} />
+            </>
         );
-    }
-
-    if (error) {
-        return (
-            <div className="messages-page">
-                <div className="messages-ambient">
-                    <div className="messages-orb messages-orb-1" />
-                    <div className="messages-orb messages-orb-2" />
-                </div>
-                <div className="messages-topbar">
-                    <div className="messages-topbar-left">
-                        <div className="messages-kicker">
-                            <span className="kicker-dot" />
-                            Messages
-                        </div>
-                        <div className="messages-topbar-title">
-                            <h1>消息中心</h1>
-                        </div>
-                    </div>
-                </div>
-                <div className="messages-body">
-                    <div className="messages-welcome-panel">
-                        <div className="messages-error">
-                            <p>加载消息失败，请稍后重试</p>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="error-retry-btn"
-                                onClick={() => refetch()}
-                            >
-                                <RefreshCw size={14} style={{ marginRight: '0.375rem', display: 'inline' }} />
-                                重新加载
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    const hasConversations = conversations && conversations.length > 0;
+    })();
 
     return (
-        <div className="messages-page">
-            <div className="messages-ambient">
+        <div className={`messages-page ${targetUserId ? 'has-thread' : ''}`}>
+            <div className="messages-ambient" aria-hidden="true">
                 <div className="messages-orb messages-orb-1" />
                 <div className="messages-orb messages-orb-2" />
             </div>
 
-            {/* Topbar */}
             <div className="messages-topbar">
-                <div className="messages-topbar-left">
-                    <div className="messages-kicker">
-                        <span className="kicker-dot" />
-                        Messages
-                    </div>
-                    <div className="messages-topbar-title">
-                        <h1>消息中心</h1>
-                        <p>与资产方实时沟通，快速达成交易</p>
-                    </div>
+                <div className="messages-kicker">
+                    <span className="kicker-dot" />
+                    Messages
+                </div>
+                <div className="messages-topbar-title">
+                    <h1>消息中心</h1>
+                    <p>{subtitle}</p>
                 </div>
             </div>
 
-            {/* Two-panel body */}
             <div className="messages-body">
-                {/* LEFT: Conversation panel */}
-                <div className="messages-conversations-panel">
-                    {/* Conversation list */}
-                    <div className="messages-list-container">
-                        <div className="messages-list">
-                            {hasConversations ? (
-                                paginatedConversations.map(conv => (
-                                    <Link
-                                        key={conv.targetUserId}
-                                        to={`/messages/${conv.targetUserId}`}
-                                        className="message-card"
-                                    >
-                                        <div className="message-avatar-wrap">
-                                            {conv.targetUserAvatar ? (
-                                                <img
-                                                    src={conv.targetUserAvatar}
-                                                    alt={conv.targetUserName}
-                                                    className="message-avatar"
-                                                    width="44"
-                                                    height="44"
-                                                    loading="lazy"
-                                                    decoding="async"
-                                                />
-                                            ) : (
-                                                <div className="message-avatar-fallback">
-                                                    <span>{conv.targetUserName?.charAt(0) ?? '?'}</span>
-                                                </div>
-                                            )}
-                                            {conv.unreadCount > 0 && (
-                                                <span className="message-badge">
-                                                    {conv.unreadCount > 9 ? '9+' : conv.unreadCount}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="message-content">
-                                            <div className="message-header-row">
-                                                <h3 className="message-name">{conv.targetUserName}</h3>
-                                                <span className="message-time">{conv.lastMessageTime}</span>
-                                            </div>
-                                            <p className="message-preview">{conv.lastMessage}</p>
-                                        </div>
-                                    </Link>
-                                ))
-                            ) : (
-                                /* Empty state inside list area - when no conversations */
-                                <div className="messages-empty" style={{ padding: '3rem 1rem' }}>
-                                    <div className="empty-visual">
-                                        <div className="empty-orbit" />
-                                        <div className="empty-icon-wrap">
-                                            <MessageCircle size={28} />
-                                        </div>
-                                    </div>
-                                    <h3>暂无新消息</h3>
-                                    <p>当您收到资产方回复或系统通知时，会在这里显示</p>
-                                </div>
-                            )}
-                        </div>
+                <section className="messages-conversations-panel" aria-label="会话列表">
+                    {listPanel}
+                </section>
 
-                        {/* Pagination for conversation list */}
-                        <PaginationBar
-                            pageNum={convPage}
-                            totalPages={totalConversationPages}
-                            onPageChange={setConvPage}
+                <section className="messages-thread-panel" aria-label="当前会话">
+                    {targetUserId ? (
+                        <ChatThread
+                            counterpart={{
+                                id: targetUserId,
+                                name: counterpartName,
+                                avatar: activeSession?.targetUserAvatar ?? null,
+                            }}
+                            onBack={closeThread}
                         />
-                    </div>
-                </div>
-
-                {/* RIGHT: Welcome panel */}
-                <div className="messages-welcome-panel">
-                    <div className="messages-welcome-content">
-                        <div className="messages-empty">
-                            <div className="empty-visual">
-                                <div className="empty-orbit" />
-                                <div className="empty-icon-wrap">
-                                    <MessageCircle size={32} />
-                                </div>
-                            </div>
-                            <h3>选择对话</h3>
-                            <p>从左侧选择一个会话开始聊天</p>
-                        </div>
-                    </div>
-                </div>
+                    ) : (
+                        <EmptyState
+                            icon={MessageCircle}
+                            title="选择会话"
+                            description="从左侧选一个会话开始聊天，或从商品详情页联系卖家。"
+                            className="messages-thread-empty"
+                        />
+                    )}
+                </section>
             </div>
         </div>
     );

@@ -6,19 +6,19 @@ import ChatHeader from './ChatHeader';
 describe('ChatHeader', () => {
     it('renders back button with aria-label', () => {
         render(<ChatHeader onBack={() => {}} />);
-        expect(screen.getByLabelText('返回')).toBeInTheDocument();
+        expect(screen.getByLabelText('返回会话列表')).toBeInTheDocument();
     });
 
     it('calls onBack when back button clicked', async () => {
         const onBack = vi.fn();
         render(<ChatHeader onBack={onBack} />);
-        await userEvent.click(screen.getByLabelText('返回'));
+        await userEvent.click(screen.getByLabelText('返回会话列表'));
         expect(onBack).toHaveBeenCalledTimes(1);
     });
 
     it('does not crash when targetUser is null', () => {
         render(<ChatHeader targetUser={null} onBack={() => {}} />);
-        expect(screen.getByLabelText('返回')).toBeInTheDocument();
+        expect(screen.getByLabelText('返回会话列表')).toBeInTheDocument();
     });
 
     it('shows user name when targetUser is provided', () => {
