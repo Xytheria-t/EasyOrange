@@ -166,6 +166,17 @@
     --shadow-glow: 0 0 60px rgba(249, 115, 22, 0.2);
     --shadow-card-hover: 0 24px 48px -8px rgba(42, 37, 32, 0.12), 0 0 0 1px rgba(249, 115, 22, 0.08);
 
+    /*
+     * 焦点环 —— 双层：暗环紧贴元素外侧，中间夹一圈亮色隔离圈。
+     * 单色暗环只在浅底上成立，落到深底或彩色渐变上就失效，每加一个页面都得
+     * 重新推一遍背景明度；亮圈保证深底可见、暗环保证浅底可见，两层相加在任意
+     * 背景上至少有一侧过 3:1（WCAG 2.2 新增 2.4.13 Focus Appearance 的做法）。
+     * 两值写死不复用 --primary-700 / --surface-panel：焦点环的对比度是成对算的，
+     * 主色或面板色一旦调整，这里必须重新配平，不该被悄悄带着变。
+     */
+    --focus-ring: #c2410c;
+    --focus-halo: #ffffff;
+
     /* Glassmorphism - Enhanced */
     --glass-bg: rgba(255, 255, 255, 0.78);
     --glass-bg-heavy: rgba(255, 255, 255, 0.92);

@@ -167,9 +167,13 @@
     border-radius: inherit;
 }
 
+/* 与 .playground-think__head 同理：外侧环会被列表卡片的 overflow:hidden 裁掉，
+   负偏移 outline 又会盖死同位置的 inset 亮圈，内侧环只能走 3px 暗环贴边。
+   box-shadow 显式清零，否则全局基线那条外插亮圈会漏进来压到相邻行上 */
 .notification-row-overlay:focus-visible {
-    outline: 2px solid var(--primary-700);
+    outline: 3px solid var(--focus-ring);
     outline-offset: -3px;
+    box-shadow: none;
 }
 
 /* ============ 业务图标：色由 biz_type 决定，取值走 tokens ============ */

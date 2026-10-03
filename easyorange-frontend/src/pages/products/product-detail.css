@@ -1330,8 +1330,9 @@
     transform: translateY(-2px) scale(1.01);
 }
 .pdp-similar-card:focus-visible {
-    outline: 2px solid var(--primary-700);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--focus-halo);
 }
 .pdp-similar-image {
     position: relative;
