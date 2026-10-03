@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
+import com.cartethyia.easyorange.message.domain.enums.MessageBizType;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import org.springframework.amqp.core.Message;
@@ -43,8 +44,8 @@ public class ProductAuditEventConsumer {
             var content = approved
                     ? "您发布的「%s」已通过审核，现已上架销售！".formatted(event.productName())
                     : "您发布的「%s」未通过审核。原因：%s。请修改后重新提交。".formatted(event.productName(), event.reason());
-            messageCommandHandler.sendSystemMessage(
-                    new SendSystemMessageCommand(event.sellerId(), title, content, event.productId()));
+            messageCommandHandler.sendSystemMessage(new SendSystemMessageCommand(
+                    event.sellerId(), title, content, event.productId(), MessageBizType.PRODUCT));
         });
     }
 }

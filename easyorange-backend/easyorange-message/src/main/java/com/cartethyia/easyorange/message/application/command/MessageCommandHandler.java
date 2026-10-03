@@ -78,7 +78,8 @@ public class MessageCommandHandler {
                 command.receiverId(),
                 command.title(),
                 command.content(),
-                command.businessId()));
+                command.businessId(),
+                command.bizType()));
 
         notifyAfterCommit(saved, true);
 

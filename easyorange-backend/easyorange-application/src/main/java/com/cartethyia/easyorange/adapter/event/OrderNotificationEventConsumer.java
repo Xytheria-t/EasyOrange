@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
+import com.cartethyia.easyorange.message.domain.enums.MessageBizType;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
@@ -60,7 +61,11 @@ public class OrderNotificationEventConsumer {
                 return;
             }
             messageCommandHandler.sendSystemMessage(new SendSystemMessageCommand(
-                    buyerId, template.title(), template.content(event.orderNo().value()), event.orderId()));
+                    buyerId,
+                    template.title(),
+                    template.content(event.orderNo().value()),
+                    event.orderId(),
+                    MessageBizType.ORDER));
         });
     }
 

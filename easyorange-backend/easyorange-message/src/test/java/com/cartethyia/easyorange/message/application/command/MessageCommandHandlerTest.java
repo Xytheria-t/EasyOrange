@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.message.application.service.OfflineMessageAppService;
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
+import com.cartethyia.easyorange.message.domain.enums.MessageBizType;
 import com.cartethyia.easyorange.message.domain.enums.MessageStatus;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.ReadStatus;
@@ -229,7 +230,8 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("正常发送系统消息")
         void sendSystemMessage_success() {
-            SendSystemMessageCommand command = new SendSystemMessageCommand(RECEIVER_ID, "系统通知", "您的商品已审核通过", null);
+            SendSystemMessageCommand command =
+                    new SendSystemMessageCommand(RECEIVER_ID, "系统通知", "您的商品已审核通过", "product-1", MessageBizType.PRODUCT);
 
             when(messageNotifier.isUserOnline(anyString())).thenReturn(true);
             when(idGenerator.generateId()).thenReturn(GENERATED_ID);
@@ -252,7 +254,10 @@ class MessageCommandHandlerTest {
 
             commandHandler.sendSystemMessage(command);
 
-            verify(messageRepository).save(argThat(msg -> GENERATED_ID.equals(msg.id())));
+            verify(messageRepository)
+                    .save(argThat(msg -> GENERATED_ID.equals(msg.id())
+                            // 业务对象类型随消息落库，读侧据此决定点击跳哪张页面
+                            && MessageBizType.PRODUCT == msg.bizType()));
             verify(offlineMessageAppService).storeIfOffline(anyString(), any(), anyString(), eq(true));
             verify(messageNotifier).sendNotification(eq(RECEIVER_ID), any());
         }

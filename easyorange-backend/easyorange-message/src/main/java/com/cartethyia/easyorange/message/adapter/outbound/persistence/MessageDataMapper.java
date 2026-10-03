@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
+import com.cartethyia.easyorange.message.domain.enums.MessageBizType;
 import com.cartethyia.easyorange.message.domain.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.enums.PushStatus;
 import java.util.List;
@@ -35,6 +36,7 @@ public final class MessageDataMapper {
                 .isRead(aggregate.isRead())
                 .readTime(aggregate.readTime())
                 .businessId(aggregate.businessId())
+                .bizType(aggregate.bizType())
                 .conversationId(aggregate.conversationId())
                 .msgStatus(aggregate.msgStatus())
                 .recalledAt(aggregate.recalledAt())
@@ -55,6 +57,7 @@ public final class MessageDataMapper {
                 entity.getIsRead(),
                 entity.getReadTime(),
                 entity.getBusinessId(),
+                entity.getBizType() == null ? MessageBizType.NONE : entity.getBizType(),
                 entity.getConversationId(),
                 entity.getMsgStatus(),
                 entity.getRecalledAt(),

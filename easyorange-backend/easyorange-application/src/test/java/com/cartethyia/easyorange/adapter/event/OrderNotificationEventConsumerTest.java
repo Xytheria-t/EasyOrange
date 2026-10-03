@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChe
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
+import com.cartethyia.easyorange.message.domain.enums.MessageBizType;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
@@ -81,6 +82,8 @@ class OrderNotificationEventConsumerTest {
         assertThat(command.title()).isEqualTo(title);
         assertThat(command.content()).isEqualTo(content);
         assertThat(command.businessId()).isEqualTo(ORDER_ID);
+        // businessId 是订单号而非商品 ID：类型不带过去，通知点击会跳到 /products/{orderId}
+        assertThat(command.bizType()).isEqualTo(MessageBizType.ORDER);
     }
 
     @Nested

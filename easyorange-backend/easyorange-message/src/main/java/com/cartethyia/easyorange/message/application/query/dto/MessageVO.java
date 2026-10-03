@@ -47,5 +47,9 @@ public class MessageVO {
 
     private String businessId;
 
+    private Integer bizType;
+
+    private String bizTypeDesc;
+
     private LocalDateTime createTime;
 }
