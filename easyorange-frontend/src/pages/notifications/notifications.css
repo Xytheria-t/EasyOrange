@@ -188,119 +188,18 @@
     cursor: not-allowed;
 }
 
-/* Loading */
-.notifications-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    padding: 80px 0;
-    color: var(--text-tertiary);
-}
-
-/* Empty State */
-.notifications-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 80px 0;
-    text-align: center;
-}
-
-.notifications-empty-icon {
-    color: var(--text-tertiary);
-    margin-bottom: 16px;
-}
-
-.notifications-empty-visual {
-    position: relative;
-    width: 80px;
-    height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-}
-
-.empty-orbit {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    border: 2px solid var(--primary-alpha-3);
-    animation: spin 8s linear infinite;
-}
-
-.empty-orbit::before {
-    content: "";
-    position: absolute;
-    top: -4px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary-500), var(--rose-400));
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.empty-icon-wrap {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary-alpha-2), var(--rose-alpha-2));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--primary-500);
-}
-
-.notifications-empty h3 {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0 0 8px;
-}
-
-.notifications-empty p {
-    font-size: 14px;
-    color: var(--text-tertiary);
-    margin: 0;
-}
-
-.notifications-retry-btn {
-    margin-top: 16px;
-    padding: 8px 20px;
-    border: 1px solid var(--primary-alpha-5);
-    background: var(--primary-alpha-2);
-    border-radius: var(--radius-md);
-    color: var(--primary-500);
-    font-size: 13px;
-    font-weight: 600;
-    transition: all var(--transition-fast);
-    height: auto;
-    min-height: unset;
-}
-
-.notifications-retry-btn:hover {
-    background: var(--primary-alpha-3);
-}
-
-.notifications-retry-btn:active {
-    transform: scale(0.98);
-}
-
 /* Notification List */
 .notifications-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.notifications-list > li {
+    position: relative;
 }
 
 .notification-card {
@@ -322,6 +221,22 @@
     min-height: unset;
 }
 
+/* 整卡可点但语义上它是一篇文章：真正可聚焦的按钮覆盖在卡片上，标题继续用 h3 */
+.notification-card-overlay {
+    position: absolute;
+    inset: 0;
+    border: none;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    border-radius: inherit;
+}
+
+.notification-card-overlay:focus-visible {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
+}
+
 .notification-card:hover {
     background: rgba(255, 255, 255, 0.94);
     border-color: var(--primary-alpha-3);
@@ -329,7 +244,7 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
-.notification-card:active {
+.notification-card:has(.notification-card-overlay:active) {
     transform: translateY(1px);
 }
 

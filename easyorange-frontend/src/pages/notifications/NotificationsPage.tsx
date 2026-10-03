@@ -1,59 +1,65 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, Bell, CheckCheck, CheckCircle2, Info, Loader2, Megaphone, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bell, CheckCheck, Loader2, Package, ShoppingCart, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { notificationApi } from '@/api/notificationApi';
+import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/StateDisplay';
 import { PaginationBar } from '@/components/PaginationBar';
 import { Button } from '@/components/ui/button';
 import { usePagination } from '@/hooks/usePagination';
 import type { NotificationItem } from '@/types';
+import { formatRelativeTime } from '@/utils';
 import './notifications.css';
 
 const PAGE_SIZE = 20;
 
-function getNotificationIcon(title: string) {
-    if (title.includes('审核通过')) {
-        return { icon: CheckCircle2, color: '#22C55E' };
+/** 后端 MessageBizType.code —— 决定图标与点击跳转，不再靠标题中文猜 */
+const BIZ_TYPE = { NONE: 0, PRODUCT: 1, ORDER: 2 } as const;
+
+function getNotificationIcon(bizType: number, title: string) {
+    if (bizType === BIZ_TYPE.ORDER) {
+        return { icon: ShoppingCart, color: '#6366F1' };
     }
-    if (title.includes('审核未通过')) {
-        return { icon: XCircle, color: '#EF4444' };
+    if (bizType === BIZ_TYPE.PRODUCT) {
+        // 审核结论只在标题里，且同属商品事件，用形状区分成败比再加一个 bizType 更划算
+        return title.includes('审核未通过') || title.includes('驳回')
+            ? { icon: XCircle, color: '#EF4444' }
+            : { icon: Package, color: '#F97316' };
     }
-    if (title.includes('系统') || title.includes('通知')) {
-        return { icon: Megaphone, color: '#8B5CF6' };
-    }
-    return { icon: Info, color: '#6B7280' };
+    return { icon: Bell, color: '#8B5CF6' };
 }
 
-function formatTime(timeString: string): string {
-    const date = new Date(timeString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) {
-        return '刚刚';
+/**
+ * 点击落点 —— businessId 指向哪张页面由 bizType 决定。
+ * 返回 null 表示没有可跳转的业务对象（点一下只标已读，不给用户一个必然 404 的地址）。
+ */
+function resolveTarget(item: NotificationItem): string | null {
+    if (!item.businessId) {
+        return null;
     }
-    if (diffMins < 60) {
-        return `${diffMins}分钟前`;
+    if (item.bizType === BIZ_TYPE.PRODUCT) {
+        return `/products/${item.businessId}`;
     }
-    if (diffHours < 24) {
-        return `${diffHours}小时前`;
+    if (item.bizType === BIZ_TYPE.ORDER) {
+        return `/orders/${item.businessId}`;
     }
-    if (diffDays < 7) {
-        return `${diffDays}天前`;
-    }
-
-    return date.toLocaleDateString('zh-CN', {
-        month: 'numeric',
-        day: 'numeric',
-    });
+    return null;
 }
 
 export default function NotificationsPage() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { pageNum: page, goTo } = usePagination();
+
+    // 全局未读数：与顶栏铃铛同一个 query key，读缓存不额外发请求。
+    // 此前按当前页过滤，第一页恰好全已读而后面还有未读时，「全部已读」按钮会凭空消失
+    const { data: unreadCountData } = useQuery({
+        queryKey: ['unread-count'],
+        queryFn: async () => {
+            const response = await notificationApi.getUnreadCount();
+            return response.data;
+        },
+        staleTime: 15 * 1000,
+    });
 
     const { data, isLoading, error } = useQuery({
         queryKey: ['notifications', page],
@@ -83,14 +89,15 @@ export default function NotificationsPage() {
         if (item.isRead === 0) {
             markAsReadMutation.mutate(item.id);
         }
-        if (item.businessId) {
-            navigate(`/products/${item.businessId}`);
+        const target = resolveTarget(item);
+        if (target) {
+            navigate(target);
         }
     };
 
     const notifications = data?.records ?? [];
     const totalPages = data?.pages ?? 1;
-    const unreadCount = notifications.filter(n => n.isRead === 0).length;
+    const systemUnread = unreadCountData?.systemCount ?? 0;
 
     return (
         <div className="notifications-page">
@@ -124,7 +131,7 @@ export default function NotificationsPage() {
                             </div>
                         </div>
                     </div>
-                    {unreadCount > 0 && (
+                    {systemUnread > 0 && (
                         <Button
                             className="notifications-mark-all-btn"
                             onClick={() => markAllReadMutation.mutate()}
@@ -136,6 +143,7 @@ export default function NotificationsPage() {
                                 <CheckCheck size={16} />
                             )}
                             全部已读
+                            {systemUnread > 0 && <span className="notifications-mark-all-count">{systemUnread}</span>}
                         </Button>
                     )}
                 </div>
@@ -144,48 +152,30 @@ export default function NotificationsPage() {
 
                 {/* Content */}
                 {isLoading ? (
-                    <div className="notifications-loading">
-                        <div className="loading-spinner" />
-                        <span>加载中...</span>
-                    </div>
+                    <LoadingState label="正在加载通知" />
                 ) : error ? (
-                    <div className="notifications-empty">
-                        <Bell size={48} className="notifications-empty-icon" />
-                        <h3>加载失败</h3>
-                        <p>请稍后重试</p>
-                        <Button
-                            variant="ghost"
-                            className="notifications-retry-btn"
-                            onClick={() => queryClient.invalidateQueries({ queryKey: ['notifications'] })}
-                        >
-                            重新加载
-                        </Button>
-                    </div>
+                    // 失败必须与空态分开：显示「暂无通知」会被当成本来就没有
+                    <ErrorState
+                        title="通知加载失败"
+                        description="网络或服务暂时不可用，请稍后重试。"
+                        onRetry={() => queryClient.invalidateQueries({ queryKey: ['notifications'] })}
+                    />
                 ) : notifications.length === 0 ? (
-                    <div className="notifications-empty">
-                        <div className="notifications-empty-visual">
-                            <div className="empty-orbit" />
-                            <div className="empty-icon-wrap">
-                                <Bell size={36} />
-                            </div>
-                        </div>
-                        <h3>暂无系统通知</h3>
-                        <p>当您的商品审核结果产生时，会在这里显示</p>
-                    </div>
+                    <EmptyState
+                        icon={Bell}
+                        title="暂无系统通知"
+                        description="商品审核结果、订单状态等系统消息会出现在这里。"
+                    />
                 ) : (
                     <>
-                        <div className="notifications-list">
+                        <ul className="notifications-list">
                             {notifications.map(item => {
-                                const { icon: Icon, color } = getNotificationIcon(item.title);
+                                const { icon: Icon, color } = getNotificationIcon(item.bizType, item.title);
                                 const isUnread = item.isRead === 0;
+                                const target = resolveTarget(item);
                                 return (
-                                    <Button
-                                        key={item.id}
-                                        variant="ghost"
-                                        className={`notification-card ${isUnread ? 'unread' : ''}`}
-                                        onClick={() => handleNotificationClick(item)}
-                                    >
-                                        {isUnread && <div className="notification-card-accent" />}
+                                    <li key={item.id} className={`notification-card ${isUnread ? 'unread' : ''}`}>
+                                        {isUnread && <span className="notification-card-accent" />}
                                         <div
                                             className="notification-card-icon"
                                             style={{
@@ -203,21 +193,28 @@ export default function NotificationsPage() {
                                                     {isUnread && <span className="notification-unread-dot" />}
                                                 </h3>
                                                 <span className="notification-card-time">
-                                                    {formatTime(item.createTime)}
+                                                    {formatRelativeTime(item.createTime)}
                                                 </span>
                                             </div>
                                             <p className="notification-card-content">{item.content}</p>
-                                            {item.businessId && (
+                                            {target && (
                                                 <span className="notification-card-link">
                                                     查看详情
                                                     <ArrowRight size={11} />
                                                 </span>
                                             )}
                                         </div>
-                                    </Button>
+                                        {/* 覆盖整卡的按钮：键盘可达，标题语义留给 h3 */}
+                                        <button
+                                            type="button"
+                                            className="notification-card-overlay"
+                                            onClick={() => handleNotificationClick(item)}
+                                            aria-label={`${item.title}${isUnread ? '，未读' : ''}`}
+                                        />
+                                    </li>
                                 );
                             })}
-                        </div>
+                        </ul>
 
                         {/* Pagination */}
                         <PaginationBar pageNum={page} totalPages={totalPages} onPageChange={goTo} />
