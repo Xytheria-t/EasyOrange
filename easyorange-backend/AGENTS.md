@@ -7,7 +7,7 @@
 - 启动统一 `./mvnw spring-boot:run -pl easyorange-application`；**禁终端 / IDE 混跑**（IDE 不吃 POM `<jvmArguments>`）；新增子模块须在父 POM `<modules>` 注册
 - **环境变量单一来源是根 `.env`**（键位看 `.env.example`）：compose 插值 / 终端 `set -a; source .env; set +a` / IDEA 需 Run Configuration 或 EnvFile
 - **占位符语法**：`application*.yaml` 用 `${VAR:default}`；`compose.yaml` / shell 用 `${VAR:-default}`——YAML 误写 `:-` 把 `-default` 当字面量（Redis 密码 → WRONGPASS）；压测关限流用 `RATE_LIMIT_FILTER_ENABLED=false`
-- IntelliJ 把 domain port / `@Mapper` 误当 Spring Bean：实现类加 `@Primary`，构造器注入加 `@Qualifier`
+- IDEA 的「more than one bean of 'XxxPort'，且多出来的 bean 就是接口本身」是**插件误报**，不是装配缺陷：机制、判据、已定处理见[常用命令 · IDE 假告警](../doc/agents/常用命令.md#ide-假告警idea)。**禁为消它加 `@Primary` / `@Qualifier` / 额外 `@Bean`**，也别把 `@MapperScan` 加回启动类
 
 ## 命名与事务
 
