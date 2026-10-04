@@ -485,6 +485,10 @@ easyorange:
       # 历史注入 prompt 的 token 预算（估算口径见 TokenEstimator）— 轮数窗口之上的第二道裁剪，
       # 超限从最新向前保留连续窗口；<=0 关闭。指标：easyorange.ai.chat.context.tokens / .trim
       max-history-tokens: 2000
+    listing:               # 发布助手（卖家侧多步工具循环）— 决策复用 chat_tool 快模型，记账走 auto_listing 场景预算
+      # 发布循环单次上限（含 finish 轮）：典型轨迹 禁售查证 → 品类召回 → 行情统计 → finish 需 4 步，
+      # 取 6 留出检索换词一轮的余量；比 chat 少一档——检索词由预识别线索锚定，不存在多意图追问撑长步数的形态
+      max-steps: 6
     pricing:               # 模型单价表 — 成本报表货币化依据（元/百万 token，键对齐 eo_ai_call_log.model）
       # 价目是「排序与汇报」口径不对账：供应商调价后改这里；缺条目的模型只出 token 不出钱（宁缺不估）
       models:

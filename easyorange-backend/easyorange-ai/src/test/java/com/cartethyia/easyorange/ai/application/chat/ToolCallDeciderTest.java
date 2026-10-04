@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ToolCallDecider;
+import com.cartethyia.easyorange.ai.application.support.ToolCallDecision;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -2,6 +2,9 @@ package com.cartethyia.easyorange.ai.application.chat;
 
 import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
 import com.cartethyia.easyorange.ai.application.support.FailureReason;
+import com.cartethyia.easyorange.ai.application.support.ToolCallArguments;
+import com.cartethyia.easyorange.ai.application.support.ToolCallDecider;
+import com.cartethyia.easyorange.ai.application.support.ToolCallDecision;
 import com.cartethyia.easyorange.ai.application.support.ToolCallLoopOutcome;
 import com.cartethyia.easyorange.ai.application.support.ToolLoopDecider;
 import com.cartethyia.easyorange.ai.application.support.ToolLoopKernel;
