@@ -2,13 +2,8 @@
 # =============================================================================
 # 开发栈一键启动 — 基础设施 / 后端 / 前端并行拉起，按需重建
 #
-# 用法：scripts/dev-up.sh [选项]
-#   （无参数）      全栈；后端 jar 比源码新就跳过打包（纯前端的日常走这条）
-#   --no-es        不起 Elasticsearch。不碰搜索/AI 找货时用，省 ~1.0G 常驻内存
-#   --force-build  强制重打后端 jar（默认按时间戳判新鲜度）
-#   --skip-build   直接用磁盘上已有的 jar，完全不碰后端源码。
-#                  源码改到一半编译不过、又还想起服务看前端时用
-#   --no-backend   只起基础设施 + 前端
+# 本项目的所有操作都走 CLI，起服务只认这一个入口：别再逐条拼
+# docker / mvnw / java / npm。需要知道跑没跑就跑 --status，要看选项就跑 --help。
 #
 # 为什么值得写这个脚本（2026-10 实测，缓存热的空闲机）：
 #   systemctl start docker            ~4s
@@ -20,8 +15,7 @@
 #   npm run dev → ready                0.3s
 #   浏览器首访 → 应用挂载               0.8s
 # 串行合计 55~65s。可压缩的是：把 maven 打包塞进「等容器 healthy」的窗口里，
-# jar 比源码新时整段省掉。剩下的下限是容器 healthy(25s) + java 启动(10s)——
-# ES 不需要时用 --no-es，前者掉到 ~5s，全过程约 16s。
+# 源码没改就整段省掉。
 #
 # 不做的事：不给 Docker 配自启。docker.service 保持 disabled，日常 WSL 不占内存；
 # 需要时本脚本按需拉起 dockerd，收工用 scripts/dev-down.sh。
@@ -31,11 +25,45 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+RUN_DIR="/tmp/easyorange-dev"
+BACKEND_DIR="$ROOT/easyorange-backend"
+FRONTEND_DIR="$ROOT/easyorange-frontend"
+BACKEND_LOG="$RUN_DIR/backend.log"
+FRONTEND_LOG="$RUN_DIR/frontend.log"
+
+usage() {
+    cat <<'EOF'
+用法：scripts/dev-up.sh [选项]
+  （无参数）      基础设施 + 后端 + 前端；后端源码无改动则跳过打包
+  --status        只报告当前状态，不做任何启停
+  --no-es         不起 Elasticsearch（省 ~1.0G 常驻内存，搜索/AI 找货不可用）
+  --skip-build    直接用磁盘上已有的 jar，完全不碰后端源码。
+                  源码改到一半编译不过、又还想起服务看效果时用
+  --no-backend    只起基础设施 + 前端（后端在 IDE 里跑时用这条）
+  --force-build   强制重打后端 jar
+EOF
+}
+
+# 端口被绑 ≠ 后端活着：dev-down 发的是 SIGTERM，JVM 退完还要几秒，
+# 这期间端口仍 LISTEN。照端口判断会「报告说跳过、实际没后端」
+backend_alive() {
+    curl -s -o /dev/null --max-time 2 "http://localhost:8080/api/products?pageNum=1&pageSize=1"
+}
+
+report_status() {
+    local fe=down be=down es=stopped
+    ss -ltn "sport = :5173" 2>/dev/null | grep -q LISTEN && fe=up
+    backend_alive && be=up
+    docker ps --format '{{.Names}}' 2>/dev/null | grep -q easyorange-es && es=up
+    echo "status: frontend=$fe backend=$be elasticsearch=$es"
+    echo "（frontend 取自监听端口 5173，backend 取自 API 探活，elasticsearch 取自运行中的容器）"
+}
+
 WITH_ES=1
 FORCE_BUILD=0
 WITH_BACKEND=1
 SKIP_BUILD=0
-RUN_DIR="/tmp/easyorange-dev"
+STATUS_ONLY=0
 mkdir -p "$RUN_DIR"
 
 while [ $# -gt 0 ]; do
@@ -44,8 +72,11 @@ while [ $# -gt 0 ]; do
         --force-build) FORCE_BUILD=1 ;;
         --skip-build) SKIP_BUILD=1 ;;
         --no-backend) WITH_BACKEND=0 ;;
+        --status)
+            STATUS_ONLY=1
+            ;;
         -h | --help)
-            sed -n '2,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+            usage
             exit 0
             ;;
         *)
@@ -56,10 +87,10 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-BACKEND_DIR="$ROOT/easyorange-backend"
-FRONTEND_DIR="$ROOT/easyorange-frontend"
-BACKEND_LOG="$RUN_DIR/backend.log"
-FRONTEND_LOG="$RUN_DIR/frontend.log"
+[ "$STATUS_ONLY" = "1" ] && {
+    report_status
+    exit 0
+}
 
 # 用 ss 判监听，不要用 bash 的 /dev/tcp：后者在本机 WSL2 上连接被拒时会挂住而不是立即返回
 port_busy() { ss -ltn "sport = :$1" 2>/dev/null | grep -q LISTEN; }
@@ -137,9 +168,23 @@ build_backend() {
 }
 
 start_backend() {
-    if port_busy 8080; then
+    if backend_alive; then
         echo "▶ 后端已在 8080 运行，跳过"
         return
+    fi
+    if port_busy 8080; then
+        echo -n "▶ 等 8080 上的旧进程退出"
+        for _ in $(seq 1 30); do
+            backend_alive || ! port_busy 8080 && break
+            echo -n "."
+            sleep 1
+        done
+        if port_busy 8080; then
+            echo " ✗" >&2
+            echo "  8080 被非本项目的进程占着，先处理它：ss -ltnp | grep 8080" >&2
+            return 1
+        fi
+        echo " ✓"
     fi
     local jar
     jar="$(ls -t "$BACKEND_DIR"/easyorange-application/target/easyorange-application-*.jar | head -1)"
@@ -152,8 +197,9 @@ start_backend() {
 
 start_frontend
 if [ "$WITH_BACKEND" = "1" ]; then
-    # 后端已在跑就别打包：13.5s 换一个用不上的 jar 是纯浪费
-    if port_busy 8080; then
+    # 后端已在跑就别打包：13.5s 换一个用不上的 jar 是纯浪费。
+    # 判据用 HTTP 探活而非端口——正在退出的 JVM 仍占着端口
+    if backend_alive; then
         echo "▶ 后端已在 8080 运行，跳过"
     else
         build_backend &   # 与容器健康检查同时进行
@@ -166,7 +212,7 @@ if ! wait "$COMPOSE_PID"; then
 fi
 if [ "${BUILD_PID:-}" != "" ]; then
     if wait "$BUILD_PID"; then
-        start_backend
+        start_backend || exit 1
     else
         echo "后端打包失败，没起 java。看 $RUN_DIR/build.log" >&2
         exit 1
@@ -210,3 +256,5 @@ else
     echo "  ES 未启动：搜索与 AI 找货不可用（需要时去掉 --no-es）"
 fi
 echo "──────────────────────────────────────────────"
+# 末行固定格式：接脚本的一方（人或 AI）不用再 grep ss/端口来判断成没成
+report_status
