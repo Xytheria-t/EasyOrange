@@ -5,7 +5,10 @@ import com.cartethyia.easyorange.ai.application.chat.ChatTools;
 import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
+import com.cartethyia.easyorange.ai.application.listing.AutoListingAppService;
+import com.cartethyia.easyorange.ai.application.listing.ListingLoopResult;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
+import com.cartethyia.easyorange.ai.application.support.ToolCallLoopOutcome;
 import com.cartethyia.easyorange.ai.domain.model.ArmComparisonReport;
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSetCase;
@@ -51,6 +54,7 @@ public class GoldenSetEvaluator {
     private final RetrievalMetricPort metricRecorder;
     private final IdGenerator idGenerator;
     private final ToolCallLoop toolCallLoop;
+    private final AutoListingAppService listingAppService;
 
     /** 生成质量回归：全部 chat 用例 Judge 打分，返回平均分。 */
     public GenerationReport evaluateGeneration() {
@@ -186,6 +190,7 @@ public class GoldenSetEvaluator {
     /**
      * 跑失败 / 降级（{@code decision_failed}、{@code step_limit}）算未命中且仍计入分母 ——
      * 决策失败正是「模型没选出该选的工具」的一种形态，把它排除掉等于把最该看的失败藏起来。
+     * 只收 chat 用例：listing 多步用例走 {@link #evaluateListingRouting()}，两条链路难度不同型、阈值分开。
      */
     public RoutingReport evaluateRouting() {
         var cases = loader.load().cases().stream()
@@ -225,6 +230,58 @@ public class GoldenSetEvaluator {
                 correct,
                 cases.size(),
                 "%.2f%%".formatted(accuracy * 100));
+        return new RoutingReport(cases.size(), correct, accuracy);
+    }
+
+    /**
+     * 发布链路路由回归 — listing 用例跑发布工具循环（只跑循环不生成），判据与 chat 路由同一条。
+     * 每条用例落一行 outcome / rounds / toolPath：多步链路「实际走了几步、路径长什么样」是发布链路
+     * 多步化有没有意义的硬证据，评估报告从这些行聚合平均步数与 toolPath 分布（只打日志聚合，
+     * RoutingReport 保持三字段口径不因评估扩列）。
+     */
+    public RoutingReport evaluateListingRouting() {
+        var cases = loader.load().cases().stream()
+                .filter(c -> GoldenSetLoader.SCOPE_LISTING.equals(c.scope()))
+                .toList();
+        int correct = 0;
+        int roundsSum = 0;
+        for (var c : cases) {
+            List<String> actual;
+            ToolCallLoopOutcome outcome;
+            int rounds;
+            try {
+                ListingLoopResult result =
+                        listingAppService.runToolLoop(null, c.question(), "eval-" + c.id(), null, null);
+                actual = result.toolPath();
+                outcome = result.outcome();
+                rounds = result.rounds();
+            } catch (Exception e) {
+                log.warn("golden case {} listing routing eval failed: {}", c.id(), e.getMessage());
+                actual = List.of();
+                outcome = ToolCallLoopOutcome.ERROR;
+                rounds = 0;
+            }
+            roundsSum += rounds;
+            boolean hit = routeMatches(c.expectedTools(), actual);
+            if (hit) {
+                correct++;
+            }
+            log.info(
+                    "golden case {} listing route: expected={}, actual={}, outcome={}, rounds={}",
+                    c.id(),
+                    String.join(",", c.expectedTools()),
+                    actual.isEmpty() ? "(无)" : String.join(",", actual),
+                    outcome.getTag(),
+                    rounds);
+        }
+        double accuracy = cases.isEmpty() ? 0 : correct * 1.0 / cases.size();
+        double avgRounds = cases.isEmpty() ? 0 : (double) roundsSum / cases.size();
+        log.info(
+                "Golden set listing routing eval: hit {}/{} cases, accuracy = {}, avg rounds = {}",
+                correct,
+                cases.size(),
+                "%.2f%%".formatted(accuracy * 100),
+                "%.2f".formatted(avgRounds));
         return new RoutingReport(cases.size(), correct, accuracy);
     }
 

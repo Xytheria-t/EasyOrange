@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.cartethyia.easyorange.ai.application.chat.ChatTools;
+import com.cartethyia.easyorange.ai.application.listing.ListingTools;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSet;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSetCase;
 import java.util.List;
@@ -19,17 +20,20 @@ class GoldenSetLoaderTest {
     private final GoldenSetLoader loader = new GoldenSetLoader();
 
     @Test
-    @DisplayName("加载 golden-set.yaml -> 52 条用例（22 chat + 30 retrieval）")
+    @DisplayName("加载 golden-set.yaml -> 62 条用例（22 chat + 30 retrieval + 10 listing）")
     void load_allCases() {
         GoldenSet goldenSet = loader.load();
 
-        assertThat(goldenSet.cases()).hasSize(52);
+        assertThat(goldenSet.cases()).hasSize(62);
         assertThat(scoped(goldenSet, GoldenSetLoader.SCOPE_CHAT)).hasSize(22);
         assertThat(scoped(goldenSet, GoldenSetLoader.SCOPE_RETRIEVAL)).hasSize(30);
+        assertThat(scoped(goldenSet, GoldenSetLoader.SCOPE_LISTING)).hasSize(10);
         assertThat(goldenSet.cases().stream().filter(c -> c.id().startsWith("chat-")))
                 .hasSize(22);
         assertThat(goldenSet.cases().stream().filter(c -> c.id().startsWith("retr-")))
                 .hasSize(30);
+        assertThat(goldenSet.cases().stream().filter(c -> c.id().startsWith("list-")))
+                .hasSize(10);
     }
 
     @Test
@@ -41,7 +45,7 @@ class GoldenSetLoaderTest {
             assertThat(c.question()).as(c.id() + " 必须有问题").isNotBlank();
             if (GoldenSetLoader.SCOPE_CHAT.equals(c.scope())) {
                 assertThat(c.referenceAnswer()).as(c.id() + " 必须有参考回答").isNotBlank();
-            } else {
+            } else if (GoldenSetLoader.SCOPE_RETRIEVAL.equals(c.scope())) {
                 assertThat(c.goldDocIds()).as(c.id() + " 必须有期望命中文档").isNotEmpty();
             }
         }
@@ -96,6 +100,35 @@ class GoldenSetLoaderTest {
         assertThatCode(() -> GoldenSetLoader.validate(
                         new GoldenSetCase("retr-001", "retrieval", "q", null, List.of("kb-0001"), List.of())))
                 .doesNotThrowAnyException();
+        assertThatCode(() -> GoldenSetLoader.validate(new GoldenSetCase(
+                        "list-999",
+                        "listing",
+                        "q",
+                        null,
+                        List.of(),
+                        List.of(ListingTools.TOOL_KNOWLEDGE_SEARCH, ListingTools.TOOL_FINISH))))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("校验：listing 用例必须标 expected_tools，且不得带 reference_answer / gold_doc_ids（路由专用 scope）")
+    void validate_listingScope() {
+        assertThatThrownBy(() -> GoldenSetLoader.validate(
+                        new GoldenSetCase("list-998", "listing", "q", null, List.of(), List.of())))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("必须标 expected_tools");
+        assertThatThrownBy(() -> GoldenSetLoader.validate(new GoldenSetCase(
+                        "list-997", "listing", "q", "参考", List.of(), List.of(ListingTools.TOOL_FINISH))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("reference_answer");
+        assertThatThrownBy(() -> GoldenSetLoader.validate(new GoldenSetCase(
+                        "list-996", "listing", "q", null, List.of("kb-0005"), List.of(ListingTools.TOOL_FINISH))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("gold_doc_ids");
+        assertThatThrownBy(() -> GoldenSetLoader.validate(
+                        new GoldenSetCase("list-995", "listing", "q", null, List.of(), List.of("remember_preference"))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("未知工具");
     }
 
     @Test
@@ -121,9 +154,33 @@ class GoldenSetLoaderTest {
                 .toList();
         assertThat(annotated).as("路由评估要有足够的标注用例才量得准").hasSizeGreaterThanOrEqualTo(15);
         for (GoldenSetCase c : annotated) {
-            assertThat(c.expectedTools()).allMatch(ChatTools.TOOL_NAMES::contains);
-            assertThat(GoldenSetLoader.SCOPE_CHAT).as("只有 chat 用例会跑工具循环").isEqualTo(c.scope());
+            if (GoldenSetLoader.SCOPE_LISTING.equals(c.scope())) {
+                assertThat(c.expectedTools()).allMatch(ListingTools.TOOL_NAMES::contains);
+            } else {
+                assertThat(c.expectedTools()).allMatch(ChatTools.TOOL_NAMES::contains);
+            }
         }
+    }
+
+    @Test
+    @DisplayName("listing 用例覆盖两种正确路径：正常品类全路径（含行情统计）、禁售品类早收敛")
+    void load_listingCasesCoverBothPathShapes() {
+        GoldenSet goldenSet = loader.load();
+
+        var listingCases = scoped(goldenSet, GoldenSetLoader.SCOPE_LISTING);
+        var fullPath = List.of(
+                ListingTools.TOOL_KNOWLEDGE_SEARCH,
+                ListingTools.TOOL_PRODUCT_SEARCH,
+                ListingTools.TOOL_MARKET_PRICE_STATS,
+                ListingTools.TOOL_FINISH);
+        // 多步用例是本次评测集补齐的重点：全路径样本不足 8 条时，路由门禁仍测不到轮间依赖
+        assertThat(listingCases)
+                .filteredOn(c -> c.expectedTools().equals(fullPath))
+                .hasSizeGreaterThanOrEqualTo(8);
+        assertThat(listingCases)
+                .filteredOn(c ->
+                        c.expectedTools().equals(List.of(ListingTools.TOOL_KNOWLEDGE_SEARCH, ListingTools.TOOL_FINISH)))
+                .hasSizeGreaterThanOrEqualTo(2);
     }
 
     @Test
@@ -152,6 +209,7 @@ class GoldenSetLoaderTest {
         assertThat(baselines.generation().minCoverage()).isEqualTo(0.8);
         assertThat(baselines.retrieval().minHitAt5()).isEqualTo(0.5);
         assertThat(baselines.routing().minAccuracy()).isEqualTo(0.7);
+        assertThat(baselines.routing().listingMinAccuracy()).isEqualTo(0.6);
     }
 
     private static List<GoldenSetCase> scoped(GoldenSet goldenSet, String scope) {
