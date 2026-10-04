@@ -30,6 +30,10 @@
 - **体积 > 100KB 的第三方库必须懒加载**（当前只有 recharts 走这条）：① `manualChunks` 分独立 `vendor-*` chunk ② `React.lazy` + `Suspense` 包装。参考 `src/admin/pages/stats/charts/lazyCharts.tsx`
 - **共享组件（如 `ProductCard`）的样式 CSS 必须在组件文件自身 import**，禁止只靠页面级导入——`React.lazy` 懒加载时页面级 CSS 不随组件 chunk 加载
 
+## 组件复用
+
+- **`Button` 的 `default` 变体是定高 44px（`h-11`）+ `inline-flex` + `whitespace-nowrap`**——拿它渲染气泡、菜单项这类非按钮形态时，长文本被静默裁成一行、换行不生效（`inline-flex` 让正文变成单个 flex item），且不报错。凡复用成非按钮形态，CSS 必须显式写 `height: auto`、`display: block|flex`，并给容器 `max-width`。正确示范 `chat-window.css` 的 `.chat-bubble` / `.chat-context-item`
+
 ## 数据边界
 
 - **`Long → String` 收敛**：后端全局把 `long`/`Long` 序列化成字符串（JS 精度安全，见后端 `JacksonConfig`），计数字段线上是 `"3"` 而非 `3`（含 `PageResult.total`）。**前端 API 层声明为 `number` 的计数字段必须 `Number(...)` 收敛**（参考 `paymentApi` / `adminApi` 里的计数字段处理），否则算术会变字符串拼接
