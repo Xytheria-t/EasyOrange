@@ -1,9 +1,5 @@
-package com.cartethyia.easyorange.ai.application.chat;
+package com.cartethyia.easyorange.ai.application.support;
 
-import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
-import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
-import com.cartethyia.easyorange.ai.application.support.FailureReason;
-import com.cartethyia.easyorange.ai.application.support.ToolLoopCall;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +36,7 @@ public class ToolCallDecider {
      * 取一轮的工具调用决策；空列表即「本轮决策失败」，调用方负责降级。
      * 一轮可以带回多个调用，全部返回 —— 供应商侧的并行发起（规则 + 找货同问最常见）在这里省掉一整轮往返。
      */
-    List<ToolCallDecision> decide(
+    public List<ToolCallDecision> decide(
             @Nullable String sessionId, List<Message> decisionMessages, List<ToolCallback> toolCallbacks) {
         return decideInternal(sessionId, decisionMessages, toolCallbacks, AiCallScope.CHAT);
     }

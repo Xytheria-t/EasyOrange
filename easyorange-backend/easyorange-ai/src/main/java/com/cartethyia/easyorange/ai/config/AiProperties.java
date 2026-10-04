@@ -22,7 +22,8 @@ public record AiProperties(
         Budget budget,
         Routing routing,
         @Valid SemanticCache semanticCache,
-        @Valid Chat chat) {
+        @Valid Chat chat,
+        @Valid Listing listing) {
 
     public AiProperties {
         // 嵌套 record 在属性源里完全没有对应键时可能绑成 null，补等价默认值；数值须与 application.yaml 保持一致（yaml 是唯一主源，此处仅兜底）
@@ -59,6 +60,9 @@ public record AiProperties(
         }
         if (chat == null) {
             chat = new Chat(24, 6, 7, 2000, 90);
+        }
+        if (listing == null) {
+            listing = new Listing(6);
         }
     }
 
@@ -164,4 +168,14 @@ public record AiProperties(
             @Min(1) @Max(10) @DefaultValue("7") int maxSteps,
             @DefaultValue("2000") int maxHistoryTokens,
             @DefaultValue("90") int sessionLockWaitSeconds) {}
+
+    /**
+     * 发布链路（多步工具循环）配置。
+     *
+     * @param maxSteps 发布循环单次上限（含 finish 轮）：典型轨迹 禁售查证 → 品类召回 → 行情统计 → finish
+     *     需 4 步，取 6 留出检索换词一轮的余量；比 chat 少一档是因为发布链路的检索词由预识别线索锚定，
+     *     不存在买家侧多意图追问把步数撑长的形态
+     */
+    public record Listing(
+            @Min(1) @Max(10) @DefaultValue("6") int maxSteps) {}
 }
