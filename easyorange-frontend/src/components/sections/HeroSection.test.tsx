@@ -176,7 +176,7 @@ describe('HeroSection', () => {
 
     it('renders product preview with image', () => {
         render(<HeroSection />);
-        expect(screen.getByText('MacBook Pro 14" M3 Pro')).toBeInTheDocument();
+        expect(screen.getByText('MacBook Pro 14″ M3 Pro')).toBeInTheDocument();
         expect(screen.getByText('¥12,999')).toBeInTheDocument();
         expect(screen.getByText('原价 ¥16,999')).toBeInTheDocument();
     });

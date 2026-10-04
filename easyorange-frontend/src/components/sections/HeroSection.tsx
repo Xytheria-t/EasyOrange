@@ -7,7 +7,7 @@ const HERO_PRODUCT = {
     image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop',
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=96&h=96&fit=crop&crop=faces',
     tag: '精选好物 · 99新',
-    name: 'MacBook Pro 14" M3 Pro',
+    name: 'MacBook Pro 14″ M3 Pro',
     price: '¥12,999',
     originalPrice: '¥16,999',
 };
