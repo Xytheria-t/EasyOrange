@@ -50,6 +50,6 @@
 
 - 状态机 / 领域术语 → [领域参考](doc/agents/领域参考.md)；模块职责 / 错误码 / 异常判据 → [架构参考](doc/agents/架构参考.md)
 - 后端 / 前端约定 → [后端](easyorange-backend/AGENTS.md) · [前端](easyorange-frontend/AGENTS.md)
-- 构建 / 测试 / 部署 / gh / CI / 校验脚本 → [常用命令](doc/agents/常用命令.md)；技术栈选型 → [README](README.md#技术栈)
+- 构建 / 测试 / 部署 / 启动 / gh / CI / 校验脚本 → [常用命令](doc/agents/常用命令.md)；技术栈选型 → [README](README.md#技术栈)
 - 数据库 / 表清单 / Flyway 规范 → [DATABASE](doc/DATABASE.md)；测试数 / 覆盖率 / 结构计数 / 技术债 → [工程指标](doc/工程指标.md)
 - 迭代路线 / 不做清单 → [迭代路线](doc/迭代路线.md)；ADR → `doc/adr/`；面试 → [interview](doc/interview/)（每章循环 = 自读 → 白话讲解 → 拷打 → **拷打后校准**；破防台账 = `01 §7`，带「上次考」日期供抽样）；REST 端点看 Swagger
