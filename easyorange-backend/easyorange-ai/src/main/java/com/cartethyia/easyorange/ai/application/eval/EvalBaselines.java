@@ -10,6 +10,6 @@ public record EvalBaselines(Generation generation, Retrieval retrieval, Routing 
     /** hit@5 下限；语料与 topK 同量级时 hit@5 恒满分，该值才需要随语料扩容上调。 */
     public record Retrieval(double minHitAt5) {}
 
-    /** 路由准确率下限；与生成分数门禁互补 —— 答案可以靠知识库兜底答对，路由走错只有独立看工具路径才量得到。 */
-    public record Routing(double minAccuracy) {}
+    /** 路由准确率下限（chat 单步用例与 listing 多步用例分开设：难度不同型，混一个分母会互相稀释）。 */
+    public record Routing(double minAccuracy, double listingMinAccuracy) {}
 }

@@ -85,4 +85,20 @@ class GoldenSetRegressionIT extends AbstractIntegrationTest {
                         report.accuracy() * 100, report.correctCases(), report.totalCases(), minAccuracy * 100)
                 .isTrue();
     }
+
+    @Test
+    void listingRoutingAccuracyAboveFloor() {
+        double minAccuracy = loader.loadBaselines().routing().listingMinAccuracy();
+        RoutingReport report = evaluator.evaluateListingRouting();
+
+        assertThat(report.totalCases()).as("金标准集应存在 listing 路由用例").isGreaterThan(0);
+        // 与 chat 路由同一条容差口径；阈值按多步链路单独标定（baselines.yaml 的 routing.listing-min-accuracy）
+        EvalGate.GateResult gate = EvalGate.check("listing-routing", report.accuracy(), minAccuracy, 0);
+        assertThat(gate.passed())
+                .as(
+                        "发布链路路由准确率 %.0f%%（%d/%d）低于下限 %.0f%%：禁售查证 / 品类召回 / 行情统计的多步路径选错"
+                                + "只有独立看工具路径才量得到（逐用例 outcome/rounds/toolPath 见运行日志）",
+                        report.accuracy() * 100, report.correctCases(), report.totalCases(), minAccuracy * 100)
+                .isTrue();
+    }
 }

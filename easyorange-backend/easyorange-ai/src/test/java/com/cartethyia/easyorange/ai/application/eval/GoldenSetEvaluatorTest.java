@@ -12,6 +12,8 @@ import com.cartethyia.easyorange.ai.application.chat.ChatTools;
 import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
+import com.cartethyia.easyorange.ai.application.listing.AutoListingAppService;
+import com.cartethyia.easyorange.ai.application.listing.ListingLoopResult;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.support.ToolCallLoopOutcome;
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
@@ -55,11 +57,21 @@ class GoldenSetEvaluatorTest {
     @Mock
     private ToolCallLoop toolCallLoop;
 
+    @Mock
+    private AutoListingAppService listingAppService;
+
     private GoldenSetEvaluator evaluator;
 
     private void setUp() {
         evaluator = new GoldenSetEvaluator(
-                loader, chatService, aiJudge, retrievalService, metricRecorder, idGenerator, toolCallLoop);
+                loader,
+                chatService,
+                aiJudge,
+                retrievalService,
+                metricRecorder,
+                idGenerator,
+                toolCallLoop,
+                listingAppService);
     }
 
     /** 工具循环的桩结果 —— 路由评估只读 {@code toolPath}，召回物与结局对它无影响。 */
@@ -219,6 +231,88 @@ class GoldenSetEvaluatorTest {
         // 决策失败降级由代码补检索，不进 toolPath —— 期望检索的用例据此判未命中
         assertThat(GoldenSetEvaluator.routeMatches(List.of(ChatTools.TOOL_KNOWLEDGE_SEARCH), List.of()))
                 .isFalse();
+    }
+
+    @Test
+    @DisplayName("listing 路由回归：跑发布循环，全路径标注命中；步数与路径逐条落日志")
+    void evaluateListingRouting_countsMatches() {
+        setUp();
+        var fullPath = List.of(
+                ChatTools.TOOL_KNOWLEDGE_SEARCH,
+                ChatTools.TOOL_PRODUCT_SEARCH,
+                ChatTools.TOOL_MARKET_PRICE_STATS,
+                ChatTools.TOOL_FINISH);
+        when(loader.load())
+                .thenReturn(new GoldenSet(List.of(
+                        new GoldenSetCase("list-001", "listing", "索尼相机", null, List.of(), fullPath),
+                        new GoldenSetCase(
+                                "list-009",
+                                "listing",
+                                "飞天茅台",
+                                null,
+                                List.of(),
+                                List.of(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_FINISH)))));
+        when(listingAppService.runToolLoop(isNull(), eq("索尼相机"), any(), isNull(), isNull()))
+                .thenReturn(new ListingLoopResult(List.of(), List.of(), ToolCallLoopOutcome.FINISHED, 4, fullPath));
+        when(listingAppService.runToolLoop(isNull(), eq("飞天茅台"), any(), isNull(), isNull()))
+                .thenReturn(new ListingLoopResult(
+                        List.of(),
+                        List.of(),
+                        ToolCallLoopOutcome.FINISHED,
+                        2,
+                        List.of(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_FINISH)));
+
+        RoutingReport report = evaluator.evaluateListingRouting();
+
+        assertThat(report.totalCases()).isEqualTo(2);
+        assertThat(report.correctCases()).isEqualTo(2);
+        assertThat(report.accuracy()).isEqualTo(1.0);
+    }
+
+    @Test
+    @DisplayName("listing 路由回归：禁售品类没查规则直接定价 -> 判未命中（禁售结论必须来自 knowledge_search）")
+    void evaluateListingRouting_pricingWithoutRuleCheckIsMiss() {
+        setUp();
+        when(loader.load())
+                .thenReturn(new GoldenSet(List.of(new GoldenSetCase(
+                        "list-009",
+                        "listing",
+                        "飞天茅台",
+                        null,
+                        List.of(),
+                        List.of(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_FINISH)))));
+        // 路由判据只看期望步骤是否发生（多查一步不算走错，那是 chat 链路定下的口径）；
+        // 禁售品「不该定价」属生成侧约束，路由侧守住的是「查证动作必须发生」
+        when(listingAppService.runToolLoop(isNull(), any(), any(), isNull(), isNull()))
+                .thenReturn(new ListingLoopResult(
+                        List.of(),
+                        List.of(),
+                        ToolCallLoopOutcome.FINISHED,
+                        3,
+                        List.of(
+                                ChatTools.TOOL_PRODUCT_SEARCH,
+                                ChatTools.TOOL_MARKET_PRICE_STATS,
+                                ChatTools.TOOL_FINISH)));
+
+        RoutingReport report = evaluator.evaluateListingRouting();
+
+        assertThat(report.correctCases()).isZero();
+    }
+
+    @Test
+    @DisplayName("listing 路由回归：循环跑挂按未命中算而不是剔除")
+    void evaluateListingRouting_failureIsMiss() {
+        setUp();
+        when(loader.load())
+                .thenReturn(new GoldenSet(List.of(new GoldenSetCase(
+                        "list-001", "listing", "q", null, List.of(), List.of(ChatTools.TOOL_FINISH)))));
+        when(listingAppService.runToolLoop(isNull(), any(), any(), isNull(), isNull()))
+                .thenThrow(new RuntimeException("decision down"));
+
+        RoutingReport report = evaluator.evaluateListingRouting();
+
+        assertThat(report.totalCases()).isEqualTo(1);
+        assertThat(report.correctCases()).isZero();
     }
 
     @Test

@@ -2,19 +2,24 @@
 # EasyOrange 金标准评测集（Golden Set）
 # 用途：评估进 CI — Judge 回归打分 + 检索指标（hit@5 / MRR）采样 + 路由准确率
 # 结构：
-#   id              用例 ID（chat-* 生成质量 / retr-* 检索质量）
-#   scope           场景，取值必须是 chat 或 retrieval（GoldenSetLoader 强校验，写错直接启动失败）
-#   question        用户问题
+#   id              用例 ID（chat-* 生成质量 / retr-* 检索质量 / list-* 发布路由）
+#   scope           场景，取值必须是 chat / retrieval / listing（GoldenSetLoader 强校验，写错直接启动失败）
+#   question        用户问题（listing 用例 = 卖家的物品线索文本，评估跑批无图片）
 #   reference_answer Judge 对照参考（scope: chat 必须有）
 #   gold_doc_ids    期望命中的知识库文档 ID（scope: retrieval 必须有，引用 R__seed_knowledge_docs.sql）
-#   expected_tools  期望模型走过的工具（scope: chat 可选，路由准确率用）：规则类问题标
-#                   knowledge_search，寒暄与能力问答这类无需检索的标 finish，取值取自 AgentTools 的工具名
+#   expected_tools  期望模型走过的工具（scope: chat / listing，路由准确率用）：chat 规则类问题标
+#                   knowledge_search，寒暄与能力问答这类无需检索的标 finish；listing 必须标全路径
+#                   （取值取自 ChatTools / ListingTools 的工具名，加载期强校验）
 # 维护：新增/修改用例走 PR，分数回归对比见 eval/baselines.yaml
 # 注意：id 是稳定标识，删除用例后不重编号（重编号会让历史评测结果对不上），因此 id 允许有洞
 # 注意：检索用例的 gold 文档必须与同域干扰文档（kb-0006~kb-0035）可区分 ——
 #      语料与 topK 同量级时 hit@5 恒为 100%，指标就成了装饰。
 # 注意：expected_tools 只标「正确路径唯一」的用例 —— 该不该检索本身有多种合理走法时
 #      （如「能推荐买什么数码吗」可以先反问预算也可以直接检索）就不标，标了等于把合理波动算成回归。
+# 注意：listing 用例的 expected_tools 必须是「正确路径唯一」的全路径或明确的早收敛路径 ——
+#      正常品类标 [knowledge_search, product_search, market_price_stats, finish]（定价是发布的主任务，
+#      缺行情就是缺陷）；禁售品类标 [knowledge_search, finish]（守住「查证动作必须发生」；路由判据只看
+#      期望步骤是否发生、不惩罚多查一步，「不该定价」属生成侧约束，路由侧量不到）。
 # ===================================================================
 cases:
   # ---- 生成质量（chat + 知识库引用溯源）----
@@ -266,3 +271,49 @@ cases:
     scope: retrieval
     question: 凭什么不让我卖那些东西
     gold_doc_ids: [kb-0005]
+  # ---- 发布链路路由（listing，多步工具循环）：卖家线索 → 禁售查证 → 品类召回 → 行情统计 → finish ----
+  # 这是本集第一批多步用例：此前 19 条 chat 路由用例只有 knowledge_search / finish 两种取值，
+  # 7 步上限、60% 冗余收敛、STEP_LIMIT 降级、轮间观察回填全部没被自己的语料执行过，路由门禁
+  # 实际只测了「该不该检索」的二元分类。发布链路的每步输入依赖上一步输出，多步路径必须标全。
+  # 评估跑批无图片：question 即卖家线索文本，从 runToolLoop 的 seller_note 进决策上下文。
+  - id: list-001
+    scope: listing
+    question: 索尼 A7M3 微单相机，九成新单机身，快门两万次，想挂个合理价出掉
+    expected_tools: [knowledge_search, product_search, market_price_stats, finish]
+  - id: list-002
+    scope: listing
+    question: ThinkPad X1 Carbon 笔记本，i7 处理器 32G 内存，用了五年，屏幕有轻微划痕
+    expected_tools: [knowledge_search, product_search, market_price_stats, finish]
+  - id: list-003
+    scope: listing
+    question: iPhone 13 128G，电池健康度 85%，屏幕两道小划痕，功能一切正常
+    expected_tools: [knowledge_search, product_search, market_price_stats, finish]
+  - id: list-004
+    scope: listing
+    question: 泡泡玛特盲盒一组，全新未拆盒，一共六个
+    expected_tools: [knowledge_search, product_search, market_price_stats, finish]
+  - id: list-005
+    scope: listing
+    question: 二手雅马哈民谣吉他，F310，用了两年，音准没问题，面板有一处掉漆
+    expected_tools: [knowledge_search, product_search, market_price_stats, finish]
+  - id: list-006
+    scope: listing
+    question: 任天堂 Switch OLED 日版，玩了一年多，配件齐全带盒子
+    expected_tools: [knowledge_search, product_search, market_price_stats, finish]
+  - id: list-007
+    scope: listing
+    question: 原版英文书 Harry Potter 全套七本，八成新，无笔记无划线
+    expected_tools: [knowledge_search, product_search, market_price_stats, finish]
+  - id: list-008
+    scope: listing
+    question: 客制化机械键盘，佳达隆黄轴，热插拔轴座，用了半年
+    expected_tools: [knowledge_search, product_search, market_price_stats, finish]
+  # ---- 禁售品类（早收敛路径）：查证到禁售结论后不应再召回定价，标全路径等于奖励错误行为 ----
+  - id: list-009
+    scope: listing
+    question: 两瓶飞天茅台 53 度，全新未开封，朋友送的想出掉
+    expected_tools: [knowledge_search, finish]
+  - id: list-010
+    scope: listing
+    question: 家里剩的一盒未拆封胰岛素，放冰箱保存的，想转手卖掉
+    expected_tools: [knowledge_search, finish]
