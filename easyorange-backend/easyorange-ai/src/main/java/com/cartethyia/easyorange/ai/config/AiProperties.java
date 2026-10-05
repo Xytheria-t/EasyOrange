@@ -5,6 +5,7 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.util.List;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
@@ -62,7 +63,7 @@ public record AiProperties(
             chat = new Chat(24, 6, 7, 2000, 90);
         }
         if (listing == null) {
-            listing = new Listing(6);
+            listing = new Listing(6, List.of());
         }
     }
 
@@ -177,5 +178,15 @@ public record AiProperties(
      *     不存在买家侧多意图追问把步数撑长的形态
      */
     public record Listing(
-            @Min(1) @Max(10) @DefaultValue("6") int maxSteps) {}
+            @Min(1) @Max(10) @DefaultValue("6") int maxSteps,
+            /**
+             * 取图主机白名单（精确匹配主机名，大小写不敏感）——命中的主机跳过内网地址校验，默认空即只放行公网。
+             * 只有自建图床落内网时才需要开；这也是本地 HttpServer 用例能跑通真实下载路径的唯一入口。
+             */
+            List<String> allowedImageHosts) {
+
+        public Listing {
+            allowedImageHosts = allowedImageHosts == null ? List.of() : List.copyOf(allowedImageHosts);
+        }
+    }
 }
