@@ -1,7 +1,8 @@
 # 发布链路多步化 · 收尾待办
 
-> 2026-10-04 会话交接，2026-10-05 更新：后端（`497ce73f` → `5e5a7539`）与前端可视化均已落在 develop，
-> **只剩真实评估跑批一项**（需真实 key）。跑完即可删本文件。
+> 2026-10-04 会话交接，2026-10-05 更新：后端（`497ce73f` → `5e5a7539`）与前端可视化均已落在 develop。
+> 剩下的真实评估跑批需真实 key，按 [项目规则](AGENTS.md)「需真实调用大模型的一律先不做」搁置——
+> 本文件降级为**搁置标记 + 跑法备查**，不再是要做的事。
 
 ## 已完成（验收对照）
 
@@ -10,11 +11,11 @@
 | 1. `./mvnw -pl easyorange-ai -am install -DskipTests` | ✅ 通过 |
 | 2. `./mvnw -pl easyorange-ai test` 全绿 | ✅ 377 个（含 ToolCallLoopTest 零断言改动全绿、PromptContentTest 9、ListingToolsTest 6、AutoListingAppServiceTest 8） |
 | 3. `python3 .githooks/check-metrics-drift.py` | ✅ OK（prompt_templates=6，golden_set_cases=62） |
-| 4. GoldenSetEvaluator 跑发布多步用例报平均步数与 toolPath 分布 | ⏳ 待真实 key，见下 |
+| 4. GoldenSetEvaluator 跑发布多步用例报平均步数与 toolPath 分布 | ⏸ 需真实 key — 按项目规则先不做，跑法见下备查 |
 | 5. 前端 /publish 步骤可视化 | ✅ `POST /api/ai/auto-listing/stream` 逐步进 `useAutoListing` 的 `steps`，`ThinkingProcess` 面板同轮渲染；前端 924 测试全绿 + `npm run build` 过 |
 | 6. 改动说明 | ✅ 见本文末尾 |
 
-## 剩下的：真实评估跑批（验收 #4，需真实 key）
+## 搁置：真实评估跑批（验收 #4，需真实 key — 按项目规则先不做，跑法备查）
 
 - 门槛跑法照 [常用命令](doc/agents/常用命令.md)：起 ES（`docker compose --profile search up -d --wait elasticsearch`）
   + 根 `.env` 有 `EASYORANGE_AI_API_KEY`，然后
