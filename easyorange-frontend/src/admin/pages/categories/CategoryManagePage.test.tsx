@@ -79,16 +79,24 @@ const sampleTree: CategoryResponse[] = [
     {
         id: '1',
         name: '电子产品',
+        parentId: null,
+        parentName: null,
         level: 0,
         sortOrder: 1,
         status: 1,
+        productCount: 0,
+        createTime: null,
         children: [
             {
                 id: '3',
                 name: '手机',
+                parentId: '1',
+                parentName: '电子产品',
                 level: 1,
                 sortOrder: 1,
                 status: 1,
+                productCount: 0,
+                createTime: null,
                 children: [],
             },
         ],
@@ -96,9 +104,13 @@ const sampleTree: CategoryResponse[] = [
     {
         id: '2',
         name: '图书',
+        parentId: null,
+        parentName: null,
         level: 0,
         sortOrder: 2,
         status: 0,
+        productCount: 0,
+        createTime: null,
         children: [],
     },
 ];

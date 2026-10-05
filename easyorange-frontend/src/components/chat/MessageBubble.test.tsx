@@ -1,16 +1,18 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChatMessage } from '@/types/message';
 import MessageBubble from './MessageBubble';
 
-const baseMessage = {
+const baseMessage: ChatMessage = {
     id: 'msg1',
-    content: 'Hello world',
     senderId: 'user1',
+    senderAvatar: null,
     receiverId: 'user2',
+    content: 'Hello world',
+    title: null,
     createTime: '2026-05-16T10:30:00',
-    type: 'TEXT' as const,
-    status: 'SENT' as const,
-    conversationId: 'conv1',
+    type: 'TEXT',
+    status: 'SENT',
     readTime: null,
     recalledAt: null,
 };

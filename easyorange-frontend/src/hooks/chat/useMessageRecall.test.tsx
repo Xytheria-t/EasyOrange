@@ -68,8 +68,10 @@ describe('useMessageRecall', () => {
             useChatStore.getState().addMessage('conv-1', {
                 id: 'msg-1',
                 senderId: 'user-1',
+                senderAvatar: null,
                 receiverId: 'user-2',
                 content: 'original',
+                title: null,
                 type: 'TEXT',
                 status: 'SENT',
                 createTime: '2026-07-28T10:00:00Z',
