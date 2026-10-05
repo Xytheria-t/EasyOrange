@@ -11,7 +11,7 @@ git config core.hooksPath .githooks
 | 文件 | 用途 | 耗时 |
 |------|------|------|
 | `pre-commit` | staged 内容快速检查（密钥 + 空白 + 冲突标记 + 大文件 + 前端 lint + **后端 spotless 格式** + 文档口径校验 + 上下文预算） | <1s~几秒 |
-| `pre-push` | 重门禁（后端 `spotless:check` + `mvn test` + 前端 `npm test`，按推送变更分发） | 数秒~数分钟 |
+| `pre-push` | 重门禁（后端 `spotless:check` + `mvn test` + 前端 `typecheck:all` + `npm test`，按推送变更分发） | 数秒~数分钟 |
 | `commit-msg` | Conventional Commits 格式校验（标题 + breaking change）+ 消息-内容一致性（纯文档提交必须标 `docs`） | <100ms |
 | `check-test-tier-drift.py` | 文档的「集成测试」声明 vs 代码事实（`*IT` 文件 + pom failsafe 绑定）一致性校验 | <100ms |
 | `check-metrics-drift.py` | 结构计数（模块/Port/ADR/消费者/表/ArchUnit 规则/Prompt 模板/前端测试文件/金标准集）单点区块 vs 代码事实；区块外出现计数即失败（`--fix` 自动回写） | <100ms |
@@ -61,7 +61,7 @@ SKIP=1        git commit -m "..."   # 任何非空值都视为跳过
 | 推送变更 | 触发检查 | 工具 |
 |----------|----------|------|
 | `easyorange-backend/**`（除 `*.md`） | `spotless:check`（兜底）+ `./mvnw test`（含编译，`-fae` 聚合） | `mvnw` |
-| `easyorange-frontend/**`（除 `*.md`） | `npm test`（`vitest run`） | npm |
+| `easyorange-frontend/**`（除 `*.md`） | `npm run typecheck:all`（src + 测试侧）+ `npm test`（`vitest run`） | npm |
 
 判定用 **「只放行纯文档」** 而非枚举触发文件名：枚举（`*.java` / `pom.xml`）会漏掉 `src/test/resources/logback-test.xml`、Flyway 迁移 SQL、`.mvn/maven.config`、`vitest.config.ts` 等同样能改变测试结果的变更 —— 门禁会随文件类型增加而静默失效。
 
