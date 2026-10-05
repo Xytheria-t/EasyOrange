@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
 import com.cartethyia.easyorange.framework.file.storage.FileStoragePort;
 import com.sun.net.httpserver.HttpServer;
@@ -35,8 +37,15 @@ class VisionImageLoaderTest {
     @BeforeEach
     void setUp() {
         fileStorage = mock(FileStoragePort.class);
-        var properties = new FileUploadProperties(uploadDir.toString(), "/api/file/", 10 * 1024 * 1024, List.of());
-        loader = new VisionImageLoader(fileStorage, properties);
+        loader = loaderWithCap(10 * 1024 * 1024);
+    }
+
+    /** 回环主机进白名单，本机 HttpServer 用例才跑得通真实下载路径；其余内网地址仍被拒（见内网地址用例）。 */
+    private VisionImageLoader loaderWithCap(long maxSize) {
+        return new VisionImageLoader(
+                fileStorage,
+                new FileUploadProperties(uploadDir.toString(), "/api/file/", maxSize, List.of()),
+                PropertyBindings.bind(AiProperties.class, "listing.allowed-image-hosts[0]", "127.0.0.1"));
     }
 
     @AfterEach
@@ -165,5 +174,59 @@ class VisionImageLoaderTest {
 
         assertThatThrownBy(() -> loader.toDataUrls(List.of("/api/file/no/such.jpg")))
                 .isInstanceOf(UncheckedIOException.class);
+    }
+
+    @Test
+    @DisplayName("内网 / 云元数据地址 — 拒绝（服务端不替调用方访问内网）")
+    void privateAddress_rejected() {
+        List<String> privateUrls = List.of(
+                "http://169.254.169.254/latest/meta-data/iam/security-credentials/",
+                "http://10.1.2.3/a.jpg",
+                "http://192.168.1.10/a.jpg",
+                "http://172.16.5.5/a.jpg",
+                "http://100.64.1.1/a.jpg");
+
+        for (String url : privateUrls) {
+            assertThatThrownBy(() -> loader.toDataUrls(List.of(url)))
+                    .as("应拒绝内网地址 %s", url)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("内网地址");
+        }
+    }
+
+    @Test
+    @DisplayName("白名单按主机名精确匹配 — 同网段的另一个回环地址不在名单内照样拒")
+    void allowlist_matchesHostExactly() {
+        assertThatThrownBy(() -> loader.toDataUrls(List.of("http://127.0.0.2/a.jpg")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("内网地址");
+    }
+
+    @Test
+    @DisplayName("下载超过上限 — 边读边拒，不先整包收进堆")
+    void oversizedDownload_rejected() throws Exception {
+        var content = new byte[64];
+        httpServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        httpServer.createContext("/big.png", exchange -> {
+            exchange.sendResponseHeaders(200, content.length);
+            exchange.getResponseBody().write(content);
+            exchange.close();
+        });
+        httpServer.start();
+        var url = "http://127.0.0.1:" + httpServer.getAddress().getPort() + "/big.png";
+
+        assertThatThrownBy(() -> loaderWithCap(16).toDataUrls(List.of(url)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("大小上限");
+    }
+
+    @Test
+    @DisplayName("本地文件超过上限 — 读盘前按文件大小拒绝")
+    void oversizedLocalFile_rejected() throws Exception {
+        stubLocalFile("big.jpg", new byte[64]);
+
+        assertThatThrownBy(() -> loaderWithCap(16).toDataUrls(List.of("/api/file/big.jpg")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("大小上限");
     }
 }
