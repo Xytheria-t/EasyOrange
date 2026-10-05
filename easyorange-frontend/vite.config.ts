@@ -90,9 +90,6 @@ export default defineConfig({
                         }
                         return 'vendor';
                     }
-                    if (id.includes('/components/sections/')) {
-                        return 'sections';
-                    }
                     if (id.includes('/components/ui/')) {
                         return 'ui-components';
                     }
