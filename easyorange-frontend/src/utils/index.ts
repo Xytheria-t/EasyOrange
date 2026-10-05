@@ -15,4 +15,3 @@ export { buildQueryString, formatDate, formatPrice, formatRelativeTime } from '.
 export { debounce, throttle } from './functionUtils';
 // 商品工具
 export { calculateDiscount, normalizeProduct } from './product';
-// 存储工具

@@ -21,13 +21,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@api/*": ["src/api/*"],
-      "@utils/*": ["src/utils/*"],
-      "@components/*": ["src/components/*"],
-      "@pages/*": ["src/pages/*"],
-      "@types/*": ["src/types/*"],
-      "@constants/*": ["src/constants/*"],
-      "@assets/*": ["src/assets/*"]
+      "@types/*": ["src/types/*"]
     },
     "types": ["vite/client"]
   },
@@ -39,8 +33,6 @@
   "exclude": [
     "node_modules",
     "dist",
-    "src/**/*.bak",
-    "**/*.bak",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/testUtils"
