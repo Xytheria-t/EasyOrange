@@ -334,7 +334,13 @@ CREATE TABLE `eo_message` (
     `recalled_at` DATETIME DEFAULT NULL COMMENT '撤回时间',
     `read_time` DATETIME DEFAULT NULL COMMENT '已读时间',
     `business_id` VARCHAR(36) DEFAULT NULL COMMENT '业务 ID',
-    `conversation_id` VARCHAR(36) DEFAULT NULL COMMENT '会话 ID',
+    -- 通知点击的跳转目标取决于 business_id 指向商品还是订单，类型不落库前端只能按标题中文猜
+    -- （订单类通知一律跳 /products/{order_id} 落 404）；0 = NONE 是合法码，未显式赋值的行
+    -- 由 DEFAULT 0 收敛，读侧对 0 不给跳转入口。合法码与 type 同口径用 CHECK 钉死。
+    `biz_type` TINYINT NOT NULL DEFAULT 0 COMMENT '业务对象类型（0 无 1 商品 2 订单）',
+    -- 私聊会话 ID 由双 UUID 排序推导（conv_{min}_{max}），实际 78 字符；
+    -- 按单 UUID 宽度 VARCHAR(36) 会在 MySQL 严格模式下 INSERT 1406 静默失败，扩到 80 留富余。
+    `conversation_id` VARCHAR(80) DEFAULT NULL COMMENT '会话 ID（conv_{min}_{max}，78 字符）',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `create_by` VARCHAR(36) DEFAULT NULL COMMENT '创建者',
@@ -347,6 +353,7 @@ CREATE TABLE `eo_message` (
     KEY `idx_eo_message_conversation_time` (`conversation_id`, `create_time` DESC),
     KEY `idx_eo_message_business_id` (`business_id`),
     KEY `idx_eo_message_create_time` (`create_time`),
+    CONSTRAINT `chk_eo_message_biz_type` CHECK (`biz_type` IN (0, 1, 2)),
     CONSTRAINT `chk_eo_message_is_read` CHECK (`is_read` IN (0, 1)),
     CONSTRAINT `chk_eo_message_type` CHECK (`type` IN (1, 2, 3, 4, 5)),
     CONSTRAINT `chk_eo_message_msg_status` CHECK (`msg_status` IN ('SENT', 'DELIVERED', 'UNREAD', 'READ', 'RECALLED'))
@@ -519,15 +526,15 @@ CREATE TABLE `eo_retrieval_metric` (
     KEY `idx_eo_retrieval_metric_run` (`run_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='RAG 检索指标采样（hit@5 / MRR，金标准集回归数据源）';
 
--- Agent 多步循环步级轨迹（一次对话请求共用一个 trace_id，含 finish 轮；
+-- 工具调用循环步级轨迹（一次对话请求共用一个 trace_id，含 finish 轮；
 -- COUNT(*) GROUP BY trace_id 即该请求决策轮数 —— 平均步数 / 降级率 / 步级延迟 p95 数据源）
-CREATE TABLE `eo_agent_step_trace` (
+CREATE TABLE `eo_tool_call_step_trace` (
     `id` VARCHAR(36) NOT NULL COMMENT '主键 UUID v7',
     `trace_id` VARCHAR(36) NOT NULL COMMENT '循环轨迹 ID（一次对话请求一个）',
     `session_id` VARCHAR(64) NOT NULL COMMENT '会话 ID',
     `user_id` VARCHAR(36) NULL COMMENT '用户 ID（匿名对话为空）',
     `step_index` INT NOT NULL COMMENT '步序（1 起，含 finish 轮）',
-    `tool` VARCHAR(32) NOT NULL COMMENT '工具（knowledge_search/product_search/product_detail/finish）',
+    `tool` VARCHAR(32) NOT NULL COMMENT '工具（7 个 @Tool 名，取值域见 ChatTools.TOOL_NAMES）',
     `tool_input` VARCHAR(512) NULL COMMENT '工具入参（检索词 / 资产 ID）',
     `thought` VARCHAR(255) NULL COMMENT '模型决策理由（步骤可视化文案）',
     `observation` VARCHAR(512) NULL COMMENT '观察摘要（命中数 / 命中标题 / 详情摘要）',
@@ -536,9 +543,9 @@ CREATE TABLE `eo_agent_step_trace` (
     `error_msg` VARCHAR(512) NULL COMMENT '失败原因',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (`id`),
-    KEY `idx_eo_agent_step_trace_trace_id` (`trace_id`),
-    KEY `idx_eo_agent_step_trace_tool_time` (`tool`, `created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Agent 多步循环步级轨迹（平均步数 / 降级率 / 步级延迟 p95 数据源）';
+    KEY `idx_eo_tool_call_step_trace_trace_id` (`trace_id`),
+    KEY `idx_eo_tool_call_step_trace_tool_time` (`tool`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='工具调用循环步级轨迹（平均步数 / 降级率 / 步级延迟 p95 数据源）';
 
 -- ===================================================================
 -- 10. Spring Modulith 事件发布注册表（替代 Outbox 模式）
