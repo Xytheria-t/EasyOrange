@@ -23,14 +23,9 @@
 ## 全局硬约束（任何改动都适用，违反即返工）
 
 - **API 统一 `Result<T>`**、分页 `PageResult<T>`、搜索 `SearchPageResponse<T>`；成功判据 `"A0000"`
-- **数据库变更必须走 Flyway**（禁对齐列）；DO 枚举经 `@EnumValue` 持久化，禁手写 TypeHandler
-- **领域异常必须继承 `BaseBusinessException`**，用模块专属 `ResultCode` 与具名工厂（`notFound(id)`…）；每模块只一个统一领域异常，不新增叶子异常（门禁 `ArchitectureRulesTest` Rule 11）
-- **DTO 转换统一在 `adapter/inbound/web/assembler/`**，Controller/Service 不直接构造 Response
 - **ID 统一 UUID v7 String**（36 位），前端实体 ID 保持 string
-- **改子模块后启动前必须 `mvnw install`**（`-DskipTests`），否则 ClassNotFoundException；**删过资源文件必须 `clean`**（install 不删 target 陈旧副本）
-- **MCP 只暴露公开只读工具**（检索/详情/类目/规则），禁用户态数据与写路径——外部 client 无用户上下文
-- **Elasticsearch 版本硬锁**（客户端与 IK 按它编译），不在 infra 侧单独升级
 - **开发中只跑涉及模块的测试**，不查覆盖率、不刷工程指标（收口统一跑）；结构计数只在工程指标单点维护，改代码后跑指标漂移校验
+- 后端专属硬约束（Flyway / 异常 / DTO 装配 / MCP / 版本锁）见[后端 AGENTS.md](easyorange-backend/AGENTS.md)，随目录懒加载
 
 ## 注释
 
