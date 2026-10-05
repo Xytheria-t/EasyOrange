@@ -49,7 +49,9 @@ stop_pidfile() {
     rm -f "$file"
 
     for _ in $(seq 1 10); do
-        ss -ltn "sport = :$port" 2>/dev/null | grep -q LISTEN || return
+        # 必须显式 return 0：裸 return 会继承上面 grep 失败时的退出码 1，
+        # 撞上 set -e 直接终止脚本 —— 端口已释放（正常情况）反而让后面的容器停不掉
+        ss -ltn "sport = :$port" 2>/dev/null | grep -q LISTEN || return 0
         sleep 1
     done
     echo "  ⚠ $port 仍被占用：进程树没清干净，ss -ltnp | grep $port 看一下"
