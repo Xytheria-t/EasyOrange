@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.application.retrieval;
 
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeMatch;
@@ -32,7 +33,13 @@ public class KnowledgeRetrievalAppService {
     private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
     private final AiModelSupport aiModelSupport;
 
-    /** 两路召回 + RRF 融合，返回 topK 命中（顺序即最终顺序）。 */
+    /**
+     * 两路召回 + RRF 融合，返回 topK 命中（顺序即最终顺序）。
+     * <p>
+     * 预算闸门挂这一层：向量化是本场景唯一计费点，而匿名 MCP 知识检索也走此路 —— 没有它，
+     * 外部 client 换个 IP 就能无限触发供应商 embedding 计费（限流按 IP 计数，不是成本闸门）。
+     */
+    @TokenBudget(scenario = "knowledge", maxTokensPerCall = 500, dailyTokenLimit = 200_000)
     public List<KnowledgeHit> search(String query, int topK) {
         if (query == null || query.isBlank() || topK <= 0) {
             return List.of();
