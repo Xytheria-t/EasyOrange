@@ -316,8 +316,10 @@ describe('useStompChat', () => {
         useChatStore.getState().addMessage('conv-1', {
             id: 'msg-1',
             senderId: 'user-2',
+            senderAvatar: null,
             receiverId: 'user-1',
             content: 'original',
+            title: null,
             type: 'TEXT',
             status: 'SENT',
             createTime: '2026-07-28T10:00:00Z',

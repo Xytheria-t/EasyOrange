@@ -91,8 +91,10 @@ describe('useChatMessages', () => {
         useChatStore.getState().addMessage('conv-1', {
             id: 'msg-2',
             senderId: 'user-1',
+            senderAvatar: null,
             receiverId: 'user-2',
             content: 'store message',
+            title: null,
             type: 'TEXT',
             status: 'SENDING',
             createTime: '2026-07-28T10:01:00Z',
@@ -116,8 +118,10 @@ describe('useChatMessages', () => {
         useChatStore.getState().addMessage('conv-1', {
             id: 'msg-1',
             senderId: 'user-1',
+            senderAvatar: null,
             receiverId: 'user-2',
             content: 'updated',
+            title: null,
             type: 'TEXT',
             status: 'READ',
             createTime: '2026-07-28T10:01:00Z',

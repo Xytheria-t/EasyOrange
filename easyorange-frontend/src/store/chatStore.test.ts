@@ -1,14 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { ChatMessage } from '@/types/message';
 import { useChatStore } from './chatStore';
 
-function createMessage(overrides: Partial<import('@/types/message').ChatMessage> = {}) {
+function createMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
     return {
         id: 'msg-1',
         senderId: 'user-1',
+        senderAvatar: null,
         receiverId: 'user-2',
         content: 'hello',
-        type: 'TEXT' as const,
-        status: 'SENT' as const,
+        title: null,
+        type: 'TEXT',
+        status: 'SENT',
         createTime: '2026-07-28T10:00:00Z',
         readTime: null,
         recalledAt: null,

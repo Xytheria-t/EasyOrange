@@ -61,7 +61,6 @@ const sampleCategories: CategoryResponse[] = [
         status: 1,
         productCount: 100,
         createTime: null,
-        updateTime: null,
         children: [],
     },
     {
@@ -74,7 +73,6 @@ const sampleCategories: CategoryResponse[] = [
         status: 1,
         productCount: 50,
         createTime: null,
-        updateTime: null,
         children: [],
     },
     {
@@ -87,7 +85,6 @@ const sampleCategories: CategoryResponse[] = [
         status: 0,
         productCount: 30,
         createTime: null,
-        updateTime: null,
         children: [],
     },
     // 二级分类：一级计数已归并它，进分布图会把同一件商品算两遍
@@ -101,7 +98,6 @@ const sampleCategories: CategoryResponse[] = [
         status: 1,
         productCount: 60,
         createTime: null,
-        updateTime: null,
         children: [],
     },
 ];

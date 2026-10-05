@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChatMessage } from '@/types/message';
 import MessageList from './MessageList';
 
 // Shared mock state that tests can mutate
@@ -14,16 +15,17 @@ vi.mock('@tanstack/react-virtual', () => ({
     })),
 }));
 
-function makeMessage(overrides: Record<string, unknown> = {}) {
+function makeMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
     return {
         id: 'm1',
-        content: 'hello',
         senderId: 'user1',
+        senderAvatar: null,
         receiverId: 'user2',
+        content: 'hello',
+        title: null,
         createTime: new Date().toISOString(),
-        type: 'TEXT' as const,
-        status: 'SENT' as const,
-        conversationId: 'conv1',
+        type: 'TEXT',
+        status: 'SENT',
         readTime: null,
         recalledAt: null,
         ...overrides,
