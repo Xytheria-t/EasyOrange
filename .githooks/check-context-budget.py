@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 """AI 上下文预算校验 — 交给模型的指令文件不得无限膨胀。
 
-背景：仓库曾同时存在 1 份根 AGENTS.md（6,958 字符）+ 11 个模块级 AGENTS.md
-（合计 84,363 字符）+ `.claude/rules/ecc/`（32 文件 / 86,724 字符的通用编码规则包）。
-其中 `.claude/rules/ecc/` 在 ZCode 里根本没有加载机制（ZCode 只识别 AGENTS.md / skills /
-commands / MCP / hooks / plugins，没有 path 激活的 rules），是纯死重；模块级 AGENTS.md 也不
-会被自动注入（ZCode 只从工作目录向上解析**一个** workspace AGENTS.md），只在被显式读取时
-消耗上下文，而它们的内容大半是目录树与端口对照表 —— `find` 一秒可得，写进文档只会漂移。
+背景：这类文件曾膨胀到 12 份 AGENTS.md（9 万字符）外加一个 8.6 万字符的通用 rules 包，
+大半是 `find` 一秒可得的目录树与端口表 —— 已删净，本脚本守住不再反弹。不写工具名：
+加载语义随工具版本变，点名的叙述必漂移（2026-10 实测，一次改名就废了一段断言）。
 
 于是约定：
 
   1. **只有 3 份 AGENTS.md**：`AGENTS.md`（根，每会话常驻）、`easyorange-backend/AGENTS.md`、
-     `easyorange-frontend/AGENTS.md`（懒加载，进对应目录工作时才读）。新增第 4 份即失败 ——
-     模块边界由 `ArchitectureRulesTest` 可执行地守卫，不需要每个模块再写一份散文。
+     `easyorange-frontend/AGENTS.md`（非每轮常驻，只在进到该目录干活时加载）。新增第 4 份
+     即失败 —— 模块边界由 `ArchitectureRulesTest` 可执行地守卫，不需要每个模块再写一份散文。
   2. **根 AGENTS.md 是唯一每轮都付费的文件**，预算 3,000 字符。放「违反即返工」的硬约束与
      参考索引（指向 doc/），不放目录树、类清单、演进叙事 —— 那些属于 README / ADR / doc/。
   3. 三份合计预算 18,000 字符：懒加载文件可以厚，但不能退化成需要人通读的百科。
@@ -59,7 +56,7 @@ def main() -> int:
     unexpected = sorted(found - set(ALLOWED))
     for rel in unexpected:
         problems.append(
-            f"  {rel}：模块级 AGENTS.md 不会被自动加载（ZCode 只解析工作目录向上的一个），"
+            f"  {rel}：不允许新增第 4 份 AGENTS.md（模块边界由 ArchitectureRulesTest 守卫），"
             "内容并入 easyorange-backend/AGENTS.md 或删除"
         )
 
