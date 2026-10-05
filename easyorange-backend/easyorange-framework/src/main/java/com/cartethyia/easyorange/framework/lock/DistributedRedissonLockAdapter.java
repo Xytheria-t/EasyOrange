@@ -23,6 +23,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * <b>持有期无硬上限</b>（ponytail 取舍）：watchdog 会持续续期，事务 hang 住时锁不会自动释放。设硬上限只能改回
  * 固定租约，那会引入「租约早于事务结束过期」的并发窗口，故改用 {@link LockProperties#holdWarnThreshold()}
  * 监控长持有、由人 / 运维介入；持锁线程必须把事务完整跑完，禁止在锁内另开异步线程执行事务部分。
+ * <b>升级触发</b>：holdWarnThreshold 告警持续出现时——先给该事务加超时上限，仍不够再评估固定租约。
  */
 @Slf4j
 @Component("distributedLockAdapter")
