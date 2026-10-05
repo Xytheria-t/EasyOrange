@@ -13,7 +13,7 @@
 
 现状事实：
 
-1. **全库单形态**：`V1__init_schema.sql` 共 32 张建表语句，**0 处 `AUTO_INCREMENT`**；主键列统一 `VARCHAR(36)`，其中 28 张以 `id` 命名，`eo_user.user_id` / `eo_product.product_id` / 2 张 Spring Modulith 表为业务列主键，类型同为 `VARCHAR(36)`。
+1. **全库单形态**：`V1__init_schema.sql` 共 24 张建表语句，**0 处 `AUTO_INCREMENT`**；主键列统一 `VARCHAR(36)`，其中 20 张以 `id` 命名，`eo_user.user_id` / `eo_product_detail.product_id` / 2 张 Spring Modulith 表为业务列主键，类型同为 `VARCHAR(36)`。
 2. **数据库不回填**：`BaseDO.id` 为 `@TableId(type = IdType.INPUT)`，MyBatis-Plus 不代为生成；`UserDO`/`ProductDetailDO` 沿用同一策略。
 3. **前端契约**：全库 ID 以 36 位字符串（含连字符）对外，前端实体 ID 保持 string，跨模块 ACL 端口也以 String 传递。
 
