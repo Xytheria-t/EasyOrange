@@ -637,6 +637,12 @@
     cursor: not-allowed;
 }
 
+/* ============ AI 识别步骤面板 ============ */
+/* 只有间距是页面的事：面板视觉与文字对齐归 ThinkingProcess.css */
+.publish-ai-steps {
+    margin-top: 1rem;
+}
+
 /* ============ FORM FIELDS ============ */
 .form-fields-v2 {
     display: flex;

@@ -21,12 +21,12 @@ export interface AutoListingResult {
 const AI_TIMEOUT = 90000;
 
 export const aiApi = {
-    autoListing(imageUrls: string[]) {
-        return request<AutoListingResult>('/ai/auto-listing', {
-            method: 'POST',
-            body: imageUrls,
-            timeout: AI_TIMEOUT,
-        });
+    /**
+     * 流式上架识别 — 事件只有 step / done / error（发布产出是结构化表单不是散文，后端无 token / sources）。
+     * done 的 data 是 AutoListingResult 的序列化 JSON 文本，调用方自行 JSON.parse。
+     */
+    autoListingStream(imageUrls: string[], onEvent: (event: ChatStreamEvent) => void, signal?: AbortSignal) {
+        return streamChat('/ai/auto-listing/stream', imageUrls, onEvent, signal);
     },
 
     /** AI 输出反馈（反馈飞轮） */

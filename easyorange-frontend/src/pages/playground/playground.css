@@ -228,129 +228,8 @@
     align-items: flex-end;
 }
 
-/* ============ THINKING PROCESS（Agent 思考过程面板） ============ */
-.playground-think {
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    overflow: hidden;
-}
-
-.playground-think__head {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    width: 100%;
-    padding: 0.375rem 0.625rem;
-    border: none;
-    background: none;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: background var(--transition-fast);
-}
-
-.playground-think__head:hover {
-    background: var(--primary-soft-bg);
-}
-
-.playground-think__head:active {
-    transform: scale(0.98);
-}
-
-/* 全站唯一两处「环只能画在内侧」的焦点态之一（父级 .playground-think 有
-   overflow:hidden，外侧环会被裁掉）。实测 Chromium 下负偏移的 outline 会盖住
-   同位置的 inset box-shadow，亮圈根本显不出来，所以内侧环不套双层，改用 3px
-   暗环直接贴边；它压的是元素自身那块浅色面板底，对比度 5.18:1 够 3:1。
-   box-shadow 要显式清掉：全局基线那条 2px 外插亮圈会漏进来，被 overflow 裁成一圈 */
-.playground-think__head:focus-visible {
-    outline: 3px solid var(--focus-ring);
-    outline-offset: -3px;
-    box-shadow: none;
-}
-
-.playground-think__head-meta {
-    font-weight: 500;
-    color: var(--text-tertiary);
-}
-
-.playground-think__chevron {
-    margin-left: auto;
-    transition: transform var(--transition-fast);
-}
-
-.playground-think__head[aria-expanded="true"] .playground-think__chevron {
-    transform: rotate(180deg);
-}
-
-.playground-think__list {
-    margin: 0;
-    padding: 0.125rem 0.625rem 0.5rem;
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.playground-think__item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    animation: msgIn 0.35s var(--ease-out) both;
-}
-
-.playground-think__icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    margin-top: 0.0625rem;
-    border-radius: 50%;
-    background: var(--status-warning-bg);
-    color: var(--status-warning);
-    flex-shrink: 0;
-}
-
-.playground-think__text {
-    min-width: 0;
-}
-
-.playground-think__thought {
-    margin: 0;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    line-height: 1.5;
-}
-
-.playground-think__obs {
-    margin: 0.125rem 0 0;
-    font-size: 0.75rem;
-    color: var(--text-tertiary);
-    line-height: 1.55;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-}
-
-.playground-think__item--pending .playground-think__thought {
-    font-weight: 500;
-    color: var(--text-tertiary);
-    animation: thinkPulse 1.4s ease-in-out infinite;
-}
-
-@keyframes thinkPulse {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.45;
-    }
-}
+/* ThinkingProcess（Agent 思考过程面板）样式见 ThinkingProcess.css —— 对话与发布两页共用，
+   随组件自身 import；本文件只留 playground 页面级样式 */
 
 /* ============ SOURCES ============ */
 .playground-msg__sources-wrap {
@@ -813,8 +692,6 @@
 @media (prefers-reduced-motion: reduce) {
     .playground__shell,
     .playground-msg,
-    .playground-think__item,
-    .playground-think__item--pending .playground-think__thought,
     .playground-typing__dot,
     .playground-msg__assets-hint > svg {
         animation: none;
