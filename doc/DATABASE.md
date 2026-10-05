@@ -78,7 +78,7 @@ V1 单脚本建全部表（`eo_*` 业务/观测表 + 2 个 Spring Modulith 基�
 | 观测 | eo_knowledge_doc | RAG 知识库文档（解析→分块→embed→ES 索引，启动补索引） | KnowledgeDocDO |
 | 观测 | eo_user_preference | 用户长期画像（Agent 长期记忆，聊天时注入 prompt） | UserPreferenceDO |
 | 观测 | eo_retrieval_metric | RAG 检索指标采样（hit@5 / MRR，金标准集回归数据源） | — |
-| 观测 | eo_tool_call_step_trace | 工具步级轨迹（工具 / 参数 / 理由 / 观察，一次请求一个 trace_id；V1 建表名 `eo_agent_step_trace`，V2 改名） | —（JDBC 直写） |
+| 观测 | eo_tool_call_step_trace | 工具步级轨迹（工具 / 参数 / 理由 / 观察，一次请求一个 trace_id） | —（JDBC 直写） |
 
 ## 公共字段
 
