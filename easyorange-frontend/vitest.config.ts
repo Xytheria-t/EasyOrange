@@ -10,13 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
-      '@api': resolve(__dirname, 'src/api'),
-      '@utils': resolve(__dirname, 'src/utils'),
-      '@components': resolve(__dirname, 'src/components'),
-      '@pages': resolve(__dirname, 'src/pages'),
       '@types': resolve(__dirname, 'src/types'),
-      '@constants': resolve(__dirname, 'src/constants'),
-      '@assets': resolve(__dirname, 'src/assets'),
     },
   },
   test: {
@@ -35,13 +29,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: [
-        'src/**/*.d.ts',
-        'src/**/*.test.*',
-        'src/**/codemap.md',
-        'src/**/index.ts',
-        'src/vite-env.d.ts',
-      ],
+      exclude: ['src/**/*.d.ts', 'src/**/*.test.*', 'src/**/codemap.md', 'src/**/index.ts'],
       reporter: ['text', 'html', 'lcov'],
       thresholds: {
         lines: 35,
