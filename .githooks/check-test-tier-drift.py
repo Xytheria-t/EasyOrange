@@ -25,7 +25,7 @@ BACKEND = ROOT / "easyorange-backend"
 POM = BACKEND / "pom.xml"
 
 # 文档扫描范围：仓库内全部 *.md，跳过依赖/构建产物目录
-SKIP_DIRS = {".git", "node_modules", "target", "dist", ".venv"}
+SKIP_DIRS = {".git", "node_modules", "target", "dist", ".venv", ".claude"}
 
 # 代码事实存在 IT 时，文档不得出现的「能力已不存在」声明
 FORBIDDEN_CLAIMS = [

@@ -40,7 +40,7 @@ ROOT_BUDGET = 3_000
 # 单个嵌套册预算：与根并不同时受限，故按文件而非按合计（见 docstring 约定 3）
 NESTED_BUDGET = 13_500
 
-SKIP_DIRS = {".git", "node_modules", "target", "dist", ".venv"}
+SKIP_DIRS = {".git", "node_modules", "target", "dist", ".venv", ".claude"}
 
 
 def find_agents_files() -> list[Path]:
