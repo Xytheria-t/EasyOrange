@@ -24,7 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 # 扫描范围：仓库内全部 *.md，跳过依赖 / 构建产物 / 本地会话产物
-SKIP_DIRS = {".git", "node_modules", "target", "dist", ".venv", ".zcode", "build"}
+SKIP_DIRS = {".git", "node_modules", "target", "dist", ".venv", ".zcode", "build", ".claude"}
 
 # [文字](目标) —— 目标是相对路径或 URL，可带 #锚点
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+?)\)")

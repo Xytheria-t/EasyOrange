@@ -44,7 +44,7 @@ BLOCK_ANCHOR = '<a name="结构计数"></a>'
 BLOCK_HEADING = "## 结构计数（脚本生成，勿手改）"
 FIX_CMD = "python3 .githooks/check-metrics-drift.py --fix"
 
-SKIP_DIRS = {".git", ".zcode", "node_modules", "target", "dist", ".venv", "archunit_store"}
+SKIP_DIRS = {".git", ".zcode", ".claude", "node_modules", "target", "dist", ".venv", "archunit_store"}
 
 # Markdown 加粗：`**49**` / `**49 个**` / `49 个` 三种断法都要能认 —— 历史漏检正是从这儿来的
 # （`doc/工程指标.md` 的表格把数字与关键词分到两个单元，旧正则只认「N 个 Port」相邻写法）。
