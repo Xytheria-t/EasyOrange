@@ -3,7 +3,10 @@
 #
 # 职责（按被推送 commit 的变更路径分发，不做全量）：
 #   1. 后端：easyorange-backend/ 下有非文档变更 → ./mvnw -Pci spotless:check（格式）+ ./mvnw test（含编译）
-#   2. 前端：easyorange-frontend/ 下有非文档变更 → npm test（vitest run）
+#   2. 前端：easyorange-frontend/ 下有非文档变更 → npm run typecheck:all（src + 测试侧）+ npm test（vitest run）
+#
+#   typecheck 必须进 pre-push：vitest 不做类型检查，只跑 npm test 时测试夹具与类型的漂移
+#   本地永远绿、CI 的 typecheck:test 步骤才红（2026-10-04 两次 CI 失败即此形态）。
 #
 # 设计：
 #   - 变更判定用「只放行纯文档」而非枚举触发文件名：枚举（*.java|pom.xml）会漏掉
@@ -87,11 +90,19 @@ else
   hook_log "No backend changes, skipping spotless:check + mvn test"
 fi
 
-# 2. 前端：npm test（vitest run，非 watch）
+# 2. 前端：typecheck（含测试侧）→ npm test（vitest run，非 watch）
 if (( need_frontend )); then
   if [[ ! -f "$FRONTEND_DIR/package.json" ]]; then
     hook_warn "frontend package.json not found, skipping npm test"
   else
+    # 排在 npm test 前：类型错误秒级失败，且 CI 正是先 typecheck 后 e2e
+    hook_log "Frontend changes pushed → typecheck:all (src + tests)..."
+    if (cd "$FRONTEND_DIR" && npm run typecheck:all); then
+      hook_ok "typecheck:all"
+    else
+      hook_fail "typecheck failed (src 或测试侧) — 见上方 tsc 报错行"
+    fi
+
     hook_log "Frontend changes pushed → npm test (vitest run)..."
     if (cd "$FRONTEND_DIR" && npm test); then
       hook_ok "npm test"
