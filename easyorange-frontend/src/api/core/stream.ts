@@ -14,8 +14,14 @@ const STREAM_IDLE_TIMEOUT_MS = 45_000;
 /** 流正常结束却没有终止事件时的兜底文案。 */
 const STREAM_TRUNCATED_MESSAGE = '连接中断，请重试';
 
+/**
+ * 流式链路的用户可见错误基类：message 是可以直接展示给用户的文案。
+ * 调用方据此把「服务端说清了原因」与 TypeError 之类的技术异常分开 —— 后者只能回落到兜底话术。
+ */
+export class StreamError extends Error {}
+
 /** 登录态失效：需要重新登录，与网络故障区分开。 */
-export class StreamAuthError extends Error {
+export class StreamAuthError extends StreamError {
     constructor() {
         super('登录已过期，请重新登录');
         this.name = 'StreamAuthError';
@@ -27,7 +33,7 @@ export class StreamAuthError extends Error {
  * 文案（如「AI 服务繁忙，请稍后重试」），必须透传到界面 —— 笼统报「连接中断」会把
  * 可自愈的问题（稍后重试即可）伪装成网络故障。
  */
-export class StreamRequestError extends Error {
+export class StreamRequestError extends StreamError {
     constructor(
         message: string,
         readonly status: number
@@ -38,7 +44,7 @@ export class StreamRequestError extends Error {
 }
 
 /** 无进展超时：与网络故障区分开，前端可提示「响应超时」。 */
-export class StreamIdleTimeoutError extends Error {
+export class StreamIdleTimeoutError extends StreamError {
     constructor(ms: number) {
         super(`超过 ${Math.round(ms / 1000)} 秒无响应，请重试`);
         this.name = 'StreamIdleTimeoutError';
@@ -164,7 +170,7 @@ export async function streamChat(
     }
 
     if (!terminated) {
-        throw new Error(STREAM_TRUNCATED_MESSAGE);
+        throw new StreamError(STREAM_TRUNCATED_MESSAGE);
     }
 }
 

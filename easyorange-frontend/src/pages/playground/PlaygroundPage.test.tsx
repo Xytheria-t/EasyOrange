@@ -68,6 +68,7 @@ describe('PlaygroundPage (AI 找货)', () => {
         knowledge_search: '查规则',
         product_search: '找资产',
         product_detail: '看详情',
+        list_categories: '查类目',
         market_price_stats: '看行情',
         compare_assets: '比候选',
         remember_preference: '记偏好',

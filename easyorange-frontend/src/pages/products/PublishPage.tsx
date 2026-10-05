@@ -35,6 +35,7 @@ import { CONDITION_LABEL_MAP } from '@/constants';
 import { useCategories, useCreateProduct } from '@/hooks';
 import { useAutoListing } from '@/hooks/useAutoListing';
 import { buildProductPayload, useProductForm } from '@/hooks/useProductForm';
+import { ThinkingProcess } from '@/pages/playground/ThinkingProcess';
 import type { PublishFormData } from '@/schemas/publishSchema';
 import { useUIStore } from '@/store/uiStore';
 import { errorHandler } from '@/utils/errorHandler';
@@ -66,6 +67,7 @@ function PublishPage() {
     const { data: categories } = useCategories();
     const {
         result: autoListingResult,
+        steps: autoListingSteps,
         isLoading: autoListingLoading,
         failure: autoListingFailure,
         analyzeImages,
@@ -429,12 +431,23 @@ function PublishPage() {
                                     </div>
                                 )}
                                 {vals.imageUrls.length > 0 && (
-                                    <AiPhotoCapture
-                                        onAnalyze={() => analyzeImages(vals.imageUrls)}
-                                        isLoading={autoListingLoading}
-                                        hasImages={vals.imageUrls.length > 0}
-                                        failure={autoListingFailure}
-                                    />
+                                    <>
+                                        <AiPhotoCapture
+                                            onAnalyze={() => analyzeImages(vals.imageUrls)}
+                                            isLoading={autoListingLoading}
+                                            hasImages={vals.imageUrls.length > 0}
+                                            failure={autoListingFailure}
+                                        />
+                                        {/* 识别跑过才占位：空态挂「已思考 0 步」纯噪音 */}
+                                        {(autoListingSteps.length > 0 || autoListingLoading) && (
+                                            <div className="publish-ai-steps">
+                                                <ThinkingProcess
+                                                    steps={autoListingSteps}
+                                                    thinking={autoListingLoading}
+                                                />
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </section>
                             {formState.errors.imageUrls?.message && (
