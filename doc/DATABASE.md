@@ -107,7 +107,7 @@ V1 单脚本建全部表（`eo_*` 业务/观测表 + 2 个 Spring Modulith 基�
 |------|------|------|
 | 主键 | PK | 自动 PRIMARY KEY |
 | 唯一索引 | uk_eo_{table}_{columns} | uk_eo_user_username |
-| 普通索引 | idx_eo_{table}_{columns} | idx_eo_product_user_id |
+| 普通索引 | idx_eo_{table}_{columns} | idx_eo_product_user_status_del |
 | 全文索引 | ft_eo_{table}_{column} | ft_eo_product_name |
 | CHECK 约束 | chk_eo_{table}_{column} | chk_eo_user_status |
 
@@ -123,7 +123,7 @@ V1 单脚本建全部表（`eo_*` 业务/观测表 + 2 个 Spring Modulith 基�
 | 时间（业务） | DATETIME | create_time DATETIME |
 | 时间（业务 / 观测） | DATETIME | created_at DATETIME |
 | 时间（事件表） | TIMESTAMP(6) | PUBLICATION_DATE TIMESTAMP(6) |
-| UUID | VARCHAR(36) | conversation_id VARCHAR(36) |
+| UUID | VARCHAR(36) | product_id VARCHAR(36)（**不是 CHAR**——全库 ID 列都是 VARCHAR） |
 | 布尔 | TINYINT | is_main TINYINT DEFAULT 0 |
 | 文件大小 | BIGINT | file_size BIGINT |
 

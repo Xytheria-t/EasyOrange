@@ -30,7 +30,7 @@
 - **DTO 分层**：application 与 adapter 共用的 Response 必须放 `application/dto/`（放 adapter 违反依赖倒置）；仅 controller 单用的可留 adapter
 - **DTO 转换统一在 `adapter/inbound/web/assembler/`**，Controller / Service 不直接构造 Response
 - **`BaseDO`**：`IdType.INPUT` String id、createTime / updateTime 走 `FieldFill`、`@TableLogic`；**`version` 乐观锁按需加**（ProductDO / OrderDO / PaymentDO）；DO 枚举经 **`@EnumValue`** 持久化，**禁手写 TypeHandler**
-- ID 统一 String（UUID v7，36 字符，列 `CHAR(36)`），MyBatis-Plus 无需 UUID TypeHandler
+- ID 统一 String（UUID v7，36 字符，列 `VARCHAR(36)`——**不是 CHAR**，V1 迁移里全库如此），MyBatis-Plus 无需 UUID TypeHandler；`conversation_id` 是例外，`VARCHAR(80)` 装 `conv_{uuid}_{uuid}` 78 字符，窄列会在严格模式静默失败
 - **Jackson 3**：`JacksonException`、包 `tools.jackson.*`；模块需**显式加 `jackson-core`**（不传递）；事件 record 无需 `@JsonCreator`；`ToStringSerializer` **`Long` 与 `long` 都注册**；不配 Jackson 2 `ObjectMapper`、`WebMvcConfig` 不重写 `extendMessageConverters`
 - **不可变集合统一 `List.of()` / `copyOf` 系**，禁 `Collections` 工具类；取值面固定的字段用枚举不用 String（非法值绑定期即失败）
 - **Mapper IN 查询必须 `<script>` + `<foreach>` 参数化**，禁 `${}` / JSON / CSV 拼接（历史事故 `IN (${ids})`：注入 + 阻止计划缓存）
