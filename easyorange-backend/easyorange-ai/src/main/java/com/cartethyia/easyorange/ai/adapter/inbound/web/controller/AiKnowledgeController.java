@@ -1,7 +1,7 @@
-package com.cartethyia.easyorange.adapter.inbound.web.controller;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.adapter.inbound.web.assembler.KnowledgeHitAssembler;
-import com.cartethyia.easyorange.adapter.inbound.web.response.KnowledgeHitVO;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.assembler.KnowledgeHitAssembler;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.KnowledgeHitVO;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.result.Result;

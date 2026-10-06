@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.adapter.inbound.web.response;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response;
 
 /**
  * 检索评测批次视图 — 管理端批次列表行。

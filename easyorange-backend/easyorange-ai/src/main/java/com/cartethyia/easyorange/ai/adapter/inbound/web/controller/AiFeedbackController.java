@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.adapter.inbound.web.controller;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.ai.application.dto.ChatFeedbackRequest;
 import com.cartethyia.easyorange.ai.application.eval.AiFeedbackAppService;

@@ -1,8 +1,8 @@
-package com.cartethyia.easyorange.adapter.inbound.web.controller;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.adapter.inbound.web.assembler.RetrievalEvalAssembler;
-import com.cartethyia.easyorange.adapter.inbound.web.response.RetrievalEvalCaseVO;
-import com.cartethyia.easyorange.adapter.inbound.web.response.RetrievalEvalRunVO;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.assembler.RetrievalEvalAssembler;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.RetrievalEvalCaseVO;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.RetrievalEvalRunVO;
 import com.cartethyia.easyorange.ai.application.eval.RetrievalReviewAppService;
 import com.cartethyia.easyorange.ai.domain.enums.RetrievalEvalLine;
 import com.cartethyia.easyorange.common.result.PageResult;

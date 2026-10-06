@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.adapter.inbound.web.controller;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.ai.domain.port.GoldenSetExportPort;
 import com.cartethyia.easyorange.common.result.Result;

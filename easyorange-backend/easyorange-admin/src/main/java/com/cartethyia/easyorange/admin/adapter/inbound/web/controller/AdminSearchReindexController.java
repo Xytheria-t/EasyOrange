@@ -1,6 +1,6 @@
-package com.cartethyia.easyorange.adapter.inbound.web.controller;
+package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.adapter.outbound.elasticsearch.ReindexService;
+import com.cartethyia.easyorange.admin.domain.port.AdminSearchIndexPort;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 @ConditionalOnProperty(name = "easyorange.search.elasticsearch.enabled", havingValue = "true")
 public class AdminSearchReindexController {
 
-    private final ReindexService reindexService;
+    private final AdminSearchIndexPort searchIndexPort;
 
     @PostMapping("/reindex")
     public Result<Integer> reindex() {
-        return Result.success(reindexService.reindexAll());
+        return Result.success(searchIndexPort.reindexAll());
     }
 }
