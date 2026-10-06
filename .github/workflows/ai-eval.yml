@@ -56,6 +56,11 @@ jobs:
 
       # key 缺失时 @EnabledIfEnvironmentVariable 会把 IT 静默跳过 → 门禁空转变绿；
       # 显式守卫把「忘配 secret」变成可见失败而不是假绿。
+      #
+      # ⚠ 本守卫只查空串，查不了「secret 存在但已失效」（额度耗尽 / key 过期 / 模型名不可达）。
+      # 那种情况的症状是下面门禁**四道全返回 0**（评审覆盖率 0/22、路由 0/19 等，分母归零），
+      # 以及日志里知识库文档 ingestion failed 全量失败 —— 是「一次 AI 调用都没成功」，
+      # **不是质量回归**，改阈值没用。判据见 doc/工程指标.md §2.4「ai-eval.yml 当前实况」。
       - name: Guard API key secret
         if: ${{ env.EASYORANGE_AI_API_KEY == '' }}
         run: |
