@@ -88,6 +88,7 @@ public class FileService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public UploadFileVO getFileInfo(String fileId) {
         var entity = uploadFileMapper.selectById(fileId);
         if (entity == null) throw FileException.of(FileResultCode.FILE_NOT_FOUND, "文件不存在");
@@ -123,6 +124,7 @@ public class FileService {
         uploadFileMapper.updateById(entity);
     }
 
+    @Transactional(readOnly = true)
     public List<UploadFileVO> getFilesByBusiness(String businessType, String businessId) {
         return uploadFileMapper
                 .selectList(new LambdaQueryWrapper<UploadFileDO>()
@@ -135,6 +137,7 @@ public class FileService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public Resource downloadFile(String fileId) {
         var entity = uploadFileMapper.selectById(fileId);
         if (entity == null) throw FileException.of(FileResultCode.FILE_NOT_FOUND, "文件不存在");

@@ -131,8 +131,8 @@ public class ProductRepositoryImpl extends BaseRepository<ProductMapper, Product
         productImageMapper.batchInsert(imageDOs);
     }
 
-    // 图片整组替换：物理删全量再重插。行 id 无外部引用，isMain/sortOrder 完全由列表顺序推导，
-    // 全量重写同时修正了旧实现"仅按 URL 求差、顺序变更不生效"的缺陷。
+    // 图片整组替换：物理删全量再重插。行 id 无外部引用、isMain/sortOrder 完全由列表顺序推导，
+    // 所以不需要按 URL 求差——求差反而漏掉「同一批图换了顺序」这类变更。
     private void replaceImages(Product product) {
         productImageMapper.deleteByProductId(product.getId().value());
         insertImages(product.getId(), product.getImages());
