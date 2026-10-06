@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.adapter.inbound.web.request;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 

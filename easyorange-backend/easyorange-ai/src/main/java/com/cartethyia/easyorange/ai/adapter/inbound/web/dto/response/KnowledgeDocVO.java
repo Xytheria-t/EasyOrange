@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.adapter.inbound.web.response;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response;
 
 import com.cartethyia.easyorange.ai.domain.enums.KnowledgeDocStatus;
 import java.time.LocalDateTime;

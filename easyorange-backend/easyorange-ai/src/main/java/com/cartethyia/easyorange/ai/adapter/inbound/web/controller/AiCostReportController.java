@@ -1,7 +1,7 @@
-package com.cartethyia.easyorange.adapter.inbound.web.controller;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.adapter.inbound.web.assembler.AiListingAdoptionAssembler;
-import com.cartethyia.easyorange.adapter.inbound.web.response.AiListingAdoptionVO;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.assembler.AiListingAdoptionAssembler;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.AiListingAdoptionVO;
 import com.cartethyia.easyorange.ai.application.dto.AiCostReportRow;
 import com.cartethyia.easyorange.ai.application.support.AiCostReportAppService;
 import com.cartethyia.easyorange.ai.domain.port.AiListingAdoptionPort;

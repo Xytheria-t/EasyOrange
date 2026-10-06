@@ -1,8 +1,8 @@
-package com.cartethyia.easyorange.adapter.inbound.web.controller;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.adapter.inbound.web.assembler.KnowledgeDocAssembler;
-import com.cartethyia.easyorange.adapter.inbound.web.request.CreateKnowledgeDocRequest;
-import com.cartethyia.easyorange.adapter.inbound.web.response.KnowledgeDocVO;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.assembler.KnowledgeDocAssembler;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.request.CreateKnowledgeDocRequest;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.KnowledgeDocVO;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeIngestionAppService;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import com.cartethyia.easyorange.common.result.PageResult;

@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.adapter.inbound.web.response;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response;
 
 /**
  * 知识库检索命中视图 — RAG 检索侧的对外形状，与 {@code KnowledgeHit} 解耦。

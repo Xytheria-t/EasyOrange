@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.admin.domain.port.AdminSearchIndexPort;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnProperty(name = "easyorange.search.elasticsearch.enabled", havingValue = "true")
 @RequiredArgsConstructor
-public class ReindexService {
+public class ReindexService implements AdminSearchIndexPort {
 
     /**
      * 单页商品数：全量重建按页游标推进，避免一次性加载全部在线商品 ID。
@@ -47,6 +48,7 @@ public class ReindexService {
      * {@link ElasticsearchProductSearchIndexAdapter#indexProducts} 的批量预加载路径，
      * 避免逐商品 N+1（每个商品 4 次关联查询）与全量 ID 一次性驻留内存。</p>
      */
+    @Override
     public int reindexAll() {
         IndexOperations indexOps = elasticsearchOperations.indexOps(ProductDocument.class);
         if (indexOps.exists()) {

@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.adapter.inbound.web.controller;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

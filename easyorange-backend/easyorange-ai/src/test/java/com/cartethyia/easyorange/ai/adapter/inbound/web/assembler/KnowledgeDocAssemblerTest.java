@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.adapter.inbound.web.assembler;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.assembler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -1,6 +1,6 @@
-package com.cartethyia.easyorange.adapter.inbound.web.assembler;
+package com.cartethyia.easyorange.ai.adapter.inbound.web.assembler;
 
-import com.cartethyia.easyorange.adapter.inbound.web.response.AiListingAdoptionVO;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.AiListingAdoptionVO;
 import com.cartethyia.easyorange.ai.domain.model.AiListingAdoptionReport;
 
 /**
