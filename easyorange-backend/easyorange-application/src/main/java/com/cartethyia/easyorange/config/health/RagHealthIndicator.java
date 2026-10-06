@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.config.health;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.cartethyia.easyorange.framework.config.properties.ElasticsearchProperties;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
@@ -23,8 +23,8 @@ public class RagHealthIndicator implements HealthIndicator {
 
     private final boolean esEnabled;
 
-    public RagHealthIndicator(@Value("${easyorange.search.elasticsearch.enabled:false}") boolean esEnabled) {
-        this.esEnabled = esEnabled;
+    public RagHealthIndicator(ElasticsearchProperties searchProperties) {
+        this.esEnabled = searchProperties.enabled();
     }
 
     @Override

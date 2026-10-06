@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.user.adapter.outbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.cartethyia.easyorange.framework.config.properties.SmsProperties;
 import com.cartethyia.easyorange.user.adapter.outbound.cache.RedisSmsCodeAdapter;
 import com.cartethyia.easyorange.user.adapter.outbound.mock.MockSmsCodeAdapter;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
@@ -69,6 +70,8 @@ class SmsCodeAdapterWiringTest {
                 ctx.getEnvironment().setActiveProfiles(activeProfiles);
             }
             ctx.getBeanFactory().registerSingleton("smsSenderPort", (SmsSenderPort) (phone, code) -> {});
+            // 适配器吃 SmsProperties 而不是裸 @Value，裸上下文里手工塞一个（本用例只验 profile 互斥）
+            ctx.registerBean(SmsProperties.class, () -> new SmsProperties(""));
             ctx.getBeanFactory().registerSingleton("redisTemplate", new RedisTemplate<Object, Object>());
             ctx.register(MockSmsCodeAdapter.class, RedisSmsCodeAdapter.class);
             ctx.refresh();

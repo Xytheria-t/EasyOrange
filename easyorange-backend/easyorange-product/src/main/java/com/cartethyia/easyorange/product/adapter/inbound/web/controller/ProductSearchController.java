@@ -2,18 +2,16 @@ package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
+import com.cartethyia.easyorange.product.adapter.inbound.web.assembler.ProductSearchAssembler;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductSearchRequest;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.FacetBucketResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKeywordResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchHistoryResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchPageResponse;
-import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.ProductSearchQueryHandler;
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
-import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -39,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProductSearchController {
 
     private final ProductSearchQueryHandler searchQueryHandler;
+    private final ProductSearchAssembler searchAssembler;
 
     @GetMapping
     public Result<SearchPageResponse<ProductResponse>> searchProducts(@Valid ProductSearchRequest request) {
@@ -54,36 +53,14 @@ public class ProductSearchController {
                 request.getPageNum(),
                 request.getPageSize());
         ProductSearchResult result = searchQueryHandler.search(criteria, request.isAiEnhanced());
-
-        var responses = result.page().records().stream()
-                .map(ProductSearchController::toProductResponse)
-                .toList();
-        var facetResponses = result.facets().stream()
-                .map(ProductSearchController::toFacetBucketResponse)
-                .toList();
-
-        var searchResp = new SearchPageResponse<>(
-                responses,
-                result.page().total(),
-                result.page().current(),
-                result.page().size(),
-                result.page().pages(),
-                facetResponses);
-        return Result.success(searchResp);
+        return Result.success(searchAssembler.toSearchPageResponse(result));
     }
 
     @GetMapping("/history")
     public Result<List<SearchHistoryResponse>> getMySearchHistory(
             @AuthenticationPrincipal AuthUser user, @RequestParam(defaultValue = "20") @Max(50) Integer limit) {
         List<SearchHistoryReadModel> histories = searchQueryHandler.getMySearchHistory(user.userId(), limit);
-        var responses = histories.stream()
-                .map(h -> SearchHistoryResponse.builder()
-                        .id(h.id())
-                        .keyword(h.keyword())
-                        .createTime(h.createTime())
-                        .build())
-                .toList();
-        return Result.success(responses);
+        return Result.success(searchAssembler.toSearchHistoryResponses(histories));
     }
 
     @DeleteMapping("/history")
@@ -101,15 +78,7 @@ public class ProductSearchController {
     @GetMapping("/hot")
     public Result<List<HotKeywordResponse>> getHotKeywords(@RequestParam(defaultValue = "10") @Max(50) Integer limit) {
         List<HotKeywordReadModel> keywords = searchQueryHandler.getHotKeywords(limit);
-        var responses = keywords.stream()
-                .map(k -> HotKeywordResponse.builder()
-                        .id(k.id())
-                        .keyword(k.keyword())
-                        .searchCount(k.searchCount())
-                        .hotLevel(k.hotLevel())
-                        .build())
-                .toList();
-        return Result.success(responses);
+        return Result.success(searchAssembler.toHotKeywordResponses(keywords));
     }
 
     @GetMapping("/suggestions")
@@ -126,35 +95,5 @@ public class ProductSearchController {
             @RequestParam @Size(max = 100, message = "关键词不能超过 100 个字符") String keyword) {
         searchQueryHandler.recordSearch(user.userId(), keyword);
         return Result.success();
-    }
-
-    // ── private DTO converters ──
-
-    private static ProductResponse toProductResponse(ProductReadModel model) {
-        return ProductResponse.builder()
-                .id(model.id())
-                .sellerId(model.sellerId())
-                .username(model.username())
-                .userAvatar(model.userAvatar())
-                .categoryId(model.categoryId())
-                .categoryName(model.categoryName())
-                .title(model.title())
-                .description(model.description())
-                .price(model.price())
-                .originalPrice(model.originalPrice())
-                .status(model.status())
-                .statusDesc(model.statusDesc())
-                .views(model.views())
-                .condition(model.condition())
-                .conditionDesc(model.conditionDesc())
-                .location(model.location())
-                .images(model.images())
-                .mainImageUrl(model.mainImageUrl())
-                .createTime(model.createTime())
-                .build();
-    }
-
-    private static FacetBucketResponse toFacetBucketResponse(FacetBucket fb) {
-        return new FacetBucketResponse(fb.key(), fb.label(), fb.count());
     }
 }

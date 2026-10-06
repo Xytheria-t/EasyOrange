@@ -2,7 +2,9 @@ package com.cartethyia.easyorange.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.cartethyia.easyorange.framework.config.properties.ElasticsearchProperties;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 /**
@@ -11,8 +13,12 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
  */
 class ProdSearchGuardTest {
 
+    /** 守卫现在吃 {@link ElasticsearchProperties} 而不是裸 `@Value`，最小上下文要把属性绑定配上。 */
+    @EnableConfigurationProperties(ElasticsearchProperties.class)
+    static class PropertiesBinding {}
+
     private final ApplicationContextRunner runner =
-            new ApplicationContextRunner().withUserConfiguration(ProdSearchGuard.class);
+            new ApplicationContextRunner().withUserConfiguration(ProdSearchGuard.class, PropertiesBinding.class);
 
     @Test
     void failsFastWhenEsDisabledInProd() {
