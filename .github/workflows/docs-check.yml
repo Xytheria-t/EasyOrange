@@ -1,7 +1,8 @@
 name: Docs Check
 
-# 文档治理门禁：结构计数单点（.githooks/check-metrics-drift.py）、测试口径（check-test-tier-drift.py）、
-# 上下文预算（check-context-budget.py）。三个脚本都是纯标准库 python3、秒级完成，所以
+# 文档治理门禁五支：结构计数单点（.githooks/check-metrics-drift.py）、测试口径（check-test-tier-drift.py）、
+# 上下文预算（check-context-budget.py）、文档链接与锚点（check-doc-links.py）、注释预算（check-comment-budget.py）。
+# 都是纯标准库 python3、秒级完成，所以
 # **恒触发、不配 paths 过滤**（配了 paths 的 PR 过滤会让这个 job 在无关 PR 上不报告，
 # 一旦被加进分支保护就永久 BLOCKED —— 见 backend-ci.yml 顶部同一教训）。
 #
