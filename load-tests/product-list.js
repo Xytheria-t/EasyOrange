@@ -33,7 +33,8 @@ export const options = {
 };
 
 export default function () {
-  // 混合只读流量：商品列表(60%) + 分类(20%) + 搜索(20%)，列表轮换 5 页
+  // 混合只读流量：每轮必打列表（轮换 5 页），按 n%5 分派——3/5 只打列表、1/5 加分类、1/5 加搜索
+  // 分母提醒：按迭代算是 60/20/20，按请求算是 71.4/14.3/14.3（列表每轮都打），报配比要说清哪种
   const n = (__ITER + __VU) % 5;
   const list = http.get(`${BASE_URL}/api/products?page=${1 + (n % 5)}&size=12`);
   check(list, { '商品列表 200': (r) => r.status === 200 });
