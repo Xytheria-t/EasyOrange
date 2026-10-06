@@ -53,7 +53,7 @@
 ## 安全 / 过滤器链
 
 - **JWT 走 OAuth2 Resource Server 内置 Filter，无自定义认证 Filter**：`JwtDecoder` 只验签 + issuer；`JwtAuthenticationConverter` 拒 refresh token、从 `authorities` claim 构造 `AuthUser`；管理员角色在 `login()` 写进 claim，资源服务器直接读、**不重算**
-- **双 Token**：Access JWT 30 分钟（前端仅内存）；Refresh opaque 落 Redis（HttpOnly Cookie，key `eo:user:refresh:*`，SHA-256），**轮换 + 复用检测**；登出 jti 进黑名单（TTL = 剩余有效期）；`TokenRevocationFilter` 只查吊销（与验签职责分离）
+- **双 Token**：Access JWT 有效期按 profile 走 yaml（dev 120 分钟 / prod 60 分钟，`JwtProperties` 的 `@DefaultValue("30")` 被两者都覆盖，**别按 30 讲**）——前端仅内存；Refresh opaque 落 Redis（HttpOnly Cookie，key `eo:user:refresh:*`，SHA-256），**轮换 + 复用检测**；登出 jti 进黑名单（TTL = 剩余有效期）；`TokenRevocationFilter` 只查吊销（与验签职责分离）
 - **Filter 顺序**：`IdempotencyKeyFilter` → `RateLimitFilter` → `RefreshCsrfFilter` → resource server 内置认证 → `TokenRevocationFilter` → Anonymous → `AuditLogAspect`。四个业务 Filter **无 `@Component`**，由 `SecurityConfig` 局部装配 + `addFilterBefore` 定位，另配 `FilterRegistrationBean(enabled=false)` 防容器自动注册（只去掉 `@Component` 不够，容器链会把任何 Filter bean 再登记一次）；`AuditLogAspect` 的 `@Order` 只在切面之间排序，Filter 先于 MVC 由容器保证，与它无关
 - **Token 吊销检查 fail-open**：Redis 异常时放行并计 `easyorange.security.revocation_check_degraded`——验签与有效期已过，黑名单 TTL 只等于 token 剩余有效期，敞口有界；fail-closed 等于把 Redis 抖动翻译成全站已认证用户 401/500
 - **`RateLimitFilter` 必须 `ObjectProvider<List<HandlerMapping>>` 延迟注入**：直接注入经 WebSocket 配置链**循环依赖**，别改回 `@RequiredArgsConstructor`；限流与防重一律 **fail-open**，`@SkipRateLimit` / `@SkipRepeatSubmit` 跳过
