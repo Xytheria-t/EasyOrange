@@ -650,6 +650,11 @@
                             </formats>
                             <skipTestScope>true</skipTestScope>
                             <skipProvidedScope>true</skipProvidedScope>
+                            <!-- NVD API Key 从环境变量取（值放 CI secret），不写成 Maven 属性：
+                                 属性会进 Maven debug 日志泄漏（GHSA-qqhq-8r2c-c3f5）。缺 key 时插件
+                                 不报错，只 WARNING 后回落到本地缓存库 —— 库会冻在上次写入那天，
+                                 扫描照常"通过"却看不见之后新增的 CVE（2026-08-07 起实测冻结两个月） -->
+                            <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
                             <!-- 显式数据目录：CI 里用 actions/cache 缓存它，NVD 库跨 run 复用，
                                  避免每次全新下载整库（nvd.nist.gov 慢/限流会让首次 run 挂 30+ 分钟） -->
                             <dataDirectory>${user.home}/.dependency-check-data</dataDirectory>

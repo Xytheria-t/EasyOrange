@@ -27,15 +27,37 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # OWASP dependency-check 的 NVD 数据目录 —— 稳定 key 跨 run 复用，避免每次全新下载整库
+      # OWASP dependency-check 的 NVD 数据目录 —— 跨 run 复用避免每次全新下载整库。
+      # key 必须每 run 唯一：actions/cache 命中时不回写（save-always 默认 false），静态 key 会让
+      # 库冻在首次写入那天（2026-08-07 写入后两个月未变，扫描一直绿却看不见新 CVE）。
+      # restore-keys 前缀匹配最近一次缓存，增量更新仍从上次的库继续，不会重下整库。
       - name: Cache OWASP NVD data
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.dependency-check-data
-          key: ${{ runner.os }}-owasp-nvd
+          key: ${{ runner.os }}-owasp-nvd-${{ github.run_number }}
+          # 无尾横线：前缀匹配要能同时命中旧 key `Linux-owasp-nvd`（存量库，首次 run 拿它当种子，
+          # 否则要重下整库）和新 key `Linux-owasp-nvd-<run_number>`
+          restore-keys: ${{ runner.os }}-owasp-nvd
 
       # verify -Powasp：仅激活 OWASP dependency-check（NVD 漏洞扫描），reactor 含全部后端模块，
       # 依赖树从 reactor 解析，无需先 install。-DskipTests=true 跳过测试执行（测试编译仍发生）
       - name: OWASP dependency-check (NVD)
         run: ./mvnw verify -B -Powasp -DskipTests=true
         working-directory: easyorange-backend
+        env:
+          # pom 的 nvdApiKeyEnvironmentVariable 指定读这个名字。不写成 -D 参数：会进日志
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+
+      # 缺 key / NVD 不可达时插件只 WARNING 后回落到旧库，job 照样绿 —— 加一道库龄校验，
+      # 把"静默看不见新 CVE"变成可见的报警。阈值 7 天：容忍连续几天的 NVD 抖动（pom 的
+      # failOnError=false 就是为这个留的），但拦住"冻结数月"这类系统性失效。
+      - name: Assert NVD data not stale
+        run: |
+          newest=$(find ~/.dependency-check-data -type f -printf '%T@\n' | sort -rn | head -1 | cut -d. -f1)
+          age_days=$(( ( $(date +%s) - newest ) / 86400 ))
+          echo "NVD 数据最近写入：${age_days} 天前"
+          if [ "$age_days" -gt 7 ]; then
+            echo "::error::NVD 数据已 ${age_days} 天未更新，本次扫描结果可能遗漏新公开的 CVE"
+            exit 1
+          fi
