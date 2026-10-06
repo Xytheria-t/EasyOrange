@@ -19,9 +19,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Primary
 @Repository
+@Transactional(readOnly = true)
 public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, MessageDO>
         implements MessageQueryRepository {
 

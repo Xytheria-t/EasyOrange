@@ -65,7 +65,7 @@ public class AdminProductAdapter implements AdminProductPort {
         }
         if (condition.categoryId() != null) {
             // 分类子树匹配（与 C 端口径一致）：商品挂在叶子分类上，一级分类应含其下全部后代。
-            // 此处此前用 eq 精确匹配，而审核页下拉给的是一级分类 id → 每个选项都 0 条。
+            // 必须走子树——审核页下拉给的就是一级分类 id，用 eq 精确匹配会让每个选项恒 0 条。
             // 子树为空 = 传了不存在的分类 id：直接返回空页，不能拼出空 IN 列表（MySQL 报错 → 500）
             var categoryIds = categoryMapper.selectSubtreeIds(condition.categoryId());
             if (categoryIds.isEmpty()) {

@@ -29,10 +29,12 @@ public class AdminCategoryAppService {
     private final AdminCategoryPort adminCategoryPort;
     private final AdminCategoryWritePort categoryWritePort;
 
+    @Transactional(readOnly = true)
     public List<CategoryView> listCategories(String parentId) {
         return adminCategoryPort.listCategories(parentId);
     }
 
+    @Transactional(readOnly = true)
     public List<CategoryView> categoryTree() {
         return adminCategoryPort.categoryTree();
     }
