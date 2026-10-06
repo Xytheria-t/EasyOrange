@@ -127,7 +127,8 @@ CLAIM_PATTERNS: dict[str, tuple[re.Pattern[str], str]] = {
         ),
         "easyorange-backend/pom.xml 的 <module> 数",
     ),
-    "ports": (re.compile(rf"{_B}(\d+){_B}\s*个?\s*Port\b|{_cell('Port')}"), "main 源码 `interface *Port` 数"),
+    # 词边界不能省：第一条分支有 `Port\b`，第二条 `_cell` 拼的是裸标签，`Portal` 会被当成 Port 计数误报
+    "ports": (re.compile(rf"{_B}(\d+){_B}\s*个?\s*Port\b|{_cell(r'Port\b')}"), "main 源码 `interface *Port` 数"),
     "adrs": (
         # `ADR 决策记录（N 个…）` 是「关键词在前」的改写，`决策 N 篇` 是 ADR 索引里的写法。
         re.compile(
