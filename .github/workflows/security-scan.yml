@@ -27,17 +27,18 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # NVD 数据目录跨 run 复用，避免每次重下整库。key 必须每 run 唯一：actions/cache 命中时
-      # 不回写，静态 key 会让库永久冻在首次写入那天，扫描照常通过却看不见新 CVE。
-      - name: Cache OWASP NVD data
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # NVD 数据目录跨 run 复用，避免每次重下整库。key 必须每 run 唯一：命中时不回写，
+      # 静态 key 会让库永久冻在首次写入那天，扫描照常通过却看不见新 CVE。
+      # 拆 restore / save 两步而非一步式 actions/cache：后者的 save-always 已被官方废弃且
+      # 不生效（实测告警），失败 run 仍不回写 —— 而扫描报红恰恰最需要留住更新后的库。
+      - name: Restore OWASP NVD data
+        id: nvd-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.dependency-check-data
           key: ${{ runner.os }}-owasp-nvd-${{ github.run_number }}
           # 无尾横线，前缀匹配才同时命中存量 key 与新 key，首次 run 拿旧库当种子免重下整库
           restore-keys: ${{ runner.os }}-owasp-nvd
-          # 扫描报红时也要回写，否则每次失败 run 都白做一遍增量拉取
-          save-always: true
 
       # verify -Powasp：仅激活 OWASP dependency-check（NVD 漏洞扫描），reactor 含全部后端模块，
       # 依赖树从 reactor 解析，无需先 install。-DskipTests=true 跳过测试执行（测试编译仍发生）
@@ -59,3 +60,11 @@ jobs:
             echo "::error::NVD 数据已 ${age_days} 天未更新，本次扫描结果可能遗漏新公开的 CVE"
             exit 1
           fi
+
+      # if: always() —— 扫描报红时也要回写，否则每次失败 run 都白做一遍增量拉取
+      - name: Save OWASP NVD data
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.dependency-check-data
+          key: ${{ steps.nvd-cache.outputs.cache-primary-key }}
