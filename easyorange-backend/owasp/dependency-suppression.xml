@@ -86,6 +86,20 @@
         <cve>CVE-2026-63263</cve>
         <cve>CVE-2026-56149</cve>
     </suppress>
+
+    <!--
+        CVE-2026-72649 (CVSS 8.8)：NVD 描述是 Elasticsearch **服务端** ML 组件加载恶意 trained model
+        时的反序列化 RCE。dependency-check 按 elastic:elasticsearch CPE 匹配到本项目携带的
+        co.elastic.clients:elasticsearch-java —— 该 jar 的 ml 包下类全是 ML API 的请求/响应绑定
+        （DTO / Builder，实测 728 个），无服务端反序列化路径（ObjectInputStream / XContentParser
+        命中 0）；服务端另由 infra/elasticsearch 自建镜像承载，升级客户端不改变该攻击面。
+        解除条件：该 CPE 不再匹配客户端构件时删除。
+    -->
+    <suppress>
+        <notes>NVD 描述指向 elasticsearch 服务端 ML 组件加载恶意 trained model 的反序列化，客户端 jar 的 ml 包只有 API 请求/响应绑定（728 个 DTO/Builder），无服务端反序列化路径（ObjectInputStream/XContentParser 命中 0），属 CPE 误匹配</notes>
+        <packageUrl regex="true">^pkg:maven/co\.elastic\.clients/elasticsearch-.*@.*$</packageUrl>
+        <cve>CVE-2026-72649</cve>
+    </suppress>
     <suppress>
         <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
         <packageUrl regex="true">^pkg:maven/org\.apache\.httpcomponents\.core5/httpcore5.*@.*$</packageUrl>
