@@ -47,6 +47,11 @@
         <!-- 覆盖 Spring Boot 4.0.8 托管的 tomcat 11.0.24 → 11.0.26：追 CVE-2026-65637（影响 11.0.20–11.0.25）。
              netty 原为追 CVE 补丁而覆盖，Boot 4.0.8 已托管到同版本 4.2.17.Final，按该注释的约定移除 -->
         <tomcat.version>11.0.26</tomcat.version>
+        <!-- 覆盖 Boot 托管的 httpclient5 5.5.2 → 5.6.4：追 CVE-2026-71290（TLS 主机名校验在 async
+             client 上失效，影响 [5.4,5.6.4)）。httpcore5 同步到 5.6.4 声明的 5.4.3，否则会按 Boot
+             的 5.3.6 解析出未测试组合。挂在 elasticsearch-rest5-client 下，与 ES 版本锁无关 -->
+        <httpclient5.version>5.6.4</httpclient5.version>
+        <httpcore5.version>5.4.3</httpcore5.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <lombok.mapstruct.binding.version>0.2.0</lombok.mapstruct.binding.version>
         <jetbrains.annotations.version>26.1.0</jetbrains.annotations.version>
