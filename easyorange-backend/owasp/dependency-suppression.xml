@@ -17,7 +17,7 @@
     </suppress>
 
     <!--
-        mysql-connector-j 9.7.0（Spring Boot 4.0.7 托管的最高版本）CVE 群：
+        mysql-connector-j 9.7.0（Spring Boot 4.0.8 托管的最高版本，Central 最新亦为 9.7.0）CVE 群：
         - CVE-2026-60192 / 60193 / 60317：受影响组件为 Oracle MySQL Connectors 的 Connector/Net（.NET），
           非 Connector/J（Java JDBC 驱动），dependency-check 按 CPE oracle:mysql_connector 误匹配。
         - CVE-2026-60586 / 60623 / 60624 / 61082：真实 Connector/J 漏洞，受影响 9.7.0-9.7.1，
@@ -63,22 +63,21 @@
     </suppress>
 
     <!--
-        log4j-api-2.25.4 CVE-2026-49844：由 Spring Boot 4.0.7 托管。升级到 2.26.x 需同步
-        log4j-core，脱离 Boot BOM 存在版本错配风险，且该 CVE 为低危（CVSS&lt;8）不阻断。
-        解除条件：Boot 托管 log4j 升级后删除。
+        log4j-api-2.25.5 CVE-2026-49844：Boot 4.0.8 托管版仍在受影响区间（2.13.1–2.25.5，修复于 2.26.0）。
+        升级到 2.26.x 需同步 log4j-core，脱离 Boot BOM 存在版本错配风险，且该 CVE 为低危（CVSS 5.9）不阻断。
+        解除条件：Boot 托管 log4j 升至 ≥ 2.26.0 后删除。
     -->
     <suppress>
-        <notes>Boot 4.0.7 托管 log4j-api 2.25.4，升级需同步 core 脱离 BOM 有错配风险；低危非阻断</notes>
+        <notes>Boot 4.0.8 托管 log4j-api 2.25.5 仍处 CVE-2026-49844 影响区间，修复版 2.26.0；跳版需同步 core 脱离 BOM 有错配风险，CVSS 5.9 非阻断</notes>
         <packageUrl regex="true">^pkg:maven/org\.apache\.logging\.log4j/log4j-api@.*$</packageUrl>
         <cve>CVE-2026-49844</cve>
     </suppress>
 
     <!--
-        elasticsearch-java-9.2.8 / httpcore5-5.3.6 / micrometer-registry-prometheus-1.16.6 /
-        opentelemetry-semconv-1.37.0 的 CVE：均为 Spring Boot 4.0.7 托管的传递依赖，修复版本
-        需大版本升级（elasticsearch 9.2→9.4、httpcore5 5.3→5.5-beta、log4j 2.25→2.26），
-        脱离 Boot BOM 存在 API 不兼容风险，且均为 CVSS&lt;8 低危不阻断。
-        解除条件：Boot 升级解决后删除。
+        elasticsearch-java-9.2.9 / httpcore5-5.3.6 / micrometer-registry-prometheus-1.16.7 /
+        opentelemetry-semconv-1.37.0 的 CVE：均为 Spring Boot 4.0.8 托管的传递依赖，修复版本
+        需大版本升级（elasticsearch 9.2→9.3.7、httpcore5 5.3→5.5-beta），脱离 Boot BOM 存在
+        API 不兼容风险，且均为 CVSS&lt;8 低危不阻断。解除条件：Boot 升级解决后删除。
     -->
     <suppress>
         <notes>Boot 托管传递依赖，修复需大版本升级有兼容风险，CVSS&lt;8 低危非阻断</notes>
@@ -136,21 +135,4 @@
         <cve>CVE-2026-66010</cve>
     </suppress>
 
-    <!--
-        CVE-2026-66299 (tomcat-embed-* 11.0.24, CVSS 7.5)
-        豁免理由：
-          1. 漏洞是 Tomcat「WebSocket chat example」示例 Web 应用的资源耗尽 DoS（CWE-400），
-             Spring Boot 内嵌 Tomcat 不打包 examples 应用，本项目无该攻击面
-             （NVD 官方注明 "Users who removed the examples web application are unaffected"）。
-          2. 修复版 11.0.25 已入 Apache 公告但尚未同步到 Maven Central（最新仍为 11.0.24），当前无法升级。
-          3. CPE 为 apache:tomcat 版本级匹配，告警会在 tomcat-embed-core/websocket/el 等构件间
-             漂移（CI 报 core、本地报 websocket），故豁免覆盖全部 tomcat-embed-*。
-        解除条件：Maven Central 发布 tomcat-embed-core ≥ 11.0.25 后，将 pom 的
-        <tomcat.version> 升级至 ≥ 11.0.25（沿用既有 netty/tomcat 覆盖模式），并删除本豁免条目。
-    -->
-    <suppress>
-        <notes>Tomcat WebSocket chat 示例应用 DoS，Spring Boot 内嵌 Tomcat 不打包 examples 无攻击面；修复版 11.0.25 未发布到 Maven Central</notes>
-        <packageUrl regex="true">^pkg:maven/org\.apache\.tomcat\.embed/tomcat-embed-.*@.*$</packageUrl>
-        <cve>CVE-2026-66299</cve>
-    </suppress>
 </suppressions>
