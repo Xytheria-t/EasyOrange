@@ -21,13 +21,24 @@ import { request } from './core/request';
  */
 const AI_ENHANCED_SEARCH_TIMEOUT = 30000;
 
+/**
+ * 后端把 `long`/`Long` 全局序列化成字符串（JS 精度安全，见后端 `JacksonConfig`），
+ * 所以线上 `total` 是 `"70"` 而不是 `70`。类型声明是 `number`，不收敛就是**类型谎言**：
+ * 关系比较（`>=`）会隐式转型侥幸能用，但任何 `+` 会静默变成字符串拼接。
+ * 口径与 adminApi 的 `coercePageTotal` 一致。
+ */
+function coercePageTotal<T extends { total: number }>(res: T): T {
+    return { ...res, total: Number(res.total ?? 0) };
+}
+
 export const productApi = {
-    getProducts(params?: ProductQueryParams) {
-        return request<PageResult<RawProduct>>('/products', {
+    async getProducts(params?: ProductQueryParams) {
+        const res = await request<PageResult<RawProduct>>('/products', {
             method: 'GET',
             params: params as Record<string, unknown>,
             skipAuth: true,
         });
+        return res.data ? { ...res, data: coercePageTotal(res.data) } : res;
     },
 
     getProductById(id: string) {
@@ -74,13 +85,14 @@ export const productApi = {
         });
     },
 
-    searchProducts(params: ProductSearchParams = {}) {
-        return request<ProductSearchResult>('/products/search', {
+    async searchProducts(params: ProductSearchParams = {}) {
+        const res = await request<ProductSearchResult>('/products/search', {
             method: 'GET',
             params: params as Record<string, unknown>,
             timeout: params.aiEnhanced ? AI_ENHANCED_SEARCH_TIMEOUT : undefined,
             skipAuth: true,
         });
+        return res.data ? { ...res, data: coercePageTotal(res.data) } : res;
     },
 
     getSearchSuggestions(keyword: string) {
@@ -124,10 +136,11 @@ export const productApi = {
         });
     },
 
-    getMyProducts(params?: { pageNum?: number; pageSize?: number; status?: ProductStatus }) {
-        return request<PageResult<RawProduct>>('/products/my', {
+    async getMyProducts(params?: { pageNum?: number; pageSize?: number; status?: ProductStatus }) {
+        const res = await request<PageResult<RawProduct>>('/products/my', {
             method: 'GET',
             params: params as Record<string, unknown>,
         });
+        return res.data ? { ...res, data: coercePageTotal(res.data) } : res;
     },
 };
