@@ -31,7 +31,7 @@ ADR-0001 决定订单创建采用 Saga 编排 + 反向补偿，ADR-0007 初版�
 关键实现：
 
 - 下单入口：[OrderCommandHandler.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/command/OrderCommandHandler.java)
-- 锁：[DistributedRedissonLockAdapter.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/lock/DistributedRedissonLockAdapter.java)（`DistributedLockPort` 的 Redisson 实现，收敛 order/payment/超时任务三处用法）、执行：`OrderItemPreparer.java`
+- 锁：[DistributedRedissonLockAdapter.java](../../easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/lock/DistributedRedissonLockAdapter.java)（`DistributedLockPort` 的 Redisson 实现，收敛下单、订单状态迁移、支付、AI 会话四处用法）、执行：`OrderItemPreparer.java`
 - 生命周期消费者：[OrderLifecycleEventConsumer.java](../../easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/adapter/inbound/messaging/OrderLifecycleEventConsumer.java)（队列 `eo.order.lifecycle`）
 
 核心驱动力：

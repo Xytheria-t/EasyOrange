@@ -11,7 +11,7 @@
 
 EasyOrange 的事件驱动架构已经落地：
 - 1 个 **Topic Exchange** `eo.domain.events`，路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`）
-- **每个业务模块一个独立事件消费者**（独占一个队列 `eo.{name}`，队列数 = 消费者数 = DLQ 队列数），完全是 pub/sub 模式：**同一条领域事件被多个下游各消费各的、各 ack 各的、各有各的失败重试链路**
+- **队列按用途分，不按模块分**：8 条业务队列，命名 `eo.{模块}.{用途}`（order 3 条 / audit 2 条 / product · payment · message 各 1 条），每条配一条 `{queue}.dlq`；消费者各自独占队列、只绑定自己关心的路由键子集（`product.#`、`order.created`、`payment.succeeded` …）。完全是 pub/sub 模式：**同一条领域事件被多个下游各消费各的、各 ack 各的、各有各的失败重试链路**
 - **DLQ 三级重试链路**：队列级 `x-dead-letter-exchange` → 失败消息自动路由到 `eo.{name}.dlq` → `DlqRetryScheduler` 每 5 分钟扫描 DLQ → 按 `x-retry-count` 指数退避重投（1min/5min/15min，自死信时间起算，手动 ack 不丢消息）→ 超过 `max-retries=3` 的毒消息转储 `eo.dlq.terminal` 等待人工介入
 - **Spring Modulith Outbox 模式**：业务表 + `EVENT_PUBLICATION` 表与应用事务同原子写入，崩溃恢复时 Modulith 自动重发未完成事件
 - **幂等**：`EventIdempotencyChecker` 基于 Redis SETNX + TTL
@@ -21,7 +21,7 @@ EasyOrange 的事件驱动架构已经落地：
 已在使用的 RabbitMQ 能力清单：
 - Topic Exchange + routing key 路由
 - 队列级 DLX + DLQ 绑定（`x-dead-letter-exchange` / `x-dead-letter-routing-key`）
-- 手动 ack / nack（`AbstractDomainEventConsumer` 统一处理）
+- 手动 ack / nack（`EventConsumerHandler` 统一处理——幂等 / 元数据 / 指标 / DLQ 四横切一处收口）
 - 消息头注入 traceId（`EventMetadataMessagePostProcessor`），消费者端 decode 回 MDC
 
 强制约束：
@@ -49,7 +49,6 @@ EasyOrange 的事件驱动架构已经落地：
 
 - 无切换风险：现有消费者 + Outbox + DLQ 三级重试 + traceId 全链路完全保留，测试不需要重写
 - 选型可充分辩护：「为什么不用 Kafka？」可直接引用本 ADR 的 4 条决策依据（DLQ/模型/成本/运维），体现**选型思维（量、场景、成本、模型匹配综合判断）> 追新思维（「 Kafka 最火就用 Kafka」）**
-- 可切换兜底：保留 `MessageBus` Port 抽象 + NATS 备选 Adapter 后，可现场演示一键切换，验证 Port 抽象的可替换性
 - 本地启动轻：`docker compose up` 只多一个 RabbitMQ 容器，开发者不需要管多组件依赖
 
 ### 负向后果
@@ -57,6 +56,7 @@ EasyOrange 的事件驱动架构已经落地：
 - 存在「默认 Kafka = 消息队列标准」的认知偏差风险，需要本 ADR 记录 4 条决策依据（见 §备选方案 下每条的拒绝理由）才能充分辩护
 - RabbitMQ 吞吐上限低于 Kafka / NATS Core，但在当前项目量级（<10k msg/s）是纯摆设，不构成真实瓶颈
 - DLQ `x-message-ttl` 与调度器延迟可能叠加（队列级 TTL 到了自动进 DLQ，调度器 5 分钟才扫一次），实际延迟会比「指数退避值」略大；当前采用调度器扫描模型（非纯 TTL 重投），可观测性更好，这个 trade-off 可接受
+- **「一键换 MQ」这个能力不存在**：`MessageBus` Port + `NATSJetStreamMessageBusAdapter` 只是 §备选方案 里的**提案**，全仓零实现（无 `MessageBus` 接口、无 `easyorange.messaging.bus` 配置键）。可辩护的是「为什么选 RabbitMQ」，**不是「我们能随时切」**——别把提案讲成已落地能力
 
 ### 缓解措施
 
