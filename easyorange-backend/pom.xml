@@ -452,8 +452,9 @@
                                 </requireMavenVersion>
                                 <!-- 不启用 dependencyConvergence：本项目大量用 dependencyManagement 显式钉版
                                      （netty/tomcat/jackson/swagger/ai 覆盖），该规则会把「已显式收敛」的传递依赖
-                                     也报成冲突，产生长尾噪声。版本收敛由显式 dependencyManagement +
-                                     OWASP dependency-check（-Pci）+ Renovate 管线共同承担。 -->
+                                     也报成冲突，产生长尾噪声。收敛靠显式 dependencyManagement，漏洞面靠
+                                     OWASP dependency-check（-Powasp，security-scan.yml nightly）兜底，
+                                     升级本身走人工评审 —— dependabot 只管 GitHub Actions。 -->
                             </rules>
                         </configuration>
                     </execution>
