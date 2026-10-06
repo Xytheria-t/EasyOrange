@@ -57,7 +57,7 @@
         <redisson.version>4.7.0</redisson.version>
         <springdoc.version>3.1.1</springdoc.version>
         <swagger-annotations.version>2.2.53</swagger-annotations.version>
-        <spring-ai.version>2.0.0</spring-ai.version>
+        <spring-ai.version>2.0.1</spring-ai.version>
 
         <!-- JaCoCo 覆盖率门禁：本地默认不阻断，CI 用 -Djacoco.haltOnFailure=true 启用。
              阈值按模块校准（2026-09-25 全模块实测，数字见 doc/工程指标.md §2.1）：
