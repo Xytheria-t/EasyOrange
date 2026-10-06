@@ -10,7 +10,7 @@ git config core.hooksPath .githooks
 
 | 文件 | 用途 | 耗时 |
 |------|------|------|
-| `pre-commit` | staged 内容快速检查（密钥 + 空白 + 冲突标记 + 大文件 + 前端 lint + **后端 spotless 格式** + 文档口径校验 + 上下文预算） | <1s~几秒 |
+| `pre-commit` | staged 内容快速检查（密钥 + 空白 + 冲突标记 + 大文件 + 前端 lint + **管理端/C 端样式漂移** + **后端 spotless 格式** + 文档口径校验 + 上下文预算 + 注释双重门禁 + 文档链接 + 走读类名巡检） | <1s~几秒 |
 | `pre-push` | 重门禁（后端 `spotless:check` + `mvn test` + 前端 `typecheck:all` + `npm test`，按推送变更分发） | 数秒~数分钟 |
 | `commit-msg` | Conventional Commits 格式校验（标题 + breaking change）+ 消息-内容一致性（纯文档提交必须标 `docs`） | <100ms |
 | `check-test-tier-drift.py` | 文档的「集成测试」声明 vs 代码事实（`*IT` 文件 + pom failsafe 绑定）一致性校验 | <100ms |
@@ -18,7 +18,12 @@ git config core.hooksPath .githooks
 | `check-context-budget.py` | AGENTS.md 份数（≤3）与字符预算（根 3000 / 单个嵌套册 13500；逐文件判，不求和） | <100ms |
 | `check-doc-links.py` | 仓库内 `*.md` 的相对链接与锚点可解析（文件改名 / 拆册 / 重排章号后的静默 404） | <100ms |
 | `check-comment-dup.py` | 跨层级重复注释：方法 / 行内注释是否在复述本类的类注释（AGENTS.md「注释」一节的机器门禁）。语义例外收在 `comment-dup-allowlist.txt`，必填理由 | <150ms |
+| `check-comment-budget.py` | 注释预算：类 javadoc ≤ 8 行、单文件注释行 ≤ 代码行（小文件 +8）、禁 TODO。上一条抓「重复」，这条抓「过长 / 过密 / 欠债」 | <150ms |
+| `check-admin-style-drift.py` | 管理端样式取值只能来自 `styles/admin.css` 令牌：tsx / ts 里出现裸 hex、裸 rgba()、Tailwind 任意色值或未定义的 `--admin-*` 令牌即失败 | <150ms |
+| `check-frontend-style-drift.py` | C 端同一口径：页面 CSS 出现白名单外裸色值，或引用未定义且无 fallback 的 CSS 变量（悬空 `var()` 静默失效、不报错） | <150ms |
 | `_lib.sh` | 共享工具（颜色、日志、SKIP、staged 文件、密钥扫描、快检函数） | — |
+
+> 后三支是 2026-09 样式/注释收口时上的锁：规则写进 AGENTS.md 没人记得，机器拦才有约束力（清过一次散落：181 处裸 hex + 92 处任意色值 / 约 600 处裸色值 + 10 处悬空引用）。
 
 **职责分层**：`pre-commit` 只放秒级快检（后端格式门禁实测全后端 ~2s，仍在这个量级内），编译/测试的重活放 `pre-push`。
 
@@ -43,11 +48,16 @@ SKIP=1        git commit -m "..."   # 任何非空值都视为跳过
 | 任意文本 | merge 冲突标记残留（`<<<<<<<`/`>>>>>>>`） | grep（staged diff） |
 | 任意文本 | 大文件 >2MB | `git cat-file -s`（staged blob） |
 | `easyorange-frontend/{src,tests}/**/*.{ts,tsx,js,jsx}` | `biome check`（仅变更文件） | `node_modules/.bin/biome` |
+| `easyorange-frontend/src/admin/**/*.{ts,tsx}` | 管理端样式漂移（取值未走 `admin.css` 令牌） | `python3 check-admin-style-drift.py --staged` |
+| `easyorange-frontend/src/**/*.css` | C 端样式漂移（白名单外裸色值 / 悬空变量引用） | `python3 check-frontend-style-drift.py --staged` |
 | `easyorange-backend/**/*.java` | 格式门禁 `spotless:check`（`-Pci`，与 CI 同源） | `mvnw` |
 | `**/*.md` / `easyorange-backend/pom.xml` | 测试口径漂移校验（文档声明 vs 代码事实） | `python3 check-test-tier-drift.py` |
 | `**/*.md` / `pom.xml` / `*.sql` / `*.java` | 结构计数漂移校验（单点区块 vs 代码事实 + 区块外不得出现） | `python3 check-metrics-drift.py` |
 | `**/AGENTS.md` | 上下文预算校验（份数 + 字符预算） | `python3 check-context-budget.py` |
 | `**/*.java`（后端主源码） | 跨层级重复注释校验（方法 / 行内注释未复述类注释） | `python3 check-comment-dup.py` |
+| `**/*.java`（后端主源码） | 注释预算（类 javadoc 长度 / 注释密度 / TODO） | `python3 check-comment-budget.py` |
+| `**/*.md` | 文档链接与锚点可解析 | `python3 check-doc-links.py` |
+| `**/*.md` / `**/*.java` | 走读类名巡检（`doc/interview/02` 散文里提到的类在源码里还在不在） | `python3 ../doc/interview/check-drift.py --symbols` |
 | 纯文档/Markdown/YAML | 跳过（仅过密钥扫描 + 口径校验） | — |
 
 > 文档不复刻版本号（权威源只有 `pom.xml` / `package.json` / `compose.yaml`），因此**没有版本漂移校验**。
