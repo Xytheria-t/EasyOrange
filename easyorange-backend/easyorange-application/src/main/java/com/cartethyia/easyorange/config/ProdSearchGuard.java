@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.cartethyia.easyorange.framework.config.properties.ElasticsearchProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
@@ -21,8 +21,8 @@ import org.springframework.context.annotation.Profile;
 @Profile("prod")
 public class ProdSearchGuard {
 
-    public ProdSearchGuard(@Value("${easyorange.search.elasticsearch.enabled:false}") boolean esEnabled) {
-        if (!esEnabled) {
+    public ProdSearchGuard(ElasticsearchProperties searchProperties) {
+        if (!searchProperties.enabled()) {
             throw new IllegalStateException("生产环境必须启用 ES（easyorange.search.elasticsearch.enabled=true）："
                     + "RAG 检索在无 ES 时降级为 MySQL LIKE，同一金标准集实测 hit@5 仅 10%。"
                     + "如确需接受该降级，请显式移除本守卫并把决策记入 ADR。");

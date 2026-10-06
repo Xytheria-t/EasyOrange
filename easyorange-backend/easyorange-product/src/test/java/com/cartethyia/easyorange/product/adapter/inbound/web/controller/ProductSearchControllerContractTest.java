@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.product.adapter.inbound.web.assembler.ProductSearchAssembler;
 import com.cartethyia.easyorange.product.application.port.query.FacetBucket;
 import com.cartethyia.easyorange.product.application.query.ProductSearchQueryHandler;
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,6 +35,8 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @WebMvcTest(ProductSearchController.class)
 @AutoConfigureMockMvc(addFilters = false)
+// 转换在 assembler 里，本用例验的就是它产出的响应形状——导入真实实现而不是 mock 掉
+@Import(ProductSearchAssembler.class)
 @DisplayName("契约冒烟：商品搜索端点")
 class ProductSearchControllerContractTest {
 

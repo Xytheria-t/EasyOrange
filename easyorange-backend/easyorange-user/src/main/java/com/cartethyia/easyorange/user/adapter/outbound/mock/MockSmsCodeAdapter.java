@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.adapter.outbound.mock;
 
+import com.cartethyia.easyorange.framework.config.properties.SmsProperties;
 import com.cartethyia.easyorange.user.domain.constant.UserSecurityConstant;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
@@ -7,7 +8,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -33,8 +33,8 @@ public class MockSmsCodeAdapter implements SmsCodePort {
     private final String demoCode;
 
     @Autowired
-    public MockSmsCodeAdapter(SmsSenderPort smsSenderPort, @Value("${easyorange.sms.demo-code:}") String demoCode) {
-        this(smsSenderPort, Clock.systemUTC(), demoCode);
+    public MockSmsCodeAdapter(SmsSenderPort smsSenderPort, SmsProperties smsProperties) {
+        this(smsSenderPort, Clock.systemUTC(), smsProperties.demoCode());
     }
 
     /** 测试注入 Clock，免等 5 分钟真实 TTL 才能验证过期路径。 */
