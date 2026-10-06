@@ -31,7 +31,7 @@
 1. **算法**：`UuidV7` 静态工具 —— 48-bit Unix 毫秒时间戳 | 4-bit 版本(7) | 12-bit 随机 | 2-bit 变体 | 62-bit 随机；随机源用 `ThreadLocalRandom`（122 位随机后缀不需要加密安全强度，无锁无熵阻塞）。时间戳在前 ⇒ 时间有序。
 2. **生成时机与注入**：实体 ID 经 `IdGenerator` Port 由应用层注入（`UuidV7IdGenerator` 为 `@Primary`）；领域事件 ID 在聚合根内直接静态生成（纯算法、无外部协调，无需 Port）。
 3. **落库形态**：`VARCHAR(36)` + `IdType.INPUT`，全库同构，跨模块 ACL 以 String 作契约，前端无类型转换负担。
-4. **订单号派生**：`OrderNo.of("ORD" + orderId.value())` —— 订单号 = `ORD` 前缀 + 订单 ID，共 39 位；唯一性从主键继承，另由 `uk_eo_order_order_no` 唯一索引兜底。库存流水的幂等键 `bizId` 用**订单 ID**（`VARCHAR(36)` 装不下 39 位订单号）。
+4. **订单号派生**：`OrderNo.forOrderId(orderId)`（`of(String)` 只用于持久化重建）—— 订单号 = `ORD` 前缀 + 订单 ID，共 39 位；唯一性从主键继承，另由 `uk_eo_order_order_no` 唯一索引兜底。库存流水的幂等键 `bizId` 用**订单 ID**（`VARCHAR(36)` 装不下 39 位订单号）。
 5. **二级索引与主键同宽**：业务表索引普遍包含 36 字节 ID 列（如 `eo_order` 的 `(buyer_id, status, del_flag, create_time DESC)`）。
 
 关键实现：

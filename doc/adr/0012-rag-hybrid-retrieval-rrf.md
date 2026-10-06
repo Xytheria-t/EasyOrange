@@ -59,7 +59,7 @@
 ### 缓解措施
 
 - 单路失败降级为单路召回，避免次要矛盾（BM25 抖动）升级为主要矛盾（零召回）。
-- `GoldenSetCorpusTest`（常驻、不需要 API key）断言「gold_doc_ids 必须存在于种子语料」「语料规模 ≥ topK × 3 倍」「种子文档均为单块」，防止语料被删回与 topK 同量级而指标悄悄失去意义。
+- `GoldenSetCorpusTest`（常驻、不需要 API key）断言「gold_doc_ids 必须存在于种子语料」「语料规模 ≥ topK × 3 倍」「**语料含多块长文档**（正文 ≥ 分块阈值 500 字）且这些多块文档被金标准集引用」——防止语料被删回与 topK 同量级而指标悄悄失去意义，也防 chunking 行为没人盯（该断言方向 2026-09 由「均为单块」反转为「必须有多块」：全单块等于分块质量从未进过评测范围）。
 - 检索指标逐条落 `eo_retrieval_metric`（含 run_id 与每条 hit 命中位置），参数调整可基于历史数据回看。
 
 ## 备选方案（Alternatives Considered）

@@ -33,13 +33,17 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 ### 1. 模型 Bean（[AiModelConfig.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/config/AiModelConfig.java)）
 
-三个 bean 统一走 `OpenAiSetup.setupSyncClient`：
+**五个 bean**统一走 `OpenAiSetup.setupSyncClient`（文本 / 决策 / 视觉 / 评审 / Embedding）：
 
 | Bean | 端点 | 模型 | 注入处 |
 |------|------|------|--------|
-| `chatModel`（`@Primary`） | DeepSeek `https://api.deepseek.com` | `deepseek-chat` | 发布助手文本生成 / 对话与工具决策 / LLM-as-Judge 评审（另：搜索意图识别，2026-09 随搜索增强下线） |
-| `visionChatModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-vl-max` | 拍照上架图片识别 |
+| `chatModel`（`@Primary`） | DeepSeek `https://api.deepseek.com` | `deepseek-chat` | 发布助手文本生成 / 对话生成 / 未指定场景时的回落（另：搜索意图识别，2026-09 随搜索增强下线） |
+| `decisionChatModel` | 同上（决策与生成分离） | `easyorange.ai.text.router-model`，留空即与 `chatModel` 同模型 | 多步循环的决策轮——纯路由任务，留给快模型 |
+| `visionChatModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-vl-max` | 拍照上架图片识别 + 成稿生成（带原图） |
+| `judgeChatModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus` | LLM-as-Judge 评审——独立评审模型，家族异于生成模型以消自评偏差 |
 | `embeddingModel` | DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` | `text-embedding-v3`（dimensions=1024） | 语义召回（商品 / 知识库）+ ES 索引写入 |
+
+> 场景 → bean 的映射在 `easyorange.ai.routing.scenarios`（`vision: visionChatModel` / `judge: judgeChatModel`），由 `AiModelRouter` 按场景名从容器取，**四个模型 bean 都不加 `@Qualifier`**——加注解得改代码，按场景路由才能 yaml 热更换模型。
 
 > 表中端点与模型是**默认值**（不带任何环境变量即可跑通的形态），非部署实况。配置槽位后来按职责改名为
 > `easyorange.ai.text` / `easyorange.ai.vision` / `easyorange.ai.embedding`（键名不带厂商名，厂商只作为
@@ -49,7 +53,7 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 ### 2. 调用去重（[AiModelSupport.java](../../easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/support/AiModelSupport.java)）
 
-`callText` / `callJson`（`response_format=json_object`）/ `embed`（`float[] → List<Float>`）/ `analyzeImages`（多图 Media + `UserMessage.builder`）四个静态工具收敛重复调用模式，**不是**端口/适配器抽象，只是代码去重。
+`AiModelSupport`（`@Component` 实例 bean，非静态工具类）收敛重复调用模式，**不是**端口/适配器抽象，只是代码去重——当前方法面：`callText`（文本 / 多消息两个重载）/ `callJson`（`response_format=json_object`）/ `callJsonAsWithImages`（多图 Media + `UserMessage.builder`）/ `callWithTools` / `callTextStream`（两个重载）/ `embed`（`float[] → List<Float>`）/ `embedBatch`。**带 `AiCallScope` 才记账**（落 `eo_ai_call_log` + 真实 token 入预算），不带不记——`AiJudge` 刻意走账外防自指。
 
 ### 3. 删除清单
 
@@ -67,7 +71,7 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 ### 5. Embedding 变真实现
 
 - 查询侧：`QueryEmbeddingAdapter.embed(keyword)` 用 `embeddingModel.embed(...)` 生成查询向量，经 `ProductSearchQueryPort` 传入 `ElasticsearchProductSearchQueryAdapter` 的 kNN 查询（`nameEmbedding` 字段）
-- 索引侧：`ElasticsearchProductSearchIndexAdapter.buildDocument()` 注入 `ObjectProvider<EmbeddingModel>`，best-effort 写入 `nameEmbedding`（失败降级 null，不阻塞索引），维度 1024 与 `product-mapping.json` 的 `dense_vector dims=1024` 对齐
+- 索引侧：`ElasticsearchProductSearchIndexAdapter.buildDocument()` 注入 `ObjectProvider<QueryEmbeddingPort>`（**不是**直接注入 `EmbeddingModel`——直调会绕开预算记账与调用日志，端口由 product 定义、ai 实现），best-effort 写入 `nameEmbedding`（失败降级 null，不阻塞索引），维度 1024 与 `product-mapping.json` 的 `dense_vector dims=1024` 对齐
 
 ## 后果（Consequences）
 
@@ -83,7 +87,7 @@ EasyOrange 的 AI 能力自 2025-11 起基于自研基础设施构建，到 2026
 
 - **自定义指标丢失**：`easyorange.ai.cache.*` / `easyorange.ai.ratelimit.*` 等自定义指标删除；缓存命中率类指标需依赖 Spring AI 内置观测或后续自行补充
 - **JSON 结构化输出依赖 OpenAI 协议**：`callJson` 用 `OpenAiChatModel.ResponseFormat`（OpenAI 特有），若切换到非 OpenAI 兼容供应商需另改
-- **供应商 Bean 名称约定**：视觉 bean 注入需 `@Qualifier("visionChatModel")`，字段级注解与 Lombok 构造器注入顺序有约定成本
+- **供应商 Bean 名称约定**：场景 → bean 名写在 yaml（`easyorange.ai.routing.scenarios`），改模型热更即可；代价是 bean 名成了**字符串契约**，编译期看不见，且 `AiModelRouter` 对未配置场景**静默回退 default-model**（症状是「图片分析悄悄走了文本模型」，不是报错）——由 `RoutingScenarioContractTest` 钉住「代码引用的场景键必须在 yaml 里配且 bean 名非空」
 - **Spring AI 尚新**：依赖框架自身的稳定性与 API 演进节奏（见 #5647 风险）
 
 ### 缓解措施
