@@ -167,7 +167,7 @@ flowchart TB
 | **安全** | Spring Security OAuth2 Resource Server · **双 Token**：RSA 签名 Access（30min 无状态）+ Opaque Refresh（Redis SHA-256，HttpOnly Cookie，轮换 + 复用检测）· BCrypt |
 | **前端** | React · TypeScript · Vite · React Router · TanStack Query · Zustand · Tailwind CSS · shadcn/ui · react-hook-form + Zod · Framer Motion · Biome · Playwright |
 | **数据 / 消息** | MySQL（utf8mb4 / InnoDB）· Redis（业务缓存单层，Caffeine 仅用于 stale / 图片处理等专用本地缓存）· RabbitMQ（Topic Exchange + Quorum Queue）· Elasticsearch（dev / prod 默认启用，关掉走 LIKE 兜底；**版本硬锁**见 `infra/elasticsearch/Dockerfile` 注释） |
-| **AI** | Spring AI · 文本 / 视觉 / Embedding 三槽位（默认 DeepSeek `deepseek-chat` + Qwen-VL + DashScope `text-embedding-v3`，部署实况为百炼托管，键名不带厂商）· MCP server（`@McpTool` 公开只读工具面） |
+| **AI** | Spring AI · **五个模型 bean**（文本 / 决策 / 视觉 / 评审 / Embedding；凭据四个槽位 `text` / `vision` / `judge` / `embedding`，默认 DeepSeek `deepseek-chat` + Qwen-VL + DashScope `qwen-plus` + `text-embedding-v3`，部署实况为百炼托管，键名不带厂商）· MCP server（`@McpTool` 公开只读工具面） |
 | **可靠性** | Redisson（分布式锁 / 令牌桶）· Spring Modulith Outbox · CacheErrorHandler fail-open · UUID v7 主键 |
 | **可观测** | Micrometer + Prometheus · OpenTelemetry（traceId → Langfuse）· Spring AI Observation · StructuredLogEncoder（prod 输出 logstash JSON） |
 | **DevOps** | Docker / docker-compose（多阶段构建，非 root 运行）· GitHub Actions · Flyway（DDL / DML 分离） |
