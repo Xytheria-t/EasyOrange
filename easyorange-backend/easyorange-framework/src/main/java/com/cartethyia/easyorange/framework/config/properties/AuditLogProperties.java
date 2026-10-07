@@ -78,6 +78,19 @@ public record AuditLogProperties(
         map.put("Notice", "通知公告");
         map.put("LoginLog", "登录日志");
         map.put("AuditLog", "审计日志");
+        // 匹配是「类名去 Controller/Command/Query 后找最长的键包含于其中」，所以比 "AiKnowledge" 更长的
+        // 键会被优先命中；少了下面这些，审计记录的模块名会回退成英文类名
+        map.put("Category", "分类管理");
+        map.put("Dashboard", "仪表盘");
+        map.put("AiChat", "AI 对话");
+        map.put("AiFeedback", "AI 反馈");
+        map.put("AiKnowledge", "AI 知识库");
+        map.put("AiListing", "AI 发布助手");
+        map.put("AiAdminCostReport", "AI 成本报表");
+        map.put("AiAdminFeedbackExport", "AI 反馈导出");
+        map.put("AiAdminKnowledge", "AI 知识库管理");
+        map.put("AiAdminListingAdoption", "AI 采纳率");
+        map.put("AiAdminRetrievalEval", "AI 检索评测");
         return map;
     }
 
@@ -137,6 +150,25 @@ public record AuditLogProperties(
         // 登录类操作
         map.put("login", new MethodMapping("登录", BusinessType.LOGIN));
         map.put("logout", new MethodMapping("登出", BusinessType.LOGIN));
+
+        // 本仓已有的动作动词 —— 漏配不会丢记录，但标题会回退成英文方法名（findMapping 无命中 → 原名 + OTHER）
+        map.put("reindex", new MethodMapping("重建索引", BusinessType.UPDATE));
+        map.put("payOrder", new MethodMapping("支付", BusinessType.UPDATE));
+        map.put("paymentCallback", new MethodMapping("支付回调", BusinessType.UPDATE));
+        map.put("shipOrder", new MethodMapping("发货", BusinessType.UPDATE));
+        map.put("refund", new MethodMapping("退款", BusinessType.UPDATE));
+        map.put("putOnline", new MethodMapping("上架", BusinessType.UPDATE));
+        map.put("takeOffline", new MethodMapping("下架", BusinessType.UPDATE));
+        map.put("close", new MethodMapping("关闭", BusinessType.UPDATE));
+        map.put("smsLogin", new MethodMapping("短信登录", BusinessType.LOGIN));
+        map.put("verify", new MethodMapping("校验", BusinessType.OTHER));
+        map.put("recordSearch", new MethodMapping("记录搜索", BusinessType.OTHER));
+        map.put("feedback", new MethodMapping("反馈", BusinessType.ADD));
+        map.put("incrementViewCount", new MethodMapping("浏览计数", BusinessType.OTHER));
+        map.put("autoListing", new MethodMapping("拍照识别上架", BusinessType.OTHER));
+        map.put("chat", new MethodMapping("AI 对话", BusinessType.OTHER));
+        map.put("stream", new MethodMapping("流式请求", BusinessType.OTHER));
+        map.put("mock", new MethodMapping("模拟网关", BusinessType.OTHER));
 
         // 其它（仅记录标题，不归属具体业务类型）
         map.put("export", new MethodMapping("导出", BusinessType.OTHER));
