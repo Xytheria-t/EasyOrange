@@ -499,28 +499,6 @@ body {
     }
 }
 
-@keyframes slideInLeft {
-    from {
-        opacity: 0;
-        transform: translateX(-40px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(40px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
 @media (prefers-reduced-motion: no-preference) {
     @keyframes float {
         0%,
@@ -579,18 +557,6 @@ body {
     }
 }
 
-@keyframes gradientShift {
-    0% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0% 50%;
-    }
-}
-
 @keyframes scaleIn {
     from {
         opacity: 0;
@@ -631,24 +597,6 @@ body {
     }
 }
 
-@keyframes textReveal {
-    from {
-        clip-path: inset(0 100% 0 0);
-    }
-    to {
-        clip-path: inset(0 0 0 0);
-    }
-}
-
-@keyframes borderDraw {
-    from {
-        stroke-dashoffset: 1000;
-    }
-    to {
-        stroke-dashoffset: 0;
-    }
-}
-
 /* ============ NEW ANIMATIONS - MICRO INTERACTIONS ============ */
 @keyframes heartbeat {
     0% {
@@ -679,40 +627,6 @@ body {
     }
 }
 
-@keyframes cursorGlow {
-    0%,
-    100% {
-        opacity: 0.6;
-        transform: translate(var(--mouse-x, 50%), var(--mouse-y, 50%)) scale(1);
-    }
-    50% {
-        opacity: 0.8;
-        transform: translate(var(--mouse-x, 50%), var(--mouse-y, 50%)) scale(1.1);
-    }
-}
-
-@keyframes btnRipple {
-    0% {
-        transform: scale(0);
-        opacity: 0.5;
-    }
-    100% {
-        transform: scale(4);
-        opacity: 0;
-    }
-}
-
-@keyframes navUnderline {
-    0% {
-        width: 0;
-        left: 50%;
-    }
-    100% {
-        width: 100%;
-        left: 0;
-    }
-}
-
 @keyframes hotPulse {
     0%,
     100% {
@@ -723,30 +637,7 @@ body {
     }
 }
 
-@keyframes toastSlide {
-    0% {
-        transform: translateX(-50%) translateY(100%) scale(0.9);
-        opacity: 0;
-    }
-    100% {
-        transform: translateX(-50%) translateY(0) scale(1);
-        opacity: 1;
-    }
-}
-
 @keyframes scrollIndicator {
-    0%,
-    100% {
-        opacity: 0.4;
-        transform: translateX(-50%) translateY(0);
-    }
-    50% {
-        opacity: 0.8;
-        transform: translateX(-50%) translateY(8px);
-    }
-}
-
-@keyframes scrollIndicatorFade {
     0%,
     100% {
         opacity: 0.4;

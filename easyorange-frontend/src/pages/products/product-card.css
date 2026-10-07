@@ -466,27 +466,6 @@
     outline: none;
 }
 
-@keyframes heartBeat {
-    0% {
-        transform: scale(1.12);
-    }
-    20% {
-        transform: scale(1.28);
-    }
-    40% {
-        transform: scale(1.08);
-    }
-    60% {
-        transform: scale(1.22);
-    }
-    80% {
-        transform: scale(1.12);
-    }
-    100% {
-        transform: scale(1.12);
-    }
-}
-
 .action-icon-premium.contact-btn-premium:hover {
     background: linear-gradient(135deg, var(--success) 0%, var(--status-success) 100%);
     border-color: transparent;
