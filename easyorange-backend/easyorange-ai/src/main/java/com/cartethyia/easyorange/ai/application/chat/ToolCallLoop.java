@@ -23,6 +23,7 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.support.ToolCallbacks;
@@ -41,6 +42,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class ToolCallLoop {
 
+    /**
+     * 机器主体标识 —— 唯一非登录调用方是评估跑批（{@code GoldenSetEvaluator}）：会话 / 缓存键照常按此主体隔离，
+     * 跑批与真人互不串记忆与缓存；而 {@link #attributedUserId} 把它收敛成 null，画像写不进（{@link ChatTools}
+     * 拒收）、trace 的 user_id 为空。
+     */
+    public static final String MACHINE_SUBJECT = "machine";
+
     /** 决策对话的 system prompt 键（与 {@code prompts/ai_chat_tool.yml} 的 name 同名）。 */
     private static final String CHAT_TOOL_PROMPT = "ai_chat_tool_system";
     /** 未知工具观察里的工具名清单（与 {@link ChatTools} 的常量同源，不重写字面量）。 */
@@ -53,12 +61,6 @@ public class ToolCallLoop {
             ChatTools.TOOL_COMPARE_ASSETS,
             ChatTools.TOOL_REMEMBER_PREFERENCE,
             ChatTools.TOOL_FINISH);
-
-    /**
-     * 机器主体标识 —— 唯一非登录调用方是评估跑批（{@code GoldenSetEvaluator}）：会话 / 缓存键照常按此主体隔离，但画像不
-     * 落库、trace 的 user_id 为空。HTTP 入口无匿名路径（身份缺失即 401），故「机器主体」≠「匿名用户」。
-     */
-    public static final String MACHINE_SUBJECT = "machine";
 
     private final PromptRegistryPort promptRegistry;
     private final ChatToolsFactory toolsFactory;
@@ -94,7 +96,8 @@ public class ToolCallLoop {
     /**
      * 一次循环的输入 — 记忆（历史 / 画像）由调用方装配，循环只管「决策 → 工具 → 观察」。
      *
-     * @param sessionId 可空（请求不带会话），两处消费方各自兜底：trace 落 anonymous 桶、会话记忆无会话 fail-open
+     * @param sessionId 可空（请求不带会话），两处消费方各自兜底：trace 的 session_id 列补 {@code anonymous} 哨兵、
+     *                  会话记忆无会话 fail-open
      * @param userId    评估跑批传 {@link #MACHINE_SUBJECT}，画像不落库
      * @param handler   可空：非流式路径不推 step 事件，trace / 指标照常
      * @param toolAllowList 工具白名单，null = 全量工具面（生产路径）；非空则只装配列出的工具，供
@@ -140,6 +143,8 @@ public class ToolCallLoop {
         }
     }
 
+    // ── 入口与装配 ──
+
     public Result run(Input input) {
         ChatTools tools = toolsFactory.create(attributedUserId(input));
         ToolLoopKernel.Outcome outcome = loopKernel.run(spec(input, tools), chatDecider());
@@ -161,44 +166,20 @@ public class ToolCallLoop {
                 metrics);
     }
 
-    /** 决策走 chat 场景快模型、记账进 chat 预算；入参摘要按本链路工具面取。 */
-    private ToolLoopDecider chatDecider() {
-        return (sessionId, messages, callbacks) ->
-                decider.decideForLoop(sessionId, messages, callbacks, AiCallScope.CHAT, ToolCallLoop::toolInputOf);
+    @Nullable
+    private static String attributedUserId(Input input) {
+        return MACHINE_SUBJECT.equals(input.userId()) ? null : input.userId();
     }
 
     /** 白名单为 null 时装配全量工具面；否则只装配白名单内的工具（模型拿不到 schema 就调不到）。 */
     private static List<ToolCallback> dispatcherCallbacks(ChatTools tools, @Nullable Set<String> allowList) {
-        return List.of(ToolCallbacks.from(tools)).stream()
+        return Stream.of(ToolCallbacks.from(tools))
                 .filter(callback -> allowList == null
                         || allowList.contains(callback.getToolDefinition().name()))
                 .toList();
     }
 
-    /** 决策失败的降级补检索 — 判重口径与工具步一致（在 {@code ChatTools} 内），自身故障不外抛（对话不死在降级路径）。 */
-    private void fallbackSearch(Input input, ChatTools tools) {
-        if (!allowsKnowledgeSearch(input)) {
-            return;
-        }
-        try {
-            tools.searchKnowledgeForFallback(input.question());
-        } catch (Exception e) {
-            log.warn(
-                    "action=tool_call_fallback_search_failed, sessionId={}, reason={}",
-                    input.sessionId(),
-                    FailureReason.of(e));
-        }
-    }
-
-    private static boolean allowsKnowledgeSearch(Input input) {
-        Set<String> allowList = input.toolAllowList();
-        return allowList == null || allowList.contains(ChatTools.TOOL_KNOWLEDGE_SEARCH);
-    }
-
-    @Nullable
-    private static String attributedUserId(Input input) {
-        return MACHINE_SUBJECT.equals(input.userId()) ? null : input.userId();
-    }
+    // ── 首轮上下文 ──
 
     /**
      * 首条 user 消息（问题 / 历史 / 画像）— 每请求固定不变，是全部轮次共享的前缀：改一个字节这轮的 KV cache 就全部作废。
@@ -232,6 +213,14 @@ public class ToolCallLoop {
                 .collect(Collectors.joining("\n"));
     }
 
+    // ── 决策 ──
+
+    /** 决策走 chat 场景快模型、记账进 chat 预算；入参摘要按本链路工具面取。 */
+    private ToolLoopDecider chatDecider() {
+        return (sessionId, messages, callbacks) ->
+                decider.decideForLoop(sessionId, messages, callbacks, AiCallScope.CHAT, ToolCallLoop::toolInputOf);
+    }
+
     /**
      * 工具入参摘要（trace 落库与失败日志用）—— 按工具名取对应分量，其余工具分量为 null 是常态。工具名缺失已在
      * {@link ToolCallDecision} 构造期收敛成空串，这里走 default 即可：再判一次空等于同一件事防两遍。
@@ -250,5 +239,27 @@ public class ToolCallLoop {
 
     private static String orEmpty(@Nullable String value) {
         return value == null ? "" : value;
+    }
+
+    // ── 降级 ──
+
+    /** 决策失败的降级补检索 — 判重口径与工具步一致（在 {@code ChatTools} 内），自身故障不外抛（对话不死在降级路径）。 */
+    private void fallbackSearch(Input input, ChatTools tools) {
+        if (!allowsKnowledgeSearch(input)) {
+            return;
+        }
+        try {
+            tools.searchKnowledgeForFallback(input.question());
+        } catch (Exception e) {
+            log.warn(
+                    "action=tool_call_fallback_search_failed, sessionId={}, reason={}",
+                    input.sessionId(),
+                    FailureReason.of(e));
+        }
+    }
+
+    private static boolean allowsKnowledgeSearch(Input input) {
+        Set<String> allowList = input.toolAllowList();
+        return allowList == null || allowList.contains(ChatTools.TOOL_KNOWLEDGE_SEARCH);
     }
 }
