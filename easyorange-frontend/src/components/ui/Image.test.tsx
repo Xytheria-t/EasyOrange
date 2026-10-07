@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Image } from './Image';
 
 // Mock placeholder image import
-vi.mock('@/assets/placeholder.png', () => ({
-    default: 'placeholder.png',
+vi.mock('@/assets/placeholder.svg', () => ({
+    default: 'placeholder.svg',
 }));
 
 describe('Image', () => {

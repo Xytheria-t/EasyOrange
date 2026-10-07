@@ -26,7 +26,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { productApi } from '@/api/productApi';
-import placeholderImage from '@/assets/placeholder.png';
+import placeholderImage from '@/assets/placeholder.svg';
 import { ErrorState } from '@/components/feedback/StateDisplay';
 import {
     Dialog,

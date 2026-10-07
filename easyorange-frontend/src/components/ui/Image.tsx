@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import placeholderImage from '@/assets/placeholder.png';
+import placeholderImage from '@/assets/placeholder.svg';
 
 interface ImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'srcSet'> {
     src: string | undefined;
@@ -22,7 +22,7 @@ const PLACEHOLDER_BASE_STYLE: React.CSSProperties = {
 const SKELETON_STYLE: React.CSSProperties = {
     ...PLACEHOLDER_BASE_STYLE,
     zIndex: 1,
-    // 取色与 global.css / main.css 的 .skeleton 同源：占位灰只有一套，别再散一份冷调灰
+    // 取色与 main.css 的 .skeleton 同源：占位灰只有一套，别再散一份冷调灰
     background: 'linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 50%, var(--gray-200) 75%)',
     backgroundSize: '200% 100%',
     animation: 'shimmer 1.5s infinite',
