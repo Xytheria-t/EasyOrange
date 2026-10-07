@@ -7,7 +7,11 @@ export interface StatusBadgeProps {
     className?: string;
 }
 
-type StatusConfig = { label: string; variant: StatusVariant };
+/**
+ * @param transient 过渡态：只在一瞬间存在（如切换启停的进行态），**不进筛选下拉**——
+ *                 它不是一个用户可以「筛」的稳定状态，列进去只会让人选中后永远筛出空列表。
+ */
+type StatusConfig = { label: string; variant: StatusVariant; transient?: boolean };
 
 const userStatusConfig: Record<string, StatusConfig> = {
     NORMAL: { label: '正常', variant: 'success' },
@@ -38,7 +42,7 @@ const categoryStatusConfig: Record<string, StatusConfig> = {
     '1': { label: '启用', variant: 'success' },
     '0': { label: '禁用', variant: 'default' },
     // 切换启停的进行态：全局 pending 会让整棵树一起变灰，这里只标当前那一行
-    UPDATING: { label: '更新中', variant: 'info' },
+    UPDATING: { label: '更新中', variant: 'info', transient: true },
 };
 
 /** 知识库文档的索引状态：RAG 摄入管线的对外可见阶段 */
@@ -105,11 +109,21 @@ export function statusVisual(
 }
 
 /** 由状态配置派生筛选下拉选项，避免页面再抄一份标签。 */
+/** 该类型的稳定状态选项（不含「全部」、不含过渡态），供表单里的状态选择器用。 */
+export function statusOptions(type: StatusBadgeProps['type']) {
+    return Object.entries(configMap[type])
+        .filter(([, config]) => !config.transient)
+        .map(([value, config]) => ({
+            value,
+            label: config.label,
+            dot: variantConfig[config.variant].dot,
+            color: variantConfig[config.variant].color,
+        }));
+}
+
+/** 筛选下拉用：多一条「全部」。与 {@link statusOptions} 同源，不再各抄一份标签。 */
 export function statusFilterOptions(type: StatusBadgeProps['type'], allLabel = '全部状态') {
-    return [
-        { value: '', label: allLabel },
-        ...Object.entries(configMap[type]).map(([value, config]) => ({ value, label: config.label })),
-    ];
+    return [{ value: '', label: allLabel }, ...statusOptions(type)];
 }
 
 /**

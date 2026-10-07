@@ -89,6 +89,8 @@ export function useStompChat(): UseStompChatReturn {
     useEffect(() => {
         // 未登录不建立连接；brokerURL 追加 ?token= 供后端 WebSocket 握手拦截器认证
         if (!token) {
+            // effect 里写 store 的一次幂等校正：setConnectionStatus 值未变时返回原 state，
+            // 不换引用 → 不触发重渲染 → 本 effect 的依赖数组不受影响，不会自激。
             setConnectionStatus('disconnected');
             return;
         }

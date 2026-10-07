@@ -1,10 +1,11 @@
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { AdminDetailModal } from '@/admin/components/AdminDetailModal';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { pickAvatarGradient } from '../../components/avatarGradient';
 import { ConfirmModal } from '../../components/ConfirmModal';
-import { StatusBadge, userTypeLabel } from '../../components/StatusBadge';
+import { StatusBadge, statusOptions as statusOptionsFor, userTypeLabel } from '../../components/StatusBadge';
 import type { AdminUser } from '../../types/admin';
 
 export interface UserDetailModalProps {
@@ -15,11 +16,8 @@ export interface UserDetailModalProps {
     loading?: boolean;
 }
 
-const statusOptions = [
-    { value: 'NORMAL', label: '正常', dot: 'var(--status-success-dot)' },
-    { value: 'DISABLED', label: '禁用', dot: 'var(--status-error-dot)' },
-    { value: 'LOCKED', label: '锁定', dot: 'var(--status-warning-dot)' },
-];
+// 从 StatusBadge 的配置出口派生：标签与圆点色都不再手抄（此前与 userStatusConfig 各写一份）
+const statusOptions = statusOptionsFor('user');
 
 /** 改成非正常态会影响该用户的登录能力，保存前要明确确认。 */
 const DESTRUCTIVE_STATUS: Record<string, string> = {
@@ -237,37 +235,17 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                                     <label
                                         key={opt.value}
                                         htmlFor={`user-status-${opt.value}`}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '0.4rem',
-                                            padding: '0.6rem',
-                                            borderRadius: 'var(--admin-radius-control)',
-                                            border: `1.5px solid ${isActive ? opt.dot : 'var(--admin-control-border)'}`,
-                                            background: isActive
-                                                ? 'var(--admin-accent-soft)'
-                                                : 'var(--admin-surface-solid)',
-                                            color: isActive ? 'var(--admin-accent)' : 'var(--admin-muted)',
-                                            fontSize: '0.84rem',
-                                            fontWeight: 600,
-                                            cursor: 'pointer',
-                                        }}
+                                        className="admin-status-choice"
+                                        data-active={isActive}
+                                        // 唯一的动态值：该状态的圆点色。静态布局全在 .admin-status-choice 里
+                                        style={{ '--choice-dot': opt.dot } as CSSProperties}
                                     >
                                         <RadioGroupItem
                                             value={opt.value}
                                             id={`user-status-${opt.value}`}
                                             className="sr-only"
                                         />
-                                        <span
-                                            aria-hidden="true"
-                                            style={{
-                                                width: 7,
-                                                height: 7,
-                                                borderRadius: 'var(--admin-radius-pill)',
-                                                background: opt.dot,
-                                            }}
-                                        />
+                                        <span aria-hidden="true" className="admin-status-choice-dot" />
                                         {opt.label}
                                     </label>
                                 );
