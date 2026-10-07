@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.redis.cache.CacheStatistics;
@@ -62,6 +63,18 @@ class JitterTtlRedisCacheWriter implements RedisCacheWriter {
     }
 
     // —— 读写与统计路径透传 ——
+
+    /**
+     * 带 loader 的读路径必须**显式透传**。接口里这个方法是 {@code default}，默认实现是
+     * 「读 → 未命中就跑 loader → 写」，**不带任何锁**；不覆盖它，装饰器会把 delegate 的加锁实现
+     * 整个挡在外面——{@code sync = true} 的单飞（防击穿）就永远走不到，而症状只是「缓存没生效」，
+     * 不报错、不降级，极难发现。
+     */
+    @Override
+    public byte @Nullable [] get(
+            String name, byte[] key, Supplier<byte[]> valueLoader, @Nullable Duration ttl, boolean timeToIdleEnabled) {
+        return delegate.get(name, key, valueLoader, jitter(ttl), timeToIdleEnabled);
+    }
 
     @Override
     public byte @Nullable [] get(String name, byte[] key) {

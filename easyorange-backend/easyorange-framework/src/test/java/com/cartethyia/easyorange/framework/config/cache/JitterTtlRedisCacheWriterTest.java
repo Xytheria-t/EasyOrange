@@ -10,7 +10,9 @@ import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 import java.util.random.RandomGeneratorFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -131,5 +133,38 @@ class JitterTtlRedisCacheWriterTest {
         var ttlCaptor = ArgumentCaptor.forClass(Duration.class);
         verify(delegate).put(eq(NAME), any(), any(), ttlCaptor.capture());
         assertThat(ttlCaptor.getValue()).isEqualTo(BASE);
+    }
+
+    @Test
+    @DisplayName("带 loader 的 get 必须透传 delegate —— 否则会把加锁实现挡在外面，防击穿静默失效")
+    void get_withLoader_delegatesToWriter() {
+        var delegate = mock(RedisCacheWriter.class);
+        var loaderCalls = new AtomicInteger();
+        Supplier<byte[]> loader = () -> {
+            loaderCalls.incrementAndGet();
+            return VALUE;
+        };
+        when(delegate.get(eq(NAME), any(), any(), any(), eq(false))).thenReturn(VALUE);
+
+        byte[] result = writer(delegate, () -> 0.0).get(NAME, KEY, loader, BASE, false);
+
+        assertThat(result).isEqualTo(VALUE);
+        // 接口里这个方法是 default，默认实现是「读 → 未命中跑 loader → 写」，不带锁。
+        // 不覆盖它就不会走到 delegate 这个重载上，sync=true 的单飞永远不生效。
+        verify(delegate).get(eq(NAME), any(), any(), any(), eq(false));
+        assertThat(loaderCalls).as("delegate 命中时不该由装饰器自己跑 loader").hasValue(0);
+    }
+
+    @Test
+    @DisplayName("带 loader 的 get：TTL 仍按比例抖动（该路径内部含一次 put）")
+    void get_withLoader_ttlJittered() {
+        var delegate = mock(RedisCacheWriter.class);
+        when(delegate.get(eq(NAME), any(), any(), any(), eq(false))).thenReturn(VALUE);
+
+        writer(delegate, () -> 0.5).get(NAME, KEY, () -> VALUE, BASE, false);
+
+        var ttlCaptor = ArgumentCaptor.forClass(Duration.class);
+        verify(delegate).get(eq(NAME), any(), any(), ttlCaptor.capture(), eq(false));
+        assertThat(ttlCaptor.getValue()).isGreaterThanOrEqualTo(BASE).isLessThan(BASE.plus(MAX_JITTER));
     }
 }

@@ -12,8 +12,9 @@ import org.springframework.stereotype.Component;
  * 商品缓存适配器 — Spring Cache 注解式（纯 Redis 单层，见 framework {@code RedisCacheConfig}）。
  * <p>
  * 三防在注解层收口：<b>防穿透</b>靠 null 结果一并缓存（无 {@code unless}），「ID 之后被创建」由写路径事件 evict 保证；
- * <b>防击穿在本路径未生效</b>——{@code sync = true} 的单飞由 cache writer 承担，而装配的是 {@code nonLockingRedisCacheWriter}
- * （判据与升级触发见 TD-034，本类同名单测跑的是 ConcurrentMapCache，别被它误导）；
+ * <b>防击穿</b>靠 {@code sync = true} 同 key 单飞——但单飞由 cache writer 承担、不是注解自己做的：writer 必须装配成
+ * locking，且 {@code JitterTtlRedisCacheWriter} 必须透传带 loader 的那次 {@code get}，**任缺一条都静默失效**（不报错、
+ * 不降级），两条由 {@code CacheSingleFlightIT} 拿真实 Redis 端到端钉住；
  * <b>防雪崩</b>的 TTL 随机抖动由 framework {@code JitterTtlRedisCacheWriter} 统一加，本层零感知。
  * <p>
  * Redis 故障由框架级 {@code CacheErrorHandler} fail-open，降级直查 DB。
