@@ -51,16 +51,6 @@ public class ToolCallLoop {
 
     /** 决策对话的 system prompt 键（与 {@code prompts/ai_chat_tool.yml} 的 name 同名）。 */
     private static final String CHAT_TOOL_PROMPT = "ai_chat_tool_system";
-    /** 未知工具观察里的工具名清单（与 {@link ChatTools} 的常量同源，不重写字面量）。 */
-    private static final String TOOL_NAME_LIST = String.join(
-            " / ",
-            ChatTools.TOOL_KNOWLEDGE_SEARCH,
-            ChatTools.TOOL_PRODUCT_SEARCH,
-            ChatTools.TOOL_PRODUCT_DETAIL,
-            ChatTools.TOOL_MARKET_PRICE_STATS,
-            ChatTools.TOOL_COMPARE_ASSETS,
-            ChatTools.TOOL_REMEMBER_PREFERENCE,
-            ChatTools.TOOL_FINISH);
 
     private final PromptRegistryPort promptRegistry;
     private final ChatToolsFactory toolsFactory;
@@ -156,7 +146,6 @@ public class ToolCallLoop {
                 promptRegistry.require(CHAT_TOOL_PROMPT),
                 firstUserMessage(input),
                 dispatcherCallbacks(tools, input.toolAllowList()),
-                TOOL_NAME_LIST,
                 aiProperties.chat().maxSteps(),
                 budgetGuard::exhausted,
                 () -> fallbackSearch(input, tools),

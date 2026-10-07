@@ -45,11 +45,9 @@ public class ToolLoopKernel {
             String systemPrompt,
             String firstUserMessage,
             List<ToolCallback> toolCallbacks,
-            /** 未知工具观察里提示的可用工具清单（各链路自己的工具面名单）。 */
-            String unknownToolHint,
             int maxSteps,
             BooleanSupplier budgetExhausted,
-            /** 决策失败出口的降级动作（chat 按原始问题补检索一次、listing 无操作），异常自担不外抛。 */
+            /* 决策失败出口的降级动作（chat 按原始问题补检索一次、listing 无操作），异常自担不外抛。 */
             Runnable decisionFailedFallback,
             @Nullable String sessionId,
             @Nullable String userId,
@@ -72,7 +70,7 @@ public class ToolLoopKernel {
 
     private Outcome executeLoop(Spec spec, ToolLoopDecider decider) {
         String traceId = idGenerator.generateId();
-        var dispatcher = ToolDispatcher.of(spec.toolCallbacks(), spec.unknownToolHint());
+        var dispatcher = ToolDispatcher.of(spec.toolCallbacks());
         var messages = new DecisionMessages(spec.systemPrompt(), spec.firstUserMessage());
         var toolPath = new ArrayList<String>();
         int rounds = 0;
@@ -217,17 +215,19 @@ public class ToolLoopKernel {
     }
 
     /**
-     * 工具面（一次请求内）— 两种框架形态（schema 下发的回调列表、按名执行的回调表）绑在一处按名分发。
-     * 召回累加器归各链路的工具面实例，内核不持有任何召回状态。
+     * 工具面（一次请求内）— 按名执行的对照表 + 未知工具观察里的可用清单；清单按本次真正下发的回调生成，
+     * 白名单臂过滤后不会报出模型拿不到的工具。召回累加器归各链路的工具面实例，内核不持有任何召回状态。
      */
-    private record ToolDispatcher(
-            List<ToolCallback> callbacks, Map<String, ToolCallback> byName, String unknownToolHint) {
+    private record ToolDispatcher(Map<String, ToolCallback> byName, String unknownToolHint) {
 
-        static ToolDispatcher of(List<ToolCallback> callbacks, String unknownToolHint) {
+        static ToolDispatcher of(List<ToolCallback> callbacks) {
             var byName = callbacks.stream()
                     .collect(Collectors.toMap(
                             callback -> callback.getToolDefinition().name(), Function.identity()));
-            return new ToolDispatcher(List.copyOf(callbacks), byName, unknownToolHint);
+            String hint = callbacks.stream()
+                    .map(callback -> callback.getToolDefinition().name())
+                    .collect(Collectors.joining(" / "));
+            return new ToolDispatcher(byName, hint);
         }
 
         /** 未知工具与执行异常（参数不合 schema / 工具内部故障）都收敛成失败观察：模型据此重试或收敛，不把整轮对话打死。 */

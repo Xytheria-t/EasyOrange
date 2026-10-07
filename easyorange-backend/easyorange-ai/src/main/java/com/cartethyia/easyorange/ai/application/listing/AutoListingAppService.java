@@ -124,7 +124,6 @@ public class AutoListingAppService {
                 promptRegistry.require("auto_listing_tool_system"),
                 ListingPromptAssembler.firstDecisionMessage(clues, sellerNote, availableCategories()),
                 List.of(ToolCallbacks.from(tools)),
-                unknownToolHint(),
                 aiProperties.listing().maxSteps(),
                 this::listingBudgetExhausted,
                 // 决策失败不补检索：发布链路的失败态就是「行情缺失 → price 置 null 留卖家」，
@@ -215,17 +214,6 @@ public class AutoListingAppService {
     /** 类目清单现查现用 —— 一次小 SELECT，相对模型调用耗时可以忽略，清单改了下次识别就生效，省掉一层缓存失效策略。 */
     private List<String> availableCategories() {
         return categoryCatalogPort.listAvailableCategoryNames();
-    }
-
-    /** 未知工具观察里的工具名清单（与 {@link ListingTools} 的常量同源，不重写字面量）。 */
-    private static String unknownToolHint() {
-        return String.join(
-                " / ",
-                ListingTools.TOOL_KNOWLEDGE_SEARCH,
-                ListingTools.TOOL_PRODUCT_SEARCH,
-                ListingTools.TOOL_MARKET_PRICE_STATS,
-                ListingTools.TOOL_LIST_CATEGORIES,
-                ListingTools.TOOL_FINISH);
     }
 
     /** 决策走 chat_tool 场景快模型（决策是纯路由任务），记账进 auto_listing 场景预算——成本归业务链路、模型归职责。 */
