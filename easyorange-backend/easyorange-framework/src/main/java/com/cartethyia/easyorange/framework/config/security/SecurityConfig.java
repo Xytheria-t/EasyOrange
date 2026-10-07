@@ -202,6 +202,11 @@ public class SecurityConfig {
                                 HttpMethod.GET,
                                 securityProperties.productPaths().toArray(String[]::new))
                         .permitAll()
+                        // 文件读接口匿名：前端把 /api/file/... 直接当 <img src>，买家必须看得到卖家的商品图。
+                        // 只放行 GET 而非把 /api/file/** 整个塞进 static-paths —— 后者按方法无关放行，
+                        // 会把 upload / delete / bind 一并变成匿名可写（写接口的登录与归属校验见 FileService）
+                        .requestMatchers(HttpMethod.GET, "/api/file/**")
+                        .permitAll()
                         .requestMatchers(securityProperties.staticPaths().toArray(String[]::new))
                         .permitAll()
                         .anyRequest()
