@@ -16,13 +16,13 @@
 - **所有 `<select>` 必须用 `AdminSelect` 组件**（Portal 渲染面板，解决 fixed 定位失效）；`handleClickOutside` 必须**同时排除触发按钮 ref 和列表 `listRef`**，否则点选项会立即关闭
 - **视觉取值只有一个来源：`styles/admin.css`**。tsx / ts 里禁裸 `#hex`、裸 `rgb()/rgba()`、Tailwind 任意色值（`text-[#6E6862]`）；要令牌用 `var(--admin-*)` 或 Tailwind 变量简写 `text-(--admin-muted)`。`.githooks/check-admin-style-drift.py` 会在 pre-commit 拦（也会查未定义的 `--admin-*` 令牌，那类 bug 静默失效不报错）
 - **`style={{}}` 只留给按数据算出来的值**（头像渐变、状态点颜色、计算位置）；静态视觉与断点都上提成 `.admin-*` 类——内联样式写不了媒体查询，断点留在 tsx 里等于没有响应式
-- **页面布局走 `<AdminPage>` 三层结构**（根 / 背景层 / 内容层，背景层 `position: absolute` **禁 fixed**），不要在页面里重写这三层
+- **内容页布局走 `<AdminPage>` 三层结构**（根 / 背景层 / 内容层，背景层 `position: absolute` **禁 fixed**），不要在页面里重写这三层。**例外是「整屏独占页」**——`ForbiddenPage` 这类没有页头、要撑满视口居中、氛围层用色的页面（`admin-forbidden-*` 是另一套样式，不是 `admin-page-*` 的复制），套内容壳会改变观感；这类页面自带三层是允许的，但样式仍须走 `admin.css` 令牌
 - **状态标签只认 `StatusBadge` 的配置出口**：`statusVisual(type, status)` 取配色、`statusFilterOptions(type)` 派生筛选选项；页面不要再抄一份状态→标签映射
 - **`admin/*` 路由必须在 `MinimalLayout` 外部独立渲染**，否则 C 端 Header 会出现在管理页
 
 ## 状态（Zustand）
 
-- **store 只接受事件驱动写入**（STOMP 回调、用户操作回调），**禁止在 `useEffect` 内写 store**——spread 新引用 → 重渲染 → 无限循环
+- **store 只接受事件驱动写入**（STOMP 回调、用户操作回调），`useEffect` 内写要谨慎。**判据是机理不是位置**：真正的危险是**写入制造新引用**——`set` 换掉 state 对象 → 订阅者重渲染，而 effect 依赖数组一变就重跑，无守卫即自激。所以 **action 里值未变必须返回原 state**（`set(s => s.x === v ? s : { x: v })`）；有这条守卫时，effect 里做一次幂等的状态校正（如未登录 → `disconnected`）是安全的，但要**注释写明为什么它不会自激**
 - **selector 里 `?? []` / `?? {}` 必须用模块级常量**，禁止内联：内联产生新引用触发无限循环，**React StrictMode 下会放大到 50 层**
 
 ## 性能与加载

@@ -82,7 +82,11 @@ export const useChatStore = create<ChatState>()(set => ({
 
     clearTyping: () => set({ typingUsers: new Set() }),
 
-    setConnectionStatus: status => set({ connectionStatus: status }),
+    // 值未变不写：set 会换掉 state 引用、让所有订阅者重渲染。useStompChat 的 effect 里有一次
+    // 「未登录 → disconnected」的写入，无守卫时每次 effect 跑都白刷一遍订阅者（值其实没变）。
+    // 返回原 state 对象即被 Zustand 判为无变化而跳过通知。
+    setConnectionStatus: status =>
+        set(state => (state.connectionStatus === status ? state : { connectionStatus: status })),
 
     reset: () => set(initialState),
 }));

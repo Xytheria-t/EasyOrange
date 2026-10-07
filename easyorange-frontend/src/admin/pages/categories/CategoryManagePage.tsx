@@ -13,6 +13,7 @@ import {
 } from '../../components/AdminPage';
 import { AdminSelect } from '../../components/AdminSelect';
 import { ConfirmModal } from '../../components/ConfirmModal';
+import { statusFilterOptions } from '../../components/StatusBadge';
 import {
     useAdminCategoryTree,
     useCreateCategory,
@@ -27,11 +28,8 @@ import { CategoryTreeNode } from './CategoryTreeNode';
 type SortField = 'name' | 'sortOrder';
 type SortDir = 'asc' | 'desc';
 
-const STATUS_FILTER_OPTIONS = [
-    { value: '', label: '全部状态' },
-    { value: '1', label: '启用' },
-    { value: '0', label: '禁用' },
-];
+// 从 StatusBadge 的配置出口派生，不再手抄一份标签（改了配置这里自动跟上；过渡态不进筛选）
+const STATUS_FILTER_OPTIONS = statusFilterOptions('category');
 
 const SORT_FIELD_OPTIONS = [
     { value: 'sortOrder', label: '按排序值' },

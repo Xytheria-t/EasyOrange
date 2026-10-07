@@ -2682,3 +2682,37 @@
         transition-duration: 0.01ms !important;
     }
 }
+
+/* 用户状态选择器（UserDetailModal）：
+   原来整块写成内联 style，静态布局与「每状态的色」混在一起。静态上提成类，
+   每状态那一个色走 CSS 变量注入（沿用 --kpi-accent / --rank-color 等既有手法）。
+   顺带修一处失效的边框：原写法是 `border: 1.5px solid ${... 'var(--admin-control-border)'}`，
+   而该令牌本身就是 `1.5px solid #e5e0db` 全简写 —— 非激活项展开成
+   `1.5px solid 1.5px solid #e5e0db`，无效声明被丢弃、边框根本不显示。 */
+.admin-status-choice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.6rem;
+    border-radius: var(--admin-radius-control);
+    border: var(--admin-control-border);
+    background: var(--admin-surface-solid);
+    color: var(--admin-muted);
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.admin-status-choice[data-active="true"] {
+    border-color: var(--choice-dot, var(--admin-accent));
+    background: var(--admin-accent-soft);
+    color: var(--admin-accent);
+}
+
+.admin-status-choice-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: var(--admin-radius-pill);
+    background: var(--choice-dot, var(--admin-muted));
+}
