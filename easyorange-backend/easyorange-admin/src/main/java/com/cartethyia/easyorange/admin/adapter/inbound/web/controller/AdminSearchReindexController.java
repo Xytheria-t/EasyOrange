@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "平台运维", description = "搜索索引重建")
+@Tag(name = "管理后台-搜索索引", description = "搜索索引重建")
 @RestController
 @RequestMapping("/api/admin/search")
 @RequiredArgsConstructor

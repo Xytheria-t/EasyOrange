@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
  * AI 建议采纳率（管理端）— 逐字段采纳率与价格偏离分布，使用侧效果数字、不依赖 LLM 判分。
  * /api/admin/** 由 SecurityConfig 统一限 ADMIN 角色。
  */
-@Tag(name = "AI 报表", description = "AI 建议字段级采纳率（使用侧效果数字）")
+@Tag(name = "管理后台-AI 报表", description = "AI 建议字段级采纳率（使用侧效果数字）")
 @RestController
 @RequestMapping("/api/admin/ai/listing-adoption")
 @RequiredArgsConstructor

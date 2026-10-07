@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 知识库文档管理（管理端）— 新增即摄入（分块 → embed → ES），列表 / 删除 / 补索引。
  * /api/admin/** 由 SecurityConfig 统一限 ADMIN 角色。
  */
-@Tag(name = "平台运维", description = "RAG 知识库文档管理（摄入 / 列表 / 删除 / 补索引）")
+@Tag(name = "管理后台-AI 知识库", description = "RAG 知识库文档管理（摄入 / 列表 / 删除 / 补索引）")
 @RestController
 @RequestMapping("/api/admin/knowledge")
 @RequiredArgsConstructor

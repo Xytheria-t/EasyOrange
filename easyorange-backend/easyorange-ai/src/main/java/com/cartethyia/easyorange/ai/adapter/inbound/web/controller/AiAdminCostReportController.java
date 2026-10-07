@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
  * AI 成本报表（管理端）— 钱花在哪个「场景 × 模型」上，按单价表货币化。
  * /api/admin/** 由 SecurityConfig 统一限 ADMIN 角色。
  */
-@Tag(name = "AI 报表", description = "AI 成本报表（按场景 × 模型，含货币化）")
+@Tag(name = "管理后台-AI 报表", description = "AI 成本报表（按场景 × 模型，含货币化）")
 @RestController
 @RequestMapping("/api/admin/ai/cost-report")
 @RequiredArgsConstructor

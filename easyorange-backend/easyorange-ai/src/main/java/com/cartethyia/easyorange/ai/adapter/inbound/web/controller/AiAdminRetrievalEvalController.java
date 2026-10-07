@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 口径提示（管理端页面同源展示）：hit@5 与 MRR 只统计<b>融合腿（生产路径）</b>，单腿属消融日志不落表；
  * 两条评测线（retr-* 真实 embedding / asset-* 合成向量）语料空间不同，必须分列比较。
  */
-@Tag(name = "AI 管理", description = "检索质量回看（评测批次趋势 + 用例级明细）")
+@Tag(name = "管理后台-AI 检索评测", description = "检索质量回看（评测批次趋势 + 用例级明细）")
 @RestController
 @RequestMapping("/api/admin/ai/retrieval-eval")
 @RequiredArgsConstructor
