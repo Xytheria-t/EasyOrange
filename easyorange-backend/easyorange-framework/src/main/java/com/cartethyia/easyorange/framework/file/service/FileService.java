@@ -119,6 +119,13 @@ public class FileService {
     public void bindBusiness(String fileId, String businessType, String businessId) {
         var entity = uploadFileMapper.selectById(fileId);
         if (entity == null) throw FileException.of(FileResultCode.FILE_NOT_FOUND, "文件不存在");
+
+        // 与 deleteFile 同一道闸：读接口匿名（前端直接把 /api/file/... 当 <img src>），鉴权只能落在服务层
+        var userId = SecurityContextUtil.getCurrentUserId().orElseThrow(() -> BusinessException.of("用户未登录"));
+        if (!Objects.equals(entity.getUploaderId(), userId)) {
+            throw BusinessException.of("无权限操作该文件");
+        }
+
         entity.setBusinessType(businessType);
         entity.setBusinessId(businessId);
         uploadFileMapper.updateById(entity);

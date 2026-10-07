@@ -361,13 +361,15 @@ security:
     # 类目浏览页的按类目筛选 — 内部委托 listProducts，与 /api/products 同属公开浏览能力（前端 skipAuth）
     - /api/products/category/**
     - /api/products/search
-    - /api/products/search/**
+    # 热词榜与搜索建议属公开浏览能力；同段下的 /history 与 /record 是用户态数据，
+    # 靠 /** 一并放行会让匿名请求带着 null 登录态打进来
+    - /api/products/search/hot
+    - /api/products/search/suggestions
     - /api/products/{id}/similar
   static-paths:
     - /static/**
     - /public/**
     - /upload/**
-    - /api/file/**
     - /favicon.ico
     - /error
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:5177,http://localhost:5178,http://localhost:3000,http://127.0.0.1:5173}
