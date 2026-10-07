@@ -36,7 +36,7 @@ public class AiAdminRetrievalEvalController {
 
     @GetMapping("/runs")
     @Operation(summary = "最近评测批次（hit@5 / MRR 趋势）")
-    public Result<List<RetrievalEvalRunVO>> runs(
+    public Result<List<RetrievalEvalRunVO>> listRuns(
             @RequestParam(required = false) RetrievalEvalLine line, @RequestParam(defaultValue = "20") int limit) {
         RetrievalEvalLine target = line == null ? RetrievalEvalLine.KNOWLEDGE : line;
         return Result.success(RetrievalEvalAssembler.toVOs(reviewService.recentRuns(target, limit)));
@@ -44,7 +44,7 @@ public class AiAdminRetrievalEvalController {
 
     @GetMapping("/cases")
     @Operation(summary = "单批次用例级明细（未命中排前）")
-    public Result<PageResult<RetrievalEvalCaseVO>> cases(
+    public Result<PageResult<RetrievalEvalCaseVO>> listCases(
             @RequestParam String runId,
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize) {

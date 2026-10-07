@@ -88,7 +88,7 @@ public class FileController {
 
     @GetMapping("/{id}/view")
     @Operation(summary = "查看文件：非图片直出原文件；图片带 w/h 则缩放、否则按 format 转码，ETag 命中返 304")
-    public ResponseEntity<Resource> viewFile(
+    public ResponseEntity<Resource> getFileContent(
             @PathVariable String id,
             @RequestParam(value = "w", required = false) Integer width,
             @RequestParam(value = "h", required = false) Integer height,
