@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/knowledge")
 @RequiredArgsConstructor
-public class AdminKnowledgeController {
+public class AiAdminKnowledgeController {
 
     private final KnowledgeIngestionAppService ingestionService;
 
