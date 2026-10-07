@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/ai/retrieval-eval")
 @RequiredArgsConstructor
-public class AdminRetrievalEvalController {
+public class AiAdminRetrievalEvalController {
 
     private final RetrievalReviewAppService reviewService;
 

@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/ai/listing-adoption")
 @RequiredArgsConstructor
-public class AdminListingAdoptionController {
+public class AiAdminListingAdoptionController {
 
     private final AiListingAdoptionAppService adoptionService;
 

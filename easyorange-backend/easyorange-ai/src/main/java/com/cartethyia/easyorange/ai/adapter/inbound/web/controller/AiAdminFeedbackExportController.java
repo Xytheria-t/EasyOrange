@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/ai/feedback")
 @RequiredArgsConstructor
-public class AdminFeedbackExportController {
+public class AiAdminFeedbackExportController {
 
     private final AiFeedbackAppService feedbackService;
 

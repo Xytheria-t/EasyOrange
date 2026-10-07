@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/ai/cost-report")
 @RequiredArgsConstructor
-public class AdminCostReportController {
+public class AiAdminCostReportController {
 
     private final AiCostReportAppService costReportService;
 
