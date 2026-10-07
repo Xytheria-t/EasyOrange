@@ -84,9 +84,11 @@ def main() -> int:
                 "（进该目录即加载，把可 `find` / `grep` 得到的清单移出去）"
             )
 
+    # 每个嵌套册各自带预算：只写 "12,774、2,914/13,500" 会读成「只有最后一个有预算」，
+    # 而这条输出正是用来瞄余量的——余量看不清等于没有。
     shape = f"根 {root_size:,}/{ROOT_BUDGET:,}"
     if nested:
-        shape += f"，嵌套 {'、'.join(f'{n:,}' for n in nested.values())}/{NESTED_BUDGET:,}"
+        shape += "，嵌套 " + "、".join(f"{n:,}/{NESTED_BUDGET:,}" for n in nested.values())
 
     if problems:
         print("[context-budget] FAIL: AI 上下文预算或结构违规：", file=sys.stderr)

@@ -111,7 +111,7 @@
 ### ai
 
 - **按能力分包** `chat` / `retrieval` / `enhancement` / `listing` / `support` / `eval`（单向，`support` 最底层）；**全面 Spring AI（ADR-0008）**：直接注入 `ChatModel` / `EmbeddingModel`，无自研 LlmPort
-- 模型 bean：`chatModel`（`@Primary`，默认场景）/ `decisionChatModel` / `visionChatModel` / `embeddingModel`（**dimensions=1024 必须与 ES `dense_vector` 对齐**）。**四者都不加 `@Qualifier`**——靠 `AiModelRouter` 按场景名从 ApplicationContext 取 bean，yaml 热更即可换模型，编译期 `@Qualifier` 做不到这点；只有 `@Primary` 起「未指定场景时回落到文本模型」的作用。`judge` 独立可换防自评偏差
+- **五个模型 bean**：`chatModel`（`@Primary`，默认场景）/ `decisionChatModel` / `visionChatModel` / `judgeChatModel`（评审独立可换，消自评偏差）/ `embeddingModel`（**dimensions=1024 必须与 ES `dense_vector` 对齐**）。**五者都不加 `@Qualifier`**——靠 `AiModelRouter` 按场景名从 ApplicationContext 取 bean，yaml 热更即可换模型，编译期 `@Qualifier` 做不到这点；只有 `@Primary` 起「未指定场景时回落到文本模型」的作用
 - **多步工具循环 `ToolCallLoop`**：原生 tool calling（7 个 `@Tool`，参数名靠 `-parameters`），`ChatModel.call` 不自动执行工具。三坑：工具抛异常 = 该步失败（「查无此资产」等有效结果要返回观察文本）、`thought` 必填、返回值挂 `ObservationTextConverter`（否则 String 被再 JSON 化）。码表类工具与 product **字面同步**（`AssetComparisonCodeTableSyncTest` 守卫）。降级：超限 / 预算尽 → 已积累观察直接生成，决策失败 → 检索一次；**预算判据 `chatBudgetExhausted` 全链路唯一**；trace 落 `eo_tool_call_step_trace`
 - **上下文裁剪 `ChatContextTrimmer`**：连续窗口、永保最新一条，**有意不做 LLM 摘要**；**历史按原始角色传多消息**（前缀稳定才吃供应商缓存折扣）
 - **MCP 只挂公开只读 4 工具**（检索/详情/类目/规则），禁用户态数据与写路径——**外部 client 无用户上下文**；**`spring.ai.mcp.server.protocol` 必须显式 `streamable`**（属性默认值不进 Environment → `/mcp` 不注册 404）；dev / prod 的 `security.ignore-paths` 都要加
