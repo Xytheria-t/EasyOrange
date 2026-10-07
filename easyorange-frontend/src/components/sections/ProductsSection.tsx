@@ -145,10 +145,7 @@ export default function ProductsSection() {
                     <p className="section-desc">精心挑选的优质资产，总有一款适合你</p>
                 </div>
 
-                <div
-                    className={`products-filter reveal ${isVisible ? 'revealed' : ''}`}
-                    style={{ transitionDelay: '100ms' }}
-                >
+                <div className={`products-filter reveal delay-100 ${isVisible ? 'revealed' : ''}`}>
                     <div className="filter-tabs" ref={tabsRef}>
                         {/* Sliding indicator */}
                         <div
@@ -215,16 +212,13 @@ export default function ProductsSection() {
                             />
                         ))
                     ) : (
-                        <div className="text-center py-12" style={{ gridColumn: '1 / -1' }}>
+                        <div className="text-center py-12 col-span-full">
                             <p className="text-secondary">暂无资产</p>
                         </div>
                     )}
                 </div>
 
-                <div
-                    className={`products-more reveal ${isVisible ? 'revealed' : ''}`}
-                    style={{ transitionDelay: '400ms' }}
-                >
+                <div className={`products-more reveal delay-[400ms] ${isVisible ? 'revealed' : ''}`}>
                     <Button variant="outline" size="lg" onClick={() => navigate('/products')}>
                         <span>查看更多资产</span>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

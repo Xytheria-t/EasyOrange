@@ -103,7 +103,7 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
                             ref={fileInputRef}
                             type="file"
                             accept="image/*"
-                            style={{ display: 'none' }}
+                            className="hidden"
                             onChange={handleAvatarChange}
                         />
                     </Button>
@@ -141,7 +141,7 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
                             <span className="ps-stat-value">42</span>
                         </div>
                         <div className="ps-stat-bar">
-                            <div className="ps-stat-fill ps-stat-fill-rose" style={{ width: '45%' }} />
+                            <div className="ps-stat-fill ps-stat-fill-rose w-[45%]" />
                         </div>
                     </div>
                 </div>

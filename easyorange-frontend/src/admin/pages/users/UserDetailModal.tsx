@@ -139,59 +139,34 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
             >
                 <div>
                     {/* 头像 + 当前状态 */}
-                    <div
-                        className="admin-inset"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '1rem',
-                            padding: '1rem',
-                            marginBottom: '1.25rem',
-                        }}
-                    >
+                    <div className="admin-inset admin-detail-identity">
                         {/* 真实头像优先：管理员做风控 / 申诉判断时，首字母色块没有辨识价值 */}
                         {user.avatar ? (
                             <img
                                 src={user.avatar}
                                 alt=""
-                                style={{ height: 52, width: 52, borderRadius: 16, flexShrink: 0 }}
+                                className="admin-detail-avatar"
                                 loading="lazy"
                                 decoding="async"
                             />
                         ) : (
                             <div
                                 aria-hidden="true"
-                                style={{
-                                    height: 52,
-                                    width: 52,
-                                    flexShrink: 0,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    borderRadius: 16,
-                                    fontSize: '1.25rem',
-                                    fontWeight: 700,
-                                    color: 'var(--admin-surface-solid)',
-                                    fontFamily: 'var(--admin-font-title)',
-                                    background: avatarGradient,
-                                }}
+                                className="admin-detail-avatar-fallback"
+                                style={{ background: avatarGradient }}
                             >
                                 {(user.nickname || user.username || '?').charAt(0).toUpperCase()}
                             </div>
                         )}
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                            <p style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--admin-ink)' }}>
-                                {user.nickname || user.username}
-                            </p>
-                            <p className="admin-label" style={{ marginTop: '0.2rem' }}>
-                                @{user.username}
-                            </p>
+                        <div className="admin-detail-identity-text">
+                            <p className="admin-detail-name">{user.nickname || user.username}</p>
+                            <p className="admin-label admin-label-flush-top">@{user.username}</p>
                         </div>
                         <StatusBadge status={user.status ?? ''} type="user" />
                     </div>
 
                     {/* 信息格：窄屏单列 */}
-                    <div className="admin-field-grid" style={{ marginBottom: '1.25rem' }}>
+                    <div className="admin-field-grid admin-detail-section">
                         {[
                             { label: '用户名', value: user.username },
                             { label: '昵称', value: user.nickname || '未设置' },
@@ -208,10 +183,8 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                             { label: '注册时间', value: formatDate(user.createTime) },
                         ].map(item => (
                             <div key={item.label} className="admin-inset">
-                                <div style={{ padding: '0.65rem 0.85rem' }}>
-                                    <p className="admin-label" style={{ marginBottom: '0.2rem' }}>
-                                        {item.label}
-                                    </p>
+                                <div className="admin-detail-inset-body">
+                                    <p className="admin-label admin-label-flush-bottom">{item.label}</p>
                                     <p className="admin-value">{item.value}</p>
                                 </div>
                             </div>
@@ -220,9 +193,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
 
                     {/* 状态选择：与分类编辑共用 Radix RadioGroup，键盘与读屏语义一致 */}
                     <fieldset>
-                        <legend className="admin-label" style={{ marginBottom: '0.5rem' }}>
-                            调整状态
-                        </legend>
+                        <legend className="admin-label admin-field-legend">调整状态</legend>
                         <RadioGroup
                             value={selectedStatus}
                             onValueChange={setSelectedStatus}

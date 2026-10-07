@@ -82,8 +82,7 @@ function ChatInputBar({ onSend, onTyping, isDisabled = false, disabledPlaceholde
                     rows={1}
                     aria-label="消息内容"
                     placeholder={isDisabled ? (disabledPlaceholder ?? '') : '输入消息…'}
-                    className="chat-textarea"
-                    style={{ maxHeight: 120 }}
+                    className="chat-textarea max-h-[120px]"
                 />
                 {/* 快捷键提示常驻：塞在占位符里，用户一开始打字就再也看不到了 */}
                 {!isDisabled && (

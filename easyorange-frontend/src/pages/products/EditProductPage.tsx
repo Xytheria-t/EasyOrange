@@ -209,7 +209,7 @@ function EditProductPage() {
                                         accept="image/*"
                                         multiple
                                         onChange={handleImageSelect}
-                                        style={{ display: 'none' }}
+                                        className="hidden"
                                     />
                                     <Button
                                         type="button"
@@ -436,7 +436,7 @@ function EditProductPage() {
 
                             <div className="edit-field-group">
                                 <Label className="edit-field-label" htmlFor="edit-product-location">
-                                    <MapPin size={14} style={{ marginRight: 4 }} />
+                                    <MapPin size={14} className="mr-1" />
                                     交易地点
                                 </Label>
                                 <Input

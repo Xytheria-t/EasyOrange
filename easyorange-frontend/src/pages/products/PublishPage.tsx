@@ -343,7 +343,7 @@ function PublishPage() {
                                     accept="image/*"
                                     multiple
                                     onChange={handleImageSelect}
-                                    style={{ display: 'none' }}
+                                    className="hidden"
                                 />
                                 {vals.imageUrls.length === 0 ? (
                                     <Button
@@ -749,7 +749,7 @@ function PublishPage() {
                                         </div>
                                     )}
 
-                                <div className="field-group-v2" style={{ maxWidth: '200px' }}>
+                                <div className="field-group-v2 max-w-[200px]">
                                     <Label className="field-label-v2" htmlFor="stock">
                                         <Package size={14} />
                                         库存数量
