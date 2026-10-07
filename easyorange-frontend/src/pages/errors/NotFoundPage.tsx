@@ -86,9 +86,7 @@ function NotFoundPage() {
                 padding: '1rem',
                 position: 'relative',
                 overflow: 'hidden',
-                background: `
-        linear-gradient(180deg, var(--gray-50) 0%, #FFF9F5 30%, #FEF5F3 60%, #FAF4FF 100%)
-      `,
+                background: 'var(--gradient-not-found)',
             }}
         >
             {/* Animated background orbs */}
@@ -299,7 +297,7 @@ function NotFoundPage() {
                 <p
                     style={{
                         fontSize: 'clamp(0.92rem, 1.5vw, 1.02rem)',
-                        color: '#8B857E',
+                        color: 'var(--text-tertiary)',
                         lineHeight: 1.7,
                         maxWidth: 380,
                         margin: '0 auto 2.25rem',
@@ -331,11 +329,11 @@ function NotFoundPage() {
                             gap: '0.45rem',
                             padding: '0.72rem 1.5rem',
                             borderRadius: 14,
-                            border: '1.5px solid #E5E0DB',
+                            border: '1.5px solid var(--gray-200)',
                             background: 'var(--surface-panel)',
                             fontSize: '0.9rem',
                             fontWeight: 600,
-                            color: '#4A4540',
+                            color: 'var(--gray-700)',
                             transition: 'all 0.25s ease',
                             boxShadow: '0 1px 3px rgba(42,37,32,0.04)',
                             height: 'auto',
