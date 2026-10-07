@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.ai.domain.port.GoldenSetExportPort;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +53,9 @@ public class GoldenSetExportService implements GoldenSetExportPort {
             needsManual = countNeedsManual();
         } catch (Exception e) {
             log.warn("Export AI feedback failed", e);
-            return "# 导出失败，请检查数据库连接";
+            // 抛而非返回提示串：返回值是 YAML 片段，包进 Result 后调用方分不清「片段」与「失败说明」，
+            // 一律 200 会让脚本把失败当成功，把一句注释合进 golden-set.yaml
+            throw BusinessException.of("导出失败，请检查数据库连接");
         }
 
         var cases = new StringBuilder();
