@@ -35,15 +35,15 @@ import './search-content.css';
 import './search-ai.css';
 
 const CATEGORY_ICON_MAP: Record<string, { icon: typeof Smartphone; color: string; bg: string }> = {
-    电子数码: { icon: Smartphone, color: '#3B82F6', bg: '#EFF6FF' },
-    书籍教材: { icon: BookOpen, color: '#10B981', bg: '#ECFDF5' },
-    服饰鞋包: { icon: ShoppingBag, color: '#EC4899', bg: '#FDF2F8' },
-    生活用品: { icon: Home, color: '#F59E0B', bg: '#FFFBEB' },
+    电子数码: { icon: Smartphone, color: 'var(--blue-500)', bg: 'var(--blue-50)' },
+    书籍教材: { icon: BookOpen, color: 'var(--emerald-500)', bg: '#ECFDF5' },
+    服饰鞋包: { icon: ShoppingBag, color: 'var(--pink-500)', bg: 'var(--pink-50)' },
+    生活用品: { icon: Home, color: 'var(--gold-500)', bg: '#FFFBEB' },
     运动健身: { icon: Dumbbell, color: '#EF4444', bg: '#FEF2F2' },
     虚拟物品: { icon: Gift, color: '#8B5CF6', bg: '#F5F3FF' },
 };
 
-const DEFAULT_CATEGORY_ICON = { icon: Gift, color: '#F97316', bg: '#FFF7ED' };
+const DEFAULT_CATEGORY_ICON = { icon: Gift, color: 'var(--primary-500)', bg: 'var(--primary-50)' };
 
 /** 每页条数与后端 PageRequest 上限（100）以内任意值；须与请求参数 pageSize 保持一致 */
 const SEARCH_PAGE_SIZE = 20;

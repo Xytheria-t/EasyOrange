@@ -39,10 +39,10 @@ const STATUS_STYLE_MAP: Record<ProductStatus, { bg: string; text: string; border
     {
         DRAFT: {
             bg: 'rgba(168, 160, 152, 0.08)',
-            text: '#787068',
+            text: 'var(--gray-500)',
             border: 'rgba(168, 160, 152, 0.2)',
             glow: '0 0 20px rgba(168, 160, 152, 0.1)',
-            dot: '#A8A098',
+            dot: 'var(--gray-400)',
         },
         ONLINE: {
             bg: 'rgba(16, 185, 129, 0.08)',
@@ -60,17 +60,17 @@ const STATUS_STYLE_MAP: Record<ProductStatus, { bg: string; text: string; border
         },
         OFFLINE: {
             bg: 'rgba(168, 160, 152, 0.08)',
-            text: '#787068',
+            text: 'var(--gray-500)',
             border: 'rgba(168, 160, 152, 0.2)',
             glow: '0 0 20px rgba(168, 160, 152, 0.1)',
-            dot: '#A8A098',
+            dot: 'var(--gray-400)',
         },
         PENDING_REVIEW: {
             bg: 'rgba(251, 191, 36, 0.08)',
             text: 'var(--status-warning)',
             border: 'rgba(251, 191, 36, 0.2)',
             glow: '0 0 20px rgba(251, 191, 36, 0.15)',
-            dot: '#FBBF24',
+            dot: 'var(--gold-400)',
         },
         REJECTED: {
             bg: 'rgba(244, 63, 94, 0.08)',

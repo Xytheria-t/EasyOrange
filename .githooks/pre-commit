@@ -120,8 +120,10 @@ fi
 
 # 3.6 C 端样式漂移：页面 CSS 出现白名单外的裸色值，或引用未定义且无 fallback 的
 #      CSS 变量（悬空 var() 静默失效，不报错）——视觉取值走 styles/tokens.css 令牌。
-#      2026-09 全站收口约 600 处裸色值 + 10 处悬空引用后上锁；admin 侧归 check-admin-style-drift.py
-if echo "$files" | grep -qE '^easyorange-frontend/src/.*\.css$'; then
+#      2026-09 全站收口约 600 处裸色值 + 10 处悬空引用后上锁；admin 侧归 check-admin-style-drift.py。
+#      触发条件含 ts/tsx：色值同样散在 tsx 里（内联 style / SVG / 调色板常量），
+#      2026-10-07 前脚本只扫 .css，那半边是盲区——只按 .css 触发等于新覆盖永不生效。
+if echo "$files" | grep -qE '^easyorange-frontend/src/.*\.(css|ts|tsx)$'; then
   if command -v python3 >/dev/null 2>&1; then
     hook_log "前端 CSS 变更 → 校验样式取值是否走 tokens.css 令牌..."
     if python3 "$SCRIPT_DIR/check-frontend-style-drift.py" --staged; then

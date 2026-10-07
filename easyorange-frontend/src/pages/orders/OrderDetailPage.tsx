@@ -25,32 +25,32 @@ import { orderErrorMessage } from '@/utils/order';
 
 const STATUS_HERO_MAP: Record<OrderStatus, { gradient: string; icon: typeof Clock; hint: string }> = {
     PENDING_PAYMENT: {
-        gradient: 'linear-gradient(135deg, #FBBF24 0%, #F97316 50%, #EA580C 100%)',
+        gradient: 'linear-gradient(135deg, var(--gold-400) 0%, var(--primary-500) 50%, var(--primary-600) 100%)',
         icon: Clock,
         hint: '请尽快完成支付，超时订单将自动取消',
     },
     PAID: {
-        gradient: 'linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%)',
+        gradient: 'linear-gradient(135deg, var(--blue-500) 0%, var(--indigo-500) 50%, #8B5CF6 100%)',
         icon: Package,
         hint: '资产方正在准备发货，请耐心等待',
     },
     SHIPPED: {
-        gradient: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #C39BD3 100%)',
+        gradient: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, var(--purple-400) 100%)',
         icon: Truck,
         hint: '商品正在配送中，请注意查收',
     },
     COMPLETED: {
-        gradient: 'linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%)',
+        gradient: 'linear-gradient(135deg, var(--emerald-500) 0%, var(--status-success) 50%, #047857 100%)',
         icon: CheckCircle,
         hint: '交易已完成，感谢您的购买',
     },
     CANCELLED: {
-        gradient: 'linear-gradient(135deg, #A8A098 0%, #787068 50%, #5C544C 100%)',
+        gradient: 'linear-gradient(135deg, var(--gray-400) 0%, var(--gray-500) 50%, #5C544C 100%)',
         icon: XCircle,
         hint: '订单已取消',
     },
     REFUNDED: {
-        gradient: 'linear-gradient(135deg, #F43F5E 0%, #E11D48 50%, #BE123C 100%)',
+        gradient: 'linear-gradient(135deg, var(--rose-500) 0%, var(--rose-600) 50%, #BE123C 100%)',
         icon: CreditCard,
         hint: '退款处理中，请留意账户变动',
     },
@@ -249,7 +249,7 @@ function OrderDetailPage() {
                             padding: '0.5rem 0',
                             fontWeight: 700,
                             fontSize: '1rem',
-                            color: '#EA580C',
+                            color: 'var(--primary-600)',
                         }}
                     >
                         合计：¥{order.totalAmount.toFixed(2)}
