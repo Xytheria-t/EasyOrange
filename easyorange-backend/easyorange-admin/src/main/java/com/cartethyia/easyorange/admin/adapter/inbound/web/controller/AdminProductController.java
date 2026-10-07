@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminProductAssembler;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminProductQueryRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
 import com.cartethyia.easyorange.admin.application.service.AdminProductAppService;
 import com.cartethyia.easyorange.admin.domain.model.DayRange;
@@ -38,7 +38,7 @@ public class AdminProductController {
 
     @PutMapping("/{id}/status")
     @Operation(summary = "改商品状态（ONLINE / OFFLINE / SOLD），不合法转换由 product 聚合拒绝")
-    public Result<Void> updateProductStatus(@PathVariable String id, @Valid @RequestBody UpdateStatusRequest request) {
+    public Result<Void> updateProductStatus(@PathVariable String id, @Valid @RequestBody ProductStatusRequest request) {
         adminProductService.updateProductStatus(id, request.status());
         return Result.success();
     }

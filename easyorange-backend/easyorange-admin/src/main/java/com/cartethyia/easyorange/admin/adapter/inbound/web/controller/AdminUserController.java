@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.assembler.AdminUserAssembler;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminUserQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ResetPasswordRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UserRoleRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UserStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminUserResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ResetPasswordResponse;
 import com.cartethyia.easyorange.admin.application.service.AdminUserAppService;
@@ -46,7 +46,7 @@ public class AdminUserController {
     public Result<Void> updateUserStatus(
             @AuthenticationPrincipal AuthUser operator,
             @PathVariable String id,
-            @Valid @RequestBody UpdateStatusRequest request) {
+            @Valid @RequestBody UserStatusRequest request) {
         adminUserService.updateUserStatus(id, request.status(), request.reason(), operator.userId());
         return Result.success();
     }

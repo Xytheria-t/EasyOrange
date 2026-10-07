@@ -75,7 +75,6 @@ export interface AdminProductQuery {
 
 export interface UpdateStatusRequest {
     status: ProductStatus;
-    reason?: string;
 }
 
 export interface UpdateUserStatusRequest {
