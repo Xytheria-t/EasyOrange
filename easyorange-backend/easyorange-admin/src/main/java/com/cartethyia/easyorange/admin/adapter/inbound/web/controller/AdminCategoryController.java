@@ -50,7 +50,7 @@ public class AdminCategoryController {
      */
     @GetMapping("/tree")
     @Operation(summary = "仅启用中的完整分类树；停用分类不出现在此接口")
-    public Result<List<CategoryResponse>> categoryTree() {
+    public Result<List<CategoryResponse>> getCategoryTree() {
         return Result.success(assembler.toResponses(adminCategoryService.categoryTree()));
     }
 

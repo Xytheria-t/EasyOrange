@@ -26,7 +26,7 @@ public class AiAdminCostReportController {
 
     @GetMapping
     @Operation(summary = "按「场景 × 模型」聚合 token 用量与失败数并货币化，时间窗上限 30 天")
-    public Result<List<AiCostReportRow>> costReport(@RequestParam(defaultValue = "24") int hours) {
+    public Result<List<AiCostReportRow>> getCostReport(@RequestParam(defaultValue = "24") int hours) {
         return Result.success(costReportService.report(hours));
     }
 }

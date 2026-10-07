@@ -41,7 +41,7 @@ public class AiAdminKnowledgeController {
 
     @GetMapping
     @Operation(summary = "分页列出库内文档（直读仓储，非检索召回结果）")
-    public Result<PageResult<KnowledgeDocVO>> page(
+    public Result<PageResult<KnowledgeDocVO>> listDocs(
             @RequestParam(defaultValue = "1") int pageNum, @RequestParam(defaultValue = "10") int pageSize) {
         return Result.success(KnowledgeDocAssembler.toVOPage(ingestionService.pageDocs(pageNum, pageSize)));
     }
