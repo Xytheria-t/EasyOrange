@@ -22,7 +22,7 @@
 - 常量紧贴使用者所在层（业务 `domain/enums`、共享 `common/enums`、技术常量适配器层）；枚举包复数 `enums/`、常量包单数
 - **服务返回值**：创建返回 `String` ID；update / 命令返回 `void`（前端 invalidate 重拉）；批量可返回结果 DTO
 - Controller 无转换 / 条件逻辑时 `Result.success()` 内联单表达式；`common` 禁引 Starter / 重量级依赖
-- **领域异常必须继承 `BaseBusinessException`**，用模块专属 `ResultCode` 与具名工厂（`notFound(id)`…）；**每模块只一个统一领域异常**，不新增叶子异常（门禁 `ArchitectureRulesTest` Rule 11）
+- **领域错误必须继承 `BaseBusinessException`**，用模块专属 `ResultCode` 与具名工厂（`notFound(id)`…）；**每模块只一个统一领域错误**，不新增叶子（门禁 Rule 11）。**例外的判据是「会不会映射成 HTTP 响应」**：不映射的控制流信号（`ChatStreamAbortedException`——客户端已离开，只在流式回调栈内传播）不继承基类、不要 ResultCode，但 javadoc 须写明它属于这一类
 
 ## DTO / 类型 / 序列化
 
