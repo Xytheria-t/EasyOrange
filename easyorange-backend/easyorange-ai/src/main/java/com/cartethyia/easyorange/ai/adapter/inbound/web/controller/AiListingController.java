@@ -39,7 +39,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  */
 @Slf4j
 @SkipRateLimit
-@Tag(name = "AI 服务", description = "AI 上架辅助：拍照识别")
+@Tag(name = "AI 发布助手", description = "卖家发布助手：拍照识别单入口（视觉预识别 + 多步工具循环生成上架表单）")
 @Validated
 @RestController
 @RequestMapping("/api/ai")
