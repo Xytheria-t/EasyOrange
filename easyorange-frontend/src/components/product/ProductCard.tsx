@@ -1,7 +1,7 @@
 import { Clock, Eye, MapPin, MessageCircle, Sparkles } from 'lucide-react';
 import { memo, useCallback, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import placeholderImage from '@/assets/placeholder.png';
+import placeholderImage from '@/assets/placeholder.svg';
 import { Button } from '@/components/ui/button';
 import { Image } from '@/components/ui/Image';
 import { CONDITION_LABEL_MAP } from '@/constants';

@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, Share2 } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import placeholderImage from '@/assets/placeholder.png';
+import placeholderImage from '@/assets/placeholder.svg';
 import { Button } from '@/components/ui/button';
 import { buildThumbnailUrl, Image, preloadImages } from '@/components/ui/Image';
 
