@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.ai.adapter.outbound.persistence.AiFeedbackRecorder;
 import com.cartethyia.easyorange.ai.adapter.outbound.persistence.GoldenSetExportService;
 import com.cartethyia.easyorange.ai.domain.port.AiFeedbackPort;
+import com.cartethyia.easyorange.ai.domain.port.GoldenSetExportPort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,9 @@ class FeedbackLoopTest {
     @Mock
     private AiFeedbackPort feedbackPort;
 
+    @Mock
+    private GoldenSetExportPort exportPort;
+
     @Nested
     @DisplayName("反馈入库")
     class RecordFeedback {
@@ -44,7 +48,7 @@ class FeedbackLoopTest {
         @Test
         @DisplayName("scope 缺省补 chat，身份取安全上下文（未登录时为 null）")
         void recordFeedback() {
-            AiFeedbackAppService service = new AiFeedbackAppService(feedbackPort);
+            AiFeedbackAppService service = new AiFeedbackAppService(feedbackPort, exportPort);
 
             service.record(null, "怎么退款？", "7 天无理由", true, "很实用", "log-1");
 
@@ -54,7 +58,7 @@ class FeedbackLoopTest {
         @Test
         @DisplayName("显式 scope 原样透传，负评与空备注不被吞掉")
         void recordFeedback_passesThrough() {
-            AiFeedbackAppService service = new AiFeedbackAppService(feedbackPort);
+            AiFeedbackAppService service = new AiFeedbackAppService(feedbackPort, exportPort);
 
             service.record("chat", "问题", "回答", false, null, null);
 

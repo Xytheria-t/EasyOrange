@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.ai.adapter.inbound.web.assembler.KnowledgeDocAs
 import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.request.CreateKnowledgeDocRequest;
 import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.KnowledgeDocVO;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeIngestionAppService;
-import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminKnowledgeController {
 
     private final KnowledgeIngestionAppService ingestionService;
-    private final KnowledgeRepository repository;
 
     /** 新增文档并摄入：解析 → 分块 → embed → ES 索引（best-effort）。 */
     @PostMapping
@@ -42,7 +40,7 @@ public class AdminKnowledgeController {
     @GetMapping
     public Result<PageResult<KnowledgeDocVO>> page(
             @RequestParam(defaultValue = "1") int pageNum, @RequestParam(defaultValue = "10") int pageSize) {
-        return Result.success(KnowledgeDocAssembler.toVOPage(repository.page(pageNum, pageSize)));
+        return Result.success(KnowledgeDocAssembler.toVOPage(ingestionService.pageDocs(pageNum, pageSize)));
     }
 
     @DeleteMapping("/{id}")
