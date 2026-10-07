@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem } from '@/components/ui/pagination';
@@ -184,9 +185,18 @@ export function AdminTable<T extends object>({
                                         {Array.from({ length: 6 }, (_, i) => (
                                             // biome-ignore lint/suspicious/noArrayIndexKey: 静态占位，无状态
                                             <div key={i} className="admin-skeleton-row" aria-hidden="true">
-                                                <span className="admin-skeleton-bar" style={{ width: '28%' }} />
-                                                <span className="admin-skeleton-bar" style={{ width: '18%' }} />
-                                                <span className="admin-skeleton-bar" style={{ width: '14%' }} />
+                                                <span
+                                                    className="admin-skeleton-bar"
+                                                    style={{ '--sk-w': '28%' } as CSSProperties}
+                                                />
+                                                <span
+                                                    className="admin-skeleton-bar"
+                                                    style={{ '--sk-w': '18%' } as CSSProperties}
+                                                />
+                                                <span
+                                                    className="admin-skeleton-bar"
+                                                    style={{ '--sk-w': '14%' } as CSSProperties}
+                                                />
                                             </div>
                                         ))}
                                     </div>

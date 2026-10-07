@@ -238,9 +238,7 @@ function MyProductCard({ product, to, onEdit, onToggleShelf, toggling, index }: 
             <div className="order-card-shine" />
 
             <div className="order-card-header-premium">
-                <span className="order-card-order-no" style={{ fontSize: '0.8rem' }}>
-                    {product.createTime}
-                </span>
+                <span className="order-card-order-no text-[0.8rem]">{product.createTime}</span>
                 <span
                     className="order-card-status-badge"
                     style={{
@@ -255,7 +253,7 @@ function MyProductCard({ product, to, onEdit, onToggleShelf, toggling, index }: 
                 </span>
             </div>
 
-            <Link to={to} className="order-card-body-premium" style={{ cursor: 'pointer' }}>
+            <Link to={to} className="order-card-body-premium cursor-pointer">
                 <div className="order-card-image-wrap">
                     <div className="order-card-image-glow" />
                     {product.images?.[0] ? (

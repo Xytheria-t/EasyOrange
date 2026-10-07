@@ -468,14 +468,8 @@ function ProductDetailPage() {
                                 <div key={i} className="pdp-similar-card pdp-similar-skeleton">
                                     <div className="pdp-similar-skeleton-image pdp-shimmer" />
                                     <div className="pdp-similar-content">
-                                        <div
-                                            className="pdp-similar-skeleton-line pdp-shimmer"
-                                            style={{ width: '85%' }}
-                                        />
-                                        <div
-                                            className="pdp-similar-skeleton-line pdp-shimmer"
-                                            style={{ width: '45%' }}
-                                        />
+                                        <div className="pdp-similar-skeleton-line pdp-shimmer w-[85%]" />
+                                        <div className="pdp-similar-skeleton-line pdp-shimmer w-[45%]" />
                                     </div>
                                 </div>
                             ))}

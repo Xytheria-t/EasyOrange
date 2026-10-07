@@ -473,7 +473,7 @@ function ProductAuditPanel({
                         </div>
                     ) : (
                         <div className="admin-modal-state">
-                            <ImageOff size={32} aria-hidden="true" style={{ opacity: 0.4 }} />
+                            <ImageOff size={32} aria-hidden="true" className="admin-empty-icon" />
                             <span>商品不存在或已被删除</span>
                         </div>
                     )}
@@ -594,7 +594,7 @@ function ProductAuditPanel({
                 onCancel={() => setState(prev => ({ ...prev, showRejectModal: false }))}
                 content={
                     <div className="flex flex-col gap-3">
-                        <p style={{ margin: 0 }}>确定要驳回该资产吗？驳回后资产方可修改并重新提交。</p>
+                        <p className="admin-modal-note">确定要驳回该资产吗？驳回后资产方可修改并重新提交。</p>
                         <div className="flex flex-wrap gap-[0.35rem]">
                             {REJECT_TAGS.map(tag => (
                                 <Button

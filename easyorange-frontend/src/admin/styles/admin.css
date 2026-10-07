@@ -2719,3 +2719,84 @@
     border-radius: var(--admin-radius-pill);
     background: var(--choice-dot, var(--admin-muted));
 }
+
+/* 用户详情弹窗的身份区与内嵌格：
+   整块局部设计原来摊在 10 个 style 对象里（头像尺寸、姓名排版、行距各自硬编码），
+   收成语义类后改一处即可影响整块。 */
+.admin-detail-identity {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.admin-detail-avatar {
+    height: 52px;
+    width: 52px;
+    border-radius: 16px;
+    flex-shrink: 0;
+}
+
+.admin-detail-avatar-fallback {
+    height: 52px;
+    width: 52px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--admin-surface-solid);
+    font-family: var(--admin-font-title);
+    /* 底色由数据算（pickAvatarGradient），仍走内联 */
+}
+
+.admin-detail-identity-text {
+    min-width: 0; /* 姓名过长时允许收缩，否则 flex 项会撑破容器 */
+    flex: 1;
+}
+
+.admin-detail-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--admin-ink);
+}
+
+/* 无底边距的紧凑标签：@username、内嵌格的键名——它们在紧凑块里不需要默认行距 */
+.admin-label-flush-bottom {
+    margin-bottom: 0.2rem;
+}
+
+.admin-label-flush-top {
+    margin-top: 0.2rem;
+}
+
+.admin-detail-section {
+    margin-bottom: 1.25rem;
+}
+
+.admin-detail-inset-body {
+    padding: 0.65rem 0.85rem;
+}
+
+/* 骨架条宽度由调用方经 --sk-w 注入（同 --clamp-w 的手法）：三条骨架要错落，
+   但「错落多少」是装饰取值、不是三条各自的设计，收进 CSS 一处调 */
+.admin-skeleton-bar {
+    width: var(--sk-w, 100%);
+}
+
+.admin-field-legend {
+    margin-bottom: 0.5rem;
+}
+
+/* 空态图标压暗：不抢正文注意力 */
+.admin-empty-icon {
+    opacity: 0.4;
+}
+
+/* 弹窗正文段落：外层已有栅格行距，段落自带的 margin 会叠出多余空隙 */
+.admin-modal-note {
+    margin: 0;
+}

@@ -192,9 +192,8 @@ export function ProfileOverview({
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="profile-edit-btn"
+                                            className="profile-edit-btn opacity-60"
                                             onClick={() => onEdit(key, value || '')}
-                                            style={{ opacity: 0.6 }}
                                         >
                                             <Pencil size={12} />
                                         </Button>
