@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.application.eval;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -13,6 +14,7 @@ import com.cartethyia.easyorange.ai.adapter.outbound.persistence.AiFeedbackRecor
 import com.cartethyia.easyorange.ai.adapter.outbound.persistence.GoldenSetExportService;
 import com.cartethyia.easyorange.ai.domain.port.AiFeedbackPort;
 import com.cartethyia.easyorange.ai.domain.port.GoldenSetExportPort;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.List;
 import java.util.Map;
@@ -176,12 +178,14 @@ class FeedbackLoopTest {
         }
 
         @Test
-        @DisplayName("查询失败 -> 返回提示文案，不抛出")
+        @DisplayName("查询失败 -> 抛出而非返回提示串（返回值是 YAML，混进失败说明会让调用方把失败当成功）")
         void exportUnreviewed_queryFails() {
             when(jdbcTemplate.queryForList(anyString(), anyInt())).thenThrow(new RuntimeException("db down"));
             GoldenSetExportService service = new GoldenSetExportService(jdbcTemplate);
 
-            assertThat(service.exportUnreviewed(50)).contains("导出失败");
+            assertThatThrownBy(() -> service.exportUnreviewed(50))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("导出失败");
         }
 
         /** 把片段当 {@code cases:} 的子节点解析（与人工合并进 golden-set.yaml 的形态一致）。 */
