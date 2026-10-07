@@ -332,7 +332,7 @@ function NotFoundPage() {
                             padding: '0.72rem 1.5rem',
                             borderRadius: 14,
                             border: '1.5px solid #E5E0DB',
-                            background: '#fff',
+                            background: 'var(--surface-panel)',
                             fontSize: '0.9rem',
                             fontWeight: 600,
                             color: '#4A4540',
@@ -346,7 +346,7 @@ function NotFoundPage() {
                             e.currentTarget.style.transform = 'translateY(-2px)';
                         }}
                         onMouseLeave={e => {
-                            e.currentTarget.style.background = '#fff';
+                            e.currentTarget.style.background = 'var(--surface-panel)';
                             e.currentTarget.style.transform = 'translateY(0)';
                         }}
                     >
@@ -375,7 +375,7 @@ function NotFoundPage() {
                             borderRadius: 14,
                             border: 'none',
                             background: 'linear-gradient(135deg, var(--primary-500), var(--rose-400))',
-                            color: '#fff',
+                            color: 'var(--text-on-accent)',
                             fontSize: '0.9rem',
                             fontWeight: 600,
                             textDecoration: 'none',
@@ -445,7 +445,7 @@ function NotFoundPage() {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 background: 'linear-gradient(135deg, var(--primary-500), var(--rose-400))',
-                                color: '#fff',
+                                color: 'var(--text-on-accent)',
                                 boxShadow: '0 3px 10px rgba(249,115,22,0.25)',
                             }}
                         >
@@ -519,7 +519,7 @@ function NotFoundPage() {
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        background: '#fff',
+                                        background: 'var(--surface-panel)',
                                         color: item.color,
                                         flexShrink: 0,
                                         boxShadow: `0 1px 4px ${item.color}15`,

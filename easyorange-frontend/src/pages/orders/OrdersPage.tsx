@@ -50,7 +50,7 @@ const STATUS_STYLE_MAP: Record<OrderStatus, { bg: string; text: string; border: 
         text: '#7C3AED',
         border: 'rgba(139, 92, 246, 0.2)',
         glow: '0 0 20px rgba(139, 92, 246, 0.15)',
-        dot: '#8B5CF6',
+        dot: 'var(--violet-500)',
     },
     COMPLETED: {
         bg: 'rgba(16, 185, 129, 0.08)',

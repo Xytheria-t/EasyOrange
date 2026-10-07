@@ -43,6 +43,7 @@
     --rose-400: #fb7185;
     --rose-500: #f43f5e;
     --rose-600: #e11d48;
+    --rose-700: #be123c;
 
     /* Accent aliases —— 2026-10 删了 --accent-600，它是 --rose-600 的零引用同值别名，
        留着只会在「强调色到底取哪档」上多一个候选。 */
@@ -62,14 +63,31 @@
     /* Gold accent for warmth —— 2026-10 删了零引用的 --gold-300 */
     --gold-400: #fbbf24;
     --gold-500: #f59e0b;
+    --gold-50: #fffbeb;
+    --gold-100: #fef3c7;
+    --gold-200: #fde68a;
 
     /* Matcha Green for freshness */
     --emerald-400: #34d399;
     --emerald-500: #10b981;
+    --emerald-50: #ecfdf5;
     --emerald-600: var(--status-success);
+    --emerald-700: #047857;
 
     /* AI 功能区 / 特色卡装饰色（低频，按需取用） */
     --indigo-500: #6366f1;
+
+    /* Red —— 状态底/边/字三段（chip 与 toast 的浅底场景）*/
+    --red-50: #fef2f2;
+    --red-100: #fee2e2;
+    --red-200: #fecaca;
+    --red-500: #ef4444;
+    --red-600: #dc2626;
+
+    /* Violet —— 装饰渐变与分类图标用（与自定义的 --purple-* 色阶不同源）*/
+    --violet-50: #f5f3ff;
+    --violet-400: #a855f7;
+    --violet-500: #8b5cf6;
     --pink-50: #fdf2f8;
     --pink-500: #ec4899;
     --cyan-50: #ecfeff;
@@ -81,6 +99,7 @@
     /* Blue - minimal use */
     --blue-50: #eff6ff;
     --blue-500: #3b82f6;
+    --blue-700: #1d4ed8;
 
     /* Semantic colors —— 2026-10 删了零引用的 --warning-light / --info-light */
     --success: #10b981;
@@ -116,6 +135,7 @@
     --gray-300: #d6d0c8;
     --gray-400: #a8a098;
     --gray-500: #787068;
+    --gray-600: #5c544c;
     --gray-700: #433d36;
     --gray-800: #2a2520;
     --gray-900: #1a1612;
@@ -129,6 +149,7 @@
     --text-tertiary: #6b6058;
     --text-heading: #1a1612;
     --text-warm: #a67c52;
+    --text-on-accent: #ffffff; /* 品牌渐变/深底上的白字 */
 
     /*
      * 表面层级 —— 会话 / 通知这类「列表 + 详情」页的三层递进。

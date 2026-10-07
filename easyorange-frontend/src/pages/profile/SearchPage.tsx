@@ -36,11 +36,11 @@ import './search-ai.css';
 
 const CATEGORY_ICON_MAP: Record<string, { icon: typeof Smartphone; color: string; bg: string }> = {
     电子数码: { icon: Smartphone, color: 'var(--blue-500)', bg: 'var(--blue-50)' },
-    书籍教材: { icon: BookOpen, color: 'var(--emerald-500)', bg: '#ECFDF5' },
+    书籍教材: { icon: BookOpen, color: 'var(--emerald-500)', bg: 'var(--emerald-50)' },
     服饰鞋包: { icon: ShoppingBag, color: 'var(--pink-500)', bg: 'var(--pink-50)' },
-    生活用品: { icon: Home, color: 'var(--gold-500)', bg: '#FFFBEB' },
-    运动健身: { icon: Dumbbell, color: '#EF4444', bg: '#FEF2F2' },
-    虚拟物品: { icon: Gift, color: '#8B5CF6', bg: '#F5F3FF' },
+    生活用品: { icon: Home, color: 'var(--gold-500)', bg: 'var(--gold-50)' },
+    运动健身: { icon: Dumbbell, color: 'var(--red-500)', bg: 'var(--red-50)' },
+    虚拟物品: { icon: Gift, color: 'var(--violet-500)', bg: 'var(--violet-50)' },
 };
 
 const DEFAULT_CATEGORY_ICON = { icon: Gift, color: 'var(--primary-500)', bg: 'var(--primary-50)' };
