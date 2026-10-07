@@ -155,8 +155,15 @@ class ProductCacheAdapterTest {
         assertThat(calls).hasValue(2);
     }
 
+    /**
+     * ⚠️ 这条**不覆盖生产路径**：本类跑的是 {@link ConcurrentMapCacheManager}，它用
+     * {@code computeIfAbsent} 自带 JVM 内单飞，所以断言恒真——哪怕 Redis 那边完全没加锁也照样绿。
+     * 真实 Redis 路径的单飞由 {@code CacheSingleFlightIT}（application 模块，真实 Redis）钉住：
+     * 那条同时覆盖「writer 必须是 locking」与「装饰器必须透传带 loader 的 get」两处装配。
+     * 这里只保留「注解参数写法正确」这层语义。
+     */
     @Test
-    @DisplayName("sync = true：并发同 key 回源只执行一次 loader（防击穿）")
+    @DisplayName("sync = true 写法生效（注意：本类用 ConcurrentMapCache，不覆盖 Redis 路径）")
     void getProductCache_concurrentSameKey_singleLoader() throws Exception {
         var calls = new AtomicInteger();
         int threads = 8;
