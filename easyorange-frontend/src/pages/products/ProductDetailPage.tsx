@@ -283,7 +283,7 @@ function ProductDetailPage() {
                                             className="pdp-status-chip"
                                             style={{
                                                 background: '#FEF3C7',
-                                                color: '#D97706',
+                                                color: 'var(--status-warning)',
                                                 border: '1px solid #FDE68A',
                                             }}
                                         >

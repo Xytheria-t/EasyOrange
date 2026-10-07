@@ -159,7 +159,7 @@ export default function ProductsSection() {
                                 bottom: 0,
                                 left: 0,
                                 height: '2px',
-                                background: 'linear-gradient(90deg, #F97316, #FB7185)',
+                                background: 'linear-gradient(90deg, var(--primary-500), var(--rose-400))',
                                 borderRadius: '2px',
                                 transition: 'transform 0.3s var(--ease-spring), width 0.3s var(--ease-spring)',
                                 boxShadow: '0 0 8px rgba(249, 115, 22, 0.4)',

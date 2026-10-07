@@ -25,7 +25,7 @@ function NotFoundPage() {
             ),
             label: '浏览首页',
             desc: '发现最新上架的资产',
-            color: '#F97316',
+            color: 'var(--primary-500)',
             bg: 'rgba(249,115,22,0.10)',
         },
         {
@@ -48,7 +48,7 @@ function NotFoundPage() {
             ),
             label: '搜索商品',
             desc: '输入关键词找到你想要的',
-            color: '#C39BD3',
+            color: 'var(--purple-400)',
             bg: 'rgba(195,155,211,0.12)',
         },
         {
@@ -71,7 +71,7 @@ function NotFoundPage() {
             ),
             label: '热门商品',
             desc: '看看大家都在关注什么',
-            color: '#FB7185',
+            color: 'var(--rose-400)',
             bg: 'rgba(251,113,133,0.10)',
         },
     ];
@@ -87,7 +87,7 @@ function NotFoundPage() {
                 position: 'relative',
                 overflow: 'hidden',
                 background: `
-        linear-gradient(180deg, #FAF8F5 0%, #FFF9F5 30%, #FEF5F3 60%, #FAF4FF 100%)
+        linear-gradient(180deg, var(--gray-50) 0%, #FFF9F5 30%, #FEF5F3 60%, #FAF4FF 100%)
       `,
             }}
         >
@@ -222,7 +222,7 @@ function NotFoundPage() {
                                 <span
                                     style={{
                                         background:
-                                            'linear-gradient(135deg, #F97316 0%, #FB7185 35%, #C39BD3 75%, #D8B4FE 100%)',
+                                            'linear-gradient(135deg, var(--primary-500) 0%, var(--rose-400) 35%, var(--purple-400) 75%, var(--purple-300) 100%)',
                                         WebkitBackgroundClip: 'text',
                                         WebkitTextFillColor: 'transparent',
                                         backgroundClip: 'text',
@@ -232,7 +232,8 @@ function NotFoundPage() {
                                 </span>
                                 <span
                                     style={{
-                                        background: 'linear-gradient(135deg, #FB7185 0%, #F43F5E 45%, #F97316 100%)',
+                                        background:
+                                            'linear-gradient(135deg, var(--rose-400) 0%, var(--rose-500) 45%, var(--primary-500) 100%)',
                                         WebkitBackgroundClip: 'text',
                                         WebkitTextFillColor: 'transparent',
                                         backgroundClip: 'text',
@@ -243,7 +244,7 @@ function NotFoundPage() {
                                 <span
                                     style={{
                                         background:
-                                            'linear-gradient(135deg, #C39BD3 0%, #FB7185 35%, #F97316 75%, #EA580C 100%)',
+                                            'linear-gradient(135deg, var(--purple-400) 0%, var(--rose-400) 35%, var(--primary-500) 75%, var(--primary-600) 100%)',
                                         WebkitBackgroundClip: 'text',
                                         WebkitTextFillColor: 'transparent',
                                         backgroundClip: 'text',
@@ -264,7 +265,7 @@ function NotFoundPage() {
                                 <span
                                     style={{
                                         background:
-                                            'linear-gradient(135deg, #F97316 0%, #FB7185 35%, #C39BD3 75%, #D8B4FE 100%)',
+                                            'linear-gradient(135deg, var(--primary-500) 0%, var(--rose-400) 35%, var(--purple-400) 75%, var(--purple-300) 100%)',
                                         WebkitBackgroundClip: 'text',
                                         WebkitTextFillColor: 'transparent',
                                         backgroundClip: 'text',
@@ -285,7 +286,7 @@ function NotFoundPage() {
                         fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
                         fontSize: 'clamp(1.5rem, 3vw, 1.85rem)',
                         fontWeight: 700,
-                        color: '#2A2520',
+                        color: 'var(--gray-800)',
                         marginBottom: '0.65rem',
                         letterSpacing: '-0.02em',
                         animation: 'nfFadeUp 0.6s ease-out 0.15s both',
@@ -373,7 +374,7 @@ function NotFoundPage() {
                             padding: '0.72rem 1.6rem',
                             borderRadius: 14,
                             border: 'none',
-                            background: 'linear-gradient(135deg, #F97316, #FB7185)',
+                            background: 'linear-gradient(135deg, var(--primary-500), var(--rose-400))',
                             color: '#fff',
                             fontSize: '0.9rem',
                             fontWeight: 600,
@@ -443,7 +444,7 @@ function NotFoundPage() {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                background: 'linear-gradient(135deg, #F97316, #FB7185)',
+                                background: 'linear-gradient(135deg, var(--primary-500), var(--rose-400))',
                                 color: '#fff',
                                 boxShadow: '0 3px 10px rgba(249,115,22,0.25)',
                             }}
@@ -468,13 +469,15 @@ function NotFoundPage() {
                                     fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
                                     fontSize: '0.95rem',
                                     fontWeight: 700,
-                                    color: '#2A2520',
+                                    color: 'var(--gray-800)',
                                     margin: 0,
                                 }}
                             >
                                 智能导航
                             </h3>
-                            <span style={{ fontSize: '0.78rem', color: '#9B9590' }}>为你推荐可能想去的页面</span>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--status-default)' }}>
+                                为你推荐可能想去的页面
+                            </span>
                         </div>
                     </div>
 
@@ -530,12 +533,18 @@ function NotFoundPage() {
                                             display: 'block',
                                             fontSize: '0.87rem',
                                             fontWeight: 600,
-                                            color: '#2A2520',
+                                            color: 'var(--gray-800)',
                                         }}
                                     >
                                         {item.label}
                                     </span>
-                                    <span style={{ display: 'block', fontSize: '0.74rem', color: '#9B9590' }}>
+                                    <span
+                                        style={{
+                                            display: 'block',
+                                            fontSize: '0.74rem',
+                                            color: 'var(--status-default)',
+                                        }}
+                                    >
                                         {item.desc}
                                     </span>
                                 </div>

@@ -43,6 +43,16 @@ RGB = re.compile(r"\brgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)")
 CSS_VAR_DEF = re.compile(r"^\s*(--[a-zA-Z][a-zA-Z0-9-]*)\s*:")
 CSS_VAR_USE = re.compile(r"var\(\s*(--[a-zA-Z][a-zA-Z0-9-]*)\s*(,)?")
 MASK_DECL = re.compile(r"^(?:-webkit-)?mask(?:-image)?\s*:")
+# tsx/ts 侧专用判据（见 check_ts_file）：
+#   SVG 呈现属性里的 var() 浏览器支持不一（Chrome/Firefox 不认），色值只能写字面量——
+#   脚本 docstring 的「SVG stop 等结构性场景的设计色」白名单条目说的就是它。
+SVG_PRESENTATION_ATTR = re.compile(r'\b(?:stopColor|stop-color|stroke|fill|floodColor|flood-color)\s*=\s*["\']')
+# var() 的 fallback 是自描述降级（令牌缺失时才生效），其字面色值放行
+VAR_WITH_FALLBACK = re.compile(r"var\(\s*--[a-zA-Z][a-zA-Z0-9-]*\s*,[^)]*\)")
+# tsx 里注入局部令牌的写法 {'--x': value}：值是令牌本体，与 CSS 的 `--x:` 定义行同口径
+TS_VAR_DEF = re.compile(r"['\"](--[a-zA-Z][a-zA-Z0-9-]*)['\"]\s*:")
+LINE_COMMENT = re.compile(r"//.*$")
+BLOCK_COMMENT = re.compile(r"/\*.*?\*/")
 
 # ---------------------------------------------------------------------------
 # 白名单：现存已知例外的精确值。新增必须带理由，别图省事往里塞。
@@ -96,6 +106,38 @@ HEX_ALLOW = {
     "#a0a0a0",
     "#cd7f32",
     "#b87333",
+    # —— 2026-10-07 纳入：tsx 侧此前不在本脚本范围内，是盲区；补上覆盖后按同一政策登记 ——
+    # 订单状态 HERO 渐变（STATUS_HERO_MAP）的暗端：每档是「浅/中/深」三段，
+    # 中间段已走令牌，暗端在本项目色阶里没有对应步
+    "#047857",
+    "#be123c",
+    "#5c544c",
+    "#a855f7",
+    "#8b5cf6",  # 唯一等值令牌 --biz-system 语义是「业务类型」，用在装饰渐变上不对
+    # 分类图标配色对（7 组的 color + bg）：低频装饰，值是 Tailwind 色阶而非本项目色阶
+    "#ecfdf5",
+    "#fffbeb",
+    "#fef2f2",
+    "#f5f3ff",
+    "#ef4444",
+    "#1d4ed8",
+    # 状态 chip 与 toast 的「浅底 / 描边」：字色那档已走 --status-*，底与边无对应令牌
+    "#fef3c7",
+    "#fde68a",
+    "#fee2e2",
+    "#fecaca",
+    "#dc2626",
+    # 暖白与骨架灰：页面局部底色、图片占位动画
+    "#fff",
+    "#f0f0f0",
+    "#e0e0e0",
+    "#fef5f3",
+    "#faf4ff",
+    # 暖中性：暖灰阶的中间步（--gray-* 只落了 50 / 400 / 500 / 800）
+    "#8b857e",
+    "#e5e0db",
+    "#4a4540",
+    "#b5aea8",
 }
 
 # rgba/rgb 白名单按「基色三元组」收，任意 alpha 合法——防的是发明新基色。
@@ -105,6 +147,11 @@ RGB_ALLOW = {
     (0, 0, 0),
     (42, 37, 32),
     (26, 22, 18),
+    # 已在本项目色阶里的色的 alpha 形态（--gray-400 / --purple-300 的基色，
+    # 另有暖中性 #e5e0db —— 与上面的 hex 白名单同源）
+    (168, 160, 152),
+    (216, 180, 254),
+    (229, 224, 219),
     # 品牌色 alpha 形态（橙 / 玫红 / 紫 / 金 / 绿 / 玫红深 / 红系 / 蓝系）
     (249, 115, 22),
     (251, 113, 133),
@@ -271,9 +318,38 @@ def check_file(path: Path, check_colors: bool) -> tuple[list[str], dict[str, boo
     return problems, used
 
 
+def ts_files() -> list[Path]:
+    """C 端 ts / tsx —— 色值散在 tsx 里（内联 style、SVG、调色板常量），此前只查 CSS 是盲区。"""
+    return sorted(
+        p for p in list(SRC.rglob("*.ts")) + list(SRC.rglob("*.tsx"))
+        if "admin" not in p.relative_to(SRC).parts and ".test." not in p.name
+    )
+
+
+def check_ts_file(path: Path) -> list[str]:
+    """ts / tsx 的裸色值检查 —— 与 CSS 同白名单，豁免按该文件形态另定。"""
+    problems: list[str] = []
+    in_block_comment = False
+    for i, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        code, in_block_comment = strip_comment(raw, in_block_comment)
+        code = LINE_COMMENT.sub("", code)
+        if "data:" in code and "url(" in code:
+            continue
+        if SVG_PRESENTATION_ATTR.search(code):
+            continue  # SVG 呈现属性不支持 var()，色值只能字面量
+        if TS_VAR_DEF.search(code):
+            continue  # {'--x': value} 是局部令牌定义，值是令牌本体
+        code = VAR_WITH_FALLBACK.sub("var(--)", code)  # fallback 字面色放行
+        if not code.strip():
+            continue
+        for kind in check_color_line(code, False):
+            problems.append(f"  {path.relative_to(ROOT)}:{i} [{kind}] {raw.strip()[:100]}")
+    return problems
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--staged", action="store_true", help="裸色值只查暂存的 C 端 CSS")
+    parser.add_argument("--staged", action="store_true", help="裸色值只查暂存的 C 端文件")
     args = parser.parse_args()
 
     files = css_files()
@@ -285,19 +361,21 @@ def main() -> int:
             ["git", "diff", "--name-only", "--cached", "HEAD"],
             cwd=ROOT, capture_output=True, text=True, check=True,
         ).stdout.split()
-        staged = {
+        c_side = [
             ROOT / name
             for name in changed
             if name.startswith("easyorange-frontend/src/")
             and not name.startswith("easyorange-frontend/src/admin/")
-            and name.endswith(".css")
-        }
-        if not staged:
-            print("[c-style] OK：本次暂存无 C 端 CSS")
+        ]
+        staged_css = {p for p in c_side if p.suffix == ".css"}
+        staged_ts = [p for p in c_side if p.suffix in (".ts", ".tsx") and ".test." not in p.name]
+        if not staged_css and not staged_ts:
+            print("[c-style] OK：本次暂存无 C 端 CSS / ts / tsx")
             return 0
-        color_files = {p for p in staged if c_css(p)}
+        color_files = {p for p in staged_css if c_css(p)}
     else:
         color_files = {p for p in files if c_css(p)}
+        staged_ts = None  # None = 全量
 
     defined = collect_definitions(files)
     problems: list[str] = []
@@ -308,13 +386,17 @@ def main() -> int:
         for var, has_fallback in file_used.items():
             used[var] = used.get(var, False) or has_fallback
 
+    ts_scope = ts_files() if staged_ts is None else staged_ts
+    for path in ts_scope:
+        problems.extend(check_ts_file(path))
+
     dangling = sorted(v for v, has_fallback in used.items() if v not in defined and not has_fallback)
     for var in dangling:
         problems.append(f"  [悬空变量] {var} 被 var() 引用但全仓库无定义（无 fallback，静默失效）")
 
     if not problems:
         print(
-            f"[c-style] OK：{len(color_files)} 个 C 端 CSS 无白名单外裸色值，"
+            f"[c-style] OK：{len(color_files)} 个 C 端 CSS + {len(ts_scope)} 个 ts/tsx 无白名单外裸色值，"
             f"{len(files)} 个 CSS 无悬空变量引用（白名单 {len(HEX_ALLOW)} hex / {len(RGB_ALLOW)} 基色）"
         )
         return 0
