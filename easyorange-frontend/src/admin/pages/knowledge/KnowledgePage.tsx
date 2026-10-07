@@ -1,4 +1,5 @@
 import { BookOpen, Plus, RefreshCw } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -116,7 +117,10 @@ export default function KnowledgePage() {
                             key: 'title',
                             title: '标题',
                             render: value => (
-                                <span className="admin-cell-strong admin-cell-clamp" style={{ maxWidth: 280 }}>
+                                <span
+                                    className="admin-cell-strong admin-cell-clamp"
+                                    style={{ '--clamp-w': 280 } as CSSProperties}
+                                >
                                     {(value as string) || '（无标题）'}
                                 </span>
                             ),

@@ -1,4 +1,5 @@
 import { ClipboardCheck, Eye, Package } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -137,7 +138,7 @@ export default function ProductReviewPage() {
             key: 'name',
             title: '商品名称',
             render: value => (
-                <span className="admin-cell-strong admin-cell-clamp" style={{ maxWidth: 220 }}>
+                <span className="admin-cell-strong admin-cell-clamp" style={{ '--clamp-w': 220 } as CSSProperties}>
                     {value as string}
                 </span>
             ),

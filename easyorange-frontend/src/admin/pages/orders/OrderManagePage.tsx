@@ -1,4 +1,5 @@
 import { Eye, ReceiptText } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { usePagination } from '@/hooks/usePagination';
@@ -53,7 +54,7 @@ export default function OrderManagePage() {
                 const firstName = items?.[0]?.productName || '—';
                 const multi = items && items.length > 1;
                 return (
-                    <span className="admin-cell-sub" style={{ maxWidth: 180 }}>
+                    <span className="admin-cell-sub" style={{ '--clamp-w': 180 } as CSSProperties}>
                         {firstName}
                         {multi ? ` 等${items.length}件` : ''}
                     </span>

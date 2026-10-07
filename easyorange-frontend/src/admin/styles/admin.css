@@ -1115,12 +1115,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    /* 每列截断宽度由调用方经 --clamp-w 注入（原本是 3 处内联 maxWidth: 180/220/280）。
+       一列一个类会把 .admin-* 撑爆，变量注入是既有的动态取值手法（同 --kpi-accent）。 */
+    max-width: var(--clamp-w, none);
 }
 
 /* 行内单行截断（表格单元格内 block 会撑破行高，用 inline-block 贴住基线） */
 .admin-cell-sub {
     display: inline-block;
-    max-width: 100%;
+    max-width: var(--clamp-w, 100%);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
