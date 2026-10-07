@@ -37,7 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminDashboardAppService {
 
     private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
-    private static final int TREND_MONTHS = 6;
+    /** 趋势起点：自 6 个月前起逐自然月补零，含当月共 7 个点（前端按数组长度渲染「近 N 个月」，不是 6）。 */
+    private static final int TREND_MONTHS_BACK = 6;
+
     private static final int RECENT_LIMIT = 10;
     private static final int RECENT_PER_SOURCE = 5;
 
@@ -64,7 +66,7 @@ public class AdminDashboardAppService {
 
     @Transactional(readOnly = true)
     public List<TrendPoint> getTrend() {
-        LocalDate since = LocalDate.now().minusMonths(TREND_MONTHS);
+        LocalDate since = LocalDate.now().minusMonths(TREND_MONTHS_BACK);
 
         Map<String, Long> usersByMonth = adminUserPort.getCreateTrend(since);
         Map<String, Long> productsByMonth = adminProductPort.getCreateTrend(since);
