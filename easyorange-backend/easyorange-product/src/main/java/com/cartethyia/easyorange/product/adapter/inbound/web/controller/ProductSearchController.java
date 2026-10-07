@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.product.application.query.ProductSearchQueryHan
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -40,6 +41,7 @@ public class ProductSearchController {
     private final ProductSearchAssembler searchAssembler;
 
     @GetMapping
+    @Operation(summary = "公开搜索，ES 未启用或不可达时回退 MySQL（回退后 facets 为空）")
     public Result<SearchPageResponse<ProductResponse>> searchProducts(@Valid ProductSearchRequest request) {
         var criteria = new ProductSearchCriteria(
                 request.getKeyword(),
@@ -57,6 +59,7 @@ public class ProductSearchController {
     }
 
     @GetMapping("/history")
+    @Operation(summary = "当前用户搜索历史（Redis 列表优先，miss 回源 DB）")
     public Result<List<SearchHistoryResponse>> getMySearchHistory(
             @AuthenticationPrincipal AuthUser user, @RequestParam(defaultValue = "20") @Max(50) Integer limit) {
         List<SearchHistoryReadModel> histories = searchQueryHandler.getMySearchHistory(user.userId(), limit);
@@ -64,24 +67,28 @@ public class ProductSearchController {
     }
 
     @DeleteMapping("/history")
+    @Operation(summary = "清空当前用户的搜索历史（Redis 与 DB 同删）")
     public Result<Void> clearMySearchHistory(@AuthenticationPrincipal AuthUser user) {
         searchQueryHandler.clearMySearchHistory(user.userId());
         return Result.success();
     }
 
     @DeleteMapping("/history/{historyId}")
+    @Operation(summary = "删除自己的单条搜索历史（条件带 userId，越权即无操作）")
     public Result<Void> deleteSearchHistory(@AuthenticationPrincipal AuthUser user, @PathVariable String historyId) {
         searchQueryHandler.deleteSearchHistory(user.userId(), historyId);
         return Result.success();
     }
 
     @GetMapping("/hot")
+    @Operation(summary = "热词榜（Redis ZSet 优先，miss 回源 DB 按搜索次数倒序）")
     public Result<List<HotKeywordResponse>> getHotKeywords(@RequestParam(defaultValue = "10") @Max(50) Integer limit) {
         List<HotKeywordReadModel> keywords = searchQueryHandler.getHotKeywords(limit);
         return Result.success(searchAssembler.toHotKeywordResponses(keywords));
     }
 
     @GetMapping("/suggestions")
+    @Operation(summary = "搜索建议（热词包含匹配，Redis 全量过滤优先）")
     public Result<List<String>> getSearchSuggestions(
             @RequestParam @Size(max = 100, message = "关键词不能超过 100 个字符") String keyword,
             @RequestParam(defaultValue = "10") @Max(50) Integer limit) {
@@ -90,6 +97,7 @@ public class ProductSearchController {
     }
 
     @PostMapping("/record")
+    @Operation(summary = "记录搜索关键词（历史去重截断，热词计数失败不阻断）")
     public Result<Void> recordSearch(
             @AuthenticationPrincipal AuthUser user,
             @RequestParam @Size(max = 100, message = "关键词不能超过 100 个字符") String keyword) {

@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.ai.application.dto.ChatFeedbackRequest;
 import com.cartethyia.easyorange.ai.application.eval.AiFeedbackAppService;
 import com.cartethyia.easyorange.common.result.Result;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +23,7 @@ public class AiFeedbackController {
     private final AiFeedbackAppService feedbackService;
 
     @PostMapping
+    @Operation(summary = "记录赞 / 踩反馈落库，身份取自登录态而非入参，失败只告警")
     public Result<Void> feedback(@RequestBody ChatFeedbackRequest request) {
         feedbackService.record(
                 request.scope(),

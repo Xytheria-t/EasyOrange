@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.admin.domain.port.AdminSearchIndexPort;
 import com.cartethyia.easyorange.common.result.Result;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -19,6 +20,7 @@ public class AdminSearchReindexController {
     private final AdminSearchIndexPort searchIndexPort;
 
     @PostMapping("/reindex")
+    @Operation(summary = "全量重建 ES 商品索引：先删后建，只写 ONLINE 商品，返回写入条数")
     public Result<Integer> reindex() {
         return Result.success(searchIndexPort.reindexAll());
     }

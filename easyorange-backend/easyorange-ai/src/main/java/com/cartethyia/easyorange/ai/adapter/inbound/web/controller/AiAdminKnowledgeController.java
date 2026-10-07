@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.KnowledgeDo
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeIngestionAppService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,18 +33,21 @@ public class AiAdminKnowledgeController {
 
     /** 新增文档并摄入：解析 → 分块 → embed → ES 索引（best-effort）。 */
     @PostMapping
+    @Operation(summary = "新建知识文档并摄入，embed / ES 写入失败整篇标 FAILED 待补索引")
     public Result<String> create(@Valid @RequestBody CreateKnowledgeDocRequest request) {
         String id = ingestionService.ingest(request.title(), request.content(), request.source());
         return Result.success(id);
     }
 
     @GetMapping
+    @Operation(summary = "分页列出库内文档（直读仓储，非检索召回结果）")
     public Result<PageResult<KnowledgeDocVO>> page(
             @RequestParam(defaultValue = "1") int pageNum, @RequestParam(defaultValue = "10") int pageSize) {
         return Result.success(KnowledgeDocAssembler.toVOPage(ingestionService.pageDocs(pageNum, pageSize)));
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "逻辑删除文档并同步移除 ES 分块，索引清理失败只告警")
     public Result<Void> delete(@PathVariable String id) {
         ingestionService.delete(id);
         return Result.success();
@@ -51,6 +55,7 @@ public class AiAdminKnowledgeController {
 
     /** 补索引：把上次摄入未完成（PENDING/FAILED）的文档全部重试一遍。 */
     @PostMapping("/reindex")
+    @Operation(summary = "重试全部未完成（PENDING / FAILED）文档，返回重试篇数")
     public Result<Integer> reindex() {
         return Result.success(ingestionService.reindexIncomplete());
     }

@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.Dashboar
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.application.service.AdminDashboardAppService;
 import com.cartethyia.easyorange.common.result.Result;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,16 +24,19 @@ public class AdminDashboardController {
     private final AdminDashboardAssembler assembler;
 
     @GetMapping("/stats")
+    @Operation(summary = "用户 / 商品 / 订单三模块总量与今日增量，含待审商品数与累计营收")
     public Result<DashboardStatsResponse> getStats() {
         return Result.success(assembler.toStatsResponse(adminDashboardService.getDashboardStats()));
     }
 
     @GetMapping("/trend")
+    @Operation(summary = "自 6 个月前起逐自然月补零：新增用户 / 商品 / 订单三条折线")
     public Result<List<TrendResponse>> getTrend() {
         return Result.success(assembler.toTrendResponses(adminDashboardService.getTrend()));
     }
 
     @GetMapping("/activity")
+    @Operation(summary = "注册 / 上架 / 下单动态合并倒序，每类各取 5 条、合计上限 10 条")
     public Result<List<ActivityResponse>> getActivity() {
         return Result.success(assembler.toActivityResponses(adminDashboardService.getRecentActivity()));
     }

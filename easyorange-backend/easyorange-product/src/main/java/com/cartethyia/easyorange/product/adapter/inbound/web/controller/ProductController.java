@@ -18,6 +18,7 @@ import com.cartethyia.easyorange.product.application.query.ProductQueryHandler;
 import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.domain.valueobject.AiSuggestion;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -50,6 +51,7 @@ public class ProductController {
     // ── 写端点 ──
 
     @PostMapping
+    @Operation(summary = "卖家发布资产草稿（DRAFT），同事务落库存基线流水")
     public Result<String> createProduct(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody ProductCreateRequest request) {
         var cmd = new CreateProductCommand(
@@ -82,6 +84,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "资产方更新自己的资产，改动库存补记一条人工调整流水")
     public Result<Void> updateProduct(
             @AuthenticationPrincipal AuthUser user,
             @PathVariable String id,
@@ -103,12 +106,14 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "资产方删除自己的资产，SOLD 终端态拒删以保留订单商品记录")
     public Result<Void> deleteProduct(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
         commandHandler.deleteProduct(user.userId(), id);
         return Result.success();
     }
 
     @PutMapping("/{id}/submit")
+    @Operation(summary = "提交自己的资产审核（DRAFT / REJECTED → PENDING_REVIEW）")
     public Result<Void> submitForReview(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
         commandHandler.submitForReview(user.userId(), id);
         return Result.success();
@@ -117,12 +122,14 @@ public class ProductController {
     // 上架与下架对称：卖家重新上架自己的下架商品（C2C 直发，平台不代持货架）；
     // 管理员强制改状态走 /api/admin/products/{id}/status
     @PutMapping("/{productId}/online")
+    @Operation(summary = "本人上架资产，进 ONLINE 前校验信息完整、价格与库存")
     public Result<Void> putOnline(@AuthenticationPrincipal AuthUser user, @PathVariable String productId) {
         commandHandler.putOnline(user.userId(), productId);
         return Result.success();
     }
 
     @PutMapping("/{productId}/offline")
+    @Operation(summary = "本人下架在售资产（仅 ONLINE → OFFLINE 合法）")
     public Result<Void> takeOffline(@AuthenticationPrincipal AuthUser user, @PathVariable String productId) {
         commandHandler.takeOffline(user.userId(), productId);
         return Result.success();
@@ -130,6 +137,7 @@ public class ProductController {
 
     @SkipRepeatSubmit
     @PostMapping("/{id}/view")
+    @Operation(summary = "浏览量 +1（匿名可达，计数失败只告警不影响响应）")
     public Result<Void> incrementViewCount(@PathVariable String id) {
         if (id != null) {
             try {
@@ -144,11 +152,13 @@ public class ProductController {
     // ── 读端点 ──
 
     @GetMapping("/{id}")
+    @Operation(summary = "公开资产详情，缓存优先并把空结果也缓存以防穿透")
     public Result<ProductVO> getProduct(@PathVariable String id) {
         return Result.success(queryHandler.getProductById(id));
     }
 
     @GetMapping
+    @Operation(summary = "公开分页浏览资产，status 缺省时只返回 ONLINE 在售")
     public Result<PageResult<ProductVO>> listProducts(@Valid ProductQueryRequest request) {
         var criteria = new ProductSearchCriteria(
                 request.getKeyword(),
@@ -165,6 +175,7 @@ public class ProductController {
     }
 
     @GetMapping("/my")
+    @Operation(summary = "当前登录卖家自己的资产列表，可按状态过滤分页")
     public Result<PageResult<ProductVO>> getMyProducts(
             @AuthenticationPrincipal AuthUser user,
             @RequestParam(defaultValue = "1") Integer pageNum,
@@ -174,6 +185,7 @@ public class ProductController {
     }
 
     @GetMapping("/category/{categoryId}")
+    @Operation(summary = "按类目浏览公开资产，强制覆盖请求里的 categoryId")
     public Result<PageResult<ProductVO>> getProductsByCategory(
             @PathVariable String categoryId, @Valid ProductQueryRequest request) {
         request.setCategoryId(categoryId);
@@ -181,17 +193,20 @@ public class ProductController {
     }
 
     @GetMapping("/{id}/similar")
+    @Operation(summary = "同类目推荐（只取 ONLINE、排除自身，limit 默认 10）")
     public Result<List<ProductVO>> getSimilarProducts(
             @PathVariable String id, @RequestParam(defaultValue = "10") Integer limit) {
         return Result.success(queryHandler.getSimilarProducts(id, limit));
     }
 
     @PostMapping("/batch")
+    @Operation(summary = "匿名批量取资产详情（按 ID，不做状态与归属过滤）")
     public Result<List<ProductVO>> getProductsByIds(@RequestBody List<String> ids) {
         return Result.success(queryHandler.getProductsByIds(ids));
     }
 
     @GetMapping("/categories")
+    @Operation(summary = "分类列表（parentId 缺省取一级，商品计数含子分类聚合）")
     public Result<List<CategoryResponse>> getCategories(@RequestParam(required = false) String parentId) {
         var categories = categoryQueryHandler.getCategories(parentId);
         return Result.success(categoryAssembler.toCategoryResponses(categories));
