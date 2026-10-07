@@ -16,13 +16,14 @@ interface ImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'sr
 const PLACEHOLDER_BASE_STYLE: React.CSSProperties = {
     position: 'absolute',
     inset: 0,
-    backgroundColor: 'var(--color-surface, #f3f4f6)',
+    backgroundColor: 'var(--gray-200)',
 };
 
 const SKELETON_STYLE: React.CSSProperties = {
     ...PLACEHOLDER_BASE_STYLE,
     zIndex: 1,
-    background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+    // 取色与 global.css / main.css 的 .skeleton 同源：占位灰只有一套，别再散一份冷调灰
+    background: 'linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 50%, var(--gray-200) 75%)',
     backgroundSize: '200% 100%',
     animation: 'shimmer 1.5s infinite',
 };

@@ -269,6 +269,9 @@
     /* Orange glow gradient */
     --gradient-orange-glow: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fda4af 100%);
 
+    /* 404 页背景 —— 暖白渐到紫调白，页面专属装饰，与 hero 同属「只出现一次」那类 */
+    --gradient-not-found: linear-gradient(180deg, var(--gray-50) 0%, #fff9f5 30%, #fef5f3 60%, #faf4ff 100%);
+
     /* Text gradient - Orange to Pink-Purple for headings/labels */
     --gradient-text-primary: linear-gradient(135deg, #ea580c 0%, #f97316 30%, #fb7185 60%, #c39bd3 100%);
     --gradient-text-soft: linear-gradient(135deg, #c2410c 0%, #f97316 40%, #c39bd3 100%);

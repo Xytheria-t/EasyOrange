@@ -17,10 +17,17 @@ alpha 收敛为 --primary-alpha-1~5、清理 10 处悬空 var() 引用（其中 
    定义集含全部 CSS（含 admin.css，同一 SPA 全局生效）与 tsx/ts 注入的变量。
 3. admin 目录不在本脚本范围：tsx 侧由 check-admin-style-drift.py 管，
    admin.css 是令牌本体。
+4. 白名单条目在扫描范围内零引用 → 违规。条目失去引用说明它对应的例外已经不存在
+   （值被令牌收编，或那段代码被删），留着就是给后来者开的后门：同样的值再写进来
+   不会被拦，而账本上看不出这条早已不作数。
 
 白名单是「现存已知例外」的账本：第三方品牌色（微信/QQ）、Canvas 与 SVG stop
 等结构性场景的设计色、金银铜热词牌、页面局部令牌的衍生 alpha，以及标注
-「遗留」的待暖化债（冷黑 rgba(17,24,39) 系）。新增例外必须带理由加进白名单。
+「遗留」的待暖化债（冷黑 rgba(17,24,39) 系）。
+
+准入判据是「与最近令牌的差是否可辨」，不是「值不值得建令牌」：暖灰阶的半步、
+另一色相的骨架灰这类肉眼不可辨的近似值是漂移不是例外，snap 到相邻令牌即可，
+登记反而把漂移固化成了政策（2026-10 清掉 8 条正是这类）。新增例外必须带理由。
 
 用法（仓库根目录）：
 
@@ -56,6 +63,11 @@ BLOCK_COMMENT = re.compile(r"/\*.*?\*/")
 
 # ---------------------------------------------------------------------------
 # 白名单：现存已知例外的精确值。新增必须带理由，别图省事往里塞。
+#
+# 准入判据是「与最近令牌的差是否可辨」，不是「值不值得建令牌」——差在肉眼不可辨
+# 量级的近似值（暖灰阶半步、另一个色相的骨架灰）是漂移不是例外，一律 snap 到相邻
+# 令牌，别登记；登记的是结构上无法引用令牌的取值（第三方品牌色 / Canvas / SVG stop）。
+# 零引用的条目由下面的 audit_allowlist 拦下——条目一旦失去引用就是给后来者开的后门。
 # ---------------------------------------------------------------------------
 
 # 第三方品牌色（微信 / QQ / 邮箱客户端），语义色不归我们管
@@ -79,7 +91,6 @@ HEX_ALLOW = {
     "#06b6d4",
     "#0f766e",
     "#b45309",
-    "#f87171",
     # 页面自造品牌色的衍生（profile 域 --profile-accent 系，遗留待收敛）
     "#172033",
     "#ef7d23",
@@ -106,18 +117,6 @@ HEX_ALLOW = {
     "#a0a0a0",
     "#cd7f32",
     "#b87333",
-    # —— 2026-10-07 纳入：tsx 侧此前不在本脚本范围内，是盲区。补上覆盖后按同一政策登记 ——
-    # 暖中性：暖灰阶的半步（--gray-* 的 50/100/200/300/400/500/600/700/800/900 之外）
-    "#8b857e",
-    "#e5e0db",
-    "#4a4540",
-    "#b5aea8",
-    # 骨架屏的冷调灰：与暖灰阶不同色相，是图片占位动画专用
-    "#f0f0f0",
-    "#e0e0e0",
-    # 404 页背景的暖/紫调白：装饰性渐变端点，非可复用取值
-    "#fef5f3",
-    "#faf4ff",
 }
 
 # rgba/rgb 白名单按「基色三元组」收，任意 alpha 合法——防的是发明新基色。
@@ -326,12 +325,45 @@ def check_ts_file(path: Path) -> list[str]:
     return problems
 
 
+def read_code(path: Path) -> str:
+    """整文件读成剥掉注释的代码文本（白名单审计用：注释里的值不算引用）。"""
+    out: list[str] = []
+    in_block_comment = False
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        code, in_block_comment = strip_comment(raw, in_block_comment)
+        out.append(LINE_COMMENT.sub("", code))
+    return "\n".join(out)
+
+
+def audit_allowlist() -> list[str]:
+    """白名单里零引用的条目。与 --staged 无关：白名单是全仓账本，每次运行都核。
+
+    没有这条审计时条目只增不减——值被令牌收编或代码被删之后没人回来销账，条目
+    就成了敞着的后门（本轮清出的 #f87171 全仓零引用，#b5aea8 则早就被 SVG 呈现
+    属性的规则豁免覆盖、纯属冗余，两种都不会被别的检查发现）。
+    """
+    sources = [
+        read_code(p) for p in css_files() if p.relative_to(SRC).parts[0] != "admin"
+    ] + [read_code(p) for p in ts_files()]
+    lowered = [s.lower() for s in sources]
+    problems: list[str] = []
+    for value in sorted(HEX_ALLOW):
+        if not any(value in s for s in lowered):
+            problems.append(f"  [死条目] hex 白名单 {value} 在扫描范围内零引用")
+    for base in sorted(RGB_ALLOW):
+        pat = re.compile(rf"rgba?\(\s*{base[0]}\s*,\s*{base[1]}\s*,\s*{base[2]}\b")
+        if not any(pat.search(s) for s in sources):
+            problems.append(f"  [死条目] 基色白名单 rgb{base} 在扫描范围内零引用")
+    return problems
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--staged", action="store_true", help="裸色值只查暂存的 C 端文件")
     args = parser.parse_args()
 
     files = css_files()
+    dead = audit_allowlist()
     c_css = lambda p: not p.relative_to(SRC).parts[0] == "admin"  # noqa: E731
     if args.staged:
         import subprocess
@@ -348,7 +380,7 @@ def main() -> int:
         ]
         staged_css = {p for p in c_side if p.suffix == ".css"}
         staged_ts = [p for p in c_side if p.suffix in (".ts", ".tsx") and ".test." not in p.name]
-        if not staged_css and not staged_ts:
+        if not staged_css and not staged_ts and not dead:
             print("[c-style] OK：本次暂存无 C 端 CSS / ts / tsx")
             return 0
         color_files = {p for p in staged_css if c_css(p)}
@@ -357,7 +389,7 @@ def main() -> int:
         staged_ts = None  # None = 全量
 
     defined = collect_definitions(files)
-    problems: list[str] = []
+    problems: list[str] = list(dead)
     used: dict[str, bool] = {}
     for path in files:
         file_problems, file_used = check_file(path, path in color_files)
@@ -385,6 +417,7 @@ def main() -> int:
     print("  修法：① 需要新颜色 → 在 tokens.css 加令牌（品牌橙 alpha 用 --primary-alpha-1~5 档）")
     print("        ② 确属结构性例外（第三方品牌色 / Canvas / SVG stop）→ 白名单加精确值并写明理由")
     print("        ③ 悬空变量 → 补令牌定义或删除引用；拼错令牌不会报错，只会静默丢样式")
+    print("        ④ 死条目 → 从白名单删掉，它对应的例外已经不存在")
     return 1
 
 
