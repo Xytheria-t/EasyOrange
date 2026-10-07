@@ -282,9 +282,9 @@ function ProductDetailPage() {
                                         <span
                                             className="pdp-status-chip"
                                             style={{
-                                                background: '#FEF3C7',
+                                                background: 'var(--gold-100)',
                                                 color: 'var(--status-warning)',
-                                                border: '1px solid #FDE68A',
+                                                border: '1px solid var(--gold-200)',
                                             }}
                                         >
                                             {statusLabel}
@@ -293,9 +293,9 @@ function ProductDetailPage() {
                                         <span
                                             className="pdp-status-chip"
                                             style={{
-                                                background: '#FEE2E2',
-                                                color: '#DC2626',
-                                                border: '1px solid #FECACA',
+                                                background: 'var(--red-100)',
+                                                color: 'var(--red-600)',
+                                                border: '1px solid var(--red-200)',
                                             }}
                                         >
                                             {statusLabel}

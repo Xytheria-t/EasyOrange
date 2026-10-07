@@ -29,9 +29,9 @@ const toastVariants = cva(
                 default: 'border-border bg-white/95 text-foreground backdrop-blur-xl',
                 // 浅底必须配深色文字：白字配 10% 透明底对比度只有 1.1，读不出来。
                 // 这几个深色分别对各自浅底 ≥ 4.99:1（WCAG AA）。
-                success: 'border-success/30 bg-success/10 text-[#047857] backdrop-blur-xl',
-                error: 'border-destructive/30 bg-destructive/10 text-[#be123c] backdrop-blur-xl',
-                info: 'border-info/30 bg-info/10 text-[#1d4ed8] backdrop-blur-xl',
+                success: 'border-success/30 bg-success/10 text-[var(--emerald-700)] backdrop-blur-xl',
+                error: 'border-destructive/30 bg-destructive/10 text-[var(--rose-700)] backdrop-blur-xl',
+                info: 'border-info/30 bg-info/10 text-[var(--blue-700)] backdrop-blur-xl',
                 warning: 'border-warning/30 bg-warning/10 text-[#92400e] backdrop-blur-xl',
             },
         },
