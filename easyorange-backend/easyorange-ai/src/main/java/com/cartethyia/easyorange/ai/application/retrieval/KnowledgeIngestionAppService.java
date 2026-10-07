@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.ai.domain.model.KnowledgeChunk;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeDocEntity;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeIndexPort;
 import com.cartethyia.easyorange.ai.domain.port.KnowledgeRepository;
+import com.cartethyia.easyorange.common.result.PageResult;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * RAG 文档摄入管线 — 解析 → 分块（chunk size + overlap）→ embed → ES 索引。
@@ -118,6 +120,12 @@ public class KnowledgeIngestionAppService {
                 log.warn("Remove knowledge doc {} from index failed", id, e);
             }
         }
+    }
+
+    /** 文档列表（管理端）：分页读仓储，不经检索链路 —— 看的是「库里有什么」，不是「搜得到什么」。 */
+    @Transactional(readOnly = true)
+    public PageResult<KnowledgeDocEntity> pageDocs(int pageNum, int pageSize) {
+        return repository.page(pageNum, pageSize);
     }
 
     /**
