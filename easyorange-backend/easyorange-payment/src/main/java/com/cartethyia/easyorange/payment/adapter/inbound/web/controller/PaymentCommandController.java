@@ -10,6 +10,7 @@ import com.cartethyia.easyorange.payment.adapter.inbound.web.request.RefundReque
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.domain.port.CallbackSignatureVerifierPort;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class PaymentCommandController {
     private final PaymentViewAssembler paymentViewAssembler;
 
     @PostMapping
+    @Operation(summary = "创建支付单（初始 PENDING，金额必须大于 0）")
     public Result<PaymentResponse> createPayment(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody CreatePaymentRequest request) {
         String paymentId = commandHandler.createPayment(user.userId(), PaymentCommandMapper.toCreateCommand(request));
@@ -34,6 +36,7 @@ public class PaymentCommandController {
     }
 
     @PostMapping("/callback")
+    @Operation(summary = "网关回调：匿名可达，HMAC-SHA256 验签 + 金额比对后确认支付")
     public Result<Void> paymentCallback(@Valid @RequestBody PaymentCallback callback) {
         signatureVerifier.verify(callback.getPaymentNo(), callback.getTransactionId(), callback.getSign());
         commandHandler.processCallback(PaymentCommandMapper.toCallbackCommand(callback));
@@ -41,6 +44,7 @@ public class PaymentCommandController {
     }
 
     @PostMapping("/{id}/refund")
+    @Operation(summary = "支付单本人发起退款（两阶段走网关，累计退款不得超支付金额）")
     public Result<Void> refund(
             @AuthenticationPrincipal AuthUser user,
             @PathVariable String id,
@@ -50,6 +54,7 @@ public class PaymentCommandController {
     }
 
     @PostMapping("/{id}/close")
+    @Operation(summary = "本人关闭支付单（仅 PENDING / FAILED 可关）并发关闭事件")
     public Result<Void> close(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
         commandHandler.closePayment(PaymentCommandMapper.toCloseCommand(id, user.userId()));
         return Result.success();

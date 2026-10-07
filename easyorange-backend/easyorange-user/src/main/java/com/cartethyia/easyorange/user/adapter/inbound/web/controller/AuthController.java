@@ -20,6 +20,7 @@ import com.cartethyia.easyorange.user.application.service.AuthAppService;
 import com.cartethyia.easyorange.user.application.service.CredentialAppService;
 import com.cartethyia.easyorange.user.domain.constant.UserConstant;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,6 +44,7 @@ public class AuthController {
     private final JwtProperties jwtProperties;
 
     @PostMapping("/register")
+    @Operation(summary = "手机号 + 验证码注册，先查重再消费验证码；昵称默认取用户名")
     public Result<String> register(@Valid @RequestBody RegisterRequest request) {
         return Result.success(
                 authAppService.register(request.username(), request.password(), request.phone(), request.verifyCode()));
@@ -52,12 +54,14 @@ public class AuthController {
     // 5 次锁定永不触发）；爆破防护由 5 次失败锁定 + 限流承担，重复同密码本就无爆破价值
     @SkipRepeatSubmit
     @PostMapping("/login")
+    @Operation(summary = "密码登录；连错 5 次锁定 30 分钟，Refresh 走 HttpOnly Cookie")
     public Result<LoginResult> login(@Valid @RequestBody PasswordLoginRequest request, HttpServletResponse response) {
         return doLogin(request.toCredential(), response);
     }
 
     @SkipRepeatSubmit
     @PostMapping("/sms-login")
+    @Operation(summary = "短信验证码登录（消费验证码）；手机号未注册或账号禁用一律拒绝")
     public Result<LoginResult> smsLogin(@Valid @RequestBody SmsLoginRequest request, HttpServletResponse response) {
         return doLogin(request.toCredential(), response);
     }
@@ -69,6 +73,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "登出：吊销 access 黑名单与 Refresh 会话、清 Cookie；缺令牌也返回成功（幂等）")
     public Result<Void> logout(HttpServletRequest request, HttpServletResponse response) {
         // logout 需认证（已从 ignore-paths 移除），access 过期时由前端先刷新再调用；
         // RefreshCsrfFilter 仍校验 X-Client-Type 防 CSRF。吊销 access(黑名单) + refresh + 清 cookie。
@@ -83,6 +88,7 @@ public class AuthController {
      */
     @SkipRepeatSubmit
     @PostMapping("/refresh")
+    @Operation(summary = "刷新令牌：轮换 Refresh 并做复用检测；账号不存在或禁用则吊销该用户全部会话并 401")
     public Result<TokenRefreshResult> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         var refreshToken = readRefreshTokenCookie(request);
         if (refreshToken == null) {
@@ -97,6 +103,7 @@ public class AuthController {
     // ── 短信验证码 ──
 
     @PostMapping("/sms-code")
+    @Operation(summary = "下发短信验证码（5 分钟有效）；60 秒内重复请求与超每日 10 条上限被拒")
     public Result<Void> sendSmsCode(
             @NotBlank(message = "手机号不能为空")
                     @Pattern(regexp = UserConstant.PHONE_REGEX, message = "手机号格式不正确")
@@ -108,6 +115,7 @@ public class AuthController {
 
     /** 验证码预检（不消费）— 忘记密码流程第二步即时校验，最终重置时再真正消费。 */
     @PostMapping("/sms-code/verify")
+    @Operation(summary = "验证码预检（不消费），供忘记密码第二步即时反馈；最终重置时再消费")
     public Result<Void> verifySmsCode(@Valid @RequestBody SmsCodeVerifyRequest request) {
         authAppService.verifySmsCode(request.phone(), request.verifyCode());
         return Result.success();
@@ -116,12 +124,14 @@ public class AuthController {
     // ── 密码管理 ──
 
     @PostMapping("/password/reset")
+    @Operation(summary = "验证码找回密码：消费验证码后落库，并吊销该用户全部会话（不要求登录态）")
     public Result<Void> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
         credentialAppService.resetPassword(request.phone(), request.verifyCode(), request.newPassword());
         return Result.success();
     }
 
     @PutMapping("/password/change")
+    @Operation(summary = "登录态自助改密：校验旧密码、新旧不得相同；成功后吊销全部会话并清 Refresh")
     public Result<Void> changePassword(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody ChangePasswordRequest request) {
         credentialAppService.changePassword(user.userId(), request.oldPassword(), request.newPassword());

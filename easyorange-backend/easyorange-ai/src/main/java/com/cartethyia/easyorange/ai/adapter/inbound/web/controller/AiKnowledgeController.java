@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.KnowledgeHi
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.result.Result;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class AiKnowledgeController {
     private final KnowledgeRetrievalAppService retrievalService;
 
     @GetMapping("/search")
+    @Operation(summary = "kNN + BM25 两路召回后 RRF 融合；向量化失败只跑 BM25 一路")
     public Result<List<KnowledgeHitVO>> search(
             @RequestParam String keyword, @RequestParam(defaultValue = "5") int topK) {
         return Result.success(KnowledgeHitAssembler.toVOList(retrievalService.search(keyword, topK)));

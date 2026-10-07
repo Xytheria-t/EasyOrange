@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -61,6 +62,7 @@ public class AiListingController {
     // 频控由 AI 限流（auto-listing 5 次/分）与 token 预算承担
     @SkipRepeatSubmit
     @PostMapping("/auto-listing")
+    @Operation(summary = "拍照识别生成上架表单（1-9 张图），身份取自登录态，非流式返回")
     public Result<AutoListingResult> autoListing(
             @RequestBody @NotEmpty(message = "请至少上传一张图片") @Size(max = 9, message = "图片数量不能超过 9 张")
                     List<@NotBlank(message = "图片地址不能为空") String> imageUrls) {
@@ -71,6 +73,7 @@ public class AiListingController {
     /** 流式识别 — 事件协议 step / done / error；身份在 servlet 线程解析后显式带进流式线程（与对话流式同型）。 */
     @SkipRepeatSubmit
     @PostMapping("/auto-listing/stream")
+    @Operation(summary = "流式识别：只推 step / done / error 事件，预算尽转 error 不落 500")
     public SseEmitter stream(
             @RequestBody @NotEmpty(message = "请至少上传一张图片") @Size(max = 9, message = "图片数量不能超过 9 张")
                     List<@NotBlank(message = "图片地址不能为空") String> imageUrls) {

@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.ai.application.eval.AiFeedbackAppService;
 import com.cartethyia.easyorange.common.result.Result;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +23,7 @@ public class AiAdminFeedbackExportController {
     private final AiFeedbackAppService feedbackService;
 
     @GetMapping("/export")
+    @Operation(summary = "点赞反馈渲染成 golden-set.yaml 片段，导出即标记 exported=1")
     public Result<String> export(@RequestParam(defaultValue = "50") int limit) {
         return Result.success(feedbackService.exportGoldenSet(limit));
     }

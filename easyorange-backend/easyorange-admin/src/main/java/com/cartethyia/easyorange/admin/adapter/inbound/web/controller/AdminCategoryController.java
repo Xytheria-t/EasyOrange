@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.Category
 import com.cartethyia.easyorange.admin.application.service.AdminCategoryAppService;
 import com.cartethyia.easyorange.admin.domain.model.CategoryUpdateCommand;
 import com.cartethyia.easyorange.common.result.Result;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -36,6 +37,7 @@ public class AdminCategoryController {
      * @param parentId 父分类 id；不传返回一级分类
      */
     @GetMapping
+    @Operation(summary = "某父分类下的直属子分类，含禁用项；不传 parentId 查一级")
     public Result<List<CategoryResponse>> listCategories(@RequestParam(required = false) String parentId) {
         return Result.success(assembler.toResponses(adminCategoryService.listCategories(parentId)));
     }
@@ -47,11 +49,13 @@ public class AdminCategoryController {
      * 不再单独维护一套 {@code CategoryTreeResponse}。
      */
     @GetMapping("/tree")
+    @Operation(summary = "仅启用中的完整分类树；停用分类不出现在此接口")
     public Result<List<CategoryResponse>> categoryTree() {
         return Result.success(assembler.toResponses(adminCategoryService.categoryTree()));
     }
 
     @PostMapping
+    @Operation(summary = "新建分类；不传 parentId 建一级，层级与重名由 product 侧裁决")
     public Result<CategoryResponse> createCategory(@Valid @RequestBody CategoryCreateRequest request) {
         return Result.success(assembler.toResponse(adminCategoryService.createCategory(
                 request.name(), request.parentId(), request.icon(), request.sortOrder())));
@@ -59,18 +63,21 @@ public class AdminCategoryController {
 
     /** 更新分类；请求体带 parentId 且与当前不同即视为移动挂载点。 */
     @PutMapping("/{id}")
+    @Operation(summary = "更新分类属性；parentId 变更时另走移动路径，连带平移子树层级")
     public Result<CategoryResponse> updateCategory(
             @PathVariable String id, @Valid @RequestBody CategoryUpdateRequest request) {
         return Result.success(assembler.toResponse(adminCategoryService.updateCategory(id, toCommand(request))));
     }
 
     @PutMapping("/{id}/status")
+    @Operation(summary = "启用 / 禁用分类（status：1 启用，0 禁用）")
     public Result<Void> updateStatus(@PathVariable String id, @RequestParam Integer status) {
         adminCategoryService.updateStatus(id, status);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "删除分类；有子分类或关联商品时由领域层拒绝")
     public Result<Void> deleteCategory(@PathVariable String id) {
         adminCategoryService.deleteCategory(id);
         return Result.success();

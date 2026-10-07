@@ -11,6 +11,7 @@ import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.io.IOException;
@@ -57,12 +58,14 @@ public class AiChatController {
     }
 
     @PostMapping
+    @Operation(summary = "非流式问答：语义缓存优先，模型故障回退 stale 旧回答或降级文案")
     public Result<ChatAnswer> chat(@Valid @RequestBody ChatRequest request) {
         return Result.success(chatService.answer(
                 request, SecurityContextUtil.getUserContextOrThrow().userId()));
     }
 
     @PostMapping("/stream")
+    @Operation(summary = "SSE 流式问答，推 step / token / sources 等事件，身份取自登录态")
     public SseEmitter stream(@Valid @RequestBody ChatRequest request) {
         // 登录身份在 servlet 线程上解析（此时 SecurityContext 还在），缺失即 401 —— 身份是硬前置，
         // 不静默降级；显式带进流式线程，即便执行器没有传播上下文，画像与 trace 的 userId 也照常归属

@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.profile.Up
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileResponse;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserResponse;
 import com.cartethyia.easyorange.user.application.service.ProfileAppService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.io.IOException;
@@ -25,11 +26,13 @@ public class UserController {
     private final UserAssembler userAssembler;
 
     @GetMapping("/me")
+    @Operation(summary = "当前登录用户资料；邮箱 / 手机号 / 真实姓名按脱敏规则返回")
     public Result<UserProfileResponse> getCurrentUser(@AuthenticationPrincipal AuthUser authUser) {
         return Result.success(userAssembler.toProfileResponse(profileAppService.getCurrentUser(authUser.userId())));
     }
 
     @PutMapping("/me")
+    @Operation(summary = "更新个人资料：空字段视为不改（全空则拒绝），邮箱 / 手机号需通过唯一性校验")
     public Result<UserResponse> updateUserInfo(
             @AuthenticationPrincipal AuthUser user, @Valid @RequestBody UpdateProfileRequest request) {
         var cmd = new ProfileAppService.UpdateCommand(
@@ -38,6 +41,7 @@ public class UserController {
     }
 
     @PostMapping("/avatar")
+    @Operation(summary = "上传头像：先删旧头像再落新文件；大小与格式在落盘前校验，失败统一报「头像上传失败」")
     public Result<UserResponse> uploadAvatar(
             @AuthenticationPrincipal AuthUser user, @RequestParam("avatar") MultipartFile avatar) throws IOException {
         var updatedUser = profileAppService.uploadAvatar(

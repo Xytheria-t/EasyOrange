@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.enums.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class MockPaymentController {
     private final PaymentViewAssembler paymentViewAssembler;
 
     @PostMapping("/create")
+    @Operation(summary = "dev 专用：直插一张 PENDING 支付单，不调网关不校验归属")
     // 不加 @Transactional：单条 insert 自成事务，控制器层的事务只会把连接占用拉长（演示端点）
     public Result<PaymentResponse> createMockPayment(
             @RequestParam String orderId, @RequestParam String paymentMethod, @RequestParam BigDecimal amount) {
@@ -53,6 +55,7 @@ public class MockPaymentController {
      * 控制器外层事务会把两个 phase 合并为跨网关调用的单一事务，违背设计约束。
      */
     @PostMapping("/process")
+    @Operation(summary = "dev 专用：按 success 决定走两阶段支付或直接置 FAILED")
     public Result<PaymentResponse> processMockPayment(@RequestBody MockPaymentRequest request) {
         Payment aggregate = paymentRepository
                 .findById(request.paymentId())
@@ -72,6 +75,7 @@ public class MockPaymentController {
     }
 
     @PostMapping("/success/{paymentId}")
+    @Operation(summary = "dev 专用：模拟网关成功，走两阶段并发布支付成功事件")
     public Result<PaymentResponse> mockPaymentSuccess(@PathVariable String paymentId) {
         Payment aggregate = paymentRepository
                 .findById(paymentId)
@@ -84,6 +88,7 @@ public class MockPaymentController {
     }
 
     @PostMapping("/fail/{paymentId}")
+    @Operation(summary = "dev 专用：直接置 FAILED（仅 PENDING 可失败），不调网关")
     @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> mockPaymentFail(@PathVariable String paymentId) {
         Payment aggregate = paymentRepository
@@ -98,6 +103,7 @@ public class MockPaymentController {
     }
 
     @PostMapping("/refund/{paymentId}")
+    @Operation(summary = "dev 专用：跳过网关直接全额退款，置 REFUNDED")
     @Transactional(rollbackFor = Exception.class)
     public Result<Void> mockRefund(@PathVariable String paymentId, @RequestParam String reason) {
         Payment aggregate = paymentRepository

@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.OrderListQuery;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
 import com.cartethyia.easyorange.order.domain.enums.OrderStatus;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,17 +24,20 @@ public class OrderQueryController {
     private final OrderQueryHandler queryHandler;
 
     @GetMapping("/owned/{id}")
+    @Operation(summary = "订单详情，仅买家或卖家本人可见（他人按越权拒绝）")
     public Result<OrderVO> getOrderDetail(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
         return Result.success(queryHandler.getOrderDetailForOwner(user.userId(), id));
     }
 
     @GetMapping("/my")
+    @Operation(summary = "我买到的订单列表（buyerId 取登录人，orderNo 过滤绕过缓存）")
     public Result<PageResult<OrderVO>> getMyOrders(
             @AuthenticationPrincipal AuthUser user, @Valid QueryOrderRequest request) {
         return Result.success(queryHandler.getMyOrders(user.userId(), toScopedListQuery(request)));
     }
 
     @GetMapping("/sold")
+    @Operation(summary = "我售出的订单列表（sellerId 取登录人，忽略入参买卖家）")
     public Result<PageResult<OrderVO>> getSoldOrders(
             @AuthenticationPrincipal AuthUser user, @Valid QueryOrderRequest request) {
         return Result.success(queryHandler.getSoldOrders(user.userId(), toScopedListQuery(request)));

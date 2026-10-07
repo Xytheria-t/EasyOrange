@@ -11,6 +11,7 @@ import com.cartethyia.easyorange.payment.application.query.PaymentListQuery;
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.enums.PaymentStatus;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,24 +29,28 @@ public class PaymentQueryController {
     private final PaymentViewAssembler paymentViewAssembler;
 
     @GetMapping("/{id}")
+    @Operation(summary = "支付单详情，仅所属用户可查（越权按记录不存在处理）")
     public Result<PaymentResponse> getById(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
         Payment aggregate = queryHandler.getPaymentById(id, user.userId());
         return Result.success(paymentViewAssembler.toPaymentResponse(aggregate));
     }
 
     @GetMapping("/orders/{orderId}")
+    @Operation(summary = "按订单 ID 查支付单（归属校验同详情，越权按不存在）")
     public Result<PaymentResponse> getByOrderId(@AuthenticationPrincipal AuthUser user, @PathVariable String orderId) {
         Payment aggregate = queryHandler.getPaymentByOrderId(orderId, user.userId());
         return Result.success(paymentViewAssembler.toPaymentResponse(aggregate));
     }
 
     @GetMapping("/{id}/status")
+    @Operation(summary = "支付状态轮询视图（轻量状态字段，归属校验同详情）")
     public Result<PaymentStatusResponse> getStatus(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
         Payment aggregate = queryHandler.getPaymentById(id, user.userId());
         return Result.success(paymentViewAssembler.toPaymentStatusResponse(aggregate));
     }
 
     @GetMapping("/my")
+    @Operation(summary = "我的支付记录（userId 以登录人为准，忽略请求入参）")
     public Result<PageResult<PaymentResponse>> getMyPayments(
             @AuthenticationPrincipal AuthUser user, @Valid QueryPaymentRequest request) {
         PaymentListQuery query = new PaymentListQuery(
@@ -55,6 +60,7 @@ public class PaymentQueryController {
     }
 
     @GetMapping
+    @Operation(summary = "管理端分页查询全部支付记录（需 ADMIN 角色，可按 userId 过滤）")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<PageResult<PaymentResponse>> queryPayments(@Valid QueryPaymentRequest request) {
         PaymentListQuery query = new PaymentListQuery(
