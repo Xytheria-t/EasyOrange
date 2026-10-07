@@ -340,7 +340,7 @@ function NotFoundPage() {
                             minHeight: 'unset',
                         }}
                         onMouseEnter={e => {
-                            e.currentTarget.style.background = 'rgba(229,224,219,0.3)';
+                            e.currentTarget.style.background = 'color-mix(in srgb, var(--gray-200) 30%, transparent)';
                             e.currentTarget.style.transform = 'translateY(-2px)';
                         }}
                         onMouseLeave={e => {
@@ -431,7 +431,7 @@ function NotFoundPage() {
                             gap: '0.7rem',
                             marginBottom: '1.1rem',
                             paddingBottom: '1rem',
-                            borderBottom: '1px solid rgba(229,224,219,0.4)',
+                            borderBottom: '1px solid color-mix(in srgb, var(--gray-200) 40%, transparent)',
                         }}
                     >
                         <div
