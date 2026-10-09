@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.ai.application.eval.GoldenSetLoader;
+import com.cartethyia.easyorange.ai.application.support.RetrievalObservations;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
@@ -23,8 +24,8 @@ import org.junit.jupiter.api.Test;
 @DisplayName("评测集与种子语料一致性 -> 测试")
 class GoldenSetCorpusTest {
 
-    /** 与 GoldenSetEvaluator.RETRIEVAL_TOP_K / ChatTools.RETRIEVAL_TOP_K 保持一致（两者均为 5）。 */
-    private static final int RETRIEVAL_TOP_K = 5;
+    /** 与生产检索同源（{@link RetrievalObservations#TOP_K}，工具面与评估共用同一取值）。 */
+    private static final int RETRIEVAL_TOP_K = RetrievalObservations.TOP_K;
 
     /**
      * 语料分块数相对 topK 的最小倍数：低于这个倍数时 topK 覆盖了语料的大部分，

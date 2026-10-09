@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.listing.AutoListingAppService;
 import com.cartethyia.easyorange.ai.application.listing.ListingLoopResult;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
+import com.cartethyia.easyorange.ai.application.support.RetrievalObservations;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
 import com.cartethyia.easyorange.ai.domain.model.ArmComparisonReport;
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
@@ -42,8 +43,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class GoldenSetEvaluator {
 
-    private static final int RETRIEVAL_TOP_K = 5;
-
     /** 无检索臂的白名单：只留 finish —— 模型拿不到检索工具的 schema，凭自身知识作答。 */
     private static final Set<String> NO_RETRIEVAL_TOOLS = Set.of(ChatTools.TOOL_FINISH);
 
@@ -56,27 +55,34 @@ public class GoldenSetEvaluator {
     private final ToolCallLoop toolCallLoop;
     private final AutoListingAppService listingAppService;
 
+    private List<GoldenSetCase> casesOf(String scope) {
+        return loader.load().cases().stream()
+                .filter(c -> scope.equals(c.scope()))
+                .toList();
+    }
+
     /** 生成质量回归：全部 chat 用例 Judge 打分，返回平均分。 */
     public GenerationReport evaluateGeneration() {
-        var cases = loader.load().cases().stream()
-                .filter(c -> GoldenSetLoader.SCOPE_CHAT.equals(c.scope()))
-                .toList();
-        var scores = new ArrayList<CaseScore>();
+        var cases = casesOf(GoldenSetLoader.SCOPE_CHAT);
+        int judged = 0;
+        int scoreSum = 0;
         for (var c : cases) {
-            scoreCase(c, null).ifPresent(j -> scores.add(new CaseScore(c.id(), j.score())));
+            Optional<AiJudge.Judgement> judgement = scoreCase(c, null);
+            if (judgement.isPresent()) {
+                judged++;
+                scoreSum += judgement.get().score();
+            }
         }
         // 均值分母是「成功评分的用例数」而非 cases.size()：判分失败的用例不参与平均，
         // 它们的流失由 GenerationReport 的 judgedCount 对比 sampleCount 单独暴露 ——
         // 拿全量当分母会把「模型答不出」算成「模型答得差」，两者在门禁上要分开看。
-        double avg = scores.isEmpty()
-                ? 0
-                : scores.stream().mapToInt(CaseScore::score).average().orElse(0);
+        double avg = ratio(scoreSum, judged);
         log.info(
                 "Golden set generation eval: judged {}/{} cases, avg score = {}",
-                scores.size(),
+                judged,
                 cases.size(),
                 "%.2f".formatted(avg));
-        return new GenerationReport(cases.size(), scores.size(), avg);
+        return new GenerationReport(cases.size(), judged, avg);
     }
 
     /**
@@ -88,9 +94,7 @@ public class GoldenSetEvaluator {
      * <b>只报配对差分</b>（见 {@link ArmComparisonReport}），两臂绝对分不作对外质量证据。
      */
     public ArmComparisonReport evaluateRagArmComparison() {
-        var cases = loader.load().cases().stream()
-                .filter(c -> GoldenSetLoader.SCOPE_CHAT.equals(c.scope()))
-                .toList();
+        var cases = casesOf(GoldenSetLoader.SCOPE_CHAT);
         var diffs = new ArrayList<Double>();
         var missing = new ArrayList<String>();
         double retrievalSum = 0;
@@ -113,8 +117,8 @@ public class GoldenSetEvaluator {
         int paired = diffs.size();
         var report = new ArmComparisonReport(
                 paired,
-                paired == 0 ? 0 : retrievalSum / paired,
-                paired == 0 ? 0 : noRetrievalSum / paired,
+                ratio(retrievalSum, paired),
+                ratio(noRetrievalSum, paired),
                 meanDiff,
                 stdDev(diffs),
                 List.copyOf(missing));
@@ -147,6 +151,11 @@ public class GoldenSetEvaluator {
         }
     }
 
+    /** 占比 / 均值 —— 空样本报 0 而不是 NaN：门禁要看到的是「没有样本」这一个信号。 */
+    private static double ratio(double numerator, int denominator) {
+        return denominator == 0 ? 0 : numerator / denominator;
+    }
+
     /** 配对差分的样本标准差 — 判「差分是信号还是单轮噪声」的量级依据（n-1 分母）。 */
     private static double stdDev(List<Double> diffs) {
         if (diffs.size() < 2) {
@@ -165,14 +174,13 @@ public class GoldenSetEvaluator {
      * 没有「判分失败」这一态，每条用例都出得了 hit 与 rr，所以漏掉的只能是真实未命中。
      */
     public RetrievalReport evaluateRetrieval() {
-        var cases = loader.load().cases().stream()
-                .filter(c -> GoldenSetLoader.SCOPE_RETRIEVAL.equals(c.scope()))
-                .toList();
+        var cases = casesOf(GoldenSetLoader.SCOPE_RETRIEVAL);
         String runId = idGenerator.generateId();
         int hits = 0;
         double mrrSum = 0;
         for (var c : cases) {
-            List<KnowledgeHit> results = retrievalService.search(c.question(), RETRIEVAL_TOP_K);
+            // topK 取生产检索同一常量：hit@5 的 5 就是产品召回窗口，评估不另立一套
+            List<KnowledgeHit> results = retrievalService.search(c.question(), RetrievalObservations.TOP_K);
             List<String> hitIds = results.stream().map(KnowledgeHit::docId).toList();
             double rr = computeReciprocalRank(c.goldDocIds(), hitIds);
             if (rr > 0) {
@@ -181,8 +189,8 @@ public class GoldenSetEvaluator {
             mrrSum += rr;
             metricRecorder.record(runId, c.id(), c.question(), String.join(",", c.goldDocIds()), rr > 0, rr);
         }
-        double hitRate = cases.isEmpty() ? 0 : hits * 1.0 / cases.size();
-        double mrr = cases.isEmpty() ? 0 : mrrSum / cases.size();
+        double hitRate = ratio(hits, cases.size());
+        double mrr = ratio(mrrSum, cases.size());
         log.info(
                 "Golden set retrieval eval: hit {}/{} cases, hit@5 = {}, MRR = {}",
                 hits,
@@ -198,9 +206,8 @@ public class GoldenSetEvaluator {
      * 只收 chat 用例：listing 多步用例走 {@link #evaluateListingRouting()}，两条链路难度不同型、阈值分开。
      */
     public RoutingReport evaluateRouting() {
-        var cases = loader.load().cases().stream()
-                .filter(c -> GoldenSetLoader.SCOPE_CHAT.equals(c.scope())
-                        && !c.expectedTools().isEmpty())
+        var cases = casesOf(GoldenSetLoader.SCOPE_CHAT).stream()
+                .filter(c -> !c.expectedTools().isEmpty())
                 .toList();
         int correct = 0;
         for (var c : cases) {
@@ -229,7 +236,7 @@ public class GoldenSetEvaluator {
                         actual.isEmpty() ? "(无)" : String.join(",", actual));
             }
         }
-        double accuracy = cases.isEmpty() ? 0 : correct * 1.0 / cases.size();
+        double accuracy = ratio(correct, cases.size());
         log.info(
                 "Golden set routing eval: hit {}/{} cases, accuracy = {}",
                 correct,
@@ -245,9 +252,7 @@ public class GoldenSetEvaluator {
      * RoutingReport 保持三字段口径不因评估扩列）。
      */
     public RoutingReport evaluateListingRouting() {
-        var cases = loader.load().cases().stream()
-                .filter(c -> GoldenSetLoader.SCOPE_LISTING.equals(c.scope()))
-                .toList();
+        var cases = casesOf(GoldenSetLoader.SCOPE_LISTING);
         int correct = 0;
         int roundsSum = 0;
         for (var c : cases) {
@@ -279,8 +284,8 @@ public class GoldenSetEvaluator {
                     outcome.getTag(),
                     rounds);
         }
-        double accuracy = cases.isEmpty() ? 0 : correct * 1.0 / cases.size();
-        double avgRounds = cases.isEmpty() ? 0 : (double) roundsSum / cases.size();
+        double accuracy = ratio(correct, cases.size());
+        double avgRounds = ratio(roundsSum, cases.size());
         log.info(
                 "Golden set listing routing eval: hit {}/{} cases, accuracy = {}, avg rounds = {}",
                 correct,
@@ -307,6 +312,4 @@ public class GoldenSetEvaluator {
         }
         return 0;
     }
-
-    private record CaseScore(String caseId, int score) {}
 }
