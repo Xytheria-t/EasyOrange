@@ -91,16 +91,18 @@ class PromptContentTest {
         // 随决策观察改按协议回填为 tool 消息（轮间前缀稳定吃 KV cache）升 v4.3.0；
         // 随「每步只调一个工具」改成「相互独立的工具同轮并行、参数有依赖的才分轮」升 v4.4.0 ——
         // 旧措辞与编排器的一轮多工具并行调用相悖，等于把模型按回串行、并行能力白建；
-        // 随决策首条 user 消息三段统一进标签块（<user_question> / <history> / <user_profile>，与生成侧同形）升 v4.5.0 ——
+        // 随决策首条 user 消息三段统一进标签块（与生成侧同形）升 v4.5.0 ——
         // 散文小标题能被块内用户文本仿写，标签形态进块前剥掉、仿不出来；
+        // 随长期记忆命名统一「画像」→「偏好」、块名改 <user_preferences> 升 v4.6.0（ai_chat_system 同轮升 v1.4.0）——
+        // 表 / 工具 / 模型类本就全叫 preference，两处 prompt 里的容器词是仅剩的别名；
         // 随标签块名对齐领域类型（knowledge_hits / asset_hits / asset_details）升 v1.2.0；
         // 随 asset_details 块补进上下文清单与不可信声明升 v1.3.0
         // auto_listing 从「一次多模态调用直接产出」改为「消费多步工具循环的观察产出」升 v2.0.0 ——
         // 原措辞的「直接生成」与循环决策互斥，留着会让同名多版本取到错的角色；
         // auto_listing_image_clues v1.0.0 随发布链路多步化新增（视觉预识别，决策轮纯文本吃不到图片）
         var bumpedVersions = java.util.Map.of(
-                "ai_chat_tool_system", "v4.5.0",
-                "ai_chat_system", "v1.3.0",
+                "ai_chat_tool_system", "v4.6.0",
+                "ai_chat_system", "v1.4.0",
                 "auto_listing", "v2.0.0",
                 "auto_listing_tool_system", "v1.0.0",
                 "auto_listing_image_clues", "v1.0.0");

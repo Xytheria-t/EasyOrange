@@ -40,7 +40,7 @@ public class ToolLoopKernel {
 
     /**
      * 一次循环的规格 — 链路差异全在这里注入；{@code userId} 是已归属的值（评估跑批传 null），
-     * 归属判定留在各链路编排器，因为同一口径还管工具面的画像归属。
+     * 归属判定留在各链路编排器，因为同一口径还管工具面的偏好归属。
      */
     public record Spec(
             String systemPrompt,

@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
  * 使它既闭合不掉当前块、也开不出新块。
  * <p>
  * chat 与 listing 的决策、生成装配都要过它：只剥一处，另一处就是注入口 —— 决策上下文决定调哪个
- * 工具，且含唯一的画像写路径。
+ * 工具，且含唯一的偏好写路径。
  */
 public final class UntrustedText {
 

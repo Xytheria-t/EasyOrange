@@ -33,7 +33,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * 每步：工具 + 决策理由 + 观察摘要，前端步骤可视化）/ token（逐字）/ sources / done / error（降级文案）。
  * <p>
  * 流式工作提交到 {@code applicationTaskExecutor}（虚拟线程）而非裸 {@code Thread.ofVirtual()}：后者不继承任何
- * ThreadLocal，SecurityContext / Observation / MDC 全部丢失，长期用户画像与 Langfuse 父 trace 会在唯一的流式
+ * ThreadLocal，SecurityContext / Observation / MDC 全部丢失，长期用户偏好与 Langfuse 父 trace 会在唯一的流式
  * 路径上静默失效。{@link SkipRepeatSubmit} 豁免防重：对话非写操作，同一问题 3 秒内二次提交是合法动作，误拦会以
  * HTTP 429 打断重试。Controller 只做事件 → SseEmitter 适配；客户端断开视为正常收尾，不补发 error。
  */
@@ -68,7 +68,7 @@ public class AiChatController {
     @Operation(summary = "SSE 流式问答，推 step / token / sources 等事件，身份取自登录态")
     public SseEmitter stream(@Valid @RequestBody ChatRequest request) {
         // 登录身份在 servlet 线程上解析（此时 SecurityContext 还在），缺失即 401 —— 身份是硬前置，
-        // 不静默降级；显式带进流式线程，即便执行器没有传播上下文，画像与 trace 的 userId 也照常归属
+        // 不静默降级；显式带进流式线程，即便执行器没有传播上下文，偏好与 trace 的 userId 也照常归属
         String userId = SecurityContextUtil.getUserContextOrThrow().userId();
         SseEmitter emitter = new SseEmitter(STREAM_TIMEOUT_MS);
         // 客户端挂到超时 / 传输错误 = 客户端侧放弃（刷新、关页、代理掐线）：注册回调安静收尾，

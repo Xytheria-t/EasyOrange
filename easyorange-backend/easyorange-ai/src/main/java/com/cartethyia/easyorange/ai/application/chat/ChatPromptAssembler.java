@@ -14,7 +14,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
 /**
- * 生成回答前的 prompt 装配 — 纯函数：把 system 模板、会话历史、当前问题连同画像与召回物装配成消息序列
+ * 生成回答前的 prompt 装配 — 纯函数：把 system 模板、会话历史、当前问题连同偏好与召回物装配成消息序列
  *（与 {@link AiChatAppService} 分开：那边管「什么时候生成、拿什么生成」，这里管「生成时消息长什么样」）。
  * <p>
  * 两条必须守住的约定：历史按原始角色传多消息 —— 跨轮前缀稳定，供应商的上下文缓存折扣才有效；不可信
@@ -42,7 +42,7 @@ final class ChatPromptAssembler {
     private static String buildCurrentUserMessage(
             String question, List<UserPreference> prefs, ToolCallLoop.Result run) {
         String questionText = UntrustedText.stripTags(question);
-        String profileText = UntrustedText.stripTags(UserPreference.format(prefs));
+        String preferencesText = UntrustedText.stripTags(UserPreference.format(prefs));
         String knowledgeText = UntrustedText.stripTags(formatKnowledgeHits(run.knowledgeHits()));
         String assetText = UntrustedText.stripTags(formatAssetHits(run.assetHits()));
         String detailText = UntrustedText.stripTags(formatAssetDetails(run.details()));
@@ -51,9 +51,9 @@ final class ChatPromptAssembler {
                 %s
                 </user_question>
 
-                <user_profile>
+                <user_preferences>
                 %s
-                </user_profile>
+                </user_preferences>
 
                 <knowledge_hits>
                 %s
@@ -66,7 +66,7 @@ final class ChatPromptAssembler {
                 <asset_details>
                 %s
                 </asset_details>
-                """.formatted(questionText, profileText, knowledgeText, assetText, detailText);
+                """.formatted(questionText, preferencesText, knowledgeText, assetText, detailText);
     }
 
     private static String formatKnowledgeHits(List<KnowledgeHit> hits) {

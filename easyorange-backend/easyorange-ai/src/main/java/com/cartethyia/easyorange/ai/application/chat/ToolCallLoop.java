@@ -43,7 +43,7 @@ public class ToolCallLoop {
 
     /**
      * 机器主体标识 —— 唯一非登录调用方是评估跑批：会话 / 缓存键照常按此主体隔离；{@link #attributedUserId}
-     * 把它收敛成 null，画像写不进（{@link ChatTools} 拒收）、trace 的 user_id 为空。
+     * 把它收敛成 null，偏好写不进（{@link ChatTools} 拒收）、trace 的 user_id 为空。
      */
     public static final String MACHINE_SUBJECT = "machine";
 
@@ -79,11 +79,11 @@ public class ToolCallLoop {
     }
 
     /**
-     * 一次循环的输入 — 记忆（历史 / 画像）由调用方装配，循环只管「决策 → 工具 → 观察」。
+     * 一次循环的输入 — 记忆（历史 / 偏好）由调用方装配，循环只管「决策 → 工具 → 观察」。
      *
      * @param sessionId 可空（请求不带会话），两处消费方各自兜底：trace 的 session_id 列补 {@code anonymous} 哨兵、
      *                  会话记忆无会话 fail-open
-     * @param userId    评估跑批传 {@link #MACHINE_SUBJECT}，画像不落库
+     * @param userId    评估跑批传 {@link #MACHINE_SUBJECT}，偏好不落库
      * @param streamHandler 流式回答的出站回调，可空：非流式路径不推 step 事件，trace / 指标照常
      * @param allowedTools 工具白名单，null = 全量工具面（生产路径）；非空只装配列出的工具，供 RAG 有效性
      *                     对照的「无检索来源」臂只挂 {@link ChatTools#TOOL_FINISH}（消融变量只落在工具装配上）
@@ -165,14 +165,14 @@ public class ToolCallLoop {
     // ── 首轮上下文 ──
 
     /**
-     * 首条 user 消息（问题 / 历史 / 画像）— 每请求固定，是全部轮次共享的前缀：改一个字节这轮的 KV cache 就作废。
+     * 首条 user 消息（问题 / 历史 / 偏好）— 每请求固定，是全部轮次共享的前缀：改一个字节这轮的 KV cache 就作废。
      * 三个分量剥掉标签形态后统一进块（与生成侧同形）：这条上下文决定调哪个工具 —— 散文小标题能被块内用户
      * 文本仿写，标签形态剥掉后仿不出来。
      */
     private static String firstUserMessage(Input input) {
         String question = UntrustedText.stripTags(input.question());
         String history = UntrustedText.stripTags(formatHistory(input.history()));
-        String profile = UntrustedText.stripTags(UserPreference.format(input.prefs()));
+        String preferences = UntrustedText.stripTags(UserPreference.format(input.prefs()));
         return """
                 <user_question>
                 %s
@@ -182,10 +182,10 @@ public class ToolCallLoop {
                 %s
                 </history>
 
-                <user_profile>
+                <user_preferences>
                 %s
-                </user_profile>
-                """.formatted(question, history, profile);
+                </user_preferences>
+                """.formatted(question, history, preferences);
     }
 
     private static String formatHistory(List<ChatTurn> history) {

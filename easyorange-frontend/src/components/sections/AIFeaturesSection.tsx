@@ -109,7 +109,7 @@ const PIPELINE_STEPS: PipelineStep[] = [
         icon: <MessageIcon />,
         title: '流式商品问答',
         subtitle: 'SSE 逐字输出 · 多轮记忆',
-        detail: '会话窗口 24h + 偏好画像,答不上来不硬编,超预算直接拦截',
+        detail: '会话窗口 24h + 长期偏好,答不上来不硬编,超预算直接拦截',
         visual: 'chat',
     },
 ];

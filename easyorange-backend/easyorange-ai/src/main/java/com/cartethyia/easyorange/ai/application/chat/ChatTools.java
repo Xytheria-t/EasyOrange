@@ -46,7 +46,7 @@ public class ChatTools {
 
     public static final String TOOL_REMEMBER_PREFERENCE = "remember_preference";
 
-    /** 偏好值的长度上限 —— 超长值不落库（跨会话回注的画像块不吃无界文本）。 */
+    /** 偏好值的长度上限 —— 超长值不落库（跨会话回注的偏好块不吃无界文本）。 */
     static final int PREFERENCE_VALUE_MAX_LENGTH = 60;
 
     public static final String TOOL_FINISH = "finish";
@@ -74,7 +74,7 @@ public class ChatTools {
     private final AssetSourcingAppService assetSourcingService;
     private final AssetDetailPort assetDetailPort;
     private final UserPreferenceRepository preferenceRepository;
-    /** 画像归属用户；机器主体（评估跑批）为 null（长期记忆不落库）。 */
+    /** 偏好归属用户；机器主体（评估跑批）为 null（长期记忆不落库）。 */
     @Nullable
     private final String userId;
 
@@ -204,7 +204,7 @@ public class ChatTools {
 
     @Tool(
             name = TOOL_REMEMBER_PREFERENCE,
-            description = "记录用户的长期偏好（成色 / 价格区间 / 风格 / 地区）到用户画像，跨会话生效；对话中出现明确偏好时调用一次即可，同一偏好不要重复记录",
+            description = "记录用户的长期偏好（成色 / 价格区间 / 风格 / 地区），跨会话生效；对话中出现明确偏好时调用一次即可，同一偏好不要重复记录",
             resultConverter = RetrievalObservations.ObservationTextConverter.class)
     public String rememberPreference(
             @ToolParam(description = "本步理由，不超过 20 字的中文概括") String thought,
@@ -215,7 +215,7 @@ public class ChatTools {
             return "偏好类别或取值为空，已跳过记录；直接继续回答即可";
         }
         if (userId == null) {
-            return "机器调用不落长期画像，已跳过记录；直接继续回答即可";
+            return "机器调用不落长期偏好，已跳过记录；直接继续回答即可";
         }
         String key = preferenceKey.trim();
         if (!PREFERENCE_KEYS.contains(key)) {
@@ -224,8 +224,8 @@ public class ChatTools {
         }
         String value = preferenceValue.trim();
         if (value.length() > PREFERENCE_VALUE_MAX_LENGTH) {
-            // value 原样落库并经 <user_profile> 回注后续所有会话的画像块 —— 无长度约束时它就是
-            // 一条跨会话的存储型注入通道，长度上限把「塞一段话进画像」的成本抬到不可用
+            // value 原样落库并经 <user_preferences> 回注后续所有会话的偏好块 —— 无长度约束时它就是
+            // 一条跨会话的存储型注入通道，长度上限把「塞一段话进偏好块」的成本抬到不可用
             return "偏好取值过长（上限 60 字），请概括成短语再记；直接继续回答即可";
         }
         try {

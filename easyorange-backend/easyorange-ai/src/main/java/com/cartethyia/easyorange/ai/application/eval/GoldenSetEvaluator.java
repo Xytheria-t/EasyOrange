@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
  * （期望工具路径命中率），外加一条按需跑的双臂对照（RAG 有效性）。三条线读同一份用例集，各按自己的口径取子集。
  * <p>
  * 生成线对每个 chat 用例调 {@link AiChatAppService#answer}（forceFresh 跳过缓存；显式传机器主体
- * {@link ToolCallLoop#MACHINE_SUBJECT} 与空会话，画像不落库、记忆不参与，不被历史污染）对照参考回答打分取均值；
+ * {@link ToolCallLoop#MACHINE_SUBJECT} 与空会话，偏好不落库、记忆不参与，不被历史污染）对照参考回答打分取均值；
  * 检索线逐条采样落 eo_retrieval_metric；路由线对标了 {@code expected_tools} 的用例跑一次工具循环。
  * <p>
  * <b>路由线只跑循环不跑生成</b>：它量的是选路，生成那步属生成分。两条线按 scope 字段分流，不用「有没有

@@ -4,8 +4,8 @@ import com.cartethyia.easyorange.ai.domain.model.UserPreference;
 import java.util.List;
 
 /**
- * 用户长期画像仓储端口 — 对话长期记忆：从对话提取的偏好写入 eo_user_preference，
- * 聊天时注入 prompt（用户画像表 / 向量记忆库的演进位是「按相关性召回」，当前量级直接全量注入）。
+ * 用户长期偏好仓储端口 — 对话长期记忆：从对话提取的偏好写入 eo_user_preference，
+ * 聊天时注入 prompt（用户偏好表 / 向量记忆库的演进位是「按相关性召回」，当前量级直接全量注入）。
  */
 public interface UserPreferenceRepository {
 
