@@ -88,10 +88,10 @@ public class ToolCallLoop {
      * @param sessionId 可空（请求不带会话），两处消费方各自兜底：trace 的 session_id 列补 {@code anonymous} 哨兵、
      *                  会话记忆无会话 fail-open
      * @param userId    评估跑批传 {@link #MACHINE_SUBJECT}，画像不落库
-     * @param handler   可空：非流式路径不推 step 事件，trace / 指标照常
-     * @param toolAllowList 工具白名单，null = 全量工具面（生产路径）；非空则只装配列出的工具，供
-     *                      RAG 有效性对照的「无检索来源」臂只挂 {@link ChatTools#TOOL_FINISH} ——
-     *                      消融变量只落在工具装配上，编排、生成与 Judge 口径两臂完全同构
+     * @param streamHandler 流式回答的出站回调，可空：非流式路径不推 step 事件，trace / 指标照常
+     * @param allowedTools 工具白名单，null = 全量工具面（生产路径）；非空则只装配列出的工具，供
+     *                     RAG 有效性对照的「无检索来源」臂只挂 {@link ChatTools#TOOL_FINISH} ——
+     *                     消融变量只落在工具装配上，编排、生成与 Judge 口径两臂完全同构
      */
     public record Input(
             String question,
@@ -99,8 +99,8 @@ public class ToolCallLoop {
             String userId,
             List<ChatTurn> history,
             List<UserPreference> prefs,
-            @Nullable ChatStreamHandler handler,
-            @Nullable Set<String> toolAllowList) {
+            @Nullable ChatStreamHandler streamHandler,
+            @Nullable Set<String> allowedTools) {
 
         public Input(
                 String question,
@@ -108,8 +108,8 @@ public class ToolCallLoop {
                 String userId,
                 List<ChatTurn> history,
                 List<UserPreference> prefs,
-                @Nullable ChatStreamHandler handler) {
-            this(question, sessionId, userId, history, prefs, handler, null);
+                @Nullable ChatStreamHandler streamHandler) {
+            this(question, sessionId, userId, history, prefs, streamHandler, null);
         }
     }
 
@@ -144,13 +144,13 @@ public class ToolCallLoop {
         return new ToolLoopKernel.Spec(
                 promptRegistry.require(CHAT_TOOL_PROMPT),
                 firstUserMessage(input),
-                dispatcherCallbacks(tools, input.toolAllowList()),
+                dispatcherCallbacks(tools, input.allowedTools()),
                 aiProperties.chat().maxSteps(),
                 budgetGuard::exhausted,
                 () -> fallbackSearch(input, tools),
                 input.sessionId(),
                 attributedUserId(input),
-                input.handler(),
+                input.streamHandler(),
                 metrics);
     }
 
@@ -160,10 +160,10 @@ public class ToolCallLoop {
     }
 
     /** 白名单为 null 时装配全量工具面；否则只装配白名单内的工具（模型拿不到 schema 就调不到）。 */
-    private static List<ToolCallback> dispatcherCallbacks(ChatTools tools, @Nullable Set<String> allowList) {
+    private static List<ToolCallback> dispatcherCallbacks(ChatTools tools, @Nullable Set<String> allowedTools) {
         return Stream.of(ToolCallbacks.from(tools))
-                .filter(callback -> allowList == null
-                        || allowList.contains(callback.getToolDefinition().name()))
+                .filter(callback -> allowedTools == null
+                        || allowedTools.contains(callback.getToolDefinition().name()))
                 .toList();
     }
 
@@ -247,7 +247,7 @@ public class ToolCallLoop {
     }
 
     private static boolean allowsKnowledgeSearch(Input input) {
-        Set<String> allowList = input.toolAllowList();
-        return allowList == null || allowList.contains(ChatTools.TOOL_KNOWLEDGE_SEARCH);
+        Set<String> allowed = input.allowedTools();
+        return allowed == null || allowed.contains(ChatTools.TOOL_KNOWLEDGE_SEARCH);
     }
 }

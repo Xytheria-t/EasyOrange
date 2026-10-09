@@ -165,12 +165,12 @@ public class AiChatAppService {
     }
 
     /**
-     * RAG 有效性对照的「无检索来源」臂 — {@code toolAllowList} 只挂 finish，模型拿不到任何检索工具的 schema，
+     * RAG 有效性对照的「无检索来源」臂 — {@code allowedTools} 只挂 finish，模型拿不到任何检索工具的 schema，
      * 只能凭自身知识作答。装配点与生产路径同一条（同一方法、同一 prompt、同一 Judge），
      * 唯一变量是工具面，因此两臂差分可归因到检索来源本身。
      */
     @TokenBudget(scenario = "chat", maxTokensPerCall = 1500, dailyTokenLimit = 300_000)
-    public ChatAnswer answer(ChatRequest request, String userId, @Nullable Set<String> toolAllowList) {
+    public ChatAnswer answer(ChatRequest request, String userId, @Nullable Set<String> allowedTools) {
         if (request.question() == null || request.question().isBlank()) {
             return new ChatAnswer(EMPTY_QUESTION_TEXT, List.of(), request.sessionId(), false);
         }
@@ -179,7 +179,7 @@ public class AiChatAppService {
             if (probe.hit().isPresent()) {
                 return probe.hit().get().withSessionId(request.sessionId());
             }
-            ChatAnswer answer = answerWithSessionLock(request, userId, null, toolAllowList);
+            ChatAnswer answer = answerWithSessionLock(request, userId, null, allowedTools);
             storeInSemanticCache(request, userId, probe, answer);
             staleCache.put(staleKey(userId, request.question()), answer);
             return answer;
@@ -306,25 +306,25 @@ public class AiChatAppService {
             ChatRequest request,
             String userId,
             @Nullable ChatStreamHandler handler,
-            @Nullable Set<String> toolAllowList) {
+            @Nullable Set<String> allowedTools) {
         String sessionId = request.sessionId();
         if (sessionId == null || sessionId.isBlank()) {
             // 无会话即无共享状态，没有需要需要串行化的 load→save，直接执行
-            return generateWithToolLoop(request, userId, handler, toolAllowList);
+            return generateWithToolLoop(request, userId, handler, allowedTools);
         }
         // 同会话串行：load→loop→save 非原子，并发请求会互相串写历史（读到半轮、写丢轮）；per-session
         // 锁把后到请求排队到前一轮完整落盘之后，等待超时按业务提示返回不伪装成降级；无事务上下文，锁在方法返回即释放
         return distributedLockPort.executeWithLocks(
                 List.of(SESSION_LOCK_PREFIX + userId + ":" + sessionId),
                 aiProperties.chat().sessionLockWaitSeconds(),
-                () -> generateWithToolLoop(request, userId, handler, toolAllowList));
+                () -> generateWithToolLoop(request, userId, handler, allowedTools));
     }
 
     private ChatAnswer generateWithToolLoop(
             ChatRequest request,
             String userId,
             @Nullable ChatStreamHandler handler,
-            @Nullable Set<String> toolAllowList) {
+            @Nullable Set<String> allowedTools) {
         long start = System.nanoTime();
         try {
             // token 级上下文治理：轮数窗口（存储侧）之上再按 token 预算裁注入窗口，一处裁、决策与生成两处生效
@@ -333,7 +333,7 @@ public class AiChatAppService {
             List<UserPreference> prefs = preferenceRepository.findByUserId(userId);
 
             ToolCallLoop.Result run = toolCallLoop.run(new ToolCallLoop.Input(
-                    request.question(), request.sessionId(), userId, history, prefs, handler, toolAllowList));
+                    request.question(), request.sessionId(), userId, history, prefs, handler, allowedTools));
 
             List<ChatSource> sources = ChatSource.merge(run.knowledgeHits(), run.assetHits(), SOURCE_LIMIT);
             if (handler != null && !sources.isEmpty()) {

@@ -52,7 +52,7 @@ public class ToolLoopKernel {
             Runnable decisionFailedFallback,
             @Nullable String sessionId,
             @Nullable String userId,
-            @Nullable ChatStreamHandler handler,
+            @Nullable ChatStreamHandler streamHandler,
             ToolLoopListener listener) {}
 
     /** 循环结果 — outcome / rounds 供指标与降级归因；toolPath 含 finish 轮，供路由准确率评估对照金标准集。 */
@@ -198,9 +198,9 @@ public class ToolLoopKernel {
     }
 
     private void emitStep(Spec spec, int stepIndex, ToolLoopCall call, @Nullable String observation) {
-        ChatStreamHandler handler = spec.handler();
-        if (handler != null) {
-            handler.onStep(new ToolCallStepView(stepIndex, call.tool(), call.thought(), observation));
+        ChatStreamHandler streamHandler = spec.streamHandler();
+        if (streamHandler != null) {
+            streamHandler.onStep(new ToolCallStepView(stepIndex, call.tool(), call.thought(), observation));
         }
     }
 
