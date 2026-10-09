@@ -171,25 +171,26 @@ public class ToolCallLoop {
 
     /**
      * 首条 user 消息（问题 / 历史 / 画像）— 每请求固定不变，是全部轮次共享的前缀：改一个字节这轮的 KV cache 就全部作废。
-     * 三个分量都过 {@link UntrustedText#stripTags}：这条上下文决定调哪个工具（含唯一写路径 remember_preference），原样
-     * 填等于把闭合标签的注入口留在决策侧。
+     * 三个分量都过 {@link UntrustedText#stripTags} 并统一进标签块（与生成侧 {@code ChatPromptAssembler} 同形）：这条
+     * 上下文决定调哪个工具（含唯一写路径 remember_preference），散文小标题能被块内用户文本仿写，标签形态剥掉后仿不出来。
      */
     private static String firstUserMessage(Input input) {
+        String question = UntrustedText.stripTags(input.question());
+        String history = UntrustedText.stripTags(formatHistory(input.history()));
+        String profile = UntrustedText.stripTags(UserPreference.format(input.prefs()));
         return """
-                用户问题：
                 <user_question>
                 %s
                 </user_question>
 
-                历史对话：
+                <history>
                 %s
+                </history>
 
-                用户画像：
+                <user_profile>
                 %s
-                """.formatted(
-                        UntrustedText.stripTags(input.question()),
-                        UntrustedText.stripTags(formatHistory(input.history())),
-                        UntrustedText.stripTags(UserPreference.format(input.prefs())));
+                </user_profile>
+                """.formatted(question, history, profile);
     }
 
     private static String formatHistory(List<ChatTurn> history) {

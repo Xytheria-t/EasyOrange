@@ -130,7 +130,7 @@ class ToolCallingWireTest {
         List<AssistantMessage.ToolCall> calls = support.callWithTools(
                 chatModel,
                 AiCallScope.CHAT,
-                List.of(new SystemMessage("你是多步工具决策器"), new UserMessage("用户问题：怎么退款？")),
+                List.of(new SystemMessage("你是多步工具决策器"), new UserMessage("<user_question>\n怎么退款？\n</user_question>")),
                 List.of(ToolCallbacks.from(tools)));
 
         String request = capturedBody.get();
@@ -171,7 +171,7 @@ class ToolCallingWireTest {
                 AiCallScope.CHAT,
                 List.of(
                         new SystemMessage("你是多步工具决策器"),
-                        new UserMessage("用户问题：怎么退款？"),
+                        new UserMessage("<user_question>\n怎么退款？\n</user_question>"),
                         AssistantMessage.builder()
                                 .content("")
                                 .toolCalls(List.of(historyCall))
@@ -209,7 +209,7 @@ class ToolCallingWireTest {
                 AiCallScope.CHAT,
                 List.of(
                         new SystemMessage("你是多步工具决策器"),
-                        new UserMessage("用户问题：退款规则，顺便推荐台笔记本"),
+                        new UserMessage("<user_question>\n退款规则，顺便推荐台笔记本\n</user_question>"),
                         AssistantMessage.builder()
                                 .content("")
                                 .toolCalls(List.of(knowledgeCall, productCall))
