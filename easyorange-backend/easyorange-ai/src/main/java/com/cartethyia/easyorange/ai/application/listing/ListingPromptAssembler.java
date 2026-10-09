@@ -39,8 +39,11 @@ final class ListingPromptAssembler {
         if (sellerNote != null && !sellerNote.isBlank()) {
             sb.append("<seller_note>\n%s\n</seller_note>\n\n".formatted(UntrustedText.stripTags(sellerNote)));
         }
-        sb.append("可用分类清单（list_categories 工具返回同一份）：\n%s"
-                .formatted(UntrustedText.stripTags(String.join("、", categories))));
+        sb.append("""
+                <category_options>
+                可用分类清单（list_categories 工具返回同一份）：
+                %s
+                </category_options>""".formatted(UntrustedText.stripTags(String.join("、", categories))));
         return sb.toString();
     }
 

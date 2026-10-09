@@ -100,11 +100,13 @@ class PromptContentTest {
         // auto_listing 从「一次多模态调用直接产出」改为「消费多步工具循环的观察产出」升 v2.0.0 ——
         // 原措辞的「直接生成」与循环决策互斥，留着会让同名多版本取到错的角色；
         // auto_listing_image_clues v1.0.0 随发布链路多步化新增（视觉预识别，决策轮纯文本吃不到图片）
+        // auto_listing_tool_system 随决策消息分类清单也进 <category_options> 块、注意行点名三块升 v1.1.0 ——
+        // 块结构不挑数据来源，平台数据照进块，声明射程才不留散文缝隙
         var bumpedVersions = java.util.Map.of(
                 "ai_chat_tool_system", "v4.6.0",
                 "ai_chat_system", "v1.4.0",
                 "auto_listing", "v2.0.0",
-                "auto_listing_tool_system", "v1.0.0",
+                "auto_listing_tool_system", "v1.1.0",
                 "auto_listing_image_clues", "v1.0.0");
         for (String name : ALL_PROMPTS) {
             var template = registry.getLatest(name).orElseThrow();
