@@ -2,8 +2,10 @@ package com.cartethyia.easyorange.ai.application.eval;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +18,7 @@ import com.cartethyia.easyorange.ai.application.listing.AutoListingAppService;
 import com.cartethyia.easyorange.ai.application.listing.ListingLoopResult;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
+import com.cartethyia.easyorange.ai.domain.model.ArmComparisonReport;
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSet;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSetCase;
@@ -29,6 +32,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -115,6 +119,40 @@ class GoldenSetEvaluatorTest {
 
         assertThat(report.judgedCases()).isZero();
         assertThat(report.avgScore()).isZero();
+    }
+
+    @Test
+    @DisplayName("RAG 双臂对照：逐条配对跑两臂，均值只算两臂都评上分的配对；评估请求不挂会话")
+    void evaluateRagArmComparison_pairedDiffs() {
+        setUp();
+        when(loader.load())
+                .thenReturn(new GoldenSet(
+                        List.of(new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of(), List.of()))));
+        // 有检索臂 = 全量工具面（null 白名单）；无检索臂 = 白名单只留 finish
+        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT), isNull()))
+                .thenReturn(new ChatAnswer("有检索回答", List.of(), null, false));
+        when(chatService.answer(
+                        any(ChatRequest.class),
+                        eq(ToolCallLoop.MACHINE_SUBJECT),
+                        argThat(allowed -> allowed != null && allowed.contains(ChatTools.TOOL_FINISH))))
+                .thenReturn(new ChatAnswer("无检索回答", List.of(), null, false));
+        when(aiJudge.judgeAgainstReference("参考A", "有检索回答")).thenReturn(Optional.of(new AiJudge.Judgement(5, "ok")));
+        when(aiJudge.judgeAgainstReference("参考A", "无检索回答")).thenReturn(Optional.of(new AiJudge.Judgement(3, "ok")));
+
+        ArmComparisonReport report = evaluator.evaluateRagArmComparison();
+
+        assertThat(report.pairedCases()).isEqualTo(1);
+        assertThat(report.retrievalMean()).isEqualTo(5.0);
+        assertThat(report.noRetrievalMean()).isEqualTo(3.0);
+        assertThat(report.meanDiff()).isEqualTo(2.0);
+        assertThat(report.missingArms()).isEmpty();
+
+        // 会话 id 必须为空：两臂挂同一个 case 级会话键时，无检索臂会读到有检索臂刚落的那轮，
+        // 「唯一变量是检索来源」就不成立，配对差被稀释
+        ArgumentCaptor<ChatRequest> requests = ArgumentCaptor.forClass(ChatRequest.class);
+        verify(chatService, times(2)).answer(requests.capture(), eq(ToolCallLoop.MACHINE_SUBJECT), any());
+        assertThat(requests.getAllValues())
+                .allSatisfy(r -> assertThat(r.sessionId()).isNull());
     }
 
     @Test

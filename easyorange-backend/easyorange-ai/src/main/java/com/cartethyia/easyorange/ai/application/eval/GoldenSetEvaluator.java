@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
  * （期望工具路径命中率），外加一条按需跑的双臂对照（RAG 有效性）。三条线读同一份用例集，各按自己的口径取子集。
  * <p>
  * 生成线对每个 chat 用例调 {@link AiChatAppService#answer}（forceFresh 跳过缓存；显式传机器主体
- * {@link ToolCallLoop#MACHINE_SUBJECT}，画像不落库，评估不被历史偏好污染）对照参考回答打分取均值；
+ * {@link ToolCallLoop#MACHINE_SUBJECT} 与空会话，画像不落库、记忆不参与，不被历史污染）对照参考回答打分取均值；
  * 检索线逐条采样落 eo_retrieval_metric；路由线对标了 {@code expected_tools} 的用例跑一次工具循环。
  * <p>
  * <b>路由线只跑循环不跑生成</b>：它量的是选路，生成那步属生成分。两条线按 scope 字段分流，不用「有没有
@@ -129,11 +129,16 @@ public class GoldenSetEvaluator {
         return report;
     }
 
-    /** 跑一臂并评分 — {@code allowedTools} 为 null 即全量工具面（与生产路径同一条链路）。 */
+    /**
+     * 跑一臂并评分 — {@code allowedTools} 为 null 即全量工具面（与生产路径同一条链路）。
+     * <p>
+     * 会话传 null：评估是无状态单轮，不读也不写会话记忆。挂 {@code eval-<caseId>} 当会话键会串历史 ——
+     * 无检索臂读到有检索臂刚落的那轮（历史同时进决策与生成 prompt），配对差被稀释；跨轮重跑也会读到上轮答案。
+     */
     private Optional<AiJudge.Judgement> scoreCase(GoldenSetCase c, @Nullable Set<String> allowedTools) {
         try {
             ChatAnswer answer = chatService.answer(
-                    new ChatRequest(c.question(), "eval-" + c.id(), true), ToolCallLoop.MACHINE_SUBJECT, allowedTools);
+                    new ChatRequest(c.question(), null, true), ToolCallLoop.MACHINE_SUBJECT, allowedTools);
             // 只有对照参考回答这一条评分路径：chat 用例必带 reference_answer，加载期已强校验
             return aiJudge.judgeAgainstReference(c.referenceAnswer(), answer.answer());
         } catch (Exception e) {
