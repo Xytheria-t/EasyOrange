@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.ai.application.chat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
-import com.cartethyia.easyorange.ai.application.support.ToolCallArguments;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolCallArguments;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
 import com.sun.net.httpserver.HttpServer;

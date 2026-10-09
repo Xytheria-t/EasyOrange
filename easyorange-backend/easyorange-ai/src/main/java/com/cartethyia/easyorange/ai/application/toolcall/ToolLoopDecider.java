@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.application.support;
+package com.cartethyia.easyorange.ai.application.toolcall;
 
 import java.util.List;
 import org.springframework.ai.chat.messages.Message;

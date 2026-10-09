@@ -1,5 +1,6 @@
-package com.cartethyia.easyorange.ai.application.support;
+package com.cartethyia.easyorange.ai.application.toolcall;
 
+import com.cartethyia.easyorange.ai.application.support.FailureReason;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepTrace;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;

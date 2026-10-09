@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.application.listing;
 
-import com.cartethyia.easyorange.ai.application.support.ToolCallLoopOutcome;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import java.util.List;

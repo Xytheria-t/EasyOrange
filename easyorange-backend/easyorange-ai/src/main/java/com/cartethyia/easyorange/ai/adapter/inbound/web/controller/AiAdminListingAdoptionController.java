@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.ai.adapter.inbound.web.assembler.AiListingAdoptionAssembler;
 import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.AiListingAdoptionVO;
-import com.cartethyia.easyorange.ai.application.support.AiListingAdoptionAppService;
+import com.cartethyia.easyorange.ai.application.report.AiListingAdoptionAppService;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.ai.application.dto.AiCostReportRow;
-import com.cartethyia.easyorange.ai.application.support.AiCostReportAppService;
+import com.cartethyia.easyorange.ai.application.report.AiCostReportAppService;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
