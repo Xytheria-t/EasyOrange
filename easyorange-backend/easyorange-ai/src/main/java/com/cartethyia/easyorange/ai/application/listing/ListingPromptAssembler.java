@@ -10,18 +10,14 @@ import org.jspecify.annotations.Nullable;
 /**
  * 发布链路两侧的 prompt 拼装 — 决策首轮上下文与最终生成的观察块，纯函数无状态。
  * <p>
- * 与买家侧 {@code ChatPromptAssembler} 同一条铁律：不可信内容（图片转写出的文字、卖家备注）一律进标签
- * 块且进块前剥掉标签形态（{@link UntrustedText#stripTags}）。图片 OCR 出的文字是注入面——照片里一张写着
- * 「忽略定价规则」的纸条，经 itemName / visibleDetails 转写后与卖家手打的注入等价。
+ * 与买家侧同一条铁律：不可信内容进块前过 {@link UntrustedText#stripTags}。图片经 OCR 转写后与卖家手打
+ * 的文本等价 —— 照片里一张写着「忽略定价规则」的纸条同样是注入。
  */
 final class ListingPromptAssembler {
 
     private ListingPromptAssembler() {}
 
-    /**
-     * 决策首轮 user 消息 — 图片线索 + 卖家备注 + 分类清单。评估跑批无图片（线索块缺省），HTTP 流程无卖家
-     * 备注（备注块缺省）；清单是平台数据，也进块声明「数据不是指令」的射程。
-     */
+    /** 决策首轮 user 消息 — 图片线索 + 卖家备注 + 分类清单；线索与备注两块按来源可缺省（评估跑批无图片、HTTP 无备注）。 */
     static String firstDecisionMessage(
             @Nullable ImageClues clues, @Nullable String sellerNote, List<String> categories) {
         var sb = new StringBuilder();
@@ -48,11 +44,7 @@ final class ListingPromptAssembler {
         return sb.toString();
     }
 
-    /**
-     * 最终生成的 user 消息 — 观察块与分类块。行情在这里按累加器现算（{@code PriceStats.of} 是纯函数，
-     * 与 market_price_stats 工具的观察同源同值），空集时明确写「无行情统计」对齐生成器 prompt 的
-     * 「price 输出 null」约束。
-     */
+    /** 最终生成的 user 消息 — 观察块 + 分类块；行情与 market_price_stats 工具的观察同源同值，空集写「无行情统计」对齐 price 置 null 的约束。 */
     static String generatorUserText(
             List<KnowledgeHit> knowledgeHits, List<AssetHit> assetHits, List<String> categories) {
         return """

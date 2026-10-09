@@ -34,17 +34,16 @@ import org.springframework.stereotype.Component;
  * 买家侧多步工具调用循环（ReAct）— 找货对话的编排器：注入首轮上下文、工具面与降级口径，循环机制交给
  * {@link ToolLoopKernel}（与 listing 链路共用）。
  * <p>
- * 降级口径（退回确定性单次生成，已积累观察不丢弃）：步数/预算超限 → 用已积累观察直接生成；决策失败 →
- * 按原始问题补一次检索（白名单未含知识检索的对照臂跳过——补检索会把该臂的检索来源偷偷加回来）。
+ * 降级口径 = 已积累观察不丢弃：步数 / 预算超限直接用观察生成；决策失败补一次检索（白名单未含检索的
+ * 消融臂跳过 —— 补检索会把该臂的检索来源加回来）。
  */
 @Slf4j
 @Component
 public class ToolCallLoop {
 
     /**
-     * 机器主体标识 —— 唯一非登录调用方是评估跑批（{@code GoldenSetEvaluator}）：会话 / 缓存键照常按此主体隔离，
-     * 跑批与真人互不串记忆与缓存；而 {@link #attributedUserId} 把它收敛成 null，画像写不进（{@link ChatTools}
-     * 拒收）、trace 的 user_id 为空。
+     * 机器主体标识 —— 唯一非登录调用方是评估跑批：会话 / 缓存键照常按此主体隔离；{@link #attributedUserId}
+     * 把它收敛成 null，画像写不进（{@link ChatTools} 拒收）、trace 的 user_id 为空。
      */
     public static final String MACHINE_SUBJECT = "machine";
 
@@ -59,10 +58,7 @@ public class ToolCallLoop {
     private final AiProperties aiProperties;
     private final ToolCallLoopMetrics metrics;
 
-    /**
-     * trace 端口与 trace_id 来源经内核持有：步级落库是循环机制的一部分（chat 不再单独消费这两个依赖）。
-     * 构造器签名保持循环抽象前的形态 —— 买家侧测试与装配零改动是内核抽取「行为不变」的验证基线。
-     */
+    /** trace 端口与 trace_id 来源经内核持有（步级落库属循环机制）；签名保持内核抽取前形态，买家侧装配零改动。 */
     @Autowired
     public ToolCallLoop(
             PromptRegistryPort promptRegistry,
@@ -89,9 +85,8 @@ public class ToolCallLoop {
      *                  会话记忆无会话 fail-open
      * @param userId    评估跑批传 {@link #MACHINE_SUBJECT}，画像不落库
      * @param streamHandler 流式回答的出站回调，可空：非流式路径不推 step 事件，trace / 指标照常
-     * @param allowedTools 工具白名单，null = 全量工具面（生产路径）；非空则只装配列出的工具，供
-     *                     RAG 有效性对照的「无检索来源」臂只挂 {@link ChatTools#TOOL_FINISH} ——
-     *                     消融变量只落在工具装配上，编排、生成与 Judge 口径两臂完全同构
+     * @param allowedTools 工具白名单，null = 全量工具面（生产路径）；非空只装配列出的工具，供 RAG 有效性
+     *                     对照的「无检索来源」臂只挂 {@link ChatTools#TOOL_FINISH}（消融变量只落在工具装配上）
      */
     public record Input(
             String question,
@@ -114,8 +109,8 @@ public class ToolCallLoop {
     }
 
     /**
-     * 循环结果 — 召回物供最终生成装配 prompt 与引用溯源；outcome / rounds 供指标与降级归因；toolPath 供路由准确率评估
-     * （金标准集 {@code expected_tools} 对照）：rounds 含 finish 轮但不计决策失败轮，降级补检索由代码发起、不进 toolPath。
+     * 循环结果 — 召回物供生成装配与引用溯源，outcome / rounds 供指标与降级归因，toolPath 供路由准确率评估
+     * （金标准集 {@code expected_tools} 对照）：rounds 含 finish 轮不计决策失败轮，降级补检索不进 toolPath。
      */
     public record Result(
             List<KnowledgeHit> knowledgeHits,
@@ -170,9 +165,9 @@ public class ToolCallLoop {
     // ── 首轮上下文 ──
 
     /**
-     * 首条 user 消息（问题 / 历史 / 画像）— 每请求固定不变，是全部轮次共享的前缀：改一个字节这轮的 KV cache 就全部作废。
-     * 三个分量都过 {@link UntrustedText#stripTags} 并统一进标签块（与生成侧 {@code ChatPromptAssembler} 同形）：这条
-     * 上下文决定调哪个工具（含唯一写路径 remember_preference），散文小标题能被块内用户文本仿写，标签形态剥掉后仿不出来。
+     * 首条 user 消息（问题 / 历史 / 画像）— 每请求固定，是全部轮次共享的前缀：改一个字节这轮的 KV cache 就作废。
+     * 三个分量剥掉标签形态后统一进块（与生成侧同形）：这条上下文决定调哪个工具 —— 散文小标题能被块内用户
+     * 文本仿写，标签形态剥掉后仿不出来。
      */
     private static String firstUserMessage(Input input) {
         String question = UntrustedText.stripTags(input.question());
@@ -211,8 +206,8 @@ public class ToolCallLoop {
     }
 
     /**
-     * 工具入参摘要（trace 落库与失败日志用）—— 按工具名取对应分量，其余工具分量为 null 是常态。工具名缺失已在
-     * {@link ToolCallDecision} 构造期收敛成空串，这里走 default 即可：再判一次空等于同一件事防两遍。
+     * 工具入参摘要（trace 落库与失败日志用）— 按工具名取对应分量；工具名缺失已在 {@link ToolCallDecision}
+     * 构造期收敛成空串，这里走 default，不再判空。
      */
     private static String toolInputOf(ToolCallDecision decision) {
         ToolCallArguments parsed = decision.parsedArguments();
