@@ -48,7 +48,7 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
-        <!-- MyBatis-Plus — 知识库文档 / 用户画像持久化（easyorange-ai 自持两张业务表） -->
+        <!-- MyBatis-Plus — 知识库文档 / 用户偏好持久化（easyorange-ai 自持两张业务表） -->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot4-starter</artifactId>

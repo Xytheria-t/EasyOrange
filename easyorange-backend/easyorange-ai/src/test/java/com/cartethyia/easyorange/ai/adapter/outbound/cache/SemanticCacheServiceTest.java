@@ -229,7 +229,7 @@ class SemanticCacheServiceTest {
             assertThat(cache.lookUp(AiCallScope.CHAT, "user-a", "怎么退款？", QUERY_VECTOR, ChatAnswer.class))
                     .isPresent();
             assertThat(cache.lookUp(AiCallScope.CHAT, "user-b", "怎么退款？", QUERY_VECTOR, ChatAnswer.class))
-                    .as("回答里注入了用户画像，跨用户命中就是信息泄露")
+                    .as("回答里注入了用户偏好，跨用户命中就是信息泄露")
                     .isEmpty();
         }
 

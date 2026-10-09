@@ -9,10 +9,10 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 用户画像仓储（MyBatis-Plus）— upsert 按 (userId, prefKey) 唯一键保证幂等。
+ * 用户偏好仓储（MyBatis-Plus）— upsert 按 (userId, prefKey) 唯一键保证幂等。
  * <p>
  * {@code record} 的「查 → 改 或 插」两步必须同事务：缺了它，两个并发的 remember_preference
- * 工具调用会双双查到空、各自插一条，画像里同一个 key 出现重复行，后续读取只能靠取第一条凑合。
+ * 工具调用会双双查到空、各自插一条，偏好表里同一个 key 出现重复行，后续读取只能靠取第一条凑合。
  */
 @Repository
 public class UserPreferenceRepositoryImpl extends BaseRepository<UserPreferenceMapper, UserPreferenceDO>

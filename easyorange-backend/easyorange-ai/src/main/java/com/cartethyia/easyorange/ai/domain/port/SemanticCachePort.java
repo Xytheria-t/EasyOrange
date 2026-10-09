@@ -19,7 +19,7 @@ public interface SemanticCachePort {
 
     /**
      * 按余弦相似度查最近的历史回答。<b>userId 是缓存键的一部分，不是过滤条件</b>：回答里注入了
-     * 该用户的长期画像与会话历史，不带用户维度的共享桶会把 A 的个性化答案返给 B。
+     * 该用户的长期偏好与会话历史，不带用户维度的共享桶会把 A 的个性化答案返给 B。
      */
     <T> Optional<T> lookUp(AiCallScope scope, String userId, String query, List<Float> queryEmbedding, Class<T> type);
 

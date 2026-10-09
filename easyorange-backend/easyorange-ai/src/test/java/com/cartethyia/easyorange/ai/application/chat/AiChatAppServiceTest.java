@@ -315,7 +315,7 @@ class AiChatAppServiceTest {
     }
 
     @Test
-    @DisplayName("缓存读写都按当前用户分桶（回答注入了该用户的画像，跨桶命中即串号）")
+    @DisplayName("缓存读写都按当前用户分桶（回答注入了该用户的偏好，跨桶命中即串号）")
     void answer_cacheUsesUserBucket() {
         when(semanticCache.embedQuery(anyString())).thenReturn(QUERY_EMBEDDING);
         when(semanticCache.lookUp(any(), any(), anyString(), anyList(), any())).thenReturn(Optional.empty());
@@ -445,7 +445,7 @@ class AiChatAppServiceTest {
         assertThat(error.get()).isNull();
 
         // 流式工作在另一个线程上跑，身份只能靠入参带进来：这条断言锁住「Controller 传了 -> 循环用上了」，
-        // 否则长期画像不加载、remember_preference 写不进库、trace 的 userId 为空
+        // 否则长期偏好不加载、remember_preference 写不进库、trace 的 userId 为空
         ArgumentCaptor<Input> input = ArgumentCaptor.forClass(Input.class);
         verify(toolCallLoop).run(input.capture());
         assertThat(input.getValue().userId()).isEqualTo(AUTH_USER.userId());
@@ -494,7 +494,7 @@ class AiChatAppServiceTest {
         verify(aiModelSupport, never()).callTextStream(any(), any(), anyList(), any());
         verify(sessionStore, never()).saveTurns(anyString(), anyString(), anyList());
         verify(semanticCache, never()).store(any(), any(), anyString(), anyList(), any());
-        // 查找走同一分桶与类型契约（缓存按用户分桶，回答注入了该用户的画像）
+        // 查找走同一分桶与类型契约（缓存按用户分桶，回答注入了该用户的偏好）
         verify(semanticCache)
                 .lookUp(
                         eq(AiCallScope.CHAT),

@@ -90,7 +90,7 @@ class ChatPromptAssemblerTest {
                 .contains(
                         "<user_question>",
                         "怎么退款？",
-                        "<user_profile>",
+                        "<user_preferences>",
                         "condition: 九五新以上",
                         "<knowledge_hits>",
                         "<asset_hits>",

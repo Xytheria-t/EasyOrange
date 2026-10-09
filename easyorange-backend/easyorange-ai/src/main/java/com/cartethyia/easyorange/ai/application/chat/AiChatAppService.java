@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service;
  * AI 智能对话（工具循环编排）— 多轮记忆 + 多步工具循环 + 引用溯源 + 语义缓存 + 预算治理；与搜索页的结构化检索正交（那边
  * 「一次查询定结果」，这里模型自己决定检索几轮、查什么）。
  * <p>
- * 链路：记忆装配（Redis 会话窗口 + 用户画像表，注入前过 {@link ChatContextTrimmer} 裁 token）→ 工具循环（{@link
+ * 链路：记忆装配（Redis 会话窗口 + 用户偏好表，注入前过 {@link ChatContextTrimmer} 裁 token）→ 工具循环（{@link
  * ToolCallLoop}，步数 / 预算超限降级为用已积累观察直接生成，决策失败降级为补检索一次）→ 生成回答（消息形状见 {@link
  * ChatPromptAssembler}，末尾 [来源:标题] 溯源）。流式预算前置检查手动做，理由见 {@link ChatBudgetGuard} 类注释。
  */
@@ -209,7 +209,7 @@ public class AiChatAppService {
      * 事件），且不碰会话记忆与会话锁 —— 没有需要串行化的共享状态。
      * <p>
      * 身份必须由调用方显式传入而非在这里读安全上下文：流式跑在 Controller 提交的另一线程上，{@code
-     * SecurityContextHolder} 的 ThreadLocal 不会跟过去，在这里读恒为空 —— 长期画像不加载、偏好写不进库、trace 的
+     * SecurityContextHolder} 的 ThreadLocal 不会跟过去，在这里读恒为空 —— 长期偏好不加载、偏好写不进库、trace 的
      * userId 为空。流末帧用量由 {@link AiModelSupport} 记账（本入口只做预留，真实记账按供应商回报）。
      */
     public void streamAnswer(ChatRequest request, String userId, ChatStreamHandler handler) {

@@ -153,7 +153,7 @@ public record AiProperties(
             @DefaultValue("24") int ttlHours) {}
 
     /**
-     * 多轮对话记忆与 工具调用循环配置 — Redis 会话窗口（短期记忆）+ 画像注入（长期记忆）+ 循环上限。
+     * 多轮对话记忆与 工具调用循环配置 — Redis 会话窗口（短期记忆）+ 偏好注入（长期记忆）+ 循环上限。
      *
      * @param maxSteps 多步 ReAct 循环单次上限（含 finish 轮）：典型轨迹 search → 计算/详情 → remember
      *     → finish 需 4~5 步，工具面扩到 5 个后由 5 上调至 7 留余量，避免工具变多反而更容易撞上限降级
