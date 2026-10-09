@@ -119,13 +119,15 @@ public final class RetrievalObservations {
         return value == null || value.isBlank();
     }
 
-    /** 观察文本原样返回 — 默认转换器会把 String 返回值 JSON 序列化（观察多一层引号），观察是进下一轮 prompt 的纯文本。finish 无执行体、不需要该转换器。 */
+    /** 观察文本剥掉标签形态后原样返回 — 默认转换器会把 String 返回值 JSON 序列化（观察多一层引号）；观察是进下一轮
+     *  prompt 的纯文本，与标签块同过 {@link UntrustedText} 剥离器（卖家标题 / 描述这类不可信文本都经工具返回值走到
+     *  这里）。finish 无执行体、不需要该转换器。 */
     @NullMarked
     public static final class ObservationTextConverter implements ToolCallResultConverter {
 
         @Override
         public String convert(@Nullable Object result, @Nullable Type returnType) {
-            return result == null ? "" : String.valueOf(result);
+            return result == null ? "" : UntrustedText.stripTags(String.valueOf(result));
         }
     }
 }
