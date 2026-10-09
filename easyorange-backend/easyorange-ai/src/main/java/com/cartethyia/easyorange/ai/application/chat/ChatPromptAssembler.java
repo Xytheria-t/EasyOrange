@@ -43,7 +43,7 @@ final class ChatPromptAssembler {
             String question, List<UserPreference> prefs, ToolCallLoop.Result run) {
         String questionText = UntrustedText.stripTags(question);
         String preferencesText = UntrustedText.stripTags(UserPreference.format(prefs));
-        String knowledgeText = UntrustedText.stripTags(formatKnowledgeHits(run.knowledgeHits()));
+        String knowledgeText = UntrustedText.stripTags(KnowledgeHit.format(run.knowledgeHits()));
         String assetText = UntrustedText.stripTags(formatAssetHits(run.assetHits()));
         String detailText = UntrustedText.stripTags(formatAssetDetails(run.details()));
         return """
@@ -67,18 +67,6 @@ final class ChatPromptAssembler {
                 %s
                 </asset_details>
                 """.formatted(questionText, preferencesText, knowledgeText, assetText, detailText);
-    }
-
-    private static String formatKnowledgeHits(List<KnowledgeHit> hits) {
-        if (hits.isEmpty()) {
-            return "(无检索结果)";
-        }
-        var sb = new StringBuilder();
-        for (int i = 0; i < hits.size(); i++) {
-            KnowledgeHit hit = hits.get(i);
-            sb.append("[%d] (%s)\n%s\n".formatted(i + 1, hit.title(), hit.content()));
-        }
-        return sb.toString();
     }
 
     /** 资产块带 id 与价格：提示词已硬约束不得编造资产与数字，这里把可核对的 id 显式给到，让约束有据可依。 */
