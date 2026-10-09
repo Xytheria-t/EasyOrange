@@ -1,0 +1,38 @@
+/* ============================================================
+   Tooltip —— 图标按钮的说明气泡。
+   深色气泡 + 发丝描边，颜色走 tokens；显隐只用 hidden 属性，
+   不做入场动画：提示类微件的动效收益低于它带来的等待感。
+   ============================================================ */
+
+.tt-anchor {
+    position: relative;
+    display: inline-flex;
+}
+
+.tt-bubble {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    max-width: 14rem;
+    padding: 0.3125rem 0.5rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--gray-900);
+    color: var(--gray-50);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+}
+
+.tt-top {
+    bottom: calc(100% + 0.375rem);
+}
+
+.tt-bottom {
+    top: calc(100% + 0.375rem);
+}

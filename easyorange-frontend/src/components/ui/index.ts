@@ -1,7 +1,16 @@
 // EasyOrange 共享 UI 组件（shadcn/ui 风格，对齐项目设计令牌）
 
+export {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from './Breadcrumb';
 export { Badge, badgeVariants } from './badge';
 export { Button, buttonVariants } from './button';
+export { CopyButton } from './CopyButton';
 export { Checkbox } from './checkbox';
 export {
     Dialog,
@@ -55,6 +64,7 @@ export {
 } from './sheet';
 export { Switch } from './switch';
 export { ToastContainer } from './Toast';
+export { Tooltip } from './Tooltip';
 export { Textarea } from './textarea';
 export {
     Toast,
