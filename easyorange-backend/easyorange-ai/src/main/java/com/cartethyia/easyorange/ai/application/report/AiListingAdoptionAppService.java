@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.application.support;
+package com.cartethyia.easyorange.ai.application.report;
 
 import com.cartethyia.easyorange.ai.domain.model.AiListingAdoptionReport;
 import com.cartethyia.easyorange.ai.domain.port.AiListingAdoptionPort;

@@ -1,14 +1,13 @@
 package com.cartethyia.easyorange.ai.application.chat;
 
-import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
 import com.cartethyia.easyorange.ai.application.support.FailureReason;
-import com.cartethyia.easyorange.ai.application.support.ToolCallArguments;
-import com.cartethyia.easyorange.ai.application.support.ToolCallDecider;
-import com.cartethyia.easyorange.ai.application.support.ToolCallDecision;
-import com.cartethyia.easyorange.ai.application.support.ToolCallLoopOutcome;
-import com.cartethyia.easyorange.ai.application.support.ToolLoopDecider;
-import com.cartethyia.easyorange.ai.application.support.ToolLoopKernel;
 import com.cartethyia.easyorange.ai.application.support.UntrustedText;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolCallArguments;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecision;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopDecider;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;

@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.application.support;
+package com.cartethyia.easyorange.ai.application.chat;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;

@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.application.support;
+package com.cartethyia.easyorange.ai.application.toolcall;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.messages.AssistantMessage;

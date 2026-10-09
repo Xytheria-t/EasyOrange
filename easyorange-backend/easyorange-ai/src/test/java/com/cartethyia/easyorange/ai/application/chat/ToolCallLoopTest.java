@@ -21,9 +21,8 @@ import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppServic
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
-import com.cartethyia.easyorange.ai.application.support.ChatBudgetGuard;
-import com.cartethyia.easyorange.ai.application.support.ToolCallDecider;
-import com.cartethyia.easyorange.ai.application.support.ToolCallLoopOutcome;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;

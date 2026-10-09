@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.application.support;
+package com.cartethyia.easyorange.ai.application.toolcall;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;

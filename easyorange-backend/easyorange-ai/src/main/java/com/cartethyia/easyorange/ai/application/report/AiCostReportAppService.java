@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.ai.application.support;
+package com.cartethyia.easyorange.ai.application.report;
 
 import com.cartethyia.easyorange.ai.application.dto.AiCostReportRow;
 import com.cartethyia.easyorange.ai.application.port.query.AiCostReportPort;
