@@ -60,21 +60,9 @@ final class ListingPromptAssembler {
                 %s
                 </category_options>
                 """.formatted(
-                        UntrustedText.stripTags(formatKnowledgeHits(knowledgeHits)),
+                        UntrustedText.stripTags(KnowledgeHit.format(knowledgeHits)),
                         UntrustedText.stripTags(priceStatsText(assetHits)),
                         UntrustedText.stripTags(String.join("、", categories)));
-    }
-
-    private static String formatKnowledgeHits(List<KnowledgeHit> hits) {
-        if (hits.isEmpty()) {
-            return "(无检索结果)";
-        }
-        var sb = new StringBuilder();
-        for (int i = 0; i < hits.size(); i++) {
-            KnowledgeHit hit = hits.get(i);
-            sb.append("[%d] (%s)\n%s\n".formatted(i + 1, hit.title(), hit.content()));
-        }
-        return sb.toString();
     }
 
     private static String priceStatsText(List<AssetHit> assetHits) {
