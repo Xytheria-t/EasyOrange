@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import placeholderImage from '@/assets/placeholder.svg';
 import { Button } from '@/components/ui/button';
 import { buildThumbnailUrl, Image, preloadImages } from '@/components/ui/Image';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 interface ProductGalleryProps {
     images: string[];
@@ -97,24 +98,30 @@ export function ProductGallery({ images, isSold, onShare }: ProductGalleryProps)
 
                 {productImages.length > 1 && (
                     <>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={handlePrevImage}
-                            className="pdp-gallery-nav pdp-gallery-prev"
-                        >
-                            <ChevronLeft size={20} />
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={handleNextImage}
-                            className="pdp-gallery-nav pdp-gallery-next"
-                        >
-                            <ChevronRight size={20} />
-                        </Button>
+                        <Tooltip content="上一张">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                aria-label="上一张"
+                                onClick={handlePrevImage}
+                                className="pdp-gallery-nav pdp-gallery-prev"
+                            >
+                                <ChevronLeft size={20} />
+                            </Button>
+                        </Tooltip>
+                        <Tooltip content="下一张">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                aria-label="下一张"
+                                onClick={handleNextImage}
+                                className="pdp-gallery-nav pdp-gallery-next"
+                            >
+                                <ChevronRight size={20} />
+                            </Button>
+                        </Tooltip>
                         <div className="pdp-gallery-counter">
                             {currentImageIndex + 1} / {productImages.length}
                         </div>
@@ -122,9 +129,18 @@ export function ProductGallery({ images, isSold, onShare }: ProductGalleryProps)
                 )}
 
                 <div className="pdp-gallery-actions">
-                    <Button type="button" variant="outline" size="icon" className="pdp-action-fab" onClick={onShare}>
-                        <Share2 size={18} />
-                    </Button>
+                    <Tooltip content="分享">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            aria-label="分享"
+                            className="pdp-action-fab"
+                            onClick={onShare}
+                        >
+                            <Share2 size={18} />
+                        </Button>
+                    </Tooltip>
                 </div>
             </div>
 

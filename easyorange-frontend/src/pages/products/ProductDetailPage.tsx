@@ -3,8 +3,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import './product-detail.css';
 import {
     ArrowLeft,
-    ChevronRight as BreadcrumbSep,
-    Check,
     ChevronRight,
     Clock,
     Copy,
@@ -29,6 +27,13 @@ import { productApi } from '@/api/productApi';
 import placeholderImage from '@/assets/placeholder.svg';
 import { ErrorState } from '@/components/feedback/StateDisplay';
 import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+    CopyButton,
     Dialog,
     DialogContent,
     DialogFooter,
@@ -78,7 +83,6 @@ function ProductDetailPage() {
         defaultValues: { phone: '', remark: '' },
         reValidateMode: 'onChange',
     });
-    const [copied, setCopied] = useState(false);
 
     const productId = id ?? '';
 
@@ -209,17 +213,6 @@ function ProductDetailPage() {
         setShowShareModal(true);
     };
 
-    const handleCopyLink = async () => {
-        try {
-            await navigator.clipboard.writeText(window.location.href);
-            setCopied(true);
-            addToast({ type: 'success', message: '链接已复制到剪贴板' });
-            setTimeout(() => setCopied(false), 2000);
-        } catch {
-            addToast({ type: 'error', message: '复制失败，请手动复制' });
-        }
-    };
-
     const handleSubmitOrder = orderForm.handleSubmit(async values => {
         try {
             const orderId = await createOrder.mutateAsync({
@@ -251,24 +244,25 @@ function ProductDetailPage() {
                         <ArrowLeft size={16} />
                         返回
                     </Button>
-                    <div className="pdp-breadcrumb-trail">
-                        <Button
-                            type="button"
-                            variant="link"
-                            className="pdp-breadcrumb-item"
-                            onClick={() => navigate('/products')}
-                        >
-                            商城
-                        </Button>
-                        <BreadcrumbSep size={14} className="pdp-breadcrumb-sep" />
-                        {product.categoryName && (
-                            <>
-                                <span className="pdp-breadcrumb-item">{product.categoryName}</span>
-                                <BreadcrumbSep size={14} className="pdp-breadcrumb-sep" />
-                            </>
-                        )}
-                        <span className="pdp-breadcrumb-current">{product.title}</span>
-                    </div>
+                    <Breadcrumb>
+                        <BreadcrumbList>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink to="/products">商城</BreadcrumbLink>
+                            </BreadcrumbItem>
+                            {product.categoryName && (
+                                <>
+                                    <BreadcrumbSeparator />
+                                    <BreadcrumbItem>
+                                        <span className="pdp-breadcrumb-category">{product.categoryName}</span>
+                                    </BreadcrumbItem>
+                                </>
+                            )}
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbPage>{product.title}</BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
                 </nav>
 
                 <div className="pdp-hero">
@@ -725,16 +719,23 @@ function ProductDetailPage() {
                                 <div className="pdp-share-icon">微</div>
                                 <span>微博</span>
                             </Button>
-                            <Button
+                            <CopyButton
+                                value={() => window.location.href}
+                                label="复制链接"
+                                icon={
+                                    <span className="pdp-share-icon">
+                                        <Copy size={24} />
+                                    </span>
+                                }
                                 variant="ghost"
                                 className="pdp-share-platform pdp-share-copy"
-                                onClick={handleCopyLink}
-                            >
-                                <div className="pdp-share-icon">
-                                    {copied ? <Check size={24} /> : <Copy size={24} />}
-                                </div>
-                                <span>{copied ? '已复制' : '复制链接'}</span>
-                            </Button>
+                                onCopy={(_, ok) =>
+                                    addToast({
+                                        type: ok ? 'success' : 'error',
+                                        message: ok ? '链接已复制到剪贴板' : '复制失败，请手动复制',
+                                    })
+                                }
+                            />
                         </div>
 
                         <div className="pdp-share-link">
@@ -747,14 +748,19 @@ function ProductDetailPage() {
                                     readOnly
                                     className="pr-10"
                                 />
-                                <Button
+                                <CopyButton
+                                    value={() => window.location.href}
+                                    aria-label="复制商品链接"
+                                    size="sm"
                                     variant="ghost"
-                                    size="icon"
                                     className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-                                    onClick={handleCopyLink}
-                                >
-                                    {copied ? <Check size={16} /> : <Copy size={16} />}
-                                </Button>
+                                    onCopy={(_, ok) =>
+                                        addToast({
+                                            type: ok ? 'success' : 'error',
+                                            message: ok ? '链接已复制到剪贴板' : '复制失败，请手动复制',
+                                        })
+                                    }
+                                />
                             </div>
                         </div>
                     </div>

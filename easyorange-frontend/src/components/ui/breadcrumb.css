@@ -1,0 +1,70 @@
+/* ============================================================
+   Breadcrumb —— 站内层级导航。
+   视觉一律走 tokens.css：工作台页层级靠明度与发丝线，不靠玻璃模糊。
+   焦点环继承 global.css 的 :focus-visible 基线，不在此重复。
+   ============================================================ */
+
+.bc-root {
+    min-width: 0;
+}
+
+.bc-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.875rem;
+}
+
+.bc-item {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.bc-link {
+    color: var(--text-tertiary);
+    text-decoration: none;
+    border-radius: var(--radius-xs);
+    padding: 0.125rem 0.25rem;
+    margin: -0.125rem -0.25rem;
+    transition: color var(--transition-fast);
+}
+
+.bc-link:hover {
+    color: var(--primary-700);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.bc-current {
+    color: var(--text-secondary);
+    font-weight: 600;
+    max-width: min(28rem, 60vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bc-separator {
+    color: var(--gray-400);
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.bc-separator-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+@media (max-width: 640px) {
+    /* 窄屏只保留首级与当前页：中间层级挤在一行读不清，且当前页语义已由
+       aria-current 承载，屏幕阅读器不依赖这些中间节点 */
+    .bc-list > li:not(:first-child):nth-last-child(n + 3) {
+        display: none;
+    }
+}

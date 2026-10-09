@@ -1,0 +1,69 @@
+/* CopyButton —— 一键复制。图标按钮 + 成功换色反馈，剪贴板不可用时兜底。 */
+
+.cb-root {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+        color var(--transition-fast),
+        background-color var(--transition-fast),
+        border-color var(--transition-fast);
+}
+
+.cb-root:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.cb-ghost:hover {
+    background: var(--gray-100);
+    color: var(--text-primary);
+}
+
+.cb-outline {
+    border-color: var(--border-medium);
+}
+
+.cb-outline:hover {
+    border-color: var(--primary-400);
+    color: var(--primary-700);
+}
+
+/* 成功是状态反馈不是装饰强调：只换图标与文字色，不加底不加光晕 */
+.cb-root[data-copied="true"] {
+    color: var(--status-success);
+}
+
+.cb-outline[data-copied="true"] {
+    border-color: var(--success-soft-border);
+}
+
+.cb-size-md {
+    min-width: 2.75rem;
+    height: 2.75rem;
+    padding: 0 0.625rem;
+}
+
+.cb-size-sm {
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.375rem;
+}
+
+.cb-icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+.cb-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+}

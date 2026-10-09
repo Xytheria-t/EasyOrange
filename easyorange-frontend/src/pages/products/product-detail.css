@@ -136,37 +136,9 @@
     transform: translateX(0);
 }
 
-.pdp-breadcrumb-trail {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.8125rem;
+/* 分类不是链接（商城列表页没有分类路由），纯文本即可 */
+.pdp-breadcrumb-category {
     color: var(--text-tertiary);
-    min-width: 0;
-    overflow: hidden;
-}
-
-.pdp-breadcrumb-item {
-    transition: color var(--transition-fast);
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.pdp-breadcrumb-item:hover {
-    color: var(--primary-600);
-}
-
-.pdp-breadcrumb-sep {
-    flex-shrink: 0;
-    opacity: 0.4;
-}
-
-.pdp-breadcrumb-current {
-    color: var(--text-secondary);
-    font-weight: 600;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 /* ============ HERO LAYOUT ============ */
@@ -1141,9 +1113,6 @@
     .pdp-breadcrumb {
         gap: 0.75rem;
         margin-bottom: 1rem;
-    }
-    .pdp-breadcrumb-trail {
-        display: none;
     }
     .pdp-title {
         font-size: 1.2rem;
