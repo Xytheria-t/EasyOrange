@@ -1,7 +1,9 @@
-import { screen } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderWithProviders } from '@/testUtils/renderWithProviders';
+import { createTestQueryClient, renderWithProviders } from '@/testUtils/renderWithProviders';
 import type { Product, User } from '@/types';
 import ProductDetailPage from './ProductDetailPage';
 
@@ -338,7 +340,7 @@ describe('ProductDetailPage', () => {
         });
     });
 
-    it('navigates back when "返回" button is clicked', async () => {
+    it('falls back to product list when opened as the first history entry', async () => {
         const product = createMockProduct();
         mockUseProduct.mockReturnValue({ data: product, isLoading: false });
         mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
@@ -351,8 +353,31 @@ describe('ProductDetailPage', () => {
         renderPage();
 
         const user = userEvent.setup();
-        const backBtn = screen.getByText('返回');
-        await user.click(backBtn);
+        await user.click(screen.getByText('返回'));
+        // 分享链接直接打开时标签页没有上一站，-1 会退出站点
+        expect(mockNavigate).toHaveBeenCalledWith('/products');
+    });
+
+    it('navigates back in history when opened from a previous page', async () => {
+        const product = createMockProduct();
+        mockUseProduct.mockReturnValue({ data: product, isLoading: false });
+        mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
+        mockUseAuthStore.mockReturnValue({
+            user: createMockUser({ userId: 'currentUser' }),
+            token: 'mock-token',
+            isAuthenticated: true,
+        });
+
+        render(
+            <QueryClientProvider client={createTestQueryClient()}>
+                <MemoryRouter initialEntries={['/products', '/products/123']}>
+                    <ProductDetailPage />
+                </MemoryRouter>
+            </QueryClientProvider>
+        );
+
+        const user = userEvent.setup();
+        await user.click(screen.getByText('返回'));
         expect(mockNavigate).toHaveBeenCalledWith(-1);
     });
 

@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { productApi } from '@/api/productApi';
 import placeholderImage from '@/assets/placeholder.svg';
 import { ErrorState } from '@/components/feedback/StateDisplay';
@@ -57,6 +57,17 @@ import { ProductGallery } from './components/ProductGallery';
 function ProductDetailPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // 分享链接 / 新标签页直接打开详情页时，标签页历史里没有上一站，
+    // navigate(-1) 会退出站点而不是回到列表——首条历史兜底去商品列表
+    const handleBack = () => {
+        if (location.key === 'default') {
+            navigate('/products');
+        } else {
+            navigate(-1);
+        }
+    };
     const { data: product, isLoading, isError, error: productError, refetch } = useProduct(id ?? '');
     const { data: similarProducts, isLoading: similarLoading } = useSimilarProducts(id ?? '');
     const { token, user } = useAuthStore();
@@ -239,8 +250,10 @@ function ProductDetailPage() {
             </div>
 
             <div className="pdp-container">
-                <nav className="pdp-breadcrumb">
-                    <Button variant="ghost" className="pdp-back-btn" onClick={() => navigate(-1)}>
+                {/* 外层只是布局容器：Breadcrumb 自己带 nav 地标，再套一层
+                   导航地标只会让屏幕阅读器读到两个「面包屑」 */}
+                <div className="pdp-breadcrumb">
+                    <Button variant="ghost" className="pdp-back-btn" onClick={handleBack}>
                         <ArrowLeft size={16} />
                         返回
                     </Button>
@@ -263,7 +276,7 @@ function ProductDetailPage() {
                             </BreadcrumbItem>
                         </BreadcrumbList>
                     </Breadcrumb>
-                </nav>
+                </div>
 
                 <div className="pdp-hero">
                     <ProductGallery images={images} isSold={isSold} onShare={handleShare} />
