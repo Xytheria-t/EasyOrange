@@ -44,6 +44,11 @@ final class ChatPromptAssembler {
 
     private static String buildCurrentUserMessage(
             String question, List<UserPreference> prefs, ToolCallLoop.Result run) {
+        String questionText = UntrustedText.stripTags(question);
+        String profileText = UntrustedText.stripTags(UserPreference.format(prefs));
+        String knowledgeText = UntrustedText.stripTags(formatKnowledgeHits(run.knowledgeHits()));
+        String assetText = UntrustedText.stripTags(formatAssetHits(run.assetHits()));
+        String detailText = UntrustedText.stripTags(formatAssetDetails(run.details()));
         return """
                 <user_question>
                 %s
@@ -64,12 +69,7 @@ final class ChatPromptAssembler {
                 <asset_details>
                 %s
                 </asset_details>
-                """.formatted(
-                        UntrustedText.stripTags(question),
-                        UntrustedText.stripTags(UserPreference.format(prefs)),
-                        UntrustedText.stripTags(formatKnowledgeHits(run.knowledgeHits())),
-                        UntrustedText.stripTags(formatAssetHits(run.assetHits())),
-                        UntrustedText.stripTags(formatAssetDetails(run.details())));
+                """.formatted(questionText, profileText, knowledgeText, assetText, detailText);
     }
 
     private static String formatKnowledgeHits(List<KnowledgeHit> hits) {
