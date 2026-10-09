@@ -388,7 +388,7 @@ class AiChatAppServiceTest {
     void stream_happyPath() {
         when(toolCallLoop.run(any())).thenAnswer(invocation -> {
             Input input = invocation.getArgument(0);
-            input.handler().onStep(new ToolCallStepView(1, "knowledge_search", "查退款规则", "命中 1 条"));
+            input.streamHandler().onStep(new ToolCallStepView(1, "knowledge_search", "查退款规则", "命中 1 条"));
             return new Result(
                     List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)),
                     List.of(),

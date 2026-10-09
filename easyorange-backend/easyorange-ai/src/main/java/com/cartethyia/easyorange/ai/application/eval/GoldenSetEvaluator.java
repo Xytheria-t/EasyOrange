@@ -129,11 +129,11 @@ public class GoldenSetEvaluator {
         return report;
     }
 
-    /** 跑一臂并评分 — {@code toolAllowList} 为 null 即全量工具面（与生产路径同一条链路）。 */
-    private Optional<AiJudge.Judgement> scoreCase(GoldenSetCase c, @Nullable Set<String> toolAllowList) {
+    /** 跑一臂并评分 — {@code allowedTools} 为 null 即全量工具面（与生产路径同一条链路）。 */
+    private Optional<AiJudge.Judgement> scoreCase(GoldenSetCase c, @Nullable Set<String> allowedTools) {
         try {
             ChatAnswer answer = chatService.answer(
-                    new ChatRequest(c.question(), "eval-" + c.id(), true), ToolCallLoop.MACHINE_SUBJECT, toolAllowList);
+                    new ChatRequest(c.question(), "eval-" + c.id(), true), ToolCallLoop.MACHINE_SUBJECT, allowedTools);
             // 只有对照参考回答这一条评分路径：chat 用例必带 reference_answer，加载期已强校验
             return aiJudge.judgeAgainstReference(c.referenceAnswer(), answer.answer());
         } catch (Exception e) {
