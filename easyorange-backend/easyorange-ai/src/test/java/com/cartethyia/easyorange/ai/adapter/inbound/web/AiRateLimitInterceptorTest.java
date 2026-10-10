@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -101,5 +102,9 @@ class AiRateLimitInterceptorTest {
         boolean result = interceptor.preHandle(request, new MockHttpServletResponse(), null);
 
         assertThat(result).isTrue();
+        // 桶 key 必须落在 XFF 首段（真实客户端）——代理跳数或常量进 key 等于所有人共享一个桶
+        var bucketKey = ArgumentCaptor.forClass(String.class);
+        verify(distributedRateLimiter).tryAcquire(bucketKey.capture(), anyLong(), anyLong());
+        assertThat(bucketKey.getValue()).endsWith("ip:192.168.1.1").doesNotContain("10.0.0.1");
     }
 }

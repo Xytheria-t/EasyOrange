@@ -178,7 +178,7 @@ class KnowledgeIngestionAppServiceTest {
     }
 
     @Test
-    @DisplayName("补索引：只重试 PENDING 文档且保持原 ID")
+    @DisplayName("补索引：未完成态重做、INDEXED 跳过，保持原 ID")
     void reindexPending_keepsId() {
         setUpIngestion();
         when(repository.findById("doc-1"))
