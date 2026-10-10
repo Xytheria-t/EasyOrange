@@ -167,18 +167,16 @@ public class ToolCallLoop {
     // ── 首轮上下文 ──
 
     /**
-     * 首条 user 消息（问题 / 历史 / 偏好）— 每请求固定、全部轮次共享：改一个字节这轮的 KV cache 就作废。三个分量剥掉
-     * 标签形态后统一进块（与生成侧同形）—— 这条上下文决定调哪个工具，散文小标题能被块内用户文本仿写，剥掉后仿不出来。
+     * 首条 user 消息（历史 / 偏好 / 问题）— 每请求固定、全部轮次共享：改一个字节这轮的 KV cache 就作废。块序按
+     * 「已写字节不再重写」排：历史追加式增长（跨轮前缀逐字节复用）→ 偏好少变 → 问题每轮必变，殿后兼取「数据在前、
+     * 任务在后」。三个分量剥掉标签形态后统一进块（与生成侧同形）—— 这条上下文决定调哪个工具，散文小标题能被块内
+     * 用户文本仿写，剥掉后仿不出来。
      */
     private static String firstUserMessage(Input input) {
-        String question = UntrustedText.stripTags(input.question());
         String history = UntrustedText.stripTags(formatHistory(input.history()));
         String preferences = UntrustedText.stripTags(UserPreference.format(input.prefs()));
+        String question = UntrustedText.stripTags(input.question());
         return """
-                <user_question>
-                %s
-                </user_question>
-
                 <history>
                 %s
                 </history>
@@ -186,7 +184,11 @@ public class ToolCallLoop {
                 <user_preferences>
                 %s
                 </user_preferences>
-                """.formatted(question, history, preferences);
+
+                <user_question>
+                %s
+                </user_question>
+                """.formatted(history, preferences, question);
     }
 
     private static String formatHistory(List<ChatTurn> history) {

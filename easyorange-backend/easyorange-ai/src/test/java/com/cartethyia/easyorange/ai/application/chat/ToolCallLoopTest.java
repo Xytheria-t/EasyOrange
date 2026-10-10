@@ -864,6 +864,46 @@ class ToolCallLoopTest {
         assertThat(firstUserMessage).doesNotContain("<system>");
     }
 
+    @Test
+    @DisplayName("首条 user 消息块序：历史 → 偏好 → 问题 —— 历史追加式增长，新一轮以上一轮历史正文为逐字节前缀")
+    void run_ordersBlocksForCrossTurnPrefixReuse() {
+        stubDecisions(
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()),
+                toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
+
+        toolCallLoop.run(new Input(
+                "第二问",
+                "sess-1",
+                "user-1",
+                List.of(ChatTurn.user("第一问"), ChatTurn.assistant("第一答")),
+                List.of(new UserPreference("style", "复古")),
+                null));
+        toolCallLoop.run(new Input(
+                "第三问",
+                "sess-1",
+                "user-1",
+                List.of(
+                        ChatTurn.user("第一问"),
+                        ChatTurn.assistant("第一答"),
+                        ChatTurn.user("第二问"),
+                        ChatTurn.assistant("第二答")),
+                List.of(new UserPreference("style", "复古")),
+                null));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
+        verify(aiModelSupport, times(2)).callWithTools(any(), any(), decisionMessages.capture(), anyList());
+        String previous = decisionMessages.getAllValues().get(0).get(1).getText();
+        String next = decisionMessages.getAllValues().get(1).get(1).getText();
+
+        // 问题殿后，历史与偏好依次在前
+        assertThat(previous.indexOf("<history>")).isLessThan(previous.indexOf("<user_preferences>"));
+        assertThat(previous.indexOf("<user_preferences>")).isLessThan(previous.indexOf("<user_question>"));
+        assertThat(previous).endsWith("</user_question>\n");
+        // 历史追加式增长 ⇒ 新一轮消息沿用上一轮历史正文为逐字节前缀（跨轮 KV cache 命中的公共段）
+        assertThat(next).startsWith(previous.substring(0, previous.indexOf("\n</history>")));
+    }
+
     private ToolCallLoop newToolCallLoop() {
         return new ToolCallLoop(
                 promptRegistry,
