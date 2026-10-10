@@ -129,7 +129,7 @@ public class AutoListingAppService {
                 attributedUserId,
                 handler,
                 metrics);
-        ToolLoopKernel.Outcome outcome = loopKernel.run(spec, listingDecider());
+        ToolLoopKernel.Outcome outcome = loopKernel.run(spec, loopDecider());
         return new ListingLoopResult(
                 tools.knowledgeHits(), tools.assetHits(), outcome.outcome(), outcome.rounds(), outcome.toolPath());
     }
@@ -210,7 +210,7 @@ public class AutoListingAppService {
     }
 
     /** 决策走 chat_tool 快模型（纯路由任务），记账进 auto_listing 预算——成本归业务链路、模型归职责。 */
-    private ToolLoopDecider listingDecider() {
+    private ToolLoopDecider loopDecider() {
         return (sessionId, messages, callbacks) -> decider.decideForLoop(
                 sessionId, messages, callbacks, AiCallScope.AUTO_LISTING, AutoListingAppService::toolInputOf);
     }

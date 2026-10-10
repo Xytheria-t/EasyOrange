@@ -134,7 +134,7 @@ public class ToolCallLoop {
 
     public Result run(Input input) {
         ChatTools tools = toolsFactory.create(attributedUserId(input));
-        ToolLoopKernel.Outcome outcome = loopKernel.run(spec(input, tools), chatDecider());
+        ToolLoopKernel.Outcome outcome = loopKernel.run(spec(input, tools), loopDecider());
         return Result.of(tools, outcome.outcome(), outcome.rounds(), outcome.toolPath());
     }
 
@@ -201,7 +201,7 @@ public class ToolCallLoop {
     // ── 决策 ──
 
     /** 决策走 chat 场景快模型、记账进 chat 预算；入参摘要按本链路工具面取。 */
-    private ToolLoopDecider chatDecider() {
+    private ToolLoopDecider loopDecider() {
         return (sessionId, messages, callbacks) ->
                 decider.decideForLoop(sessionId, messages, callbacks, AiCallScope.CHAT, ToolCallLoop::toolInputOf);
     }
