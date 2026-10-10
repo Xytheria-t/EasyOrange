@@ -111,7 +111,7 @@ public class SemanticCacheService implements SemanticCachePort {
             metrics.record(SemanticCacheMetrics.Outcome.HIT);
             return Optional.of(hit);
         } catch (Exception e) {
-            log.warn("Semantic cache read failed, miss", e);
+            log.warn("Semantic cache read failed, treating as miss", e);
             metrics.recordFailure();
             return Optional.empty();
         }

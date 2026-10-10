@@ -45,6 +45,7 @@ public class RedisTokenBudgetStore implements TokenBudgetStorePort {
     }
 
     static final String KEY_PREFIX = "eo:ai:budget:";
+    // 字段名在三张 Lua 脚本里同字面出现（'input' / 'output' / 'reserved'）——改值必须同改脚本，否则读写分叉。
     static final String FIELD_INPUT = "input";
     static final String FIELD_OUTPUT = "output";
     static final String FIELD_RESERVED = "reserved";

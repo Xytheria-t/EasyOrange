@@ -78,7 +78,10 @@ public class AiListingController {
         String userId = SecurityContextUtil.getUserContextOrThrow().userId();
         SseEmitter emitter = new SseEmitter(STREAM_TIMEOUT_MS);
         emitter.onTimeout(() -> AiChatController.completeQuietly(emitter));
-        emitter.onError(e -> AiChatController.completeQuietly(emitter));
+        emitter.onError(e -> {
+            log.debug("sse emitter error, client gone", e);
+            AiChatController.completeQuietly(emitter);
+        });
         Runnable task = () -> runStream(emitter, imageUrls, userId);
         var executor = taskExecutors.getIfAvailable();
         if (executor == null) {
