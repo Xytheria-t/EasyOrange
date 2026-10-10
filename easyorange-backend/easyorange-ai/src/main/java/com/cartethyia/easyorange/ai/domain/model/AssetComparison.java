@@ -93,8 +93,8 @@ public final class AssetComparison {
         }
         String winner = cheapest.size() == 1 ? cheapest.getFirst().productId() : null;
         String note = winner == null
-                ? "%s 同为最低 %s".formatted(ids(cheapest), money(lowest))
-                : "%s 最低 %s".formatted(winner, money(lowest));
+                ? "%s 同为最低 %s".formatted(ids(cheapest), MoneyFormat.render(lowest))
+                : "%s 最低 %s".formatted(winner, MoneyFormat.render(lowest));
         return Optional.of(new Dimension(DIMENSION_PRICE, winner, note + negotiableSuffix(candidates)));
     }
 
@@ -221,11 +221,6 @@ public final class AssetComparison {
     /** null / 空白归一为「没有值」；返回值可能为 null，进码表查询前必须判空。 */
     private static String normalized(String value) {
         return value == null || value.isBlank() ? null : value.strip();
-    }
-
-    /** 金额展示：去掉小数尾巴（¥4200 而不是 ¥4200.00）。 */
-    private static String money(BigDecimal value) {
-        return "¥" + value.stripTrailingZeros().toPlainString();
     }
 
     private static String observation(List<AssetDetail> candidates, List<Dimension> dimensions) {

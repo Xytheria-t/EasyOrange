@@ -66,13 +66,8 @@ public final class PriceStats {
 
     public String observation() {
         String range = min.compareTo(max) == 0
-                ? "均为 %s".formatted(money(min))
-                : "价格区间 %s-%s".formatted(money(min), money(max));
-        return "当前 %d 件在售，均价 %s，%s".formatted(count, money(avg), range);
-    }
-
-    /** 金额展示：去掉小数尾巴（¥4200 而不是 ¥4200.00）。 */
-    private static String money(BigDecimal value) {
-        return "¥" + value.stripTrailingZeros().toPlainString();
+                ? "均为 %s".formatted(MoneyFormat.render(min))
+                : "价格区间 %s-%s".formatted(MoneyFormat.render(min), MoneyFormat.render(max));
+        return "当前 %d 件在售，均价 %s，%s".formatted(count, MoneyFormat.render(avg), range);
     }
 }
