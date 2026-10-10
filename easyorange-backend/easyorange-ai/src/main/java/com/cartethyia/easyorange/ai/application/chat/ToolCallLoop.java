@@ -137,7 +137,7 @@ public class ToolCallLoop {
         return new ToolLoopKernel.Spec(
                 promptRegistry.require(CHAT_TOOL_PROMPT),
                 firstUserMessage(input),
-                dispatcherCallbacks(tools, input.allowedTools()),
+                toolCallbacks(tools, input.allowedTools()),
                 aiProperties.chat().maxSteps(),
                 budgetGuard::exhausted,
                 () -> fallbackSearch(input, tools),
@@ -152,11 +152,15 @@ public class ToolCallLoop {
         return MACHINE_SUBJECT.equals(input.userId()) ? null : input.userId();
     }
 
-    /** 白名单为 null 时装配全量工具面；否则只装配白名单内的工具（模型拿不到 schema 就调不到）。 */
-    private static List<ToolCallback> dispatcherCallbacks(ChatTools tools, @Nullable Set<String> allowedTools) {
-        return Stream.of(ToolCallbacks.from(tools))
-                .filter(callback -> allowedTools == null
-                        || allowedTools.contains(callback.getToolDefinition().name()))
+    /** 白名单在装配层生效 —— 模型拿不到工具 schema 就调不到。 */
+    private static List<ToolCallback> toolCallbacks(ChatTools tools, @Nullable Set<String> allowedTools) {
+        ToolCallback[] all = ToolCallbacks.from(tools);
+        if (allowedTools == null) {
+            return List.of(all);
+        }
+        return Stream.of(all)
+                .filter(callback ->
+                        allowedTools.contains(callback.getToolDefinition().name()))
                 .toList();
     }
 
