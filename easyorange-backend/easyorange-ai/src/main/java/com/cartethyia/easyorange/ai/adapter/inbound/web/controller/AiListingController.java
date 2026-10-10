@@ -30,11 +30,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
- * AI 上架辅助端点 — 拍照识别（发布助手，多步工具循环）。
- * <p>
- * 两个入口跑同一条链路（视觉预识别 → 工具循环 → 生成表单）：非流式返回 {@code Result} 信封；流式（SSE）
- * 逐步推 step 事件（工具步可视化：查禁售 / 召回同类 / 行情统计），done 带表单 JSON，无 token / sources
- * 事件——发布产出是结构化表单不是散文。
+ * AI 上架辅助端点 — 拍照识别（发布助手，多步工具循环）。两个入口跑同一条链路（视觉预识别 → 工具循环 → 生成表单）：
+ * 非流式返回 {@code Result} 信封；流式（SSE）逐步推 step 事件（工具步可视化：查禁售 / 召回同类 / 行情统计）、
+ * done 带表单 JSON，无 token / sources 事件——发布产出是结构化表单不是散文。
  * <p>
  * 图片张数上限与商品创建侧对齐（9 张）：识别一批图却只能发布 9 张，第 10 张之后纯属白花 token。
  */
@@ -58,8 +56,8 @@ public class AiListingController {
         this.taskExecutors = taskExecutors;
     }
 
-    // 只读识别调用，无状态可重复提交风险；防重 3s 会把「再次识别」误拦成 429（连点/连跑不一致），
-    // 频控由 AI 限流（auto-listing 5 次/分）与 token 预算承担
+    // 只读识别调用，可重复提交；防重 3s 会把「再次识别」误拦成 429，频控由 AI 限流（auto-listing 5 次/分）
+    // 与 token 预算承担
     @SkipRepeatSubmit
     @PostMapping("/auto-listing")
     @Operation(summary = "拍照识别生成上架表单（1-9 张图），身份取自登录态，非流式返回")
@@ -101,7 +99,7 @@ public class AiListingController {
             // 客户端中途离开（步骤推送时断开）— 静默收尾，不当作服务故障
             AiChatController.completeQuietly(emitter);
         } catch (BaseBusinessException e) {
-            // B8001（日预算尽）与 B8002（识别失败）都带面向用户的文案
+            // B8001（预算尽）/ B8002（识别失败）都带面向用户的文案
             sendError(emitter, e.getMessage());
         } catch (Exception e) {
             log.error("action=auto_listing_stream_failed, images={}", imageUrls.size(), e);

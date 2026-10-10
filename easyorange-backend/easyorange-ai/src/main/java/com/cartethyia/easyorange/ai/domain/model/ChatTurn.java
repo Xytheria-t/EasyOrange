@@ -4,11 +4,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * 对话轮次 — 短期记忆的最小单元（Redis 会话窗口内按序存取）。
- * <p>
- * 角色用 {@link Role} 枚举而非自由字符串：它在「存进 Redis」「装配 prompt 多消息」「决策上下文
- * 文本」三处被消费，其中两处是角色比较 —— 字符串拼错一个字母不会报错，只会静默把助手的话
- * 当用户的话注入。
+ * 对话轮次 — 短期记忆的最小单元（Redis 会话窗口内按序存取）。角色用 {@link Role} 枚举而非自由字符串：
+ * 它在存 Redis、装配 prompt、决策上下文三处被消费且要做角色比较，拼错一个字母不报错，
+ * 只会静默把助手的话当用户的话注入。
  */
 public record ChatTurn(Role role, String content) {
 

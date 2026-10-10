@@ -241,7 +241,7 @@ class ToolCallLoopTest {
         assertThat(schemas.get(ChatTools.TOOL_COMPARE_ASSETS)).contains("thought", "productIds");
         assertThat(schemas.get(ChatTools.TOOL_REMEMBER_PREFERENCE))
                 .contains("thought", "preferenceKey", "preferenceValue");
-        // 偏好已从 finish 的参数副作用拆成独立工具，finish 不再带偏好字段（拆分的回归守卫）
+        // finish 不带偏好字段：偏好写入独立成工具，三条降级路径下才不会静默丢失（拆分的回归守卫）
         assertThat(schemas.get(ChatTools.TOOL_FINISH)).contains("thought").doesNotContain("preferenceKey");
     }
 

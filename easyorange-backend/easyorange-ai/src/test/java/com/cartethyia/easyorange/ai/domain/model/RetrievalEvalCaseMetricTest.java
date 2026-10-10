@@ -5,9 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * 用例明细模型测试 — 命中位次换算是面板唯一的计算：rr 是倒数，显示「第 0 位」或「第 6 位」都算错。
- */
+/** 用例明细模型测试 — 命中位次换算是面板唯一的计算：rr 是倒数，显示「第 0 位」或「第 6 位」都算错。 */
 @DisplayName("检索用例明细模型 -> 测试")
 class RetrievalEvalCaseMetricTest {
 

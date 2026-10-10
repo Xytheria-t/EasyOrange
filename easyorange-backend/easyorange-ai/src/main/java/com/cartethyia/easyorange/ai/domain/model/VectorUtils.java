@@ -3,11 +3,9 @@ package com.cartethyia.easyorange.ai.domain.model;
 import java.util.List;
 
 /**
- * 向量相似度工具 — 两个等长向量的余弦相似度。
- * <p>
- * 仅用于<b>语义回答缓存</b>（`SemanticCacheService` 在 Redis Hash 里按余弦找最相似的已缓存问题）。
- * 检索排序不走这里：知识库检索是 kNN + BM25 两路召回后在索引侧做 RRF 排名融合，
- * 余弦与 BM25 分值量纲不可比，回到 Java 侧按余弦重排会把 BM25 的排序信号整体丢掉（ADR-0012）。
+ * 向量相似度工具 — 两个等长向量的余弦相似度。仅用于<b>语义回答缓存</b>
+ * （`SemanticCacheService` 在 Redis Hash 里按余弦找最相似的已缓存问题）——检索排序不走这里：
+ * kNN + BM25 两路召回已在索引侧做 RRF，回到 Java 侧按余弦重排会把 BM25 的排序信号整体丢掉（ADR-0012）。
  */
 public final class VectorUtils {
 

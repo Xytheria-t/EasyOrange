@@ -6,9 +6,8 @@ import java.util.List;
 public record KnowledgeHit(String docId, String title, String content, double score) {
 
     /**
-     * 命中清单的文本渲染（每条约 {@code [序号] (标题) + 正文}）—— 生成 prompt 两处装配共用
-     *（{@code ChatPromptAssembler} / {@code ListingPromptAssembler}）：同一份命中在两处渲染成
-     * 同一种形状，空集的缺省标记也就只有一处定义。
+     * 命中清单的文本渲染 — 生成 prompt 两处装配共用（{@code ChatPromptAssembler} / {@code ListingPromptAssembler}）：
+     * 同一份命中渲染成同一种形状，空集的缺省标记只有一处定义。
      */
     public static String format(List<KnowledgeHit> hits) {
         if (hits.isEmpty()) {

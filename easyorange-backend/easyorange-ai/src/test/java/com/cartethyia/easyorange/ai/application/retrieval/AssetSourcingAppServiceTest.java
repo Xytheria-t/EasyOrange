@@ -23,9 +23,9 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 
 /**
- * 找货召回的降级语义分层 —— 同一成功路径两种故障语义：对话侧 {@code search} 三种失败（无适配器 / 检索抛异常）
- * 收敛成「少一次推荐」；MCP 侧 {@code searchStrict} 故障上抛（工具 description 承诺空结果 = 无匹配，
- * 故障伪装成空会让外部模型误判没货而盲目换词重试）。向量化失败两侧同语义：退化 BM25 单路，部分降级 ≠ 不可用。
+ * 找货召回的降级语义分层 —— 对话侧 {@code search} 吞掉适配器缺失 / 检索异常（收敛成「少一次推荐」）；
+ * MCP 侧 {@code searchStrict} 故障上抛 —— 工具 description 承诺空结果 = 无匹配，伪装成空会让外部模型
+ * 误判没货而换词重试。向量化失败两侧同语义：退化 BM25 单路，部分降级 ≠ 不可用。
  */
 @DisplayName("AssetSourcingAppService -> 降级语义分层测试")
 class AssetSourcingAppServiceTest {

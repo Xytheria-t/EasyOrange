@@ -69,7 +69,7 @@ class KnowledgeRetrievalAppServiceTest {
         assertThat(hits).hasSize(2);
         assertThat(hits.getFirst().docId()).isEqualTo("kb-a");
         assertThat(hits.get(1).docId()).isEqualTo("kb-b");
-        // topK 不再被放大成 2 倍：候选池大小由索引侧决定，服务层不再做「多取再截断」
+        // topK 原样透传：候选池大小由索引侧决定，服务层不做「多取再截断」
         verify(indexPort).search("退款", List.of(1f, 0f, 0f), 2);
     }
 

@@ -2,14 +2,11 @@ package com.cartethyia.easyorange.ai.domain.model;
 
 /**
  * 上下文 token 估算器（确定性，无模型依赖）— 供注入 prompt 前的 pre-flight 裁剪决策。
- * <p>
- * 估算口径：CJK（汉字 / 假名 / 谚文 / 全角标点，codePoint >= 0x2E80 一律按 CJK 计）
- * 0.7 token/字，其余字符 0.3 token/字符（约 3.3 字符/token），向上取整。
- * 系数比 DeepSeek 官方口径（中文 0.6 / 英文 0.3）整体偏保守约 15%——预算护栏宁高勿低，
- * 高估只会多裁一点历史，低估会放超长上下文出去。
- * <p>
- * 估算只用于裁剪决策，不用于计费口径：真实用量以 API usage 回报为准
- * （Langfuse trace 与 {@code @TokenBudget} 记账都是真实值）。
+ * 口径：CJK（汉字 / 假名 / 谚文 / 全角标点，codePoint >= 0x2E80 一律按 CJK 计）0.7 token/字、
+ * 其余 0.3 token/字符（约 3.3 字符/token），向上取整；比 DeepSeek 官方口径（中文 0.6 / 英文 0.3）
+ * 整体保守约 15%——护栏宁高勿低，高估只多裁一点历史，低估会放超长上下文出去。
+ * 只用于裁剪、不作计费口径：真实用量以 API usage 回报为准（Langfuse trace 与 {@code @TokenBudget}
+ * 记账都用真实值）。
  */
 public final class TokenEstimator {
 

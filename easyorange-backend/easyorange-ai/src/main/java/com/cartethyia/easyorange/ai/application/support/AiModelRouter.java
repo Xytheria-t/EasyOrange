@@ -9,11 +9,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 /**
- * 模型路由 — 按场景选择模型 bean（快模型做工具决策 / 文本模型做生成与评审 / 视觉模型做图片分析）。
+ * 模型路由 — 按场景选择模型 bean；场景 → bean 名的映射在 {@code easyorange.ai.routing.scenarios}（yaml 可热
+ * 更新），未配置的场景回退 {@code easyorange.ai.routing.default-model}。
  * <p>
- * 场景 → bean 名的映射在 {@code easyorange.ai.routing.scenarios}（yaml 可热更新），未配置的场景回退
- * {@code easyorange.ai.routing.default-model}。决策与生成分属两个场景，是「决策 / 生成分离配快模型」
- * 这条成本治理的落点；接入新模型只改配置，代码零改动。
+ * 决策与生成分属两个场景，是「决策 / 生成分离配快模型」这条成本治理的落点；接入新模型只改配置，代码零改动。
  */
 @Slf4j
 @Component

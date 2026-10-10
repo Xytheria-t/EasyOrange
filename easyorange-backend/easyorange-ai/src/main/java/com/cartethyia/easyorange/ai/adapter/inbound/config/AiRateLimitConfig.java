@@ -12,8 +12,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * AI 限流装配 — 注册 {@link AiRateLimitInterceptor} 拦截 {@code /api/ai/**}，超限返回 429。
  * <p>
- * 缓存不在本类：多级响应缓存随 Spring AI 迁移一并删除，仅存的 stale 缓存（LLM 供应商故障兜底，
- * 消费方 {@code AiChatAppService}）在 {@link com.cartethyia.easyorange.ai.config.AiStaleCacheConfig}。
+ * 缓存不在本类：stale 缓存（LLM 供应商故障兜底，消费方 {@code AiChatAppService}）见
+ * {@link com.cartethyia.easyorange.ai.config.AiStaleCacheConfig}。
  */
 @Slf4j
 @Configuration

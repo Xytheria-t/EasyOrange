@@ -13,15 +13,14 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
 /**
- * 发布链路的工具面 — 5 个工具（规则检索 / 品类召回 / 行情统计 / 类目清单 / 收敛），每次循环实例化一份，
- * 召回物累加器是单次请求内的可变状态、由实例独占（与 {@code ChatTools} 同一并发约定）。
+ * 发布链路的工具面 — 5 个工具（规则检索 / 品类召回 / 行情统计 / 类目清单 / 收敛）；每次循环实例化一份，
+ * 召回累加器实例独占（与 {@code ChatTools} 同一并发约定）。
  * <p>
- * knowledge_search / product_search / market_price_stats / finish 与买家侧工具面<b>同名同义</b>（检索
- * 语义、观察文案、冗余判据全部同源）：golden-set 的 expected_tools、前端 STEP_LABELS、trace 的工具列
- * 三处只认一份词汇。list_categories 是发布链路独有的第 5 个工具——决策器 prompt 的分类约束锚在它身上。
+ * knowledge_search / product_search / market_price_stats / finish 与买家侧工具面同名同义（检索语义、
+ * 观察文案、冗余判据全部同源）：golden-set 的 expected_tools、前端 STEP_LABELS、trace 的工具列三处只认
+ * 一份词汇。list_categories 是发布链路独有的第 5 个工具——决策器 prompt 的分类约束锚在它身上。
  * <p>
- * 没有写路径：发布链路的一切产出都进最终生成的表单由卖家确认，没有 chat 链路 remember_preference 那类
- * 直接落库的工具。抛异常 = 该步失败；「查无 / 未命中」返回观察文本。
+ * 没有写路径：产出都进最终生成的表单由卖家确认；抛异常 = 该步失败，「查无 / 未命中」返回观察文本。
  */
 @SuppressWarnings("unused") // thought 只进工具 schema，方法体不消费
 public class ListingTools {
@@ -44,7 +43,7 @@ public class ListingTools {
     private final AssetSourcingAppService assetSourcingService;
     private final CategoryCatalogPort categoryCatalogPort;
 
-    /** 各轮召回物累加器 — 请求内可变状态，实例独占持有；读取走只读快照方法，不交出可变引用。 */
+    /** 各轮召回物累加器 — 实例独占；读取走只读快照方法，不交出可变引用。 */
     private final List<KnowledgeHit> knowledgeHits = new ArrayList<>();
 
     private final List<AssetHit> assetHits = new ArrayList<>();
@@ -92,7 +91,7 @@ public class ListingTools {
         return turn.observation();
     }
 
-    // 顺序约束写进 schema 描述而不只写 system prompt：模型是在选工具时读它的，等生成时才发现约束已经晚一轮
+    // 顺序约束写进 schema 描述而不只写 system prompt：模型选工具时读的就是它，生成阶段才发现约束已晚一轮
     @Tool(
             name = TOOL_MARKET_PRICE_STATS,
             description = "对已召回的在售资产算行情（在售件数 / 均价 / 价格区间），作为建议售价的依据。"
@@ -116,7 +115,7 @@ public class ListingTools {
 
     @Tool(name = TOOL_FINISH, description = "合规结论与行情基准已足够产出上架信息，不再调用任何工具")
     public String finish(@ToolParam(description = "收敛理由，不超过 20 字的中文概括") String thought) {
-        // 方法体永不执行，这里只为让 finish 出现在发给供应商的工具 schema 里
+        // 方法体永不执行，只为让 finish 出现在发给供应商的工具 schema 里
         return TOOL_FINISH;
     }
 }

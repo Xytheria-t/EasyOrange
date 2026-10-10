@@ -19,9 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- * 检索质量回看服务测试 — 钉住三处回看特有的口径：空表不编数字、limit 收敛、空 runId 不列全量明细。
- */
+/** 钉住三处回看特有的口径：空表不编数字、limit 收敛、空 runId 不列全量明细。 */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("检索质量回看服务 -> 测试")
 class RetrievalReviewAppServiceTest {

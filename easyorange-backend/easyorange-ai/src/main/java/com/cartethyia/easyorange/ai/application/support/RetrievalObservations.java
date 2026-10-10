@@ -12,19 +12,18 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 
 /**
- * 检索类工具的观察文本、判重与冗余收敛 — chat 与 listing 两条工具面的单一来源：判据漂移一处生效（或
- * 一处暴露），观察文案两链路逐字一致（STEP 文案与评测断言都引用它们）。
+ * 检索类工具的观察文本、判重与冗余收敛 — chat 与 listing 两条工具面的单一来源：判据漂移一处生效（或一处暴露），
+ * 观察文案两链路逐字一致（STEP 文案与评测断言都引用它们）。
  * <p>
- * 判重口径：保留本轮新增的召回物 —— 判据取 docId（资产按 productId），缺失时退回标题，兜底只为 LIKE
- * 降级路径不因 null 误判成「全新增」。收敛判据见 {@link #isRedundant}：完全没召回到不算冗余，那是空
- * 结果不是重复。
+ * 判重口径：保留本轮新增的召回物 —— 判据取 docId（资产按 productId），缺失时退回标题（兜底只为 LIKE 降级路径
+ * 不因 null 误判成「全新增」）。收敛判据见 {@link #isRedundant}：完全没召回到不算冗余，那是空结果不是重复。
  */
 public final class RetrievalObservations {
 
     /** 检索 topK —— 两条工具面共用同一取值（观察摘要与检索量同量级是收敛判据的隐含前提）。 */
     public static final int TOP_K = 5;
 
-    /** 检索无新增时的观察文案 —— 模型不会自己看出「再查也是重复」，把这件事作为一条明确观察交回比在循环里硬性拦掉更合适。 */
+    /** 检索无新增时的观察文案 —— 模型不会自己看出「再查也是重复」，作为一条明确观察交回比在循环里硬性拦掉更合适。 */
     public static final String NO_NEW_HIT_OBSERVATION = "本次检索无新增信息（命中的内容此前已出现过）：请直接调用 finish 基于已有信息作答，不要再换关键词重试";
 
     /** 观察里列举的命中条数上限 —— 观察是给下一轮决策的摘要，召回多少条都只列举这么多。 */
@@ -33,9 +32,9 @@ public final class RetrievalObservations {
     private RetrievalObservations() {}
 
     /**
-     * 判为「无新增」的重合比例阈值 —— 本轮命中里此前出现过的条目占比达到此值即收敛。只认「完全重复」不够：检索是 topK
-     * 截断的，换关键词常返回高度重叠但不完全相同的一批，逐条判重会让模型无限换词直到撞步数上限；取 0.6 是因为一次检索
-     * 能带进 3 条以上新内容时（约 40% 重合）不算冗余。
+     * 判为「无新增」的重合比例阈值 —— 此前出现过的条目占比达到此值即收敛。只认「完全重复」不够：检索是 topK 截断的，
+     * 换关键词常返回高度重叠但不完全相同的一批，逐条判重会让模型无限换词直到撞步数上限；0.6 = 一次检索能带进 3 条
+     * 以上新内容时（约 40% 重合）不算冗余。
      */
     public static boolean isRedundant(int alreadySeenCount, int foundCount) {
         return foundCount > 0 && (double) alreadySeenCount / foundCount >= 0.6;

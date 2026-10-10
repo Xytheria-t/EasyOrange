@@ -147,8 +147,7 @@ class GoldenSetEvaluatorTest {
         assertThat(report.meanDiff()).isEqualTo(2.0);
         assertThat(report.missingArms()).isEmpty();
 
-        // 会话 id 必须为空：两臂挂同一个 case 级会话键时，无检索臂会读到有检索臂刚落的那轮，
-        // 「唯一变量是检索来源」就不成立，配对差被稀释
+        // 会话 id 必须为空：两臂挂同一 case 级会话键会串历史（无检索臂读到有检索臂刚落的那轮），配对差被稀释
         ArgumentCaptor<ChatRequest> requests = ArgumentCaptor.forClass(ChatRequest.class);
         verify(chatService, times(2)).answer(requests.capture(), eq(ToolCallLoop.MACHINE_SUBJECT), any());
         assertThat(requests.getAllValues())
@@ -194,7 +193,7 @@ class GoldenSetEvaluatorTest {
         GenerationReport generation = evaluator.evaluateGeneration();
         RetrievalReport retrieval = evaluator.evaluateRetrieval();
 
-        // 带 gold_doc_ids 的 chat 用例只算生成、不算检索（此前按 gold_doc_ids 过滤会让它进检索分母）
+        // 带 gold_doc_ids 的 chat 用例只算生成、不算检索（分流按 scope，不按派生特征）
         assertThat(generation.totalCases()).isEqualTo(1);
         assertThat(retrieval.totalCases()).isEqualTo(1);
         assertThat(retrieval.hitRateAt5()).isEqualTo(1.0);

@@ -7,10 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * 来源类型的 JSON 形态 —— 前端 {@code parseSources} 按小写字面量判 asset / knowledge，
- * 枚举名默认下发大写会让商品引用全被判成知识库来源（点不动）。
- */
+/** 来源类型 JSON 形态守卫 —— 对齐前端 {@code parseSources} 判的小写字面量（理由见 {@link ChatSource.Type}）。 */
 class ChatSourceTest {
 
     private final ObjectMapper mapper = new ObjectMapper();

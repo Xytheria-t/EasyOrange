@@ -17,17 +17,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 
 /**
- * AI 调用记账 — 每次 LLM/Embedding 调用落一条 eo_ai_call_log，并把真实 token 用量累加进场景预算。
+ * AI 调用记账 — 每次 LLM/Embedding 调用落一条 eo_ai_call_log，并把真实 token 用量累加进场景预算；全工程唯一把
+ * 供应商回报的 usage 写进 {@link TokenBudgetStorePort} 的地方——切面只做前置检查、拿不到响应体，绕开记账直调
+ * {@code ChatModel} 在类型上就不成立（必须经 {@link AiModelSupport}），「治理只有一个出口」由此是结构性事实。
  * <p>
- * 独立成类是为了让「治理只有一个出口」成为结构性事实而不是注释约定：切面只做前置检查（拿不到响应体），本类是
- * 全工程唯一把供应商回报的 usage 写进 {@link TokenBudgetStorePort} 的地方，绕开记账直调 {@code ChatModel} 的新代码
- * 在类型上就不成立（调用必须经 {@link AiModelSupport}）。
- * <p>
- * 两笔账的口径刻意不同，别互相套用：<b>调用日志记 0 而不估算</b>（估算值混进成本报表比缺数据更危险）；
- * <b>预算未回报才退化为场景上限估算</b>（宁高估也不让预算静默失效）。<b>失败调用不记账</b>——按上限估算会让故障期
- * 虚烧日预算（chat 口径下约 100 个失败请求烧穿 30 万日限），故障恢复后整个场景被前置检查锁死。
- * <p>
- * 两笔账都是调用副产物，写失败只 debug 一行、绝不抛出。
+ * 两笔账口径刻意不同，别互相套用：调用日志记 0 而不估算（估算值混进成本报表比缺数据更危险）；预算未回报才退化为
+ * 场景上限估算（宁高估也不让预算静默失效）；失败调用两笔都不记——按上限估算会让故障期虚烧日预算（chat 口径约
+ * 100 个失败请求烧穿 30 万日限），恢复后整个场景被前置检查锁死。两笔账都是副产物，写失败只 debug 一行、绝不抛出。
  */
 @Slf4j
 @Component
@@ -42,10 +38,10 @@ public class AiCallRecorder {
     private final AiProperties aiProperties;
 
     /**
-     * 执行一次模型调用并记账，返回调用结果；异常原样重抛（记账在 finally 里先落，不吞业务故障）。
+     * 执行一次模型调用并记账；异常原样重抛（记账在 finally 里先落，不吞业务故障）。
      *
-     * @param model 被调用的模型实例，只取实现类简名做日志维度（换供应商一眼能从成本报表看出来）
-     * @param promptText 提示词全文，入库只留 MD5（报表按 hash 归并，响应文本也可能很大）
+     * @param model 只取实现类简名做日志维度（换供应商一眼能从成本报表看出来）
+     * @param promptText 入库只留 MD5（报表按 hash 归并，响应文本也可能很大）
      */
     public <T> T record(AiCallScope scope, Object model, String promptText, Supplier<CallOutcome<T>> call) {
         long startNanos = System.nanoTime();
@@ -63,11 +59,8 @@ public class AiCallRecorder {
         }
     }
 
-    /**
-     * 落调用日志（成本报表数据源，同时是 LLM-as-Judge 离线评估的输入）。
-     * <b>成功与否由 {@code outcome != null} 推导</b>：只有调用正常返回才会有 outcome，异常路径直接
-     * 跳进 finally，两者不同时成立；再单传一个 success 标志只会多出一个可能与事实不符的状态。
-     */
+    /** 落调用日志（成本报表数据源，同时是 LLM-as-Judge 离线评估的输入）。成功与否由 {@code outcome != null} 推导：
+     * 异常路径直接跳进 finally，两者不会同时成立；单传 success 标志只会多出一个可能与事实不符的状态。 */
     private void recordLog(
             AiCallScope scope,
             Object model,
@@ -94,13 +87,9 @@ public class AiCallRecorder {
     }
 
     /**
-     * 记录本次调用的 token 用量（场景键与 {@code @TokenBudget(scenario=...)} 对齐）。
-     * 有真实用量就按真实值累加；供应商未回报时退化为场景配置的单次上限（偏高，但比「预算永远为 0、
-     * 限流静默失效」安全）。<b>失败调用不记账</b>：{@code outcome == null} 即异常路径。
-     * <p>
-     * 场景在 yaml 缺配置时这里什么都不记（{@code configured == null} 直接返回）：注解上的
-     * {@code maxTokensPerCall} 是切面前置检查的兜底契约，本路径取不到它属于配置缺失而非可猜的默认值，
-     * 宁可漏记也不要按猜的数写进预算。
+     * 记录 token 用量 —— 场景键与 {@code @TokenBudget(scenario=...)} 对齐；真实 / 未回报 / 失败三种口径见类注释。
+     * yaml 缺配置时什么都不记（{@code configured == null} 直接返回）：注解上的 {@code maxTokensPerCall} 是切面
+     * 前置检查的兜底契约，取不到属于配置缺失而非可猜的默认值——宁可漏记也不按猜的数写进预算。
      */
     private void recordBudget(AiCallScope scope, @Nullable CallOutcome<?> outcome) {
         if (!aiProperties.budget().enabled() || outcome == null) {
@@ -158,8 +147,8 @@ public class AiCallRecorder {
     /**
      * 流式响应里用量只出现在末尾分片，且可能整段缺失 —— 取最后一个真正回报了 token 的分片。
      * <p>
-     * 「有壳无值」（metadata 在、token 全 null 或全 0）不算回报：部分供应商在每个分片都带一个空
-     * usage 占位，不滤掉的话末尾那个空壳会覆盖掉前面真实回报的用量，记账直接退化成 0。
+     * 「有壳无值」（metadata 在、token 全 null 或全 0）不算回报：部分供应商每个分片都带空 usage 占位，
+     * 不滤掉的话末尾空壳会覆盖掉前面真实回报的用量，记账直接退化成 0。
      */
     static final class UsageAccumulator implements Consumer<ChatResponse> {
 

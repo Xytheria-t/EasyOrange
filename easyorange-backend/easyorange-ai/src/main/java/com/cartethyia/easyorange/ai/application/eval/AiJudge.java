@@ -9,16 +9,13 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * LLM-as-Judge 评审器 — 用 ChatModel 当评审员给 AI 输出打 1-5 分，唯一消费方是金标准集回归
- * （{@link GoldenSetEvaluator}，CI 的 {@code ai-eval.yml} 触发）；Judge 打分与检索指标共同构成
- * EvalGate 的双门禁。调用不落调用日志（避免「谁来评估评估者」的套娃）。
+ * LLM-as-Judge 评审器 — 用 ChatModel 给 AI 输出打 1-5 分，唯一消费方是金标准集回归
+ * （{@link GoldenSetEvaluator}，CI 的 {@code ai-eval.yml} 触发），与检索指标共同构成 EvalGate 双门禁；
+ * 调用不落调用日志（避免「谁来评估评估者」的套娃）。评审模型走场景路由（{@code judge}）：自评有偏差
+ * （同一模型倾向给自己风格的输出高分），场景名在 {@link AiModelRouter} 单点定义，换评审模型只改 yaml。
  * <p>
- * 只保留「对照参考回答评审」一条：金标准集的 chat 用例在 {@code GoldenSetLoader} 加载期就强制要求
- * {@code reference_answer}，无参考回答的通用评分标准没有任何生产可达路径，留着等于一份改不到、
- * 也测不到的旁支评测口径。
- * <p>
- * 评审模型走场景路由（{@code judge} → 配置的评审模型 bean）：自评有偏差（同一模型倾向给自己风格的
- * 输出高分），场景名在 {@link AiModelRouter} 单点定义，换评审模型只改 yaml，代码零改动。
+ * 只保留「对照参考回答评审」一条：chat 用例在 {@code GoldenSetLoader} 加载期就强制要求
+ * {@code reference_answer}，无参考回答的通用评分标准没有生产可达路径，留着只是一份改不到、也测不到的旁支口径。
  */
 @Component
 @RequiredArgsConstructor

@@ -6,8 +6,7 @@ import java.util.regex.Pattern;
  * 不可信文本进标签块前的净化 — 剥掉标签形态序列（{@code </knowledge_hits>}、{@code <system>}），
  * 使它既闭合不掉当前块、也开不出新块。
  * <p>
- * chat 与 listing 的决策、生成装配都要过它：只剥一处，另一处就是注入口 —— 决策上下文决定调哪个
- * 工具，且含唯一的偏好写路径。
+ * chat 与 listing 的决策、生成装配都要过它：只剥一处，另一处就是注入口——决策上下文决定调哪个工具、含唯一偏好写路径。
  */
 public final class UntrustedText {
 

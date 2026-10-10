@@ -7,10 +7,7 @@ import jakarta.validation.Validator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * {@link ChatRequest} 的 Bean Validation 约束 — 服务端兜底（前端输入框未设 maxlength）。
- * 2000 字上限的成本口径见该字段的 javadoc。
- */
+/** {@link ChatRequest} 的 Bean Validation 约束 — 服务端兜底（前端输入框未设 maxlength）；2000 字上限的成本口径见该 record 的 question javadoc。 */
 @DisplayName("ChatRequest 约束 -> 测试")
 class ChatRequestTest {
 

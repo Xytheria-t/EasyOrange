@@ -29,14 +29,14 @@ import org.springframework.stereotype.Component;
 
 /**
  * 金标准集回归评估器 — 三条评估线：生成质量（LLM-as-Judge）、检索质量（hit@5 / MRR）、路由质量
- * （期望工具路径命中率），外加一条按需跑的双臂对照（RAG 有效性）。三条线读同一份用例集，各按自己的口径取子集。
+ * （期望工具路径命中率），外加按需跑的双臂对照（RAG 有效性）；三条线读同一份用例集、各按口径取子集。
  * <p>
  * 生成线对每个 chat 用例调 {@link AiChatAppService#answer}（forceFresh 跳过缓存；显式传机器主体
- * {@link ToolCallLoop#MACHINE_SUBJECT} 与空会话，偏好不落库、记忆不参与，不被历史污染）对照参考回答打分取均值；
- * 检索线逐条采样落 eo_retrieval_metric；路由线对标了 {@code expected_tools} 的用例跑一次工具循环。
+ * {@link ToolCallLoop#MACHINE_SUBJECT} 与空会话，偏好不落库、记忆不参与）对照参考回答打分取均值；
+ * 检索线逐条落 eo_retrieval_metric；路由线对标了 {@code expected_tools} 的用例跑一次工具循环。
  * <p>
- * <b>路由线只跑循环不跑生成</b>：它量的是选路，生成那步属生成分。两条线按 scope 字段分流，不用「有没有
- * gold_doc_ids」这类派生特征，那会让带 gold 的生成用例同时被算进检索分母。
+ * <b>路由线只跑循环不跑生成</b>：它量的是选路，生成那步属生成分。两条线按 scope 字段分流，不用
+ * 「有没有 gold_doc_ids」这类派生特征 —— 那会让带 gold 的生成用例同时进检索分母。
  */
 @Slf4j
 @Component
@@ -61,7 +61,7 @@ public class GoldenSetEvaluator {
                 .toList();
     }
 
-    /** 生成质量回归：全部 chat 用例 Judge 打分，返回平均分。 */
+    /** 生成质量回归：全部 chat 用例 Judge 打分取均值。 */
     public GenerationReport evaluateGeneration() {
         var cases = casesOf(GoldenSetLoader.SCOPE_CHAT);
         int judged = 0;
@@ -73,9 +73,8 @@ public class GoldenSetEvaluator {
                 scoreSum += judgement.get().score();
             }
         }
-        // 均值分母是「成功评分的用例数」而非 cases.size()：判分失败的用例不参与平均，
-        // 它们的流失由 GenerationReport 的 judgedCount 对比 sampleCount 单独暴露 ——
-        // 拿全量当分母会把「模型答不出」算成「模型答得差」，两者在门禁上要分开看。
+        // 均值分母是「成功评分数」而非 cases.size()：判分失败不进平均，其流失由 GenerationReport 的
+        // judgedCount 对比 sampleCount 暴露 —— 拿全量当分母会把「模型答不出」算成「模型答得差」。
         double avg = ratio(scoreSum, judged);
         log.info(
                 "Golden set generation eval: judged {}/{} cases, avg score = {}",
@@ -86,12 +85,10 @@ public class GoldenSetEvaluator {
     }
 
     /**
-     * RAG 有效性对照（双臂）— 同批 chat 用例跑两臂，唯一变量是检索来源：
-     * 有检索臂走现状全量工具面，无检索臂只挂 finish，模型拿不到任何检索工具的 schema。
-     * <p>
-     * 两臂同模型、同 Judge 提示词、同机器主体、同 forceFresh，在同一次调用里跑完；评分路径复用
-     * {@link #scoreCase}（对照参考回答），因此与 {@link #evaluateGeneration} 是同一套口径。
-     * <b>只报配对差分</b>（见 {@link ArmComparisonReport}），两臂绝对分不作对外质量证据。
+     * RAG 有效性对照（双臂）— 同批 chat 用例跑两臂，唯一变量是检索来源：有检索臂走全量工具面，
+     * 无检索臂只挂 finish（模型拿不到任何检索工具 schema）；同模型、同 Judge 提示词、同机器主体、
+     * 同 forceFresh，评分路径复用 {@link #scoreCase}（与 {@link #evaluateGeneration} 同口径），
+     * 只报配对差分（{@link ArmComparisonReport}），两臂绝对分不作对外质量证据。
      */
     public ArmComparisonReport evaluateRagArmComparison() {
         var cases = casesOf(GoldenSetLoader.SCOPE_CHAT);
@@ -134,10 +131,9 @@ public class GoldenSetEvaluator {
     }
 
     /**
-     * 跑一臂并评分 — {@code allowedTools} 为 null 即全量工具面（与生产路径同一条链路）。
-     * <p>
-     * 会话传 null：评估是无状态单轮，不读也不写会话记忆。挂 {@code eval-<caseId>} 当会话键会串历史 ——
-     * 无检索臂读到有检索臂刚落的那轮（历史同时进决策与生成 prompt），配对差被稀释；跨轮重跑也会读到上轮答案。
+     * 跑一臂并评分 — {@code allowedTools} 为 null 即全量工具面（与生产路径同一条链路）。会话传 null：
+     * 评估是无状态单轮，不读也不写会话记忆；挂 {@code eval-<caseId>} 当会话键会串历史 —— 无检索臂读到
+     * 有检索臂刚落的那轮（历史同时进决策与生成 prompt），配对差被稀释。
      */
     private Optional<AiJudge.Judgement> scoreCase(GoldenSetCase c, @Nullable Set<String> allowedTools) {
         try {
@@ -168,10 +164,8 @@ public class GoldenSetEvaluator {
     }
 
     /**
-     * 检索质量回归：对全部 retrieval 用例跑检索，计算 hit@5 / MRR 并逐条落库。
-     * <p>
-     * 分母是全量 {@code cases.size()}，与生成分的「成功评分数」口径相反：检索是纯本地计算，
-     * 没有「判分失败」这一态，每条用例都出得了 hit 与 rr，所以漏掉的只能是真实未命中。
+     * 检索质量回归：全部 retrieval 用例跑检索，算 hit@5 / MRR 并逐条落库。分母是全量 {@code cases.size()}，
+     * 与生成分的「成功评分数」口径相反：检索是纯本地计算、没有「判分失败」这一态，漏掉的只能是真实未命中。
      */
     public RetrievalReport evaluateRetrieval() {
         var cases = casesOf(GoldenSetLoader.SCOPE_RETRIEVAL);
@@ -201,9 +195,9 @@ public class GoldenSetEvaluator {
     }
 
     /**
-     * 跑失败 / 降级（{@code decision_failed}、{@code step_limit}）算未命中且仍计入分母 ——
-     * 决策失败正是「模型没选出该选的工具」的一种形态，把它排除掉等于把最该看的失败藏起来。
-     * 只收 chat 用例：listing 多步用例走 {@link #evaluateListingRouting()}，两条链路难度不同型、阈值分开。
+     * 跑失败 / 降级（{@code decision_failed}、{@code step_limit}）算未命中且仍计入分母 —— 决策失败正是
+     * 「没选出该选的工具」的一种形态，排除掉等于把最该看的失败藏起来。只收 chat 用例：listing 多步用例走
+     * {@link #evaluateListingRouting()}，两条链路难度不同型、阈值分开。
      */
     public RoutingReport evaluateRouting() {
         var cases = casesOf(GoldenSetLoader.SCOPE_CHAT).stream()
@@ -247,9 +241,8 @@ public class GoldenSetEvaluator {
 
     /**
      * 发布链路路由回归 — listing 用例跑发布工具循环（只跑循环不生成），判据与 chat 路由同一条。
-     * 每条用例落一行 outcome / rounds / toolPath：多步链路「实际走了几步、路径长什么样」是发布链路
-     * 多步化有没有意义的硬证据，评估报告从这些行聚合平均步数与 toolPath 分布（只打日志聚合，
-     * RoutingReport 保持三字段口径不因评估扩列）。
+     * 每条用例落一行 outcome / rounds / toolPath：多步链路「实际走几步、路径长什么样」是多步化有没有
+     * 意义的硬证据；只打日志聚合，RoutingReport 保持三字段口径不因评估扩列。
      */
     public RoutingReport evaluateListingRouting() {
         var cases = casesOf(GoldenSetLoader.SCOPE_LISTING);
@@ -295,10 +288,8 @@ public class GoldenSetEvaluator {
         return new RoutingReport(cases.size(), correct, accuracy);
     }
 
-    /**
-     * 路由命中判据：期望工具是否都出现在实际路径里（不比顺序与次数）。
-     * 只看「有没有」而不是「先不先」：模型为稳妥多查一步仍然拿到了该查的信息，判错会让指标惩罚正确行为。
-     */
+    /** 路由命中判据：期望工具都在实际路径里即可，不比顺序与次数 —— 模型为稳妥多查一步仍然拿到了该查的
+     * 信息，按顺序判错会让指标惩罚正确行为。 */
     static boolean routeMatches(List<String> expectedTools, List<String> actualToolPath) {
         return expectedTools.stream().allMatch(actualToolPath::contains);
     }

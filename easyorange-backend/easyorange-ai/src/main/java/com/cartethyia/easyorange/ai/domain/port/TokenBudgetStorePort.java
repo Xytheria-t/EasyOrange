@@ -4,17 +4,14 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Token 预算存储接口 — 按场景隔离的每日 token 用量，读侧检查 + 原子预留两段协议。
- * <p>
- * 预留（{@link #tryReserve}）是并发正确性的收口：读用量、判限额、记占用必须在一次原子操作里完成
- * （Redis 单脚本 Lua / 内存 CAS），否则 N 个并发请求各自拿着同一份旧用量通过检查，日限被突破
- * 「并发数 × maxPerCall」。真实用量仍由记账方（AiCallRecorder）按供应商回报另行累加。
+ * Token 预算存储接口 — 按场景隔离每日用量，读侧检查 + 原子预留两段协议。预留（{@link #tryReserve}）
+ * 是并发正确性的收口：读用量、判限额、记占用必须一次原子完成（Redis 单脚本 Lua / 内存 CAS），否则
+ * N 个并发请求各拿同一份旧用量通过检查，日限被突破「并发数 × maxPerCall」。真实用量由记账方
+ * （AiCallRecorder）按供应商回报另行累加。
  */
 public interface TokenBudgetStorePort {
 
-    /**
-     * 用量快照 — {@code total()} 是预算判定口径：真实记账 + 在途预留（并发请求的估算占用），不只是已记账值。
-     */
+    /** 用量快照 — {@code total()} 是预算判定口径：真实记账 + 在途预留（并发请求的估算占用），不只是已记账值。 */
     record TokenUsage(int inputTokens, int outputTokens, int reservedTokens, long timestamp) {
         public int total() {
             return inputTokens + outputTokens + reservedTokens;

@@ -8,11 +8,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * AI 输出反馈入库（反馈飞轮）— 观测类数据，失败只告警不阻塞主链路。落库见 {@link AiFeedbackPort}，
- * 导出逻辑见 {@link GoldenSetExportPort}。
- * <p>
- * 用户身份在这一层解析：入参是前端回传的回答与问题（不可信），登录态才是事实来源，
- * 混在 Controller 传进来只会多一条能被填错的通道。
+ * AI 输出反馈入库（反馈飞轮）— 观测类数据，失败只告警不阻塞主链路；落库见 {@link AiFeedbackPort}、
+ * 导出见 {@link GoldenSetExportPort}。用户身份在这一层解析：入参（回答与问题）是前端回传的不可信数据，
+ * 登录态才是事实来源；混在 Controller 传进来只会多一条能被填错的通道。
  */
 @Component
 @RequiredArgsConstructor
@@ -38,9 +36,8 @@ public class AiFeedbackAppService {
 
     /**
      * 导出未审核反馈为金标准用例片段（管理端）— 导出即标记 exported=1，见 {@link GoldenSetExportPort}。
-     * <p>
-     * <b>整批同事务</b>：导出中途失败时已标记的行必须一起回滚 —— 否则那几条反馈「已导出」却从未到达
-     * 调用方，下次导出不再出现，等于静默从金标准集里丢反馈。
+     * <b>整批同事务</b>：中途失败时已标记的行必须一起回滚 —— 否则那几条反馈「已导出」却从未到达调用方，
+     * 下次导出不再出现，等于静默从金标准集里丢反馈。
      */
     @Transactional(rollbackFor = Exception.class)
     public String exportGoldenSet(int limit) {

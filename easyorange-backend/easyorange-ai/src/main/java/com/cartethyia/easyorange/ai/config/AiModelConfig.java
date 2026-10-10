@@ -21,13 +21,12 @@ import org.springframework.context.annotation.Primary;
 
 /**
  * Spring AI 模型装配 — 五个模型 bean 全手动创建（决策 / 文本 / 视觉 / 评审 / Embedding）：
- * 文本与视觉是两家 OpenAI 兼容供应商（部署实测用阿里云百炼，两者同端点同 key），base-url 与 api-key 可各自独立，
- * 单一 {@code spring.ai.openai.*} 自动配置表达不了，统一经 {@link OpenAiSetup#setupSyncClient} 手动
- * 构造 {@link OpenAIClient}；定义 bean 后自动配置的 {@code @ConditionalOnMissingBean} 自动退让，
- * 不会产生重复 bean。重试与并发隔离由 openai-java 客户端内置（{@code maxRetries} / 连接池）承担。
- * <p>
- * key 缺失时装配 {@link UnconfiguredChatModel} / {@link UnconfiguredEmbeddingModel} 占位 bean
- * （调用即抛「AI 模型未配置」，服务层现有 try/catch 降级）——应用无需任何 AI key 即可启动。
+ * 文本与视觉是两家 OpenAI 兼容供应商（部署实测用阿里云百炼，同端点同 key），base-url / api-key 可各自独立，
+ * 单一 {@code spring.ai.openai.*} 自动配置表达不了，统一经 {@link OpenAiSetup#setupSyncClient} 手动构造
+ * {@link OpenAIClient}；定义 bean 后自动配置的 {@code @ConditionalOnMissingBean} 自动退让，不会重复装配。
+ * 重试与并发隔离由 openai-java 客户端内置（{@code maxRetries} / 连接池）承担；key 缺失时装配
+ * {@link UnconfiguredChatModel} / {@link UnconfiguredEmbeddingModel} 占位 bean，调用即抛（服务层
+ * try/catch 降级）——应用无需任何 AI key 即可启动。
  */
 @Configuration
 public class AiModelConfig {
@@ -36,9 +35,8 @@ public class AiModelConfig {
 
     /**
      * 文本模型，业务服务默认注入的 {@code ChatModel}。
-     * options 必须同时带 baseUrl / apiKey：Builder 需要同步与异步两个客户端，异步的由 options 里的
-     * 连接参数自行装配，缺凭据会抛 IllegalStateException 导致 key 非空时上下文启动失败
-     * （key 为空走占位 bean 分支，恰好掩盖该问题）。
+     * options 必须同时带 baseUrl / apiKey：Builder 的异步客户端由 options 里的连接参数自行装配，
+     * 缺凭据会抛 IllegalStateException（key 非空时启动失败；key 为空走占位分支，恰好掩盖该问题）。
      */
     @Bean
     @Primary
@@ -52,11 +50,10 @@ public class AiModelConfig {
 
     /**
      * 工具决策模型 — 工具调用循环每轮「选哪个工具」，由 {@code chat_tool} 场景路由到这里。
-     * 与生成模型分开配的理由：决策的产物只是几十字符的工具参数 JSON，纯路由任务，而推理模型在这种
-     * 短决策上仍会产出长度不定的思考内容（实测同一决策在几十到上千字符间波动，直接决定单轮延迟，
-     * 同一问题 3.8s ~ 13.5s）；循环每轮串行一次决策，N 轮就是 N 倍开销 —— 这里配快模型，强模型留给
-     * 最终生成。{@code router-model} 留空时与生成同模型，不改变既有行为。
-     * 非 {@code @Primary}：业务服务默认注入的仍是 {@link #chatModel}。
+     * 分槽理由：决策产物只是几十字符的工具参数 JSON，而推理模型在短决策上思考长度不定（实测同一决策
+     * 几十~上千字符，直接决定单轮延迟：3.8s ~ 13.5s），循环 N 轮串行即 N 倍开销——快模型给决策，
+     * 强模型留给最终生成。{@code router-model} 留空时与生成同模型；非 {@code @Primary}，默认注入仍是
+     * {@link #chatModel}。
      */
     @Bean
     public ChatModel decisionChatModel(AiProperties props, ObservationRegistry obs, MeterRegistry meters) {
@@ -117,10 +114,8 @@ public class AiModelConfig {
     }
 
     /**
-     * 文本类模型的统一装配 —— 四个槽位只在「凭据 / 模型名 / 是否开流式用量」上不同。
-     * options 必须同时带 baseUrl / apiKey：Builder 需要同步与异步两个客户端，异步的由 options 里的
-     * 连接参数自行装配，缺凭据会抛 IllegalStateException 导致 key 非空时上下文启动失败
-     * （key 为空走占位 bean 分支，恰好掩盖该问题）。
+     * 文本类模型的统一装配 —— 四个槽位只在「凭据 / 模型名 / 是否开流式用量」上不同；
+     * options 必须同时带 baseUrl / apiKey——原因与后果见 {@link #chatModel}。
      */
     private static ChatModel chatModel(
             String baseUrl,

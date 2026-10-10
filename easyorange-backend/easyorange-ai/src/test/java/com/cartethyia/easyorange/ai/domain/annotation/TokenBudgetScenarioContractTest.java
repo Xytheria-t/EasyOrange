@@ -18,9 +18,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  * {@code @TokenBudget(scenario = ...)} 与 {@link AiCallScope#budgetScenario()} 的契约测试。
  * <p>
- * 注解的 {@code scenario} 只能写字面量，编译期发现不了它与枚举脱节；而脱节的后果是静默的 ——
- * 切面按注解里的场景查用量、记账按枚举场景写入，两边各记各的，预算永远显示「没花超」，
- * 到账单上才发现。所以三处注解逐个反射钉死：场景名改了、忘了同步枚举或漏了一处新注解，这里直接红。
+ * 注解 {@code scenario} 只能写字面量，与枚举脱节编译期发现不了、后果还静默：切面按注解场景查用量、
+ * 记账按枚举场景写入，预算永远显示「没花超」。所以带注解的类必须逐个反射钉死 —— 场景名改了或
+ * 漏登记新注解，这里直接红。
  */
 @DisplayName("@TokenBudget 场景契约（注解字面量 == AiCallScope 场景键）-> 测试")
 class TokenBudgetScenarioContractTest {
@@ -53,8 +53,8 @@ class TokenBudgetScenarioContractTest {
     }
 
     /**
-     * 清单里的类必须真的挂着注解 —— 上面那条只校验「存在的注解写对了没有」，注解被摘掉时它只会
-     * 少跑几个参数化用例、不会红，预算闸门就这样静默消失。这条把「登记了却没注解」变成失败。
+     * 登记了却没挂注解要让测试变红 —— 上条只校验「存在的注解写对了没有」，摘掉注解它只会少跑几个
+     * 参数化用例，预算闸门静默消失。
      */
     @Test
     @DisplayName("登记进清单的类必须有方法带 @TokenBudget（摘掉注解不能让用例静静变少）")

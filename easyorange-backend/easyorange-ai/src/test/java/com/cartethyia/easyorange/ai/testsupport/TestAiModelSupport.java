@@ -11,13 +11,10 @@ import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * AiModelSupport 测试夹具 — 依赖装配收在一处。
+ * AiModelSupport 测试夹具 — 依赖装配收在一处：构造器每加一个横切依赖，只改这里，不用改散在各测试的
+ * {@code new}。
  * <p>
- * 记账已抽成 {@link AiCallRecorder}，此处只负责把「日志端口 + 预算存储 + 配置」拼成 recorder 再塞进
- * support：配置要同时喂给两边（recorder 记账判场景上限，support 下发 max_tokens），所以出现两次
- * 是真实的依赖关系，不是漏改。
- * <p>
- * 构造器每加一个横切依赖，散在各测试里的 {@code new} 就要跟着改；集中后只改这里。
+ * 配置在 recorder（记账判场景上限）与 support（下发 max_tokens）各出现一次，是真实依赖关系，不是漏改。
  * 需要断言记账行为的用例走三参重载，自己传 {@link InMemoryTokenBudgetStore}。
  */
 public final class TestAiModelSupport {

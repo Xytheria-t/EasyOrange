@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import java.util.List;
 
 /**
- * 知识库命中视图组装 — 检索侧 domain 模型 → 对外 VO，列表整体映射。
+ * 知识库命中视图组装 — 检索侧 domain 模型 → 对外 VO。
  */
 public final class KnowledgeHitAssembler {
 

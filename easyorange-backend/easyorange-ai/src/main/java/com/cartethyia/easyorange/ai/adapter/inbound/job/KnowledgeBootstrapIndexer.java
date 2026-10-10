@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 
 /**
  * 知识库启动补索引 — 上次摄入时 ES 不可用（PENDING）或写入/embed 失败（FAILED）的文档，启动时重试
- * （保持文档 ID 稳定）。
+ * （文档 ID 保持稳定）。
  * <p>
- * best-effort 语义：种子文档（R__seed_knowledge_docs.sql）首次启动即被摄入进 ES，
- * 不需要人工点管理端「重新索引」；索引持续不可用则保持 PENDING 下次再试。
+ * best-effort：种子文档（R__seed_knowledge_docs.sql）首次启动即被摄入，无需人工点管理端「重新索引」；
+ * 索引持续不可用则保持 PENDING 下次再试。
  */
 @Slf4j
 @Component

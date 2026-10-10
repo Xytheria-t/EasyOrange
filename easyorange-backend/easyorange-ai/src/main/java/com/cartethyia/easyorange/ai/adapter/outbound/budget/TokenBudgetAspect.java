@@ -13,10 +13,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Token 预算切面 — 拦截标注 {@link TokenBudget} 的方法，调用前原子预留 {@code maxTokensPerCall}：
- * check-and-reserve 在存储侧单次完成（读-判-记之间无窗口），预留失败抛 {@link TokenBudgetExceededException}
- * 目标方法不执行；请求结束（含异常）释放预留，真实用量由 {@code AiCallRecorder} 按供应商回报另记 —— 服务方法
- * 只返回业务 DTO，切面拿不到真实 token 数，按上限记账会与真实消耗差一个量级。
+ * Token 预算切面 — 拦截标注 {@link TokenBudget} 的方法，调用前原子预留 {@code maxTokensPerCall}：预留在存储侧
+ * 单次完成（读-判-记无窗口），失败抛 {@link TokenBudgetExceededException} 且目标方法不执行；请求结束（含异常）
+ * 释放预留，真实用量由 {@code AiCallRecorder} 按供应商回报另记 —— 服务方法只返回业务 DTO，切面拿不到真实
+ * token 数，按上限记账会与真实消耗差一个量级。
  * <p>
  * <b>配置优先</b>：{@code easyorange.ai.budget.scenarios.<scenario>} 覆盖注解默认值 —— 注解给编译期可见的兜底
  * 契约，运维改限额不发版。
@@ -52,7 +52,6 @@ public class TokenBudgetAspect {
         }
     }
 
-    /** 解析场景预算：配置优先，注解兜底 —— 注解是编译期契约，配置是运行期调优旋钮。 */
     private ResolvedBudget resolveBudget(String scenario, TokenBudget annotation) {
         var scenarioConfig = aiProperties.budget().resolve(scenario);
         if (scenarioConfig != null) {

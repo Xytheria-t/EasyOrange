@@ -15,18 +15,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * stale 缓存装配 — 容器里同时存在两个 Caffeine 缓存（{@code aiStaleCache} 与 framework 的
- * {@code imageProcessCache}），两者靠<b>值类型</b>区分，注入点都不写 {@code @Qualifier}。
- * <p>
- * 这里把「泛型能唯一解析」断言化：探针的注入点只写类型，一旦有人把任一缓存的值类型改回
- * {@code Object}（两个 bean 泛型撞车），容器 refresh 直接抛
- * {@code NoUniqueBeanDefinitionException}，或该注入点解析不到 bean —— 这个测试先红，
- * 否则要等应用启动才发现。
+ * stale 缓存装配 — 容器里两个 Caffeine 缓存（{@code aiStaleCache} 与 framework 的 {@code imageProcessCache}）
+ * 靠值类型区分，注入点都不写 {@code @Qualifier}。这里把「泛型能唯一解析」断言化：探针注入点只写类型，
+ * 一旦谁把值类型改回 {@code Object}（两个 bean 泛型撞车），容器 refresh 抛
+ * {@code NoUniqueBeanDefinitionException} —— 本测试先红，不必等应用启动才发现。
  */
 @DisplayName("Caffeine 缓存装配（stale 与 imageProcessCache 的泛型区分）")
 class AiStaleCacheWiringTest {
 
-    /** 探针 — 只声明注入类型，用构造注入逼容器解析。 */
+    /** 探针 — 只声明注入类型，逼容器按泛型解析。 */
     @Configuration(proxyBeanMethods = false)
     static class ProbeConfig {
 

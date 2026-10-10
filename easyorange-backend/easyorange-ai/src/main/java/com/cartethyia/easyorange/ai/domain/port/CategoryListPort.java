@@ -5,10 +5,8 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 公开类目查询端口 — 类目浏览工具的执行通道：逐层列出平台资产类目。
- * <p>
- * 端口由 ai 定义、实现在 easyorange-application（经 product 模块类目查询，带缓存），
- * 方向与 {@link AssetDetailPort} 一致：只读消费 product 的数据，不碰其领域模型。
+ * 公开类目查询端口 — 类目浏览工具的执行通道；端口由 ai 定义、实现在 easyorange-application
+ * （经 product 模块类目查询，带缓存），方向同 {@link AssetDetailPort}：只读消费、不碰其领域模型。
  */
 public interface CategoryListPort {
 

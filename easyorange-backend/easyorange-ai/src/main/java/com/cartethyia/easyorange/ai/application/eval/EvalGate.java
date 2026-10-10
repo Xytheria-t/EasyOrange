@@ -2,12 +2,11 @@ package com.cartethyia.easyorange.ai.application.eval;
 
 /**
  * 评估门禁 — 金标准集回归分数与基线对比，低于「基线 - 容忍度」即失败（卡 build），与 JaCoCo/PIT
- * 门禁同一思路：质量是可量化、可回归、可卡 CI 的数值。
+ * 同一思路：质量是可量化、可回归、可卡 CI 的数值。
  * <p>
- * 门禁检查两件事：<b>覆盖率</b>（有多少用例真的跑成功）与<b>分数</b>（成功的那些答得怎么样）。
- * 只卡分数会漏掉一整类回归：模型或评测链路大面积失败时均分只统计幸存用例，极端情况下 1 条打 5 分
- * 就能让门禁变绿 —— 覆盖率先挡住这种情况。本类只做判定不含阈值：一律来自 {@code eval/baselines.yaml}
- * （见 {@link EvalBaselines}），改阈值不用改这里。
+ * 门禁查两件事：<b>覆盖率</b>（多少用例真的跑成功）与<b>分数</b>（成功的那些答得怎么样）。只卡分数会漏掉
+ * 一整类回归 —— 模型或评测链路大面积失败时均分只统计幸存用例，1 条打 5 分就能让门禁变绿，覆盖率先挡住。
+ * 阈值一律来自 {@code eval/baselines.yaml}（见 {@link EvalBaselines}），本类只做判定。
  */
 public final class EvalGate {
 
@@ -21,7 +20,7 @@ public final class EvalGate {
         return new GateResult(delta >= -tolerance, scope, actual, baseline, delta);
     }
 
-    /** 覆盖率门禁：判定「跑成功并计入均分」的用例占比是否达标。 */
+    /** 覆盖率门禁：judged 只计「跑成功并计入均分」的用例。 */
     public static GateResult checkCoverage(String scope, int judged, int total, double minRatio) {
         double ratio = total <= 0 ? 0 : (double) judged / total;
         return new GateResult(ratio >= minRatio, scope + "-coverage", ratio, minRatio, ratio - minRatio);

@@ -12,10 +12,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * 内存版 Token 预算存储 — 开发模式使用，重启后清空。
  * <p>
- * 预留与记账都走 {@code AtomicReference} 的 CAS 重试循环，同 key 并发不丢增量 —— 但只在单进程内成立。
+ * 预留与记账走 {@code AtomicReference} 的 CAS 重试循环，同 key 并发不丢增量 —— 只在单进程内成立：
  * <b>多副本部署必须切 {@code easyorange.ai.budget.store=redis}</b>，否则 N 个实例各记各的，日限被放大 N 倍。
- * key 为 {@code scenario + ":" + LocalDate.now()} 实现每日隔离，不做 TTL 清理（YAGNI，重启即清空）；
- * 通过 {@link com.cartethyia.easyorange.ai.config.AiConfig#tokenBudgetStore()} 注册为 Bean。
+ * key 为 {@code scenario + ":" + LocalDate.now()} 实现每日隔离，不做 TTL 清理（重启即清空）。
  */
 @Slf4j
 public class InMemoryTokenBudgetStore implements TokenBudgetStorePort {

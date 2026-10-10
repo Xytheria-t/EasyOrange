@@ -106,8 +106,8 @@ class AiListingControllerTest {
             SseEmitter emitter = controller.stream(List.of("https://example.com/img.jpg"));
 
             assertThat(emitter).isNotNull();
-            // done / error 事件发送在无容器 SseEmitter 上会静默收尾（send 抛 IllegalStateException 被适配层吞掉），
-            // 这里只验证身份与 handler 的传递；事件协议由 SSE 适配层的既有测试覆盖
+            // 无容器 SseEmitter 上发 done / error 会静默收尾（IllegalStateException 被适配层吞掉），
+            // 这里只验证身份与 handler 传递；事件协议由 SSE 适配层测试覆盖
             verify(autoListingService).analyzeImages(anyList(), eq("user-1"), any(ChatStreamHandler.class));
         }
 

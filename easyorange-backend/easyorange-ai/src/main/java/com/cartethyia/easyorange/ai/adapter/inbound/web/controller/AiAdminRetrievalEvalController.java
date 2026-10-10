@@ -17,14 +17,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 管理端检索质量回看 — 读 {@code eo_retrieval_metric} 的历史批次与用例明细，兑现 ADR-0012
- * 「参数调整可基于历史数据回看」：调分块 / topK / RRF 的 k 之后在这里比对，而不是靠手感。
+ * 管理端检索质量回看 — 读 {@code eo_retrieval_metric} 的历史批次与用例明细，兑现 ADR-0012「参数调整可基于历史数据回看」。
+ * /api/admin/** 由 SecurityConfig 统一限 ADMIN 角色，不额外标 {@code @PreAuthorize}。
  * <p>
- * 路径落在 {@code /api/admin/**} 下，由安全配置统一限 ADMIN（见 SecurityConfig 管理后台规则），
- * 不额外标 {@code @PreAuthorize}。
- * <p>
- * 口径提示（管理端页面同源展示）：hit@5 与 MRR 只统计<b>融合腿（生产路径）</b>，单腿属消融日志不落表；
- * 两条评测线（retr-* 真实 embedding / asset-* 合成向量）语料空间不同，必须分列比较。
+ * 口径（管理端页面同源展示）：hit@5 与 MRR 只统计<b>融合腿（生产路径）</b>，单腿属消融日志不落表；两条评测线
+ * （retr-* 真实 embedding / asset-* 合成向量）语料空间不同，必须分列比较。
  */
 @Tag(name = "管理后台-AI 检索评测", description = "检索质量回看（评测批次趋势 + 用例级明细）")
 @RestController

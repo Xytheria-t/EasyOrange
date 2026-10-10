@@ -11,12 +11,10 @@ import java.util.stream.Collectors;
 
 /**
  * 资产逐维比对 — compare_assets 工具的观察物：对 2~4 件候选做确定性比对，一次替代最多 4 次 product_detail。
- * <p>
- * 每维统一准入：<b>至少两件可判定，且判定值不全同</b>才进结果，否则该维静默缺席。缺席只表示「这一维给不出结论」，
- * 不表示候选相同——面议件不能当最低价胜出，成色自由文本读不出档位就不猜，状态码表外的取值按未知处理。
- * <p>
+ * 每维统一准入：<b>至少两件可判定，且判定值不全同</b>才进结果，否则该维静默缺席——缺席只表示「给不出结论」，
+ * 不表示候选相同（面议件不能当最低价胜出、自由文本成色不猜档位、码表外状态按未知）。
  * 码表是 product 模块的语言（{@code ConditionLevel} 的 desc / {@code ProductStatus} 的 code）；domain 层
- * 不能跨模块引用（ArchUnit Rule 1 白名单只放 JDK 与领域内部包），故按字面同步，改那边码表要同步改这里的常量。
+ * 不能跨模块引用（ArchUnit Rule 1 白名单只放 JDK 与领域内部包），故按字面同步——改那边码表要同步改这里的常量。
  */
 public final class AssetComparison {
 
@@ -61,7 +59,7 @@ public final class AssetComparison {
         return Optional.of(new AssetComparison(List.copyOf(dimensions), observation(candidates, dimensions)));
     }
 
-    /** 逐维差异（价格 / 成色 / 地区 / 在售状态），每维标出胜出方；无差异的维度不进结果。 */
+    /** 逐维差异（价格 / 成色 / 地区 / 在售状态），每维标出胜出方。 */
     public List<Dimension> dimensions() {
         return dimensions;
     }
@@ -74,10 +72,7 @@ public final class AssetComparison {
     /** 单维结论：维度名、胜出资产 ID（无胜出方时为 null）、一句话依据。 */
     public record Dimension(String name, String winnerProductId, String note) {}
 
-    /**
-     * 价格：胜出方 = 最低价。非正价是脏数据，静默剔除；
-     * 只有一件有有效价格（其余面议或价格缺失）时也不判定——单件不构成「更便宜」。
-     */
+    /** 胜出方 = 最低价；非正价是脏数据静默剔除，只有一件有效价时不判定——单件不构成「更便宜」。 */
     private static Optional<Dimension> priceDimension(List<AssetDetail> candidates) {
         List<AssetDetail> priced = candidates.stream()
                 .filter(candidate ->
@@ -103,7 +98,7 @@ public final class AssetComparison {
         return Optional.of(new Dimension(DIMENSION_PRICE, winner, note + negotiableSuffix(candidates)));
     }
 
-    /** 成色：胜出方 = 档位最新的一件；读不出档位的候选退出该维比较，只在 note 里点明。 */
+    /** 胜出方 = 档位最新的一件；读不出档位的候选退出该维比较，只在 note 里点明。 */
     private static Optional<Dimension> conditionDimension(List<AssetDetail> candidates) {
         List<AssetDetail> graded = new ArrayList<>();
         List<AssetDetail> unjudged = new ArrayList<>();
@@ -135,7 +130,7 @@ public final class AssetComparison {
                 new Dimension(DIMENSION_CONDITION, winner, note + unjudgedSuffix(unjudged, DIMENSION_CONDITION)));
     }
 
-    /** 地区：没有客观优劣，胜出方恒为 null，只在候选分散在不同地区时列出事实。 */
+    /** 没有客观优劣，胜出方恒为 null，只在候选分散在不同地区时列出事实。 */
     private static Optional<Dimension> locationDimension(List<AssetDetail> candidates) {
         List<AssetDetail> located = new ArrayList<>();
         List<AssetDetail> unjudged = new ArrayList<>();
@@ -161,8 +156,8 @@ public final class AssetComparison {
     }
 
     /**
-     * 在售状态：决定还推不推荐得出口，所以非在售必须显式点出。胜出方 = 唯一仍在售的那件
-     * （只在其余候选都被判为非在售时才有意义）；码表外的取值按未知处理，不拿未知去下「非在售」的结论。
+     * 非在售必须显式点出（决定还推不推荐得出口）；胜出方 = 唯一仍在售的那件（其余都判非在售才有意义），
+     * 码表外取值按未知、不下「非在售」结论。
      */
     private static Optional<Dimension> statusDimension(List<AssetDetail> candidates) {
         List<AssetDetail> onSale = new ArrayList<>();
@@ -208,7 +203,7 @@ public final class AssetComparison {
         return candidates.stream().map(AssetDetail::productId).collect(Collectors.joining("、"));
     }
 
-    /** 成色档位，值越小越新；0 = 自由文本读不出档位（此时该件退出成色比较，不硬编档位）。 */
+    /** 档位，值越小越新；0 = 读不出（该件退出成色比较，不硬编档位）。 */
     private static int gradeOf(String conditionDesc) {
         String text = normalized(conditionDesc);
         if (text == null) {
@@ -223,7 +218,7 @@ public final class AssetComparison {
         };
     }
 
-    /** 自由文本归一化：null / 空白一律视为「没有值」。返回值可能为 null，进码表查询前必须判空。 */
+    /** null / 空白归一为「没有值」；返回值可能为 null，进码表查询前必须判空。 */
     private static String normalized(String value) {
         return value == null || value.isBlank() ? null : value.strip();
     }

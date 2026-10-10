@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 知识库文档管理（管理端）— 新增即摄入（分块 → embed → ES），列表 / 删除 / 补索引。
+ * 知识库文档管理（管理端）— 新增即摄入（分块 → embed → ES）。
  * /api/admin/** 由 SecurityConfig 统一限 ADMIN 角色。
  */
 @Tag(name = "管理后台-AI 知识库", description = "RAG 知识库文档管理（摄入 / 列表 / 删除 / 补索引）")
@@ -31,7 +31,6 @@ public class AiAdminKnowledgeController {
 
     private final KnowledgeIngestionAppService ingestionService;
 
-    /** 新增文档并摄入：解析 → 分块 → embed → ES 索引（best-effort）。 */
     @PostMapping
     @Operation(summary = "新建知识文档并摄入，embed / ES 写入失败整篇标 FAILED 待补索引")
     public Result<String> create(@Valid @RequestBody CreateKnowledgeDocRequest request) {
@@ -53,7 +52,6 @@ public class AiAdminKnowledgeController {
         return Result.success();
     }
 
-    /** 补索引：把上次摄入未完成（PENDING/FAILED）的文档全部重试一遍。 */
     @PostMapping("/reindex")
     @Operation(summary = "重试全部未完成（PENDING / FAILED）文档，返回重试篇数")
     public Result<Integer> reindex() {

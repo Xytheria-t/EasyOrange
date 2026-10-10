@@ -74,7 +74,7 @@ class GoldenSetLoaderTest {
                 .flatMap(c -> c.goldDocIds().stream())
                 .collect(Collectors.toSet());
 
-        // 15 条检索用例的目标文档集合应有一定宽度，否则指标只在一个文档上打转
+        // 目标文档集合应有一定宽度，否则指标只在一个文档上打转
         assertThat(targets).hasSizeGreaterThanOrEqualTo(5);
     }
 
@@ -173,7 +173,7 @@ class GoldenSetLoaderTest {
                 ListingTools.TOOL_PRODUCT_SEARCH,
                 ListingTools.TOOL_MARKET_PRICE_STATS,
                 ListingTools.TOOL_FINISH);
-        // 多步用例是本次评测集补齐的重点：全路径样本不足 8 条时，路由门禁仍测不到轮间依赖
+        // 全路径样本不足 8 条时，路由门禁测不到轮间依赖
         assertThat(listingCases)
                 .filteredOn(c -> c.expectedTools().equals(fullPath))
                 .hasSizeGreaterThanOrEqualTo(8);

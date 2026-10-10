@@ -10,9 +10,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 
-/**
- * AI 未配置占位模型单元测试 — 调用即抛明确异常，由服务层 catch 降级为 null（fail-open）。
- */
+/** AI 未配置占位模型单元测试 — 调用即抛明确异常，由服务层 catch 降级为 null（fail-open）。 */
 @DisplayName("AI 未配置占位模型")
 class UnconfiguredAiModelTest {
 

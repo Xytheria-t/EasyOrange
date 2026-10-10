@@ -18,10 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.embedding.EmbeddingModel;
 
-/**
- * 重点在「永不抛异常」这条契约：本类挂在商品检索主链路上，调用方不做兜底，
- * 它一抛就是把整个搜索接口打成 500。
- */
+/** 重点在「永不抛异常」这条契约：本类挂在商品检索主链路上，调用方不做兜底，一抛就是把整个搜索接口打成 500。 */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("QueryEmbeddingAdapter 测试")
 class QueryEmbeddingAdapterTest {

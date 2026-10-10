@@ -5,13 +5,11 @@ import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
 import java.util.Optional;
 
 /**
- * 测试用 PromptRegistryPort 桩 — 默认返回以模板名拼成的 stub 正文，避免依赖 classpath YAML 文件。
+ * 测试用 PromptRegistryPort 桩 — 返回以模板名拼成的 stub 正文（不依赖 classpath YAML）；正文带模板名，
+ * 是为了让多个 LLM 调用打同一 mock 时能用 {@code withSystemContaining("auto_listing")} 区分来源；
+ * 模板内容本身由 {@code PromptContentTest} 覆盖。
  * <p>
- * 正文里带上模板名，是为了让「多个 LLM 调用打同一个 mock」的测试能用
- * {@code withSystemContaining("auto_listing")} 区分调用来自哪个模板；
- * 模板内容本身由 {@code PromptContentTest} 单独覆盖。
- * <p>
- * 验「模板缺失」路径用 {@link #empty()}，不要在每个测试里再手写一遍匿名实现。
+ * 验「模板缺失」路径用 {@link #empty()}，别在每个测试里手写匿名实现。
  */
 public final class TestPromptRegistry implements PromptRegistryPort {
 

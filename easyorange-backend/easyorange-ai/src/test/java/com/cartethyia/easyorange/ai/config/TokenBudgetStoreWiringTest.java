@@ -15,10 +15,9 @@ import org.springframework.core.env.MapPropertySource;
 
 /**
  * 预算存储装配 — 默认内存版；{@code easyorange.ai.budget.store=redis} 时切 Redis 版。
- * <p>
- * 这里把「Redis Bean 必须声明在内存版之前」这条顺序要求断言化：顺序反了
- * {@code @ConditionalOnMissingBean} 会两个都注册，容器里出现两个 {@link TokenBudgetStorePort}（注入点报
- * NoUniqueBeanDefinitionException），这个测试先红。
+ * 把 {@link AiConfig} 的「Redis bean 必须声明在内存版之前」顺序要求断言化：顺序反了
+ * {@code @ConditionalOnMissingBean} 会两个都注册，注入点报 NoUniqueBeanDefinitionException——
+ * 本测试先红，不必等应用启动才发现。
  */
 @DisplayName("TokenBudgetStorePort 装配（memory / redis 切换）")
 class TokenBudgetStoreWiringTest {

@@ -8,9 +8,8 @@ import java.util.List;
 
 /**
  * 检索指标回看端口 — 读 {@code eo_retrieval_metric}（写侧见 {@link RetrievalMetricPort}），兑现
- * ADR-0012「参数调整可基于历史数据回看」：调分块 / topK / RRF 的 k 之后，能拿历史批次对比而不是靠手感。
- * <p>
- * 批次口径在这里声明（分母 = 该 run 的用例数、按 case_id 前缀分评测线），实现侧只负责把它翻译成聚合 SQL。
+ * ADR-0012「参数调整可基于历史数据回看」：调分块 / topK / RRF 的 k 后拿历史批次对比，不靠手感；
+ * 批次口径在此声明（分母 = 该 run 用例数、按 case_id 前缀分评测线），实现侧只翻译成聚合 SQL。
  */
 public interface RetrievalMetricQueryPort {
 

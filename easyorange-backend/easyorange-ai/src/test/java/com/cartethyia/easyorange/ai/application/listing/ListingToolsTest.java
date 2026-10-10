@@ -19,9 +19,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * 发布链路工具面测试 — 检索观察 / 冗余收敛与买家侧同一份机制（{@code RetrievalObservations}），这里验
- * listing 侧的接线与工具名契约：与 ChatTools 的四个同名工具必须逐字相等，漂移会让 golden-set 的
- * expected_tools、前端 STEP_LABELS 两处一起失锚。
+ * 发布链路工具面测试 — 检索观察 / 冗余收敛复用买家侧同一份机制（{@code RetrievalObservations}），这里验
+ * listing 侧接线与工具名契约：四个共享工具名须与 ChatTools 逐字相等，漂移会让 golden-set 的 expected_tools
+ * 与前端 STEP_LABELS 失锚。
  */
 @DisplayName("ListingTools (发布链路工具面) -> 测试")
 class ListingToolsTest {

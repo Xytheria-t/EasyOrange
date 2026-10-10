@@ -9,17 +9,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * 跨模块码表同步守卫 —— {@link AssetComparison} 按字面硬编了 product 模块的两个码表
- * （domain 层不能跨模块引用，ArchUnit Rule 1 白名单只放 JDK 与领域内部包），只写注释挡不住漂移：
- * 那边改了 {@code ConditionLevel.desc} 或加了状态码，这边的成色 / 状态维会<b>静默缺席</b>——不报错、
- * 不影响对话，只是模型少一个决策依据，日志里也看不出来。
- * <p>
- * 数据路径已核实：{@code AssetDetail.conditionDesc ← ConditionLevel.getDesc()}、
- * {@code AssetDetail.status ← ProductStatus.getCode()}（{@code ProductReadModelAssembler}），
- * 所以断言这两个枚举就是断言真实数据。
- * <p>
- * 断言行为而非私有常量：把枚举值当真值走一遍比对，读到预期结论才算同步；绕过私有可见性也避免
- * 「测试复制一份常量、两边一起错」。
+ * 跨模块码表同步守卫 —— {@link AssetComparison} 按字面硬编了 product 模块的两个码表（domain 层不能跨模块
+ * 引用，ArchUnit Rule 1 白名单只放 JDK 与领域内部包）；只写注释挡不住漂移：那边改了 {@code ConditionLevel.desc}
+ * 或加了状态码，这边的成色 / 状态维会<b>静默缺席</b>——不报错、不影响对话、日志里也看不出来，只是模型少一个决策依据。
+ * 数据路径是 {@code AssetDetail.conditionDesc ← ConditionLevel.getDesc()}、{@code AssetDetail.status ←
+ * ProductStatus.getCode()}（{@code ProductReadModelAssembler}），故断言这两个枚举即断言真实数据。
+ * 断言行为而非私有常量：把枚举值当真值走一遍比对，也避免「测试复制一份常量、两边一起错」。
  */
 @DisplayName("AssetComparison 与 product 模块码表的同步守卫 -> 测试")
 class AssetComparisonCodeTableSyncTest {

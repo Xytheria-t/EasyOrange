@@ -22,14 +22,12 @@ import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * 基于 YAML 文件的 Prompt 模板注册中心。
- * <p>
- * 模板全部外置到 {@code resources/prompts/*.yml}，改 Prompt 不必改 Java、不必发版；同名多版本按语义化
- * 版本号取最新，启动日志逐条打出「名称 + 版本列表」，加载错了肉眼可辨。
+ * 基于 YAML 文件的 Prompt 模板注册中心 — 模板全部外置到 {@code resources/prompts/*.yml}，改 Prompt 不必改
+ * Java、不必发版；同名多版本按语义化版本号取最新，启动日志逐条打出「名称 + 版本列表」，加载错了肉眼可辨。
  * <p>
  * 目录解析失败只告警不抛 —— 拿不到模板时 {@link PromptRegistryPort#require} 会以缺模板的具体名字 fail-fast，
- * 比在装配期抛一个无上下文的 IO 异常好定位。文件内容缺必需字段（name / version / template）则直接抛：
- * 那是作者写错了，不该带病上线。
+ * 比装配期抛无上下文的 IO 异常好定位；文件内容缺必需字段（name / version / template）则直接抛：作者写错了，
+ * 不该带病上线。
  */
 @Slf4j
 @Component
@@ -47,11 +45,7 @@ public class YamlPromptRegistry implements PromptRegistryPort {
         this.classpathMode = true;
     }
 
-    /**
-     * 测试构造器 — 从指定文件系统目录加载。
-     *
-     * @param directory 包含 .yml 文件的目录
-     */
+    /** 测试构造器 — 从指定文件系统目录加载。 */
     public YamlPromptRegistry(Path directory) {
         this.directory = directory;
         this.classpathMode = false;
@@ -160,9 +154,7 @@ public class YamlPromptRegistry implements PromptRegistryPort {
         log.info("已加载 {} 个 Prompt 模板: {}", total, details);
     }
 
-    /**
-     * 语义化版本比较 — 解析 "v1.2.3" 格式，按 major.minor.patch 比较。
-     */
+    /** 语义化版本比较 — 解析 "v1.2.3" 格式，按 major.minor.patch 比较。 */
     private static int compareVersions(String v1, String v2) {
         var parts1 = parseVersion(v1);
         var parts2 = parseVersion(v2);

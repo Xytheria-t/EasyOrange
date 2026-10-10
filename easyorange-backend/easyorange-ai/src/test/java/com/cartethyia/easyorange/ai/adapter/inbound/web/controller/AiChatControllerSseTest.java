@@ -9,12 +9,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
- * SSE 发送/收尾对「emitter 已完成」的容错 — TD-022。
- * <p>
- * playground 中途刷新/连发时，流线程会对已完成的 emitter 继续写入，
- * {@code ResponseBodyEmitter has already completed}（IllegalStateException）曾作为 ERROR 逃逸；
- * 现收敛为 {@link ChatStreamAbortedException} 终止流并降 debug —— ai 侧 {@code streamAnswer}
- * 识别为「客户端离开」静默收尾，不记模型降级。
+ * SSE 发送/收尾对「emitter 已完成」的容错 — TD-022：playground 中途刷新 / 连发时流线程会对已完成的
+ * emitter 继续写入（{@code ResponseBodyEmitter has already completed}），由 {@link ChatStreamAbortedException}
+ * 终止流并降 debug —— ai 侧 {@code streamAnswer} 识别为「客户端离开」静默收尾，不记模型降级。
  */
 @DisplayName("AiChatController SSE 完成态容错")
 class AiChatControllerSseTest {

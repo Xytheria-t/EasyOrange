@@ -13,11 +13,10 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 知识库文档仓储（MyBatis-Plus）— 实现 {@link KnowledgeRepository}，
- * 端口隔离保证领域侧不直接依赖 mapper。
+ * 知识库文档仓储（MyBatis-Plus）— 实现 {@link KnowledgeRepository}，端口隔离让领域侧不直接依赖 mapper。
  * <p>
- * 读方法挂 {@code readOnly}、写方法挂 {@code rollbackFor} 而非整类统一：本类读写混装，
- * 类级注解会让写方法也走只读连接（MySQL 会拒写），或让读方法多拿一次事务开销。
+ * 读方法挂 {@code readOnly}、写方法挂 {@code rollbackFor} 而非整类统一：本类读写混装，类级注解会让写方法
+ * 也走只读连接（MySQL 会拒写），或让读方法多拿一次事务开销。
  */
 @Repository
 public class KnowledgeRepositoryImpl extends BaseRepository<KnowledgeDocMapper, KnowledgeDocDO>

@@ -9,8 +9,8 @@ import org.springframework.ai.content.Media;
 import org.springframework.util.MimeType;
 
 /**
- * 图片 URL → Media 的 MIME 推断 —— 图片本体在供应商那边，客户端只能给一个声明，
- * 猜错类型的后果是视觉模型拒答，所以这里的每条分支都值得钉住。
+ * 图片 URL → Media 的 MIME 推断 —— 猜错类型的后果是视觉模型拒答（图片本体在供应商那边，客户端只能给声明），
+ * 所以这里的每条分支都值得钉住。
  */
 @DisplayName("MediaResolver MIME 推断 -> 测试")
 class MediaResolverTest {

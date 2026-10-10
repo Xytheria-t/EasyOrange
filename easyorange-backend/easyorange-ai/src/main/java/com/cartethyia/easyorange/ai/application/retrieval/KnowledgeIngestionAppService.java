@@ -20,9 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * RAG 文档摄入管线 — 解析 → 分块（chunk size + overlap）→ embed → ES 索引。
  * <p>
- * <b>要么完整要么 FAILED</b>：embed 或 ES 写入失败整篇标 FAILED（启动补索引与管理端 reindex 会重试
- * PENDING 与 FAILED），不再「缺向量块照写」—— 那会让 INDEXED 掩盖「语义召回静默缺失」。索引不可用
- * （ES 未启用）时文档保持 PENDING。任何失败都不阻塞文档落库。
+ * <b>要么完整要么 FAILED</b>：embed 或 ES 写入失败整篇标 FAILED（PENDING / FAILED 由启动补索引与管理端
+ * reindex 重试），不留「缺向量块照写」—— 后者会让 INDEXED 掩盖「语义召回静默缺失」。索引不可用（ES 未启用）
+ * 时文档保持 PENDING；任何失败都不阻塞文档落库。
  */
 @Slf4j
 @Service
@@ -39,7 +39,7 @@ public class KnowledgeIngestionAppService {
     private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
     private final AiModelSupport aiModelSupport;
 
-    /** 摄入一篇文档：落库 → 分块 → 逐块 embed → 批量写 ES 索引 → 回填状态。 */
+    /** 落库 → 建索引，返回文档 ID。 */
     public String ingest(String title, String content, String source) {
         String id = repository.save(
                 new KnowledgeDocEntity(null, title, content, source, KnowledgeDocStatus.PENDING, 0, null));
@@ -47,8 +47,8 @@ public class KnowledgeIngestionAppService {
         return id;
     }
 
-    /** 重新摄入已存在的文档（启动补索引用）— 保持文档 ID 稳定（金标准集引用同一批 ID）。
-     * FAILED 一并重试：它是「ES 可用但 embed/写失败」的产物，与 PENDING（当时索引不可用）同属未完成态。 */
+    /** 重摄入已存在文档（启动补索引用），文档 ID 保持稳定（金标准集引用同一批 ID）；FAILED 一并重试 ——
+     * 它是「ES 可用但 embed / 写失败」的产物，与 PENDING（当时索引不可用）同属未完成态。 */
     public void reindexPending(String id) {
         var doc = repository.findById(id).orElse(null);
         if (doc == null || (doc.status() != KnowledgeDocStatus.PENDING && doc.status() != KnowledgeDocStatus.FAILED)) {
@@ -109,7 +109,7 @@ public class KnowledgeIngestionAppService {
         }
     }
 
-    /** 删除文档：逻辑删除 + 同步移除 ES 分块。 */
+    /** 逻辑删除 + 同步清 ES 分块。 */
     public void delete(String id) {
         repository.deleteById(id);
         var port = indexPortProvider.getIfAvailable();
@@ -128,13 +128,8 @@ public class KnowledgeIngestionAppService {
         return repository.page(pageNum, pageSize);
     }
 
-    /**
-     * 分块算法：固定 chunk size + overlap，切点优先落在换行处；纯静态便于单测覆盖。
-     * <p>
-     * 前进量的下界是 {@code start + 1} 而不是 {@code start}：切点回退到换行处时
-     * {@code end - CHUNK_OVERLAP} 可能不大于 {@code start}（超长单行文档的换行落在窗口之外），
-     * 少了这个钳位 while 会在同一位置空转。
-     */
+    /** 固定 chunk size + overlap，切点优先落换行处。前进量下界取 {@code start + 1}：切点回退到换行处时
+     * {@code end - CHUNK_OVERLAP} 可能不大于 {@code start}（超长单行文档换行在窗口外），少了钳位 while 空转。 */
     static List<String> chunkContent(String content) {
         if (content == null || content.isBlank()) {
             return List.of();

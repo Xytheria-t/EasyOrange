@@ -6,16 +6,13 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * 知识库文档仓储端口 — 业务侧只依赖本接口，持久化实现（MyBatis-Plus）在
- * {@code adapter/outbound/persistence}，符合 DDD 依赖方向（domain/application 不碰 mapper）。
- */
+/** 知识库文档仓储端口 — MyBatis-Plus 实现在 {@code adapter/outbound/persistence}，domain/application 不碰 mapper。 */
 public interface KnowledgeRepository {
 
-    /** 插入文档（id 为空时生成 UUID v7），返回文档 ID。 */
+    /** id 为空时生成 UUID v7。 */
     String save(KnowledgeDocEntity doc);
 
-    /** 摄入完成后回填索引状态与分块数。 */
+    /** 摄入完成后回填。 */
     void updateStatus(String id, KnowledgeDocStatus status, int chunkCount);
 
     Optional<KnowledgeDocEntity> findById(String id);

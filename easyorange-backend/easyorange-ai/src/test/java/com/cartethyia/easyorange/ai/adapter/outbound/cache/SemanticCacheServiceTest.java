@@ -45,10 +45,10 @@ class SemanticCacheServiceTest {
 
     private static final List<Float> QUERY_VECTOR = List.of(1f, 0f, 0f);
 
-    /** 被测调用的调用方身份：缓存 key 按它分桶（key 里不再只有 scope）。 */
+    /** 调用方身份：缓存 key 按它分桶。 */
     private static final String USER = "user-1";
 
-    /** USER 对应的 Redis key —— 分桶后的实际 key，断言直接比对字面量。 */
+    /** USER 对应的实际 Redis key —— 断言直接比对字面量。 */
     private static final String CACHE_KEY = "eo:ai:semantic:chat:" + USER;
 
     private static final String CACHED_JSON = cachedEntry(List.of(0.99f, 0.1f, 0f), "缓存回答", 1);
@@ -73,7 +73,7 @@ class SemanticCacheServiceTest {
 
     private SemanticCacheService cache;
 
-    /** 真实 registry 而非 mock：口径要断言的是「记到了哪个 outcome」，mock 只能验调用次数、验不了取值。 */
+    /** 真实 registry 而非 mock：断言的是「记到哪个 outcome」，mock 只能验次数、验不了取值。 */
     private SimpleMeterRegistry meterRegistry;
 
     @BeforeEach
@@ -344,7 +344,7 @@ class SemanticCacheServiceTest {
                     .isPresent();
             assertThat(outcomeCount(Outcome.HIT)).isEqualTo(1d);
 
-            // 与 CACHED_JSON 向量正交（0.99, 0.1, 0）—— 余弦低于 0.92 阈值
+            // 与 CACHED_JSON 的向量 (0.99, 0.1, 0) 余弦低于 0.92 阈值
             assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", List.of(0f, 1f, 0f), ChatAnswer.class))
                     .isEmpty();
             assertThat(outcomeCount(Outcome.MISS)).isEqualTo(1d);

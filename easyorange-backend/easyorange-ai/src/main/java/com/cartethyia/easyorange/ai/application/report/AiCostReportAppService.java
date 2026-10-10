@@ -9,10 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * AI 成本报表 — 按「场景 × 模型」聚合调用次数、token 用量、平均耗时与失败次数，并按单价表货币化。
- * <p>
- * 本类做两件治理决策：窗口夹取（窗口是入参，合法区间不是）与货币化（token → 元，单价来自
- * {@link AiPricingProperties}）；聚合口径与 SQL 在 {@link AiCostReportPort} 的实现里，应用层不碰持久化。
+ * AI 成本报表 — 两个治理决策在这一层：窗口夹取（窗口是入参，合法区间不是）与货币化（token → 元，单价来自
+ * {@link AiPricingProperties}）；聚合口径与 SQL 在 {@link AiCostReportPort} 实现里，应用层不碰持久化。
  */
 @Service
 @RequiredArgsConstructor
@@ -37,7 +35,7 @@ public class AiCostReportAppService {
         return Math.min(hours, MAX_WINDOW_HOURS);
     }
 
-    /** 按单价表折算货币成本；单价表缺该模型的条目时保留 null —— 只出 token 不出钱，宁缺不估。 */
+    /** 按单价表折算；缺该模型条目时保持 null —— 只出 token 不出钱，宁缺不估。 */
     private AiCostReportRow withCost(AiCostReportRow row) {
         var price = pricing.models().get(row.model());
         if (price == null) {

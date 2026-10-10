@@ -14,15 +14,14 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 多轮对话短期记忆 — Redis List 会话窗口（TTL 24h，最近 N 轮），配合「最近 N 轮 + 工具结果」的 prompt 注入。
- * 一轮对话（提问 + 回答）一次 {@code RPUSH} + 裁剪 + 续期：拆成两次单条写入会把 Redis 往返翻倍，
- * 且中途失败会留下只有提问没有回答的半轮记忆。
+ * 多轮对话短期记忆 — Redis List 会话窗口（TTL 24h，最近 N 轮）。一轮对话（提问 + 回答）一次
+ * {@code RPUSH} + 裁剪 + 续期：拆成两次单条写入会把 Redis 往返翻倍，且中途失败会留下只有提问没有回答的半轮记忆。
  * <p>
  * Redis 不可用 / 会话为空时返回空列表（fail-open：丢记忆不阻塞回答）；单条记录读不出来只跳过该条。
  * <p>
  * <b>并发正确性依赖调用方的会话锁</b>：{@code RPUSH → LTRIM → EXPIRE} 三步非事务，并发写会互相裁剪。
  * 本端口<b>刻意不加锁</b>——会话锁在 {@code AiChatAppService} 按 sessionId 粒度覆盖「读窗口 → 生成 → 写回」，
- * 端口层再加一把只会让锁边界与业务边界脱节；新增绕过该服务的调用方必须自带同粒度锁。
+ * 端口层再加一把只会让锁边界与业务边界脱节；绕过该服务的调用方必须自带同粒度锁。
  */
 @Slf4j
 @Component
@@ -31,14 +30,13 @@ public class ChatSessionStore implements ChatSessionPort {
 
     private static final String KEY_PREFIX = "eo:chat:session:";
 
-    /** 一轮对话 = 提问 + 回答两条 —— 存储按条裁剪 / 读取，配置按轮计。 */
+    /** 一轮对话 = 提问 + 回答两条 —— 存储按条，配置按轮。 */
     private static final int TURNS_PER_EXCHANGE = 2;
 
     private final ObjectProvider<StringRedisTemplate> redisProvider;
     private final ObjectMapper objectMapper;
     private final AiProperties aiProperties;
 
-    /** 保存一轮对话（提问 + 回答），裁剪到最近 N 轮 + 刷新 TTL。键绑定 userId（归属即校验）。 */
     @Override
     public void saveTurns(String userId, String sessionId, List<ChatTurn> turns) {
         if (isBlank(userId) || isBlank(sessionId) || turns == null || turns.isEmpty()) {
@@ -60,7 +58,7 @@ public class ChatSessionStore implements ChatSessionPort {
         }
     }
 
-    /** 读取最近 N 轮对话（不含当前问题）。键绑定 userId，他人 sessionId 在请求方名下查无记忆。 */
+    /** 最近 N 轮对话，不含当前问题（键即用户归属，见 {@link #sessionKey}）。 */
     @Override
     public List<ChatTurn> loadRecent(String userId, String sessionId) {
         if (isBlank(userId) || isBlank(sessionId)) {
@@ -103,7 +101,7 @@ public class ChatSessionStore implements ChatSessionPort {
         return value == null || value.isBlank();
     }
 
-    /** 轮数窗口 → Redis List 元素数（存储按条，配置按轮），读写同一份 {@code historyLimit}。 */
+    /** 轮数窗口 → List 元素数，读写共用同一份 {@code historyLimit}。 */
     private int entries() {
         return Math.max(aiProperties.chat().historyLimit(), 1) * TURNS_PER_EXCHANGE;
     }

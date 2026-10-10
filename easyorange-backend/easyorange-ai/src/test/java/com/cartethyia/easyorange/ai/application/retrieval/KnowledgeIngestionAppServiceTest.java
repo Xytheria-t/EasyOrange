@@ -52,7 +52,7 @@ class KnowledgeIngestionAppServiceTest {
 
     private KnowledgeIngestionAppService ingestionService;
 
-    /** embedding 响应夹具：向量化走 embedForResponse（拿得到响应本体，记账才取得到 usage），批量按请求条数逐条返回。 */
+    /** embedding 响应夹具：走 embedForResponse 才能拿到响应本体（记账取 usage）；按请求条数逐条返回。 */
     private static EmbeddingResponse embeddingResponse(float[] vector, int count) {
         var embeddings = new ArrayList<Embedding>(count);
         for (int i = 0; i < count; i++) {

@@ -6,11 +6,8 @@ package com.cartethyia.easyorange.ai.domain.enums;
  * 无法解释的数，故分列。
  */
 public enum RetrievalEvalLine {
-
-    /** 金标准集知识库检索（retr-*）——真实 embedding 语义空间。 */
     KNOWLEDGE("知识库检索", "retr-"),
 
-    /** asset 找货检索评测（asset-*）——合成向量语料那一层。 */
     ASSET("找货检索", "asset-");
 
     private final String label;

@@ -7,16 +7,13 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 /**
- * 语义缓存的观测副产物 — 命中率口径的唯一来源：命中率 = {@code hit / (hit + miss)}，分母只由真实发生过的
- * 查找构成。{@link Outcome#BYPASS}（根本没查）与 {@link Outcome#ERROR}（查了但 Redis 故障 fail-open）不进分母 ——
- * 计进去会让「故障期间命中率暴跌」被误读成「阈值该调松」，而故障期恰恰最不该据此改参数。
+ * 语义缓存的观测副产物 — 命中率口径唯一来源：{@code hit / (hit + miss)}，只有真实发生过的查找进分母；
+ * {@link Outcome#BYPASS}（根本没查）与 {@link Outcome#ERROR}（Redis 故障 fail-open）不计入，否则
+ * 「故障期命中率暴跌」会被误读成「阈值该调松」—— 而故障期恰恰最不该据此改参数。
  *
- * <p>没有它就调不动参数：成本模型是「先无条件付一次供应商 embedding 调用，再看命不命中」，未命中纯亏；换模型
- * 必然改变向量与相似度分布，没有命中率就无从判断 0.92 / 200 是否还成立。
- *
- * <p>埋点是横切关注点，缓存实现不该知道指标名与 tag 契约：本类构造期按枚举全集注册（tag 取值是时序契约，
- * 显式固化，改枚举名不影响历史数据；预注册也让 {@code rate(...)} 告警从 t=0 有效），热路径只做一次
- * {@link EnumMap} 查找、零字符串拼接。观测失败绝不影响主链路。
+ * <p>没它调不动参数：未命中也得先付一次供应商 embedding，换模型必然改变向量与相似度分布，命中率是判断
+ * 0.92 / 200 是否还成立的唯一依据。埋点属横切：缓存实现不持指标名与 tag 契约，构造期按枚举全集预注册；
+ * 热路径只做一次 {@link EnumMap} 查找，观测失败不影响主链路。
  */
 @Component
 public class SemanticCacheMetrics {

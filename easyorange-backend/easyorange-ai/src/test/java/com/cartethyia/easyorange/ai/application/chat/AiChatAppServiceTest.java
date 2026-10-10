@@ -111,7 +111,7 @@ class AiChatAppServiceTest {
                 return operation.execute();
             }
         });
-        // 部分用例（空问题/预算超限/缓存命中）不会走到循环，循环 的默认行为允许不被消费
+        // 部分用例（空问题/预算超限/缓存命中）走不到循环，lenient 允许默认桩未被消费
         lenient()
                 .when(toolCallLoop.run(any(Input.class)))
                 .thenReturn(new Result(List.of(), List.of(), List.of(), ToolCallLoopOutcome.FINISHED, 1, List.of()));

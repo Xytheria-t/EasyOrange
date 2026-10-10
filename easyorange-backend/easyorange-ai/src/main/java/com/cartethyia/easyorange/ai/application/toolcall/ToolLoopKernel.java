@@ -23,24 +23,24 @@ import org.springframework.stereotype.Component;
  * 多步工具调用循环（ReAct）的编排内核 — 逐轮「决策 → 工具 → 观察」推进到模型判定信息足够。
  * <p>
  * 手写循环 + 原生 tool calling：{@code ChatModel.call} 不自动执行工具，步数与降级控制权留在本类。内核只持
- * 链路无关的机制（四条出口、协议回填、步级 trace/SSE、toolPath），首轮上下文怎么拼、决策绑哪个模型、降级
- * 动作是什么，全部由 {@link Spec} 与 {@link ToolLoopDecider} 注入 —— chat 与 listing 两条链路共用，不改写
- * 各自的工具语义。trace/step/指标是副产物，失败不碰主链路。
+ * 链路无关的机制（四条出口、协议回填、步级 trace/SSE、toolPath），首轮上下文、模型路由与降级动作由
+ * {@link Spec} / {@link ToolLoopDecider} 注入 —— chat 与 listing 共用，不改写各自的工具语义；trace/step/
+ * 指标失败不碰主链路。
  */
 @Slf4j
 @RequiredArgsConstructor
 @Component
 public class ToolLoopKernel {
 
-    /** 收敛轮的工具名 — 两条工具面（chat / listing）共享的协议词汇，各自的常量与之同字面并由测试钉住。 */
+    /** 收敛轮工具名 — 两条工具面共享的协议词汇；各链路常量与之同字面，由测试钉住。 */
     private static final String FINISH_TOOL = "finish";
 
     private final ToolCallStepTracePort tracePort;
     private final IdGenerator idGenerator;
 
     /**
-     * 一次循环的规格 — 链路差异全在这里注入；{@code userId} 是已归属的值（评估跑批传 null），
-     * 归属判定留在各链路编排器，因为同一口径还管工具面的偏好归属。
+     * 一次循环的规格 — 链路差异全在这里注入；{@code userId} 是已归属的值（评估跑批传 null），归属判定
+     * 留在各链路编排器（同一口径还管工具面的偏好归属）。
      */
     public record Spec(
             String systemPrompt,
@@ -107,9 +107,8 @@ public class ToolLoopKernel {
     }
 
     /**
-     * 执行一轮里的全部工具调用并落成观测副产物（trace 落库 / SSE step 事件 / 步级指标），再按对话协议回填。与
-     * 决策同以「这批工具调用」为宾语：轮是循环级单位，不写进方法名（否则与「步」分不开）；步序跨轮连续，否则
-     * 一轮内的多个工具（同一个决策动作）挤进同一 stepIndex 会让 trace 里两个动作看起来是同一步。
+     * 执行一轮的全部调用并落成观测副产物（trace / SSE step / 步级指标），再按对话协议回填；步序跨轮连续，
+     * 否则一轮内多个工具挤进同一 stepIndex，trace 里两个动作看起来是同一步。
      */
     private RoundResult executeCalls(
             Spec spec,
@@ -161,7 +160,7 @@ public class ToolLoopKernel {
         return calls.stream().map(ToolLoopCall::rawToolCall).toList();
     }
 
-    /** 落一步工具步 trace 并推 SSE step 事件 —— 前端步骤可视化与「平均步数 / 降级率 / 步级延迟」口径的唯一数据来源，
+    /** 落一步工具步 trace 并推 SSE step 事件 —— 前端步骤可视化与「平均步数 / 降级率 / 步级延迟」口径的唯一来源；
      * 端口实现内部兜底、不打挂主链路。 */
     private void recordToolStep(
             Spec spec, String traceId, int stepIndex, ToolLoopCall call, DispatchResult result, long latencyMs) {
@@ -204,7 +203,7 @@ public class ToolLoopKernel {
         }
     }
 
-    /** 一轮的执行结果 — nextStepIndex 跨轮连续（1 起）；toolPath 含 finish 轮，让整条路径上的「模型选了什么」完整。 */
+    /** 一轮的执行结果 — nextStepIndex 跨轮连续（1 起）；toolPath 含 finish 轮，路径上「模型选了什么」保持完整。 */
     private record RoundResult(int nextStepIndex, List<String> toolPath, boolean finished) {}
 
     private record DispatchResult(boolean succeeded, String observation) {
@@ -216,8 +215,8 @@ public class ToolLoopKernel {
     }
 
     /**
-     * 工具面（一次请求内）— 按名执行的对照表 + 未知工具观察里的可用清单；清单按本次真正下发的回调生成，
-     * 白名单臂过滤后不会报出模型拿不到的工具。召回累加器归各链路的工具面实例，内核不持有任何召回状态。
+     * 工具面（一次请求内）— 按名执行对照表 + 未知工具的可用清单；清单按本次真正下发的回调生成，白名单
+     * 过滤后不会报出模型拿不到的工具。召回累加器归各链路工具面实例，内核不持召回状态。
      */
     private record ToolDispatcher(Map<String, ToolCallback> byName, String unknownToolHint) {
 

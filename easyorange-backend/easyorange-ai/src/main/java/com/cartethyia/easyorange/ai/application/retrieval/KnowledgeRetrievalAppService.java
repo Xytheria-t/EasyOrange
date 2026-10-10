@@ -14,15 +14,13 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 /**
- * 知识库检索服务 — 查询向量化 → 索引侧两路召回（kNN + BM25）+ RRF 排名融合 → 引用溯源。
- * 排序不在这一层做：融合需要两路的完整排名，只有索引侧拿得到（见 {@link KnowledgeIndexPort}）；
- * 在这里按余弦相似度重排是对稠密路同一向量的单调变换（等于没排），还会把 BM25 的排序信号整体丢掉，不做。
+ * 知识库检索服务 — 查询向量化 → 索引侧两路召回（kNN + BM25）+ RRF 融合 → 引用溯源。
+ * 排序不在这一层做：融合要两路的完整排名（只有索引侧拿得到，见 {@link KnowledgeIndexPort}）；按余弦相似度
+ * 重排是对稠密路同一向量的单调变换（等于没排），还会丢掉 BM25 的排序信号，不做。
  * <p>
- * 索引不可用（ES 关闭）时降级到 MySQL 标题/正文 LIKE 检索：仅保证可用，不保证召回质量。
- * <p>
- * <b>查询向量化失败同样不放弃检索</b>：空向量直接传给端口，只跑 BM25 一路 —— 与
- * {@link AssetSourcingAppService} 同一口径。两条链路都只服务对话主链路，向量化的失败方（供应商抖动 /
- * key 未配置）在资产侧会让整个找货功能静默失效，在这里也会让规则问答整条空掉；少一路召回好过没有召回。
+ * 索引不可用（ES 关闭）时降级 MySQL 标题/正文 LIKE：只保证可用，不保证召回质量。查询向量化失败同样不
+ * 放弃检索：空向量直接传端口只跑 BM25 一路，与 {@link AssetSourcingAppService} 同口径 —— 两条链路都只
+ * 服务对话主链路，少一路召回好过整条规则问答空掉。
  */
 @Slf4j
 @Service
@@ -33,12 +31,9 @@ public class KnowledgeRetrievalAppService {
     private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
     private final AiModelSupport aiModelSupport;
 
-    /**
-     * 两路召回 + RRF 融合，返回 topK 命中（顺序即最终顺序）。
-     * <p>
-     * 预算闸门挂这一层：向量化是本场景唯一计费点，而匿名 MCP 知识检索也走此路 —— 没有它，
-     * 外部 client 换个 IP 就能无限触发供应商 embedding 计费（限流按 IP 计数，不是成本闸门）。
-     */
+    /** 两路召回 + RRF 融合，返回 topK 命中（顺序即最终顺序）；预算闸门挂这一层 —— 向量化是本场景唯一计费
+     * 点，匿名 MCP 知识检索也走此路，没有它外部 client 换个 IP 就能无限触发供应商 embedding 计费
+     * （限流按 IP 计数，不是成本闸门）。 */
     @TokenBudget(scenario = "knowledge", maxTokensPerCall = 500, dailyTokenLimit = 200_000)
     public List<KnowledgeHit> search(String query, int topK) {
         if (query == null || query.isBlank() || topK <= 0) {
@@ -59,11 +54,8 @@ public class KnowledgeRetrievalAppService {
         return toHits(port.search(query, embedOrEmpty(embeddingModel, query), topK));
     }
 
-    /**
-     * 查询向量化 —— 失败退化为空向量（端口只跑 BM25 一路），不把异常抛出去中断检索：
-     * 对话侧要等工具失败被收敛成失败观察，比「整条规则问答答不出」好得多。
-     * key 未配置时装配的占位模型也是调用即抛，这条降级路径同时承担「AI 密钥可选、不影响启动」的契约。
-     */
+    /** 向量化失败退化空向量（端口只跑 BM25 一路）—— 抛出去会让整条规则问答答不出；占位模型（key 未配置）
+     * 也是调用即抛，这条路径同时承担「AI 密钥可选、不影响启动」的契约。 */
     private List<Float> embedOrEmpty(EmbeddingModel embeddingModel, String query) {
         try {
             List<Float> embedding = aiModelSupport.embed(embeddingModel, AiCallScope.KNOWLEDGE, query);

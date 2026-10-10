@@ -38,12 +38,11 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
 
 /**
- * AI 智能对话（工具循环编排）— 多轮记忆 + 多步工具循环 + 引用溯源 + 语义缓存 + 预算治理；与搜索页的结构化检索正交（那边
- * 「一次查询定结果」，这里模型自己决定检索几轮、查什么）。
+ * AI 智能对话（工具循环编排）— 多轮记忆 + 多步工具循环 + 引用溯源 + 语义缓存 + 预算治理；与搜索页的结构化检索正交：那边「一次查询定结果」，这里模型自己决定检索几轮、查什么。
  * <p>
- * 链路：记忆装配（Redis 会话窗口 + 用户偏好表，注入前过 {@link ChatContextTrimmer} 裁 token）→ 工具循环（{@link
- * ToolCallLoop}，步数 / 预算超限降级为用已积累观察直接生成，决策失败降级为补检索一次）→ 生成回答（消息形状见 {@link
- * ChatPromptAssembler}，末尾 [来源:标题] 溯源）。流式预算前置检查手动做，理由见 {@link ChatBudgetGuard} 类注释。
+ * 链路：记忆装配（Redis 会话窗口 + 用户偏好表，过 {@link ChatContextTrimmer} 裁 token）→ 工具循环（{@link ToolCallLoop}，
+ * 步数 / 预算超限用已积累观察直接生成、决策失败补检索一次）→ 生成回答（{@link ChatPromptAssembler}，末尾 [来源:标题] 溯源）；
+ * 流式预算前置检查手动做，理由见 {@link ChatBudgetGuard}。
  */
 @Slf4j
 @Service
@@ -54,8 +53,7 @@ public class AiChatAppService {
     private static final String DEGRADED_METRIC = "easyorange.ai.chat.degraded";
     private static final String SESSION_BUSY_METRIC = "easyorange.ai.chat.session.busy";
     private static final String STREAM_ABORTED_METRIC = "easyorange.ai.chat.stream.aborted";
-    /** 一次问答的端到端耗时（工具循环 + 生成 + 会话落盘）— 对外引用的延迟数字只有这一处指标源。
-     * 口径只圈跑通生成的请求：缓存命中与空问题不进分布，否则 p95 与真实生成延迟不可比。 */
+    /** 一次问答端到端耗时（循环 + 生成 + 落盘）— 对外引用的延迟数字只有这一处指标源；只圈跑通生成的请求，缓存命中与空问题不进分布，否则 p95 与真实生成延迟不可比。 */
     private static final String TURN_DURATION_METRIC = "easyorange.ai.chat.turn.duration";
 
     private static final String EMPTY_QUESTION_TEXT = "请描述你的问题";
@@ -84,8 +82,8 @@ public class AiChatAppService {
     private final Cache<String, ChatAnswer> staleCache;
 
     /**
-     * 降级原因 — {@link #DEGRADED_METRIC} 的封闭 tag 集，构造期按全集注册计数器（热路径零查找）；对外 tag 值是时序
-     * 契约：改枚举名不改 tag。STALE = 供应商故障复用 stale 旧回答兜底，UNAVAILABLE = 无旧回答可兜底、返回统一降级文案。
+     * 降级原因 — {@link #DEGRADED_METRIC} 的封闭 tag 集（构造期按全集注册，热路径零查找）；tag 值是时序契约：改枚举名
+     * 不改 tag。STALE = 供应商故障复用旧回答兜底，UNAVAILABLE = 无旧回答、返回统一降级文案。
      */
     private enum DegradationReason {
         STALE("stale"),
@@ -154,10 +152,10 @@ public class AiChatAppService {
     }
 
     /**
-     * 非流式回答 — 供应商故障不抛异常：有 stale 旧回答就复用、没有就返回降级文案，都置 degraded 并计入降级指标；抛出去
-     * 只会变成 500 + 通用错误码，调用方读不到「AI 不可用」，也与流式路径的 error 事件口径不一致。预算超限等业务异常照旧
-     * 上抛（4xx，不伪装成降级）。两个缓存职责不同：语义缓存在 {@code forceFresh} 下读写都跳过，stale 缓存随每次成功回答
-     * 无条件刷新 —— forceFresh 只绕语义缓存，故障时仍拿得到旧回答。身份由入站适配层显式传入（见 {@link #streamAnswer}）。
+     * 非流式回答 — 供应商故障不抛异常：有 stale 旧回答就复用、没有就返回降级文案，都置 degraded 并计入降级指标；上抛只会
+     * 变成 500 + 通用错误码，也与流式路径的 error 事件口径不一致。预算超限等业务异常照旧上抛（4xx，不伪装成降级）。
+     * 语义缓存在 {@code forceFresh} 下读写都跳过，stale 缓存随每次成功回答无条件刷新 —— forceFresh 只绕语义缓存，故障时
+     * 仍拿得到旧回答。身份由入站适配层显式传入（见 {@link #streamAnswer}）。
      */
     @TokenBudget(scenario = "chat", maxTokensPerCall = 1500, dailyTokenLimit = 300_000)
     public ChatAnswer answer(ChatRequest request, String userId) {
@@ -165,9 +163,8 @@ public class AiChatAppService {
     }
 
     /**
-     * RAG 有效性对照的「无检索来源」臂 — {@code allowedTools} 只挂 finish，模型拿不到任何检索工具的 schema，
-     * 只能凭自身知识作答。装配点与生产路径同一条（同一方法、同一 prompt、同一 Judge），
-     * 唯一变量是工具面，因此两臂差分可归因到检索来源本身。
+     * RAG 有效性对照的「无检索来源」臂 — {@code allowedTools} 只挂 finish：模型拿不到任何检索工具的 schema，只能凭自身
+     * 知识作答。装配点与生产路径同一条（同一方法、同一 prompt、同一 Judge），唯一变量是工具面，两臂差分可归因到检索来源本身。
      */
     @TokenBudget(scenario = "chat", maxTokensPerCall = 1500, dailyTokenLimit = 300_000)
     public ChatAnswer answer(ChatRequest request, String userId, @Nullable Set<String> allowedTools) {
@@ -204,13 +201,13 @@ public class AiChatAppService {
     }
 
     /**
-     * 流式回答（SSE）：step → token 逐段回调，错误统一走 {@link ChatStreamHandler#onError}。语义缓存与非流式同一模式
-     * （embed 一次、命中回放、未命中写回）：命中把缓存回答按固定块回放成 token 并重放 sources 事件（不进循环、无 step
-     * 事件），且不碰会话记忆与会话锁 —— 没有需要串行化的共享状态。
+     * 流式回答（SSE）：step → token 逐段回调，错误统一走 {@link ChatStreamHandler#onError}。语义缓存与非流式同一模式：
+     * 命中按固定块回放 token 并重放 sources 事件（不进循环、无 step 事件），也不碰会话记忆与会话锁 —— 没有需要串行化
+     * 的共享状态。
      * <p>
      * 身份必须由调用方显式传入而非在这里读安全上下文：流式跑在 Controller 提交的另一线程上，{@code
-     * SecurityContextHolder} 的 ThreadLocal 不会跟过去，在这里读恒为空 —— 长期偏好不加载、偏好写不进库、trace 的
-     * userId 为空。流末帧用量由 {@link AiModelSupport} 记账（本入口只做预留，真实记账按供应商回报）。
+     * SecurityContextHolder} 的 ThreadLocal 不会跟过去，读恒为空 —— 长期偏好不加载、偏好写不进库、trace 的 userId 为空。
+     * 流末帧用量由 {@link AiModelSupport} 记账（本入口只做预留，真实记账按供应商回报）。
      */
     public void streamAnswer(ChatRequest request, String userId, ChatStreamHandler handler) {
         if (request.question() == null || request.question().isBlank()) {
@@ -250,8 +247,8 @@ public class AiChatAppService {
     }
 
     /**
-     * 语义缓存的一次探查 — 向量与命中打在一起：两条路径同一模式（向量只算一次，未命中后的写回复用同一个向量）。
-     * 向量为空同时覆盖 forceFresh 绕过与 embedding 不可用：查找与写入一起跳过，不会把不可用写成脏缓存。
+     * 语义缓存的一次探查 — 向量与命中打在一起：向量只算一次，未命中的写回复用同一个向量。向量为空同时覆盖 forceFresh
+     * 绕过与 embedding 不可用：查找与写入一起跳过，不会把不可用写成脏缓存。
      */
     private record SemanticCacheProbe(List<Float> queryEmbedding, Optional<ChatAnswer> hit) {}
 
@@ -309,7 +306,7 @@ public class AiChatAppService {
             @Nullable Set<String> allowedTools) {
         String sessionId = request.sessionId();
         if (sessionId == null || sessionId.isBlank()) {
-            // 无会话即无共享状态，没有需要需要串行化的 load→save，直接执行
+            // 无会话即无共享状态，没有需要串行化的 load→save，直接执行
             return generateWithToolLoop(request, userId, handler, allowedTools);
         }
         // 同会话串行：load→loop→save 非原子，并发请求会互相串写历史（读到半轮、写丢轮）；per-session

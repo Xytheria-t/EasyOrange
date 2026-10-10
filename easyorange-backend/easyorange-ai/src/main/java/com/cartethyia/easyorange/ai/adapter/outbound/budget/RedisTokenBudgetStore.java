@@ -16,13 +16,13 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 
 /**
- * Redis 版 Token 预算存储 — 多实例部署下的日预算口径（内存版每实例各记各的，日限会被放大 N 倍）。key 按
+ * Redis 版 Token 预算存储 — 多实例部署下的日预算口径（内存版每实例各记各的，日限放大 N 倍）。key 按
  * 「场景 + 本地日期」隔离，跨天自然从零开始，TTL 只做回收。
  * <p>
- * 三个写操作（预留 / 释放 / 记账）各是一个 Lua 脚本：读用量 → 判限 → 记增量的窗口在脚本内闭合，并发下
- * 日限不会被「并发数 × maxPerCall」突破，EXPIRE 同脚本执行（无 TTL 永久 key 窗口一并关闭）。用
- * {@link StringRedisTemplate} 是因脚本参数要纯数字字符串，JSON 序列化器会把增量写成带类型信息的 JSON。
- * fail-open：预留放行空句柄、读 empty、记账只告警，失败计数（构造期按 op 全集注册）是放行的唯一统计面。
+ * 三个写操作（预留 / 释放 / 记账）各是 Lua 脚本：读-判-写在脚本内闭合，并发下日限不会被「并发数 ×
+ * maxPerCall」突破，EXPIRE 同脚本执行让「无 TTL 永久 key」窗口一并关闭。用 {@link StringRedisTemplate}
+ * 是因脚本参数要纯数字字符串，JSON 序列化器会把增量写成带类型信息的 JSON。fail-open：预留放行空句柄、
+ * 读 empty、记账只告警，失败计数（构造期按 op 全集注册）是放行的唯一统计面。
  */
 @Slf4j
 public class RedisTokenBudgetStore implements TokenBudgetStorePort {
@@ -55,9 +55,8 @@ public class RedisTokenBudgetStore implements TokenBudgetStorePort {
     private static final String TTL_SECONDS = String.valueOf(KEY_TTL.toSeconds());
 
     /**
-     * 预留：used(input+output+reserved) + amount 越限返回 -1，否则 HINCRBY reserved 并刷新 TTL，返回已占用总量。
-     * limit &lt;= 0 不限。判定式与 {@code TokenBudgetPolicy.exhausted} 是同一条公式（预留在脚本内才原子），
-     * 改动两边必须同步。
+     * 预留：used(input+output+reserved) + amount 越限返回 -1，否则 HINCRBY reserved 并刷新 TTL，返回已占用总量；
+     * limit &lt;= 0 不限。判定式与 {@code TokenBudgetPolicy.exhausted} 是同一条公式（预留在脚本内才原子），改动两边必须同步。
      */
     private static final RedisScript<Long> RESERVE_SCRIPT = RedisScript.of("""
             local used = tonumber(redis.call('HGET', KEYS[1], 'input') or '0')

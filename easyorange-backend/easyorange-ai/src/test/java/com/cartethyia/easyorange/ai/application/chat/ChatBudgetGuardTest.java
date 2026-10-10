@@ -90,10 +90,7 @@ class ChatBudgetGuardTest {
         assertThat(guard(properties).tryAcquire()).isNotNull();
     }
 
-    /**
-     * 契约测试：兜底常量与 {@code @TokenBudget(scenario="chat")} 注解默认值必须一致。
-     * 两者分属「手动预检」与「AOP 切面」两条路径，靠反射钉住 —— 改一边不改另一边直接红。
-     */
+    /** 兜底常量与注解默认值分属「手动预检」与「AOP 切面」两条路径，反射钉住 —— 改一边不改另一边直接红。 */
     @Test
     @DisplayName("兜底常量 == @TokenBudget(scenario=chat) 注解默认值（改一边必须改另一边）")
     void fallbackMatchesAnnotationContract() throws NoSuchMethodException {

@@ -55,8 +55,8 @@ class TokenBudgetAspectTest {
 
         aspect.aroundBudget(pjp, annotation);
 
-        // 切面只做原子预留 + 释放：若按 maxTokensPerCall 记账会与真实用量重复计数；
-        // 预留会在今日条目上留一个零值快照，判据是总量归零而非条目不存在
+        // 切面只做原子预留 + 释放：按 maxTokensPerCall 记账会与真实用量重复计数；预留会在今日条目
+        // 留一个零值快照，判据是总量归零而非条目不存在
         assertThat(store.getTodayUsage("pricing").map(u -> u.total()).orElse(0)).isZero();
     }
 
@@ -91,8 +91,8 @@ class TokenBudgetAspectTest {
         var annotation = mockBudget("pricing", 600, 1000);
         store.recordUsage("pricing", 500, 0);
 
-        // 回归守卫：非 BaseBusinessException 子类的 RuntimeException 会被 GlobalExceptionHandler
-        // 一律判为编程错误 → 500，前端 isRetryable(>=500) 会把它当可重试错误自动重试
+        // 回归守卫：非 BaseBusinessException 子类的 RuntimeException 会被 GlobalExceptionHandler 判为
+        // 编程错误 → 500，前端 isRetryable(>=500) 会把它当可重试错误自动重试
         assertThatThrownBy(() -> aspect.aroundBudget(pjp, annotation))
                 .isInstanceOfSatisfying(TokenBudgetExceededException.class, ex -> {
                     assertThat(ex.getCode()).isEqualTo(AiResultCode.TOKEN_BUDGET_EXCEEDED.getCode());
@@ -155,14 +155,13 @@ class TokenBudgetAspectTest {
                 "200");
         aspect = new TokenBudgetAspect(store, aiProperties);
 
-        // 注解声明 1000/10000（应被配置覆盖，仅 scenario() 会被读取）
+        // 注解 mock 只提供 scenario()，限值应走配置覆盖
         var annotation = mock(TokenBudget.class);
         when(annotation.scenario()).thenReturn("pricing");
 
-        // 累计 180 + 配置上限 50 = 230 > 配置日预算 200 → 超限
         store.recordUsage("pricing", 180, 0);
 
-        // 配置的日预算 200 生效（而非注解的 10000）：180 + 50 > 200 → 超限
+        // 配置值生效（注解限值未被读取）：180 + 50 > 200 → 超限
         assertThatThrownBy(() -> aspect.aroundBudget(pjp, annotation)).isInstanceOf(TokenBudgetExceededException.class);
 
         verify(pjp, never()).proceed();
@@ -171,10 +170,10 @@ class TokenBudgetAspectTest {
     @Test
     @DisplayName("配置未覆盖场景时回退到注解默认值")
     void aroundBudget_configMissing_fallsBackToAnnotation() throws Throwable {
-        // aiProperties.budget.scenarios 为空（默认），应使用注解值
+        // budget.scenarios 为空（默认）→ 用注解值判定
         var annotation = mockBudget("qa", 800, 5000);
 
-        // 累计 4500 + 800 = 5300 > 5000 → 超限（用注解值判定）
+        // 4500 + 800 > 5000 → 超限（注解值生效）
         store.recordUsage("qa", 4500, 0);
 
         assertThatThrownBy(() -> aspect.aroundBudget(pjp, annotation)).isInstanceOf(TokenBudgetExceededException.class);
@@ -182,9 +181,6 @@ class TokenBudgetAspectTest {
         verify(pjp, never()).proceed();
     }
 
-    /**
-     * 创建模拟的 @TokenBudget 注解实例。
-     */
     private TokenBudget mockBudget(String scenario, int maxPerCall, int dailyLimit) {
         var annotation = mock(TokenBudget.class);
         when(annotation.scenario()).thenReturn(scenario);

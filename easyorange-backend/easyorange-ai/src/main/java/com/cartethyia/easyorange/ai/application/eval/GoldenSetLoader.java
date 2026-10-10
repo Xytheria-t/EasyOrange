@@ -13,13 +13,12 @@ import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * 金标准评测集加载器 — 从 classpath 读取 {@code eval/golden-set.yaml} 与 {@code eval/baselines.yaml}。
- * 评测集是 YAML（版本化、可评审 diff）不落库，与 Prompt YAML 同一套「配置即代码」思路。
+ * 金标准评测集加载器 — 从 classpath 读 {@code eval/golden-set.yaml} 与 {@code eval/baselines.yaml}；
+ * 评测集是 YAML（版本化、可评审 diff）不落库，与 Prompt YAML 同是「配置即代码」。
  * <p>
- * <b>加载即校验</b>：scope 只认 {@code chat} / {@code retrieval} / {@code listing}，chat 必须有参考回答、
- * retrieval 必须有 gold_doc_ids 且不得标路由、listing 必须标路由且不得带参考回答 / gold 文档（发布用例是
- * 路由专用，串了指标照样算得出来但悄悄失真，这类错误必须在加载期炸掉）。{@code expected_tools} 的取值
- * 同样在加载期按 scope 对应工具面的工具名强校验。
+ * <b>加载即校验</b>：scope 只认 {@code chat} / {@code retrieval} / {@code listing}，chat 必须有参考回答，
+ * retrieval 必须有 gold_doc_ids 且不得标路由，listing 必须标路由且不得带参考回答 / gold 文档（串了指标
+ * 照样算得出来但悄悄失真，这类错误必须在加载期炸掉）；{@code expected_tools} 按 scope 对应工具名强校验。
  */
 @Slf4j
 @Component
@@ -28,10 +27,8 @@ public class GoldenSetLoader {
     public static final String GOLDEN_SET_PATH = "eval/golden-set.yaml";
     public static final String BASELINES_PATH = "eval/baselines.yaml";
 
-    /** 生成质量用例的 scope 值。 */
     public static final String SCOPE_CHAT = "chat";
 
-    /** 检索质量用例的 scope 值。 */
     public static final String SCOPE_RETRIEVAL = "retrieval";
 
     /** 发布链路路由用例的 scope 值（多步工具循环，只跑循环不生成）。 */
@@ -105,8 +102,8 @@ public class GoldenSetLoader {
     }
 
     /**
-     * 评估门禁阈值（baselines.yaml）— 分数基线、容忍度、覆盖率下限、hit@5 与路由准确率下限。
-     * 键缺失即抛异常：门禁阈值静默回落成内置默认值，等于门禁悄悄放松（改了 yaml 的键名却照旧跑绿）。
+     * 评估门禁阈值（baselines.yaml）— 分数基线、容忍度、覆盖率下限、hit@5 与路由准确率下限；键缺失即抛异常，
+     * 静默回落成内置默认值等于门禁悄悄放松（改了 yaml 的键名却照旧跑绿）。
      */
     public EvalBaselines loadBaselines() {
         try (var in = new ClassPathResource(BASELINES_PATH).getInputStream()) {

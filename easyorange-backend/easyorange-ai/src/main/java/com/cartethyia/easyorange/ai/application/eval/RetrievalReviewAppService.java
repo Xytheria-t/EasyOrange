@@ -12,21 +12,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 检索质量回看服务 — ADR-0012「参数调整可基于历史数据回看」的读侧入口：批次趋势 + 用例级下钻。
+ * 只读编排，hit@5 与 MRR 的定义在 {@link RetrievalMetricQueryPort} 上声明、聚合在实现侧（JDBC）完成，
+ * 这里只有「回看」特有的两件事：
  * <p>
- * 只读编排，不含任何计算口径：hit@5 与 MRR 的定义在 {@link RetrievalMetricQueryPort} 上声明，
- * 聚合由实现侧（JDBC 适配器）完成。这里做的是「回看」特有的两件事：
- * <p>
- * <b>① 不替空表编数字</b>：没有任何批次时返回空列表而不是造一条 hit@5=0 的批次 ——
- * 「还没跑过评测」与「跑了但全没命中」在面板上必须分得开，前者该提示去跑评测而不是显示 0%。
+ * <b>① 不替空表编数字</b>：没有任何批次时返回空列表而不是造一条 hit@5=0 的批次 ——「还没跑过评测」与
+ * 「跑了但全没命中」在面板上必须分得开，前者该提示去跑评测而不是显示 0%。
  * <p>
  * <b>② 下钻限定单批次</b>：{@code runId} 为空即回空页而不是列出全量用例 —— 全量明细跨批次混排时
- * reciprocal_rank 没有可比的基准，看的人会把它误读成「这些用例一直很差」。
+ * reciprocal_rank 没有可比的基准，会被误读成「这些用例一直很差」。
  */
 @Service
 @RequiredArgsConstructor
 public class RetrievalReviewAppService {
 
-    /** 最近批次的默认条数：够看出趋势又不至于把首屏撑成一个长列表。 */
+    /** 最近批次的条数上限：够看出趋势又不至于把首屏撑成一个长列表。 */
     public static final int DEFAULT_RECENT_LIMIT = 20;
 
     /** 下钻分页上限，与管理端其它列表页的 pageSize 上限一致。 */

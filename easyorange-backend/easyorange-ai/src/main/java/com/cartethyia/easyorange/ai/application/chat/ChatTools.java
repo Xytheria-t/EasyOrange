@@ -22,12 +22,12 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
 /**
- * 多步工具循环的内部工具面 — 7 个工具的 schema 与执行都在这里（{@code @Tool} / {@code @ToolParam} 注解生成供应商侧校验
- * 的 JSON Schema）；每次循环实例化一份，召回物累加器是单次请求内的可变状态、由实例独占。
+ * 多步工具循环的内部工具面 — 7 个工具（{@code @Tool} / {@code @ToolParam} 注解生成供应商侧校验的 schema）；每次循环实例化
+ * 一份，召回物累加器是单次请求内的可变状态、由实例独占。
  * <p>
- * 约定：thought 是每个工具的必填参数（原生 tool calling 没有独立的「决策理由」通道，只由编排器取出落 trace / SSE）；抛
- * 异常 = 该步失败，「查无此资产」这类有效结果必须返回观察文本；finish 只有 schema 没有执行；remember_preference 是唯一
- * 写路径（按 userId + key 幂等 upsert），独立成一步是为了让降级路径下偏好不再静默丢失。
+ * 约定：thought 是每个工具的必填参数（原生 tool calling 没有独立的「决策理由」通道，只由编排器取出落 trace / SSE）；
+ * 抛异常 = 该步失败，「查无此资产」这类有效结果必须返回观察文本；finish 只有 schema 没有执行；remember_preference 是唯一写路径
+ * （按 userId + key 幂等 upsert），独立成一步是为了让降级路径下偏好不再静默丢失。
  */
 @SuppressWarnings("unused") // thought 只进工具 schema，方法体不消费（见类注释）
 public class ChatTools {
@@ -65,7 +65,7 @@ public class ChatTools {
     /** 详情描述进观察前截断的字数 —— 描述是自由文本，长度不可控。 */
     private static final int DETAIL_DESC_MAX_CHARS = 80;
 
-    /** 各轮召回物累加器 — 请求内可变状态，实例独占持有；读取走只读快照方法，不交出可变引用。 */
+    /** 各轮召回物累加器 — 读取走只读快照方法，不交出可变引用（可变状态归属见类注释）。 */
     private final List<KnowledgeHit> knowledgeHits = new ArrayList<>();
 
     private final List<AssetHit> assetHits = new ArrayList<>();

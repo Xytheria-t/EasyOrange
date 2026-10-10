@@ -9,8 +9,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * 工具步级轨迹记录器 — 多步工具循环每轮落一条 {@code eo_tool_call_step_trace}，
- * 作为平均步数 / 降级率 / 步级延迟 p95 三个口径的数据源。
+ * 工具步级轨迹记录器 — 多步工具循环每轮落一条 {@code eo_tool_call_step_trace}，作为平均步数 / 降级率 /
+ * 步级延迟 p95 三个口径的数据源。
  * <p>
  * 记录失败只告警不抛出：轨迹是观测副产物，绝不能影响对话主链路（与 {@link AiCallLogRecorder} 同一取向）。
  */

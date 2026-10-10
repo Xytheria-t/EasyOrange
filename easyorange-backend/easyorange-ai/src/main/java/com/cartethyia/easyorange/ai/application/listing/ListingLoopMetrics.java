@@ -13,10 +13,10 @@ import org.springframework.stereotype.Component;
 
 /**
  * 发布链路循环的观测副产物 — 与买家侧 {@code ToolCallLoopMetrics} 同构、不同命名空间（easyorange.ai.listing.*）：
- * 两条链路的步数分布 / 降级率要分开看（发布链路每步都是定价与合规的必经查证，降级语义更重）。
+ * 两条链路的步数分布 / 降级率分开看（发布链路每步都是定价与合规的必经查证，降级语义更重）。
  * <p>
- * 埋点是横切关注点，编排器不该知道指标名与 tag 契约：构造期按枚举全集预注册（tag 是时序契约），热路径只做
- * {@link EnumMap} 查找。观测失败绝不影响主链路。
+ * 埋点是横切关注点，编排器不该知道指标名与 tag 契约：构造期按枚举全集预注册（tag 是时序契约），热路径
+ * 只做 {@link EnumMap} 查找。
  */
 @Component
 public class ListingLoopMetrics implements ToolLoopListener {

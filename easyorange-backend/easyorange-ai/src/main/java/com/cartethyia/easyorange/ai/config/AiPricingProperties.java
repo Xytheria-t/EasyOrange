@@ -6,10 +6,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * 模型单价表 — 成本报表的货币化依据（元/百万 token，按模型名对齐 {@code eo_ai_call_log.model}）。
- * <p>
- * 价格是「排序与汇报」口径不是对账口径：供应商价目随活动/版本变动，官方调价后改这里即可，
- * 缺某个模型的条目时该行只出 token 不出钱（估算价混进成本报表比缺数据更危险，与「只认真实回报
- * 用量」同一口径）。
+ * 价格是「排序与汇报」口径不是对账口径：供应商价目随活动/版本变动，官方调价后改这里即可；缺某个
+ * 模型的条目时该行只出 token 不出钱——估算价混进成本报表比缺数据更危险，与「只认真实回报用量」同一口径。
  */
 @ConfigurationProperties(prefix = "easyorange.ai.pricing")
 public record AiPricingProperties(Map<String, ModelPrice> models) {

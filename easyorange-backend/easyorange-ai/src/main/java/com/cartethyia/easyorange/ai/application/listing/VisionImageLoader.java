@@ -24,11 +24,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
- * 视觉识别取图 → base64 data URL。
- * <p>
- * 供应商只认「公网可达 URL 或 data URL」：上传后的 {@code /api/file/…} 相对地址与
- * localhost 地址对它都不可达（DashScope 直接报 {@code InvalidParameter}）。统一在服务端
- * 把图取回内联——本地文件读盘、公网 URL 下载——供应商不再需要回源访问本服务。
+ * 视觉识别取图 → base64 data URL：供应商只认「公网可达 URL 或 data URL」，上传后的 {@code /api/file/…}
+ * 相对地址与 localhost 地址对它都不可达（DashScope 直接报 {@code InvalidParameter}）。统一在服务端把图
+ * 取回内联（本地文件读盘 / 公网 URL 下载），供应商不再需要回源访问本服务。
  */
 @RequiredArgsConstructor
 @Component
@@ -36,7 +34,7 @@ public class VisionImageLoader {
 
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
-            // 显式钉住不跟随重定向：跟随后，一个公网地址就能 302 到内网，绕过下面的地址校验
+            // 显式钉住不跟随重定向：跟随后一个公网地址就能 302 到内网，绕过下面的地址校验
             .followRedirects(HttpClient.Redirect.NEVER)
             .build();
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
@@ -114,9 +112,9 @@ public class VisionImageLoader {
     }
 
     /**
-     * 只放行公网地址：环回 / 链路本地（云元数据 169.254.169.254）/ 私网 / CGNAT / IPv6 ULA 一律拒。
-     * 白名单按主机名精确匹配，默认空。残留缺口是解析与建连之间的 DNS rebinding 窗口 —— 堵它要在
-     * 连接层锁 IP，代价与收益不成比例，这里只保证「填进来的地址本身是公网」。
+     * 只放行公网地址：环回 / 链路本地（云元数据 169.254.169.254）/ 私网 / CGNAT / IPv6 ULA 一律拒；
+     * 白名单按主机名精确匹配，默认空。残留缺口是解析与建连之间的 DNS rebinding 窗口——堵它要在连接层
+     * 锁 IP，代价与收益不成比例，这里只保证「填进来的地址本身是公网」。
      */
     private void requireAllowedHost(URI uri, String source) {
         String host = uri.getHost();

@@ -10,14 +10,14 @@ import org.jspecify.annotations.Nullable;
 /**
  * 发布链路两侧的 prompt 拼装 — 决策首轮上下文与最终生成的观察块，纯函数无状态。
  * <p>
- * 与买家侧同一条铁律：不可信内容进块前过 {@link UntrustedText#stripTags}。图片经 OCR 转写后与卖家手打
- * 的文本等价 —— 照片里一张写着「忽略定价规则」的纸条同样是注入。
+ * 与买家侧同一条铁律：不可信内容进块前过 {@link UntrustedText#stripTags}——图片经 OCR 转写后与卖家
+ * 手打的文本等价，照片里一张写着「忽略定价规则」的纸条同样是注入。
  */
 final class ListingPromptAssembler {
 
     private ListingPromptAssembler() {}
 
-    /** 决策首轮 user 消息 — 图片线索 + 卖家备注 + 分类清单；线索与备注两块按来源可缺省（评估跑批无图片、HTTP 无备注）。 */
+    /** 决策首轮 user 消息 — 图片线索 + 卖家备注 + 分类清单；线索与备注按来源可缺省（评估跑批无图片、HTTP 无备注）。 */
     static String firstDecisionMessage(
             @Nullable ImageClues clues, @Nullable String sellerNote, List<String> categories) {
         var sb = new StringBuilder();
@@ -47,7 +47,7 @@ final class ListingPromptAssembler {
         return sb.toString();
     }
 
-    /** 最终生成的 user 消息 — 观察块 + 分类块；行情与 market_price_stats 工具的观察同源同值，空集写「无行情统计」对齐 price 置 null 的约束。 */
+    /** 最终生成的 user 消息 — 观察块 + 分类块；行情与 market_price_stats 观察同源同值，空集写「无行情统计」对齐 price 置 null 的约束。 */
     static String generatorUserText(
             List<KnowledgeHit> knowledgeHits, List<AssetHit> assetHits, List<String> categories) {
         return """

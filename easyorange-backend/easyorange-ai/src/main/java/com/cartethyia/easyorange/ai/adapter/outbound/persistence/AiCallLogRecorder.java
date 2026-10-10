@@ -11,14 +11,12 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * AI 调用日志记录器 — 每次 LLM/Embedding 调用落一条 {@code eo_ai_call_log}，
- * 作为<b>成本报表</b>的数据源。
+ * AI 调用日志记录器 — 每次 LLM/Embedding 调用落一条 {@code eo_ai_call_log}，作为<b>成本报表</b>的数据源。
  * <p>
- * 记录失败只告警不抛出：AI 调用日志是观测副产物，绝不能影响主链路。
+ * 记录失败只告警不抛出：日志是观测副产物，绝不能影响主链路。
  * <p>
- * {@code REQUIRES_NEW} 是硬要求：调用常被包在外层事务里，而检索链路的事务是
- * {@code @Transactional(readOnly = true)}——借用外层连接的 INSERT 会直接被拒
- *（{@code Connection is read-only}），SEMANTIC（搜索向量化）行曾因此一条都没落过库；
+ * {@code REQUIRES_NEW} 是硬要求：调用常被包在外层事务里，而检索链路的外层事务是
+ * {@code @Transactional(readOnly = true)}——借用外层连接的 INSERT 会被拒（{@code Connection is read-only}）；
  * 挂起外层、开独立读写连接提交，也让调用日志与业务事务的成败解耦（LLM 花的钱已经发生）。
  */
 @Slf4j

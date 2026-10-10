@@ -12,9 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * AI 成本报表读仓储 — 在 {@code eo_ai_call_log} 上按「场景 × 模型」聚合（token 用量降序，同量按调用次数）。
  * <p>
- * 用量口径（只认供应商真实回报、不估算）写在端口上；这里只负责把那条口径翻译成聚合 SQL。
- * model 维度在这里展开而不是调用方再 GROUP 一次：决策/生成分离的效果（同一个场景里贵慢模型与
- * 便宜快模型的占比）要靠它对照。
+ * 用量口径（只认供应商真实回报、不估算）写在端口上，这里只翻译成聚合 SQL；model 维度在此展开而非调用方再
+ * GROUP：决策/生成分离的效果（同场景里贵慢模型与便宜快模型的占比）要靠它对照。
  */
 @Repository
 @RequiredArgsConstructor

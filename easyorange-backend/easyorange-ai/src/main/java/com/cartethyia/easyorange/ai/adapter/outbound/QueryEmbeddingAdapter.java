@@ -12,15 +12,12 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Component;
 
 /**
- * 检索词向量化（实现 {@link QueryEmbeddingPort}）— 商品搜索 kNN 那一路的编码器。
+ * 检索词向量化 — 商品搜索 kNN 那一路的编码器（实现 {@link QueryEmbeddingPort}）。
  * <p>
- * <b>对外契约是「永不抛异常」</b>：本类挂在商品检索主链路上（{@code ProductSearchQueryHandler} 不做兜底），
- * 供应商未配置或调用失败一律返回空列表，让检索退化为纯 BM25 单路召回。
- * key 缺失时 AI 模块装配的是 {@code UnconfiguredEmbeddingModel}（调用即抛），
- * 因此「不带任何 AI key 也能正常搜索」由这里的 catch 保证。
+ * <b>对外契约是「永不抛异常」</b>：挂在商品检索主链路上、调用方不做兜底，key 缺失时装配的
+ * {@code UnconfiguredEmbeddingModel} 调用即抛 —— 未配置或调用失败一律返回空列表，检索退化为纯 BM25 单路召回。
  * <p>
- * 预算走 {@code semantic} 场景：用量取供应商回报的真实 prompt token，
- * 未回报时才退化为按场景上限估算（见 {@link AiCallRecorder}）。
+ * 预算走 {@code semantic} 场景：用量取供应商回报的真实 prompt token，未回报时才按场景上限估算（见 {@link AiCallRecorder}）。
  */
 @Slf4j
 @Component

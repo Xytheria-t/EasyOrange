@@ -32,11 +32,11 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Spring AI 调用小工具 — 收敛 system+user 双消息、JSON 结构化输出、原生 tool calling、Embedding、多模态结构化输出这几类
- * 重复调用模式，避免每个服务重复组装 {@link Prompt}。
+ * Spring AI 调用小工具 — 收敛 system+user 双消息、JSON 结构化输出、原生 tool calling、Embedding、多模态结构化输出
+ * 几类重复调用模式，避免每个服务重复组装 {@link Prompt}。
  * <p>
- * 带 {@link AiCallScope} 的方法一律经 {@link AiCallRecorder} 执行（它落 eo_ai_call_log 与场景预算记账），治理出口因此
- * 只有一个；唯一例外是 {@link #callJson}，专供 LLM-as-Judge 离线评估、刻意不记账。需按角色分隔多轮消息的调用走 {@link
+ * 带 {@link AiCallScope} 的方法一律经 {@link AiCallRecorder} 执行（落 eo_ai_call_log 与场景预算记账），治理出口唯一；
+ * 唯一例外是 {@link #callJson}，专供 LLM-as-Judge 离线评估、刻意不记账。按角色分隔多轮消息走 {@link
  * #callText(ChatModel, AiCallScope, List)} 重载 —— 历史不进单条 user 消息，前缀稳定才能命中供应商 KV cache 折扣计价。
  */
 @Slf4j
@@ -44,7 +44,7 @@ import tools.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class AiModelSupport {
 
-    /** OpenAI 兼容协议的工具选择枚举值：{@code required} = 必须从给定工具里选一个（见 {@link #toolOptions}）。 */
+    /** OpenAI 兼容协议 {@code tool_choice} 的枚举值：{@code required} = 必须从给定工具里选一个（口径见 {@link #toolOptions}）。 */
     private static final String TOOL_CHOICE_REQUIRED = "required";
 
     private final AiCallRecorder callRecorder;
@@ -63,14 +63,14 @@ public class AiModelSupport {
                 () -> chatOutcome(chatModel.call(new Prompt(messages, scopedOptions(chatModel, scope)))));
     }
 
-    /** JSON 结构化输出（<b>唯一不记账的调用</b>）：追加 {@code response_format=json_object}，解析与降级由调用方承担。不
-     * 记账是刻意的：唯一调用方 {@code AiJudge} 只在金标准集回归跑批里跑，记账会让成本报表套娃、还要额外配评估场景预算。 */
+    /** JSON 结构化输出（唯一不记账的调用）：追加 {@code response_format=json_object}，解析与降级由调用方承担。唯一调用方
+     * {@code AiJudge} 只在金标准集回归跑批里跑，记账会让成本报表套娃、还要额外配评估场景预算，故刻意账外。 */
     public String callJson(ChatModel chatModel, String systemPrompt, String userMessage) {
         return outputText(
                 chatModel.call(new Prompt(systemUser(systemPrompt, userMessage), jsonOptions(chatModel, null))));
     }
 
-    /** 原生 tool calling（带记账）：返回模型请求的工具调用，空列表 = 模型没调工具、由调用方按决策失败处理；只发请求不执行工具。 */
+    /** 原生 tool calling（带记账）：空列表 = 模型没调工具，由调用方按决策失败处理；只发请求不执行工具。 */
     public List<AssistantMessage.ToolCall> callWithTools(
             ChatModel chatModel, AiCallScope scope, List<Message> messages, List<ToolCallback> toolCallbacks) {
         return callRecorder.record(scope, chatModel, joinTexts(messages), () -> {
@@ -80,7 +80,7 @@ public class AiModelSupport {
         });
     }
 
-    /** 流式文本生成：逐 token 回调，阻塞至流结束返回完整文本；记账口径与 {@link #callText} 一致（Judge 数据源不缺流式调用）。 */
+    /** 流式文本生成：逐 token 回调，阻塞至流结束返回完整文本；记账口径同 {@link #callText}（Judge 不走流式调用）。 */
     public String callTextStream(
             ChatModel chatModel,
             AiCallScope scope,
@@ -115,7 +115,7 @@ public class AiModelSupport {
     }
 
     /** 文本向量化（ES kNN 需要的 {@code List<Float>} 形态），响应不落库只记成功与否。必须走 {@code embedForResponse}：
-     * {@code embed(String)} 会把 metadata 丢在中间层、usage 取不到，成本报表里 embedding 一行永远是 0。 */
+     * {@code embed(String)} 把 metadata 丢在中间层、usage 取不到，报表里 embedding 一行永远是 0。 */
     public List<Float> embed(EmbeddingModel embeddingModel, AiCallScope scope, String text) {
         // 加前缀把 embedding 与 chat 的 prompt 摘要在报表里隔开，同段文本两种调用的 hash 不撞
         return callRecorder.record(scope, embeddingModel, "embed:" + text, () -> {
@@ -136,8 +136,8 @@ public class AiModelSupport {
         });
     }
 
-    /** 多模态结构化输出一步到位：图片与「要哪些字段」在同一次请求给到视觉模型。刻意不做「视觉模型写自由文本、文本模型
-     * 再转 JSON」两段式 —— 第二次调用看不到图片，只是格式转换，多付一次调用的钱与延迟，还丢掉没写进文字的画面细节。 */
+    /** 多模态结构化输出：图片与「要哪些字段」同一次请求给到视觉模型。刻意不做「视觉模型写自由文本、文本模型再转
+     * JSON」两段式 —— 第二次调用看不到图片，多付一次调用的钱与延迟，还丢掉没写进文字的画面细节。 */
     public <T> Optional<T> callJsonAsWithImages(
             ChatModel chatModel,
             AiCallScope scope,
@@ -159,7 +159,7 @@ public class AiModelSupport {
         return parseJson(scope, json, responseType);
     }
 
-    /** 解析模型返回的 JSON；空内容或解析失败返回 empty（调用方据此降级，不抛出去打断业务链路）。不合 schema 与「模型不可用」在这里是同一个结果，需要区分的场景用 {@link #callJson} 自行解析。 */
+    /** 解析模型返回的 JSON；空内容或解析失败返回 empty（调用方据此降级，不打断业务链路）；不合 schema 与「模型不可用」同一结果，需要区分用 {@link #callJson}。 */
     private <T> Optional<T> parseJson(AiCallScope scope, @Nullable String json, Class<T> responseType) {
         try {
             if (json == null || json.isBlank()) {
@@ -189,7 +189,7 @@ public class AiModelSupport {
         return list;
     }
 
-    /** 提取模型文本输出；模型可能不返回结果（流式分片尤其常见只有 metadata 没有 output），统一回退空串。 */
+    /** 模型文本输出；可能没有结果（流式分片尤其常见只有 metadata 没有 output），统一回退空串。 */
     private static String outputText(@Nullable ChatResponse response) {
         var result = response == null ? null : response.getResult();
         return result == null || result.getOutput() == null
@@ -201,7 +201,7 @@ public class AiModelSupport {
         return new CallOutcome<>(outputText(response), usageOf(response));
     }
 
-    /** 模型请求的工具调用（可能为空：模型直接回了文本）；供应商侧未回结果时同样为空。 */
+    /** 模型请求的工具调用（可能为空：模型直接回了文本）；供应商未回结果同样为空。 */
     private static List<AssistantMessage.ToolCall> toolCallsOf(@Nullable ChatResponse response) {
         if (response == null
                 || response.getResult() == null
@@ -219,8 +219,8 @@ public class AiModelSupport {
                 .build();
     }
 
-    /** 工具决策调用的请求选项 —— {@code tool_choice} 显式设 {@code required}：ReAct 每轮的产物契约就是「一个工具调用」，
-     * {@code auto} 下模型仍可能回纯文本，在协议层要求后失败模式就从「降级」变成「不可能发生」。 */
+    /** 工具决策请求选项 —— {@code tool_choice} 显式 {@code required}：ReAct 每轮的产物契约就是「一个工具调用」，
+     * {@code auto} 下模型仍可能回纯文本，协议层要求后失败模式从「降级」变成「不可能发生」。 */
     private static OpenAiChatOptions toolOptions(
             ChatModel chatModel, List<ToolCallback> toolCallbacks, @Nullable Integer maxTokens) {
         return options(chatModel, maxTokens)
@@ -230,15 +230,14 @@ public class AiModelSupport {
     }
 
     /** scoped 调用的 per-request options —— 输出上限按场景预算真下发（{@code max_tokens}），与预算前置检查 / 记账共用同一份
-     * 配置：供应商侧截断输出，最坏单次成本由此封顶。无配置返回 null（不下发）且连继承连接都不做，避免发一个只有连接
-     * 字段的 options 把「没配」伪装成「配了」。 */
+     * 配置：供应商侧截断输出，最坏单次成本由此封顶；无配置返回 null 且不继承连接，避免只有连接字段的 options 把「没配」伪装成「配了」。 */
     private @Nullable OpenAiChatOptions scopedOptions(ChatModel chatModel, AiCallScope scope) {
         Integer maxTokens = maxTokensOf(scope);
         return maxTokens == null ? null : options(chatModel, maxTokens).build();
     }
 
-    /** per-request options 统一入口：先下发场景 {@code max_tokens} 再继承模型名 —— 只有这个顺序能让三种 options 复用同一段
-     * 模板。 */
+    /** per-request options 统一入口：先下发场景 {@code max_tokens} 再继承模型名 —— 只有这个顺序能让三种 options
+     * 复用同一段模板。 */
     private static OpenAiChatOptions.Builder options(ChatModel chatModel, @Nullable Integer maxTokens) {
         var builder = OpenAiChatOptions.builder();
         if (maxTokens != null) {
@@ -247,8 +246,8 @@ public class AiModelSupport {
         return inheritConnection(builder, chatModel);
     }
 
-    /** 继承模型的连接与模型名 —— 只设业务字段时 {@code model} 为 null，openai-java 会回退到 SDK 默认模型名（{@code
-     * gpt-5-mini}），对非 OpenAI 供应商直接 404，走到这条路径的 AI 决策点会整体静默降级。 */
+    /** 继承模型的连接与模型名 —— 只设业务字段时 {@code model} 为 null，openai-java 回退到 SDK 默认模型名（{@code
+     * gpt-5-mini}），非 OpenAI 供应商直接 404、AI 决策点整体静默降级。 */
     private static OpenAiChatOptions.Builder inheritConnection(OpenAiChatOptions.Builder builder, ChatModel chatModel) {
         if (chatModel instanceof OpenAiChatModel openAiModel
                 && openAiModel.getDefaultOptions() instanceof OpenAiChatOptions defaults) {
@@ -257,7 +256,7 @@ public class AiModelSupport {
         return builder;
     }
 
-    /** 场景的单次调用输出上限；无配置或非正返回 null（不下发，保持供应商默认）。<b>刻意不受 {@code budget.enabled} 控制</b>：
+    /** 场景的单次调用输出上限；无配置或非正返回 null（不下发，保持供应商默认）。刻意不受 {@code budget.enabled} 控制：
      * 预算是记账口径，关掉只意味着不再累计，而 {@code max_tokens} 是供应商侧硬约束 —— 跟着关掉等于「省统计」变「放开成本」。 */
     private @Nullable Integer maxTokensOf(AiCallScope scope) {
         var configured = aiProperties.budget().resolve(scope.budgetScenario());

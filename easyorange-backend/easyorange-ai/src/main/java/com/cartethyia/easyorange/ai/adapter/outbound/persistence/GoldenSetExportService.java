@@ -10,26 +10,22 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * 反馈 → 金标准评测集导出 — 把可用的用户反馈渲染成 golden-set.yaml 用例片段，导出即标记 exported=1；
- * 人工审核后合入 {@code eval/golden-set.yaml}，实现「反馈飞轮自动扩充评测集」。
+ * 反馈 → 金标准评测集导出 — 把可用的用户反馈渲染成 golden-set.yaml 用例片段，导出即标记 exported=1，
+ * 人工审核后合入 {@code eval/golden-set.yaml}。
  * <p>
- * <b>只导「能自动成用例」的反馈</b>（{@link #EXPORTABLE}，加载校验要求 chat 用例必须有非空
- * reference_answer）：helpful = 0 不能自动成用例 —— 反馈里的 response_text 正是被用户嫌弃的那条回答，
- * 拿它当 reference_answer 等于把错答案钉成标准，下一轮评测会把「答得对」判成回归（负样本必须先由
- * 人工补一条正确回答）；scope != chat 缺 gold_doc_ids、问题或回答为空，导出的片段也过不了加载校验。
+ * <b>只导「能自动成用例」的反馈</b>（{@link #EXPORTABLE}，加载校验要求 chat 用例必须有非空 reference_answer）：
+ * helpful = 0 不能自动成用例 —— response_text 正是被用户嫌弃的回答，拿它当 reference_answer 等于把错答案
+ * 钉成标准（负样本必须先人工补正确回答）；scope != chat 缺 gold_doc_ids、问题或回答为空也过不了加载校验。
  * <p>
- * 不能自动成用例的行<b>不标 exported</b>：标了就等于「已产出用例」，下次导出不再提示，这条信号就丢了
- * —— 只在片段头部按条数汇总提示人工处理。宁可反复提示，不可漏处理。
+ * 不能自动成用例的行<b>不标 exported</b>：标了就等于「已产出用例」，下次导出不再提示、信号丢失 ——
+ * 只在片段头部按条数汇总提示人工处理。宁可反复提示，不可漏处理。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class GoldenSetExportService implements GoldenSetExportPort {
 
-    /**
-     * 「能自动成用例」的唯一判据 —— 正取（导出）与取反（统计待人工）共用同一段 SQL，
-     * 不会出现「导出认为可用、统计认为不可用」的两套口径。
-     */
+    /** 「能自动成用例」的唯一判据 —— 正取（导出）与取反（统计待人工）共用同一段 SQL，不会出现两套口径。 */
     private static final String EXPORTABLE = "helpful = 1 AND scope = 'chat'"
             + " AND COALESCE(query_text, '') <> '' AND COALESCE(response_text, '') <> ''";
 
@@ -53,8 +49,7 @@ public class GoldenSetExportService implements GoldenSetExportPort {
             needsManual = countNeedsManual();
         } catch (Exception e) {
             log.warn("Export AI feedback failed", e);
-            // 抛而非返回提示串：返回值是 YAML 片段，包进 Result 后调用方分不清「片段」与「失败说明」，
-            // 一律 200 会让脚本把失败当成功，把一句注释合进 golden-set.yaml
+            // 抛而非返回提示串：返回值是 YAML 片段，包进 Result 后 200 会让脚本把失败当成功、把一句注释合进 golden-set.yaml
             throw BusinessException.of("导出失败，请检查数据库连接");
         }
 

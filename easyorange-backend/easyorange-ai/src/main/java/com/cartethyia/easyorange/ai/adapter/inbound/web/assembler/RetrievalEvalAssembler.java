@@ -10,8 +10,7 @@ import java.util.List;
 /**
  * 检索质量回看视图组装 — domain 模型 → 对外 VO。
  * <p>
- * hit@5 的百分比形式在这里出：domain 侧保留 0-1 比例供程序比较，管理端展示要的是百分数，
- * 两份口径同时外发会让看的人以为「0.90 与 90% 是两个指标」。
+ * hit@5 百分比在这里出：domain 侧保留 0-1 比例供程序比较；管理端展示要百分数，两份口径同时外发会被当成两个指标。
  */
 public final class RetrievalEvalAssembler {
 

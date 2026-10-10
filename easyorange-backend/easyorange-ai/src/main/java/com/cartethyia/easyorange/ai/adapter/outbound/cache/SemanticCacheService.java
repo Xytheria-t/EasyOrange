@@ -28,12 +28,12 @@ import tools.jackson.databind.ObjectMapper;
  * （{@code eo:ai:semantic:<scope>:<用户桶>}），条目超上限淘汰最旧；Redis / embedding 任一不可用都 fail-open。
  * <p>
  * 按用户分桶是正确性要求而非调优项：条目存的是注入了该用户长期偏好与会话历史的回答，共享桶会把一个人的偏好
- * 返给另一个人。向量按 base64 float32 存而非 JSON 数字数组：1024 维 JSON 约 10KB，base64 约 5.5KB 且不走
- * 浮点文本解析；查询要把整个 Hash 拉回逐条算余弦（O(n) 扫描），单条约 7KB × 默认 200 条上限，真到这个量级
- * 应换向量索引（ES kNN）而不是加大 Hash。
+ * 返给另一个人。向量按 base64 float32 存而非 JSON 数组：1024 维 JSON 约 10KB、base64 约 5.5KB 且不走浮点
+ * 文本解析；查找要把整个 Hash 拉回逐条算余弦（O(n) 扫描，单条约 7KB × 默认上限 200 条），到这个量级应换
+ * 向量索引（ES kNN）而非加大 Hash。
  * <p>
- * 单条脏数据（格式不符 / 向量解码失败）直接跳过，旧格式条目随 TTL 与淘汰自然过期，不做迁移。每次查找记一个
- * 结局到 {@link SemanticCacheMetrics} —— 未命中纯亏一次供应商 embedding 调用，没有命中率就只能拍脑袋调参。
+ * 单条脏数据（格式不符 / 向量解码失败）直接跳过，旧格式条目随 TTL 与淘汰自然过期。每次查找记一个结局到
+ * {@link SemanticCacheMetrics} —— 未命中纯亏一次供应商 embedding 调用，没有命中率只能拍脑袋调参。
  */
 @Slf4j
 @Component
@@ -65,8 +65,7 @@ public class SemanticCacheService implements SemanticCachePort {
             return aiModelSupport.embed(embeddingModel, AiCallScope.CHAT, query);
         } catch (Exception e) {
             log.warn("Semantic cache query embedding failed, skip cache for this call", e);
-            // 向量化失败记 error 而非 bypass：钱已经花了（供应商已计费）却没换来一次查找，
-            // 与「主动没查」的 bypass 不是一回事，故障期间要能从这条曲线看出来
+            // 失败记 error 而非 bypass：钱已花（供应商已计费）却没换来查找，与主动不查不是一回事，故障期能从曲线看出来
             metrics.recordFailure();
             return List.of();
         }
@@ -107,8 +106,7 @@ public class SemanticCacheService implements SemanticCachePort {
                 metrics.record(SemanticCacheMetrics.Outcome.MISS);
                 return Optional.empty();
             }
-            // 反序列化放在计数之前：它同样可能抛，而一次查找只能出一个结局
-            // （先记 HIT 再抛会被 catch 补记 ERROR，命中率分子分母同时污染）
+            // 反序列化先于计数：它同样可能抛，而一次查找只能出一个结局（先记 HIT 再抛会被 catch 补记 ERROR，分子分母同时污染）
             var hit = objectMapper.readValue(bestResponse, type);
             metrics.record(SemanticCacheMetrics.Outcome.HIT);
             return Optional.of(hit);
@@ -119,7 +117,7 @@ public class SemanticCacheService implements SemanticCachePort {
         }
     }
 
-    /** 写入缓存 (queryEmbedding, response)；淘汰上限按用户桶各算各的 —— 高频用户的桶满了不该把其他用户的条目挤掉。 */
+    /** 淘汰上限按用户桶各算各的 —— 高频用户的桶满了不该把其他用户的条目挤掉。 */
     @Override
     public void store(AiCallScope scope, String userId, String query, List<Float> queryEmbedding, Object response) {
         if (queryEmbedding == null || queryEmbedding.isEmpty()) {
@@ -195,7 +193,7 @@ public class SemanticCacheService implements SemanticCachePort {
         return vector;
     }
 
-    /** Redis key = 前缀 + scope + <b>用户桶</b>（正确性要求，见类注释）；加桶前的旧 key 随 TTL 自然过期，不做迁移。 */
+    /** Redis key = 前缀 + scope + <b>用户桶</b>（正确性要求，见类注释）。 */
     private static String key(AiCallScope scope, String userId) {
         return KEY_PREFIX + scope.name().toLowerCase() + ':' + userId;
     }
@@ -204,6 +202,6 @@ public class SemanticCacheService implements SemanticCachePort {
         return DigestUtils.md5DigestAsHex(input.getBytes(StandardCharsets.UTF_8));
     }
 
-    /** Redis Hash 条目：查询向量（base64 float32）+ 序列化响应 + 时间戳。字段名 vector 与旧版 embedding 不同，旧条目解析失败即被跳过、自然过期，不做迁移。 */
+    /** Redis Hash 条目：查询向量（base64 float32）+ 序列化响应 + 时间戳；旧字段名 embedding 的条目解析失败即被跳过。 */
     private record CachedEntry(String vector, String response, long timestamp) {}
 }

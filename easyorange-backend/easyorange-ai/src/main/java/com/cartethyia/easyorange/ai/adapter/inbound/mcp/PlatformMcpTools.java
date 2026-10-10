@@ -18,14 +18,13 @@ import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 
 /**
- * MCP 公开只读工具面 — 外部 MCP client（Cursor / Claude Desktop 等）经 streamable HTTP
- * （端点 {@code /mcp}）调用；与对话工具面（{@code ToolCallLoop} 的 {@code ChatTools}）两级独立暴露：
- * 外部 client 无用户上下文，只挂公开只读数据（在售资产检索/详情、类目、平台规则知识），
- * 不暴露订单、个人信息与任何写路径（信任边界见根 AGENTS.md）。
+ * MCP 公开只读工具面 — 外部 client（Cursor / Claude Desktop 等）经 streamable HTTP（端点 {@code /mcp}）调用，
+ * 与对话工具面（{@code ChatTools}）两级独立暴露：外部 client 无用户上下文，只挂公开只读 4 工具
+ * （资产检索/详情、类目、平台规则），不暴露订单、个人信息与任何写路径。
  * <p>
- * <b>故障一律上抛</b>（经 MCP 协议转错误结果交 client）：空结果被工具 description 承诺为「无匹配」，
- * 故障伪装成空会让外部模型误判没货而盲目换词重试 —— 吞异常降级只属于对话侧，MCP 走 strict 路径。
- * 每次调用计 {@code easyorange.mcp.tool{name}} 指标，与 工具调用循环指标同面板观测。
+ * <b>故障一律上抛</b>（经 MCP 协议转错误结果交 client）：空结果被工具 description 承诺为「无匹配」，故障伪装成空
+ * 会让外部模型误判没货而盲目换词重试 —— 吞异常降级只属于对话侧。调用计 {@code easyorange.mcp.tool{name}} 指标，
+ * 与工具调用循环指标同面板观测。
  */
 @Component
 public class PlatformMcpTools {
@@ -39,7 +38,7 @@ public class PlatformMcpTools {
     private static final int MAX_PRODUCT_TOP_K = 20;
     private static final int MAX_KNOWLEDGE_TOP_K = 10;
 
-    /** 工具指标 tag 封闭集 — 4 个公开只读工具名（与 {@code @McpTool(name=...)} 同源常量），构造期按全集注册；新增工具只加枚举常量。 */
+    /** 工具指标 tag 封闭集 — 常量与 {@code @McpTool(name=...)} 同源，构造期按全集注册；新增工具只加枚举常量。 */
     private enum McpToolTag {
         SEARCH_PRODUCTS(TOOL_SEARCH_PRODUCTS),
         GET_PRODUCT_DETAIL(TOOL_GET_PRODUCT_DETAIL),

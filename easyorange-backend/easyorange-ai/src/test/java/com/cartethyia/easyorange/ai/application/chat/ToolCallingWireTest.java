@@ -30,20 +30,12 @@ import org.springframework.ai.support.ToolCallbacks;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 原生 tool calling 的 wire 契约测试 — 用 JDK 自带 {@link HttpServer} 当供应商桩，校验经
- * {@link AiModelSupport#callWithTools} 发出的<b>真实请求体</b>与回来的 tool call 解析。
- * <p>
- * 覆盖四件会「静默失效」的事（都不是单元测试能看出来的）：
- * <ol>
- *   <li>工具定义确实进了请求体 {@code tools}（丢了 = 模型永不调工具，整条对话降级成单步检索）；</li>
- *   <li>per-request options 继承了模型名（缺 {@code model} 时 openai-java 回退 SDK 默认模型名，
- *       对非 OpenAI 供应商直接 404）；</li>
- *   <li>工具轮不带 {@code response_format}（JSON 模式与 tools 同发在部分供应商会冲突），
- *       且响应里的 tool call 经 Spring AI 的 OpenAI 映射层能被正确解析出来；</li>
- *   <li>历史轮的 assistant tool_calls + role=tool 消息能序列化成供应商接受的请求体
- *       （循环轮间的 wire 形态，{@code tool_call_id} 关联不上 = 第二轮起整条链路 400），
- *       一轮并行发起的多个调用同样每个 id 都要带一条对应观察。</li>
- * </ol>
+ * 原生 tool calling 的 wire 契约测试 — JDK 自带 {@link HttpServer} 当供应商桩，校验经 {@link AiModelSupport#callWithTools}
+ * 发出的真实请求体与回来的 tool call 解析。覆盖四件会「静默失效」的事（都不是单元测试能看出来的）：工具定义确实进
+ * {@code tools}（丢了 = 模型永不调工具，整条对话降级成单步检索）；per-request options 继承模型名（缺 {@code model} 时
+ * openai-java 回退 SDK 默认名，对非 OpenAI 供应商直接 404）；工具轮不带 {@code response_format}（与 tools 同发在部分供应商
+ * 会冲突）；历史轮的 assistant tool_calls + role=tool 能序列化成供应商接受的请求体（{@code tool_call_id} 关联不上 = 第二轮起
+ * 整条链路 400，并行调用的每个 id 都要带一条对应观察），且响应里的 tool call 经 Spring AI 的 OpenAI 映射层正确解析。
  */
 @DisplayName("原生 tool calling wire 契约（HTTP 桩）-> 测试")
 class ToolCallingWireTest {
@@ -182,8 +174,7 @@ class ToolCallingWireTest {
                                 .build()),
                 List.of(ToolCallbacks.from(tools)));
 
-        // 循环轮间的消息序列能被 openai-java 正确序列化：assistant 带 tool_calls，观察走 role=tool
-        // （tool_call_id 关联不上 = 供应商 400，整条对话链路在第二轮起全挂——单元测试看不出来的 wire 事实）
+        // 循环轮间 wire 形态：tool_call_id 关联不上 = 供应商 400，整条对话从第二轮起全挂（单元测试看不出来）
         String request = capturedBody.get();
         assertThat(request).contains("\"tool_calls\"", "\"role\":\"tool\"", "\"tool_call_id\":\"call-9\"");
         assertThat(request).contains("\"tools\"", "\"tool_choice\":\"required\"");
