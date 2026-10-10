@@ -19,10 +19,10 @@ import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
 import com.cartethyia.easyorange.ai.domain.port.ToolCallStepTracePort;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.support.ToolCallbacks;
@@ -83,8 +83,8 @@ public class ToolCallLoop {
      * @param sessionId 可空（请求不带会话），两处消费方各自兜底：trace 的 session_id 补 {@code anonymous} 哨兵、会话记忆 fail-open
      * @param userId 评估跑批传 {@link #MACHINE_SUBJECT}，偏好不落库
      * @param streamHandler 可空：非流式路径不推 step 事件，trace / 指标照常
-     * @param allowedTools 工具白名单，null = 全量工具面（生产路径）；非空只装配列出的工具，RAG 有效性对照的「无检索来源」
-     *                     臂据此只挂 {@link ChatTools#TOOL_FINISH}（消融变量只落在工具装配上）
+     * @param allowedTools 工具白名单，判定语义见 {@link #allows}；RAG 有效性对照的「无检索来源」臂据此只挂
+     *                     {@link ChatTools#TOOL_FINISH}（消融变量只落在工具装配上）
      */
     public record Input(
             String question,
@@ -103,6 +103,11 @@ public class ToolCallLoop {
                 List<UserPreference> prefs,
                 @Nullable ChatStreamHandler streamHandler) {
             this(question, sessionId, userId, history, prefs, streamHandler, null);
+        }
+
+        /** 白名单判定（装配过滤与降级补检索共用）：null = 不限（生产路径即全量工具面），非空只放行名单内工具。 */
+        public boolean allows(String toolName) {
+            return allowedTools == null || allowedTools.contains(toolName);
         }
     }
 
@@ -137,7 +142,7 @@ public class ToolCallLoop {
         return new ToolLoopKernel.Spec(
                 promptRegistry.require(CHAT_TOOL_PROMPT),
                 firstUserMessage(input),
-                toolCallbacks(tools, input.allowedTools()),
+                toolCallbacks(tools, input),
                 aiProperties.chat().maxSteps(),
                 budgetGuard::exhausted,
                 () -> fallbackSearch(input, tools),
@@ -153,14 +158,9 @@ public class ToolCallLoop {
     }
 
     /** 白名单在装配层生效 —— 模型拿不到工具 schema 就调不到。 */
-    private static List<ToolCallback> toolCallbacks(ChatTools tools, @Nullable Set<String> allowedTools) {
-        ToolCallback[] all = ToolCallbacks.from(tools);
-        if (allowedTools == null) {
-            return List.of(all);
-        }
-        return Stream.of(all)
-                .filter(callback ->
-                        allowedTools.contains(callback.getToolDefinition().name()))
+    private static List<ToolCallback> toolCallbacks(ChatTools tools, Input input) {
+        return Arrays.stream(ToolCallbacks.from(tools))
+                .filter(callback -> input.allows(callback.getToolDefinition().name()))
                 .toList();
     }
 
@@ -228,7 +228,7 @@ public class ToolCallLoop {
 
     /** 决策失败的降级补检索 — 判重口径与工具步一致（在 {@code ChatTools} 内），自身故障不外抛（对话不死在降级路径）。 */
     private void fallbackSearch(Input input, ChatTools tools) {
-        if (!allowsKnowledgeSearch(input)) {
+        if (!input.allows(ChatTools.TOOL_KNOWLEDGE_SEARCH)) {
             return;
         }
         try {
@@ -239,10 +239,5 @@ public class ToolCallLoop {
                     input.sessionId(),
                     FailureReason.of(e));
         }
-    }
-
-    private static boolean allowsKnowledgeSearch(Input input) {
-        Set<String> allowed = input.allowedTools();
-        return allowed == null || allowed.contains(ChatTools.TOOL_KNOWLEDGE_SEARCH);
     }
 }
