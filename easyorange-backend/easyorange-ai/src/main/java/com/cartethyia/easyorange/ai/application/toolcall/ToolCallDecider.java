@@ -36,18 +36,10 @@ public class ToolCallDecider {
     private final ObjectMapper objectMapper;
 
     /**
-     * 取一轮的工具调用决策；空列表即「本轮决策失败」，调用方负责降级。一轮可带回多个调用并全部返回——供应商侧的
-     * 并行发起（规则 + 找货同问最常见）在这里省掉一整轮往返。
-     */
-    public List<ToolCallDecision> decide(
-            @Nullable String sessionId, List<Message> decisionMessages, List<ToolCallback> toolCallbacks) {
-        return decideInternal(sessionId, decisionMessages, toolCallbacks, AiCallScope.CHAT);
-    }
-
-    /**
      * 编排内核的决策入口 — 输出 {@link ToolLoopCall} 视图。模型场景固定 {@code chat_tool}（决策是纯路由任务，
      * 两条链路共用快模型）；记账口径由 {@code scope} 指定（listing 的决策调用记进 auto_listing 场景预算）；
-     * {@code toolInputOf} 按各链路工具面取入参摘要，供 trace 展示。
+     * {@code toolInputOf} 按各链路工具面取入参摘要，供 trace 展示；一轮可带回多个调用并全部返回——供应商侧的
+     * 并行发起（规则 + 找货同问最常见）在这里省掉一整轮往返。
      */
     public List<ToolLoopCall> decideForLoop(
             @Nullable String sessionId,

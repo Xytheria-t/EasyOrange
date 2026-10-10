@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.ai.application.chat.ChatTools;
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,16 @@ class ToolCallDeciderTest {
         return new ToolCallDecider(aiModelSupport, mock(AiModelRouter.class), new ObjectMapper());
     }
 
+    private List<ToolLoopCall> loopCalls(AiModelSupport aiModelSupport) {
+        return decider(aiModelSupport)
+                .decideForLoop(
+                        "sess-1",
+                        List.of(new UserMessage("退款规则")),
+                        List.of(UNUSED_CALLBACK),
+                        AiCallScope.CHAT,
+                        d -> null);
+    }
+
     @Test
     @DisplayName("首次决策故障重试一次后成功 — 抖动自愈，不落入单步降级")
     void retry_recoversFromTransientFailure() {
@@ -36,11 +47,10 @@ class ToolCallDeciderTest {
                 .thenThrow(new RuntimeException("connection reset"))
                 .thenReturn(List.of(toolCall("{\"thought\":\"查规则\",\"query\":\"退款\"}")));
 
-        List<ToolCallDecision> decisions =
-                decider(aiModelSupport).decide("sess-1", List.of(new UserMessage("退款规则")), List.of(UNUSED_CALLBACK));
+        List<ToolLoopCall> calls = loopCalls(aiModelSupport);
 
-        assertThat(decisions).hasSize(1);
-        assertThat(decisions.get(0).rawArguments()).contains("退款");
+        assertThat(calls).hasSize(1);
+        assertThat(calls.get(0).rawArguments()).contains("退款");
         verify(aiModelSupport, times(2)).callWithTools(any(), any(), anyList(), anyList());
     }
 
@@ -52,10 +62,9 @@ class ToolCallDeciderTest {
                 .thenThrow(new RuntimeException("timeout"))
                 .thenThrow(new RuntimeException("timeout"));
 
-        List<ToolCallDecision> decisions =
-                decider(aiModelSupport).decide("sess-1", List.of(new UserMessage("退款规则")), List.of(UNUSED_CALLBACK));
+        List<ToolLoopCall> calls = loopCalls(aiModelSupport);
 
-        assertThat(decisions).isEmpty();
+        assertThat(calls).isEmpty();
         verify(aiModelSupport, times(2)).callWithTools(any(), any(), anyList(), anyList());
     }
 
@@ -65,10 +74,9 @@ class ToolCallDeciderTest {
         AiModelSupport aiModelSupport = mock(AiModelSupport.class);
         when(aiModelSupport.callWithTools(any(), any(), anyList(), anyList())).thenReturn(List.of());
 
-        List<ToolCallDecision> decisions =
-                decider(aiModelSupport).decide("sess-1", List.of(new UserMessage("退款规则")), List.of(UNUSED_CALLBACK));
+        List<ToolLoopCall> calls = loopCalls(aiModelSupport);
 
-        assertThat(decisions).isEmpty();
+        assertThat(calls).isEmpty();
         verify(aiModelSupport, times(1)).callWithTools(any(), any(), anyList(), anyList());
     }
 
