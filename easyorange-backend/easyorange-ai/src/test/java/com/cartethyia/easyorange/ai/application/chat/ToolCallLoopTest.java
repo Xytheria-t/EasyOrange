@@ -652,6 +652,25 @@ class ToolCallLoopTest {
     }
 
     @Test
+    @DisplayName("一轮多个 finish（病态输出）-> 取最后一个作为收敛理由，trace / step / toolPath 都只记一次")
+    void run_multipleFinishesInOneRoundKeepsLast() {
+        stubDecisions(parallelResponse(
+                parallelCall("call-1", ChatTools.TOOL_FINISH, "{\"thought\":\"可以收敛了\"}"),
+                parallelCall("call-2", ChatTools.TOOL_FINISH, "{\"thought\":\"信息已足够\"}")));
+        var steps = new RecordingHandler();
+
+        Result result = run("在吗？", "user-1", steps);
+
+        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.toolPath()).containsExactly(ChatTools.TOOL_FINISH);
+        assertThat(steps.steps).hasSize(1);
+        assertThat(steps.steps.getFirst().thought()).isEqualTo("信息已足够");
+        verify(tracePort)
+                .record(argThat(
+                        trace -> ChatTools.TOOL_FINISH.equals(trace.tool()) && "信息已足够".equals(trace.thought())));
+    }
+
+    @Test
     @DisplayName("并行调用里有一个参数不可解析 -> 整轮判决策失败降级（半执行会让回填的工具调用与观察对不上）")
     void run_parallelCallWithUnparsableArgumentsDegrades() {
         stubDecisions(parallelResponse(
