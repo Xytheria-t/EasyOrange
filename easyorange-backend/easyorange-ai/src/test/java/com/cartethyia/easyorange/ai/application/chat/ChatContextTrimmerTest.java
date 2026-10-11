@@ -54,9 +54,9 @@ class ChatContextTrimmerTest {
     }
 
     @Test
-    @DisplayName("超预算 -> 从最新向前保留连续窗口")
-    void trim_keepsNewestContiguousWindow() {
-        // 每条 400 字符 = 120 token；预算 300 -> 放得下最新 2 条（240），第 3 条（360）放不下
+    @DisplayName("超预算 -> 量化驱逐：一次裁到半额，从最新向前保留连续窗口")
+    void trim_keepsNewestContiguousWindowWithinHalfBudget() {
+        // 每条 400 字符 = 120 token；预算 300 -> 裁到半额 150，只放得下最新 1 条（120）
         List<ChatTurn> history = List.of(
                 asciiTurn(ChatTurn.Role.USER, 400),
                 asciiTurn(ChatTurn.Role.ASSISTANT, 400),
@@ -67,8 +67,28 @@ class ChatContextTrimmerTest {
 
         List<ChatTurn> kept = trimmer.trim(history);
 
-        assertThat(kept).containsExactly(history.get(2), history.get(3));
+        assertThat(kept).containsExactly(history.get(3));
         assertThat(trimCount("trimmed")).isEqualTo(1.0);
+        assertThat(recordedTokens()).isEqualTo(120);
+    }
+
+    @Test
+    @DisplayName("半额内放得下多条 -> 保留过半额的最新连续窗口（不做逐条贴着预算裁）")
+    void trim_keepsContiguousWindowUpToHalfBudget() {
+        // 每条 120 token；预算 600 -> 裁到半额 300，放得下最新 2 条（240），第 3 条（360）放不下
+        List<ChatTurn> history = List.of(
+                asciiTurn(ChatTurn.Role.USER, 400),
+                asciiTurn(ChatTurn.Role.ASSISTANT, 400),
+                asciiTurn(ChatTurn.Role.USER, 400),
+                asciiTurn(ChatTurn.Role.ASSISTANT, 400),
+                asciiTurn(ChatTurn.Role.USER, 400),
+                asciiTurn(ChatTurn.Role.ASSISTANT, 400));
+        trimmer = new ChatContextTrimmer(
+                PropertyBindings.bind(AiProperties.class, "chat.max-history-tokens", "600"), meterRegistry);
+
+        List<ChatTurn> kept = trimmer.trim(history);
+
+        assertThat(kept).containsExactly(history.get(4), history.get(5));
         assertThat(recordedTokens()).isEqualTo(240);
     }
 

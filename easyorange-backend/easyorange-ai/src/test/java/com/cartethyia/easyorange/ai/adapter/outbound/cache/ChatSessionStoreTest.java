@@ -2,6 +2,8 @@ package com.cartethyia.easyorange.ai.adapter.outbound.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -49,8 +51,10 @@ class ChatSessionStoreTest {
     }
 
     @Test
-    @DisplayName("一轮对话 -> 两条一并右推 + 一次裁剪 + 一次续期")
+    @DisplayName("一轮对话 -> 两条一并右推 + 一次续期；超窗才裁、一裁到半窗（量化驱逐）")
     void saveTurns() {
+        when(listOps.rightPushAll(anyString(), anyCollection())).thenReturn(14L);
+
         store.saveTurns("user-42", "sess-1", List.of(ChatTurn.user("你好"), ChatTurn.assistant("在的")));
 
         // 小写 role code 与既有 Redis 数据同形（枚举名只用于 Java 侧）
@@ -60,7 +64,18 @@ class ChatSessionStoreTest {
                         List.of(
                                 "{\"role\":\"user\",\"content\":\"你好\"}",
                                 "{\"role\":\"assistant\",\"content\":\"在的\"}"));
-        verify(listOps).trim("eo:chat:session:user-42:sess-1", -12L, -1);
+        verify(listOps).trim("eo:chat:session:user-42:sess-1", -6L, -1);
+        verify(redis).expire("eo:chat:session:user-42:sess-1", Duration.ofHours(24));
+    }
+
+    @Test
+    @DisplayName("窗口内 -> 不裁剪（逐轮纯追加，跨轮前缀缓存不被前移打断）")
+    void saveTurns_withinWindow_skipsTrim() {
+        when(listOps.rightPushAll(anyString(), anyCollection())).thenReturn(12L);
+
+        store.saveTurns("user-42", "sess-1", List.of(ChatTurn.user("你好"), ChatTurn.assistant("在的")));
+
+        verify(listOps, never()).trim(anyString(), anyLong(), anyLong());
         verify(redis).expire("eo:chat:session:user-42:sess-1", Duration.ofHours(24));
     }
 

@@ -17,6 +17,9 @@ import org.springframework.stereotype.Component;
  * 单条超预算时仍保最新一条，永不返回空历史。检索片段 / 资产详情等固定块不在裁剪范围——由 topK 与分块上限天然约束，
  * 会无界膨胀的只有对话原文。
  * <p>
+ * 超预算时一次裁到<b>半额</b>（量化驱逐）：贴着预算裁会让注入窗口每轮前移一次，供应商前缀缓存的跨轮复用段每轮整段失效；
+ * 裁到半额换多数轮次的逐字节追加，代价是均摊历史变短。
+ * <p>
  * 不做 LLM 摘要压缩（有意取舍）：步数上限与轮数窗口都不大时压缩收益小，而每轮摘要多一次模型调用、直接翻倍延迟与成本。
  */
 @Component
@@ -75,11 +78,12 @@ public class ChatContextTrimmer {
             record(TrimAction.WITHIN, total);
             return history;
         }
-        // 最新一条无条件保留（超长单条也注入，由 maxTokensPerCall 兜住生成侧），其余从最新向前累计
+        // 最新一条无条件保留（超长单条也注入，由 maxTokensPerCall 兜住生成侧），其余从最新向前累计到半额
+        int evictTo = Math.max(budget / 2, 1);
         int keptFrom = tokens.length - 1;
         int kept = tokens[keptFrom];
         for (int i = keptFrom - 1; i >= 0; i--) {
-            if (kept + tokens[i] > budget) {
+            if (kept + tokens[i] > evictTo) {
                 break;
             }
             kept += tokens[i];

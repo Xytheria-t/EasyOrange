@@ -14,8 +14,8 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 多轮对话短期记忆 — Redis List 会话窗口（TTL 24h，最近 N 轮）。一轮对话（提问 + 回答）一次
- * {@code RPUSH} + 裁剪 + 续期：拆成两次单条写入会把 Redis 往返翻倍，且中途失败会留下只有提问没有回答的半轮记忆。
+ * 多轮对话短期记忆 — Redis List 会话窗口（TTL 24h）。一轮对话（提问 + 回答）一次 {@code RPUSH} +
+ * 超窗裁剪 + 续期：拆成两次单条写入会把 Redis 往返翻倍，且中途失败会留下只有提问没有回答的半轮记忆。
  * <p>
  * Redis 不可用 / 会话为空时返回空列表（fail-open：丢记忆不阻塞回答）；单条记录读不出来只跳过该条。
  * <p>
@@ -50,8 +50,12 @@ public class ChatSessionStore implements ChatSessionPort {
             String key = sessionKey(userId, sessionId);
             List<String> payloads =
                     turns.stream().map(objectMapper::writeValueAsString).toList();
-            redis.opsForList().rightPushAll(key, payloads);
-            redis.opsForList().trim(key, -entries(), -1);
+            Long size = redis.opsForList().rightPushAll(key, payloads);
+            // 量化驱逐：超窗才裁、一裁到半窗 —— 每存必裁会让历史前部每轮前移，跨轮前缀缓存整段失效；
+            // 半窗起步换多数轮次纯追加（与 ChatContextTrimmer 的 token 侧同一口径）
+            if (size != null && size > entries()) {
+                redis.opsForList().trim(key, -entries() / 2, -1);
+            }
             redis.expire(key, Duration.ofHours(aiProperties.chat().sessionTtlHours()));
         } catch (Exception e) {
             log.warn("action=chat_session_save_failed, sessionId={}", sessionId, e);
