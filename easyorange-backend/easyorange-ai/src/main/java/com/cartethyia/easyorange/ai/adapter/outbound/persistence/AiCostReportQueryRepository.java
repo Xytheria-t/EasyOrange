@@ -25,6 +25,7 @@ public class AiCostReportQueryRepository implements AiCostReportPort {
                    COUNT(*)                                                        AS calls,
                    COALESCE(SUM(token_input), 0)                                   AS token_input,
                    COALESCE(SUM(token_output), 0)                                  AS token_output,
+                   COALESCE(SUM(cache_read_tokens), 0)                             AS cache_read_tokens,
                    COALESCE(ROUND(AVG(latency_ms)), 0)                             AS avg_latency_ms,
                    COALESCE(SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END), 0)       AS failures
             FROM eo_ai_call_log
@@ -49,6 +50,7 @@ public class AiCostReportQueryRepository implements AiCostReportPort {
                 rs.getLong("calls"),
                 rs.getLong("token_input"),
                 rs.getLong("token_output"),
+                rs.getLong("cache_read_tokens"),
                 rs.getLong("avg_latency_ms"),
                 rs.getLong("failures"),
                 null);

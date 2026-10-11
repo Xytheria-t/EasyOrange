@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
+import com.openai.models.completions.CompletionUsage;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -32,6 +33,9 @@ public class AiCallRecorder {
 
     /** {@code eo_ai_call_log.error_msg} 列宽（VARCHAR(512)）—— 不截断则超长时整条记录写不进去，而写不进去的恰是失败记录。 */
     private static final int ERROR_MSG_MAX = 512;
+
+    /** DeepSeek 回报缓存命中的非标 usage 字段（标准 OpenAI 协议无此字段）。 */
+    private static final String DEEPSEEK_CACHE_HIT_FIELD = "prompt_cache_hit_tokens";
 
     private final AiCallLogPort callLogPort;
     private final TokenBudgetStorePort budgetStore;
@@ -78,6 +82,7 @@ public class AiCallRecorder {
                     (System.nanoTime() - startNanos) / 1_000_000,
                     tokens.input(),
                     tokens.output(),
+                    tokens.cacheRead(),
                     outcome != null,
                     truncate(errorMsg));
         } catch (Exception e) {
@@ -123,13 +128,14 @@ public class AiCallRecorder {
         return DigestUtils.md5DigestAsHex(input.getBytes(StandardCharsets.UTF_8));
     }
 
-    /** 供应商回报的 token 数（缺失字段记 0）—— 调用日志与预算记账共用这一套 null 安全取法。 */
-    private record Tokens(int input, int output) {
+    /** 供应商回报的 token 数（缺失字段记 0）—— 调用日志与预算记账共用这一套 null 安全取法；cacheRead 只进日志。 */
+    private record Tokens(int input, int output, int cacheRead) {
 
         static Tokens of(@Nullable Usage usage) {
             return new Tokens(
                     orZero(usage == null ? null : usage.getPromptTokens()),
-                    orZero(usage == null ? null : usage.getCompletionTokens()));
+                    orZero(usage == null ? null : usage.getCompletionTokens()),
+                    cacheReadOf(usage));
         }
 
         int total() {
@@ -138,6 +144,30 @@ public class AiCallRecorder {
 
         private static int orZero(@Nullable Integer value) {
             return value == null ? 0 : value;
+        }
+
+        /**
+         * 缓存命中输入 token —— 标准字段优先，DeepSeek 非标字段回退。DeepSeek 只在 usage 里多报
+         * {@code prompt_cache_hit_tokens}（不在标准 {@code prompt_tokens_details.cached_tokens} 里），Spring AI 不映射它，
+         * 但 openai-java 把未知字段保留在 {@code additionalProperties} —— 不从 nativeUsage 取回来，主供应商链路的
+         * 命中率将恒为 0。未回报记 0，与输入/输出同一口径不估算。
+         */
+        private static int cacheReadOf(@Nullable Usage usage) {
+            if (usage == null) {
+                return 0;
+            }
+            Long standard = usage.getCacheReadInputTokens();
+            if (standard != null) {
+                return standard.intValue();
+            }
+            if (usage.getNativeUsage() instanceof CompletionUsage completionUsage) {
+                var field = completionUsage._additionalProperties().get(DEEPSEEK_CACHE_HIT_FIELD);
+                if (field != null) {
+                    Long value = field.convert(Long.class);
+                    return value == null ? 0 : value.intValue();
+                }
+            }
+            return 0;
         }
     }
 

@@ -36,7 +36,7 @@ class AiCostReportAppServiceTest {
     @DisplayName("时间窗先夹取再交给读端口（超上限的入参不会原样打到 SQL）")
     void report_clampsWindowBeforeQuerying() {
         var service = new AiCostReportAppService(
-                port, pricing(new AiPricingProperties.ModelPrice(BigDecimal.TEN, BigDecimal.TEN)));
+                port, pricing(new AiPricingProperties.ModelPrice(BigDecimal.TEN, BigDecimal.TEN, null)));
         when(port.report(AiCostReportAppService.MAX_WINDOW_HOURS)).thenReturn(List.of());
 
         service.report(24 * 365);
@@ -48,8 +48,8 @@ class AiCostReportAppServiceTest {
     @DisplayName("货币化 -> 输入/输出分别按百万 token 单价折算（入 2 元/百万 + 出 8 元/百万：1k 入 500 出 = 0.006 元）")
     void report_pricesTokensByModel() {
         var service = new AiCostReportAppService(
-                port, pricing(new AiPricingProperties.ModelPrice(new BigDecimal("2"), new BigDecimal("8"))));
-        when(port.report(24)).thenReturn(List.of(row("DecisionChatModel", 1000, 500)));
+                port, pricing(new AiPricingProperties.ModelPrice(new BigDecimal("2"), new BigDecimal("8"), null)));
+        when(port.report(24)).thenReturn(List.of(row("DecisionChatModel", 1000, 500, 0)));
 
         var rows = service.report(24);
 
@@ -57,10 +57,39 @@ class AiCostReportAppServiceTest {
     }
 
     @Test
+    @DisplayName("命中档单价 -> 命中段按 hit 价、未命中段按原价（入 2 元/百万、命中 0.5 元/百万：1k 入含 600 命中 + 500 出 = 0.0051 元）")
+    void report_pricesCacheHitTier() {
+        var service = new AiCostReportAppService(
+                port,
+                pricing(new AiPricingProperties.ModelPrice(
+                        new BigDecimal("2"), new BigDecimal("8"), new BigDecimal("0.5"))));
+        when(port.report(24)).thenReturn(List.of(row("DecisionChatModel", 1000, 500, 600)));
+
+        var rows = service.report(24);
+
+        assertThat(rows.get(0).costYuan()).isEqualByComparingTo(new BigDecimal("0.0051"));
+    }
+
+    @Test
+    @DisplayName("命中数超过输入总数 -> 按输入总数夹取（回报异常时未命中段不会算成负数）")
+    void report_cacheReadClampedToInput() {
+        var service = new AiCostReportAppService(
+                port,
+                pricing(new AiPricingProperties.ModelPrice(
+                        new BigDecimal("2"), new BigDecimal("8"), new BigDecimal("0.5"))));
+        when(port.report(24)).thenReturn(List.of(row("DecisionChatModel", 1000, 500, 2000)));
+
+        var rows = service.report(24);
+
+        // 2000 命中夹到 1000 全段按 hit 价：1000×0.5 + 500×8 = 4500 / 1e6
+        assertThat(rows.get(0).costYuan()).isEqualByComparingTo(new BigDecimal("0.0045"));
+    }
+
+    @Test
     @DisplayName("单价表缺该模型 -> costYuan 保持 null（只出 token 不出钱，宁缺不估）")
     void report_missingPrice_keepsNullCost() {
         var service = new AiCostReportAppService(port, new AiPricingProperties(Map.of()));
-        when(port.report(24)).thenReturn(List.of(row("UnknownModel", 1000, 500)));
+        when(port.report(24)).thenReturn(List.of(row("UnknownModel", 1000, 500, 0)));
 
         var rows = service.report(24);
 
@@ -68,7 +97,7 @@ class AiCostReportAppServiceTest {
         assertThat(rows.get(0).totalTokens()).isEqualTo(1500);
     }
 
-    private static AiCostReportRow row(String model, long tokenInput, long tokenOutput) {
-        return new AiCostReportRow("CHAT", model, 3, tokenInput, tokenOutput, 1200, 0, null);
+    private static AiCostReportRow row(String model, long tokenInput, long tokenOutput, long tokenCacheRead) {
+        return new AiCostReportRow("CHAT", model, 3, tokenInput, tokenOutput, tokenCacheRead, 1200, 0, null);
     }
 }

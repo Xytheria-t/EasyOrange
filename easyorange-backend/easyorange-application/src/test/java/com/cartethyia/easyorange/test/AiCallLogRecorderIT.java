@@ -43,7 +43,7 @@ class AiCallLogRecorderIT extends AbstractIntegrationTest {
             var readOnlyTx = new TransactionTemplate(transactionManager);
             readOnlyTx.setReadOnly(true);
             readOnlyTx.executeWithoutResult(
-                    status -> aiCallLogPort.record(SCOPE, "it-model", promptHash, null, 1, 0, 0, true, null));
+                    status -> aiCallLogPort.record(SCOPE, "it-model", promptHash, null, 1, 0, 0, 0, true, null));
 
             Integer count = jdbcTemplate.queryForObject(
                     "SELECT COUNT(*) FROM eo_ai_call_log WHERE prompt_hash = ?", Integer.class, promptHash);

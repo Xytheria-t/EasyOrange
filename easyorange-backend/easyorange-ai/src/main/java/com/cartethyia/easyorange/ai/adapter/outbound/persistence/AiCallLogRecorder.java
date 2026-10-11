@@ -27,8 +27,8 @@ public class AiCallLogRecorder implements AiCallLogPort {
     private static final String INSERT_SQL = """
             INSERT INTO eo_ai_call_log
                 (id, scope, model, prompt_hash, response_text, latency_ms, token_input, token_output,
-                 success, error_msg)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 cache_read_tokens, success, error_msg)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     private final JdbcTemplate jdbcTemplate;
@@ -44,6 +44,7 @@ public class AiCallLogRecorder implements AiCallLogPort {
             long latencyMs,
             int tokenInput,
             int tokenOutput,
+            int tokenCacheRead,
             boolean success,
             @Nullable String errorMsg) {
         try {
@@ -57,6 +58,7 @@ public class AiCallLogRecorder implements AiCallLogPort {
                     latencyMs,
                     Math.max(tokenInput, 0),
                     Math.max(tokenOutput, 0),
+                    Math.max(tokenCacheRead, 0),
                     success ? 1 : 0,
                     errorMsg != null && errorMsg.length() > 512 ? errorMsg.substring(0, 512) : errorMsg);
         } catch (Exception e) {

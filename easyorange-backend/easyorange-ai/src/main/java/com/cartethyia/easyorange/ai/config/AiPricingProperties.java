@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.config;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -18,6 +19,10 @@ public record AiPricingProperties(Map<String, ModelPrice> models) {
         }
     }
 
-    /** 单价 — 输入/输出分开计（输出单价通常是输入的数倍，混成单一均价会把「长回答更贵」算反）。 */
-    public record ModelPrice(BigDecimal inputPerMillion, BigDecimal outputPerMillion) {}
+    /** 单价 — 输入/输出分开计（输出单价通常是输入的数倍，混成单一均价会把「长回答更贵」算反）；
+     * {@code cacheHitInputPerMillion} 为缓存命中档输入单价，缺省（null）按未命中价折算 —— 报表偏保守，但绝不漏价。 */
+    public record ModelPrice(
+            BigDecimal inputPerMillion,
+            BigDecimal outputPerMillion,
+            @Nullable BigDecimal cacheHitInputPerMillion) {}
 }

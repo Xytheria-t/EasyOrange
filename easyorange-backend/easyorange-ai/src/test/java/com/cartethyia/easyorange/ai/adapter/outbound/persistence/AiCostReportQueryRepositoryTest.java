@@ -21,6 +21,7 @@ class AiCostReportQueryRepositoryTest {
         when(rs.getLong("calls")).thenReturn(12L);
         when(rs.getLong("token_input")).thenReturn(8000L);
         when(rs.getLong("token_output")).thenReturn(2000L);
+        when(rs.getLong("cache_read_tokens")).thenReturn(6000L);
         when(rs.getLong("avg_latency_ms")).thenReturn(1500L);
         when(rs.getLong("failures")).thenReturn(1L);
 
@@ -31,6 +32,7 @@ class AiCostReportQueryRepositoryTest {
         assertThat(row.calls()).isEqualTo(12);
         assertThat(row.tokenInput()).isEqualTo(8000);
         assertThat(row.tokenOutput()).isEqualTo(2000);
+        assertThat(row.tokenCacheRead()).isEqualTo(6000);
         assertThat(row.totalTokens()).isEqualTo(10_000);
         assertThat(row.avgLatencyMs()).isEqualTo(1500);
         assertThat(row.failures()).isEqualTo(1);

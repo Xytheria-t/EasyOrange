@@ -11,6 +11,8 @@ import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.port.AiCallLogPort;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
+import com.openai.core.JsonValue;
+import com.openai.models.completions.CompletionUsage;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,6 +96,7 @@ class AiModelSupportTest {
                             anyLong(),
                             anyInt(),
                             anyInt(),
+                            anyInt(),
                             eq(true),
                             isNull());
         }
@@ -116,6 +119,7 @@ class AiModelSupportTest {
                             anyLong(),
                             anyInt(),
                             anyInt(),
+                            anyInt(),
                             eq(false),
                             anyString());
         }
@@ -134,6 +138,7 @@ class AiModelSupportTest {
                             anyString(),
                             eq("你好"),
                             anyLong(),
+                            anyInt(),
                             anyInt(),
                             anyInt(),
                             eq(true),
@@ -156,6 +161,7 @@ class AiModelSupportTest {
                             anyString(),
                             isNull(),
                             anyLong(),
+                            anyInt(),
                             anyInt(),
                             anyInt(),
                             eq(false),
@@ -329,6 +335,7 @@ class AiModelSupportTest {
                             anyLong(),
                             eq(12),
                             eq(0),
+                            eq(0),
                             eq(true),
                             isNull());
         }
@@ -409,12 +416,90 @@ class AiModelSupportTest {
         }
     }
 
+    @Nested
+    @DisplayName("缓存命中 token 提取")
+    class CacheReadTests {
+
+        @Test
+        @DisplayName("标准字段（prompt_tokens_details.cached_tokens 映射的 cacheRead）-> 落进调用日志命中列")
+        void standardField_propagatesToCallLog() {
+            when(chatModel.call(any(Prompt.class)))
+                    .thenReturn(responseWithUsage("回答", new DefaultUsage(120, 30, 150, null, 96L, null)));
+
+            aiModelSupport.callText(chatModel, AiCallScope.CHAT, "system", "user");
+
+            verify(callLogRecorder)
+                    .record(
+                            eq("CHAT"),
+                            anyString(),
+                            anyString(),
+                            eq("回答"),
+                            anyLong(),
+                            eq(120),
+                            eq(30),
+                            eq(96),
+                            eq(true),
+                            isNull());
+        }
+
+        @Test
+        @DisplayName("DeepSeek 非标字段（prompt_cache_hit_tokens 只在 nativeUsage）-> 回退提取，主链路命中率不恒 0")
+        void deepseekNativeField_fallsBackToAdditionalProperties() {
+            var nativeUsage = CompletionUsage.builder()
+                    .promptTokens(120)
+                    .completionTokens(30)
+                    .totalTokens(150)
+                    .putAdditionalProperty("prompt_cache_hit_tokens", JsonValue.from(64L))
+                    .build();
+            when(chatModel.call(any(Prompt.class)))
+                    .thenReturn(responseWithUsage("回答", new DefaultUsage(120, 30, 150, nativeUsage, null, null)));
+
+            aiModelSupport.callText(chatModel, AiCallScope.CHAT, "system", "user");
+
+            verify(callLogRecorder)
+                    .record(
+                            eq("CHAT"),
+                            anyString(),
+                            anyString(),
+                            eq("回答"),
+                            anyLong(),
+                            eq(120),
+                            eq(30),
+                            eq(64),
+                            eq(true),
+                            isNull());
+        }
+
+        @Test
+        @DisplayName("未回报命中字段 -> 记 0（不估算，与输入/输出同一口径）")
+        void noCacheField_recordsZero() {
+            when(chatModel.call(any(Prompt.class))).thenReturn(responseWithUsage("回答", 120, 30));
+
+            aiModelSupport.callText(chatModel, AiCallScope.CHAT, "system", "user");
+
+            verify(callLogRecorder)
+                    .record(
+                            eq("CHAT"),
+                            anyString(),
+                            anyString(),
+                            eq("回答"),
+                            anyLong(),
+                            eq(120),
+                            eq(30),
+                            eq(0),
+                            eq(true),
+                            isNull());
+        }
+    }
+
     private static ChatResponse responseWithUsage(String text, int promptTokens, int completionTokens) {
+        return responseWithUsage(text, new DefaultUsage(promptTokens, completionTokens));
+    }
+
+    private static ChatResponse responseWithUsage(String text, DefaultUsage usage) {
         return new ChatResponse(
                 List.of(new Generation(new AssistantMessage(text))),
-                ChatResponseMetadata.builder()
-                        .usage(new DefaultUsage(promptTokens, completionTokens))
-                        .build());
+                ChatResponseMetadata.builder().usage(usage).build());
     }
 
     /** embedding 响应夹具：向量 + 供应商回报的 prompt token（completion 对 embedding 恒为 0）。 */

@@ -41,8 +41,14 @@ public class AiCostReportAppService {
         if (price == null) {
             return row;
         }
-        BigDecimal cost = price.inputPerMillion()
-                .multiply(BigDecimal.valueOf(row.tokenInput()))
+        // 命中段按命中档单价（缺省回落未命中价）；命中数按输入总数夹取，第三方回报异常时残段不算命中
+        BigDecimal hitPrice =
+                price.cacheHitInputPerMillion() != null ? price.cacheHitInputPerMillion() : price.inputPerMillion();
+        long cached = Math.min(row.tokenCacheRead(), row.tokenInput());
+        BigDecimal inputCost = price.inputPerMillion()
+                .multiply(BigDecimal.valueOf(row.tokenInput() - cached))
+                .add(hitPrice.multiply(BigDecimal.valueOf(cached)));
+        BigDecimal cost = inputCost
                 .add(price.outputPerMillion().multiply(BigDecimal.valueOf(row.tokenOutput())))
                 .movePointLeft(6);
         return new AiCostReportRow(
@@ -51,6 +57,7 @@ public class AiCostReportAppService {
                 row.calls(),
                 row.tokenInput(),
                 row.tokenOutput(),
+                row.tokenCacheRead(),
                 row.avgLatencyMs(),
                 row.failures(),
                 cost);

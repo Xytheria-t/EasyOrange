@@ -258,6 +258,15 @@ class ToolCallingWireTest {
     /** 只关心请求体形状，用例不校验记账 —— 走统一夹具，日志端口空实现、预算记内存。 */
     private static AiModelSupport support() {
         return TestAiModelSupport.create(
-                (scope, model, promptHash, response, latencyMs, tokenInput, tokenOutput, success, errorMsg) -> {});
+                (scope,
+                        model,
+                        promptHash,
+                        response,
+                        latencyMs,
+                        tokenInput,
+                        tokenOutput,
+                        tokenCacheRead,
+                        success,
+                        errorMsg) -> {});
     }
 }

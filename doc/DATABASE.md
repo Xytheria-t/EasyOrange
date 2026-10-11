@@ -176,7 +176,7 @@ eo_ai_call_log ──1:N── eo_ai_feedback (call_log_id，可空)
 
 > **现状**：`AiCallLogRecorder`（easyorange-ai/adapter/outbound/persistence/）在每次 LLM/Embedding 调用后 JDBC 直写一条（记录失败仅告警，不阻塞主链路）；写入方只有这一处，读取方是成本报表与 `GET /api/admin/ai/cost-report`。
 
-关键列：`scope`（AI 调用场景）、`prompt_hash`（system+user prompt 摘要 MD5，去重与回归用）、`token_input` / `token_output`（供应商真实回报的用量，未回报记 0 不估算）、`response_text`（完整回答文本，流式调用落拼接结果）。
+关键列：`scope`（AI 调用场景）、`prompt_hash`（system+user prompt 摘要 MD5，去重与回归用）、`token_input` / `token_output`（供应商真实回报的用量，未回报记 0 不估算）、`cache_read_tokens`（缓存命中输入 token，含在 `token_input` 内——标准字段 `prompt_tokens_details.cached_tokens` 优先、DeepSeek 非标 `prompt_cache_hit_tokens` 回退，是前缀缓存命中率的唯一数据源）、`response_text`（完整回答文本，流式调用落拼接结果）。
 
 > **用量的用途**：没有 token 列时，该表只能回答「哪个场景调用得多」，回答不了「哪个场景花得多」。有列后 `AiCostReportAppService` 可按场景出 token 报表（`GET /api/admin/ai/cost-report`）。注意未带 usage 的流式调用仍记 0（不估算）；embedding 用量按供应商回报的真实 prompt token 记账，不再恒 0。
 
