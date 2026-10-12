@@ -25,10 +25,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +33,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 /**
  * AI 智能对话（工具循环编排）— 多轮记忆 + 多步工具循环 + 引用溯源 + 语义缓存 + 预算治理；与搜索页的结构化检索正交：那边「一次查询定结果」，这里模型自己决定检索几轮、查什么。
@@ -82,25 +80,12 @@ public class AiChatAppService {
     private final Cache<String, ChatAnswer> staleCache;
 
     /**
-     * 降级原因 — {@link #DEGRADED_METRIC} 的封闭 tag 集（构造期按全集注册，热路径零查找）；tag 值是时序契约：改枚举名
-     * 不改 tag。STALE = 供应商故障复用旧回答兜底，UNAVAILABLE = 无旧回答、返回统一降级文案。
+     * 降级计数按原因各一字段 —— {@code reason} tag 值是时序契约（改字段名不改 tag），构造期注册、热路径零查找。
+     * STALE = 供应商故障复用旧回答兜底，UNAVAILABLE = 无旧回答、返回统一降级文案。
      */
-    private enum DegradationReason {
-        STALE("stale"),
-        UNAVAILABLE("unavailable");
+    private final Counter staleDegradedCounter;
 
-        private final String tag;
-
-        DegradationReason(String tag) {
-            this.tag = tag;
-        }
-
-        String tag() {
-            return tag;
-        }
-    }
-
-    private final Map<DegradationReason, Counter> degradedCounters;
+    private final Counter unavailableDegradedCounter;
 
     private final Counter sessionBusyCounter;
 
@@ -137,10 +122,8 @@ public class AiChatAppService {
         this.distributedLockPort = distributedLockPort;
         this.aiProperties = aiProperties;
         this.staleCache = staleCache;
-        this.degradedCounters = new EnumMap<>(DegradationReason.class);
-        for (DegradationReason reason : DegradationReason.values()) {
-            degradedCounters.put(reason, meterRegistry.counter(DEGRADED_METRIC, "reason", reason.tag()));
-        }
+        this.staleDegradedCounter = meterRegistry.counter(DEGRADED_METRIC, "reason", "stale");
+        this.unavailableDegradedCounter = meterRegistry.counter(DEGRADED_METRIC, "reason", "unavailable");
         this.sessionBusyCounter = meterRegistry.counter(SESSION_BUSY_METRIC);
         this.streamAbortedCounter = meterRegistry.counter(STREAM_ABORTED_METRIC);
         this.turnTimer = Timer.builder(TURN_DURATION_METRIC)
@@ -168,13 +151,13 @@ public class AiChatAppService {
      */
     @TokenBudget(scenario = "chat", maxTokensPerCall = 1500, dailyTokenLimit = 300_000)
     public ChatAnswer answer(ChatRequest request, String userId, @Nullable Set<String> allowedTools) {
-        if (request.question() == null || request.question().isBlank()) {
+        if (!StringUtils.hasText(request.question())) {
             return new ChatAnswer(EMPTY_QUESTION_TEXT, List.of(), request.sessionId(), false);
         }
         try {
             SemanticCacheProbe probe = probeSemanticCache(request, userId);
-            if (probe.hit().isPresent()) {
-                return probe.hit().get().withSessionId(request.sessionId());
+            if (probe.hit() != null) {
+                return probe.hit().withSessionId(request.sessionId());
             }
             ChatAnswer answer = answerWithSessionLock(request, userId, null, allowedTools);
             storeInSemanticCache(request, userId, probe, answer);
@@ -192,7 +175,7 @@ public class AiChatAppService {
                         "action=chat_degraded, reason=stale, question={}, cause={}",
                         request.question(),
                         e.getMessage());
-                degradedCounters.get(DegradationReason.STALE).increment();
+                staleDegradedCounter.increment();
                 return stale.asDegraded().withSessionId(request.sessionId());
             }
             recordUnavailableDegradation(request.question(), e);
@@ -210,7 +193,7 @@ public class AiChatAppService {
      * 流末帧用量由 {@link AiModelSupport} 记账（本入口只做预留，真实记账按供应商回报）。
      */
     public void streamAnswer(ChatRequest request, String userId, ChatStreamHandler handler) {
-        if (request.question() == null || request.question().isBlank()) {
+        if (!StringUtils.hasText(request.question())) {
             handler.onError(EMPTY_QUESTION_TEXT);
             return;
         }
@@ -224,8 +207,8 @@ public class AiChatAppService {
         }
         try {
             SemanticCacheProbe probe = probeSemanticCache(request, userId);
-            if (probe.hit().isPresent()) {
-                replayCached(probe.hit().get(), handler);
+            if (probe.hit() != null) {
+                replayCached(probe.hit(), handler);
                 return;
             }
             ChatAnswer answer = answerWithSessionLock(request, userId, handler, null);
@@ -250,20 +233,23 @@ public class AiChatAppService {
      * 语义缓存的一次探查 — 向量与命中打在一起：向量只算一次，未命中的写回复用同一个向量。向量为空同时覆盖 forceFresh
      * 绕过与 embedding 不可用：查找与写入一起跳过，不会把不可用写成脏缓存。
      */
-    private record SemanticCacheProbe(List<Float> queryEmbedding, Optional<ChatAnswer> hit) {}
+    private record SemanticCacheProbe(
+            List<Float> queryEmbedding, @Nullable ChatAnswer hit) {}
 
     private SemanticCacheProbe probeSemanticCache(ChatRequest request, String userId) {
         if (request.forceFresh()) {
             semanticCacheBypassCounter.increment();
-            return new SemanticCacheProbe(List.of(), Optional.empty());
+            return new SemanticCacheProbe(List.of(), null);
         }
         List<Float> queryEmbedding = semanticCache.embedQuery(request.question());
         if (queryEmbedding.isEmpty()) {
-            return new SemanticCacheProbe(List.of(), Optional.empty());
+            return new SemanticCacheProbe(List.of(), null);
         }
         return new SemanticCacheProbe(
                 queryEmbedding,
-                semanticCache.lookUp(AiCallScope.CHAT, userId, request.question(), queryEmbedding, ChatAnswer.class));
+                semanticCache
+                        .lookUp(AiCallScope.CHAT, userId, request.question(), queryEmbedding, ChatAnswer.class)
+                        .orElse(null));
     }
 
     private void storeInSemanticCache(ChatRequest request, String userId, SemanticCacheProbe probe, ChatAnswer answer) {
@@ -296,7 +282,7 @@ public class AiChatAppService {
 
     private void recordUnavailableDegradation(String question, Exception cause) {
         log.error("action=chat_degraded, reason=unavailable, question={}", question, cause);
-        degradedCounters.get(DegradationReason.UNAVAILABLE).increment();
+        unavailableDegradedCounter.increment();
     }
 
     private ChatAnswer answerWithSessionLock(
@@ -305,7 +291,7 @@ public class AiChatAppService {
             @Nullable ChatStreamHandler handler,
             @Nullable Set<String> allowedTools) {
         String sessionId = request.sessionId();
-        if (sessionId == null || sessionId.isBlank()) {
+        if (!StringUtils.hasText(sessionId)) {
             // 无会话即无共享状态，没有需要串行化的 load→save，直接执行
             return generateWithToolLoop(request, userId, handler, allowedTools);
         }
