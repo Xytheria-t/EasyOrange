@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * 平台类目清单读取端口 — 拍照识别的类目约束来源；类目表属 product 模块，这里只声明读需求、实现放
- * application 的 outbound 适配器（同 {@code AiListingAdoptionPort} 规矩）。清单必须进 prompt：
+ * application 的 outbound 适配器（同 {@code ListingAdoptionPort} 规矩）。清单必须进 prompt：
  * 不写时模型会编「看起来对」的类目名，与平台对不上整条被丢、类别填充率折半。
  */
 public interface CategoryCatalogPort {

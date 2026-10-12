@@ -178,7 +178,7 @@ public class MessageCommandHandler {
 
     /**
      * 消息发送限流（Redisson RRateLimiter 令牌桶，5 条/秒/用户）— Redis 不可用时 fail-open 放行，
-     * 与框架 RateLimitFilter / AiRateLimitInterceptor 的降级策略一致。
+     * 与框架 RateLimitFilter / RateLimitInterceptor 的降级策略一致。
      */
     private boolean allowSendMessage(String userId) {
         try {

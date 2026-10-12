@@ -20,7 +20,7 @@ import tools.jackson.databind.ObjectMapper;
  * Redis 不可用 / 会话为空时返回空列表（fail-open：丢记忆不阻塞回答）；单条记录读不出来只跳过该条。
  * <p>
  * <b>并发正确性依赖调用方的会话锁</b>：{@code RPUSH → LTRIM → EXPIRE} 三步非事务，并发写会互相裁剪。
- * 本端口<b>刻意不加锁</b>——会话锁在 {@code AiChatAppService} 按 sessionId 粒度覆盖「读窗口 → 生成 → 写回」，
+ * 本端口<b>刻意不加锁</b>——会话锁在 {@code ChatAppService} 按 sessionId 粒度覆盖「读窗口 → 生成 → 写回」，
  * 端口层再加一把只会让锁边界与业务边界脱节；绕过该服务的调用方必须自带同粒度锁。
  */
 @Slf4j

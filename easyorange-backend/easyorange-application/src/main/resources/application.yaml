@@ -12,7 +12,7 @@ spring:
   task:
     execution:
       # force — ThreadPoolConfig 的 taskScheduler 是 Executor 类型 bean，缺省条件下 Boot 的
-      # applicationTaskExecutor 会整体退让不装配；而 AiChatController 的 SSE 流式工作依赖它，
+      # applicationTaskExecutor 会整体退让不装配；而 ChatController 的 SSE 流式工作依赖它，
       # getIfAvailable() 拿到 null 时整条流回退内联跑在 servlet 线程上：emitter 迟迟不返回，
       # 全部事件积压进 earlySendAttempts，等响应完成才一次性回放 —— 打字机效果与步骤可视化全废。
       # force = 即使存在自定义 Executor bean 也强制装配 applicationTaskExecutor（虚拟线程版）。
@@ -26,7 +26,7 @@ spring:
     banner-mode: console
 
   ai:
-    # 模型由 easyorange-ai 的 AiModelConfig 手动装配（文本/视觉/Embedding 三槽位），
+    # 模型由 easyorange-ai 的 ModelConfig 手动装配（文本/视觉/Embedding 三槽位），
     # 且不使用 audio/image/moderation 模型族，故整体禁用 Spring AI OpenAI 自动配置，
     # 避免无 AI key 时这些自动装配模型在启动期强制校验凭据而崩溃
     model:
@@ -446,7 +446,7 @@ easyorange:
       # 内存版每个实例各记各的 —— 多副本部署下日限会被放大 N 倍，生产多副本必须切 redis
       store: memory
       # 按场景配置 token 预算 — 覆盖 @TokenBudget 注解默认值，运维可热更新而无需发版
-      # scenario 键与 AiCallScope 枚举名（小写）对齐：auto_listing/semantic/chat/knowledge
+      # scenario 键与 ModelCallScope 枚举名（小写）对齐：auto_listing/semantic/chat/knowledge
       # 缺一个场景的后果不是「不限额」而是「该场景的用量恒记 0」——预算里看不见的调用照样在供应商那边计费
       # pricing / copy / review / qa / search_enhance 五个场景已随各自的重复入口下线（独立估值 / 文案生成 / 商品详情问答 / 管理端审核建议 / 搜索页四路增强），不在两条 AI 主线上，勿再加回
       scenarios:

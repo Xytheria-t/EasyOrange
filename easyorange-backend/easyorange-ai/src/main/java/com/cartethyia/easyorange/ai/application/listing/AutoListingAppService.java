@@ -1,16 +1,16 @@
 package com.cartethyia.easyorange.ai.application.listing;
 
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
-import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
-import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelRouter;
+import com.cartethyia.easyorange.ai.application.support.ModelSupport;
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecision;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
-import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
+import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.port.CategoryCatalogPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
@@ -52,9 +52,9 @@ public class AutoListingAppService {
 
     static final int ANNOTATION_DAILY_TOKEN_LIMIT = 500_000;
 
-    private final AiModelRouter modelRouter;
+    private final ModelRouter modelRouter;
     private final PromptRegistryPort promptRegistry;
-    private final AiModelSupport aiModelSupport;
+    private final ModelSupport aiModelSupport;
     private final CategoryCatalogPort categoryCatalogPort;
     private final VisionImageLoader visionImageLoader;
     private final ToolLoopKernel loopKernel;
@@ -136,8 +136,8 @@ public class AutoListingAppService {
     private ImageClues recognizeClues(String cluePrompt, List<String> dataUrls) {
         return aiModelSupport
                 .callJsonAsWithImages(
-                        modelRouter.choose(AiModelRouter.SCENARIO_VISION),
-                        AiCallScope.AUTO_LISTING,
+                        modelRouter.choose(ModelRouter.SCENARIO_VISION),
+                        ModelCallScope.AUTO_LISTING,
                         cluePrompt,
                         CLUE_REQUEST_TEXT,
                         dataUrls,
@@ -152,8 +152,8 @@ public class AutoListingAppService {
         // clues 只服务决策轮，不进生成消息：生成器 prompt 的上下文只有 <observations> 与 <category_options>，
         // 画面信息由随请求的原图承担
         Optional<AutoListingResult> listing = aiModelSupport.callJsonAsWithImages(
-                modelRouter.choose(AiModelRouter.SCENARIO_VISION),
-                AiCallScope.AUTO_LISTING,
+                modelRouter.choose(ModelRouter.SCENARIO_VISION),
+                ModelCallScope.AUTO_LISTING,
                 generatorPrompt,
                 userText,
                 dataUrls,
@@ -210,7 +210,7 @@ public class AutoListingAppService {
     /** 决策走 chat_tool 快模型（纯路由任务），记账进 auto_listing 预算——成本归业务链路、模型归职责。 */
     private ToolLoopKernel.Decider loopDecider() {
         return (sessionId, messages, callbacks) -> decider.decide(
-                sessionId, messages, callbacks, AiCallScope.AUTO_LISTING, AutoListingAppService::toolInputOf);
+                sessionId, messages, callbacks, ModelCallScope.AUTO_LISTING, AutoListingAppService::toolInputOf);
     }
 
     /** 检索类工具取关键词做入参摘要，其余工具无摘要（与买家侧同口径）。 */
@@ -224,7 +224,7 @@ public class AutoListingAppService {
     /** 循环中途的日预算判定 — 解析与判定单点在 {@link TokenBudgetGuard}，这里只给 auto_listing 场景键与兜底常量。 */
     private boolean listingBudgetExhausted() {
         return tokenBudgetGuard.exhausted(
-                AiCallScope.AUTO_LISTING.budgetScenario(),
+                ModelCallScope.AUTO_LISTING.budgetScenario(),
                 ANNOTATION_MAX_TOKENS_PER_CALL,
                 ANNOTATION_DAILY_TOKEN_LIMIT);
     }

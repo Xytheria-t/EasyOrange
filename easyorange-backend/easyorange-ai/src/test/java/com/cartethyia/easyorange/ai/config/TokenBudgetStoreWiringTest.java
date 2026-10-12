@@ -15,7 +15,7 @@ import org.springframework.core.env.MapPropertySource;
 
 /**
  * 预算存储装配 — 默认内存版；{@code easyorange.ai.budget.store=redis} 时切 Redis 版。
- * 把 {@link AiConfig} 的「Redis bean 必须声明在内存版之前」顺序要求断言化：顺序反了
+ * 把 {@link TokenBudgetStoreConfig} 的「Redis bean 必须声明在内存版之前」顺序要求断言化：顺序反了
  * {@code @ConditionalOnMissingBean} 会两个都注册，注入点报 NoUniqueBeanDefinitionException——
  * 本测试先红，不必等应用启动才发现。
  */
@@ -25,7 +25,7 @@ class TokenBudgetStoreWiringTest {
     @Test
     @DisplayName("未配置 store -> 内存版（默认，单实例 / 开发）")
     void defaultsToInMemoryStore() {
-        try (var context = new AnnotationConfigApplicationContext(AiConfig.class)) {
+        try (var context = new AnnotationConfigApplicationContext(TokenBudgetStoreConfig.class)) {
             assertThat(context.getBean(TokenBudgetStorePort.class)).isInstanceOf(InMemoryTokenBudgetStore.class);
         }
     }
@@ -39,7 +39,7 @@ class TokenBudgetStoreWiringTest {
                     .addFirst(new MapPropertySource("test", Map.of("easyorange.ai.budget.store", "redis")));
             // fail-open 计数依赖 MeterRegistry（生产由 actuator 提供），这里按同形态补上
             context.registerBean(MeterRegistry.class, SimpleMeterRegistry::new);
-            context.register(AiConfig.class);
+            context.register(TokenBudgetStoreConfig.class);
             context.refresh();
 
             assertThat(context.getBeansOfType(TokenBudgetStorePort.class)).hasSize(1);

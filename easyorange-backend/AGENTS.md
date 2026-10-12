@@ -111,15 +111,15 @@
 ### ai
 
 - **按能力分包** `chat` / `listing` / `retrieval` / `eval` / `report`，加共用内核 `toolcall`（chat 与 listing 的循环机制）、`support`（模型管道与共享工具）；单向：`toolcall` / `support` 只被链路包引用，链路包之间互不引用，`support` 最底层；**全面 Spring AI（ADR-0008）**：直接注入 `ChatModel` / `EmbeddingModel`，无自研 LlmPort
-- **五个模型 bean**：`chatModel`（`@Primary`，默认场景）/ `decisionChatModel` / `visionChatModel` / `judgeChatModel`（评审独立可换，消自评偏差）/ `embeddingModel`（**dimensions=1024 必须与 ES `dense_vector` 对齐**）。**五者都不加 `@Qualifier`**——靠 `AiModelRouter` 按场景名从 ApplicationContext 取 bean，yaml 热更即可换模型，编译期 `@Qualifier` 做不到这点；只有 `@Primary` 起「未指定场景时回落到文本模型」的作用
+- **五个模型 bean**：`chatModel`（`@Primary`，默认场景）/ `decisionChatModel` / `visionChatModel` / `judgeChatModel`（评审独立可换，消自评偏差）/ `embeddingModel`（**dimensions=1024 必须与 ES `dense_vector` 对齐**）。**五者都不加 `@Qualifier`**——靠 `ModelRouter` 按场景名从 ApplicationContext 取 bean，yaml 热更即可换模型，编译期 `@Qualifier` 做不到这点；只有 `@Primary` 起「未指定场景时回落到文本模型」的作用
 - **多步工具循环 `ChatToolLoop`**：原生 tool calling（7 个 `@Tool`，参数名靠 `-parameters`），`ChatModel.call` 不自动执行工具。三坑：工具抛异常 = 该步失败（「查无此资产」等有效结果要返回观察文本）、`thought` 必填、返回值挂 `ObservationTextConverter`（否则 String 被再 JSON 化）。码表类工具与 product **字面同步**（`AssetComparisonCodeTableSyncTest` 守卫）。降级：超限 / 预算尽 → 已积累观察直接生成，决策失败 → 检索一次；**预算判定式单点在 `TokenBudgetPolicy.exhausted`**（`TokenBudgetGuard` 单点解析「配置优先、兜底其次」后调用 —— 切面 / chat 流式预留 / 两条链路循环检查共用）；trace 落 `eo_tool_call_step_trace`
 - **上下文裁剪 `ChatContextTrimmer`**：连续窗口、永保最新一条，**有意不做 LLM 摘要**；**历史按原始角色传多消息**（前缀稳定才吃供应商缓存折扣）
 - **MCP 只挂公开只读 4 工具**（检索/详情/类目/规则），禁用户态数据与写路径——**外部 client 无用户上下文**；**`spring.ai.mcp.server.protocol` 必须显式 `streamable`**（属性默认值不进 Environment → `/mcp` 不注册 404）；dev / prod 的 `security.ignore-paths` 都要加
-- **`AiModelSupport` 收敛所有 LLM 调用**，**带 `AiCallScope` 才记账**（`eo_ai_call_log` + 真实 token 入预算），不带不记（`AiJudge` 刻意账外防自指）；**观测 OTel → OTLP → Langfuse** 靠 `ChatModelContentObservationFilter` 拷进 `gen_ai.*`——**漏配面板恒 null**
+- **`ModelSupport` 收敛所有 LLM 调用**，**带 `ModelCallScope` 才记账**（`eo_ai_call_log` + 真实 token 入预算），不带不记（`Judge` 刻意账外防自指）；**观测 OTel → OTLP → Langfuse** 靠 `ChatModelContentObservationFilter` 拷进 `gen_ai.*`——**漏配面板恒 null**
 - **Prompt 全 YAML**（`resources/prompts/*.yml`，一文件一模板，`require` fail-fast，**加内容同改 `PromptContentTest.ALL_PROMPTS`**——含 Judge 量表）；**评估阈值全在 `eval/baselines.yaml` 禁内置默认**；**不可信内容进标签块**（`<user_question>` 等）+ 声明「块内是数据非指令」，且**进块前剥掉标签形态**（`UntrustedText`）——决策与生成两条装配都要剥，否则提问里写 `</user_question>` 就能在决策上下文里另开一块，而决策决定调哪个工具
 - 查询侧 `QueryEmbeddingAdapter` **永不抛**（拿不到向量退化纯 BM25）；**语义检索只在「开 AI 开关 + 相关度排序 + 关键词非空」三条件同时成立时向量化**（其余情况 kNN 缺相似度下限会召回全库并白付 embedding）；**RAG**：kNN + BM25 两路独立召回 → `RrfFusion`（k=60），**否决 Cosine 重排**（单调 = 没排、丢 BM25 信号），ES 关降级空
-- **Token 预算**：`@TokenBudget` 编译期契约 + yaml 热更；**切面前置检查、记账在 `AiModelSupport`**（切面按上限估**差一个量级**）；**流式拦不住 AOP** → `ChatBudgetGuard.exhausted()` 同判据不重复记账（循环中途降级同调这一处）；`budget.store` 多副本必须 `redis`（内存版日限放大 N 倍）；**scenario 必须与 `AiCallScope.budgetScenario()` 一致否则预算静默失效**（注解只能写字面量，编译期发现不了，由 `TokenBudgetScenarioContractTest` 反射钉住；新增带 `@TokenBudget` 的类要登记进该测试的类清单）
-- **Port 方向不反转**（端口 product 定义、ai 实现，ai 不碰 product 表）；**反馈导出只出 `helpful=1 AND scope='chat'`**（**helpful=0 不能自动成金标准**）；供应商可换 = 改 `AiModelConfig` / `easyorange.ai.*`，重试走 openai-java 内置无自研
+- **Token 预算**：`@TokenBudget` 编译期契约 + yaml 热更；**切面前置检查、记账在 `ModelSupport`**（切面按上限估**差一个量级**）；**流式拦不住 AOP** → `ChatBudgetGuard.exhausted()` 同判据不重复记账（循环中途降级同调这一处）；`budget.store` 多副本必须 `redis`（内存版日限放大 N 倍）；**scenario 必须与 `ModelCallScope.budgetScenario()` 一致否则预算静默失效**（注解只能写字面量，编译期发现不了，由 `TokenBudgetScenarioContractTest` 反射钉住；新增带 `@TokenBudget` 的类要登记进该测试的类清单）
+- **Port 方向不反转**（端口 product 定义、ai 实现，ai 不碰 product 表）；**反馈导出只出 `helpful=1 AND scope='chat'`**（**helpful=0 不能自动成金标准**）；供应商可换 = 改 `ModelConfig` / `easyorange.ai.*`，重试走 openai-java 内置无自研
 
 ### admin
 

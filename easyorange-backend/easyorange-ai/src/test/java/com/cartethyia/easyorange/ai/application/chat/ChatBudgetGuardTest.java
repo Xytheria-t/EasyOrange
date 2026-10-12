@@ -95,7 +95,7 @@ class ChatBudgetGuardTest {
     @Test
     @DisplayName("兜底常量 == @TokenBudget(scenario=chat) 注解默认值（改一边必须改另一边）")
     void fallbackMatchesAnnotationContract() throws NoSuchMethodException {
-        TokenBudget limits = AiChatAppService.class
+        TokenBudget limits = ChatAppService.class
                 .getDeclaredMethod("answer", ChatRequest.class, String.class)
                 .getAnnotation(TokenBudget.class);
 

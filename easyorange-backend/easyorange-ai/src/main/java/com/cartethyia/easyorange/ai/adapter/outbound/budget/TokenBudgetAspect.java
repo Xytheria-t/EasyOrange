@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 /**
  * Token 预算切面 — 拦截标注 {@link TokenBudget} 的方法，调用前原子预留 {@code maxTokensPerCall}：预留在存储侧
  * 单次完成（读-判-记无窗口），失败抛 {@link TokenBudgetExceededException} 且目标方法不执行；请求结束（含异常）
- * 释放预留，真实用量由 {@code AiCallRecorder} 按供应商回报另记 —— 服务方法只返回业务 DTO，切面拿不到真实
+ * 释放预留，真实用量由 {@code ModelCallRecorder} 按供应商回报另记 —— 服务方法只返回业务 DTO，切面拿不到真实
  * token 数，按上限记账会与真实消耗差一个量级。
  * <p>
  * <b>配置优先</b>：{@code easyorange.ai.budget.scenarios.<scenario>} 覆盖注解默认值（解析在 {@link TokenBudgetGuard}）

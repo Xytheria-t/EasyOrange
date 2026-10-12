@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.adapter.inbound.web.assembler.AiListingAdoptionAssembler;
-import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.AiListingAdoptionVO;
-import com.cartethyia.easyorange.ai.application.report.AiListingAdoptionAppService;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.assembler.ListingAdoptionAssembler;
+import com.cartethyia.easyorange.ai.adapter.inbound.web.dto.response.ListingAdoptionVO;
+import com.cartethyia.easyorange.ai.application.report.ListingAdoptionAppService;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,11 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AiAdminListingAdoptionController {
 
-    private final AiListingAdoptionAppService adoptionService;
+    private final ListingAdoptionAppService adoptionService;
 
     @GetMapping
     @Operation(summary = "逐字段采纳率与价格偏离分布，使用侧口径非 LLM 判分")
-    public Result<AiListingAdoptionVO> listingAdoption() {
-        return Result.success(AiListingAdoptionAssembler.toVO(adoptionService.report()));
+    public Result<ListingAdoptionVO> listingAdoption() {
+        return Result.success(ListingAdoptionAssembler.toVO(adoptionService.report()));
     }
 }

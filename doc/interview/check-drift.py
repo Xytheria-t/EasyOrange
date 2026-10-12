@@ -104,7 +104,7 @@ def main() -> int:
 # 要写进这个清单得给出理由——它是「允许不校验」的唯一入口。
 EXTERNAL_CLASSES = {
     "ChatClient",  # Spring AI 的高层门面，本项目只用到 ChatModel 一层
-    "ChatModel",  # Spring AI 抽象接口，由本仓 AiModelConfig 实现
+    "ChatModel",  # Spring AI 抽象接口，由本仓 ModelConfig 实现
     "ToolCallback",  # Spring AI 工具执行回调
 }
 

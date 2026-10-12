@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.ai.application.toolcall;
 
-import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
-import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.application.support.FailureReason;
-import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.application.support.ModelRouter;
+import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import java.util.List;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +28,8 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 public class ToolCallDecider {
 
-    private final AiModelSupport aiModelSupport;
-    private final AiModelRouter modelRouter;
+    private final ModelSupport aiModelSupport;
+    private final ModelRouter modelRouter;
     private final ObjectMapper objectMapper;
 
     /**
@@ -42,7 +42,7 @@ public class ToolCallDecider {
             @Nullable String sessionId,
             List<Message> messages,
             List<ToolCallback> callbacks,
-            AiCallScope scope,
+            ModelCallScope scope,
             Function<ToolCallDecision, String> toolInputOf) {
         return decideWithRetry(sessionId, messages, callbacks, scope).stream()
                 .map(decision -> new ToolLoopCall(
@@ -55,7 +55,7 @@ public class ToolCallDecider {
     }
 
     private List<ToolCallDecision> decideWithRetry(
-            @Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks, AiCallScope scope) {
+            @Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks, ModelCallScope scope) {
         try {
             return decideOnce(sessionId, messages, callbacks, scope);
         } catch (Exception first) {
@@ -73,9 +73,9 @@ public class ToolCallDecider {
     }
 
     private List<ToolCallDecision> decideOnce(
-            @Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks, AiCallScope scope) {
+            @Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks, ModelCallScope scope) {
         List<AssistantMessage.ToolCall> toolCalls = aiModelSupport.callWithTools(
-                modelRouter.choose(AiModelRouter.SCENARIO_CHAT_TOOL), scope, messages, callbacks);
+                modelRouter.choose(ModelRouter.SCENARIO_CHAT_TOOL), scope, messages, callbacks);
         if (toolCalls.isEmpty()) {
             log.warn(
                     "action=tool_call_decision_failed, fallback=single_step, sessionId={}, reason=模型未返回工具调用",

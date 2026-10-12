@@ -7,8 +7,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
-import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,7 +27,7 @@ class QueryEmbeddingAdapterTest {
     private EmbeddingModel embeddingModel;
 
     @Mock
-    private AiModelSupport aiModelSupport;
+    private ModelSupport aiModelSupport;
 
     private QueryEmbeddingAdapter adapter;
 
@@ -57,7 +57,7 @@ class QueryEmbeddingAdapterTest {
     @Test
     @DisplayName("正常路径按 SEMANTIC 场景记账并返回向量")
     void embed_success_shouldReturnVector() {
-        when(aiModelSupport.embed(any(), eq(AiCallScope.SEMANTIC), eq("手机"))).thenReturn(List.of(0.1f, 0.2f));
+        when(aiModelSupport.embed(any(), eq(ModelCallScope.SEMANTIC), eq("手机"))).thenReturn(List.of(0.1f, 0.2f));
 
         assertThat(adapter.embed("手机")).containsExactly(0.1f, 0.2f);
     }

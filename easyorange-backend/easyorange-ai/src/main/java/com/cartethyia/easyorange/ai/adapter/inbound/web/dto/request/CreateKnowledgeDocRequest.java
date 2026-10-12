@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.ai.adapter.inbound.web.dto.request;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * 知识库文档新增请求 — 新增即摄入（链路见 {@code AiAdminKnowledgeController}）。
+ * 知识库文档新增请求 — 新增即摄入（链路见 {@code AdminKnowledgeController}）。
  *
  * @param content 文档正文（Markdown / 纯文本）
  * @param source  来源标注（缺省由前端填「运营」）

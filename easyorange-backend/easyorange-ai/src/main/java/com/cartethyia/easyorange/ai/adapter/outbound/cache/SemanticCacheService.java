@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.ai.application.cache.SemanticCacheMetrics;
-import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.model.VectorUtils;
 import com.cartethyia.easyorange.ai.domain.port.SemanticCachePort;
 import java.nio.ByteBuffer;
@@ -44,12 +44,12 @@ public class SemanticCacheService implements SemanticCachePort {
 
     private final ObjectProvider<StringRedisTemplate> redisProvider;
     private final ObjectProvider<EmbeddingModel> embeddingModelProvider;
-    private final AiModelSupport aiModelSupport;
+    private final ModelSupport aiModelSupport;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
     private final SemanticCacheMetrics metrics;
 
-    /** 查询向量化 — 按 {@link AiCallScope#CHAT} 记账：命中一次就是一次真实供应商调用，不落日志不计预算就永远是账外项。 */
+    /** 查询向量化 — 按 {@link ModelCallScope#CHAT} 记账：命中一次就是一次真实供应商调用，不落日志不计预算就永远是账外项。 */
     @Override
     public List<Float> embedQuery(String query) {
         if (!aiProperties.semanticCache().enabled() || query == null || query.isBlank()) {
@@ -62,7 +62,7 @@ public class SemanticCacheService implements SemanticCachePort {
             return List.of();
         }
         try {
-            return aiModelSupport.embed(embeddingModel, AiCallScope.CHAT, query);
+            return aiModelSupport.embed(embeddingModel, ModelCallScope.CHAT, query);
         } catch (Exception e) {
             log.warn("Semantic cache query embedding failed, skip cache for this call", e);
             // 失败记 error 而非 bypass：钱已花（供应商已计费）却没换来查找，与主动不查不是一回事，故障期能从曲线看出来
@@ -74,7 +74,7 @@ public class SemanticCacheService implements SemanticCachePort {
     /** 语义命中则返回缓存响应，否则 empty（命中只在同一用户桶内比较，分桶口径见 {@link SemanticCachePort#lookUp}）。 */
     @Override
     public <T> Optional<T> lookUp(
-            AiCallScope scope, String userId, String query, List<Float> queryEmbedding, Class<T> type) {
+            ModelCallScope scope, String userId, String query, List<Float> queryEmbedding, Class<T> type) {
         if (queryEmbedding == null || queryEmbedding.isEmpty()) {
             metrics.record(SemanticCacheMetrics.Outcome.BYPASS);
             return Optional.empty();
@@ -119,7 +119,7 @@ public class SemanticCacheService implements SemanticCachePort {
 
     /** 淘汰上限按用户桶各算各的 —— 高频用户的桶满了不该把其他用户的条目挤掉。 */
     @Override
-    public void store(AiCallScope scope, String userId, String query, List<Float> queryEmbedding, Object response) {
+    public void store(ModelCallScope scope, String userId, String query, List<Float> queryEmbedding, Object response) {
         if (queryEmbedding == null || queryEmbedding.isEmpty()) {
             return;
         }
@@ -194,7 +194,7 @@ public class SemanticCacheService implements SemanticCachePort {
     }
 
     /** Redis key = 前缀 + scope + <b>用户桶</b>（正确性要求，见类注释）。 */
-    private static String key(AiCallScope scope, String userId) {
+    private static String key(ModelCallScope scope, String userId) {
         return KEY_PREFIX + scope.name().toLowerCase() + ':' + userId;
     }
 

@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecision;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
 import com.cartethyia.easyorange.ai.domain.model.ChatTurn;
@@ -204,7 +204,7 @@ public class ChatToolLoop {
     /** 决策走 chat 场景快模型、记账进 chat 预算；入参摘要按本链路工具面取。 */
     private ToolLoopKernel.Decider loopDecider() {
         return (sessionId, messages, callbacks) ->
-                decider.decide(sessionId, messages, callbacks, AiCallScope.CHAT, ChatToolLoop::toolInputOf);
+                decider.decide(sessionId, messages, callbacks, ModelCallScope.CHAT, ChatToolLoop::toolInputOf);
     }
 
     /** 工具入参摘要（trace 落库与失败日志用）— 工具名缺失已在 {@link ToolCallDecision} 构造期收敛成空串，这里走 default，

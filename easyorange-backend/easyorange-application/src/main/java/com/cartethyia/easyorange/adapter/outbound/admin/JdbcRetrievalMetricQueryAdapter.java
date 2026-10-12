@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 检索指标回看读仓储 — 在 {@code eo_retrieval_metric} 上按 {@code run_id} 聚合（写侧见
  * {@code RetrievalMetricRecorder}）。放在 application 模块：管理端只读统计走组合根装配，与
- * {@code JdbcAiListingAdoptionAdapter} 同一层。
+ * {@code JdbcListingAdoptionAdapter} 同一层。
  * <p>
  * <b>评测线在 SQL 里按 case_id 前缀过滤而不是查出来再判</b>：两条线（retr-* 真实 embedding /
  * asset-* 合成向量）共用一张表，聚合前不分开就会把两种语料空间的命中率算成一个数。

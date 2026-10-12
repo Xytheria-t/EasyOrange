@@ -78,14 +78,14 @@ public record AuditLogProperties(
         map.put("Notice", "通知公告");
         map.put("LoginLog", "登录日志");
         map.put("AuditLog", "审计日志");
-        // 匹配是「类名去 Controller/Command/Query 后找最长的键包含于其中」，所以比 "AiKnowledge" 更长的
+        // 匹配是「类名去 Controller/Command/Query 后找最长的键包含于其中」，所以比 "Knowledge" 更长的
         // 键会被优先命中；少了下面这些，审计记录的模块名会回退成英文类名
         map.put("Category", "分类管理");
         map.put("Dashboard", "仪表盘");
-        map.put("AiChat", "AI 对话");
-        map.put("AiFeedback", "AI 反馈");
-        map.put("AiKnowledge", "AI 知识库");
-        map.put("AiListing", "AI 发布助手");
+        map.put("Chat", "AI 对话");
+        map.put("Feedback", "AI 反馈");
+        map.put("Knowledge", "AI 知识库");
+        map.put("Listing", "AI 发布助手");
         map.put("AiAdminCostReport", "AI 成本报表");
         map.put("AiAdminFeedbackExport", "AI 反馈导出");
         map.put("AiAdminKnowledge", "AI 知识库管理");

@@ -239,7 +239,7 @@ class ArchitectureRulesTest {
             .because("Spring DataAccessException 家族与 JdbcTemplate 都是持久化技术细节，必须在 adapter/outbound 内"
                     + "翻译成端口返回值或领域异常（如 UniqueConstraint → 幂等返回空），禁止渗进 domain/application；"
                     + "org.springframework.jdbc 一并禁是因为 application 层直连 JdbcTemplate + 内联 SQL 是绕过端口"
-                    + "最省事也最难被发现的破口（历史上 AiFeedbackAppService / AiCostReportAppService 各出现过一处）");
+                    + "最省事也最难被发现的破口（历史上 FeedbackAppService / CostReportAppService 各出现过一处）");
 
     // ==================== Rule 11: 每个模块一套领域异常层级 ====================
 

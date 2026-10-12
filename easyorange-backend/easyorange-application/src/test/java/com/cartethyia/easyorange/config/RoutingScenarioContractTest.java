@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
+import com.cartethyia.easyorange.ai.application.support.ModelRouter;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Set;
@@ -13,8 +13,8 @@ import org.yaml.snakeyaml.Yaml;
 /**
  * 模型路由场景契约 — 守住「代码引用的场景键必须在 yaml 配置」这条静默失效线。
  *
- * <p>{@code AiModelRouter.choose} 对未配置的场景回退 default-model：<b>键缺失不报错</b>，症状是「图片
- * 分析悄悄走了文本模型」这类降级而非异常。场景名在 {@link AiModelRouter} 单点定义（消费方引用常量，
+ * <p>{@code ModelRouter.choose} 对未配置的场景回退 default-model：<b>键缺失不报错</b>，症状是「图片
+ * 分析悄悄走了文本模型」这类降级而非异常。场景名在 {@link ModelRouter} 单点定义（消费方引用常量，
  * 不写字面量），本测试钉住 application.yaml 与这批常量的对应关系——加了新场景忘配 yaml，这里红。
  */
 @DisplayName("模型路由场景契约")
@@ -26,7 +26,7 @@ class RoutingScenarioContractTest {
         Map<?, ?> scenarios = routingScenarios();
 
         for (String scenario :
-                Set.of(AiModelRouter.SCENARIO_CHAT_TOOL, AiModelRouter.SCENARIO_VISION, AiModelRouter.SCENARIO_JUDGE)) {
+                Set.of(ModelRouter.SCENARIO_CHAT_TOOL, ModelRouter.SCENARIO_VISION, ModelRouter.SCENARIO_JUDGE)) {
             Object beanName = scenarios.get(scenario);
             assertThat(beanName)
                     .as("easyorange.ai.routing.scenarios.%s 未配置 —— 该场景会静默回退 default-model", scenario)

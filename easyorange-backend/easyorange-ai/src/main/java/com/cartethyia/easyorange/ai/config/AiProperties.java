@@ -80,7 +80,7 @@ public record AiProperties(
      * 不带任何环境变量可直接跑通）。本槽不另设 {@code @DefaultValue}（测试不按单键覆盖它），
      * 端点 / 模型 / 超时在代码里只有构造器兜底这一处。
      *
-     * @param routerModel 工具决策专用模型，留空与 {@code model} 同模型；分槽理由见 {@link AiModelConfig#decisionChatModel}
+     * @param routerModel 工具决策专用模型，留空与 {@code model} 同模型；分槽理由见 {@link ModelConfig#decisionChatModel}
      */
     public record Text(String apiKey, String baseUrl, String model, String routerModel, int timeout) {}
 
@@ -89,7 +89,7 @@ public record AiProperties(
 
     /**
      * 评审模型配置（LLM-as-Judge）— 生成默认 DeepSeek、评审默认百炼 qwen；apiKey 缺省借视觉槽的
-     * DashScope key（yaml 占位符兜底），要独立计费时另设。分家族理由见 {@link AiModelConfig#judgeChatModel}。
+     * DashScope key（yaml 占位符兜底），要独立计费时另设。分家族理由见 {@link ModelConfig#judgeChatModel}。
      */
     public record Judge(String apiKey, String baseUrl, String model, int timeout) {}
 
@@ -116,7 +116,7 @@ public record AiProperties(
 
     /**
      * Token 预算治理配置 — 每场景限单次调用 token 上限 + 日预算上限；场景键与
-     * {@link com.cartethyia.easyorange.ai.domain.enums.AiCallScope#budgetScenario()} 同源，yaml 缺场景时回退
+     * {@link com.cartethyia.easyorange.ai.domain.enums.ModelCallScope#budgetScenario()} 同源，yaml 缺场景时回退
      * 注解 {@code @TokenBudget} 的默认值（两侧字面量的一致性由 TokenBudgetScenarioContractTest 反射钉住）。
      */
     public record Budget(@DefaultValue("true") boolean enabled, Map<String, ScenarioBudget> scenarios) {
@@ -141,7 +141,7 @@ public record AiProperties(
     }
 
     /**
-     * 模型路由配置 — 键为场景名（常量定义见 {@link AiModelRouter}），值为 Spring bean 名；未配置的场景
+     * 模型路由配置 — 键为场景名（常量定义见 {@link ModelRouter}），值为 Spring bean 名；未配置的场景
      * 回退 {@code defaultModel}，换模型只改配置代码零改动，judge 指向独立评审模型即可消除自评偏差。
      */
     public record Routing(@DefaultValue("chatModel") String defaultModel, Map<String, String> scenarios) {

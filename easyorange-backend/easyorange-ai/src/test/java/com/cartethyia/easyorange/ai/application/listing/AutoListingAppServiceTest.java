@@ -13,14 +13,14 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
-import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
+import com.cartethyia.easyorange.ai.application.support.ModelRouter;
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
-import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
 import com.cartethyia.easyorange.ai.domain.port.CategoryCatalogPort;
@@ -29,7 +29,7 @@ import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import com.cartethyia.easyorange.ai.domain.port.ToolCallStepTracePort;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
-import com.cartethyia.easyorange.ai.testsupport.TestAiModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.TestModelSupport;
 import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
@@ -54,7 +54,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 发布助手全链路测试 — 视觉预识别 → 工具循环 → 生成，模型全部走桩（真内核 + 真 AiModelSupport +
+ * 发布助手全链路测试 — 视觉预识别 → 工具循环 → 生成，模型全部走桩（真内核 + 真 ModelSupport +
  * 桩 ChatModel），覆盖步骤事件、降级口径与取图失败语义。
  */
 @ExtendWith(MockitoExtension.class)
@@ -71,7 +71,7 @@ class AutoListingAppServiceTest {
             """;
 
     @Mock
-    private AiModelRouter modelRouter;
+    private ModelRouter modelRouter;
 
     @Mock
     private CategoryCatalogPort categoryCatalogPort;
@@ -88,8 +88,8 @@ class AutoListingAppServiceTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(modelRouter.choose(AiModelRouter.SCENARIO_VISION)).thenReturn(visionChatModel);
-        lenient().when(modelRouter.choose(AiModelRouter.SCENARIO_CHAT_TOOL)).thenReturn(decisionChatModel);
+        lenient().when(modelRouter.choose(ModelRouter.SCENARIO_VISION)).thenReturn(visionChatModel);
+        lenient().when(modelRouter.choose(ModelRouter.SCENARIO_CHAT_TOOL)).thenReturn(decisionChatModel);
         lenient().when(categoryCatalogPort.listAvailableCategoryNames()).thenReturn(List.of("手机数码", "图书教材"));
         lenient()
                 .when(visionChatModel.call(any(Prompt.class)))
@@ -108,7 +108,7 @@ class AutoListingAppServiceTest {
         return new AutoListingAppService(
                 modelRouter,
                 promptRegistry,
-                TestAiModelSupport.create(),
+                TestModelSupport.create(),
                 categoryCatalogPort,
                 visionImageLoader,
                 new ToolLoopKernel(mock(ToolCallStepTracePort.class), stubIdGenerator()),
@@ -116,7 +116,7 @@ class AutoListingAppServiceTest {
                         mock(KnowledgeRetrievalAppService.class),
                         mock(AssetSourcingAppService.class),
                         categoryCatalogPort),
-                new ToolCallDecider(TestAiModelSupport.create(), modelRouter, new ObjectMapper()),
+                new ToolCallDecider(TestModelSupport.create(), modelRouter, new ObjectMapper()),
                 new TokenBudgetGuard(mock(TokenBudgetStorePort.class), PropertyBindings.bind(AiProperties.class)),
                 PropertyBindings.bind(AiProperties.class),
                 new ListingLoopMetrics(new SimpleMeterRegistry()));
@@ -131,7 +131,7 @@ class AutoListingAppServiceTest {
                 .getAnnotation(TokenBudget.class);
 
         assertThat(limits).isNotNull();
-        assertThat(limits.scenario()).isEqualTo(AiCallScope.AUTO_LISTING.budgetScenario());
+        assertThat(limits.scenario()).isEqualTo(ModelCallScope.AUTO_LISTING.budgetScenario());
         assertThat(AutoListingAppService.ANNOTATION_MAX_TOKENS_PER_CALL).isEqualTo(limits.maxTokensPerCall());
         assertThat(AutoListingAppService.ANNOTATION_DAILY_TOKEN_LIMIT).isEqualTo(limits.dailyTokenLimit());
     }

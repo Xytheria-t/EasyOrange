@@ -14,7 +14,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
 /**
- * 生成回答前的 prompt 装配 — 纯函数，只管「生成时消息长什么样」（什么时候生成、拿什么生成在 {@link AiChatAppService}）。
+ * 生成回答前的 prompt 装配 — 纯函数，只管「生成时消息长什么样」（什么时候生成、拿什么生成在 {@link ChatAppService}）。
  * <p>
  * 两条必须守住的约定：历史按原始角色传多消息 —— 跨轮前缀稳定，供应商的上下文缓存折扣才有效；不可信内容一律进标签块，
  * 且进块前过 {@link UntrustedText#stripTags}。

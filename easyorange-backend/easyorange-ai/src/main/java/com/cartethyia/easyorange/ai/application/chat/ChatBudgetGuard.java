@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.application.chat;
 
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
-import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort.TokenReservation;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -21,8 +21,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ChatBudgetGuard {
 
-    /** 预算场景键取自 {@link AiCallScope}（枚举名小写），与 {@code @TokenBudget(scenario=...)} 单点同源不重写。 */
-    private static final String CHAT_SCENARIO = AiCallScope.CHAT.budgetScenario();
+    /** 预算场景键取自 {@link ModelCallScope}（枚举名小写），与 {@code @TokenBudget(scenario=...)} 单点同源不重写。 */
+    private static final String CHAT_SCENARIO = ModelCallScope.CHAT.budgetScenario();
 
     /** yaml 场景缺失时的兜底 —— 须与 {@code @TokenBudget(scenario="chat")} 注解默认值一致（契约由测试反射锁死）。 */
     static final int DEFAULT_MAX_TOKENS_PER_CALL = 1500;

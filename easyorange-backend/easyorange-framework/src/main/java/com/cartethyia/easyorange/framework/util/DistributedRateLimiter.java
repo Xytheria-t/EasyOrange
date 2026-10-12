@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * 不用 {@code increment + expire} 固定窗口：两次调用之间崩溃会让 key 无 TTL 永久限流，且固定窗口边界可放过 2× 流量；
  * 用 Redisson 内置实现而非手写 Lua，顺带避开 RedisTemplate 序列化器与 Lua {@code tonumber} 的兼容问题。
  * <p>
- * <b>fail-open</b>：Redis 异常时本方法抛出，由调用方（{@code RateLimitFilter} / {@code AiRateLimitInterceptor}）catch 后放行。
+ * <b>fail-open</b>：Redis 异常时本方法抛出，由调用方（{@code RateLimitFilter} / {@code RateLimitInterceptor}）catch 后放行。
  * 补桶时脚本内已设 {@code PEXPIRE}，key 随窗口到期被 Redis 自动回收，无需手动清理。
  */
 @Slf4j

@@ -12,9 +12,9 @@ import static org.mockito.Mockito.when;
 import com.cartethyia.easyorange.ai.application.cache.SemanticCacheMetrics;
 import com.cartethyia.easyorange.ai.application.cache.SemanticCacheMetrics.Outcome;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
-import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelSupport;
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.testsupport.PropertyBindings;
 import io.micrometer.core.instrument.Counter;
@@ -69,7 +69,7 @@ class SemanticCacheServiceTest {
     private EmbeddingModel embeddingModel;
 
     @Mock
-    private AiModelSupport aiModelSupport;
+    private ModelSupport aiModelSupport;
 
     private SemanticCacheService cache;
 
@@ -158,7 +158,8 @@ class SemanticCacheServiceTest {
             when(redis.opsForHash()).thenReturn(hashOps);
             when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of("f1", CACHED_JSON));
 
-            Optional<ChatAnswer> result = cache.lookUp(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
+            Optional<ChatAnswer> result =
+                    cache.lookUp(ModelCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
 
             assertThat(result).isPresent();
             assertThat(result.get().answer()).isEqualTo("缓存回答");
@@ -172,7 +173,7 @@ class SemanticCacheServiceTest {
             String dissimilar = cachedEntry(List.of(0f, 1f, 0f), "缓存回答", 1);
             when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of("f1", dissimilar));
 
-            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, ChatAnswer.class))
+            assertThat(cache.lookUp(ModelCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, ChatAnswer.class))
                     .isEmpty();
         }
 
@@ -189,7 +190,8 @@ class SemanticCacheServiceTest {
             when(hashOps.entries(CACHE_KEY))
                     .thenReturn(Map.of("legacy", legacy, "broken", brokenVector, "good", CACHED_JSON));
 
-            Optional<ChatAnswer> result = cache.lookUp(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
+            Optional<ChatAnswer> result =
+                    cache.lookUp(ModelCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
 
             assertThat(result).as("一条脏数据不应把整次查询变成未命中").isPresent();
             assertThat(result.get().answer()).isEqualTo("缓存回答");
@@ -198,7 +200,7 @@ class SemanticCacheServiceTest {
         @Test
         @DisplayName("空查询向量（缓存不可用）-> 未命中，不访问 Redis")
         void lookUp_emptyEmbedding() {
-            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", List.of(), ChatAnswer.class))
+            assertThat(cache.lookUp(ModelCallScope.CHAT, USER, "问题", List.of(), ChatAnswer.class))
                     .isEmpty();
             verify(redisProvider, never()).getIfAvailable();
         }
@@ -208,7 +210,7 @@ class SemanticCacheServiceTest {
         void lookUp_noRedis() {
             when(redisProvider.getIfAvailable()).thenReturn(null);
 
-            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
+            assertThat(cache.lookUp(ModelCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
                     .isEmpty();
         }
     }
@@ -226,9 +228,9 @@ class SemanticCacheServiceTest {
             when(hashOps.entries("eo:ai:semantic:chat:user-a")).thenReturn(Map.of("f1", CACHED_JSON));
             when(hashOps.entries("eo:ai:semantic:chat:user-b")).thenReturn(Map.of());
 
-            assertThat(cache.lookUp(AiCallScope.CHAT, "user-a", "怎么退款？", QUERY_VECTOR, ChatAnswer.class))
+            assertThat(cache.lookUp(ModelCallScope.CHAT, "user-a", "怎么退款？", QUERY_VECTOR, ChatAnswer.class))
                     .isPresent();
-            assertThat(cache.lookUp(AiCallScope.CHAT, "user-b", "怎么退款？", QUERY_VECTOR, ChatAnswer.class))
+            assertThat(cache.lookUp(ModelCallScope.CHAT, "user-b", "怎么退款？", QUERY_VECTOR, ChatAnswer.class))
                     .as("回答里注入了用户偏好，跨用户命中就是信息泄露")
                     .isEmpty();
         }
@@ -240,7 +242,7 @@ class SemanticCacheServiceTest {
             when(redis.opsForHash()).thenReturn(hashOps);
             when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of());
 
-            cache.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class);
+            cache.lookUp(ModelCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class);
 
             verify(hashOps, never()).entries("eo:ai:semantic:chat");
         }
@@ -257,7 +259,7 @@ class SemanticCacheServiceTest {
             when(redis.opsForHash()).thenReturn(hashOps);
             when(hashOps.size(CACHE_KEY)).thenReturn(0L);
 
-            cache.store(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
+            cache.store(ModelCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
 
             verify(hashOps).put(eq(CACHE_KEY), anyString(), anyString());
             verify(redis).expire(CACHE_KEY, Duration.ofHours(24));
@@ -273,7 +275,7 @@ class SemanticCacheServiceTest {
             String newEntry = cachedEntry(QUERY_VECTOR, "新", 200);
             when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of("old", oldEntry, "new", newEntry));
 
-            cache.store(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
+            cache.store(ModelCallScope.CHAT, USER, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
 
             verify(hashOps).delete(CACHE_KEY, "old");
         }
@@ -281,7 +283,7 @@ class SemanticCacheServiceTest {
         @Test
         @DisplayName("空查询向量（缓存不可用）-> 跳过写入，不访问 Redis")
         void store_emptyEmbedding() {
-            cache.store(AiCallScope.CHAT, USER, "问题", List.of(), new ChatAnswer("回答", List.of(), "s", false));
+            cache.store(ModelCallScope.CHAT, USER, "问题", List.of(), new ChatAnswer("回答", List.of(), "s", false));
 
             verify(redisProvider, never()).getIfAvailable();
         }
@@ -303,11 +305,11 @@ class SemanticCacheServiceTest {
 
         var original = new ChatAnswer(
                 "退款路径是这样的", List.of(new ChatSource(ChatSource.Type.KNOWLEDGE, "kb-1", "帮助中心")), "s-9", false);
-        cache.store(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, original);
+        cache.store(ModelCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, original);
 
         assertThat(written.get()).isNotNull();
         when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of("f", written.get()));
-        var result = cache.lookUp(AiCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
+        var result = cache.lookUp(ModelCallScope.CHAT, USER, "怎么退款？", QUERY_VECTOR, ChatAnswer.class);
 
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(original);
@@ -324,9 +326,9 @@ class SemanticCacheServiceTest {
                 new ObjectMapper(),
                 new SemanticCacheMetrics(meterRegistry));
 
-        assertThat(cacheNoRedis.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
+        assertThat(cacheNoRedis.lookUp(ModelCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
                 .isEmpty();
-        cacheNoRedis.store(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
+        cacheNoRedis.store(ModelCallScope.CHAT, USER, "问题", QUERY_VECTOR, new ChatAnswer("回答", List.of(), "s", false));
     }
 
     @Nested
@@ -340,12 +342,12 @@ class SemanticCacheServiceTest {
             when(redis.opsForHash()).thenReturn(hashOps);
             when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of("f", CACHED_JSON));
 
-            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
+            assertThat(cache.lookUp(ModelCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
                     .isPresent();
             assertThat(outcomeCount(Outcome.HIT)).isEqualTo(1d);
 
             // 与 CACHED_JSON 的向量 (0.99, 0.1, 0) 余弦低于 0.92 阈值
-            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", List.of(0f, 1f, 0f), ChatAnswer.class))
+            assertThat(cache.lookUp(ModelCallScope.CHAT, USER, "问题", List.of(0f, 1f, 0f), ChatAnswer.class))
                     .isEmpty();
             assertThat(outcomeCount(Outcome.MISS)).isEqualTo(1d);
         }
@@ -355,7 +357,7 @@ class SemanticCacheServiceTest {
         void bypassIsExcludedFromDenominator() {
             cache = cache(PropertyBindings.bind(AiProperties.class, "semantic-cache.enabled", "false"));
             assertThat(cache.embedQuery("问题")).isEmpty();
-            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
+            assertThat(cache.lookUp(ModelCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
                     .isEmpty();
 
             assertThat(outcomeCount(Outcome.BYPASS)).isEqualTo(2d);
@@ -381,7 +383,7 @@ class SemanticCacheServiceTest {
             when(redisProvider.getIfAvailable()).thenReturn(redis);
             when(redis.opsForHash()).thenThrow(new RuntimeException("redis down"));
 
-            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
+            assertThat(cache.lookUp(ModelCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
                     .isEmpty();
 
             assertThat(outcomeCount(Outcome.ERROR)).isEqualTo(1d);
@@ -400,7 +402,7 @@ class SemanticCacheServiceTest {
                     cachedEntry(List.of(0.99f, 0.1f, 0f), "回答", 1).replace("\"response\":\"", "\"response\":\"{");
             when(hashOps.entries(CACHE_KEY)).thenReturn(Map.of("f", corrupt));
 
-            assertThat(cache.lookUp(AiCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
+            assertThat(cache.lookUp(ModelCallScope.CHAT, USER, "问题", QUERY_VECTOR, ChatAnswer.class))
                     .isEmpty();
 
             assertThat(outcomeCount(Outcome.ERROR)).isEqualTo(1d);

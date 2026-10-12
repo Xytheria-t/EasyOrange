@@ -3,10 +3,10 @@ package com.cartethyia.easyorange.ai.domain.annotation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.cartethyia.easyorange.ai.adapter.outbound.QueryEmbeddingAdapter;
-import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
+import com.cartethyia.easyorange.ai.application.chat.ChatAppService;
 import com.cartethyia.easyorange.ai.application.listing.AutoListingAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
-import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -16,18 +16,18 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * {@code @TokenBudget(scenario = ...)} 与 {@link AiCallScope#budgetScenario()} 的契约测试。
+ * {@code @TokenBudget(scenario = ...)} 与 {@link ModelCallScope#budgetScenario()} 的契约测试。
  * <p>
  * 注解 {@code scenario} 只能写字面量，与枚举脱节编译期发现不了、后果还静默：切面按注解场景查用量、
  * 记账按枚举场景写入，预算永远显示「没花超」。所以带注解的类必须逐个反射钉死 —— 场景名改了或
  * 漏登记新注解，这里直接红。
  */
-@DisplayName("@TokenBudget 场景契约（注解字面量 == AiCallScope 场景键）-> 测试")
+@DisplayName("@TokenBudget 场景契约（注解字面量 == ModelCallScope 场景键）-> 测试")
 class TokenBudgetScenarioContractTest {
 
     /** 全部带 {@code @TokenBudget} 的类 —— 新增带预算的调用点必须登记进来，否则本测试失去覆盖面。 */
     private static final List<Class<?>> BUDGETED_CLASSES = List.of(
-            AiChatAppService.class,
+            ChatAppService.class,
             AutoListingAppService.class,
             QueryEmbeddingAdapter.class,
             KnowledgeRetrievalAppService.class);
@@ -44,11 +44,11 @@ class TokenBudgetScenarioContractTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("budgetedMethods")
-    @DisplayName("注解 scenario 必须是某个 AiCallScope 的场景键（否则记账与检查落进两个场景）")
-    void scenarioMatchesAiCallScope(String method, String scenario) {
-        assertThat(AiCallScope.values())
-                .as("%s 的 scenario='%s' 不在 AiCallScope 的场景键取值域内", method, scenario)
-                .extracting(AiCallScope::budgetScenario)
+    @DisplayName("注解 scenario 必须是某个 ModelCallScope 的场景键（否则记账与检查落进两个场景）")
+    void scenarioMatchesModelCallScope(String method, String scenario) {
+        assertThat(ModelCallScope.values())
+                .as("%s 的 scenario='%s' 不在 ModelCallScope 的场景键取值域内", method, scenario)
+                .extracting(ModelCallScope::budgetScenario)
                 .contains(scenario);
     }
 

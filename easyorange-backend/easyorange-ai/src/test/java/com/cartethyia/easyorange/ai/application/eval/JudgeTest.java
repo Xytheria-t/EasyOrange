@@ -1,0 +1,82 @@
+package com.cartethyia.easyorange.ai.application.eval;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
+
+import com.cartethyia.easyorange.ai.application.support.ModelRouter;
+import com.cartethyia.easyorange.ai.testsupport.TestModelSupport;
+import com.cartethyia.easyorange.ai.testsupport.TestPromptRegistry;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
+import tools.jackson.databind.ObjectMapper;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("Judge (LLM-as-Judge) -> 测试")
+class JudgeTest {
+
+    @Mock
+    private ChatModel chatModel;
+
+    @Mock
+    private ModelRouter modelRouter;
+
+    private Judge aiJudge;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(modelRouter.choose(ModelRouter.SCENARIO_JUDGE)).thenReturn(chatModel);
+        aiJudge = new Judge(modelRouter, new TestPromptRegistry(), TestModelSupport.create(), new ObjectMapper());
+    }
+
+    private static ChatResponse textResponse(String text) {
+        return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
+    }
+
+    @Test
+    @DisplayName("对照参考评审 -> 返回分数与评语")
+    void judge_againstReference() {
+        when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"score\": 5, \"comment\": \"一致\"}"));
+
+        Optional<Judge.Judgement> result = aiJudge.judgeAgainstReference("参考", "AI 回答");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().score()).isEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("分数越界 -> empty（不写脏数据）")
+    void judge_invalidScore_empty() {
+        when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("{\"score\": 99, \"comment\": \"bad\"}"));
+
+        assertThat(aiJudge.judgeAgainstReference("参考", "x")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("非 JSON 输出 -> empty")
+    void judge_unparseable_empty() {
+        when(chatModel.call(any(Prompt.class))).thenReturn(textResponse("我不知道"));
+
+        assertThat(aiJudge.judgeAgainstReference("参考", "x")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("模型异常 -> empty（调用方跳过该条）")
+    void judge_modelError_empty() {
+        when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("down"));
+
+        assertThat(aiJudge.judgeAgainstReference("参考", "x")).isEmpty();
+    }
+}

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.ai.application.eval;
 
-import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
+import com.cartethyia.easyorange.ai.application.chat.ChatAppService;
 import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop;
 import com.cartethyia.easyorange.ai.application.chat.ChatTools;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
  * 金标准集回归评估器 — 三条评估线：生成质量（LLM-as-Judge）、检索质量（hit@5 / MRR）、路由质量
  * （期望工具路径命中率），外加按需跑的双臂对照（RAG 有效性）；三条线读同一份用例集、各按口径取子集。
  * <p>
- * 生成线对每个 chat 用例调 {@link AiChatAppService#answer}（forceFresh 跳过缓存；显式传机器主体
+ * 生成线对每个 chat 用例调 {@link ChatAppService#answer}（forceFresh 跳过缓存；显式传机器主体
  * {@link ChatToolLoop#MACHINE_SUBJECT} 与空会话，偏好不落库、记忆不参与）对照参考回答打分取均值；
  * 检索线逐条落 eo_retrieval_metric；路由线对标了 {@code expected_tools} 的用例跑一次工具循环。
  * <p>
@@ -47,8 +47,8 @@ public class GoldenSetEvaluator {
     private static final Set<String> NO_RETRIEVAL_TOOLS = Set.of(ChatTools.TOOL_FINISH);
 
     private final GoldenSetLoader loader;
-    private final AiChatAppService chatService;
-    private final AiJudge aiJudge;
+    private final ChatAppService chatService;
+    private final Judge aiJudge;
     private final KnowledgeRetrievalAppService retrievalService;
     private final RetrievalMetricPort metricRecorder;
     private final IdGenerator idGenerator;
@@ -67,7 +67,7 @@ public class GoldenSetEvaluator {
         int judged = 0;
         int scoreSum = 0;
         for (var c : cases) {
-            Optional<AiJudge.Judgement> judgement = scoreCase(c, null);
+            Optional<Judge.Judgement> judgement = scoreCase(c, null);
             if (judgement.isPresent()) {
                 judged++;
                 scoreSum += judgement.get().score();
@@ -135,7 +135,7 @@ public class GoldenSetEvaluator {
      * 评估是无状态单轮，不读也不写会话记忆；挂 {@code eval-<caseId>} 当会话键会串历史 —— 无检索臂读到
      * 有检索臂刚落的那轮（历史同时进决策与生成 prompt），配对差被稀释。
      */
-    private Optional<AiJudge.Judgement> scoreCase(GoldenSetCase c, @Nullable Set<String> allowedTools) {
+    private Optional<Judge.Judgement> scoreCase(GoldenSetCase c, @Nullable Set<String> allowedTools) {
         try {
             ChatAnswer answer = chatService.answer(
                     new ChatRequest(c.question(), null, true), ChatToolLoop.MACHINE_SUBJECT, allowedTools);

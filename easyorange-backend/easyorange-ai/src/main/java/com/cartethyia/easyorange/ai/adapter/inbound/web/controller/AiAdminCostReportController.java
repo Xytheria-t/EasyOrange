@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.application.dto.AiCostReportRow;
-import com.cartethyia.easyorange.ai.application.report.AiCostReportAppService;
+import com.cartethyia.easyorange.ai.application.dto.CostReportRow;
+import com.cartethyia.easyorange.ai.application.report.CostReportAppService;
 import com.cartethyia.easyorange.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,11 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AiAdminCostReportController {
 
-    private final AiCostReportAppService costReportService;
+    private final CostReportAppService costReportService;
 
     @GetMapping
     @Operation(summary = "按「场景 × 模型」聚合 token 用量与失败数并货币化，时间窗上限 30 天")
-    public Result<List<AiCostReportRow>> getCostReport(@RequestParam(defaultValue = "24") int hours) {
+    public Result<List<CostReportRow>> getCostReport(@RequestParam(defaultValue = "24") int hours) {
         return Result.success(costReportService.report(hours));
     }
 }

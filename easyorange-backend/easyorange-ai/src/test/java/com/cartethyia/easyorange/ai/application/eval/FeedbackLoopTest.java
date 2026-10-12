@@ -10,9 +10,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.adapter.outbound.persistence.AiFeedbackRecorder;
+import com.cartethyia.easyorange.ai.adapter.outbound.persistence.FeedbackRecorder;
 import com.cartethyia.easyorange.ai.adapter.outbound.persistence.GoldenSetExportService;
-import com.cartethyia.easyorange.ai.domain.port.AiFeedbackPort;
+import com.cartethyia.easyorange.ai.domain.port.FeedbackPort;
 import com.cartethyia.easyorange.ai.domain.port.GoldenSetExportPort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
@@ -38,7 +38,7 @@ class FeedbackLoopTest {
     private IdGenerator idGenerator;
 
     @Mock
-    private AiFeedbackPort feedbackPort;
+    private FeedbackPort feedbackPort;
 
     @Mock
     private GoldenSetExportPort exportPort;
@@ -50,7 +50,7 @@ class FeedbackLoopTest {
         @Test
         @DisplayName("scope 缺省补 chat，身份取安全上下文（未登录时为 null）")
         void recordFeedback() {
-            AiFeedbackAppService service = new AiFeedbackAppService(feedbackPort, exportPort);
+            FeedbackAppService service = new FeedbackAppService(feedbackPort, exportPort);
 
             service.record(null, "怎么退款？", "7 天无理由", true, "很实用", "log-1");
 
@@ -60,7 +60,7 @@ class FeedbackLoopTest {
         @Test
         @DisplayName("显式 scope 原样透传，负评与空备注不被吞掉")
         void recordFeedback_passesThrough() {
-            AiFeedbackAppService service = new AiFeedbackAppService(feedbackPort, exportPort);
+            FeedbackAppService service = new FeedbackAppService(feedbackPort, exportPort);
 
             service.record("chat", "问题", "回答", false, null, null);
 
@@ -77,7 +77,7 @@ class FeedbackLoopTest {
         void insert() {
             when(idGenerator.generateId()).thenReturn("fb-1");
 
-            new AiFeedbackRecorder(jdbcTemplate, idGenerator)
+            new FeedbackRecorder(jdbcTemplate, idGenerator)
                     .record("chat", "怎么退款？", "7 天无理由", true, "很实用", "log-1", null);
 
             verify(jdbcTemplate)
@@ -100,7 +100,7 @@ class FeedbackLoopTest {
             when(jdbcTemplate.update(anyString(), org.mockito.ArgumentMatchers.<Object>any()))
                     .thenThrow(new RuntimeException("db down"));
 
-            new AiFeedbackRecorder(jdbcTemplate, idGenerator).record("chat", "问题", "回答", false, null, null, null);
+            new FeedbackRecorder(jdbcTemplate, idGenerator).record("chat", "问题", "回答", false, null, null, null);
         }
     }
 

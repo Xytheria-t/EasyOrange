@@ -19,8 +19,8 @@ import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop.Input;
 import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop.Result;
 import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
-import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
-import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.ModelRouter;
+import com.cartethyia.easyorange.ai.application.support.ModelSupport;
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
@@ -74,10 +74,10 @@ class ToolCallLoopTest {
     private ChatModel chatModel;
 
     @Mock
-    private AiModelSupport aiModelSupport;
+    private ModelSupport aiModelSupport;
 
     @Mock
-    private AiModelRouter modelRouter;
+    private ModelRouter modelRouter;
 
     /** 用真实桩而非 mock：{@code PromptRegistryPort.require} 是接口 default 方法，mock 会把它拦成 null。 */
     private final PromptRegistryPort promptRegistry = new TestPromptRegistry();
@@ -115,7 +115,7 @@ class ToolCallLoopTest {
         // 真实 guard：判定读同一个 budgetStore 桩，预算降级用例不用额外改写
         budgetGuard = new ChatBudgetGuard(new TokenBudgetGuard(budgetStore, aiProperties));
         toolCallLoop = newToolCallLoop();
-        lenient().when(modelRouter.choose(AiModelRouter.SCENARIO_CHAT_TOOL)).thenReturn(chatModel);
+        lenient().when(modelRouter.choose(ModelRouter.SCENARIO_CHAT_TOOL)).thenReturn(chatModel);
         lenient().when(idGenerator.generateId()).thenReturn("trace-1");
         lenient().when(budgetStore.getTodayUsage("chat")).thenReturn(Optional.empty());
     }

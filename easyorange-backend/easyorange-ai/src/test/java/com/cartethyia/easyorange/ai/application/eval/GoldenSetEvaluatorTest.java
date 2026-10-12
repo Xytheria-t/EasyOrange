@@ -9,7 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
+import com.cartethyia.easyorange.ai.application.chat.ChatAppService;
 import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop;
 import com.cartethyia.easyorange.ai.application.chat.ChatTools;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
@@ -44,10 +44,10 @@ class GoldenSetEvaluatorTest {
     private GoldenSetLoader loader;
 
     @Mock
-    private AiChatAppService chatService;
+    private ChatAppService chatService;
 
     @Mock
-    private AiJudge aiJudge;
+    private Judge aiJudge;
 
     @Mock
     private KnowledgeRetrievalAppService retrievalService;
@@ -94,8 +94,8 @@ class GoldenSetEvaluatorTest {
                         new GoldenSetCase("chat-002", "chat", "问题B", "参考B", List.of(), List.of()))));
         when(chatService.answer(any(ChatRequest.class), eq(ChatToolLoop.MACHINE_SUBJECT), isNull()))
                 .thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
-        when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(4, "ok")));
-        when(aiJudge.judgeAgainstReference("参考B", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(3, "ok")));
+        when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new Judge.Judgement(4, "ok")));
+        when(aiJudge.judgeAgainstReference("参考B", "回答")).thenReturn(Optional.of(new Judge.Judgement(3, "ok")));
 
         GenerationReport report = evaluator.evaluateGeneration();
 
@@ -135,8 +135,8 @@ class GoldenSetEvaluatorTest {
                         eq(ChatToolLoop.MACHINE_SUBJECT),
                         argThat(allowed -> allowed != null && allowed.contains(ChatTools.TOOL_FINISH))))
                 .thenReturn(new ChatAnswer("无检索回答", List.of(), null, false));
-        when(aiJudge.judgeAgainstReference("参考A", "有检索回答")).thenReturn(Optional.of(new AiJudge.Judgement(5, "ok")));
-        when(aiJudge.judgeAgainstReference("参考A", "无检索回答")).thenReturn(Optional.of(new AiJudge.Judgement(3, "ok")));
+        when(aiJudge.judgeAgainstReference("参考A", "有检索回答")).thenReturn(Optional.of(new Judge.Judgement(5, "ok")));
+        when(aiJudge.judgeAgainstReference("参考A", "无检索回答")).thenReturn(Optional.of(new Judge.Judgement(3, "ok")));
 
         ArmComparisonReport report = evaluator.evaluateRagArmComparison();
 
@@ -185,7 +185,7 @@ class GoldenSetEvaluatorTest {
                         new GoldenSetCase("retr-001", "retrieval", "退款", null, List.of("kb-0002"), List.of()))));
         when(chatService.answer(any(ChatRequest.class), eq(ChatToolLoop.MACHINE_SUBJECT), isNull()))
                 .thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
-        when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(5, "ok")));
+        when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new Judge.Judgement(5, "ok")));
         when(retrievalService.search("退款", 5)).thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "内容", 1.0)));
         when(idGenerator.generateId()).thenReturn("run-1");
 

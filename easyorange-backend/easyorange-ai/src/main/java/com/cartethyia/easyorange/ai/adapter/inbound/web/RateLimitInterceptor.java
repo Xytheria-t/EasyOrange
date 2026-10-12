@@ -1,0 +1,71 @@
+package com.cartethyia.easyorange.ai.adapter.inbound.web;
+
+import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
+import com.cartethyia.easyorange.common.enums.ResultCode;
+import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
+import com.cartethyia.easyorange.framework.util.RequestUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.web.ErrorResponseWriter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NullMarked;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+
+/**
+ * AI 模块限流拦截器 — scope 粒度令牌桶（如对话 20 次/分/用户）；超限返回 429（fail-open 容忍 Redis 故障）。
+ * <p>
+ * 供应商故障的 stale 回答兜底在 {@code ChatAppService} 服务层（stale-while-error），拦截器不承担缓存职责。
+ */
+@Slf4j
+@RequiredArgsConstructor
+@Component
+@NullMarked
+public class RateLimitInterceptor implements HandlerInterceptor {
+
+    private final DistributedRateLimiter distributedRateLimiter;
+    private final AiProperties aiProperties;
+    private final ErrorResponseWriter errorResponseWriter;
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
+        String uri = request.getRequestURI();
+        if (!uri.startsWith("/api/ai/")) {
+            return true;
+        }
+
+        ModelCallScope scope = ModelCallScope.fromUri(uri);
+        String userKey = resolveUserKey(request);
+        String bucketKey = scope.rateLimitKeyPrefix() + userKey;
+
+        try {
+            // Redisson RRateLimiter 令牌桶 — 原子化取桶/补桶/扣桶，解决 increment+expire 的原子性缺口
+            boolean allowed = distributedRateLimiter.tryAcquire(bucketKey, scope.getRatePerMinute(), 60);
+
+            if (!allowed) {
+                log.debug("AI rate limit exceeded: scope={}, user={}", scope, userKey);
+                // 与全局约定一致，限流错误也返回 Result 信封（code=A0429）
+                errorResponseWriter.write(response, 429, ResultCode.TOO_MANY_REQUESTS, "AI 服务繁忙，请稍后重试");
+                return false;
+            }
+        } catch (Exception e) {
+            if (aiProperties.rateLimit().failOpen()) {
+                log.warn("Redis unavailable, fail-open for AI rate limit", e);
+                return true;
+            }
+            throw e;
+        }
+
+        return true;
+    }
+
+    private String resolveUserKey(HttpServletRequest request) {
+        return SecurityContextUtil.getCurrentUserId()
+                .map(id -> "user:" + id)
+                .orElseGet(() -> "ip:" + RequestUtil.getClientIp(request));
+    }
+}

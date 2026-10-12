@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
  * Token 预算存储接口 — 按场景隔离每日用量，读侧检查 + 原子预留两段协议。预留（{@link #tryReserve}）
  * 是并发正确性的收口：读用量、判限额、记占用必须一次原子完成（Redis 单脚本 Lua / 内存 CAS），否则
  * N 个并发请求各拿同一份旧用量通过检查，日限被突破「并发数 × maxPerCall」。真实用量由记账方
- * （AiCallRecorder）按供应商回报另行累加。
+ * （ModelCallRecorder）按供应商回报另行累加。
  */
 public interface TokenBudgetStorePort {
 

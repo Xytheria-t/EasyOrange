@@ -9,9 +9,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.chat.ChatTools;
-import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
-import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
-import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.application.support.ModelRouter;
+import com.cartethyia.easyorange.ai.application.support.ModelSupport;
+import com.cartethyia.easyorange.ai.domain.enums.ModelCallScope;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,24 +25,24 @@ class ToolCallDeciderTest {
 
     private static final ToolCallback UNUSED_CALLBACK = mock(ToolCallback.class);
 
-    private ToolCallDecider decider(AiModelSupport aiModelSupport) {
-        return new ToolCallDecider(aiModelSupport, mock(AiModelRouter.class), new ObjectMapper());
+    private ToolCallDecider decider(ModelSupport aiModelSupport) {
+        return new ToolCallDecider(aiModelSupport, mock(ModelRouter.class), new ObjectMapper());
     }
 
-    private List<ToolLoopCall> loopCalls(AiModelSupport aiModelSupport) {
+    private List<ToolLoopCall> loopCalls(ModelSupport aiModelSupport) {
         return decider(aiModelSupport)
                 .decide(
                         "sess-1",
                         List.of(new UserMessage("退款规则")),
                         List.of(UNUSED_CALLBACK),
-                        AiCallScope.CHAT,
+                        ModelCallScope.CHAT,
                         d -> null);
     }
 
     @Test
     @DisplayName("首次决策故障重试一次后成功 — 抖动自愈，不落入单步降级")
     void retry_recoversFromTransientFailure() {
-        AiModelSupport aiModelSupport = mock(AiModelSupport.class);
+        ModelSupport aiModelSupport = mock(ModelSupport.class);
         when(aiModelSupport.callWithTools(any(), any(), anyList(), anyList()))
                 .thenThrow(new RuntimeException("connection reset"))
                 .thenReturn(List.of(toolCall("{\"thought\":\"查规则\",\"query\":\"退款\"}")));
@@ -57,7 +57,7 @@ class ToolCallDeciderTest {
     @Test
     @DisplayName("重试仍失败才交编排器降级 — 返回空列表且调用恰好两次")
     void retry_givesUpAfterSecondFailure() {
-        AiModelSupport aiModelSupport = mock(AiModelSupport.class);
+        ModelSupport aiModelSupport = mock(ModelSupport.class);
         when(aiModelSupport.callWithTools(any(), any(), anyList(), anyList()))
                 .thenThrow(new RuntimeException("timeout"))
                 .thenThrow(new RuntimeException("timeout"));
@@ -71,7 +71,7 @@ class ToolCallDeciderTest {
     @Test
     @DisplayName("模型未返回工具调用不重试 — 协议层确定性响应，重试同一输入只会白付一次调用")
     void noRetry_whenModelReturnsNoToolCalls() {
-        AiModelSupport aiModelSupport = mock(AiModelSupport.class);
+        ModelSupport aiModelSupport = mock(ModelSupport.class);
         when(aiModelSupport.callWithTools(any(), any(), anyList(), anyList())).thenReturn(List.of());
 
         List<ToolLoopCall> calls = loopCalls(aiModelSupport);
