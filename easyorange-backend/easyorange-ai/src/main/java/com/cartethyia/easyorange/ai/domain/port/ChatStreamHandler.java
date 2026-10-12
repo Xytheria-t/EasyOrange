@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.ai.domain.port;
 
+import com.cartethyia.easyorange.ai.domain.exception.ChatStreamAbortedException;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
 import java.util.List;
