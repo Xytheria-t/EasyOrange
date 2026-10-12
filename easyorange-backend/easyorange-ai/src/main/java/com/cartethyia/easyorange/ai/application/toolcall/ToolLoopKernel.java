@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
  * <p>
  * 手写循环 + 原生 tool calling：{@code ChatModel.call} 不自动执行工具，轮数上限与降级控制权留在本类。内核只持
  * 链路无关的机制（四条出口、协议回填、步级 trace/SSE、toolPath），首轮上下文、模型路由与降级动作由
- * {@link Spec} / {@link Decider} 注入 —— chat 与 listing 共用，不改写各自的工具语义；trace/step/
+ * {@link Spec} / {@link RoundDecider} 注入 —— chat 与 listing 共用，不改写各自的工具语义；trace/step/
  * 指标失败不碰主链路。
  */
 @Slf4j
@@ -56,22 +56,24 @@ public class ToolLoopKernel {
             ToolLoopListener listener) {}
 
     /**
-     * 循环的决策函数 — 内核收函数不收实现：模型路由、记账场景与重试等协议口径随链路（chat / listing）不同，
+     * 每轮的决策函数 — 内核收函数不收实现：模型路由、记账场景与重试等协议口径随链路（chat / listing）不同，
      * 由各决策实现自持；返回空列表即本轮决策失败，由内核按 Spec 注入的降级动作收口。
+     * <p>
+     * 与 {@link ToolCallDecider}（调模型的决策器）分属两层：链路把它绑定场景与入参摘要后以本接口注入，
+     * 内核只认「每轮一批调用」，不认背后是否走了模型。
      */
     @FunctionalInterface
-    public interface Decider {
+    public interface RoundDecider {
 
-        List<ToolLoopCall> decide(
-                @Nullable String sessionId, List<Message> decisionMessages, List<ToolCallback> toolCallbacks);
+        List<ToolLoopCall> decide(@Nullable String sessionId, List<Message> messages, List<ToolCallback> callbacks);
     }
 
     /** 循环结果 — outcome / rounds 供指标与降级归因；toolPath 含 finish 轮，供路由准确率评估对照金标准集。 */
     public record Result(ToolLoopOutcome outcome, int rounds, List<String> toolPath) {}
 
-    public Result run(Spec spec, Decider decider) {
+    public Result run(Spec spec, RoundDecider roundDecider) {
         try {
-            Result result = executeLoop(spec, decider);
+            Result result = executeLoop(spec, roundDecider);
             spec.listener().recordLoop(result.outcome(), result.rounds());
             return result;
         } catch (RuntimeException e) {
@@ -80,7 +82,7 @@ public class ToolLoopKernel {
         }
     }
 
-    private Result executeLoop(Spec spec, Decider decider) {
+    private Result executeLoop(Spec spec, RoundDecider roundDecider) {
         String traceId = idGenerator.generateId();
         var dispatcher = ToolDispatcher.of(spec.toolCallbacks());
         var transcript = new ToolLoopTranscript(spec.systemPrompt(), spec.firstUserMessage());
@@ -96,7 +98,8 @@ public class ToolLoopKernel {
                         rounds);
                 return new Result(ToolLoopOutcome.BUDGET, rounds, List.copyOf(toolPath));
             }
-            List<ToolLoopCall> calls = decider.decide(spec.sessionId(), transcript.messages(), spec.toolCallbacks());
+            List<ToolLoopCall> calls =
+                    roundDecider.decide(spec.sessionId(), transcript.messages(), spec.toolCallbacks());
             if (calls.isEmpty()) {
                 spec.decisionFailedFallback().run();
                 return new Result(ToolLoopOutcome.DECISION_FAILED, rounds, List.copyOf(toolPath));

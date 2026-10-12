@@ -133,7 +133,7 @@ public class ChatToolLoop {
 
     public Result run(Input input) {
         ChatTools tools = toolsFactory.create(attributedUserId(input));
-        ToolLoopKernel.Result result = loopKernel.run(spec(input, tools), loopDecider());
+        ToolLoopKernel.Result result = loopKernel.run(spec(input, tools), roundDecider());
         return Result.of(tools, result.outcome(), result.rounds(), result.toolPath());
     }
 
@@ -202,7 +202,7 @@ public class ChatToolLoop {
     // ── 决策 ──
 
     /** 决策走 chat 场景快模型、记账进 chat 预算；入参摘要按本链路工具面取。 */
-    private ToolLoopKernel.Decider loopDecider() {
+    private ToolLoopKernel.RoundDecider roundDecider() {
         return (sessionId, messages, callbacks) ->
                 decider.decide(sessionId, messages, callbacks, ModelCallScope.CHAT, ChatToolLoop::toolInputOf);
     }
