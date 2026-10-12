@@ -445,7 +445,7 @@ CREATE TABLE `eo_audit_log` (
 -- 9. AI 功能模块
 -- ===================================================================
 
--- AI 调用日志（ModelCallLogRecorder 每次 LLM/Embedding 调用后直写一条，失败仅告警不阻塞主链路；
+-- AI 调用日志（AiCallLogRecorder 每次 LLM/Embedding 调用后直写一条，失败仅告警不阻塞主链路；
 -- 读取方为成本报表 GET /api/admin/ai/cost-report）
 CREATE TABLE `eo_ai_call_log` (
     `id` VARCHAR(36) NOT NULL COMMENT '主键 UUID v7',
