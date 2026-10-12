@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.ai.application.eval;
 
 import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
+import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop;
 import com.cartethyia.easyorange.ai.application.chat.ChatTools;
-import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.listing.AutoListingAppService;
@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
  * （期望工具路径命中率），外加按需跑的双臂对照（RAG 有效性）；三条线读同一份用例集、各按口径取子集。
  * <p>
  * 生成线对每个 chat 用例调 {@link AiChatAppService#answer}（forceFresh 跳过缓存；显式传机器主体
- * {@link ToolCallLoop#MACHINE_SUBJECT} 与空会话，偏好不落库、记忆不参与）对照参考回答打分取均值；
+ * {@link ChatToolLoop#MACHINE_SUBJECT} 与空会话，偏好不落库、记忆不参与）对照参考回答打分取均值；
  * 检索线逐条落 eo_retrieval_metric；路由线对标了 {@code expected_tools} 的用例跑一次工具循环。
  * <p>
  * <b>路由线只跑循环不跑生成</b>：它量的是选路，生成那步属生成分。两条线按 scope 字段分流，不用
@@ -52,7 +52,7 @@ public class GoldenSetEvaluator {
     private final KnowledgeRetrievalAppService retrievalService;
     private final RetrievalMetricPort metricRecorder;
     private final IdGenerator idGenerator;
-    private final ToolCallLoop toolCallLoop;
+    private final ChatToolLoop toolCallLoop;
     private final AutoListingAppService listingAppService;
 
     private List<GoldenSetCase> casesOf(String scope) {
@@ -138,7 +138,7 @@ public class GoldenSetEvaluator {
     private Optional<AiJudge.Judgement> scoreCase(GoldenSetCase c, @Nullable Set<String> allowedTools) {
         try {
             ChatAnswer answer = chatService.answer(
-                    new ChatRequest(c.question(), null, true), ToolCallLoop.MACHINE_SUBJECT, allowedTools);
+                    new ChatRequest(c.question(), null, true), ChatToolLoop.MACHINE_SUBJECT, allowedTools);
             // 只有对照参考回答这一条评分路径：chat 用例必带 reference_answer，加载期已强校验
             return aiJudge.judgeAgainstReference(c.referenceAnswer(), answer.answer());
         } catch (Exception e) {
@@ -208,10 +208,10 @@ public class GoldenSetEvaluator {
             List<String> actual;
             try {
                 actual = toolCallLoop
-                        .run(new ToolCallLoop.Input(
+                        .run(new ChatToolLoop.Input(
                                 c.question(),
                                 "eval-" + c.id(),
-                                ToolCallLoop.MACHINE_SUBJECT,
+                                ChatToolLoop.MACHINE_SUBJECT,
                                 List.of(),
                                 List.of(),
                                 null))

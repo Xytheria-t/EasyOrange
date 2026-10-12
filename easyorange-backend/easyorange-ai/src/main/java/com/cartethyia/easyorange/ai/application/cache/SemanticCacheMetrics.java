@@ -53,7 +53,7 @@ public class SemanticCacheMetrics {
         counters.get(outcome).increment();
     }
 
-    /** 记一次故障穿透 — 只记 {@link Outcome#ERROR}，不进命中率分母；与 {@code ToolCallLoopMetrics#recordLoopFailure} 同源。 */
+    /** 记一次故障穿透 — 只记 {@link Outcome#ERROR}，不进命中率分母；与 {@code ChatLoopMetrics#recordLoopFailure} 同源。 */
     public void recordFailure() {
         counters.get(Outcome.ERROR).increment();
     }

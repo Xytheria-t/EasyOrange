@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * 发布链路循环结果 — 召回物供最终生成拼观察块（行情由生成侧按累加器现算，不入记录）；outcome / rounds /
- * toolPath 口径见 {@code ToolLoopKernel.Result}。与买家侧 {@code ToolCallLoop.Result} 同构，但发布链路
+ * toolPath 口径见 {@code ToolLoopKernel.Result}。与买家侧 {@code ChatToolLoop.Result} 同构，但发布链路
  * 没有 product_detail / 偏好，故无详情列表。
  */
 public record ListingLoopResult(

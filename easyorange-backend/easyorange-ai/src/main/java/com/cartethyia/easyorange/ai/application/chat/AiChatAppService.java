@@ -38,7 +38,7 @@ import org.springframework.util.StringUtils;
 /**
  * AI 智能对话（工具循环编排）— 多轮记忆 + 多步工具循环 + 引用溯源 + 语义缓存 + 预算治理；与搜索页的结构化检索正交：那边「一次查询定结果」，这里模型自己决定检索几轮、查什么。
  * <p>
- * 链路：记忆装配（Redis 会话窗口 + 用户偏好表，过 {@link ChatContextTrimmer} 裁 token）→ 工具循环（{@link ToolCallLoop}，
+ * 链路：记忆装配（Redis 会话窗口 + 用户偏好表，过 {@link ChatContextTrimmer} 裁 token）→ 工具循环（{@link ChatToolLoop}，
  * 步数 / 预算超限用已积累观察直接生成、决策失败补检索一次）→ 生成回答（{@link ChatPromptAssembler}，末尾 [来源:标题] 溯源）；
  * 流式预算前置检查手动做，理由见 {@link ChatBudgetGuard}。
  */
@@ -72,7 +72,7 @@ public class AiChatAppService {
     private final SemanticCachePort semanticCache;
     private final ChatSessionPort sessionStore;
     private final UserPreferenceRepository preferenceRepository;
-    private final ToolCallLoop toolCallLoop;
+    private final ChatToolLoop toolCallLoop;
     private final ChatBudgetGuard budgetGuard;
     private final ChatContextTrimmer contextTrimmer;
     private final DistributedLockPort distributedLockPort;
@@ -103,7 +103,7 @@ public class AiChatAppService {
             SemanticCachePort semanticCache,
             ChatSessionPort sessionStore,
             UserPreferenceRepository preferenceRepository,
-            ToolCallLoop toolCallLoop,
+            ChatToolLoop toolCallLoop,
             ChatBudgetGuard budgetGuard,
             ChatContextTrimmer contextTrimmer,
             DistributedLockPort distributedLockPort,
@@ -315,7 +315,7 @@ public class AiChatAppService {
             // 机器主体在写侧被 ChatTools 拒收偏好，此处查到的恒为空表，无需特判
             List<UserPreference> prefs = preferenceRepository.findByUserId(userId);
 
-            ToolCallLoop.Result loopResult = toolCallLoop.run(new ToolCallLoop.Input(
+            ChatToolLoop.Result loopResult = toolCallLoop.run(new ChatToolLoop.Input(
                     request.question(), request.sessionId(), userId, history, prefs, handler, allowedTools));
 
             List<ChatSource> sources =

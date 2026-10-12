@@ -10,8 +10,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.chat.AiChatAppService;
+import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop;
 import com.cartethyia.easyorange.ai.application.chat.ChatTools;
-import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.listing.AutoListingAppService;
@@ -59,7 +59,7 @@ class GoldenSetEvaluatorTest {
     private IdGenerator idGenerator;
 
     @Mock
-    private ToolCallLoop toolCallLoop;
+    private ChatToolLoop toolCallLoop;
 
     @Mock
     private AutoListingAppService listingAppService;
@@ -79,9 +79,9 @@ class GoldenSetEvaluatorTest {
     }
 
     /** 工具循环的桩结果 —— 路由评估只读 {@code toolPath}，召回物与结局对它无影响。 */
-    private static ToolCallLoop.Result loopResult(String... tools) {
+    private static ChatToolLoop.Result loopResult(String... tools) {
         List<String> path = List.of(tools);
-        return new ToolCallLoop.Result(List.of(), List.of(), List.of(), ToolLoopOutcome.FINISHED, path.size(), path);
+        return new ChatToolLoop.Result(List.of(), List.of(), List.of(), ToolLoopOutcome.FINISHED, path.size(), path);
     }
 
     @Test
@@ -92,7 +92,7 @@ class GoldenSetEvaluatorTest {
                 .thenReturn(new GoldenSet(List.of(
                         new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of(), List.of()),
                         new GoldenSetCase("chat-002", "chat", "问题B", "参考B", List.of(), List.of()))));
-        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT), isNull()))
+        when(chatService.answer(any(ChatRequest.class), eq(ChatToolLoop.MACHINE_SUBJECT), isNull()))
                 .thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
         when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(4, "ok")));
         when(aiJudge.judgeAgainstReference("参考B", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(3, "ok")));
@@ -111,7 +111,7 @@ class GoldenSetEvaluatorTest {
         when(loader.load())
                 .thenReturn(new GoldenSet(
                         List.of(new GoldenSetCase("chat-001", "chat", "问题A", null, List.of(), List.of()))));
-        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT), isNull()))
+        when(chatService.answer(any(ChatRequest.class), eq(ChatToolLoop.MACHINE_SUBJECT), isNull()))
                 .thenThrow(new RuntimeException("model down"));
 
         GenerationReport report = evaluator.evaluateGeneration();
@@ -128,11 +128,11 @@ class GoldenSetEvaluatorTest {
                 .thenReturn(new GoldenSet(
                         List.of(new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of(), List.of()))));
         // 有检索臂 = 全量工具面（null 白名单）；无检索臂 = 白名单只留 finish
-        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT), isNull()))
+        when(chatService.answer(any(ChatRequest.class), eq(ChatToolLoop.MACHINE_SUBJECT), isNull()))
                 .thenReturn(new ChatAnswer("有检索回答", List.of(), null, false));
         when(chatService.answer(
                         any(ChatRequest.class),
-                        eq(ToolCallLoop.MACHINE_SUBJECT),
+                        eq(ChatToolLoop.MACHINE_SUBJECT),
                         argThat(allowed -> allowed != null && allowed.contains(ChatTools.TOOL_FINISH))))
                 .thenReturn(new ChatAnswer("无检索回答", List.of(), null, false));
         when(aiJudge.judgeAgainstReference("参考A", "有检索回答")).thenReturn(Optional.of(new AiJudge.Judgement(5, "ok")));
@@ -148,7 +148,7 @@ class GoldenSetEvaluatorTest {
 
         // 会话 id 必须为空：两臂挂同一 case 级会话键会串历史（无检索臂读到有检索臂刚落的那轮），配对差被稀释
         ArgumentCaptor<ChatRequest> requests = ArgumentCaptor.forClass(ChatRequest.class);
-        verify(chatService, times(2)).answer(requests.capture(), eq(ToolCallLoop.MACHINE_SUBJECT), any());
+        verify(chatService, times(2)).answer(requests.capture(), eq(ChatToolLoop.MACHINE_SUBJECT), any());
         assertThat(requests.getAllValues())
                 .allSatisfy(r -> assertThat(r.sessionId()).isNull());
     }
@@ -183,7 +183,7 @@ class GoldenSetEvaluatorTest {
                 .thenReturn(new GoldenSet(List.of(
                         new GoldenSetCase("chat-001", "chat", "问题A", "参考A", List.of("kb-0001"), List.of()),
                         new GoldenSetCase("retr-001", "retrieval", "退款", null, List.of("kb-0002"), List.of()))));
-        when(chatService.answer(any(ChatRequest.class), eq(ToolCallLoop.MACHINE_SUBJECT), isNull()))
+        when(chatService.answer(any(ChatRequest.class), eq(ChatToolLoop.MACHINE_SUBJECT), isNull()))
                 .thenReturn(new ChatAnswer("回答", List.of(), "eval-x", false));
         when(aiJudge.judgeAgainstReference("参考A", "回答")).thenReturn(Optional.of(new AiJudge.Judgement(5, "ok")));
         when(retrievalService.search("退款", 5)).thenReturn(List.of(new KnowledgeHit("kb-0002", "退款规则", "内容", 1.0)));

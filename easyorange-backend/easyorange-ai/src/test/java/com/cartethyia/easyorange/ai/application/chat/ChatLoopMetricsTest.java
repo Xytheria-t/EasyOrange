@@ -9,16 +9,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("ToolCallLoopMetrics (循环观测副产物) -> 测试")
+@DisplayName("ChatLoopMetrics (循环观测副产物) -> 测试")
 class ToolCallLoopMetricsTest {
 
     private SimpleMeterRegistry registry;
-    private ToolCallLoopMetrics metrics;
+    private ChatLoopMetrics metrics;
 
     @BeforeEach
     void setUp() {
         registry = new SimpleMeterRegistry();
-        metrics = new ToolCallLoopMetrics(registry);
+        metrics = new ChatLoopMetrics(registry);
     }
 
     @Test

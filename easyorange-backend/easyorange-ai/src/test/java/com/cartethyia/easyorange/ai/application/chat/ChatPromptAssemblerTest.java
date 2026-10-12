@@ -31,7 +31,7 @@ class ChatPromptAssemblerTest {
                 question,
                 history,
                 List.of(new UserPreference("condition", "九五新以上")),
-                new ToolCallLoop.Result(hits, assetHits, details, ToolLoopOutcome.FINISHED, 1, List.of()));
+                new ChatToolLoop.Result(hits, assetHits, details, ToolLoopOutcome.FINISHED, 1, List.of()));
     }
 
     private static String currentUserMessage(List<Message> messages) {

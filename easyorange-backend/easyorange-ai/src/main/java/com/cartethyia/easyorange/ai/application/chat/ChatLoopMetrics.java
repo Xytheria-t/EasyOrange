@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
  * 结局与耗时，本类不抛异常、不反查配置。
  */
 @Component
-public class ToolCallLoopMetrics implements ToolLoopListener {
+public class ChatLoopMetrics implements ToolLoopListener {
 
     private static final String LOOP_METRIC = "easyorange.ai.chat.loop";
     private static final String STEPS_METRIC = "easyorange.ai.chat.steps";
@@ -71,7 +71,7 @@ public class ToolCallLoopMetrics implements ToolLoopListener {
     private final Map<TrackedTool, Counter> toolCounters;
     private final Map<TrackedTool, Timer> toolTimers;
 
-    public ToolCallLoopMetrics(MeterRegistry meterRegistry) {
+    public ChatLoopMetrics(MeterRegistry meterRegistry) {
         this.loopCounters = new EnumMap<>(ToolLoopOutcome.class);
         for (ToolLoopOutcome outcome : ToolLoopOutcome.values()) {
             loopCounters.put(outcome, meterRegistry.counter(LOOP_METRIC, "outcome", outcome.getTag()));

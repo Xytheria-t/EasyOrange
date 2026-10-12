@@ -11,8 +11,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop.Input;
-import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop.Result;
+import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop.Input;
+import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop.Result;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
@@ -90,7 +90,7 @@ class AiChatAppServiceTest {
     private UserPreferenceRepository preferenceRepository;
 
     @Mock
-    private ToolCallLoop toolCallLoop;
+    private ChatToolLoop toolCallLoop;
 
     @Mock
     private ChatBudgetGuard budgetGuard;
@@ -590,11 +590,11 @@ class AiChatAppServiceTest {
                 .thenReturn("回答");
 
         chatService.streamAnswer(
-                new ChatRequest("问题", "sess-1", false), ToolCallLoop.MACHINE_SUBJECT, new StreamHandlerStub());
+                new ChatRequest("问题", "sess-1", false), ChatToolLoop.MACHINE_SUBJECT, new StreamHandlerStub());
 
         ArgumentCaptor<Input> input = ArgumentCaptor.forClass(Input.class);
         verify(toolCallLoop).run(input.capture());
-        assertThat(input.getValue().userId()).isEqualTo(ToolCallLoop.MACHINE_SUBJECT);
+        assertThat(input.getValue().userId()).isEqualTo(ChatToolLoop.MACHINE_SUBJECT);
     }
 
     @Test

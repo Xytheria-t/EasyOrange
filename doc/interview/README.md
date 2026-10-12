@@ -163,7 +163,7 @@
 
 **路径写法**：同目录互链用文件名（`01-备战清单.md`），指上级用 `../工程指标.md`，锚点用 `#结构计数`。
 
-**源码路径里的 `...` 是省略段**：`easyorange-ai/.../application/chat/ToolCallLoop.java` 的真实位置是 `easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/chat/ToolCallLoop.java`。找文件**按类名在 IDE 里跳**，别按路径字符串去拼。注意 02 骨架里的方法名（`decide` / `executeTool`）是示意名，搜不到；**节首「文件」行给的是真类名，那个搜得到**。
+**源码路径里的 `...` 是省略段**：`easyorange-ai/.../application/chat/ChatToolLoop.java` 的真实位置是 `easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/chat/ChatToolLoop.java`。找文件**按类名在 IDE 里跳**，别按路径字符串去拼。注意 02 骨架里的方法名（`decide` / `executeTool`）是示意名，搜不到；**节首「文件」行给的是真类名，那个搜得到**。
 
 **阶段 / 周次 / 投递时间线**统一看 [迭代路线](../迭代路线.md)。
 

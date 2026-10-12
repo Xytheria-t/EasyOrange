@@ -28,7 +28,7 @@ final class ChatPromptAssembler {
             String question,
             List<ChatTurn> history,
             List<UserPreference> prefs,
-            ToolCallLoop.Result run) {
+            ChatToolLoop.Result run) {
         List<Message> messages = new ArrayList<>(history.size() + 2);
         messages.add(new SystemMessage(systemPrompt));
         for (ChatTurn turn : history) {
@@ -39,7 +39,7 @@ final class ChatPromptAssembler {
     }
 
     private static String buildCurrentUserMessage(
-            String question, List<UserPreference> prefs, ToolCallLoop.Result run) {
+            String question, List<UserPreference> prefs, ChatToolLoop.Result run) {
         String questionText = UntrustedText.stripTags(question);
         String preferencesText = UntrustedText.stripTags(UserPreference.format(prefs));
         String knowledgeText = UntrustedText.stripTags(KnowledgeHit.format(run.knowledgeHits()));

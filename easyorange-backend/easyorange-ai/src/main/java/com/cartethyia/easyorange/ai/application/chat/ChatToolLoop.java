@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-public class ToolCallLoop {
+public class ChatToolLoop {
 
     /**
      * 机器主体标识 —— 唯一非登录调用方是评估跑批：会话 / 缓存键照常按此主体隔离；{@link #attributedUserId} 收敛成 null 后
@@ -54,11 +54,11 @@ public class ToolCallLoop {
     private final ToolLoopKernel loopKernel;
     private final ChatBudgetGuard budgetGuard;
     private final AiProperties aiProperties;
-    private final ToolCallLoopMetrics metrics;
+    private final ChatLoopMetrics metrics;
 
     /** trace 端口与 trace_id 来源经内核持有（步级落库属循环机制）；签名保持内核抽取前形态，买家侧装配零改动。 */
     @Autowired
-    public ToolCallLoop(
+    public ChatToolLoop(
             PromptRegistryPort promptRegistry,
             ChatToolsFactory toolsFactory,
             ToolCallDecider decider,
@@ -66,7 +66,7 @@ public class ToolCallLoop {
             ChatBudgetGuard budgetGuard,
             AiProperties aiProperties,
             IdGenerator idGenerator,
-            ToolCallLoopMetrics metrics) {
+            ChatLoopMetrics metrics) {
         this.promptRegistry = promptRegistry;
         this.toolsFactory = toolsFactory;
         this.decider = decider;
@@ -204,7 +204,7 @@ public class ToolCallLoop {
     /** 决策走 chat 场景快模型、记账进 chat 预算；入参摘要按本链路工具面取。 */
     private ToolLoopKernel.Decider loopDecider() {
         return (sessionId, messages, callbacks) ->
-                decider.decide(sessionId, messages, callbacks, AiCallScope.CHAT, ToolCallLoop::toolInputOf);
+                decider.decide(sessionId, messages, callbacks, AiCallScope.CHAT, ChatToolLoop::toolInputOf);
     }
 
     /** 工具入参摘要（trace 落库与失败日志用）— 工具名缺失已在 {@link ToolCallDecision} 构造期收敛成空串，这里走 default，

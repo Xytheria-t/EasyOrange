@@ -15,8 +15,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop.Input;
-import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop.Result;
+import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop.Input;
+import com.cartethyia.easyorange.ai.application.chat.ChatToolLoop.Result;
 import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
@@ -67,7 +67,7 @@ import org.springframework.ai.tool.ToolCallback;
 import tools.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ToolCallLoop (多步 ReAct 循环) -> 测试")
+@DisplayName("ChatToolLoop (多步 ReAct 循环) -> 测试")
 class ToolCallLoopTest {
 
     @Mock
@@ -106,7 +106,7 @@ class ToolCallLoopTest {
     private AiProperties aiProperties;
     private SimpleMeterRegistry meterRegistry;
     private ChatBudgetGuard budgetGuard;
-    private ToolCallLoop toolCallLoop;
+    private ChatToolLoop toolCallLoop;
 
     @BeforeEach
     void setUp() {
@@ -816,7 +816,7 @@ class ToolCallLoopTest {
                 toolCallResponse(ChatTools.TOOL_REMEMBER_PREFERENCE, rememberArgs("style", "复古")),
                 toolCallResponse(ChatTools.TOOL_FINISH, finishArgs()));
 
-        run("我喜欢复古风格的东西", ToolCallLoop.MACHINE_SUBJECT, null);
+        run("我喜欢复古风格的东西", ChatToolLoop.MACHINE_SUBJECT, null);
 
         verifyNoInteractions(preferenceRepository);
     }
@@ -927,8 +927,8 @@ class ToolCallLoopTest {
         assertThat(next).startsWith(previous.substring(0, previous.indexOf("\n</history>")));
     }
 
-    private ToolCallLoop newToolCallLoop() {
-        return new ToolCallLoop(
+    private ChatToolLoop newToolCallLoop() {
+        return new ChatToolLoop(
                 promptRegistry,
                 new ChatToolsFactory(retrievalService, assetSourcingService, assetDetailPort, preferenceRepository),
                 new ToolCallDecider(aiModelSupport, modelRouter, new ObjectMapper()),
@@ -936,7 +936,7 @@ class ToolCallLoopTest {
                 budgetGuard,
                 aiProperties,
                 idGenerator,
-                new ToolCallLoopMetrics(meterRegistry));
+                new ChatLoopMetrics(meterRegistry));
     }
 
     /** 记录 step 事件的回调桩。 */
