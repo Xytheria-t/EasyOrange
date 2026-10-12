@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.application.listing;
 import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecision;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopDecider;
@@ -11,11 +12,9 @@ import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
-import com.cartethyia.easyorange.ai.domain.model.TokenBudgetPolicy;
 import com.cartethyia.easyorange.ai.domain.port.CategoryCatalogPort;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
-import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import java.util.List;
@@ -49,7 +48,7 @@ public class AutoListingAppService {
 
     private static final String CLUE_REQUEST_TEXT = "识别图片中的待售物品，返回结构化线索。";
 
-    /** 与 {@code @TokenBudget(scenario = "auto_listing")} 注解一致：配置缺失时循环中途的预算判定兜到同一组值。 */
+    /** 与 {@code @TokenBudget(scenario = "auto_listing")} 注解一致：配置缺失时循环中途的预算判定兜到同一组值（契约由测试反射锁死）。 */
     static final int ANNOTATION_MAX_TOKENS_PER_CALL = 3000;
 
     static final int ANNOTATION_DAILY_TOKEN_LIMIT = 500_000;
@@ -62,7 +61,7 @@ public class AutoListingAppService {
     private final ToolLoopKernel loopKernel;
     private final ListingToolsFactory toolsFactory;
     private final ToolCallDecider decider;
-    private final TokenBudgetStorePort budgetStore;
+    private final TokenBudgetGuard tokenBudgetGuard;
     private final AiProperties aiProperties;
     private final ListingLoopMetrics metrics;
 
@@ -223,18 +222,11 @@ public class AutoListingAppService {
                 : null;
     }
 
-    /**
-     * 循环中途的日预算判定 — 判定式单点在 {@link TokenBudgetPolicy}，配置优先、注解兜底（chat 的
-     * {@code ChatBudgetGuard} 锁 chat 场景契约，这里按 auto_listing 场景判，同一口径）。
-     */
+    /** 循环中途的日预算判定 — 解析与判定单点在 {@link TokenBudgetGuard}，这里只给 auto_listing 场景键与兜底常量。 */
     private boolean listingBudgetExhausted() {
-        int used = budgetStore
-                .getTodayUsage(AiCallScope.AUTO_LISTING.budgetScenario())
-                .map(TokenBudgetStorePort.TokenUsage::total)
-                .orElse(0);
-        var cfg = aiProperties.budget().resolve(AiCallScope.AUTO_LISTING.budgetScenario());
-        int maxPerCall = cfg != null ? cfg.maxTokensPerCall() : ANNOTATION_MAX_TOKENS_PER_CALL;
-        int dailyLimit = cfg != null ? cfg.dailyTokenLimit() : ANNOTATION_DAILY_TOKEN_LIMIT;
-        return TokenBudgetPolicy.exhausted(used, maxPerCall, dailyLimit);
+        return tokenBudgetGuard.exhausted(
+                AiCallScope.AUTO_LISTING.budgetScenario(),
+                ANNOTATION_MAX_TOKENS_PER_CALL,
+                ANNOTATION_DAILY_TOKEN_LIMIT);
     }
 }

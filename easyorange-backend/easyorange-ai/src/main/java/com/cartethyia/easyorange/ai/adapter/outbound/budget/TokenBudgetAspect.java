@@ -1,9 +1,8 @@
 package com.cartethyia.easyorange.ai.adapter.outbound.budget;
 
-import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.exception.TokenBudgetExceededException;
-import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -18,8 +17,8 @@ import org.springframework.stereotype.Component;
  * 释放预留，真实用量由 {@code AiCallRecorder} 按供应商回报另记 —— 服务方法只返回业务 DTO，切面拿不到真实
  * token 数，按上限记账会与真实消耗差一个量级。
  * <p>
- * <b>配置优先</b>：{@code easyorange.ai.budget.scenarios.<scenario>} 覆盖注解默认值 —— 注解给编译期可见的兜底
- * 契约，运维改限额不发版。
+ * <b>配置优先</b>：{@code easyorange.ai.budget.scenarios.<scenario>} 覆盖注解默认值（解析在 {@link TokenBudgetGuard}）
+ * —— 注解给编译期可见的兜底契约，运维改限额不发版。
  */
 @Slf4j
 @Aspect
@@ -28,21 +27,20 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "easyorange.ai.budget.enabled", matchIfMissing = true)
 public class TokenBudgetAspect {
 
-    private final TokenBudgetStorePort budgetStore;
-    private final AiProperties aiProperties;
+    private final TokenBudgetGuard tokenBudgetGuard;
 
     @Around("@annotation(tokenBudget)")
     public Object aroundBudget(ProceedingJoinPoint pjp, TokenBudget tokenBudget) throws Throwable {
         var scenario = tokenBudget.scenario();
-        var resolved = resolveBudget(scenario, tokenBudget);
+        var budget = tokenBudgetGuard.resolve(scenario, tokenBudget.maxTokensPerCall(), tokenBudget.dailyTokenLimit());
 
-        var reservation = budgetStore.tryReserve(scenario, resolved.maxTokensPerCall(), resolved.dailyTokenLimit());
+        var reservation = tokenBudgetGuard.tryReserve(scenario, budget);
         if (reservation == null) {
             log.warn(
                     "action=token_budget_exceeded, scenario={}, maxPerCall={}, limit={}",
                     scenario,
-                    resolved.maxTokensPerCall(),
-                    resolved.dailyTokenLimit());
+                    budget.maxTokensPerCall(),
+                    budget.dailyTokenLimit());
             throw new TokenBudgetExceededException();
         }
         try {
@@ -51,14 +49,4 @@ public class TokenBudgetAspect {
             reservation.release();
         }
     }
-
-    private ResolvedBudget resolveBudget(String scenario, TokenBudget annotation) {
-        var scenarioConfig = aiProperties.budget().resolve(scenario);
-        if (scenarioConfig != null) {
-            return new ResolvedBudget(scenarioConfig.maxTokensPerCall(), scenarioConfig.dailyTokenLimit());
-        }
-        return new ResolvedBudget(annotation.maxTokensPerCall(), annotation.dailyTokenLimit());
-    }
-
-    private record ResolvedBudget(int maxTokensPerCall, int dailyTokenLimit) {}
 }

@@ -14,10 +14,13 @@ import com.cartethyia.easyorange.ai.application.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppService;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
+import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
+import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.ChatSource;
 import com.cartethyia.easyorange.ai.domain.model.ToolCallStepView;
 import com.cartethyia.easyorange.ai.domain.port.CategoryCatalogPort;
@@ -114,9 +117,23 @@ class AutoListingAppServiceTest {
                         mock(AssetSourcingAppService.class),
                         categoryCatalogPort),
                 new ToolCallDecider(TestAiModelSupport.create(), modelRouter, new ObjectMapper()),
-                mock(TokenBudgetStorePort.class),
+                new TokenBudgetGuard(mock(TokenBudgetStorePort.class), PropertyBindings.bind(AiProperties.class)),
                 PropertyBindings.bind(AiProperties.class),
                 new ListingLoopMetrics(new SimpleMeterRegistry()));
+    }
+
+    /** 兜底常量与注解分属「循环中途判定」与「AOP 切面」两条路径，反射钉住 —— 改一边不改另一边直接红。 */
+    @Test
+    @DisplayName("兜底常量 == @TokenBudget(scenario=auto_listing) 注解默认值（改一边必须改另一边）")
+    void fallbackConstantsMatchAnnotationContract() throws NoSuchMethodException {
+        TokenBudget limits = AutoListingAppService.class
+                .getDeclaredMethod("analyzeImages", List.class, String.class, ChatStreamHandler.class)
+                .getAnnotation(TokenBudget.class);
+
+        assertThat(limits).isNotNull();
+        assertThat(limits.scenario()).isEqualTo(AiCallScope.AUTO_LISTING.budgetScenario());
+        assertThat(AutoListingAppService.ANNOTATION_MAX_TOKENS_PER_CALL).isEqualTo(limits.maxTokensPerCall());
+        assertThat(AutoListingAppService.ANNOTATION_DAILY_TOKEN_LIMIT).isEqualTo(limits.dailyTokenLimit());
     }
 
     private static IdGenerator stubIdGenerator() {

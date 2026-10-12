@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
+import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.port.TokenBudgetStorePort;
@@ -105,7 +106,7 @@ class ChatBudgetGuardTest {
     }
 
     private ChatBudgetGuard guard(AiProperties properties) {
-        return new ChatBudgetGuard(budgetStore, properties);
+        return new ChatBudgetGuard(new TokenBudgetGuard(budgetStore, properties));
     }
 
     private TokenBudgetStorePort.TokenUsage usage(int total) {

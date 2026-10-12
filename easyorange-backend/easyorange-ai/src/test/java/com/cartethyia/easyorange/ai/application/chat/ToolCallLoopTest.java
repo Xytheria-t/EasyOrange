@@ -21,6 +21,7 @@ import com.cartethyia.easyorange.ai.application.retrieval.AssetSourcingAppServic
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
+import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
@@ -112,7 +113,7 @@ class ToolCallLoopTest {
         aiProperties = PropertyBindings.bind(AiProperties.class);
         meterRegistry = new SimpleMeterRegistry();
         // 真实 guard：判定读同一个 budgetStore 桩，预算降级用例不用额外改写
-        budgetGuard = new ChatBudgetGuard(budgetStore, aiProperties);
+        budgetGuard = new ChatBudgetGuard(new TokenBudgetGuard(budgetStore, aiProperties));
         toolCallLoop = newToolCallLoop();
         lenient().when(modelRouter.choose(AiModelRouter.SCENARIO_CHAT_TOOL)).thenReturn(chatModel);
         lenient().when(idGenerator.generateId()).thenReturn("trace-1");

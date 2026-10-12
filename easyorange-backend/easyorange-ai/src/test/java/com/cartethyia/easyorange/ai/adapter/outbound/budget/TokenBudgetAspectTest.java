@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
+import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.enums.AiResultCode;
@@ -32,7 +33,7 @@ class TokenBudgetAspectTest {
     void setUp() {
         store = new InMemoryTokenBudgetStore();
         aiProperties = PropertyBindings.bind(AiProperties.class);
-        aspect = new TokenBudgetAspect(store, aiProperties);
+        aspect = new TokenBudgetAspect(new TokenBudgetGuard(store, aiProperties));
     }
 
     @Test
@@ -153,7 +154,7 @@ class TokenBudgetAspectTest {
                 "50",
                 "budget.scenarios.pricing.daily-token-limit",
                 "200");
-        aspect = new TokenBudgetAspect(store, aiProperties);
+        aspect = new TokenBudgetAspect(new TokenBudgetGuard(store, aiProperties));
 
         // 注解 mock 只提供 scenario()，限值应走配置覆盖
         var annotation = mock(TokenBudget.class);
