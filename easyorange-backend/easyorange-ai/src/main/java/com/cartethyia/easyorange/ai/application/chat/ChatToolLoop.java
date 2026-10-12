@@ -16,8 +16,6 @@ import com.cartethyia.easyorange.ai.domain.model.KnowledgeHit;
 import com.cartethyia.easyorange.ai.domain.model.UserPreference;
 import com.cartethyia.easyorange.ai.domain.port.ChatStreamHandler;
 import com.cartethyia.easyorange.ai.domain.port.PromptRegistryPort;
-import com.cartethyia.easyorange.ai.domain.port.ToolCallStepTracePort;
-import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -56,21 +54,19 @@ public class ChatToolLoop {
     private final AiProperties aiProperties;
     private final ChatLoopMetrics metrics;
 
-    /** trace 端口与 trace_id 来源经内核持有（步级落库属循环机制）；签名保持内核抽取前形态，买家侧装配零改动。 */
     @Autowired
     public ChatToolLoop(
             PromptRegistryPort promptRegistry,
             ChatToolsFactory toolsFactory,
             ToolCallDecider decider,
-            ToolCallStepTracePort tracePort,
+            ToolLoopKernel loopKernel,
             ChatBudgetGuard budgetGuard,
             AiProperties aiProperties,
-            IdGenerator idGenerator,
             ChatLoopMetrics metrics) {
         this.promptRegistry = promptRegistry;
         this.toolsFactory = toolsFactory;
         this.decider = decider;
-        this.loopKernel = new ToolLoopKernel(tracePort, idGenerator);
+        this.loopKernel = loopKernel;
         this.budgetGuard = budgetGuard;
         this.aiProperties = aiProperties;
         this.metrics = metrics;

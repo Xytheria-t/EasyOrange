@@ -23,6 +23,7 @@ import com.cartethyia.easyorange.ai.application.support.ModelRouter;
 import com.cartethyia.easyorange.ai.application.support.ModelSupport;
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
@@ -932,10 +933,9 @@ class ToolCallLoopTest {
                 promptRegistry,
                 new ChatToolsFactory(retrievalService, assetSourcingService, assetDetailPort, preferenceRepository),
                 new ToolCallDecider(aiModelSupport, modelRouter, new ObjectMapper()),
-                tracePort,
+                new ToolLoopKernel(tracePort, idGenerator),
                 budgetGuard,
                 aiProperties,
-                idGenerator,
                 new ChatLoopMetrics(meterRegistry));
     }
 
