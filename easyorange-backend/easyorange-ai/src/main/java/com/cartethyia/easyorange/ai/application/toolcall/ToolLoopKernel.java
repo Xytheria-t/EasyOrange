@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
@@ -84,7 +83,7 @@ public class ToolLoopKernel {
     private Result executeLoop(Spec spec, Decider decider) {
         String traceId = idGenerator.generateId();
         var dispatcher = ToolDispatcher.of(spec.toolCallbacks());
-        var messages = new DecisionMessages(spec.systemPrompt(), spec.firstUserMessage());
+        var transcript = new ToolLoopTranscript(spec.systemPrompt(), spec.firstUserMessage());
         var toolPath = new ArrayList<String>();
         int rounds = 0;
         int nextStepIndex = 1;
@@ -97,13 +96,13 @@ public class ToolLoopKernel {
                         rounds);
                 return new Result(ToolLoopOutcome.BUDGET, rounds, List.copyOf(toolPath));
             }
-            List<ToolLoopCall> calls = decider.decide(spec.sessionId(), messages.snapshot(), spec.toolCallbacks());
+            List<ToolLoopCall> calls = decider.decide(spec.sessionId(), transcript.messages(), spec.toolCallbacks());
             if (calls.isEmpty()) {
                 spec.decisionFailedFallback().run();
                 return new Result(ToolLoopOutcome.DECISION_FAILED, rounds, List.copyOf(toolPath));
             }
             rounds = round;
-            RoundResult roundResult = executeCalls(spec, traceId, dispatcher, messages, calls, nextStepIndex);
+            RoundResult roundResult = executeCalls(spec, traceId, dispatcher, transcript, calls, nextStepIndex);
             nextStepIndex = roundResult.nextStepIndex();
             toolPath.addAll(roundResult.toolPath());
             if (roundResult.finished()) {
@@ -126,7 +125,7 @@ public class ToolLoopKernel {
             Spec spec,
             String traceId,
             ToolDispatcher dispatcher,
-            DecisionMessages messages,
+            ToolLoopTranscript transcript,
             List<ToolLoopCall> calls,
             int firstStepIndex) {
         // finish 先摘出去：执行体里就没有「跳过它」的分支，回填的 tool_calls 与观察天然等长；多个 finish 取最后一个
@@ -153,7 +152,7 @@ public class ToolLoopKernel {
             toolPath.add(finish.tool());
             return new RoundResult(stepIndex + 1, toolPath, true);
         }
-        messages.appendRound(rawToolCallsOf(executableCalls), observations);
+        transcript.appendRound(executableCalls, observations);
         return new RoundResult(stepIndex, toolPath, false);
     }
 
@@ -165,11 +164,6 @@ public class ToolLoopKernel {
         spec.listener().recordTool(call.tool(), latencyMs);
         recordToolStep(spec, traceId, stepIndex, call, result, latencyMs);
         return result;
-    }
-
-    /** 按模型给出的顺序取原始 tool call —— 回填时 assistant 与 role=tool 两侧须同序。 */
-    private static List<AssistantMessage.ToolCall> rawToolCallsOf(List<ToolLoopCall> calls) {
-        return calls.stream().map(ToolLoopCall::rawToolCall).toList();
     }
 
     /** 落一步工具步 trace 并推 SSE step 事件 —— 前端步骤可视化与「工具步数 / 步级延迟 p95」口径的唯一来源；
