@@ -192,7 +192,7 @@
 | **tool_call / tool_call_id** | 模型回复里「请调哪个函数、传什么参数」的请求，每条带唯一编号；执行结果回填时必须带回同一编号配对。 | 一轮回填 = 1 条 assistant（`tool_calls` 数组）+ N 条回执；少一条配对供应商直接 400 |
 | **工具 schema** | 工具说明书：叫什么、收什么参数、返回什么，随请求下发给模型。 | 由 `ChatTools` 的 `@Tool` 注解生成；模型照它决定调哪个、传什么参数 |
 | **ChatModel / ChatClient** | Spring AI 两个入口：`ChatModel` 只调模型，`ChatClient` 会替你把工具也执行掉。 | 工具循环用 `ChatModel`——执行权与循环控制权必须在编排器手里 |
-| **模型路由** | 一个应用挂多个模型实例，按「场景名」取用；换模型改配置不改代码。 | `AiModelRouter` 按 yaml 场景名从容器取 bean（chat / decision / vision / judge / embedding） |
+| **模型路由** | 一个应用挂多个模型实例，按「场景名」取用；换模型改配置不改代码。 | `AiModelRouter` 按 yaml 场景名取 bean：`chat_tool`→decisionChatModel / `vision`→visionChatModel / `judge`→judgeChatModel，未配场景回落 `default-model`（chatModel），bean 名配错当场抛错不静默回退。与评估里的「路由准确率」（模型选工具）不同义 |
 | **KV cache / 前缀缓存** | 供应商缓存「前缀没变的部分」，下次只按新增部分计费；前缀动一个字节，折扣全作废。 | 首两条消息固定、轮间只在尾部追加，才吃得到折扣（`DecisionMessages` javadoc） |
 | **SSE / 流式** | 边生成边推给前端：一次 HTTP 长连接持续吐事件；选它不选 WebSocket——单向 + 自带重连。 | 最终回答走流式口；循环每步还推 SSE step 事件给前端画步骤 |
 | **幻觉** | 模型编造出看起来合理但不存在的事实。 | 引用溯源（答案带 `[来源:标题]`）让幻觉当场可核 |
@@ -202,7 +202,7 @@
 
 > 末 4 条（幻觉 / Embedding / Chunk / Rerank）属第 ③ 章 RAG，到那时再解锁；表里没有的词（RRF / kNN / HNSW / MRR…）同理，属于更后面的章，现在不用管。
 
-> **标准出处**（要「官方口径」时引这里）：SSE → [WHATWG §9.2](https://html.spec.whatwg.org/multipage/server-sent-events.html) · trace/span → [OpenTelemetry](https://opentelemetry.io/docs/concepts/signals/traces/) · 对话消息 / role / tool_call_id → [OpenAI API 规范](https://github.com/openai/openai-openapi)（DeepSeek 同规范） · Context Caching → [DeepSeek 文档](https://api-docs.deepseek.com/guides/kv_cache) · 观察（Observation）→ [ReAct 论文](https://arxiv.org/abs/2210.03629)（ICLR 2023） · 工具循环执行归属 → [Spring AI](https://docs.spring.io/spring-ai/reference/api/tools.html)
+> **标准出处**（要「官方口径」时引这里）：SSE → [WHATWG §9.2](https://html.spec.whatwg.org/multipage/server-sent-events.html) · trace/span → [OpenTelemetry](https://opentelemetry.io/docs/concepts/signals/traces/) · 对话消息 / role / tool_call_id → [OpenAI API 规范](https://github.com/openai/openai-openapi)（DeepSeek 同规范） · Context Caching → [DeepSeek 文档](https://api-docs.deepseek.com/guides/kv_cache) · 观察（Observation）→ [ReAct 论文](https://arxiv.org/abs/2210.03629)（ICLR 2023） · step / finish → [LangChain agent 抽象](https://reference.langchain.com/python/langchain-core/agents/)（`AgentStep` / `AgentFinish`，1.0 起兼容保留）；其观测对应物 → [OTel GenAI semconv](https://github.com/open-telemetry/semantic-conventions-genai)（`execute_tool` span） · 模型路由 → [RouteLLM](https://arxiv.org/abs/2406.18665)（ICLR 2025；动态路由代表，本仓是配置驱动的静态路由） · 工具循环执行归属 → [Spring AI](https://docs.spring.io/spring-ai/reference/api/tools.html)
 
 **AI 主线**
 
