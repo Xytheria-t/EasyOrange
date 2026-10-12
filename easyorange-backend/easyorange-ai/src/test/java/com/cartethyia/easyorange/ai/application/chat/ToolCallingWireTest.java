@@ -112,7 +112,7 @@ class ToolCallingWireTest {
     }
 
     @Test
-    @DisplayName("请求体带 5 个工具的 schema 与模型名、不带 response_format；响应的 tool call 可解析")
+    @DisplayName("请求体带 7 个工具的 schema 与模型名、不带 response_format；响应的 tool call 可解析")
     void callWithTools_wireContract() throws Exception {
         String baseUrl = "http://localhost:" + server.getAddress().getPort();
         ChatModel chatModel = stubChatModel(baseUrl);
