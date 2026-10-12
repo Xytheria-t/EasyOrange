@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -60,7 +61,8 @@ public class ChatTools {
             TOOL_REMEMBER_PREFERENCE,
             TOOL_FINISH);
 
-    private static final Set<String> PREFERENCE_KEYS = Set.of("condition", "price_range", "style", "location");
+    /** 偏好键白名单 — 声明序即回执文案列举序（List 保序）；与 schema 描述的同源由 ToolCallLoopTest 钉住。 */
+    static final List<String> PREFERENCE_KEYS = List.of("condition", "price_range", "style", "location");
 
     /** 详情描述进观察前截断的字数 —— 描述是自由文本，长度不可控。 */
     private static final int DETAIL_DESC_MAX_CHARS = 80;
@@ -144,7 +146,7 @@ public class ChatTools {
             // 「查无此资产」是有效结果而非故障：返回观察文本让模型换目标，不打断对话
             return "未找到该资产（可能不存在或已下架）";
         }
-        details.add(found.get());
+        recordDetail(found.get());
         return formatDetailObservation(found.get());
     }
 
@@ -190,7 +192,7 @@ public class ChatTools {
             AssetDetail detail = byId.get(id);
             if (detail != null) {
                 found.add(detail);
-                details.add(detail);
+                recordDetail(detail);
             } else {
                 missing.add(id);
             }
@@ -220,13 +222,14 @@ public class ChatTools {
         String key = preferenceKey.trim();
         if (!PREFERENCE_KEYS.contains(key)) {
             // 白名单（取值与 schema 描述 / prompt yml 同源）是代码层硬校验：那两处只是对模型的指令，提示注入可让它带任意 key 进来
-            return "偏好类别仅支持 condition / price_range / style / location，已跳过记录；直接继续回答即可";
+            return "偏好类别仅支持 %s，已跳过记录；直接继续回答即可".formatted(String.join(" / ", PREFERENCE_KEYS));
         }
-        String value = preferenceValue.trim();
+        // 折叠空白（含换行）：偏好块按 \n 分行回注，换行能让一条值跨会话伪造出「额外一条偏好」
+        String value = preferenceValue.trim().replaceAll("\\s+", " ");
         if (value.length() > PREFERENCE_VALUE_MAX_LENGTH) {
             // value 原样落库并经 <user_preferences> 回注后续所有会话的偏好块 —— 无长度约束时它就是
             // 一条跨会话的存储型注入通道，长度上限把「塞一段话进偏好块」的成本抬到不可用
-            return "偏好取值过长（上限 60 字），请概括成短语再记；直接继续回答即可";
+            return "偏好取值过长（上限 %d 字），请概括成短语再记；直接继续回答即可".formatted(PREFERENCE_VALUE_MAX_LENGTH);
         }
         try {
             preferenceRepository.record(userId, key, value);
@@ -251,6 +254,15 @@ public class ChatTools {
 
     private Optional<AssetDetail> findDetail(String productId) {
         return queryDetailOrFail(() -> assetDetailPort.findDetail(productId));
+    }
+
+    /** 详情累加器判重 — 与 hits 同口径（保留首次出现）：重复详情会让生成侧 <asset_details> 块重复同一资产。 */
+    private void recordDetail(AssetDetail detail) {
+        boolean alreadyRecorded =
+                details.stream().anyMatch(existing -> Objects.equals(existing.productId(), detail.productId()));
+        if (!alreadyRecorded) {
+            details.add(detail);
+        }
     }
 
     private List<AssetDetail> findDetails(List<String> productIds) {

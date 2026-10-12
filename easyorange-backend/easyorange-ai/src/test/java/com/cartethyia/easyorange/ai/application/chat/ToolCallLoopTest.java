@@ -241,6 +241,9 @@ class ToolCallLoopTest {
         assertThat(schemas.get(ChatTools.TOOL_COMPARE_ASSETS)).contains("thought", "productIds");
         assertThat(schemas.get(ChatTools.TOOL_REMEMBER_PREFERENCE))
                 .contains("thought", "preferenceKey", "preferenceValue");
+        // 偏好键与代码白名单同源：schema 描述只是对模型的指令，键集漂移会让「描述里允许」与「代码层拒绝」对不上
+        assertThat(schemas.get(ChatTools.TOOL_REMEMBER_PREFERENCE))
+                .contains(ChatTools.PREFERENCE_KEYS.toArray(String[]::new));
         // finish 不带偏好字段：偏好写入独立成工具，三条降级路径下才不会静默丢失（拆分的回归守卫）
         assertThat(schemas.get(ChatTools.TOOL_FINISH)).contains("thought").doesNotContain("preferenceKey");
     }
