@@ -17,7 +17,7 @@ import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.listing.AutoListingAppService;
 import com.cartethyia.easyorange.ai.application.listing.ListingLoopResult;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
-import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import com.cartethyia.easyorange.ai.domain.model.ArmComparisonReport;
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSet;
@@ -81,8 +81,7 @@ class GoldenSetEvaluatorTest {
     /** 工具循环的桩结果 —— 路由评估只读 {@code toolPath}，召回物与结局对它无影响。 */
     private static ToolCallLoop.Result loopResult(String... tools) {
         List<String> path = List.of(tools);
-        return new ToolCallLoop.Result(
-                List.of(), List.of(), List.of(), ToolCallLoopOutcome.FINISHED, path.size(), path);
+        return new ToolCallLoop.Result(List.of(), List.of(), List.of(), ToolLoopOutcome.FINISHED, path.size(), path);
     }
 
     @Test
@@ -290,12 +289,12 @@ class GoldenSetEvaluatorTest {
                                 List.of(),
                                 List.of(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_FINISH)))));
         when(listingAppService.runToolLoop(isNull(), eq("索尼相机"), any(), isNull(), isNull()))
-                .thenReturn(new ListingLoopResult(List.of(), List.of(), ToolCallLoopOutcome.FINISHED, 4, fullPath));
+                .thenReturn(new ListingLoopResult(List.of(), List.of(), ToolLoopOutcome.FINISHED, 4, fullPath));
         when(listingAppService.runToolLoop(isNull(), eq("飞天茅台"), any(), isNull(), isNull()))
                 .thenReturn(new ListingLoopResult(
                         List.of(),
                         List.of(),
-                        ToolCallLoopOutcome.FINISHED,
+                        ToolLoopOutcome.FINISHED,
                         2,
                         List.of(ChatTools.TOOL_KNOWLEDGE_SEARCH, ChatTools.TOOL_FINISH)));
 
@@ -324,7 +323,7 @@ class GoldenSetEvaluatorTest {
                 .thenReturn(new ListingLoopResult(
                         List.of(),
                         List.of(),
-                        ToolCallLoopOutcome.FINISHED,
+                        ToolLoopOutcome.FINISHED,
                         3,
                         List.of(
                                 ChatTools.TOOL_PRODUCT_SEARCH,

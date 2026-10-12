@@ -9,7 +9,7 @@ import com.cartethyia.easyorange.ai.application.listing.AutoListingAppService;
 import com.cartethyia.easyorange.ai.application.listing.ListingLoopResult;
 import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppService;
 import com.cartethyia.easyorange.ai.application.support.RetrievalObservations;
-import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import com.cartethyia.easyorange.ai.domain.model.ArmComparisonReport;
 import com.cartethyia.easyorange.ai.domain.model.GenerationReport;
 import com.cartethyia.easyorange.ai.domain.model.GoldenSetCase;
@@ -250,7 +250,7 @@ public class GoldenSetEvaluator {
         int roundsSum = 0;
         for (var c : cases) {
             List<String> actual;
-            ToolCallLoopOutcome outcome;
+            ToolLoopOutcome outcome;
             int rounds;
             try {
                 ListingLoopResult result =
@@ -261,7 +261,7 @@ public class GoldenSetEvaluator {
             } catch (Exception e) {
                 log.warn("golden case {} listing routing eval failed: {}", c.id(), e.getMessage());
                 actual = List.of();
-                outcome = ToolCallLoopOutcome.ERROR;
+                outcome = ToolLoopOutcome.ERROR;
                 rounds = 0;
             }
             roundsSum += rounds;

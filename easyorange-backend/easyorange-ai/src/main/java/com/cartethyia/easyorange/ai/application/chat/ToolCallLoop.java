@@ -5,9 +5,8 @@ import com.cartethyia.easyorange.ai.application.support.UntrustedText;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallArguments;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecision;
-import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
-import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
@@ -119,12 +118,12 @@ public class ToolCallLoop {
             List<KnowledgeHit> knowledgeHits,
             List<AssetHit> assetHits,
             List<AssetDetail> details,
-            ToolCallLoopOutcome outcome,
+            ToolLoopOutcome outcome,
             int rounds,
             List<String> toolPath) {
 
         /** 出循环时一次性定稿 — 三个召回物来自 {@code tools} 实例上已积累的累加器，循环只有这一处读它。 */
-        static Result of(ChatTools tools, ToolCallLoopOutcome outcome, int rounds, List<String> toolPath) {
+        static Result of(ChatTools tools, ToolLoopOutcome outcome, int rounds, List<String> toolPath) {
             return new Result(
                     tools.knowledgeHits(), tools.assetHits(), tools.details(), outcome, rounds, List.copyOf(toolPath));
         }
@@ -134,8 +133,8 @@ public class ToolCallLoop {
 
     public Result run(Input input) {
         ChatTools tools = toolsFactory.create(attributedUserId(input));
-        ToolLoopKernel.Outcome outcome = loopKernel.run(spec(input, tools), loopDecider());
-        return Result.of(tools, outcome.outcome(), outcome.rounds(), outcome.toolPath());
+        ToolLoopKernel.Result result = loopKernel.run(spec(input, tools), loopDecider());
+        return Result.of(tools, result.outcome(), result.rounds(), result.toolPath());
     }
 
     private ToolLoopKernel.Spec spec(Input input, ChatTools tools) {
@@ -203,9 +202,9 @@ public class ToolCallLoop {
     // ── 决策 ──
 
     /** 决策走 chat 场景快模型、记账进 chat 预算；入参摘要按本链路工具面取。 */
-    private ToolLoopDecider loopDecider() {
+    private ToolLoopKernel.Decider loopDecider() {
         return (sessionId, messages, callbacks) ->
-                decider.decideForLoop(sessionId, messages, callbacks, AiCallScope.CHAT, ToolCallLoop::toolInputOf);
+                decider.decide(sessionId, messages, callbacks, AiCallScope.CHAT, ToolCallLoop::toolInputOf);
     }
 
     /** 工具入参摘要（trace 落库与失败日志用）— 工具名缺失已在 {@link ToolCallDecision} 构造期收敛成空串，这里走 default，

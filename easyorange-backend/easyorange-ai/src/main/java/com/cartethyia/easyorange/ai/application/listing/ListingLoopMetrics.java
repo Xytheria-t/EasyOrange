@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.application.listing;
 
-import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopListener;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -54,14 +54,14 @@ public class ListingLoopMetrics implements ToolLoopListener {
         }
     }
 
-    private final Map<ToolCallLoopOutcome, Counter> loopCounters;
+    private final Map<ToolLoopOutcome, Counter> loopCounters;
     private final DistributionSummary stepsSummary;
     private final Map<TrackedTool, Counter> toolCounters;
     private final Map<TrackedTool, Timer> toolTimers;
 
     public ListingLoopMetrics(MeterRegistry meterRegistry) {
-        this.loopCounters = new EnumMap<>(ToolCallLoopOutcome.class);
-        for (ToolCallLoopOutcome outcome : ToolCallLoopOutcome.values()) {
+        this.loopCounters = new EnumMap<>(ToolLoopOutcome.class);
+        for (ToolLoopOutcome outcome : ToolLoopOutcome.values()) {
             loopCounters.put(outcome, meterRegistry.counter(LOOP_METRIC, "outcome", outcome.getTag()));
         }
         this.stepsSummary = DistributionSummary.builder(STEPS_METRIC)
@@ -82,14 +82,14 @@ public class ListingLoopMetrics implements ToolLoopListener {
     }
 
     @Override
-    public void recordLoop(ToolCallLoopOutcome outcome, int rounds) {
+    public void recordLoop(ToolLoopOutcome outcome, int rounds) {
         loopCounters.get(outcome).increment();
         stepsSummary.record(rounds);
     }
 
     @Override
     public void recordLoopFailure() {
-        loopCounters.get(ToolCallLoopOutcome.ERROR).increment();
+        loopCounters.get(ToolLoopOutcome.ERROR).increment();
     }
 
     @Override

@@ -23,7 +23,7 @@ import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
-import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.model.AssetDetail;
 import com.cartethyia.easyorange.ai.domain.model.AssetHit;
@@ -191,7 +191,7 @@ class ToolCallLoopTest {
 
         Result result = run("在吗？", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(1);
         assertThat(result.knowledgeHits()).isEmpty();
         verifyNoInteractions(retrievalService, assetSourcingService);
@@ -260,7 +260,7 @@ class ToolCallLoopTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
         assertThat(result.knowledgeHits()).hasSize(1);
         verify(retrievalService).search("退款", 5);
@@ -303,7 +303,7 @@ class ToolCallLoopTest {
 
         Result result = run("预算 5000 想买笔记本", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(3);
         assertThat(result.assetHits()).hasSize(1);
         assertThat(result.details()).hasSize(1);
@@ -351,7 +351,7 @@ class ToolCallLoopTest {
 
         Result result = run("预算 5000 想买笔记本，帮我挑一台", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         // 一次 compare_assets 拿到两件详情（等价于两次 product_detail）但只花一步
         assertThat(result.details()).hasSize(2);
         assertThat(steps.steps)
@@ -381,7 +381,7 @@ class ToolCallLoopTest {
 
         Result result = run("比一下", "user-1", null);
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         verifyNoInteractions(assetDetailPort);
     }
 
@@ -400,7 +400,7 @@ class ToolCallLoopTest {
 
         Result result = run("预算 5000 想买笔记本", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         assertThat(steps.steps.get(1).tool()).isEqualTo(ChatTools.TOOL_MARKET_PRICE_STATS);
         assertThat(steps.steps.get(1).observation()).isEqualTo("当前 2 件在售，均价 ¥4500，价格区间 ¥4200-¥4800");
         // 行情统计只吃已召回资产，不额外读详情
@@ -430,7 +430,7 @@ class ToolCallLoopTest {
 
         Result result = run("反复问规则");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.STEP_LIMIT);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.STEP_LIMIT);
         assertThat(result.rounds()).isEqualTo(2);
         verify(aiModelSupport, times(2)).callWithTools(any(), any(), anyList(), anyList());
         assertThat(meterRegistry
@@ -452,7 +452,7 @@ class ToolCallLoopTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.BUDGET);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.BUDGET);
         assertThat(result.rounds()).isEqualTo(1);
         verify(aiModelSupport, times(1)).callWithTools(any(), any(), anyList(), anyList());
     }
@@ -467,7 +467,7 @@ class ToolCallLoopTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.DECISION_FAILED);
         assertThat(result.knowledgeHits()).hasSize(1);
         verify(retrievalService).search("怎么退款？", 5);
         verify(tracePort, never()).record(any());
@@ -485,7 +485,7 @@ class ToolCallLoopTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.DECISION_FAILED);
         verify(retrievalService).search("怎么退款？", 5);
     }
 
@@ -497,7 +497,7 @@ class ToolCallLoopTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.DECISION_FAILED);
         verify(retrievalService).search("怎么退款？", 5);
     }
 
@@ -512,7 +512,7 @@ class ToolCallLoopTest {
         Result result = run("怎么退款？");
 
         // 缺名不是决策失败（决策本身成功了，模型确实要了个工具）：走完一轮后由 finish 正常收敛
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         // 归一化后的空串照常进 toolPath（它就是「模型选了什么」的真实记录），finish 轮同口径计入
         assertThat(result.toolPath()).containsExactly("", ChatTools.TOOL_FINISH);
 
@@ -531,7 +531,7 @@ class ToolCallLoopTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.DECISION_FAILED);
         assertThat(result.knowledgeHits()).isEmpty();
     }
 
@@ -548,7 +548,7 @@ class ToolCallLoopTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.DECISION_FAILED);
         assertThat(result.knowledgeHits()).hasSize(1);
     }
 
@@ -585,7 +585,7 @@ class ToolCallLoopTest {
 
         Result result = run("退款规则顺便推荐台笔记本", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         // 规则 + 找货两路召回都进了 Result，两条工具各只发一次决策
         assertThat(result.knowledgeHits()).hasSize(1);
         assertThat(result.assetHits()).hasSize(1);
@@ -624,7 +624,7 @@ class ToolCallLoopTest {
 
         Result result = run("推荐台笔记本");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Message>> decisionMessages = ArgumentCaptor.forClass(List.class);
         verify(aiModelSupport, times(2)).callWithTools(any(), any(), decisionMessages.capture(), anyList());
@@ -645,7 +645,7 @@ class ToolCallLoopTest {
 
         Result result = run("怎么退款？", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         // 模型确实要了这份信息就照给，不因同轮出现 finish 就丢弃
         verify(retrievalService).search("退款", 5);
         assertThat(result.knowledgeHits()).hasSize(1);
@@ -665,7 +665,7 @@ class ToolCallLoopTest {
 
         Result result = run("在吗？", "user-1", steps);
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         assertThat(result.toolPath()).containsExactly(ChatTools.TOOL_FINISH);
         assertThat(steps.steps).hasSize(1);
         assertThat(steps.steps.getFirst().thought()).isEqualTo("信息已足够");
@@ -683,7 +683,7 @@ class ToolCallLoopTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.DECISION_FAILED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.DECISION_FAILED);
         assertThat(result.toolPath()).isEmpty();
         verifyNoInteractions(assetSourcingService);
     }
@@ -725,7 +725,7 @@ class ToolCallLoopTest {
 
         Result result = run("看看 p-404");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         assertThat(result.details()).isEmpty();
         verify(tracePort, times(2))
                 .record(argThat(trace -> trace.stepIndex() != 1
@@ -742,7 +742,7 @@ class ToolCallLoopTest {
 
         Result result = run("看看 p-1");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
         verify(tracePort, times(2))
                 .record(argThat(trace -> trace.stepIndex() != 1
@@ -759,7 +759,7 @@ class ToolCallLoopTest {
 
         Result result = run("怎么退款？");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
         verify(tracePort, times(2)).record(any(ToolCallStepTrace.class));
         verify(tracePort)
@@ -775,7 +775,7 @@ class ToolCallLoopTest {
 
         Result result = run("随便看看");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         assertThat(result.rounds()).isEqualTo(2);
         verify(tracePort)
                 .record(argThat(trace -> "web_browse".equals(trace.tool())
@@ -830,7 +830,7 @@ class ToolCallLoopTest {
 
         Result result = run("我想买台九成新的相机", "user-1", null);
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         verify(preferenceRepository, never()).record(anyString(), anyString(), anyString());
     }
 
@@ -846,7 +846,7 @@ class ToolCallLoopTest {
 
         Result result = run("我喜欢复古风格的东西", "user-1", null);
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
     }
 
     @Test
@@ -856,7 +856,7 @@ class ToolCallLoopTest {
 
         Result result = run("在吗？");
 
-        assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
         verify(tracePort).record(any(ToolCallStepTrace.class));
     }
 

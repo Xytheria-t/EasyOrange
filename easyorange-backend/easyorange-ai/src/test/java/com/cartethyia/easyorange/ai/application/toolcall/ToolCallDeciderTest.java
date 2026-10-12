@@ -31,7 +31,7 @@ class ToolCallDeciderTest {
 
     private List<ToolLoopCall> loopCalls(AiModelSupport aiModelSupport) {
         return decider(aiModelSupport)
-                .decideForLoop(
+                .decide(
                         "sess-1",
                         List.of(new UserMessage("退款规则")),
                         List.of(UNUSED_CALLBACK),

@@ -16,7 +16,7 @@ import com.cartethyia.easyorange.ai.application.chat.ToolCallLoop.Result;
 import com.cartethyia.easyorange.ai.application.dto.ChatAnswer;
 import com.cartethyia.easyorange.ai.application.dto.ChatRequest;
 import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
-import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.domain.exception.ChatStreamAbortedException;
@@ -114,7 +114,7 @@ class AiChatAppServiceTest {
         // 部分用例（空问题/预算超限/缓存命中）走不到循环，lenient 允许默认桩未被消费
         lenient()
                 .when(toolCallLoop.run(any(Input.class)))
-                .thenReturn(new Result(List.of(), List.of(), List.of(), ToolCallLoopOutcome.FINISHED, 1, List.of()));
+                .thenReturn(new Result(List.of(), List.of(), List.of(), ToolLoopOutcome.FINISHED, 1, List.of()));
         // 流式入口先原子预留；预算超限用例会显式覆盖为 null
         lenient().when(budgetGuard.tryAcquire()).thenReturn(TokenBudgetStorePort.TokenReservation.NOOP);
     }
@@ -156,7 +156,7 @@ class AiChatAppServiceTest {
                         List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)),
                         List.of(),
                         List.of(),
-                        ToolCallLoopOutcome.FINISHED,
+                        ToolLoopOutcome.FINISHED,
                         2,
                         List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("签收后 7 天内支持无理由退货 [来源:退款规则]");
@@ -190,7 +190,7 @@ class AiChatAppServiceTest {
                         List.of(),
                         List.of(new AssetHit("p-1", "MacBook Air M1", BigDecimal.valueOf(4200), "数码", "九五新", 0.83)),
                         List.of(),
-                        ToolCallLoopOutcome.FINISHED,
+                        ToolLoopOutcome.FINISHED,
                         2,
                         List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("这几件在预算内：MacBook Air M1 [来源:MacBook Air M1]");
@@ -225,7 +225,7 @@ class AiChatAppServiceTest {
                                 "上海",
                                 "liming",
                                 "ONLINE")),
-                        ToolCallLoopOutcome.FINISHED,
+                        ToolLoopOutcome.FINISHED,
                         3,
                         List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("推荐 MacBook [来源:MacBook Air M1]");
@@ -248,7 +248,7 @@ class AiChatAppServiceTest {
                         List.of(new KnowledgeHit("kb-0007", "交易规则", "平台担保交易…", 0.9)),
                         List.of(new AssetHit("p-1", "交易规则", null, null, null, 0.5)),
                         List.of(),
-                        ToolCallLoopOutcome.FINISHED,
+                        ToolLoopOutcome.FINISHED,
                         3,
                         List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("担保交易保障双方 [来源:交易规则]");
@@ -276,7 +276,7 @@ class AiChatAppServiceTest {
                                 new AssetHit("p-2", "资产二", null, null, null, 0.6),
                                 new AssetHit("p-3", "资产三", null, null, null, 0.5)),
                         List.of(),
-                        ToolCallLoopOutcome.FINISHED,
+                        ToolLoopOutcome.FINISHED,
                         4,
                         List.of()));
         when(aiModelSupport.callText(any(), any(), anyList())).thenReturn("回答");
@@ -393,7 +393,7 @@ class AiChatAppServiceTest {
                     List.of(new KnowledgeHit("kb-0002", "退款规则", "7 天无理由…", 0.95)),
                     List.of(),
                     List.of(),
-                    ToolCallLoopOutcome.FINISHED,
+                    ToolLoopOutcome.FINISHED,
                     2,
                     List.of());
         });
@@ -525,7 +525,7 @@ class AiChatAppServiceTest {
                         List.of(new KnowledgeHit("kb-2", "规则B", "内容B", 0.9)),
                         List.of(),
                         List.of(),
-                        ToolCallLoopOutcome.FINISHED,
+                        ToolLoopOutcome.FINISHED,
                         1,
                         List.of()));
         when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
@@ -585,7 +585,7 @@ class AiChatAppServiceTest {
     @DisplayName("机器主体（评估跑批）-> 原样透传给循环，会话与缓存按同一主体分桶")
     void stream_machineSubjectPassesThrough() {
         when(toolCallLoop.run(any()))
-                .thenReturn(new Result(List.of(), List.of(), List.of(), ToolCallLoopOutcome.FINISHED, 1, List.of()));
+                .thenReturn(new Result(List.of(), List.of(), List.of(), ToolLoopOutcome.FINISHED, 1, List.of()));
         when(aiModelSupport.callTextStream(any(), any(), anyList(), any(Consumer.class)))
                 .thenReturn("回答");
 

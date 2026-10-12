@@ -9,7 +9,7 @@ package com.cartethyia.easyorange.ai.application.toolcall;
 public interface ToolLoopListener {
 
     /** 记一次循环的结局与决策轮数 —— 结局含降级归因，轮数是「平均步数」口径的来源。 */
-    void recordLoop(ToolCallLoopOutcome outcome, int rounds);
+    void recordLoop(ToolLoopOutcome outcome, int rounds);
 
     /** 记一次故障穿透 — 只记结局，不进轮数分布（故障没有出口、轮数不可知，记 0 会把均值往 0 拽）。 */
     void recordLoopFailure();

@@ -16,8 +16,8 @@ import com.cartethyia.easyorange.ai.application.retrieval.KnowledgeRetrievalAppS
 import com.cartethyia.easyorange.ai.application.support.AiModelRouter;
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
-import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
 import com.cartethyia.easyorange.ai.domain.enums.AiCallScope;
@@ -253,7 +253,7 @@ class AutoListingAppServiceTest {
 
             ListingLoopResult result = service.runToolLoop(null, "佳能单反相机 九成新 想出掉", "eval-listing-001", null, null);
 
-            assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+            assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
             assertThat(result.toolPath()).containsExactly("knowledge_search", "finish");
             assertThat(result.rounds()).isEqualTo(2);
         }
@@ -265,7 +265,7 @@ class AutoListingAppServiceTest {
 
             ListingLoopResult result = service.runToolLoop(null, "拍了几张耳机", null, null, null);
 
-            assertThat(result.outcome()).isEqualTo(ToolCallLoopOutcome.FINISHED);
+            assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.FINISHED);
             assertThat(result.toolPath()).containsExactly("finish");
         }
     }

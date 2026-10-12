@@ -315,16 +315,17 @@ public class AiChatAppService {
             // 机器主体在写侧被 ChatTools 拒收偏好，此处查到的恒为空表，无需特判
             List<UserPreference> prefs = preferenceRepository.findByUserId(userId);
 
-            ToolCallLoop.Result run = toolCallLoop.run(new ToolCallLoop.Input(
+            ToolCallLoop.Result loopResult = toolCallLoop.run(new ToolCallLoop.Input(
                     request.question(), request.sessionId(), userId, history, prefs, handler, allowedTools));
 
-            List<ChatSource> sources = ChatSource.merge(run.knowledgeHits(), run.assetHits(), SOURCE_LIMIT);
+            List<ChatSource> sources =
+                    ChatSource.merge(loopResult.knowledgeHits(), loopResult.assetHits(), SOURCE_LIMIT);
             if (handler != null && !sources.isEmpty()) {
                 handler.onSources(sources);
             }
 
             List<Message> messages = ChatPromptAssembler.assemble(
-                    promptRegistry.require(CHAT_PROMPT), request.question(), history, prefs, run);
+                    promptRegistry.require(CHAT_PROMPT), request.question(), history, prefs, loopResult);
             String answer = handler != null
                     ? aiModelSupport.callTextStream(chatModel, AiCallScope.CHAT, messages, handler::onToken)
                     : aiModelSupport.callText(chatModel, AiCallScope.CHAT, messages);

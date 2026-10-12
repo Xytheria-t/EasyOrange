@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +25,7 @@ import org.springframework.stereotype.Component;
  * <p>
  * 手写循环 + 原生 tool calling：{@code ChatModel.call} 不自动执行工具，步数与降级控制权留在本类。内核只持
  * 链路无关的机制（四条出口、协议回填、步级 trace/SSE、toolPath），首轮上下文、模型路由与降级动作由
- * {@link Spec} / {@link ToolLoopDecider} 注入 —— chat 与 listing 共用，不改写各自的工具语义；trace/step/
+ * {@link Spec} / {@link Decider} 注入 —— chat 与 listing 共用，不改写各自的工具语义；trace/step/
  * 指标失败不碰主链路。
  */
 @Slf4j
@@ -55,21 +56,32 @@ public class ToolLoopKernel {
             @Nullable ChatStreamHandler streamHandler,
             ToolLoopListener listener) {}
 
-    /** 循环结果 — outcome / rounds 供指标与降级归因；toolPath 含 finish 轮，供路由准确率评估对照金标准集。 */
-    public record Outcome(ToolCallLoopOutcome outcome, int rounds, List<String> toolPath) {}
+    /**
+     * 循环的决策函数 — 内核收函数不收实现：模型路由、记账场景与重试等协议口径随链路（chat / listing）不同，
+     * 由各决策实现自持；返回空列表即本轮决策失败，由内核按 Spec 注入的降级动作收口。
+     */
+    @FunctionalInterface
+    public interface Decider {
 
-    public Outcome run(Spec spec, ToolLoopDecider decider) {
+        List<ToolLoopCall> decide(
+                @Nullable String sessionId, List<Message> decisionMessages, List<ToolCallback> toolCallbacks);
+    }
+
+    /** 循环结果 — outcome / rounds 供指标与降级归因；toolPath 含 finish 轮，供路由准确率评估对照金标准集。 */
+    public record Result(ToolLoopOutcome outcome, int rounds, List<String> toolPath) {}
+
+    public Result run(Spec spec, Decider decider) {
         try {
-            Outcome outcome = executeLoop(spec, decider);
-            spec.listener().recordLoop(outcome.outcome(), outcome.rounds());
-            return outcome;
+            Result result = executeLoop(spec, decider);
+            spec.listener().recordLoop(result.outcome(), result.rounds());
+            return result;
         } catch (RuntimeException e) {
             spec.listener().recordLoopFailure();
             throw e;
         }
     }
 
-    private Outcome executeLoop(Spec spec, ToolLoopDecider decider) {
+    private Result executeLoop(Spec spec, Decider decider) {
         String traceId = idGenerator.generateId();
         var dispatcher = ToolDispatcher.of(spec.toolCallbacks());
         var messages = new DecisionMessages(spec.systemPrompt(), spec.firstUserMessage());
@@ -83,19 +95,19 @@ public class ToolLoopKernel {
                         "action=tool_call_loop_degraded, reason=budget, sessionId={}, rounds={}",
                         spec.sessionId(),
                         rounds);
-                return new Outcome(ToolCallLoopOutcome.BUDGET, rounds, List.copyOf(toolPath));
+                return new Result(ToolLoopOutcome.BUDGET, rounds, List.copyOf(toolPath));
             }
             List<ToolLoopCall> calls = decider.decide(spec.sessionId(), messages.snapshot(), spec.toolCallbacks());
             if (calls.isEmpty()) {
                 spec.decisionFailedFallback().run();
-                return new Outcome(ToolCallLoopOutcome.DECISION_FAILED, rounds, List.copyOf(toolPath));
+                return new Result(ToolLoopOutcome.DECISION_FAILED, rounds, List.copyOf(toolPath));
             }
             rounds = round;
             RoundResult roundResult = executeCalls(spec, traceId, dispatcher, messages, calls, nextStepIndex);
             nextStepIndex = roundResult.nextStepIndex();
             toolPath.addAll(roundResult.toolPath());
             if (roundResult.finished()) {
-                return new Outcome(ToolCallLoopOutcome.FINISHED, rounds, List.copyOf(toolPath));
+                return new Result(ToolLoopOutcome.FINISHED, rounds, List.copyOf(toolPath));
             }
         }
         log.warn(
@@ -103,7 +115,7 @@ public class ToolLoopKernel {
                 spec.sessionId(),
                 rounds,
                 String.join(",", toolPath));
-        return new Outcome(ToolCallLoopOutcome.STEP_LIMIT, rounds, List.copyOf(toolPath));
+        return new Result(ToolLoopOutcome.STEP_LIMIT, rounds, List.copyOf(toolPath));
     }
 
     /**

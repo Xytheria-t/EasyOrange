@@ -6,7 +6,6 @@ import com.cartethyia.easyorange.ai.application.support.AiModelSupport;
 import com.cartethyia.easyorange.ai.application.support.TokenBudgetGuard;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolCallDecision;
-import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopDecider;
 import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopKernel;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.domain.annotation.TokenBudget;
@@ -128,9 +127,9 @@ public class AutoListingAppService {
                 attributedUserId,
                 handler,
                 metrics);
-        ToolLoopKernel.Outcome outcome = loopKernel.run(spec, loopDecider());
+        ToolLoopKernel.Result result = loopKernel.run(spec, loopDecider());
         return new ListingLoopResult(
-                tools.knowledgeHits(), tools.assetHits(), outcome.outcome(), outcome.rounds(), outcome.toolPath());
+                tools.knowledgeHits(), tools.assetHits(), result.outcome(), result.rounds(), result.toolPath());
     }
 
     /** 视觉预识别 — 循环前的一次多模态调用，产出决策轮线索；识别不出即显式失败，不给半张表。 */
@@ -209,8 +208,8 @@ public class AutoListingAppService {
     }
 
     /** 决策走 chat_tool 快模型（纯路由任务），记账进 auto_listing 预算——成本归业务链路、模型归职责。 */
-    private ToolLoopDecider loopDecider() {
-        return (sessionId, messages, callbacks) -> decider.decideForLoop(
+    private ToolLoopKernel.Decider loopDecider() {
+        return (sessionId, messages, callbacks) -> decider.decide(
                 sessionId, messages, callbacks, AiCallScope.AUTO_LISTING, AutoListingAppService::toolInputOf);
     }
 

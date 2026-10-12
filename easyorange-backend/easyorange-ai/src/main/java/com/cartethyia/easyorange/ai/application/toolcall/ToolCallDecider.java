@@ -38,7 +38,7 @@ public class ToolCallDecider {
      * 决策调用记进 auto_listing 预算，摘要供 trace 展示。一轮可带回多个调用并全部返回——模型的并行发起（规则 +
      * 找货同问最常见）在这里省掉一整轮往返。
      */
-    public List<ToolLoopCall> decideForLoop(
+    public List<ToolLoopCall> decide(
             @Nullable String sessionId,
             List<Message> messages,
             List<ToolCallback> callbacks,

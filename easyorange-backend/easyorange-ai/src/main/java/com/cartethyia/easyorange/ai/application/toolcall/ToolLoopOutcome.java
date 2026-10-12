@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Getter
 @RequiredArgsConstructor
-public enum ToolCallLoopOutcome {
+public enum ToolLoopOutcome {
     FINISHED("finished"),
 
     STEP_LIMIT("step_limit"),

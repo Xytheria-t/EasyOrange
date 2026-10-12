@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.ai.application.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.cartethyia.easyorange.ai.application.toolcall.ToolCallLoopOutcome;
+import com.cartethyia.easyorange.ai.application.toolcall.ToolLoopOutcome;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +24,7 @@ class ToolCallLoopMetricsTest {
     @Test
     @DisplayName("构造期全集预注册 —— 结局与工具 tag 在任何一次调用发生前就已在时序里（rate 类告警从 t=0 有效）")
     void meters_registeredAtConstruction() {
-        for (ToolCallLoopOutcome outcome : ToolCallLoopOutcome.values()) {
+        for (ToolLoopOutcome outcome : ToolLoopOutcome.values()) {
             assertThat(registry.counter("easyorange.ai.chat.loop", "outcome", outcome.getTag())
                             .count())
                     .isZero();
@@ -84,8 +84,8 @@ class ToolCallLoopMetricsTest {
     @Test
     @DisplayName("recordLoop -> 结局计数 + 决策轮数分布（降级率与平均步数的口径来源）")
     void recordLoop_countsOutcomeAndRounds() {
-        metrics.recordLoop(ToolCallLoopOutcome.FINISHED, 3);
-        metrics.recordLoop(ToolCallLoopOutcome.STEP_LIMIT, 7);
+        metrics.recordLoop(ToolLoopOutcome.FINISHED, 3);
+        metrics.recordLoop(ToolLoopOutcome.STEP_LIMIT, 7);
 
         assertThat(registry.counter("easyorange.ai.chat.loop", "outcome", "finished")
                         .count())
@@ -100,7 +100,7 @@ class ToolCallLoopMetricsTest {
     @Test
     @DisplayName("recordLoopFailure -> 只记结局，不进轮数分布（记 0 会把平均步数的均值往 0 拽）")
     void recordLoopFailure_excludedFromSteps() {
-        metrics.recordLoop(ToolCallLoopOutcome.FINISHED, 3);
+        metrics.recordLoop(ToolLoopOutcome.FINISHED, 3);
         metrics.recordLoopFailure();
 
         assertThat(registry.counter("easyorange.ai.chat.loop", "outcome", "error")
@@ -114,7 +114,7 @@ class ToolCallLoopMetricsTest {
     @DisplayName("分位数不由客户端算 —— 走直方图分桶，metric 不带 quantile 维度（多副本下由 PromQL 聚合）")
     void percentilesNotComputedClientSide() {
         metrics.recordTool(ChatTools.TOOL_PRODUCT_SEARCH, 8);
-        metrics.recordLoop(ToolCallLoopOutcome.FINISHED, 1);
+        metrics.recordLoop(ToolLoopOutcome.FINISHED, 1);
 
         assertThat(registry.timer("easyorange.ai.chat.tool.duration", "tool", ChatTools.TOOL_PRODUCT_SEARCH)
                         .takeSnapshot()
