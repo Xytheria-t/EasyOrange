@@ -482,15 +482,15 @@ easyorange:
       session-lock-wait-seconds: 90
       # 多步 ReAct 循环单次上限（含 finish 轮）；达到上限未 finish 用已积累观察强制收敛
       # 典型轨迹 search → 计算/详情 → remember → finish 需 4~5 步（工具面见 ChatTools 类注释），取 7 留换词 / 追问余量
-      # 避免工具一多反而更容易撞上限降级；步数分布见 easyorange.ai.chat.steps
-      max-steps: 7
+      # 避免工具一多反而更容易撞上限降级；轮数分布见 easyorange.ai.chat.rounds
+      max-rounds: 7
       # 历史注入 prompt 的 token 预算（估算口径见 TokenEstimator）— 轮数窗口之上的第二道裁剪，
       # 超限从最新向前保留连续窗口；<=0 关闭。指标：easyorange.ai.chat.context.tokens / .trim
       max-history-tokens: 2000
     listing:               # 发布助手（卖家侧多步工具循环）— 决策复用 chat_tool 快模型，记账走 auto_listing 场景预算
       # 发布循环单次上限（含 finish 轮）：典型轨迹 禁售查证 → 品类召回 → 行情统计 → finish 需 4 步，
-      # 取 6 留出检索换词一轮的余量；比 chat 少一档——检索词由预识别线索锚定，不存在多意图追问撑长步数的形态
-      max-steps: 6
+      # 取 6 留出检索换词一轮的余量；比 chat 少一档——检索词由预识别线索锚定，不存在多意图追问撑长轮数的形态
+      max-rounds: 6
       # 取图主机白名单（精确匹配主机名）：命中的主机跳过内网地址校验 —— 其余一律只放行公网，
       # 挡的是「填个内网/云元数据 URL 让服务端替我访问」。默认空；自建图床落内网时才需要开
       allowed-image-hosts: []

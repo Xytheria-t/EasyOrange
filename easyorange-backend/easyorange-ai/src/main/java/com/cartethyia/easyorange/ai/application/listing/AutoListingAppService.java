@@ -118,7 +118,7 @@ public class AutoListingAppService {
                 promptRegistry.require("auto_listing_tool_system"),
                 ListingPromptAssembler.firstDecisionMessage(clues, sellerNote, availableCategories()),
                 List.of(ToolCallbacks.from(tools)),
-                aiProperties.listing().maxSteps(),
+                aiProperties.listing().maxRounds(),
                 this::listingBudgetExhausted,
                 // 决策失败不补检索：发布链路的失败态就是「行情缺失 → price 置 null 留卖家」，
                 // 强塞一次猜测关键词的检索只会给生成喂噪声

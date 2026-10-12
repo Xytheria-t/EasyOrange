@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 /**
  * 多步工具调用循环（ReAct）的编排内核 — 逐轮「决策 → 工具 → 观察」推进到模型判定信息足够。
  * <p>
- * 手写循环 + 原生 tool calling：{@code ChatModel.call} 不自动执行工具，步数与降级控制权留在本类。内核只持
+ * 手写循环 + 原生 tool calling：{@code ChatModel.call} 不自动执行工具，轮数上限与降级控制权留在本类。内核只持
  * 链路无关的机制（四条出口、协议回填、步级 trace/SSE、toolPath），首轮上下文、模型路由与降级动作由
  * {@link Spec} / {@link Decider} 注入 —— chat 与 listing 共用，不改写各自的工具语义；trace/step/
  * 指标失败不碰主链路。
@@ -47,7 +47,7 @@ public class ToolLoopKernel {
             String systemPrompt,
             String firstUserMessage,
             List<ToolCallback> toolCallbacks,
-            int maxSteps,
+            int maxRounds,
             BooleanSupplier budgetExhausted,
             /* 决策失败出口的降级动作（chat 按原始问题补检索一次、listing 无操作），异常自担不外抛。 */
             Runnable decisionFailedFallback,
@@ -89,7 +89,7 @@ public class ToolLoopKernel {
         int rounds = 0;
         int nextStepIndex = 1;
 
-        for (int round = 1; round <= spec.maxSteps(); round++) {
+        for (int round = 1; round <= spec.maxRounds(); round++) {
             if (round > 1 && spec.budgetExhausted().getAsBoolean()) {
                 log.warn(
                         "action=tool_call_loop_degraded, reason=budget, sessionId={}, rounds={}",
@@ -115,7 +115,7 @@ public class ToolLoopKernel {
                 spec.sessionId(),
                 rounds,
                 String.join(",", toolPath));
-        return new Result(ToolLoopOutcome.STEP_LIMIT, rounds, List.copyOf(toolPath));
+        return new Result(ToolLoopOutcome.ROUND_LIMIT, rounds, List.copyOf(toolPath));
     }
 
     /**
@@ -172,7 +172,7 @@ public class ToolLoopKernel {
         return calls.stream().map(ToolLoopCall::rawToolCall).toList();
     }
 
-    /** 落一步工具步 trace 并推 SSE step 事件 —— 前端步骤可视化与「平均步数 / 降级率 / 步级延迟」口径的唯一来源；
+    /** 落一步工具步 trace 并推 SSE step 事件 —— 前端步骤可视化与「工具步数 / 步级延迟 p95」口径的唯一来源；
      * 端口实现内部兜底、不打挂主链路。 */
     private void recordToolStep(
             Spec spec, String traceId, int stepIndex, ToolLoopCall call, DispatchResult result, long latencyMs) {

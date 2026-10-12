@@ -33,7 +33,7 @@ public final class RetrievalObservations {
 
     /**
      * 判为「无新增」的重合比例阈值 —— 此前出现过的条目占比达到此值即收敛。只认「完全重复」不够：检索是 topK 截断的，
-     * 换关键词常返回高度重叠但不完全相同的一批，逐条判重会让模型无限换词直到撞步数上限；0.6 = 一次检索能带进 3 条
+     * 换关键词常返回高度重叠但不完全相同的一批，逐条判重会让模型无限换词直到撞轮数上限；0.6 = 一次检索能带进 3 条
      * 以上新内容时（约 40% 重合）不算冗余。
      */
     public static boolean isRedundant(int alreadySeenCount, int foundCount) {

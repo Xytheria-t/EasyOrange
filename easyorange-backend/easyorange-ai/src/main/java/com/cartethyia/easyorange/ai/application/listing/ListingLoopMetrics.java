@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 发布链路循环的观测副产物 — 与买家侧 {@code ChatLoopMetrics} 同构、不同命名空间（easyorange.ai.listing.*）：
- * 两条链路的步数分布 / 降级率分开看（发布链路每步都是定价与合规的必经查证，降级语义更重）。
+ * 两条链路的轮数分布 / 降级率分开看（发布链路每轮都是定价与合规的必经查证，降级语义更重）。
  * <p>
  * 埋点是横切关注点，编排器不该知道指标名与 tag 契约：构造期按枚举全集预注册（tag 是时序契约），热路径
  * 只做 {@link EnumMap} 查找。
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 public class ListingLoopMetrics implements ToolLoopListener {
 
     private static final String LOOP_METRIC = "easyorange.ai.listing.loop";
-    private static final String STEPS_METRIC = "easyorange.ai.listing.steps";
+    private static final String ROUNDS_METRIC = "easyorange.ai.listing.rounds";
     private static final String TOOL_METRIC = "easyorange.ai.listing.tool";
     private static final String TOOL_DURATION_METRIC = "easyorange.ai.listing.tool.duration";
 
@@ -55,7 +55,7 @@ public class ListingLoopMetrics implements ToolLoopListener {
     }
 
     private final Map<ToolLoopOutcome, Counter> loopCounters;
-    private final DistributionSummary stepsSummary;
+    private final DistributionSummary roundsSummary;
     private final Map<TrackedTool, Counter> toolCounters;
     private final Map<TrackedTool, Timer> toolTimers;
 
@@ -64,7 +64,7 @@ public class ListingLoopMetrics implements ToolLoopListener {
         for (ToolLoopOutcome outcome : ToolLoopOutcome.values()) {
             loopCounters.put(outcome, meterRegistry.counter(LOOP_METRIC, "outcome", outcome.getTag()));
         }
-        this.stepsSummary = DistributionSummary.builder(STEPS_METRIC)
+        this.roundsSummary = DistributionSummary.builder(ROUNDS_METRIC)
                 .description("发布链路每次循环出口的决策轮数（含 finish 轮，故障哨兵不入分布）")
                 .publishPercentileHistogram()
                 .register(meterRegistry);
@@ -84,7 +84,7 @@ public class ListingLoopMetrics implements ToolLoopListener {
     @Override
     public void recordLoop(ToolLoopOutcome outcome, int rounds) {
         loopCounters.get(outcome).increment();
-        stepsSummary.record(rounds);
+        roundsSummary.record(rounds);
     }
 
     @Override

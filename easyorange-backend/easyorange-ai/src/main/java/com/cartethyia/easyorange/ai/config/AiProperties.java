@@ -170,7 +170,7 @@ public record AiProperties(
     /**
      * 多轮对话记忆与工具调用循环配置 — Redis 会话窗口（短期记忆）+ 偏好注入（长期记忆）+ 循环上限。
      *
-     * @param maxSteps 多步 ReAct 循环单次上限（含 finish 轮）：典型轨迹 search → 计算/详情 → remember
+     * @param maxRounds 多步 ReAct 循环单次上限（含 finish 轮）：典型轨迹 search → 计算/详情 → remember
      *     → finish 需 4~5 步，取 7 留一轮换词 / 多意图追问的余量——上限过紧会逼富轨迹中途强制收敛
      * @param maxHistoryTokens 历史注入 prompt 的 token 预算（估算口径见 TokenEstimator），轮数窗口
      *     之上的第二道裁剪；&lt;=0 关闭。超限只裁历史、不影响生成（生成侧由 maxTokensPerCall 兜底）
@@ -181,21 +181,21 @@ public record AiProperties(
     public record Chat(
             @DefaultValue("24") int sessionTtlHours,
             @DefaultValue("6") int historyLimit,
-            @Min(1) @Max(10) @DefaultValue("7") int maxSteps,
+            @Min(1) @Max(10) @DefaultValue("7") int maxRounds,
             @DefaultValue("2000") int maxHistoryTokens,
             @DefaultValue("90") int sessionLockWaitSeconds) {}
 
     /**
      * 发布链路（多步工具循环）配置。
      *
-     * @param maxSteps 发布循环单次上限（含 finish 轮）：典型轨迹 禁售查证 → 品类召回 → 行情统计 → finish
+     * @param maxRounds 发布循环单次上限（含 finish 轮）：典型轨迹 禁售查证 → 品类召回 → 行情统计 → finish
      *     需 4 步，取 6 留出检索换词一轮的余量；比 chat 少一档是因为发布链路的检索词由预识别线索锚定，
-     *     不存在买家侧多意图追问把步数撑长的形态
+     *     不存在买家侧多意图追问把轮数撑长的形态
      * @param allowedImageHosts 取图主机白名单（精确匹配主机名，大小写不敏感）——命中的主机跳过内网地址
      *     校验，默认空只放行公网；自建图床落内网才需要开，也是本地 HttpServer 用例能跑通真实下载路径的唯一入口
      */
     public record Listing(
-            @Min(1) @Max(10) @DefaultValue("6") int maxSteps, List<String> allowedImageHosts) {
+            @Min(1) @Max(10) @DefaultValue("6") int maxRounds, List<String> allowedImageHosts) {
 
         public Listing {
             allowedImageHosts = allowedImageHosts == null ? List.of() : List.copyOf(allowedImageHosts);

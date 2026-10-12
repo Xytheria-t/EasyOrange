@@ -43,7 +43,7 @@ class ToolCallLoopMetricsTest {
                             .count())
                     .isZero();
         }
-        assertThat(registry.summary("easyorange.ai.chat.steps").count()).isZero();
+        assertThat(registry.summary("easyorange.ai.chat.rounds").count()).isZero();
     }
 
     @Test
@@ -82,10 +82,10 @@ class ToolCallLoopMetricsTest {
     }
 
     @Test
-    @DisplayName("recordLoop -> 结局计数 + 决策轮数分布（降级率与平均步数的口径来源）")
+    @DisplayName("recordLoop -> 结局计数 + 决策轮数分布（降级率与平均轮数的口径来源）")
     void recordLoop_countsOutcomeAndRounds() {
         metrics.recordLoop(ToolLoopOutcome.FINISHED, 3);
-        metrics.recordLoop(ToolLoopOutcome.STEP_LIMIT, 7);
+        metrics.recordLoop(ToolLoopOutcome.ROUND_LIMIT, 7);
 
         assertThat(registry.counter("easyorange.ai.chat.loop", "outcome", "finished")
                         .count())
@@ -93,12 +93,12 @@ class ToolCallLoopMetricsTest {
         assertThat(registry.counter("easyorange.ai.chat.loop", "outcome", "step_limit")
                         .count())
                 .isEqualTo(1.0);
-        assertThat(registry.summary("easyorange.ai.chat.steps").count()).isEqualTo(2L);
-        assertThat(registry.summary("easyorange.ai.chat.steps").totalAmount()).isEqualTo(10.0);
+        assertThat(registry.summary("easyorange.ai.chat.rounds").count()).isEqualTo(2L);
+        assertThat(registry.summary("easyorange.ai.chat.rounds").totalAmount()).isEqualTo(10.0);
     }
 
     @Test
-    @DisplayName("recordLoopFailure -> 只记结局，不进轮数分布（记 0 会把平均步数的均值往 0 拽）")
+    @DisplayName("recordLoopFailure -> 只记结局，不进轮数分布（记 0 会把平均轮数的均值往 0 拽）")
     void recordLoopFailure_excludedFromSteps() {
         metrics.recordLoop(ToolLoopOutcome.FINISHED, 3);
         metrics.recordLoopFailure();
@@ -106,8 +106,8 @@ class ToolCallLoopMetricsTest {
         assertThat(registry.counter("easyorange.ai.chat.loop", "outcome", "error")
                         .count())
                 .isEqualTo(1.0);
-        assertThat(registry.summary("easyorange.ai.chat.steps").count()).isEqualTo(1L);
-        assertThat(registry.summary("easyorange.ai.chat.steps").totalAmount()).isEqualTo(3.0);
+        assertThat(registry.summary("easyorange.ai.chat.rounds").count()).isEqualTo(1L);
+        assertThat(registry.summary("easyorange.ai.chat.rounds").totalAmount()).isEqualTo(3.0);
     }
 
     @Test
@@ -120,7 +120,7 @@ class ToolCallLoopMetricsTest {
                         .takeSnapshot()
                         .percentileValues())
                 .isEmpty();
-        assertThat(registry.summary("easyorange.ai.chat.steps").takeSnapshot().percentileValues())
+        assertThat(registry.summary("easyorange.ai.chat.rounds").takeSnapshot().percentileValues())
                 .isEmpty();
         assertThat(registry.getMeters()).noneMatch(meter -> meter.getId().getTag("quantile") != null);
     }

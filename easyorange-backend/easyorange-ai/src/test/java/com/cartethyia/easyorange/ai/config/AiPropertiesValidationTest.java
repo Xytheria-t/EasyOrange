@@ -22,8 +22,8 @@ class AiPropertiesValidationTest {
     @Test
     @DisplayName("嵌套槽位的约束经 @Valid 级联 —— 非法值在绑定期被拦")
     void nestedConstraintsAreEnforced() {
-        assertViolates("chat.max-steps", "0", "chat.maxSteps");
-        assertViolates("listing.max-steps", "11", "listing.maxSteps");
+        assertViolates("chat.max-rounds", "0", "chat.maxRounds");
+        assertViolates("listing.max-rounds", "11", "listing.maxRounds");
         assertViolates("semantic-cache.similarity-threshold", "1.5", "semanticCache.similarityThreshold");
         assertViolates("embedding.dimensions", "0", "embedding.dimensions");
     }

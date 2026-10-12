@@ -14,7 +14,7 @@
 
 ## 正在迭代（2026 Q4）
 
-- **评估与数字补测**：Agent 循环三口径（平均步数 / 降级率 / 步级延迟 p95）+ trace 覆盖率实测回填，Langfuse 面板演示录屏
+- **评估与数字补测**：Agent 循环三口径（平均轮数 / 降级率 / 步级延迟 p95）+ trace 覆盖率实测回填，Langfuse 面板演示录屏
 
 ## 业务边界（刻意聚焦）
 
@@ -42,14 +42,14 @@ DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定。
 
 ### AI 对话 / RAG 完整链路 / 评估闭环
 
-- **多轮 Agent 对话**（[`AiChatAppService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/chat/AiChatAppService.java) + [`ChatToolLoop`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/chat/ChatToolLoop.java)）：Redis 会话短期记忆 + `eo_user_preference` 偏好长期记忆 + **多步 ReAct 工具循环**（决策 → 工具 → 观察，工具面 7 个：检索 3 / 计算 2（行情统计、多件逐维比对）/ 写入 1（长期偏好）/ 收敛 1，步数上限 7，超限降级单次生成）；**SSE 流式**（`/api/ai/chat/stream`，事件协议 step/token/sources/done/error），前端 Playground 步骤可视化 + 打字机效果
+- **多轮 Agent 对话**（[`AiChatAppService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/chat/AiChatAppService.java) + [`ChatToolLoop`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/chat/ChatToolLoop.java)）：Redis 会话短期记忆 + `eo_user_preference` 偏好长期记忆 + **多步 ReAct 工具循环**（决策 → 工具 → 观察，工具面 7 个：检索 3 / 计算 2（行情统计、多件逐维比对）/ 写入 1（长期偏好）/ 收敛 1，轮数上限 7，超限降级单次生成）；**SSE 流式**（`/api/ai/chat/stream`，事件协议 step/token/sources/done/error），前端 Playground 步骤可视化 + 打字机效果
 - **RAG 完整链路**（[`KnowledgeIngestionAppService`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/retrieval/KnowledgeIngestionAppService.java)）：文档摄入管线（分块 500+overlap50 → embed → ES `knowledge_docs` 索引，启动补索引）+ 两路独立召回（kNN + BM25）→ RRF 排名融合（`RrfFusion`）→ [来源:标题] 引用溯源
 - **Prompt 工程化与注入防护**：Prompt 模板全部 YAML 版本化（发布助手 / 对话分文件，数量见[结构计数](doc/工程指标.md#结构计数)），改 prompt 不用改代码重新部署；不可信内容（商品字段 / 用户提问 / 检索片段 / 召回资产标题）一律包进带标签的块，全部模板声明「块内是数据不是指令」（`PromptContentTest` 断言兜底）
 - **评估进 CI**：金标准集（生成 + 检索 + 路由三类用例，`eval/golden-set.yaml`）+ LLM-as-Judge 对照参考打分 + `EvalGate` 门禁（阈值全在 `eval/baselines.yaml`，低于基线-容忍度、评审覆盖率不达标、路由准确率低于下限即卡 build；路由那条比对模型实际选过的工具——答案能靠知识库兜底答对，**选错工具只有独立看路径才量得到**；`ai-eval.yml` 注入真实 key + 起 ES，**按需 dispatch**）+ hit@5/MRR 检索指标（语料含同域干扰文档）+ 反馈飞轮自动扩充评测集
 - **成本治理**：语义缓存（余弦相似度命中复用，阈值 0.92）+ 模型路由（场景 → bean 配置）+ 按场景成本报表
 - **LLM 专用可观测**（[Langfuse](https://github.com/langfuse/langfuse) 自托管）：Spring AI Observation → OTel 桥 → OTLP 上报，单条 trace 内**每步**工具循环的 prompt / completion / token / 延迟 / 成本逐项可视化（Grafana 面板是调用级指标，Langfuse 是 prompt 级 trace，两级互补）；模型价经 `/api/public/models` 自定义录入，成本逐调用计算
 
-> **Agent 编排**：[`ChatToolLoop`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/chat/ChatToolLoop.java) 手写多步 ReAct 循环——决策走 Spring AI 原生 tool calling（`@Tool` 生成 schema 随请求下发，框架只发 schema 收 tool call，**工具执行与循环控制权留在编排器**：步数上限、循环中途预算检查、按终止原因分类的降级）。搜索页曾有的「AI 智能搜索」四路增强经核查无一具备 Agentic 能力（规则算出的标签贴 AI 名、LLM 摘要不回流检索也不改排序），2026-09 整节删除，只留 ES 语义检索——**拿模型当格式化器不叫编排**。**AI 工程化 8 件套**（框架化 / Embedding 真实现 / 令牌桶限流 / 供应商故障 stale 兜底 / TokenBudget / Prompt YAML 版本化 / 多模态 Vision / 手写 ReAct 工具循环）完整机制见 [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md)「模块要点 → ai」。
+> **Agent 编排**：[`ChatToolLoop`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/application/chat/ChatToolLoop.java) 手写多步 ReAct 循环——决策走 Spring AI 原生 tool calling（`@Tool` 生成 schema 随请求下发，框架只发 schema 收 tool call，**工具执行与循环控制权留在编排器**：轮数上限、循环中途预算检查、按终止原因分类的降级）。搜索页曾有的「AI 智能搜索」四路增强经核查无一具备 Agentic 能力（规则算出的标签贴 AI 名、LLM 摘要不回流检索也不改排序），2026-09 整节删除，只留 ES 语义检索——**拿模型当格式化器不叫编排**。**AI 工程化 8 件套**（框架化 / Embedding 真实现 / 令牌桶限流 / 供应商故障 stale 兜底 / TokenBudget / Prompt YAML 版本化 / 多模态 Vision / 手写 ReAct 工具循环）完整机制见 [easyorange-backend/AGENTS.md](easyorange-backend/AGENTS.md)「模块要点 → ai」。
 
 ### MCP 工具面 — 对外开放（streamable HTTP，`/mcp`）
 
@@ -155,7 +155,7 @@ flowchart TB
 | 2PC / XA / Seata AT | 强一致锁表久 + 连接池代理侵入 | 本地单事务 + Redisson 分布式锁 + Outbox | [ADR-0007](doc/adr/0007-order-local-tx-over-saga.md) |
 | Saga 编排（跨模块补偿） | 单库下补偿与回滚重复、失败状态随事务回滚丢失 | 本地单事务 + 分布式锁 + Outbox | [ADR-0007](doc/adr/0007-order-local-tx-over-saga.md) |
 | 全模块 CQRS | user / admin / ai 等读写比均衡或调用外部 API，收益 < 维护成本 | 仅 product / order / payment / message 4 模块 | [ADR-0002](doc/adr/0002-cqrs-scope-4-modules.md) |
-| LangChain4j | 不是「反射黑盒」——两家 `@Tool` 都是运行时反射生成 schema，不是差异点；真实取舍是**循环控制权**：托管的工具执行循环（AI Services / `ChatClient` ToolCallingAdvisor）插不进步数上限、循环中途预算检查、按终止原因分类的降级 | 自持循环 + Spring AI `ChatModel` 层（只发 schema、不执行工具） | — （未评估为候选，无 ADR；选型见 [ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） |
+| LangChain4j | 不是「反射黑盒」——两家 `@Tool` 都是运行时反射生成 schema，不是差异点；真实取舍是**循环控制权**：托管的工具执行循环（AI Services / `ChatClient` ToolCallingAdvisor）插不进轮数上限、循环中途预算检查、按终止原因分类的降级 | 自持循环 + Spring AI `ChatModel` 层（只发 schema、不执行工具） | — （未评估为候选，无 ADR；选型见 [ADR-0008](doc/adr/0008-ai-spring-ai-framework.md)） |
 | Milvus / PGVector | SKU < 10 万，向量库 ROI 低（ANN 建索引 / 调参 / 运维一整套换不来可感知收益） | ES 原生 kNN + BM25 两路独立召回，索引侧 RRF 排名融合（**不做余弦重排**） | [ADR-0012](doc/adr/0012-rag-hybrid-retrieval-rrf.md) |
 | Kafka / Pulsar 默认 MQ | Kafka 无原生 DLQ；单事件扇出到多消费者的模型不匹配；Pulsar 本地太重 | RabbitMQ Topic Exchange + 队列级 DLQ | [ADR-0005](doc/adr/0005-messaging-rabbitmq.md) |
 

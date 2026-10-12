@@ -270,7 +270,7 @@ class GoldenSetEvaluatorTest {
     }
 
     @Test
-    @DisplayName("listing 路由回归：跑发布循环，全路径标注命中；步数与路径逐条落日志")
+    @DisplayName("listing 路由回归：跑发布循环，全路径标注命中；轮数与路径逐条落日志")
     void evaluateListingRouting_countsMatches() {
         setUp();
         var fullPath = List.of(

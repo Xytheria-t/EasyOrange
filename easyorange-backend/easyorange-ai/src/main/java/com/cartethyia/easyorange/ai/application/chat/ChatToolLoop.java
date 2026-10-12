@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
  * 买家侧多步工具调用循环（ReAct）— 找货对话的编排器：注入首轮上下文、工具面与降级口径，循环机制交给 {@link ToolLoopKernel}
  * （与 listing 链路共用）。
  * <p>
- * 降级口径 = 已积累观察不丢弃：步数 / 预算超限用观察直接生成；决策失败补一次检索（白名单未含检索的消融臂跳过 —— 补检索会把该臂的检索来源加回来）。
+ * 降级口径 = 已积累观察不丢弃：轮数 / 预算超限用观察直接生成；决策失败补一次检索（白名单未含检索的消融臂跳过 —— 补检索会把该臂的检索来源加回来）。
  */
 @Slf4j
 @Component
@@ -142,7 +142,7 @@ public class ChatToolLoop {
                 promptRegistry.require(CHAT_TOOL_PROMPT),
                 firstUserMessage(input),
                 toolCallbacks(tools, input),
-                aiProperties.chat().maxSteps(),
+                aiProperties.chat().maxRounds(),
                 budgetGuard::exhausted,
                 () -> fallbackSearch(input, tools),
                 input.sessionId(),

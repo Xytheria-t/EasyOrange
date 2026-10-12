@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 public class ChatLoopMetrics implements ToolLoopListener {
 
     private static final String LOOP_METRIC = "easyorange.ai.chat.loop";
-    private static final String STEPS_METRIC = "easyorange.ai.chat.steps";
+    private static final String ROUNDS_METRIC = "easyorange.ai.chat.rounds";
     private static final String TOOL_METRIC = "easyorange.ai.chat.tool";
     /** 工具执行耗时 —— 只包住工具执行本身，不含本轮决策的模型调用（决策调用耗时在 eo_ai_call_log 与 OTel span 里）。 */
     private static final String TOOL_DURATION_METRIC = "easyorange.ai.chat.tool.duration";
@@ -67,7 +67,7 @@ public class ChatLoopMetrics implements ToolLoopListener {
     }
 
     private final Map<ToolLoopOutcome, Counter> loopCounters;
-    private final DistributionSummary stepsSummary;
+    private final DistributionSummary roundsSummary;
     private final Map<TrackedTool, Counter> toolCounters;
     private final Map<TrackedTool, Timer> toolTimers;
 
@@ -76,7 +76,7 @@ public class ChatLoopMetrics implements ToolLoopListener {
         for (ToolLoopOutcome outcome : ToolLoopOutcome.values()) {
             loopCounters.put(outcome, meterRegistry.counter(LOOP_METRIC, "outcome", outcome.getTag()));
         }
-        this.stepsSummary = DistributionSummary.builder(STEPS_METRIC)
+        this.roundsSummary = DistributionSummary.builder(ROUNDS_METRIC)
                 .description("每次循环出口的决策轮数（含 finish 轮，故障哨兵不入分布）")
                 .publishPercentileHistogram()
                 .register(meterRegistry);
@@ -97,7 +97,7 @@ public class ChatLoopMetrics implements ToolLoopListener {
     @Override
     public void recordLoop(ToolLoopOutcome outcome, int rounds) {
         loopCounters.get(outcome).increment();
-        stepsSummary.record(rounds);
+        roundsSummary.record(rounds);
     }
 
     /**

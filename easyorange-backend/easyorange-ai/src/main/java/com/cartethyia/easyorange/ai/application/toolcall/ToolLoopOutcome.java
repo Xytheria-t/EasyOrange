@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 public enum ToolLoopOutcome {
     FINISHED("finished"),
 
-    STEP_LIMIT("step_limit"),
+    ROUND_LIMIT("step_limit"),
 
     BUDGET("budget"),
 

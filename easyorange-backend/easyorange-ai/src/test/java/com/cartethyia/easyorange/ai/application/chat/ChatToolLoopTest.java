@@ -206,7 +206,7 @@ class ToolCallLoopTest {
                         .counter("easyorange.ai.chat.loop", "outcome", "finished")
                         .count())
                 .isEqualTo(1.0);
-        assertThat(meterRegistry.get("easyorange.ai.chat.steps").summary().count())
+        assertThat(meterRegistry.get("easyorange.ai.chat.rounds").summary().count())
                 .isEqualTo(1);
     }
 
@@ -418,9 +418,9 @@ class ToolCallLoopTest {
     }
 
     @Test
-    @DisplayName("步数上限内未 finish -> 强制收敛（step_limit），不再发第 N+1 次决策")
+    @DisplayName("轮数上限内未 finish -> 强制收敛（step_limit），不再发第 N+1 次决策")
     void run_stepLimitForcesConvergence() {
-        aiProperties = PropertyBindings.bind(AiProperties.class, "chat.max-steps", "2");
+        aiProperties = PropertyBindings.bind(AiProperties.class, "chat.max-rounds", "2");
         toolCallLoop = newToolCallLoop();
         stubDecisions(
                 toolCallResponse(ChatTools.TOOL_KNOWLEDGE_SEARCH, searchArgs("退款")),
@@ -430,7 +430,7 @@ class ToolCallLoopTest {
 
         Result result = run("反复问规则");
 
-        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.STEP_LIMIT);
+        assertThat(result.outcome()).isEqualTo(ToolLoopOutcome.ROUND_LIMIT);
         assertThat(result.rounds()).isEqualTo(2);
         verify(aiModelSupport, times(2)).callWithTools(any(), any(), anyList(), anyList());
         assertThat(meterRegistry
